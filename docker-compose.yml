@@ -277,21 +277,21 @@ services:
   quadratic-dev:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: dev
+      dockerfile: Dockerfile.dev
+    container_name: quadratic-dev
     environment:
       # common
       ENVIRONMENT: ${ENVIRONMENT}
       RUST_LOG: ${RUST_LOG}
       STORAGE_TYPE: ${STORAGE_TYPE}
       QUADRATIC_API_URI: ${QUADRATIC_API_URL_INTERNAL}
-      AUTH0_JWKS_URI: ${JWKS_URI}
       M2M_AUTH_TOKEN: ${M2M_AUTH_TOKEN}
       PUBSUB_HOST: ${PUBSUB_HOST}
       PUBSUB_PORT: ${PUBSUB_PORT}
       PUBSUB_PASSWORD: ${PUBSUB_PASSWORD}
       PUBSUB_ACTIVE_CHANNELS: ${PUBSUB_ACTIVE_CHANNELS}
-      HOST: 0.0.0.0
+      HOST: ""
+      PORT: ""
       # client
       VITE_DEBUG: 1
       VITE_QUADRATIC_API_URL: ${QUADRATIC_API_URL_EXTERNAL}
@@ -314,12 +314,11 @@ services:
       QUADRATIC_FILE_URI_PUBLIC: ${QUADRATIC_FILES_URL_EXTERNAL}
       LICENSE_KEY: ${LICENSE_KEY}
       # multiplayer
-      # PORT: ${QUADRATIC_MULTIPLAYER_PORT}
       HEARTBEAT_CHECK_S: ${QUADRATIC_MULTIPLAYER_HEARTBEAT_CHECK_S}
       HEARTBEAT_TIMEOUT_S: ${QUADRATIC_MULTIPLAYER_HEARTBEAT_TIMEOUT_S}
       AUTHENTICATE_JWT: true
+      AUTH0_JWKS_URI: ${JWKS_URI}
       # files
-      # PORT: ${QUADRATIC_FILES_PORT}
       FILE_CHECK_S: ${QUADRATIC_FILES_FILE_CHECK_S}
       FILES_PER_CHECK: ${QUADRATIC_FILES_FILES_PER_CHECK}
       TRUNCATE_FILE_CHECK_S: ${QUADRATIC_FILES_TRUNCATE_FILE_CHECK_S}
@@ -328,7 +327,6 @@ services:
       STORAGE_DIR: ${STORAGE_DIR}
       STORAGE_ENCRYPTION_KEYS: ${ENCRYPTION_KEY}
       # connection
-      # PORT: ${QUADRATIC_CONNECTION_PORT}
       MAX_RESPONSE_BYTES: ${QUADRATIC_CONNECTION_MAX_RESPONSE_BYTES}
       STATIC_IPS: ${QUADRATIC_CONNECTION_STATIC_IPS}
     ports:
@@ -338,10 +336,22 @@ services:
       - "3002:3002"
       - "3003:3003"
     volumes:
+      - quadratic-dev-cache:/root/.cache
+      - quadratic-dev-cargo:/root/.cargo
       - ./:/quadratic
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ory-auth:
+        condition: service_started
+      ory-auth-migrate:
+        condition: service_started
+      ory-auth-node:
+        condition: service_started
+      ory-auth-mail:
+        condition: service_started
     profiles:
       - quadratic-dev
       - dev
@@ -539,8 +549,12 @@ services:
       - quadratic-connection-db-mssql
 
 volumes:
-  docker:
-    name: docker
+  quadratic-dev-cache:
+    name: quadratic-dev-cache
+    driver: local
+  quadratic-dev-cargo:
+    name: quadratic-dev-cargo
+    driver: local
   mysql-connection:
     name: mysql-connection
     driver: local

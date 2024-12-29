@@ -12,7 +12,9 @@ use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
 pub(crate) struct Config {
+    #[serde(default = "default_host")]
     pub(crate) host: String,
+    #[serde(default = "default_port")]
     pub(crate) port: String,
     pub(crate) heartbeat_check_s: i64,
     pub(crate) authenticate_jwt: bool,
@@ -29,6 +31,14 @@ pub(crate) struct Config {
     pub(crate) m2m_auth_token: String,
 }
 
+fn default_host() -> String {
+    "0.0.0.0".to_string()
+}
+
+fn default_port() -> String {
+    "3001".to_string()
+}
+
 /// Load the global configuration from the environment into Config.
 pub(crate) fn config() -> Result<Config> {
     let filename = if cfg!(test) { ".env.test" } else { ".env" };
@@ -37,7 +47,13 @@ pub(crate) fn config() -> Result<Config> {
     dotenv::from_filename(filename).ok();
     dotenv().ok();
 
-    let config = envy::from_env::<Config>().map_err(|e| MpError::Config(e.to_string()))?;
+    let mut config = envy::from_env::<Config>().map_err(|e| MpError::Config(e.to_string()))?;
+    if config.host.is_empty() {
+        config.host = default_host();
+    }
+    if config.port.is_empty() {
+        config.port = default_port();
+    }
     Ok(config)
 }
 

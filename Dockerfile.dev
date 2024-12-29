@@ -25,4 +25,4 @@ RUN echo 'Installing cargo-watch...' && cargo install cargo-watch
 
 WORKDIR /quadratic
 
-CMD ["bash", "-c", "source ~/.bashrc && npm install --no-audit --no-fund && npm run compile --workspace=quadratic-shared && npm run dev"]
+CMD ["bash", "-c", "source ~/.bashrc && npm install --no-audit --no-fund && npm run compile --workspace=quadratic-shared && npm run dev:docker"]
