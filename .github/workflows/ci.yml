@@ -65,7 +65,7 @@ jobs:
           grcov $(find . -name "grcov-*.profraw" -print) \
             --branch \
             --ignore-not-existing \
-            --binary-path ./target/debug/ \
+            --binary-path ../target/debug/ \
             -s . \
             -t lcov \
             --ignore "/*" \
