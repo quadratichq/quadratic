@@ -20,15 +20,18 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+
+      - uses: useblacksmith/setup-node@v5
         with:
           node-version: 18
+          cache: "npm"
 
       - name: Set up Rust
-        uses: moonrepo/setup-rust@v1
+        uses: actions-rs/toolchain@v1
         with:
           components: clippy, llvm-tools-preview
-          cache: false
+
+      - uses: useblacksmith/rust-cache@v3
 
       - name: Install grcov
         run: if ! which grcov; then cargo install grcov; fi
@@ -52,21 +55,21 @@ jobs:
           cd quadratic-core
           cargo test -- --test-threads=4
 
-      - name: Generate coverage for quadratic-core
-        env:
-          RUSTC_BOOTSTRAP: 1
-        run: |
-          grcov $(find . -name "grcov-*.profraw" -print) \
-            --branch \
-            --ignore-not-existing \
-            --binary-path ./target/debug/ \
-            -s . \
-            -t lcov \
-            --ignore "/*" \
-            --ignore "./src/wasm_bindings/*" \
-            --ignore "./src/bin/*" \
-            --ignore "./docker/*" \
-            -o lcov.info
+      # - name: Generate coverage for quadratic-core
+      #   env:
+      #     RUSTC_BOOTSTRAP: 1
+      #   run: |
+      #     grcov $(find . -name "grcov-*.profraw" -print) \
+      #       --branch \
+      #       --ignore-not-existing \
+      #       --binary-path ./target/debug/ \
+      #       -s . \
+      #       -t lcov \
+      #       --ignore "/*" \
+      #       --ignore "./src/wasm_bindings/*" \
+      #       --ignore "./src/bin/*" \
+      #       --ignore "./docker/*" \
+      #       -o lcov.info
 
       - name: Upload coverage reports to Codecov quadratic-core
         uses: codecov/codecov-action@v3
@@ -78,15 +81,18 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+
+      - uses: useblacksmith/setup-node@v5
         with:
           node-version: 18
+          cache: "npm"
 
       - name: Set up Rust
-        uses: moonrepo/setup-rust@v1
+        uses: actions-rs/toolchain@v1
         with:
           components: clippy, llvm-tools-preview
-          cache: false
+
+      - uses: useblacksmith/rust-cache@v3
 
       - name: Install grcov
         run: if ! which grcov; then cargo install grcov; fi
@@ -114,6 +120,7 @@ jobs:
         env:
           RUSTC_BOOTSTRAP: 1
         run: |
+          cd quadratic-multiplayer
           grcov $(find . -name "grcov-*.profraw" -print) \
             --branch \
             --ignore-not-existing \
@@ -124,7 +131,6 @@ jobs:
             --ignore "./src/wasm_bindings/*" \
             --ignore "./src/bin/*" \
             --ignore "./docker/*" \
-            --ignore "./../docker/*" \
             -o lcov.info
 
       - name: Upload coverage reports to Codecov quadratic-multiplayer
@@ -137,15 +143,18 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+
+      - uses: useblacksmith/setup-node@v5
         with:
           node-version: 18
+          cache: "npm"
 
       - name: Set up Rust
-        uses: moonrepo/setup-rust@v1
+        uses: actions-rs/toolchain@v1
         with:
           components: clippy, llvm-tools-preview
-          cache: false
+
+      - uses: useblacksmith/rust-cache@v3
 
       - name: Install grcov
         run: if ! which grcov; then cargo install grcov; fi
@@ -174,17 +183,21 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+
+      - uses: useblacksmith/setup-node@v5
         with:
           node-version: 18
-      - uses: actions/setup-python@v5
+          cache: "npm"
+
+      - uses: useblacksmith/setup-python@v6
         with:
           python-version: "3.11.3"
+          cache: "pip"
 
       - name: Set up Rust
-        uses: moonrepo/setup-rust@v1
-        with:
-          channel: "nightly"
+        uses: actions-rs/toolchain@v1
+
+      - uses: useblacksmith/rust-cache@v3
 
       - uses: jetli/wasm-pack-action@v0.4.0
 
@@ -210,10 +223,13 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+
+      - uses: useblacksmith/setup-node@v5
         with:
           node-version: 18
-      - uses: actions/setup-python@v5
+          cache: "npm"
+
+      - uses: useblacksmith/setup-python@v6
         with:
           python-version: "3.11.3"
           cache: "pip"
@@ -228,9 +244,11 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+
+      - uses: useblacksmith/setup-node@v5
         with:
           node-version: 18
+          cache: "npm"
 
       - name: Run npm test:ci in quadratic-api
         run: |
@@ -243,11 +261,13 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Rust
-        uses: moonrepo/setup-rust@v1
+        uses: actions-rs/toolchain@v1
         with:
           components: clippy
-          cache: false
+
+      - uses: useblacksmith/rust-cache@v3
 
       - name: Run cargo clippy in quadratic-core
         run: |
@@ -259,13 +279,17 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+
+      - uses: useblacksmith/setup-node@v5
         with:
           node-version: 18
+          cache: "npm"
+
       - name: Set up Rust
-        uses: moonrepo/setup-rust@v1
-        with:
-          cache: false
+        uses: actions-rs/toolchain@v1
+
+      - uses: useblacksmith/rust-cache@v3
+
       - uses: jetli/wasm-pack-action@v0.4.0
         with:
           version: "latest"

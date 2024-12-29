@@ -263,6 +263,8 @@ services:
     depends_on:
       quadratic-client:
         condition: service_healthy
+      quadratic-api:
+        condition: service_started
     profiles:
       - quadratic-connection
       - backend
@@ -410,6 +412,8 @@ services:
       CSRF_COOKIE_NAME: ${KRATOS_CSRF_COOKIE_NAME}
       CSRF_COOKIE_SECRET: ${KRATOS_CSRF_COOKIE_SECRET}
     restart: on-failure
+    depends_on:
+      - ory-auth
     profiles:
       - ory
       - dev

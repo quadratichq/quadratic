@@ -141,7 +141,7 @@ RUN if [ "$DEV" = "true" ]; then \
 ###########################################################################################
 # Builder 5 - Combine all builder files and build the client
 ###########################################################################################
-FROM node:18 AS vite-build
+FROM node:18 AS vite-builder
 
 # Install python
 RUN apt-get update && apt-get install -y --no-install-recommends python-is-python3 python3-pip
@@ -186,7 +186,7 @@ RUN echo 'Building front-end...' && npm run build --workspace=quadratic-client
 ###########################################################################################
 FROM nginx:stable-alpine
 
-COPY --from=vite-build /quadratic/build /usr/share/nginx/html
+COPY --from=vite-builder /quadratic/build /usr/share/nginx/html
 
 EXPOSE 80 443 3000
 
