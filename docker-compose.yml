@@ -494,7 +494,7 @@ services:
     image: mcr.microsoft.com/mssql/server:2022-latest
     restart: always
     container_name: mssql-connection
-    user: mssql
+    user: root
     ports:
       - 1433:1433
     environment:
