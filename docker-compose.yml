@@ -470,7 +470,6 @@ services:
     image: mysql:8
     restart: always
     container_name: mysql-connection
-    user: "999:999"
     ports:
       - 3306:3306
     environment:
@@ -484,7 +483,7 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      - ./docker/mysql-connection/data:/var/lib/mysql:rw
+      - ./docker/mysql-connection/data:/var/lib/mysql
       - ./docker/mysql-connection/scripts:/docker-entrypoint-initdb.d/
     profiles:
       - quadratic-connection
