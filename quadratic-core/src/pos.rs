@@ -1,7 +1,7 @@
 use crate::{
+    a1::CellRefRangeEnd,
     grid::SheetId,
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-    CellRefRangeEnd,
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -64,7 +64,6 @@ impl Pos {
         format!("{col}{row}")
     }
 
-    // TODO: rename this method (`from_str`?)
     pub fn try_a1_string(a1: &str) -> Option<Self> {
         if let Ok(end) = CellRefRangeEnd::parse_end(a1) {
             if end.is_unbounded() {

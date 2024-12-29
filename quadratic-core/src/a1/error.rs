@@ -2,6 +2,7 @@ use serde::Serialize;
 use ts_rs::TS;
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq, TS)]
+#[serde(tag = "type", content = "error")]
 pub enum A1Error {
     InvalidCellReference(String),
     InvalidSheetId(String),

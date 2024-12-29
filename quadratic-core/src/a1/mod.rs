@@ -1,3 +1,4 @@
+mod a1_context;
 mod a1_selection;
 mod a1_sheet_name;
 mod cell_ref_coord;
@@ -10,23 +11,17 @@ mod ref_range_bounds;
 mod sheet_cell_ref_range;
 mod table_ref;
 
+pub use a1_context::*;
 pub use a1_selection::*;
-pub use a1_sheet_name::*;
+pub(crate) use a1_sheet_name::*;
 pub use cell_ref_coord::*;
 pub use cell_ref_end::*;
 pub use cell_ref_range::*;
 pub use column_names::*;
 pub use error::*;
-pub use ref_range_bounds::*;
+pub(crate) use ref_range_bounds::*;
 pub use sheet_cell_ref_range::*;
 pub use table_ref::*;
-
-/// Name to use when a sheet ID has no corresponding name.
-///
-/// This isn't reserved, but also ideally the user will never see it. If we
-/// decide at sometime in the future that we'd prefer to handle the error in a
-/// different way, then just delete this constant and follow the errors.
-pub(crate) const UNKNOWN_SHEET_NAME: &str = "UnknownSheet";
 
 // TODO(perf): raise or remove upper bound on proptest to test larger ranges.
 #[cfg(test)]

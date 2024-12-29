@@ -82,12 +82,12 @@ pub fn parse_formula(formula_string: &str, pos: Pos) -> FormulaParseResult {
 mod tests {
     use crate::controller::formula::{parse_formula, CellRefSpan, FormulaParseResult};
     use crate::formulas::{CellRef, CellRefCoord, RangeRef};
-    use crate::{Span, UNBOUNDED};
+    use crate::{a1::UNBOUNDED, Span};
     use serial_test::parallel;
 
     fn parse(s: &str) -> FormulaParseResult {
         println!("Parsing {s}");
-        
+
         parse_formula(s, crate::Pos::ORIGIN)
     }
 

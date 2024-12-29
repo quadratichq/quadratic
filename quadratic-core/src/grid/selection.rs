@@ -1,4 +1,5 @@
-use crate::{controller::GridController, A1Error, A1Selection};
+use crate::a1::{A1Error, A1Selection};
+use crate::controller::GridController;
 
 use super::SheetId;
 
@@ -8,16 +9,16 @@ impl GridController {
         a1: &str,
         default_sheet_id: &SheetId,
     ) -> Result<A1Selection, A1Error> {
-        let sheet_map = self.grid().sheet_name_id_map();
-        let table_map = self.grid().table_map();
-        A1Selection::parse(a1, default_sheet_id, &sheet_map, &table_map)
+        let context = self.grid().a1_context();
+        A1Selection::parse(a1, default_sheet_id, &context)
     }
 }
 
 #[cfg(test)]
 #[serial_test::parallel]
 mod test {
-    use crate::{controller::GridController, CellRefRange};
+    use crate::a1::CellRefRange;
+    use crate::controller::GridController;
 
     #[test]
     fn a1_selection_from_string() {

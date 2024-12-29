@@ -1,15 +1,5 @@
-use std::collections::HashMap;
-
-use super::A1Error;
+use super::{A1Context, A1Error};
 use crate::grid::SheetId;
-
-/// Map from sheet name to ID.
-///
-/// Note, we cannot use a reverse map because TS does
-/// not support structs as keys.
-///
-/// Sheet names should be case-folded using [`crate::util::case_fold()`].
-pub type SheetNameIdMap = HashMap<String, SheetId>;
 
 /// Parses the sheet name from an A1 cell reference string. If the string does
 /// not contain `!`, then this function returns `Ok((None, _))`. If the string
@@ -41,19 +31,13 @@ pub(crate) fn parse_optional_sheet_name(a1: &str) -> Result<(Option<String>, &st
 pub(crate) fn parse_optional_sheet_name_to_id<'a>(
     a1: &'a str,
     default_sheet_id: &SheetId,
-    sheet_map: &SheetNameIdMap,
+    context: &A1Context,
 ) -> Result<(SheetId, &'a str), A1Error> {
     let (sheet_name, rest) = parse_optional_sheet_name(a1)?;
     let sheet_id = match sheet_name {
-        Some(sheet_name) => {
-            let folded_name = sheet_name.to_lowercase();
-            **sheet_map
-                .iter()
-                .map(|(k, v)| (k.to_lowercase(), v))
-                .collect::<HashMap<_, _>>()
-                .get(&folded_name)
-                .ok_or(A1Error::InvalidSheetName(sheet_name))?
-        }
+        Some(sheet_name) => context
+            .try_sheet_name(&sheet_name)
+            .ok_or(A1Error::InvalidSheetName(sheet_name))?,
         None => default_sheet_id.to_owned(),
     };
     Ok((sheet_id, rest))
@@ -128,10 +112,7 @@ mod tests {
     fn test_parse_optional_sheet_id() {
         let sheet_1 = SheetId::new();
         let sheet_2 = SheetId::new();
-        let map = HashMap::from([
-            ("sheet1".to_string(), sheet_1),
-            ("sheet 2".to_string(), sheet_2),
-        ]);
+        let map = A1Context::test(&[("sheet1", sheet_1), ("sheet 2", sheet_2)], &[]);
         assert_eq!(
             parse_optional_sheet_name_to_id("SHEET1!A1", &sheet_1, &map),
             Ok((sheet_1, "A1"))
@@ -168,7 +149,7 @@ mod tests {
     fn test_parse_long_sheet_name() {
         let mut sheet = Sheet::test();
         sheet.name = "Types: sequences, mapping, sets".to_string();
-        let map = HashMap::from([("Types: sequences, mapping, sets".to_string(), sheet.id)]);
+        let map = A1Context::test(&[("Types: sequences, mapping, sets", sheet.id)], &[]);
         assert_eq!(
             parse_optional_sheet_name_to_id(
                 "'Types: sequences, mapping, sets'!A1:B2",

@@ -17,7 +17,7 @@ class Sheets {
   private _current: string;
 
   // Stores stringified TableMap for use by A1 functions
-  tableMap: string;
+  a1Context: string;
 
   // set up sheet information
   // ------------------------
@@ -25,19 +25,19 @@ class Sheets {
   constructor() {
     this.sheets = [];
     this._current = '';
-    this.tableMap = '';
+    this.a1Context = '';
     events.on('sheetInfo', this.create);
     events.on('addSheet', this.addSheet);
     events.on('deleteSheet', this.deleteSheet);
     events.on('sheetInfoUpdate', this.updateSheet);
     events.on('setCursor', this.setCursor);
     events.on('sheetOffsets', this.updateOffsets);
-    events.on('tableMap', this.updateTableMap);
+    events.on('a1Context', this.updateA1Context);
     this.initialized = false;
   }
 
-  private updateTableMap = (tableMap: string) => {
-    this.tableMap = tableMap;
+  private updateA1Context = (context: string) => {
+    this.a1Context = context;
   };
 
   private create = (sheetInfo: SheetInfo[]) => {

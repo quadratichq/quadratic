@@ -7,6 +7,10 @@ use itertools::Itertools;
 use std::str::FromStr;
 
 use crate::{
+    a1::{
+        CellRefCoord, CellRefRange, CellRefRangeEnd, ColRange, RefRangeBounds, RowRange,
+        RowRangeEntry, TableRef,
+    },
     grid::{
         block::SameValue,
         data_table::{
@@ -16,8 +20,7 @@ use crate::{
         table_formats::TableFormats,
         CellsAccessed, CodeRun, ColumnData, DataTable, DataTableKind, SheetId,
     },
-    ArraySize, Axis, CellRefCoord, CellRefRange, CellRefRangeEnd, ColRange, Pos, RefRangeBounds,
-    RowRange, RowRangeEntry, RunError, RunErrorMsg, TableRef, Value,
+    ArraySize, Axis, Pos, RunError, RunErrorMsg, Value,
 };
 
 use super::{

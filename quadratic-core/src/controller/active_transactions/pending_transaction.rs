@@ -9,13 +9,14 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use uuid::Uuid;
 
 use crate::{
+    a1::A1Selection,
     controller::{
         execution::TransactionSource, operations::operation::Operation, transaction::Transaction,
     },
     grid::{
         sheet::validations::validation::Validation, CellsAccessed, CodeCellLanguage, Sheet, SheetId,
     },
-    A1Selection, Pos, SheetPos, SheetRect,
+    Pos, SheetPos, SheetRect,
 };
 
 use super::transaction_name::TransactionName;

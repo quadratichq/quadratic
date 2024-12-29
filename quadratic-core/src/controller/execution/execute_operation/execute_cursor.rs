@@ -49,7 +49,7 @@ impl GridController {
 #[serial_test::parallel]
 mod test {
     use super::*;
-    use crate::{controller::GridController, A1Selection};
+    use crate::{a1::A1Selection, controller::GridController};
 
     #[test]
     fn test_execute_set_cursor_a1() {

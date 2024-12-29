@@ -46,7 +46,7 @@ declare var self: WorkerGlobalScope &
     sendDeleteSheetClient: (sheetId: string, user: boolean) => void;
     sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
     sendSheetInfoClient: (sheetInfo: SheetInfo[]) => void;
-    sendTableMap: (tableMap: string) => void;
+    sendA1Context: (tableMap: string) => void;
     sendSheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
     sendSheetMetaFills: (sheetId: string, fills: JsSheetFill[]) => void;
     sendSetCursor: (cursor: string) => void;
@@ -102,7 +102,7 @@ class CoreClient {
     self.sendSheetFills = coreClient.sendSheetFills;
     self.sendSheetMetaFills = coreClient.sendSheetMetaFills;
     self.sheetInfoUpdate = coreClient.sendSheetInfoUpdate;
-    self.sendTableMap = coreClient.sendTableMap;
+    self.sendA1Context = coreClient.sendA1Context;
     self.sendSetCursor = coreClient.sendSetCursor;
     self.sendSheetOffsetsClient = coreClient.sendSheetOffsets;
     self.sendSheetHtml = coreClient.sendSheetHtml;
@@ -842,8 +842,8 @@ class CoreClient {
     this.send({ type: 'coreClientClientMessage', message, error });
   };
 
-  sendTableMap = (tableMap: string) => {
-    this.send({ type: 'coreClientTableMap', tableMap });
+  sendA1Context = (context: string) => {
+    this.send({ type: 'coreClientA1Context', context });
   };
 }
 

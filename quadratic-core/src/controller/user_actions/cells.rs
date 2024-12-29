@@ -2,7 +2,7 @@ use anyhow::Result;
 
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::GridController;
-use crate::{A1Selection, CellValue, Pos, SheetPos};
+use crate::{a1::A1Selection, CellValue, Pos, SheetPos};
 
 impl GridController {
     // Using sheet_pos, either set a cell value or a data table value
@@ -91,9 +91,10 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
+        a1::A1Selection,
         controller::GridController,
         grid::{NumericFormat, SheetId},
-        A1Selection, CellValue, Pos, Rect, SheetPos,
+        CellValue, Pos, Rect, SheetPos,
     };
     use std::str::FromStr;
 

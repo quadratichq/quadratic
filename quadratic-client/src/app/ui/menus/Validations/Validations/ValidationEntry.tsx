@@ -48,7 +48,7 @@ export const ValidationEntry = (props: Props) => {
   const title = useMemo(() => validationText(validation), [validation]);
 
   const selection = useMemo(() => {
-    const selection = A1SelectionToJsSelection(validation.selection, sheets.tableMap);
+    const selection = A1SelectionToJsSelection(validation.selection, sheets.a1Context);
     return selection.toA1String(sheets.current, sheets.getSheetIdNameMap());
   }, [validation.selection]);
 

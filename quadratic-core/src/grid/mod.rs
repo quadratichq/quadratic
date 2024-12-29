@@ -22,6 +22,7 @@ use crate::CellValue;
 #[cfg(test)]
 use crate::{Array, Pos};
 
+mod a1_context;
 mod block;
 mod bounds;
 mod cells_accessed;
@@ -42,6 +43,7 @@ pub mod series;
 pub mod sheet;
 pub mod sheet_formatting;
 pub mod sheets;
+pub use a1_context::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]

@@ -1,7 +1,9 @@
 use std::str::FromStr;
 
 use crate::{
-    grid::SheetId, A1Selection, CellRefCoord, CellRefRange, CellRefRangeEnd, Pos, RefRangeBounds,
+    a1::{A1Selection, CellRefCoord, CellRefRange, CellRefRangeEnd, RefRangeBounds},
+    grid::SheetId,
+    Pos,
 };
 
 use super::{

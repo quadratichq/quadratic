@@ -1,4 +1,4 @@
-use crate::{grid::Sheet, A1Selection, Pos};
+use crate::{a1::A1Selection, grid::Sheet, Pos};
 
 use super::{Borders, BordersUpdates};
 

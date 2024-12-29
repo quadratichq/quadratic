@@ -225,12 +225,13 @@ pub fn export(grid: Grid) -> Result<Vec<u8>> {
 mod tests {
     use super::*;
     use crate::{
+        a1::A1Selection,
         controller::GridController,
         grid::{
             sheet::borders::{BorderSelection, BorderStyle},
             CodeCellLanguage, CodeCellValue,
         },
-        A1Selection, ArraySize, CellValue, Pos,
+        ArraySize, CellValue, Pos,
     };
     use bigdecimal::BigDecimal;
 

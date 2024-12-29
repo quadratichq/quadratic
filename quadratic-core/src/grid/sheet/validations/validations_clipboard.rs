@@ -1,6 +1,6 @@
 use crate::{
+    a1::A1Selection,
     controller::operations::clipboard::{ClipboardOrigin, ClipboardValidations},
-    A1Selection,
 };
 
 use super::Validations;
@@ -42,6 +42,7 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
+        a1::A1Selection,
         controller::operations::clipboard::ClipboardOrigin,
         grid::{
             sheet::validations::{
@@ -49,7 +50,7 @@ mod tests {
             },
             SheetId,
         },
-        A1Selection, SheetRect,
+        SheetRect,
     };
 
     #[test]

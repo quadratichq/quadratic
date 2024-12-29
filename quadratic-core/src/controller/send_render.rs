@@ -3,11 +3,12 @@ use std::collections::{HashMap, HashSet};
 use itertools::Itertools;
 
 use crate::{
+    a1::A1Selection,
     grid::{js_types::JsOffset, SheetId},
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     viewport::ViewportBuffer,
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
-    A1Selection, Pos, Rect, SheetPos, SheetRect,
+    Pos, Rect, SheetPos, SheetRect,
 };
 
 use super::{active_transactions::pending_transaction::PendingTransaction, GridController};
@@ -347,11 +348,11 @@ impl GridController {
         );
     }
 
-    pub fn send_table_map(&self) {
+    pub fn send_a1_context(&self) {
         if cfg!(target_family = "wasm") || cfg!(test) {
-            let table_map = self.grid().table_map();
-            if let Ok(table_map) = serde_json::to_string(&table_map) {
-                crate::wasm_bindings::js::jsTableMap(table_map);
+            let context = self.grid().a1_context();
+            if let Ok(context) = serde_json::to_string(&context) {
+                crate::wasm_bindings::js::jsA1Context(context);
             }
         }
     }
@@ -360,6 +361,7 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
+        a1::A1Selection,
         controller::{
             active_transactions::pending_transaction::PendingTransaction,
             execution::TransactionSource, transaction_types::JsCodeResult, GridController,
@@ -373,7 +375,7 @@ mod test {
             SheetId,
         },
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
-        A1Selection, Pos, SheetPos, SheetRect,
+        Pos, SheetPos, SheetRect,
     };
     use serial_test::serial;
     use std::collections::HashSet;

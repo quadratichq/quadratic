@@ -7,9 +7,10 @@ use uuid::Uuid;
 use validation::{Validation, ValidationDisplay, ValidationDisplaySheet};
 
 use crate::{
+    a1::{A1Context, A1Selection},
     controller::operations::operation::Operation,
-    grid::{js_types::JsRenderCellSpecial, TableMap},
-    A1Selection, Pos, Rect,
+    grid::js_types::JsRenderCellSpecial,
+    Pos, Rect,
 };
 
 use super::Sheet;
@@ -156,7 +157,7 @@ impl Validations {
     }
 
     /// Returns validations that intersect with a rect.
-    pub fn in_rect(&self, rect: Rect, table_map: &TableMap) -> Vec<&Validation> {
+    pub fn in_rect(&self, rect: Rect, context: &A1Context) -> Vec<&Validation> {
         self.validations
             .iter()
             .filter(|validation| {
@@ -164,7 +165,7 @@ impl Validations {
                     .selection
                     .ranges
                     .iter()
-                    .any(|range| range.is_finite() && range.might_intersect_rect(rect, table_map))
+                    .any(|range| range.is_finite() && range.might_intersect_rect(rect, context))
             })
             .collect()
     }
@@ -181,7 +182,7 @@ impl Validations {
 mod tests {
     use validation_rules::{validation_logical::ValidationLogical, ValidationRule};
 
-    use crate::{grid::SheetId, CellRefRange, SheetRect};
+    use crate::{a1::CellRefRange, grid::SheetId, SheetRect};
 
     use super::*;
 

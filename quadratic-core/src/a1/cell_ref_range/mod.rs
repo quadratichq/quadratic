@@ -3,12 +3,9 @@ use std::{fmt, str::FromStr};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::{
-    grid::{SheetId, TableMap},
-    Pos, Rect, RefRangeBounds,
-};
+use crate::{grid::SheetId, Pos, Rect};
 
-use super::{A1Error, TableRef, UNBOUNDED};
+use super::{A1Context, A1Error, RefRangeBounds, TableRef, UNBOUNDED};
 
 pub mod cell_ref_col_row;
 pub mod cell_ref_query;
@@ -46,9 +43,9 @@ impl CellRefRange {
 }
 
 impl CellRefRange {
-    pub fn parse(s: &str, table_map: &TableMap) -> Result<Self, A1Error> {
+    pub fn parse(s: &str, context: &A1Context) -> Result<Self, A1Error> {
         // first try table parsing
-        if let Ok(range) = TableRef::parse(s, &table_map) {
+        if let Ok(range) = TableRef::parse(s, &context) {
             return Ok(Self::Table { range });
         }
         // then try sheet parsing
@@ -117,10 +114,10 @@ impl CellRefRange {
         }
     }
 
-    pub fn might_intersect_rect(&self, rect: Rect, table_map: &TableMap) -> bool {
+    pub fn might_intersect_rect(&self, rect: Rect, context: &A1Context) -> bool {
         match self {
             Self::Sheet { range } => range.might_intersect_rect(rect),
-            Self::Table { range } => range.intersect_rect(rect, table_map),
+            Self::Table { range } => range.intersect_rect(rect, context),
         }
     }
 

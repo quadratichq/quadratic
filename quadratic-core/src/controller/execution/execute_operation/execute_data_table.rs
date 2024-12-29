@@ -1,11 +1,12 @@
 use crate::{
+    a1::A1Selection,
     cellvalue::Import,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
     grid::{DataTable, DataTableKind},
-    A1Selection, ArraySize, CellValue, Pos, Rect, SheetRect,
+    ArraySize, CellValue, Pos, Rect, SheetRect,
 };
 
 use anyhow::{bail, Result};

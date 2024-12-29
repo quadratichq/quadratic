@@ -244,11 +244,11 @@ impl Sheet {
 
         // need a sheet-specific table map to get validations (since
         // validation.selection may have a reference to table w/in the sheet)
-        let table_map = self.table_map();
+        let context = self.a1_context();
 
         // Populate validations for cells that are not yet in the render_cells
         self.validations
-            .in_rect(rect, &table_map)
+            .in_rect(rect, &context)
             .iter()
             .rev() // we need to reverse to ensure that later rules overwrite earlier ones
             .for_each(|validation| {
@@ -589,6 +589,7 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
+        a1::A1Selection,
         controller::{transaction_types::JsCodeResult, GridController},
         grid::{
             js_types::{
@@ -602,7 +603,7 @@ mod tests {
             CellVerticalAlign, CellWrap, CodeCellValue, CodeRun, DataTableKind,
         },
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
-        A1Selection, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
+        CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
     };
 
     #[test]

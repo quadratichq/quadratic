@@ -3,7 +3,7 @@ use csv::Writer;
 use itertools::PeekingNext;
 
 use super::GridController;
-use crate::{A1Selection, Pos};
+use crate::{a1::A1Selection, Pos};
 
 impl GridController {
     /// exports a CSV string from a selection on the grid.

@@ -1,6 +1,7 @@
 use crate::{
+    a1::A1Selection,
     grid::{formats::SheetFormatUpdates, Sheet},
-    A1Selection, Pos,
+    Pos,
 };
 
 use super::SheetFormatting;
@@ -32,9 +33,9 @@ impl SheetFormatting {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
+    use super::*;
     use crate::controller::GridController;
     use crate::ClearOption;
-    use crate::{A1Selection, Pos};
 
     #[test]
     fn test_to_clipboard() {

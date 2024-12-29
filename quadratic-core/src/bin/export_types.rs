@@ -55,6 +55,7 @@ use quadratic_core::sheet_offsets::sheet_offsets_wasm::ColumnRow;
 use quadratic_core::small_timestamp::SmallTimestamp;
 use quadratic_core::wasm_bindings::controller::bounds::MinMax;
 use quadratic_core::wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo};
+use quadratic_core::A1Error;
 use quadratic_core::A1Selection;
 use quadratic_core::CellRefCoord;
 use quadratic_core::CellRefRangeEnd;
@@ -79,6 +80,7 @@ fn main() {
     s += "// Do not modify it manually.\n\n";
 
     s += &generate_type_declarations!(
+        A1Error,
         A1Selection,
         ArraySize,
         Axis,

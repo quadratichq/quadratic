@@ -1,15 +1,8 @@
-#[cfg(test)]
-use std::ops::RangeInclusive;
-
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use super::{CellRefRange, SheetCellRefRange};
-use crate::{
-    grid::{SheetId, TableMap},
-    selection::OldSelection,
-    A1Error, Pos, SheetNameIdMap, SheetPos, SheetRect,
-};
+use super::{A1Context, A1Error, CellRefRange, RefRangeBounds, SheetCellRefRange, TableRef};
+use crate::{grid::SheetId, selection::OldSelection, Pos, SheetPos, SheetRect};
 
 pub mod a1_selection_exclude;
 pub mod a1_selection_mutate;
@@ -90,27 +83,35 @@ impl From<OldSelection> for A1Selection {
 
 impl A1Selection {
     /// Constructs a basic selection containing a single region.
-    pub fn from_range(range: CellRefRange, sheet: SheetId) -> Self {
+    pub fn from_range(range: CellRefRange, sheet: SheetId, context: &A1Context) -> Self {
         Self {
             sheet_id: sheet,
-            cursor: cursor_pos_from_last_range(&range),
+            cursor: cursor_pos_from_last_range(&range, context),
             ranges: vec![range],
+        }
+    }
+
+    pub fn from_ref_range_bounds(sheet_id: SheetId, range: RefRangeBounds) -> Self {
+        Self {
+            sheet_id,
+            cursor: range.cursor_pos_from_last_range(),
+            ranges: vec![CellRefRange::Sheet { range }],
         }
     }
 
     /// Constructs a selection containing a single cell.
     pub fn from_single_cell(sheet_pos: SheetPos) -> Self {
-        Self::from_range(
-            CellRefRange::new_relative_pos(sheet_pos.into()),
+        Self::from_ref_range_bounds(
             sheet_pos.sheet_id,
+            RefRangeBounds::new_relative_pos(sheet_pos.into()),
         )
     }
 
     /// Constructs a selection containing a single rectangle.
     pub fn from_rect(sheet_rect: SheetRect) -> Self {
-        Self::from_range(
-            CellRefRange::new_relative_rect(sheet_rect.into()),
+        Self::from_ref_range_bounds(
             sheet_rect.sheet_id,
+            RefRangeBounds::new_relative_rect(sheet_rect.into()),
         )
     }
 
@@ -122,52 +123,7 @@ impl A1Selection {
 
     /// Constructs a selection all for a sheet.
     pub fn all(sheet: SheetId) -> Self {
-        Self::from_range(CellRefRange::ALL, sheet)
-    }
-
-    /// Constructs a selection containing a set of columns.
-    #[cfg(test)]
-    pub fn from_column_ranges(column_ranges: &[RangeInclusive<i64>], sheet: SheetId) -> Self {
-        let ranges = column_ranges.iter().map(|range| {
-            if range.start() == range.end() {
-                CellRefRange::new_relative_column(*range.start())
-            } else {
-                CellRefRange::new_relative_column_range(*range.start(), *range.end())
-            }
-        });
-        Self::from_ranges(ranges, sheet)
-    }
-    /// Constructs a selection containing a set of rows.
-    #[cfg(test)]
-    pub fn from_row_ranges(row_ranges: &[RangeInclusive<i64>], sheet: SheetId) -> Self {
-        let ranges = row_ranges.iter().map(|range| {
-            if range.start() == range.end() {
-                CellRefRange::new_relative_row(*range.start())
-            } else {
-                CellRefRange::new_relative_row_range(*range.start(), *range.end())
-            }
-        });
-        Self::from_ranges(ranges, sheet)
-    }
-    #[cfg(test)]
-    pub fn from_ranges(ranges: impl Iterator<Item = CellRefRange>, sheet: SheetId) -> Self {
-        let ranges = ranges.collect::<Vec<_>>();
-        let last_range = ranges.last().expect("empty selection is invalid");
-        let cursor = cursor_pos_from_last_range(last_range);
-        Self {
-            sheet_id: sheet,
-            cursor,
-            ranges,
-        }
-    }
-
-    /// Constructs a selection containing multiple rectangles.
-    #[cfg(test)]
-    pub fn from_rects(rects: &[crate::Rect], sheet: SheetId) -> Self {
-        Self::from_ranges(
-            rects.iter().copied().map(CellRefRange::new_relative_rect),
-            sheet,
-        )
+        Self::from_ref_range_bounds(sheet, RefRangeBounds::ALL)
     }
 
     /// Constructs the default selection, which contains only the cell A1.
@@ -182,8 +138,7 @@ impl A1Selection {
     pub fn parse(
         a1: &str,
         default_sheet_id: &SheetId,
-        sheet_map: &SheetNameIdMap,
-        table_map: &TableMap,
+        context: &A1Context,
     ) -> Result<Self, A1Error> {
         let mut sheet = None;
         let mut ranges = vec![];
@@ -213,9 +168,8 @@ impl A1Selection {
         }
 
         for segment in segments {
-            let range =
-                SheetCellRefRange::parse(segment.trim(), default_sheet_id, sheet_map, table_map)?;
-            if *sheet.get_or_insert(range.sheet) != range.sheet {
+            let range = SheetCellRefRange::parse(segment.trim(), default_sheet_id, context)?;
+            if *sheet.get_or_insert(range.sheet_id) != range.sheet_id {
                 return Err(A1Error::TooManySheets(a1.to_string()));
             }
 
@@ -229,7 +183,7 @@ impl A1Selection {
 
         Ok(Self {
             sheet_id: sheet.unwrap_or(default_sheet_id.to_owned()),
-            cursor: cursor_pos_from_last_range(&last_range),
+            cursor: cursor_pos_from_last_range(&last_range, context),
             ranges,
         })
     }
@@ -239,20 +193,16 @@ impl A1Selection {
     /// from the ID of the sheet containing the range.
     ///
     /// The cursor position has no effect on the output.
-    pub fn to_string(
-        &self,
-        default_sheet_id: Option<SheetId>,
-        sheet_map: &SheetNameIdMap,
-    ) -> String {
+    pub fn to_string(&self, default_sheet_id: Option<SheetId>, context: &A1Context) -> String {
         let sheet = self.sheet_id;
         self.ranges
             .iter()
             .map(|cells| {
                 SheetCellRefRange {
-                    sheet,
+                    sheet_id: sheet,
                     cells: cells.clone(),
                 }
-                .to_string(default_sheet_id, sheet_map)
+                .to_string(default_sheet_id, context)
             })
             .collect::<Vec<_>>()
             .join(",")
@@ -323,8 +273,28 @@ impl A1Selection {
         }
     }
 
+    /// Returns `true` if the RefRangeBounds overlaps the TableRef.
+    fn overlap_ref_range_bounds_table_ref(
+        range: &RefRangeBounds,
+        other_range: &TableRef,
+        current_row: i64,
+        context: &A1Context,
+    ) -> bool {
+        let rect = range.to_rect_unbounded();
+        if let Some(other_rect) = other_range.to_largest_rect(current_row, context) {
+            rect.intersects(other_rect)
+        } else {
+            false
+        }
+    }
+
     /// Returns `true` if the two selections overlap.
-    pub fn overlaps_a1_selection(&self, other: &Self) -> bool {
+    pub fn overlaps_a1_selection(
+        &self,
+        other: &Self,
+        current_row: i64,
+        context: &A1Context,
+    ) -> bool {
         if self.sheet_id != other.sheet_id {
             return false;
         }
@@ -335,16 +305,37 @@ impl A1Selection {
                     CellRefRange::Sheet { range: other_range } => {
                         range.intersection(other_range).is_some()
                     }
-                    CellRefRange::Table { .. } => todo!(),
+                    CellRefRange::Table { range: other_range } => {
+                        A1Selection::overlap_ref_range_bounds_table_ref(
+                            range,
+                            other_range,
+                            current_row,
+                            context,
+                        )
+                    }
                 })
             }
-            CellRefRange::Table { .. } => todo!(),
+            CellRefRange::Table { range } => {
+                other.ranges.iter().any(|other_range| match other_range {
+                    CellRefRange::Sheet { range: other_range } => {
+                        A1Selection::overlap_ref_range_bounds_table_ref(
+                            other_range,
+                            range,
+                            current_row,
+                            context,
+                        )
+                    }
+                    // two tables cannot overlap
+                    CellRefRange::Table { .. } => false,
+                })
+            }
         })
     }
 
-    pub fn update_cursor(&mut self) {
+    /// Updates the cursor position to the position of the last range.
+    pub fn update_cursor(&mut self, context: &A1Context) {
         if let Some(last) = self.ranges.last() {
-            self.cursor = cursor_pos_from_last_range(last);
+            self.cursor = cursor_pos_from_last_range(last, context);
         }
     }
 
@@ -362,21 +353,13 @@ impl A1Selection {
     /// Returns a test selection from the A1-string with SheetId::test().
     #[cfg(test)]
     pub fn test_a1(a1: &str) -> Self {
-        let table_map = TableMap::default();
-        Self::parse(
-            a1,
-            &SheetId::TEST,
-            &std::collections::HashMap::new(),
-            &table_map,
-        )
-        .unwrap()
+        Self::parse(a1, &SheetId::TEST, &A1Context::default()).unwrap()
     }
 
     /// Returns a test selection from the A1-string with the given sheet ID.
     #[cfg(test)]
     pub fn test_a1_sheet_id(a1: &str, sheet_id: &SheetId) -> Self {
-        let table_map = TableMap::default();
-        Self::parse(a1, sheet_id, &std::collections::HashMap::new(), &table_map).unwrap()
+        Self::parse(a1, sheet_id, &A1Context::default()).unwrap()
     }
 
     /// Returns an A1-style string describing the selection with default
@@ -389,14 +372,10 @@ impl A1Selection {
 
 /// Returns the position from the last range (either the end, or if not defined,
 /// the start).
-fn cursor_pos_from_last_range(last_range: &CellRefRange) -> Pos {
+fn cursor_pos_from_last_range(last_range: &CellRefRange, context: &A1Context) -> Pos {
     match last_range {
-        CellRefRange::Sheet { range } => {
-            let x = range.start.col();
-            let y = range.start.row();
-            Pos { x, y }
-        }
-        CellRefRange::Table { .. } => todo!(),
+        CellRefRange::Sheet { range } => range.cursor_pos_from_last_range(),
+        CellRefRange::Table { range } => range.cursor_pos_from_last_range(context),
     }
 }
 
@@ -405,18 +384,19 @@ fn cursor_pos_from_last_range(last_range: &CellRefRange) -> Pos {
 mod tests {
     use std::collections::HashMap;
 
-    use crate::{Rect, RefRangeBounds};
+    use crate::Rect;
 
     use super::*;
 
     #[test]
     fn test_cursor_pos_from_last_range() {
+        let context = A1Context::default();
         assert_eq!(
-            cursor_pos_from_last_range(&CellRefRange::test_a1("A1")),
+            cursor_pos_from_last_range(&CellRefRange::test_a1("A1"), &context),
             pos![A1]
         );
         assert_eq!(
-            cursor_pos_from_last_range(&CellRefRange::test_a1("A1:C3")),
+            cursor_pos_from_last_range(&CellRefRange::test_a1("A1:C3"), &context),
             pos![A1]
         );
     }
@@ -424,9 +404,9 @@ mod tests {
     #[test]
     fn test_from_a1() {
         let sheet_id = SheetId::test();
-        let table_map = TableMap::default();
+        let context = A1Context::default();
         assert_eq!(
-            A1Selection::parse("A1", &sheet_id, &HashMap::new(), &table_map),
+            A1Selection::parse("A1", &sheet_id, &context),
             Ok(A1Selection::from_xy(1, 1, sheet_id)),
         );
     }
@@ -434,73 +414,41 @@ mod tests {
     #[test]
     fn test_from_a1_all() {
         let sheet_id = SheetId::test();
-        let table_map = TableMap::default();
+        let context = A1Context::default();
         assert_eq!(
-            A1Selection::parse("*", &sheet_id, &HashMap::new(), &table_map),
-            Ok(A1Selection::from_range(CellRefRange::ALL, sheet_id)),
-        );
-    }
-
-    #[test]
-    fn test_from_a1_columns() {
-        let sheet_id = SheetId::test();
-        let table_map = TableMap::default();
-        assert_eq!(
-            A1Selection::parse("A:C", &sheet_id, &HashMap::new(), &table_map),
-            Ok(A1Selection::from_column_ranges(&[1..=3], sheet_id)),
-        );
-    }
-
-    #[test]
-    fn test_from_a1_rows() {
-        let sheet_id = SheetId::test();
-        let table_map = TableMap::default();
-        assert_eq!(
-            A1Selection::parse("1:3", &sheet_id, &HashMap::new(), &table_map),
-            Ok(A1Selection::from_row_ranges(&[1..=3], sheet_id)),
+            A1Selection::parse("*", &sheet_id, &context),
+            Ok(A1Selection::from_range(
+                CellRefRange::ALL,
+                sheet_id,
+                &context
+            )),
         );
     }
 
     #[test]
     fn test_from_a1_rect() {
         let sheet_id = SheetId::test();
-        let table_map = TableMap::default();
-        let d1a5 = RefRangeBounds::new_relative(4, 1, 1, 5);
+        let context = A1Context::default();
         assert_eq!(
-            A1Selection::parse("A1:B2", &sheet_id, &HashMap::new(), &table_map),
-            Ok(A1Selection::from_rect(SheetRect::new(1, 1, 2, 2, sheet_id))),
+            A1Selection::parse("A1:B2", &sheet_id, &context),
+            Ok(A1Selection::test_a1("A1:B2")),
         );
         assert_eq!(
-            A1Selection::parse("D1:A5", &sheet_id, &HashMap::new(), &table_map),
-            Ok(A1Selection::from_range(
-                CellRefRange::Sheet { range: d1a5 },
-                sheet_id,
-            )),
+            A1Selection::parse("D1:A5", &sheet_id, &context),
+            Ok(A1Selection::test_a1("D1:A5")),
         );
         assert_eq!(
-            A1Selection::parse("A1:B2,D1:A5", &sheet_id, &HashMap::new(), &table_map),
-            Ok(A1Selection::from_ranges(
-                [
-                    CellRefRange::new_relative_rect(Rect::new(1, 1, 2, 2)),
-                    CellRefRange::Sheet { range: d1a5 }
-                ]
-                .into_iter(),
-                sheet_id,
-            )),
+            A1Selection::parse("A1:B2,D1:A5", &sheet_id, &context),
+            Ok(A1Selection::test_a1("A1:B2,D1:A5")),
         );
     }
 
     #[test]
     fn test_from_a1_everything() {
         let sheet_id = SheetId::test();
-        let table_map = TableMap::default();
-        let selection = A1Selection::parse(
-            "A1,B1:D2,E:G,2:3,5:7,F6:G8,4",
-            &sheet_id,
-            &HashMap::new(),
-            &table_map,
-        )
-        .unwrap();
+        let context = A1Context::default();
+        let selection =
+            A1Selection::parse("A1,B1:D2,E:G,2:3,5:7,F6:G8,4", &sheet_id, &context).unwrap();
 
         assert_eq!(selection.sheet_id, sheet_id);
         assert_eq!(selection.cursor, pos![A4]);
@@ -521,28 +469,24 @@ mod tests {
     #[test]
     fn test_row_to_a1() {
         let sheet_id = SheetId::test();
-        let table_map = TableMap::default();
+        let context = A1Context::default();
         assert_eq!(
-            A1Selection::parse("1", &sheet_id, &HashMap::new(), &table_map),
+            A1Selection::parse("1", &sheet_id, &context),
             Ok(A1Selection::from_range(
                 CellRefRange::new_relative_row(1),
                 sheet_id,
+                &context,
             )),
         );
 
         assert_eq!(
-            A1Selection::parse("1:3", &sheet_id, &HashMap::new(), &table_map),
-            Ok(A1Selection::from_row_ranges(&[1..=3], sheet_id)),
+            A1Selection::parse("1:3", &sheet_id, &context),
+            Ok(A1Selection::test_a1("1:3")),
         );
 
         assert_eq!(
-            A1Selection::parse("1:", &sheet_id, &HashMap::new(), &table_map),
-            Ok(A1Selection::from_range(
-                CellRefRange::Sheet {
-                    range: RefRangeBounds::ALL
-                },
-                sheet_id,
-            )),
+            A1Selection::parse("1:", &sheet_id, &context),
+            Ok(A1Selection::test_a1("*")),
         );
     }
 
@@ -550,57 +494,46 @@ mod tests {
     fn test_from_a1_sheets() {
         let sheet_id = SheetId::new();
         let sheet_id2 = SheetId::new();
-        let table_map = TableMap::default();
-        let map = HashMap::from([
-            (sheet_id, "Sheet1".to_string()),
-            (sheet_id2, "Second".to_string()),
-        ]);
-        let rev_map = map
-            .iter()
-            .map(|(&id, name)| (crate::util::case_fold(name), id))
-            .collect();
+        let context = A1Context::test(&[("Sheet1", sheet_id), ("Second", sheet_id2)], &[]);
         assert_eq!(
-            A1Selection::parse("'Second'!A1", &sheet_id, &rev_map, &table_map),
+            A1Selection::parse("'Second'!A1", &sheet_id, &context),
             Ok(A1Selection::from_xy(1, 1, sheet_id2)),
         );
     }
 
     #[test]
     fn test_to_a1_all() {
-        let selection = A1Selection::from_range(CellRefRange::ALL, SheetId::test());
-        assert_eq!(
-            selection.to_string(Some(SheetId::test()), &HashMap::new()),
-            "*",
-        );
+        let context = A1Context::default();
+        let selection = A1Selection::from_range(CellRefRange::ALL, SheetId::test(), &context);
+        assert_eq!(selection.to_string(Some(SheetId::test()), &context), "*",);
     }
 
     #[test]
     fn test_to_a1_columns() {
-        let selection =
-            A1Selection::from_column_ranges(&[1..=5, 10..=12, 15..=15], SheetId::test());
+        let context = A1Context::default();
+        let selection = A1Selection::test_a1("A:e,J:L,O");
         assert_eq!(
-            selection.to_string(Some(SheetId::test()), &HashMap::new()),
+            selection.to_string(Some(SheetId::test()), &context),
             "A:E,J:L,O",
         );
     }
 
     #[test]
     fn test_to_a1_rows() {
-        let selection = A1Selection::from_row_ranges(&[1..=5, 10..=12, 15..=15], SheetId::test());
+        let context = A1Context::default();
+        let selection = A1Selection::test_a1("1:5,10:12,A15:15");
         assert_eq!(
-            selection.to_string(Some(SheetId::test()), &HashMap::new()),
+            selection.to_string(Some(SheetId::test()), &context),
             "1:5,10:12,A15:15",
         );
     }
 
     #[test]
     fn test_to_a1_rects() {
-        let selection = A1Selection::from_rects(
-            &[Rect::new(1, 1, 2, 2), Rect::new(3, 3, 4, 4)],
-            SheetId::test(),
-        );
+        let context = A1Context::default();
+        let selection = A1Selection::test_a1("A1:B2,C3:D4");
         assert_eq!(
-            selection.to_string(Some(SheetId::test()), &HashMap::new()),
+            selection.to_string(Some(SheetId::test()), &context),
             "A1:B2,C3:D4",
         );
     }
@@ -613,7 +546,7 @@ mod tests {
             ranges: vec![CellRefRange::new_relative_rect(Rect::new(1, 1, 1, 1))],
         };
         assert_eq!(
-            selection.to_string(Some(SheetId::test()), &HashMap::new()),
+            selection.to_string(Some(SheetId::test()), &A1Context::default()),
             "A1",
         );
     }
@@ -633,7 +566,7 @@ mod tests {
             ],
         };
         assert_eq!(
-            selection.to_string(Some(SheetId::test()), &HashMap::new()),
+            selection.to_string(Some(SheetId::test()), &A1Context::default()),
             "A:E,J:L,O,1:5,10:12,A15:15",
         );
     }
@@ -646,7 +579,7 @@ mod tests {
             ranges: vec![CellRefRange::test_a1("A1:A1")],
         };
         assert_eq!(
-            selection.to_string(Some(SheetId::test()), &HashMap::new()),
+            selection.to_string(Some(SheetId::test()), &A1Context::default()),
             "A1",
         );
     }
@@ -654,19 +587,19 @@ mod tests {
     #[test]
     fn test_extra_comma() {
         let sheet_id = SheetId::test();
-        let table_map = TableMap::default();
-        let selection = A1Selection::parse("1,", &sheet_id, &HashMap::new(), &table_map).unwrap();
-        assert_eq!(selection.to_string(Some(sheet_id), &HashMap::new()), "A1:1",);
+        let selection = A1Selection::parse("1,", &sheet_id, &A1Context::default()).unwrap();
+        assert_eq!(
+            selection.to_string(Some(sheet_id), &A1Context::default()),
+            "A1:1",
+        );
     }
 
     #[test]
     fn test_multiple_one_sized_rects() {
         let sheet_id = SheetId::test();
-        let table_map = TableMap::default();
-        let selection =
-            A1Selection::parse("A1,B1,C1", &sheet_id, &HashMap::new(), &table_map).unwrap();
+        let selection = A1Selection::parse("A1,B1,C1", &sheet_id, &A1Context::default()).unwrap();
         assert_eq!(
-            selection.to_string(Some(sheet_id), &HashMap::new()),
+            selection.to_string(Some(sheet_id), &A1Context::default()),
             "A1,B1,C1",
         );
     }
@@ -674,25 +607,12 @@ mod tests {
     #[test]
     fn test_different_sheet() {
         let sheet_id = SheetId::test();
-        let table_map = TableMap::default();
         let sheet_second = SheetId::new();
-        let map = HashMap::from([
-            ("First".to_string(), sheet_id),
-            ("Second".to_string(), sheet_second),
-        ]);
-        let rev_map = map
-            .iter()
-            .map(|(name, &id)| (crate::util::case_fold(name), id))
-            .collect();
-        let selection = A1Selection::parse(
-            "second!A1,second!B1,second!C1",
-            &sheet_id,
-            &rev_map,
-            &table_map,
-        )
-        .unwrap();
+        let context = A1Context::test(&[("First", sheet_id), ("Second", sheet_second)], &[]);
+        let selection =
+            A1Selection::parse("second!A1,second!B1,second!C1", &sheet_id, &context).unwrap();
         assert_eq!(
-            selection.to_string(Some(sheet_id), &map),
+            selection.to_string(Some(sheet_id), &context),
             "Second!A1,Second!B1,Second!C1",
         );
     }
@@ -916,11 +836,12 @@ mod intersection_tests {
 
     #[test]
     fn test_overlaps_a1_selection() {
+        let context = A1Context::test(&[], &[]);
         // Different sheets don't overlap
         let sel1 = A1Selection::test_a1_sheet_id("A1:B2", &SheetId::new());
         let sel2 = A1Selection::test_a1_sheet_id("B2:C3", &SheetId::new());
         assert!(
-            !sel1.overlaps_a1_selection(&sel2),
+            !sel1.overlaps_a1_selection(&sel2, &context),
             "Different sheets should not overlap"
         );
 
@@ -928,7 +849,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("A1:B2");
         let sel2 = A1Selection::test_a1("C3:D4");
         assert!(
-            !sel1.overlaps_a1_selection(&sel2),
+            !sel1.overlaps_a1_selection(&sel2, &context),
             "Non-overlapping rectangles should not overlap"
         );
 
@@ -936,7 +857,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("A1:C3");
         let sel2 = A1Selection::test_a1("B2:D4");
         assert!(
-            sel1.overlaps_a1_selection(&sel2),
+            sel1.overlaps_a1_selection(&sel2, &context),
             "Overlapping rectangles should overlap"
         );
 
@@ -944,7 +865,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("A1:D4");
         let sel2 = A1Selection::test_a1("B2:C3");
         assert!(
-            sel1.overlaps_a1_selection(&sel2),
+            sel1.overlaps_a1_selection(&sel2, &context),
             "Nested rectangles should overlap"
         );
 
@@ -952,7 +873,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("A:C");
         let sel2 = A1Selection::test_a1("B:D");
         assert!(
-            sel1.overlaps_a1_selection(&sel2),
+            sel1.overlaps_a1_selection(&sel2, &context),
             "Overlapping columns should overlap"
         );
 
@@ -960,7 +881,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("A:B");
         let sel2 = A1Selection::test_a1("C:D");
         assert!(
-            !sel1.overlaps_a1_selection(&sel2),
+            !sel1.overlaps_a1_selection(&sel2, &context),
             "Non-overlapping columns should not overlap"
         );
 
@@ -968,7 +889,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("1:3");
         let sel2 = A1Selection::test_a1("2:4");
         assert!(
-            sel1.overlaps_a1_selection(&sel2),
+            sel1.overlaps_a1_selection(&sel2, &context),
             "Overlapping rows should overlap"
         );
 
@@ -976,7 +897,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("1:2");
         let sel2 = A1Selection::test_a1("3:4");
         assert!(
-            !sel1.overlaps_a1_selection(&sel2),
+            !sel1.overlaps_a1_selection(&sel2, &context),
             "Non-overlapping rows should not overlap"
         );
 
@@ -984,7 +905,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("A1:B2");
         let sel2 = A1Selection::test_a1("B2");
         assert!(
-            sel1.overlaps_a1_selection(&sel2),
+            sel1.overlaps_a1_selection(&sel2, &context),
             "Single cell should overlap with containing rectangle"
         );
 
@@ -992,7 +913,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("A1:C3,E1:G3");
         let sel2 = A1Selection::test_a1("B2:F2");
         assert!(
-            sel1.overlaps_a1_selection(&sel2),
+            sel1.overlaps_a1_selection(&sel2, &context),
             "Disjoint ranges should overlap when intersecting"
         );
 
@@ -1000,7 +921,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("A1:B2,D1:E2");
         let sel2 = A1Selection::test_a1("F1:G2,H1:I2");
         assert!(
-            !sel1.overlaps_a1_selection(&sel2),
+            !sel1.overlaps_a1_selection(&sel2, &context),
             "Disjoint ranges should not overlap when separate"
         );
 
@@ -1008,7 +929,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("A1:C3,E:G,2:4");
         let sel2 = A1Selection::test_a1("B2:D4,F:H,3:5");
         assert!(
-            sel1.overlaps_a1_selection(&sel2),
+            sel1.overlaps_a1_selection(&sel2, &context),
             "Complex selections should detect overlap correctly"
         );
 
@@ -1016,7 +937,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("*");
         let sel2 = A1Selection::test_a1("B2:C3");
         assert!(
-            sel1.overlaps_a1_selection(&sel2),
+            sel1.overlaps_a1_selection(&sel2, &context),
             "All (*) should overlap with any selection"
         );
 
@@ -1024,7 +945,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("2:4");
         let sel2 = A1Selection::test_a1("B2:C3");
         assert!(
-            sel1.overlaps_a1_selection(&sel2),
+            sel1.overlaps_a1_selection(&sel2, &context),
             "Row should overlap with intersecting rectangle"
         );
 
@@ -1032,7 +953,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("B:D");
         let sel2 = A1Selection::test_a1("B2:C3");
         assert!(
-            sel1.overlaps_a1_selection(&sel2),
+            sel1.overlaps_a1_selection(&sel2, &context),
             "Column should overlap with intersecting rectangle"
         );
     }

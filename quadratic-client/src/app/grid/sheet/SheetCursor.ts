@@ -45,7 +45,7 @@ export class SheetCursor {
   boxCells: boolean;
 
   constructor(sheet: Sheet) {
-    this.jsSelection = new JsSelection(sheet.id, sheets.tableMap);
+    this.jsSelection = new JsSelection(sheet.id, sheets.a1Context);
     this.boxCells = false;
   }
 
@@ -223,7 +223,7 @@ export class SheetCursor {
   }
 
   isMultiCursor(): boolean {
-    return this.jsSelection.isMultiCursor(sheets.sheet.id, sheets.tableMap);
+    return this.jsSelection.isMultiCursor(sheets.sheet.id, sheets.a1Context);
   }
 
   isMultiRange(): boolean {

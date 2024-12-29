@@ -1,3 +1,4 @@
+use a1::A1Selection;
 use sheet::jump_cursor::JumpDirection;
 use ts_rs::TS;
 use wasm_bindgen::prelude::*;

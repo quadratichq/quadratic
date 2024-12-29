@@ -323,7 +323,7 @@ export class Multiplayer {
 
     if (update.selection) {
       player.selection = update.selection;
-      player.parsedSelection = new JsSelection(player.sheet_id, sheets.tableMap);
+      player.parsedSelection = new JsSelection(player.sheet_id, sheets.a1Context);
       if (player.selection) {
         player.parsedSelection.load(player.selection);
       }
@@ -380,7 +380,7 @@ export class Multiplayer {
         this.colorString = MULTIPLAYER_COLORS[user.index % MULTIPLAYER_COLORS.length];
       } else {
         let player = this.users.get(user.session_id);
-        const parsedSelection = new JsSelection(user.sheet_id, sheets.tableMap);
+        const parsedSelection = new JsSelection(user.sheet_id, sheets.a1Context);
         if (user.selection) {
           parsedSelection.load(user.selection);
         }

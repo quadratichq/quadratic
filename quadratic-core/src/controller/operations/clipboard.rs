@@ -15,7 +15,7 @@ use crate::grid::js_types::JsClipboard;
 use crate::grid::sheet::borders::BordersUpdates;
 use crate::grid::sheet::validations::validation::Validation;
 use crate::grid::{CodeCellLanguage, DataTableKind};
-use crate::{A1Selection, CellValue, Pos, Rect, SheetPos, SheetRect};
+use crate::{a1::A1Selection, CellValue, Pos, Rect, SheetPos, SheetRect};
 
 // todo: break up this file so tests are easier to write
 
@@ -438,7 +438,7 @@ impl GridController {
                 let delta_x = insert_at.x - clipboard.origin.x;
                 let delta_y = insert_at.y - clipboard.origin.y;
 
-                let table_map = self.grid().table_map();
+                let context = self.grid.a1_context();
 
                 // loop through the clipboard and replace cell references in formulas
                 for (x, col) in clipboard.cells.columns.iter_mut().enumerate() {
@@ -454,7 +454,7 @@ impl GridController {
                                         },
                                     );
                                 } else {
-                                    code_cell.update_cell_references(delta_x, delta_y, &table_map);
+                                    code_cell.update_cell_references(delta_x, delta_y, &context);
                                 }
                             }
                             _ => { /* noop */ }
@@ -478,6 +478,7 @@ mod test {
     use serial_test::parallel;
 
     use super::{PasteSpecial, *};
+    use crate::a1::A1Selection;
     use crate::controller::active_transactions::transaction_name::TransactionName;
     use crate::controller::user_actions::import::tests::{simple_csv, simple_csv_at};
     use crate::grid::js_types::JsClipboard;
@@ -485,7 +486,6 @@ mod test {
     use crate::grid::SheetId;
     use crate::test_util::{assert_cell_value_row, print_data_table, print_table};
     use crate::Rect;
-    use crate::{A1Selection, CellRefRange};
 
     #[test]
     #[parallel]
@@ -579,15 +579,7 @@ mod test {
             .set_rect(1, 3, None, Some(4), Some(true));
 
         let sheet = gc.sheet(sheet_id);
-        let selection = A1Selection::from_ranges(
-            [
-                CellRefRange::new_relative_column_range(1, 2),
-                CellRefRange::new_relative_row_range(3, 4),
-                CellRefRange::new_relative_pos(Pos { x: 1, y: 3 }),
-            ]
-            .into_iter(),
-            sheet_id,
-        );
+        let selection = A1Selection::test_a1("A:B,3:4,A3");
         let JsClipboard { html, .. } = sheet.copy_to_clipboard(&selection).unwrap();
 
         gc.paste_from_clipboard(

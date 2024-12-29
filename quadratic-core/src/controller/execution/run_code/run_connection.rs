@@ -2,9 +2,10 @@ use anyhow::Result;
 use regex::Regex;
 
 use crate::{
+    a1::{A1Error, A1Selection},
     controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
     grid::{CodeCellLanguage, ConnectionKind, SheetId},
-    A1Error, A1Selection, RunError, RunErrorMsg, SheetPos,
+    RunError, RunErrorMsg, SheetPos,
 };
 
 use lazy_static::lazy_static;
@@ -29,8 +30,7 @@ impl GridController {
         let mut result = String::new();
         let mut last_match_end = 0;
 
-        let sheet_map = self.grid.sheet_name_id_map();
-        let table_map = self.grid.table_map();
+        let context = self.grid.a1_context();
         for cap in HANDLEBARS_REGEX.captures_iter(code) {
             let Some(whole_match) = cap.get(0) else {
                 continue;
@@ -39,7 +39,7 @@ impl GridController {
             result.push_str(&code[last_match_end..whole_match.start()]);
 
             let content = cap.get(1).map(|m| m.as_str().trim()).unwrap_or("");
-            let selection = A1Selection::parse(content, &default_sheet_id, &sheet_map, &table_map)?;
+            let selection = A1Selection::parse(content, &default_sheet_id, &context)?;
 
             let Some(pos) = selection.try_to_pos() else {
                 return Err(A1Error::WrongCellCount(

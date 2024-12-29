@@ -4,12 +4,12 @@
 
 use wasm_bindgen::JsValue;
 
+use crate::a1::A1Selection;
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::operation::Operation;
 use crate::controller::GridController;
 use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
 use crate::grid::{CellAlign, CellVerticalAlign, CellWrap, NumericFormat, NumericFormatKind};
-use crate::A1Selection;
 
 impl GridController {
     pub(crate) fn clear_format_borders(&mut self, selection: &A1Selection, cursor: Option<String>) {
@@ -307,7 +307,7 @@ impl GridController {
 mod test {
     use crate::controller::GridController;
     use crate::grid::CellWrap;
-    use crate::{A1Selection, Pos};
+    use crate::{a1::A1Selection, Pos};
 
     #[test]
     fn test_set_align_selection() {
@@ -632,7 +632,7 @@ mod test {
             Some("red".to_string())
         );
 
-        let selection = A1Selection::from_column_ranges(&[1..=1], sheet_id);
+        let selection = A1Selection::test_a1("A");
         gc.clear_format_borders(&selection, None);
 
         let sheet = gc.sheet(sheet_id);

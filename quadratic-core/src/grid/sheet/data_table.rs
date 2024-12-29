@@ -1,8 +1,5 @@
 use super::Sheet;
-use crate::{
-    grid::{data_table::DataTable, TableMap, TableMapEntry},
-    Pos,
-};
+use crate::{grid::data_table::DataTable, Pos};
 
 use anyhow::{anyhow, bail, Result};
 use indexmap::map::{Entry, OccupiedEntry};
@@ -110,20 +107,6 @@ impl Sheet {
                 false
             }
         })
-    }
-
-    /// Returns a TableMap for this sheet.
-    pub fn table_map(&self) -> TableMap {
-        let mut tables = vec![];
-        for (pos, data_table) in self.data_tables.iter() {
-            tables.push(TableMapEntry {
-                sheet_id: self.id.clone(),
-                table_name: data_table.name.clone(),
-                column_names: data_table.columns_map(),
-                bounds: data_table.output_rect(*pos, true),
-            });
-        }
-        TableMap { tables }
     }
 }
 

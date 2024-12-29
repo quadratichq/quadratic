@@ -1,6 +1,7 @@
 import { editorInteractionStateShowGoToMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { A1Error } from '@/app/quadratic-core-types';
 import { stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import '@/app/ui/styles/floating-dialog.css';
 import { GoToIcon } from '@/shared/components/Icons';
@@ -21,29 +22,34 @@ export const GoTo = () => {
     if (!value) {
       return (
         <span>
-          <span className="font-bold">A1</span>
+          Go to <span className="font-bold">A1</span>
         </span>
       );
     }
     try {
       const map = sheets.getSheetIdNameMap();
-      const selection = stringToSelection(value, sheets.current, map, sheets.tableMap);
+      const selection = stringToSelection(value, sheets.current, map, sheets.a1Context);
       return (
         <span>
-          <span className="font-bold">{selection.toA1String(sheets.current, map)}</span>
+          Go to <span className="font-bold">{selection.toA1String(sheets.current, map)}</span>
         </span>
       );
     } catch (e: any) {
       if (e) {
         try {
-          const error = JSON.parse(e);
-          if (error?.InvalidSheetName) {
+          const error: A1Error | undefined = JSON.parse(e);
+          console.log(error);
+          if (error?.type === 'InvalidSheetName') {
             return (
               <span>
-                Sheet <span className="font-bold">{error.InvalidSheetName}</span> not found
+                Sheet <span className="font-bold">{error.error}</span> not found
               </span>
             );
-          } else if (error?.TooManySheets) {
+          } else if (error?.type === 'InvalidColumn') {
+            return <span>Column {error.error} is out of bounds</span>;
+          } else if (error?.type === 'InvalidRow') {
+            return <span>Row {error.error} is out of bounds</span>;
+          } else if (error?.type === 'TooManySheets') {
             return <span>Only one sheet is supported</span>;
           }
         } catch (_) {}
@@ -60,7 +66,7 @@ export const GoTo = () => {
     } else {
       try {
         const map = sheets.getSheetIdNameMap();
-        const selection = stringToSelection(value, sheets.sheet.id, map, sheets.tableMap);
+        const selection = stringToSelection(value, sheets.sheet.id, map, sheets.a1Context);
         sheets.changeSelection(selection);
       } catch (_) {
         // nothing to do if we can't parse the input
@@ -92,7 +98,7 @@ export const GoTo = () => {
             e.stopPropagation();
           }}
         >
-          {convertedInput ? <div>Go to {convertedInput}</div> : null}
+          {convertedInput ? <div>{convertedInput}</div> : null}
           <GoToIcon className="text-muted-foreground" />
         </CommandItem>
         {/* <CommandItem className="flex cursor-pointer items-center justify-between">

@@ -1,4 +1,4 @@
-use crate::CellRefCoord;
+use crate::a1::CellRefCoord;
 
 use super::*;
 

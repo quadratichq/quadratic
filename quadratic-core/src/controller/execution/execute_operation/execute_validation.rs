@@ -228,7 +228,7 @@ mod tests {
 
     use crate::grid::sheet::validations::validation_rules::ValidationRule;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count};
-    use crate::{A1Selection, CellValue};
+    use crate::{a1::A1Selection, CellValue};
 
     #[test]
     #[serial]

@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 
-use crate::grid::TableMap;
+use crate::a1::A1Context;
 
 use super::*;
 
@@ -37,20 +37,29 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "getLargestRectangle")]
-    pub fn get_largest_rectangle(&self) -> Result<Rect, String> {
-        Ok(self.selection.largest_rect_finite(&self.table_map))
+    pub fn get_largest_rectangle(&self, context: &str) -> Result<Rect, String> {
+        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
+            return Err("Unable to parse context".to_string());
+        };
+        Ok(self.selection.largest_rect_finite(&context))
     }
 
     #[wasm_bindgen(js_name = "getSingleRectangle")]
-    pub fn get_single_rectangle(&self) -> Result<Option<Rect>, String> {
-        Ok(self.selection.single_rect(self.sheet_id, &self.table_map))
+    pub fn get_single_rectangle(&self, context: &str) -> Result<Option<Rect>, String> {
+        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
+            return Err("Unable to parse context".to_string());
+        };
+        Ok(self.selection.single_rect(self.sheet_id, &context))
     }
 
     #[wasm_bindgen(js_name = "getSingleRectangleOrCursor")]
-    pub fn get_single_rectangle_or_cursor(&self) -> Result<Option<Rect>, String> {
+    pub fn get_single_rectangle_or_cursor(&self, context: &str) -> Result<Option<Rect>, String> {
+        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
+            return Err("Unable to parse context".to_string());
+        };
         Ok(self
             .selection
-            .single_rect_or_cursor(self.sheet_id, &self.table_map))
+            .single_rect_or_cursor(self.sheet_id, &context))
     }
 
     #[wasm_bindgen(js_name = "contains")]
@@ -91,10 +100,13 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "overlapsA1Selection")]
-    pub fn overlaps_a1_selection(&self, selection: String) -> Result<bool, String> {
+    pub fn overlaps_a1_selection(&self, selection: &str, context: &str) -> Result<bool, String> {
         let selection =
-            serde_json::from_str::<A1Selection>(&selection).map_err(|e| e.to_string())?;
-        Ok(self.selection.overlaps_a1_selection(&selection))
+            serde_json::from_str::<A1Selection>(selection).map_err(|e| e.to_string())?;
+        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
+            return Err("Unable to parse context".to_string());
+        };
+        Ok(self.selection.overlaps_a1_selection(&selection, &context))
     }
 
     #[wasm_bindgen(js_name = "bottomRightCell")]

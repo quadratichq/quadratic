@@ -137,7 +137,7 @@ extern "C" {
 
     pub fn jsClientMessage(message: String, error: bool);
 
-    pub fn jsTableMap(table_map: String);
+    pub fn jsA1Context(context: String);
 }
 
 #[cfg(test)]
@@ -675,9 +675,9 @@ pub fn jsClientMessage(message: String, error: bool) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsTableMap(table_map: String) {
+pub fn jsA1Context(context: String) {
     TEST_ARRAY
         .lock()
         .unwrap()
-        .push(TestFunction::new("jsTableMap", table_map));
+        .push(TestFunction::new("jsA1Context", context));
 }

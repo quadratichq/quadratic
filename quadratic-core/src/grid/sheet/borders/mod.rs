@@ -162,7 +162,7 @@ impl BordersUpdates {
 mod tests {
     use super::*;
 
-    use crate::A1Selection;
+    use crate::a1::A1Selection;
 
     #[test]
     fn test_is_empty() {

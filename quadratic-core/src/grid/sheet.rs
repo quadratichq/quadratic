@@ -15,9 +15,11 @@ use super::ids::SheetId;
 use super::js_types::{CellFormatSummary, CellType, JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;
 use super::{CellWrap, CodeRun, NumericFormatKind, SheetFormatting};
+use crate::a1::A1Selection;
 use crate::sheet_offsets::SheetOffsets;
-use crate::{A1Selection, Array, CellValue, Pos, Rect};
+use crate::{Array, CellValue, Pos, Rect};
 
+pub mod a1_context;
 pub mod a1_selection;
 pub mod borders;
 pub mod bounds;
@@ -509,10 +511,11 @@ mod test {
     use serial_test::parallel;
 
     use super::*;
+    use crate::a1::A1Selection;
     use crate::controller::GridController;
     use crate::grid::{CodeCellLanguage, CodeCellValue, DataTableKind, NumericFormat};
     use crate::test_util::print_table;
-    use crate::{A1Selection, SheetPos, SheetRect, Value};
+    use crate::{SheetPos, SheetRect, Value};
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
         let mut grid_controller = GridController::test();

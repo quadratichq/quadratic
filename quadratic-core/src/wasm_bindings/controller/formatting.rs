@@ -2,8 +2,8 @@ use std::str::FromStr;
 
 use wasm_bindgen::prelude::*;
 
+use crate::a1::A1Selection;
 use crate::controller::GridController;
-use crate::A1Selection;
 use crate::Pos;
 use crate::SheetPos;
 

@@ -51,6 +51,7 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
+        a1::A1Selection,
         controller::GridController,
         grid::{
             sheet::borders::{BorderSelection, BorderStyle},
@@ -60,7 +61,7 @@ mod test {
             controller::sheet_info::SheetInfo,
             js::{clear_js_calls, expect_js_call},
         },
-        A1Selection, CellValue, SheetPos,
+        CellValue, SheetPos,
     };
     use bigdecimal::BigDecimal;
     use serial_test::{parallel, serial};

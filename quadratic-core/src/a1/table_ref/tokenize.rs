@@ -1,6 +1,6 @@
 //! Tokenizes a table reference after the table_name has been removed.
 
-use crate::UNBOUNDED;
+use crate::a1::UNBOUNDED;
 
 use super::*;
 
@@ -219,8 +219,6 @@ impl TableRef {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
-    use crate::UNBOUNDED;
-
     use super::*;
 
     #[test]

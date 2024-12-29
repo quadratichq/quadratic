@@ -73,7 +73,7 @@ export const SheetRange = (props: Props) => {
           value,
           a1SheetId,
           onlyCurrentSheet ? '{}' : sheets.getSheetIdNameMap(),
-          sheets.tableMap
+          sheets.a1Context
         );
         onChangeRange(jsSelection);
         setRangeError(undefined);
@@ -102,7 +102,7 @@ export const SheetRange = (props: Props) => {
   useEffect(() => {
     if (ref.current) {
       ref.current.value = initial
-        ? A1SelectionToJsSelection(initial, sheets.tableMap).toA1String(a1SheetId, sheets.getSheetIdNameMap())
+        ? A1SelectionToJsSelection(initial, sheets.a1Context).toA1String(a1SheetId, sheets.getSheetIdNameMap())
         : '';
     }
   }, [changeCursor, a1SheetId, initial]);
@@ -114,7 +114,7 @@ export const SheetRange = (props: Props) => {
         ref.current.value,
         a1SheetId,
         onlyCurrentSheet ? '{}' : sheets.getSheetIdNameMap(),
-        sheets.tableMap
+        sheets.a1Context
       );
       if (selection) {
         sheets.changeSelection(selection, true);

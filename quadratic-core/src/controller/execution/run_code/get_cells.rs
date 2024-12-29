@@ -2,7 +2,7 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::{
-    controller::GridController, error_core::CoreError, CellRefRange, RunError, RunErrorMsg,
+    a1::CellRefRange, controller::GridController, error_core::CoreError, RunError, RunErrorMsg,
 };
 use serde::{Deserialize, Serialize};
 

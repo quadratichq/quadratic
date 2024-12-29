@@ -92,12 +92,13 @@ impl Borders {
 #[serial_test::parallel]
 mod tests {
     use crate::{
+        a1::A1Selection,
         controller::GridController,
         grid::{
             sheet::borders::{BorderSelection, BorderStyle, Borders},
             CodeCellLanguage,
         },
-        A1Selection, CellValue, CopyFormats,
+        CellValue, CopyFormats,
     };
 
     #[test]

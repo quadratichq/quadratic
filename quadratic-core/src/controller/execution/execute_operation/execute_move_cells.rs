@@ -1,12 +1,12 @@
 use std::collections::VecDeque;
 
 use crate::{
+    a1::A1Selection,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::{clipboard::PasteSpecial, operation::Operation},
         GridController,
     },
-    A1Selection,
 };
 
 impl GridController {

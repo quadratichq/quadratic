@@ -122,7 +122,7 @@ To clear the values of a cell, set the value to an empty string.\n
           top_left_position,
           sheets.current,
           sheets.getSheetIdNameMap(),
-          sheets.tableMap
+          sheets.a1Context
         );
         if (!selection.isSingleSelection()) {
           return 'Invalid code cell position, this should be a single cell, not a range';
@@ -192,7 +192,7 @@ Always refer to the data from cell by its position in a1 notation from respectiv
           code_cell_position,
           sheets.current,
           sheets.getSheetIdNameMap(),
-          sheets.tableMap
+          sheets.a1Context
         );
         if (!selection.isSingleSelection()) {
           return 'Invalid code cell position, this should be a single cell, not a range';
@@ -270,7 +270,7 @@ Target location is the top left corner of the target location on the currently o
           source_selection_rect,
           sheets.current,
           sheets.getSheetIdNameMap(),
-          sheets.tableMap
+          sheets.a1Context
         );
         const sourceRect = sourceSelection.getSingleRectangle();
         if (!sourceRect) {
@@ -294,7 +294,7 @@ Target location is the top left corner of the target location on the currently o
           target_top_left_position,
           sheets.current,
           sheets.getSheetIdNameMap(),
-          sheets.tableMap
+          sheets.a1Context
         );
         if (!targetSelection.isSingleSelection()) {
           return 'Invalid code cell position, this should be a single cell, not a range';
@@ -341,7 +341,7 @@ delete_cells functions requires a string representation (in a1 notation) of a se
           selection,
           sheets.current,
           sheets.getSheetIdNameMap(),
-          sheets.tableMap
+          sheets.a1Context
         );
 
         quadraticCore.deleteCellValues(sourceSelection.save(), sheets.getCursorPosition());

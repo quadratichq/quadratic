@@ -1,6 +1,7 @@
 use crate::{
+    a1::A1Selection,
     grid::{formats::SheetFormatUpdates, sheet::borders::BordersUpdates, SheetId},
-    A1Selection, Rect, SheetPos, SheetRect,
+    Rect, SheetPos, SheetRect,
 };
 
 use super::GridController;
@@ -40,7 +41,9 @@ impl GridController {
         let thumbnail_a1 =
             A1Selection::from_rect(sheet.offsets.thumbnail().to_sheet_rect(sheet.id));
 
-        selection.overlaps_a1_selection(&thumbnail_a1)
+        let context = self.grid().a1_context();
+        // todo: not sure what to do with current_row here...
+        selection.overlaps_a1_selection(&thumbnail_a1, 1, &context)
     }
 
     /// Returns whether the thumbnail contains any intersection with
@@ -73,13 +76,14 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
+        a1::A1Selection,
         controller::GridController,
         grid::{
             formats::{FormatUpdate, SheetFormatUpdates},
             sheet::borders::{BorderStyleCell, BorderStyleTimestamp, BordersUpdates},
             SheetId,
         },
-        A1Selection, Pos, Rect, SheetPos, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH,
+        Pos, Rect, SheetPos, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH,
     };
     use serial_test::parallel;
 

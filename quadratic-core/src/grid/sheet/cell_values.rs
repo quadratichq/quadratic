@@ -128,12 +128,13 @@ mod test {
     use std::str::FromStr;
 
     use crate::{
+        a1::A1Selection,
         grid::{
             sheet::validations::{validation::Validation, validation_rules::ValidationRule},
             NumericFormat,
         },
         wasm_bindings::js::expect_js_call,
-        A1Selection, CellValue,
+        CellValue,
     };
 
     use super::*;

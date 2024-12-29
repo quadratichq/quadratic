@@ -126,9 +126,10 @@ mod test {
     use serial_test::parallel;
 
     use crate::{
+        a1::UNBOUNDED,
         controller::GridController,
         grid::{file::import, sheet::borders::CellBorderLine},
-        CellValue, Pos, UNBOUNDED,
+        CellValue, Pos,
     };
 
     #[test]

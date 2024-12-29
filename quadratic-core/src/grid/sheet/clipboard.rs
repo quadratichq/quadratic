@@ -1,10 +1,11 @@
+use crate::a1::A1Selection;
 use crate::cell_values::CellValues;
 use crate::color::Rgba;
 use crate::controller::operations::clipboard::{Clipboard, ClipboardOrigin};
 use crate::formulas::replace_a1_notation;
 use crate::grid::js_types::JsClipboard;
 use crate::grid::{CodeCellLanguage, Sheet};
-use crate::{A1Selection, CellValue, Pos, Rect};
+use crate::{CellValue, Pos, Rect};
 
 impl Sheet {
     /// Copies the selection to the clipboard.
@@ -291,17 +292,16 @@ impl Sheet {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
-    use serial_test::parallel;
-
+    use super::*;
     use crate::controller::operations::clipboard::PasteSpecial;
     use crate::controller::GridController;
     use crate::grid::js_types::JsClipboard;
     use crate::grid::sheet::borders::{BorderSelection, BorderStyle, CellBorderLine};
-    use crate::{A1Selection, Pos, Rect};
+    use crate::Pos;
 
     #[test]
-    #[parallel]
     fn copy_to_clipboard_exclude() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -309,13 +309,7 @@ mod tests {
         let sheet = gc.sheet_mut(sheet_id);
         sheet.test_set_values(0, 0, 4, 1, vec!["1", "2", "3", "4"]);
 
-        let selection = A1Selection::from_rects(
-            &[
-                Rect::single_pos(Pos { x: 0, y: 0 }),
-                Rect::from_numbers(2, 0, 2, 1),
-            ],
-            sheet_id,
-        );
+        let selection = A1Selection::test_a1("A1,C1:C2");
         let JsClipboard { html, .. } = sheet.copy_to_clipboard(&selection).unwrap();
 
         gc.paste_from_clipboard(
@@ -331,7 +325,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn clipboard_borders() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

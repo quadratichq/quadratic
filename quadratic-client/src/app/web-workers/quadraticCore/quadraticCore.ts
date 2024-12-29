@@ -199,8 +199,8 @@ class QuadraticCore {
       this.receivedClientMessage = true;
 
       return;
-    } else if (e.data.type === 'coreClientTableMap') {
-      events.emit('tableMap', e.data.tableMap);
+    } else if (e.data.type === 'coreClientA1Context') {
+      events.emit('a1Context', e.data.context);
       return;
     }
 

@@ -1,8 +1,9 @@
 use lazy_static::lazy_static;
 use regex::Regex;
 
+use crate::a1::{A1Context, A1Error};
+
 use super::{tokenize::Token, ColRange, RowRange, RowRangeEntry, TableRef};
-use crate::{grid::TableMap, A1Error};
 
 lazy_static! {
     static ref TABLE_NAME_PATTERN: Regex =
@@ -23,14 +24,10 @@ impl TableRef {
     }
 
     /// Parse a table reference given a list of table_names.
-    pub fn parse(s: &str, table_map: &TableMap) -> Result<Self, A1Error> {
-        let table_names = table_map.table_names();
+    pub fn parse(s: &str, context: &A1Context) -> Result<Self, A1Error> {
         let (table_name, remaining) = Self::parse_table_name(s)?;
-        let table_name = if let Some(name) = table_names
-            .iter()
-            .find(|t| t.eq_ignore_ascii_case(&table_name))
-        {
-            name.clone()
+        let table_name = if let Some(entry) = context.try_table(&table_name) {
+            entry.table_name.clone()
         } else {
             return Err(A1Error::TableNotFound(table_name.clone()));
         };
@@ -135,8 +132,8 @@ mod tests {
 
     #[test]
     fn test_simple_table_ref() {
-        let table_map = TableMap::test(&[("Table1", Rect::test_a1("A1:B2"))]);
-        let table_ref = TableRef::parse("Table1", &table_map).unwrap();
+        let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
+        let table_ref = TableRef::parse("Table1", &context).unwrap();
         assert_eq!(table_ref.table_name, "Table1");
         assert!(table_ref.data);
         assert!(!table_ref.headers);
@@ -145,15 +142,15 @@ mod tests {
 
     #[test]
     fn test_table_name_case_insensitive() {
-        let table_map = TableMap::test(&[("Table1", Rect::test_a1("A1:B2"))]);
-        let table_ref = TableRef::parse("table1", &table_map).unwrap();
+        let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
+        let table_ref = TableRef::parse("table1", &context).unwrap();
         assert_eq!(table_ref.table_name, "Table1");
     }
 
     #[test]
     fn test_table_name_not_found() {
-        let table_map = TableMap::test(&[("Table1", Rect::test_a1("A1:B2"))]);
-        let result = TableRef::parse("Table2", &table_map);
+        let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
+        let result = TableRef::parse("Table2", &context);
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err(),
@@ -163,8 +160,8 @@ mod tests {
 
     #[test]
     fn test_table_with_column() {
-        let table_map = TableMap::test(&[("Table1", Rect::test_a1("A1:B2"))]);
-        let table_ref = TableRef::parse("Table1[Column Name]", &table_map).unwrap();
+        let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
+        let table_ref = TableRef::parse("Table1[Column Name]", &context).unwrap();
         assert_eq!(table_ref.table_name, "Table1");
         assert_eq!(table_ref.col_ranges.len(), 1);
         assert_eq!(
@@ -175,19 +172,22 @@ mod tests {
 
     #[test]
     fn test_table_with_headers() {
-        let table_map = TableMap::test(&[("Table1", Rect::test_a1("A1:B2"))]);
-        let table_ref = TableRef::parse("Table1[[#HEADERS]]", &table_map).unwrap();
+        let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
+        let table_ref = TableRef::parse("Table1[[#HEADERS]]", &context).unwrap();
         assert_eq!(table_ref.table_name, "Table1");
         assert!(table_ref.headers);
     }
 
     #[test]
     fn test_table_with_row_range() {
-        let table_map = TableMap::test(&[
-            ("Table1", Rect::test_a1("A1:B2")),
-            ("Table2", Rect::test_a1("C3:D4")),
-            ("Table3", Rect::test_a1("E5:F6")),
-        ]);
+        let context = A1Context::test(
+            &[],
+            &[
+                ("Table1", &["A", "B"], Rect::test_a1("A1:B2")),
+                ("Table2", &["C", "D"], Rect::test_a1("C3:D4")),
+                ("Table3", &["E", "F"], Rect::test_a1("E5:F6")),
+            ],
+        );
 
         let variations = [
             (
@@ -226,7 +226,7 @@ mod tests {
         ];
 
         for (s, expected) in variations.iter() {
-            let table_ref = TableRef::parse(s, &table_map).unwrap();
+            let table_ref = TableRef::parse(s, &context).unwrap();
             assert_eq!(table_ref, *expected, "{}", s);
         }
     }

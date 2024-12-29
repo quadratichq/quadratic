@@ -1,11 +1,12 @@
 use crate::{
+    a1::UNBOUNDED,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
     formulas::{replace_cell_references_with, CellRefCoord},
     grid::{CodeCellLanguage, CodeCellValue, GridBounds, SheetId},
-    CellValue, Pos, UNBOUNDED,
+    CellValue, Pos,
 };
 
 impl GridController {
@@ -120,10 +121,9 @@ impl GridController {
                                 }
                                 _ => {
                                     let mut new_code = code.clone();
-                                    let table_map = self.grid.table_map();
-                                    new_code.adjust_code_cell_column_row(
-                                        column, row, delta, &table_map,
-                                    );
+                                    let context = self.grid.a1_context();
+                                    new_code
+                                        .adjust_code_cell_column_row(column, row, delta, &context);
                                     new_code.code
                                 }
                             };
@@ -307,12 +307,13 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
+        a1::A1Selection,
         grid::{
             sheet::validations::{validation::Validation, validation_rules::ValidationRule},
             CellsAccessed, CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
         },
         wasm_bindings::js::{clear_js_calls, expect_js_call_count, expect_js_offsets},
-        A1Selection, Array, CellValue, Pos, Rect, SheetPos, SheetRect, Value, DEFAULT_COLUMN_WIDTH,
+        Array, CellValue, Pos, Rect, SheetPos, SheetRect, Value, DEFAULT_COLUMN_WIDTH,
         DEFAULT_ROW_HEIGHT,
     };
 

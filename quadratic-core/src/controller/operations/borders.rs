@@ -1,7 +1,8 @@
 use crate::{
+    a1::{A1Selection, CellRefRange, RefRangeBounds},
     controller::GridController,
     grid::sheet::borders::{BorderSelection, BorderStyle, BordersUpdates},
-    A1Selection, CellRefRange, ClearOption, RefRangeBounds,
+    ClearOption,
 };
 
 use super::operation::Operation;

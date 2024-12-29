@@ -12,7 +12,6 @@ impl Default for JsSelection {
         JsSelection {
             selection: A1Selection::from_xy(1, 1, SheetId::test()),
             sheet_id: SheetId::test(),
-            table_map: TableMap::default(),
         }
     }
 }
@@ -91,7 +90,7 @@ pub fn to_selection(
     let sheet_map = serde_json::from_str::<SheetNameIdMap>(sheet_map).map_err(|e| e.to_string())?;
     let table_map = serde_json::from_str::<TableMap>(table_map).map_err(|e| e.to_string())?;
     let selection = A1Selection::parse(a1, &default_sheet_id, &sheet_map, &table_map)
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| serde_json::to_string(&e).unwrap_or(e.to_string()))?;
     Ok(JsSelection {
         selection,
         sheet_id: default_sheet_id,

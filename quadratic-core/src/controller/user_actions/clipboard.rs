@@ -3,7 +3,7 @@ use crate::controller::operations::clipboard::PasteSpecial;
 use crate::controller::GridController;
 use crate::grid::js_types::JsClipboard;
 use crate::grid::{GridBounds, SheetId};
-use crate::{A1Selection, Pos, Rect, SheetPos, SheetRect};
+use crate::{a1::A1Selection, Pos, Rect, SheetPos, SheetRect};
 
 // To view you clipboard contents, go to https://evercoder.github.io/clipboard-inspector/
 // To decode the html, use https://codebeautify.org/html-decode-string

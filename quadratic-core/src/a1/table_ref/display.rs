@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use crate::UNBOUNDED;
+use crate::a1::UNBOUNDED;
 
 use super::*;
 
@@ -101,14 +101,14 @@ impl fmt::Display for TableRef {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
-    use crate::{grid::TableMap, Rect};
+    use crate::{a1::A1Context, Rect};
 
     use super::*;
 
     #[test]
     fn test_to_string_only_table_name() {
-        let table_map = TableMap::test(&[("Table1", Rect::test_a1("A1"))]);
-        let table_ref = TableRef::parse("Table1", &table_map).unwrap_or_else(|e| {
+        let context = A1Context::test(&[], &[("Table1", &["A"], Rect::test_a1("A1"))]);
+        let table_ref = TableRef::parse("Table1", &context).unwrap_or_else(|e| {
             panic!("Failed to parse Table1: {}", e);
         });
         assert_eq!(table_ref.to_string(), "Table1");
@@ -116,7 +116,7 @@ mod tests {
 
     #[test]
     fn test_to_string() {
-        let table_map = TableMap::test(&[("Table1", Rect::test_a1("A1"))]);
+        let context = A1Context::test(&[], &[("Table1", &["A"], Rect::test_a1("A1"))]);
         let tests = [
             "Table1[[#12:]]",
             "Table1[[#12:15]]",
@@ -130,7 +130,7 @@ mod tests {
         ];
 
         for test in tests {
-            let table_ref = TableRef::parse(test, &table_map)
+            let table_ref = TableRef::parse(test, &context)
                 .unwrap_or_else(|e| panic!("Failed to parse {}: {}", test, e));
             assert_eq!(table_ref.to_string(), test, "{}", test);
         }

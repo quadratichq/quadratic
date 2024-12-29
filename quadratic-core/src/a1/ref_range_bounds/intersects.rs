@@ -1,10 +1,10 @@
-use crate::UNBOUNDED;
+use crate::a1::UNBOUNDED;
 
 use super::*;
 
 impl RefRangeBounds {
     /// Find intersection between two CellRefRanges.
-    pub fn intersection(&self, other: &RefRangeBounds) -> Option<Self> {
+    pub fn intersection(&self, other: &RefRangeBounds) -> Option<RefRangeBounds> {
         // Handle all-* cases
         if self.is_all() {
             return Some(*other);

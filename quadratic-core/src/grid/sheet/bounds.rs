@@ -562,6 +562,7 @@ impl Sheet {
 #[serial_test::parallel]
 mod test {
     use crate::{
+        a1::A1Selection,
         controller::GridController,
         grid::{
             sheet::{
@@ -574,7 +575,7 @@ mod test {
             CellAlign, CellWrap, CodeCellLanguage, CodeCellValue, CodeRun, DataTable,
             DataTableKind, GridBounds, Sheet,
         },
-        A1Selection, Array, CellValue, Pos, Rect, SheetPos, SheetRect, Value,
+        Array, CellValue, Pos, Rect, SheetPos, SheetRect, Value,
     };
     use proptest::proptest;
     use std::collections::HashMap;

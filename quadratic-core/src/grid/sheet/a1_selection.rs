@@ -1,11 +1,12 @@
 use indexmap::IndexMap;
 
 use crate::{
+    a1::{A1Selection, CellRefRange},
     grid::{
         js_types::{JsCellValuePosAIContext, JsCodeCell},
         GridBounds,
     },
-    A1Selection, CellRefRange, CellValue, Pos, Rect,
+    CellValue, Pos, Rect,
 };
 
 use super::Sheet;
@@ -291,12 +292,12 @@ impl Sheet {
 mod tests {
 
     use crate::{
+        a1::{A1Selection, CellRefRange},
         grid::{
             js_types::{JsCellValuePosAIContext, JsCodeCell, JsReturnInfo},
             CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
         },
-        A1Selection, Array, CellRefRange, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetRect,
-        Value,
+        Array, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetRect, Value,
     };
 
     use super::Sheet;

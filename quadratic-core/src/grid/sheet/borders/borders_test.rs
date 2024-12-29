@@ -86,7 +86,7 @@ impl Borders {
 #[serial_test::parallel]
 mod tests {
     use super::*;
-    use crate::{controller::GridController, grid::SheetId, A1Selection};
+    use crate::{a1::A1Selection, controller::GridController, grid::SheetId};
 
     #[test]
     fn print_borders() {

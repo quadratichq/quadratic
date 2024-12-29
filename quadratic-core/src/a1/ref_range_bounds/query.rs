@@ -1,4 +1,4 @@
-use crate::UNBOUNDED;
+use crate::a1::UNBOUNDED;
 
 use super::*;
 
@@ -78,6 +78,16 @@ impl RefRangeBounds {
         } else {
             None
         }
+    }
+
+    /// Returns a rectangle that may contain an unbounded range.
+    pub fn to_rect_unbounded(&self) -> Rect {
+        Rect::new(
+            self.start.col(),
+            self.start.row(),
+            self.end.col(),
+            self.end.row(),
+        )
     }
 
     /// Returns a rectangle that bounds a finite range.
@@ -162,6 +172,13 @@ impl RefRangeBounds {
                 Some(self.end.row())
             },
         )
+    }
+
+    /// Returns the cursor position from the last range.
+    pub fn cursor_pos_from_last_range(&self) -> Pos {
+        let x = self.start.col();
+        let y = self.start.row();
+        Pos { x, y }
     }
 }
 
@@ -494,6 +511,38 @@ mod tests {
         assert_eq!(
             RefRangeBounds::test_a1("E:G").to_contiguous2d_coords(),
             (5, 1, Some(7), None)
+        );
+    }
+
+    #[test]
+    fn test_to_rect_unbounded() {
+        assert_eq!(
+            RefRangeBounds::test_a1("*").to_rect_unbounded(),
+            Rect::new(1, 1, UNBOUNDED, UNBOUNDED)
+        );
+        assert_eq!(
+            RefRangeBounds::test_a1("A1:").to_rect_unbounded(),
+            Rect::new(1, 1, UNBOUNDED, UNBOUNDED)
+        );
+        assert_eq!(
+            RefRangeBounds::test_a1("1:").to_rect_unbounded(),
+            Rect::new(1, 1, UNBOUNDED, UNBOUNDED)
+        );
+        assert_eq!(
+            RefRangeBounds::test_a1("B3:D5").to_rect_unbounded(),
+            Rect::test_a1("B3:D5")
+        );
+    }
+
+    #[test]
+    fn test_cursor_pos_from_last_range() {
+        assert_eq!(
+            RefRangeBounds::test_a1("A1").cursor_pos_from_last_range(),
+            pos![A1]
+        );
+        assert_eq!(
+            RefRangeBounds::test_a1("A1:B2").cursor_pos_from_last_range(),
+            pos![A1]
         );
     }
 }

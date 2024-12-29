@@ -3,7 +3,7 @@ use std::str::FromStr;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 use super::js_types::{JsCellValuePosAIContext, JsCodeCell};
-use crate::A1Selection;
+use crate::a1::A1Selection;
 use crate::{controller::GridController, grid::SheetId, Pos};
 
 #[wasm_bindgen]

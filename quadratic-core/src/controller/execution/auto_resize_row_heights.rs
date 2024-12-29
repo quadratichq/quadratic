@@ -92,7 +92,7 @@ mod tests {
     use crate::wasm_bindings::js::{
         clear_js_calls, expect_js_call, expect_js_call_count, expect_js_offsets,
     };
-    use crate::{A1Selection, CellValue, Pos, SheetPos};
+    use crate::{a1::A1Selection, CellValue, Pos, SheetPos};
 
     fn mock_auto_resize_row_heights(
         gc: &mut GridController,

@@ -108,7 +108,7 @@ pub fn import_cell_value(value: current::CellValueSchema) -> CellValue {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
-    use crate::{controller::GridController, grid::file, A1Selection};
+    use crate::{a1::A1Selection, controller::GridController, grid::file};
 
     #[test]
     fn test_import_and_export_date_time() {

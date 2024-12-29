@@ -214,7 +214,7 @@ impl GridController {
 
             // send updated TableMap to client
             if !transaction.code_cells.is_empty() || !transaction.offsets_modified.is_empty() {
-                self.send_table_map();
+                self.send_a1_context();
             }
         }
     }

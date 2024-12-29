@@ -39,7 +39,7 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
               toolArgs.data.code_cell_position,
               sheets.current,
               sheets.getSheetIdNameMap(),
-              sheets.tableMap
+              sheets.a1Context
             );
             const { x, y } = selection.getCursor();
             setCodeCellPos({ x, y });

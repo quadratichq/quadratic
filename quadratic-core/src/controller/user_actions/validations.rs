@@ -1,6 +1,7 @@
 use uuid::Uuid;
 
 use crate::{
+    a1::A1Selection,
     controller::{
         active_transactions::transaction_name::TransactionName, operations::operation::Operation,
         GridController,
@@ -12,7 +13,7 @@ use crate::{
         },
         SheetId,
     },
-    A1Selection, CellValue, Pos,
+    CellValue, Pos,
 };
 
 impl GridController {

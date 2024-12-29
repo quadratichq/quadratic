@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
+    a1::A1Selection,
     cell_values::CellValues,
     grid::{
         data_table::{column_header::DataTableColumnHeader, sort::DataTableSort},
@@ -20,7 +21,7 @@ use crate::{
         CodeRunOld, DataTable, DataTableKind, Sheet, SheetId,
     },
     selection::OldSelection,
-    A1Selection, CopyFormats, SheetPos, SheetRect,
+    CopyFormats, SheetPos, SheetRect,
 };
 
 /// Description of changes to make to a file.

@@ -5,8 +5,9 @@ use std::{
 };
 use ts_rs::TS;
 
-use super::{SheetId, TableMap};
-use crate::{CellRefRange, Rect, SheetPos, SheetRect};
+use super::SheetId;
+use crate::a1::{A1Context, CellRefRange};
+use crate::{Rect, SheetPos, SheetRect};
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 #[serde(rename_all = "camelCase")]
@@ -108,7 +109,7 @@ impl CellsAccessed {
     }
 
     /// Whether the CellsAccessed intersects the SheetRect.
-    pub fn intersects(&self, sheet_rect: &SheetRect, table_map: &TableMap) -> bool {
+    pub fn intersects(&self, sheet_rect: &SheetRect, context: &A1Context) -> bool {
         let rect: Rect = (*sheet_rect).into();
         self.cells
             .iter()
@@ -122,7 +123,7 @@ impl CellsAccessed {
             .any(|ranges| {
                 ranges
                     .iter()
-                    .any(|range| range.might_intersect_rect(rect, &table_map))
+                    .any(|range| range.might_intersect_rect(rect, &context))
             })
     }
 
@@ -194,9 +195,9 @@ mod tests {
             sheet_id,
             CellRefRange::new_relative_rect(Rect::new(1, 1, 3, 3)),
         );
-        let table_map = TableMap::default();
-        assert!(cells.intersects(&SheetRect::new(1, 1, 3, 3, sheet_id), &table_map));
-        assert!(!cells.intersects(&SheetRect::new(4, 4, 5, 5, sheet_id), &table_map));
+        let context = A1Context::default();
+        assert!(cells.intersects(&SheetRect::new(1, 1, 3, 3, sheet_id), &context));
+        assert!(!cells.intersects(&SheetRect::new(4, 4, 5, 5, sheet_id), &context));
     }
 
     #[test]

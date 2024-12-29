@@ -141,7 +141,7 @@ interface EventTypes {
 
   codeEditorCodeCell: (codeCell?: CodeCell) => void;
 
-  tableMap: (tableMap: string) => void;
+  a1Context: (context: string) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

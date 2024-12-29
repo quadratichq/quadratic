@@ -1,10 +1,10 @@
 use crate::{
+    a1::A1Selection,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
     grid::SheetId,
-    A1Selection,
 };
 
 use super::{validation::Validation, Validations};
@@ -151,10 +151,10 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
+        a1::A1Selection,
         grid::sheet::validations::validation_rules::{
             validation_logical::ValidationLogical, ValidationRule,
         },
-        A1Selection,
     };
 
     use super::*;
