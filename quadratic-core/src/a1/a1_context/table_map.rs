@@ -9,7 +9,8 @@ use crate::{
 pub struct TableMapEntry {
     pub sheet_id: SheetId,
     pub table_name: String,
-    pub column_names: Vec<String>,
+    pub visible_columns: Vec<String>,
+    pub all_columns: Vec<String>,
     pub bounds: Rect,
 }
 
@@ -23,7 +24,8 @@ impl TableMap {
         self.tables.push(TableMapEntry {
             sheet_id,
             table_name: table.name.clone(),
-            column_names: table.columns_map(),
+            visible_columns: table.columns_map(false),
+            all_columns: table.columns_map(true),
             bounds: table.output_rect(pos, true),
         });
     }
@@ -32,7 +34,7 @@ impl TableMap {
     pub fn try_table(&self, table_name: &str) -> Option<&TableMapEntry> {
         self.tables
             .iter()
-            .find(|table| &table.table_name == table_name)
+            .find(|table| table.table_name.to_lowercase() == table_name.to_lowercase())
     }
 
     /// Returns a list of all table names in the table map.
@@ -43,17 +45,25 @@ impl TableMap {
 
 #[cfg(test)]
 impl TableMap {
+    /// Inserts a test table into the table map.
+    ///
+    /// if all_columns is None, then it uses visible_columns.
     pub fn test_insert(
         &mut self,
         sheet_id: SheetId,
         table_name: &str,
-        column_names: &[&str],
+        visible_columns: &[&str],
+        all_columns: Option<&[&str]>,
         bounds: Rect,
     ) {
+        let visible_columns: Vec<String> = visible_columns.iter().map(|c| c.to_string()).collect();
         self.tables.push(TableMapEntry {
             sheet_id,
             table_name: table_name.to_string(),
-            column_names: column_names.iter().map(|c| c.to_string()).collect(),
+            visible_columns: visible_columns.clone(),
+            all_columns: all_columns.map_or(visible_columns, |c| {
+                c.iter().map(|c| c.to_string()).collect()
+            }),
             bounds,
         });
     }

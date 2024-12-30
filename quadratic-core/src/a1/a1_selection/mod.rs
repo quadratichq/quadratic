@@ -194,12 +194,12 @@ impl A1Selection {
     ///
     /// The cursor position has no effect on the output.
     pub fn to_string(&self, default_sheet_id: Option<SheetId>, context: &A1Context) -> String {
-        let sheet = self.sheet_id;
+        let sheet_id = self.sheet_id;
         self.ranges
             .iter()
             .map(|cells| {
                 SheetCellRefRange {
-                    sheet_id: sheet,
+                    sheet_id,
                     cells: cells.clone(),
                 }
                 .to_string(default_sheet_id, context)

@@ -58,12 +58,12 @@ impl A1Context {
 
         let mut table_map = TableMap::default();
         for (table_name, column_names, bounds) in tables {
-            table_map.test_insert(SheetId::test(), table_name, column_names, *bounds);
+            table_map.test_insert(SheetId::test(), table_name, column_names, None, *bounds);
         }
 
         Self {
             sheet_map,
-            table_map: TableMap::default(),
+            table_map,
         }
     }
 }

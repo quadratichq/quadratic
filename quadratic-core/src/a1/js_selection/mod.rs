@@ -1,6 +1,4 @@
-// todo: move this to A1Selection
-
-//! Allow manipulation of A1Selection via JS rust calls.
+//! Wrapper around A1Selection for use in JS rust calls.
 
 use std::str::FromStr;
 
@@ -26,7 +24,6 @@ pub struct JsCoordinate {
 #[wasm_bindgen]
 pub struct JsSelection {
     selection: A1Selection,
-    sheet_id: SheetId,
 }
 
 impl From<Pos> for JsCoordinate {

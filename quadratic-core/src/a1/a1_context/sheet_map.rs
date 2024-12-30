@@ -17,11 +17,15 @@ pub struct SheetMap {
 impl SheetMap {
     pub fn insert(&mut self, sheet: &Sheet) {
         self.sheet_map
-            .insert(case_fold(&sheet.name), sheet.id.clone());
+            .insert(sheet.name.to_string(), sheet.id.clone());
     }
 
     pub fn try_sheet_name(&self, sheet_name: &str) -> Option<SheetId> {
-        self.sheet_map.get(&case_fold(sheet_name)).cloned()
+        let folded_name = case_fold(sheet_name);
+        self.sheet_map
+            .iter()
+            .find(|(name, _)| case_fold(name) == folded_name)
+            .map(|(_, id)| id.clone())
     }
 
     pub fn try_sheet_id(&self, sheet_id: SheetId) -> Option<&String> {
@@ -35,6 +39,6 @@ impl SheetMap {
 #[cfg(test)]
 impl SheetMap {
     pub fn insert_test(&mut self, name: &str, id: SheetId) {
-        self.sheet_map.insert(case_fold(name), id);
+        self.sheet_map.insert(name.to_string(), id);
     }
 }

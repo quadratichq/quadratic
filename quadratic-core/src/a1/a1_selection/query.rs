@@ -516,7 +516,6 @@ mod tests {
 
     #[test]
     fn test_single_rect_or_cursor() {
-        let sheet_id = SheetId::test();
         let context = A1Context::default();
         assert_eq!(
             A1Selection::test_a1("A1,B2,C3").single_rect_or_cursor(&context),

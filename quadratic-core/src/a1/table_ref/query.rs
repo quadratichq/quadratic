@@ -7,6 +7,8 @@ use crate::{
 use super::*;
 
 impl TableRef {
+    /// Returns any columns that have content in the TableRef that are between
+    /// from and to.
     pub fn selected_cols(
         &self,
         from: i64,
@@ -16,11 +18,101 @@ impl TableRef {
     ) -> Vec<i64> {
         let mut cols = vec![];
 
-        context.tables().for_each(|table| {
-            if table.sheet_id == sheet_id && table.table_name == self.table_name {
-                cols.extend(table.bounds.cols_range(from, to));
+        if let Some(table) = context.try_table(&self.table_name) {
+            if sheet_id == table.sheet_id {
+                let bounds = table.bounds;
+                self.col_ranges.iter().for_each(|col_range| {
+                    match col_range {
+                        ColRange::Col(col) => {
+                            // hidden column names are not included in
+                            // column_names and we therefore skip them for this
+                            // purpose
+                            if let Some(index) = table.visible_columns.iter().position(|c| c == col)
+                            {
+                                let x = index as i64 + bounds.min.x;
+                                if x >= from && x <= to {
+                                    cols.push(x);
+                                }
+                            }
+                        }
+                        ColRange::ColRange(col_range_start, col_range_end) => {
+                            let start = table
+                                .visible_columns
+                                .iter()
+                                .position(|c| c == col_range_start);
+                            let end = table
+                                .visible_columns
+                                .iter()
+                                .position(|c| c == col_range_end);
+                            if let (Some(start), Some(end)) = (start, end) {
+                                cols.extend(start as i64..=end as i64);
+                            } else {
+                                // Find positions in all_columns
+                                if let (Some(all_start), Some(all_end)) = (
+                                    table.all_columns.iter().position(|c| c == col_range_start),
+                                    table.all_columns.iter().position(|c| c == col_range_end),
+                                ) {
+                                    // Get visible columns between all_start and all_end
+                                    for col in &table.visible_columns {
+                                        if let Some(pos) =
+                                            table.all_columns.iter().position(|c| c == col)
+                                        {
+                                            if pos >= all_start && pos <= all_end {
+                                                if let Some(visible_pos) = table
+                                                    .visible_columns
+                                                    .iter()
+                                                    .position(|c| c == col)
+                                                {
+                                                    let x = visible_pos as i64 + bounds.min.x;
+                                                    if x >= from && x <= to {
+                                                        cols.push(x);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        ColRange::ColumnToEnd(col) => {
+                            // Try to find the column in visible_columns first
+                            let start = if let Some(visible_pos) =
+                                table.visible_columns.iter().position(|c| c == col)
+                            {
+                                visible_pos
+                            } else {
+                                // If not in visible_columns, find its position in all_columns
+                                if let Some(all_pos) =
+                                    table.all_columns.iter().position(|c| c == col)
+                                {
+                                    // Find the first visible column after this position
+                                    match table.visible_columns.iter().position(|c| {
+                                        table
+                                            .all_columns
+                                            .iter()
+                                            .position(|ac| ac == c)
+                                            .map_or(false, |pos| pos >= all_pos)
+                                    }) {
+                                        Some(pos) => pos,
+                                        None => return, // No visible columns after this position
+                                    }
+                                } else {
+                                    return;
+                                }
+                            };
+
+                            // Add all visible columns from start position to the end
+                            for x in start..table.visible_columns.len() {
+                                let col_pos = x as i64 + bounds.min.x;
+                                if col_pos >= from && col_pos <= to {
+                                    cols.push(col_pos);
+                                }
+                            }
+                        }
+                    }
+                })
             }
-        });
+        }
 
         cols
     }
@@ -34,11 +126,31 @@ impl TableRef {
     ) -> Vec<i64> {
         let mut rows = vec![];
 
-        context.tables().for_each(|table| {
-            if table.sheet_id == sheet_id && table.table_name == self.table_name {
-                rows.extend(table.bounds.rows_range(from, to));
+        if let Some(table) = context.try_table(&self.table_name) {
+            if sheet_id == table.sheet_id {
+                let bounds = table.bounds;
+                if bounds.min.y > to || bounds.max.y < from {
+                    return rows;
+                }
+                match &self.row_range {
+                    RowRange::All => {
+                        let start = bounds.min.y.max(from);
+                        let end = bounds.max.y.min(to);
+                        rows.extend(start..=end);
+                    }
+                    RowRange::CurrentRow => {
+                        // this one doesn't make sense in this context
+                    }
+                    RowRange::Rows(ranges) => {
+                        for range in ranges {
+                            let start = range.start.coord.max(from);
+                            let end = range.end.coord.min(to);
+                            rows.extend(start..=end);
+                        }
+                    }
+                }
             }
-        });
+        }
 
         rows
     }
@@ -88,30 +200,40 @@ impl TableRef {
         for range in self.col_ranges.iter() {
             match range {
                 ColRange::Col(col) => {
-                    let Some(col) = table.column_names.iter().position(|c| c == col) else {
+                    let Some(col) = table.visible_columns.iter().position(|c| c == col) else {
                         return None;
                     };
-                    min_x = min_x.min(col as i64);
-                    max_x = max_x.max(col as i64);
+                    min_x = min_x.min(bounds.min.x + col as i64);
+                    max_x = max_x.max(bounds.min.x + col as i64);
                 }
                 ColRange::ColRange(col_range_start, col_range_end) => {
-                    let Some(start) = table.column_names.iter().position(|c| c == col_range_start)
+                    let Some(start) = table
+                        .visible_columns
+                        .iter()
+                        .position(|c| c == col_range_start)
                     else {
                         return None;
                     };
-                    let Some(end) = table.column_names.iter().position(|c| c == col_range_end)
+                    let Some(end) = table
+                        .visible_columns
+                        .iter()
+                        .position(|c| c == col_range_end)
                     else {
                         return None;
                     };
-                    min_x = min_x.min(start as i64).min(end as i64);
-                    max_x = max_x.max(start as i64).max(end as i64);
+                    min_x = min_x
+                        .min(bounds.min.x + start as i64)
+                        .min(bounds.min.x + end as i64);
+                    max_x = max_x
+                        .max(bounds.min.x + start as i64)
+                        .max(bounds.min.x + end as i64);
                 }
                 ColRange::ColumnToEnd(col) => {
-                    let Some(start) = table.column_names.iter().position(|c| c == col) else {
+                    let Some(start) = table.visible_columns.iter().position(|c| c == col) else {
                         return None;
                     };
-                    min_x = min_x.min(start as i64);
-                    max_x = max_x.max(table.column_names.len() as i64);
+                    min_x = min_x.min(bounds.min.x + start as i64);
+                    max_x = min_x.max(bounds.min.x + table.visible_columns.len() as i64);
                 }
             }
         }
@@ -154,6 +276,8 @@ impl TableRef {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
+    use crate::a1::CellRefCoord;
+
     use super::*;
 
     fn setup_test_context() -> (A1Context, SheetId) {
@@ -164,6 +288,22 @@ mod tests {
             sheet_id,
             "test_table",
             &["A", "B", "C"],
+            None,
+            Rect::test_a1("A1:C3"),
+        );
+
+        (context, sheet_id)
+    }
+
+    fn setup_test_context_with_hidden_columns() -> (A1Context, SheetId) {
+        let sheet_id = SheetId::test();
+
+        let mut context = A1Context::default();
+        context.table_map.test_insert(
+            sheet_id,
+            "test_table",
+            &["A", "C"],
+            Some(&["A", "B", "C"]),
             Rect::test_a1("A1:C3"),
         );
 
@@ -187,6 +327,23 @@ mod tests {
     }
 
     #[test]
+    fn test_selected_cols_hidden_columns() {
+        let (context, sheet_id) = setup_test_context_with_hidden_columns();
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_ranges: vec![ColRange::Col("C".to_string())],
+            row_range: RowRange::All,
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        let cols = table_ref.selected_cols(1, 3, sheet_id, &context);
+
+        // C should be 2 since B is hidden
+        assert_eq!(cols, vec![2]);
+    }
+
+    #[test]
     fn test_selected_rows() {
         let (context, sheet_id) = setup_test_context();
         let table_ref = TableRef {
@@ -202,78 +359,88 @@ mod tests {
         assert_eq!(rows, vec![1, 2]);
     }
 
-    // #[test]
-    // fn test_is_multi_cursor() {
-    //     let (context, _) = setup_test_context();
+    #[test]
+    fn test_is_multi_cursor() {
+        let (context, _) = setup_test_context();
 
-    //     // Single column, single row
-    //     let table_ref = TableRef {
-    //         table_name: "test_table".to_string(),
-    //         col_ranges: vec![ColRange::Col("A".to_string())],
-    //         row_range: RowRange::CurrentRow,
-    //     };
-    //     assert!(!table_ref.is_multi_cursor(&context));
+        // Single column, single row
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_ranges: vec![ColRange::Col("A".to_string())],
+            row_range: RowRange::CurrentRow,
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        assert!(!table_ref.is_multi_cursor(&context));
 
-    //     // Multiple columns
-    //     let table_ref = TableRef {
-    //         table_name: "test_table".to_string(),
-    //         col_ranges: vec![
-    //             ColRange::Col("A".to_string()),
-    //             ColRange::Col("B".to_string()),
-    //         ],
-    //         row_range: RowRange::CurrentRow,
-    //     };
-    //     assert!(table_ref.is_multi_cursor(&context));
+        // Multiple columns
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_ranges: vec![
+                ColRange::Col("A".to_string()),
+                ColRange::Col("B".to_string()),
+            ],
+            row_range: RowRange::CurrentRow,
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        assert!(table_ref.is_multi_cursor(&context));
 
-    //     // Multiple rows
-    //     let table_ref = TableRef {
-    //         table_name: "test_table".to_string(),
-    //         col_ranges: vec![ColRange::Col("A".to_string())],
-    //         row_range: RowRange::Rows(vec![
-    //             RowRangeEntry {
-    //                 start: RowRangeValue { coord: 0 },
-    //                 end: RowRangeValue { coord: 1 },
-    //             },
-    //             RowRangeEntry {
-    //                 start: RowRangeValue { coord: 2 },
-    //                 end: RowRangeValue { coord: 2 },
-    //             },
-    //         ]),
-    //     };
-    //     assert!(table_ref.is_multi_cursor(&context));
-    // }
+        // Multiple rows
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_ranges: vec![ColRange::Col("A".to_string())],
+            row_range: RowRange::Rows(vec![
+                RowRangeEntry {
+                    start: CellRefCoord::new_rel(0),
+                    end: CellRefCoord::new_rel(1),
+                },
+                RowRangeEntry {
+                    start: CellRefCoord::new_rel(2),
+                    end: CellRefCoord::new_rel(2),
+                },
+            ]),
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        assert!(table_ref.is_multi_cursor(&context));
+    }
 
-    // #[test]
-    // fn test_intersect_rect() {
-    //     let (context, _) = setup_test_context();
-    //     let table_ref = TableRef {
-    //         table_name: "test_table".to_string(),
-    //         col_ranges: vec![ColRange::Col("A".to_string())],
-    //         row_range: RowRange::All,
-    //     };
+    #[test]
+    fn test_intersect_rect() {
+        let (context, _) = setup_test_context();
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_ranges: vec![ColRange::Col("A".to_string())],
+            row_range: RowRange::All,
+            data: true,
+            headers: false,
+            totals: false,
+        };
 
-    //     // Intersecting rectangle
-    //     assert!(table_ref.intersect_rect(Rect::new(0, 0, 1, 1), &context));
+        // Intersecting rectangle
+        assert!(table_ref.intersect_rect(Rect::test_a1("A1:B2"), &context));
 
-    //     // Non-intersecting rectangle
-    //     assert!(!table_ref.intersect_rect(Rect::new(10, 10, 11, 11), &context));
-    // }
+        // Non-intersecting rectangle
+        assert!(!table_ref.intersect_rect(Rect::new(10, 10, 11, 11), &context));
+    }
 
-    // #[test]
-    // fn test_to_largest_rect() {
-    //     let (context, _) = setup_test_context();
-    //     let table_ref = TableRef {
-    //         table_name: "test_table".to_string(),
-    //         col_ranges: vec![ColRange::ColRange("A".to_string(), "B".to_string())],
-    //         row_range: RowRange::All,
-    //     };
+    #[test]
+    fn test_to_largest_rect() {
+        let (context, _) = setup_test_context();
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_ranges: vec![ColRange::ColRange("A".to_string(), "B".to_string())],
+            row_range: RowRange::All,
+            data: true,
+            headers: false,
+            totals: false,
+        };
 
-    //     let rect = table_ref.to_largest_rect(0, &context);
-    //     assert!(rect.is_some());
-    //     let rect = rect.unwrap();
-    //     assert_eq!(rect.min.x, 0); // Column A
-    //     assert_eq!(rect.max.x, 1); // Column B
-    //     assert_eq!(rect.min.y, 0); // First row
-    //     assert_eq!(rect.max.y, 2); // Last row
-    // }
+        let rect = table_ref.to_largest_rect(1, &context);
+        assert_eq!(rect.unwrap(), Rect::test_a1("A1:B3"));
+    }
 }

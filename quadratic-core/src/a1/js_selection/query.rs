@@ -157,7 +157,7 @@ impl JsSelection {
             return vec![];
         };
         self.selection
-            .selected_column_ranges(from as i64, to as i64, self.sheet_id, &context)
+            .selected_column_ranges(from as i64, to as i64, self.selection.sheet_id, &context)
             .iter()
             .map(|c| *c as u32)
             .collect()
@@ -170,7 +170,7 @@ impl JsSelection {
             return vec![];
         };
         self.selection
-            .selected_row_ranges(from as i64, to as i64, self.sheet_id, &context)
+            .selected_row_ranges(from as i64, to as i64, self.selection.sheet_id, &context)
             .iter()
             .map(|c| *c as u32)
             .collect()
