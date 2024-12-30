@@ -7,8 +7,8 @@ use crate::{grid::SheetId, Pos, Rect};
 
 use super::{A1Context, A1Error, RefRangeBounds, TableRef, UNBOUNDED};
 
-pub mod cell_ref_col_row;
-pub mod cell_ref_query;
+mod col_row;
+mod query;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Hash, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]

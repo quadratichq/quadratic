@@ -4,11 +4,11 @@ use ts_rs::TS;
 use super::{A1Context, A1Error, CellRefRange, RefRangeBounds, SheetCellRefRange, TableRef};
 use crate::{grid::SheetId, selection::OldSelection, Pos, SheetPos, SheetRect};
 
-pub mod a1_selection_exclude;
-pub mod a1_selection_mutate;
-pub mod a1_selection_query;
-pub mod a1_selection_select;
-pub mod a1_selection_table;
+mod exclude;
+mod mutate;
+mod query;
+mod select;
+mod table;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
