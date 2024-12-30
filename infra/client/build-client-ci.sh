@@ -20,6 +20,9 @@ source "$HOME/.cargo/env"
 echo 'Installing wasm-pack...'
 curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
+echo 'Installing wasm32-unknown-unknown target...'
+rustup target add wasm32-unknown-unknown
+
 # Start parallel builds
 (
   # Task 1: Install dependencies

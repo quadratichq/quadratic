@@ -41,7 +41,7 @@ RUN echo 'Installing wasm-pack...' && curl https://rustwasm.github.io/wasm-pack/
 RUN echo 'wasm-pack version:' && wasm-pack --version
 
 # Install wasm32-unknown-unknown target
-RUN rustup target add wasm32-unknown-unknown
+RUN echo 'Installing wasm32-unknown-unknown target...' && rustup target add wasm32-unknown-unknown
 
 WORKDIR /quadratic
 
@@ -79,7 +79,7 @@ RUN echo 'Installing wasm-pack...' && curl https://rustwasm.github.io/wasm-pack/
 RUN echo 'wasm-pack version:' && wasm-pack --version
 
 # Install wasm32-unknown-unknown target
-RUN rustup target add wasm32-unknown-unknown
+RUN echo 'Installing wasm32-unknown-unknown target...' && rustup target add wasm32-unknown-unknown
 
 WORKDIR /quadratic
 
@@ -115,7 +115,7 @@ RUN echo 'Installing wasm-pack...' && curl https://rustwasm.github.io/wasm-pack/
 RUN echo 'wasm-pack version:' && wasm-pack --version
 
 # Install wasm32-unknown-unknown target
-RUN rustup target add wasm32-unknown-unknown
+RUN echo 'Installing wasm32-unknown-unknown target...' && rustup target add wasm32-unknown-unknown
 
 WORKDIR /quadratic
 
