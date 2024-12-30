@@ -9,10 +9,10 @@ services:
       - "6379:6379"
       - "8001:8001"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: "5s"
     volumes:
-      - redis-data:/data
+      - ./docker/redis/data:/data:rw
     profiles:
       - base
       - dev
@@ -30,12 +30,12 @@ services:
       POSTGRES_PASSWORD: postgres
       ADDITIONAL_DATABASES: kratos
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d postgres" ]
       interval: 10s
       timeout: 5s
       retries: 5
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/data:/var/lib/postgresql/data:rw
       - ./docker/postgres/scripts:/docker-entrypoint-initdb.d
     profiles:
       - base
@@ -63,8 +63,8 @@ services:
       - EXTRA_CORS_ALLOWED_ORIGINS=*
     volumes:
       - "./docker/localstack/scripts/init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh" # ready hook
-      - "./docker/localstack/data:/var/lib/localstack"
-      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./docker/localstack/data:/var/lib/localstack:rw"
+      - "/var/run/docker.sock:/var/run/docker.sock:rw"
     profiles:
       - base
     networks:
@@ -91,7 +91,7 @@ services:
       sh -c "/client/scripts/replace_env_vars.sh &&
             nginx -g \"daemon off;\""
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://host.docker.internal:3000/ || exit 1"]
+      test: [ "CMD-SHELL", "curl -f http://host.docker.internal:3000/ || exit 1" ]
       interval: 10s
       timeout: 5s
     restart: "always"
@@ -225,7 +225,7 @@ services:
     ports:
       - "3002:3002"
     volumes:
-      - ./docker/file-storage:/file-storage
+      - ./docker/file-storage:/file-storage:rw
     depends_on:
       redis:
         condition: service_healthy
@@ -336,11 +336,7 @@ services:
       - "3002:3002"
       - "3003:3003"
     volumes:
-      - quadratic-dev-cache:/root/.cache
-      - quadratic-dev-cargo:/root/.cargo
-      - quadratic-dev-node_modules:/quadratic/node_modules
-      - quadratic-dev-target:/quadratic/target
-      - ./:/quadratic
+      - ./:/quadratic:rw
     depends_on:
       redis:
         condition: service_healthy
@@ -466,7 +462,7 @@ services:
       PGUSER: user
       POSTGRES_PASSWORD: password
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d postgres-connection"]
+      test: [ "CMD-SHELL", "pg_isready -U user -d postgres-connection" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -490,7 +486,7 @@ services:
       MYSQL_PASSWORD: password
       MYSQL_ROOT_PASSWORD: password
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -517,23 +513,7 @@ services:
       - mssql-connection-data:/var/opt/mssql
       - ./docker/mssql-connection/scripts:/docker-entrypoint-initdb.d/
     healthcheck:
-      test:
-        [
-          "CMD",
-          "/opt/mssql-tools18/bin/sqlcmd",
-          "-S",
-          "localhost",
-          "-U",
-          "sa",
-          "-P",
-          "yourStrong(!)Password",
-          "-Q",
-          "SELECT 1",
-          "-C",
-          "-N",
-          "-t",
-          "30",
-        ]
+      test: [ "CMD", "/opt/mssql-tools18/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "yourStrong(!)Password", "-Q", "SELECT 1", "-C", "-N", "-t", "30" ]
       interval: 10s
       timeout: 5s
       start_period: 30s
@@ -546,24 +526,6 @@ services:
       - quadratic-connection-db-mssql
 
 volumes:
-  redis-data:
-    name: redis-data
-    driver: local
-  postgres-data:
-    name: postgres-data
-    driver: local
-  quadratic-dev-cache:
-    name: quadratic-dev-cache
-    driver: local
-  quadratic-dev-cargo:
-    name: quadratic-dev-cargo
-    driver: local
-  quadratic-dev-node_modules:
-    name: quadratic-dev-node_modules
-    driver: local
-  quadratic-dev-target:
-    name: quadratic-dev-target
-    driver: local
   postgres-connection-data:
     name: postgres-connection-data
     driver: local
