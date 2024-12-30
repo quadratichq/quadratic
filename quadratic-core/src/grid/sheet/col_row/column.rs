@@ -214,7 +214,9 @@ impl Sheet {
         // mark hashes of new columns dirty
         transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
 
-        let changed_selections = self.validations.remove_column(transaction, self.id, column);
+        let changed_selections =
+            self.validations
+                .remove_column(transaction, self.id, column, &self.a1_context());
         transaction.add_dirty_hashes_from_selections(self, changed_selections);
     }
 
@@ -295,7 +297,9 @@ impl Sheet {
         // mark hashes of new columns dirty
         transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
 
-        let changed_selections = self.validations.insert_column(transaction, self.id, column);
+        let changed_selections =
+            self.validations
+                .insert_column(transaction, self.id, column, &self.a1_context());
         transaction.add_dirty_hashes_from_selections(self, changed_selections);
 
         let changes = self.offsets.insert_column(column);

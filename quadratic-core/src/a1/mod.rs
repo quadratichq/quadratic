@@ -19,7 +19,7 @@ pub use cell_ref_end::*;
 pub use cell_ref_range::*;
 pub use column_names::*;
 pub use error::*;
-pub(crate) use ref_range_bounds::*;
+pub use ref_range_bounds::*;
 pub use sheet_cell_ref_range::*;
 pub use table_ref::*;
 

@@ -1,4 +1,5 @@
-use crate::{CellRefCoord, CellRefRangeEnd, Pos, RefRangeBounds, UNBOUNDED};
+use crate::a1::{CellRefCoord, CellRefRangeEnd, RefRangeBounds, UNBOUNDED};
+use crate::Pos;
 
 use super::{A1Selection, CellRefRange};
 

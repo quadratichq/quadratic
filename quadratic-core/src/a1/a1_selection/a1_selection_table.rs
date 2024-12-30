@@ -1,4 +1,4 @@
-use crate::TableRef;
+use crate::a1::TableRef;
 
 use super::*;
 
@@ -22,7 +22,7 @@ impl A1Selection {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
-    use crate::RefRangeBounds;
+    use crate::a1::RefRangeBounds;
 
     use super::*;
 

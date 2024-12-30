@@ -1,4 +1,4 @@
-use crate::{Pos, UNBOUNDED};
+use crate::{a1::UNBOUNDED, Pos};
 
 use super::CellRefRange;
 

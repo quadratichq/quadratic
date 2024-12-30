@@ -1,7 +1,8 @@
 use std::collections::HashSet;
 
 use crate::{
-    grid::{Sheet, SheetId, TableMap},
+    a1::A1Context,
+    grid::{Sheet, SheetId},
     Pos, Rect,
 };
 
@@ -10,14 +11,14 @@ use super::{A1Selection, CellRefRange};
 impl A1Selection {
     // Returns whether the selection is one cell or multiple cells (either a
     // rect, column, row, or all)
-    pub fn is_multi_cursor(&self, sheet_id: SheetId, table_map: &TableMap) -> bool {
+    pub fn is_multi_cursor(&self, context: &A1Context) -> bool {
         if self.ranges.len() > 1 {
             return true;
         }
         if let Some(last_range) = self.ranges.last() {
             match last_range {
                 CellRefRange::Sheet { range } => range.is_multi_cursor(),
-                CellRefRange::Table { range } => range.is_multi_cursor(sheet_id, table_map),
+                CellRefRange::Table { range } => range.is_multi_cursor(context),
             }
         } else {
             false
@@ -54,7 +55,7 @@ impl A1Selection {
 
     /// Returns the largest rectangle that can be formed by the selection,
     /// ignoring any ranges that extend infinitely.
-    pub fn largest_rect_finite(&self, table_map: &TableMap) -> Rect {
+    pub fn largest_rect_finite(&self, context: &A1Context) -> Rect {
         let mut rect = Rect::single_pos(self.cursor);
         self.ranges.iter().for_each(|range| match range {
             CellRefRange::Sheet { range } => {
@@ -68,7 +69,7 @@ impl A1Selection {
                 }
             }
             CellRefRange::Table { range } => {
-                if let Some(table_rect) = range.to_largest_rect(self.cursor.y, table_map) {
+                if let Some(table_rect) = range.to_largest_rect(self.cursor.y, context) {
                     rect = rect.union(&table_rect);
                 }
             }
@@ -77,8 +78,8 @@ impl A1Selection {
     }
 
     /// Returns rectangle in case of single finite range selection having more than one cell.
-    pub fn single_rect(&self, sheet_id: SheetId, table_map: &TableMap) -> Option<Rect> {
-        if self.ranges.len() != 1 || !self.is_multi_cursor(sheet_id, table_map) {
+    pub fn single_rect(&self, context: &A1Context) -> Option<Rect> {
+        if self.ranges.len() != 1 || !self.is_multi_cursor(context) {
             None
         } else {
             self.ranges.first().and_then(|range| range.to_rect())
@@ -87,8 +88,8 @@ impl A1Selection {
 
     /// Returns rectangle in case of single finite range selection,
     /// otherwise returns a rectangle that contains the cursor.
-    pub fn single_rect_or_cursor(&self, sheet_id: SheetId, table_map: &TableMap) -> Option<Rect> {
-        if !self.is_multi_cursor(sheet_id, table_map) {
+    pub fn single_rect_or_cursor(&self, context: &A1Context) -> Option<Rect> {
+        if !self.is_multi_cursor(context) {
             Some(Rect::single_pos(self.cursor))
         } else if self.ranges.len() != 1 {
             None
@@ -191,13 +192,13 @@ impl A1Selection {
         from: i64,
         to: i64,
         sheet_id: SheetId,
-        table_map: &TableMap,
+        context: &A1Context,
     ) -> Vec<i64> {
         let mut columns = HashSet::new();
         self.ranges.iter().for_each(|range| {
             columns.extend(
                 range
-                    .selected_columns(from, to, sheet_id, table_map)
+                    .selected_columns(from, to, sheet_id, context)
                     .iter()
                     .filter(|c| c >= &&from && c <= &&to),
             );
@@ -249,12 +250,12 @@ impl A1Selection {
         from: i64,
         to: i64,
         sheet_id: SheetId,
-        table_map: &TableMap,
+        context: &A1Context,
     ) -> Vec<i64> {
         let mut rows = HashSet::new();
-        self.ranges.iter().for_each(|range| {
-            rows.extend(range.selected_rows(from, to, sheet_id, table_map).iter())
-        });
+        self.ranges
+            .iter()
+            .for_each(|range| rows.extend(range.selected_rows(from, to, sheet_id, context).iter()));
 
         let mut rows = rows.into_iter().collect::<Vec<_>>();
         rows.sort_unstable();
@@ -335,9 +336,9 @@ mod tests {
     #[test]
     fn test_largest_rect() {
         let selection = A1Selection::test_a1("A1,B1:D2,E:G,2:3,5:7,F6:G8,4");
-        let table_map = TableMap::default();
+        let context = A1Context::default();
         assert_eq!(
-            selection.largest_rect_finite(&table_map),
+            selection.largest_rect_finite(&context),
             Rect::new(1, 1, 7, 8)
         );
     }
@@ -345,31 +346,30 @@ mod tests {
     #[test]
     fn test_largest_rect_finite() {
         let selection = A1Selection::test_a1("A1,B1:D2,E:G,2:3,5:7,F6:G8,4");
-        let table_map = TableMap::default();
+        let context = A1Context::default();
         assert_eq!(
-            selection.largest_rect_finite(&table_map),
+            selection.largest_rect_finite(&context),
             Rect::new(1, 1, 7, 8)
         );
     }
 
     #[test]
     fn test_is_multi_cursor() {
-        let sheet_id = SheetId::test();
-        let table_map = TableMap::default();
+        let context = A1Context::default();
         let selection = A1Selection::test_a1("A1,B2,C3");
-        assert!(selection.is_multi_cursor(sheet_id, &table_map));
+        assert!(selection.is_multi_cursor(&context));
 
         let selection = A1Selection::test_a1("A1,B1:C2");
-        assert!(selection.is_multi_cursor(sheet_id, &table_map));
+        assert!(selection.is_multi_cursor(&context));
 
         let selection = A1Selection::test_a1("A");
-        assert!(selection.is_multi_cursor(sheet_id, &table_map));
+        assert!(selection.is_multi_cursor(&context));
 
         let selection = A1Selection::test_a1("1");
-        assert!(selection.is_multi_cursor(sheet_id, &table_map));
+        assert!(selection.is_multi_cursor(&context));
 
         let selection = A1Selection::test_a1("A1");
-        assert!(!selection.is_multi_cursor(sheet_id, &table_map));
+        assert!(!selection.is_multi_cursor(&context));
     }
 
     #[test]
@@ -422,28 +422,28 @@ mod tests {
     #[test]
     fn test_selected_column_ranges() {
         let sheet_id = SheetId::test();
-        let table_map = TableMap::default();
+        let context = A1Context::default();
         let selection = A1Selection::test_a1("A1,B2,C3,D4:E5,F6:G7,H8");
         assert_eq!(
-            selection.selected_column_ranges(1, 10, sheet_id, &table_map),
+            selection.selected_column_ranges(1, 10, sheet_id, &context),
             vec![1, 8]
         );
 
         let selection = A1Selection::test_a1("A1,B2,D4:E5,F6:G7,H8");
         assert_eq!(
-            selection.selected_column_ranges(1, 10, sheet_id, &table_map),
+            selection.selected_column_ranges(1, 10, sheet_id, &context),
             vec![1, 2, 4, 8]
         );
 
         let selection = A1Selection::test_a1("A1,B2,D4:E5,F6:G7,H8");
         assert_eq!(
-            selection.selected_column_ranges(2, 5, sheet_id, &table_map),
+            selection.selected_column_ranges(2, 5, sheet_id, &context),
             vec![2, 2, 4, 5]
         );
 
         let selection = A1Selection::test_a1("C:A");
         assert_eq!(
-            selection.selected_column_ranges(1, 10, sheet_id, &table_map),
+            selection.selected_column_ranges(1, 10, sheet_id, &context),
             vec![1, 3]
         );
     }
@@ -451,22 +451,22 @@ mod tests {
     #[test]
     fn test_selected_row_ranges() {
         let sheet_id = SheetId::test();
-        let table_map = TableMap::default();
+        let context = A1Context::default();
         let selection = A1Selection::test_a1("A1,B2,C3,D4:E5,F6:G7,H8");
         assert_eq!(
-            selection.selected_row_ranges(1, 10, sheet_id, &table_map),
+            selection.selected_row_ranges(1, 10, sheet_id, &context),
             vec![1, 8]
         );
 
         let selection = A1Selection::test_a1("A1,B2,D4:E5,F6:G7,H8");
         assert_eq!(
-            selection.selected_row_ranges(1, 10, sheet_id, &table_map),
+            selection.selected_row_ranges(1, 10, sheet_id, &context),
             vec![1, 2, 4, 8]
         );
 
         let selection = A1Selection::test_a1("A1,B2,D4:E5,F6:G7,H8");
         assert_eq!(
-            selection.selected_row_ranges(2, 5, sheet_id, &table_map),
+            selection.selected_row_ranges(2, 5, sheet_id, &context),
             vec![2, 2, 4, 5]
         );
     }
@@ -517,25 +517,25 @@ mod tests {
     #[test]
     fn test_single_rect_or_cursor() {
         let sheet_id = SheetId::test();
-        let table_map = TableMap::default();
+        let context = A1Context::default();
         assert_eq!(
-            A1Selection::test_a1("A1,B2,C3").single_rect_or_cursor(sheet_id, &table_map),
+            A1Selection::test_a1("A1,B2,C3").single_rect_or_cursor(&context),
             None
         );
         assert_eq!(
-            A1Selection::test_a1("A1:D5").single_rect_or_cursor(sheet_id, &table_map),
+            A1Selection::test_a1("A1:D5").single_rect_or_cursor(&context),
             Some(Rect::new(1, 1, 4, 5))
         );
         assert_eq!(
-            A1Selection::test_a1("A1:D5, A1").single_rect_or_cursor(sheet_id, &table_map),
+            A1Selection::test_a1("A1:D5, A1").single_rect_or_cursor(&context),
             None
         );
         assert_eq!(
-            A1Selection::test_a1("A").single_rect_or_cursor(sheet_id, &table_map),
+            A1Selection::test_a1("A").single_rect_or_cursor(&context),
             None
         );
         assert_eq!(
-            A1Selection::test_a1("2:5").single_rect_or_cursor(sheet_id, &table_map),
+            A1Selection::test_a1("2:5").single_rect_or_cursor(&context),
             None
         );
     }

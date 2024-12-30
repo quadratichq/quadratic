@@ -228,7 +228,9 @@ impl Sheet {
         // mark hashes of new rows dirty
         transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
 
-        let changed_selections = self.validations.remove_row(transaction, self.id, row);
+        let changed_selections =
+            self.validations
+                .remove_row(transaction, self.id, row, &self.a1_context());
         transaction.add_dirty_hashes_from_selections(self, changed_selections);
     }
 
@@ -320,7 +322,9 @@ impl Sheet {
         // mark hashes of new rows dirty
         transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
 
-        let changed_selections = self.validations.insert_row(transaction, self.id, row);
+        let changed_selections =
+            self.validations
+                .insert_row(transaction, self.id, row, &self.a1_context());
         transaction.add_dirty_hashes_from_selections(self, changed_selections);
 
         let changes = self.offsets.insert_row(row);

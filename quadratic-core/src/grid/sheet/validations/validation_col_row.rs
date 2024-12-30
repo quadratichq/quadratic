@@ -1,5 +1,5 @@
 use crate::{
-    a1::A1Selection,
+    a1::{A1Context, A1Selection},
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
@@ -17,12 +17,13 @@ impl Validations {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         column: i64,
+        context: &A1Context,
     ) -> Vec<A1Selection> {
         let mut reverse_operations = Vec::new();
         let mut changed_selections = vec![];
         self.validations.retain_mut(|validation| {
             let original_selection = validation.selection.clone();
-            if validation.selection.removed_column(column) {
+            if validation.selection.removed_column(column, context) {
                 changed_selections.extend(transaction.validation_changed(
                     sheet_id,
                     validation,
@@ -52,12 +53,13 @@ impl Validations {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         row: i64,
+        context: &A1Context,
     ) -> Vec<A1Selection> {
         let mut changed_selections = vec![];
         let mut reverse_operations = Vec::new();
         self.validations.retain_mut(|validation| {
             let original_selection = validation.selection.clone();
-            if validation.selection.removed_row(row) {
+            if validation.selection.removed_row(row, context) {
                 changed_selections.extend(transaction.validation_changed(
                     sheet_id,
                     validation,
@@ -86,13 +88,14 @@ impl Validations {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         column: i64,
+        context: &A1Context,
     ) -> Vec<A1Selection> {
         let mut changed_selections = vec![];
         let mut reverse_operations = Vec::new();
 
         self.validations.iter_mut().for_each(|validation| {
             let original_selection = validation.selection.clone();
-            if validation.selection.inserted_column(column) {
+            if validation.selection.inserted_column(column, context) {
                 changed_selections.extend(transaction.validation_changed(
                     sheet_id,
                     validation,
@@ -119,13 +122,14 @@ impl Validations {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         row: i64,
+        context: &A1Context,
     ) -> Vec<A1Selection> {
         let mut changed_selections = vec![];
         let mut reverse_operations = Vec::new();
 
         self.validations.iter_mut().for_each(|validation| {
             let original_selection = validation.selection.clone();
-            if validation.selection.inserted_row(row) {
+            if validation.selection.inserted_row(row, context) {
                 changed_selections.extend(transaction.validation_changed(
                     sheet_id,
                     validation,
@@ -161,6 +165,7 @@ mod tests {
 
     #[test]
     fn test_remove_column() {
+        let context = A1Context::default();
         let mut validations = Validations::default();
 
         // rect and columns to be updated
@@ -197,7 +202,7 @@ mod tests {
         let sheet_id = SheetId::test();
 
         // remove column 2
-        validations.remove_column(&mut transaction, sheet_id, 2);
+        validations.remove_column(&mut transaction, sheet_id, 2, &context);
         assert_eq!(transaction.reverse_operations.len(), 2);
         assert_eq!(validations.validations.len(), 2);
 
@@ -214,6 +219,7 @@ mod tests {
 
     #[test]
     fn test_remove_row() {
+        let context = A1Context::default();
         let mut validations = Validations::default();
 
         // rect and columns to be updated
@@ -249,7 +255,7 @@ mod tests {
         // remove row 2
         let mut transaction = PendingTransaction::default();
         let sheet_id = SheetId::test();
-        validations.remove_row(&mut transaction, sheet_id, 2);
+        validations.remove_row(&mut transaction, sheet_id, 2, &context);
         assert_eq!(transaction.reverse_operations.len(), 2);
         assert_eq!(validations.validations.len(), 2);
 
@@ -265,6 +271,7 @@ mod tests {
 
     #[test]
     fn inserted_column() {
+        let context = A1Context::default();
         let mut validations = Validations::default();
 
         // rect and rows to be updated
@@ -290,7 +297,7 @@ mod tests {
         // insert column 2
         let mut transaction = PendingTransaction::default();
         let sheet_id = SheetId::test();
-        validations.insert_column(&mut transaction, sheet_id, 2);
+        validations.insert_column(&mut transaction, sheet_id, 2, &context);
         assert_eq!(transaction.reverse_operations.len(), 1);
 
         assert_eq!(validations.validations.len(), 2);
@@ -307,6 +314,7 @@ mod tests {
 
     #[test]
     fn inserted_row() {
+        let context = A1Context::default();
         let mut validations = Validations::default();
 
         // rect and columns to be updated
@@ -332,7 +340,7 @@ mod tests {
         // insert row 2
         let mut transaction = PendingTransaction::default();
         let sheet_id = SheetId::test();
-        validations.insert_row(&mut transaction, sheet_id, 2);
+        validations.insert_row(&mut transaction, sheet_id, 2, &context);
         assert_eq!(transaction.reverse_operations.len(), 1);
 
         assert_eq!(validations.validations.len(), 2);

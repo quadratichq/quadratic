@@ -6,11 +6,11 @@ use ts_rs::TS;
 use super::{range_might_intersect, A1Error, CellRefRangeEnd};
 use crate::{Pos, Rect};
 
-pub mod contains;
-pub mod create;
-pub mod intersects;
-pub mod query;
-pub mod translate;
+mod contains;
+mod create;
+mod intersects;
+mod query;
+mod translate;
 
 #[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]

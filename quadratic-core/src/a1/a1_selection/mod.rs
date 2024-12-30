@@ -366,7 +366,7 @@ impl A1Selection {
     /// SheetId.
     #[cfg(test)]
     pub fn test_to_string(&self) -> String {
-        self.to_string(Some(SheetId::TEST), &std::collections::HashMap::new())
+        self.to_string(Some(SheetId::TEST), &A1Context::default())
     }
 }
 
@@ -382,8 +382,6 @@ fn cursor_pos_from_last_range(last_range: &CellRefRange, context: &A1Context) ->
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
-    use std::collections::HashMap;
-
     use crate::Rect;
 
     use super::*;
@@ -841,7 +839,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1_sheet_id("A1:B2", &SheetId::new());
         let sel2 = A1Selection::test_a1_sheet_id("B2:C3", &SheetId::new());
         assert!(
-            !sel1.overlaps_a1_selection(&sel2, &context),
+            !sel1.overlaps_a1_selection(&sel2, 1, &context),
             "Different sheets should not overlap"
         );
 
@@ -849,7 +847,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("A1:B2");
         let sel2 = A1Selection::test_a1("C3:D4");
         assert!(
-            !sel1.overlaps_a1_selection(&sel2, &context),
+            !sel1.overlaps_a1_selection(&sel2, 1, &context),
             "Non-overlapping rectangles should not overlap"
         );
 
@@ -857,7 +855,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("A1:C3");
         let sel2 = A1Selection::test_a1("B2:D4");
         assert!(
-            sel1.overlaps_a1_selection(&sel2, &context),
+            sel1.overlaps_a1_selection(&sel2, 1, &context),
             "Overlapping rectangles should overlap"
         );
 
@@ -865,7 +863,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("A1:D4");
         let sel2 = A1Selection::test_a1("B2:C3");
         assert!(
-            sel1.overlaps_a1_selection(&sel2, &context),
+            sel1.overlaps_a1_selection(&sel2, 1, &context),
             "Nested rectangles should overlap"
         );
 
@@ -873,7 +871,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("A:C");
         let sel2 = A1Selection::test_a1("B:D");
         assert!(
-            sel1.overlaps_a1_selection(&sel2, &context),
+            sel1.overlaps_a1_selection(&sel2, 1, &context),
             "Overlapping columns should overlap"
         );
 
@@ -881,7 +879,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("A:B");
         let sel2 = A1Selection::test_a1("C:D");
         assert!(
-            !sel1.overlaps_a1_selection(&sel2, &context),
+            !sel1.overlaps_a1_selection(&sel2, 1, &context),
             "Non-overlapping columns should not overlap"
         );
 
@@ -889,7 +887,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("1:3");
         let sel2 = A1Selection::test_a1("2:4");
         assert!(
-            sel1.overlaps_a1_selection(&sel2, &context),
+            sel1.overlaps_a1_selection(&sel2, 1, &context),
             "Overlapping rows should overlap"
         );
 
@@ -897,7 +895,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("1:2");
         let sel2 = A1Selection::test_a1("3:4");
         assert!(
-            !sel1.overlaps_a1_selection(&sel2, &context),
+            !sel1.overlaps_a1_selection(&sel2, 1, &context),
             "Non-overlapping rows should not overlap"
         );
 
@@ -905,7 +903,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("A1:B2");
         let sel2 = A1Selection::test_a1("B2");
         assert!(
-            sel1.overlaps_a1_selection(&sel2, &context),
+            sel1.overlaps_a1_selection(&sel2, 1, &context),
             "Single cell should overlap with containing rectangle"
         );
 
@@ -913,7 +911,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("A1:C3,E1:G3");
         let sel2 = A1Selection::test_a1("B2:F2");
         assert!(
-            sel1.overlaps_a1_selection(&sel2, &context),
+            sel1.overlaps_a1_selection(&sel2, 1, &context),
             "Disjoint ranges should overlap when intersecting"
         );
 
@@ -921,7 +919,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("A1:B2,D1:E2");
         let sel2 = A1Selection::test_a1("F1:G2,H1:I2");
         assert!(
-            !sel1.overlaps_a1_selection(&sel2, &context),
+            !sel1.overlaps_a1_selection(&sel2, 1, &context),
             "Disjoint ranges should not overlap when separate"
         );
 
@@ -929,7 +927,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("A1:C3,E:G,2:4");
         let sel2 = A1Selection::test_a1("B2:D4,F:H,3:5");
         assert!(
-            sel1.overlaps_a1_selection(&sel2, &context),
+            sel1.overlaps_a1_selection(&sel2, 1, &context),
             "Complex selections should detect overlap correctly"
         );
 
@@ -937,7 +935,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("*");
         let sel2 = A1Selection::test_a1("B2:C3");
         assert!(
-            sel1.overlaps_a1_selection(&sel2, &context),
+            sel1.overlaps_a1_selection(&sel2, 1, &context),
             "All (*) should overlap with any selection"
         );
 
@@ -945,7 +943,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("2:4");
         let sel2 = A1Selection::test_a1("B2:C3");
         assert!(
-            sel1.overlaps_a1_selection(&sel2, &context),
+            sel1.overlaps_a1_selection(&sel2, 1, &context),
             "Row should overlap with intersecting rectangle"
         );
 
@@ -953,7 +951,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("B:D");
         let sel2 = A1Selection::test_a1("B2:C3");
         assert!(
-            sel1.overlaps_a1_selection(&sel2, &context),
+            sel1.overlaps_a1_selection(&sel2, 1, &context),
             "Column should overlap with intersecting rectangle"
         );
     }

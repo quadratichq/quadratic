@@ -49,7 +49,7 @@ impl JsSelection {
         let Ok(context) = serde_json::from_str::<A1Context>(context) else {
             return Err("Unable to parse context".to_string());
         };
-        Ok(self.selection.single_rect(self.sheet_id, &context))
+        Ok(self.selection.single_rect(&context))
     }
 
     #[wasm_bindgen(js_name = "getSingleRectangleOrCursor")]
@@ -57,9 +57,7 @@ impl JsSelection {
         let Ok(context) = serde_json::from_str::<A1Context>(context) else {
             return Err("Unable to parse context".to_string());
         };
-        Ok(self
-            .selection
-            .single_rect_or_cursor(self.sheet_id, &context))
+        Ok(self.selection.single_rect_or_cursor(&context))
     }
 
     #[wasm_bindgen(js_name = "contains")]
@@ -106,7 +104,9 @@ impl JsSelection {
         let Ok(context) = serde_json::from_str::<A1Context>(context) else {
             return Err("Unable to parse context".to_string());
         };
-        Ok(self.selection.overlaps_a1_selection(&selection, &context))
+        Ok(self
+            .selection
+            .overlaps_a1_selection(&selection, self.selection.cursor.y, &context))
     }
 
     #[wasm_bindgen(js_name = "bottomRightCell")]
@@ -151,18 +151,26 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "getSelectedColumnRanges")]
-    pub fn get_selected_column_ranges(&self, from: u32, to: u32) -> Vec<u32> {
+    pub fn get_selected_column_ranges(&self, from: u32, to: u32, context: &str) -> Vec<u32> {
+        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
+            dbgjs!("Unable to parse context in get_selected_column_ranges");
+            return vec![];
+        };
         self.selection
-            .selected_column_ranges(from as i64, to as i64, self.sheet_id, &self.table_map)
+            .selected_column_ranges(from as i64, to as i64, self.sheet_id, &context)
             .iter()
             .map(|c| *c as u32)
             .collect()
     }
 
     #[wasm_bindgen(js_name = "getSelectedRowRanges")]
-    pub fn get_selected_row_ranges(&self, from: u32, to: u32) -> Vec<u32> {
+    pub fn get_selected_row_ranges(&self, from: u32, to: u32, context: &str) -> Vec<u32> {
+        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
+            dbgjs!("Unable to parse context in get_selected_row_ranges");
+            return vec![];
+        };
         self.selection
-            .selected_row_ranges(from as i64, to as i64, self.sheet_id, &self.table_map)
+            .selected_row_ranges(from as i64, to as i64, self.sheet_id, &context)
             .iter()
             .map(|c| *c as u32)
             .collect()
@@ -179,23 +187,21 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "isMultiCursor")]
-    pub fn is_multi_cursor(&self, sheet_id: String, table_map: String) -> bool {
-        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
-            dbgjs!("Unable to parse sheet_id in isMultiCursor");
+    pub fn is_multi_cursor(&self, context: &str) -> bool {
+        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
+            dbgjs!("Unable to parse context in isMultiCursor");
             return false;
         };
-        let Ok(table_map) = serde_json::from_str::<TableMap>(&table_map) else {
-            dbgjs!("Unable to parse table_map in isMultiCursor");
-            return false;
-        };
-        self.selection.is_multi_cursor(sheet_id, &table_map)
+        self.selection.is_multi_cursor(&context)
     }
 
     #[wasm_bindgen(js_name = "toA1String")]
-    pub fn to_string(&self, default_sheet_id: String, sheet_map: &str) -> Result<String, String> {
-        let sheet_map =
-            serde_json::from_str::<SheetNameIdMap>(sheet_map).map_err(|e| e.to_string())?;
+    pub fn to_string(&self, default_sheet_id: String, context: &str) -> Result<String, String> {
+        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
+            dbgjs!("Unable to parse context in to_string");
+            return Err("Unable to parse context".to_string());
+        };
         let default_sheet_id = SheetId::from_str(&default_sheet_id).map_err(|e| e.to_string())?;
-        Ok(self.selection.to_string(Some(default_sheet_id), &sheet_map))
+        Ok(self.selection.to_string(Some(default_sheet_id), &context))
     }
 }

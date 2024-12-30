@@ -1,3 +1,5 @@
+// todo: move this to A1Selection
+
 //! Allow manipulation of A1Selection via JS rust calls.
 
 use std::str::FromStr;

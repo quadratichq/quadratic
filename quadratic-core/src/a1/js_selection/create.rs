@@ -3,6 +3,8 @@
 
 use wasm_bindgen::prelude::*;
 
+use crate::a1::A1Context;
+
 use super::*;
 
 impl Default for JsSelection {
@@ -19,29 +21,15 @@ impl Default for JsSelection {
 #[wasm_bindgen]
 impl JsSelection {
     #[wasm_bindgen(constructor)]
-    pub fn new(sheet_id: String, table_map: String) -> Self {
+    pub fn new(sheet_id: String) -> Self {
         let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
             dbgjs!("Unable to parse sheet_id in JsSelection::new");
-            return JsSelection::default();
-        };
-        let Ok(table_map) = serde_json::from_str::<TableMap>(&table_map) else {
-            dbgjs!("Unable to parse table_map in JsSelection::new");
             return JsSelection::default();
         };
         JsSelection {
             selection: A1Selection::from_xy(1, 1, sheet_id),
             sheet_id,
-            table_map,
         }
-    }
-
-    #[wasm_bindgen]
-    pub fn set_table_map(&mut self, table_map: String) {
-        let Ok(table_map) = serde_json::from_str::<TableMap>(&table_map) else {
-            dbgjs!("Unable to parse table_map in set_table_map");
-            return;
-        };
-        self.table_map = table_map;
     }
 
     /// Saves the selection to a JSON string.
@@ -83,18 +71,15 @@ pub fn rect_to_a1(rect: JsValue) -> Result<String, String> {
 pub fn to_selection(
     a1: &str,
     default_sheet_id: &str,
-    sheet_map: &str,
-    table_map: &str,
+    context: &str,
 ) -> Result<JsSelection, String> {
     let default_sheet_id = SheetId::from_str(default_sheet_id).map_err(|e| e.to_string())?;
-    let sheet_map = serde_json::from_str::<SheetNameIdMap>(sheet_map).map_err(|e| e.to_string())?;
-    let table_map = serde_json::from_str::<TableMap>(table_map).map_err(|e| e.to_string())?;
-    let selection = A1Selection::parse(a1, &default_sheet_id, &sheet_map, &table_map)
+    let context = serde_json::from_str::<A1Context>(context).map_err(|e| e.to_string())?;
+    let selection = A1Selection::parse(a1, &default_sheet_id, &context)
         .map_err(|e| serde_json::to_string(&e).unwrap_or(e.to_string()))?;
     Ok(JsSelection {
         selection,
         sheet_id: default_sheet_id,
-        table_map,
     })
 }
 
@@ -104,7 +89,6 @@ pub fn new_single_selection(sheet_id: String, x: u32, y: u32) -> Result<JsSelect
     Ok(JsSelection {
         selection: A1Selection::from_xy(x as i64, y as i64, sheet_id),
         sheet_id,
-        table_map: TableMap::default(),
     })
 }
 
@@ -120,7 +104,6 @@ pub fn new_rect_selection(
     let selection = JsSelection {
         selection: A1Selection::from_rect(SheetRect::new(x0, y0, x1, y1, sheet_id)),
         sheet_id,
-        table_map: TableMap::default(),
     };
     selection.save()
 }
@@ -131,7 +114,6 @@ pub fn new_all_selection(sheet_id: String) -> Result<String, String> {
     let selection = JsSelection {
         selection: A1Selection::all(sheet_id),
         sheet_id,
-        table_map: TableMap::default(),
     };
     selection.save()
 }
@@ -142,22 +124,16 @@ pub fn a1_selection_string_to_selection(a1_selection: &str) -> Result<String, St
     let selection = JsSelection {
         sheet_id: selection.sheet_id,
         selection,
-        table_map: TableMap::default(),
     };
     selection.save()
 }
 
 #[wasm_bindgen(js_name = "A1SelectionToJsSelection")]
-pub fn a1_selection_value_to_selection(
-    a1_selection: JsValue,
-    table_map: String,
-) -> Result<JsSelection, String> {
-    let table_map = serde_json::from_str::<TableMap>(&table_map).map_err(|e| e.to_string())?;
+pub fn a1_selection_value_to_selection(a1_selection: JsValue) -> Result<JsSelection, String> {
     let selection =
         serde_wasm_bindgen::from_value::<A1Selection>(a1_selection).map_err(|e| e.to_string())?;
     Ok(JsSelection {
         sheet_id: selection.sheet_id,
         selection,
-        table_map,
     })
 }
