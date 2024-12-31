@@ -121,17 +121,17 @@ impl CellRefRange {
         }
     }
 
-    pub fn might_contain_pos(&self, pos: Pos) -> bool {
+    pub fn might_contain_pos(&self, pos: Pos, context: &A1Context) -> bool {
         match self {
             Self::Sheet { range } => range.might_contain_pos(pos),
-            Self::Table { .. } => todo!(),
+            Self::Table { range } => range.contains_pos(pos, context),
         }
     }
 
-    pub fn contains_pos(&self, pos: Pos) -> bool {
+    pub fn contains_pos(&self, pos: Pos, context: &A1Context) -> bool {
         match self {
             Self::Sheet { range } => range.contains_pos(pos),
-            Self::Table { .. } => todo!(),
+            Self::Table { range } => range.contains_pos(pos, context),
         }
     }
 

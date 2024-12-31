@@ -1,4 +1,4 @@
-use crate::a1::{CellRefCoord, CellRefRangeEnd, RefRangeBounds, UNBOUNDED};
+use crate::a1::{A1Context, CellRefCoord, CellRefRangeEnd, RefRangeBounds, UNBOUNDED};
 use crate::Pos;
 
 use super::{A1Selection, CellRefRange};
@@ -17,7 +17,7 @@ impl A1Selection {
     }
 
     /// Removes a column if it is in any column ranges, or adds it if it is not.
-    fn add_or_remove_column(&mut self, col: i64, top: i64) {
+    fn add_or_remove_column(&mut self, col: i64, top: i64, context: &A1Context) {
         // If the full column is in any range, then we'll remove it from all
         // ranges. Otherwise we'll add it.
         if self.ranges.iter().any(|range| range.has_column_range(col)) {
@@ -86,10 +86,10 @@ impl A1Selection {
             self.cursor.y = top;
         }
 
-        if !self.contains_pos(self.cursor) {
-            if self.contains_pos(Pos { x: col + 1, y: top }) {
+        if !self.contains_pos(self.cursor, context) {
+            if self.contains_pos(Pos { x: col + 1, y: top }, context) {
                 self.cursor = Pos { x: col + 1, y: top };
-            } else if self.contains_pos(Pos { x: col - 1, y: top }) {
+            } else if self.contains_pos(Pos { x: col - 1, y: top }, context) {
                 self.cursor = Pos { x: col - 1, y: top };
             } else {
                 // otherwise find a sensible default
@@ -123,7 +123,7 @@ impl A1Selection {
     }
 
     /// Removes a row if it is in any row ranges, or adds it if it is not.
-    fn add_or_remove_row(&mut self, row: i64, left: i64) {
+    fn add_or_remove_row(&mut self, row: i64, left: i64, context: &A1Context) {
         // If the full row is in any range, then we'll remove it from all
         // ranges. Otherwise we'll add it.
         if self.ranges.iter().any(|range| range.has_row_range(row)) {
@@ -187,19 +187,25 @@ impl A1Selection {
             self.cursor.y = row;
         }
 
-        if !self.contains_pos(self.cursor) {
-            if self.contains_pos(Pos {
-                x: left,
-                y: row + 1,
-            }) {
+        if !self.contains_pos(self.cursor, context) {
+            if self.contains_pos(
+                Pos {
+                    x: left,
+                    y: row + 1,
+                },
+                context,
+            ) {
                 self.cursor = Pos {
                     x: left,
                     y: row + 1,
                 };
-            } else if self.contains_pos(Pos {
-                x: left,
-                y: row - 1,
-            }) {
+            } else if self.contains_pos(
+                Pos {
+                    x: left,
+                    y: row - 1,
+                },
+                context,
+            ) {
                 self.cursor = Pos {
                     x: left,
                     y: row - 1,
@@ -232,6 +238,8 @@ impl A1Selection {
 
         // top of the screen to change the cursor position when selecting a column
         top: i64,
+
+        context: &A1Context,
     ) {
         if is_right_click || (!ctrl_key && !shift_key) {
             self.ranges.clear();
@@ -239,7 +247,7 @@ impl A1Selection {
             self.cursor.x = col;
             self.cursor.y = top;
         } else if ctrl_key && !shift_key {
-            self.add_or_remove_column(col, top);
+            self.add_or_remove_column(col, top, context);
         } else if shift_key {
             self.extend_column(col, top);
         }
@@ -274,6 +282,8 @@ impl A1Selection {
 
         // left of the screen to change the cursor position when selecting a row
         left: i64,
+
+        context: &A1Context,
     ) {
         if is_right_click || (!ctrl_key && !shift_key) {
             self.ranges.clear();
@@ -281,7 +291,7 @@ impl A1Selection {
             self.cursor.x = left;
             self.cursor.y = row;
         } else if ctrl_key && !shift_key {
-            self.add_or_remove_row(row, left);
+            self.add_or_remove_row(row, left, context);
         } else if shift_key {
             self.extend_row(row, left);
         }
@@ -403,8 +413,9 @@ mod tests {
 
     #[test]
     fn test_select_column() {
+        let context = A1Context::default();
         let mut selection = A1Selection::test_a1("A1");
-        selection.select_column(2, false, false, false, 1);
+        selection.select_column(2, false, false, false, 1, &context);
         assert_eq!(selection.test_to_string(), "B");
     }
 
@@ -467,8 +478,9 @@ mod tests {
 
     #[test]
     fn test_select_row() {
+        let context = A1Context::default();
         let mut selection = A1Selection::test_a1("A1");
-        selection.select_row(2, false, false, false, 1);
+        selection.select_row(2, false, false, false, 1, &context);
         assert_eq!(selection.test_to_string(), "A2:2");
     }
 
@@ -515,8 +527,9 @@ mod tests {
 
     #[test]
     fn test_add_or_remove_column() {
+        let context = A1Context::default();
         let mut selection = A1Selection::test_a1("A1,B1,C1");
-        selection.add_or_remove_column(4, 2);
+        selection.add_or_remove_column(4, 2, &context);
         assert_eq!(
             selection.ranges,
             vec![
@@ -530,7 +543,7 @@ mod tests {
         assert_eq!(selection.cursor.y, 2);
 
         let mut selection = A1Selection::test_a1("A:D,B1,A");
-        selection.add_or_remove_column(1, 2);
+        selection.add_or_remove_column(1, 2, &context);
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::test_a1("B:D"), CellRefRange::test_a1("B1"),]
@@ -539,7 +552,7 @@ mod tests {
         assert_eq!(selection.cursor.y, 2);
 
         let mut selection = A1Selection::test_a1("A");
-        selection.add_or_remove_column(1, 2);
+        selection.add_or_remove_column(1, 2, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A2")]);
         assert_eq!(selection.cursor.x, 1);
         assert_eq!(selection.cursor.y, 2);
@@ -559,8 +572,9 @@ mod tests {
 
     #[test]
     fn test_add_or_remove_row() {
+        let context = A1Context::default();
         let mut selection = A1Selection::test_a1("A1,B2,3");
-        selection.add_or_remove_row(4, 2);
+        selection.add_or_remove_row(4, 2, &context);
         assert_eq!(
             selection.ranges,
             vec![
@@ -575,7 +589,7 @@ mod tests {
 
         // Test removing a row from a range
         let mut selection = A1Selection::test_a1("1:4");
-        selection.add_or_remove_row(2, 1);
+        selection.add_or_remove_row(2, 1, &context);
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::test_a1("1"), CellRefRange::test_a1("3:4")]
@@ -583,7 +597,7 @@ mod tests {
 
         // Test removing the only selected row
         let mut selection = A1Selection::test_a1("3");
-        selection.add_or_remove_row(3, 1);
+        selection.add_or_remove_row(3, 1, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A3")]);
     }
 
@@ -626,21 +640,22 @@ mod tests {
 
     #[test]
     fn test_all_remove_col() {
+        let context = A1Context::default();
         let mut selection = A1Selection::test_a1("*");
         selection.cursor = Pos { x: 1, y: 1 };
-        selection.add_or_remove_column(col![A], 2);
+        selection.add_or_remove_column(col![A], 2, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("B:")]);
         assert_eq!(selection.cursor, Pos { x: 2, y: 2 });
 
         let mut selection = A1Selection::test_a1("*");
-        selection.add_or_remove_column(2, 1);
+        selection.add_or_remove_column(2, 1, &context);
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::test_a1("A"), CellRefRange::test_a1("C:")]
         );
 
         let mut selection = A1Selection::test_a1("*");
-        selection.add_or_remove_column(3, 2);
+        selection.add_or_remove_column(3, 2, &context);
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::test_a1("A:B"), CellRefRange::test_a1("D:")]
@@ -650,13 +665,14 @@ mod tests {
 
     #[test]
     fn test_remove_col_from_unbounded_range() {
+        let context = A1Context::default();
         let mut selection = A1Selection::test_a1("C:");
-        selection.add_or_remove_column(3, 1);
+        selection.add_or_remove_column(3, 1, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("D:")]);
         assert_eq!(selection.cursor, Pos { x: 4, y: 1 });
 
         let mut selection = A1Selection::test_a1("A:B,D:");
-        selection.add_or_remove_column(col![F], 1);
+        selection.add_or_remove_column(col![F], 1, &context);
         assert_eq!(
             selection.ranges,
             vec![
@@ -670,20 +686,21 @@ mod tests {
 
     #[test]
     fn test_all_remove_row() {
+        let context = A1Context::default();
         let mut selection = A1Selection::test_a1("*");
-        selection.add_or_remove_row(1, 2);
+        selection.add_or_remove_row(1, 2, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("2:")]);
         assert_eq!(selection.cursor, Pos { x: 2, y: 2 });
 
         let mut selection = A1Selection::test_a1("*");
-        selection.add_or_remove_row(2, 1);
+        selection.add_or_remove_row(2, 1, &context);
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::test_a1("1"), CellRefRange::test_a1("3:")]
         );
 
         let mut selection = A1Selection::test_a1("*");
-        selection.add_or_remove_row(3, 1);
+        selection.add_or_remove_row(3, 1, &context);
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::test_a1("1:2"), CellRefRange::test_a1("4:")]
@@ -693,13 +710,14 @@ mod tests {
 
     #[test]
     fn test_remove_row_from_unbounded_range() {
+        let context = A1Context::default();
         let mut selection = A1Selection::test_a1("3:");
-        selection.add_or_remove_row(3, 1);
+        selection.add_or_remove_row(3, 1, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("4:")]);
         assert_eq!(selection.cursor, Pos { x: 1, y: 4 });
 
         let mut selection = A1Selection::test_a1("1:2,4:");
-        selection.add_or_remove_row(6, 1);
+        selection.add_or_remove_row(6, 1, &context);
         assert_eq!(
             selection.ranges,
             vec![
@@ -713,13 +731,14 @@ mod tests {
 
     #[test]
     fn test_col_row_cross() {
+        let context = A1Context::default();
         let mut selection = A1Selection::test_a1("*");
-        selection.add_or_remove_column(col![D], 1);
+        selection.add_or_remove_column(col![D], 1, &context);
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::test_a1("A:C"), CellRefRange::test_a1("E:")]
         );
-        selection.add_or_remove_row(2, 1);
+        selection.add_or_remove_row(2, 1, &context);
         assert_eq!(
             selection.ranges,
             vec![
@@ -730,7 +749,7 @@ mod tests {
         );
 
         let mut selection = A1Selection::test_a1("A:D,F");
-        selection.add_or_remove_row(17, 1);
+        selection.add_or_remove_row(17, 1, &context);
         assert_eq!(
             selection.ranges,
             vec![
@@ -743,13 +762,14 @@ mod tests {
 
     #[test]
     fn test_row_col_cross() {
+        let context = A1Context::default();
         let mut selection = A1Selection::test_a1("*");
-        selection.add_or_remove_row(4, 1);
+        selection.add_or_remove_row(4, 1, &context);
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::test_a1("1:3"), CellRefRange::test_a1("5:")]
         );
-        selection.add_or_remove_column(col![B], 1);
+        selection.add_or_remove_column(col![B], 1, &context);
         assert_eq!(
             selection.ranges,
             vec![

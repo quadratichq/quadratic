@@ -2,6 +2,8 @@
 
 use wasm_bindgen::prelude::*;
 
+use crate::a1::A1Context;
+
 use super::*;
 
 #[wasm_bindgen]
@@ -20,13 +22,18 @@ impl JsSelection {
         shift_key: bool,
         is_right_click: bool,
         top: u32,
+        context: &str,
     ) {
+        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
+            return;
+        };
         self.selection.select_column(
             column as i64,
             ctrl_key || shift_key,
             shift_key,
             is_right_click,
             top as i64,
+            &context,
         );
     }
 
@@ -38,13 +45,18 @@ impl JsSelection {
         shift_key: bool,
         is_right_click: bool,
         left: u32,
+        context: &str,
     ) {
+        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
+            return;
+        };
         self.selection.select_row(
             row as i64,
             ctrl_key || shift_key,
             shift_key,
             is_right_click,
             left as i64,
+            &context,
         );
     }
 

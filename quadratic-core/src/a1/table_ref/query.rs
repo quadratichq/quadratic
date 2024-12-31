@@ -24,14 +24,9 @@ impl TableRef {
                 self.col_ranges.iter().for_each(|col_range| {
                     match col_range {
                         ColRange::Col(col) => {
-                            // hidden column names are not included in
-                            // column_names and we therefore skip them for this
-                            // purpose
-                            if let Some(index) = table.visible_columns.iter().position(|c| c == col)
-                            {
-                                let x = index as i64 + bounds.min.x;
-                                if x >= from && x <= to {
-                                    cols.push(x);
+                            if let Some(col_index) = table.try_col_index(col) {
+                                if col_index >= from && col_index <= to {
+                                    cols.push(col_index);
                                 }
                             }
                         }
@@ -178,13 +173,6 @@ impl TableRef {
                 false
             }
         }
-    }
-
-    pub fn intersect_rect(&self, rect: Rect, context: &A1Context) -> bool {
-        let Some(table) = context.try_table(&self.table_name) else {
-            return false;
-        };
-        table.bounds.intersects(rect)
     }
 
     pub fn to_largest_rect(&self, current_row: i64, context: &A1Context) -> Option<Rect> {
@@ -407,25 +395,6 @@ mod tests {
             totals: false,
         };
         assert!(table_ref.is_multi_cursor(&context));
-    }
-
-    #[test]
-    fn test_intersect_rect() {
-        let (context, _) = setup_test_context();
-        let table_ref = TableRef {
-            table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::Col("A".to_string())],
-            row_range: RowRange::All,
-            data: true,
-            headers: false,
-            totals: false,
-        };
-
-        // Intersecting rectangle
-        assert!(table_ref.intersect_rect(Rect::test_a1("A1:B2"), &context));
-
-        // Non-intersecting rectangle
-        assert!(!table_ref.intersect_rect(Rect::new(10, 10, 11, 11), &context));
     }
 
     #[test]

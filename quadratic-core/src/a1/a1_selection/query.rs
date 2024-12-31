@@ -33,24 +33,28 @@ impl A1Selection {
     }
 
     /// Returns whether the selection contains the given position.
-    pub fn might_contain_xy(&self, x: i64, y: i64) -> bool {
+    pub fn might_contain_xy(&self, x: i64, y: i64, context: &A1Context) -> bool {
         self.ranges
             .iter()
-            .any(|range| range.might_contain_pos(Pos::new(x, y)))
+            .any(|range| range.might_contain_pos(Pos::new(x, y), context))
     }
 
     /// Returns whether any range in `self` might contain `pos`.
     ///
     /// It's impossible to give an exact answer without knowing the bounds of
     /// each column and row.
-    pub fn might_contain_pos(&self, pos: Pos) -> bool {
-        self.ranges.iter().any(|range| range.might_contain_pos(pos))
+    pub fn might_contain_pos(&self, pos: Pos, context: &A1Context) -> bool {
+        self.ranges
+            .iter()
+            .any(|range| range.might_contain_pos(pos, context))
     }
 
     /// Returns whether any range in `self` contains `pos` regardless of data
     /// bounds. (Use might_contains_pos for that.)
-    pub fn contains_pos(&self, pos: Pos) -> bool {
-        self.ranges.iter().any(|range| range.contains_pos(pos))
+    pub fn contains_pos(&self, pos: Pos, context: &A1Context) -> bool {
+        self.ranges
+            .iter()
+            .any(|range| range.contains_pos(pos, context))
     }
 
     /// Returns the largest rectangle that can be formed by the selection,
@@ -314,23 +318,26 @@ mod tests {
 
     #[test]
     fn test_contains() {
+        let context = A1Context::default();
         let selection = A1Selection::test_a1("A1,B2,C3");
-        assert!(selection.might_contain_xy(1, 1));
-        assert!(!selection.might_contain_xy(4, 1));
+        assert!(selection.might_contain_xy(1, 1, &context));
+        assert!(!selection.might_contain_xy(4, 1, &context));
     }
 
     #[test]
     fn test_contains_pos() {
+        let context = A1Context::default();
         let selection = A1Selection::test_a1("B7:G7");
-        assert!(selection.contains_pos(pos![B7]));
-        assert!(!selection.contains_pos(pos![A1]));
+        assert!(selection.contains_pos(pos![B7], &context));
+        assert!(!selection.contains_pos(pos![A1], &context));
     }
 
     #[test]
     fn test_might_contain_pos() {
+        let context = A1Context::default();
         let selection = A1Selection::test_a1("A1,B2,C3");
-        assert!(selection.might_contain_pos(pos![A1]));
-        assert!(!selection.might_contain_pos(pos![D1]));
+        assert!(selection.might_contain_pos(pos![A1], &context));
+        assert!(!selection.might_contain_pos(pos![D1], &context));
     }
 
     #[test]

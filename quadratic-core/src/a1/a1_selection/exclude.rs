@@ -135,7 +135,7 @@ impl A1Selection {
                     } else {
                         ranges.push(range);
                     }
-                } else if range.might_contain_pos(p1) {
+                } else if range.might_contain_pos(p1, context) {
                     ranges.extend(A1Selection::remove_rect(range, p1, p1));
                 } else {
                     ranges.push(range);
@@ -152,7 +152,7 @@ impl A1Selection {
         self.ranges = ranges;
 
         // if the cursor is no longer in the range, then set the cursor to the last range
-        if !self.contains_pos(self.cursor) {
+        if !self.contains_pos(self.cursor, context) {
             // we find a finite range to se the cursor to, starting at the end and working backwards
             if let Some(cursor) = self.ranges.iter().rev().find_map(|range| match range {
                 CellRefRange::Sheet { range } => {

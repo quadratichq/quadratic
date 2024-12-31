@@ -82,8 +82,9 @@ impl GridController {
             }
         };
 
+        let context = self.grid().a1_context();
         if selection.sheet_id == current_sheet_pos.sheet_id
-            && selection.might_contain_pos(current_sheet_pos.into())
+            && selection.might_contain_pos(current_sheet_pos.into(), &context)
         {
             // self reference not allowed
             let msg = "Self reference not allowed".to_string();

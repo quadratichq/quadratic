@@ -217,7 +217,7 @@ impl A1Selection {
     }
 
     /// Finds intersection of two Selections.
-    pub fn intersection(&self, other: &Self) -> Option<Self> {
+    pub fn intersection(&self, other: &Self, context: &A1Context) -> Option<Self> {
         if self.sheet_id != other.sheet_id {
             return None;
         }
@@ -251,17 +251,17 @@ impl A1Selection {
             };
 
             // try to find a better cursor position
-            result.cursor = if result.contains_pos(self.cursor) {
+            result.cursor = if result.contains_pos(self.cursor, context) {
                 self.cursor
-            } else if result.contains_pos(other.cursor) {
+            } else if result.contains_pos(other.cursor, context) {
                 other.cursor
             } else {
                 let pos = result.last_selection_end();
-                if result.contains_pos(pos) {
+                if result.contains_pos(pos, context) {
                     pos
                 } else {
                     let pos = result.last_selection_end();
-                    if result.contains_pos(pos) {
+                    if result.contains_pos(pos, context) {
                         pos
                     } else {
                         // give up and just use the cursor even though it's wrong
@@ -705,11 +705,12 @@ mod intersection_tests {
 
     #[test]
     fn test_intersection() {
+        let context = A1Context::default();
         // Test different sheets return None
         let sel1 = A1Selection::test_a1_sheet_id("A1:B2", &SheetId::new());
         let sel2 = A1Selection::test_a1_sheet_id("B2:C3", &SheetId::new());
         assert_eq!(
-            sel1.intersection(&sel2),
+            sel1.intersection(&sel2, &context),
             None,
             "Different sheets should return None"
         );
@@ -718,7 +719,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("A1:B2");
         let sel2 = A1Selection::test_a1("C3:D4");
         assert_eq!(
-            sel1.intersection(&sel2),
+            sel1.intersection(&sel2, &context),
             None,
             "Non-overlapping rectangles should return None"
         );
@@ -727,12 +728,12 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("A1:C3");
         let sel2 = A1Selection::test_a1("B2:D4");
         assert_eq!(
-            sel1.intersection(&sel2).unwrap().test_to_string(),
+            sel1.intersection(&sel2, &context).unwrap().test_to_string(),
             "B2:C3",
             "Overlapping rectangles intersection failed"
         );
         assert_eq!(
-            sel1.intersection(&sel2).unwrap().cursor,
+            sel1.intersection(&sel2, &context).unwrap().cursor,
             pos![B2],
             "Cursor position incorrect for overlapping rectangles"
         );
@@ -741,7 +742,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("A1:D4");
         let sel2 = A1Selection::test_a1("B2:C3");
         assert_eq!(
-            sel1.intersection(&sel2).unwrap().test_to_string(),
+            sel1.intersection(&sel2, &context).unwrap().test_to_string(),
             "B2:C3",
             "Rectangle inside another intersection failed"
         );
@@ -749,7 +750,7 @@ mod intersection_tests {
         // Test overlapping columns
         let sel1 = A1Selection::test_a1("A:C");
         let sel2 = A1Selection::test_a1("B:D");
-        let intersection = sel1.intersection(&sel2).unwrap();
+        let intersection = sel1.intersection(&sel2, &context).unwrap();
         assert_eq!(
             intersection.test_to_string(),
             "B:C",
@@ -760,7 +761,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("A:B");
         let sel2 = A1Selection::test_a1("C:D");
         assert_eq!(
-            sel1.intersection(&sel2),
+            sel1.intersection(&sel2, &context),
             None,
             "Non-overlapping columns should return None"
         );
@@ -768,7 +769,7 @@ mod intersection_tests {
         // Test overlapping rows
         let sel1 = A1Selection::test_a1("1:3");
         let sel2 = A1Selection::test_a1("2:4");
-        let intersection = sel1.intersection(&sel2).unwrap();
+        let intersection = sel1.intersection(&sel2, &context).unwrap();
         assert_eq!(
             intersection.test_to_string(),
             "2:3",
@@ -779,7 +780,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("1:2");
         let sel2 = A1Selection::test_a1("3:4");
         assert_eq!(
-            sel1.intersection(&sel2),
+            sel1.intersection(&sel2, &context),
             None,
             "Non-overlapping rows should return None"
         );
@@ -788,7 +789,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("*");
         let sel2 = A1Selection::test_a1("*");
         assert_eq!(
-            sel1.intersection(&sel2).unwrap().test_to_string(),
+            sel1.intersection(&sel2, &context).unwrap().test_to_string(),
             "*",
             "All (*) intersection with all (*) failed"
         );
@@ -797,7 +798,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("A1:B2");
         let sel2 = A1Selection::test_a1("B2");
         assert_eq!(
-            sel1.intersection(&sel2).unwrap().test_to_string(),
+            sel1.intersection(&sel2, &context).unwrap().test_to_string(),
             "B2",
             "Single cell intersection failed"
         );
@@ -806,7 +807,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("A1:C3,E1:G3");
         let sel2 = A1Selection::test_a1("B2:F2");
         assert_eq!(
-            sel1.intersection(&sel2).unwrap().test_to_string(),
+            sel1.intersection(&sel2, &context).unwrap().test_to_string(),
             "B2:C2,E2:F2",
             "Multiple disjoint intersections failed"
         );
@@ -815,7 +816,7 @@ mod intersection_tests {
         let sel1 = A1Selection::test_a1("*");
         let sel2 = A1Selection::test_a1("B2:C3");
         assert_eq!(
-            sel1.intersection(&sel2).unwrap().test_to_string(),
+            sel1.intersection(&sel2, &context).unwrap().test_to_string(),
             "B2:C3",
             "All (*) intersection with rectangle failed"
         );

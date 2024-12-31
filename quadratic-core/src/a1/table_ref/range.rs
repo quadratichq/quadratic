@@ -12,7 +12,7 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::a1::CellRefCoord;
+use crate::a1::{CellRefCoord, TableMapEntry};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, TS, Serialize, Deserialize)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -52,6 +52,23 @@ pub enum ColRange {
     Col(String),
     ColRange(String, String),
     ColumnToEnd(String),
+}
+
+impl ColRange {
+    pub fn has_col(&self, col: i64, table: &TableMapEntry) -> bool {
+        match self {
+            ColRange::Col(table_col) => {
+                if let Some(col_index) = table.try_col_index(table_col) {
+                    if col_index != col {
+                        return false;
+                    }
+                }
+            }
+            ColRange::ColRange(col1, col2) => {}
+            ColRange::ColumnToEnd(col) => {}
+        }
+        true
+    }
 }
 
 #[cfg(test)]

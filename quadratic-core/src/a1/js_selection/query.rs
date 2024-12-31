@@ -61,8 +61,12 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "contains")]
-    pub fn contains(&self, x: u32, y: u32) -> bool {
-        self.selection.might_contain_xy(x as i64, y as i64)
+    pub fn contains(&self, x: u32, y: u32, context: &str) -> bool {
+        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
+            return false;
+        };
+        self.selection
+            .might_contain_xy(x as i64, y as i64, &context)
     }
 
     #[wasm_bindgen(js_name = "getRanges")]

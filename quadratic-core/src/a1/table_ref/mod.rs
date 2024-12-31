@@ -59,12 +59,13 @@
 //! =DeptSales[[#Headers], [#Data], [% Commission]]
 
 pub mod display;
+mod intersects;
 pub mod parse;
 pub mod query;
-mod table_ref_range;
+mod range;
 mod tokenize;
 
-pub use table_ref_range::*;
+pub use range::*;
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
