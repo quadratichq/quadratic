@@ -45,7 +45,7 @@ export class SheetCursor {
   boxCells: boolean;
 
   constructor(sheet: Sheet) {
-    this.jsSelection = new JsSelection(sheet.id, sheets.a1Context);
+    this.jsSelection = new JsSelection(sheet.id);
     this.boxCells = false;
   }
 
@@ -103,12 +103,12 @@ export class SheetCursor {
 
   // Returns the columns that are selected via ranges [c1_start, c1_end, c2_start, c2_end, ...].
   getSelectedColumnRanges(from: number, to: number): number[] {
-    return Array.from(this.jsSelection.getSelectedColumnRanges(from, to));
+    return Array.from(this.jsSelection.getSelectedColumnRanges(from, to, sheets.a1Context));
   }
 
   // Returns the rows that are selected via ranges [r1_start, r1_end, r2_start, r2_end, ...].
   getSelectedRowRanges(from: number, to: number): number[] {
-    return Array.from(this.jsSelection.getSelectedRowRanges(from, to));
+    return Array.from(this.jsSelection.getSelectedRowRanges(from, to, sheets.a1Context));
   }
 
   // Returns the bottom-right cell for the selection.
@@ -118,26 +118,26 @@ export class SheetCursor {
 
   // Returns the largest rectangle that contains all the multiCursor rectangles
   getLargestRectangle(): Rectangle {
-    const rect = this.jsSelection.getLargestRectangle();
+    const rect = this.jsSelection.getLargestRectangle(sheets.a1Context);
     return rectToRectangle(rect);
   }
 
   // Returns rectangle in case of single finite range selection having more than one cell
   // Returns undefined if there are multiple ranges or infinite range selection
   getSingleRectangle(): Rectangle | undefined {
-    const rect = this.jsSelection.getSingleRectangle();
+    const rect = this.jsSelection.getSingleRectangle(sheets.a1Context);
     return rect ? rectToRectangle(rect) : undefined;
   }
 
   // Returns rectangle in case of single finite range selection, otherwise returns a rectangle that represents the cursor
   // Returns undefined if there are multiple ranges or infinite range selection
   getSingleRectangleOrCursor(): Rectangle | undefined {
-    const rect = this.jsSelection.getSingleRectangleOrCursor();
+    const rect = this.jsSelection.getSingleRectangleOrCursor(sheets.a1Context);
     return rect ? rectToRectangle(rect) : undefined;
   }
 
   overlapsSelection(a1Selection: string): boolean {
-    return this.jsSelection.overlapsA1Selection(a1Selection);
+    return this.jsSelection.overlapsA1Selection(a1Selection, sheets.a1Context);
   }
 
   // Returns true if the selection is a single cell or a single column or single row.
@@ -223,7 +223,7 @@ export class SheetCursor {
   }
 
   isMultiCursor(): boolean {
-    return this.jsSelection.isMultiCursor(sheets.sheet.id, sheets.a1Context);
+    return this.jsSelection.isMultiCursor(sheets.a1Context);
   }
 
   isMultiRange(): boolean {
@@ -235,7 +235,7 @@ export class SheetCursor {
   }
 
   toA1String(sheetId = sheets.current): string {
-    return this.jsSelection.toA1String(sheetId, sheets.getSheetIdNameMap());
+    return this.jsSelection.toA1String(sheetId, sheets.a1Context);
   }
 
   toCursorA1(): string {
@@ -252,11 +252,11 @@ export class SheetCursor {
   }
 
   a1String(): string {
-    return this.jsSelection.toA1String(sheets.sheet.id, sheets.getSheetIdNameMap());
+    return this.jsSelection.toA1String(sheets.sheet.id, sheets.a1Context);
   }
 
   excludeCells(x0: number, y0: number, x1: number, y1: number, ensureVisible = true) {
-    this.jsSelection.excludeCells(x0, y0, x1, y1);
+    this.jsSelection.excludeCells(x0, y0, x1, y1, sheets.a1Context);
     this.updatePosition(ensureVisible);
   }
 

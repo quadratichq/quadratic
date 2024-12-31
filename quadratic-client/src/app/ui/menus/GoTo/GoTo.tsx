@@ -27,11 +27,10 @@ export const GoTo = () => {
       );
     }
     try {
-      const map = sheets.getSheetIdNameMap();
-      const selection = stringToSelection(value, sheets.current, map, sheets.a1Context);
+      const selection = stringToSelection(value, sheets.current, sheets.a1Context);
       return (
         <span>
-          Go to <span className="font-bold">{selection.toA1String(sheets.current, map)}</span>
+          Go to <span className="font-bold">{selection.toA1String(sheets.current, sheets.a1Context)}</span>
         </span>
       );
     } catch (e: any) {
@@ -65,8 +64,7 @@ export const GoTo = () => {
       pixiApp.viewport.reset();
     } else {
       try {
-        const map = sheets.getSheetIdNameMap();
-        const selection = stringToSelection(value, sheets.sheet.id, map, sheets.a1Context);
+        const selection = stringToSelection(value, sheets.sheet.id, sheets.a1Context);
         sheets.changeSelection(selection);
       } catch (_) {
         // nothing to do if we can't parse the input

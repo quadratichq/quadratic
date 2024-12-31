@@ -318,14 +318,7 @@ class Sheets {
   }
 
   getA1String = (sheetId = this.current): string => {
-    return this.sheet.cursor.jsSelection.toA1String(sheetId, this.getSheetIdNameMap());
-  };
-
-  /// Gets a stringified SheetIdNameMap for Rust's A1 functions
-  getSheetIdNameMap = (): string => {
-    const sheetMap: Record<string, { id: string }> = {};
-    this.sheets.forEach((sheet) => (sheetMap[sheet.name] = { id: sheet.id }));
-    return JSON.stringify(sheetMap);
+    return this.sheet.cursor.jsSelection.toA1String(sheetId, this.a1Context);
   };
 
   // Changes the cursor to the incoming selection

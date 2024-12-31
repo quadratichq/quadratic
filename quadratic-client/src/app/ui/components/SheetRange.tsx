@@ -60,7 +60,7 @@ export const SheetRange = (props: Props) => {
   const onInsert = useCallback(() => {
     if (ref.current) {
       const jsSelection = sheets.sheet.cursor.jsSelection;
-      ref.current.value = jsSelection.toA1String(a1SheetId, sheets.getSheetIdNameMap());
+      ref.current.value = jsSelection.toA1String(a1SheetId, sheets.a1Context);
       onChangeRange(jsSelection);
       setRangeError(undefined);
     }
@@ -69,12 +69,7 @@ export const SheetRange = (props: Props) => {
   const updateValue = useCallback(
     (value: string) => {
       try {
-        const jsSelection = stringToSelection(
-          value,
-          a1SheetId,
-          onlyCurrentSheet ? '{}' : sheets.getSheetIdNameMap(),
-          sheets.a1Context
-        );
+        const jsSelection = stringToSelection(value, a1SheetId, sheets.a1Context);
         onChangeRange(jsSelection);
         setRangeError(undefined);
       } catch (e: any) {
@@ -88,7 +83,7 @@ export const SheetRange = (props: Props) => {
         }
       }
     },
-    [a1SheetId, onChangeRange, onlyCurrentSheet, onlyCurrentSheetError]
+    [a1SheetId, onChangeRange, onlyCurrentSheetError]
   );
 
   const onBlur = useCallback(
@@ -101,21 +96,14 @@ export const SheetRange = (props: Props) => {
 
   useEffect(() => {
     if (ref.current) {
-      ref.current.value = initial
-        ? A1SelectionToJsSelection(initial, sheets.a1Context).toA1String(a1SheetId, sheets.getSheetIdNameMap())
-        : '';
+      ref.current.value = initial ? A1SelectionToJsSelection(initial).toA1String(a1SheetId, sheets.a1Context) : '';
     }
   }, [changeCursor, a1SheetId, initial]);
 
   const onFocus = () => {
     if (!ref.current || !changeCursor) return;
     try {
-      const selection = stringToSelection(
-        ref.current.value,
-        a1SheetId,
-        onlyCurrentSheet ? '{}' : sheets.getSheetIdNameMap(),
-        sheets.a1Context
-      );
+      const selection = stringToSelection(ref.current.value, a1SheetId, sheets.a1Context);
       if (selection) {
         sheets.changeSelection(selection, true);
       }
