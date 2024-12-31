@@ -20,41 +20,22 @@ source "$HOME/.cargo/env"
 echo 'Installing wasm-pack...'
 curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
-echo 'Installing wasm32-unknown-unknown target...'
-rustup target add wasm32-unknown-unknown
-
-# Start parallel builds
-(
-  # Task 1: Install dependencies
-  (
-    echo 'Installing dependencies...'
-    npm ci
-  ) &
-
-  # Task 2: Build core
-  (
-    echo 'Building core...'
-    npm run build --workspace=quadratic-core -- --frozen
-  ) &
-
-  # Task 3: Build TS/Rust types
-  (
-    echo 'Building TS/Rust types...'
-    npm run export_types --workspace=quadratic-core -- --frozen
-  ) &
-
-  # Task 4: Build rust client
-  (
-    echo 'Building rust-client...'
-    npm run build --workspace=quadratic-rust-client -- --frozen
-  ) &
-
-  # Wait for all background tasks to complete
-  wait
-)
-
 echo 'Packaging quadratic_py'
 ./quadratic-kernels/python-wasm/package.sh --no-poetry
 
+cd quadratic-core
+
+echo 'Building wasm...'
+wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-core
+
+echo 'Exporting TS/Rust types...'
+cargo run --bin export_types
+
+cd ..
+
+echo 'Building quadratic-rust-client...'
+npm run build --workspace=quadratic-rust-client
+
 echo 'Building front-end...'
+npm ci --no-audit --no-fund
 npm run build --workspace=quadratic-client
