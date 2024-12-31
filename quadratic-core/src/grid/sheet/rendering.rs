@@ -69,14 +69,17 @@ impl Sheet {
         } else {
             None
         };
+        let context = self.a1_context();
         let special = special.or_else(|| {
-            self.validations.render_special_pos(Pos { x, y }).or({
-                if matches!(value, CellValue::Logical(_)) {
-                    Some(JsRenderCellSpecial::Logical)
-                } else {
-                    None
-                }
-            })
+            self.validations
+                .render_special_pos(Pos { x, y }, &context)
+                .or({
+                    if matches!(value, CellValue::Logical(_)) {
+                        Some(JsRenderCellSpecial::Logical)
+                    } else {
+                        None
+                    }
+                })
         });
 
         let mut format = self.formats.try_format(Pos { x, y }).unwrap_or_default();

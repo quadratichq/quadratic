@@ -1,5 +1,5 @@
 use crate::{
-    a1::A1Selection,
+    a1::{A1Context, A1Selection},
     controller::operations::clipboard::{ClipboardOrigin, ClipboardValidations},
 };
 
@@ -11,12 +11,13 @@ impl Validations {
         &self,
         selection: &A1Selection,
         clipboard_origin: &ClipboardOrigin,
+        context: &A1Context,
     ) -> Option<ClipboardValidations> {
         let validations = self
             .validations
             .iter()
             .filter_map(|validation| {
-                if let Some(intersection) = selection.intersection(&validation.selection) {
+                if let Some(intersection) = selection.intersection(&validation.selection, context) {
                     let mut v = validation.clone();
                     v.selection = intersection;
                     v.selection
@@ -42,7 +43,7 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
-        a1::A1Selection,
+        a1::{A1Context, A1Selection},
         controller::operations::clipboard::ClipboardOrigin,
         grid::{
             sheet::validations::{
@@ -83,7 +84,7 @@ mod tests {
             ..Default::default()
         };
         let clipboard_validations = validations
-            .to_clipboard(&selection, &clipboard_origin)
+            .to_clipboard(&selection, &clipboard_origin, &A1Context::default())
             .unwrap();
         assert_eq!(clipboard_validations.validations.len(), 1);
         assert_eq!(

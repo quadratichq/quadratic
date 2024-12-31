@@ -128,7 +128,7 @@ impl CellsAccessed {
     }
 
     /// Whether this CellsAccessed contains the SheetPos.
-    pub fn contains(&self, pos: SheetPos) -> bool {
+    pub fn contains(&self, pos: SheetPos, context: &A1Context) -> bool {
         self.cells
             .iter()
             .filter_map(|(sheet_id, ranges)| {
@@ -141,7 +141,7 @@ impl CellsAccessed {
             .any(|ranges| {
                 ranges
                     .iter()
-                    .any(|range| range.might_contain_pos(pos.into()))
+                    .any(|range| range.might_contain_pos(pos.into(), &context))
             })
     }
 
@@ -205,8 +205,9 @@ mod tests {
         let mut cells = CellsAccessed::default();
         let sheet_id = SheetId::new();
         cells.add(sheet_id, CellRefRange::new_relative_xy(1, 1));
-        assert!(cells.contains(SheetPos::new(sheet_id, 1, 1)));
-        assert!(!cells.contains(SheetPos::new(sheet_id, 2, 2)));
+        let context = A1Context::default();
+        assert!(cells.contains(SheetPos::new(sheet_id, 1, 1), &context));
+        assert!(!cells.contains(SheetPos::new(sheet_id, 2, 2), &context));
     }
 
     #[test]
@@ -222,8 +223,9 @@ mod tests {
     fn test_add_sheet_pos() {
         let mut cells = CellsAccessed::default();
         let sheet_id = SheetId::new();
+        let context = A1Context::default();
         cells.add_sheet_pos(SheetPos::new(sheet_id, 1, 1));
-        assert!(cells.contains(SheetPos::new(sheet_id, 1, 1)));
+        assert!(cells.contains(SheetPos::new(sheet_id, 1, 1), &context));
     }
 
     #[test]

@@ -44,9 +44,9 @@ impl RefRangeBounds {
         // Check if there is a valid intersection
         if min_col <= max_col && min_row <= max_row {
             match (
-                self.is_column_range(),
+                self.is_col_range(),
                 self.is_row_range(),
-                other.is_column_range(),
+                other.is_col_range(),
                 other.is_row_range(),
             ) {
                 // Both are column ranges (including partial)

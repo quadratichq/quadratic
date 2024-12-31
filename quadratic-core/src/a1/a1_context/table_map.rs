@@ -15,7 +15,8 @@ pub struct TableMapEntry {
 }
 
 impl TableMapEntry {
-    /// Tries to get the column for the given column name.
+    /// Tries to get the column for the given column name. Returns None if the
+    /// range is not visible or no longer exists.
     pub fn try_col_index(&self, col: &str) -> Option<i64> {
         let index = self
             .visible_columns
@@ -24,70 +25,78 @@ impl TableMapEntry {
         Some(self.bounds.min.x + index as i64)
     }
 
-    pub fn try_col_range(&self, col1: &str, col2: &str) -> Option<(i64, i64)> {
-        // first try to see if start and end are visible columns
-        let start = self.try_col_index(col1);
-        let end = self.try_col_index(col2);
-        if let (Some(start), Some(end)) = (start, end) {
-            return Some((self.bounds.min.x + start, self.bounds.min.x + end));
-        } else if let (Some(start), None) = (start, end) {
-            let end = self
-                .all_columns
-                .iter()
-                .position(|c| c.to_lowercase() == col2.to_lowercase())?;
-            for i in start + 1..end as i64 {
-                if self.visible_columns.contains(&self.all_columns[i as usize]) {
-                    return Some((self.bounds.min.x + start, self.bounds.min.x + i));
-                }
-            }
-        } else if let (None, Some(end)) = (start, end) {
-            let start = self
-                .all_columns
-                .iter()
-                .position(|c| c.to_lowercase() == col1.to_lowercase())?;
-            for i in start as i64 + 1..end {
-                if self.visible_columns.contains(&self.all_columns[i as usize]) {
-                    return Some((self.bounds.min.x + i, self.bounds.min.x + end));
-                }
-            }
+    /// Returns the col_index if visible, otherwise returns the closest visible
+    /// column index either after or before the hidden one. Returns None if there are none.
+    pub fn try_col_closest(&self, col: &str, after: bool) -> Option<i64> {
+        if let Some(index) = self.try_col_index(col) {
+            // If the column is visible, return its index
+            Some(index)
         } else {
-            let start = self
+            // Find position in all_columns
+            let all_col_pos = self
                 .all_columns
                 .iter()
-                .position(|c| c.to_lowercase() == col1.to_lowercase())?;
-            let end = self
-                .all_columns
-                .iter()
-                .position(|c| c.to_lowercase() == col2.to_lowercase())?;
+                .position(|c| c.to_lowercase() == col.to_lowercase())?;
 
-            // Find first visible column after start
-            let mut start_visible = None;
-            for i in start + 1..end {
-                if self.visible_columns.contains(&self.all_columns[i]) {
-                    start_visible = Some(i);
-                    break;
+            if after {
+                // Find first visible column after this position
+                for i in all_col_pos..self.all_columns.len() {
+                    let col = &self.all_columns[i];
+                    if let Some(vis_pos) = self
+                        .visible_columns
+                        .iter()
+                        .position(|c| c.to_lowercase() == col.to_lowercase())
+                    {
+                        return Some(self.bounds.min.x + vis_pos as i64);
+                    }
                 }
-            }
-            if start_visible.is_none() {
-                return None;
-            }
-            // Find last visible column before end
-            let mut end_visible = None;
-            for i in (start + 1..end).rev() {
-                if self.visible_columns.contains(&self.all_columns[i]) {
-                    end_visible = Some(i);
-                    break;
-                }
-            }
 
-            if let (Some(first), Some(last)) = (start_visible, end_visible) {
-                return Some((
-                    self.bounds.min.x + first as i64,
-                    self.bounds.min.x + last as i64,
-                ));
+                // If no visible columns after, return last visible column
+                if !self.visible_columns.is_empty() {
+                    return Some(self.bounds.min.x + (self.visible_columns.len() - 1) as i64);
+                } else {
+                    return None;
+                }
+            } else {
+                // Find first visible column before this position
+                for i in (0..all_col_pos).rev() {
+                    let col = &self.all_columns[i];
+                    if let Some(vis_pos) = self
+                        .visible_columns
+                        .iter()
+                        .position(|c| c.to_lowercase() == col.to_lowercase())
+                    {
+                        return Some(self.bounds.min.x + vis_pos as i64);
+                    }
+                }
+
+                // If no visible columns before, return first visible column
+                if !self.visible_columns.is_empty() {
+                    return Some(self.bounds.min.x);
+                } else {
+                    return None;
+                }
             }
         }
-        None
+    }
+
+    /// Tries to get the range for the given column range. Returns None if the
+    /// range is not visible or no longer exists.
+    pub fn try_col_range(&self, col1: &str, col2: &str) -> Option<(i64, i64)> {
+        // Get closest visible columns for start and end
+        let start = self.try_col_closest(col1, true)?;
+        let end = self.try_col_closest(col2, false)?;
+
+        // Return range between closest visible columns, ensuring start <= end
+        Some((start.min(end), start.max(end)))
+    }
+
+    /// Tries to get the range for the given column range. Returns None if the
+    /// range is not visible or no longer exists.
+    pub fn try_col_range_to_end(&self, col: &str) -> Option<(i64, i64)> {
+        let start = self.try_col_closest(col, true)?;
+        let end = self.bounds.min.x + (self.visible_columns.len() - 1) as i64;
+        Some((start, end))
     }
 }
 
@@ -118,13 +127,11 @@ impl TableMap {
     pub fn table_names(&self) -> Vec<String> {
         self.tables.iter().map(|t| t.table_name.clone()).collect()
     }
-}
 
-#[cfg(test)]
-impl TableMap {
     /// Inserts a test table into the table map.
     ///
     /// if all_columns is None, then it uses visible_columns.
+    #[cfg(test)]
     pub fn test_insert(
         &mut self,
         sheet_id: SheetId,
@@ -212,5 +219,96 @@ mod tests {
         assert_eq!(table.try_col_range("X", "Y"), None);
         assert_eq!(table.try_col_range("A", "Y"), None);
         assert_eq!(table.try_col_range("X", "E"), None);
+    }
+
+    #[test]
+    fn test_try_col_range_to_end() {
+        let mut map = TableMap::default();
+
+        // Test with visible and hidden columns
+        map.test_insert(
+            SheetId::test(),
+            "test",
+            &["A", "C", "E"],                 // visible columns
+            Some(&["A", "B", "C", "D", "E"]), // all columns
+            Rect::new(1, 1, 2, 4),
+        );
+
+        let table = map.try_table("test").unwrap();
+
+        // Test from visible column
+        assert_eq!(table.try_col_range_to_end("A"), Some((1, 3)));
+        assert_eq!(table.try_col_range_to_end("C"), Some((2, 3)));
+
+        // Test case insensitive
+        assert_eq!(table.try_col_range_to_end("a"), Some((1, 3)));
+
+        // Test from hidden column
+        assert_eq!(table.try_col_range_to_end("B"), Some((2, 3)));
+        assert_eq!(table.try_col_range_to_end("D"), Some((3, 3)));
+
+        // Test non-existent column
+        assert_eq!(table.try_col_range_to_end("X"), None);
+    }
+
+    #[test]
+    fn test_try_col_closest_after() {
+        let mut map = TableMap::default();
+
+        // Test with visible and hidden columns
+        map.test_insert(
+            SheetId::test(),
+            "test",
+            &["A", "C", "E"],                 // visible columns
+            Some(&["A", "B", "C", "D", "E"]), // all columns
+            Rect::new(1, 1, 2, 4),
+        );
+
+        let table = map.try_table("test").unwrap();
+
+        // Test visible column
+        assert_eq!(table.try_col_closest("A", true), Some(1));
+        assert_eq!(table.try_col_closest("C", true), Some(2));
+        assert_eq!(table.try_col_closest("E", true), Some(3));
+
+        // Test case insensitive
+        assert_eq!(table.try_col_closest("a", true), Some(1));
+
+        // Test hidden column - should return next visible
+        assert_eq!(table.try_col_closest("B", true), Some(2)); // Returns C
+        assert_eq!(table.try_col_closest("D", true), Some(3)); // Returns E
+
+        // Test non-existent column
+        assert_eq!(table.try_col_closest("X", true), None);
+    }
+
+    #[test]
+    fn test_try_col_closest_before() {
+        let mut map = TableMap::default();
+        // Test with visible and hidden columns
+        map.test_insert(
+            SheetId::test(),
+            "test",
+            &["A", "C", "E"],                 // visible columns
+            Some(&["A", "B", "C", "D", "E"]), // all columns
+            Rect::new(1, 1, 2, 4),
+        );
+
+        let table = map.try_table("test").unwrap();
+
+        // Test visible column
+        assert_eq!(table.try_col_closest("A", false), Some(1));
+        assert_eq!(table.try_col_closest("C", false), Some(2));
+        assert_eq!(table.try_col_closest("E", false), Some(3));
+
+        // Test case insensitive
+        assert_eq!(table.try_col_closest("a", false), Some(1));
+
+        // Test hidden column - should return previous visible
+        assert_eq!(table.try_col_closest("B", false), Some(1)); // Returns A
+        assert_eq!(table.try_col_closest("D", false), Some(2)); // Returns C
+
+        // Test non-existent column
+        assert_eq!(table.try_col_closest("X", false), None);
     }
 }

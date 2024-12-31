@@ -29,7 +29,7 @@ impl A1Selection {
     pub fn is_column_row(&self) -> bool {
         self.ranges
             .iter()
-            .any(|range| range.is_column_range() || range.is_row_range())
+            .any(|range| range.is_col_range() || range.is_row_range())
     }
 
     /// Returns whether the selection contains the given position.
@@ -294,7 +294,7 @@ impl A1Selection {
         let Some(range) = self.ranges.first() else {
             return false;
         };
-        range.is_column_range() || range.is_row_range() || (one_cell && range.is_single_cell())
+        range.is_col_range() || range.is_row_range() || (one_cell && range.is_single_cell())
     }
 
     /// Returns true if the selection is a single cell.

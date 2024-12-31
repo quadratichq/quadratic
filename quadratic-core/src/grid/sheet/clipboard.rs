@@ -18,6 +18,7 @@ impl Sheet {
         let mut cells = CellValues::default();
         let mut values = CellValues::default();
         let mut sheet_bounds: Option<Rect> = None;
+        let context = self.a1_context();
 
         if let Some(bounds) = self.selection_bounds(selection) {
             clipboard_origin.x = bounds.min.x;
@@ -40,7 +41,7 @@ impl Sheet {
 
                     let pos = Pos { x, y };
 
-                    if !selection.might_contain_pos(pos) {
+                    if !selection.might_contain_pos(pos, &context) {
                         continue;
                     }
 
@@ -249,7 +250,7 @@ impl Sheet {
                                     x: x - bounds.min.x,
                                     y: y - bounds.min.y,
                                 };
-                                if selection.might_contain_pos(Pos { x, y }) {
+                                if selection.might_contain_pos(Pos { x, y }, &context) {
                                     if include_in_cells {
                                         cells.set(pos.x as u32, pos.y as u32, value.clone());
                                     }
@@ -266,7 +267,9 @@ impl Sheet {
 
         let borders = self.borders.to_clipboard(self, selection);
 
-        let validations = self.validations.to_clipboard(selection, &clipboard_origin);
+        let validations = self
+            .validations
+            .to_clipboard(selection, &clipboard_origin, &context);
 
         let clipboard = Clipboard {
             cells,

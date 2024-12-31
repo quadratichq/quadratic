@@ -149,9 +149,10 @@ mod tests {
             .unwrap();
         assert_eq!(result, "test".to_string());
         assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
+        let context = gc.grid.a1_context();
         assert!(transaction
             .cells_accessed
-            .contains(SheetPos::new(sheet_id, 1, 2)));
+            .contains(SheetPos::new(sheet_id, 1, 2), &context));
 
         gc.add_sheet(None);
         let sheet_2_id = gc.sheet_ids()[1];
@@ -166,7 +167,7 @@ mod tests {
         assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
         assert!(transaction
             .cells_accessed
-            .contains(SheetPos::new(sheet_id, 1, 2)));
+            .contains(SheetPos::new(sheet_id, 1, 2), &context));
     }
 
     #[test]
@@ -192,9 +193,10 @@ mod tests {
             .unwrap();
         assert_eq!(result, "test".to_string());
         assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
+        let context = gc.grid.a1_context();
         assert!(transaction
             .cells_accessed
-            .contains(SheetPos::new(sheet_id, 1, 2)));
+            .contains(SheetPos::new(sheet_id, 1, 2), &context));
 
         let code = r#"{{'Sheet 1'!A2}}"#;
         let result = gc
@@ -204,7 +206,7 @@ mod tests {
         assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
         assert!(transaction
             .cells_accessed
-            .contains(SheetPos::new(sheet_id, 1, 2)));
+            .contains(SheetPos::new(sheet_id, 1, 2), &context));
     }
 
     #[test]

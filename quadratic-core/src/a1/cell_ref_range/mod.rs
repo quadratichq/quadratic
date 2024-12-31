@@ -135,16 +135,16 @@ impl CellRefRange {
         }
     }
 
-    pub fn is_column_range(&self) -> bool {
+    pub fn is_col_range(&self) -> bool {
         match self {
-            Self::Sheet { range } => range.is_column_range(),
+            Self::Sheet { range } => range.is_col_range(),
             Self::Table { .. } => false,
         }
     }
 
-    pub fn has_column_range(&self, col: i64) -> bool {
+    pub fn has_col_range(&self, col: i64) -> bool {
         match self {
-            Self::Sheet { range } => range.has_column_range(col),
+            Self::Sheet { range } => range.has_col_range(col),
             Self::Table { .. } => false,
         }
     }
@@ -325,12 +325,12 @@ mod tests {
 
     #[test]
     fn test_is_column_row() {
-        assert!(!CellRefRange::test_a1("A1").is_column_range());
-        assert!(CellRefRange::test_a1("A").is_column_range());
-        assert!(!CellRefRange::test_a1("A1:C3").is_column_range());
-        assert!(CellRefRange::test_a1("A:C").is_column_range());
-        assert!(CellRefRange::test_a1("A1:C").is_column_range());
-        assert!(!CellRefRange::test_a1("A:C1").is_column_range());
+        assert!(!CellRefRange::test_a1("A1").is_col_range());
+        assert!(CellRefRange::test_a1("A").is_col_range());
+        assert!(!CellRefRange::test_a1("A1:C3").is_col_range());
+        assert!(CellRefRange::test_a1("A:C").is_col_range());
+        assert!(CellRefRange::test_a1("A1:C").is_col_range());
+        assert!(!CellRefRange::test_a1("A:C1").is_col_range());
     }
 
     #[test]
@@ -346,15 +346,15 @@ mod tests {
 
     #[test]
     fn test_has_column() {
-        assert!(CellRefRange::test_a1("A").has_column_range(1));
-        assert!(!CellRefRange::test_a1("A").has_column_range(2));
-        assert!(CellRefRange::test_a1("A:B").has_column_range(1));
-        assert!(CellRefRange::test_a1("A:B").has_column_range(2));
-        assert!(!CellRefRange::test_a1("A:B").has_column_range(3));
+        assert!(CellRefRange::test_a1("A").has_col_range(1));
+        assert!(!CellRefRange::test_a1("A").has_col_range(2));
+        assert!(CellRefRange::test_a1("A:B").has_col_range(1));
+        assert!(CellRefRange::test_a1("A:B").has_col_range(2));
+        assert!(!CellRefRange::test_a1("A:B").has_col_range(3));
 
-        assert!(!CellRefRange::test_a1("A1").has_column_range(1));
-        assert!(!CellRefRange::test_a1("1").has_column_range(1));
-        assert!(!CellRefRange::test_a1("A1:C3").has_column_range(2));
+        assert!(!CellRefRange::test_a1("A1").has_col_range(1));
+        assert!(!CellRefRange::test_a1("1").has_col_range(1));
+        assert!(!CellRefRange::test_a1("A1:C3").has_col_range(2));
     }
 
     #[test]

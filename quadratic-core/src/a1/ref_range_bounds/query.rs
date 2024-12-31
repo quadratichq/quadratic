@@ -4,7 +4,7 @@ use super::*;
 
 impl RefRangeBounds {
     /// Returns whether `self` is a single column or a column range.
-    pub fn is_column_range(&self) -> bool {
+    pub fn is_col_range(&self) -> bool {
         self.start.row() == 1 && self.end.row() == UNBOUNDED
     }
 
@@ -22,8 +22,8 @@ impl RefRangeBounds {
     }
 
     /// Returns whether `self` contains the column `col` in its column range.
-    pub fn has_column_range(&self, col: i64) -> bool {
-        if !self.is_column_range() {
+    pub fn has_col_range(&self, col: i64) -> bool {
+        if !self.is_col_range() {
             return false;
         }
         let min = if self.start.col.is_unbounded() {
@@ -217,13 +217,13 @@ mod tests {
 
     #[test]
     fn test_is_column_row() {
-        assert!(!RefRangeBounds::test_a1("A1").is_column_range());
-        assert!(RefRangeBounds::test_a1("A").is_column_range());
-        assert!(!RefRangeBounds::test_a1("A1:C3").is_column_range());
-        assert!(RefRangeBounds::test_a1("A:C").is_column_range());
-        assert!(RefRangeBounds::test_a1("A1:C").is_column_range());
-        assert!(RefRangeBounds::test_a1("C1:A").is_column_range());
-        assert!(RefRangeBounds::test_a1("*").is_column_range());
+        assert!(!RefRangeBounds::test_a1("A1").is_col_range());
+        assert!(RefRangeBounds::test_a1("A").is_col_range());
+        assert!(!RefRangeBounds::test_a1("A1:C3").is_col_range());
+        assert!(RefRangeBounds::test_a1("A:C").is_col_range());
+        assert!(RefRangeBounds::test_a1("A1:C").is_col_range());
+        assert!(RefRangeBounds::test_a1("C1:A").is_col_range());
+        assert!(RefRangeBounds::test_a1("*").is_col_range());
     }
 
     #[test]
@@ -240,27 +240,27 @@ mod tests {
 
     #[test]
     fn test_has_column_range() {
-        assert!(RefRangeBounds::test_a1("A").has_column_range(1));
-        assert!(!RefRangeBounds::test_a1("A").has_column_range(2));
-        assert!(RefRangeBounds::test_a1("A:B").has_column_range(1));
-        assert!(RefRangeBounds::test_a1("A:B").has_column_range(2));
-        assert!(!RefRangeBounds::test_a1("A:B").has_column_range(3));
+        assert!(RefRangeBounds::test_a1("A").has_col_range(1));
+        assert!(!RefRangeBounds::test_a1("A").has_col_range(2));
+        assert!(RefRangeBounds::test_a1("A:B").has_col_range(1));
+        assert!(RefRangeBounds::test_a1("A:B").has_col_range(2));
+        assert!(!RefRangeBounds::test_a1("A:B").has_col_range(3));
 
-        assert!(!RefRangeBounds::test_a1("A1").has_column_range(1));
-        assert!(!RefRangeBounds::test_a1("1").has_column_range(1));
-        assert!(RefRangeBounds::test_a1("A1:C").has_column_range(2));
+        assert!(!RefRangeBounds::test_a1("A1").has_col_range(1));
+        assert!(!RefRangeBounds::test_a1("1").has_col_range(1));
+        assert!(RefRangeBounds::test_a1("A1:C").has_col_range(2));
 
-        assert!(!RefRangeBounds::test_a1("A1:C3").has_column_range(2));
+        assert!(!RefRangeBounds::test_a1("A1:C3").has_col_range(2));
 
-        assert!(RefRangeBounds::test_a1("A:").has_column_range(1));
-        assert!(!RefRangeBounds::test_a1("D:").has_column_range(1));
-        assert!(RefRangeBounds::test_a1("D:").has_column_range(col![E]));
+        assert!(RefRangeBounds::test_a1("A:").has_col_range(1));
+        assert!(!RefRangeBounds::test_a1("D:").has_col_range(1));
+        assert!(RefRangeBounds::test_a1("D:").has_col_range(col![E]));
 
-        assert!(RefRangeBounds::test_a1("*").has_column_range(col![E]));
-        assert!(!RefRangeBounds::test_a1("3:").has_column_range(col![A]));
+        assert!(RefRangeBounds::test_a1("*").has_col_range(col![E]));
+        assert!(!RefRangeBounds::test_a1("3:").has_col_range(col![A]));
 
         // since this is the same as * it should be true
-        assert!(RefRangeBounds::test_a1("1:").has_column_range(col![A]));
+        assert!(RefRangeBounds::test_a1("1:").has_col_range(col![A]));
     }
 
     #[test]

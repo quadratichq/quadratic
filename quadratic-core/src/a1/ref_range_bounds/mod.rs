@@ -32,7 +32,7 @@ impl fmt::Display for RefRangeBounds {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if *self == Self::ALL {
             write!(f, "*")?;
-        } else if self.is_column_range() {
+        } else if self.is_col_range() {
             if self.start.col() == self.end.col() {
                 self.start.col.fmt_as_column(f)?;
             } else {

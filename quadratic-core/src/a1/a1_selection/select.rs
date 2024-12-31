@@ -20,10 +20,10 @@ impl A1Selection {
     fn add_or_remove_column(&mut self, col: i64, top: i64, context: &A1Context) {
         // If the full column is in any range, then we'll remove it from all
         // ranges. Otherwise we'll add it.
-        if self.ranges.iter().any(|range| range.has_column_range(col)) {
+        if self.ranges.iter().any(|range| range.has_col_range(col)) {
             let mut ranges = vec![];
             self.ranges.iter().for_each(|range| {
-                if !range.has_column_range(col) {
+                if !range.has_col_range(col) {
                     ranges.push(range.clone());
                 } else {
                     match range {
@@ -109,7 +109,7 @@ impl A1Selection {
     /// Extends the last column range or creates a new one.
     pub fn extend_column(&mut self, col: i64, top: i64) {
         if let Some(CellRefRange::Sheet { range }) = self.ranges.last_mut() {
-            if range.is_column_range() {
+            if range.is_col_range() {
                 range.end = CellRefRangeEnd::new_relative_xy(col, UNBOUNDED);
             } else {
                 range.end = CellRefRangeEnd::new_relative_xy(col, UNBOUNDED);

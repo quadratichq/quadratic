@@ -59,15 +59,21 @@ impl ColRange {
         match self {
             ColRange::Col(table_col) => {
                 if let Some(col_index) = table.try_col_index(table_col) {
-                    if col_index != col {
-                        return false;
-                    }
+                    return col_index == col;
                 }
             }
-            ColRange::ColRange(col1, col2) => {}
-            ColRange::ColumnToEnd(col) => {}
+            ColRange::ColRange(col1, col2) => {
+                if let Some((col1_index, col2_index)) = table.try_col_range(col1, col2) {
+                    return col >= col1_index && col <= col2_index;
+                }
+            }
+            ColRange::ColumnToEnd(col_name) => {
+                if let Some((start, end)) = table.try_col_range_to_end(col_name) {
+                    return col >= start && col <= end;
+                }
+            }
         }
-        true
+        false
     }
 }
 
