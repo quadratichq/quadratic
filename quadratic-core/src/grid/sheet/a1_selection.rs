@@ -184,7 +184,9 @@ impl Sheet {
     /// on the sheet.
     pub fn cell_ref_range_to_rect(&self, cell_ref_range: CellRefRange) -> Rect {
         match cell_ref_range {
-            CellRefRange::Table { .. } => todo!(),
+            CellRefRange::Table { range } => range
+                .to_largest_rect(0, &self.a1_context())
+                .unwrap_or(Rect::new(1, 1, 1, 1)),
             CellRefRange::Sheet { range } => {
                 let start = range.start;
                 let end = range.end;
