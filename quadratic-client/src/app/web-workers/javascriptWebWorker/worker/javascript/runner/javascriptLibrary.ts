@@ -1,5 +1,3 @@
-import { COMMUNITY_A1_FILE_UPDATE_URL } from '@/shared/constants/urls';
-
 declare var self: WorkerGlobalScope & typeof globalThis;
 
 declare global {
@@ -357,8 +355,7 @@ export class q {
       oldFunc +
       ' functionality is no longer supported. Use ' +
       newFunc +
-      ' instead.  Refer to the documentation at ' +
-      COMMUNITY_A1_FILE_UPDATE_URL +
+      ' instead.  Refer to the documentation at {COMMUNITY_A1_FILE_UPDATE_URL}' +
       ' for more details.';
     throw new Error(message);
   }
