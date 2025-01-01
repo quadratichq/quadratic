@@ -1,6 +1,5 @@
 use crate::{
     a1::{A1Context, CellRefRange, RefRangeBounds, UNBOUNDED},
-    grid::SheetId,
     Pos, Rect,
 };
 
@@ -9,90 +8,85 @@ use super::*;
 impl TableRef {
     /// Returns any columns that have content in the TableRef that are between
     /// from and to.
-    pub fn selected_cols(
-        &self,
-        from: i64,
-        to: i64,
-        sheet_id: SheetId,
-        context: &A1Context,
-    ) -> Vec<i64> {
+    pub fn selected_cols(&self, from: i64, to: i64, context: &A1Context) -> Vec<i64> {
         let mut cols = vec![];
 
         if let Some(table) = context.try_table(&self.table_name) {
-            if sheet_id == table.sheet_id {
-                self.col_ranges
-                    .iter()
-                    .for_each(|col_range| match col_range {
-                        ColRange::Col(col) => {
-                            if let Some(col_index) = table.try_col_index(col) {
-                                if col_index >= from && col_index <= to {
-                                    cols.push(col_index);
+            self.col_ranges
+                .iter()
+                .for_each(|col_range| match col_range {
+                    ColRange::Col(col) => {
+                        if let Some(col_index) = table.try_col_index(col) {
+                            if col_index >= from && col_index <= to {
+                                cols.push(col_index);
+                            }
+                        }
+                    }
+                    ColRange::ColRange(col_range_start, col_range_end) => {
+                        if let Some((start, end)) =
+                            table.try_col_range(col_range_start, col_range_end)
+                        {
+                            if start >= from && end <= to {
+                                for x in start.max(from)..=end.min(to) {
+                                    cols.push(x);
                                 }
                             }
                         }
-                        ColRange::ColRange(col_range_start, col_range_end) => {
-                            if let Some((start, end)) =
-                                table.try_col_range(col_range_start, col_range_end)
-                            {
-                                if start >= from && end <= to {
-                                    for x in start.max(from)..=end.min(to) {
-                                        cols.push(x);
-                                    }
+                    }
+                    ColRange::ColumnToEnd(col) => {
+                        if let Some((start, end)) = table.try_col_range_to_end(col) {
+                            if start >= from && end <= to {
+                                for x in start.max(from)..=end.min(to) {
+                                    cols.push(x);
                                 }
                             }
                         }
-                        ColRange::ColumnToEnd(col) => {
-                            if let Some((start, end)) = table.try_col_range_to_end(col) {
-                                if start >= from && end <= to {
-                                    for x in start.max(from)..=end.min(to) {
-                                        cols.push(x);
-                                    }
-                                }
-                            }
-                        }
-                    });
-            }
+                    }
+                });
         }
 
         cols
     }
 
-    pub fn selected_rows(
-        &self,
-        from: i64,
-        to: i64,
-        sheet_id: SheetId,
-        context: &A1Context,
-    ) -> Vec<i64> {
+    /// Returns all columns that have content in the TableRef.
+    pub fn selected_cols_finite(&self, context: &A1Context) -> Vec<i64> {
+        // a table cannot be infinite, so we can just use UNBOUNDED
+        self.selected_cols(1, UNBOUNDED, context)
+    }
+
+    pub fn selected_rows(&self, from: i64, to: i64, context: &A1Context) -> Vec<i64> {
         let mut rows = vec![];
 
         if let Some(table) = context.try_table(&self.table_name) {
-            if sheet_id == table.sheet_id {
-                let bounds = table.bounds;
-                if bounds.min.y > to || bounds.max.y < from {
-                    return rows;
+            let bounds = table.bounds;
+            if bounds.min.y > to || bounds.max.y < from {
+                return rows;
+            }
+            match &self.row_range {
+                RowRange::All => {
+                    let start = bounds.min.y.max(from);
+                    let end = bounds.max.y.min(to);
+                    rows.extend(start..=end);
                 }
-                match &self.row_range {
-                    RowRange::All => {
-                        let start = bounds.min.y.max(from);
-                        let end = bounds.max.y.min(to);
+                RowRange::CurrentRow => {
+                    // this one doesn't make sense in this context
+                }
+                RowRange::Rows(ranges) => {
+                    for range in ranges {
+                        let start = range.start.coord.max(from);
+                        let end = range.end.coord.min(to);
                         rows.extend(start..=end);
-                    }
-                    RowRange::CurrentRow => {
-                        // this one doesn't make sense in this context
-                    }
-                    RowRange::Rows(ranges) => {
-                        for range in ranges {
-                            let start = range.start.coord.max(from);
-                            let end = range.end.coord.min(to);
-                            rows.extend(start..=end);
-                        }
                     }
                 }
             }
         }
 
         rows
+    }
+
+    pub fn selected_rows_finite(&self, context: &A1Context) -> Vec<i64> {
+        // a table cannot be infinite, so we can just use UNBOUNDED
+        self.selected_rows(1, UNBOUNDED, context)
     }
 
     pub fn is_multi_cursor(&self, context: &A1Context) -> bool {
@@ -269,39 +263,30 @@ mod tests {
 
     use super::*;
 
-    fn setup_test_context() -> (A1Context, SheetId) {
-        let sheet_id = SheetId::test();
-
+    fn setup_test_context() -> A1Context {
         let mut context = A1Context::default();
-        context.table_map.test_insert(
-            sheet_id,
-            "test_table",
-            &["A", "B", "C"],
-            None,
-            Rect::test_a1("A1:C3"),
-        );
+        context
+            .table_map
+            .test_insert("test_table", &["A", "B", "C"], None, Rect::test_a1("A1:C3"));
 
-        (context, sheet_id)
+        context
     }
 
-    fn setup_test_context_with_hidden_columns() -> (A1Context, SheetId) {
-        let sheet_id = SheetId::test();
-
+    fn setup_test_context_with_hidden_columns() -> A1Context {
         let mut context = A1Context::default();
         context.table_map.test_insert(
-            sheet_id,
             "test_table",
             &["A", "C"],
             Some(&["A", "B", "C"]),
             Rect::test_a1("A1:C3"),
         );
 
-        (context, sheet_id)
+        context
     }
 
     #[test]
     fn test_selected_cols() {
-        let (context, sheet_id) = setup_test_context();
+        let context = setup_test_context();
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_ranges: vec![ColRange::Col("B".to_string())],
@@ -311,13 +296,13 @@ mod tests {
             totals: false,
         };
 
-        let cols = table_ref.selected_cols(1, 3, sheet_id, &context);
+        let cols = table_ref.selected_cols(1, 3, &context);
         assert_eq!(cols, vec![2]);
     }
 
     #[test]
     fn test_selected_cols_hidden_columns() {
-        let (context, sheet_id) = setup_test_context_with_hidden_columns();
+        let context = setup_test_context_with_hidden_columns();
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_ranges: vec![ColRange::Col("C".to_string())],
@@ -326,7 +311,7 @@ mod tests {
             headers: false,
             totals: false,
         };
-        let cols = table_ref.selected_cols(1, 3, sheet_id, &context);
+        let cols = table_ref.selected_cols(1, 3, &context);
 
         // C should be 2 since B is hidden
         assert_eq!(cols, vec![2]);
@@ -334,7 +319,7 @@ mod tests {
 
     #[test]
     fn test_selected_rows() {
-        let (context, sheet_id) = setup_test_context();
+        let context = setup_test_context();
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_ranges: vec![ColRange::Col("A".to_string())],
@@ -344,13 +329,13 @@ mod tests {
             totals: false,
         };
 
-        let rows = table_ref.selected_rows(1, 3, sheet_id, &context);
+        let rows = table_ref.selected_rows(1, 3, &context);
         assert_eq!(rows, vec![1, 2]);
     }
 
     #[test]
     fn test_is_multi_cursor() {
-        let (context, _) = setup_test_context();
+        let context = setup_test_context();
 
         // Single column, single row
         let table_ref = TableRef {
@@ -400,7 +385,7 @@ mod tests {
 
     #[test]
     fn test_to_largest_rect() {
-        let (context, _) = setup_test_context();
+        let context = setup_test_context();
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_ranges: vec![ColRange::ColRange("A".to_string(), "B".to_string())],
@@ -416,16 +401,10 @@ mod tests {
 
     #[test]
     fn test_convert_to_ref_range_bounds() {
-        let sheet_id = SheetId::test();
-
         let mut context = A1Context::default();
-        context.table_map.test_insert(
-            sheet_id,
-            "test_table",
-            &["A", "B", "C"],
-            None,
-            Rect::test_a1("A1:C3"),
-        );
+        context
+            .table_map
+            .test_insert("test_table", &["A", "B", "C"], None, Rect::test_a1("A1:C3"));
 
         // Test case 1: Single column with all rows
         let table_ref = TableRef {

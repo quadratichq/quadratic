@@ -1,10 +1,6 @@
 use std::collections::HashSet;
 
-use crate::{
-    a1::A1Context,
-    grid::{Sheet, SheetId},
-    Pos, Rect,
-};
+use crate::{a1::A1Context, grid::Sheet, Pos, Rect};
 
 use super::{A1Selection, CellRefRange};
 
@@ -149,7 +145,7 @@ impl A1Selection {
 
     /// Returns the last selection's end. It defaults to the cursor if it's
     /// a non-finite range.
-    pub fn last_selection_end(&self) -> Pos {
+    pub fn last_selection_end(&self, context: &A1Context) -> Pos {
         if let Some(range) = self.ranges.last() {
             match range {
                 CellRefRange::Sheet { range } => {
@@ -162,7 +158,22 @@ impl A1Selection {
                         }
                     }
                 }
-                CellRefRange::Table { .. } => todo!(),
+                CellRefRange::Table { range } => {
+                    let range = range.convert_to_ref_range_bounds(0, context);
+                    if let Some(last) = range.last() {
+                        match last {
+                            CellRefRange::Sheet { range } => Pos {
+                                x: range.end.col(),
+                                y: range.end.row(),
+                            },
+                            // this should not happen as we already converted it
+                            // to a sheet range
+                            CellRefRange::Table { .. } => self.cursor,
+                        }
+                    } else {
+                        self.cursor
+                    }
+                }
             }
         } else {
             self.cursor
@@ -175,34 +186,28 @@ impl A1Selection {
     }
 
     /// Returns true if all the selected columns are finite.
-    pub fn is_selected_columns_finite(&self) -> bool {
+    pub fn is_selected_columns_finite(&self, context: &A1Context) -> bool {
         self.ranges
             .iter()
-            .all(|range| !range.selected_columns_finite().is_empty())
+            .all(|range| !range.selected_columns_finite(context).is_empty())
     }
 
     /// Returns the selected columns as a list of column numbers.
-    pub fn selected_columns_finite(&self) -> Vec<i64> {
+    pub fn selected_columns_finite(&self, context: &A1Context) -> Vec<i64> {
         let mut columns = HashSet::new();
         self.ranges.iter().for_each(|range| {
-            columns.extend(range.selected_columns_finite());
+            columns.extend(range.selected_columns_finite(context));
         });
         columns.into_iter().collect::<Vec<_>>()
     }
 
     /// Returns the selected column ranges as a list of [start, end] pairs between two coordinates.
-    pub fn selected_column_ranges(
-        &self,
-        from: i64,
-        to: i64,
-        sheet_id: SheetId,
-        context: &A1Context,
-    ) -> Vec<i64> {
+    pub fn selected_column_ranges(&self, from: i64, to: i64, context: &A1Context) -> Vec<i64> {
         let mut columns = HashSet::new();
         self.ranges.iter().for_each(|range| {
             columns.extend(
                 range
-                    .selected_columns(from, to, sheet_id, context)
+                    .selected_columns(from, to, context)
                     .iter()
                     .filter(|c| c >= &&from && c <= &&to),
             );
@@ -233,33 +238,27 @@ impl A1Selection {
     }
 
     /// Returns true if all the selected rows are finite.
-    pub fn is_selected_rows_finite(&self) -> bool {
+    pub fn is_selected_rows_finite(&self, context: &A1Context) -> bool {
         self.ranges
             .iter()
-            .all(|range| !range.selected_rows_finite().is_empty())
+            .all(|range| !range.selected_rows_finite(context).is_empty())
     }
 
     /// Returns the selected rows as a list of row numbers.
-    pub fn selected_rows_finite(&self) -> Vec<i64> {
+    pub fn selected_rows_finite(&self, context: &A1Context) -> Vec<i64> {
         let mut rows = HashSet::new();
         self.ranges.iter().for_each(|range| {
-            rows.extend(range.selected_rows_finite());
+            rows.extend(range.selected_rows_finite(context));
         });
         rows.into_iter().collect::<Vec<_>>()
     }
 
     /// Returns the selected row ranges as a list of [start, end] pairs between two coordinates.
-    pub fn selected_row_ranges(
-        &self,
-        from: i64,
-        to: i64,
-        sheet_id: SheetId,
-        context: &A1Context,
-    ) -> Vec<i64> {
+    pub fn selected_row_ranges(&self, from: i64, to: i64, context: &A1Context) -> Vec<i64> {
         let mut rows = HashSet::new();
         self.ranges
             .iter()
-            .for_each(|range| rows.extend(range.selected_rows(from, to, sheet_id, context).iter()));
+            .for_each(|range| rows.extend(range.selected_rows(from, to, context).iter()));
 
         let mut rows = rows.into_iter().collect::<Vec<_>>();
         rows.sort_unstable();
@@ -404,14 +403,15 @@ mod tests {
 
     #[test]
     fn test_selection_end() {
+        let context = A1Context::default();
         let selection = A1Selection::test_a1("A1,B2,C3");
-        assert_eq!(selection.last_selection_end(), pos![C3]);
+        assert_eq!(selection.last_selection_end(&context), pos![C3]);
 
         let selection = A1Selection::test_a1("A1,B1:C2");
-        assert_eq!(selection.last_selection_end(), pos![C2]);
+        assert_eq!(selection.last_selection_end(&context), pos![C2]);
 
         let selection = A1Selection::test_a1("C2:B1");
-        assert_eq!(selection.last_selection_end(), pos![B1]);
+        assert_eq!(selection.last_selection_end(&context), pos![B1]);
     }
 
     #[test]
@@ -428,52 +428,47 @@ mod tests {
 
     #[test]
     fn test_selected_column_ranges() {
-        let sheet_id = SheetId::test();
         let context = A1Context::default();
         let selection = A1Selection::test_a1("A1,B2,C3,D4:E5,F6:G7,H8");
         assert_eq!(
-            selection.selected_column_ranges(1, 10, sheet_id, &context),
+            selection.selected_column_ranges(1, 10, &context),
             vec![1, 8]
         );
 
         let selection = A1Selection::test_a1("A1,B2,D4:E5,F6:G7,H8");
         assert_eq!(
-            selection.selected_column_ranges(1, 10, sheet_id, &context),
+            selection.selected_column_ranges(1, 10, &context),
             vec![1, 2, 4, 8]
         );
 
         let selection = A1Selection::test_a1("A1,B2,D4:E5,F6:G7,H8");
         assert_eq!(
-            selection.selected_column_ranges(2, 5, sheet_id, &context),
+            selection.selected_column_ranges(2, 5, &context),
             vec![2, 2, 4, 5]
         );
 
         let selection = A1Selection::test_a1("C:A");
         assert_eq!(
-            selection.selected_column_ranges(1, 10, sheet_id, &context),
+            selection.selected_column_ranges(1, 10, &context),
             vec![1, 3]
         );
     }
 
     #[test]
     fn test_selected_row_ranges() {
-        let sheet_id = SheetId::test();
         let context = A1Context::default();
         let selection = A1Selection::test_a1("A1,B2,C3,D4:E5,F6:G7,H8");
-        assert_eq!(
-            selection.selected_row_ranges(1, 10, sheet_id, &context),
-            vec![1, 8]
-        );
+        assert_eq!(selection.selected_row_ranges(1, 10, &context), vec![1, 8]);
 
         let selection = A1Selection::test_a1("A1,B2,D4:E5,F6:G7,H8");
         assert_eq!(
-            selection.selected_row_ranges(1, 10, sheet_id, &context),
+            selection.selected_row_ranges(1, 10, &context),
             vec![1, 2, 4, 8]
         );
 
         let selection = A1Selection::test_a1("A1,B2,D4:E5,F6:G7,H8");
         assert_eq!(
-            selection.selected_row_ranges(2, 5, sheet_id, &context),
+            selection.selected_row_ranges(2, 5, &context),
             vec![2, 2, 4, 5]
         );
     }
@@ -504,21 +499,23 @@ mod tests {
 
     #[test]
     fn test_is_selected_columns_finite() {
-        assert!(A1Selection::test_a1("A1,B2,C3").is_selected_columns_finite());
-        assert!(A1Selection::test_a1("A1,B2,C3,D:E").is_selected_columns_finite());
-        assert!(A1Selection::test_a1("A:B").is_selected_columns_finite());
-        assert!(!A1Selection::test_a1("*").is_selected_columns_finite());
-        assert!(!A1Selection::test_a1("1:2").is_selected_columns_finite());
-        assert!(!A1Selection::test_a1("A1:2").is_selected_columns_finite());
+        let context = A1Context::default();
+        assert!(A1Selection::test_a1("A1,B2,C3").is_selected_columns_finite(&context));
+        assert!(A1Selection::test_a1("A1,B2,C3,D:E").is_selected_columns_finite(&context));
+        assert!(A1Selection::test_a1("A:B").is_selected_columns_finite(&context));
+        assert!(!A1Selection::test_a1("*").is_selected_columns_finite(&context));
+        assert!(!A1Selection::test_a1("1:2").is_selected_columns_finite(&context));
+        assert!(!A1Selection::test_a1("A1:2").is_selected_columns_finite(&context));
     }
 
     #[test]
     fn test_is_selected_rows_finite() {
-        assert!(A1Selection::test_a1("A1,B2,C3").is_selected_rows_finite());
-        assert!(A1Selection::test_a1("1:2").is_selected_rows_finite());
-        assert!(!A1Selection::test_a1("A1,B2,C3,D:E").is_selected_rows_finite());
-        assert!(!A1Selection::test_a1("A:B").is_selected_rows_finite());
-        assert!(!A1Selection::test_a1("*").is_selected_rows_finite());
+        let context = A1Context::default();
+        assert!(A1Selection::test_a1("A1,B2,C3").is_selected_rows_finite(&context));
+        assert!(A1Selection::test_a1("1:2").is_selected_rows_finite(&context));
+        assert!(!A1Selection::test_a1("A1,B2,C3,D:E").is_selected_rows_finite(&context));
+        assert!(!A1Selection::test_a1("A:B").is_selected_rows_finite(&context));
+        assert!(!A1Selection::test_a1("*").is_selected_rows_finite(&context));
     }
 
     #[test]

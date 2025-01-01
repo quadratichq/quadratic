@@ -114,10 +114,14 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "bottomRightCell")]
-    pub fn bottom_right_cell(&self) -> JsCoordinate {
+    pub fn bottom_right_cell(&self, context: &str) -> JsCoordinate {
+        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
+            dbgjs!("Unable to parse context in bottom_right_cell");
+            return JsCoordinate { x: 0, y: 0 };
+        };
         JsCoordinate {
-            x: self.selection.last_selection_end().x as u32,
-            y: self.selection.last_selection_end().y as u32,
+            x: self.selection.last_selection_end(&context).x as u32,
+            y: self.selection.last_selection_end(&context).y as u32,
         }
     }
 
@@ -127,28 +131,44 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "isSelectedColumnsFinite")]
-    pub fn is_selected_columns_finite(&self) -> bool {
-        self.selection.is_selected_columns_finite()
+    pub fn is_selected_columns_finite(&self, context: &str) -> bool {
+        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
+            dbgjs!("Unable to parse context in is_selected_columns_finite");
+            return false;
+        };
+        self.selection.is_selected_columns_finite(&context)
     }
 
     #[wasm_bindgen(js_name = "isSelectedRowsFinite")]
-    pub fn is_selected_rows_finite(&self) -> bool {
-        self.selection.is_selected_rows_finite()
+    pub fn is_selected_rows_finite(&self, context: &str) -> bool {
+        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
+            dbgjs!("Unable to parse context in is_selected_rows_finite");
+            return false;
+        };
+        self.selection.is_selected_rows_finite(&context)
     }
 
     #[wasm_bindgen(js_name = "getSelectedColumns")]
-    pub fn get_selected_columns(&self) -> Vec<u32> {
+    pub fn get_selected_columns(&self, context: &str) -> Vec<u32> {
+        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
+            dbgjs!("Unable to parse context in get_selected_columns");
+            return vec![];
+        };
         self.selection
-            .selected_columns_finite()
+            .selected_columns_finite(&context)
             .iter()
             .map(|c| *c as u32)
             .collect()
     }
 
     #[wasm_bindgen(js_name = "getSelectedRows")]
-    pub fn get_selected_rows(&self) -> Vec<u32> {
+    pub fn get_selected_rows(&self, context: &str) -> Vec<u32> {
+        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
+            dbgjs!("Unable to parse context in get_selected_rows");
+            return vec![];
+        };
         self.selection
-            .selected_rows_finite()
+            .selected_rows_finite(&context)
             .iter()
             .map(|c| *c as u32)
             .collect()
@@ -161,7 +181,7 @@ impl JsSelection {
             return vec![];
         };
         self.selection
-            .selected_column_ranges(from as i64, to as i64, self.selection.sheet_id, &context)
+            .selected_column_ranges(from as i64, to as i64, &context)
             .iter()
             .map(|c| *c as u32)
             .collect()
@@ -174,7 +194,7 @@ impl JsSelection {
             return vec![];
         };
         self.selection
-            .selected_row_ranges(from as i64, to as i64, self.selection.sheet_id, &context)
+            .selected_row_ranges(from as i64, to as i64, &context)
             .iter()
             .map(|c| *c as u32)
             .collect()

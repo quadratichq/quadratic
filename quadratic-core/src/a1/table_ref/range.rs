@@ -143,13 +143,7 @@ mod tests {
 
     #[test]
     fn test_to_rows() {
-        let table = TableMapEntry::test(
-            SheetId::test(),
-            "test",
-            &["A"],
-            None,
-            Rect::test_a1("A1:A5"),
-        );
+        let table = TableMapEntry::test("test", &["A"], None, Rect::test_a1("A1:A5"));
 
         let row_range = RowRange::All;
         let rows = row_range.to_rows(1, &table);

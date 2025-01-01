@@ -101,7 +101,6 @@ impl TableMapEntry {
 
     #[cfg(test)]
     pub fn test(
-        sheet_id: SheetId,
         table_name: &str,
         visible_columns: &[&str],
         all_columns: Option<&[&str]>,
@@ -112,7 +111,7 @@ impl TableMapEntry {
             c.iter().map(|c| c.to_string()).collect()
         });
         TableMapEntry {
-            sheet_id,
+            sheet_id: SheetId::test(),
             table_name: table_name.to_string(),
             visible_columns,
             all_columns,
@@ -155,14 +154,12 @@ impl TableMap {
     #[cfg(test)]
     pub fn test_insert(
         &mut self,
-        sheet_id: SheetId,
         table_name: &str,
         visible_columns: &[&str],
         all_columns: Option<&[&str]>,
         bounds: Rect,
     ) {
         self.tables.push(TableMapEntry::test(
-            sheet_id,
             table_name,
             visible_columns,
             all_columns,
@@ -180,7 +177,6 @@ mod tests {
     fn test_try_col_index() {
         let mut map = TableMap::default();
         map.test_insert(
-            SheetId::test(),
             "test",
             &["Col1", "Col2", "Col3"],
             None,
@@ -208,7 +204,6 @@ mod tests {
 
         // Test with visible and hidden columns
         map.test_insert(
-            SheetId::test(),
             "test",
             &["A", "C", "E"],                 // visible columns
             Some(&["A", "B", "C", "D", "E"]), // all columns
@@ -245,7 +240,6 @@ mod tests {
 
         // Test with visible and hidden columns
         map.test_insert(
-            SheetId::test(),
             "test",
             &["A", "C", "E"],                 // visible columns
             Some(&["A", "B", "C", "D", "E"]), // all columns
@@ -275,7 +269,6 @@ mod tests {
 
         // Test with visible and hidden columns
         map.test_insert(
-            SheetId::test(),
             "test",
             &["A", "C", "E"],                 // visible columns
             Some(&["A", "B", "C", "D", "E"]), // all columns
@@ -305,7 +298,6 @@ mod tests {
         let mut map = TableMap::default();
         // Test with visible and hidden columns
         map.test_insert(
-            SheetId::test(),
             "test",
             &["A", "C", "E"],                 // visible columns
             Some(&["A", "B", "C", "D", "E"]), // all columns

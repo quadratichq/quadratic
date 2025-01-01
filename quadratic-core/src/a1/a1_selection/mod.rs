@@ -256,11 +256,11 @@ impl A1Selection {
             } else if result.contains_pos(other.cursor, context) {
                 other.cursor
             } else {
-                let pos = result.last_selection_end();
+                let pos = result.last_selection_end(context);
                 if result.contains_pos(pos, context) {
                     pos
                 } else {
-                    let pos = result.last_selection_end();
+                    let pos = result.last_selection_end(context);
                     if result.contains_pos(pos, context) {
                         pos
                     } else {
