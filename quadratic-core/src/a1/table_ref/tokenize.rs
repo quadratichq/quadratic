@@ -150,14 +150,12 @@ impl TableRef {
                 ':' => {
                     if in_special || in_double_brackets {
                         entry.push(c);
+                    } else if entry.is_empty() {
+                        return Err(A1Error::InvalidTableRef("Empty entry found".into()));
                     } else {
-                        if entry.is_empty() {
-                            return Err(A1Error::InvalidTableRef("Empty entry found".into()));
-                        } else {
-                            entries.push(entry.trim().to_string());
-                            entries.push(":".to_string());
-                            entry = String::new();
-                        }
+                        entries.push(entry.trim().to_string());
+                        entries.push(":".to_string());
+                        entry = String::new();
                     }
                 }
                 c => {
@@ -194,20 +192,18 @@ impl TableRef {
                         continue;
                     }
                     let s = s.to_string();
-                    if s.chars().next() == Some('#') {
-                        tokens.extend(Self::tokenize_rows(s)?)
-                    } else {
-                        if iter.peek().is_some_and(|s| **s == ":") {
-                            // skip the colon
-                            iter.next();
-                            if let Some(column_name) = iter.next() {
-                                tokens.push(Token::ColumnRange(s, column_name.to_string()));
-                            } else {
-                                tokens.push(Token::ColumnToEnd(s));
-                            }
+                    if s.starts_with('#') {
+                        tokens.extend(Self::tokenize_rows(s)?);
+                    } else if iter.peek().is_some_and(|s| **s == ":") {
+                        // skip the colon
+                        iter.next();
+                        if let Some(column_name) = iter.next() {
+                            tokens.push(Token::ColumnRange(s, column_name.to_string()));
                         } else {
-                            tokens.push(Token::Column(s));
+                            tokens.push(Token::ColumnToEnd(s));
                         }
+                    } else {
+                        tokens.push(Token::Column(s));
                     }
                 }
             }

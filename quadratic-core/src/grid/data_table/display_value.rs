@@ -86,8 +86,8 @@ impl DataTable {
         let columns = self.column_headers.iter().flatten().collect::<Vec<_>>();
 
         // increase the x position if the column before it is not displayed
-        for i in 0..columns.len() {
-            if !columns[i].display && i <= x as usize {
+        for (i, column) in columns.iter().enumerate() {
+            if !column.display && i <= x as usize {
                 new_x = new_x.add_checked(1).unwrap_or(new_x);
             }
         }
@@ -162,14 +162,14 @@ impl DataTable {
 
     /// For a given row of CellValues, return only the columns that should be displayed
     pub fn display_columns(&self, columns_to_show: &[usize], row: &[CellValue]) -> Vec<CellValue> {
-        row.to_vec()
-            .into_iter()
+        row.iter()
+            .cloned()
             .enumerate()
             .filter(|(i, _)| {
                 // TODO(ddimaria): removed the "*i != 0" check, delete the
                 // commented-out code if no bugs arise
                 // (*i == 0 && !self.header_is_first_row) || (*i != 0 && columns_to_show.contains(&i))
-                (*i == 0 && !self.header_is_first_row) || (columns_to_show.contains(&i))
+                (*i == 0 && !self.header_is_first_row) || (columns_to_show.contains(i))
             })
             .map(|(_, v)| v)
             .collect::<Vec<CellValue>>()
@@ -235,7 +235,7 @@ pub mod test {
         assert_eq!(
             sheet.display_value(Pos { x: 2, y: 1 }).unwrap(),
             CellValue::Blank
-        )
+        );
     }
 
     #[test]
@@ -265,7 +265,7 @@ pub mod test {
             data_table.column_headers = Some(column);
 
             let title = Some(format!("Remove column {}", remove_at));
-            pretty_print_data_table(&data_table, title.as_deref(), None);
+            pretty_print_data_table(data_table, title.as_deref(), None);
 
             let expected_output_width = data_table.columns_to_show().len();
             assert_eq!(

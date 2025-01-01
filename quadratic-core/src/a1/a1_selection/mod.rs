@@ -178,12 +178,11 @@ impl A1Selection {
 
         let last_range = ranges
             .last()
-            .clone()
             .ok_or_else(|| A1Error::InvalidRange(a1.to_string()))?;
 
         Ok(Self {
             sheet_id: sheet.unwrap_or(default_sheet_id.to_owned()),
-            cursor: cursor_pos_from_last_range(&last_range, context),
+            cursor: cursor_pos_from_last_range(last_range, context),
             ranges,
         })
     }

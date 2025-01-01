@@ -295,12 +295,11 @@ impl Sheet {
         let mut x = column_start;
         while (reverse && x >= bounds.0) || (!reverse && x <= bounds.1) {
             let mut has_content = self.display_value(Pos { x, y: row });
-            if !has_content.is_some()
+            if (has_content.is_none()
                 || has_content
                     .as_ref()
-                    .is_some_and(|cell_value| *cell_value == CellValue::Blank)
-            {
-                if self.table_intersects(
+                    .is_some_and(|cell_value| *cell_value == CellValue::Blank))
+                && self.table_intersects(
                     x,
                     row,
                     Some(if reverse {
@@ -309,14 +308,15 @@ impl Sheet {
                         column_start - 1
                     }),
                     None,
-                ) {
-                    // we use a dummy CellValue::Logical to share that there is
-                    // content here (so we don't have to check for the actual
-                    // Table content--as it's not really needed except for a
-                    // Blank check)
-                    has_content = Some(CellValue::Logical(true));
-                }
+                )
+            {
+                // we use a dummy CellValue::Logical to share that there is
+                // content here (so we don't have to check for the actual
+                // Table content--as it's not really needed except for a
+                // Blank check)
+                has_content = Some(CellValue::Logical(true));
             }
+
             if has_content.is_some_and(|cell_value| cell_value != CellValue::Blank) {
                 if with_content {
                     return Some(x);

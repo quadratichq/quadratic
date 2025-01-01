@@ -60,11 +60,12 @@ impl TableRef {
             .map(TableRef::col_range_entry_to_string)
             .collect::<Vec<String>>()
     }
+}
 
-    /// Returns the string representation of the table reference.
-    pub fn to_string(&self) -> String {
+impl fmt::Display for TableRef {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.is_default() {
-            return self.table_name.to_string();
+            return write!(f, "{}", self.table_name);
         }
 
         let mut entries = vec![];
@@ -88,13 +89,7 @@ impl TableRef {
         entries.extend(self.row_range_to_string());
         entries.extend(self.col_ranges_to_string());
 
-        format!("{}[{}]", self.table_name.to_string(), entries.join(","))
-    }
-}
-
-impl fmt::Display for TableRef {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Display::fmt(&self.to_string(), f)
+        write!(f, "{}[{}]", self.table_name, entries.join(","))
     }
 }
 

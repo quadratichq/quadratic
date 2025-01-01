@@ -16,8 +16,7 @@ pub struct SheetMap {
 
 impl SheetMap {
     pub fn insert(&mut self, sheet: &Sheet) {
-        self.sheet_map
-            .insert(sheet.name.to_string(), sheet.id.clone());
+        self.sheet_map.insert(sheet.name.to_string(), sheet.id);
     }
 
     pub fn try_sheet_name(&self, sheet_name: &str) -> Option<SheetId> {
@@ -25,7 +24,7 @@ impl SheetMap {
         self.sheet_map
             .iter()
             .find(|(name, _)| case_fold(name) == folded_name)
-            .map(|(_, id)| id.clone())
+            .map(|(_, id)| *id)
     }
 
     pub fn try_sheet_id(&self, sheet_id: SheetId) -> Option<&String> {

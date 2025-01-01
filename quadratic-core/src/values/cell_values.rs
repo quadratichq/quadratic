@@ -63,7 +63,7 @@ impl CellValues {
         Ok(cell_value)
     }
 
-    pub fn get_owned<'a>(&'a mut self, x: u32, y: u32) -> anyhow::Result<&'a mut CellValue> {
+    pub fn get_owned(&mut self, x: u32, y: u32) -> anyhow::Result<&mut CellValue> {
         if !(x < self.w && y < self.h) {
             anyhow::bail!(
                 "CellValues::safe_get out of bounds: w={}, h={}, x={}, y={}",
@@ -95,9 +95,7 @@ impl CellValues {
                 let new_x = u32::try_from(x).unwrap_or(0);
                 let new_y = u32::try_from(y).unwrap_or(0);
 
-                values[y_index as usize][x_index as usize] = self
-                    .remove(new_x as u32, new_y as u32)
-                    .unwrap_or(CellValue::Blank);
+                values[y_index][x_index] = self.remove(new_x, new_y).unwrap_or(CellValue::Blank);
             }
         }
         values

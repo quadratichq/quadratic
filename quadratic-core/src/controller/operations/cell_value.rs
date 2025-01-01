@@ -146,7 +146,7 @@ impl GridController {
                 ops.push(Operation::SetDataTableAt {
                     sheet_pos,
                     values: cell_values,
-                })
+                });
             }
         };
         ops

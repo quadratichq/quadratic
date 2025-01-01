@@ -84,11 +84,10 @@ impl Sheet {
             .iter()
             .find_map(|(code_cell_pos, data_table)| {
                 if data_table.output_rect(*code_cell_pos, false).contains(pos) {
-                    let val = data_table.cell_value_at(
+                    data_table.cell_value_at(
                         (pos.x - code_cell_pos.x) as u32,
                         (pos.y - code_cell_pos.y) as u32,
-                    );
-                    val
+                    )
                 } else {
                     None
                 }
@@ -137,24 +136,25 @@ impl Sheet {
 
     /// TODO(ddimaria): move to DataTable code
     pub fn set_code_cell_values(&mut self, pos: Pos, values: CellValues) {
-        self.data_tables
-            .iter_mut()
-            .find(|(code_cell_pos, data_table)| {
-                data_table.output_rect(**code_cell_pos, false).contains(pos)
-            })
-            .map(|(code_cell_pos, data_table)| {
-                let rect = Rect::from(&values);
+        if let Some((code_cell_pos, data_table)) =
+            self.data_tables
+                .iter_mut()
+                .find(|(code_cell_pos, data_table)| {
+                    data_table.output_rect(**code_cell_pos, false).contains(pos)
+                })
+        {
+            let rect = Rect::from(&values);
 
-                for y in rect.y_range() {
-                    for x in rect.x_range() {
-                        let new_x = u32::try_from(pos.x - code_cell_pos.x + x).unwrap_or(0);
-                        let new_y = u32::try_from(pos.y - code_cell_pos.y + y).unwrap_or(0);
-                        let value = values.get(x as u32, y as u32).unwrap_or(&CellValue::Blank);
+            for y in rect.y_range() {
+                for x in rect.x_range() {
+                    let new_x = u32::try_from(pos.x - code_cell_pos.x + x).unwrap_or(0);
+                    let new_y = u32::try_from(pos.y - code_cell_pos.y + y).unwrap_or(0);
+                    let value = values.get(x as u32, y as u32).unwrap_or(&CellValue::Blank);
 
-                        data_table.set_cell_value_at(new_x, new_y, value.to_owned());
-                    }
+                    data_table.set_cell_value_at(new_x, new_y, value.to_owned());
                 }
-            });
+            }
+        }
     }
 
     pub fn iter_code_output_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, &DataTable)> {
@@ -178,9 +178,7 @@ impl Sheet {
                 let output_rect = data_table.output_rect(*pos, false);
                 output_rect
                     .intersection(&rect)
-                    .and_then(|intersection_rect| {
-                        Some((output_rect, intersection_rect, data_table))
-                    })
+                    .map(|intersection_rect| (output_rect, intersection_rect, data_table))
             })
     }
 

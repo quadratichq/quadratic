@@ -53,7 +53,7 @@ impl A1Context {
     pub fn test(sheets: &[(&str, SheetId)], tables: &[(&str, &[&str], Rect)]) -> Self {
         let mut sheet_map = SheetMap::default();
         for (name, id) in sheets {
-            sheet_map.insert_test(name, id.clone());
+            sheet_map.insert_test(name, *id);
         }
 
         let mut table_map = TableMap::default();

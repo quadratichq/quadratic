@@ -53,9 +53,9 @@ impl TableMapEntry {
 
                 // If no visible columns after, return last visible column
                 if !self.visible_columns.is_empty() {
-                    return Some(self.bounds.min.x + (self.visible_columns.len() - 1) as i64);
+                    Some(self.bounds.min.x + (self.visible_columns.len() - 1) as i64)
                 } else {
-                    return None;
+                    None
                 }
             } else {
                 // Find first visible column before this position
@@ -72,9 +72,9 @@ impl TableMapEntry {
 
                 // If no visible columns before, return first visible column
                 if !self.visible_columns.is_empty() {
-                    return Some(self.bounds.min.x);
+                    Some(self.bounds.min.x)
                 } else {
-                    return None;
+                    None
                 }
             }
         }

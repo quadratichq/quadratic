@@ -378,7 +378,7 @@ impl DataTable {
         }
     }
 
-    pub fn value_as_array<'a>(&'a self) -> Result<&'a Array> {
+    pub fn value_as_array(&self) -> Result<&Array> {
         match &self.value {
             Value::Array(array) => Ok(array),
             _ => bail!("Expected an array"),

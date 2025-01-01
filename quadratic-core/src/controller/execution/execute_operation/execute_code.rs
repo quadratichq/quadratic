@@ -51,7 +51,7 @@ impl GridController {
         {
             let op = Operation::SetCodeRunVersion {
                 sheet_pos,
-                code_run: code_run.map(|code_run| code_run.into()),
+                code_run,
                 index,
                 version: 1,
             };

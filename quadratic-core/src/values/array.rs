@@ -289,8 +289,7 @@ impl Array {
         let insert_at_end = insert_at_index as u32 == width;
 
         // reverse the values so that we can efficiently pop them off the end
-        let mut reversed =
-            values.and_then(|values| Some(values.into_iter().rev().collect::<Vec<_>>()));
+        let mut reversed = values.map(|values| values.into_iter().rev().collect::<Vec<_>>());
 
         // pop the next value from the insert array
         let mut next_insert_value = || {
@@ -317,7 +316,7 @@ impl Array {
                 array.set(width, row as u32, next_insert_value())?;
             }
 
-            col_index = last.then(|| 0).unwrap_or(col_index + 1);
+            col_index = if last { 0 } else { col_index + 1 };
         }
 
         self.size = new_size;
@@ -342,7 +341,7 @@ impl Array {
 
             if col == remove_at_index {
                 if last {
-                    col_index = 0
+                    col_index = 0;
                 }
 
                 continue;
@@ -351,7 +350,7 @@ impl Array {
             // TODO(ddimaria): this clone is expensive, we should be able to modify
             // the array in-place
             array.set(col_index, row as u32, value.to_owned())?;
-            col_index = last.then(|| 0).unwrap_or(col_index + 1);
+            col_index = if last { 0 } else { col_index + 1 };
         }
 
         self.size = new_size;
@@ -376,7 +375,7 @@ impl Array {
         let insert_at_end = insert_at_index as u32 == height;
 
         for (i, row) in self.rows().enumerate() {
-            let last = row_index as u32 == height - 1;
+            let last = row_index == height - 1;
 
             if i == insert_at_index {
                 array.set_row(row_index as usize, &values)?;
@@ -389,7 +388,7 @@ impl Array {
                 array.set_row(height as usize, &values)?;
             }
 
-            row_index = last.then(|| 0).unwrap_or(row_index + 1);
+            row_index = if last { 0 } else { row_index + 1 };
         }
 
         self.size = new_size;

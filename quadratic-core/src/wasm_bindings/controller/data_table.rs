@@ -125,6 +125,7 @@ impl GridController {
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     #[wasm_bindgen(js_name = "dataTableMutations")]
     pub fn js_data_table_mutations(
         &mut self,

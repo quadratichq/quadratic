@@ -54,17 +54,14 @@ impl TableRef {
             match token {
                 Token::RowRange(start, end) => match row_ranges {
                     Some(RowRange::Rows(mut rows)) => {
-                        rows.push(RowRangeEntry::new_rel(start as i64, end as i64));
+                        rows.push(RowRangeEntry::new_rel(start, end));
                         row_ranges = Some(RowRange::Rows(rows));
                     }
                     Some(_) => {
                         return Err(A1Error::MultipleRowDefinitions);
                     }
                     None => {
-                        row_ranges = Some(RowRange::Rows(vec![RowRangeEntry::new_rel(
-                            start as i64,
-                            end as i64,
-                        )]));
+                        row_ranges = Some(RowRange::Rows(vec![RowRangeEntry::new_rel(start, end)]));
                     }
                 },
                 Token::Column(name) => {

@@ -473,9 +473,9 @@ impl GridController {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod test {
     use bigdecimal::BigDecimal;
-    use serial_test::parallel;
 
     use super::{PasteSpecial, *};
     use crate::a1::A1Selection;
@@ -488,7 +488,6 @@ mod test {
     use crate::Rect;
 
     #[test]
-    #[parallel]
     fn move_cell_operations() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -500,7 +499,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn paste_clipboard_cells_columns() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -521,7 +519,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn paste_clipboard_cells_rows() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -542,7 +539,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn paste_clipboard_cells_all() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -567,7 +563,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn sheet_formats_operations_column_rows() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -601,7 +596,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn set_clipboard_validations() {
         let gc = GridController::test();
         let validations = ClipboardValidations {
@@ -630,7 +624,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn paste_clipboard_with_formula() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -679,7 +672,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn paste_clipboard_with_data_table() {
         let (mut gc, sheet_id, _, _) = simple_csv();
         let paste = |gc: &mut GridController, x, y, html| {
@@ -689,7 +681,7 @@ mod test {
                 Some(html),
                 PasteSpecial::None,
                 None,
-            )
+            );
         };
 
         let JsClipboard { html, .. } = gc
@@ -702,11 +694,10 @@ mod test {
         // paste side by side
         paste(&mut gc, 4, 0, html.clone());
         print_table(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 10));
-        assert_cell_value_row(&mut gc, sheet_id, 4, 0, 0, expected_row1);
+        assert_cell_value_row(&gc, sheet_id, 4, 0, 0, expected_row1);
     }
 
     #[test]
-    #[parallel]
     fn update_code_cell_references_python() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -739,7 +730,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn paste_clipboard_on_top_of_data_table() {
         let (mut gc, sheet_id, _, _) = simple_csv_at(Pos { x: 2, y: 0 });
         let sheet = gc.sheet_mut(sheet_id);
@@ -757,7 +747,7 @@ mod test {
                 Some(html),
                 PasteSpecial::None,
                 None,
-            )
+            );
         };
 
         let expected_row1 = vec!["1", "2"];
@@ -766,43 +756,42 @@ mod test {
         // paste overlap inner
         paste(&mut gc, 4, 2, html.clone());
         print_table(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 11));
-        assert_cell_value_row(&mut gc, sheet_id, 4, 5, 2, expected_row1.clone());
-        assert_cell_value_row(&mut gc, sheet_id, 4, 5, 3, expected_row2.clone());
+        assert_cell_value_row(&gc, sheet_id, 4, 5, 2, expected_row1.clone());
+        assert_cell_value_row(&gc, sheet_id, 4, 5, 3, expected_row2.clone());
         gc.undo(None);
 
         // paste overlap with right grid
         paste(&mut gc, 5, 2, html.clone());
         print_table(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 11));
-        assert_cell_value_row(&mut gc, sheet_id, 5, 6, 2, expected_row1.clone());
-        assert_cell_value_row(&mut gc, sheet_id, 5, 6, 3, expected_row2.clone());
+        assert_cell_value_row(&gc, sheet_id, 5, 6, 2, expected_row1.clone());
+        assert_cell_value_row(&gc, sheet_id, 5, 6, 3, expected_row2.clone());
         gc.undo(None);
 
         // paste overlap with bottom grid
         paste(&mut gc, 4, 10, html.clone());
         print_table(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 12));
-        assert_cell_value_row(&mut gc, sheet_id, 4, 5, 10, expected_row1.clone());
-        assert_cell_value_row(&mut gc, sheet_id, 4, 5, 11, expected_row2.clone());
+        assert_cell_value_row(&gc, sheet_id, 4, 5, 10, expected_row1.clone());
+        assert_cell_value_row(&gc, sheet_id, 4, 5, 11, expected_row2.clone());
         gc.undo(None);
 
         // paste overlap with bottom left grid
         paste(&mut gc, 1, 10, html.clone());
         print_table(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 12));
         // print_table(&gc, sheet_id, Rect::from_numbers(1, 10, 2, 2));
-        assert_cell_value_row(&mut gc, sheet_id, 1, 2, 10, expected_row1.clone());
-        assert_cell_value_row(&mut gc, sheet_id, 1, 2, 11, expected_row2.clone());
+        assert_cell_value_row(&gc, sheet_id, 1, 2, 10, expected_row1.clone());
+        assert_cell_value_row(&gc, sheet_id, 1, 2, 11, expected_row2.clone());
         gc.undo(None);
 
         // paste overlap with top left grid
         paste(&mut gc, 3, 0, html.clone());
         print_data_table(&gc, sheet_id, Rect::from_numbers(2, 0, 4, 4));
         // print_table(&gc, sheet_id, Rect::from_numbers(2, 0, 4, 4));
-        // assert_cell_value_row(&mut gc, sheet_id, 1, 2, 10, expected_row1.clone());
-        // assert_cell_value_row(&mut gc, sheet_id, 1, 2, 11, expected_row2.clone());
+        // assert_cell_value_row(&gc, sheet_id, 1, 2, 10, expected_row1.clone());
+        // assert_cell_value_row(&gc, sheet_id, 1, 2, 11, expected_row2.clone());
         gc.undo(None);
     }
 
     #[test]
-    #[parallel]
     fn update_code_cell_references_javascript() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

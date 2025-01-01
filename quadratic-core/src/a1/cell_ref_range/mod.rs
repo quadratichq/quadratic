@@ -45,7 +45,7 @@ impl CellRefRange {
 impl CellRefRange {
     pub fn parse(s: &str, context: &A1Context) -> Result<Self, A1Error> {
         // first try table parsing
-        if let Ok(range) = TableRef::parse(s, &context) {
+        if let Ok(range) = TableRef::parse(s, context) {
             return Ok(Self::Table { range });
         }
         // then try sheet parsing

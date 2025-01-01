@@ -123,7 +123,7 @@ impl CellsAccessed {
             .any(|ranges| {
                 ranges
                     .iter()
-                    .any(|range| range.might_intersect_rect(rect, &context))
+                    .any(|range| range.might_intersect_rect(rect, context))
             })
     }
 
@@ -141,7 +141,7 @@ impl CellsAccessed {
             .any(|ranges| {
                 ranges
                     .iter()
-                    .any(|range| range.might_contain_pos(pos.into(), &context))
+                    .any(|range| range.might_contain_pos(pos.into(), context))
             })
     }
 

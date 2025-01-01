@@ -197,7 +197,7 @@ impl GridController {
                         });
                     }
                 }
-            })
+            });
         }
         ops
     }

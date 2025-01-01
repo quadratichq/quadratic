@@ -115,9 +115,7 @@ impl TableRef {
     }
 
     pub fn to_largest_rect(&self, current_row: i64, context: &A1Context) -> Option<Rect> {
-        let Some(table) = context.try_table(&self.table_name) else {
-            return None;
-        };
+        let table = context.try_table(&self.table_name)?;
         let bounds = table.bounds;
         let mut min_x = bounds.max.x;
         let mut min_y = bounds.max.y;
@@ -127,27 +125,19 @@ impl TableRef {
         for range in self.col_ranges.iter() {
             match range {
                 ColRange::Col(col) => {
-                    let Some(col) = table.visible_columns.iter().position(|c| c == col) else {
-                        return None;
-                    };
+                    let col = table.visible_columns.iter().position(|c| c == col)?;
                     min_x = min_x.min(bounds.min.x + col as i64);
                     max_x = max_x.max(bounds.min.x + col as i64);
                 }
                 ColRange::ColRange(col_range_start, col_range_end) => {
-                    let Some(start) = table
+                    let start = table
                         .visible_columns
                         .iter()
-                        .position(|c| c == col_range_start)
-                    else {
-                        return None;
-                    };
-                    let Some(end) = table
+                        .position(|c| c == col_range_start)?;
+                    let end = table
                         .visible_columns
                         .iter()
-                        .position(|c| c == col_range_end)
-                    else {
-                        return None;
-                    };
+                        .position(|c| c == col_range_end)?;
                     min_x = min_x
                         .min(bounds.min.x + start as i64)
                         .min(bounds.min.x + end as i64);
@@ -156,9 +146,7 @@ impl TableRef {
                         .max(bounds.min.x + end as i64);
                 }
                 ColRange::ColumnToEnd(col) => {
-                    let Some(start) = table.visible_columns.iter().position(|c| c == col) else {
-                        return None;
-                    };
+                    let start = table.visible_columns.iter().position(|c| c == col)?;
                     min_x = min_x.min(bounds.min.x + start as i64);
                     max_x = min_x.max(bounds.min.x + table.visible_columns.len() as i64);
                 }
@@ -211,7 +199,7 @@ impl TableRef {
         };
 
         let mut ranges = vec![];
-        let y_ranges = self.row_range.to_rows(current_row, &table);
+        let y_ranges = self.row_range.to_rows(current_row, table);
 
         for range in self.col_ranges.iter() {
             match range {
@@ -219,9 +207,7 @@ impl TableRef {
                     if let Some(col) = table.try_col_index(col) {
                         for (y_start, y_end) in y_ranges.iter() {
                             ranges.push(CellRefRange::Sheet {
-                                range: RefRangeBounds::new_relative(
-                                    col as i64, *y_start, col as i64, *y_end,
-                                ),
+                                range: RefRangeBounds::new_relative(col, *y_start, col, *y_end),
                             });
                         }
                     }
@@ -240,12 +226,7 @@ impl TableRef {
                     if let Some((start, end)) = table.try_col_range_to_end(col) {
                         for (y_start, y_end) in y_ranges.iter() {
                             ranges.push(CellRefRange::Sheet {
-                                range: RefRangeBounds::new_relative(
-                                    start as i64,
-                                    *y_start,
-                                    end,
-                                    *y_end,
-                                ),
+                                range: RefRangeBounds::new_relative(start, *y_start, end, *y_end),
                             });
                         }
                     }
