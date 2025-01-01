@@ -101,7 +101,7 @@ impl ColRange {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
-    use crate::{a1::UNBOUNDED, grid::SheetId, Rect};
+    use crate::{a1::UNBOUNDED, Rect};
 
     use super::*;
 
