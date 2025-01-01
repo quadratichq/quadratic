@@ -1,5 +1,5 @@
 use crate::{
-    a1::{A1Context, UNBOUNDED},
+    a1::{A1Context, CellRefRange, RefRangeBounds, UNBOUNDED},
     grid::SheetId,
     Pos, Rect,
 };
@@ -20,9 +20,9 @@ impl TableRef {
 
         if let Some(table) = context.try_table(&self.table_name) {
             if sheet_id == table.sheet_id {
-                let bounds = table.bounds;
-                self.col_ranges.iter().for_each(|col_range| {
-                    match col_range {
+                self.col_ranges
+                    .iter()
+                    .for_each(|col_range| match col_range {
                         ColRange::Col(col) => {
                             if let Some(col_index) = table.try_col_index(col) {
                                 if col_index >= from && col_index <= to {
@@ -31,81 +31,26 @@ impl TableRef {
                             }
                         }
                         ColRange::ColRange(col_range_start, col_range_end) => {
-                            let start = table
-                                .visible_columns
-                                .iter()
-                                .position(|c| c == col_range_start);
-                            let end = table
-                                .visible_columns
-                                .iter()
-                                .position(|c| c == col_range_end);
-                            if let (Some(start), Some(end)) = (start, end) {
-                                cols.extend(start as i64..=end as i64);
-                            } else {
-                                // Find positions in all_columns
-                                if let (Some(all_start), Some(all_end)) = (
-                                    table.all_columns.iter().position(|c| c == col_range_start),
-                                    table.all_columns.iter().position(|c| c == col_range_end),
-                                ) {
-                                    // Get visible columns between all_start and all_end
-                                    for col in &table.visible_columns {
-                                        if let Some(pos) =
-                                            table.all_columns.iter().position(|c| c == col)
-                                        {
-                                            if pos >= all_start && pos <= all_end {
-                                                if let Some(visible_pos) = table
-                                                    .visible_columns
-                                                    .iter()
-                                                    .position(|c| c == col)
-                                                {
-                                                    let x = visible_pos as i64 + bounds.min.x;
-                                                    if x >= from && x <= to {
-                                                        cols.push(x);
-                                                    }
-                                                }
-                                            }
-                                        }
+                            if let Some((start, end)) =
+                                table.try_col_range(col_range_start, col_range_end)
+                            {
+                                if start >= from && end <= to {
+                                    for x in start.max(from)..=end.min(to) {
+                                        cols.push(x);
                                     }
                                 }
                             }
                         }
                         ColRange::ColumnToEnd(col) => {
-                            // Try to find the column in visible_columns first
-                            let start = if let Some(visible_pos) =
-                                table.visible_columns.iter().position(|c| c == col)
-                            {
-                                visible_pos
-                            } else {
-                                // If not in visible_columns, find its position in all_columns
-                                if let Some(all_pos) =
-                                    table.all_columns.iter().position(|c| c == col)
-                                {
-                                    // Find the first visible column after this position
-                                    match table.visible_columns.iter().position(|c| {
-                                        table
-                                            .all_columns
-                                            .iter()
-                                            .position(|ac| ac == c)
-                                            .map_or(false, |pos| pos >= all_pos)
-                                    }) {
-                                        Some(pos) => pos,
-                                        None => return, // No visible columns after this position
+                            if let Some((start, end)) = table.try_col_range_to_end(col) {
+                                if start >= from && end <= to {
+                                    for x in start.max(from)..=end.min(to) {
+                                        cols.push(x);
                                     }
-                                } else {
-                                    return;
-                                }
-                            };
-
-                            // Add all visible columns from start position to the end
-                            for x in start..table.visible_columns.len() {
-                                let col_pos = x as i64 + bounds.min.x;
-                                if col_pos >= from && col_pos <= to {
-                                    cols.push(col_pos);
                                 }
                             }
                         }
-                    }
-                })
+                    });
             }
         }
 
@@ -259,6 +204,62 @@ impl TableRef {
             Pos { x: 1, y: 1 }
         }
     }
+
+    /// Converts the table ref to a list of CellRefRange::RefRangeBounds
+    pub fn convert_to_ref_range_bounds(
+        &self,
+        current_row: i64,
+        context: &A1Context,
+    ) -> Vec<CellRefRange> {
+        let Some(table) = context.try_table(&self.table_name) else {
+            // the table may no longer exist
+            return vec![];
+        };
+
+        let mut ranges = vec![];
+        let y_ranges = self.row_range.to_rows(current_row, &table);
+
+        for range in self.col_ranges.iter() {
+            match range {
+                ColRange::Col(col) => {
+                    if let Some(col) = table.try_col_index(col) {
+                        for (y_start, y_end) in y_ranges.iter() {
+                            ranges.push(CellRefRange::Sheet {
+                                range: RefRangeBounds::new_relative(
+                                    col as i64, *y_start, col as i64, *y_end,
+                                ),
+                            });
+                        }
+                    }
+                }
+                ColRange::ColRange(col_range_start, col_range_end) => {
+                    if let Some((start, end)) = table.try_col_range(col_range_start, col_range_end)
+                    {
+                        for (y_start, y_end) in y_ranges.iter() {
+                            ranges.push(CellRefRange::Sheet {
+                                range: RefRangeBounds::new_relative(start, *y_start, end, *y_end),
+                            });
+                        }
+                    }
+                }
+                ColRange::ColumnToEnd(col) => {
+                    if let Some((start, end)) = table.try_col_range_to_end(col) {
+                        for (y_start, y_end) in y_ranges.iter() {
+                            ranges.push(CellRefRange::Sheet {
+                                range: RefRangeBounds::new_relative(
+                                    start as i64,
+                                    *y_start,
+                                    end,
+                                    *y_end,
+                                ),
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        ranges
+    }
 }
 
 #[cfg(test)]
@@ -411,5 +412,73 @@ mod tests {
 
         let rect = table_ref.to_largest_rect(1, &context);
         assert_eq!(rect.unwrap(), Rect::test_a1("A1:B3"));
+    }
+
+    #[test]
+    fn test_convert_to_ref_range_bounds() {
+        let sheet_id = SheetId::test();
+
+        let mut context = A1Context::default();
+        context.table_map.test_insert(
+            sheet_id,
+            "test_table",
+            &["A", "B", "C"],
+            None,
+            Rect::test_a1("A1:C3"),
+        );
+
+        // Test case 1: Single column with all rows
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_ranges: vec![ColRange::Col("B".to_string())],
+            row_range: RowRange::All,
+            data: true,
+            headers: false,
+            totals: false,
+        };
+
+        let ranges = table_ref.convert_to_ref_range_bounds(1, &context);
+        assert_eq!(
+            ranges,
+            vec![CellRefRange::Sheet {
+                range: RefRangeBounds::test_a1("B1:B3")
+            }]
+        );
+
+        // Test case 2: Column range with specific rows
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_ranges: vec![ColRange::ColRange("A".to_string(), "C".to_string())],
+            row_range: RowRange::Rows(vec![RowRangeEntry::new_rel(1, 2)]),
+            data: true,
+            headers: false,
+            totals: false,
+        };
+
+        let ranges = table_ref.convert_to_ref_range_bounds(1, &context);
+        assert_eq!(
+            ranges,
+            vec![CellRefRange::Sheet {
+                range: RefRangeBounds::new_relative(1, 1, 3, 2)
+            }]
+        );
+
+        // Test case 3: Column to end
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_ranges: vec![ColRange::ColumnToEnd("B".to_string())],
+            row_range: RowRange::CurrentRow,
+            data: true,
+            headers: false,
+            totals: false,
+        };
+
+        let ranges = table_ref.convert_to_ref_range_bounds(2, &context);
+        assert_eq!(
+            ranges,
+            vec![CellRefRange::Sheet {
+                range: RefRangeBounds::new_relative(2, 2, 3, 2)
+            }]
+        );
     }
 }

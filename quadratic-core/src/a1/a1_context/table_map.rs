@@ -98,6 +98,27 @@ impl TableMapEntry {
         let end = self.bounds.min.x + (self.visible_columns.len() - 1) as i64;
         Some((start, end))
     }
+
+    #[cfg(test)]
+    pub fn test(
+        sheet_id: SheetId,
+        table_name: &str,
+        visible_columns: &[&str],
+        all_columns: Option<&[&str]>,
+        bounds: Rect,
+    ) -> Self {
+        let visible_columns: Vec<String> = visible_columns.iter().map(|c| c.to_string()).collect();
+        let all_columns: Vec<String> = all_columns.map_or(visible_columns.clone(), |c| {
+            c.iter().map(|c| c.to_string()).collect()
+        });
+        TableMapEntry {
+            sheet_id,
+            table_name: table_name.to_string(),
+            visible_columns,
+            all_columns,
+            bounds,
+        }
+    }
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
@@ -140,16 +161,13 @@ impl TableMap {
         all_columns: Option<&[&str]>,
         bounds: Rect,
     ) {
-        let visible_columns: Vec<String> = visible_columns.iter().map(|c| c.to_string()).collect();
-        self.tables.push(TableMapEntry {
+        self.tables.push(TableMapEntry::test(
             sheet_id,
-            table_name: table_name.to_string(),
-            visible_columns: visible_columns.clone(),
-            all_columns: all_columns.map_or(visible_columns, |c| {
-                c.iter().map(|c| c.to_string()).collect()
-            }),
+            table_name,
+            visible_columns,
+            all_columns,
             bounds,
-        });
+        ));
     }
 }
 

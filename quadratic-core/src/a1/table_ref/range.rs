@@ -46,6 +46,27 @@ pub enum RowRange {
     Rows(Vec<RowRangeEntry>),
 }
 
+impl RowRange {
+    /// Returns a list of (start, end) pairs for the row range.
+    pub fn to_rows(&self, current_row: i64, table: &TableMapEntry) -> Vec<(i64, i64)> {
+        match self {
+            RowRange::All => vec![(table.bounds.min.y, table.bounds.max.y)],
+            RowRange::CurrentRow => vec![(current_row, current_row)],
+            RowRange::Rows(ranges) => ranges
+                .iter()
+                .map(|r| {
+                    (
+                        // the -1 is because the row-index is 1-based instead of
+                        // 0-based
+                        table.bounds.min.y + r.start.coord - 1,
+                        table.bounds.min.y + r.end.coord - 1,
+                    )
+                })
+                .collect(),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub enum ColRange {
@@ -80,7 +101,7 @@ impl ColRange {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
-    use crate::a1::UNBOUNDED;
+    use crate::{a1::UNBOUNDED, grid::SheetId, Rect};
 
     use super::*;
 
@@ -118,5 +139,31 @@ mod tests {
 
         let deserialized: RowRangeEntry = serde_json::from_str(&serialized).unwrap();
         assert_eq!(deserialized, row_range);
+    }
+
+    #[test]
+    fn test_to_rows() {
+        let table = TableMapEntry::test(
+            SheetId::test(),
+            "test",
+            &["A"],
+            None,
+            Rect::test_a1("A1:A5"),
+        );
+
+        let row_range = RowRange::All;
+        let rows = row_range.to_rows(1, &table);
+        assert_eq!(rows, vec![(1, 5)]);
+
+        let row_range = RowRange::CurrentRow;
+        let rows = row_range.to_rows(1, &table);
+        assert_eq!(rows, vec![(1, 1)]);
+
+        let row_range = RowRange::Rows(vec![
+            RowRangeEntry::new_rel(1, 2),
+            RowRangeEntry::new_rel(4, 5),
+        ]);
+        let rows = row_range.to_rows(1, &table);
+        assert_eq!(rows, vec![(1, 2), (4, 5)]);
     }
 }
