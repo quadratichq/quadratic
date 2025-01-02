@@ -67,7 +67,7 @@ Resources:
         - Key: Name
           Value: !Sub "${ImageTag}"
       InstanceType: m6a.large
-      ImageId: ami-094c4f62c0fffae5e # quadratic-selfhost-base-ami
+      ImageId: ami-0b8c6b923777519db # AMI for us-west-2 (Ubuntu 22.04 LTS amd64)
       IamInstanceProfile: !Ref EC2InstanceProfile
       SecurityGroups:
         - !Ref SecurityGroup
@@ -80,6 +80,41 @@ Resources:
         Fn::Base64: !Sub |
           #!/bin/bash
 
+          # Update and install dependencies
+          sudo apt-get update
+          sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common unzip jq awscli
+
+          # Install AWS CLI v2
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+          rm -rf aws awscliv2.zip
+
+          # Install Docker
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+          sudo apt-get update
+          sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          sudo chown ubuntu /var/run/docker.sock
+          sudo systemctl enable docker
+          sudo systemctl start docker
+          sudo usermod -aG docker ubuntu
+
+          # Download Quadratic initialization script
+          curl -sSf https://raw.githubusercontent.com/quadratichq/quadratic-selfhost/main/init-aws-staging.sh -o init.sh
+
+          # Fetch License Key
+          LICENSE_KEY="$(aws ssm get-parameter --name "/quadratic-development/QUADRATIC_LICENSE_KEY" --with-decryption --query "Parameter.Value" --output text)"
+
+          # Generate Domain Name
+          DOMAIN_NAME="${ImageTag}.quadratic-selfhost.com"
+
+          # Run Quadratic initialization script
+          chmod +x init.sh
+          ./init.sh $LICENSE_KEY $DOMAIN_NAME
+
           # Append environment variables to .env file
           cat << EOF >> /quadratic-selfhost/.env.docker
 
@@ -87,7 +122,7 @@ Resources:
           AWS_S3_ACCESS_KEY_ID=$(aws ssm get-parameter --name "/quadratic-development/AWS_S3_ACCESS_KEY_ID" --with-decryption --query "Parameter.Value" --output text)
           AWS_S3_SECRET_ACCESS_KEY=$(aws ssm get-parameter --name "/quadratic-development/AWS_S3_SECRET_ACCESS_KEY" --with-decryption --query "Parameter.Value" --output text)
 
-          # AI API Keys
+          # ai api keys
           OPENAI_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/OPENAI_API_KEY" --with-decryption --query "Parameter.Value" --output text)
           ANTHROPIC_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/ANTHROPIC_API_KEY" --with-decryption --query "Parameter.Value" --output text)
           EXA_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/EXA_API_KEY" --with-decryption --query "Parameter.Value" --output text)
@@ -104,11 +139,11 @@ Resources:
           EOF
 
           chmod +x /quadratic-selfhost/login.sh
+          chmod +x /quadratic-selfhost/start.sh
+
           cd /quadratic-selfhost
           ./login.sh
-
-          # Run Quadratic initialization script
-          ./init.sh "$(aws ssm get-parameter --name "/quadratic-development/QUADRATIC_LICENSE_KEY" --with-decryption --query "Parameter.Value" --output text)" "${ImageTag}.quadratic-selfhost.com"
+          ./start.sh
 
   # Global Accelerator
   GlobalAccelerator:

@@ -73,7 +73,7 @@ jobs:
       - name: Define repository name
         id: repo-name
         run: |
-          echo "REPO_NAME=quadratic-${{ matrix.service }}-development" >> $GITHUB_OUTPUT
+          echo "REPO_NAME=quadratic-${{ matrix.service }}" >> $GITHUB_OUTPUT
 
       - name: Create Private ECR Repository
         id: create-ecr
