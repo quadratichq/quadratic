@@ -21,7 +21,7 @@ use crate::{
         CodeRunOld, DataTable, DataTableKind, Sheet, SheetId,
     },
     selection::OldSelection,
-    CopyFormats, SheetPos, SheetRect,
+    CellValue, CopyFormats, SheetPos, SheetRect,
 };
 
 /// Description of changes to make to a file.
@@ -86,6 +86,8 @@ pub enum Operation {
     InsertDataTableColumn {
         sheet_pos: SheetPos,
         index: u32,
+        column_header: Option<String>,
+        values: Option<Vec<CellValue>>,
     },
     DeleteDataTableColumn {
         sheet_pos: SheetPos,
@@ -347,11 +349,16 @@ impl fmt::Display for Operation {
                     sheet_pos, first_row_is_header
                 )
             }
-            Operation::InsertDataTableColumn { sheet_pos, index } => {
+            Operation::InsertDataTableColumn {
+                sheet_pos,
+                index,
+                column_header: name,
+                values,
+            } => {
                 write!(
                     fmt,
-                    "InsertDataTableColumn {{ sheet_pos: {}, index: {} }}",
-                    sheet_pos, index
+                    "InsertDataTableColumn {{ sheet_pos: {}, index: {}, name: {:?}, values: {:?} }}",
+                    sheet_pos, index, name, values
                 )
             }
             Operation::DeleteDataTableColumn { sheet_pos, index } => {

@@ -1,15 +1,34 @@
 use anyhow::{bail, Result};
 
 use super::{column_header::DataTableColumnHeader, DataTable};
-use crate::Value;
+use crate::{CellValue, Value};
 
 impl DataTable {
+    pub fn get_column(&self, column_index: usize) -> Result<Vec<CellValue>> {
+        let column = self
+            .value_ref()?
+            .iter()
+            .skip(column_index)
+            .step_by(self.width())
+            .map(|value| value.to_owned().to_owned())
+            .collect();
+
+        Ok(column)
+    }
+
     /// Insert a new column at the given index.
-    pub fn insert_column(&mut self, column_index: usize) -> Result<()> {
-        let column_name = self.unique_column_header_name(None).to_string();
+    pub fn insert_column(
+        &mut self,
+        column_index: usize,
+        column_header: Option<String>,
+        values: Option<Vec<CellValue>>,
+    ) -> Result<()> {
+        let column_name = self
+            .unique_column_header_name(column_header.as_deref())
+            .to_string();
 
         if let Value::Array(array) = &mut self.value {
-            array.insert_column(column_index, None)?;
+            array.insert_column(column_index, values)?;
         } else {
             bail!("Expected an array");
         }
@@ -18,7 +37,13 @@ impl DataTable {
 
         if let Some(headers) = &mut self.column_headers {
             let new_header = DataTableColumnHeader::new(column_name, true, column_index as u32);
-            headers.push(new_header);
+            headers.insert(column_index, new_header);
+
+            for header in headers.iter_mut() {
+                if header.value_index > column_index as u32 {
+                    header.value_index += 1;
+                }
+            }
         }
 
         Ok(())
@@ -36,6 +61,12 @@ impl DataTable {
 
         if let Some(headers) = &mut self.column_headers {
             headers.remove(column_index);
+
+            for header in headers.iter_mut() {
+                if header.value_index > column_index as u32 {
+                    header.value_index -= 1;
+                }
+            }
         }
 
         Ok(())
@@ -58,7 +89,7 @@ pub mod test {
 
         pretty_print_data_table(&data_table, Some("Original Data Table"), None);
 
-        data_table.insert_column(4).unwrap();
+        data_table.insert_column(4, None, None).unwrap();
         pretty_print_data_table(&data_table, Some("Data Table with New Column"), None);
 
         // there should be a "Column" header

@@ -46,10 +46,7 @@ impl DataTable {
         let y = display_buffer
             .get(pos.y as usize)
             .ok_or_else(|| anyhow!("Y {} out of bounds: {}", pos.y, display_buffer.len()))?;
-        let new_pos = Pos {
-            x: pos.x,
-            y: *y as i64,
-        };
+        let new_pos = Pos::new(pos.x, *y as i64);
         let cell_value = self.display_value_from_value_at(new_pos)?;
 
         Ok(cell_value)

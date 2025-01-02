@@ -208,6 +208,30 @@ impl DataTable {
         self.name = name.into();
     }
 
+    pub fn value_ref(&self) -> Result<Vec<&CellValue>> {
+        match &self.value {
+            Value::Single(value) => Ok(vec![value]),
+            Value::Array(array) => Ok(array.cell_values_slice().iter().collect()),
+            Value::Tuple(_) => bail!("Expected an array"),
+        }
+    }
+
+    pub fn width(&self) -> usize {
+        match &self.value {
+            Value::Single(_) => 1,
+            Value::Array(array) => array.width() as usize,
+            Value::Tuple(_) => 0,
+        }
+    }
+
+    pub fn height(&self) -> usize {
+        match &self.value {
+            Value::Single(_) => 1,
+            Value::Array(array) => array.height() as usize,
+            Value::Tuple(_) => 0,
+        }
+    }
+
     /// Helper function to get the CodeRun from the DataTable.
     /// Returns `None` if the DataTableKind is not CodeRun.
     pub fn code_run(&self) -> Option<&CodeRun> {

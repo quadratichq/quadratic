@@ -478,12 +478,18 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) -> Result<()> {
-        if let Operation::InsertDataTableColumn { sheet_pos, index } = op.to_owned() {
+        if let Operation::InsertDataTableColumn {
+            sheet_pos,
+            index,
+            column_header,
+            values,
+        } = op.to_owned()
+        {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
-            data_table.insert_column(index as usize)?;
+            data_table.insert_column(index as usize, column_header, values)?;
 
             let data_table_rect = data_table
                 .output_rect(sheet_pos.into(), true)
@@ -518,6 +524,15 @@ impl GridController {
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
+            let old_column_header = data_table
+                .column_headers
+                .as_ref()
+                .ok_or(anyhow::anyhow!("Column headers are not set"))?[index as usize]
+                .name
+                .to_owned()
+                .to_string();
+            let old_values = data_table.get_column(index as usize)?;
+
             data_table.delete_column(index as usize)?;
 
             let data_table_rect = data_table
@@ -528,7 +543,12 @@ impl GridController {
             transaction.add_code_cell(sheet_id, data_table_pos);
 
             let forward_operations = vec![op];
-            let reverse_operations = vec![Operation::InsertDataTableColumn { sheet_pos, index }];
+            let reverse_operations = vec![Operation::InsertDataTableColumn {
+                sheet_pos,
+                index,
+                column_header: Some(old_column_header),
+                values: Some(old_values),
+            }];
 
             self.data_table_operations(
                 transaction,
@@ -666,6 +686,7 @@ mod tests {
             user_actions::import::tests::{assert_simple_csv, simple_csv},
         },
         grid::{
+            column_header::DataTableColumnHeader,
             data_table::sort::{DataTableSort, SortDirection},
             CodeCellLanguage, CodeCellValue, CodeRun, SheetId,
         },
@@ -742,6 +763,26 @@ mod tests {
         let last_row = vec!["Westborough", "MA", "United States", "29313"];
         assert_data_table_cell_value_row(gc, sheet_id, 0, 3, 10, last_row);
         (gc, sheet_id, pos, file_name)
+    }
+
+    #[track_caller]
+    pub(crate) fn assert_data_table_column_width<'a>(
+        gc: &'a GridController,
+        sheet_id: SheetId,
+        pos: Pos,
+        width: u32,
+        index: u32,
+        name: &'a str,
+    ) {
+        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap().to_owned();
+        let headers = data_table.column_headers.unwrap();
+
+        assert_eq!(headers.len(), width as usize);
+        assert_eq!(
+            headers[index as usize],
+            DataTableColumnHeader::new(name.into(), true, index)
+        );
+        assert_eq!(data_table.value.into_array().unwrap().size().w.get(), width);
     }
 
     #[test]
@@ -1000,5 +1041,64 @@ mod tests {
         gc.execute_data_table_meta(&mut transaction, op).unwrap();
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
         assert_eq!(&data_table.name, "ABC");
+    }
+
+    #[test]
+    fn test_execute_insert_data_table_column() {
+        let (mut gc, sheet_id, pos, _) = simple_csv();
+
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+
+        let sheet_pos = SheetPos::from((pos, sheet_id));
+        let index = 0;
+        let op = Operation::InsertDataTableColumn {
+            sheet_pos,
+            index,
+            column_header: None,
+            values: None,
+        };
+        let mut transaction = PendingTransaction::default();
+        gc.execute_insert_data_table_column(&mut transaction, op)
+            .unwrap();
+
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+        assert_data_table_column_width(&gc, sheet_id, pos, 5, index, "Column");
+
+        // undo, the value should be a data table again
+        execute_reverse_operations(&mut gc, &transaction);
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+        assert_simple_csv(&gc, sheet_id, pos, "simple.csv");
+
+        // redo, the value should be on the grid
+        execute_forward_operations(&mut gc, &mut transaction);
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+        assert_data_table_column_width(&gc, sheet_id, pos, 5, index, "Column");
+    }
+
+    #[test]
+    fn test_execute_delete_data_table_column() {
+        let (mut gc, sheet_id, pos, _) = simple_csv();
+
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+
+        let sheet_pos = SheetPos::from((pos, sheet_id));
+        let index = 0;
+        let op = Operation::DeleteDataTableColumn { sheet_pos, index };
+        let mut transaction = PendingTransaction::default();
+        gc.execute_delete_data_table_column(&mut transaction, op)
+            .unwrap();
+
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+        assert_data_table_column_width(&gc, sheet_id, pos, 3, index, "region");
+
+        // undo, the value should be a data table again
+        execute_reverse_operations(&mut gc, &transaction);
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+        assert_simple_csv(&gc, sheet_id, pos, "simple.csv");
+
+        // redo, the value should be on the grid
+        execute_forward_operations(&mut gc, &mut transaction);
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+        assert_data_table_column_width(&gc, sheet_id, pos, 3, index, "region");
     }
 }
