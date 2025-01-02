@@ -205,7 +205,8 @@ class q:
         return f"{column}{y}"
 
     def _conversion_error(old: str, new: str, raise_exception: bool = True):
-        output = f"{old} functionality is no longer supported.  Use {new} instead, though this may be different if your sheet had negative values.  Refer to the documentation at https://docs.quadratic.app/python-api/ for more details."
+        url = "https://community.quadratichq.com/t/switch-to-a1-notation-from-x-y-coordinates/"
+        output = f"{old} functionality is no longer supported.  Use {new} instead, though this may be different if your sheet had negative values.  Refer to the documentation at {url} for more details."
 
         if raise_exception:
             raise Exception(output)

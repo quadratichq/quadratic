@@ -38,7 +38,6 @@ class PythonClient {
         break;
 
       case 'clientPythonInit':
-        this.env = e.data.env;
         return;
 
       default:
