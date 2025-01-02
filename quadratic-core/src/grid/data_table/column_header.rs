@@ -125,13 +125,17 @@ impl DataTable {
         }
     }
 
+    pub fn get_column_header(&self, index: usize) -> Option<&DataTableColumnHeader> {
+        self.column_headers
+            .as_ref()
+            .and_then(|columns| columns.get(index))
+    }
+
     /// Get a column header by name.
     pub fn get_header_by_name(&self, name: &str) -> Option<&DataTableColumnHeader> {
         self.column_headers
             .as_ref()
-            .unwrap()
-            .iter()
-            .find(|h| h.name.to_string() == name)
+            .and_then(|columns| columns.iter().find(|h| h.name.to_string() == name))
     }
 }
 

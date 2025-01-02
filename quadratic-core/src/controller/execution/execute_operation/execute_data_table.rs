@@ -525,12 +525,8 @@ impl GridController {
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
             let old_column_header = data_table
-                .column_headers
-                .as_ref()
-                .ok_or(anyhow::anyhow!("Column headers are not set"))?[index as usize]
-                .name
-                .to_owned()
-                .to_string();
+                .get_column_header(index as usize)
+                .map(|header| header.name.to_owned().to_string());
             let old_values = data_table.get_column(index as usize)?;
 
             data_table.delete_column(index as usize)?;
@@ -546,7 +542,7 @@ impl GridController {
             let reverse_operations = vec![Operation::InsertDataTableColumn {
                 sheet_pos,
                 index,
-                column_header: Some(old_column_header),
+                column_header: old_column_header,
                 values: Some(old_values),
             }];
 
