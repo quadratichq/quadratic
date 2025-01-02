@@ -148,21 +148,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends python-is-pytho
 
 WORKDIR /quadratic
 
-# Copy all files
+# Copy updateAlertVersion.json
 COPY updateAlertVersion.json .
-COPY package.json .
-COPY package-lock.json .
-COPY ./quadratic-core/. ./quadratic-core/
-COPY ./quadratic-rust-client/. ./quadratic-rust-client/
-COPY ./quadratic-kernels/python-wasm/. ./quadratic-kernels/python-wasm/
-COPY ./quadratic-shared/. ./quadratic-shared/
-COPY ./quadratic-client/. ./quadratic-client/
 
 # Copy files from core, ts/rust types, and rust client builders
-COPY --from=dependencies-builder /quadratic/. ./
 COPY --from=core-builder /quadratic/quadratic-client/src/app/quadratic-core/. ./quadratic-client/src/app/quadratic-core
 COPY --from=ts-rust-types-builder /quadratic/quadratic-client/src/app/quadratic-core-types/. ./quadratic-client/src/app/quadratic-core-types
 COPY --from=rust-client-builder /quadratic/quadratic-client/src/app/quadratic-rust-client/. ./quadratic-client/src/app/quadratic-rust-client
+
+# Copy package.json and package-lock.json
+COPY package.json .
+COPY package-lock.json .
+
+# Copy npm dependencies from dependencies-builder
+COPY --from=dependencies-builder /quadratic/. ./
+
+# Copy remaining files
+COPY ./quadratic-kernels/python-wasm/. ./quadratic-kernels/python-wasm/
+COPY ./quadratic-shared/. ./quadratic-shared/
+COPY ./quadratic-client/. ./quadratic-client/
 
 # Run the packaging script for quadratic_py
 RUN ./quadratic-kernels/python-wasm/package.sh --no-poetry
