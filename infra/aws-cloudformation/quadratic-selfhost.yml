@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Quadratic Preview - DockerDeployment Template
+Description: Quadratic Preview - Docker Deployment Template
 
 Parameters:
   ImageTag:
@@ -109,15 +109,14 @@ Resources:
           LICENSE_KEY="$(aws ssm get-parameter --name "/quadratic-development/QUADRATIC_LICENSE_KEY" --with-decryption --query "Parameter.Value" --output text)"
 
           # Generate Domain Name
-          DOMAIN_NAME="${ImageTag}.quadratic-selfhost.com"
+          DOMAIN_NAME="${ImageTag}.quadratic-preview.com"
 
           # Run Quadratic initialization script
           chmod +x init.sh
           ./init.sh $LICENSE_KEY $DOMAIN_NAME
 
           # Append environment variables to .env file
-          cat << EOF >> /quadratic-selfhost/.env.docker
-
+          cat << EOF >> /quadratic-selfhost/.env
           AWS_S3_REGION=$(aws ssm get-parameter --name "/quadratic-development/AWS_S3_REGION" --with-decryption --query "Parameter.Value" --output text)
           AWS_S3_ACCESS_KEY_ID=$(aws ssm get-parameter --name "/quadratic-development/AWS_S3_ACCESS_KEY_ID" --with-decryption --query "Parameter.Value" --output text)
           AWS_S3_SECRET_ACCESS_KEY=$(aws ssm get-parameter --name "/quadratic-development/AWS_S3_SECRET_ACCESS_KEY" --with-decryption --query "Parameter.Value" --output text)
@@ -190,8 +189,8 @@ Resources:
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
-      HostedZoneId: Z08322143IM80L9CZZQV5
-      Name: !Sub "${ImageTag}.quadratic-selfhost.com."
+      HostedZoneId: Z0126430TJ1UYIMO3SYX
+      Name: !Sub "${ImageTag}.quadratic-preview.com."
       Type: A
       AliasTarget:
         DNSName: !GetAtt GlobalAccelerator.DnsName
@@ -204,8 +203,8 @@ Resources:
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
-      HostedZoneId: Z08322143IM80L9CZZQV5
-      Name: !Sub "*.${ImageTag}.quadratic-selfhost.com."
+      HostedZoneId: Z0126430TJ1UYIMO3SYX
+      Name: !Sub "*.${ImageTag}.quadratic-preview.com."
       Type: A
       AliasTarget:
         DNSName: !GetAtt GlobalAccelerator.DnsName
@@ -215,4 +214,4 @@ Resources:
 Outputs:
   WebsiteURL:
     Description: Website URL
-    Value: !Sub "https://${ImageTag}.quadratic-selfhost.com"
+    Value: !Sub "https://${ImageTag}.quadratic-preview.com"
