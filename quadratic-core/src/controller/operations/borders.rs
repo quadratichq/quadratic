@@ -394,7 +394,7 @@ impl GridController {
                     clear_neighbors,
                 );
             }
-            CellRefRange::Table { .. } => todo!(),
+            CellRefRange::Table { .. } => (),
         });
 
         if !borders.is_empty() {

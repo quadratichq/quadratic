@@ -27,7 +27,7 @@ impl A1Selection {
                     ranges.push(range.clone());
                 } else {
                     match range {
-                        CellRefRange::Table { .. } => todo!(),
+                        CellRefRange::Table { .. } => (),
                         CellRefRange::Sheet { mut range } => {
                             if range.start.col() == range.end.col() {
                                 // if the range is a single column, then we
@@ -133,7 +133,7 @@ impl A1Selection {
                     ranges.push(range.clone());
                 } else {
                     match range {
-                        CellRefRange::Table { .. } => todo!(),
+                        CellRefRange::Table { .. } => (),
                         CellRefRange::Sheet { mut range } => {
                             if range.start.row() == range.end.row() {
                                 // if the range is a single row, then we
@@ -339,7 +339,7 @@ impl A1Selection {
         };
         if let Some(last) = self.ranges.last_mut() {
             match last {
-                CellRefRange::Table { .. } => todo!(),
+                CellRefRange::Table { .. } => (),
                 CellRefRange::Sheet { range } => {
                     range.end = CellRefRangeEnd::new_relative_xy(column, row);
                     if range.start.row.is_unbounded() {
@@ -358,13 +358,22 @@ impl A1Selection {
 
     /// Changes the selection to select all columns that have a selection (used by cmd+space). It only
     /// checks the last range (the same as Excel and Sheets)
-    pub fn set_columns_selected(&mut self) {
+    pub fn set_columns_selected(&mut self, context: &A1Context) {
         let Some(last) = self.ranges.last() else {
             return;
         };
         let last = match last {
             CellRefRange::Sheet { range } => *range,
-            CellRefRange::Table { .. } => todo!(),
+            CellRefRange::Table { range } => {
+                if let Some(last) = range.convert_to_ref_range_bounds(0, context).last() {
+                    match last {
+                        CellRefRange::Sheet { range } => *range,
+                        CellRefRange::Table { .. } => return,
+                    }
+                } else {
+                    return;
+                }
+            }
         };
         self.ranges.clear();
         self.ranges.push(CellRefRange::Sheet {
@@ -377,13 +386,22 @@ impl A1Selection {
 
     /// Changes the selection to select all rows that have a selection (used by shift+space). It only
     /// checks the last range (the same as Excel and Sheets)
-    pub fn set_rows_selected(&mut self) {
+    pub fn set_rows_selected(&mut self, context: &A1Context) {
         let Some(last) = self.ranges.last() else {
             return;
         };
         let last = match last {
             CellRefRange::Sheet { range } => *range,
-            CellRefRange::Table { .. } => todo!(),
+            CellRefRange::Table { range } => {
+                if let Some(last) = range.convert_to_ref_range_bounds(0, context).last() {
+                    match last {
+                        CellRefRange::Sheet { range } => *range,
+                        CellRefRange::Table { .. } => return,
+                    }
+                } else {
+                    return;
+                }
+            }
         };
         self.ranges.clear();
         self.ranges.push(CellRefRange::Sheet {
@@ -428,51 +446,53 @@ mod tests {
 
     #[test]
     fn test_columns_selected() {
+        let context = A1Context::default();
         let mut selection = A1Selection::test_a1("A1,B1,C1");
-        selection.set_columns_selected();
+        selection.set_columns_selected(&context);
         assert_eq!(selection.ranges, vec![CellRefRange::new_relative_column(3)]);
 
         let mut selection = A1Selection::test_a1("A1:C1");
-        selection.set_columns_selected();
+        selection.set_columns_selected(&context);
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::new_relative_column_range(1, 3)]
         );
 
         let mut selection = A1Selection::test_a1("A:C");
-        selection.set_columns_selected();
+        selection.set_columns_selected(&context);
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::new_relative_column_range(1, 3)]
         );
 
         let mut selection = A1Selection::test_a1("2:3");
-        selection.set_columns_selected();
+        selection.set_columns_selected(&context);
         assert_eq!(selection.ranges, vec![CellRefRange::ALL]);
     }
 
     #[test]
     fn test_rows_selected() {
+        let context = A1Context::default();
         let mut selection = A1Selection::test_a1("A1,B2,C3");
-        selection.set_rows_selected();
+        selection.set_rows_selected(&context);
         assert_eq!(selection.ranges, vec![CellRefRange::new_relative_row(3)]);
 
         let mut selection = A1Selection::test_a1("A1:C3");
-        selection.set_rows_selected();
+        selection.set_rows_selected(&context);
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::new_relative_row_range(1, 3)]
         );
 
         let mut selection = A1Selection::test_a1("1:3");
-        selection.set_rows_selected();
+        selection.set_rows_selected(&context);
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::new_relative_row_range(1, 3)]
         );
 
         let mut selection = A1Selection::test_a1("C:D");
-        selection.set_rows_selected();
+        selection.set_rows_selected(&context);
         assert_eq!(selection.ranges, vec![CellRefRange::ALL]);
     }
 

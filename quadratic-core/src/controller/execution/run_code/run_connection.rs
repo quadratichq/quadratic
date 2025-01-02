@@ -41,7 +41,7 @@ impl GridController {
             let content = cap.get(1).map(|m| m.as_str().trim()).unwrap_or("");
             let selection = A1Selection::parse(content, &default_sheet_id, &context)?;
 
-            let Some(pos) = selection.try_to_pos() else {
+            let Some(pos) = selection.try_to_pos(&context) else {
                 return Err(A1Error::WrongCellCount(
                     "Connections only supports one cell".to_string(),
                 ));

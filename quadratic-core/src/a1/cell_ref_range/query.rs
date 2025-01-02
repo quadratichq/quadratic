@@ -1,4 +1,7 @@
-use crate::{a1::UNBOUNDED, Pos};
+use crate::{
+    a1::{A1Context, UNBOUNDED},
+    Pos,
+};
 
 use super::CellRefRange;
 
@@ -54,7 +57,7 @@ impl CellRefRange {
     }
 
     /// Returns true if the range is a single position or a range that contains the given position.
-    pub fn is_pos_range(&self, p1: Pos, p2: Option<Pos>) -> bool {
+    pub fn is_pos_range(&self, p1: Pos, p2: Option<Pos>, context: &A1Context) -> bool {
         match self {
             Self::Sheet { range } => {
                 if let Some(p2) = p2 {
@@ -64,7 +67,23 @@ impl CellRefRange {
                     range.start.is_pos(p1) && range.end.is_pos(p1)
                 }
             }
-            Self::Table { .. } => todo!(),
+            Self::Table { range } => {
+                range
+                    .convert_to_ref_range_bounds(0, context)
+                    .iter()
+                    .any(|range| {
+                        if let Self::Sheet { range } = range {
+                            if let Some(p2) = p2 {
+                                range.start.is_pos(p1) && range.end.is_pos(p2)
+                                    || range.end.is_pos(p1) && range.start.is_pos(p2)
+                            } else {
+                                range.start.is_pos(p1) && range.end.is_pos(p1)
+                            }
+                        } else {
+                            false
+                        }
+                    })
+            }
         }
     }
 }
@@ -98,17 +117,25 @@ mod tests {
 
     #[test]
     fn test_is_pos_range() {
-        assert!(CellRefRange::test_a1("A1").is_pos_range(Pos { x: 1, y: 1 }, None));
-        assert!(!CellRefRange::test_a1("A1").is_pos_range(Pos { x: 2, y: 1 }, None));
-        assert!(!CellRefRange::test_a1("A1").is_pos_range(Pos { x: 1, y: 2 }, None));
-        assert!(CellRefRange::test_a1("A1:B2")
-            .is_pos_range(Pos { x: 1, y: 1 }, Some(Pos { x: 2, y: 2 })));
-        assert!(
-            !CellRefRange::test_a1("A1").is_pos_range(Pos { x: 2, y: 1 }, Some(Pos { x: 1, y: 1 }))
-        );
-        assert!(
-            !CellRefRange::test_a1("A1").is_pos_range(Pos { x: 1, y: 2 }, Some(Pos { x: 1, y: 1 }))
-        );
+        let context = A1Context::default();
+        assert!(CellRefRange::test_a1("A1").is_pos_range(Pos { x: 1, y: 1 }, None, &context));
+        assert!(!CellRefRange::test_a1("A1").is_pos_range(Pos { x: 2, y: 1 }, None, &context));
+        assert!(!CellRefRange::test_a1("A1").is_pos_range(Pos { x: 1, y: 2 }, None, &context));
+        assert!(CellRefRange::test_a1("A1:B2").is_pos_range(
+            Pos { x: 1, y: 1 },
+            Some(Pos { x: 2, y: 2 }),
+            &context
+        ));
+        assert!(!CellRefRange::test_a1("A1").is_pos_range(
+            Pos { x: 2, y: 1 },
+            Some(Pos { x: 1, y: 1 }),
+            &context
+        ));
+        assert!(!CellRefRange::test_a1("A1").is_pos_range(
+            Pos { x: 1, y: 2 },
+            Some(Pos { x: 1, y: 1 }),
+            &context
+        ));
     }
 
     #[test]

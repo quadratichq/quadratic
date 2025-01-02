@@ -245,6 +245,13 @@ impl TableRef {
             ColRange::ColumnToEnd(_) => true,
         })
     }
+
+    /// Tries to convert the TableRef to a Pos.
+    pub fn try_to_pos(&self, context: &A1Context) -> Option<Pos> {
+        let ranges = self.convert_to_ref_range_bounds(0, context);
+        let range = ranges.first()?;
+        range.try_to_pos(context)
+    }
 }
 
 #[cfg(test)]
@@ -500,5 +507,19 @@ mod tests {
             totals: false,
         };
         assert!(!table_ref.is_two_dimensional());
+    }
+
+    #[test]
+    fn test_try_to_pos() {
+        let context = setup_test_context();
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_ranges: vec![ColRange::Col("B".to_string())],
+            row_range: RowRange::Rows(vec![RowRangeEntry::new_rel(1, 1)]),
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        assert_eq!(table_ref.try_to_pos(&context).unwrap(), pos![B1]);
     }
 }

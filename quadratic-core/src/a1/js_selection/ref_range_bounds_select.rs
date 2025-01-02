@@ -77,12 +77,16 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "setColumnsSelected")]
-    pub fn set_columns_selected(&mut self) {
-        self.selection.set_columns_selected();
+    pub fn set_columns_selected(&mut self, context: &str) {
+        if let Ok(context) = serde_json::from_str::<A1Context>(context) {
+            self.selection.set_columns_selected(&context);
+        }
     }
 
     #[wasm_bindgen(js_name = "setRowsSelected")]
-    pub fn set_rows_selected(&mut self) {
-        self.selection.set_rows_selected();
+    pub fn set_rows_selected(&mut self, context: &str) {
+        if let Ok(context) = serde_json::from_str::<A1Context>(context) {
+            self.selection.set_rows_selected(&context);
+        }
     }
 }

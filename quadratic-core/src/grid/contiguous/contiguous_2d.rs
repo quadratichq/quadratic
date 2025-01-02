@@ -88,7 +88,7 @@ impl<T: Default + Clone + PartialEq + Debug> Contiguous2D<T> {
                 c.set_rect(start_col, start_row, end_col, end_row, value.clone());
             }
             // todo: not sure what this should do
-            CellRefRange::Table { .. } => todo!(),
+            CellRefRange::Table { .. } => (),
         });
         c
     }

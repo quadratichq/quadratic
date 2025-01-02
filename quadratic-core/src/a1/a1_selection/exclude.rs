@@ -99,7 +99,7 @@ impl A1Selection {
             CellRefRange::Sheet { range } => {
                 ranges.extend(A1Selection::find_excluded_rects(range, exclude_rect));
             }
-            CellRefRange::Table { .. } => todo!(),
+            CellRefRange::Table { .. } => (),
         }
 
         ranges
@@ -126,8 +126,8 @@ impl A1Selection {
         let mut ranges = Vec::new();
         for range in self.ranges.drain(..) {
             // skip range if it's the entire range or the reverse of the entire range
-            if !range.is_pos_range(p1, p2)
-                && (p2.is_none() || p2.is_some_and(|p2| !range.is_pos_range(p2, Some(p1))))
+            if !range.is_pos_range(p1, p2, context)
+                && (p2.is_none() || p2.is_some_and(|p2| !range.is_pos_range(p2, Some(p1), context)))
             {
                 if let Some(p2) = p2 {
                     if range.might_intersect_rect(Rect { min: p1, max: p2 }, context) {
@@ -153,7 +153,7 @@ impl A1Selection {
 
         // if the cursor is no longer in the range, then set the cursor to the last range
         if !self.contains_pos(self.cursor, context) {
-            // we find a finite range to se the cursor to, starting at the end and working backwards
+            // we find a finite range to set the cursor to, starting at the end and working backwards
             if let Some(cursor) = self.ranges.iter().rev().find_map(|range| match range {
                 CellRefRange::Sheet { range } => {
                     // first we check if end is finite
@@ -166,7 +166,7 @@ impl A1Selection {
                     }
                     None
                 }
-                CellRefRange::Table { .. } => todo!(),
+                CellRefRange::Table { .. } => None,
             }) {
                 self.cursor = cursor;
             } else {

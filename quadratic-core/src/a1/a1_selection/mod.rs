@@ -235,10 +235,10 @@ impl A1Selection {
                                 });
                             }
                         }
-                        CellRefRange::Table { .. } => todo!(),
+                        CellRefRange::Table { .. } => (),
                     });
             }
-            CellRefRange::Table { .. } => todo!(),
+            CellRefRange::Table { .. } => (),
         });
         if ranges.is_empty() {
             None
@@ -340,10 +340,10 @@ impl A1Selection {
 
     /// Tries to convert the selection to a single position. This works only if
     /// there is one range, and the range is a single cell.
-    pub fn try_to_pos(&self) -> Option<Pos> {
+    pub fn try_to_pos(&self, context: &A1Context) -> Option<Pos> {
         if self.ranges.len() == 1 {
             if let Some(range) = self.ranges.first() {
-                return range.try_to_pos();
+                return range.try_to_pos(context);
             }
         }
         None
@@ -958,19 +958,20 @@ mod intersection_tests {
 
     #[test]
     fn test_try_to_pos() {
+        let context = A1Context::default();
         let selection = A1Selection::test_a1("A1");
-        assert_eq!(selection.try_to_pos(), Some(pos![A1]));
+        assert_eq!(selection.try_to_pos(&context), Some(pos![A1]));
 
         let selection = A1Selection::test_a1("A1:B2");
-        assert_eq!(selection.try_to_pos(), None);
+        assert_eq!(selection.try_to_pos(&context), None);
 
         let selection = A1Selection::test_a1("A");
-        assert_eq!(selection.try_to_pos(), None);
+        assert_eq!(selection.try_to_pos(&context), None);
 
         let selection = A1Selection::test_a1("*");
-        assert_eq!(selection.try_to_pos(), None);
+        assert_eq!(selection.try_to_pos(&context), None);
 
         let selection = A1Selection::test_a1("1:4");
-        assert_eq!(selection.try_to_pos(), None);
+        assert_eq!(selection.try_to_pos(&context), None);
     }
 }

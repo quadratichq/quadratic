@@ -208,16 +208,17 @@ impl CellRefRange {
     pub fn translate_in_place(&mut self, x: i64, y: i64) {
         match self {
             Self::Sheet { range } => range.translate_in_place(x, y),
-            Self::Table { .. } => todo!(),
+            Self::Table { .. } => (),
         }
     }
 
     pub fn translate(&self, x: i64, y: i64) -> Self {
-        match self {
-            Self::Sheet { range } => Self::Sheet {
+        if let Self::Sheet { range } = self {
+            Self::Sheet {
                 range: range.translate(x, y),
-            },
-            Self::Table { .. } => todo!(),
+            }
+        } else {
+            self.clone()
         }
     }
 
@@ -227,25 +228,25 @@ impl CellRefRange {
         row: Option<i64>,
         delta: i64,
     ) {
-        match self {
-            Self::Sheet { range } => range.adjust_column_row_in_place(column, row, delta),
-            Self::Table { .. } => todo!(),
+        if let Self::Sheet { range } = self {
+            range.adjust_column_row_in_place(column, row, delta);
         }
     }
 
     pub fn adjust_column_row(&self, column: Option<i64>, row: Option<i64>, delta: i64) -> Self {
-        match self {
-            Self::Sheet { range } => Self::Sheet {
+        if let Self::Sheet { range } = self {
+            Self::Sheet {
                 range: range.adjust_column_row(column, row, delta),
-            },
-            Self::Table { .. } => todo!(),
+            }
+        } else {
+            self.clone()
         }
     }
 
-    pub fn try_to_pos(&self) -> Option<Pos> {
+    pub fn try_to_pos(&self, context: &A1Context) -> Option<Pos> {
         match self {
             Self::Sheet { range } => range.try_to_pos(),
-            Self::Table { .. } => todo!(),
+            Self::Table { range } => range.try_to_pos(context),
         }
     }
 
