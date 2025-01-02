@@ -12,37 +12,43 @@ impl TableRef {
         let mut cols = vec![];
 
         if let Some(table) = context.try_table(&self.table_name) {
-            self.col_ranges
-                .iter()
-                .for_each(|col_range| match col_range {
-                    ColRange::Col(col) => {
-                        if let Some(col_index) = table.try_col_index(col) {
-                            if col_index >= from && col_index <= to {
-                                cols.push(col_index);
+            match &self.col_range {
+                ColRange::All => {
+                    let start = table.bounds.min.x;
+                    let end = table.bounds.max.x;
+                    if start >= from && end <= to {
+                        for x in start.max(from)..=end.min(to) {
+                            cols.push(x);
+                        }
+                    }
+                }
+                ColRange::Col(col) => {
+                    if let Some(col_index) = table.try_col_index(col) {
+                        if col_index >= from && col_index <= to {
+                            cols.push(col_index);
+                        }
+                    }
+                }
+                ColRange::ColRange(col_range_start, col_range_end) => {
+                    if let Some((start, end)) = table.try_col_range(col_range_start, col_range_end)
+                    {
+                        if start >= from && end <= to {
+                            for x in start.max(from)..=end.min(to) {
+                                cols.push(x);
                             }
                         }
                     }
-                    ColRange::ColRange(col_range_start, col_range_end) => {
-                        if let Some((start, end)) =
-                            table.try_col_range(col_range_start, col_range_end)
-                        {
-                            if start >= from && end <= to {
-                                for x in start.max(from)..=end.min(to) {
-                                    cols.push(x);
-                                }
+                }
+                ColRange::ColumnToEnd(col) => {
+                    if let Some((start, end)) = table.try_col_range_to_end(col) {
+                        if start >= from && end <= to {
+                            for x in start.max(from)..=end.min(to) {
+                                cols.push(x);
                             }
                         }
                     }
-                    ColRange::ColumnToEnd(col) => {
-                        if let Some((start, end)) = table.try_col_range_to_end(col) {
-                            if start >= from && end <= to {
-                                for x in start.max(from)..=end.min(to) {
-                                    cols.push(x);
-                                }
-                            }
-                        }
-                    }
-                });
+                }
+            }
         }
 
         cols
@@ -71,12 +77,10 @@ impl TableRef {
                 RowRange::CurrentRow => {
                     // this one doesn't make sense in this context
                 }
-                RowRange::Rows(ranges) => {
-                    for range in ranges {
-                        let start = range.start.coord.max(from);
-                        let end = range.end.coord.min(to);
-                        rows.extend(start..=end);
-                    }
+                RowRange::Rows(range) => {
+                    let start = range.start.coord.max(from);
+                    let end = range.end.coord.min(to);
+                    rows.extend(start..=end);
                 }
             }
         }
@@ -91,7 +95,7 @@ impl TableRef {
 
     pub fn is_multi_cursor(&self, context: &A1Context) -> bool {
         // if more than one column, then it's a multi-cursor
-        if self.col_ranges.len() > 1 {
+        if self.col_range.len() > 1 {
             return true;
         }
 
@@ -122,7 +126,7 @@ impl TableRef {
         let mut max_x = bounds.min.x;
         let mut max_y = bounds.min.y;
 
-        for range in self.col_ranges.iter() {
+        for range in self.col_range.iter() {
             match range {
                 ColRange::Col(col) => {
                     let col = table.visible_columns.iter().position(|c| c == col)?;
@@ -201,7 +205,7 @@ impl TableRef {
         let mut ranges = vec![];
         let y_ranges = self.row_range.to_rows(current_row, table);
 
-        for range in self.col_ranges.iter() {
+        for range in self.col_range.iter() {
             match range {
                 ColRange::Col(col) => {
                     if let Some(col) = table.try_col_index(col) {
@@ -239,7 +243,7 @@ impl TableRef {
     /// Returns true if the table ref may be two-dimensional--ie, if it has
     /// unbounded ranges that may change.
     pub fn is_two_dimensional(&self) -> bool {
-        self.col_ranges.iter().any(|range| match range {
+        self.col_range.iter().any(|range| match range {
             ColRange::Col(_) => false,
             ColRange::ColRange(start, end) => start != end,
             ColRange::ColumnToEnd(_) => true,
@@ -287,7 +291,7 @@ mod tests {
         let context = setup_test_context();
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::Col("B".to_string())],
+            col_range: vec![ColRange::Col("B".to_string())],
             row_range: RowRange::All,
             data: true,
             headers: false,
@@ -303,7 +307,7 @@ mod tests {
         let context = setup_test_context_with_hidden_columns();
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::Col("C".to_string())],
+            col_range: vec![ColRange::Col("C".to_string())],
             row_range: RowRange::All,
             data: true,
             headers: false,
@@ -320,7 +324,7 @@ mod tests {
         let context = setup_test_context();
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::Col("A".to_string())],
+            col_range: vec![ColRange::Col("A".to_string())],
             row_range: RowRange::Rows(vec![RowRangeEntry::new_rel(1, 2)]),
             data: true,
             headers: false,
@@ -338,7 +342,7 @@ mod tests {
         // Single column, single row
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::Col("A".to_string())],
+            col_range: vec![ColRange::Col("A".to_string())],
             row_range: RowRange::CurrentRow,
             data: true,
             headers: false,
@@ -349,7 +353,7 @@ mod tests {
         // Multiple columns
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![
+            col_range: vec![
                 ColRange::Col("A".to_string()),
                 ColRange::Col("B".to_string()),
             ],
@@ -363,7 +367,7 @@ mod tests {
         // Multiple rows
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::Col("A".to_string())],
+            col_range: vec![ColRange::Col("A".to_string())],
             row_range: RowRange::Rows(vec![
                 RowRangeEntry {
                     start: CellRefCoord::new_rel(0),
@@ -386,7 +390,7 @@ mod tests {
         let context = setup_test_context();
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::ColRange("A".to_string(), "B".to_string())],
+            col_range: vec![ColRange::ColRange("A".to_string(), "B".to_string())],
             row_range: RowRange::All,
             data: true,
             headers: false,
@@ -407,7 +411,7 @@ mod tests {
         // Test case 1: Single column with all rows
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::Col("B".to_string())],
+            col_range: ColRange::Col("B".to_string()),
             row_range: RowRange::All,
             data: true,
             headers: false,
@@ -425,8 +429,8 @@ mod tests {
         // Test case 2: Column range with specific rows
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::ColRange("A".to_string(), "C".to_string())],
-            row_range: RowRange::Rows(vec![RowRangeEntry::new_rel(1, 2)]),
+            col_range: ColRange::ColRange("A".to_string(), "C".to_string()),
+            row_range: RowRange::Rows(RowRangeEntry::new_rel(1, 2)),
             data: true,
             headers: false,
             totals: false,
@@ -443,7 +447,7 @@ mod tests {
         // Test case 3: Column to end
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::ColumnToEnd("B".to_string())],
+            col_range: ColRange::ColumnToEnd("B".to_string()),
             row_range: RowRange::CurrentRow,
             data: true,
             headers: false,
@@ -464,7 +468,7 @@ mod tests {
         // Single column is not two-dimensional
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::Col("A".to_string())],
+            col_range: ColRange::Col("A".to_string()),
             row_range: RowRange::All,
             data: true,
             headers: false,
@@ -475,7 +479,7 @@ mod tests {
         // Column range with different start and end is two-dimensional
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::ColRange("A".to_string(), "C".to_string())],
+            col_range: ColRange::ColRange("A".to_string(), "C".to_string()),
             row_range: RowRange::All,
             data: true,
             headers: false,
@@ -486,27 +490,13 @@ mod tests {
         // Column to end is two-dimensional
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::ColumnToEnd("B".to_string())],
+            col_range: ColRange::ColumnToEnd("B".to_string()),
             row_range: RowRange::All,
             data: true,
             headers: false,
             totals: false,
         };
         assert!(table_ref.is_two_dimensional());
-
-        // Multiple single columns are not two-dimensional
-        let table_ref = TableRef {
-            table_name: "test_table".to_string(),
-            col_ranges: vec![
-                ColRange::Col("A".to_string()),
-                ColRange::Col("B".to_string()),
-            ],
-            row_range: RowRange::All,
-            data: true,
-            headers: false,
-            totals: false,
-        };
-        assert!(!table_ref.is_two_dimensional());
     }
 
     #[test]
@@ -514,8 +504,8 @@ mod tests {
         let context = setup_test_context();
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::Col("B".to_string())],
-            row_range: RowRange::Rows(vec![RowRangeEntry::new_rel(1, 1)]),
+            col_range: ColRange::Col("B".to_string()),
+            row_range: RowRange::Rows(RowRangeEntry::new_rel(1, 1)),
             data: true,
             headers: false,
             totals: false,

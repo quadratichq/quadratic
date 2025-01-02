@@ -14,7 +14,7 @@ impl TableRef {
         let Some(table) = context.try_table(&self.table_name) else {
             return false;
         };
-        for col_range in self.col_ranges.iter() {
+        for col_range in self.col_range.iter() {
             if !col_range.has_col(pos.x, table) {
                 return false;
             }
@@ -46,7 +46,7 @@ mod tests {
         let (context, _) = setup_test_context();
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::Col("A".to_string())],
+            col_range: vec![ColRange::Col("A".to_string())],
             row_range: RowRange::All,
             data: true,
             headers: false,

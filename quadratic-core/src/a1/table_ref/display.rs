@@ -13,7 +13,7 @@ impl TableRef {
             && !self.headers
             && !self.totals
             && self.row_range == RowRange::All
-            && self.col_ranges.is_empty()
+            && self.col_range.is_empty()
     }
 
     fn row_range_entry_to_string(entry: &RowRangeEntry) -> String {
@@ -55,7 +55,7 @@ impl TableRef {
     }
 
     fn col_ranges_to_string(&self) -> Vec<String> {
-        self.col_ranges
+        self.col_range
             .iter()
             .map(TableRef::col_range_entry_to_string)
             .collect::<Vec<String>>()

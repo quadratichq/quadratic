@@ -43,26 +43,19 @@ pub enum RowRange {
     #[default]
     All,
     CurrentRow,
-    Rows(Vec<RowRangeEntry>),
+    Rows(RowRangeEntry),
 }
 
 impl RowRange {
     /// Returns a list of (start, end) pairs for the row range.
-    pub fn to_rows(&self, current_row: i64, table: &TableMapEntry) -> Vec<(i64, i64)> {
+    pub fn to_rows(&self, current_row: i64, table: &TableMapEntry) -> (i64, i64) {
         match self {
-            RowRange::All => vec![(table.bounds.min.y, table.bounds.max.y)],
-            RowRange::CurrentRow => vec![(current_row, current_row)],
-            RowRange::Rows(ranges) => ranges
-                .iter()
-                .map(|r| {
-                    (
-                        // the -1 is because the row-index is 1-based instead of
-                        // 0-based
-                        table.bounds.min.y + r.start.coord - 1,
-                        table.bounds.min.y + r.end.coord - 1,
-                    )
-                })
-                .collect(),
+            RowRange::All => (table.bounds.min.y, table.bounds.max.y),
+            RowRange::CurrentRow => (current_row, current_row),
+            RowRange::Rows(ranges) => (
+                table.bounds.min.y + ranges.start.coord - 1,
+                table.bounds.min.y + ranges.end.coord - 1,
+            ),
         }
     }
 }
@@ -70,6 +63,7 @@ impl RowRange {
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub enum ColRange {
+    All,
     Col(String),
     ColRange(String, String),
     ColumnToEnd(String),
@@ -78,6 +72,7 @@ pub enum ColRange {
 impl ColRange {
     pub fn has_col(&self, col: i64, table: &TableMapEntry) -> bool {
         match self {
+            ColRange::All => return true,
             ColRange::Col(table_col) => {
                 if let Some(col_index) = table.try_col_index(table_col) {
                     return col_index == col;
@@ -147,17 +142,10 @@ mod tests {
 
         let row_range = RowRange::All;
         let rows = row_range.to_rows(1, &table);
-        assert_eq!(rows, vec![(1, 5)]);
+        assert_eq!(rows, (1, 5));
 
         let row_range = RowRange::CurrentRow;
         let rows = row_range.to_rows(1, &table);
-        assert_eq!(rows, vec![(1, 1)]);
-
-        let row_range = RowRange::Rows(vec![
-            RowRangeEntry::new_rel(1, 2),
-            RowRangeEntry::new_rel(4, 5),
-        ]);
-        let rows = row_range.to_rows(1, &table);
-        assert_eq!(rows, vec![(1, 2), (4, 5)]);
+        assert_eq!(rows, (1, 1));
     }
 }

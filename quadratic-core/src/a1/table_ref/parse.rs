@@ -23,8 +23,11 @@ impl TableRef {
         Err(A1Error::InvalidTableRef("Invalid table name".into()))
     }
 
-    /// Parse a table reference given a list of table_names.
-    pub fn parse(s: &str, context: &A1Context) -> Result<Self, A1Error> {
+    /// Parse a table reference and returns a list of TableRefs. A list is
+    /// required because we break non-rectangular regions into multiple
+    /// TableRefs, For example: `Table1[[Column 1],[Column 3]]` will become
+    /// `Table1[Column 1]` and `Table1[Column 3]`.
+    pub fn parse(s: &str, context: &A1Context) -> Result<Vec<TableRef>, A1Error> {
         let (table_name, remaining) = Self::parse_table_name(s)?;
         let table_name = if let Some(entry) = context.try_table(&table_name) {
             entry.table_name.clone()
@@ -32,46 +35,40 @@ impl TableRef {
             return Err(A1Error::TableNotFound(table_name.clone()));
         };
 
-        // if it's just the table name, return the entire table TableRef
+        // if it's just the table name, return the entire TableRef
         if remaining.trim().is_empty() {
-            return Ok(Self {
+            return Ok(vec![Self {
                 table_name,
                 data: true,
                 headers: false,
                 totals: false,
                 row_range: RowRange::All,
-                col_ranges: vec![],
-            });
+                col_range: ColRange::All,
+            }]);
         }
 
-        let mut row_ranges = None;
-        let mut column_ranges = vec![];
+        let mut row_range = None;
+        let mut col_ranges = vec![];
         let mut data = None;
         let mut headers = false;
         let mut totals = false;
 
         for token in Self::tokenize(remaining)? {
             match token {
-                Token::RowRange(start, end) => match row_ranges {
-                    Some(RowRange::Rows(mut rows)) => {
-                        rows.push(RowRangeEntry::new_rel(start, end));
-                        row_ranges = Some(RowRange::Rows(rows));
-                    }
-                    Some(_) => {
+                Token::RowRange(start, end) => {
+                    if row_range.is_some() {
                         return Err(A1Error::MultipleRowDefinitions);
                     }
-                    None => {
-                        row_ranges = Some(RowRange::Rows(vec![RowRangeEntry::new_rel(start, end)]));
-                    }
-                },
+                    row_range = Some(RowRange::Rows(RowRangeEntry::new_rel(start, end)));
+                }
                 Token::Column(name) => {
-                    column_ranges.push(ColRange::Col(name));
+                    col_ranges.push(ColRange::Col(name));
                 }
                 Token::ColumnRange(start, end) => {
-                    column_ranges.push(ColRange::ColRange(start, end));
+                    col_ranges.push(ColRange::ColRange(start, end));
                 }
                 Token::ColumnToEnd(name) => {
-                    column_ranges.push(ColRange::ColumnToEnd(name));
+                    col_ranges.push(ColRange::ColumnToEnd(name));
                 }
                 Token::All => {
                     headers = true;
@@ -94,22 +91,25 @@ impl TableRef {
                     data = Some(true);
                 }
                 Token::ThisRow => {
-                    if row_ranges.is_some() {
+                    if row_range.is_some() {
                         return Err(A1Error::MultipleRowDefinitions);
                     }
-                    row_ranges = Some(RowRange::CurrentRow);
+                    row_range = Some(RowRange::CurrentRow);
                 }
             }
         }
 
-        Ok(Self {
-            table_name,
-            data: data.unwrap_or(true),
-            headers,
-            totals,
-            row_range: row_ranges.unwrap_or(RowRange::All),
-            col_ranges: column_ranges,
-        })
+        Ok(col_ranges
+            .iter()
+            .map(|col_range| TableRef {
+                table_name: table_name.clone(),
+                data: data.unwrap_or(true),
+                headers,
+                totals,
+                row_range: row_range.clone().unwrap_or(RowRange::All),
+                col_range: col_range.clone(),
+            })
+            .collect())
     }
 }
 
@@ -130,17 +130,21 @@ mod tests {
     #[test]
     fn test_simple_table_ref() {
         let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
-        let table_ref = TableRef::parse("Table1", &context).unwrap();
+        let table_refs = TableRef::parse("Table1", &context).unwrap();
+        assert_eq!(table_refs.len(), 1);
+        let table_ref = &table_refs.first().unwrap();
         assert_eq!(table_ref.table_name, "Table1");
         assert!(table_ref.data);
         assert!(!table_ref.headers);
-        assert!(table_ref.col_ranges.is_empty());
+        assert_eq!(table_ref.col_range, ColRange::All);
     }
 
     #[test]
     fn test_table_name_case_insensitive() {
         let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
-        let table_ref = TableRef::parse("table1", &context).unwrap();
+        let table_refs = TableRef::parse("table1", &context).unwrap();
+        assert_eq!(table_refs.len(), 1);
+        let table_ref = &table_refs.first().unwrap();
         assert_eq!(table_ref.table_name, "Table1");
     }
 
@@ -158,11 +162,12 @@ mod tests {
     #[test]
     fn test_table_with_column() {
         let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
-        let table_ref = TableRef::parse("Table1[Column Name]", &context).unwrap();
+        let table_refs = TableRef::parse("Table1[Column Name]", &context).unwrap();
+        assert_eq!(table_refs.len(), 1);
+        let table_ref = &table_refs.first().unwrap();
         assert_eq!(table_ref.table_name, "Table1");
-        assert_eq!(table_ref.col_ranges.len(), 1);
         assert_eq!(
-            table_ref.col_ranges[0],
+            table_ref.col_range,
             ColRange::Col("Column Name".to_string())
         );
     }
@@ -170,7 +175,9 @@ mod tests {
     #[test]
     fn test_table_with_headers() {
         let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
-        let table_ref = TableRef::parse("Table1[[#HEADERS]]", &context).unwrap();
+        let table_refs = TableRef::parse("Table1[[#HEADERS]]", &context).unwrap();
+        assert_eq!(table_refs.len(), 1);
+        let table_ref = &table_refs.first().unwrap();
         assert_eq!(table_ref.table_name, "Table1");
         assert!(table_ref.headers);
     }
@@ -194,8 +201,8 @@ mod tests {
                     data: true,
                     headers: false,
                     totals: false,
-                    row_range: RowRange::Rows(vec![RowRangeEntry::new_rel(12, 15)]),
-                    col_ranges: vec![ColRange::Col("Column 1".to_string())],
+                    row_range: RowRange::Rows(RowRangeEntry::new_rel(12, 15)),
+                    col_range: ColRange::Col("Column 1".to_string()),
                 },
             ),
             (
@@ -205,8 +212,8 @@ mod tests {
                     data: true,
                     headers: false,
                     totals: false,
-                    row_range: RowRange::Rows(vec![RowRangeEntry::new_rel(12, 15)]),
-                    col_ranges: vec![ColRange::Col("Column 2".to_string())],
+                    row_range: RowRange::Rows(RowRangeEntry::new_rel(12, 15)),
+                    col_range: ColRange::Col("Column 2".to_string()),
                 },
             ),
             (
@@ -216,15 +223,17 @@ mod tests {
                     data: true,
                     headers: false,
                     totals: false,
-                    row_range: RowRange::Rows(vec![RowRangeEntry::new_rel(12, 15)]),
-                    col_ranges: vec![ColRange::Col("Column 3".to_string())],
+                    row_range: RowRange::Rows(RowRangeEntry::new_rel(12, 15)),
+                    col_range: ColRange::Col("Column 3".to_string()),
                 },
             ),
         ];
 
         for (s, expected) in variations.iter() {
-            let table_ref = TableRef::parse(s, &context).unwrap();
-            assert_eq!(table_ref, *expected, "{}", s);
+            let table_refs = TableRef::parse(s, &context).unwrap();
+            assert_eq!(table_refs.len(), 1);
+            let table_ref = &table_refs.first().unwrap();
+            assert_eq!(*table_ref, expected, "{}", s);
         }
     }
 }

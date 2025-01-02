@@ -72,7 +72,7 @@ pub(crate) fn import_table_ref(table_ref: current::TableRefSchema) -> TableRef {
         headers: table_ref.headers,
         totals: table_ref.totals,
         row_range: import_row_range(table_ref.row_ranges),
-        col_ranges: import_col_ranges(table_ref.col_ranges),
+        col_range: import_col_ranges(table_ref.col_ranges),
     }
 }
 
@@ -254,7 +254,7 @@ pub(crate) fn export_cell_ref_range(range: CellRefRange) -> current::CellRefRang
                 headers: range.headers,
                 totals: range.totals,
                 row_ranges: export_row_range(range.row_range),
-                col_ranges: export_col_ranges(range.col_ranges),
+                col_ranges: export_col_ranges(range.col_range),
             })
         }
     }

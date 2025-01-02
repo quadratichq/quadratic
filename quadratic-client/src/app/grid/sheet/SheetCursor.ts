@@ -146,21 +146,21 @@ export class SheetCursor {
   }
 
   isSelectedColumnsFinite(): boolean {
-    return this.jsSelection.isSelectedColumnsFinite();
+    return this.jsSelection.isSelectedColumnsFinite(sheets.a1Context);
   }
 
   isSelectedRowsFinite(): boolean {
-    return this.jsSelection.isSelectedRowsFinite();
+    return this.jsSelection.isSelectedRowsFinite(sheets.a1Context);
   }
 
   // Returns the columns that are selected.
   getSelectedColumns(): number[] {
-    return Array.from(this.jsSelection.getSelectedColumns());
+    return Array.from(this.jsSelection.getSelectedColumns(sheets.a1Context));
   }
 
   // Returns the rows that are selected.
   getSelectedRows(): number[] {
-    return Array.from(this.jsSelection.getSelectedRows());
+    return Array.from(this.jsSelection.getSelectedRows(sheets.a1Context));
   }
 
   // Returns true if the cursor is only selecting a single cell
@@ -202,23 +202,23 @@ export class SheetCursor {
 
   // Selects columns that have a current selection (used by cmd+space)
   setColumnsSelected() {
-    this.jsSelection.setColumnsSelected();
+    this.jsSelection.setColumnsSelected(sheets.a1Context);
     this.updatePosition(true);
   }
 
   // Selects rows that have a current selection (used by shift+cmd+space)
   setRowsSelected() {
-    this.jsSelection.setRowsSelected();
+    this.jsSelection.setRowsSelected(sheets.a1Context);
     this.updatePosition(true);
   }
 
   selectColumn(column: number, ctrlKey: boolean, shiftKey: boolean, isRightClick: boolean, top: number) {
-    this.jsSelection.selectColumn(column, ctrlKey || shiftKey, shiftKey, isRightClick, top);
+    this.jsSelection.selectColumn(column, ctrlKey || shiftKey, shiftKey, isRightClick, top, sheets.a1Context);
     this.updatePosition(true);
   }
 
   selectRow(row: number, ctrlKey: boolean, shiftKey: boolean, isRightClick: boolean, left: number) {
-    this.jsSelection.selectRow(row, ctrlKey || shiftKey, shiftKey, isRightClick, left);
+    this.jsSelection.selectRow(row, ctrlKey || shiftKey, shiftKey, isRightClick, left, sheets.a1Context);
     this.updatePosition(true);
   }
 
@@ -243,7 +243,7 @@ export class SheetCursor {
   }
 
   contains(x: number, y: number): boolean {
-    return this.jsSelection.contains(x, y);
+    return this.jsSelection.contains(x, y, sheets.a1Context);
   }
 
   selectRect(left: number, top: number, right: number, bottom: number, append = false, ensureVisible = true) {
@@ -308,6 +308,6 @@ export class SheetCursor {
   }
 
   get selectionEnd(): JsCoordinate {
-    return this.jsSelection.bottomRightCell();
+    return this.jsSelection.bottomRightCell(sheets.a1Context);
   }
 }
