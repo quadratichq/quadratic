@@ -144,7 +144,7 @@ impl GridController {
                             || !(range.start.row.coord == range.end.row.coord
                                 || range.start.col.coord == range.end.col.coord)
                     }
-                    CellRefRange::Table { .. } => todo!(),
+                    CellRefRange::Table { range } => range.is_two_dimensional(),
                 }
             } else {
                 false

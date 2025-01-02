@@ -1,7 +1,7 @@
 use indexmap::IndexMap;
 
 use crate::{
-    a1::{A1Selection, CellRefRange},
+    a1::{A1Selection, CellRefRange, RefRangeBounds, TableRef},
     grid::{
         js_types::{JsCellValuePosAIContext, JsCodeCell},
         GridBounds,
@@ -49,25 +49,30 @@ impl Sheet {
             |entry: &CellValue| skip_code_runs || !matches!(entry, &CellValue::Code(_));
 
         for range in selection.ranges.iter() {
-            let rect = self.cell_ref_range_to_rect(range.clone());
-            for x in rect.x_range() {
-                for y in rect.y_range() {
-                    if let Some(entry) = self.cell_value_ref(Pos { x, y }) {
-                        if (include_blanks || !matches!(entry, &CellValue::Blank))
-                            && check_code(entry)
-                        {
+            let rects = match range {
+                CellRefRange::Sheet { range } => vec![self.ref_range_bounds_to_rect(range)],
+                CellRefRange::Table { range } => self.table_ref_to_rects(range),
+            };
+            for rect in &rects {
+                for x in rect.x_range() {
+                    for y in rect.y_range() {
+                        if let Some(entry) = self.cell_value_ref(Pos { x, y }) {
+                            if (include_blanks || !matches!(entry, &CellValue::Blank))
+                                && check_code(entry)
+                            {
+                                count += 1;
+                                if count >= max_count {
+                                    return None;
+                                }
+                                cells.insert(Pos { x, y }, entry);
+                            }
+                        } else if include_blanks {
                             count += 1;
                             if count >= max_count {
                                 return None;
                             }
-                            cells.insert(Pos { x, y }, entry);
+                            cells.insert(Pos { x, y }, &CellValue::Blank);
                         }
-                    } else if include_blanks {
-                        count += 1;
-                        if count >= max_count {
-                            return None;
-                        }
-                        cells.insert(Pos { x, y }, &CellValue::Blank);
                     }
                 }
             }
@@ -77,7 +82,7 @@ impl Sheet {
                     let code_rect = code_run.output_rect(*pos, false);
                     for x in code_rect.x_range() {
                         for y in code_rect.y_range() {
-                            if rect.contains(Pos { x, y }) {
+                            if rects.iter().any(|rect| rect.contains(Pos { x, y })) {
                                 if let Some(entry) = code_run
                                     .cell_value_ref_at((x - pos.x) as u32, (y - pos.y) as u32)
                                 {
@@ -180,80 +185,90 @@ impl Sheet {
         code_cells
     }
 
+    pub fn table_ref_to_rects(&self, range: &TableRef) -> Vec<Rect> {
+        let rects = range.convert_to_ref_range_bounds(1, &self.a1_context());
+        rects
+            .iter()
+            .filter_map(|range| {
+                if let CellRefRange::Sheet { range } = range {
+                    Some(self.ref_range_bounds_to_rect(range))
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
     /// Converts a cell reference range to a minimal rectangle covering the data
     /// on the sheet.
-    pub fn cell_ref_range_to_rect(&self, cell_ref_range: CellRefRange) -> Rect {
-        match cell_ref_range {
-            CellRefRange::Table { range } => range
-                .to_largest_rect(0, &self.a1_context())
-                .unwrap_or(Rect::new(1, 1, 1, 1)),
-            CellRefRange::Sheet { range } => {
-                let start = range.start;
-                let end = range.end;
-                // ensure start is not unbounded (it shouldn't be)
-                let rect_start: Pos = Pos {
-                    x: if start.col.is_unbounded() {
-                        1
-                    } else {
-                        start.col()
-                    },
-                    y: if start.row.is_unbounded() {
-                        1
-                    } else {
-                        start.row()
-                    },
-                };
+    pub fn ref_range_bounds_to_rect(&self, range: &RefRangeBounds) -> Rect {
+        let start = range.start;
+        let end = range.end;
+        // ensure start is not unbounded (it shouldn't be)
+        let rect_start: Pos = Pos {
+            x: if start.col.is_unbounded() {
+                1
+            } else {
+                start.col()
+            },
+            y: if start.row.is_unbounded() {
+                1
+            } else {
+                start.row()
+            },
+        };
 
-                let ignore_formatting = false;
-                let rect_end = if end.is_unbounded() {
-                    if end.col.is_unbounded() && end.row.is_unbounded() {
-                        match self.bounds(ignore_formatting) {
-                            GridBounds::NonEmpty(bounds) => Pos {
-                                x: bounds.max.x,
-                                y: bounds.max.y,
-                            },
-                            GridBounds::Empty => rect_start,
-                        }
+        let ignore_formatting = false;
+        let rect_end = if end.is_unbounded() {
+            if end.col.is_unbounded() && end.row.is_unbounded() {
+                match self.bounds(ignore_formatting) {
+                    GridBounds::NonEmpty(bounds) => Pos {
+                        x: bounds.max.x,
+                        y: bounds.max.y,
+                    },
+                    GridBounds::Empty => rect_start,
+                }
+            } else {
+                // if there is an end, then calculate the end, goes up to bounds.max if infinite
+                Pos {
+                    x: if end.col.is_unbounded() {
+                        // get max column for the range of rows
+                        self.rows_bounds(start.row(), end.row(), ignore_formatting)
+                            .map_or(rect_start.x, |(_, hi)| hi.max(rect_start.x))
                     } else {
-                        // if there is an end, then calculate the end, goes up to bounds.max if infinite
-                        Pos {
-                            x: if end.col.is_unbounded() {
-                                // get max column for the range of rows
-                                self.rows_bounds(start.row(), end.row(), ignore_formatting)
-                                    .map_or(rect_start.x, |(_, hi)| hi.max(rect_start.x))
-                            } else {
-                                end.col()
-                            },
-                            y: if end.row.is_unbounded() {
-                                // get max row for the range of columns
-                                self.columns_bounds(start.col(), end.col(), ignore_formatting)
-                                    .map_or(rect_start.y, |(_, hi)| hi.max(rect_start.y))
-                            } else {
-                                end.row()
-                            },
-                        }
-                    }
-                } else {
-                    Pos {
-                        x: end.col(),
-                        y: end.row(),
-                    }
-                };
-
-                Rect::new_span(rect_start, rect_end)
+                        end.col()
+                    },
+                    y: if end.row.is_unbounded() {
+                        // get max row for the range of columns
+                        self.columns_bounds(start.col(), end.col(), ignore_formatting)
+                            .map_or(rect_start.y, |(_, hi)| hi.max(rect_start.y))
+                    } else {
+                        end.row()
+                    },
+                }
             }
-        }
+        } else {
+            Pos {
+                x: end.col(),
+                y: end.row(),
+            }
+        };
+
+        Rect::new_span(rect_start, rect_end)
     }
 
     /// Resolves a selection to a union of rectangles. This is important for
     /// ensuring that all clients agree on the exact rectangles a transaction
     /// applies to.
     pub fn selection_to_rects(&self, selection: &A1Selection) -> Vec<Rect> {
-        selection
-            .ranges
-            .iter()
-            .map(|range| self.cell_ref_range_to_rect(range.clone()))
-            .collect()
+        let mut rects = Vec::new();
+        for range in selection.ranges.iter() {
+            match range {
+                CellRefRange::Sheet { range } => rects.push(self.ref_range_bounds_to_rect(range)),
+                CellRefRange::Table { range } => rects.extend(self.table_ref_to_rects(range)),
+            }
+        }
+        rects
     }
 
     /// Returns the smallest rect that contains all the ranges in the selection.
@@ -267,13 +282,6 @@ impl Sheet {
         }
     }
 
-    /// Converts an unbounded cell reference range to a finite rectangle via
-    /// [`Self::cell_ref_range_to_rect()`]. Bounded ranges are returned
-    /// unmodified.
-    pub fn finitize_cell_ref_range(&self, cell_ref_range: CellRefRange) -> CellRefRange {
-        CellRefRange::new_relative_rect(self.cell_ref_range_to_rect(cell_ref_range))
-    }
-
     /// Converts unbounded regions in a selection to finite rectangular regions.
     /// Bounded regions are unmodified.
     pub fn finitize_selection(&self, selection: &A1Selection) -> A1Selection {
@@ -283,7 +291,18 @@ impl Sheet {
             ranges: selection
                 .ranges
                 .iter()
-                .map(|range| self.finitize_cell_ref_range(range.clone()))
+                .flat_map(|range| match range {
+                    CellRefRange::Sheet { range } => {
+                        vec![CellRefRange::new_relative_rect(
+                            self.ref_range_bounds_to_rect(range),
+                        )]
+                    }
+                    CellRefRange::Table { range } => self
+                        .table_ref_to_rects(range)
+                        .into_iter()
+                        .map(|rect| CellRefRange::new_relative_rect(rect))
+                        .collect(),
+                })
                 .collect(),
         }
     }
@@ -294,7 +313,7 @@ impl Sheet {
 mod tests {
 
     use crate::{
-        a1::{A1Selection, CellRefRange},
+        a1::{A1Selection, CellRefRange, RefRangeBounds},
         grid::{
             js_types::{JsCellValuePosAIContext, JsCodeCell, JsReturnInfo},
             CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
@@ -553,13 +572,13 @@ mod tests {
         sheet.recalculate_bounds();
 
         // Test fully specified range
-        let range = CellRefRange::test_a1("A1:E5");
-        let rect = sheet.cell_ref_range_to_rect(range);
+        let range = RefRangeBounds::test_a1("A1:E5");
+        let rect = sheet.ref_range_bounds_to_rect(&range);
         assert_eq!(rect, Rect::new(1, 1, 5, 5));
 
         // Test unbounded end
-        let range = CellRefRange::test_a1("B2:");
-        let rect = sheet.cell_ref_range_to_rect(range);
+        let range = RefRangeBounds::test_a1("B2:");
+        let rect = sheet.ref_range_bounds_to_rect(&range);
         assert_eq!(rect, Rect::new(2, 2, 5, 5)); // Should extend to sheet bounds
     }
 
@@ -573,7 +592,7 @@ mod tests {
     }
 
     #[test]
-    fn test_finitize_cell_ref_range() {
+    fn test_finitize_ref_range_bounds() {
         let mut sheet = Sheet::test();
         // Add some data to create bounds
         sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
@@ -581,19 +600,19 @@ mod tests {
         sheet.recalculate_bounds();
 
         // Test unbounded range
-        let range = CellRefRange::test_a1("B2:");
-        let finite_range = sheet.finitize_cell_ref_range(range);
-        assert_eq!(finite_range, CellRefRange::test_a1("B2:J10"));
+        let range = RefRangeBounds::test_a1("B2:");
+        let finite_range = sheet.ref_range_bounds_to_rect(&range);
+        assert_eq!(finite_range, Rect::test_a1("B2:J10"));
 
         // Test already bounded range (should remain unchanged)
-        let range = CellRefRange::test_a1("C3:E5");
-        let finite_range = sheet.finitize_cell_ref_range(range);
-        assert_eq!(finite_range, CellRefRange::test_a1("C3:E5"));
+        let range = RefRangeBounds::test_a1("C3:E5");
+        let finite_range = sheet.ref_range_bounds_to_rect(&range);
+        assert_eq!(finite_range, Rect::test_a1("C3:E5"));
 
         // Test select all
-        let range = CellRefRange::test_a1("*");
-        let finite_range = sheet.finitize_cell_ref_range(range);
-        assert_eq!(finite_range, CellRefRange::test_a1("A1:J10"));
+        let range = RefRangeBounds::test_a1("*");
+        let finite_range = sheet.ref_range_bounds_to_rect(&range);
+        assert_eq!(finite_range, Rect::test_a1("A1:J10"));
     }
 
     #[test]

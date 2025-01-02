@@ -15,7 +15,7 @@ use super::ids::SheetId;
 use super::js_types::{CellFormatSummary, CellType, JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;
 use super::{CellWrap, CodeRun, NumericFormatKind, SheetFormatting};
-use crate::a1::A1Selection;
+use crate::a1::{A1Selection, CellRefRange};
 use crate::sheet_offsets::SheetOffsets;
 use crate::{Array, CellValue, Pos, Rect};
 
@@ -493,9 +493,14 @@ impl Sheet {
     ) -> Vec<i64> {
         let mut rows_set = HashSet::<i64>::new();
         selection.ranges.iter().for_each(|range| {
-            let rect = self.cell_ref_range_to_rect(range.clone());
-            let rows = self.get_rows_with_wrap_in_rect(&rect, include_blanks);
-            rows_set.extend(rows);
+            let rects = match range {
+                CellRefRange::Sheet { range } => vec![self.ref_range_bounds_to_rect(range)],
+                CellRefRange::Table { range } => self.table_ref_to_rects(range),
+            };
+            for rect in rects {
+                let rows = self.get_rows_with_wrap_in_rect(&rect, include_blanks);
+                rows_set.extend(rows);
+            }
         });
         rows_set.into_iter().collect()
     }

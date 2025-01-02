@@ -1,5 +1,5 @@
 use crate::{
-    a1::UNBOUNDED,
+    a1::{CellRefRange, UNBOUNDED},
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
@@ -99,7 +99,11 @@ impl GridController {
                     };
 
                     for cells_range in cells_ranges.iter() {
-                        let cells_rect = sheet.cell_ref_range_to_rect(cells_range.clone());
+                        let ref_range_bounds = match cells_range {
+                            CellRefRange::Sheet { range } => range,
+                            CellRefRange::Table { .. } => continue,
+                        };
+                        let cells_rect = sheet.ref_range_bounds_to_rect(ref_range_bounds);
 
                         if cells_rect.max.x < column.unwrap_or(UNBOUNDED)
                             && cells_rect.max.y < row.unwrap_or(UNBOUNDED)

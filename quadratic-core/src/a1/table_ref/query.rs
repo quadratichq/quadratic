@@ -235,6 +235,16 @@ impl TableRef {
         }
         ranges
     }
+
+    /// Returns true if the table ref may be two-dimensional--ie, if it has
+    /// unbounded ranges that may change.
+    pub fn is_two_dimensional(&self) -> bool {
+        self.col_ranges.iter().any(|range| match range {
+            ColRange::Col(_) => false,
+            ColRange::ColRange(start, end) => start != end,
+            ColRange::ColumnToEnd(_) => true,
+        })
+    }
 }
 
 #[cfg(test)]
@@ -440,5 +450,55 @@ mod tests {
                 range: RefRangeBounds::new_relative(2, 2, 3, 2)
             }]
         );
+    }
+
+    #[test]
+    fn test_is_two_dimensional() {
+        // Single column is not two-dimensional
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_ranges: vec![ColRange::Col("A".to_string())],
+            row_range: RowRange::All,
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        assert!(!table_ref.is_two_dimensional());
+
+        // Column range with different start and end is two-dimensional
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_ranges: vec![ColRange::ColRange("A".to_string(), "C".to_string())],
+            row_range: RowRange::All,
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        assert!(table_ref.is_two_dimensional());
+
+        // Column to end is two-dimensional
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_ranges: vec![ColRange::ColumnToEnd("B".to_string())],
+            row_range: RowRange::All,
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        assert!(table_ref.is_two_dimensional());
+
+        // Multiple single columns are not two-dimensional
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_ranges: vec![
+                ColRange::Col("A".to_string()),
+                ColRange::Col("B".to_string()),
+            ],
+            row_range: RowRange::All,
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        assert!(!table_ref.is_two_dimensional());
     }
 }
