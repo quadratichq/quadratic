@@ -514,31 +514,31 @@ mod test {
         let result = gc
             .calculation_get_cells_a1(transaction_id.to_string(), "B:".to_string(), None)
             .unwrap();
-        assert_eq!(result.two_dimensional, true);
+        assert!(result.two_dimensional);
 
         let result = gc
             .calculation_get_cells_a1(transaction_id.to_string(), "B".to_string(), None)
             .unwrap();
-        assert_eq!(result.two_dimensional, false);
+        assert!(!result.two_dimensional);
 
         let result = gc
             .calculation_get_cells_a1(transaction_id.to_string(), "2:".to_string(), None)
             .unwrap();
-        assert_eq!(result.two_dimensional, true);
+        assert!(result.two_dimensional);
 
         let result = gc
             .calculation_get_cells_a1(transaction_id.to_string(), "2".to_string(), None)
             .unwrap();
-        assert_eq!(result.two_dimensional, false);
+        assert!(!result.two_dimensional);
 
         let result = gc
             .calculation_get_cells_a1(transaction_id.to_string(), "D5:E5".to_string(), None)
             .unwrap();
-        assert_eq!(result.two_dimensional, false);
+        assert!(!result.two_dimensional);
 
         let result = gc
             .calculation_get_cells_a1(transaction_id.to_string(), "D5:".to_string(), None)
             .unwrap();
-        assert_eq!(result.two_dimensional, true);
+        assert!(result.two_dimensional);
     }
 }
