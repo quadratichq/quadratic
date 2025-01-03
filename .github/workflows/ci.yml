@@ -11,7 +11,7 @@ on:
   pull_request:
 
 concurrency:
-  group: ci
+  group: ci-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
