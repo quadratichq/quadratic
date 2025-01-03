@@ -90,7 +90,7 @@ mod tests {
         assert_close(-100.0, &eval_to_string(&g, "PMT(0, 12, 1200)"), "Zero interest rate");
         
         // Test with negative number of periods
-        assert_close(136.10, &eval_to_string(&g, "PMT(0.08/12, -12*5, -10000)"), "Negative periods");
+        assert_close(-136.10, &eval_to_string(&g, "PMT(0.08/12, -12*5, -10000)"), "Negative periods");
     }
 }
 
