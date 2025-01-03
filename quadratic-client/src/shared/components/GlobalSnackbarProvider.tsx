@@ -170,6 +170,10 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
             backgroundColor: 'hsl(var(--foreground))',
             color: 'hsl(var(--background))',
           },
+          // Override this so it sits over the sheetbar
+          '&.MuiSnackbar-anchorOriginBottomCenter': {
+            bottom: '66px !important',
+          },
         }}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         autoHideDuration={stayOpen ? null : DURATION}

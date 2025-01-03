@@ -1,4 +1,4 @@
-//! A CellRefRange that also might include a sheet name. This is used by ranges
+//! A CellRefRange that includes a default sheet name. This is used by ranges
 //! that may include multiple sheets.
 
 use serde::{Deserialize, Serialize};

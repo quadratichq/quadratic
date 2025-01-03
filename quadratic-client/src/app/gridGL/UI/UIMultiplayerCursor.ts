@@ -1,6 +1,6 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { drawFiniteSelection, drawInfiniteSelection } from '@/app/gridGL/UI/drawCursor';
-import { CellRefRange, JsCoordinate } from '@/app/quadratic-core-types';
+import { JsCoordinate } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { Graphics } from 'pixi.js';
 
@@ -86,20 +86,27 @@ export class UIMultiPlayerCursor extends Graphics {
             cursor: player.parsedSelection?.getCursor(),
           });
 
-          const rangesStringified = player.parsedSelection.getRanges();
-          let ranges: CellRefRange[] = [];
+          const rangesStringified = player.parsedSelection.getFiniteRefRangeBounds(sheets.a1Context);
           try {
-            ranges = JSON.parse(rangesStringified);
+            const ranges = JSON.parse(rangesStringified);
+            drawFiniteSelection(this, color, FILL_ALPHA, ranges);
           } catch (e) {
-            console.error(e);
+            // it's possible for a table to no longer exist, so we don't want to
+            // throw a warning or error
           }
-          drawFiniteSelection(this, color, FILL_ALPHA, ranges);
-          drawInfiniteSelection({
-            g: this,
-            color,
-            alpha: FILL_ALPHA,
-            ranges,
-          });
+
+          try {
+            const infiniteRangesStringified = player.parsedSelection.getInfiniteRefRangeBounds();
+            const infiniteRanges = JSON.parse(infiniteRangesStringified);
+            drawInfiniteSelection({
+              g: this,
+              color,
+              alpha: FILL_ALPHA,
+              ranges: infiniteRanges,
+            });
+          } catch (e) {
+            console.warn(`Unable to draw infinite ranges for player ${player.session_id}, ${e}`);
+          }
         }
       });
     }

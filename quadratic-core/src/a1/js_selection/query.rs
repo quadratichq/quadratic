@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 
-use crate::a1::A1Context;
+use crate::a1::{A1Context, CellRefRange};
 
 use super::*;
 
@@ -74,24 +74,42 @@ impl JsSelection {
         serde_json::to_string(&self.selection.ranges).map_err(|e| e.to_string())
     }
 
-    #[wasm_bindgen(js_name = "getFiniteRanges")]
-    pub fn get_finite_ranges(&self) -> Result<String, String> {
+    #[wasm_bindgen(js_name = "getFiniteRefRangeBounds")]
+    pub fn finite_ref_range_bounds(&self, context: &str) -> Result<String, String> {
+        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
+            return Err("Unable to parse context".to_string());
+        };
         let ranges = self
             .selection
             .ranges
             .iter()
             .filter(|r| r.is_finite())
+            .filter_map(|range| match range {
+                CellRefRange::Sheet { range } => Some(range.clone()),
+                CellRefRange::Table { range } => range.convert_to_ref_range_bounds(0, &context),
+            })
             .collect::<Vec<_>>();
         serde_json::to_string(&ranges).map_err(|e| e.to_string())
     }
 
-    #[wasm_bindgen(js_name = "getInfiniteRanges")]
-    pub fn get_infinite_ranges(&self) -> Result<String, String> {
+    #[wasm_bindgen(js_name = "getInfiniteRefRangeBounds")]
+    pub fn get_infinite_ref_range_bounds(&self) -> Result<String, String> {
         let ranges = self
             .selection
             .ranges
             .iter()
-            .filter(|r| !r.is_finite())
+            .filter_map(|r| {
+                if !r.is_finite() {
+                    None
+                } else {
+                    match r {
+                        CellRefRange::Sheet { range } => Some(range.clone()),
+
+                        // tables cannot have infinite bounds
+                        CellRefRange::Table { .. } => None,
+                    }
+                }
+            })
             .collect::<Vec<_>>();
         serde_json::to_string(&ranges).map_err(|e| e.to_string())
     }

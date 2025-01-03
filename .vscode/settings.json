@@ -2,21 +2,28 @@
   "editor.formatOnSave": true,
   "cSpell.words": [
     "actix",
+    "autoclean",
+    "awscli",
+    "awscliv",
     "ayush",
     "bigdecimal",
     "bincode",
     "bindgen",
-<<<<<<< HEAD
+    "buildkit",
+    "Buildx",
     "cellvalue",
-=======
+    "codegen",
+    "containerd",
     "CRPXNLSKVLJFHH",
->>>>>>> origin/qa
     "dashmap",
     "dbgjs",
     "dcell",
     "ddimaria",
+    "dearmor",
+    "demangle",
     "dgraph",
     "dotenv",
+    "dpkg",
     "endregion",
     "finitize",
     "Fuzzysort",
@@ -31,31 +38,53 @@
     "htmlescape",
     "indexmap",
     "indicies",
+    "initdb",
+    "isready",
     "itertools",
     "jwks",
+    "keyrings",
+    "localstack",
+    "mailslurper",
     "MDSL",
     "micropip",
     "minmax",
+    "moby",
     "msdf",
+    "mysqladmin",
     "nonblank",
     "Northbridge",
     "openai",
+    "opencontainers",
     "opensans",
+    "oryd",
     "peekable",
+    "PGUSER",
     "pixi",
     "pixiapp",
     "Plotly",
+    "proptest",
     "pulumi",
     "pyimport",
     "rects",
+    "Referer",
     "RELCELL",
     "relcells",
     "reqwest",
+    "rfind",
+    "rustup",
     "scrollend",
+    "selfhost",
+    "selfhosted",
+    "selfservice",
+    "serde",
     "shadcn",
     "Signin",
     "smallpop",
+    "smtps",
     "Southborough",
+    "sqlcmd",
+    "sqlservr",
+    "sslmode",
     "Strftime",
     "szhsin",
     "thiserror",
@@ -63,17 +92,19 @@
     "trackpad",
     "undoable",
     "unspill",
+    "useblacksmith",
+    "usermod",
     "vals",
+    "vcpu",
+    "VITE",
     "websockets",
-    "Westborough"
+    "Westborough",
+    "zstd"
   ],
   "editor.codeActionsOnSave": {
     "source.organizeImports": "explicit"
   },
-<<<<<<< HEAD
-=======
   "rust-analyzer.check.extraArgs": ["--target-dir=target/rust-analyzer"],
->>>>>>> origin/qa
   "rust-analyzer.checkOnSave": true,
   "rust-analyzer.cargo.unsetTest": true,
   // "rust-analyzer.checkOnSave.command": "clippy",
@@ -106,12 +137,16 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[dockercompose]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "ms-azuretools.vscode-docker"
   },
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[html]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  }
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "C_Cpp.errorSquiggles": "enabled"
 }

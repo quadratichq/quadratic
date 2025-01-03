@@ -1,5 +1,5 @@
 use crate::{
-    a1::{A1Context, CellRefRange, RefRangeBounds, UNBOUNDED},
+    a1::{A1Context, RefRangeBounds, UNBOUNDED},
     Pos, Rect,
 };
 
@@ -12,37 +12,43 @@ impl TableRef {
         let mut cols = vec![];
 
         if let Some(table) = context.try_table(&self.table_name) {
-            self.col_ranges
-                .iter()
-                .for_each(|col_range| match col_range {
-                    ColRange::Col(col) => {
-                        if let Some(col_index) = table.try_col_index(col) {
-                            if col_index >= from && col_index <= to {
-                                cols.push(col_index);
+            match &self.col_range {
+                ColRange::All => {
+                    let start = table.bounds.min.x;
+                    let end = table.bounds.max.x;
+                    if start >= from && end <= to {
+                        for x in start.max(from)..=end.min(to) {
+                            cols.push(x);
+                        }
+                    }
+                }
+                ColRange::Col(col) => {
+                    if let Some(col_index) = table.try_col_index(col) {
+                        if col_index >= from && col_index <= to {
+                            cols.push(col_index);
+                        }
+                    }
+                }
+                ColRange::ColRange(col_range_start, col_range_end) => {
+                    if let Some((start, end)) = table.try_col_range(col_range_start, col_range_end)
+                    {
+                        if start >= from && end <= to {
+                            for x in start.max(from)..=end.min(to) {
+                                cols.push(x);
                             }
                         }
                     }
-                    ColRange::ColRange(col_range_start, col_range_end) => {
-                        if let Some((start, end)) =
-                            table.try_col_range(col_range_start, col_range_end)
-                        {
-                            if start >= from && end <= to {
-                                for x in start.max(from)..=end.min(to) {
-                                    cols.push(x);
-                                }
+                }
+                ColRange::ColumnToEnd(col) => {
+                    if let Some((start, end)) = table.try_col_range_to_end(col) {
+                        if start >= from && end <= to {
+                            for x in start.max(from)..=end.min(to) {
+                                cols.push(x);
                             }
                         }
                     }
-                    ColRange::ColumnToEnd(col) => {
-                        if let Some((start, end)) = table.try_col_range_to_end(col) {
-                            if start >= from && end <= to {
-                                for x in start.max(from)..=end.min(to) {
-                                    cols.push(x);
-                                }
-                            }
-                        }
-                    }
-                });
+                }
+            }
         }
 
         cols
@@ -71,12 +77,10 @@ impl TableRef {
                 RowRange::CurrentRow => {
                     // this one doesn't make sense in this context
                 }
-                RowRange::Rows(ranges) => {
-                    for range in ranges {
-                        let start = range.start.coord.max(from);
-                        let end = range.end.coord.min(to);
-                        rows.extend(start..=end);
-                    }
+                RowRange::Rows(range) => {
+                    let start = range.start.coord.max(from);
+                    let end = range.end.coord.min(to);
+                    rows.extend(start..=end);
                 }
             }
         }
@@ -90,8 +94,24 @@ impl TableRef {
     }
 
     pub fn is_multi_cursor(&self, context: &A1Context) -> bool {
-        // if more than one column, then it's a multi-cursor
-        if self.col_ranges.len() > 1 {
+        let Some(table_entry) = context.try_table(&self.table_name) else {
+            return false;
+        };
+        let cols = match &self.col_range {
+            ColRange::All => table_entry.bounds.width() as i64,
+            ColRange::Col(_) => 1,
+            ColRange::ColRange(start, end) => {
+                let start = table_entry.try_col_index(start).unwrap_or(0);
+                let end = table_entry.try_col_index(end).unwrap_or(0);
+                end - start
+            }
+            ColRange::ColumnToEnd(col) => {
+                table_entry.visible_columns.len() as i64
+                    - table_entry.try_col_index(col).unwrap_or(0)
+            }
+        };
+
+        if cols > 1 {
             return true;
         }
 
@@ -105,12 +125,7 @@ impl TableRef {
                 }
             }
             RowRange::CurrentRow => false,
-            RowRange::Rows(ranges) => {
-                if ranges.len() > 1 {
-                    return true;
-                }
-                false
-            }
+            RowRange::Rows(range) => range.start.coord != range.end.coord,
         }
     }
 
@@ -122,34 +137,36 @@ impl TableRef {
         let mut max_x = bounds.min.x;
         let mut max_y = bounds.min.y;
 
-        for range in self.col_ranges.iter() {
-            match range {
-                ColRange::Col(col) => {
-                    let col = table.visible_columns.iter().position(|c| c == col)?;
-                    min_x = min_x.min(bounds.min.x + col as i64);
-                    max_x = max_x.max(bounds.min.x + col as i64);
-                }
-                ColRange::ColRange(col_range_start, col_range_end) => {
-                    let start = table
-                        .visible_columns
-                        .iter()
-                        .position(|c| c == col_range_start)?;
-                    let end = table
-                        .visible_columns
-                        .iter()
-                        .position(|c| c == col_range_end)?;
-                    min_x = min_x
-                        .min(bounds.min.x + start as i64)
-                        .min(bounds.min.x + end as i64);
-                    max_x = max_x
-                        .max(bounds.min.x + start as i64)
-                        .max(bounds.min.x + end as i64);
-                }
-                ColRange::ColumnToEnd(col) => {
-                    let start = table.visible_columns.iter().position(|c| c == col)?;
-                    min_x = min_x.min(bounds.min.x + start as i64);
-                    max_x = min_x.max(bounds.min.x + table.visible_columns.len() as i64);
-                }
+        match &self.col_range {
+            ColRange::All => {
+                min_x = bounds.min.x;
+                max_x = bounds.max.x;
+            }
+            ColRange::Col(col) => {
+                let col = table.visible_columns.iter().position(|c| c == col)?;
+                min_x = min_x.min(bounds.min.x + col as i64);
+                max_x = max_x.max(bounds.min.x + col as i64);
+            }
+            ColRange::ColRange(col_range_start, col_range_end) => {
+                let start = table
+                    .visible_columns
+                    .iter()
+                    .position(|c| c == col_range_start)?;
+                let end = table
+                    .visible_columns
+                    .iter()
+                    .position(|c| c == col_range_end)?;
+                min_x = min_x
+                    .min(bounds.min.x + start as i64)
+                    .min(bounds.min.x + end as i64);
+                max_x = max_x
+                    .max(bounds.min.x + start as i64)
+                    .max(bounds.min.x + end as i64);
+            }
+            ColRange::ColumnToEnd(col) => {
+                let start = table.visible_columns.iter().position(|c| c == col)?;
+                min_x = min_x.min(bounds.min.x + start as i64);
+                max_x = min_x.max(bounds.min.x + table.visible_columns.len() as i64);
             }
         }
         match &self.row_range {
@@ -161,14 +178,12 @@ impl TableRef {
                 min_y = current_row;
                 max_y = current_row;
             }
-            RowRange::Rows(ranges) => {
-                for range in ranges {
-                    min_y = min_y.min(range.start.coord);
-                    if range.end.coord == UNBOUNDED {
-                        max_y = bounds.max.y;
-                    } else {
-                        max_y = max_y.max(range.end.coord);
-                    }
+            RowRange::Rows(range) => {
+                min_y = min_y.min(range.start.coord);
+                if range.end.coord == UNBOUNDED {
+                    max_y = bounds.max.y;
+                } else {
+                    max_y = max_y.max(range.end.coord);
                 }
             }
         }
@@ -192,73 +207,68 @@ impl TableRef {
         &self,
         current_row: i64,
         context: &A1Context,
-    ) -> Vec<CellRefRange> {
+    ) -> Option<RefRangeBounds> {
         let Some(table) = context.try_table(&self.table_name) else {
             // the table may no longer exist
-            return vec![];
+            return None;
         };
 
-        let mut ranges = vec![];
-        let y_ranges = self.row_range.to_rows(current_row, table);
-
-        for range in self.col_ranges.iter() {
-            match range {
-                ColRange::Col(col) => {
-                    if let Some(col) = table.try_col_index(col) {
-                        for (y_start, y_end) in y_ranges.iter() {
-                            ranges.push(CellRefRange::Sheet {
-                                range: RefRangeBounds::new_relative(col, *y_start, col, *y_end),
-                            });
-                        }
-                    }
+        let (y_start, y_end) = self.row_range.to_rows(current_row, table);
+        match &self.col_range {
+            ColRange::All => {
+                let range = RefRangeBounds::new_relative(
+                    table.bounds.min.x,
+                    y_start,
+                    table.bounds.max.x,
+                    y_end,
+                );
+                Some(range)
+            }
+            ColRange::Col(col) => {
+                if let Some(col) = table.try_col_index(col) {
+                    Some(RefRangeBounds::new_relative(col, y_start, col, y_end))
+                } else {
+                    None
                 }
-                ColRange::ColRange(col_range_start, col_range_end) => {
-                    if let Some((start, end)) = table.try_col_range(col_range_start, col_range_end)
-                    {
-                        for (y_start, y_end) in y_ranges.iter() {
-                            ranges.push(CellRefRange::Sheet {
-                                range: RefRangeBounds::new_relative(start, *y_start, end, *y_end),
-                            });
-                        }
-                    }
+            }
+            ColRange::ColRange(col_range_start, col_range_end) => {
+                if let Some((start, end)) = table.try_col_range(col_range_start, col_range_end) {
+                    Some(RefRangeBounds::new_relative(start, y_start, end, y_end))
+                } else {
+                    None
                 }
-                ColRange::ColumnToEnd(col) => {
-                    if let Some((start, end)) = table.try_col_range_to_end(col) {
-                        for (y_start, y_end) in y_ranges.iter() {
-                            ranges.push(CellRefRange::Sheet {
-                                range: RefRangeBounds::new_relative(start, *y_start, end, *y_end),
-                            });
-                        }
-                    }
+            }
+            ColRange::ColumnToEnd(col) => {
+                if let Some((start, end)) = table.try_col_range_to_end(col) {
+                    Some(RefRangeBounds::new_relative(start, y_start, end, y_end))
+                } else {
+                    None
                 }
             }
         }
-        ranges
     }
 
     /// Returns true if the table ref may be two-dimensional--ie, if it has
     /// unbounded ranges that may change.
     pub fn is_two_dimensional(&self) -> bool {
-        self.col_ranges.iter().any(|range| match range {
+        match &self.col_range {
+            ColRange::All => true,
             ColRange::Col(_) => false,
             ColRange::ColRange(start, end) => start != end,
             ColRange::ColumnToEnd(_) => true,
-        })
+        }
     }
 
     /// Tries to convert the TableRef to a Pos.
     pub fn try_to_pos(&self, context: &A1Context) -> Option<Pos> {
-        let ranges = self.convert_to_ref_range_bounds(0, context);
-        let range = ranges.first()?;
-        range.try_to_pos(context)
+        let range = self.convert_to_ref_range_bounds(0, context)?;
+        range.try_to_pos()
     }
 }
 
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
-    use crate::a1::CellRefCoord;
-
     use super::*;
 
     fn setup_test_context() -> A1Context {
@@ -287,7 +297,7 @@ mod tests {
         let context = setup_test_context();
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::Col("B".to_string())],
+            col_range: ColRange::Col("B".to_string()),
             row_range: RowRange::All,
             data: true,
             headers: false,
@@ -303,7 +313,7 @@ mod tests {
         let context = setup_test_context_with_hidden_columns();
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::Col("C".to_string())],
+            col_range: ColRange::Col("C".to_string()),
             row_range: RowRange::All,
             data: true,
             headers: false,
@@ -320,8 +330,8 @@ mod tests {
         let context = setup_test_context();
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::Col("A".to_string())],
-            row_range: RowRange::Rows(vec![RowRangeEntry::new_rel(1, 2)]),
+            col_range: ColRange::Col("A".to_string()),
+            row_range: RowRange::Rows(RowRangeEntry::new_rel(1, 2)),
             data: true,
             headers: false,
             totals: false,
@@ -338,7 +348,7 @@ mod tests {
         // Single column, single row
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::Col("A".to_string())],
+            col_range: ColRange::Col("A".to_string()),
             row_range: RowRange::CurrentRow,
             data: true,
             headers: false,
@@ -349,31 +359,39 @@ mod tests {
         // Multiple columns
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![
-                ColRange::Col("A".to_string()),
-                ColRange::Col("B".to_string()),
-            ],
+            col_range: ColRange::Col("A".to_string()),
             row_range: RowRange::CurrentRow,
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        assert!(!table_ref.is_multi_cursor(&context));
+
+        // Multiple rows
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::Col("A".to_string()),
+            row_range: RowRange::Rows(RowRangeEntry::new_rel(0, 1)),
             data: true,
             headers: false,
             totals: false,
         };
         assert!(table_ref.is_multi_cursor(&context));
 
-        // Multiple rows
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::Col("A".to_string())],
-            row_range: RowRange::Rows(vec![
-                RowRangeEntry {
-                    start: CellRefCoord::new_rel(0),
-                    end: CellRefCoord::new_rel(1),
-                },
-                RowRangeEntry {
-                    start: CellRefCoord::new_rel(2),
-                    end: CellRefCoord::new_rel(2),
-                },
-            ]),
+            col_range: ColRange::Col("A".to_string()),
+            row_range: RowRange::Rows(RowRangeEntry::new_rel(1, 2)),
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        assert!(table_ref.is_multi_cursor(&context));
+
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::Col("A".to_string()),
+            row_range: RowRange::Rows(RowRangeEntry::new_rel(1, 2)),
             data: true,
             headers: false,
             totals: false,
@@ -386,7 +404,7 @@ mod tests {
         let context = setup_test_context();
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::ColRange("A".to_string(), "B".to_string())],
+            col_range: ColRange::ColRange("A".to_string(), "B".to_string()),
             row_range: RowRange::All,
             data: true,
             headers: false,
@@ -407,7 +425,7 @@ mod tests {
         // Test case 1: Single column with all rows
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::Col("B".to_string())],
+            col_range: ColRange::Col("B".to_string()),
             row_range: RowRange::All,
             data: true,
             headers: false,
@@ -415,35 +433,25 @@ mod tests {
         };
 
         let ranges = table_ref.convert_to_ref_range_bounds(1, &context);
-        assert_eq!(
-            ranges,
-            vec![CellRefRange::Sheet {
-                range: RefRangeBounds::test_a1("B1:B3")
-            }]
-        );
+        assert_eq!(ranges, Some(RefRangeBounds::test_a1("B1:B3")));
 
         // Test case 2: Column range with specific rows
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::ColRange("A".to_string(), "C".to_string())],
-            row_range: RowRange::Rows(vec![RowRangeEntry::new_rel(1, 2)]),
+            col_range: ColRange::ColRange("A".to_string(), "C".to_string()),
+            row_range: RowRange::Rows(RowRangeEntry::new_rel(1, 2)),
             data: true,
             headers: false,
             totals: false,
         };
 
         let ranges = table_ref.convert_to_ref_range_bounds(1, &context);
-        assert_eq!(
-            ranges,
-            vec![CellRefRange::Sheet {
-                range: RefRangeBounds::new_relative(1, 1, 3, 2)
-            }]
-        );
+        assert_eq!(ranges, Some(RefRangeBounds::new_relative(1, 1, 3, 2)));
 
         // Test case 3: Column to end
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::ColumnToEnd("B".to_string())],
+            col_range: ColRange::ColumnToEnd("B".to_string()),
             row_range: RowRange::CurrentRow,
             data: true,
             headers: false,
@@ -451,12 +459,7 @@ mod tests {
         };
 
         let ranges = table_ref.convert_to_ref_range_bounds(2, &context);
-        assert_eq!(
-            ranges,
-            vec![CellRefRange::Sheet {
-                range: RefRangeBounds::new_relative(2, 2, 3, 2)
-            }]
-        );
+        assert_eq!(ranges, Some(RefRangeBounds::new_relative(2, 2, 3, 2)));
     }
 
     #[test]
@@ -464,7 +467,7 @@ mod tests {
         // Single column is not two-dimensional
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::Col("A".to_string())],
+            col_range: ColRange::Col("A".to_string()),
             row_range: RowRange::All,
             data: true,
             headers: false,
@@ -475,7 +478,7 @@ mod tests {
         // Column range with different start and end is two-dimensional
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::ColRange("A".to_string(), "C".to_string())],
+            col_range: ColRange::ColRange("A".to_string(), "C".to_string()),
             row_range: RowRange::All,
             data: true,
             headers: false,
@@ -486,27 +489,13 @@ mod tests {
         // Column to end is two-dimensional
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::ColumnToEnd("B".to_string())],
+            col_range: ColRange::ColumnToEnd("B".to_string()),
             row_range: RowRange::All,
             data: true,
             headers: false,
             totals: false,
         };
         assert!(table_ref.is_two_dimensional());
-
-        // Multiple single columns are not two-dimensional
-        let table_ref = TableRef {
-            table_name: "test_table".to_string(),
-            col_ranges: vec![
-                ColRange::Col("A".to_string()),
-                ColRange::Col("B".to_string()),
-            ],
-            row_range: RowRange::All,
-            data: true,
-            headers: false,
-            totals: false,
-        };
-        assert!(!table_ref.is_two_dimensional());
     }
 
     #[test]
@@ -514,8 +503,8 @@ mod tests {
         let context = setup_test_context();
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_ranges: vec![ColRange::Col("B".to_string())],
-            row_range: RowRange::Rows(vec![RowRangeEntry::new_rel(1, 1)]),
+            col_range: ColRange::Col("B".to_string()),
+            row_range: RowRange::Rows(RowRangeEntry::new_rel(1, 1)),
             data: true,
             headers: false,
             totals: false,

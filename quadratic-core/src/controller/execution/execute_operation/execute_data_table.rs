@@ -18,7 +18,7 @@ impl GridController {
         sheet_rect: &SheetRect,
     ) -> Result<()> {
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-            self.send_updated_bounds_rect(sheet_rect, false);
+            self.send_updated_bounds(sheet_rect.sheet_id);
             transaction.add_dirty_hashes_from_sheet_rect(*sheet_rect);
 
             if transaction.is_user() {

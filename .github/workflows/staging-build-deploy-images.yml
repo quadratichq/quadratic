@@ -1,0 +1,276 @@
+name: Build & Deploy Images
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}-build-images
+  cancel-in-progress: ${{ (github.event.action != 'labeled' && github.event.action !=  'unlabeled') || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && startsWith(github.event.label.name, 'build:')) }}
+
+jobs:
+  build_images:
+    name: Build Images - Staging
+    if: (github.event.action != 'labeled' && github.event.action != 'unlabeled') || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && (startsWith(github.event.label.name, 'build:')))
+    permissions:
+      contents: read
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        include:
+          - service: client
+            runner: blacksmith-16vcpu-ubuntu-2204
+          - service: api
+            runner: blacksmith-2vcpu-ubuntu-2204
+          - service: connection
+            runner: blacksmith-4vcpu-ubuntu-2204
+          - service: files
+            runner: blacksmith-4vcpu-ubuntu-2204
+          - service: multiplayer
+            runner: blacksmith-4vcpu-ubuntu-2204
+      fail-fast: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for build:dev label
+        id: build-dev
+        run: |
+          if [[ ${{ contains(github.event.pull_request.labels.*.name, 'build:dev') }} == true ]]; then
+            echo "CLIENT_DEV=true" >> $GITHUB_OUTPUT
+          else
+            echo "CLIENT_DEV=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check for build:cache:disabled label
+        id: build-cache
+        run: |
+          if [[ ${{ contains(github.event.pull_request.labels.*.name, 'build:cache:disabled') }} == true ]]; then
+            echo "CACHE_DISABLED=true" >> $GITHUB_OUTPUT
+          else
+            echo "CACHE_DISABLED=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate Build Metadata
+        id: build-metadata
+        run: |
+          echo "BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+          echo "GIT_SHA_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "BRANCH_NAME=$(echo "${{ github.head_ref }}" | tr '/' '-')" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR Private
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Define repository name
+        id: repo-name
+        run: |
+          echo "REPO_NAME=quadratic-${{ matrix.service }}" >> $GITHUB_OUTPUT
+
+      - name: Create Private ECR Repository
+        id: create-ecr
+        env:
+          REPO_NAME: ${{ steps.repo-name.outputs.REPO_NAME }}
+        run: |
+          # Try to describe the repository first
+          if ! aws ecr describe-repositories --repository-names $REPO_NAME 2>/dev/null; then
+            # Repository doesn't exist, create it
+            aws ecr create-repository --repository-name $REPO_NAME || true
+          fi
+
+          # Get the repository URI either way
+          REPO_INFO=$(aws ecr describe-repositories --repository-names $REPO_NAME)
+          ECR_URL=$(echo $REPO_INFO | jq -r '.repositories[0].repositoryUri')
+          echo "ECR_URL=$ECR_URL" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
+            network=host
+
+      - name: Build and push (with cache)
+        if: steps.build-cache.outputs.CACHE_DISABLED == 'false'
+        uses: useblacksmith/build-push-action@v1
+        with:
+          context: .
+          file: quadratic-${{ matrix.service }}/Dockerfile
+          push: true
+          tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            BUILD_TIME=${{ steps.build-metadata.outputs.BUILD_TIME }}
+            GIT_SHA_SHORT=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
+            BRANCH_NAME=${{ steps.build-metadata.outputs.BRANCH_NAME }}
+            PR_NUMBER=${{ github.event.pull_request.number }}
+            CLIENT_DEV=${{ steps.build-dev.outputs.CLIENT_DEV }}
+          labels: |
+            org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
+            org.opencontainers.image.revision=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
+
+      - name: Build and push (without cache)
+        if: steps.build-cache.outputs.CACHE_DISABLED == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: quadratic-${{ matrix.service }}/Dockerfile
+          push: true
+          tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            BUILD_TIME=${{ steps.build-metadata.outputs.BUILD_TIME }}
+            GIT_SHA_SHORT=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
+            BRANCH_NAME=${{ steps.build-metadata.outputs.BRANCH_NAME }}
+            PR_NUMBER=${{ github.event.pull_request.number }}
+            CLIENT_DEV=${{ steps.build-dev.outputs.CLIENT_DEV }}
+          labels: |
+            org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
+            org.opencontainers.image.revision=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
+
+  deploy_images:
+    name: Deploy Images - Staging
+    needs: build_images
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    timeout-minutes: 30
+    env:
+      STACK_NAME: pr-${{ github.event.pull_request.number }}
+      MAX_ATTEMPTS: 20
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Wait for stack deployment
+        id: check-stack
+        run: |
+          ATTEMPTS=0
+          while [ $ATTEMPTS -lt ${{ env.MAX_ATTEMPTS }} ]; do
+            if ! STATUS=$(aws cloudformation describe-stacks \
+              --stack-name ${{ env.STACK_NAME }} \
+              --query 'Stacks[0].StackStatus' \
+              --output text 2>&1); then
+              echo "Error getting stack status: $STATUS"
+              echo "Stack might not exist yet. Waiting..."
+              sleep 30
+              ATTEMPTS=$((ATTEMPTS + 1))
+              continue
+            fi
+            
+            echo "Current stack status: $STATUS"
+            
+            # Fail if stack is in a failed or rollback state
+            if [[ $STATUS == *FAILED* ]] || [[ $STATUS == *ROLLBACK* ]]; then
+              echo "::error::Stack is in a failed or rollback state: $STATUS"
+              exit 1
+            fi
+            
+            # Continue if stack is ready
+            if [[ $STATUS == "CREATE_COMPLETE" ]] || [[ $STATUS == "UPDATE_COMPLETE" ]]; then
+              echo "::notice::Stack is ready with status: $STATUS"
+              break
+            fi
+            
+            # Wait and check again if stack is still being created/updated
+            if [[ $STATUS == *IN_PROGRESS* ]]; then
+              echo "Stack operation in progress. Waiting 30 seconds..."
+              sleep 30
+              ATTEMPTS=$((ATTEMPTS + 1))
+              continue
+            fi
+          done
+
+          if [ $ATTEMPTS -eq ${{ env.MAX_ATTEMPTS }} ]; then
+            echo "::error::Timeout waiting for stack to be ready"
+            exit 1
+          fi
+
+      - name: Get EC2 Instance ID
+        id: get-instance
+        run: |
+          INSTANCE_ID=$(aws cloudformation describe-stack-resources \
+            --stack-name ${{ env.STACK_NAME }} \
+            --logical-resource-id EC2Instance \
+            --query 'StackResources[0].PhysicalResourceId' \
+            --output text)
+          if [ -z "$INSTANCE_ID" ]; then
+            echo "::error::Failed to get EC2 instance ID"
+            exit 1
+          fi
+          echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
+
+      - name: Wait for instance to be ready
+        run: |
+          aws ec2 wait instance-status-ok \
+            --instance-ids ${{ steps.get-instance.outputs.instance_id }}
+
+      - name: Run deployment script on EC2
+        id: deploy
+        run: |
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids ${{ steps.get-instance.outputs.instance_id }} \
+            --document-name "AWS-RunShellScript" \
+            --parameters commands=["cd /quadratic-selfhost && ./login.sh && ./start.sh"] \
+            --comment "Deploying new images after build" \
+            --query 'Command.CommandId' \
+            --output text)
+
+          # Wait for command completion
+          echo "Waiting for deployment command to complete..."
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id ${{ steps.get-instance.outputs.instance_id }}
+
+      - name: Generate Deploy Metadata
+        id: deploy-metadata
+        run: |
+          echo "DEPLOY_TIME=$(date -u +'%B %d, %Y at %H:%M UTC')" >> $GITHUB_OUTPUT
+
+      - name: Find Build & Deploy Images Comment
+        uses: peter-evans/find-comment@v3
+        id: staging-build-deploy-images-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Staging - Build & Deploy Images"
+
+      - name: Create or update comment on deployment success
+        if: success()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.staging-build-deploy-images-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Staging - Build & Deploy Images
+            ✅ Staging images built and deployed successfully.
+
+            🕒 Last deployed: ${{ steps.deploy-metadata.outputs.DEPLOY_TIME }}
+          edit-mode: replace
+
+      - name: Create or update comment on deployment failure
+        if: failure()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.staging-build-deploy-images-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Staging - Build & Deploy Images
+            ❌ The staging build & deploy images encountered an error.
+
+            🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+          edit-mode: replace

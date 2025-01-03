@@ -7,6 +7,7 @@ use quadratic_core::a1::CellRefCoord;
 use quadratic_core::a1::CellRefRange;
 use quadratic_core::a1::CellRefRangeEnd;
 use quadratic_core::a1::RefRangeBounds;
+use quadratic_core::a1::TableRef;
 use quadratic_core::color::Rgba;
 use quadratic_core::controller::active_transactions::transaction_name::TransactionName;
 use quadratic_core::controller::execution::run_code::get_cells::CellA1Response;
@@ -153,6 +154,7 @@ fn main() {
         DataTableSort,
         SmallTimestamp,
         Span,
+        TableRef,
         TextCase,
         TextMatch,
         TransactionName,

@@ -193,7 +193,7 @@ function SidebarNavLinkCreateButton({
           size="icon-sm"
           className="absolute right-2 top-1 ml-auto !bg-transparent opacity-30 hover:opacity-100"
         >
-          <Link to={isPrivate ? ROUTES.CREATE_FILE_PRIVATE(teamUuid) : ROUTES.CREATE_FILE(teamUuid)} reloadDocument>
+          <Link to={ROUTES.CREATE_FILE(teamUuid, { private: isPrivate })} reloadDocument>
             <AddIcon />
           </Link>
         </Button>

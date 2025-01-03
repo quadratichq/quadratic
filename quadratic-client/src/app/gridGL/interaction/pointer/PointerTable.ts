@@ -19,7 +19,7 @@ export class PointerTable {
   private tableNameDown: { column: number; row: number; point: Point } | undefined;
 
   private pointerDownTableName(world: Point, tableDown: TablePointerDownResult, append: boolean) {
-    sheets.sheet.cursor.selectTable(tableDown.table.name, append);
+    sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, append);
     pixiApp.cellsSheet().tables.ensureActive(tableDown.table);
     if (this.doubleClickTimeout) {
       events.emit('contextMenu', {

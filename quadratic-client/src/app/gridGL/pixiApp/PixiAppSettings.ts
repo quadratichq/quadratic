@@ -15,6 +15,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { SubmitAIAnalystPromptArgs } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { GlobalSnackbar, SnackbarOptions } from '@/shared/components/GlobalSnackbarProvider';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
@@ -67,6 +68,7 @@ class PixiAppSettings {
   setContextMenu?: SetterOrUpdater<ContextMenuOptions>;
   aiAnalystState = defaultAIAnalystState;
   setAIAnalystState?: SetterOrUpdater<AIAnalystState>;
+  submitAIAnalystPrompt?: (prompt: SubmitAIAnalystPromptArgs) => Promise<void>;
 
   constructor() {
     const settings = localStorage.getItem('viewSettings');
@@ -150,9 +152,14 @@ class PixiAppSettings {
     this.setCodeEditorState = setCodeEditorState;
   }
 
-  updateAIAnalystState(aiAnalystState: AIAnalystState, setAIAnalystState: SetterOrUpdater<AIAnalystState>): void {
+  updateAIAnalystState(
+    aiAnalystState: AIAnalystState,
+    setAIAnalystState: SetterOrUpdater<AIAnalystState>,
+    submitAIAnalystPrompt: (prompt: SubmitAIAnalystPromptArgs) => Promise<void>
+  ): void {
     this.aiAnalystState = aiAnalystState;
     this.setAIAnalystState = setAIAnalystState;
+    this.submitAIAnalystPrompt = submitAIAnalystPrompt;
   }
 
   get showGridLines(): boolean {
