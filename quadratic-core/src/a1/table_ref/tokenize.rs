@@ -176,7 +176,7 @@ impl TableRef {
                         continue;
                     }
                     if s.starts_with('#') {
-                        tokens.push(Self::tokenize_rows(s)?);
+                        tokens.push(Self::tokenize_rows(&s[1..])?);
                     } else if iter.peek().is_some_and(|s| **s == ":") {
                         // skip the colon
                         iter.next();

@@ -10,9 +10,6 @@
 //! Table references:
 //! - Table1[Column Name] - reference only the data in that column
 //! - Table1[[Column 1]:[Column 3]] - all data within the range of the columns
-//! - Table1[[Column 1],[Column 3],[Column 4]:] - all data within the list of columns
-//! - (not yet supported) Table1[[Column 1] [Column 3]] - the intersection of
-//!   two or more columns -- I don't understand this one
 //! - Table1[[#ALL], [Column Name]] - column header and data
 //! - Table1[#HEADERS] - only the table headers
 //! - (not yet supported) Table1[[#TOTALS][Column 1]] - reference the total line at the end

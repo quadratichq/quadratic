@@ -22,6 +22,7 @@ pub enum A1Error {
 
     InvalidTableRef(String),
     TableNotFound(String),
+    MultipleColumnDefinitions,
     MultipleRowDefinitions,
     UnexpectedRowNumber,
     InvalidRowRange(String),
@@ -56,6 +57,9 @@ impl std::fmt::Display for A1Error {
 
             A1Error::InvalidTableRef(msg) => write!(f, "Invalid Table Ref: {msg}"),
             A1Error::TableNotFound(msg) => write!(f, "Table Not Found: {msg}"),
+            A1Error::MultipleColumnDefinitions => {
+                write!(f, "Table reference may only have one column definition")
+            }
             A1Error::MultipleRowDefinitions => {
                 write!(f, "Table reference may only have one row definition")
             }

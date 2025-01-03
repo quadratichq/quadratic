@@ -9,10 +9,12 @@
 //!
 //! i64 is used to maintain compatibility with CellRefCoord.
 
+use std::fmt;
+
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::a1::{CellRefCoord, TableMapEntry};
+use crate::a1::{CellRefCoord, TableMapEntry, UNBOUNDED};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, TS, Serialize, Deserialize)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -37,6 +39,28 @@ impl RowRangeEntry {
     }
 }
 
+impl fmt::Display for RowRangeEntry {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = if self.start.coord == 1 && self.end.coord == UNBOUNDED {
+            String::default()
+        } else {
+            let start = self.start.coord.to_string();
+            let end = if self.end.coord == UNBOUNDED {
+                String::default()
+            } else {
+                self.end.coord.to_string()
+            };
+
+            if start == end {
+                format!("[#{}]", start)
+            } else {
+                format!("[#{}:{}]", start, end)
+            }
+        };
+        write!(f, "{}", s)
+    }
+}
+
 #[derive(Default, Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub enum RowRange {
@@ -57,6 +81,18 @@ impl RowRange {
                 table.bounds.min.y + ranges.end.coord - 1,
             ),
         }
+    }
+}
+
+impl fmt::Display for RowRange {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match &self {
+            RowRange::All => String::default(),
+            RowRange::CurrentRow => "[#THIS ROW]".to_string(),
+            RowRange::Rows(row) => row.to_string(),
+        };
+
+        write!(f, "{}", s)
     }
 }
 
@@ -90,6 +126,18 @@ impl ColRange {
             }
         }
         false
+    }
+}
+
+impl fmt::Display for ColRange {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            ColRange::All => String::default(),
+            ColRange::Col(col) => format!("[{}]", col),
+            ColRange::ColRange(start, end) => format!("[{}]:[{}]", start, end),
+            ColRange::ColumnToEnd(col) => format!("[{}]:", col),
+        };
+        write!(f, "{}", s)
     }
 }
 
@@ -147,5 +195,51 @@ mod tests {
         let row_range = RowRange::CurrentRow;
         let rows = row_range.to_rows(1, &table);
         assert_eq!(rows, (1, 1));
+    }
+
+    #[test]
+    fn test_row_range_entry_to_string() {
+        // Test single row
+        let entry = RowRangeEntry::new_rel(5, 5);
+        assert_eq!(entry.to_string(), "[#5]");
+
+        // Test row range
+        let entry = RowRangeEntry::new_rel(1, 5);
+        assert_eq!(entry.to_string(), "[#1:5]");
+
+        // Test unbounded range
+        let entry = RowRangeEntry::new_rel(1, UNBOUNDED);
+        assert_eq!(entry.to_string(), "");
+    }
+
+    #[test]
+    fn test_row_range_to_string() {
+        // Test All (default empty string)
+        assert_eq!(RowRange::All.to_string(), "");
+
+        // Test CurrentRow
+        assert_eq!(RowRange::CurrentRow.to_string(), "[#THIS ROW]");
+
+        // Test Rows variant
+        let entry = RowRangeEntry::new_rel(1, 5);
+        assert_eq!(RowRange::Rows(entry).to_string(), "[#1:5]");
+    }
+
+    #[test]
+    fn test_col_range_to_string() {
+        // Test All (default empty string)
+        assert_eq!(ColRange::All.to_string(), "");
+
+        // Test single column
+        assert_eq!(ColRange::Col("A".to_string()).to_string(), "[A]");
+
+        // Test column range
+        assert_eq!(
+            ColRange::ColRange("A".to_string(), "C".to_string()).to_string(),
+            "[A]:[C]"
+        );
+
+        // Test column to end
+        assert_eq!(ColRange::ColumnToEnd("B".to_string()).to_string(), "[B]:");
     }
 }
