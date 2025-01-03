@@ -1,0 +1,217 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Quadratic Preview - Docker Deployment Template
+
+Parameters:
+  ImageTag:
+    Type: String
+    Description: Image tag to use for all services
+
+Resources:
+  # Security Group for the EC2 instance
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref ImageTag
+      GroupDescription: !Ref ImageTag
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+
+  # IAM Role for the EC2 instance
+  EC2Role:
+    Type: AWS::IAM::Role
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref ImageTag
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
+
+  # IAM Instance Profile for the EC2 instance
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      Roles:
+        - !Ref EC2Role
+
+  # EC2 instance
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "${ImageTag}"
+      InstanceType: m6a.large
+      ImageId: ami-0b8c6b923777519db # AMI for us-west-2 (Ubuntu 22.04 LTS amd64)
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      SecurityGroups:
+        - !Ref SecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 30
+            VolumeType: gp3
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+
+          # Update and install dependencies
+          sudo apt-get update
+          sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common unzip jq awscli
+
+          # Install AWS CLI v2
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+          rm -rf aws awscliv2.zip
+
+          # Install Docker
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+          sudo apt-get update
+          sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          sudo chown ubuntu /var/run/docker.sock
+          sudo systemctl enable docker
+          sudo systemctl start docker
+          sudo usermod -aG docker ubuntu
+
+          # Download Quadratic initialization script
+          curl -sSf https://raw.githubusercontent.com/quadratichq/quadratic-selfhost/main/init-aws-staging.sh -o init.sh
+
+          # Fetch License Key
+          LICENSE_KEY="$(aws ssm get-parameter --name "/quadratic-development/QUADRATIC_LICENSE_KEY" --with-decryption --query "Parameter.Value" --output text)"
+
+          # Generate Domain Name
+          DOMAIN_NAME="${ImageTag}.quadratic-preview.com"
+
+          # Run Quadratic initialization script
+          chmod +x init.sh
+          ./init.sh $LICENSE_KEY $DOMAIN_NAME
+
+          # Append environment variables to .env file
+          cat << EOF >> /quadratic-selfhost/.env
+          AWS_S3_REGION=$(aws ssm get-parameter --name "/quadratic-development/AWS_S3_REGION" --with-decryption --query "Parameter.Value" --output text)
+          AWS_S3_ACCESS_KEY_ID=$(aws ssm get-parameter --name "/quadratic-development/AWS_S3_ACCESS_KEY_ID" --with-decryption --query "Parameter.Value" --output text)
+          AWS_S3_SECRET_ACCESS_KEY=$(aws ssm get-parameter --name "/quadratic-development/AWS_S3_SECRET_ACCESS_KEY" --with-decryption --query "Parameter.Value" --output text)
+
+          # ai api keys
+          OPENAI_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/OPENAI_API_KEY" --with-decryption --query "Parameter.Value" --output text)
+          ANTHROPIC_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/ANTHROPIC_API_KEY" --with-decryption --query "Parameter.Value" --output text)
+          EXA_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/EXA_API_KEY" --with-decryption --query "Parameter.Value" --output text)
+
+          # aws ecr
+          ECR_URL=${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
+          IMAGE_TAG=${ImageTag}
+          EOF
+
+          # Create login.sh script and run it
+          cat << 'EOF' > /quadratic-selfhost/login.sh
+          #!/bin/bash
+          aws ecr get-login-password --region ${AWS::Region} | docker login --username AWS --password-stdin ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
+          EOF
+
+          chmod +x /quadratic-selfhost/login.sh
+          chmod +x /quadratic-selfhost/start.sh
+
+          cd /quadratic-selfhost
+          ./login.sh
+          ./start.sh
+
+  # Global Accelerator
+  GlobalAccelerator:
+    Type: AWS::GlobalAccelerator::Accelerator
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      Name: !Sub "${ImageTag}"
+      Enabled: true
+      Tags:
+        - Key: Name
+          Value: !Ref ImageTag
+
+  # Global Accelerator Listener
+  GlobalAcceleratorListener:
+    Type: AWS::GlobalAccelerator::Listener
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      AcceleratorArn: !Ref GlobalAccelerator
+      Protocol: TCP
+      PortRanges:
+        - FromPort: 80
+          ToPort: 80
+        - FromPort: 443
+          ToPort: 443
+
+  # Global Accelerator Endpoint Group
+  GlobalAcceleratorEndpointGroup:
+    Type: AWS::GlobalAccelerator::EndpointGroup
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      ListenerArn: !Ref GlobalAcceleratorListener
+      EndpointGroupRegion: !Ref AWS::Region
+      EndpointConfigurations:
+        - EndpointId: !Ref EC2Instance
+          Weight: 100
+          ClientIPPreservationEnabled: true
+
+  # DNS record for the main application
+  DNSRecord:
+    Type: AWS::Route53::RecordSet
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      HostedZoneId: Z0126430TJ1UYIMO3SYX
+      Name: !Sub "${ImageTag}.quadratic-preview.com."
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt GlobalAccelerator.DnsName
+        HostedZoneId: Z2BJ6XQ5FK7U4H
+        EvaluateTargetHealth: true
+
+  # Wildcard DNS record for all services on subdomains
+  WildcardDNSRecord:
+    Type: AWS::Route53::RecordSet
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      HostedZoneId: Z0126430TJ1UYIMO3SYX
+      Name: !Sub "*.${ImageTag}.quadratic-preview.com."
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt GlobalAccelerator.DnsName
+        HostedZoneId: Z2BJ6XQ5FK7U4H
+        EvaluateTargetHealth: true
+
+Outputs:
+  WebsiteURL:
+    Description: Website URL
+    Value: !Sub "https://${ImageTag}.quadratic-preview.com"

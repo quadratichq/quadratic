@@ -1,0 +1,75 @@
+name: Delete Stack
+
+on:
+  pull_request:
+    types: [closed]
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}-stack
+
+jobs:
+  delete_stack:
+    name: Delete Stack - Staging
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    timeout-minutes: 30
+    env:
+      STACK_NAME: pr-${{ github.event.pull_request.number }}
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Delete CloudFormation Stack
+        run: |
+          if aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} 2>/dev/null; then
+            echo "Deleting stack ${{ env.STACK_NAME }}..."
+            aws cloudformation delete-stack --stack-name ${{ env.STACK_NAME }}
+            
+            echo "Waiting for stack deletion to complete..."
+            if aws cloudformation wait stack-delete-complete --stack-name ${{ env.STACK_NAME }}; then
+              echo "Stack deleted successfully"
+            else
+              echo "::error::Stack deletion wait timed out"
+              exit 1
+            fi
+          else
+            echo "Stack ${{ env.STACK_NAME }} does not exist"
+          fi
+
+      - name: Find Comment
+        uses: peter-evans/find-comment@v3
+        id: staging-delete-stack-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Staging - Stack"
+
+      - name: Update comment on delete stack success
+        if: success() && steps.staging-delete-stack-comment.outputs.comment-id != ''
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.staging-delete-stack-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Staging - Stack
+            ✅ Stack deleted.
+          edit-mode: replace
+
+      - name: Update comment on delete stack failure
+        if: failure() && steps.staging-delete-stack-comment.outputs.comment-id != ''
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.staging-delete-stack-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Staging - Stack
+            ❌ Stack deletion encountered an error.\
+
+            🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+          edit-mode: replace

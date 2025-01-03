@@ -9,6 +9,7 @@ import { TableColumnHeaderRename } from '@/app/gridGL/HTMLGrid/contextMenus/Tabl
 import { TableContextMenu } from '@/app/gridGL/HTMLGrid/contextMenus/TableContextMenu';
 import { TableRename } from '@/app/gridGL/HTMLGrid/contextMenus/TableRename';
 import { TableSort } from '@/app/gridGL/HTMLGrid/contextMenus/tableSort/TableSort';
+import { EmptyGridMessage } from '@/app/gridGL/HTMLGrid/EmptyGridMessage';
 import { HoverCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import { HoverTooltip } from '@/app/gridGL/HTMLGrid/hoverTooltip/HoverTooltip';
 import { HtmlCells } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCells';
@@ -128,6 +129,8 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
       </div>
 
       <Following />
+
+      <EmptyGridMessage />
 
       {/* This is positioned on the grid over the headings and not zoomed. It comes
           after the above, so it's above it on the grid. */}

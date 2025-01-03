@@ -20,6 +20,9 @@ export function drawDashedRectangle(options: {
     return;
   }
 
+  const boundedRight = Math.min(selectionRect.right, bounds.right);
+  const boundedBottom = Math.min(selectionRect.bottom, bounds.bottom);
+
   g.lineStyle({
     width: CURSOR_THICKNESS,
     color,
@@ -27,9 +30,9 @@ export function drawDashedRectangle(options: {
     texture: generatedTextures.dashedHorizontal,
   });
   g.moveTo(selectionRect.left, selectionRect.top);
-  g.lineTo(Math.min(selectionRect.right, bounds.right), selectionRect.top);
+  g.lineTo(boundedRight, selectionRect.top);
   if (selectionRect.bottom <= bounds.bottom) {
-    g.moveTo(Math.min(selectionRect.right, bounds.right), selectionRect.bottom);
+    g.moveTo(boundedRight, selectionRect.bottom);
     g.lineTo(selectionRect.left, selectionRect.bottom);
   }
 
@@ -39,10 +42,10 @@ export function drawDashedRectangle(options: {
     alignment: 0.5,
     texture: generatedTextures.dashedVertical,
   });
-  g.moveTo(selectionRect.left, Math.min(selectionRect.bottom, bounds.bottom));
+  g.moveTo(selectionRect.left, boundedBottom);
   g.lineTo(selectionRect.left, selectionRect.top);
   if (selectionRect.right <= bounds.right) {
-    g.moveTo(selectionRect.right, Math.min(selectionRect.bottom, bounds.bottom));
+    g.moveTo(selectionRect.right, boundedBottom);
     g.lineTo(selectionRect.right, selectionRect.top);
   }
 
@@ -55,8 +58,8 @@ export function drawDashedRectangle(options: {
     g.drawRect(
       selectionRect.left,
       selectionRect.top,
-      Math.min(selectionRect.right, bounds.right) - selectionRect.left,
-      Math.min(selectionRect.bottom, bounds.bottom) - selectionRect.top
+      boundedRight - selectionRect.left,
+      boundedBottom - selectionRect.top
     );
     g.endFill();
   }
@@ -84,6 +87,9 @@ export function drawDashedRectangleMarching(options: {
   const maxX = selectionRect.right - offset;
   const maxY = selectionRect.bottom - offset;
 
+  const boundedRight = Math.min(maxX, bounds.right);
+  const boundedBottom = Math.min(maxY, bounds.bottom);
+
   if (!noFill) {
     g.clear();
   }
@@ -93,7 +99,7 @@ export function drawDashedRectangleMarching(options: {
   });
   if (!noFill) {
     g.beginFill(color, FILL_ALPHA);
-    g.drawRect(minX, minY, maxX - minX, maxY - minY);
+    g.drawRect(minX, minY, boundedRight - minX, boundedBottom - minY);
     g.endFill();
   }
 
@@ -116,34 +122,38 @@ export function drawDashedRectangleMarching(options: {
   let wrapAmount = 0;
 
   // draw top line
-  for (let x = minX + march; x <= maxX - DASHED / 2; x += DASHED) {
-    g.moveTo(clamp(x, minX, maxX), minY);
-    g.lineTo(clamp(x + DASHED / 2, minX, maxX), minY);
-    wrapAmount = x - (maxX - DASHED / 2);
+  for (let x = minX + march; x <= boundedRight - DASHED / 2; x += DASHED) {
+    g.moveTo(clamp(x, minX, boundedRight), minY);
+    g.lineTo(clamp(x + DASHED / 2, minX, boundedRight), minY);
+    wrapAmount = x - (boundedRight - DASHED / 2);
   }
 
-  // draw right line
-  for (let y = minY + wrapAmount; y <= maxY - DASHED / 2; y += DASHED) {
-    if (y + DASHED / 2 > minY + DASHED_THICKNESS) {
-      g.moveTo(maxX, clamp(y, minY, maxY));
-      g.lineTo(maxX, clamp(y + DASHED / 2, minY, maxY));
-      wrapAmount = y + DASHED / 2 - maxY;
+  if (maxX <= boundedRight) {
+    // draw right line
+    for (let y = minY + wrapAmount; y <= boundedBottom - DASHED / 2; y += DASHED) {
+      if (y + DASHED / 2 > minY + DASHED_THICKNESS) {
+        g.moveTo(boundedRight, clamp(y, minY, boundedBottom));
+        g.lineTo(boundedRight, clamp(y + DASHED / 2, minY, boundedBottom));
+        wrapAmount = y + DASHED / 2 - boundedBottom;
+      }
     }
   }
 
-  // draw bottom line
-  for (let x = maxX - wrapAmount; x >= minX + DASHED / 2; x -= DASHED) {
-    if (x - DASHED / 2 < maxX - DASHED_THICKNESS) {
-      g.moveTo(clamp(x - DASHED / 2, minX, maxX - DASHED_THICKNESS), maxY - DASHED_THICKNESS);
-      g.lineTo(clamp(x, minX, maxX), maxY - DASHED_THICKNESS);
+  if (maxY <= boundedBottom) {
+    // draw bottom line
+    for (let x = boundedRight - wrapAmount; x >= minX + DASHED / 2; x -= DASHED) {
+      if (x - DASHED / 2 < boundedRight - DASHED_THICKNESS) {
+        g.moveTo(clamp(x - DASHED / 2, minX, boundedRight - DASHED_THICKNESS), boundedBottom - DASHED_THICKNESS);
+        g.lineTo(clamp(x, minX, boundedRight), boundedBottom - DASHED_THICKNESS);
+      }
+      wrapAmount = minX - x - DASHED / 2;
     }
-    wrapAmount = minX - x - DASHED / 2;
   }
 
   // draw left line
-  for (let y = maxY - wrapAmount; y >= minY + DASHED / 2; y -= DASHED) {
-    g.moveTo(minX + DASHED_THICKNESS, clamp(y - DASHED / 2, minY, maxY));
-    g.lineTo(minX + DASHED_THICKNESS, clamp(y, minY, maxY));
+  for (let y = boundedBottom - wrapAmount; y >= minY + DASHED / 2; y -= DASHED) {
+    g.moveTo(minX + DASHED_THICKNESS, clamp(y - DASHED / 2, minY, boundedBottom));
+    g.lineTo(minX + DASHED_THICKNESS, clamp(y, minY, boundedBottom));
   }
 
   return true;

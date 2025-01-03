@@ -214,22 +214,6 @@ impl GridController {
         }
     }
 
-    pub fn send_updated_bounds_rect(&mut self, sheet_rect: &SheetRect, format: bool) {
-        let recalculated = if let Some(sheet) = self.try_sheet_mut(sheet_rect.sheet_id) {
-            sheet.recalculate_add_bounds((*sheet_rect).into(), format)
-        } else {
-            false
-        };
-
-        if cfg!(target_family = "wasm") && recalculated {
-            if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
-                if let Ok(sheet_info) = serde_json::to_string(&SheetBounds::from(sheet)) {
-                    crate::wasm_bindings::js::jsSheetBoundsUpdate(sheet_info);
-                }
-            }
-        };
-    }
-
     /// Recalculates sheet bounds, and if changed then sends to TS.
     pub fn send_updated_bounds(&mut self, sheet_id: SheetId) {
         let recalculated = if let Some(sheet) = self.try_sheet_mut(sheet_id) {
