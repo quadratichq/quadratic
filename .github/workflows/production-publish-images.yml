@@ -7,7 +7,6 @@ on:
 
 concurrency:
   group: production-publish-images
-  cancel-in-progress: true
 
 jobs:
   publish_images:

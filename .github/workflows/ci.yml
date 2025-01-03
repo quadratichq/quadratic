@@ -55,7 +55,7 @@ jobs:
           CARGO_BUILD_JOBS: 4
         run: |
           cd quadratic-core
-          cargo test -- --test-threads=4
+          cargo test -- --test-threads=2
 
       - name: Generate coverage for quadratic-core
         env:

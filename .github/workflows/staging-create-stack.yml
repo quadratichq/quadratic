@@ -59,7 +59,7 @@ jobs:
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
           name: ${{ env.STACK_NAME }}
-          template: infra/aws-cloudformation/quadratic-selfhost.yml
+          template: infra/aws-cloudformation/quadratic-preview.yml
           parameter-overrides: >-
             ImageTag=pr-${{ github.event.pull_request.number }}
           capabilities: CAPABILITY_IAM
