@@ -303,8 +303,8 @@ export class SheetCursor {
     }
   }
 
-  selectTable(table: string, append: boolean) {
-    this.jsSelection.selectTable(table, append);
+  selectTable(table: string, column: string | undefined, append: boolean) {
+    this.jsSelection.selectTable(table, column, append);
   }
 
   get selectionEnd(): JsCoordinate {
