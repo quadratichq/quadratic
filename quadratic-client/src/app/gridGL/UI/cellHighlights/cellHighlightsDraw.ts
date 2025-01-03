@@ -79,6 +79,9 @@ export function drawDashedRectangleMarching(options: {
   const maxX = selectionRect.right - offset;
   const maxY = selectionRect.bottom - offset;
 
+  const boundedMaxX = Math.min(maxX, bounds.right);
+  const boundedMaxY = Math.min(maxY, bounds.bottom);
+
   if (!noFill) {
     g.clear();
   }
@@ -88,7 +91,7 @@ export function drawDashedRectangleMarching(options: {
   });
   if (!noFill) {
     g.beginFill(color, FILL_ALPHA);
-    g.drawRect(minX, minY, maxX - minX, maxY - minY);
+    g.drawRect(minX, minY, boundedMaxX - minX, boundedMaxY - minY);
     g.endFill();
   }
 
@@ -111,34 +114,38 @@ export function drawDashedRectangleMarching(options: {
   let wrapAmount = 0;
 
   // draw top line
-  for (let x = minX + march; x <= maxX - DASHED / 2; x += DASHED) {
-    g.moveTo(clamp(x, minX, maxX), minY);
-    g.lineTo(clamp(x + DASHED / 2, minX, maxX), minY);
-    wrapAmount = x - (maxX - DASHED / 2);
+  for (let x = minX + march; x <= boundedMaxX - DASHED / 2; x += DASHED) {
+    g.moveTo(clamp(x, minX, boundedMaxX), minY);
+    g.lineTo(clamp(x + DASHED / 2, minX, boundedMaxX), minY);
+    wrapAmount = x - (boundedMaxX - DASHED / 2);
   }
 
-  // draw right line
-  for (let y = minY + wrapAmount; y <= maxY - DASHED / 2; y += DASHED) {
-    if (y + DASHED / 2 > minY + DASHED_THICKNESS) {
-      g.moveTo(maxX, clamp(y, minY, maxY));
-      g.lineTo(maxX, clamp(y + DASHED / 2, minY, maxY));
-      wrapAmount = y + DASHED / 2 - maxY;
+  if (maxX <= boundedMaxX) {
+    // draw right line
+    for (let y = minY + wrapAmount; y <= boundedMaxY - DASHED / 2; y += DASHED) {
+      if (y + DASHED / 2 > minY + DASHED_THICKNESS) {
+        g.moveTo(boundedMaxX, clamp(y, minY, boundedMaxY));
+        g.lineTo(boundedMaxX, clamp(y + DASHED / 2, minY, boundedMaxY));
+        wrapAmount = y + DASHED / 2 - boundedMaxY;
+      }
     }
   }
 
-  // draw bottom line
-  for (let x = maxX - wrapAmount; x >= minX + DASHED / 2; x -= DASHED) {
-    if (x - DASHED / 2 < maxX - DASHED_THICKNESS) {
-      g.moveTo(clamp(x - DASHED / 2, minX, maxX - DASHED_THICKNESS), maxY - DASHED_THICKNESS);
-      g.lineTo(clamp(x, minX, maxX), maxY - DASHED_THICKNESS);
+  if (maxY <= boundedMaxY) {
+    // draw bottom line
+    for (let x = boundedMaxX - wrapAmount; x >= minX + DASHED / 2; x -= DASHED) {
+      if (x - DASHED / 2 < boundedMaxX - DASHED_THICKNESS) {
+        g.moveTo(clamp(x - DASHED / 2, minX, boundedMaxX - DASHED_THICKNESS), boundedMaxY - DASHED_THICKNESS);
+        g.lineTo(clamp(x, minX, boundedMaxX), boundedMaxY - DASHED_THICKNESS);
+      }
+      wrapAmount = minX - x - DASHED / 2;
     }
-    wrapAmount = minX - x - DASHED / 2;
   }
 
   // draw left line
-  for (let y = maxY - wrapAmount; y >= minY + DASHED / 2; y -= DASHED) {
-    g.moveTo(minX + DASHED_THICKNESS, clamp(y - DASHED / 2, minY, maxY));
-    g.lineTo(minX + DASHED_THICKNESS, clamp(y, minY, maxY));
+  for (let y = boundedMaxY - wrapAmount; y >= minY + DASHED / 2; y -= DASHED) {
+    g.moveTo(minX + DASHED_THICKNESS, clamp(y - DASHED / 2, minY, boundedMaxY));
+    g.lineTo(minX + DASHED_THICKNESS, clamp(y, minY, boundedMaxY));
   }
 
   return true;
