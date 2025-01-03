@@ -51,23 +51,6 @@ impl Sheet {
             || old_format_bounds != self.format_bounds.to_bounds_rect()
     }
 
-    /// Adds a SheetRect to the bounds of the sheet.
-    ///
-    /// Returns whether any of the sheet's bounds has changed
-    pub fn recalculate_add_bounds(&mut self, rect: Rect, format: bool) -> bool {
-        if format {
-            let old_format_bounds = self.format_bounds.to_bounds_rect();
-            self.format_bounds.add(rect.min);
-            self.format_bounds.add(rect.max);
-            old_format_bounds != self.format_bounds.to_bounds_rect()
-        } else {
-            let old_data_bounds = self.format_bounds.to_bounds_rect();
-            self.data_bounds.add(rect.min);
-            self.data_bounds.add(rect.max);
-            old_data_bounds != self.data_bounds.to_bounds_rect()
-        }
-    }
-
     /// Returns whether the sheet is completely empty.
     pub fn is_empty(&self) -> bool {
         self.data_bounds.is_empty() && self.format_bounds.is_empty()
@@ -521,7 +504,7 @@ mod test {
             },
             CellAlign, CellWrap, CodeCellLanguage, GridBounds, Sheet,
         },
-        A1Selection, Array, CellValue, Pos, Rect, SheetPos, SheetRect,
+        A1Selection, Array, CellValue, Pos, Rect, SheetPos,
     };
     use proptest::proptest;
     use std::collections::HashMap;
@@ -922,42 +905,6 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.row_bounds(2, true), Some((1, 1)));
         assert_eq!(sheet.row_bounds(2, false), Some((1, 1)));
-    }
-
-    #[test]
-    fn send_updated_bounds_rect() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_value(
-            SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id,
-            },
-            "test".to_string(),
-            None,
-        );
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.data_bounds,
-            GridBounds::NonEmpty(Rect::from_numbers(1, 2, 1, 1))
-        );
-        gc.set_bold(
-            &A1Selection::from_rect(SheetRect::from_numbers(3, 5, 1, 1, sheet_id)),
-            true,
-            None,
-        )
-        .unwrap();
-
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.bounds(true),
-            GridBounds::NonEmpty(Rect::from_numbers(1, 2, 1, 1))
-        );
-        assert_eq!(
-            sheet.bounds(false),
-            GridBounds::NonEmpty(Rect::from_numbers(1, 2, 3, 4))
-        );
     }
 
     #[test]
