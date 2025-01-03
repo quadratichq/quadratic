@@ -1,6 +1,10 @@
 use std::collections::HashSet;
 
-use crate::{a1::A1Context, grid::Sheet, Pos, Rect, SheetPos};
+use crate::{
+    a1::{A1Context, RefRangeBounds},
+    grid::Sheet,
+    Pos, Rect, SheetPos,
+};
 
 use super::{A1Selection, CellRefRange};
 
@@ -329,11 +333,31 @@ impl A1Selection {
             CellRefRange::Table { range } => range.cursor_pos_from_last_range(context),
         }
     }
+
+    /// Returns all finite RefRangeBounds for the selection, converting table selections to
+    /// RefRangeBounds.
+    pub fn finite_ref_range_bounds(&self, context: &A1Context) -> Vec<RefRangeBounds> {
+        self.ranges
+            .iter()
+            .filter_map(|range| match range {
+                CellRefRange::Sheet { range } => {
+                    if range.is_finite() {
+                        Some(range.clone())
+                    } else {
+                        None
+                    }
+                }
+                CellRefRange::Table { range } => range.convert_to_ref_range_bounds(0, context),
+            })
+            .collect()
+    }
 }
 
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
+    use crate::grid::SheetId;
+
     use super::*;
 
     #[test]
@@ -645,5 +669,25 @@ mod tests {
 
         let selection = A1Selection::test_a1("1:4");
         assert_eq!(selection.try_to_pos(&context), None);
+    }
+
+    #[test]
+    fn test_get_ref_range_bounds() {
+        let context = A1Context::test(
+            &[("Sheet1", SheetId::test())],
+            &[("Table1", &["A", "B", "C"], Rect::test_a1("A1:C3"))],
+        );
+        // note we do not return the D5: range as it is infinite
+        let selection = A1Selection::test_a1_context("A1,B2,D5:,C3,Table1", &context);
+        let ref_range_bounds = selection.finite_ref_range_bounds(&context);
+        assert_eq!(
+            ref_range_bounds,
+            vec![
+                RefRangeBounds::test_a1("A1"),
+                RefRangeBounds::test_a1("B2"),
+                RefRangeBounds::test_a1("C3"),
+                RefRangeBounds::test_a1("A1:C3")
+            ]
+        );
     }
 }

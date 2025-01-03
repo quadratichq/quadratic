@@ -5,7 +5,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
-import { CellRefRange, JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
+import { JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
 import { Graphics } from 'pixi.js';
 
 const SECTION_OUTLINE_WIDTH = 1;
@@ -29,16 +29,16 @@ export const drawCursorOutline = (g: Graphics, color: number, cursor: JsCoordina
 
 // Draws a cursor with a finite number of cells (this is drawn once for each
 // selection setting).
-export const drawFiniteSelection = (g: Graphics, color: number, alpha: number, ranges: CellRefRange[]) => {
+export const drawFiniteSelection = (g: Graphics, color: number, alpha: number, ranges: RefRangeBounds[]) => {
   if (ranges.length === 0) return;
 
   g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 0, native: SECTION_OUTLINE_NATIVE });
   g.beginFill(color, alpha);
 
   const sheet = sheets.sheet;
-  ranges.forEach(({ range }) => {
-    const start = (range as RefRangeBounds).start;
-    const end = (range as RefRangeBounds).end;
+  ranges.forEach((range) => {
+    const start = range.start;
+    const end = range.end;
 
     // we have all four points, just draw a rectangle
     if (!isUnbounded(end.col.coord) && !isUnbounded(end.row.coord)) {
@@ -59,7 +59,7 @@ export const drawInfiniteSelection = (options: {
   g: Graphics;
   color: number;
   alpha: number;
-  ranges: CellRefRange[];
+  ranges: RefRangeBounds[];
 }) => {
   const { g, color, alpha, ranges } = options;
   if (ranges.length === 0) return;
@@ -74,9 +74,9 @@ export const drawInfiniteSelection = (options: {
   bounds.x = Math.max(bounds.x, 0);
   bounds.y = Math.max(bounds.y, 0);
 
-  ranges.forEach(({ range }) => {
-    const start = (range as RefRangeBounds).start;
-    const end = (range as RefRangeBounds).end;
+  ranges.forEach((range) => {
+    const start = range.start;
+    const end = range.end;
 
     g.lineStyle();
     g.beginFill(color, alpha);

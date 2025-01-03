@@ -11,7 +11,7 @@ import { intersects } from '@/app/gridGL/helpers/intersects';
 import { getRangeRectangleFromCellRefRange } from '@/app/gridGL/helpers/selection';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { CellRefRange } from '@/app/quadratic-core-types';
+import { RefRangeBounds } from '@/app/quadratic-core-types';
 import { A1SelectionToJsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { ValidationUIType, validationUIType } from '@/app/ui/menus/Validations/Validation/validationType';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -54,8 +54,8 @@ export class UIValidations extends Container<SpecialSprite> {
 
       try {
         const jsSelection = A1SelectionToJsSelection(v.selection);
-        const infiniteRangesStringified = jsSelection.getInfiniteRanges();
-        const infiniteRanges: CellRefRange[] = JSON.parse(infiniteRangesStringified);
+        const infiniteRangesStringified = jsSelection.getInfiniteRefRangeBounds();
+        const infiniteRanges: RefRangeBounds[] = JSON.parse(infiniteRangesStringified);
         infiniteRanges.forEach((range) => this.drawInfiniteRange(range, type));
       } catch (e) {
         console.log('UIValidations.ts: Error drawing infinite range', e);
@@ -63,7 +63,7 @@ export class UIValidations extends Container<SpecialSprite> {
     }
   }
 
-  private drawInfiniteRange(range: CellRefRange, type: ValidationUIType) {
+  private drawInfiniteRange(range: RefRangeBounds, type: ValidationUIType) {
     const screenRangeRectangle = getRangeRectangleFromCellRefRange(range);
     const visibleRectangle = sheets.getVisibleRectangle();
     const intersection = intersects.rectangleClip(screenRangeRectangle, visibleRectangle);

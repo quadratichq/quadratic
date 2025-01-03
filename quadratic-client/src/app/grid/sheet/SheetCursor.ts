@@ -6,7 +6,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { A1Selection, CellRefRange, JsCoordinate } from '@/app/quadratic-core-types';
+import { A1Selection, CellRefRange, JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
 import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
@@ -261,21 +261,20 @@ export class SheetCursor {
   }
 
   rangeCount(): number {
-    return this.getFiniteRanges().length + this.getInfiniteRanges().length;
+    return this.getRanges().length;
   }
 
-  getFiniteRanges(): CellRefRange[] {
-    const ranges = this.jsSelection.getFiniteRanges();
+  getFiniteRefRangeBounds(): RefRangeBounds[] {
     try {
-      return JSON.parse(ranges);
+      return JSON.parse(this.jsSelection.getFiniteRefRangeBounds(sheets.a1Context));
     } catch (e) {
-      console.error(e);
+      console.warn('Error getting ref range bounds', e);
       return [];
     }
   }
 
-  getInfiniteRanges(): CellRefRange[] {
-    const ranges = this.jsSelection.getInfiniteRanges();
+  getInfiniteRefRangeBounds(): RefRangeBounds[] {
+    const ranges = this.jsSelection.getInfiniteRefRangeBounds();
     try {
       return JSON.parse(ranges);
     } catch (e) {
@@ -304,7 +303,8 @@ export class SheetCursor {
   }
 
   selectTable(table: string, column: string | undefined, append: boolean) {
-    this.jsSelection.selectTable(table, column, append);
+    this.jsSelection.selectTable(table, column, append, sheets.a1Context);
+    this.updatePosition(true);
   }
 
   get selectionEnd(): JsCoordinate {

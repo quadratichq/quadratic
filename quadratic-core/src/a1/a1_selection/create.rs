@@ -109,4 +109,9 @@ impl A1Selection {
     pub fn test_a1_sheet_id(a1: &str, sheet_id: &SheetId) -> Self {
         Self::parse(a1, sheet_id, &A1Context::default()).unwrap()
     }
+
+    #[cfg(test)]
+    pub fn test_a1_context(a1: &str, context: &A1Context) -> Self {
+        Self::parse(a1, &SheetId::TEST, context).unwrap()
+    }
 }

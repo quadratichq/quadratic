@@ -12,7 +12,7 @@ use super::A1Selection;
 pub mod create;
 pub mod query;
 pub mod ref_range_bounds_select;
-pub mod table_ref_select;
+pub mod select;
 
 #[derive(Debug, Clone, TS)]
 #[wasm_bindgen]

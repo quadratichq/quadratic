@@ -81,9 +81,7 @@ export const GoTo = () => {
     <Command shouldFilter={false}>
       <CommandInput
         value={value}
-        onValueChange={(value) => {
-          setValue(value);
-        }}
+        onValueChange={setValue}
         placeholder="Enter a cell “A1” or range “A1:B2”"
         omitIcon={true}
       />

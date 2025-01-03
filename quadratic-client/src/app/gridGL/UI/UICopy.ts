@@ -5,7 +5,7 @@ import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { drawDashedRectangleMarching } from '@/app/gridGL/UI/cellHighlights/cellHighlightsDraw';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
-import { CellRefRange } from '@/app/quadratic-core-types';
+import { RefRangeBounds } from '@/app/quadratic-core-types';
 import { Graphics } from 'pixi.js';
 
 const MARCH_TIME = 80;
@@ -16,7 +16,7 @@ const RECT_OFFSET = 1;
 
 export class UICopy extends Graphics {
   private sheetId?: string;
-  private ranges?: CellRefRange[];
+  private ranges?: RefRangeBounds[];
   private time = 0;
   private march = 0;
   private dirty = false;
@@ -49,7 +49,7 @@ export class UICopy extends Graphics {
   };
 
   changeCopyRanges() {
-    const range = sheets.sheet.cursor.getRanges();
+    const range = sheets.sheet.cursor.getFiniteRefRangeBounds();
     this.ranges = range;
     this.time = 0;
     this.march = 0;
@@ -60,9 +60,7 @@ export class UICopy extends Graphics {
     if (!this.ranges) return;
     const bounds = pixiApp.viewport.getVisibleBounds();
     let render = false;
-    this.ranges.forEach((cellRefRange) => {
-      if (!cellRefRange.range) return;
-      const range = cellRefRange.range;
+    this.ranges.forEach((range) => {
       let minX = Number(range.start.col.coord);
       let minY = Number(range.start.row.coord);
       let maxX: number;
@@ -88,7 +86,7 @@ export class UICopy extends Graphics {
       drawDashedRectangleMarching({
         g: this,
         color,
-        range: cellRefRange,
+        range,
         march: this.march,
         alpha: ALPHA,
         offset: RECT_OFFSET,

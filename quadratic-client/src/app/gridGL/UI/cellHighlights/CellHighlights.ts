@@ -6,7 +6,8 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { drawDashedRectangle, drawDashedRectangleMarching } from '@/app/gridGL/UI/cellHighlights/cellHighlightsDraw';
 import { FILL_ALPHA } from '@/app/gridGL/UI/Cursor';
 import { convertColorStringToTint } from '@/app/helpers/convertColor';
-import type { JsCellsAccessed } from '@/app/quadratic-core-types';
+import type { CellRefRange, JsCellsAccessed, RefRangeBounds } from '@/app/quadratic-core-types';
+import { cellRefRangeToRefRangeBounds } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { colors } from '@/app/theme/colors';
 import { Container, Graphics } from 'pixi.js';
 
@@ -49,6 +50,16 @@ export class CellHighlights extends Container {
     this.dirty = false;
   }
 
+  private convertCellRefRangeToRefRangeBounds(cellRefRange: CellRefRange): RefRangeBounds | undefined {
+    try {
+      const refRangeBoundsStringified = cellRefRangeToRefRangeBounds(JSON.stringify(cellRefRange), 0, sheets.a1Context);
+      const refRangeBounds = JSON.parse(refRangeBoundsStringified);
+      return refRangeBounds;
+    } catch (e) {
+      console.log(`Error converting CellRefRange to RefRangeBounds: ${e}`);
+    }
+  }
+
   private draw() {
     this.highlights.clear();
 
@@ -62,12 +73,15 @@ export class CellHighlights extends Container {
       .flatMap(({ ranges }) => ranges)
       .forEach((range, index) => {
         if (selectedCellIndex === undefined || selectedCellIndex !== index || !inlineEditorHandler.cursorIsMoving) {
-          drawDashedRectangle({
-            g: this.highlights,
-            color: convertColorStringToTint(colors.cellHighlightColor[index % NUM_OF_CELL_REF_COLORS]),
-            isSelected: selectedCellIndex === index,
-            range,
-          });
+          const refRangeBounds = this.convertCellRefRangeToRefRangeBounds(range);
+          if (refRangeBounds) {
+            drawDashedRectangle({
+              g: this.highlights,
+              color: convertColorStringToTint(colors.cellHighlightColor[index % NUM_OF_CELL_REF_COLORS]),
+              isSelected: selectedCellIndex === index,
+              range: refRangeBounds,
+            });
+          }
         }
       });
 
@@ -94,11 +108,13 @@ export class CellHighlights extends Container {
     const accessedCell = this.cellsAccessed[selectedCellIndex];
     if (!accessedCell) return;
     const colorNumber = convertColorStringToTint(colors.cellHighlightColor[selectedCellIndex % NUM_OF_CELL_REF_COLORS]);
+    const refRangeBounds = this.convertCellRefRangeToRefRangeBounds(accessedCell.ranges[0]);
+    if (!refRangeBounds) return;
     drawDashedRectangleMarching({
       g: this.marchingHighlight,
       color: colorNumber,
       march: this.march,
-      range: accessedCell.ranges[0],
+      range: refRangeBounds,
       alpha: FILL_ALPHA,
     });
     this.march = (this.march + 1) % Math.floor(DASHED);
