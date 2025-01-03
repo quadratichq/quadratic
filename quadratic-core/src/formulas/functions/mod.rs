@@ -17,6 +17,8 @@ mod statistics;
 mod string;
 mod tests;
 mod trigonometry;
+mod financial;
+
 
 use super::{util, CellRef, Criterion, Ctx, Param, ParamKind};
 use crate::{
@@ -44,6 +46,7 @@ pub const CATEGORIES: &[FormulaFunctionCategory] = &[
     array::CATEGORY,
     datetime::CATEGORY,
     lookup::CATEGORY,
+    financial::CATEGORY,
     #[cfg(test)]
     tests::CATEGORY,
 ];
