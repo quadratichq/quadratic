@@ -5,6 +5,13 @@ use crate::a1::A1Context;
 use super::A1Selection;
 
 impl A1Selection {
+    /// Updates the cursor position to the position of the last range.
+    pub fn update_cursor(&mut self, context: &A1Context) {
+        if let Some(last) = self.ranges.last() {
+            self.cursor = Self::cursor_pos_from_last_range(last, context);
+        }
+    }
+
     /// Potentially shrinks a selection after the removal of a column.
     /// A1Selection may have no ranges after the removal.
     pub fn removed_column(&mut self, column: i64, context: &A1Context) -> bool {

@@ -18,24 +18,8 @@ pub(crate) enum Token {
 }
 
 impl TableRef {
-    /// Tokenizes a string of row numbers separated by commas.
-    fn tokenize_rows(s: String) -> Result<Vec<Token>, A1Error> {
-        // remove the #
-        let s = s.chars().skip(1).collect::<String>();
-
-        // Split by commas and process each part
-        let parts = s.split(',');
-        let mut tokens = Vec::new();
-
-        for part in parts {
-            tokens.push(Self::tokenize_single_row(part)?);
-        }
-
-        Ok(tokens)
-    }
-
-    /// Tokenizes a single row number.
-    fn tokenize_single_row(s: &str) -> Result<Token, A1Error> {
+    /// Tokenizes rows.
+    fn tokenize_rows(s: &str) -> Result<Token, A1Error> {
         let s = s.trim().to_ascii_uppercase();
 
         // Handle single number case
@@ -191,19 +175,18 @@ impl TableRef {
                     if s.is_empty() {
                         continue;
                     }
-                    let s = s.to_string();
                     if s.starts_with('#') {
-                        tokens.extend(Self::tokenize_rows(s)?);
+                        tokens.push(Self::tokenize_rows(&s[1..])?);
                     } else if iter.peek().is_some_and(|s| **s == ":") {
                         // skip the colon
                         iter.next();
                         if let Some(column_name) = iter.next() {
-                            tokens.push(Token::ColumnRange(s, column_name.to_string()));
+                            tokens.push(Token::ColumnRange(s.to_string(), column_name.to_string()));
                         } else {
-                            tokens.push(Token::ColumnToEnd(s));
+                            tokens.push(Token::ColumnToEnd(s.to_string()));
                         }
                     } else {
-                        tokens.push(Token::Column(s));
+                        tokens.push(Token::Column(s.to_string()));
                     }
                 }
             }
@@ -307,24 +290,17 @@ mod tests {
     #[test]
     fn test_tokenize_rows() {
         let rows = [
-            ("#1", vec![Token::RowRange(1, 1)]),
-            ("#1:10", vec![Token::RowRange(1, 10)]),
-            ("#1:", vec![Token::RowRange(1, UNBOUNDED)]),
-            ("#2:", vec![Token::RowRange(2, UNBOUNDED)]),
-            (
-                "#1, 2, 3 : 5 ",
-                vec![
-                    Token::RowRange(1, 1),
-                    Token::RowRange(2, 2),
-                    Token::RowRange(3, 5),
-                ],
-            ),
-            ("#LAST", vec![Token::RowRange(UNBOUNDED, UNBOUNDED)]),
-            ("#This Row", vec![Token::ThisRow]),
+            ("1", Token::RowRange(1, 1)),
+            ("1:10", Token::RowRange(1, 10)),
+            ("1:", Token::RowRange(1, UNBOUNDED)),
+            ("2:", Token::RowRange(2, UNBOUNDED)),
+            ("LAST", Token::RowRange(UNBOUNDED, UNBOUNDED)),
+            ("This Row", Token::ThisRow),
         ];
         for (s, expected) in rows {
             assert_eq!(
-                TableRef::tokenize_rows(s.to_string()).unwrap(),
+                TableRef::tokenize_rows(s)
+                    .unwrap_or_else(|e| panic!("Failed to tokenize rows '{}': {}", s, e)),
                 expected.clone(),
                 "Expected {:?} for {}",
                 expected,
@@ -368,10 +344,9 @@ mod tests {
     fn test_tokenize_rows_columns() {
         let column_rows = [
             (
-                "[#12,15],[Column 1]",
+                "[#12],[Column 1]",
                 vec![
                     Token::RowRange(12, 12),
-                    Token::RowRange(15, 15),
                     Token::Column("Column 1".to_string()),
                 ],
             ),
@@ -387,14 +362,6 @@ mod tests {
                 vec![
                     Token::RowRange(12, 15),
                     Token::ColumnToEnd("Column 1".to_string()),
-                ],
-            ),
-            (
-                "[#12:15],[Column 1],[Column 2]",
-                vec![
-                    Token::RowRange(12, 15),
-                    Token::Column("Column 1".to_string()),
-                    Token::Column("Column 2".to_string()),
                 ],
             ),
         ];

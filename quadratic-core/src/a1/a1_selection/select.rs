@@ -365,9 +365,9 @@ impl A1Selection {
         let last = match last {
             CellRefRange::Sheet { range } => *range,
             CellRefRange::Table { range } => {
-                if let Some(last) = range.convert_to_ref_range_bounds(0, context).last() {
-                    match last {
-                        CellRefRange::Sheet { range } => *range,
+                if let Some(range) = range.convert_to_ref_range_bounds(0, context) {
+                    match range {
+                        CellRefRange::Sheet { range } => range,
                         CellRefRange::Table { .. } => return,
                     }
                 } else {
@@ -393,9 +393,9 @@ impl A1Selection {
         let last = match last {
             CellRefRange::Sheet { range } => *range,
             CellRefRange::Table { range } => {
-                if let Some(last) = range.convert_to_ref_range_bounds(0, context).last() {
-                    match last {
-                        CellRefRange::Sheet { range } => *range,
+                if let Some(range) = range.convert_to_ref_range_bounds(0, context) {
+                    match range {
+                        CellRefRange::Sheet { range } => range,
                         CellRefRange::Table { .. } => return,
                     }
                 } else {

@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::{a1::A1Context, grid::Sheet, Pos, Rect};
+use crate::{a1::A1Context, grid::Sheet, Pos, Rect, SheetPos};
 
 use super::{A1Selection, CellRefRange};
 
@@ -159,9 +159,8 @@ impl A1Selection {
                     }
                 }
                 CellRefRange::Table { range } => {
-                    let range = range.convert_to_ref_range_bounds(0, context);
-                    if let Some(last) = range.last() {
-                        match last {
+                    if let Some(range) = range.convert_to_ref_range_bounds(0, context) {
+                        match range {
                             CellRefRange::Sheet { range } => Pos {
                                 x: range.end.col(),
                                 y: range.end.row(),
@@ -306,6 +305,33 @@ impl A1Selection {
             range.is_single_cell()
         } else {
             false
+        }
+    }
+
+    pub fn to_cursor_sheet_pos(&self) -> SheetPos {
+        self.cursor.to_sheet_pos(self.sheet_id)
+    }
+
+    /// Tries to convert the selection to a single position. This works only if
+    /// there is one range, and the range is a single cell.
+    pub fn try_to_pos(&self, context: &A1Context) -> Option<Pos> {
+        if self.ranges.len() == 1 {
+            if let Some(range) = self.ranges.first() {
+                return range.try_to_pos(context);
+            }
+        }
+        None
+    }
+
+    /// Returns the position from the last range (either the end, or if not defined,
+    /// the start).
+    pub(crate) fn cursor_pos_from_last_range(
+        last_range: &CellRefRange,
+        context: &A1Context,
+    ) -> Pos {
+        match last_range {
+            CellRefRange::Sheet { range } => range.cursor_pos_from_last_range(),
+            CellRefRange::Table { range } => range.cursor_pos_from_last_range(context),
         }
     }
 }
@@ -549,5 +575,80 @@ mod tests {
         assert!(A1Selection::test_a1("A1:D5, A1:").is_all_selected());
         assert!(!A1Selection::test_a1("A1:A").is_all_selected());
         assert!(!A1Selection::test_a1("A1:1").is_all_selected());
+    }
+
+    #[test]
+    fn test_cursor_pos_from_last_range() {
+        let context = A1Context::default();
+        assert_eq!(
+            A1Selection::cursor_pos_from_last_range(&CellRefRange::test_a1("A1"), &context),
+            pos![A1]
+        );
+        assert_eq!(
+            A1Selection::cursor_pos_from_last_range(&CellRefRange::test_a1("A1:C3"), &context),
+            pos![A1]
+        );
+    }
+
+    #[test]
+    fn test_cursor_sheet_pos() {
+        // Test basic cursor position
+        let selection = A1Selection::test_a1("A1");
+        assert_eq!(
+            selection.to_cursor_sheet_pos(),
+            SheetPos::new(selection.sheet_id, 1, 1),
+            "Basic cursor sheet pos failed"
+        );
+
+        // Test cursor at different positions
+        let selection = A1Selection::test_a1("B2");
+        assert_eq!(
+            selection.to_cursor_sheet_pos(),
+            SheetPos::new(selection.sheet_id, 2, 2),
+            "B2 cursor sheet pos failed"
+        );
+
+        // Test cursor with large coordinates
+        let selection = A1Selection::test_a1("Z100");
+        assert_eq!(
+            selection.to_cursor_sheet_pos(),
+            SheetPos::new(selection.sheet_id, 26, 100),
+            "Large coordinate cursor sheet pos failed"
+        );
+
+        // Test cursor with multi-letter column
+        let selection = A1Selection::test_a1("AA1");
+        assert_eq!(
+            selection.to_cursor_sheet_pos(),
+            SheetPos::new(selection.sheet_id, 27, 1),
+            "Multi-letter column cursor sheet pos failed"
+        );
+
+        // Test cursor position in a range selection
+        let selection = A1Selection::test_a1("A1:C3");
+        assert_eq!(
+            selection.to_cursor_sheet_pos(),
+            SheetPos::new(selection.sheet_id, 1, 1),
+            "Range selection cursor sheet pos failed"
+        );
+    }
+
+    #[test]
+    fn test_try_to_pos() {
+        let context = A1Context::default();
+        let selection = A1Selection::test_a1("A1");
+        assert_eq!(selection.try_to_pos(&context), Some(pos![A1]));
+
+        let selection = A1Selection::test_a1("A1:B2");
+        assert_eq!(selection.try_to_pos(&context), None);
+
+        let selection = A1Selection::test_a1("A");
+        assert_eq!(selection.try_to_pos(&context), None);
+
+        let selection = A1Selection::test_a1("*");
+        assert_eq!(selection.try_to_pos(&context), None);
+
+        let selection = A1Selection::test_a1("1:4");
+        assert_eq!(selection.try_to_pos(&context), None);
     }
 }

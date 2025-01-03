@@ -9,10 +9,12 @@
 //!
 //! i64 is used to maintain compatibility with CellRefCoord.
 
+use std::fmt;
+
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::a1::{CellRefCoord, TableMapEntry};
+use crate::a1::{CellRefCoord, TableMapEntry, UNBOUNDED};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, TS, Serialize, Deserialize)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -37,39 +39,67 @@ impl RowRangeEntry {
     }
 }
 
+impl fmt::Display for RowRangeEntry {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = if self.start.coord == 1 && self.end.coord == UNBOUNDED {
+            String::default()
+        } else {
+            let start = self.start.coord.to_string();
+            let end = if self.end.coord == UNBOUNDED {
+                String::default()
+            } else {
+                self.end.coord.to_string()
+            };
+
+            if start == end {
+                format!("[#{}]", start)
+            } else {
+                format!("[#{}:{}]", start, end)
+            }
+        };
+        write!(f, "{}", s)
+    }
+}
+
 #[derive(Default, Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub enum RowRange {
     #[default]
     All,
     CurrentRow,
-    Rows(Vec<RowRangeEntry>),
+    Rows(RowRangeEntry),
 }
 
 impl RowRange {
     /// Returns a list of (start, end) pairs for the row range.
-    pub fn to_rows(&self, current_row: i64, table: &TableMapEntry) -> Vec<(i64, i64)> {
+    pub fn to_rows(&self, current_row: i64, table: &TableMapEntry) -> (i64, i64) {
         match self {
-            RowRange::All => vec![(table.bounds.min.y, table.bounds.max.y)],
-            RowRange::CurrentRow => vec![(current_row, current_row)],
-            RowRange::Rows(ranges) => ranges
-                .iter()
-                .map(|r| {
-                    (
-                        // the -1 is because the row-index is 1-based instead of
-                        // 0-based
-                        table.bounds.min.y + r.start.coord - 1,
-                        table.bounds.min.y + r.end.coord - 1,
-                    )
-                })
-                .collect(),
+            RowRange::All => (table.bounds.min.y, table.bounds.max.y),
+            RowRange::CurrentRow => (current_row, current_row),
+            RowRange::Rows(ranges) => (
+                table.bounds.min.y + ranges.start.coord - 1,
+                table.bounds.min.y + ranges.end.coord - 1,
+            ),
         }
+    }
+}
+
+impl fmt::Display for RowRange {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match &self {
+            RowRange::All => String::default(),
+            RowRange::CurrentRow => "[#THIS ROW]".to_string(),
+            RowRange::Rows(row) => row.to_string(),
+        };
+
+        write!(f, "{}", s)
     }
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub enum ColRange {
+    All,
     Col(String),
     ColRange(String, String),
     ColumnToEnd(String),
@@ -78,6 +108,7 @@ pub enum ColRange {
 impl ColRange {
     pub fn has_col(&self, col: i64, table: &TableMapEntry) -> bool {
         match self {
+            ColRange::All => return true,
             ColRange::Col(table_col) => {
                 if let Some(col_index) = table.try_col_index(table_col) {
                     return col_index == col;
@@ -95,6 +126,18 @@ impl ColRange {
             }
         }
         false
+    }
+}
+
+impl fmt::Display for ColRange {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            ColRange::All => String::default(),
+            ColRange::Col(col) => format!("[{}]", col),
+            ColRange::ColRange(start, end) => format!("[{}]:[{}]", start, end),
+            ColRange::ColumnToEnd(col) => format!("[{}]:", col),
+        };
+        write!(f, "{}", s)
     }
 }
 
@@ -147,17 +190,56 @@ mod tests {
 
         let row_range = RowRange::All;
         let rows = row_range.to_rows(1, &table);
-        assert_eq!(rows, vec![(1, 5)]);
+        assert_eq!(rows, (1, 5));
 
         let row_range = RowRange::CurrentRow;
         let rows = row_range.to_rows(1, &table);
-        assert_eq!(rows, vec![(1, 1)]);
+        assert_eq!(rows, (1, 1));
+    }
 
-        let row_range = RowRange::Rows(vec![
-            RowRangeEntry::new_rel(1, 2),
-            RowRangeEntry::new_rel(4, 5),
-        ]);
-        let rows = row_range.to_rows(1, &table);
-        assert_eq!(rows, vec![(1, 2), (4, 5)]);
+    #[test]
+    fn test_row_range_entry_to_string() {
+        // Test single row
+        let entry = RowRangeEntry::new_rel(5, 5);
+        assert_eq!(entry.to_string(), "[#5]");
+
+        // Test row range
+        let entry = RowRangeEntry::new_rel(1, 5);
+        assert_eq!(entry.to_string(), "[#1:5]");
+
+        // Test unbounded range
+        let entry = RowRangeEntry::new_rel(1, UNBOUNDED);
+        assert_eq!(entry.to_string(), "");
+    }
+
+    #[test]
+    fn test_row_range_to_string() {
+        // Test All (default empty string)
+        assert_eq!(RowRange::All.to_string(), "");
+
+        // Test CurrentRow
+        assert_eq!(RowRange::CurrentRow.to_string(), "[#THIS ROW]");
+
+        // Test Rows variant
+        let entry = RowRangeEntry::new_rel(1, 5);
+        assert_eq!(RowRange::Rows(entry).to_string(), "[#1:5]");
+    }
+
+    #[test]
+    fn test_col_range_to_string() {
+        // Test All (default empty string)
+        assert_eq!(ColRange::All.to_string(), "");
+
+        // Test single column
+        assert_eq!(ColRange::Col("A".to_string()).to_string(), "[A]");
+
+        // Test column range
+        assert_eq!(
+            ColRange::ColRange("A".to_string(), "C".to_string()).to_string(),
+            "[A]:[C]"
+        );
+
+        // Test column to end
+        assert_eq!(ColRange::ColumnToEnd("B".to_string()).to_string(), "[B]:");
     }
 }

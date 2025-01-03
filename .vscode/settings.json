@@ -6,11 +6,8 @@
     "bigdecimal",
     "bincode",
     "bindgen",
-<<<<<<< HEAD
     "cellvalue",
-=======
     "CRPXNLSKVLJFHH",
->>>>>>> origin/qa
     "dashmap",
     "dbgjs",
     "dcell",
@@ -70,10 +67,7 @@
   "editor.codeActionsOnSave": {
     "source.organizeImports": "explicit"
   },
-<<<<<<< HEAD
-=======
   "rust-analyzer.check.extraArgs": ["--target-dir=target/rust-analyzer"],
->>>>>>> origin/qa
   "rust-analyzer.checkOnSave": true,
   "rust-analyzer.cargo.unsetTest": true,
   // "rust-analyzer.checkOnSave.command": "clippy",
@@ -113,5 +107,6 @@
   },
   "[html]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  }
+  },
+  "C_Cpp.errorSquiggles": "enabled"
 }

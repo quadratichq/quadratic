@@ -2,8 +2,6 @@
 
 use std::fmt;
 
-use crate::a1::UNBOUNDED;
-
 use super::*;
 
 impl TableRef {
@@ -13,52 +11,7 @@ impl TableRef {
             && !self.headers
             && !self.totals
             && self.row_range == RowRange::All
-            && self.col_ranges.is_empty()
-    }
-
-    fn row_range_entry_to_string(entry: &RowRangeEntry) -> String {
-        if entry.start.coord == 1 && entry.end.coord == UNBOUNDED {
-            return String::default();
-        }
-        let start = entry.start.coord.to_string();
-        let end = if entry.end.coord == UNBOUNDED {
-            "".to_string()
-        } else {
-            entry.end.coord.to_string()
-        };
-
-        if start == end {
-            format!("[#{}]", start)
-        } else {
-            format!("[#{}:{}]", start, end)
-        }
-    }
-
-    /// Returns the string representation of the row range.
-    fn row_range_to_string(&self) -> Vec<String> {
-        match &self.row_range {
-            RowRange::All => vec![],
-            RowRange::CurrentRow => vec!["[#THIS ROW]".to_string()],
-            RowRange::Rows(rows) => rows
-                .iter()
-                .map(TableRef::row_range_entry_to_string)
-                .collect::<Vec<String>>(),
-        }
-    }
-
-    fn col_range_entry_to_string(entry: &ColRange) -> String {
-        match entry {
-            ColRange::Col(col) => format!("[{}]", col),
-            ColRange::ColRange(start, end) => format!("[{}]:[{}]", start, end),
-            ColRange::ColumnToEnd(col) => format!("[{}]:", col),
-        }
-    }
-
-    fn col_ranges_to_string(&self) -> Vec<String> {
-        self.col_ranges
-            .iter()
-            .map(TableRef::col_range_entry_to_string)
-            .collect::<Vec<String>>()
+            && self.col_range == ColRange::All
     }
 }
 
@@ -86,10 +39,22 @@ impl fmt::Display for TableRef {
                 }
             }
         }
-        entries.extend(self.row_range_to_string());
-        entries.extend(self.col_ranges_to_string());
-
-        write!(f, "{}[{}]", self.table_name, entries.join(","))
+        if entries.len() == 0
+            && self.row_range == RowRange::All
+            && matches!(self.col_range, ColRange::Col(_))
+        {
+            write!(f, "{}{}", self.table_name, self.col_range)
+        } else {
+            let row = self.row_range.to_string();
+            if !row.is_empty() {
+                entries.push(row);
+            }
+            let col = self.col_range.to_string();
+            if !col.is_empty() {
+                entries.push(col);
+            }
+            write!(f, "{}[{}]", self.table_name, entries.join(","))
+        }
     }
 }
 
@@ -113,14 +78,15 @@ mod tests {
     fn test_to_string() {
         let context = A1Context::test(&[], &[("Table1", &["A"], Rect::test_a1("A1"))]);
         let tests = [
+            "Table1[Column 1]",
+            "Table1[[#12]]",
             "Table1[[#12:]]",
             "Table1[[#12:15]]",
-            "Table1[[#12:]]",
             "Table1[[#ALL]]",
             "Table1[[#HEADERS],[#TOTALS]]",
             "Table1[[#HEADERS],[Column 1]]",
-            "Table1[[#HEADERS],[Column 1],[Column 2]]",
-            "Table1[[#HEADERS],[Column 1],[Column 2],[Column 3]:[Column 4],[Column 6]]",
+            "Table1[[#HEADERS],[Column 3]:[Column 4]]",
+            "Table1[[#HEADERS],[Column 3]:]",
             "Table1[[#DATA],[#HEADERS],[Column 1]]",
         ];
 

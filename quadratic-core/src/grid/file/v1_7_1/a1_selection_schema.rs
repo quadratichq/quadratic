@@ -46,7 +46,7 @@ impl CellRefCoordSchema {
 pub enum RowRangeSchema {
     All,
     CurrentRow,
-    Rows(Vec<RowRangeEntrySchema>),
+    Rows(RowRangeEntrySchema),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -57,6 +57,7 @@ pub struct RowRangeEntrySchema {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ColRangeSchema {
+    All,
     Col(String),
     ColRange(String, String),
     ColumnToEnd(String),
@@ -68,6 +69,6 @@ pub struct TableRefSchema {
     pub data: bool,
     pub headers: bool,
     pub totals: bool,
-    pub row_ranges: RowRangeSchema,
-    pub col_ranges: Vec<ColRangeSchema>,
+    pub row_range: RowRangeSchema,
+    pub col_range: ColRangeSchema,
 }
