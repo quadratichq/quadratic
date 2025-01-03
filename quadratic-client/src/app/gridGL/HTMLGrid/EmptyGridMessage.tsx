@@ -10,6 +10,7 @@ import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { useEffect, useRef, useState } from 'react';
+import { isMobile } from 'react-device-detect';
 import { useSetRecoilState } from 'recoil';
 
 const fileHasData = () => sheets.sheets.filter((sheet) => sheet.bounds.type === 'nonEmpty').length > 0;
@@ -45,6 +46,10 @@ export function EmptyGridMessage() {
   }
 
   if (!open) {
+    return null;
+  }
+
+  if (isMobile) {
     return null;
   }
 

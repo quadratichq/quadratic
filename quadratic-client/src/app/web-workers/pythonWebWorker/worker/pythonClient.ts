@@ -14,7 +14,11 @@ declare var self: WorkerGlobalScope & typeof globalThis & {};
 class PythonClient {
   private id = 0;
   private waitingForResponse: Record<number, Function> = {};
-  env: Record<string, string> = {};
+  private _env: Record<string, string> = {};
+
+  get env() {
+    return this._env;
+  }
 
   start() {
     self.onmessage = this.handleMessage;
@@ -38,6 +42,7 @@ class PythonClient {
         break;
 
       case 'clientPythonInit':
+        this._env = e.data.env;
         return;
 
       default:
