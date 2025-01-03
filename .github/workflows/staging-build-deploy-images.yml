@@ -38,9 +38,9 @@ jobs:
         id: build-dev
         run: |
           if [[ ${{ contains(github.event.pull_request.labels.*.name, 'build:dev') }} == true ]]; then
-            echo "DEV=true" >> $GITHUB_OUTPUT
+            echo "CLIENT_DEV=true" >> $GITHUB_OUTPUT
           else
-            echo "DEV=false" >> $GITHUB_OUTPUT
+            echo "CLIENT_DEV=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Check for build:cache:disabled label
@@ -112,7 +112,7 @@ jobs:
             GIT_SHA_SHORT=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
             BRANCH_NAME=${{ steps.build-metadata.outputs.BRANCH_NAME }}
             PR_NUMBER=${{ github.event.pull_request.number }}
-            DEV=${{ steps.build-dev.outputs.DEV }}
+            CLIENT_DEV=${{ steps.build-dev.outputs.CLIENT_DEV }}
           labels: |
             org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
             org.opencontainers.image.revision=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
@@ -131,7 +131,7 @@ jobs:
             GIT_SHA_SHORT=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
             BRANCH_NAME=${{ steps.build-metadata.outputs.BRANCH_NAME }}
             PR_NUMBER=${{ github.event.pull_request.number }}
-            DEV=${{ steps.build-dev.outputs.DEV }}
+            CLIENT_DEV=${{ steps.build-dev.outputs.CLIENT_DEV }}
           labels: |
             org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
             org.opencontainers.image.revision=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}

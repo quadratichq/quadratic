@@ -26,7 +26,7 @@ RUN npm install --no-audit --no-fund
 ###########################################################################################
 FROM node:18 AS core-builder
 
-ARG DEV
+ARG CLIENT_DEV
 
 # Install rustup
 RUN echo 'Installing rustup...' && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -54,7 +54,7 @@ COPY ./quadratic-core/. ./quadratic-core/
 COPY ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
 
 # Build core
-RUN if [ "$DEV" = "true" ]; then \
+RUN if [ "$CLIENT_DEV" = "true" ]; then \
   echo 'Building core in dev mode...' && npm run build:dev --workspace=quadratic-core; \
   else \
   echo 'Building core...' && npm run build --workspace=quadratic-core; \
@@ -100,7 +100,7 @@ RUN echo 'Building TS/Rust types...' && npm run export_types --workspace=quadrat
 ###########################################################################################
 FROM node:18 AS rust-client-builder
 
-ARG DEV
+ARG CLIENT_DEV
 
 # Install rustup
 RUN echo 'Installing rustup...' && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -131,7 +131,7 @@ COPY ./quadratic-rust-client/. ./quadratic-rust-client/
 # Build the rust-client
 ARG GIT_COMMIT
 ENV GIT_COMMIT=$GIT_COMMIT
-RUN if [ "$DEV" = "true" ]; then \
+RUN if [ "$CLIENT_DEV" = "true" ]; then \
   echo 'Building rust-client in dev mode...' && npm run build:dev --workspace=quadratic-rust-client; \
   else \
   echo 'Building rust-client...' && npm run build --workspace=quadratic-rust-client; \

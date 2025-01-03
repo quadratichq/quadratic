@@ -60,12 +60,12 @@
     "copy:esbuild": "cp -f node_modules/esbuild-wasm/esbuild.wasm quadratic-client/public/",
     "gen:pyright:initialization": "npm run gen:pyright:worker --workspace=quadratic-kernels/python-wasm",
     "gen:pyright:worker": "npm run gen:pyright:worker --workspace=quadratic-kernels/python-wasm",
-    "docker:base": "ECR_OR_BUILD=build DEV=false docker compose --profile base --env-file .env.docker up",
-    "docker:dev": "ECR_OR_BUILD=build DEV=true docker compose --profile dev --env-file .env.docker up -d && docker attach quadratic-dev",
-    "docker:build": "ECR_OR_BUILD=build DEV=false docker compose --profile all --env-file .env.docker up",
-    "docker:build:dev": "ECR_OR_BUILD=build DEV=true docker compose --profile all --env-file .env.docker up",
-    "docker:ecr": "ECR_OR_BUILD=ecr DEV=false docker compose --profile all --env-file .env.docker up",
-    "docker:down": "ECR_OR_BUILD=build DEV=false docker compose --profile all --env-file .env.docker down",
+    "docker:base": "ECR_OR_BUILD=build CLIENT_DEV=false docker compose --profile base --env-file .env.docker up",
+    "docker:dev": "ECR_OR_BUILD=build CLIENT_DEV=true docker compose --profile dev --env-file .env.docker up -d && docker attach quadratic-dev",
+    "docker:build": "ECR_OR_BUILD=build CLIENT_DEV=false docker compose --profile all --env-file .env.docker up",
+    "docker:build:dev": "ECR_OR_BUILD=build CLIENT_DEV=true docker compose --profile all --env-file .env.docker up",
+    "docker:ecr": "ECR_OR_BUILD=ecr CLIENT_DEV=false docker compose --profile all --env-file .env.docker up",
+    "docker:down": "ECR_OR_BUILD=build CLIENT_DEV=false docker compose --profile all --env-file .env.docker down",
     "docker:clean": "docker system prune -af && docker builder prune -af && docker volume prune -af"
   },
   "dependencies": {
