@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 
-use crate::a1::A1Context;
+use crate::a1::{A1Context, CellRefRange};
 
 use super::*;
 
@@ -75,12 +75,19 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "getFiniteRanges")]
-    pub fn get_finite_ranges(&self) -> Result<String, String> {
+    pub fn get_finite_ranges(&self, context: &str) -> Result<String, String> {
+        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
+            return Err("Unable to parse context".to_string());
+        };
         let ranges = self
             .selection
             .ranges
             .iter()
             .filter(|r| r.is_finite())
+            .filter_map(|range| match range {
+                CellRefRange::Sheet { range } => Some(range.clone()),
+                CellRefRange::Table { range } => range.convert_to_ref_range_bounds(0, &context),
+            })
             .collect::<Vec<_>>();
         serde_json::to_string(&ranges).map_err(|e| e.to_string())
     }

@@ -5,7 +5,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
-import { CellRefRange, JsCoordinate } from '@/app/quadratic-core-types';
+import { CellRefRange, JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
 import { Graphics } from 'pixi.js';
 
 const SECTION_OUTLINE_WIDTH = 1;
@@ -37,8 +37,8 @@ export const drawFiniteSelection = (g: Graphics, color: number, alpha: number, r
 
   const sheet = sheets.sheet;
   ranges.forEach(({ range }) => {
-    const start = range.start;
-    const end = range.end;
+    const start = (range as RefRangeBounds).start;
+    const end = (range as RefRangeBounds).end;
 
     // we have all four points, just draw a rectangle
     if (!isUnbounded(end.col.coord) && !isUnbounded(end.row.coord)) {
@@ -75,8 +75,8 @@ export const drawInfiniteSelection = (options: {
   bounds.y = Math.max(bounds.y, 0);
 
   ranges.forEach(({ range }) => {
-    const start = range.start;
-    const end = range.end;
+    const start = (range as RefRangeBounds).start;
+    const end = (range as RefRangeBounds).end;
 
     g.lineStyle();
     g.beginFill(color, alpha);

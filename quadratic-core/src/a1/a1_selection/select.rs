@@ -366,10 +366,7 @@ impl A1Selection {
             CellRefRange::Sheet { range } => *range,
             CellRefRange::Table { range } => {
                 if let Some(range) = range.convert_to_ref_range_bounds(0, context) {
-                    match range {
-                        CellRefRange::Sheet { range } => range,
-                        CellRefRange::Table { .. } => return,
-                    }
+                    range
                 } else {
                     return;
                 }
@@ -394,10 +391,7 @@ impl A1Selection {
             CellRefRange::Sheet { range } => *range,
             CellRefRange::Table { range } => {
                 if let Some(range) = range.convert_to_ref_range_bounds(0, context) {
-                    match range {
-                        CellRefRange::Sheet { range } => range,
-                        CellRefRange::Table { .. } => return,
-                    }
+                    range
                 } else {
                     return;
                 }

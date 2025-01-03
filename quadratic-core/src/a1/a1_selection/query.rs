@@ -160,14 +160,9 @@ impl A1Selection {
                 }
                 CellRefRange::Table { range } => {
                     if let Some(range) = range.convert_to_ref_range_bounds(0, context) {
-                        match range {
-                            CellRefRange::Sheet { range } => Pos {
-                                x: range.end.col(),
-                                y: range.end.row(),
-                            },
-                            // this should not happen as we already converted it
-                            // to a sheet range
-                            CellRefRange::Table { .. } => self.cursor,
+                        Pos {
+                            x: range.end.col(),
+                            y: range.end.row(),
                         }
                     } else {
                         self.cursor

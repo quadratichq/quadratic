@@ -1,5 +1,5 @@
 use crate::{
-    a1::{A1Context, CellRefRange, RefRangeBounds, UNBOUNDED},
+    a1::{A1Context, RefRangeBounds, UNBOUNDED},
     Pos, Rect,
 };
 
@@ -207,7 +207,7 @@ impl TableRef {
         &self,
         current_row: i64,
         context: &A1Context,
-    ) -> Option<CellRefRange> {
+    ) -> Option<RefRangeBounds> {
         let Some(table) = context.try_table(&self.table_name) else {
             // the table may no longer exist
             return None;
@@ -222,31 +222,25 @@ impl TableRef {
                     table.bounds.max.x,
                     y_end,
                 );
-                Some(CellRefRange::Sheet { range })
+                Some(range)
             }
             ColRange::Col(col) => {
                 if let Some(col) = table.try_col_index(col) {
-                    Some(CellRefRange::Sheet {
-                        range: RefRangeBounds::new_relative(col, y_start, col, y_end),
-                    })
+                    Some(RefRangeBounds::new_relative(col, y_start, col, y_end))
                 } else {
                     None
                 }
             }
             ColRange::ColRange(col_range_start, col_range_end) => {
                 if let Some((start, end)) = table.try_col_range(col_range_start, col_range_end) {
-                    Some(CellRefRange::Sheet {
-                        range: RefRangeBounds::new_relative(start, y_start, end, y_end),
-                    })
+                    Some(RefRangeBounds::new_relative(start, y_start, end, y_end))
                 } else {
                     None
                 }
             }
             ColRange::ColumnToEnd(col) => {
                 if let Some((start, end)) = table.try_col_range_to_end(col) {
-                    Some(CellRefRange::Sheet {
-                        range: RefRangeBounds::new_relative(start, y_start, end, y_end),
-                    })
+                    Some(RefRangeBounds::new_relative(start, y_start, end, y_end))
                 } else {
                     None
                 }
@@ -268,7 +262,7 @@ impl TableRef {
     /// Tries to convert the TableRef to a Pos.
     pub fn try_to_pos(&self, context: &A1Context) -> Option<Pos> {
         let range = self.convert_to_ref_range_bounds(0, context)?;
-        range.try_to_pos(context)
+        range.try_to_pos()
     }
 }
 
@@ -439,12 +433,7 @@ mod tests {
         };
 
         let ranges = table_ref.convert_to_ref_range_bounds(1, &context);
-        assert_eq!(
-            ranges,
-            Some(CellRefRange::Sheet {
-                range: RefRangeBounds::test_a1("B1:B3")
-            })
-        );
+        assert_eq!(ranges, Some(RefRangeBounds::test_a1("B1:B3")));
 
         // Test case 2: Column range with specific rows
         let table_ref = TableRef {
@@ -457,12 +446,7 @@ mod tests {
         };
 
         let ranges = table_ref.convert_to_ref_range_bounds(1, &context);
-        assert_eq!(
-            ranges,
-            Some(CellRefRange::Sheet {
-                range: RefRangeBounds::new_relative(1, 1, 3, 2)
-            })
-        );
+        assert_eq!(ranges, Some(RefRangeBounds::new_relative(1, 1, 3, 2)));
 
         // Test case 3: Column to end
         let table_ref = TableRef {
@@ -475,12 +459,7 @@ mod tests {
         };
 
         let ranges = table_ref.convert_to_ref_range_bounds(2, &context);
-        assert_eq!(
-            ranges,
-            Some(CellRefRange::Sheet {
-                range: RefRangeBounds::new_relative(2, 2, 3, 2)
-            })
-        );
+        assert_eq!(ranges, Some(RefRangeBounds::new_relative(2, 2, 3, 2)));
     }
 
     #[test]

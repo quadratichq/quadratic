@@ -70,17 +70,12 @@ impl CellRefRange {
             Self::Table { range } => {
                 range
                     .convert_to_ref_range_bounds(0, context)
-                    .iter()
-                    .any(|range| {
-                        if let Self::Sheet { range } = range {
-                            if let Some(p2) = p2 {
-                                range.start.is_pos(p1) && range.end.is_pos(p2)
-                                    || range.end.is_pos(p1) && range.start.is_pos(p2)
-                            } else {
-                                range.start.is_pos(p1) && range.end.is_pos(p1)
-                            }
+                    .is_some_and(|range| {
+                        if let Some(p2) = p2 {
+                            range.start.is_pos(p1) && range.end.is_pos(p2)
+                                || range.end.is_pos(p1) && range.start.is_pos(p2)
                         } else {
-                            false
+                            range.start.is_pos(p1) && range.end.is_pos(p1)
                         }
                     })
             }
@@ -236,7 +231,7 @@ mod tests {
         assert!(!CellRefRange::test_a1("A1").contains_only_row(2));
     }
 
-        #[test]
+    #[test]
     fn test_is_finite() {
         assert!(CellRefRange::test_a1("A1").is_finite());
         assert!(!CellRefRange::test_a1("A").is_finite());
@@ -486,5 +481,4 @@ mod tests {
             vec![1, 2, 3]
         );
     }
-
 }

@@ -49,11 +49,11 @@ impl Sheet {
             |entry: &CellValue| skip_code_runs || !matches!(entry, &CellValue::Code(_));
 
         for range in selection.ranges.iter() {
-            let rects = match range {
-                CellRefRange::Sheet { range } => vec![self.ref_range_bounds_to_rect(range)],
-                CellRefRange::Table { range } => self.table_ref_to_rects(range),
+            let rect = match range {
+                CellRefRange::Sheet { range } => Some(self.ref_range_bounds_to_rect(range)),
+                CellRefRange::Table { range } => self.table_ref_to_rect(range),
             };
-            for rect in &rects {
+            if let Some(rect) = rect {
                 for x in rect.x_range() {
                     for y in rect.y_range() {
                         if let Some(entry) = self.cell_value_ref(Pos { x, y }) {
@@ -75,14 +75,14 @@ impl Sheet {
                         }
                     }
                 }
-            }
+            };
 
             if !skip_code_runs {
                 for (pos, code_run) in self.data_tables.iter() {
                     let code_rect = code_run.output_rect(*pos, false);
                     for x in code_rect.x_range() {
                         for y in code_rect.y_range() {
-                            if rects.iter().any(|rect| rect.contains(Pos { x, y })) {
+                            if rect.is_some_and(|rect| rect.contains(Pos { x, y })) {
                                 if let Some(entry) = code_run
                                     .cell_value_ref_at((x - pos.x) as u32, (y - pos.y) as u32)
                                 {
@@ -185,18 +185,11 @@ impl Sheet {
         code_cells
     }
 
-    pub fn table_ref_to_rects(&self, range: &TableRef) -> Vec<Rect> {
-        let rects = range.convert_to_ref_range_bounds(1, &self.a1_context());
-        rects
-            .iter()
-            .filter_map(|range| {
-                if let CellRefRange::Sheet { range } = range {
-                    Some(self.ref_range_bounds_to_rect(range))
-                } else {
-                    None
-                }
-            })
-            .collect()
+    pub fn table_ref_to_rect(&self, range: &TableRef) -> Option<Rect> {
+        range
+            .convert_to_ref_range_bounds(1, &self.a1_context())
+            .map(|range| range.to_rect())
+            .flatten()
     }
 
     /// Converts a cell reference range to a minimal rectangle covering the data
@@ -265,7 +258,11 @@ impl Sheet {
         for range in selection.ranges.iter() {
             match range {
                 CellRefRange::Sheet { range } => rects.push(self.ref_range_bounds_to_rect(range)),
-                CellRefRange::Table { range } => rects.extend(self.table_ref_to_rects(range)),
+                CellRefRange::Table { range } => {
+                    if let Some(rect) = self.table_ref_to_rect(range) {
+                        rects.push(rect);
+                    }
+                }
             }
         }
         rects
@@ -291,17 +288,13 @@ impl Sheet {
             ranges: selection
                 .ranges
                 .iter()
-                .flat_map(|range| match range {
-                    CellRefRange::Sheet { range } => {
-                        vec![CellRefRange::new_relative_rect(
-                            self.ref_range_bounds_to_rect(range),
-                        )]
-                    }
+                .filter_map(|range| match range {
+                    CellRefRange::Sheet { range } => Some(CellRefRange::new_relative_rect(
+                        self.ref_range_bounds_to_rect(range),
+                    )),
                     CellRefRange::Table { range } => self
-                        .table_ref_to_rects(range)
-                        .into_iter()
-                        .map(|rect| CellRefRange::new_relative_rect(rect))
-                        .collect(),
+                        .table_ref_to_rect(range)
+                        .map(|rect| CellRefRange::new_relative_rect(rect)),
                 })
                 .collect(),
         }
