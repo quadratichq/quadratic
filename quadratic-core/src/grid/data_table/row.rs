@@ -1,13 +1,38 @@
 use anyhow::{bail, Result};
 
 use super::DataTable;
-use crate::Value;
+use crate::{CellValue, Value};
 
 impl DataTable {
+    /// Get the values of a row (does not include the header)
+    pub fn get_row(&self, mut row_index: usize) -> Result<Vec<CellValue>> {
+        if self.header_is_first_row {
+            row_index += 1;
+        }
+
+        let row = self
+            .value_ref()?
+            .iter()
+            .skip(row_index * self.width() as usize)
+            .take(self.width() as usize)
+            .map(|value| value.to_owned().to_owned())
+            .collect();
+
+        Ok(row)
+    }
+
     /// Insert a new row at the given index.
-    pub fn insert_row(&mut self, row_index: usize) -> Result<()> {
+    pub fn insert_row(
+        &mut self,
+        mut row_index: usize,
+        values: Option<Vec<CellValue>>,
+    ) -> Result<()> {
+        if self.header_is_first_row {
+            row_index += 1;
+        }
+
         if let Value::Array(array) = &mut self.value {
-            array.insert_row(row_index, None)?;
+            array.insert_row(row_index, values)?;
         } else {
             bail!("Expected an array");
         }
@@ -18,7 +43,11 @@ impl DataTable {
     }
 
     /// Remove a row at the given index.
-    pub fn delete_row(&mut self, row_index: usize) -> Result<()> {
+    pub fn delete_row(&mut self, mut row_index: usize) -> Result<()> {
+        if self.header_is_first_row {
+            row_index += 1;
+        }
+
         if let Value::Array(array) = &mut self.value {
             array.delete_row(row_index)?;
         } else {
@@ -47,7 +76,7 @@ pub mod test {
 
         pretty_print_data_table(&data_table, Some("Original Data Table"), None);
 
-        data_table.insert_row(4).unwrap();
+        data_table.insert_row(4, None).unwrap();
         pretty_print_data_table(&data_table, Some("Data Table with New Row"), None);
 
         // this should be a 5x4 array

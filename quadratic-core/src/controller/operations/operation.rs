@@ -96,6 +96,7 @@ pub enum Operation {
     InsertDataTableRow {
         sheet_pos: SheetPos,
         index: u32,
+        values: Option<Vec<CellValue>>,
     },
     DeleteDataTableRow {
         sheet_pos: SheetPos,
@@ -368,11 +369,15 @@ impl fmt::Display for Operation {
                     sheet_pos, index
                 )
             }
-            Operation::InsertDataTableRow { sheet_pos, index } => {
+            Operation::InsertDataTableRow {
+                sheet_pos,
+                index,
+                values,
+            } => {
                 write!(
                     fmt,
-                    "InsertDataTableRow {{ sheet_pos: {}, index: {} }}",
-                    sheet_pos, index
+                    "InsertDataTableRow {{ sheet_pos: {}, index: {}, values: {:?} }}",
+                    sheet_pos, index, values
                 )
             }
             Operation::DeleteDataTableRow { sheet_pos, index } => {

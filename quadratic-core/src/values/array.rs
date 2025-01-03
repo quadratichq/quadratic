@@ -388,7 +388,8 @@ impl Array {
                 array.set_row(height as usize, &values)?;
             }
 
-            row_index = if last { 0 } else { row_index + 1 };
+            // row_index = if last { 0 } else { row_index + 1 };
+            row_index += 1;
         }
 
         self.size = new_size;

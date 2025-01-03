@@ -95,6 +95,7 @@ impl GridController {
             ops.push(Operation::InsertDataTableRow {
                 sheet_pos,
                 index: row_to_add,
+                values: None,
             });
         }
 

@@ -564,12 +564,17 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) -> Result<()> {
-        if let Operation::InsertDataTableRow { sheet_pos, index } = op.to_owned() {
+        if let Operation::InsertDataTableRow {
+            sheet_pos,
+            index,
+            values,
+        } = op.to_owned()
+        {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
-            data_table.insert_row(index as usize)?;
+            data_table.insert_row(index as usize, values)?;
 
             let data_table_rect = data_table
                 .output_rect(sheet_pos.into(), true)
@@ -604,6 +609,7 @@ impl GridController {
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
+            let old_values = data_table.get_row(index as usize)?;
             data_table.delete_row(index as usize)?;
 
             let data_table_rect = data_table
@@ -614,7 +620,11 @@ impl GridController {
             transaction.add_code_cell(sheet_id, data_table_pos);
 
             let forward_operations = vec![op];
-            let reverse_operations = vec![Operation::InsertDataTableRow { sheet_pos, index }];
+            let reverse_operations = vec![Operation::InsertDataTableRow {
+                sheet_pos,
+                index,
+                values: Some(old_values),
+            }];
 
             self.data_table_operations(
                 transaction,
@@ -779,6 +789,24 @@ mod tests {
             DataTableColumnHeader::new(name.into(), true, index)
         );
         assert_eq!(data_table.value.into_array().unwrap().size().w.get(), width);
+    }
+
+    #[track_caller]
+    pub(crate) fn assert_data_table_row_height<'a>(
+        gc: &'a GridController,
+        sheet_id: SheetId,
+        pos: Pos,
+        height: u32,
+        index: u32,
+        values: Vec<CellValue>,
+    ) {
+        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap().to_owned();
+        let row = data_table.get_row(index as usize).unwrap();
+        assert_eq!(row, values);
+        assert_eq!(
+            data_table.value.into_array().unwrap().size().h.get(),
+            height
+        );
     }
 
     #[test]
@@ -1096,5 +1124,68 @@ mod tests {
         execute_forward_operations(&mut gc, &mut transaction);
         print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
         assert_data_table_column_width(&gc, sheet_id, pos, 3, index, "region");
+    }
+
+    #[test]
+    fn test_execute_insert_data_table_row() {
+        let (mut gc, sheet_id, pos, _) = simple_csv();
+
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+
+        let sheet_pos = SheetPos::from((pos, sheet_id));
+        let index = 2;
+        let op = Operation::InsertDataTableRow {
+            sheet_pos,
+            index,
+            values: None,
+        };
+        let mut transaction = PendingTransaction::default();
+        gc.execute_insert_data_table_row(&mut transaction, op)
+            .unwrap();
+
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 11));
+        let blank = CellValue::Blank;
+        let values = vec![blank.clone(), blank.clone(), blank.clone(), blank.clone()];
+        assert_data_table_row_height(&gc, sheet_id, pos, 12, index, values.into());
+
+        // undo, the value should be a data table again
+        execute_reverse_operations(&mut gc, &transaction);
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+        assert_simple_csv(&gc, sheet_id, pos, "simple.csv");
+
+        // redo, the value should be on the grid
+        execute_forward_operations(&mut gc, &mut transaction);
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 11));
+        let values = vec![blank.clone(), blank.clone(), blank.clone(), blank.clone()];
+        assert_data_table_row_height(&gc, sheet_id, pos, 12, index, values);
+    }
+
+    #[test]
+    fn test_execute_delete_data_table_row() {
+        let (mut gc, sheet_id, pos, _) = simple_csv();
+
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+
+        let sheet_pos = SheetPos::from((pos, sheet_id));
+        let index = 2;
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        let values = data_table.get_row(index as usize + 1).unwrap();
+        let op = Operation::DeleteDataTableRow { sheet_pos, index };
+        let mut transaction = PendingTransaction::default();
+        gc.execute_delete_data_table_row(&mut transaction, op)
+            .unwrap();
+
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 11));
+        assert_data_table_row_height(&gc, sheet_id, pos, 10, index, values.clone());
+
+        // undo, the value should be a data table again
+        execute_reverse_operations(&mut gc, &transaction);
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+        assert_simple_csv(&gc, sheet_id, pos, "simple.csv");
+
+        // redo, the value should be on the grid
+        execute_forward_operations(&mut gc, &mut transaction);
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 11));
+        assert_data_table_row_height(&gc, sheet_id, pos, 10, index, values);
     }
 }

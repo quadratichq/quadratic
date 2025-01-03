@@ -4,6 +4,7 @@ use super::{column_header::DataTableColumnHeader, DataTable};
 use crate::{CellValue, Value};
 
 impl DataTable {
+    /// Get the values of a column
     pub fn get_column(&self, column_index: usize) -> Result<Vec<CellValue>> {
         let column = self
             .value_ref()?
