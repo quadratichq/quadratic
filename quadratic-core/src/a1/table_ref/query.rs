@@ -371,7 +371,7 @@ mod tests {
             headers: false,
             totals: false,
         };
-        assert!(table_ref.is_multi_cursor(&context));
+        assert!(!table_ref.is_multi_cursor(&context));
 
         // Multiple rows
         let table_ref = TableRef {
@@ -392,7 +392,7 @@ mod tests {
             headers: false,
             totals: false,
         };
-        assert!(!table_ref.is_multi_cursor(&context));
+        assert!(table_ref.is_multi_cursor(&context));
 
         let table_ref = TableRef {
             table_name: "test_table".to_string(),

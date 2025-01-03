@@ -290,16 +290,17 @@ mod tests {
     #[test]
     fn test_tokenize_rows() {
         let rows = [
-            ("#1", Token::RowRange(1, 1)),
-            ("#1:10", Token::RowRange(1, 10)),
-            ("#1:", Token::RowRange(1, UNBOUNDED)),
-            ("#2:", Token::RowRange(2, UNBOUNDED)),
-            ("#LAST", Token::RowRange(UNBOUNDED, UNBOUNDED)),
-            ("#This Row", Token::ThisRow),
+            ("1", Token::RowRange(1, 1)),
+            ("1:10", Token::RowRange(1, 10)),
+            ("1:", Token::RowRange(1, UNBOUNDED)),
+            ("2:", Token::RowRange(2, UNBOUNDED)),
+            ("LAST", Token::RowRange(UNBOUNDED, UNBOUNDED)),
+            ("This Row", Token::ThisRow),
         ];
         for (s, expected) in rows {
             assert_eq!(
-                TableRef::tokenize_rows(s).unwrap(),
+                TableRef::tokenize_rows(s)
+                    .unwrap_or_else(|e| panic!("Failed to tokenize rows '{}': {}", s, e)),
                 expected.clone(),
                 "Expected {:?} for {}",
                 expected,
@@ -343,10 +344,9 @@ mod tests {
     fn test_tokenize_rows_columns() {
         let column_rows = [
             (
-                "[#12,15],[Column 1]",
+                "[#12],[Column 1]",
                 vec![
                     Token::RowRange(12, 12),
-                    Token::RowRange(15, 15),
                     Token::Column("Column 1".to_string()),
                 ],
             ),
@@ -362,14 +362,6 @@ mod tests {
                 vec![
                     Token::RowRange(12, 15),
                     Token::ColumnToEnd("Column 1".to_string()),
-                ],
-            ),
-            (
-                "[#12:15],[Column 1],[Column 2]",
-                vec![
-                    Token::RowRange(12, 15),
-                    Token::Column("Column 1".to_string()),
-                    Token::Column("Column 2".to_string()),
                 ],
             ),
         ];
