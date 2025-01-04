@@ -5,7 +5,6 @@ import {
 } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { A1SelectionToJsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { AIAnalystSelectContextMenu } from '@/app/ui/menus/AIAnalyst/AIAnalystSelectContextMenu';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { CloseIcon } from '@/shared/components/Icons';
