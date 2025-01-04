@@ -9,8 +9,45 @@ concurrency:
   cancel-in-progress: ${{ (github.event.action != 'labeled' && github.event.action !=  'unlabeled') || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && startsWith(github.event.label.name, 'build:')) }}
 
 jobs:
+  create_deployment:
+    name: Create Deployment
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    permissions:
+      contents: read
+      deployments: write
+    outputs:
+      deployment_id: ${{ steps.deployment.outputs.id }}
+    steps:
+      - name: Create deployment
+        id: deployment
+        run: |
+          DEPLOYMENT_ID=$(gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/deployments \
+            -f ref="${{ github.event.pull_request.head.ref }}" \
+            -f description="Building and deploying PR #${{ github.event.pull_request.number }} (${GITHUB_SHA::7})" \
+            -f required_contexts='[]' \
+            --jq '.id')
+          echo "id=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update deployment status (building images)
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/deployments/${{ steps.deployment.outputs.id }}/statuses \
+            -f state="in_progress" \
+            -f description="Building Docker images..." \
+            -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build_images:
     name: Build Images - Staging
+    needs: create_deployment
     if: (github.event.action != 'labeled' && github.event.action != 'unlabeled') || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && (startsWith(github.event.label.name, 'build:')))
     permissions:
       contents: read
@@ -136,9 +173,22 @@ jobs:
             org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
             org.opencontainers.image.revision=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
 
+      - name: Update deployment status (failure)
+        if: failure()
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
+            -f state="failure" \
+            -f description="Failed to build ${{ matrix.service }} image" \
+            -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   deploy_images:
     name: Deploy Images - Staging
-    needs: build_images
+    needs: [create_deployment, build_images]
     permissions:
       contents: read
       issues: write
@@ -149,6 +199,18 @@ jobs:
       STACK_NAME: pr-${{ github.event.pull_request.number }}
       MAX_ATTEMPTS: 20
     steps:
+      - name: Update deployment status (deploying)
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
+            -f state="in_progress" \
+            -f description="Deploying images..." \
+            -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -274,3 +336,30 @@ jobs:
 
             🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
           edit-mode: replace
+
+      - name: Update deployment status (success)
+        if: success()
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
+            -f state="success" \
+            -f environment_url="https://pr-${{ github.event.pull_request.number }}.quadratic-preview.com" \
+            -f description="Deployment successful!" \
+            -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update deployment status (failure)
+        if: failure()
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
+            -f state="failure" \
+            -f description="Deployment failed" \
+            -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
