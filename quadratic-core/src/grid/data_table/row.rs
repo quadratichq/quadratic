@@ -93,25 +93,25 @@ pub mod test {
         pretty_print_data_table(&source_data_table, Some("Original Data Table"), None);
 
         let mut data_table = source_data_table.clone();
-        data_table.delete_row(3).unwrap();
-        pretty_print_data_table(&data_table, Some("Data Table without row 4"), None);
+        data_table.delete_row(2).unwrap();
+        pretty_print_data_table(&data_table, Some("Data Table without Seattle row"), None);
 
-        // this should be a 4x3 array
+        // this should be a 4x3 array, includes the header row
         let expected_size = ArraySize::new(4, 3).unwrap();
         assert_eq!(data_table.output_size(), expected_size);
 
         let mut data_table = source_data_table.clone();
         data_table.delete_row(1).unwrap();
-        pretty_print_data_table(&data_table, Some("Data Table without row 1"), None);
+        pretty_print_data_table(&data_table, Some("Data Table without Denver row"), None);
 
-        // this should be a 4x3 array
+        // this should be a 4x3 array, includes the header row
         let expected_size = ArraySize::new(4, 3).unwrap();
         assert_eq!(data_table.output_size(), expected_size);
 
-        // Southborough should no longer be at (0, 1)
+        // Denver should no longer be at (0, 1)
         assert_eq!(
             data_table.cell_value_at(0, 1),
-            Some(CellValue::Text("Denver".to_string()))
+            Some(CellValue::Text("Southborough".to_string()))
         );
     }
 }
