@@ -26,6 +26,7 @@ export class CellsFills extends Container {
   private alternatingColors: Map<string, JsRenderCodeCell> = new Map();
 
   private dirty = false;
+  private dirtyTables = false;
 
   constructor(cellsSheet: CellsSheet) {
     super();
@@ -129,6 +130,10 @@ export class CellsFills extends Container {
       this.dirty = false;
       this.drawMeta();
     }
+    if (this.dirtyTables) {
+      this.dirtyTables = false;
+      this.drawAlternatingColors();
+    }
   };
 
   private drawMeta = () => {
@@ -186,11 +191,11 @@ export class CellsFills extends Container {
     const key = `${x},${y}`;
     if (table) {
       this.alternatingColors.set(key, table);
-      this.setDirty();
+      this.dirtyTables = true;
     } else {
       if (this.alternatingColors.has(key)) {
         this.alternatingColors.delete(key);
-        this.setDirty();
+        this.dirtyTables = true;
       }
     }
   };
@@ -199,7 +204,7 @@ export class CellsFills extends Container {
     this.alternatingColorsGraphics.clear();
     const color = getCSSVariableTint('primary', { luminosity: ALTERNATING_COLOR_LUMINOSITY });
     this.alternatingColors.forEach((table) => {
-      const bounds = this.sheet.getScreenRectangle(table.x, table.y + 1, table.w - 1, table.y);
+      const bounds = this.sheet.getScreenRectangle(table.x, table.y + 1, table.w, table.y);
       let yOffset = bounds.y;
       for (let y = table.show_header ? 1 : 0; y < table.h - 1; y++) {
         let height = this.sheet.offsets.getRowHeight(y + table.y);
@@ -211,5 +216,6 @@ export class CellsFills extends Container {
         yOffset += height;
       }
     });
+    pixiApp.setViewportDirty();
   };
 }

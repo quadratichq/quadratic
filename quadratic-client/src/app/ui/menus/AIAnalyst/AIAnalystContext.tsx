@@ -5,7 +5,7 @@ import {
 } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { A1SelectionToJsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { A1SelectionStringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { AIAnalystSelectContextMenu } from '@/app/ui/menus/AIAnalyst/AIAnalystSelectContextMenu';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { CloseIcon } from '@/shared/components/Icons';
@@ -115,7 +115,7 @@ export const AIAnalystContext = ({
         key="cursor"
         primary={
           context.selection
-            ? sheets.sheet.cursor.toCursorA1() // TODO(ddimaria); fix this => A1SelectionToJsSelection(context.selection).toA1String(sheets.current, sheets.a1Context)
+            ? A1SelectionStringToSelection(context.selection).toA1String(sheets.current, sheets.a1Context)
             : sheets.sheet.cursor.toCursorA1()
         }
         secondary="Cursor"

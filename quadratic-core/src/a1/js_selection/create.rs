@@ -111,10 +111,9 @@ pub fn new_all_selection(sheet_id: String) -> Result<String, String> {
 }
 
 #[wasm_bindgen(js_name = "A1SelectionStringToSelection")]
-pub fn a1_selection_string_to_selection(a1_selection: &str) -> Result<String, String> {
+pub fn a1_selection_string_to_selection(a1_selection: &str) -> Result<JsSelection, String> {
     let selection = serde_json::from_str::<A1Selection>(a1_selection).map_err(|e| e.to_string())?;
-    let selection = JsSelection { selection };
-    selection.save()
+    Ok(JsSelection { selection })
 }
 
 #[wasm_bindgen(js_name = "A1SelectionToJsSelection")]
