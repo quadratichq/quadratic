@@ -30,6 +30,8 @@ jobs:
             -F auto_merge=false \
             -f required_contexts\[\] \
             -f environment=staging \
+            -F transient_environment=true \
+            -F production_environment=false \
             --jq '.id')
           echo "id=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
         env:
