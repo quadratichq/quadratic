@@ -76,7 +76,6 @@ export class Cursor extends Container {
     const { codeEditorState } = pixiAppSettings;
     const cell = cursor.position;
     const showInput = pixiAppSettings.input.show;
-
     if (cursor.isSingleSelection() && pixiApp.cellsSheet().tables.isHtmlOrImage(cell)) {
       return;
     }
@@ -313,7 +312,7 @@ export class Cursor extends Container {
           alpha: FILL_ALPHA,
           ranges: infiniteRanges,
         });
-        if (!columnRow && cursor.rangeCount() === 1 && !cursor.getInfiniteRefRangeBounds().length) {
+        if (!columnRow && cursor.rangeCount() === 1 && cursor.getInfiniteRefRangeBounds().length === 0) {
           this.drawCursorIndicator();
         }
       }
