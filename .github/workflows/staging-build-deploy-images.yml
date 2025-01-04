@@ -9,8 +9,70 @@ concurrency:
   cancel-in-progress: ${{ (github.event.action != 'labeled' && github.event.action !=  'unlabeled') || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && startsWith(github.event.label.name, 'build:')) }}
 
 jobs:
+  create_deployment:
+    name: Create Deployment - Staging
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    permissions:
+      contents: read
+      deployments: write
+    outputs:
+      deployment_id: ${{ steps.deployment.outputs.id }}
+    steps:
+      - name: Deactivate previous deployments
+        run: |
+          gh api \
+            --method GET \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/deployments \
+            -f ref="${{ github.event.pull_request.head.ref }}" \
+            -f environment=staging \
+            --jq '.[] | .id' | while read -r id; do
+              gh api \
+                --method POST \
+                -H "Accept: application/vnd.github+json" \
+                /repos/${{ github.repository }}/deployments/$id/statuses \
+                -f state="inactive" \
+                -f environment="staging" \
+                -f description="Superseded by newer deployment"
+            done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create deployment
+        id: deployment
+        run: |
+          DEPLOYMENT_ID=$(gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/deployments \
+            -f ref="${{ github.event.pull_request.head.ref }}" \
+            -f description="Building and deploying PR #${{ github.event.pull_request.number }} (${GITHUB_SHA::7})" \
+            -F auto_merge=false \
+            -f required_contexts\[\] \
+            -f environment=staging \
+            -F transient_environment=true \
+            -F production_environment=false \
+            --jq '.id')
+          echo "id=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update deployment status (building images)
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/deployments/${{ steps.deployment.outputs.id }}/statuses \
+            -f state="in_progress" \
+            -f description="Building Docker images..." \
+            -f environment=staging \
+            -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build_images:
     name: Build Images - Staging
+    needs: create_deployment
     if: (github.event.action != 'labeled' && github.event.action != 'unlabeled') || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && (startsWith(github.event.label.name, 'build:')))
     permissions:
       contents: read
@@ -136,11 +198,26 @@ jobs:
             org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
             org.opencontainers.image.revision=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
 
+      - name: Update deployment status (failure)
+        if: failure()
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
+            -f state="failure" \
+            -f description="Failed to build ${{ matrix.service }} image" \
+            -f environment=staging \
+            -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   deploy_images:
     name: Deploy Images - Staging
-    needs: build_images
+    needs: [create_deployment, build_images]
     permissions:
       contents: read
+      deployments: write
       issues: write
       pull-requests: write
     runs-on: blacksmith-2vcpu-ubuntu-2204
@@ -149,6 +226,19 @@ jobs:
       STACK_NAME: pr-${{ github.event.pull_request.number }}
       MAX_ATTEMPTS: 20
     steps:
+      - name: Update deployment status (deploying)
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
+            -f state="in_progress" \
+            -f description="Deploying images..." \
+            -f environment=staging \
+            -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -236,6 +326,29 @@ jobs:
             --command-id "$COMMAND_ID" \
             --instance-id ${{ steps.get-instance.outputs.instance_id }}
 
+      - name: Delete old images
+        run: |
+          for service in client api connection files multiplayer; do
+            REPO_NAME="quadratic-${service}"
+            
+            # Get list of untagged image digests
+            UNTAGGED_IMAGES=$(aws ecr list-images \
+              --repository-name "$REPO_NAME" \
+              --filter "tagStatus=UNTAGGED" \
+              --query 'imageIds[*].imageDigest' \
+              --output json)
+            
+            # Delete untagged images if any exist
+            if [ "$UNTAGGED_IMAGES" != "[]" ]; then
+              echo "Deleting untagged images from $REPO_NAME"
+              aws ecr batch-delete-image \
+                --repository-name "$REPO_NAME" \
+                --image-ids "$(echo $UNTAGGED_IMAGES | jq -r 'map({imageDigest: .}) | @json')"
+            else
+              echo "No untagged images found in $REPO_NAME"
+            fi
+          done
+
       - name: Generate Deploy Metadata
         id: deploy-metadata
         run: |
@@ -274,3 +387,32 @@ jobs:
 
             🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
           edit-mode: replace
+
+      - name: Update deployment status (success)
+        if: success()
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
+            -f state="success" \
+            -f environment_url="https://pr-${{ github.event.pull_request.number }}.quadratic-preview.com" \
+            -f description="Deployment successful!" \
+            -f environment=staging \
+            -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update deployment status (failure)
+        if: failure()
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
+            -f state="failure" \
+            -f description="Deployment failed" \
+            -f environment=staging \
+            -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

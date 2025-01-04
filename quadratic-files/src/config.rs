@@ -21,9 +21,7 @@ pub(crate) enum StorageType {
 #[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 pub(crate) struct Config {
-    #[serde(default = "default_host")]
     pub(crate) host: String,
-    #[serde(default = "default_port")]
     pub(crate) port: String,
     pub(crate) file_check_s: i64,
     pub(crate) files_per_check: i64,
@@ -55,29 +53,18 @@ pub(crate) struct Config {
     pub(crate) storage_encryption_keys: Option<Vec<String>>,
 }
 
-fn default_host() -> String {
-    "0.0.0.0".to_string()
-}
-
-fn default_port() -> String {
-    "3002".to_string()
-}
-
 /// Load the global configuration from the environment into Config.
 pub(crate) fn config() -> Result<Config> {
     let filename = if cfg!(test) { ".env.test" } else { ".env" };
-    // let filename = if cfg!(test) { ".env" } else { ".env" };
 
     dotenv::from_filename(filename).ok();
     dotenv().ok();
 
-    let mut config = envy::from_env::<Config>().map_err(|e| FilesError::Config(e.to_string()))?;
-    if config.host.is_empty() {
-        config.host = default_host();
-    }
-    if config.port.is_empty() {
-        config.port = default_port();
-    }
+    // Try prefixed first, fall back to non-prefixed if that fails
+    let config = envy::prefixed("FILES__")
+        .from_env::<Config>()
+        .or_else(|_| envy::from_env::<Config>())
+        .map_err(|e| FilesError::Config(e.to_string()))?;
     Ok(config)
 }
 
