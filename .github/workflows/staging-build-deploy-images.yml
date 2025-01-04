@@ -27,7 +27,7 @@ jobs:
             /repos/${{ github.repository }}/deployments \
             -f ref="${{ github.event.pull_request.head.ref }}" \
             -f description="Building and deploying PR #${{ github.event.pull_request.number }} (${GITHUB_SHA::7})" \
-            -f required_contexts="[]" \
+            -F required_contexts='[]' \
             --jq '.id')
           echo "id=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
         env:
