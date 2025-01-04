@@ -326,6 +326,29 @@ jobs:
             --command-id "$COMMAND_ID" \
             --instance-id ${{ steps.get-instance.outputs.instance_id }}
 
+      - name: Delete old images
+        run: |
+          for service in client api connection files multiplayer; do
+            REPO_NAME="quadratic-${service}"
+            
+            # Get list of untagged image digests
+            UNTAGGED_IMAGES=$(aws ecr list-images \
+              --repository-name "$REPO_NAME" \
+              --filter "tagStatus=UNTAGGED" \
+              --query 'imageIds[*].imageDigest' \
+              --output json)
+            
+            # Delete untagged images if any exist
+            if [ "$UNTAGGED_IMAGES" != "[]" ]; then
+              echo "Deleting untagged images from $REPO_NAME"
+              aws ecr batch-delete-image \
+                --repository-name "$REPO_NAME" \
+                --image-ids "$(echo $UNTAGGED_IMAGES | jq -r 'map({imageDigest: .}) | @json')"
+            else
+              echo "No untagged images found in $REPO_NAME"
+            fi
+          done
+
       - name: Generate Deploy Metadata
         id: deploy-metadata
         run: |
