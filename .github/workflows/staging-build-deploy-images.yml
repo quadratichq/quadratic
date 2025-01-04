@@ -18,6 +18,26 @@ jobs:
     outputs:
       deployment_id: ${{ steps.deployment.outputs.id }}
     steps:
+      - name: Deactivate previous deployments
+        run: |
+          gh api \
+            --method GET \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/deployments \
+            -f ref="${{ github.event.pull_request.head.ref }}" \
+            -f environment=staging \
+            --jq '.[] | .id' | while read -r id; do
+              gh api \
+                --method POST \
+                -H "Accept: application/vnd.github+json" \
+                /repos/${{ github.repository }}/deployments/$id/statuses \
+                -f state="inactive" \
+                -f environment="staging" \
+                -f description="Superseded by newer deployment"
+            done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create deployment
         id: deployment
         run: |
