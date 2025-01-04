@@ -99,7 +99,7 @@ impl JsSelection {
             .ranges
             .iter()
             .filter_map(|r| {
-                if !r.is_finite() {
+                if r.is_finite() {
                     None
                 } else {
                     match r {
