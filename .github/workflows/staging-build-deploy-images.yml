@@ -27,7 +27,7 @@ jobs:
             /repos/${{ github.repository }}/deployments \
             -f ref="${{ github.event.pull_request.head.ref }}" \
             -f description="Building and deploying PR #${{ github.event.pull_request.number }} (${GITHUB_SHA::7})" \
-            -f auto_merge=false \
+            -F auto_merge=false \
             -f required_contexts\[\] \
             -f environment=staging \
             --jq '.id')
