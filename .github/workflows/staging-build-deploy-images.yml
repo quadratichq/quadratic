@@ -43,6 +43,7 @@ jobs:
             /repos/${{ github.repository }}/deployments/${{ steps.deployment.outputs.id }}/statuses \
             -f state="in_progress" \
             -f description="Building Docker images..." \
+            -f environment=staging \
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -184,6 +185,7 @@ jobs:
             /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
             -f state="failure" \
             -f description="Failed to build ${{ matrix.service }} image" \
+            -f environment=staging \
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -210,6 +212,7 @@ jobs:
             /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
             -f state="in_progress" \
             -f description="Deploying images..." \
+            -f environment=staging \
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -350,6 +353,7 @@ jobs:
             -f state="success" \
             -f environment_url="https://pr-${{ github.event.pull_request.number }}.quadratic-preview.com" \
             -f description="Deployment successful!" \
+            -f environment=staging \
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -363,6 +367,7 @@ jobs:
             /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
             -f state="failure" \
             -f description="Deployment failed" \
+            -f environment=staging \
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
