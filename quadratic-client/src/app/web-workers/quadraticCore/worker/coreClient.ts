@@ -135,8 +135,6 @@ class CoreClient {
   private handleMessage = async (e: MessageEvent<ClientCoreMessage>) => {
     if (debugWebWorkersMessages) console.log(`[coreClient] message: ${e.data.type}`);
 
-    console.log('e.data', e.data);
-
     switch (e.data.type) {
       case 'clientCoreLoad':
         await offline.init(e.data.fileId);

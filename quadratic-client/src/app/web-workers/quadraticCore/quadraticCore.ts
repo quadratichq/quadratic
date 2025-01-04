@@ -224,8 +224,6 @@ class QuadraticCore {
   };
 
   private send(message: ClientCoreMessage, extra?: MessagePort | Transferable) {
-    console.log('send', message);
-
     // worker may not be defined during hmr
     if (!this.worker) return;
 
