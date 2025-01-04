@@ -10,7 +10,7 @@ concurrency:
 
 jobs:
   create_deployment:
-    name: Create Deployment
+    name: Create Deployment - Staging
     runs-on: blacksmith-2vcpu-ubuntu-2204
     permissions:
       contents: read
@@ -193,6 +193,7 @@ jobs:
     needs: [create_deployment, build_images]
     permissions:
       contents: read
+      deployments: write
       issues: write
       pull-requests: write
     runs-on: blacksmith-2vcpu-ubuntu-2204
