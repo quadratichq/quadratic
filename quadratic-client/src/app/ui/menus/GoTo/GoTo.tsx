@@ -1,22 +1,47 @@
 import { editorInteractionStateShowGoToMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { A1Error } from '@/app/quadratic-core-types';
-import { stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { getTableNames, stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import '@/app/ui/styles/floating-dialog.css';
-import { GoToIcon } from '@/shared/components/Icons';
-import { Command, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
-import React, { useCallback, useMemo } from 'react';
+import { ArrowDropDownIcon, GoToIcon } from '@/shared/components/Icons';
+import { Command, CommandInput, CommandItem, CommandList, CommandSeparator } from '@/shared/shadcn/ui/command';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
 export const GoTo = () => {
   const [showGoToMenu, setShowGoToMenu] = useRecoilState(editorInteractionStateShowGoToMenuAtom);
+  const [pages, setPages] = useState<string[]>([]);
+  const page = pages[pages.length - 1];
 
   const [value, setValue] = React.useState<string>('');
 
   const closeMenu = useCallback(() => {
     setShowGoToMenu(false);
   }, [setShowGoToMenu]);
+
+  const [tableNames, setTablesNames] = useState<string[]>();
+  useEffect(() => {
+    const sync = () => {
+      const namesStringified = getTableNames(sheets.a1Context);
+      if (namesStringified) {
+        try {
+          const names = JSON.parse(namesStringified);
+          setTablesNames(names);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    };
+    sync();
+    events.on('updateCodeCell', sync);
+    events.on('renderCodeCells', sync);
+    return () => {
+      events.off('updateCodeCell', sync);
+      events.off('renderCodeCells', sync);
+    };
+  }, []);
 
   const convertedInput = useMemo(() => {
     if (!value) {
@@ -37,7 +62,6 @@ export const GoTo = () => {
       if (e) {
         try {
           const error: A1Error | undefined = JSON.parse(e);
-          console.log(error);
           if (error?.type === 'InvalidSheetName') {
             return (
               <span>
@@ -73,6 +97,16 @@ export const GoTo = () => {
     closeMenu();
   }, [closeMenu, value]);
 
+  const selectTable = useCallback(
+    (tableName: string) => {
+      setPages([]);
+      const selection = stringToSelection(tableName, sheets.sheet.id, sheets.a1Context);
+      sheets.changeSelection(selection);
+      closeMenu();
+    },
+    [setPages, closeMenu]
+  );
+
   if (!showGoToMenu) {
     return null;
   }
@@ -100,6 +134,30 @@ export const GoTo = () => {
         {/* <CommandItem className="flex cursor-pointer items-center justify-between">
           <div>Rename range {convertedInput}</div>
         </CommandItem> */}
+        <CommandSeparator className="my-2" />
+        {!page && (
+          <CommandItem onSelect={() => setPages([...pages, 'tables'])}>
+            <div className="flex w-full items-center justify-between">
+              <div>Go to table</div>
+              <ArrowDropDownIcon className="text-muted-foreground group-hover:text-foreground" />
+            </div>
+          </CommandItem>
+        )}
+        {page === 'tables' && (
+          <>
+            <CommandItem onSelect={() => setPages(pages.filter((s) => s !== 'tables'))}>
+              <div className="flex w-full items-center justify-between">
+                <div>Go to table</div>
+                <ArrowDropDownIcon className="text-muted-foreground group-hover:text-foreground" />
+              </div>
+            </CommandItem>
+            {tableNames?.map((name) => (
+              <CommandItem key={name} onSelect={() => selectTable(name)}>
+                <div className="ml-3">{name}</div>
+              </CommandItem>
+            ))}
+          </>
+        )}
       </CommandList>
     </Command>
   );
