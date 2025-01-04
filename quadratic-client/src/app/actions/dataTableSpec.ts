@@ -52,6 +52,26 @@ export const getTable = (): JsRenderCodeCell | undefined => {
   return pixiAppSettings.contextMenu?.table ?? pixiApp.cellsSheet().cursorOnDataTable();
 };
 
+export const getRow = (): number | undefined => {
+  const table = getTable();
+
+  if (!table) return undefined;
+
+  let row = pixiAppSettings.contextMenu?.row;
+
+  return row ? row - table.y : table.h;
+};
+
+export const getColumn = (): number | undefined => {
+  const table = getTable();
+
+  if (!table) return undefined;
+
+  const column = pixiAppSettings.contextMenu?.column;
+
+  return column ? column - table.x : table.w;
+};
+
 export const getColumns = (): JsDataTableColumnHeader[] | undefined => {
   const table = getTable();
   return table?.columns;
@@ -266,15 +286,14 @@ export const dataTableSpec: DataTableSpec = {
     Icon: AddIcon,
     run: () => {
       const table = getTable();
+      const column = getColumn();
 
-      if (table) {
-        let nextColumn = table.columns.length;
-
+      if (table && column) {
         quadraticCore.dataTableMutations(
           sheets.sheet.id,
           table.x,
           table.y,
-          nextColumn,
+          column,
           undefined,
           undefined,
           undefined,
@@ -288,16 +307,15 @@ export const dataTableSpec: DataTableSpec = {
     Icon: DeleteIcon,
     run: () => {
       const table = getTable();
-      const columns = getDisplayColumns();
-      const selectedColumn = pixiAppSettings.contextMenu?.selectedColumn;
+      const column = getColumn();
 
-      if (table && columns && selectedColumn !== undefined && columns[selectedColumn]) {
+      if (table && column) {
         quadraticCore.dataTableMutations(
           sheets.sheet.id,
           table.x,
           table.y,
           undefined,
-          selectedColumn,
+          column,
           undefined,
           undefined,
           sheets.getCursorPosition()
@@ -378,14 +396,42 @@ export const dataTableSpec: DataTableSpec = {
     label: 'Insert row',
     Icon: AddIcon,
     run: () => {
-      console.warn('todo...');
+      const table = getTable();
+      const row = getRow();
+
+      if (table && row) {
+        quadraticCore.dataTableMutations(
+          sheets.sheet.id,
+          table.x,
+          table.y,
+          undefined,
+          undefined,
+          row,
+          undefined,
+          sheets.getCursorPosition()
+        );
+      }
     },
   },
   [Action.RemoveTableRow]: {
     label: 'Remove row',
     Icon: DeleteIcon,
     run: () => {
-      console.warn('todo...');
+      const table = getTable();
+      const row = getRow();
+
+      if (table && row) {
+        quadraticCore.dataTableMutations(
+          sheets.sheet.id,
+          table.x,
+          table.y,
+          undefined,
+          undefined,
+          undefined,
+          row - 1,
+          sheets.getCursorPosition()
+        );
+      }
     },
   },
 };

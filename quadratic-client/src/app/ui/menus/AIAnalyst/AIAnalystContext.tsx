@@ -115,7 +115,7 @@ export const AIAnalystContext = ({
         key="cursor"
         primary={
           context.selection
-            ? A1SelectionToJsSelection(context.selection).toA1String(sheets.current, sheets.a1Context)
+            ? sheets.sheet.cursor.toCursorA1() // TODO(ddimaria); fix this => A1SelectionToJsSelection(context.selection).toA1String(sheets.current, sheets.a1Context)
             : sheets.sheet.cursor.toCursorA1()
         }
         secondary="Cursor"
