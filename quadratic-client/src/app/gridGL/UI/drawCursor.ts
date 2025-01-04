@@ -46,10 +46,8 @@ export const drawFiniteSelection = (g: Graphics, color: number, alpha: number, r
       const startY = Math.min(Number(start.row.coord), Number(end.row.coord));
       const width = Math.abs(Number(end.col.coord) - Number(start.col.coord)) + 1;
       const height = Math.abs(Number(end.row.coord) - Number(start.row.coord)) + 1;
-      if (width > 1 || height > 1) {
-        const rect = sheet.getScreenRectangle(startX, startY, width, height);
-        g.drawShape(rect);
-      }
+      const rect = sheet.getScreenRectangle(startX, startY, width, height);
+      g.drawShape(rect);
     }
   });
   g.endFill();
