@@ -27,6 +27,7 @@
     "dgraph",
     "dotenv",
     "dpkg",
+    "elif",
     "endregion",
     "finitize",
     "fontfaceobserver",
