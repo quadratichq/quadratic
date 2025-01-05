@@ -357,7 +357,7 @@ jobs:
           echo "Deployment timed out after ${{ env.MAX_ATTEMPTS }} attempts"
           exit 1
 
-      - name: Delete old images
+      - name: Delete untagged images
         run: |
           for service in client api connection files multiplayer; do
             REPO_NAME="quadratic-${service}"
@@ -369,18 +369,28 @@ jobs:
               --image-ids "$(aws ecr list-images \
                 --repository-name "$REPO_NAME" \
                 --filter "tagStatus=UNTAGGED" \
-                --query 'imageIds[?contains(imageDigest, `sha256:`)]' \
+                --query 'imageIds[*]' \
                 --output json)" \
               --accepted-media-types "application/vnd.docker.distribution.manifest.list.v2+json" \
               --query 'images[].imageId.imageDigest' \
-              --output json || echo "[]")
+              --output text || echo "")
             
-            # Then get all untagged images excluding manifest lists
-            UNTAGGED_IMAGES=$(aws ecr list-images \
-              --repository-name "$REPO_NAME" \
-              --filter "tagStatus=UNTAGGED" \
-              --query "imageIds[?!contains(@.imageDigest, \`${MANIFEST_LISTS}\`)]" \
-              --output json)
+            # Then get all untagged images
+            if [ -z "$MANIFEST_LISTS" ]; then
+              # If no manifest lists, get all untagged images
+              UNTAGGED_IMAGES=$(aws ecr list-images \
+                --repository-name "$REPO_NAME" \
+                --filter "tagStatus=UNTAGGED" \
+                --query 'imageIds[*]' \
+                --output json)
+            else
+              # Get untagged images excluding manifest lists
+              UNTAGGED_IMAGES=$(aws ecr list-images \
+                --repository-name "$REPO_NAME" \
+                --filter "tagStatus=UNTAGGED" \
+                --query "imageIds[?!(imageDigest in [${MANIFEST_LISTS//sha256:/\`sha256:`}])]" \
+                --output json)
+            fi
             
             if [ "$UNTAGGED_IMAGES" != "[]" ] && [ "$UNTAGGED_IMAGES" != "null" ]; then
               echo "Deleting untagged images from $REPO_NAME"
