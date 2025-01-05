@@ -375,20 +375,23 @@ jobs:
               --query 'images[].imageId.imageDigest' \
               --output text || echo "")
             
-            # Then get all untagged images
-            if [ -z "$MANIFEST_LISTS" ]; then
+            if [ -n "$MANIFEST_LISTS" ]; then
+              echo "Found manifest lists: $MANIFEST_LISTS"
+              # Convert space-separated list to comma-separated list with proper quotes
+              MANIFEST_LIST_ARRAY=$(echo "$MANIFEST_LISTS" | tr ' ' '\n' | sed "s/.*/'&'/" | tr '\n' ',' | sed 's/,$//')
+              
+              # Get untagged images excluding manifest lists
+              UNTAGGED_IMAGES=$(aws ecr list-images \
+                --repository-name "$REPO_NAME" \
+                --filter "tagStatus=UNTAGGED" \
+                --query "imageIds[?!(imageDigest in [$MANIFEST_LIST_ARRAY])]" \
+                --output json)
+            else
               # If no manifest lists, get all untagged images
               UNTAGGED_IMAGES=$(aws ecr list-images \
                 --repository-name "$REPO_NAME" \
                 --filter "tagStatus=UNTAGGED" \
                 --query 'imageIds[*]' \
-                --output json)
-            else
-              # Get untagged images excluding manifest lists
-              UNTAGGED_IMAGES=$(aws ecr list-images \
-                --repository-name "$REPO_NAME" \
-                --filter "tagStatus=UNTAGGED" \
-                --query "imageIds[?!(imageDigest in [${MANIFEST_LISTS//sha256:/\`sha256:`}])]" \
                 --output json)
             fi
             
