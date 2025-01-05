@@ -361,23 +361,43 @@ jobs:
         run: |
           for service in client api connection files multiplayer; do
             REPO_NAME="quadratic-${service}"
+            echo "Cleaning untagged images from: $REPO_NAME"
             
-            # Get list of untagged image digests
+            # First, get all manifest lists
+            MANIFEST_LISTS=$(aws ecr batch-get-image \
+              --repository-name "$REPO_NAME" \
+              --image-ids "$(aws ecr list-images \
+                --repository-name "$REPO_NAME" \
+                --filter "tagStatus=UNTAGGED" \
+                --query 'imageIds[?contains(imageDigest, `sha256:`)]' \
+                --output json)" \
+              --accepted-media-types "application/vnd.docker.distribution.manifest.list.v2+json" \
+              --query 'images[].imageId.imageDigest' \
+              --output json || echo "[]")
+            
+            # Then get all untagged images excluding manifest lists
             UNTAGGED_IMAGES=$(aws ecr list-images \
               --repository-name "$REPO_NAME" \
               --filter "tagStatus=UNTAGGED" \
-              --query 'imageIds[*].imageDigest' \
+              --query "imageIds[?!contains(@.imageDigest, \`${MANIFEST_LISTS}\`)]" \
               --output json)
             
-            # Delete untagged images if any exist
-            if [ "$UNTAGGED_IMAGES" != "[]" ]; then
+            if [ "$UNTAGGED_IMAGES" != "[]" ] && [ "$UNTAGGED_IMAGES" != "null" ]; then
               echo "Deleting untagged images from $REPO_NAME"
               aws ecr batch-delete-image \
                 --repository-name "$REPO_NAME" \
-                --image-ids "$(echo $UNTAGGED_IMAGES | jq -r 'map({imageDigest: .}) | @json')"
+                --image-ids "$UNTAGGED_IMAGES" || true
+              
+              # Check for failures and log them
+              RESULT=$?
+              if [ $RESULT -ne 0 ]; then
+                echo "Some deletions failed for $REPO_NAME. This is expected for manifest lists."
+              fi
             else
-              echo "No untagged images found in $REPO_NAME"
+              echo "No eligible untagged images found in $REPO_NAME"
             fi
+            
+            echo "Finished cleaning untagged images from $REPO_NAME"
           done
 
       - name: Generate Deploy Metadata
