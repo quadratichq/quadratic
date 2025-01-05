@@ -85,7 +85,7 @@ impl JsSelection {
             .iter()
             .filter(|r| r.is_finite())
             .filter_map(|range| match range {
-                CellRefRange::Sheet { range } => Some(range.clone()),
+                CellRefRange::Sheet { range } => Some(*range),
                 CellRefRange::Table { range } => range.convert_to_ref_range_bounds(0, &context),
             })
             .collect::<Vec<_>>();
@@ -103,7 +103,7 @@ impl JsSelection {
                     None
                 } else {
                     match r {
-                        CellRefRange::Sheet { range } => Some(range.clone()),
+                        CellRefRange::Sheet { range } => Some(*range),
 
                         // tables cannot have infinite bounds
                         CellRefRange::Table { .. } => None,

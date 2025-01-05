@@ -342,7 +342,7 @@ impl A1Selection {
             .filter_map(|range| match range {
                 CellRefRange::Sheet { range } => {
                     if range.is_finite() {
-                        Some(range.clone())
+                        Some(*range)
                     } else {
                         None
                     }

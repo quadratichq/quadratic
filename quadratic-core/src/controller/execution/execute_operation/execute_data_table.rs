@@ -792,8 +792,8 @@ mod tests {
     }
 
     #[track_caller]
-    pub(crate) fn assert_data_table_row_height<'a>(
-        gc: &'a GridController,
+    pub(crate) fn assert_data_table_row_height(
+        gc: &GridController,
         sheet_id: SheetId,
         pos: Pos,
         height: u32,
@@ -1146,7 +1146,7 @@ mod tests {
         print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 11));
         let blank = CellValue::Blank;
         let values = vec![blank.clone(), blank.clone(), blank.clone(), blank.clone()];
-        assert_data_table_row_height(&gc, sheet_id, pos, 12, index, values.into());
+        assert_data_table_row_height(&gc, sheet_id, pos, 12, index, values);
 
         // undo, the value should be a data table again
         execute_reverse_operations(&mut gc, &transaction);

@@ -224,13 +224,9 @@ impl TableRef {
                 );
                 Some(range)
             }
-            ColRange::Col(col) => {
-                if let Some(col) = table.try_col_index(col) {
-                    Some(RefRangeBounds::new_relative(col, y_start, col, y_end))
-                } else {
-                    None
-                }
-            }
+            ColRange::Col(col) => table
+                .try_col_index(col)
+                .map(|col| RefRangeBounds::new_relative(col, y_start, col, y_end)),
             ColRange::ColRange(col_range_start, col_range_end) => {
                 if let Some((start, end)) = table.try_col_range(col_range_start, col_range_end) {
                     Some(RefRangeBounds::new_relative(start, y_start, end, y_end))

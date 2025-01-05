@@ -141,5 +141,5 @@ pub fn cell_ref_range_to_ref_range_bounds(
             }
         }
     };
-    Ok(serde_json::to_string(&ref_range_bounds).map_err(|e| e.to_string())?)
+    serde_json::to_string(&ref_range_bounds).map_err(|e| e.to_string())
 }

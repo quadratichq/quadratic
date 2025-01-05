@@ -39,7 +39,7 @@ impl fmt::Display for TableRef {
                 }
             }
         }
-        if entries.len() == 0
+        if entries.is_empty()
             && self.row_range == RowRange::All
             && matches!(self.col_range, ColRange::Col(_))
         {

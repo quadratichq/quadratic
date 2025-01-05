@@ -188,8 +188,7 @@ impl Sheet {
     pub fn table_ref_to_rect(&self, range: &TableRef) -> Option<Rect> {
         range
             .convert_to_ref_range_bounds(1, &self.a1_context())
-            .map(|range| range.to_rect())
-            .flatten()
+            .and_then(|range| range.to_rect())
     }
 
     /// Converts a cell reference range to a minimal rectangle covering the data
@@ -294,7 +293,7 @@ impl Sheet {
                     )),
                     CellRefRange::Table { range } => self
                         .table_ref_to_rect(range)
-                        .map(|rect| CellRefRange::new_relative_rect(rect)),
+                        .map(CellRefRange::new_relative_rect),
                 })
                 .collect(),
         }

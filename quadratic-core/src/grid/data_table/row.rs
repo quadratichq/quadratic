@@ -13,8 +13,8 @@ impl DataTable {
         let row = self
             .value_ref()?
             .iter()
-            .skip(row_index * self.width() as usize)
-            .take(self.width() as usize)
+            .skip(row_index * self.width())
+            .take(self.width())
             .map(|value| value.to_owned().to_owned())
             .collect();
 
