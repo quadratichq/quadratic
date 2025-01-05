@@ -377,14 +377,15 @@ jobs:
             
             if [ -n "$MANIFEST_LISTS" ]; then
               echo "Found manifest lists: $MANIFEST_LISTS"
-              # Convert space-separated list to comma-separated list with proper quotes
-              MANIFEST_LIST_ARRAY=$(echo "$MANIFEST_LISTS" | tr ' ' '\n' | sed "s/.*/'&'/" | tr '\n' ',' | sed 's/,$//')
+              # Convert tab/space-separated list to proper JSON array format
+              MANIFEST_LIST_ARRAY=$(echo "$MANIFEST_LISTS" | tr '\t' '\n' | tr ' ' '\n' | sort -u | \
+                awk 'BEGIN{printf "["} {printf "%s\"%s\"", (NR==1?"":","), $0} END{printf "]"}')
               
               # Get untagged images excluding manifest lists
               UNTAGGED_IMAGES=$(aws ecr list-images \
                 --repository-name "$REPO_NAME" \
                 --filter "tagStatus=UNTAGGED" \
-                --query "imageIds[?!(imageDigest in [$MANIFEST_LIST_ARRAY])]" \
+                --query "imageIds[?!(imageDigest in ${MANIFEST_LIST_ARRAY})]" \
                 --output json)
             else
               # If no manifest lists, get all untagged images
@@ -396,7 +397,7 @@ jobs:
             fi
             
             if [ "$UNTAGGED_IMAGES" != "[]" ] && [ "$UNTAGGED_IMAGES" != "null" ]; then
-              echo "Deleting untagged images from $REPO_NAME"
+              echo "Found untagged images to delete: $UNTAGGED_IMAGES"
               aws ecr batch-delete-image \
                 --repository-name "$REPO_NAME" \
                 --image-ids "$UNTAGGED_IMAGES" || true
