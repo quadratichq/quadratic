@@ -1,11 +1,11 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
-import { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
+import type { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
+import type { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { JsRenderCodeCell } from '@/app/quadratic-core-types';
+import type { JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { Point } from 'pixi.js';
+import type { Point } from 'pixi.js';
 
 export class PointerCursor {
   private lastInfo?: JsRenderCodeCell | EditingCell | ErrorValidation;

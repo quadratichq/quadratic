@@ -1,4 +1,4 @@
-import { SortDirection } from '@/app/quadratic-core-types';
+import type { SortDirection } from '@/app/quadratic-core-types';
 import { ValidationDropdown } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationUI';
 import {
   DeleteIcon,

@@ -1,7 +1,8 @@
-import { RectangleLike } from '@/app/grid/sheet/SheetCursor';
-import { JsCoordinate, Rect } from '@/app/quadratic-core-types';
+import type { RectangleLike } from '@/app/grid/sheet/SheetCursor';
+import type { JsCoordinate, Rect } from '@/app/quadratic-core-types';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
-import { Circle, Point, Rectangle } from 'pixi.js';
+import type { Circle } from 'pixi.js';
+import { Point, Rectangle } from 'pixi.js';
 
 function left(rectangle: RectangleLike): number {
   return Math.min(rectangle.x, rectangle.x + rectangle.width);

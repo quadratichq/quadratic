@@ -13,7 +13,7 @@ import { checkFormula, parseFormula } from '@/app/quadratic-rust-client/quadrati
 import { colors } from '@/app/theme/colors';
 import { extractCellsFromParseFormula } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
 import * as monaco from 'monaco-editor';
-import { editor } from 'monaco-editor';
+import type { editor } from 'monaco-editor';
 
 class InlineEditorFormula {
   private insertingCells?: { value: string; position: number };

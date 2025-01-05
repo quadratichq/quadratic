@@ -1,5 +1,5 @@
 import { ConnectionInputPassword } from '@/shared/components/connections/ConnectionInputPassword';
-import { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
+import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';

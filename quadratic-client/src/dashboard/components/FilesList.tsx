@@ -1,19 +1,20 @@
 import { fileDragDropModalAtom } from '@/dashboard/atoms/fileDragDropModalAtom';
+import { Empty } from '@/dashboard/components/Empty';
 import { FileDragDrop } from '@/dashboard/components/FileDragDrop';
+import { FilesListItemExampleFile, FilesListItems, FilesListItemUserFile } from '@/dashboard/components/FilesListItem';
+import { FilesListViewControls } from '@/dashboard/components/FilesListViewControls';
+import { Layout, Order, Sort, type ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
 import { DRAWER_WIDTH } from '@/routes/_dashboard';
-import { Action as FilesAction } from '@/routes/api.files.$uuid';
+import type { Action as FilesAction } from '@/routes/api.files.$uuid';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
-import { FilePermission, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
-import { ReactNode, useCallback, useState } from 'react';
+import type { FilePermission, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
+import type { ReactNode } from 'react';
+import { useCallback, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useFetchers, useLocation } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
-import { Empty } from './Empty';
-import { FilesListItemExampleFile, FilesListItemUserFile, FilesListItems } from './FilesListItem';
-import { FilesListViewControls } from './FilesListViewControls';
-import { Layout, Order, Sort, ViewPreferences } from './FilesListViewControlsDropdown';
 
 export type FilesListUserFile = {
   createdDate: string;

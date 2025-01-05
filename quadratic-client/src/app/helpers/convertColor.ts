@@ -1,8 +1,8 @@
+import type { Rgba } from '@/app/quadratic-core-types';
+import { colors } from '@/app/theme/colors';
 import * as Sentry from '@sentry/react';
 import Color from 'color';
-import { ColorResult } from 'react-color';
-import { Rgba } from '../quadratic-core-types';
-import { colors } from '../theme/colors';
+import type { ColorResult } from 'react-color';
 
 export function convertReactColorToString(color: ColorResult): string {
   const rgb = color.rgb;
@@ -78,7 +78,7 @@ export function convertRgbaToTint(rgba: Rgba): { tint: number; alpha: number } {
  * we can use in pixi.
  * @param cssVariableName - CSS var without the `--` prefix
  * @param options - Optional options object
- * @param options.luminosity - If provided, will mulitply the luminosity by this number
+ * @param options.luminosity - If provided, will multiply the luminosity by this number
  */
 export function getCSSVariableTint(cssVariableName: string, options?: { luminosity?: number }): number {
   if (cssVariableName.startsWith('--')) {

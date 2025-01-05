@@ -1,4 +1,5 @@
-import { Plugin, Viewport } from 'pixi-viewport';
+import type { Viewport } from 'pixi-viewport';
+import { Plugin } from 'pixi-viewport';
 
 export const DECELERATE_OUT_OF_BOUNDS_FACTOR = 0.8;
 const MIN_SPEED = 0.1;

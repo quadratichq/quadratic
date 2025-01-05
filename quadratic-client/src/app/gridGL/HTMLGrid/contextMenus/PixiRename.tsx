@@ -3,8 +3,9 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
-import { Rectangle } from 'pixi.js';
-import { KeyboardEvent, useCallback, useEffect, useRef } from 'react';
+import type { Rectangle } from 'pixi.js';
+import type { KeyboardEvent} from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 interface Props {
   position?: Rectangle;

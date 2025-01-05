@@ -1,30 +1,31 @@
 import EventEmitter from 'eventemitter3';
-import {
+import type {
   CompletionList,
   CompletionParams,
-  CompletionRequest,
   Diagnostic,
-  DiagnosticSeverity,
-  DiagnosticTag,
-  DidChangeTextDocumentNotification,
-  DidCloseTextDocumentNotification,
   DidCloseTextDocumentParams,
-  DidOpenTextDocumentNotification,
   Hover,
   HoverParams,
-  HoverRequest,
-  InitializedNotification,
   InitializeParams,
-  InitializeRequest,
   MessageConnection,
-  PublishDiagnosticsNotification,
   PublishDiagnosticsParams,
   ServerCapabilities,
   SignatureHelp,
   SignatureHelpParams,
-  SignatureHelpRequest,
   TextDocumentContentChangeEvent,
-  TextDocumentItem,
+  TextDocumentItem} from 'vscode-languageserver-protocol';
+import {
+  CompletionRequest,
+  DiagnosticSeverity,
+  DiagnosticTag,
+  DidChangeTextDocumentNotification,
+  DidCloseTextDocumentNotification,
+  DidOpenTextDocumentNotification,
+  HoverRequest,
+  InitializedNotification,
+  InitializeRequest,
+  PublishDiagnosticsNotification,
+  SignatureHelpRequest
 } from 'vscode-languageserver-protocol';
 
 /**

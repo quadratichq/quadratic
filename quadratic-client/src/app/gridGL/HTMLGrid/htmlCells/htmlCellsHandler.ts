@@ -1,9 +1,10 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
-import { JsCoordinate, JsHtmlOutput, JsRenderCodeCell } from '@/app/quadratic-core-types';
-import { Point, Rectangle } from 'pixi.js';
-import { HtmlCell } from './HtmlCell';
+import { HtmlCell } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCell';
+import type { JsCoordinate, JsHtmlOutput, JsRenderCodeCell } from '@/app/quadratic-core-types';
+import type { Point } from 'pixi.js';
+import { Rectangle } from 'pixi.js';
 
 class HTMLCellsHandler {
   // used to attach the html-cells to react

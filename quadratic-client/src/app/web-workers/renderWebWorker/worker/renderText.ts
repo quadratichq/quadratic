@@ -7,12 +7,12 @@
  */
 
 import { debugShowCellHashesInfo } from '@/app/debugFlags';
-import { JsOffset, JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import type { JsOffset, JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
 import init from '@/app/quadratic-rust-client/quadratic_rust_client';
-import { Rectangle } from 'pixi.js';
-import { RenderBitmapFonts } from '../renderBitmapFonts';
-import { CellsLabels } from './cellsLabel/CellsLabels';
-import { renderClient } from './renderClient';
+import type { RenderBitmapFonts } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
+import { CellsLabels } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsLabels';
+import { renderClient } from '@/app/web-workers/renderWebWorker/worker/renderClient';
+import type { Rectangle } from 'pixi.js';
 
 // We need Rust, Client, and Core to be initialized before we can start rendering
 interface RenderTextStatus {

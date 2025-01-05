@@ -5,23 +5,25 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { MULTIPLAYER_COLORS, MULTIPLAYER_COLORS_TINT } from '@/app/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { SheetPosTS } from '@/app/gridGL/types/size';
+import type { SheetPosTS } from '@/app/gridGL/types/size';
 import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
-import { LanguageState } from '@/app/web-workers/languageTypes';
-import { User, authClient, parseDomain } from '@/auth/auth';
-import { displayName } from '@/shared/utils/userUtil';
-import * as Sentry from '@sentry/react';
-import { v4 as uuid } from 'uuid';
-import updateAlertVersion from '../../../../../updateAlertVersion.json';
-import { quadraticCore } from '../quadraticCore/quadraticCore';
-import {
+import type { LanguageState } from '@/app/web-workers/languageTypes';
+import type {
   ClientMultiplayerMessage,
   MultiplayerClientMessage,
   MultiplayerClientUserUpdate,
   MultiplayerState,
-} from './multiplayerClientMessages';
-import { MultiplayerUser, ReceiveRoom } from './multiplayerTypes';
+} from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
+import type { MultiplayerUser, ReceiveRoom } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import type { User } from '@/auth/auth';
+import { authClient } from '@/auth/auth';
+import { parseDomain } from '@/auth/auth.helper';
+import { displayName } from '@/shared/utils/userUtil';
+import * as Sentry from '@sentry/react';
+import { v4 as uuid } from 'uuid';
+import updateAlertVersion from '../../../../../updateAlertVersion.json';
 
 export class Multiplayer {
   private worker?: Worker;

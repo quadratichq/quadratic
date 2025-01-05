@@ -1,5 +1,5 @@
 import { events } from '@/app/events/events';
-import {
+import type {
   CoreClientImportProgress,
   CoreClientTransactionProgress,
   CoreClientTransactionStart,

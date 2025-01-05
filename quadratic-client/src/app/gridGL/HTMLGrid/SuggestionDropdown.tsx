@@ -8,7 +8,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { validationRuleSimple } from '@/app/ui/menus/Validations/Validation/validationType';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { cn } from '@/shared/shadcn/utils';
-import { Rectangle } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
 import { useCallback, useEffect, useState } from 'react';
 
 export const SuggestionDropDown = () => {

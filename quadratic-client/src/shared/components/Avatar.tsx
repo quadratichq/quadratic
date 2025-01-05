@@ -1,5 +1,6 @@
 import { getAuth0AvatarSrc } from '@/app/helpers/links';
-import React, { ImgHTMLAttributes, forwardRef } from 'react';
+import type { ImgHTMLAttributes} from 'react';
+import React, { forwardRef } from 'react';
 
 interface AvatarProps extends ImgHTMLAttributes<HTMLImageElement> {
   size?: 'small' | 'medium' | 'large';

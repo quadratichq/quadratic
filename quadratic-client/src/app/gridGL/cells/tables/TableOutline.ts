@@ -1,7 +1,7 @@
 //! Draws a table outline, including the spill error boundaries.
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Table } from '@/app/gridGL/cells/tables/Table';
+import type { Table } from '@/app/gridGL/cells/tables/Table';
 import { generatedTextures } from '@/app/gridGL/generateTextures';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { colors } from '@/app/theme/colors';
@@ -20,6 +20,11 @@ export class TableOutline extends Graphics {
     this.table = table;
 
     sharedEvents.on('changeThemeAccentColor', this.update);
+  }
+
+  destroy() {
+    sharedEvents.off('changeThemeAccentColor', this.update);
+    super.destroy();
   }
 
   activate(active: boolean) {

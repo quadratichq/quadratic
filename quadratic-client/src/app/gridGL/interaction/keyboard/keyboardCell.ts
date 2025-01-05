@@ -1,10 +1,10 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
-import { CodeEditorState } from '@/app/atoms/codeEditorAtom';
+import type { CodeEditorState } from '@/app/atoms/codeEditorAtom';
 import { events } from '@/app/events/events';
 import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { SheetCursor } from '@/app/grid/sheet/SheetCursor';
+import type { SheetCursor } from '@/app/grid/sheet/SheetCursor';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { isAllowedFirstChar } from '@/app/gridGL/interaction/keyboard/keyboardCellChars';

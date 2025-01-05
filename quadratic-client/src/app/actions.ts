@@ -1,10 +1,12 @@
-import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { getActionFileDelete, getActionFileDuplicate } from '@/routes/api.files.$uuid';
-import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import type { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
-import { ApiTypes, FilePermission, FilePermissionSchema, TeamPermission } from 'quadratic-shared/typesAndSchemas';
-import { SubmitFunction } from 'react-router-dom';
-import { SetterOrUpdater } from 'recoil';
+import type { ApiTypes, FilePermission, TeamPermission } from 'quadratic-shared/typesAndSchemas';
+import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
+import type { SubmitFunction } from 'react-router-dom';
+import type { SetterOrUpdater } from 'recoil';
+
 const { FILE_EDIT, FILE_DELETE } = FilePermissionSchema.enum;
 
 type IsAvailableArgs = {

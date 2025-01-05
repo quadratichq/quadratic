@@ -1,12 +1,13 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Bounds } from '@/app/grid/sheet/Bounds';
-import { CellsTextHash } from '@/app/gridGL/cells/cellsLabel/CellsTextHash';
-import { JsValidationWarning } from '@/app/quadratic-core-types';
+import type { CellsTextHash } from '@/app/gridGL/cells/cellsLabel/CellsTextHash';
+import { TRIANGLE_SCALE } from '@/app/gridGL/cells/CellsMarkers';
+import type { ErrorMarker, ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
+import { generatedTextures } from '@/app/gridGL/generateTextures';
+import type { JsValidationWarning } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
-import { Container, Point, Rectangle, Sprite } from 'pixi.js';
-import { generatedTextures } from '../../generateTextures';
-import { TRIANGLE_SCALE } from '../CellsMarkers';
-import { ErrorMarker, ErrorValidation } from '../CellsSheet';
+import type { Point, Rectangle } from 'pixi.js';
+import { Container, Sprite } from 'pixi.js';
 
 export class CellsTextHashValidations extends Container {
   private cellsTextHash: CellsTextHash;

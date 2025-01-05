@@ -1,10 +1,10 @@
 import { AITool } from '@/app/ai/tools/aiTools';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
-import { SheetRect } from '@/app/quadratic-core-types';
+import type { SheetRect } from '@/app/quadratic-core-types';
 import { stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { AIToolArgs } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIToolArgs } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {

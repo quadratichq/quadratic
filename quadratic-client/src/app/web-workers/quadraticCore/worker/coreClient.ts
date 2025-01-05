@@ -7,7 +7,7 @@
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
-import {
+import type {
   JsBordersSheet,
   JsCodeCell,
   JsHtmlOutput,
@@ -22,14 +22,18 @@ import {
   TransactionName,
   Validation,
 } from '@/app/quadratic-core-types';
+import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
+import type {
+  ClientCoreGetJwt,
+  ClientCoreMessage,
+  CoreClientMessage,
+} from '@/app/web-workers/quadraticCore/coreClientMessages';
+import { core } from '@/app/web-workers/quadraticCore/worker/core';
 import { coreConnection } from '@/app/web-workers/quadraticCore/worker/coreConnection';
-import { MultiplayerState } from '../../multiplayerWebWorker/multiplayerClientMessages';
-import { ClientCoreGetJwt, ClientCoreMessage, CoreClientMessage } from '../coreClientMessages';
-import { core } from './core';
-import { coreJavascript } from './coreJavascript';
-import { coreMultiplayer } from './coreMultiplayer';
-import { corePython } from './corePython';
-import { offline } from './offline';
+import { coreJavascript } from '@/app/web-workers/quadraticCore/worker/coreJavascript';
+import { coreMultiplayer } from '@/app/web-workers/quadraticCore/worker/coreMultiplayer';
+import { corePython } from '@/app/web-workers/quadraticCore/worker/corePython';
+import { offline } from '@/app/web-workers/quadraticCore/worker/offline';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {

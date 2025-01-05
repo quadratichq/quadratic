@@ -8,7 +8,7 @@ import { debugShowFileIO, debugWebWorkersMessages } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import {
+import type {
   BorderSelection,
   BorderStyle,
   CellAlign,
@@ -33,7 +33,7 @@ import {
   SheetRect,
   Validation,
 } from '@/app/quadratic-core-types';
-import {
+import type {
   ClientCoreCellHasContent,
   ClientCoreGetCellFormatSummary,
   ClientCoreGetCodeCell,
@@ -71,7 +71,7 @@ import {
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { authClient } from '@/auth/auth';
-import { Rectangle } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
 
 class QuadraticCore {
   private worker?: Worker;

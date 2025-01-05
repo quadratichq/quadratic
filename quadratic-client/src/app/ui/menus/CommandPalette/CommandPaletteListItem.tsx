@@ -1,5 +1,5 @@
-import { GenericAction } from '@/app/actions';
-import { Action } from '@/app/actions/actions';
+import type { GenericAction } from '@/app/actions';
+import type { Action } from '@/app/actions/actions';
 import { CommandItem, CommandShortcut } from '@/shared/shadcn/ui/command';
 import fuzzysort from 'fuzzysort';
 import mixpanel from 'mixpanel-browser';

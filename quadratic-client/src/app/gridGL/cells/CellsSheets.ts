@@ -3,14 +3,15 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { SheetInfo } from '@/app/quadratic-core-types';
-import {
+import type { SheetInfo } from '@/app/quadratic-core-types';
+import type {
   RenderClientCellsTextHashClear,
   RenderClientFinalizeCellsTextHash,
   RenderClientLabelMeshEntry,
 } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { Container, Rectangle } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
+import { Container } from 'pixi.js';
 
 export class CellsSheets extends Container<CellsSheet> {
   current?: CellsSheet;

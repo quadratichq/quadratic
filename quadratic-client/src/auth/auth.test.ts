@@ -1,5 +1,5 @@
+import { parseDomain } from '@/auth/auth.helper';
 import { describe, expect, it } from 'vitest';
-import { parseDomain } from './auth';
 
 describe('auth', () => {
   it('parses domains', () => {

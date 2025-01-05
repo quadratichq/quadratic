@@ -7,7 +7,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { drawFiniteSelection, drawInfiniteSelection } from '@/app/gridGL/UI/drawCursor';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
-import { JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
+import type { JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { Container, Graphics, Rectangle, Sprite } from 'pixi.js';
 

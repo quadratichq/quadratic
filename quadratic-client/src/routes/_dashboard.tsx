@@ -13,14 +13,13 @@ import { Sheet, SheetContent, SheetTrigger } from '@/shared/shadcn/ui/sheet';
 import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
+import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router-dom';
 import {
   Link,
-  LoaderFunctionArgs,
   Outlet,
-  ShouldRevalidateFunctionArgs,
   isRouteErrorResponse,
   redirect,
   useLocation,

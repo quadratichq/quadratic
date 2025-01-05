@@ -1,5 +1,5 @@
 import { sheets } from '@/app/grid/controller/Sheets';
-import { RefRangeBounds } from '@/app/quadratic-core-types';
+import type { RefRangeBounds } from '@/app/quadratic-core-types';
 import { Rectangle } from 'pixi.js';
 
 // returns rectangle representing the range in col/row coordinates

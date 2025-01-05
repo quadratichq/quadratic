@@ -1,9 +1,13 @@
 import { events } from '@/app/events/events';
-import { LanguageState } from '@/app/web-workers/languageTypes';
+import type { LanguageState } from '@/app/web-workers/languageTypes';
+import type {
+  ClientPythonMessage,
+  PythonClientGetJwt,
+  PythonClientMessage,
+} from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { authClient } from '@/auth/auth';
 import mixpanel from 'mixpanel-browser';
-import { quadraticCore } from '../quadraticCore/quadraticCore';
-import { ClientPythonMessage, PythonClientGetJwt, PythonClientMessage } from './pythonClientMessages';
 
 class PythonWebWorker {
   state: LanguageState = 'loading';

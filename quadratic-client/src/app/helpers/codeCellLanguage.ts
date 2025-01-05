@@ -1,4 +1,4 @@
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 
 export type CodeCellType = 'Python' | 'Javascript' | 'Formula' | 'Connection' | 'Import';
 

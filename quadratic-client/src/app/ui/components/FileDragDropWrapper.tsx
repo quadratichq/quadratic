@@ -4,9 +4,10 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { isExcelMimeType } from '@/app/helpers/files';
-import { JsCoordinate } from '@/app/quadratic-core-types';
+import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
-import { DragEvent, PropsWithChildren, useCallback, useRef, useState } from 'react';
+import type { DragEvent, PropsWithChildren } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
 
 export const FileDragDropWrapper = (props: PropsWithChildren) => {

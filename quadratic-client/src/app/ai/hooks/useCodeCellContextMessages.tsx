@@ -1,9 +1,9 @@
-import { CodeCell } from '@/app/gridGL/types/codeCell';
+import type { CodeCell } from '@/app/gridGL/types/codeCell';
 import { getConnectionInfo, getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { connectionClient } from '@/shared/api/connectionClient';
-import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
 export function useCodeCellContextMessages() {

@@ -3,8 +3,8 @@ import { useSaveAndRunCell } from '@/app/ui/menus/CodeEditor/hooks/useSaveAndRun
 import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromState';
 import { Button } from '@/shared/shadcn/ui/button';
 import mixpanel from 'mixpanel-browser';
-import * as monaco from 'monaco-editor';
-import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import type * as monaco from 'monaco-editor';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { Link } from 'react-router-dom';
 
 /**

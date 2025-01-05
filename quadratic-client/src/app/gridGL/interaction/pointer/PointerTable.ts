@@ -3,12 +3,12 @@
 import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
+import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
 import { DOUBLE_CLICK_TIME } from '@/app/gridGL/interaction/pointer/pointerUtils';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { isMac } from '@/shared/utils/isMac';
-import { Point } from 'pixi.js';
+import type { Point } from 'pixi.js';
 
 // todo: dragging on double click
 

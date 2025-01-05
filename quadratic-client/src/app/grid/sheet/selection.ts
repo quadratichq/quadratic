@@ -1,4 +1,4 @@
-import { Rect } from '@/app/quadratic-core-types';
+import type { Rect } from '@/app/quadratic-core-types';
 import {
   newAllSelection,
   newRectSelection,

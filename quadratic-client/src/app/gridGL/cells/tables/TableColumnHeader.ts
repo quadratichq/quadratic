@@ -1,13 +1,14 @@
 //! Holds a column header within a table.
 
-import { Table } from '@/app/gridGL/cells/tables/Table';
-import { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
+import type { Table } from '@/app/gridGL/cells/tables/Table';
+import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
-import { DataTableSort } from '@/app/quadratic-core-types';
+import type { DataTableSort } from '@/app/quadratic-core-types';
 import { FONT_SIZE, OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
-import { BitmapText, Container, Graphics, Point, Rectangle, Sprite, Texture } from 'pixi.js';
+import type { Point } from 'pixi.js';
+import { BitmapText, Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
 
 const SORT_BACKGROUND_ALPHA = 0.1;
 const SORT_BUTTON_RADIUS = 7;

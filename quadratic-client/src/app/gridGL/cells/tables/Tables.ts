@@ -1,17 +1,19 @@
 //! Tables renders all pixi-based UI elements for tables. Right now that's the
 //! headings.
 
-import { ContextMenuOptions, ContextMenuType } from '@/app/atoms/contextMenuAtom';
+import type { ContextMenuOptions } from '@/app/atoms/contextMenuAtom';
+import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Sheet } from '@/app/grid/sheet/Sheet';
-import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
+import type { Sheet } from '@/app/grid/sheet/Sheet';
+import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { Table } from '@/app/gridGL/cells/tables/Table';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { JsCodeCell, JsCoordinate, JsHtmlOutput, JsRenderCodeCell } from '@/app/quadratic-core-types';
-import { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
-import { Container, Point, Rectangle } from 'pixi.js';
+import type { JsCodeCell, JsCoordinate, JsHtmlOutput, JsRenderCodeCell } from '@/app/quadratic-core-types';
+import type { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
+import type { Point, Rectangle } from 'pixi.js';
+import { Container } from 'pixi.js';
 
 export interface TablePointerDownResult {
   table: JsRenderCodeCell;

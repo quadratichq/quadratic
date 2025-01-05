@@ -7,7 +7,7 @@
 
 import { bigIntReplacer } from '@/app/bigint';
 import { debugWebWorkers } from '@/app/debugFlags';
-import {
+import type {
   BorderSelection,
   BorderStyle,
   CellAlign,
@@ -29,12 +29,13 @@ import {
   SheetPos,
   Validation,
 } from '@/app/quadratic-core-types';
-import initCore, { GridController, MinMax, Pos, Rect } from '@/app/quadratic-core/quadratic_core';
-import {
+import type { MinMax, Pos, Rect } from '@/app/quadratic-core/quadratic_core';
+import initCore, { GridController } from '@/app/quadratic-core/quadratic_core';
+import type {
   MultiplayerCoreReceiveTransaction,
   MultiplayerCoreReceiveTransactions,
 } from '@/app/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
-import {
+import type {
   ClientCoreFindNextColumnForRect,
   ClientCoreFindNextRowForRect,
   ClientCoreImportFile,

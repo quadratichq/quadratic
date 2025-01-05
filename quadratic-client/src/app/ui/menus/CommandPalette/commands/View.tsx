@@ -7,7 +7,8 @@ import {
 } from '@/app/atoms/gridSettingsAtom';
 import { zoomIn, zoomOut, zoomReset, zoomTo100, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
-import { CommandGroup, CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { ZoomInIcon, ZoomOutIcon } from '@/shared/components/Icons';
 import { Checkbox } from '@/shared/shadcn/ui/checkbox';
 import { useRecoilState } from 'recoil';

@@ -4,7 +4,8 @@ import { useKeyboard } from '@/app/gridGL/interaction/keyboard/useKeyboard';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { ImportProgress } from '@/app/ui/components/ImportProgress';
 import { Search } from '@/app/ui/components/Search';
-import { MouseEvent, useCallback, useState } from 'react';
+import type { MouseEvent} from 'react';
+import { useCallback, useState } from 'react';
 import { useRecoilCallback } from 'recoil';
 
 export default function QuadraticGrid() {

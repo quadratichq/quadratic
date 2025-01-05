@@ -1,10 +1,11 @@
 import { Action } from '@/app/actions/actions';
-import { ActionSpecRecord } from '@/app/actions/actionsSpec';
+import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import { SNIPPET_JS_API, SNIPPET_JS_CHART } from '@/app/ui/menus/CodeEditor/snippetsJS';
 import { SNIPPET_PY_API, SNIPPET_PY_CHART } from '@/app/ui/menus/CodeEditor/snippetsPY';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
   ArrowDropDownIcon,
   CheckBoxIcon,
@@ -12,7 +13,6 @@ import {
   FormatDateTimeIcon,
   SheetIcon,
 } from '@/shared/components/Icons';
-import { quadraticCore } from '../web-workers/quadraticCore/quadraticCore';
 
 type InsertActionSpec = Pick<
   ActionSpecRecord,

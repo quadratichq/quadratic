@@ -1,15 +1,16 @@
 //! Holds the column headers for a table
 
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Table } from '@/app/gridGL/cells/tables/Table';
+import type { Table } from '@/app/gridGL/cells/tables/Table';
 import { TableColumnHeader } from '@/app/gridGL/cells/tables/TableColumnHeader';
-import { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
+import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
-import { JsCoordinate, JsDataTableColumnHeader, SortDirection } from '@/app/quadratic-core-types';
+import type { JsCoordinate, JsDataTableColumnHeader, SortDirection } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { sharedEvents } from '@/shared/sharedEvents';
-import { Container, Graphics, Point, Rectangle } from 'pixi.js';
+import type { Point } from 'pixi.js';
+import { Container, Graphics, Rectangle } from 'pixi.js';
 
 // used to make the column header background a bit darker than the primary color
 export const COLUMN_HEADER_BACKGROUND_LUMINOSITY = 1.75;
@@ -29,6 +30,11 @@ export class TableColumnHeaders extends Container {
     this.columns = this.addChild(new Container<TableColumnHeader>());
 
     sharedEvents.on('changeThemeAccentColor', this.drawBackground);
+  }
+
+  destroy() {
+    sharedEvents.off('changeThemeAccentColor', this.drawBackground);
+    super.destroy();
   }
 
   drawBackground = () => {

@@ -1,5 +1,5 @@
 import { events } from '@/app/events/events';
-import { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
+import type { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
 import { convertColorStringToTint } from '@/app/helpers/convertColor';
 import { Container, Graphics } from 'pixi.js';
 

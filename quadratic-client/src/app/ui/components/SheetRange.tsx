@@ -1,9 +1,10 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { A1Selection } from '@/app/quadratic-core-types';
+import type { A1Selection } from '@/app/quadratic-core-types';
+import type {
+  JsSelection} from '@/app/quadratic-rust-client/quadratic_rust_client';
 import {
   A1SelectionToJsSelection,
-  JsSelection,
   stringToSelection,
 } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -12,7 +13,8 @@ import { Label } from '@/shared/shadcn/ui/label';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import HighlightAltIcon from '@mui/icons-material/HighlightAlt';
-import { FocusEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { FocusEvent} from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface Props {
   label?: string;

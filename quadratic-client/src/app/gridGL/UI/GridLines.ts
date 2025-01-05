@@ -3,12 +3,14 @@
 //! overflow (and in the future, merged cells). Grid lines also respect the
 //! sheet.clamp value.
 
-import { Graphics, ILineStyleOptions, Rectangle } from 'pixi.js';
-import { sheets } from '../../grid/controller/Sheets';
-import { colors } from '../../theme/colors';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
-import { calculateAlphaForGridLines } from './gridUtils';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { calculateAlphaForGridLines } from '@/app/gridGL/UI/gridUtils';
+import { colors } from '@/app/theme/colors';
+import { sharedEvents } from '@/shared/sharedEvents';
+import type { ILineStyleOptions, Rectangle } from 'pixi.js';
+import { Graphics } from 'pixi.js';
 
 interface GridLine {
   column?: number;
@@ -26,6 +28,20 @@ export class GridLines extends Graphics {
   // cache of lines used for snapping
   gridLinesX: GridLine[] = [];
   gridLinesY: GridLine[] = [];
+
+  constructor() {
+    super();
+    sharedEvents.on('gridLinesDirty', this.setDirty);
+  }
+
+  destroy() {
+    sharedEvents.off('gridLinesDirty', this.setDirty);
+    super.destroy();
+  }
+
+  setDirty = () => {
+    this.dirty = true;
+  };
 
   update(bounds = pixiApp.viewport.getVisibleBounds(), scale = pixiApp.viewport.scale.x, forceRefresh = false) {
     if (this.dirty || forceRefresh) {

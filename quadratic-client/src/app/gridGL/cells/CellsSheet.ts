@@ -1,15 +1,16 @@
 import { events } from '@/app/events/events';
 import { Borders } from '@/app/gridGL/cells/Borders';
+import { CellsFills } from '@/app/gridGL/cells/CellsFills';
+import type { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
+import { CellsImages } from '@/app/gridGL/cells/cellsImages/CellsImages';
+import { CellsLabels } from '@/app/gridGL/cells/cellsLabel/CellsLabels';
+import { CellsMarkers } from '@/app/gridGL/cells/CellsMarkers';
+import { CellsSearch } from '@/app/gridGL/cells/CellsSearch';
 import { Tables } from '@/app/gridGL/cells/tables/Tables';
-import { JsRenderCodeCell, JsValidationWarning } from '@/app/quadratic-core-types';
+import type { JsRenderCodeCell, JsValidationWarning } from '@/app/quadratic-core-types';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { Container, Rectangle, Sprite } from 'pixi.js';
-import { CellsFills } from './CellsFills';
-import { CellsImage } from './cellsImages/CellsImage';
-import { CellsImages } from './cellsImages/CellsImages';
-import { CellsLabels } from './cellsLabel/CellsLabels';
-import { CellsMarkers } from './CellsMarkers';
-import { CellsSearch } from './CellsSearch';
+import type { Rectangle, Sprite } from 'pixi.js';
+import { Container } from 'pixi.js';
 
 export interface ErrorMarker {
   triangle?: Sprite;

@@ -10,8 +10,8 @@ import { PointerTable } from '@/app/gridGL/interaction/pointer/PointerTable';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { Viewport } from 'pixi-viewport';
-import { InteractionEvent } from 'pixi.js';
+import type { Viewport } from 'pixi-viewport';
+import type { InteractionEvent } from 'pixi.js';
 
 export class Pointer {
   pointerHeading: PointerHeading;

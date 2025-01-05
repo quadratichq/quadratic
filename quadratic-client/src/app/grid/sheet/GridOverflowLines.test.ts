@@ -1,5 +1,5 @@
 import { GridOverflowLines } from '@/app/grid/sheet/GridOverflowLines';
-import { Sheet } from '@/app/grid/sheet/Sheet';
+import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { describe, expect, it } from 'vitest';
 
 // todo...

@@ -5,7 +5,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { TableSortEntry } from '@/app/gridGL/HTMLGrid/contextMenus/tableSort/TableSortEntry';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { DataTableSort, SortDirection } from '@/app/quadratic-core-types';
+import type { DataTableSort, SortDirection } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';

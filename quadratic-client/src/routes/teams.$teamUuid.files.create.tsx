@@ -5,7 +5,8 @@ import { ROUTES } from '@/shared/constants/routes';
 import { initMixpanelAnalytics } from '@/shared/utils/analytics';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
-import { ActionFunctionArgs, LoaderFunctionArgs, replace } from 'react-router-dom';
+import type { ActionFunctionArgs, LoaderFunctionArgs} from 'react-router-dom';
+import { replace } from 'react-router-dom';
 
 const getFailUrl = (path: string = '/') => {
   let params = new URLSearchParams();

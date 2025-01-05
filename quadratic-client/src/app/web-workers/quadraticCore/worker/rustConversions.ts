@@ -3,8 +3,8 @@
  */
 
 import { bigIntReplacer } from '@/app/bigint';
-import { RectangleLike } from '@/app/grid/sheet/SheetCursor';
-import { Pos, Rect, SheetPos, SheetRect } from '@/app/quadratic-core-types';
+import type { RectangleLike } from '@/app/grid/sheet/SheetCursor';
+import type { Pos, Rect, SheetPos, SheetRect } from '@/app/quadratic-core-types';
 import { Point, Rectangle } from 'pixi.js';
 
 export function rectangleToRect(rectangle: Rectangle | RectangleLike): Rect {

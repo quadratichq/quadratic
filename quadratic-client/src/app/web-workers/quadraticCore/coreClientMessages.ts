@@ -1,4 +1,4 @@
-import {
+import type {
   BorderSelection,
   BorderStyle,
   CellAlign,
@@ -30,10 +30,10 @@ import {
   TransactionName,
   Validation,
 } from '@/app/quadratic-core-types';
-import { Pos } from '@/app/quadratic-core/quadratic_core';
-import { CodeRun } from '@/app/web-workers/CodeRun';
-import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
-import { Rectangle } from 'pixi.js';
+import type { Pos } from '@/app/quadratic-core/quadratic_core';
+import type { CodeRun } from '@/app/web-workers/CodeRun';
+import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
+import type { Rectangle } from 'pixi.js';
 
 //#region Initialize
 

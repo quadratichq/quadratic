@@ -1,9 +1,9 @@
 //! Keeps track of which grid lines should not be drawn within the sheet because
 //! of overflow of text, images, and html tables..
 
-import { Sheet } from '@/app/grid/sheet/Sheet';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { JsCoordinate } from '@/app/quadratic-core-types';
+import type { Sheet } from '@/app/grid/sheet/Sheet';
+import type { JsCoordinate } from '@/app/quadratic-core-types';
+import { sharedEvents } from '@/shared/sharedEvents';
 import { Rectangle } from 'pixi.js';
 
 export class GridOverflowLines {
@@ -39,13 +39,12 @@ export class GridOverflowLines {
   updateImageHtml(column: number, row: number, width?: number, height?: number) {
     if (width === undefined || height === undefined) {
       this.overflowImageHtml.delete(`${column},${row}`);
-      pixiApp.gridLines.dirty = true;
-      return;
+    } else {
+      const start = this.sheet.offsets.getCellOffsets(column, row);
+      const end = this.sheet.getColumnRow(start.x + width, start.y + height);
+      this.overflowImageHtml.set(`${column},${row}`, new Rectangle(column, row, end.x - column, end.y - row));
     }
-    const start = this.sheet.offsets.getCellOffsets(column, row);
-    const end = this.sheet.getColumnRow(start.x + width, start.y + height);
-    this.overflowImageHtml.set(`${column},${row}`, new Rectangle(column, row, end.x - column, end.y - row));
-    pixiApp.gridLines.dirty = true;
+    sharedEvents.emit('gridLinesDirty');
   }
 
   // returns a list of ranges of y-values that need to be drawn (excluding the

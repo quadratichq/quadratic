@@ -4,8 +4,9 @@ import { apiClient } from '@/shared/api/apiClient';
 import { Button } from '@/shared/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { ActionFunctionArgs, Link, Outlet, redirectDocument, useRouteError } from 'react-router-dom';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { ActionFunctionArgs} from 'react-router-dom';
+import { Link, Outlet, redirectDocument, useRouteError } from 'react-router-dom';
 
 export type TeamAction = {
   'request.update-team': ReturnType<typeof getActionUpdateTeam>;

@@ -1,11 +1,13 @@
 import { Action } from '@/app/actions/actions';
+import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { bigIntReplacer } from '@/app/bigint';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { JsDataTableColumnHeader, JsRenderCodeCell, SheetRect } from '@/app/quadratic-core-types';
+import type { JsDataTableColumnHeader, JsRenderCodeCell, SheetRect } from '@/app/quadratic-core-types';
 import { newSingleSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
@@ -22,8 +24,6 @@ import {
   TableConvertIcon,
   TableIcon,
 } from '@/shared/components/Icons';
-import { sheets } from '../grid/controller/Sheets';
-import { ActionSpecRecord } from './actionsSpec';
 
 type DataTableSpec = Pick<
   ActionSpecRecord,

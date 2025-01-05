@@ -2,7 +2,7 @@ import { editorInteractionStateShowGoToMenuAtom } from '@/app/atoms/editorIntera
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { A1Error } from '@/app/quadratic-core-types';
+import type { A1Error } from '@/app/quadratic-core-types';
 import { getTableNames, stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import '@/app/ui/styles/floating-dialog.css';
 import { ArrowDropDownIcon, GoToIcon } from '@/shared/components/Icons';

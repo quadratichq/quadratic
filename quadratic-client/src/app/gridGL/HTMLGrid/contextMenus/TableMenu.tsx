@@ -5,7 +5,7 @@ import { ContextMenuItem, ContextMenuItemAction } from '@/app/gridGL/HTMLGrid/co
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
-import { JsRenderCodeCell } from '@/app/quadratic-core-types';
+import type { JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { EditIcon } from '@/shared/components/Icons';
 import { DropdownMenuItem, DropdownMenuSeparator } from '@/shared/shadcn/ui/dropdown-menu';
 import { useMemo } from 'react';

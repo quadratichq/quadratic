@@ -25,7 +25,7 @@ import {
 import { Button } from '@/shared/shadcn/ui/button';
 import { ApiOutlined, BarChartOutlined, IntegrationInstructionsOutlined } from '@mui/icons-material';
 import mixpanel from 'mixpanel-browser';
-import * as monaco from 'monaco-editor';
+import type * as monaco from 'monaco-editor';
 import { useCallback, useMemo } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 

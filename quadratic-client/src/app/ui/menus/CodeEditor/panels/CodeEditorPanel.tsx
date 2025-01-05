@@ -7,7 +7,7 @@ import { useConnectionSchemaBrowserTableQueryActionInsertQuery } from '@/dashboa
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import * as monaco from 'monaco-editor';
+import type * as monaco from 'monaco-editor';
 import { memo, useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 

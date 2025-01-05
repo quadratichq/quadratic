@@ -7,7 +7,8 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { ContextMenuBase } from '@/app/gridGL/HTMLGrid/contextMenus/ContextMenuBase';
 import { ContextMenuItem, ContextMenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/ContextMenuItem';
 import { TableMenu } from '@/app/gridGL/HTMLGrid/contextMenus/TableMenu';
-import { JsRenderCodeCell } from '@/app/quadratic-core-types';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import type { JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { TableIcon } from '@/shared/components/Icons';
 import {
   DropdownMenuSeparator,
@@ -16,7 +17,6 @@ import {
   DropdownMenuSubTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { useEffect, useState } from 'react';
-import { pixiApp } from '../../pixiApp/PixiApp';
 
 export const GridContextMenu = () => {
   const [columnRowAvailable, setColumnRowAvailable] = useState(false);

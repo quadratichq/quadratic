@@ -1,16 +1,14 @@
-import { IRange, Position, editor, languages } from 'monaco-editor';
-// import { createConverter as createProtocolConverter } from 'vscode-languageclient/lib/common/protocolConverter';
-import {
+import { pyrightWorker, uri } from '@/app/web-workers/pythonLanguageServer/worker';
+import type { IRange, Position, editor } from 'monaco-editor';
+import { languages } from 'monaco-editor';
+import type {
   CompletionItem,
-  CompletionItemKind,
   CompletionParams,
-  CompletionTriggerKind,
-  InsertReplaceEdit,
   MarkupContent,
   Range,
   TextDocumentContentChangeEvent,
 } from 'vscode-languageserver-protocol';
-import { pyrightWorker, uri } from '../../../web-workers/pythonLanguageServer/worker';
+import { CompletionItemKind, CompletionTriggerKind, InsertReplaceEdit } from 'vscode-languageserver-protocol';
 
 export async function provideCompletionItems(
   model: editor.ITextModel,

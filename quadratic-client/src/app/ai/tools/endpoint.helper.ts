@@ -1,5 +1,5 @@
 import { AI } from '@/shared/constants/routes';
-import { AIModel } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIModel } from 'quadratic-shared/typesAndSchemasAI';
 import { isAnthropicBedrockModel, isAnthropicModel, isBedrockModel, isOpenAIModel } from './model.helper';
 
 export function getAIProviderEndpoint(model: AIModel, stream: boolean): string {

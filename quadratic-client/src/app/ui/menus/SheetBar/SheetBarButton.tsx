@@ -1,4 +1,5 @@
-import { Button, ButtonProps } from '@/shared/shadcn/ui/button';
+import type { ButtonProps } from '@/shared/shadcn/ui/button';
+import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 
 interface Props extends ButtonProps {

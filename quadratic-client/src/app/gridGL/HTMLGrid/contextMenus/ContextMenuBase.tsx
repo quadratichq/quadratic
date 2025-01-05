@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { contextMenuAtom, ContextMenuState, ContextMenuType } from '@/app/atoms/contextMenuAtom';
+import type { ContextMenuState, ContextMenuType } from '@/app/atoms/contextMenuAtom';
+import { contextMenuAtom } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { focusGrid } from '@/app/helpers/focusGrid';

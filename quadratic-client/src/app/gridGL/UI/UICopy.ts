@@ -5,7 +5,7 @@ import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { drawDashedRectangleMarching } from '@/app/gridGL/UI/cellHighlights/cellHighlightsDraw';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
-import { RefRangeBounds } from '@/app/quadratic-core-types';
+import type { RefRangeBounds } from '@/app/quadratic-core-types';
 import { Graphics } from 'pixi.js';
 
 const MARCH_TIME = 80;

@@ -16,17 +16,11 @@ import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import {
-  Link,
-  LoaderFunctionArgs,
-  Outlet,
-  isRouteErrorResponse,
-  redirect,
-  useLoaderData,
-  useRouteError,
-} from 'react-router-dom';
-import { MutableSnapshot, RecoilRoot } from 'recoil';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { LoaderFunctionArgs } from 'react-router-dom';
+import { Link, Outlet, isRouteErrorResponse, redirect, useLoaderData, useRouteError } from 'react-router-dom';
+import type { MutableSnapshot } from 'recoil';
+import { RecoilRoot } from 'recoil';
 import { Empty } from '../dashboard/components/Empty';
 
 type FileData = ApiTypes['/v0/files/:uuid.GET.response'];

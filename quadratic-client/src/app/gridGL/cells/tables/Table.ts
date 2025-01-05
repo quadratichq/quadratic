@@ -1,17 +1,18 @@
 //! A table in the grid.
 
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Sheet } from '@/app/grid/sheet/Sheet';
+import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { TableColumnHeaders } from '@/app/gridGL/cells/tables/TableColumnHeaders';
 import { TableColumnHeadersGridLines } from '@/app/gridGL/cells/tables/TableColumnHeadersGridLines';
 import { TableName } from '@/app/gridGL/cells/tables/TableName';
 import { TableOutline } from '@/app/gridGL/cells/tables/TableOutline';
-import { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
+import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { JsCoordinate, JsRenderCodeCell } from '@/app/quadratic-core-types';
-import { Container, Point, Rectangle } from 'pixi.js';
+import type { JsCoordinate, JsRenderCodeCell } from '@/app/quadratic-core-types';
+import type { Point } from 'pixi.js';
+import { Container, Rectangle } from 'pixi.js';
 
 export class Table extends Container {
   private outline: TableOutline;

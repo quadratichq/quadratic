@@ -1,8 +1,9 @@
 import { sheets } from '@/app/grid/controller/Sheets';
-import { ValidationRule } from '@/app/quadratic-core-types';
-import { JsSelection, newSingleSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { ValidationRule } from '@/app/quadratic-core-types';
+import type { JsSelection} from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { newSingleSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { SheetRange } from '@/app/ui/components/SheetRange';
-import { ValidationData } from '@/app/ui/menus/Validations/Validation/useValidationData';
+import type { ValidationData } from '@/app/ui/menus/Validations/Validation/useValidationData';
 import { ValidationInput } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationInput';
 import {
   ValidationMoreOptions,

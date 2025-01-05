@@ -3,13 +3,13 @@ import { getRectSelection } from '@/app/grid/sheet/selection';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { A1Selection, JsOffset, Rect, SheetInfo } from '@/app/quadratic-core-types';
-import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { A1Selection, JsOffset, Rect, SheetInfo } from '@/app/quadratic-core-types';
+import type { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
-import { Rectangle } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
 
-class Sheets {
+export class Sheets {
   initialized: boolean;
   sheets: Sheet[];
 
@@ -43,7 +43,7 @@ class Sheets {
   private create = (sheetInfo: SheetInfo[]) => {
     this.sheets = [];
     sheetInfo.forEach((info) => {
-      const sheet = new Sheet(info);
+      const sheet = new Sheet(this, info);
       this.sheets.push(sheet);
     });
     this.sort();
@@ -53,7 +53,7 @@ class Sheets {
   };
 
   private addSheet = (sheetInfo: SheetInfo, user: boolean) => {
-    const sheet = new Sheet(sheetInfo);
+    const sheet = new Sheet(this, sheetInfo);
     this.sheets.push(sheet);
     this.sort();
     if (user) {
@@ -148,6 +148,7 @@ class Sheets {
     if (!sheet) {
       // these lines remove some console errors during hmr loading.
       const sheet = new Sheet(
+        this,
         {
           sheet_id: 'error',
           name: 'Error',

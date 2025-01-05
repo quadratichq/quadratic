@@ -1,6 +1,6 @@
 import { events } from '@/app/events/events';
-import { JsRenderCodeCell } from '@/app/quadratic-core-types';
-import { Point } from 'pixi.js';
+import type { JsRenderCodeCell } from '@/app/quadratic-core-types';
+import type { Point } from 'pixi.js';
 import { atom } from 'recoil';
 
 export enum ContextMenuType {

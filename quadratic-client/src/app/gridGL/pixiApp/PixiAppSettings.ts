@@ -1,25 +1,32 @@
-import { AIAnalystState, defaultAIAnalystState } from '@/app/atoms/aiAnalystAtom';
-import { CodeEditorState, defaultCodeEditorState } from '@/app/atoms/codeEditorAtom';
-import {
+import type { AIAnalystState} from '@/app/atoms/aiAnalystAtom';
+import { defaultAIAnalystState } from '@/app/atoms/aiAnalystAtom';
+import type { CodeEditorState} from '@/app/atoms/codeEditorAtom';
+import { defaultCodeEditorState } from '@/app/atoms/codeEditorAtom';
+import type {
   ContextMenuOptions,
-  ContextMenuState,
+  ContextMenuState} from '@/app/atoms/contextMenuAtom';
+import {
   ContextMenuType,
   defaultContextMenuState,
 } from '@/app/atoms/contextMenuAtom';
-import { defaultEditorInteractionState, EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
-import { defaultGridPanMode, GridPanMode, PanMode } from '@/app/atoms/gridPanModeAtom';
-import { defaultGridSettings, GridSettings } from '@/app/atoms/gridSettingsAtom';
-import { defaultInlineEditor, InlineEditorState } from '@/app/atoms/inlineEditorAtom';
+import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import { defaultEditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import type { GridPanMode} from '@/app/atoms/gridPanModeAtom';
+import { defaultGridPanMode, PanMode } from '@/app/atoms/gridPanModeAtom';
+import type { GridSettings } from '@/app/atoms/gridSettingsAtom';
+import { defaultGridSettings } from '@/app/atoms/gridSettingsAtom';
+import type { InlineEditorState } from '@/app/atoms/inlineEditorAtom';
+import { defaultInlineEditor } from '@/app/atoms/inlineEditorAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
+import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { SubmitAIAnalystPromptArgs } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
+import type { SubmitAIAnalystPromptArgs } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { GlobalSnackbar, SnackbarOptions } from '@/shared/components/GlobalSnackbarProvider';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { SetterOrUpdater } from 'recoil';
+import type { GlobalSnackbar, SnackbarOptions } from '@/shared/components/GlobalSnackbarProvider';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { SetterOrUpdater } from 'recoil';
 
 interface Input {
   show: boolean;

@@ -3,8 +3,8 @@ import { intersects } from '@/app/gridGL/helpers/intersects';
 import { getRangeScreenRectangleFromCellRefRange } from '@/app/gridGL/helpers/selection';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { CURSOR_THICKNESS, FILL_ALPHA } from '@/app/gridGL/UI/Cursor';
-import { RefRangeBounds } from '@/app/quadratic-core-types';
-import { Graphics } from 'pixi.js';
+import type { RefRangeBounds } from '@/app/quadratic-core-types';
+import type { Graphics } from 'pixi.js';
 
 export function drawDashedRectangle(options: {
   g: Graphics;

@@ -1,8 +1,9 @@
-import { CodeCellLanguage, JsRenderCodeCell } from '@/app/quadratic-core-types';
-import { Container, Point, Rectangle, Sprite, Texture } from 'pixi.js';
-import { colors } from '../../theme/colors';
-import { generatedTextures } from '../generateTextures';
-import { ErrorMarker } from './CellsSheet';
+import type { ErrorMarker } from '@/app/gridGL/cells/CellsSheet';
+import { generatedTextures } from '@/app/gridGL/generateTextures';
+import type { CodeCellLanguage, JsRenderCodeCell } from '@/app/quadratic-core-types';
+import { colors } from '@/app/theme/colors';
+import type { Point } from 'pixi.js';
+import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
 
 // const INDICATOR_SIZE = 4;
 export const TRIANGLE_SCALE = 0.1;

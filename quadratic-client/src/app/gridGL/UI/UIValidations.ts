@@ -6,16 +6,19 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { drawCheckbox, drawDropdown, SpecialSprite } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
+import type { SpecialSprite } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
+import { drawCheckbox, drawDropdown } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { getRangeRectangleFromCellRefRange } from '@/app/gridGL/helpers/selection';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { RefRangeBounds } from '@/app/quadratic-core-types';
+import type { RefRangeBounds } from '@/app/quadratic-core-types';
 import { A1SelectionToJsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import { ValidationUIType, validationUIType } from '@/app/ui/menus/Validations/Validation/validationType';
+import type { ValidationUIType} from '@/app/ui/menus/Validations/Validation/validationType';
+import { validationUIType } from '@/app/ui/menus/Validations/Validation/validationType';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { Container, Point } from 'pixi.js';
+import type { Point } from 'pixi.js';
+import { Container } from 'pixi.js';
 
 const MINIMUM_SCALE_TO_SHOW_VALIDATIONS = 0.25;
 const FADE_SCALE = 0.1;

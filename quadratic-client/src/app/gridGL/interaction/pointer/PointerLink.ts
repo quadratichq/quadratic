@@ -3,11 +3,12 @@ import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Link } from '@/app/gridGL/types/links';
+import type { Link } from '@/app/gridGL/types/links';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
 import { openLink } from '@/app/helpers/links';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { Point, Rectangle } from 'pixi.js';
+import type { Point} from 'pixi.js';
+import { Rectangle } from 'pixi.js';
 
 const HOVER_DELAY = 500;
 

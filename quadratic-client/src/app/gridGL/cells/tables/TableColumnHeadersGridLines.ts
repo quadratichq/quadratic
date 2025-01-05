@@ -1,6 +1,6 @@
 //! Draws the grid lines for column headers when they are sticky.
 
-import { Table } from '@/app/gridGL/cells/tables/Table';
+import type { Table } from '@/app/gridGL/cells/tables/Table';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
@@ -15,6 +15,11 @@ export class TableColumnHeadersGridLines extends Graphics {
     this.table = table;
 
     sharedEvents.on('changeThemeAccentColor', this.update);
+  }
+
+  destroy() {
+    sharedEvents.off('changeThemeAccentColor', this.update);
+    super.destroy();
   }
 
   update = () => {

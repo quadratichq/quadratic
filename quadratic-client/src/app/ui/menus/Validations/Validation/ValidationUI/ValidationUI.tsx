@@ -1,11 +1,12 @@
+import type { ValidationData } from '@/app/ui/menus/Validations/Validation/useValidationData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Checkbox } from '@/shared/shadcn/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/shadcn/ui/select';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Close } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
-import { FocusEvent, useCallback, useEffect, useRef } from 'react';
-import { ValidationData } from '../useValidationData';
+import type { FocusEvent } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 interface CheckboxProps {
   className?: string;
