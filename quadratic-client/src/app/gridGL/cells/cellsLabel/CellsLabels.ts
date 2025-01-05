@@ -22,7 +22,7 @@ import type {
 } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
-import type { Point} from 'pixi.js';
+import type { Point } from 'pixi.js';
 import { Container, Graphics, Rectangle } from 'pixi.js';
 
 export class CellsLabels extends Container {

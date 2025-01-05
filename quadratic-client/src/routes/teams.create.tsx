@@ -18,7 +18,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { TeamSchema } from 'quadratic-shared/typesAndSchemas';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import type { ActionFunctionArgs} from 'react-router-dom';
+import type { ActionFunctionArgs } from 'react-router-dom';
 import { redirect, useFetcher, useLocation, useNavigate, useParams } from 'react-router-dom';
 import z from 'zod';
 type ActionData = {

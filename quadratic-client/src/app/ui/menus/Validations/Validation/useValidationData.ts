@@ -10,15 +10,10 @@ import { bigIntReplacer } from '@/app/bigint';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { Validation, ValidationRule } from '@/app/quadratic-core-types';
 import type { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import type {
-  ValidationRuleSimple,
-  ValidationUndefined} from '@/app/ui/menus/Validations/Validation/validationType';
-import {
-  validationRuleSimple,
-  ValidationRuleSimpleValues
-} from '@/app/ui/menus/Validations/Validation/validationType';
+import type { ValidationRuleSimple, ValidationUndefined } from '@/app/ui/menus/Validations/Validation/validationType';
+import { validationRuleSimple, ValidationRuleSimpleValues } from '@/app/ui/menus/Validations/Validation/validationType';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import type { Dispatch, SetStateAction} from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { v4 } from 'uuid';

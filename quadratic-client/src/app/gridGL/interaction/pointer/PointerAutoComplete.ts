@@ -7,7 +7,7 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import type { Point} from 'pixi.js';
+import type { Point } from 'pixi.js';
 import { Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 

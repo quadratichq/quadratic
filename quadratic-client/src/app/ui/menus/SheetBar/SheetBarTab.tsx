@@ -12,7 +12,7 @@ import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer'
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { cn } from '@/shared/shadcn/utils';
 import { Box, Fade, Paper, Popper, Stack, Typography, useTheme } from '@mui/material';
-import type { PointerEvent} from 'react';
+import type { PointerEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';

@@ -32,7 +32,7 @@ import {
 import * as Tabs from '@radix-ui/react-tabs';
 import mixpanel from 'mixpanel-browser';
 import { UserTeamRoleSchema } from 'quadratic-shared/typesAndSchemas';
-import type { FormEvent} from 'react';
+import type { FormEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSubmit } from 'react-router-dom';
 import { z } from 'zod';

@@ -5,10 +5,9 @@ import {
 } from '@/app/atoms/editorInteractionStateAtom';
 import type {
   CommandGroup,
-  CommandPaletteListItemDynamicProps} from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
-import {
-  CommandPaletteListItem
+  CommandPaletteListItemDynamicProps,
 } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { DatabaseIcon } from '@/shared/components/Icons';
 import { useSetRecoilState } from 'recoil';
 

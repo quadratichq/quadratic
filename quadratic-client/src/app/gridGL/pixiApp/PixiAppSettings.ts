@@ -1,17 +1,12 @@
-import type { AIAnalystState} from '@/app/atoms/aiAnalystAtom';
+import type { AIAnalystState } from '@/app/atoms/aiAnalystAtom';
 import { defaultAIAnalystState } from '@/app/atoms/aiAnalystAtom';
-import type { CodeEditorState} from '@/app/atoms/codeEditorAtom';
+import type { CodeEditorState } from '@/app/atoms/codeEditorAtom';
 import { defaultCodeEditorState } from '@/app/atoms/codeEditorAtom';
-import type {
-  ContextMenuOptions,
-  ContextMenuState} from '@/app/atoms/contextMenuAtom';
-import {
-  ContextMenuType,
-  defaultContextMenuState,
-} from '@/app/atoms/contextMenuAtom';
+import type { ContextMenuOptions, ContextMenuState } from '@/app/atoms/contextMenuAtom';
+import { ContextMenuType, defaultContextMenuState } from '@/app/atoms/contextMenuAtom';
 import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { defaultEditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
-import type { GridPanMode} from '@/app/atoms/gridPanModeAtom';
+import type { GridPanMode } from '@/app/atoms/gridPanModeAtom';
 import { defaultGridPanMode, PanMode } from '@/app/atoms/gridPanModeAtom';
 import type { GridSettings } from '@/app/atoms/gridSettingsAtom';
 import { defaultGridSettings } from '@/app/atoms/gridSettingsAtom';

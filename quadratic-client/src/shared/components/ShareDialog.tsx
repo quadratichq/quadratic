@@ -34,15 +34,12 @@ import type {
   PublicLinkAccess,
   TeamPermission,
   UserFileRole,
-  UserTeamRole} from 'quadratic-shared/typesAndSchemas';
-import {
-  UserFileRoleSchema,
-  UserTeamRoleSchema,
-  emailSchema,
+  UserTeamRole,
 } from 'quadratic-shared/typesAndSchemas';
-import type { FormEvent, ReactNode} from 'react';
+import { UserFileRoleSchema, UserTeamRoleSchema, emailSchema } from 'quadratic-shared/typesAndSchemas';
+import type { FormEvent, ReactNode } from 'react';
 import React, { Children, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { FetcherSubmitFunction} from 'react-router-dom';
+import type { FetcherSubmitFunction } from 'react-router-dom';
 import { useFetcher, useFetchers, useSubmit } from 'react-router-dom';
 
 function getRoleLabel(role: UserTeamRole | UserFileRole) {

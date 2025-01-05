@@ -1,7 +1,7 @@
 import { debugGridSettings } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import type { AtomEffect} from 'recoil';
+import type { AtomEffect } from 'recoil';
 import { DefaultValue, atom, selector } from 'recoil';
 
 const SETTINGS_KEY = 'viewSettings';

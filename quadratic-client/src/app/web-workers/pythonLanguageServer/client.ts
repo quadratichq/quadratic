@@ -13,7 +13,8 @@ import type {
   SignatureHelp,
   SignatureHelpParams,
   TextDocumentContentChangeEvent,
-  TextDocumentItem} from 'vscode-languageserver-protocol';
+  TextDocumentItem,
+} from 'vscode-languageserver-protocol';
 import {
   CompletionRequest,
   DiagnosticSeverity,
@@ -25,7 +26,7 @@ import {
   InitializedNotification,
   InitializeRequest,
   PublishDiagnosticsNotification,
-  SignatureHelpRequest
+  SignatureHelpRequest,
 } from 'vscode-languageserver-protocol';
 
 /**

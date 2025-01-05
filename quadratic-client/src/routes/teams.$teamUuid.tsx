@@ -5,7 +5,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import type { ActionFunctionArgs} from 'react-router-dom';
+import type { ActionFunctionArgs } from 'react-router-dom';
 import { Link, Outlet, redirectDocument, useRouteError } from 'react-router-dom';
 
 export type TeamAction = {

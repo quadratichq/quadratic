@@ -4,7 +4,7 @@ import { focusGrid } from '@/app/helpers/focusGrid';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
 import type { Rectangle } from 'pixi.js';
-import type { KeyboardEvent} from 'react';
+import type { KeyboardEvent } from 'react';
 import { useCallback, useEffect, useRef } from 'react';
 
 interface Props {

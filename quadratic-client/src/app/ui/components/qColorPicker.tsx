@@ -1,4 +1,4 @@
-import type { ColorChangeHandler} from 'react-color';
+import type { ColorChangeHandler } from 'react-color';
 import { CompactPicker } from 'react-color';
 import './qColorPicker.scss';
 

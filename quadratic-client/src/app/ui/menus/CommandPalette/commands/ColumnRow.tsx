@@ -1,7 +1,7 @@
 import { resizeColumnAction } from '@/app/actions';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import type { CommandGroup} from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 
 const columnRowCommandGroup: CommandGroup = {

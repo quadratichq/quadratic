@@ -22,7 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popo
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import mixpanel from 'mixpanel-browser';
 import type * as monaco from 'monaco-editor';
-import type { ReactNode} from 'react';
+import type { ReactNode } from 'react';
 import { useEffect, useMemo } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 

@@ -43,7 +43,7 @@
     "@sentry/node": "^7.50.0",
     "@sentry/tracing": "^7.50.0",
     "@types/express": "^4.17.14",
-    "@types/node": "^18.11.9",
+    "@types/node": "^18.19",
     "@types/supertest": "^2.0.12",
     "auth0": "^3.6.1",
     "axios": "^1.7.4",

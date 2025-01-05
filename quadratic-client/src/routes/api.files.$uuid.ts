@@ -1,7 +1,7 @@
 import { aiAnalystOfflineChats } from '@/app/ai/offline/aiAnalystChats';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
-import type { ActionFunctionArgs} from 'react-router-dom';
+import type { ActionFunctionArgs } from 'react-router-dom';
 import { redirectDocument } from 'react-router-dom';
 
 export const loader = async () => null;

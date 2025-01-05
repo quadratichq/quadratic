@@ -17,7 +17,7 @@ import { SnippetsPopover } from '@/app/ui/menus/CodeEditor/SnippetsPopover';
 import { useCancelRun } from '@/app/ui/menus/CodeEditor/hooks/useCancelRun';
 import { useCloseCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useCloseCodeEditor';
 import { useSaveAndRunCell } from '@/app/ui/menus/CodeEditor/hooks/useSaveAndRunCell';
-import type { PanelPosition} from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
+import type { PanelPosition } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
@@ -35,7 +35,7 @@ import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { CircularProgress } from '@mui/material';
 import type * as monaco from 'monaco-editor';
-import type { MouseEvent} from 'react';
+import type { MouseEvent } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 

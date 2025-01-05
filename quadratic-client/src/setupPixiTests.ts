@@ -1,4 +1,4 @@
-import type { ImageResource} from 'pixi.js';
+import type { ImageResource } from 'pixi.js';
 import { settings } from 'pixi.js';
 
 const getContext = () => {

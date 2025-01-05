@@ -3,7 +3,7 @@ import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { adjustPercentages } from '@/app/ui/menus/CodeEditor/panels/adjustPercentages';
 import type { SetValue } from '@/shared/hooks/useLocalStorage';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
-import type { Dispatch, SetStateAction} from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 

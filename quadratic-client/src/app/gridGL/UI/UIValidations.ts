@@ -14,7 +14,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { RefRangeBounds } from '@/app/quadratic-core-types';
 import { A1SelectionToJsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import type { ValidationUIType} from '@/app/ui/menus/Validations/Validation/validationType';
+import type { ValidationUIType } from '@/app/ui/menus/Validations/Validation/validationType';
 import { validationUIType } from '@/app/ui/menus/Validations/Validation/validationType';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { Point } from 'pixi.js';

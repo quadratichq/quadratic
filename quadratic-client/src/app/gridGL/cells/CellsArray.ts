@@ -2,7 +2,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
-import type { BorderCull} from '@/app/gridGL/cells/drawBorders';
+import type { BorderCull } from '@/app/gridGL/cells/drawBorders';
 import { borderLineWidth, drawBorder, drawLine } from '@/app/gridGL/cells/drawBorders';
 import { generatedTextures } from '@/app/gridGL/generateTextures';
 import { intersects } from '@/app/gridGL/helpers/intersects';
