@@ -349,7 +349,7 @@ jobs:
               exit 1
             fi
             
-            echo "Waiting for deployment to complete... (Attempt $((ATTEMPTS + 1))/$MAX_WAIT_ATTEMPTS)"
+            echo "Waiting for deployment to complete... (Attempt $((ATTEMPTS + 1))/${{ env.MAX_ATTEMPTS }})"
             sleep 30
             ATTEMPTS=$((ATTEMPTS + 1))
           done
