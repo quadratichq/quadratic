@@ -50,7 +50,7 @@ export class PointerTable {
     });
   }
 
-  private pointerDownColumnName(world: Point, tableDown: TablePointerDownResult) {
+  private pointerDownColumnName(world: Point, tableDown: TablePointerDownResult, append: boolean) {
     if (tableDown.column === undefined) {
       throw new Error('Expected column to be defined in pointerTable');
     }
@@ -66,9 +66,9 @@ export class PointerTable {
       });
     } else {
       // move cursor to column header
-      sheets.sheet.cursor.moveTo(tableDown.table.x + tableDown.column, tableDown.table.y);
-
-      // select entire column?
+      console.log(tableDown);
+      const columnName = tableDown.table.columns[tableDown.column].name;
+      sheets.sheet.cursor.selectTable(tableDown.table.name, columnName, append);
 
       this.doubleClickTimeout = window.setTimeout(() => {
         this.doubleClickTimeout = undefined;
@@ -115,7 +115,7 @@ export class PointerTable {
     } else if (tableDown.type === 'sort') {
       // tables doesn't have to do anything with sort; it's handled in TableColumnHeader
     } else if (tableDown.type === 'column-name') {
-      this.pointerDownColumnName(world, tableDown);
+      this.pointerDownColumnName(world, tableDown, event.shiftKey);
     }
     return true;
   }

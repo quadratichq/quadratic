@@ -2,6 +2,7 @@
 //! that state as you switch between sheets, a multiplayer user follows your
 //! cursor, or you save the cursor state in the URL at ?state=.
 
+import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -311,8 +312,10 @@ export class SheetCursor {
     }
   };
 
-  selectTable = (table: string, column: string | undefined, append: boolean) => {
-    this.jsSelection.selectTable(table, column, append, this.sheet.sheets.a1Context);
+  selectTable = (tableName: string, column: string | undefined, append: boolean) => {
+    const bounds = pixiApp.viewport.getVisibleBounds();
+    const top = sheets.sheet.offsets.getRowFromScreen(bounds.top);
+    this.jsSelection.selectTable(tableName, column, append, this.sheet.sheets.a1Context, top);
     this.updatePosition(true);
   };
 

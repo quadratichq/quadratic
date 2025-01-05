@@ -15,18 +15,22 @@ pub struct TableMapEntry {
 }
 
 impl TableMapEntry {
-    /// Tries to get the column for the given column name. Returns None if the
-    /// range is not visible or no longer exists.
+    /// Tries to get the visible_columns index for the given column name.
+    /// Returns None if the range is not visible or no longer exists.
+    ///
+    /// Note: the index does not include the table's column offset.
     pub fn try_col_index(&self, col: &str) -> Option<i64> {
         let index = self
             .visible_columns
             .iter()
             .position(|c| c.to_lowercase() == col.to_lowercase())?;
-        Some(self.bounds.min.x + index as i64)
+        Some(index as i64)
     }
 
     /// Returns the col_index if visible, otherwise returns the closest visible
     /// column index either after or before the hidden one. Returns None if there are none.
+    ///
+    /// Note: the index does not include the table's column offset.
     pub fn try_col_closest(&self, col: &str, after: bool) -> Option<i64> {
         if let Some(index) = self.try_col_index(col) {
             // If the column is visible, return its index
@@ -47,13 +51,13 @@ impl TableMapEntry {
                         .iter()
                         .position(|c| c.to_lowercase() == col.to_lowercase())
                     {
-                        return Some(self.bounds.min.x + vis_pos as i64);
+                        return Some(vis_pos as i64);
                     }
                 }
 
                 // If no visible columns after, return last visible column
                 if !self.visible_columns.is_empty() {
-                    Some(self.bounds.min.x + (self.visible_columns.len() - 1) as i64)
+                    Some((self.visible_columns.len() - 1) as i64)
                 } else {
                     None
                 }
@@ -66,13 +70,13 @@ impl TableMapEntry {
                         .iter()
                         .position(|c| c.to_lowercase() == col.to_lowercase())
                     {
-                        return Some(self.bounds.min.x + vis_pos as i64);
+                        return Some(vis_pos as i64);
                     }
                 }
 
                 // If no visible columns before, return first visible column
                 if !self.visible_columns.is_empty() {
-                    Some(self.bounds.min.x)
+                    Some(0)
                 } else {
                     None
                 }
@@ -82,6 +86,8 @@ impl TableMapEntry {
 
     /// Tries to get the range for the given column range. Returns None if the
     /// range is not visible or no longer exists.
+    ///
+    /// Note: the index does not include the table's column offset.
     pub fn try_col_range(&self, col1: &str, col2: &str) -> Option<(i64, i64)> {
         // Get closest visible columns for start and end
         let start = self.try_col_closest(col1, true)?;
@@ -93,9 +99,11 @@ impl TableMapEntry {
 
     /// Tries to get the range for the given column range. Returns None if the
     /// range is not visible or no longer exists.
+    ///
+    /// Note: the index does not include the table's column offset.
     pub fn try_col_range_to_end(&self, col: &str) -> Option<(i64, i64)> {
         let start = self.try_col_closest(col, true)?;
-        let end = self.bounds.min.x + (self.visible_columns.len() - 1) as i64;
+        let end = (self.visible_columns.len() - 1) as i64;
         Some((start, end))
     }
 
@@ -186,13 +194,13 @@ mod tests {
         let table = map.try_table("test").unwrap();
 
         // Test exact match
-        assert_eq!(table.try_col_index("Col1"), Some(1));
-        assert_eq!(table.try_col_index("Col2"), Some(2));
-        assert_eq!(table.try_col_index("Col3"), Some(3));
+        assert_eq!(table.try_col_index("Col1"), Some(0));
+        assert_eq!(table.try_col_index("Col2"), Some(1));
+        assert_eq!(table.try_col_index("Col3"), Some(2));
 
         // Test case insensitive
-        assert_eq!(table.try_col_index("col1"), Some(1));
-        assert_eq!(table.try_col_index("COL2"), Some(2));
+        assert_eq!(table.try_col_index("col1"), Some(0));
+        assert_eq!(table.try_col_index("COL2"), Some(1));
 
         // Test non-existent column
         assert_eq!(table.try_col_index("Col4"), None);
@@ -213,20 +221,20 @@ mod tests {
         let table = map.try_table("test").unwrap();
 
         // Test both visible columns
-        assert_eq!(table.try_col_range("A", "C"), Some((1, 2)));
-        assert_eq!(table.try_col_range("A", "E"), Some((1, 3)));
+        assert_eq!(table.try_col_range("A", "C"), Some((0, 1)));
+        assert_eq!(table.try_col_range("A", "E"), Some((0, 2)));
 
         // Test case insensitive
-        assert_eq!(table.try_col_range("a", "c"), Some((1, 2)));
+        assert_eq!(table.try_col_range("a", "c"), Some((0, 1)));
 
         // Test with hidden start column
-        assert_eq!(table.try_col_range("B", "E"), Some((2, 3)));
+        assert_eq!(table.try_col_range("B", "E"), Some((1, 2)));
 
         // Test with hidden end column
-        assert_eq!(table.try_col_range("A", "D"), Some((1, 2)));
+        assert_eq!(table.try_col_range("A", "D"), Some((0, 1)));
 
         // Test with both hidden columns
-        assert_eq!(table.try_col_range("B", "D"), Some((2, 2)));
+        assert_eq!(table.try_col_range("B", "D"), Some((1, 1)));
 
         // Test non-existent columns
         assert_eq!(table.try_col_range("X", "Y"), None);
@@ -249,15 +257,15 @@ mod tests {
         let table = map.try_table("test").unwrap();
 
         // Test from visible column
-        assert_eq!(table.try_col_range_to_end("A"), Some((1, 3)));
-        assert_eq!(table.try_col_range_to_end("C"), Some((2, 3)));
+        assert_eq!(table.try_col_range_to_end("A"), Some((0, 2)));
+        assert_eq!(table.try_col_range_to_end("C"), Some((1, 2)));
 
         // Test case insensitive
-        assert_eq!(table.try_col_range_to_end("a"), Some((1, 3)));
+        assert_eq!(table.try_col_range_to_end("a"), Some((0, 2)));
 
         // Test from hidden column
-        assert_eq!(table.try_col_range_to_end("B"), Some((2, 3)));
-        assert_eq!(table.try_col_range_to_end("D"), Some((3, 3)));
+        assert_eq!(table.try_col_range_to_end("B"), Some((1, 2)));
+        assert_eq!(table.try_col_range_to_end("D"), Some((2, 2)));
 
         // Test non-existent column
         assert_eq!(table.try_col_range_to_end("X"), None);
@@ -278,16 +286,16 @@ mod tests {
         let table = map.try_table("test").unwrap();
 
         // Test visible column
-        assert_eq!(table.try_col_closest("A", true), Some(1));
-        assert_eq!(table.try_col_closest("C", true), Some(2));
-        assert_eq!(table.try_col_closest("E", true), Some(3));
+        assert_eq!(table.try_col_closest("A", true), Some(0));
+        assert_eq!(table.try_col_closest("C", true), Some(1));
+        assert_eq!(table.try_col_closest("E", true), Some(2));
 
         // Test case insensitive
-        assert_eq!(table.try_col_closest("a", true), Some(1));
+        assert_eq!(table.try_col_closest("a", true), Some(0));
 
         // Test hidden column - should return next visible
-        assert_eq!(table.try_col_closest("B", true), Some(2)); // Returns C
-        assert_eq!(table.try_col_closest("D", true), Some(3)); // Returns E
+        assert_eq!(table.try_col_closest("B", true), Some(1)); // Returns C
+        assert_eq!(table.try_col_closest("D", true), Some(2)); // Returns E
 
         // Test non-existent column
         assert_eq!(table.try_col_closest("X", true), None);
@@ -307,16 +315,16 @@ mod tests {
         let table = map.try_table("test").unwrap();
 
         // Test visible column
-        assert_eq!(table.try_col_closest("A", false), Some(1));
-        assert_eq!(table.try_col_closest("C", false), Some(2));
-        assert_eq!(table.try_col_closest("E", false), Some(3));
+        assert_eq!(table.try_col_closest("A", false), Some(0));
+        assert_eq!(table.try_col_closest("C", false), Some(1));
+        assert_eq!(table.try_col_closest("E", false), Some(2));
 
         // Test case insensitive
-        assert_eq!(table.try_col_closest("a", false), Some(1));
+        assert_eq!(table.try_col_closest("a", false), Some(0));
 
         // Test hidden column - should return previous visible
-        assert_eq!(table.try_col_closest("B", false), Some(1)); // Returns A
-        assert_eq!(table.try_col_closest("D", false), Some(2)); // Returns C
+        assert_eq!(table.try_col_closest("B", false), Some(0)); // Returns A
+        assert_eq!(table.try_col_closest("D", false), Some(1)); // Returns C
 
         // Test non-existent column
         assert_eq!(table.try_col_closest("X", false), None);

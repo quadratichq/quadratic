@@ -24,6 +24,7 @@ impl TableRef {
                 }
                 ColRange::Col(col) => {
                     if let Some(col_index) = table.try_col_index(col) {
+                        let col_index = col_index + table.bounds.min.x;
                         if col_index >= from && col_index <= to {
                             cols.push(col_index);
                         }
@@ -32,6 +33,8 @@ impl TableRef {
                 ColRange::ColRange(col_range_start, col_range_end) => {
                     if let Some((start, end)) = table.try_col_range(col_range_start, col_range_end)
                     {
+                        let start = start + table.bounds.min.x;
+                        let end = end + table.bounds.min.x;
                         if start >= from && end <= to {
                             for x in start.max(from)..=end.min(to) {
                                 cols.push(x);
@@ -41,6 +44,8 @@ impl TableRef {
                 }
                 ColRange::ColumnToEnd(col) => {
                     if let Some((start, end)) = table.try_col_range_to_end(col) {
+                        let start = start + table.bounds.min.x;
+                        let end = end + table.bounds.min.x;
                         if start >= from && end <= to {
                             for x in start.max(from)..=end.min(to) {
                                 cols.push(x);
@@ -224,19 +229,34 @@ impl TableRef {
                 );
                 Some(range)
             }
-            ColRange::Col(col) => table
-                .try_col_index(col)
-                .map(|col| RefRangeBounds::new_relative(col, y_start, col, y_end)),
+            ColRange::Col(col) => table.try_col_index(col).map(|col| {
+                RefRangeBounds::new_relative(
+                    col + table.bounds.min.x,
+                    y_start,
+                    col + table.bounds.min.x,
+                    y_end,
+                )
+            }),
             ColRange::ColRange(col_range_start, col_range_end) => {
                 if let Some((start, end)) = table.try_col_range(col_range_start, col_range_end) {
-                    Some(RefRangeBounds::new_relative(start, y_start, end, y_end))
+                    Some(RefRangeBounds::new_relative(
+                        start + table.bounds.min.x,
+                        y_start,
+                        end + table.bounds.min.x,
+                        y_end,
+                    ))
                 } else {
                     None
                 }
             }
             ColRange::ColumnToEnd(col) => {
                 if let Some((start, end)) = table.try_col_range_to_end(col) {
-                    Some(RefRangeBounds::new_relative(start, y_start, end, y_end))
+                    Some(RefRangeBounds::new_relative(
+                        start + table.bounds.min.x,
+                        y_start,
+                        end + table.bounds.min.x,
+                        y_end,
+                    ))
                 } else {
                     None
                 }

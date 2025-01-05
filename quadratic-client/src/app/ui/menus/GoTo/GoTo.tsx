@@ -5,9 +5,11 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { A1Error } from '@/app/quadratic-core-types';
 import { getTableNames, stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import '@/app/ui/styles/floating-dialog.css';
-import { ArrowDropDownIcon, GoToIcon } from '@/shared/components/Icons';
-import { Command, CommandInput, CommandItem, CommandList, CommandSeparator } from '@/shared/shadcn/ui/command';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ArrowDropDownIcon, EditIcon, GoToIcon } from '@/shared/components/Icons';
+import { Button } from '@/shared/shadcn/ui/button';
+import { Command, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
 export const GoTo = () => {
@@ -15,7 +17,7 @@ export const GoTo = () => {
   const [pages, setPages] = useState<string[]>([]);
   const page = pages[pages.length - 1];
 
-  const [value, setValue] = React.useState<string>('');
+  const [value, setValue] = useState<string>('');
 
   const closeMenu = useCallback(() => {
     setShowGoToMenu(false);
@@ -107,18 +109,38 @@ export const GoTo = () => {
     [setPages, closeMenu]
   );
 
+  const inputRef = useRef<HTMLInputElement>(null);
+  const editCurrentValue = useCallback(() => {
+    setValue(sheets.sheet.cursor.toA1String());
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
+
   if (!showGoToMenu) {
     return null;
   }
 
   return (
     <Command shouldFilter={false}>
-      <CommandInput
-        value={value}
-        onValueChange={setValue}
-        placeholder="Enter a cell “A1” or range “A1:B2”"
-        omitIcon={true}
-      />
+      <div className="flex w-full items-center justify-between">
+        <div className="w-full flex-grow">
+          <CommandInput
+            ref={inputRef}
+            value={value}
+            onValueChange={setValue}
+            placeholder="Enter a cell “A1” or range “A1:B2”"
+            omitIcon={true}
+          />
+        </div>
+        <Tooltip>
+          <TooltipTrigger asChild className="flex-grow-0">
+            <Button variant="ghost" onClick={editCurrentValue}>
+              <EditIcon />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Edit current selection</TooltipContent>
+        </Tooltip>
+      </div>
       <CommandList className="p-2">
         <CommandItem
           onSelect={onSelect}
@@ -134,26 +156,33 @@ export const GoTo = () => {
         {/* <CommandItem className="flex cursor-pointer items-center justify-between">
           <div>Rename range {convertedInput}</div>
         </CommandItem> */}
-        <CommandSeparator className="my-2" />
         {!page && (
-          <CommandItem onSelect={() => setPages([...pages, 'tables'])}>
+          <CommandItem
+            className="mt-2 pt-2"
+            style={{ borderTop: '2px solid hsl(var(--primary-foreground))' }}
+            onSelect={() => setPages([...pages, 'tables'])}
+          >
             <div className="flex w-full items-center justify-between">
-              <div>Go to table</div>
+              <div>Select table</div>
               <ArrowDropDownIcon className="text-muted-foreground group-hover:text-foreground" />
             </div>
           </CommandItem>
         )}
         {page === 'tables' && (
           <>
-            <CommandItem onSelect={() => setPages(pages.filter((s) => s !== 'tables'))}>
+            <CommandItem
+              className="mt-2 pt-2"
+              style={{ borderTop: '2px solid hsl(var(--primary-foreground))' }}
+              onSelect={() => setPages(pages.filter((s) => s !== 'tables'))}
+            >
               <div className="flex w-full items-center justify-between">
-                <div>Go to table</div>
+                <div>Select table</div>
                 <ArrowDropDownIcon className="text-muted-foreground group-hover:text-foreground" />
               </div>
             </CommandItem>
             {tableNames?.map((name) => (
               <CommandItem key={name} onSelect={() => selectTable(name)}>
-                <div className="ml-3">{name}</div>
+                <div className="ml-3 font-bold">{name}</div>
               </CommandItem>
             ))}
           </>
