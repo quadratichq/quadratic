@@ -23,6 +23,7 @@
     "dgraph",
     "dotenv",
     "dpkg",
+    "elif",
     "endregion",
     "finitize",
     "Fuzzysort",
