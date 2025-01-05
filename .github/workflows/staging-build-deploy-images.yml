@@ -357,61 +357,27 @@ jobs:
           echo "Deployment timed out after ${{ env.MAX_ATTEMPTS }} attempts"
           exit 1
 
-      - name: Delete untagged images
+      - name: Delete untagged (old) images
         run: |
           for service in client api connection files multiplayer; do
             REPO_NAME="quadratic-${service}"
-            echo "Cleaning untagged images from: $REPO_NAME"
             
-            # First, get all manifest lists
-            MANIFEST_LISTS=$(aws ecr batch-get-image \
+            # Get list of untagged image digests
+            UNTAGGED_IMAGES=$(aws ecr list-images \
               --repository-name "$REPO_NAME" \
-              --image-ids "$(aws ecr list-images \
-                --repository-name "$REPO_NAME" \
-                --filter "tagStatus=UNTAGGED" \
-                --query 'imageIds[*]' \
-                --output json)" \
-              --accepted-media-types "application/vnd.docker.distribution.manifest.list.v2+json" \
-              --query 'images[].imageId.imageDigest' \
-              --output text || echo "")
+              --filter "tagStatus=UNTAGGED" \
+              --query 'imageIds[*].imageDigest' \
+              --output json)
             
-            if [ -n "$MANIFEST_LISTS" ]; then
-              echo "Found manifest lists: $MANIFEST_LISTS"
-              # Convert tab/space-separated list to proper JSON array format
-              MANIFEST_LIST_ARRAY=$(echo "$MANIFEST_LISTS" | tr '\t' '\n' | tr ' ' '\n' | sort -u | \
-                awk 'BEGIN{printf "["} {printf "%s\"%s\"", (NR==1?"":","), $0} END{printf "]"}')
-              
-              # Get untagged images excluding manifest lists
-              UNTAGGED_IMAGES=$(aws ecr list-images \
-                --repository-name "$REPO_NAME" \
-                --filter "tagStatus=UNTAGGED" \
-                --query "imageIds[?!(imageDigest in ${MANIFEST_LIST_ARRAY})]" \
-                --output json)
-            else
-              # If no manifest lists, get all untagged images
-              UNTAGGED_IMAGES=$(aws ecr list-images \
-                --repository-name "$REPO_NAME" \
-                --filter "tagStatus=UNTAGGED" \
-                --query 'imageIds[*]' \
-                --output json)
-            fi
-            
-            if [ "$UNTAGGED_IMAGES" != "[]" ] && [ "$UNTAGGED_IMAGES" != "null" ]; then
-              echo "Found untagged images to delete: $UNTAGGED_IMAGES"
+            # Delete untagged images if any exist
+            if [ "$UNTAGGED_IMAGES" != "[]" ]; then
+              echo "Deleting untagged images from $REPO_NAME"
               aws ecr batch-delete-image \
                 --repository-name "$REPO_NAME" \
-                --image-ids "$UNTAGGED_IMAGES" || true
-              
-              # Check for failures and log them
-              RESULT=$?
-              if [ $RESULT -ne 0 ]; then
-                echo "Some deletions failed for $REPO_NAME. This is expected for manifest lists."
-              fi
+                --image-ids "$(echo $UNTAGGED_IMAGES | jq -r 'map({imageDigest: .}) | @json')"
             else
-              echo "No eligible untagged images found in $REPO_NAME"
+              echo "No untagged images found in $REPO_NAME"
             fi
-            
-            echo "Finished cleaning untagged images from $REPO_NAME"
           done
 
       - name: Generate Deploy Metadata
