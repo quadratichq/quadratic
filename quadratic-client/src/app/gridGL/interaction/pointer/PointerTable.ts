@@ -66,7 +66,6 @@ export class PointerTable {
       });
     } else {
       // move cursor to column header
-      console.log(tableDown);
       const columnName = tableDown.table.columns[tableDown.column].name;
       sheets.sheet.cursor.selectTable(tableDown.table.name, columnName, append);
 
