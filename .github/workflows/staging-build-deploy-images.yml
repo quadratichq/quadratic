@@ -382,7 +382,7 @@ jobs:
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids ${{ steps.get-instance.outputs.instance_id }} \
             --document-name "AWS-RunShellScript" \
-            --parameters commands=["cd /quadratic-selfhost && ./login.sh && ./start.sh"] \
+            --parameters commands=["cd /quadratic-selfhost && ./login.sh && ./pull_start.sh"] \
             --comment "Deploying new images after build" \
             --query 'Command.CommandId' \
             --output text)
