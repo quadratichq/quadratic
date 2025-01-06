@@ -21,7 +21,7 @@ jobs:
     steps:
       - name: Find Create Stack Comment
         uses: peter-evans/find-comment@v3
-        id: preview-create-stack-comment
+        id: preview-create-stack-comment-start
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: "github-actions[bot]"
@@ -30,7 +30,7 @@ jobs:
       - name: Comment on create stack start
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ steps.preview-create-stack-comment.outputs.comment-id }}
+          comment-id: ${{ steps.preview-create-stack-comment-start.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Preview - Stack
@@ -97,11 +97,20 @@ jobs:
             exit 1
           fi
 
+      - name: Find Create Stack Comment
+        uses: peter-evans/find-comment@v3
+        if: always()
+        id: preview-create-stack-comment-update
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Preview - Stack"
+
       - name: Update comment on create stack success
         if: success()
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ steps.preview-create-stack-comment.outputs.comment-id }}
+          comment-id: ${{ steps.preview-create-stack-comment-update.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Preview - Stack
@@ -114,7 +123,7 @@ jobs:
         if: failure()
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ steps.preview-create-stack-comment.outputs.comment-id }}
+          comment-id: ${{ steps.preview-create-stack-comment-update.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Preview - Stack

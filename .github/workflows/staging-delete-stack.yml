@@ -21,7 +21,7 @@ jobs:
     steps:
       - name: Find Delete Stack Comment
         uses: peter-evans/find-comment@v3
-        id: preview-delete-stack-comment
+        id: preview-delete-stack-comment-start
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: "github-actions[bot]"
@@ -30,7 +30,7 @@ jobs:
       - name: Comment on delete stack start
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ steps.preview-delete-stack-comment.outputs.comment-id }}
+          comment-id: ${{ steps.preview-delete-stack-comment-start.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Preview - Stack
@@ -63,11 +63,20 @@ jobs:
             echo "Stack ${{ env.STACK_NAME }} does not exist"
           fi
 
+      - name: Find Delete Stack Comment
+        uses: peter-evans/find-comment@v3
+        if: always()
+        id: preview-delete-stack-comment-update
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Preview - Stack"
+
       - name: Update comment on delete stack success
-        if: success() && steps.preview-delete-stack-comment.outputs.comment-id != ''
+        if: success()
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ steps.preview-delete-stack-comment.outputs.comment-id }}
+          comment-id: ${{ steps.preview-delete-stack-comment-update.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Preview - Stack
@@ -75,10 +84,10 @@ jobs:
           edit-mode: replace
 
       - name: Update comment on delete stack failure
-        if: failure() && steps.preview-delete-stack-comment.outputs.comment-id != ''
+        if: failure()
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ steps.preview-delete-stack-comment.outputs.comment-id }}
+          comment-id: ${{ steps.preview-delete-stack-comment-update.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Preview - Stack

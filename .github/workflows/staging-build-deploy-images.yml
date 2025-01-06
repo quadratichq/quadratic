@@ -19,7 +19,6 @@ jobs:
       deployments: write
     outputs:
       deployment_id: ${{ steps.deployment.outputs.id }}
-      comment_id: ${{ steps.preview-build-deploy-images-comment.outputs.comment-id }}
     steps:
       - name: Find Build & Deploy Images Comment
         uses: peter-evans/find-comment@v3
@@ -119,10 +118,18 @@ jobs:
             runner: blacksmith-4vcpu-ubuntu-2204
       fail-fast: true
     steps:
+      - name: Find Build & Deploy Images Comment
+        uses: peter-evans/find-comment@v3
+        id: preview-build-deploy-images-comment-start
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Preview - Build & Deploy Images"
+
       - name: Update comment on build images start
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ needs.create_deployment.outputs.comment_id }}
+          comment-id: ${{ steps.preview-build-deploy-images-comment-start.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Preview - Build & Deploy Images
@@ -237,11 +244,20 @@ jobs:
             org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
             org.opencontainers.image.revision=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
 
+      - name: Find Build & Deploy Images Comment
+        uses: peter-evans/find-comment@v3
+        if: always()
+        id: preview-build-deploy-images-comment-update
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Preview - Build & Deploy Images"
+
       - name: Update comment on build images failure
         if: failure()
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ needs.create_deployment.outputs.comment_id }}
+          comment-id: ${{ steps.preview-build-deploy-images-comment-update.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Preview - Build & Deploy Images
@@ -279,10 +295,18 @@ jobs:
       STACK_NAME: pr-${{ github.event.pull_request.number }}
       MAX_ATTEMPTS: 50
     steps:
+      - name: Find Build & Deploy Images Comment
+        uses: peter-evans/find-comment@v3
+        id: preview-build-deploy-images-comment-start
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Preview - Build & Deploy Images"
+
       - name: Update comment on deploy images start
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ needs.create_deployment.outputs.comment_id }}
+          comment-id: ${{ steps.preview-build-deploy-images-comment-start.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Preview - Build & Deploy Images
@@ -451,11 +475,20 @@ jobs:
         run: |
           echo "DEPLOY_TIME=$(date -u +'%B %d, %Y at %H:%M UTC')" >> $GITHUB_OUTPUT
 
+      - name: Find Build & Deploy Images Comment
+        uses: peter-evans/find-comment@v3
+        if: always()
+        id: preview-build-deploy-images-comment-update
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Preview - Build & Deploy Images"
+
       - name: Update comment on deploy images success
         if: success()
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ needs.create_deployment.outputs.comment_id }}
+          comment-id: ${{ steps.preview-build-deploy-images-comment-update.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Preview - Build & Deploy Images
@@ -471,7 +504,7 @@ jobs:
         if: failure()
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ needs.create_deployment.outputs.comment_id }}
+          comment-id: ${{ steps.preview-build-deploy-images-comment-update.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Preview - Build & Deploy Images
