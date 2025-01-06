@@ -207,63 +207,6 @@ impl TableRef {
         }
     }
 
-    /// Converts the table ref to a list of CellRefRange::RefRangeBounds
-    pub fn convert_to_ref_range_bounds(
-        &self,
-        current_row: i64,
-        context: &A1Context,
-    ) -> Option<RefRangeBounds> {
-        let Some(table) = context.try_table(&self.table_name) else {
-            // the table may no longer exist
-            return None;
-        };
-
-        let (y_start, y_end) = self.row_range.to_rows(current_row, table);
-        match &self.col_range {
-            ColRange::All => {
-                let range = RefRangeBounds::new_relative(
-                    table.bounds.min.x,
-                    y_start,
-                    table.bounds.max.x,
-                    y_end,
-                );
-                Some(range)
-            }
-            ColRange::Col(col) => table.try_col_index(col).map(|col| {
-                RefRangeBounds::new_relative(
-                    col + table.bounds.min.x,
-                    y_start,
-                    col + table.bounds.min.x,
-                    y_end,
-                )
-            }),
-            ColRange::ColRange(col_range_start, col_range_end) => {
-                if let Some((start, end)) = table.try_col_range(col_range_start, col_range_end) {
-                    Some(RefRangeBounds::new_relative(
-                        start + table.bounds.min.x,
-                        y_start,
-                        end + table.bounds.min.x,
-                        y_end,
-                    ))
-                } else {
-                    None
-                }
-            }
-            ColRange::ColumnToEnd(col) => {
-                if let Some((start, end)) = table.try_col_range_to_end(col) {
-                    Some(RefRangeBounds::new_relative(
-                        start + table.bounds.min.x,
-                        y_start,
-                        end + table.bounds.min.x,
-                        y_end,
-                    ))
-                } else {
-                    None
-                }
-            }
-        }
-    }
-
     /// Returns true if the table ref may be two-dimensional--ie, if it has
     /// unbounded ranges that may change.
     pub fn is_two_dimensional(&self) -> bool {

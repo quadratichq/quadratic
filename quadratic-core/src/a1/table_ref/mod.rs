@@ -54,10 +54,11 @@
 //! reference. It is ignored in parsing: =DeptSales[ [Sales Person]:[Region] ]
 //! =DeptSales[[#Headers], [#Data], [% Commission]]
 
+mod convert;
 pub mod display;
 mod intersects;
-pub mod parse;
-pub mod query;
+mod parse;
+mod query;
 mod range;
 mod tokenize;
 
