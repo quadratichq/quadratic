@@ -35,7 +35,7 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Preview - Build & Deploy Images
-            ⏳ Build images
+            ⏳ Building images...
             ⏳ Deploy images
 
             🔍 Track progress in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
@@ -118,27 +118,6 @@ jobs:
             runner: blacksmith-4vcpu-ubuntu-2204
       fail-fast: true
     steps:
-      - name: Find Build & Deploy Images Comment
-        uses: peter-evans/find-comment@v3
-        id: preview-build-deploy-images-comment-start
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          comment-author: "github-actions[bot]"
-          body-includes: "Preview - Build & Deploy Images"
-
-      - name: Update comment on build images start
-        uses: peter-evans/create-or-update-comment@v3
-        with:
-          comment-id: ${{ steps.preview-build-deploy-images-comment-start.outputs.comment-id }}
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ## Preview - Build & Deploy Images
-            ⏳ Building images...
-            ⏳ Deploy images
-
-            🔍 Track progress in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-          edit-mode: replace
-
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -247,7 +226,7 @@ jobs:
       - name: Find Build & Deploy Images Comment
         uses: peter-evans/find-comment@v3
         if: always()
-        id: preview-build-deploy-images-comment-update
+        id: preview-build-deploy-images-comment
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: "github-actions[bot]"
@@ -257,7 +236,7 @@ jobs:
         if: failure()
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ steps.preview-build-deploy-images-comment-update.outputs.comment-id }}
+          comment-id: ${{ steps.preview-build-deploy-images-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Preview - Build & Deploy Images
