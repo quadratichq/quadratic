@@ -42,7 +42,7 @@ impl TableRef {
                         }
                     }
                 }
-                ColRange::ColumnToEnd(col) => {
+                ColRange::ColToEnd(col) => {
                     if let Some((start, end)) = table.try_col_range_to_end(col) {
                         let start = start + table.bounds.min.x;
                         let end = end + table.bounds.min.x;
@@ -110,7 +110,7 @@ impl TableRef {
                 let end = table_entry.try_col_index(end).unwrap_or(0);
                 end - start
             }
-            ColRange::ColumnToEnd(col) => {
+            ColRange::ColToEnd(col) => {
                 table_entry.visible_columns.len() as i64
                     - table_entry.try_col_index(col).unwrap_or(0)
             }
@@ -168,7 +168,7 @@ impl TableRef {
                     .max(bounds.min.x + start as i64)
                     .max(bounds.min.x + end as i64);
             }
-            ColRange::ColumnToEnd(col) => {
+            ColRange::ColToEnd(col) => {
                 let start = table.visible_columns.iter().position(|c| c == col)?;
                 min_x = min_x.min(bounds.min.x + start as i64);
                 max_x = min_x.max(bounds.min.x + table.visible_columns.len() as i64);
@@ -214,7 +214,7 @@ impl TableRef {
             ColRange::All => true,
             ColRange::Col(_) => false,
             ColRange::ColRange(start, end) => start != end,
-            ColRange::ColumnToEnd(_) => true,
+            ColRange::ColToEnd(_) => true,
         }
     }
 
@@ -410,7 +410,7 @@ mod tests {
         // Test case 3: Column to end
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_range: ColRange::ColumnToEnd("B".to_string()),
+            col_range: ColRange::ColToEnd("B".to_string()),
             row_range: RowRange::CurrentRow,
             data: true,
             headers: false,
@@ -448,7 +448,7 @@ mod tests {
         // Column to end is two-dimensional
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_range: ColRange::ColumnToEnd("B".to_string()),
+            col_range: ColRange::ColToEnd("B".to_string()),
             row_range: RowRange::All,
             data: true,
             headers: false,

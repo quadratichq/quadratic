@@ -110,7 +110,7 @@ pub enum ColRange {
     All,
     Col(String),
     ColRange(String, String),
-    ColumnToEnd(String),
+    ColToEnd(String),
 }
 
 impl ColRange {
@@ -127,7 +127,7 @@ impl ColRange {
                     return col >= col1_index && col <= col2_index;
                 }
             }
-            ColRange::ColumnToEnd(col_name) => {
+            ColRange::ColToEnd(col_name) => {
                 if let Some((start, end)) = table.try_col_range_to_end(col_name) {
                     return col >= start && col <= end;
                 }
@@ -143,7 +143,7 @@ impl fmt::Display for ColRange {
             ColRange::All => String::default(),
             ColRange::Col(col) => format!("[{}]", col),
             ColRange::ColRange(start, end) => format!("[{}]:[{}]", start, end),
-            ColRange::ColumnToEnd(col) => format!("[{}]:", col),
+            ColRange::ColToEnd(col) => format!("[{}]:", col),
         };
         write!(f, "{}", s)
     }
@@ -252,6 +252,6 @@ mod tests {
         );
 
         // Test column to end
-        assert_eq!(ColRange::ColumnToEnd("B".to_string()).to_string(), "[B]:");
+        assert_eq!(ColRange::ColToEnd("B".to_string()).to_string(), "[B]:");
     }
 }

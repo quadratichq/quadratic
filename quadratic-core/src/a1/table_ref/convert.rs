@@ -45,7 +45,7 @@ impl TableRef {
                     None
                 }
             }
-            ColRange::ColumnToEnd(col) => {
+            ColRange::ColToEnd(col) => {
                 if let Some((start, end)) = table.try_col_range_to_end(col) {
                     Some(RefRangeBounds::new_relative(
                         start + table.bounds.min.x,
@@ -202,7 +202,7 @@ mod tests {
 
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_range: ColRange::ColumnToEnd("Col2".to_string()),
+            col_range: ColRange::ColToEnd("Col2".to_string()),
             row_range: RowRange::All,
             data: true,
             headers: false,
@@ -216,7 +216,7 @@ mod tests {
 
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_range: ColRange::ColumnToEnd("Col2".to_string()),
+            col_range: ColRange::ColToEnd("Col2".to_string()),
             row_range: RowRange::All,
             data: true,
             headers: true,
@@ -261,9 +261,6 @@ mod tests {
             totals: false,
         };
 
-        assert_eq!(
-            table_ref.convert_to_ref_range_bounds(0, &context),
-            None
-        );
+        assert_eq!(table_ref.convert_to_ref_range_bounds(0, &context), None);
     }
 }

@@ -56,7 +56,7 @@ fn import_col_range(range: current::ColRangeSchema) -> ColRange {
         current::ColRangeSchema::All => ColRange::All,
         current::ColRangeSchema::Col(col) => ColRange::Col(col),
         current::ColRangeSchema::ColRange(col1, col2) => ColRange::ColRange(col1, col2),
-        current::ColRangeSchema::ColumnToEnd(col) => ColRange::ColumnToEnd(col),
+        current::ColRangeSchema::ColumnToEnd(col) => ColRange::ColToEnd(col),
     }
 }
 
@@ -219,7 +219,7 @@ fn export_col_range(range: ColRange) -> current::ColRangeSchema {
         ColRange::All => current::ColRangeSchema::All,
         ColRange::Col(col) => current::ColRangeSchema::Col(col),
         ColRange::ColRange(col1, col2) => current::ColRangeSchema::ColRange(col1, col2),
-        ColRange::ColumnToEnd(col) => current::ColRangeSchema::ColumnToEnd(col),
+        ColRange::ColToEnd(col) => current::ColRangeSchema::ColumnToEnd(col),
     }
 }
 

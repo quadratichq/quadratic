@@ -77,7 +77,7 @@ impl TableRef {
                     if col_range.is_some() {
                         return Err(A1Error::MultipleColumnDefinitions);
                     }
-                    col_range = Some(ColRange::ColumnToEnd(name));
+                    col_range = Some(ColRange::ColToEnd(name));
                 }
                 Token::All => {
                     headers = true;
