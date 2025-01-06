@@ -62,7 +62,10 @@ impl Grid {
             })
             .collect_vec();
 
-        unique_name(name, all_names, require_number)
+        let name = unique_name(name, all_names, require_number);
+
+        // replace spaces with underscores
+        name.replace(' ', "_")
     }
 
     pub fn update_data_table_name(
