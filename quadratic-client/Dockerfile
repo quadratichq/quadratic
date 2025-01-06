@@ -1,28 +1,5 @@
 ###########################################################################################
-# Builder 1 - Install dependencies
-###########################################################################################
-FROM node:18 AS dependencies-builder
-
-WORKDIR /quadratic
-
-# Copy updateAlertVersion.json
-COPY updateAlertVersion.json .
-
-# Copy all package.json files
-COPY package.json .
-COPY package-lock.json .
-COPY ./quadratic-kernels/python-wasm/package*.json ./quadratic-kernels/python-wasm/
-COPY ./quadratic-core/package*.json ./quadratic-core/
-COPY ./quadratic-rust-client/package*.json ./quadratic-rust-client/
-COPY ./quadratic-shared/package*.json ./quadratic-shared/
-COPY ./quadratic-client/package*.json ./quadratic-client/
-
-# Install npm dependencies
-RUN npm install --no-audit --no-fund
-
-
-###########################################################################################
-# Builder 2 - Build core
+# Builder 1 - Build core
 ###########################################################################################
 FROM node:18 AS core-builder
 
@@ -62,7 +39,7 @@ RUN if [ "$CLIENT_DEV" = "true" ]; then \
 
 
 ###########################################################################################
-# Builder 3 - Build TS/Rust types
+# Builder 2 - Build TS/Rust types
 ###########################################################################################
 FROM node:18 AS ts-rust-types-builder
 
@@ -96,7 +73,7 @@ RUN echo 'Building TS/Rust types...' && npm run export_types --workspace=quadrat
 
 
 ###########################################################################################
-# Builder 4 - Build rust client
+# Builder 3 - Build rust client
 ###########################################################################################
 FROM node:18 AS rust-client-builder
 
@@ -139,7 +116,7 @@ RUN if [ "$CLIENT_DEV" = "true" ]; then \
 
 
 ###########################################################################################
-# Builder 5 - Combine all builder files and build the client
+# Builder 4 - Combine all builder files and build the client
 ###########################################################################################
 FROM node:18 AS vite-builder
 
@@ -160,8 +137,17 @@ COPY --from=rust-client-builder /quadratic/quadratic-client/src/app/quadratic-ru
 COPY package.json .
 COPY package-lock.json .
 
-# Copy npm dependencies from dependencies-builder
-COPY --from=dependencies-builder /quadratic/. ./
+# Copy all package.json files
+COPY package.json .
+COPY package-lock.json .
+COPY ./quadratic-kernels/python-wasm/package*.json ./quadratic-kernels/python-wasm/
+COPY ./quadratic-core/package*.json ./quadratic-core/
+COPY ./quadratic-rust-client/package*.json ./quadratic-rust-client/
+COPY ./quadratic-shared/package*.json ./quadratic-shared/
+COPY ./quadratic-client/package*.json ./quadratic-client/
+
+# Install npm dependencies
+RUN npm install --no-audit --no-fund
 
 # Copy remaining files
 COPY ./quadratic-kernels/python-wasm/. ./quadratic-kernels/python-wasm/
