@@ -199,7 +199,12 @@ impl TableRef {
     pub fn cursor_pos_from_last_range(&self, context: &A1Context) -> Pos {
         if let Some(table) = context.try_table(&self.table_name) {
             let x = table.bounds.min.x;
-            let y = table.bounds.min.y;
+            let y = table.bounds.min.y
+                + if self.headers || !table.show_headers || table.bounds.height() == 1 {
+                    0
+                } else {
+                    1
+                };
             Pos { x, y }
         } else {
             dbgjs!("Expected to find table in cursor_pos_from_last_range");
@@ -469,5 +474,26 @@ mod tests {
             totals: false,
         };
         assert_eq!(table_ref.try_to_pos(&context).unwrap(), pos![B1]);
+    }
+
+    #[test]
+    fn test_cursor_pos_from_last_range() {
+        let mut context = setup_test_context();
+        let mut table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::Col("B".to_string()),
+            row_range: RowRange::All,
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A2]);
+
+        context.table_map.tables.first_mut().unwrap().show_headers = false;
+        assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A1]);
+
+        context.table_map.tables.first_mut().unwrap().show_headers = true;
+        table_ref.headers = true;
+        assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A1]);
     }
 }
