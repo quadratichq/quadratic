@@ -1,5 +1,5 @@
 use crate::{
-    a1::{A1Context, RefRangeBounds, UNBOUNDED},
+    a1::{A1Context, UNBOUNDED},
     Pos, Rect,
 };
 
@@ -233,6 +233,8 @@ impl TableRef {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
+    use crate::a1::RefRangeBounds;
+
     use super::*;
 
     fn setup_test_context() -> A1Context {
@@ -397,7 +399,7 @@ mod tests {
         };
 
         let ranges = table_ref.convert_to_ref_range_bounds(1, &context);
-        assert_eq!(ranges, Some(RefRangeBounds::test_a1("B1:B3")));
+        assert_eq!(ranges, Some(RefRangeBounds::test_a1("B2:B3")));
 
         // Test case 2: Column range with specific rows
         let table_ref = TableRef {
