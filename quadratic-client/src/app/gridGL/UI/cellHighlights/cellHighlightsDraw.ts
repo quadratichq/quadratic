@@ -69,7 +69,7 @@ export function drawDashedRectangleMarching(options: {
   offset?: number;
   range: CellRefRange;
 }): boolean {
-  const { g, color, march, noFill, alpha, offset = 0, range } = options;
+  const { g, color, march, noFill, alpha = 1, offset = 0, range } = options;
 
   const selectionRect = getRangeScreenRectangleFromCellRefRange(range);
   const bounds = pixiApp.viewport.getVisibleBounds();
