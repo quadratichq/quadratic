@@ -14,7 +14,7 @@ Include a concise explanation of the actions you are taking to respond to the us
 
 Don't include tool details in your response. Reply in layman's terms what actions you are taking.\n
 
-Don't use multiple tools in a single response. You can use same tool multiple times in a single response. You should wait for the tool result message and then use another tool to complete the action.\n
+Use multiple tools in a single response if required, use same tool multiple times in a single response if required. Try to reduce tool call iterations.\n
           
 ${Object.entries(aiToolsSpec)
   .filter(([_, { internalTool }]) => !internalTool)

@@ -15,24 +15,20 @@ export interface PythonCoreResults {
   results: PythonRun;
 }
 
-export interface PythonCoreGetCellsLength {
-  type: 'pythonCoreGetCellsLength';
+export interface PythonCoreGetCellsA1Length {
+  type: 'pythonCoreGetCellsA1Length';
   sharedBuffer: SharedArrayBuffer;
   transactionId: string;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  sheet?: string;
+  a1: string;
   lineNumber?: number;
 }
 
-export interface PythonCoreGetCellsData {
-  type: 'pythonCoreGetCellsData';
+export interface PythonCoreGetCellsA1Data {
+  type: 'pythonCoreGetCellsA1Data';
   id: number;
   sharedBuffer: SharedArrayBuffer;
 }
 
 export type CorePythonMessage = CorePythonRun;
 
-export type PythonCoreMessage = PythonCoreResults | PythonCoreGetCellsLength | PythonCoreGetCellsData;
+export type PythonCoreMessage = PythonCoreResults | PythonCoreGetCellsA1Length | PythonCoreGetCellsA1Data;

@@ -1,7 +1,7 @@
-import { Coordinate } from '@/app/gridGL/types/size';
+import { JsCoordinate } from '@/app/quadratic-core-types';
 import { Rectangle } from 'pixi.js';
 
 export interface Link {
-  pos: Coordinate;
+  pos: JsCoordinate;
   textRectangle: Rectangle;
 }

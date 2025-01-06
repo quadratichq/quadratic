@@ -1,51 +1,74 @@
-import { ZOOM_ANIMATION_TIME_MS, ZOOM_BUFFER } from '@/shared/constants/gridConstants';
-import { Point, Rectangle } from 'pixi.js';
-import { sheets } from '../../grid/controller/Sheets';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { intersects } from './intersects';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { intersects } from '@/app/gridGL/helpers/intersects';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { ZOOM_ANIMATION_TIME_MS } from '@/shared/constants/gridConstants';
+import { Point } from 'pixi.js';
 
-export async function zoomToFit() {
+export function zoomReset() {
+  pixiApp.viewport.reset();
+}
+
+function clampZoom(center: Point, scale: number) {
   const viewport = pixiApp.viewport;
-  const sheet = sheets.sheet;
-  const gridBounds = sheet.getBounds(false);
-  if (gridBounds) {
-    const screenRectangle = sheet.getScreenRectangle(gridBounds.x, gridBounds.y, gridBounds.width, gridBounds.height);
+  const headingSize = pixiApp.headings.headingSize;
+  const oldScale = viewport.scale.x;
+  const { width, height } = viewport.getVisibleBounds();
 
-    // calc scale, and leave a little room on the top and sides
-    let scale = viewport.findFit(screenRectangle.width * ZOOM_BUFFER, screenRectangle.height * ZOOM_BUFFER);
+  // clamp left
+  const left = center.x - width / 2 / (scale / oldScale);
+  if (left < -headingSize.width / scale) {
+    const delta = -left - headingSize.width / scale;
+    center.x += delta;
+  }
+
+  // clamp top
+  const top = center.y - height / 2 / (scale / oldScale);
+  if (top < -headingSize.height / scale) {
+    const delta = -top - headingSize.height / scale;
+    center.y += delta;
+  }
+
+  viewport.animate({
+    time: ZOOM_ANIMATION_TIME_MS,
+    position: center,
+    scale,
+  });
+}
+
+export function zoomToFit() {
+  const gridBounds = sheets.sheet.getBounds(false);
+  if (gridBounds) {
+    const screenRectangle = sheets.sheet.getScreenRectangleFromRect(gridBounds);
+    const { screenWidth, screenHeight } = pixiApp.viewport;
+    const headingSize = pixiApp.headings.headingSize;
+
+    const sx = (screenWidth - headingSize.width) / screenRectangle.width;
+    const sy = (screenHeight - headingSize.height) / screenRectangle.height;
+    let scale = Math.min(sx, sy);
 
     // Don't zoom in more than a factor of 2
-    if (scale > 2) scale = 2;
+    scale = Math.min(scale, 2);
 
-    viewport.animate({
-      time: ZOOM_ANIMATION_TIME_MS,
-      position: new Point(
-        screenRectangle.x + screenRectangle.width / 2,
-        screenRectangle.y + screenRectangle.height / 2
-      ),
-      scale,
-    });
+    const screenCenter = new Point(
+      screenRectangle.x + screenRectangle.width / 2 - headingSize.width / 2 / scale,
+      screenRectangle.y + screenRectangle.height / 2 - headingSize.height / 2 / scale
+    );
+
+    const center = new Point(screenCenter.x - headingSize.width, screenCenter.y - headingSize.height);
+    clampZoom(center, scale);
   } else {
-    viewport.animate({
-      time: ZOOM_ANIMATION_TIME_MS,
-      position: new Point(0, 0),
-      scale: 1,
-    });
+    clampZoom(new Point(0, 0), 1);
   }
 }
 
 export function zoomInOut(scale: number): void {
-  const cursorPosition = sheets.sheet.cursor.getCursor();
+  const cursorPosition = sheets.sheet.cursor.position;
   const visibleBounds = pixiApp.viewport.getVisibleBounds();
-
   // If the center of the cell cursor's position is visible, then zoom to that point
   const cursorWorld = sheets.sheet.getCellOffsets(cursorPosition.x, cursorPosition.y);
   const center = new Point(cursorWorld.x + cursorWorld.width / 2, cursorWorld.y + cursorWorld.height / 2);
-  pixiApp.viewport.animate({
-    time: ZOOM_ANIMATION_TIME_MS,
-    scale,
-    position: intersects.rectanglePoint(visibleBounds, center) ? center : undefined,
-  });
+  const newCenter = intersects.rectanglePoint(visibleBounds, center) ? center : pixiApp.viewport.center;
+  clampZoom(newCenter, scale);
 }
 
 export function zoomIn() {
@@ -61,34 +84,25 @@ export function zoomTo100() {
 }
 
 export function zoomToSelection(): void {
-  let screenRectangle: Rectangle;
   const sheet = sheets.sheet;
-  if (sheet.cursor.multiCursor) {
-    const rectangles = sheet.cursor.multiCursor;
-    let minX = Infinity,
-      minY = Infinity,
-      maxX = -Infinity,
-      maxY = -Infinity;
-    for (const rectangle of rectangles) {
-      minX = Math.min(minX, rectangle.left);
-      minY = Math.min(minY, rectangle.top);
-      maxX = Math.max(maxX, rectangle.right);
-      maxY = Math.max(maxY, rectangle.bottom);
-    }
-    screenRectangle = sheet.getScreenRectangle(minX, minY, maxX - minX, maxY - minY);
-  } else {
-    const cursor = sheet.cursor.cursorPosition;
-    screenRectangle = sheet.getScreenRectangle(cursor.x, cursor.y, 1, 1);
-  }
+  const rectangle = sheet.cursor.getLargestRectangle();
+  const screenRectangle = sheet.getScreenRectangleFromRect(rectangle);
+  const headingSize = pixiApp.headings.headingSize;
+
   // calc scale, and leave a little room on the top and sides
-  let scale = pixiApp.viewport.findFit(screenRectangle.width * ZOOM_BUFFER, screenRectangle.height * ZOOM_BUFFER);
+  let scale = pixiApp.viewport.findFit(
+    screenRectangle.width + headingSize.width,
+    screenRectangle.height + headingSize.height
+  );
 
   // Don't zoom in more than a factor of 2
-  if (scale > 2) scale = 2;
+  scale = Math.min(scale, 2);
 
-  pixiApp.viewport.animate({
-    time: ZOOM_ANIMATION_TIME_MS,
-    position: new Point(screenRectangle.x + screenRectangle.width / 2, screenRectangle.y + screenRectangle.height / 2),
-    scale,
-  });
+  const screenCenter = new Point(
+    screenRectangle.x + screenRectangle.width / 2,
+    screenRectangle.y + screenRectangle.height / 2
+  );
+
+  const center = new Point(screenCenter.x - headingSize.width, screenCenter.y - headingSize.height);
+  clampZoom(center, scale);
 }

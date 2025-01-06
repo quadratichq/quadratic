@@ -1,5 +1,5 @@
+import { JsCoordinate } from '@/app/quadratic-core-types';
 import { Rectangle } from 'pixi.js';
-import { Coordinate } from '../../gridGL/types/size';
 
 export class Bounds {
   empty = true;
@@ -56,7 +56,7 @@ export class Bounds {
     this.empty = false;
   }
 
-  addCoordinate(coordinate: Coordinate): void {
+  addCoordinate(coordinate: JsCoordinate): void {
     this.add(coordinate.x, coordinate.y);
   }
 
@@ -99,7 +99,7 @@ export class Bounds {
     );
   }
 
-  containsCoordinate(coordinate: Coordinate): boolean {
+  containsCoordinate(coordinate: JsCoordinate): boolean {
     return this.contains(coordinate.x, coordinate.y);
   }
 

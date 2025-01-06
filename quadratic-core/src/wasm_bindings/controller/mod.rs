@@ -10,6 +10,7 @@ pub mod bounds;
 pub mod cells;
 pub mod clipboard;
 pub mod code;
+pub mod col_row;
 pub mod export;
 pub mod formatting;
 pub mod import;
@@ -22,7 +23,6 @@ pub mod summarize;
 pub mod transactions;
 pub mod validation;
 pub mod worker;
-pub mod col_row;
 
 #[wasm_bindgen]
 impl GridController {
@@ -62,10 +62,7 @@ impl GridController {
                         }
                     }
                     grid.sheet_ids().iter().for_each(|sheet_id| {
-                        let fills = grid.sheet_fills(*sheet_id);
-                        if let Ok(fills) = serde_json::to_string(&fills) {
-                            crate::wasm_bindings::js::jsSheetFills(sheet_id.to_string(), fills);
-                        }
+                        grid.send_all_fills(*sheet_id);
                         if let Some(sheet) = grid.try_sheet(*sheet_id) {
                             let code = sheet.get_all_render_code_cells();
                             if !code.is_empty() {
@@ -76,8 +73,6 @@ impl GridController {
                                     );
                                 }
                             }
-                            // sends all sheet fills to the client
-                            sheet.send_sheet_fills();
 
                             // sends all images to the client
                             sheet.send_all_images();

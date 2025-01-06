@@ -83,7 +83,7 @@ class CoreConnection {
       });
 
       if (!response.ok) {
-        std_err = await response.text();
+        std_err = (await response.text()) + `\n\nQuery: ${codeRun.code}`;
         console.warn(std_err);
       } else {
         buffer = await response.arrayBuffer();

@@ -46,9 +46,10 @@ export const ConnectionSchemaBrowser = ({
           <h3 className="truncate font-medium tracking-tight">{data?.name ? data.name : ''}</h3>
         </div>
         <div className="flex flex-row-reverse items-center gap-1">
+          {data && !data.tables[selectedTableIndex] && <div className="text-center">No tables in this connection</div>}
           <TableQueryAction
             query={
-              !isLoading && data
+              !isLoading && data && data.tables[selectedTableIndex]
                 ? getTableQuery({ table: data.tables[selectedTableIndex], connectionKind: data.type })
                 : ''
             }

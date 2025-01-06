@@ -1,9 +1,9 @@
 import { Action } from '@/app/actions/actions';
 import {
   presentationModeAtom,
+  showAIAnalystOnStartupAtom,
   showCellTypeOutlinesAtom,
   showCodePeekAtom,
-  showGridAxesAtom,
   showGridLinesAtom,
   showHeadingsAtom,
 } from '@/app/atoms/gridSettingsAtom';
@@ -31,10 +31,10 @@ const MenubarItemCheckbox = ({ checked }: { checked: boolean }) => {
 // function of each accessible from outside of react (e.g. without `useGridSettings`)
 export const ViewMenubarMenu = () => {
   const [showHeadings, setShowHeadings] = useRecoilState(showHeadingsAtom);
-  const [showGridAxes, setShowGridAxes] = useRecoilState(showGridAxesAtom);
   const [showGridLines, setShowGridLines] = useRecoilState(showGridLinesAtom);
   const [showCellTypeOutlines, setShowCellTypeOutlines] = useRecoilState(showCellTypeOutlinesAtom);
   const [showCodePeek, setShowCodePeek] = useRecoilState(showCodePeekAtom);
+  const [showAIAnalystOnStartup, setShowAIAnalystOnStartup] = useRecoilState(showAIAnalystOnStartupAtom);
   const setPresentationMode = useSetRecoilState(presentationModeAtom);
 
   return (
@@ -44,9 +44,6 @@ export const ViewMenubarMenu = () => {
         <MenubarItem onClick={() => setShowHeadings((prev) => !prev)}>
           <MenubarItemCheckbox checked={showHeadings} /> Show row and column headings
         </MenubarItem>
-        <MenubarItem onClick={() => setShowGridAxes((prev) => !prev)}>
-          <MenubarItemCheckbox checked={showGridAxes} /> Show grid axis
-        </MenubarItem>
         <MenubarItem onClick={() => setShowGridLines((prev) => !prev)}>
           <MenubarItemCheckbox checked={showGridLines} />
           Show grid lines
@@ -54,6 +51,10 @@ export const ViewMenubarMenu = () => {
         <MenubarItem onClick={() => setShowCellTypeOutlines((prev) => !prev)}>
           <MenubarItemCheckbox checked={showCellTypeOutlines} />
           Show code cell outlines
+        </MenubarItem>
+        <MenubarItem onClick={() => setShowAIAnalystOnStartup((prev) => !prev)}>
+          <MenubarItemCheckbox checked={showAIAnalystOnStartup} />
+          Show AI on startup
         </MenubarItem>
         <MenubarItem onClick={() => setShowCodePeek((prev) => !prev)}>
           <MenubarItemCheckbox checked={showCodePeek} />
@@ -81,6 +82,7 @@ export const ViewMenubarMenu = () => {
           Presentation mode
           <MenubarShortcut>{KeyboardSymbols.Command + '.'}</MenubarShortcut>
         </MenubarItem>
+        <MenubarSeparator />
       </MenubarContent>
     </MenubarMenu>
   );

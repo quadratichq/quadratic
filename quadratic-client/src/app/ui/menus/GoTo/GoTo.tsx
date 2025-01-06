@@ -1,13 +1,11 @@
 import { editorInteractionStateShowGoToMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { moveViewport } from '@/app/gridGL/interaction/viewportHelper';
-import { Coordinate } from '@/app/gridGL/types/size';
-import { getCoordinatesFromUserInput } from '@/app/ui/menus/GoTo/getCoordinatesFromUserInput';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import '@/app/ui/styles/floating-dialog.css';
 import { GoToIcon } from '@/shared/components/Icons';
 import { Command, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
-import { Rectangle } from 'pixi.js';
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useRecoilState } from 'recoil';
 
 export const GoTo = () => {
@@ -19,42 +17,57 @@ export const GoTo = () => {
     setShowGoToMenu(false);
   }, [setShowGoToMenu]);
 
-  const coordinates = getCoordinatesFromUserInput(value);
+  const convertedInput = useMemo(() => {
+    if (!value) {
+      return (
+        <span>
+          <span className="font-bold">A1</span>
+        </span>
+      );
+    }
+    try {
+      const map = sheets.getSheetIdNameMap();
+      const selection = stringToSelection(value, sheets.current, map);
+      return (
+        <span>
+          <span className="font-bold">{selection.toA1String(sheets.current, map)}</span>
+        </span>
+      );
+    } catch (e: any) {
+      if (e) {
+        try {
+          const error = JSON.parse(e);
+          if (error?.InvalidSheetName) {
+            return (
+              <span>
+                Sheet <span className="font-bold">{error.InvalidSheetName}</span> not found
+              </span>
+            );
+          } else if (error?.TooManySheets) {
+            return <span>Only one sheet is supported</span>;
+          }
+        } catch (_) {}
+      }
+      return 'Invalid input';
+    }
+  }, [value]);
 
   const onSelect = useCallback(() => {
-    const [coor1, coor2] = coordinates;
-
-    // GoTo Cell
-    let cursorPosition = coor1;
-    let keyboardMovePosition = coor1;
-    let multiCursor: undefined | Rectangle[];
-
-    // GoTo range
-    if (coor2) {
-      // User has given us two arbitrary points. We need to figure out the
-      // upper left to bottom right coordinates of a rectangle between those coordinates
-      const originPosition: Coordinate = { x: Math.min(coor1.x, coor2.x), y: Math.min(coor1.y, coor2.y) };
-      const terminalPosition: Coordinate = { x: Math.max(coor1.x, coor2.x), y: Math.max(coor1.y, coor2.y) };
-
-      keyboardMovePosition = originPosition;
-      cursorPosition = originPosition;
-      multiCursor = [
-        new Rectangle(
-          originPosition.x,
-          originPosition.y,
-          terminalPosition.x - originPosition.x + 1,
-          terminalPosition.y - originPosition.y + 1
-        ),
-      ];
+    // if empty, then move cursor to A1
+    if (!value) {
+      sheets.sheet.cursor.moveTo(1, 1);
+      pixiApp.viewport.reset();
+    } else {
+      try {
+        const map = sheets.getSheetIdNameMap();
+        const selection = stringToSelection(value, sheets.sheet.id, map);
+        sheets.changeSelection(selection);
+      } catch (_) {
+        // nothing to do if we can't parse the input
+      }
     }
-    sheets.sheet.cursor.changePosition({
-      keyboardMovePosition,
-      cursorPosition,
-      multiCursor,
-    });
-    moveViewport({ topLeft: cursorPosition });
     closeMenu();
-  }, [closeMenu, coordinates]);
+  }, [closeMenu, value]);
 
   if (!showGoToMenu) {
     return null;
@@ -67,22 +80,24 @@ export const GoTo = () => {
         onValueChange={(value) => {
           setValue(value);
         }}
-        placeholder="Enter a cell “0, 0” or range “0, 0, -5, -5”"
+        placeholder="Enter a cell “A1” or range “A1:B2”"
         omitIcon={true}
       />
       <CommandList className="p-2">
         <CommandItem
           onSelect={onSelect}
-          className="flex items-center justify-between"
+          className="flex cursor-pointer items-center justify-between"
           onPointerDown={(e) => {
             e.preventDefault();
             e.stopPropagation();
           }}
         >
-          Go to {coordinates.length === 1 ? 'cell' : 'range'}:{' '}
-          {coordinates.map(({ x, y }) => `(${x}, ${y})`).join(', ')}
+          {convertedInput ? <div>Go to {convertedInput}</div> : null}
           <GoToIcon className="text-muted-foreground" />
         </CommandItem>
+        {/* <CommandItem className="flex cursor-pointer items-center justify-between">
+          <div>Rename range {convertedInput}</div>
+        </CommandItem> */}
       </CommandList>
     </Command>
   );

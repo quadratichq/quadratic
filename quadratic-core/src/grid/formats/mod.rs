@@ -4,15 +4,19 @@
 //!
 //! Formats is used to store multiple formats for use in Operations.
 
-pub mod format;
-pub mod format_update;
+mod format;
+mod format_update;
+mod sheet_format_updates;
 
 use crate::RunLengthEncoding;
-use format_update::FormatUpdate;
 use serde::{Deserialize, Serialize};
 use std::ops::{Deref, DerefMut};
 
-/// Used to store changes from a Format to another Format.
+pub use format::Format;
+pub use format_update::FormatUpdate;
+pub use sheet_format_updates::{SheetFormatUpdates, SheetFormatUpdatesType};
+
+/// Run-length encoded changes to apply to formatting.
 #[derive(Default, Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct Formats {
     pub formats: RunLengthEncoding<FormatUpdate>,

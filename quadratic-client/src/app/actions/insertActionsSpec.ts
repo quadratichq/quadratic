@@ -39,7 +39,7 @@ export const insertActionsSpec: InsertActionSpec = {
     labelVerbose: 'Insert Python code',
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
-      const cursor = sheets.sheet.cursor.getCursor();
+      const cursor = sheets.sheet.cursor.position;
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
         diffEditorContent: undefined,
@@ -61,7 +61,7 @@ export const insertActionsSpec: InsertActionSpec = {
     labelVerbose: 'Insert JavaScript code',
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
-      const cursor = sheets.sheet.cursor.getCursor();
+      const cursor = sheets.sheet.cursor.position;
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
         diffEditorContent: undefined,
@@ -83,7 +83,7 @@ export const insertActionsSpec: InsertActionSpec = {
     labelVerbose: 'Insert Formula',
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
-      const cursor = sheets.sheet.cursor.getCursor();
+      const cursor = sheets.sheet.cursor.position;
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
         diffEditorContent: undefined,
@@ -105,7 +105,7 @@ export const insertActionsSpec: InsertActionSpec = {
     labelVerbose: 'Insert Python chart (Plotly)',
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
-      const cursor = sheets.sheet.cursor.getCursor();
+      const cursor = sheets.sheet.cursor.position;
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
         diffEditorContent: undefined,
@@ -127,7 +127,7 @@ export const insertActionsSpec: InsertActionSpec = {
     labelVerbose: 'Insert JavaScript chart (Chart.js)',
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
-      const cursor = sheets.sheet.cursor.getCursor();
+      const cursor = sheets.sheet.cursor.position;
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
         diffEditorContent: undefined,
@@ -149,7 +149,7 @@ export const insertActionsSpec: InsertActionSpec = {
     labelVerbose: 'Insert JavaScript API request',
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
-      const cursor = sheets.sheet.cursor.getCursor();
+      const cursor = sheets.sheet.cursor.position;
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
         diffEditorContent: undefined,
@@ -171,7 +171,7 @@ export const insertActionsSpec: InsertActionSpec = {
     labelVerbose: 'Insert Python API request',
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
-      const cursor = sheets.sheet.cursor.getCursor();
+      const cursor = sheets.sheet.cursor.position;
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
         diffEditorContent: undefined,
@@ -237,8 +237,8 @@ export const insertActionsSpec: InsertActionSpec = {
     labelVerbose: 'Insert cell reference',
     run: () => {
       if (pixiAppSettings.codeEditorState.showCodeEditor) {
-        const { sheetId, pos, language } = pixiAppSettings.codeEditorState.codeCell;
-        insertCellRef(pos, sheetId, language);
+        const { sheetId, language } = pixiAppSettings.codeEditorState.codeCell;
+        insertCellRef(sheetId, language);
       }
     },
   },
@@ -254,7 +254,7 @@ export const insertActionsSpec: InsertActionSpec = {
       const cursor = sheet.cursor;
       const today = new Date();
       const formattedDate = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
-      quadraticCore.setCellValue(sheet.id, cursor.cursorPosition.x, cursor.cursorPosition.y, formattedDate);
+      quadraticCore.setCellValue(sheet.id, cursor.position.x, cursor.position.y, formattedDate);
     },
   },
   [Action.InsertTodayTime]: {
@@ -265,7 +265,7 @@ export const insertActionsSpec: InsertActionSpec = {
       const cursor = sheet.cursor;
       const today = new Date();
       const formattedTime = `${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}`;
-      quadraticCore.setCellValue(sheet.id, cursor.cursorPosition.x, cursor.cursorPosition.y, formattedTime);
+      quadraticCore.setCellValue(sheet.id, cursor.position.x, cursor.position.y, formattedTime);
     },
   },
 };

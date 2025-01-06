@@ -13,7 +13,6 @@ import {
   JsRenderFill,
   JsSheetFill,
   JsValidationWarning,
-  Selection,
   SheetBounds,
   SheetInfo,
   Validation,
@@ -49,7 +48,7 @@ interface EventTypes {
   changeSheet: (sheetId: string) => void;
   sheetBounds: (sheetBounds: SheetBounds) => void;
 
-  setCursor: (cursor?: string, selection?: Selection) => void;
+  setCursor: (selection?: string) => void;
   cursorPosition: () => void;
   generateThumbnail: () => void;
   changeInput: (input: boolean, initialValue?: string, cursorMode?: CursorMode) => void;
@@ -58,7 +57,7 @@ interface EventTypes {
 
   sheetOffsets: (sheetId: string, offsets: JsOffset[]) => void;
   sheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
-  sheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
+  sheetMetaFills: (sheetId: string, fills: JsSheetFill[]) => void;
   htmlOutput: (html: JsHtmlOutput[]) => void;
   htmlUpdate: (html: JsHtmlOutput) => void;
   bordersSheet: (sheetId: string, borders?: JsBordersSheet) => void;
@@ -130,6 +129,11 @@ interface EventTypes {
 
   suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;
 
+  // use this to set a drawing element to dirty
+  viewportChanged: () => void;
+
+  // use this only if you need to immediately get the viewport's value (ie, from React)
+  viewportChangedReady: () => void;
   hashContentChanged: (sheetId: string, hashX: number, hashY: number) => void;
 
   codeEditorCodeCell: (codeCell?: CodeCell) => void;

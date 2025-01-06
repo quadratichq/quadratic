@@ -1,6 +1,6 @@
 import { AITool } from '@/app/ai/tools/aiTools';
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
-import { getRowColSentence, ToolCard } from '@/app/ui/menus/AIAnalyst/toolCards/ToolCard';
+import { ToolCard } from '@/app/ui/menus/AIAnalyst/toolCards/ToolCard';
 import { GridActionIcon } from '@/shared/components/Icons';
 import { useEffect, useState } from 'react';
 import { z } from 'zod';
@@ -42,16 +42,5 @@ export const DeleteCells = ({ args, loading }: DeleteCellsProps) => {
     return <ToolCard icon={icon} label={label} isLoading />;
   }
 
-  return toolArgs.data.rects.map((rect, index) => {
-    const rows = rect.rect_height;
-    const cols = rect.rect_width;
-    return (
-      <ToolCard
-        key={`${index}-${rect.top_left_x},${rect.top_left_y} ${rect.rect_height}x${rect.rect_width}`}
-        icon={<GridActionIcon />}
-        label={'Action: delete'}
-        description={`${getRowColSentence({ rows, cols })} at (${rect.top_left_x}, ${rect.top_left_y})`}
-      />
-    );
-  });
+  return <ToolCard icon={<GridActionIcon />} label={'Action: delete'} description={`${toolArgs.data.selection}`} />;
 };

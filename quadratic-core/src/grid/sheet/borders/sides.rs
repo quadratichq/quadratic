@@ -1,3 +1,5 @@
+// todo: remove this
+#[allow(dead_code)]
 #[derive(Debug, Default, PartialEq)]
 pub(crate) struct Sides {
     pub left: bool,
@@ -6,6 +8,8 @@ pub(crate) struct Sides {
     pub bottom: bool,
 }
 
+// todo: remove this
+#[allow(dead_code)]
 impl Sides {
     pub fn all() -> Self {
         Self {

@@ -1,21 +1,23 @@
-import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
+import {
+  codeEditorCellsAccessedAtom,
+  codeEditorCodeCellAtom,
+  codeEditorUnsavedChangesAtom,
+} from '@/app/atoms/codeEditorAtom';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Coordinate } from '@/app/gridGL/types/size';
-import { ParseFormulaReturnType, Span } from '@/app/helpers/formulaNotation';
-import { getKey, StringId } from '@/app/helpers/getKey';
-import { parsePython as parseCellsAccessed } from '@/app/helpers/parseEditorPythonCell';
-import { SheetRect } from '@/app/quadratic-core-types';
+import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
+import { parseFormulaReturnToCellsAccessed, ParseFormulaReturnType } from '@/app/helpers/formulaNotation';
+import { getKey, type StringId } from '@/app/helpers/getKey';
+import type { JsCoordinate, Span } from '@/app/quadratic-core-types';
 import { parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { colors } from '@/app/theme/colors';
-import { Monaco } from '@monaco-editor/react';
-import * as monaco from 'monaco-editor';
+import type { Monaco } from '@monaco-editor/react';
+import type * as monaco from 'monaco-editor';
 import { useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export function extractCellsFromParseFormula(
   parsedFormula: ParseFormulaReturnType,
-  cell: Coordinate,
-  sheet: string
+  cell: JsCoordinate
 ): { cellId: CellRefId; span: Span; index: number }[] {
   return parsedFormula.cell_refs.map(({ cell_ref, span }, index) => {
     if (cell_ref.type === 'CellRange') {
@@ -39,8 +41,7 @@ export function extractCellsFromParseFormula(
   });
 }
 
-export type CellRefId = StringId | `${StringId}:${StringId}`;
-export type CellMatch = Map<CellRefId, monaco.Range>;
+type CellRefId = StringId | `${StringId}:${StringId}`;
 
 export const createFormulaStyleHighlights = () => {
   const id = 'useEditorCellHighlights';
@@ -61,10 +62,11 @@ export const createFormulaStyleHighlights = () => {
 export const useEditorCellHighlights = (
   isValidRef: boolean,
   editorInst: monaco.editor.IStandaloneCodeEditor | null,
-  monacoInst: Monaco | null,
-  cellsAccessed?: SheetRect[] | null
+  monacoInst: Monaco | null
 ) => {
   const codeCell = useRecoilValue(codeEditorCodeCellAtom);
+  const cellsAccessed = useRecoilValue(codeEditorCellsAccessedAtom);
+  const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
   const decorations = useRef<monaco.editor.IEditorDecorationsCollection | undefined>(undefined);
 
   // Dynamically generate the classnames we'll use for cell references by pulling
@@ -80,62 +82,74 @@ export const useEditorCellHighlights = (
     const model = editorInst.getModel();
     if (!model) return;
 
-    const onChangeModel = async () => {
+    const onChange = () => {
       if (decorations) decorations.current?.clear();
 
       const cellColorReferences = new Map<string, number>();
       let newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
 
       const modelValue = editorInst.getValue();
-      let parsed;
-      if (codeCell.language === 'Python' || codeCell.language === 'Javascript') {
-        parsed = parseCellsAccessed(cellsAccessed) as ParseFormulaReturnType;
+      if (
+        codeCell.language === 'Python' ||
+        codeCell.language === 'Javascript' ||
+        codeCellIsAConnection(codeCell.language)
+      ) {
+        pixiApp.cellHighlights.fromCellsAccessed(unsavedChanges ? null : cellsAccessed);
       } else if (codeCell.language === 'Formula') {
-        parsed = (await parseFormula(modelValue, codeCell.pos.x, codeCell.pos.y)) as ParseFormulaReturnType;
-      }
+        const parsed = JSON.parse(parseFormula(modelValue, codeCell.pos.x, codeCell.pos.y)) as ParseFormulaReturnType;
+        if (parsed) {
+          const cellsAccessed = parseFormulaReturnToCellsAccessed(parsed, codeCell.pos, codeCell.sheetId);
+          pixiApp.cellHighlights.fromCellsAccessed(cellsAccessed);
+          const extractedCells = extractCellsFromParseFormula(parsed, codeCell.pos);
+          extractedCells.forEach((value, index) => {
+            const { cellId, span } = value;
+            const startPosition = model.getPositionAt(span.start);
 
-      if (parsed) {
-        pixiApp.cellHighlights.fromFormula(parsed, codeCell.pos, codeCell.sheetId);
-        if (codeCell.language !== 'Formula') return;
+            const cellColor =
+              cellColorReferences.get(cellId) ?? cellColorReferences.size % colors.cellHighlightColor.length;
+            cellColorReferences.set(cellId, cellColor);
 
-        const extractedCells = extractCellsFromParseFormula(parsed, codeCell.pos, codeCell.sheetId);
-        extractedCells.forEach((value, index) => {
-          const { cellId, span } = value;
-          const startPosition = model.getPositionAt(span.start);
+            const range = new monacoInst.Range(
+              startPosition.lineNumber,
+              startPosition.column,
+              startPosition.lineNumber,
+              startPosition.column + span.end - span.start
+            );
 
-          const cellColor =
-            cellColorReferences.get(cellId) ?? cellColorReferences.size % colors.cellHighlightColor.length;
-          cellColorReferences.set(cellId, cellColor);
+            // decorations color the cell references in the editor
+            newDecorations.push({
+              range,
+              options: {
+                stickiness: 1,
+                inlineClassName: `cell-reference-${cellColorReferences.get(cellId)}`,
+              },
+            });
 
-          const range = new monacoInst.Range(
-            startPosition.lineNumber,
-            startPosition.column,
-            startPosition.lineNumber,
-            startPosition.column + span.end - span.start
-          );
+            const editorCursorPosition = editorInst.getPosition();
 
-          // decorations color the cell references in the editor
-          newDecorations.push({
-            range,
-            options: {
-              stickiness: 1,
-              inlineClassName: `cell-reference-${cellColorReferences.get(cellId)}`,
-            },
+            if (editorCursorPosition && range.containsPosition(editorCursorPosition)) {
+              pixiApp.cellHighlights.setSelectedCell(index);
+            }
           });
 
-          const editorCursorPosition = editorInst.getPosition();
-
-          if (editorCursorPosition && range.containsPosition(editorCursorPosition)) {
-            pixiApp.cellHighlights.setHighlightedCell(index);
-          }
-        });
-
-        // update the cell references in the editor
-        decorations.current = editorInst.createDecorationsCollection(newDecorations);
+          // update the cell references in the editor
+          decorations.current = editorInst.createDecorationsCollection(newDecorations);
+        }
       }
     };
 
-    onChangeModel();
-    editorInst.onDidChangeModelContent(() => onChangeModel());
-  }, [cellsAccessed, codeCell.language, codeCell.pos, codeCell.sheetId, editorInst, isValidRef, monacoInst]);
+    onChange();
+
+    editorInst.onDidChangeModelContent(() => onChange());
+    editorInst.onDidChangeCursorPosition(() => onChange());
+  }, [
+    cellsAccessed,
+    codeCell.language,
+    codeCell.pos,
+    codeCell.sheetId,
+    editorInst,
+    isValidRef,
+    monacoInst,
+    unsavedChanges,
+  ]);
 };

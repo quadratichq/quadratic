@@ -1,13 +1,11 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import {
-  codeEditorCellsAccessedAtom,
   codeEditorCodeCellAtom,
   codeEditorDiffEditorContentAtom,
   codeEditorEditorContentAtom,
   codeEditorLoadingAtom,
   codeEditorShowCodeEditorAtom,
   codeEditorShowDiffEditorAtom,
-  codeEditorUnsavedChangesAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
@@ -19,7 +17,6 @@ import { CodeEditorPlaceholder } from '@/app/ui/menus/CodeEditor/CodeEditorPlace
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
 import { useCloseCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useCloseCodeEditor';
 import { useEditorCellHighlights } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
-import { useEditorOnSelectionChange } from '@/app/ui/menus/CodeEditor/hooks/useEditorOnSelectionChange';
 import { useEditorReturn } from '@/app/ui/menus/CodeEditor/hooks/useEditorReturn';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import {
@@ -59,13 +56,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
   const showDiffEditor = useRecoilValue(codeEditorShowDiffEditorAtom);
   const diffEditorContent = useRecoilValue(codeEditorDiffEditorContentAtom);
-  const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
   const loading = useRecoilValue(codeEditorLoadingAtom);
-  const cellsAccessedState = useRecoilValue(codeEditorCellsAccessedAtom);
-  const cellsAccessed = useMemo(
-    () => (!unsavedChanges ? cellsAccessedState : []),
-    [cellsAccessedState, unsavedChanges]
-  );
   const {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
@@ -78,8 +69,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
 
   const [isValidRef, setIsValidRef] = useState(false);
   const [monacoInst, setMonacoInst] = useState<Monaco | null>(null);
-  useEditorCellHighlights(isValidRef, editorInst, monacoInst, cellsAccessed);
-  useEditorOnSelectionChange(isValidRef, editorInst, monacoInst);
+  useEditorCellHighlights(isValidRef, editorInst, monacoInst);
   useEditorReturn(isValidRef, editorInst, monacoInst);
 
   const { closeEditor } = useCloseCodeEditor({
@@ -97,13 +87,13 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   useEffect(() => {
     const insertText = (text: string) => {
       if (!editorInst) return;
-      const position = editorInst.getPosition();
-      const model = editorInst.getModel();
-      if (!position || !model) return;
+      const line = editorInst.getPosition();
+      if (!line) return;
       const selection = editorInst.getSelection();
-      const range =
-        selection || new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column);
-      model.applyEdits([{ range, text }]);
+      const range = new monaco.Range(line.lineNumber, line.column, line.lineNumber, line.column);
+      const id = { major: 1, minor: 1 };
+      const op = { identifier: id, range: selection || range, text: text, forceMoveMarkers: true };
+      editorInst.executeEdits('insertCelRef', [op]);
       editorInst.focus();
     };
     events.on('insertCodeEditorText', insertText);
@@ -147,10 +137,10 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
         '!findWidgetVisible && !inReferenceSearchEditor && !editorHasSelection && !suggestWidgetVisible'
       );
       editor.addCommand(monaco.KeyCode.KeyL | monaco.KeyMod.CtrlCmd, () => {
-        insertCellRef(codeCell.pos, codeCell.sheetId, codeCell.language);
+        insertCellRef(codeCell.sheetId, codeCell.language);
       });
     },
-    [closeEditor, codeCell.language, codeCell.pos, codeCell.sheetId]
+    [closeEditor, codeCell.language, codeCell.sheetId]
   );
 
   const runEditorAction = useCallback((e: CustomEvent<string>) => editorInst?.getAction(e.detail)?.run(), [editorInst]);
@@ -171,6 +161,42 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
       monaco.editor.setTheme('quadratic');
 
       addCommands(editor, monaco);
+      // this adds a cursor when the editor is not focused (useful when using insertCellRef button)
+      const decorationCollection = editor.createDecorationsCollection();
+
+      let position: monaco.Position | null = null;
+
+      const updateCursorIndicator = () => {
+        position = editor.getPosition();
+      };
+
+      const hideCursorIndicator = () => decorationCollection.set([]);
+
+      const showCursorIndicator = () => {
+        if (!position) return;
+
+        // Define the decoration that represents the visual indicator
+        const decoration = {
+          range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column + 1),
+          options: {
+            isWholeLine: false,
+            className: 'w-0',
+            before: {
+              content: ' ',
+              backgroundColor: 'transparent',
+              inlineClassName: 'inline-block w-cursor bg-black h-full',
+              inlineClassNameAffectsLetterSpacing: false,
+            },
+          },
+        };
+
+        // Update the decoration collection
+        decorationCollection.set([decoration]);
+      };
+
+      editor.onDidChangeCursorPosition(updateCursorIndicator);
+      editor.onDidFocusEditorText(hideCursorIndicator);
+      editor.onDidBlurEditorText(showCursorIndicator);
 
       // Only register language once
       if (monacoLanguage === 'formula' && !registered.Formula) {

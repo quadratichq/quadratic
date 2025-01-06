@@ -36,11 +36,7 @@ export class UrlParamsUser {
     const x = parseInt(params.get('x') ?? '');
     const y = parseInt(params.get('y') ?? '');
     if (!isNaN(x) && !isNaN(y)) {
-      sheets.sheet.cursor.changePosition({
-        cursorPosition: { x, y },
-        keyboardMovePosition: { x, y },
-        ensureVisible: true,
-      });
+      sheets.sheet.cursor.moveTo(x, y);
     }
   }
 
@@ -55,7 +51,7 @@ export class UrlParamsUser {
         if (!pixiAppSettings.setEditorInteractionState) {
           throw new Error('Expected setEditorInteractionState to be set in urlParams.loadCode');
         }
-        const { x, y } = sheets.sheet.cursor.cursorPosition;
+        const { x, y } = sheets.sheet.cursor.position;
         pixiAppSettings.setCodeEditorState?.((prev) => ({
           ...prev,
           showCodeEditor: true,
@@ -145,7 +141,7 @@ export class UrlParamsUser {
 
       // otherwise we use the normal cursor
       else {
-        const cursor = sheets.sheet.cursor.cursorPosition;
+        const cursor = sheets.sheet.cursor.position;
         url.set('x', cursor.x.toString());
         url.set('y', cursor.y.toString());
         if (sheets.sheet !== sheets.getFirst()) {

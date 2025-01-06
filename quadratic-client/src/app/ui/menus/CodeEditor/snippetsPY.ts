@@ -37,8 +37,8 @@ fake.name()
 # Learn more:
 # https://docs.quadratichq.com/python/packages`;
 
-export const SNIPPET_PY_READ = `my_value = cell(0, 0)
-my_dataframe = cells((0, 0), (1, 10))
+export const SNIPPET_PY_READ = `my_value = q.cells('A1')
+my_dataframe = q.cells('A1:A10')
 
 # Learn more:
 # https://docs.quadratichq.com/python/reference-cells`;
@@ -126,28 +126,6 @@ filtered_df = df.query('num_legs > 2 and num_specimen_seen >= 1')
 
 # return your filtered DataFrame to the sheet
 filtered_df`,
-  },
-  {
-    label: 'Relative cell reference',
-    keywords: 'relative reference position cell',
-    code: `# reference one cell to the left of the current cell
-c = rel_cell(-1, 0)
-c = rc(-1, 0)
-
-# above for one cell to the left is equivalent to the following 
-(x, y) = pos()
-c = cell(x - 1, y)
-
-# one cell left
-c = rc(-1, 0)
-# one cell up 
-c = rc(0, -1)
-# one cell right 
-c = rc(1, 0)
-# one cell down
-c = rc(0, 1)
-# five cells left, five cells down
-c = rc(-5, 5)`,
   },
   {
     label: 'Create a line chart',

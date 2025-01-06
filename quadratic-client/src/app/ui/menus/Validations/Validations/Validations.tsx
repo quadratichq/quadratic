@@ -1,4 +1,5 @@
 import { editorInteractionStateShowValidationAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { bigIntReplacer } from '@/app/bigint';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { useValidationsData } from '@/app/ui/menus/Validations/Validations/useValidationsData';
@@ -24,7 +25,7 @@ export const Validations = () => {
       }
       const cursor = sheets.sheet.cursor;
       const newHighlighted = validations
-        .filter((validation) => cursor.overlapsSelection(validation.selection))
+        .filter((validation) => cursor.overlapsSelection(JSON.stringify(validation.selection, bigIntReplacer)))
         .map((validation) => validation.id);
 
       setHighlighted(newHighlighted);

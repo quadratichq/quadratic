@@ -81,11 +81,11 @@ impl GridController {
             transaction.add_from_code_run(sheet_id, pos, &old_code_run);
             transaction.add_from_code_run(sheet_id, pos, &new_code_run);
 
-            self.send_updated_bounds_rect(&sheet_rect, false);
+            self.send_updated_bounds(sheet_rect.sheet_id);
             transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
             if transaction.is_user() {
                 if let Some(sheet) = self.try_sheet(sheet_id) {
-                    let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into());
+                    let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into(), true);
                     if !rows.is_empty() {
                         let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
                         resize_rows.extend(rows);
@@ -95,17 +95,23 @@ impl GridController {
         }
 
         if transaction.is_user_undo_redo() {
-            transaction.forward_operations.push(Operation::SetCodeRun {
-                sheet_pos,
-                code_run: new_code_run,
-                index,
-            });
+            transaction
+                .forward_operations
+                .push(Operation::SetCodeRunVersion {
+                    sheet_pos,
+                    code_run: new_code_run,
+                    index,
+                    version: 1,
+                });
 
-            transaction.reverse_operations.push(Operation::SetCodeRun {
-                sheet_pos,
-                code_run: old_code_run,
-                index,
-            });
+            transaction
+                .reverse_operations
+                .push(Operation::SetCodeRunVersion {
+                    sheet_pos,
+                    code_run: old_code_run,
+                    index,
+                    version: 1,
+                });
 
             if transaction.is_user() {
                 self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
@@ -113,7 +119,7 @@ impl GridController {
             }
         }
 
-        transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
+        transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
     }
 
     /// continues the calculate cycle after an async call
@@ -227,6 +233,7 @@ impl GridController {
                 cells_accessed: transaction.cells_accessed.clone(),
             },
         };
+        transaction.cells_accessed.clear();
         transaction.waiting_for_async = None;
         self.finalize_code_run(transaction, sheet_pos, Some(new_code_run), None);
 
@@ -322,13 +329,11 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashSet;
-
     use serial_test::{parallel, serial};
 
     use super::*;
+    use crate::grid::CodeCellValue;
     use crate::wasm_bindings::js::expect_js_call_count;
-    use crate::CodeCellValue;
 
     #[test]
     #[parallel]
@@ -365,7 +370,7 @@ mod test {
             line_number: None,
             output_type: None,
             last_modified: Utc::now(),
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             spill_error: false,
         };
         gc.finalize_code_run(transaction, sheet_pos, Some(new_code_run.clone()), None);
@@ -394,7 +399,7 @@ mod test {
             line_number: None,
             output_type: None,
             last_modified: Utc::now(),
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             spill_error: false,
         };
         gc.finalize_code_run(transaction, sheet_pos, Some(new_code_run.clone()), None);
