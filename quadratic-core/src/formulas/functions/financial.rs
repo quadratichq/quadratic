@@ -52,20 +52,8 @@ fn get_functions() -> Vec<FormulaFunction> {
 #[cfg(test)]
 mod tests {
     use crate::formulas::tests::*;
+    use crate::util::assert_f64_approx_eq;
     use serial_test::parallel;
-
-    fn assert_close(expected: f64, actual: &str, msg: &str) {
-        let actual = actual.parse::<f64>().unwrap();
-        let percentage_diff = ((actual - expected).abs() / expected) * 100.0;
-        assert!(
-            percentage_diff <= 1.0,
-            "{}: Expected {} but got {}, diff: {:.2}%",
-            msg,
-            expected,
-            actual,
-            percentage_diff
-        );
-    }
 
     #[test]
     #[parallel]
@@ -73,39 +61,38 @@ mod tests {
         let g = Grid::new();
 
         // Test basic loan payment calculation
-        // $10000 loan, 5 years, 8% annual interest, monthly payments
-        assert_close(
-            -202.76,
-            &eval_to_string(&g, "PMT(0.08/12, 12*5, 10000)"),
-            "Basic loan payment",
+        assert_f64_approx_eq(
+            -202.76394,
+            eval_to_string(&g, "PMT(0.08/12, 12*5, 10000)").parse::<f64>().unwrap(),
+            "Basic loan payment"
         );
 
         // Test with future value
-        assert_close(
-            -260.92,
-            &eval_to_string(&g, "PMT(0.06/12, 24, 5000, 1000)"),
-            "Payment with future value",
+        assert_f64_approx_eq(
+            -260.92366,
+            eval_to_string(&g, "PMT(0.06/12, 24, 5000, 1000)").parse::<f64>().unwrap(),
+            "Payment with future value"
         );
 
         // Test with payment at beginning of period
-        assert_close(
-            -259.63,
-            &eval_to_string(&g, "PMT(0.06/12, 24, 5000, 1000, 1)"),
-            "Payment at beginning",
+        assert_f64_approx_eq(
+            -259.62553,
+            eval_to_string(&g, "PMT(0.06/12, 24, 5000, 1000, 1)").parse::<f64>().unwrap(),
+            "Payment at beginning"
         );
 
         // Test with zero interest rate
-        assert_close(
+        assert_f64_approx_eq(
             -100.0,
-            &eval_to_string(&g, "PMT(0, 12, 1200)"),
-            "Zero interest rate",
+            eval_to_string(&g, "PMT(0, 12, 1200)").parse::<f64>().unwrap(),
+            "Zero interest rate"
         );
 
         // Test with negative number of periods
-        assert_close(
-            -136.10,
-            &eval_to_string(&g, "PMT(0.08/12, -12*5, -10000)"),
-            "Negative periods",
+        assert_f64_approx_eq(
+            -136.09727,
+            eval_to_string(&g, "PMT(0.08/12, -12*5, -10000)").parse::<f64>().unwrap(),
+            "Negative periods"
         );
     }
 }
