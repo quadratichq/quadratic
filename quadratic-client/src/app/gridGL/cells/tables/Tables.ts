@@ -233,13 +233,15 @@ export class Tables extends Container<Table> {
   // table is not active to allow the user to select the row above the table.
   pointerDown(world: Point): TablePointerDownResult | undefined {
     for (const table of this.children) {
-      const result = table.intersectsTableName(world);
-      if (result && (result.type !== 'table-name' || this.isTableActive(table))) {
-        return result;
-      }
-      const columnName = table.pointerDown(world);
-      if (columnName && columnName.type !== 'table-name') {
-        return columnName;
+      if (this.isActive(table)) {
+        const result = table.intersectsTableName(world);
+        if (result && (result.type !== 'table-name' || this.isTableActive(table))) {
+          return result;
+        }
+        const columnName = table.pointerDown(world);
+        if (columnName && columnName.type !== 'table-name') {
+          return columnName;
+        }
       }
     }
   }
@@ -248,6 +250,10 @@ export class Tables extends Container<Table> {
     for (const table of this.children) {
       const result = table.pointerMove(world);
       if (result) {
+        // the table name can only be active if the table is active
+        if (result === 'table-name' && !this.isTableActive(table)) {
+          return true;
+        }
         this.tableCursor = table.tableCursor;
         // we don't make the title active unless we're already hovering over
         // it--this ensures that the user can select the row above the table

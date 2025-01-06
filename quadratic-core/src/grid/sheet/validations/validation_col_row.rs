@@ -363,7 +363,7 @@ mod tests {
             sheet.validations.warnings.get(&pos![B3]),
             Some(&validation_rect_columns.id)
         );
-        assert!(sheet.validations.warnings.get(&pos![C3]).is_none());
+        assert!(!sheet.validations.warnings.contains_key(&pos![C3]));
         expect_js_call(
             "jsSheetValidations",
             format!(
@@ -515,7 +515,7 @@ mod tests {
             sheet.validations.warnings.get(&pos![C2]),
             Some(&validation_rect_rows.id)
         );
-        assert!(sheet.validations.warnings.get(&pos![C3]).is_none());
+        assert!(!sheet.validations.warnings.contains_key(&pos![C3]));
         expect_js_call(
             "jsSheetValidations",
             format!(
@@ -620,7 +620,7 @@ mod tests {
             sheet.validations.warnings.get(&pos![C3]),
             Some(&validation_rect_cols.id)
         );
-        assert!(sheet.validations.warnings.get(&pos![D3]).is_none());
+        assert!(!sheet.validations.warnings.contains_key(&pos![D3]));
         expect_js_call(
             "jsSheetValidations",
             format!(
@@ -757,7 +757,7 @@ mod tests {
             sheet.validations.warnings.get(&pos![C3]),
             Some(&validation_rect_rows.id)
         );
-        assert!(sheet.validations.warnings.get(&pos![C4]).is_none());
+        assert!(!sheet.validations.warnings.contains_key(&pos![C4]));
         expect_js_call(
             "jsSheetValidations",
             format!(

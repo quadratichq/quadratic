@@ -1,5 +1,5 @@
 use crate::{
-    a1::{A1Context, RefRangeBounds, UNBOUNDED},
+    a1::{A1Context, UNBOUNDED},
     Pos, Rect,
 };
 
@@ -42,7 +42,7 @@ impl TableRef {
                         }
                     }
                 }
-                ColRange::ColumnToEnd(col) => {
+                ColRange::ColToEnd(col) => {
                     if let Some((start, end)) = table.try_col_range_to_end(col) {
                         let start = start + table.bounds.min.x;
                         let end = end + table.bounds.min.x;
@@ -110,7 +110,7 @@ impl TableRef {
                 let end = table_entry.try_col_index(end).unwrap_or(0);
                 end - start
             }
-            ColRange::ColumnToEnd(col) => {
+            ColRange::ColToEnd(col) => {
                 table_entry.visible_columns.len() as i64
                     - table_entry.try_col_index(col).unwrap_or(0)
             }
@@ -168,7 +168,7 @@ impl TableRef {
                     .max(bounds.min.x + start as i64)
                     .max(bounds.min.x + end as i64);
             }
-            ColRange::ColumnToEnd(col) => {
+            ColRange::ColToEnd(col) => {
                 let start = table.visible_columns.iter().position(|c| c == col)?;
                 min_x = min_x.min(bounds.min.x + start as i64);
                 max_x = min_x.max(bounds.min.x + table.visible_columns.len() as i64);
@@ -199,7 +199,12 @@ impl TableRef {
     pub fn cursor_pos_from_last_range(&self, context: &A1Context) -> Pos {
         if let Some(table) = context.try_table(&self.table_name) {
             let x = table.bounds.min.x;
-            let y = table.bounds.min.y;
+            let y = table.bounds.min.y
+                + if self.headers || !table.show_headers || table.bounds.height() == 1 {
+                    0
+                } else {
+                    1
+                };
             Pos { x, y }
         } else {
             dbgjs!("Expected to find table in cursor_pos_from_last_range");
@@ -214,7 +219,7 @@ impl TableRef {
             ColRange::All => true,
             ColRange::Col(_) => false,
             ColRange::ColRange(start, end) => start != end,
-            ColRange::ColumnToEnd(_) => true,
+            ColRange::ColToEnd(_) => true,
         }
     }
 
@@ -228,6 +233,8 @@ impl TableRef {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
+    use crate::a1::RefRangeBounds;
+
     use super::*;
 
     fn setup_test_context() -> A1Context {
@@ -392,7 +399,7 @@ mod tests {
         };
 
         let ranges = table_ref.convert_to_ref_range_bounds(1, &context);
-        assert_eq!(ranges, Some(RefRangeBounds::test_a1("B1:B3")));
+        assert_eq!(ranges, Some(RefRangeBounds::test_a1("B2:B3")));
 
         // Test case 2: Column range with specific rows
         let table_ref = TableRef {
@@ -410,7 +417,7 @@ mod tests {
         // Test case 3: Column to end
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_range: ColRange::ColumnToEnd("B".to_string()),
+            col_range: ColRange::ColToEnd("B".to_string()),
             row_range: RowRange::CurrentRow,
             data: true,
             headers: false,
@@ -448,7 +455,7 @@ mod tests {
         // Column to end is two-dimensional
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
-            col_range: ColRange::ColumnToEnd("B".to_string()),
+            col_range: ColRange::ColToEnd("B".to_string()),
             row_range: RowRange::All,
             data: true,
             headers: false,
@@ -469,5 +476,26 @@ mod tests {
             totals: false,
         };
         assert_eq!(table_ref.try_to_pos(&context).unwrap(), pos![B1]);
+    }
+
+    #[test]
+    fn test_cursor_pos_from_last_range() {
+        let mut context = setup_test_context();
+        let mut table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::Col("B".to_string()),
+            row_range: RowRange::All,
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A2]);
+
+        context.table_map.tables.first_mut().unwrap().show_headers = false;
+        assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A1]);
+
+        context.table_map.tables.first_mut().unwrap().show_headers = true;
+        table_ref.headers = true;
+        assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A1]);
     }
 }

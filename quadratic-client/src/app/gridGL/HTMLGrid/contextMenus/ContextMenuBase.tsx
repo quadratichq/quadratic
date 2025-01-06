@@ -30,10 +30,13 @@ export const ContextMenuBase = ({
   }, [open]);
 
   const onClose = useCallback(() => {
+    // we don't want to stop renaming when moving the viewport
+    if (contextMenu.rename) return;
+
     setContextMenu({});
     events.emit('contextMenuClose');
     focusGrid();
-  }, [setContextMenu]);
+  }, [contextMenu.rename, setContextMenu]);
 
   useEffect(() => {
     pixiApp.viewport.on('moved', onClose);
