@@ -13,6 +13,7 @@ import { useRecoilValue } from 'recoil';
 export const TableColumnHeaderRename = () => {
   const contextMenu = useRecoilValue(contextMenuAtom);
 
+  // todo: use state for position, and reset it when the viewport changes
   const position = useMemo(() => {
     if (
       contextMenu.type !== ContextMenuType.TableColumn ||
