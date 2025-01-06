@@ -9,7 +9,7 @@ concurrency:
 
 jobs:
   delete_stack:
-    name: Delete Stack - Staging
+    name: Delete Stack - Preview
     permissions:
       contents: read
       pull-requests: write
@@ -21,19 +21,19 @@ jobs:
     steps:
       - name: Find Delete Stack Comment
         uses: peter-evans/find-comment@v3
-        id: staging-delete-stack-comment
+        id: preview-delete-stack-comment-start
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: "github-actions[bot]"
-          body-includes: "Staging - Stack"
+          body-includes: "Preview - Stack"
 
       - name: Comment on delete stack start
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ steps.staging-delete-stack-comment.outputs.comment-id }}
+          comment-id: ${{ steps.preview-delete-stack-comment-start.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Staging - Stack
+            ## Preview - Stack
             ⏳ Stack deletion in progress...
 
             🔍 Track progress in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
@@ -63,26 +63,35 @@ jobs:
             echo "Stack ${{ env.STACK_NAME }} does not exist"
           fi
 
+      - name: Find Delete Stack Comment
+        uses: peter-evans/find-comment@v3
+        if: always()
+        id: preview-delete-stack-comment-update
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Preview - Stack"
+
       - name: Update comment on delete stack success
-        if: success() && steps.staging-delete-stack-comment.outputs.comment-id != ''
+        if: success()
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ steps.staging-delete-stack-comment.outputs.comment-id }}
+          comment-id: ${{ steps.preview-delete-stack-comment-update.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Staging - Stack
-            ✅ Staging stack deleted successfully.
+            ## Preview - Stack
+            ✅ Preview stack deleted successfully.
           edit-mode: replace
 
       - name: Update comment on delete stack failure
-        if: failure() && steps.staging-delete-stack-comment.outputs.comment-id != ''
+        if: failure()
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ steps.staging-delete-stack-comment.outputs.comment-id }}
+          comment-id: ${{ steps.preview-delete-stack-comment-update.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Staging - Stack
-            ❌ Staging stack deletion encountered an error.
+            ## Preview - Stack
+            ❌ Preview stack deletion encountered an error.
 
             🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
           edit-mode: replace
