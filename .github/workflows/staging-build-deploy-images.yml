@@ -10,7 +10,7 @@ concurrency:
 
 jobs:
   create_deployment:
-    name: Create Deployment - Staging
+    name: Create Deployment - Preview
     runs-on: blacksmith-2vcpu-ubuntu-2204
     permissions:
       contents: read
@@ -19,23 +19,23 @@ jobs:
       deployments: write
     outputs:
       deployment_id: ${{ steps.deployment.outputs.id }}
-      comment_id: ${{ steps.staging-build-deploy-images-comment.outputs.comment-id }}
+      comment_id: ${{ steps.preview-build-deploy-images-comment.outputs.comment-id }}
     steps:
       - name: Find Build & Deploy Images Comment
         uses: peter-evans/find-comment@v3
-        id: staging-build-deploy-images-comment
+        id: preview-build-deploy-images-comment
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: "github-actions[bot]"
-          body-includes: "Staging - Build & Deploy Images"
+          body-includes: "Preview - Build & Deploy Images"
 
       - name: Create initial status comment
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ steps.staging-build-deploy-images-comment.outputs.comment-id }}
+          comment-id: ${{ steps.preview-build-deploy-images-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Staging - Build & Deploy Images
+            ## Preview - Build & Deploy Images
             ⏳ Build images
             ⏳ Deploy images
 
@@ -49,14 +49,14 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             /repos/${{ github.repository }}/deployments \
             -f ref="${{ github.event.pull_request.head.ref }}" \
-            -f environment=staging \
+            -f environment=preview \
             --jq '.[] | .id' | while read -r id; do
               gh api \
                 --method POST \
                 -H "Accept: application/vnd.github+json" \
                 /repos/${{ github.repository }}/deployments/$id/statuses \
                 -f state="inactive" \
-                -f environment="staging" \
+                -f environment="preview" \
                 -f description="Superseded by newer deployment"
             done
         env:
@@ -73,7 +73,7 @@ jobs:
             -f description="Building and deploying PR #${{ github.event.pull_request.number }} (${GITHUB_SHA::7})" \
             -F auto_merge=false \
             -f required_contexts\[\] \
-            -f environment=staging \
+            -f environment=preview \
             -F transient_environment=true \
             -F production_environment=false \
             --jq '.id')
@@ -89,13 +89,13 @@ jobs:
             /repos/${{ github.repository }}/deployments/${{ steps.deployment.outputs.id }}/statuses \
             -f state="in_progress" \
             -f description="Building Docker images..." \
-            -f environment=staging \
+            -f environment=preview \
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build_images:
-    name: Build Images - Staging
+    name: Build Images - Preview
     needs: create_deployment
     if: (github.event.action != 'labeled' && github.event.action != 'unlabeled') || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && (startsWith(github.event.label.name, 'build:')))
     permissions:
@@ -125,7 +125,7 @@ jobs:
           comment-id: ${{ needs.create_deployment.outputs.comment_id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Staging - Build & Deploy Images
+            ## Preview - Build & Deploy Images
             ⏳ Building images...
             ⏳ Deploy images
 
@@ -244,7 +244,7 @@ jobs:
           comment-id: ${{ needs.create_deployment.outputs.comment_id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Staging - Build & Deploy Images
+            ## Preview - Build & Deploy Images
             ❌ Build images
             ❌ Deploy images
 
@@ -260,13 +260,13 @@ jobs:
             /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
             -f state="failure" \
             -f description="Failed to build ${{ matrix.service }} image" \
-            -f environment=staging \
+            -f environment=preview \
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   deploy_images:
-    name: Deploy Images - Staging
+    name: Deploy Images - Preview
     needs: [create_deployment, build_images]
     permissions:
       contents: read
@@ -285,7 +285,7 @@ jobs:
           comment-id: ${{ needs.create_deployment.outputs.comment_id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Staging - Build & Deploy Images
+            ## Preview - Build & Deploy Images
             ✅ Build images
             ⏳ Deploying images...
 
@@ -300,7 +300,7 @@ jobs:
             /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
             -f state="in_progress" \
             -f description="Deploying images..." \
-            -f environment=staging \
+            -f environment=preview \
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -458,7 +458,7 @@ jobs:
           comment-id: ${{ needs.create_deployment.outputs.comment_id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Staging - Build & Deploy Images
+            ## Preview - Build & Deploy Images
             ✅ Build images
             ✅ Deploy images
 
@@ -474,7 +474,7 @@ jobs:
           comment-id: ${{ needs.create_deployment.outputs.comment_id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Staging - Build & Deploy Images
+            ## Preview - Build & Deploy Images
             ✅ Build images
             ❌ Deploy images
 
@@ -491,7 +491,7 @@ jobs:
             -f state="success" \
             -f environment_url="https://pr-${{ github.event.pull_request.number }}.quadratic-preview.com" \
             -f description="Deployment successful!" \
-            -f environment=staging \
+            -f environment=preview \
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -505,7 +505,7 @@ jobs:
             /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
             -f state="failure" \
             -f description="Deployment failed" \
-            -f environment=staging \
+            -f environment=preview \
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
