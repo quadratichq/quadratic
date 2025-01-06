@@ -14,6 +14,8 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     permissions:
       contents: read
+      pull-requests: write
+      issues: write
       deployments: write
     outputs:
       deployment_id: ${{ steps.deployment.outputs.id }}
@@ -98,6 +100,8 @@ jobs:
     if: (github.event.action != 'labeled' && github.event.action != 'unlabeled') || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && (startsWith(github.event.label.name, 'build:')))
     permissions:
       contents: read
+      pull-requests: write
+      issues: write
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     strategy:
@@ -266,9 +270,9 @@ jobs:
     needs: [create_deployment, build_images]
     permissions:
       contents: read
-      deployments: write
-      issues: write
       pull-requests: write
+      issues: write
+      deployments: write
     runs-on: blacksmith-2vcpu-ubuntu-2204
     timeout-minutes: 30
     env:
