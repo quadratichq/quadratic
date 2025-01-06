@@ -138,11 +138,11 @@ Resources:
           EOF
 
           chmod +x /quadratic-selfhost/login.sh
-          chmod +x /quadratic-selfhost/start.sh
+          chmod +x /quadratic-selfhost/pull_start.sh
 
           cd /quadratic-selfhost
           ./login.sh
-          ./start.sh
+          ./pull_start.sh
 
   # Global Accelerator
   GlobalAccelerator:
