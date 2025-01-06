@@ -98,7 +98,7 @@ impl DataTable {
     }
 
     pub fn unique_column_header_name(&self, name: Option<&str>) -> String {
-        let name = name.unwrap_or("Column");
+        let name = name.unwrap_or("Column 1");
 
         if let Some(columns) = self.column_headers.as_ref() {
             let all_names = columns
