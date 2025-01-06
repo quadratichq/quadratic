@@ -280,7 +280,6 @@ pub(crate) fn import_code_run_builder(code_run: current::CodeRunSchema) -> Resul
         None
     };
     let code_run = CodeRun {
-        formatted_code_string: code_run.formatted_code_string,
         std_out: code_run.std_out,
         std_err: code_run.std_err,
         error,
@@ -505,7 +504,6 @@ pub(crate) fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
     };
 
     current::CodeRunSchema {
-        formatted_code_string: code_run.formatted_code_string,
         std_out: code_run.std_out,
         std_err: code_run.std_err,
         error,

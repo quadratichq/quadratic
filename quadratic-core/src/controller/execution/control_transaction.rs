@@ -302,7 +302,6 @@ impl GridController {
             });
 
             let code_run = CodeRun {
-                formatted_code_string: None,
                 error,
                 return_type: Some(return_type.to_owned()),
                 line_number: Some(1),

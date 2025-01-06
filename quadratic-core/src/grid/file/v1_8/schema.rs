@@ -98,7 +98,6 @@ pub struct SheetSchema {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CodeRunSchema {
-    pub formatted_code_string: Option<String>,
     pub std_out: Option<String>,
     pub std_err: Option<String>,
     pub cells_accessed: CellsAccessedSchema,

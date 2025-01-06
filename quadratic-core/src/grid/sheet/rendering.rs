@@ -645,7 +645,6 @@ mod tests {
             }),
         );
         let code_run = CodeRun {
-            formatted_code_string: None,
             std_err: None,
             std_out: None,
             cells_accessed: Default::default(),
@@ -864,7 +863,6 @@ mod tests {
         let code_run = CodeRun {
             std_out: None,
             std_err: None,
-            formatted_code_string: None,
             cells_accessed: Default::default(),
             error: None,
             return_type: Some("text".into()),
@@ -922,7 +920,6 @@ mod tests {
         let code_run = CodeRun {
             std_out: None,
             std_err: None,
-            formatted_code_string: None,
             cells_accessed: Default::default(),
             error: None,
             return_type: Some("number".into()),
@@ -1052,7 +1049,6 @@ mod tests {
         let code_run = CodeRun {
             std_out: None,
             std_err: None,
-            formatted_code_string: None,
             cells_accessed: Default::default(),
             error: None,
             return_type: Some("number".into()),
@@ -1112,7 +1108,6 @@ mod tests {
         let code_run = CodeRun {
             std_out: None,
             std_err: None,
-            formatted_code_string: None,
             cells_accessed: Default::default(),
             error: None,
             return_type: Some("image".into()),
@@ -1335,7 +1330,6 @@ mod tests {
         let code_run = CodeRun {
             std_out: None,
             std_err: None,
-            formatted_code_string: None,
             cells_accessed: Default::default(),
             error: None,
             return_type: Some("image".into()),

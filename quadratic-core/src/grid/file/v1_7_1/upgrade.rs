@@ -30,7 +30,6 @@ fn upgrade_code_runs(
                 None
             };
             let new_code_run = v1_8::CodeRunSchema {
-                formatted_code_string: code_run.formatted_code_string,
                 std_out: code_run.std_out,
                 std_err: code_run.std_err,
                 cells_accessed: code_run.cells_accessed,

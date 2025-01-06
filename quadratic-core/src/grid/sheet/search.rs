@@ -496,7 +496,6 @@ mod test {
             }),
         );
         let code_run = CodeRun {
-            formatted_code_string: None,
             error: None,
             std_out: None,
             std_err: None,
@@ -542,7 +541,6 @@ mod test {
     fn search_within_code_runs() {
         let mut sheet = Sheet::test();
         let code_run = CodeRun {
-            formatted_code_string: None,
             error: None,
             std_out: None,
             std_err: None,
