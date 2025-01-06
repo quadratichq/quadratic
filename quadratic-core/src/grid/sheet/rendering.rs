@@ -488,7 +488,7 @@ impl Sheet {
 
     /// Sends all validations for this sheet to the client.
     pub fn send_all_validations(&self) {
-        if let Ok(validations) = serde_json::to_string(&self.validations.validations) {
+        if let Ok(validations) = self.validations.to_string() {
             crate::wasm_bindings::js::jsSheetValidations(self.id.to_string(), validations);
         }
     }
@@ -522,6 +522,17 @@ impl Sheet {
         }
     }
 
+    /// Sends validation warnings to the client.
+    pub fn send_validation_warnings(&self, warnings: Vec<JsValidationWarning>) {
+        if warnings.is_empty() {
+            return;
+        }
+
+        if let Ok(warnings) = serde_json::to_string(&warnings) {
+            crate::wasm_bindings::js::jsValidationWarning(self.id.to_string(), warnings);
+        }
+    }
+
     /// Sends all validation warnings for this sheet to the client.
     pub fn send_all_validation_warnings(&self) {
         let warnings = self
@@ -539,13 +550,11 @@ impl Sheet {
             })
             .collect::<Vec<_>>();
 
-        if let Ok(warnings) = serde_json::to_string(&warnings) {
-            crate::wasm_bindings::js::jsValidationWarning(self.id.to_string(), warnings);
-        }
+        self.send_validation_warnings(warnings);
     }
 
     /// Sends validation warnings for a hashed region to the client.
-    pub fn send_validation_warnings(&self, hash_x: i64, hash_y: i64, rect: Rect) {
+    pub fn send_validation_warnings_from_hash(&self, hash_x: i64, hash_y: i64, rect: Rect) {
         let warnings = self
             .validations
             .warnings
@@ -580,7 +589,7 @@ impl Sheet {
     pub fn send_validation_warnings_rect(&self, rect: Rect) {
         let hash_x = rect.min.x / CELL_SHEET_WIDTH as i64;
         let hash_y = rect.min.y / CELL_SHEET_HEIGHT as i64;
-        self.send_validation_warnings(hash_x, hash_y, rect);
+        self.send_validation_warnings_from_hash(hash_x, hash_y, rect);
     }
 }
 

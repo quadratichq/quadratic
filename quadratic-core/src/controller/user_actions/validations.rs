@@ -122,8 +122,7 @@ mod tests {
                 ValidationRule,
             },
         },
-        wasm_bindings::js::{expect_js_call, hash_test},
-        Rect,
+        wasm_bindings::js::expect_js_call,
     };
 
     use super::*;
@@ -161,11 +160,13 @@ mod tests {
         assert_eq!(gc.validations(sheet_id).unwrap().len(), 1);
         assert_eq!(gc.validation_selection(selection), Some(&validation));
 
-        let sheet = gc.sheet(sheet_id);
-        let validations = sheet.validations.to_string().unwrap();
         expect_js_call(
             "jsSheetValidations",
-            format!("{},{}", sheet_id, validations),
+            format!(
+                "{},{}",
+                sheet_id,
+                serde_json::to_string(&vec![validation]).unwrap()
+            ),
             true,
         );
     }
@@ -187,7 +188,7 @@ mod tests {
             message: Default::default(),
             error: Default::default(),
         };
-        gc.update_validation(validation1, None);
+        gc.update_validation(validation1.clone(), None);
 
         let validation2 = Validation {
             id: Uuid::new_v4(),
@@ -199,26 +200,29 @@ mod tests {
             message: Default::default(),
             error: Default::default(),
         };
-        gc.update_validation(validation2, None);
+        gc.update_validation(validation2.clone(), None);
 
         assert_eq!(gc.validations(sheet_id).unwrap().len(), 2);
-
-        gc.remove_validations(sheet_id, None);
-        assert!(gc.validations(sheet_id).is_none());
-
-        let sheet = gc.sheet(sheet_id);
-        let validations = sheet.validations.to_string().unwrap();
         expect_js_call(
             "jsSheetValidations",
-            format!("{},{}", sheet_id, validations),
-            false,
+            format!(
+                "{},{}",
+                sheet_id,
+                serde_json::to_string(&vec![validation1, validation2]).unwrap()
+            ),
+            true,
         );
 
-        let sheet = gc.sheet(sheet_id);
-        let send = serde_json::to_string(&sheet.get_render_cells(Rect::new(0, 0, 0, 0))).unwrap();
+        gc.remove_validations(sheet_id, None);
+
+        assert!(gc.validations(sheet_id).is_none());
         expect_js_call(
-            "jsRenderCellSheets",
-            format!("{},{},{},{}", sheet_id, 0, 0, hash_test(&send)),
+            "jsSheetValidations",
+            format!(
+                "{},{}",
+                sheet_id,
+                serde_json::to_string(&Vec::<Validation>::new()).unwrap()
+            ),
             true,
         );
     }

@@ -122,15 +122,6 @@ impl Sheet {
             transaction
                 .reverse_operations
                 .extend(self.reverse_code_runs_ops_for_column(column));
-
-            // reverse operation to create the column (this will also shift all impacted columns)
-            transaction
-                .reverse_operations
-                .push(Operation::InsertColumn {
-                    sheet_id: self.id,
-                    column,
-                    copy_formats: CopyFormats::None,
-                });
         }
 
         self.delete_column_offset(transaction, column);
@@ -218,6 +209,17 @@ impl Sheet {
             self.validations
                 .remove_column(transaction, self.id, column, &self.a1_context());
         transaction.add_dirty_hashes_from_selections(self, changed_selections);
+
+        if transaction.is_user_undo_redo() {
+            // reverse operation to create the column (this will also shift all impacted columns)
+            transaction
+                .reverse_operations
+                .push(Operation::InsertColumn {
+                    sheet_id: self.id,
+                    column,
+                    copy_formats: CopyFormats::None,
+                });
+        }
     }
 
     pub(crate) fn insert_column(
@@ -226,17 +228,6 @@ impl Sheet {
         column: i64,
         copy_formats: CopyFormats,
     ) {
-        // create undo operations for the inserted column
-        if transaction.is_user_undo_redo() {
-            // reverse operation to delete the column (this will also shift all impacted columns)
-            transaction
-                .reverse_operations
-                .push(Operation::DeleteColumn {
-                    sheet_id: self.id,
-                    column,
-                });
-        }
-
         // mark hashes of existing columns dirty
         transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
 
@@ -307,6 +298,17 @@ impl Sheet {
             changes.iter().for_each(|(index, size)| {
                 transaction.offsets_modified(self.id, Some(*index), None, Some(*size));
             });
+        }
+
+        // create undo operations for the inserted column
+        if transaction.is_user_undo_redo() {
+            // reverse operation to delete the column (this will also shift all impacted columns)
+            transaction
+                .reverse_operations
+                .push(Operation::DeleteColumn {
+                    sheet_id: self.id,
+                    column,
+                });
         }
     }
 }

@@ -14,12 +14,16 @@ use crate::{
         execution::TransactionSource, operations::operation::Operation, transaction::Transaction,
     },
     grid::{
-        sheet::validations::validation::Validation, CellsAccessed, CodeCellLanguage, Sheet, SheetId,
+        js_types::JsValidationWarning, sheet::validations::validation::Validation, CellsAccessed,
+        CodeCellLanguage, Sheet, SheetId,
     },
     Pos, SheetPos, SheetRect,
 };
 
 use super::transaction_name::TransactionName;
+
+// validations warnings for a sheet (pos -> JsValidationWarning)
+type SheetValidationsWarnings = HashMap<Pos, JsValidationWarning>;
 
 // offsets modified ((column, row) -> new_size)
 type SheetOffsets = HashMap<(Option<i64>, Option<i64>), f64>;
@@ -71,6 +75,10 @@ pub struct PendingTransaction {
     /// sheets w/updated validations
     pub validations: HashSet<SheetId>,
 
+    /// sheets w/updated validations warnings
+    pub validations_warnings: HashMap<SheetId, SheetValidationsWarnings>,
+
+    /// sheets w/updated rows to resize
     pub resize_rows: HashMap<SheetId, HashSet<i64>>,
 
     /// which hashes are dirty
@@ -119,6 +127,7 @@ impl Default for PendingTransaction {
             generate_thumbnail: false,
             cursor_undo_redo: None,
             validations: HashSet::new(),
+            validations_warnings: HashMap::new(),
             resize_rows: HashMap::new(),
             dirty_hashes: HashMap::new(),
             sheet_borders: HashSet::new(),
@@ -359,6 +368,34 @@ impl PendingTransaction {
             }
         }
         changed_selections
+    }
+
+    pub fn validation_warning_added(&mut self, sheet_id: SheetId, warning: JsValidationWarning) {
+        self.validations_warnings
+            .entry(sheet_id)
+            .or_default()
+            .insert(
+                Pos {
+                    x: warning.x,
+                    y: warning.y,
+                },
+                warning,
+            );
+    }
+
+    pub fn validation_warning_deleted(&mut self, sheet_id: SheetId, pos: Pos) {
+        self.validations_warnings
+            .entry(sheet_id)
+            .or_default()
+            .insert(
+                pos,
+                JsValidationWarning {
+                    x: pos.x,
+                    y: pos.y,
+                    style: None,
+                    validation: None,
+                },
+            );
     }
 
     /// Updates the offsets modified for a column or row.

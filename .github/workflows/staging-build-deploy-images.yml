@@ -14,10 +14,34 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     permissions:
       contents: read
+      pull-requests: write
+      issues: write
       deployments: write
     outputs:
       deployment_id: ${{ steps.deployment.outputs.id }}
+      comment_id: ${{ steps.staging-build-deploy-images-comment.outputs.comment-id }}
     steps:
+      - name: Find Build & Deploy Images Comment
+        uses: peter-evans/find-comment@v3
+        id: staging-build-deploy-images-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Staging - Build & Deploy Images"
+
+      - name: Create initial status comment
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.staging-build-deploy-images-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Staging - Build & Deploy Images
+            ⏳ Build images
+            ⏳ Deploy images
+
+            🔍 Track progress in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          edit-mode: replace
+
       - name: Deactivate previous deployments
         run: |
           gh api \
@@ -76,13 +100,15 @@ jobs:
     if: (github.event.action != 'labeled' && github.event.action != 'unlabeled') || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && (startsWith(github.event.label.name, 'build:')))
     permissions:
       contents: read
+      pull-requests: write
+      issues: write
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     strategy:
       matrix:
         include:
           - service: client
-            runner: blacksmith-16vcpu-ubuntu-2204
+            runner: blacksmith-8vcpu-ubuntu-2204
           - service: api
             runner: blacksmith-2vcpu-ubuntu-2204
           - service: connection
@@ -93,13 +119,26 @@ jobs:
             runner: blacksmith-4vcpu-ubuntu-2204
       fail-fast: true
     steps:
+      - name: Update comment on build images start
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ needs.create_deployment.outputs.comment_id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Staging - Build & Deploy Images
+            ⏳ Building images...
+            ⏳ Deploy images
+
+            🔍 Track progress in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          edit-mode: replace
+
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Check for build:dev label
-        id: build-dev
+      - name: Check for build:wasm-opt:disabled label
+        id: build-wasm-opt-disabled
         run: |
-          if [[ ${{ contains(github.event.pull_request.labels.*.name, 'build:dev') }} == true ]]; then
+          if [[ ${{ contains(github.event.pull_request.labels.*.name, 'build:wasm-opt:disabled') }} == true ]]; then
             echo "CLIENT_DEV=true" >> $GITHUB_OUTPUT
           else
             echo "CLIENT_DEV=false" >> $GITHUB_OUTPUT
@@ -174,7 +213,7 @@ jobs:
             GIT_SHA_SHORT=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
             BRANCH_NAME=${{ steps.build-metadata.outputs.BRANCH_NAME }}
             PR_NUMBER=${{ github.event.pull_request.number }}
-            CLIENT_DEV=${{ steps.build-dev.outputs.CLIENT_DEV }}
+            CLIENT_DEV=${{ steps.build-wasm-opt-disabled.outputs.CLIENT_DEV }}
           labels: |
             org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
             org.opencontainers.image.revision=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
@@ -193,10 +232,24 @@ jobs:
             GIT_SHA_SHORT=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
             BRANCH_NAME=${{ steps.build-metadata.outputs.BRANCH_NAME }}
             PR_NUMBER=${{ github.event.pull_request.number }}
-            CLIENT_DEV=${{ steps.build-dev.outputs.CLIENT_DEV }}
+            CLIENT_DEV=${{ steps.build-wasm-opt-disabled.outputs.CLIENT_DEV }}
           labels: |
             org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
             org.opencontainers.image.revision=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
+
+      - name: Update comment on build images failure
+        if: failure()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ needs.create_deployment.outputs.comment_id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Staging - Build & Deploy Images
+            ❌ Build images
+            ❌ Deploy images
+
+            🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+          edit-mode: replace
 
       - name: Update deployment status (failure)
         if: failure()
@@ -217,15 +270,28 @@ jobs:
     needs: [create_deployment, build_images]
     permissions:
       contents: read
-      deployments: write
-      issues: write
       pull-requests: write
+      issues: write
+      deployments: write
     runs-on: blacksmith-2vcpu-ubuntu-2204
     timeout-minutes: 30
     env:
       STACK_NAME: pr-${{ github.event.pull_request.number }}
       MAX_ATTEMPTS: 50
     steps:
+      - name: Update comment on deploy images start
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ needs.create_deployment.outputs.comment_id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Staging - Build & Deploy Images
+            ✅ Build images
+            ⏳ Deploying images...
+
+            🔍 Track progress in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          edit-mode: replace
+
       - name: Update deployment status (deploying)
         run: |
           gh api \
@@ -385,36 +451,32 @@ jobs:
         run: |
           echo "DEPLOY_TIME=$(date -u +'%B %d, %Y at %H:%M UTC')" >> $GITHUB_OUTPUT
 
-      - name: Find Build & Deploy Images Comment
-        uses: peter-evans/find-comment@v3
-        id: staging-build-deploy-images-comment
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          comment-author: "github-actions[bot]"
-          body-includes: "Staging - Build & Deploy Images"
-
-      - name: Create or update comment on deployment success
+      - name: Update comment on deploy images success
         if: success()
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ steps.staging-build-deploy-images-comment.outputs.comment-id }}
+          comment-id: ${{ needs.create_deployment.outputs.comment_id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Staging - Build & Deploy Images
-            ✅ Staging images built and deployed successfully.
+            ✅ Build images
+            ✅ Deploy images
 
             🕒 Last deployed: ${{ steps.deploy-metadata.outputs.DEPLOY_TIME }}
+
+            🔗 URL: https://pr-${{ github.event.pull_request.number }}.quadratic-preview.com
           edit-mode: replace
 
-      - name: Create or update comment on deployment failure
+      - name: Update comment on deploy images failure
         if: failure()
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ steps.staging-build-deploy-images-comment.outputs.comment-id }}
+          comment-id: ${{ needs.create_deployment.outputs.comment_id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Staging - Build & Deploy Images
-            ❌ The staging build & deploy images encountered an error.
+            ✅ Build images
+            ❌ Deploy images
 
             🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
           edit-mode: replace

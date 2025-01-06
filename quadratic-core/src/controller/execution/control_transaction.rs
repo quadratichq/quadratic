@@ -155,9 +155,18 @@ impl GridController {
             transaction.validations.iter().for_each(|sheet_id| {
                 if let Some(sheet) = self.try_sheet(*sheet_id) {
                     sheet.send_all_validations();
-                    sheet.send_all_validation_warnings();
                 }
             });
+
+            transaction
+                .validations_warnings
+                .iter()
+                .for_each(|(sheet_id, warnings)| {
+                    let warnings = warnings.values().cloned().collect::<Vec<_>>();
+                    if let Some(sheet) = self.try_sheet(*sheet_id) {
+                        sheet.send_validation_warnings(warnings);
+                    }
+                });
 
             transaction.sheet_borders.iter().for_each(|sheet_id| {
                 if let Some(sheet) = self.try_sheet(*sheet_id) {

@@ -110,7 +110,7 @@ export class CellHighlights extends Container {
     const colorNumber = convertColorStringToTint(colors.cellHighlightColor[selectedCellIndex % NUM_OF_CELL_REF_COLORS]);
     const refRangeBounds = this.convertCellRefRangeToRefRangeBounds(accessedCell.ranges[0]);
     if (!refRangeBounds) return;
-    drawDashedRectangleMarching({
+    const render = drawDashedRectangleMarching({
       g: this.marchingHighlight,
       color: colorNumber,
       march: this.march,
@@ -118,7 +118,9 @@ export class CellHighlights extends Container {
       alpha: FILL_ALPHA,
     });
     this.march = (this.march + 1) % Math.floor(DASHED);
-    pixiApp.setViewportDirty();
+    if (render) {
+      pixiApp.setViewportDirty();
+    }
   }
 
   update() {

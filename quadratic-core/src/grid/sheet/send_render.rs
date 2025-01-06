@@ -59,6 +59,7 @@ impl Sheet {
                 cells,
             );
         }
+        self.send_validation_warnings_from_hash(hash.x, hash.y, rect);
     }
 
     /// Sends all render cells to the render web worker
