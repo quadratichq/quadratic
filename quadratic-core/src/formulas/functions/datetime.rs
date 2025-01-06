@@ -1,5 +1,5 @@
 use bigdecimal::num_traits::ToPrimitive;
-use chrono::{Datelike, Timelike};
+use chrono::{Datelike, Months, NaiveDate, Timelike};
 
 use super::*;
 
@@ -464,6 +464,39 @@ fn get_functions() -> Vec<FormulaFunction> {
                 }
             }
         ),
+        // Arithmetic
+        formula_fn!(
+            /// Returns the last day of the month that is `months_offset` months
+            /// after `day`.
+            ///
+            /// - If `months_offset` is zero, then the value returned is the
+            ///   last day of the month containing `day`.
+            /// - If `months_offset` is positive, then the day returned is that
+            ///   many months later.
+            /// - If `months_offset` is negative, then the day returned is that
+            ///   many months earlier.
+            #[examples("EOMONTH(DATE(2024, 04, 08))", "EOMONTH(DATE(2024, 04, 08), 8)")]
+            #[zip_map]
+            fn EOMONTH(span: Span, [day]: NaiveDate, [months_offset]: (Option<i64>)) {
+                // Add `months_offset`
+                let day = match months_offset {
+                    None => Some(day),
+                    Some(x) => {
+                        if let Ok(m) = u32::try_from(x) {
+                            day.checked_add_months(Months::new(m))
+                        } else if let Ok(m) = u32::try_from(x.saturating_neg()) {
+                            dbg!(dbg!(day).checked_sub_months(dbg!(Months::new(m))))
+                        } else {
+                            None
+                        }
+                    }
+                }
+                .ok_or_else(|| RunErrorMsg::Overflow.with_span(span))?;
+
+                // Find last day of month
+                (1..=31).rev().find_map(|i| day.with_day(i))
+            }
+        ),
     ]
 }
 
@@ -734,6 +767,39 @@ mod tests {
                 "SECOND(-DURATION.YMD(1, 2, 3) - DURATION.HMS(6, 10, 15))"
             ),
             "45",
+        );
+    }
+
+    #[test]
+    fn test_formula_eomonth() {
+        let year = 2006; // not before or after a leap year
+        let g = Grid::new();
+        for (month, expected_final_day) in [(1, 31), (2, 28), (3, 31), (4, 30), (11, 30), (12, 31)]
+        {
+            for init_day in [1, 2, expected_final_day - 1, expected_final_day] {
+                let formula = format!("EOMONTH(DATE({year}, {month}, {init_day}))");
+                let expected = format!("{year}-{month:02}-{expected_final_day:02}");
+                assert_eq!(expected, eval_to_string(&g, &formula));
+            }
+
+            let init_day = 20;
+            for month_offset in [-5, -2, 0, 2, 5] {
+                let new_month = month - month_offset;
+                let formula =
+                    format!("EOMONTH(DATE({year}, {new_month}, {init_day}), {month_offset})");
+                let expected = format!("{year}-{month:02}-{expected_final_day:02}");
+                assert_eq!(expected, eval_to_string(&g, &formula));
+            }
+        }
+
+        // Test with leap year
+        assert_eq!(
+            "2008-02-29",
+            eval_to_string(&g, "EOMONTH(DATE(2008, 02, 15))"),
+        );
+        assert_eq!(
+            "2008-02-29",
+            eval_to_string(&g, "EOMONTH(DATE(2008, 01, 15), 1)"),
         );
     }
 }
