@@ -65,7 +65,7 @@ jobs:
 
       - name: Find Delete Stack Comment
         uses: peter-evans/find-comment@v3
-        if: always()
+        if: success() || failure()
         id: preview-delete-stack-comment-update
         with:
           issue-number: ${{ github.event.pull_request.number }}
