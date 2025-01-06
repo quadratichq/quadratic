@@ -63,36 +63,46 @@ mod tests {
         // Test basic loan payment calculation
         assert_f64_approx_eq(
             -202.76394,
-            eval_to_string(&g, "PMT(0.08/12, 12*5, 10000)").parse::<f64>().unwrap(),
-            "Basic loan payment"
+            eval_to_string(&g, "PMT(0.08/12, 12*5, 10000)")
+                .parse::<f64>()
+                .unwrap(),
+            "Basic loan payment",
         );
 
         // Test with future value
         assert_f64_approx_eq(
             -260.92366,
-            eval_to_string(&g, "PMT(0.06/12, 24, 5000, 1000)").parse::<f64>().unwrap(),
-            "Payment with future value"
+            eval_to_string(&g, "PMT(0.06/12, 24, 5000, 1000)")
+                .parse::<f64>()
+                .unwrap(),
+            "Payment with future value",
         );
 
         // Test with payment at beginning of period
         assert_f64_approx_eq(
             -259.62553,
-            eval_to_string(&g, "PMT(0.06/12, 24, 5000, 1000, 1)").parse::<f64>().unwrap(),
-            "Payment at beginning"
+            eval_to_string(&g, "PMT(0.06/12, 24, 5000, 1000, 1)")
+                .parse::<f64>()
+                .unwrap(),
+            "Payment at beginning",
         );
 
         // Test with zero interest rate
         assert_f64_approx_eq(
             -100.0,
-            eval_to_string(&g, "PMT(0, 12, 1200)").parse::<f64>().unwrap(),
-            "Zero interest rate"
+            eval_to_string(&g, "PMT(0, 12, 1200)")
+                .parse::<f64>()
+                .unwrap(),
+            "Zero interest rate",
         );
 
         // Test with negative number of periods
         assert_f64_approx_eq(
             -136.09727,
-            eval_to_string(&g, "PMT(0.08/12, -12*5, -10000)").parse::<f64>().unwrap(),
-            "Negative periods"
+            eval_to_string(&g, "PMT(0.08/12, -12*5, -10000)")
+                .parse::<f64>()
+                .unwrap(),
+            "Negative periods",
         );
     }
 }

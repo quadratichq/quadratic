@@ -141,8 +141,10 @@ mod tests {
             println!("Testing that {name}({input}) = {expected_output}");
             assert_f64_approx_eq(
                 expected_output,
-                eval_to_string(&g, &format!("{name}({input})")).parse::<f64>().unwrap(),
-                &format!("Testing {name}({input})")
+                eval_to_string(&g, &format!("{name}({input})"))
+                    .parse::<f64>()
+                    .unwrap(),
+                &format!("Testing {name}({input})"),
             );
         }
     }
@@ -157,14 +159,18 @@ mod tests {
 
         assert_f64_approx_eq(
             -4.0,
-            eval_to_string(&g, "RADIANS(-720) / PI()").parse::<f64>().unwrap(),
-            "Testing RADIANS(-720) / PI()"
+            eval_to_string(&g, "RADIANS(-720) / PI()")
+                .parse::<f64>()
+                .unwrap(),
+            "Testing RADIANS(-720) / PI()",
         );
-        
+
         assert_f64_approx_eq(
-            -720.0, 
-            eval_to_string(&g, "DEGREES(-PI() * 4)").parse::<f64>().unwrap(),
-            "Testing DEGREES(-PI() * 4)"
+            -720.0,
+            eval_to_string(&g, "DEGREES(-PI() * 4)")
+                .parse::<f64>()
+                .unwrap(),
+            "Testing DEGREES(-PI() * 4)",
         );
     }
 
