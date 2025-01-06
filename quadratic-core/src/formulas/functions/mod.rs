@@ -9,6 +9,7 @@ mod macros;
 mod array;
 mod datetime;
 pub mod excel;
+mod financial;
 mod logic;
 mod lookup;
 mod mathematics;
@@ -17,8 +18,6 @@ mod statistics;
 mod string;
 mod tests;
 mod trigonometry;
-mod financial;
-
 
 use super::{util, CellRef, Criterion, Ctx, Param, ParamKind};
 use crate::{
