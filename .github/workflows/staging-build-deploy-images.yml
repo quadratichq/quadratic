@@ -457,7 +457,7 @@ jobs:
       - name: Generate Deploy Metadata
         id: deploy-metadata
         run: |
-          echo "DEPLOY_TIME=$(date -u +'%B %d, %Y at %H:%M UTC')" >> $GITHUB_OUTPUT
+          echo "DEPLOY_TIME=$(date -u +'%b %d, %Y at %I:%M %p UTC')" >> $GITHUB_OUTPUT
 
       - name: Find Build & Deploy Images Comment
         uses: peter-evans/find-comment@v3
