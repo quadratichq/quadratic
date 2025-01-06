@@ -12,6 +12,12 @@ jobs:
   create_deployment:
     name: Create Deployment - Preview
     runs-on: blacksmith-2vcpu-ubuntu-2204
+    if: |
+      github.event.action == 'opened' || 
+      github.event.action == 'synchronize' || 
+      github.event.action == 'reopened' || 
+      (github.event.action == 'labeled' && startsWith(github.event.label.name, 'build:')) ||
+      (github.event.action == 'unlabeled' && startsWith(github.event.label.name, 'build:'))
     permissions:
       contents: read
       pull-requests: write
@@ -96,7 +102,6 @@ jobs:
   build_images:
     name: Build Images - Preview
     needs: create_deployment
-    if: (github.event.action != 'labeled' && github.event.action != 'unlabeled') || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && (startsWith(github.event.label.name, 'build:')))
     permissions:
       contents: read
       pull-requests: write
