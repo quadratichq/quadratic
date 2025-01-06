@@ -53,7 +53,6 @@ impl Sheet {
         let code_run = CodeRun {
             std_out: None,
             std_err: None,
-            formatted_code_string: None,
             cells_accessed: Default::default(),
             error: None,
             return_type: Some("number".into()),
@@ -113,7 +112,6 @@ impl Sheet {
         let code_run = CodeRun {
             std_out: None,
             std_err: None,
-            formatted_code_string: None,
             cells_accessed: Default::default(),
             error: None,
             return_type: Some("number".into()),
@@ -161,7 +159,6 @@ impl Sheet {
         let code_run = CodeRun {
             std_out: None,
             std_err: None,
-            formatted_code_string: None,
             cells_accessed: Default::default(),
             error: None,
             return_type: Some("number".into()),

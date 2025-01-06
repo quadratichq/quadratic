@@ -196,4 +196,18 @@ mod tests {
             "Range selection cursor A1 string failed"
         );
     }
+
+    #[test]
+    fn test_table() {
+        let context = A1Context::test(
+            &[("First", SheetId::test())],
+            &[("test_table", &["Col1"], Rect::test_a1("A1:C3"))],
+        );
+        let selection =
+            A1Selection::test_a1_context("test_table[[#DATA],[#HEADERS],[Col1]]", &context);
+        assert_eq!(
+            selection.to_string(Some(SheetId::test()), &context),
+            "test_table[[#DATA],[#HEADERS],[Col1]]"
+        );
+    }
 }

@@ -56,7 +56,7 @@ fn import_col_range(range: current::ColRangeSchema) -> ColRange {
         current::ColRangeSchema::All => ColRange::All,
         current::ColRangeSchema::Col(col) => ColRange::Col(col),
         current::ColRangeSchema::ColRange(col1, col2) => ColRange::ColRange(col1, col2),
-        current::ColRangeSchema::ColumnToEnd(col) => ColRange::ColumnToEnd(col),
+        current::ColRangeSchema::ColumnToEnd(col) => ColRange::ColToEnd(col),
     }
 }
 
@@ -219,7 +219,7 @@ fn export_col_range(range: ColRange) -> current::ColRangeSchema {
         ColRange::All => current::ColRangeSchema::All,
         ColRange::Col(col) => current::ColRangeSchema::Col(col),
         ColRange::ColRange(col1, col2) => current::ColRangeSchema::ColRange(col1, col2),
-        ColRange::ColumnToEnd(col) => current::ColRangeSchema::ColumnToEnd(col),
+        ColRange::ColToEnd(col) => current::ColRangeSchema::ColumnToEnd(col),
     }
 }
 
@@ -280,7 +280,6 @@ pub(crate) fn import_code_run_builder(code_run: current::CodeRunSchema) -> Resul
         None
     };
     let code_run = CodeRun {
-        formatted_code_string: code_run.formatted_code_string,
         std_out: code_run.std_out,
         std_err: code_run.std_err,
         error,
@@ -505,7 +504,6 @@ pub(crate) fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
     };
 
     current::CodeRunSchema {
-        formatted_code_string: code_run.formatted_code_string,
         std_out: code_run.std_out,
         std_err: code_run.std_err,
         error,

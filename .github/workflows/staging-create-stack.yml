@@ -9,7 +9,7 @@ concurrency:
 
 jobs:
   create_stack:
-    name: Create Stack - Staging
+    name: Create Stack - Preview
     permissions:
       contents: read
       pull-requests: write
@@ -21,19 +21,19 @@ jobs:
     steps:
       - name: Find Create Stack Comment
         uses: peter-evans/find-comment@v3
-        id: staging-create-stack-comment
+        id: preview-create-stack-comment-start
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: "github-actions[bot]"
-          body-includes: "Staging - Stack"
+          body-includes: "Preview - Stack"
 
       - name: Comment on create stack start
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ steps.staging-create-stack-comment.outputs.comment-id }}
+          comment-id: ${{ steps.preview-create-stack-comment-start.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Staging - Stack
+            ## Preview - Stack
             ⏳ Stack creation in progress...
 
             🔍 Track progress in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
@@ -97,15 +97,24 @@ jobs:
             exit 1
           fi
 
+      - name: Find Create Stack Comment
+        uses: peter-evans/find-comment@v3
+        if: success() || failure()
+        id: preview-create-stack-comment-update
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Preview - Stack"
+
       - name: Update comment on create stack success
         if: success()
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ steps.staging-create-stack-comment.outputs.comment-id }}
+          comment-id: ${{ steps.preview-create-stack-comment-update.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Staging - Stack
-            ✅ Staging stack created successfully.
+            ## Preview - Stack
+            ✅ Preview stack created successfully.
 
             🔗 URL: ${{ steps.create-stack.outputs.WebsiteURL }}
           edit-mode: replace
@@ -114,11 +123,11 @@ jobs:
         if: failure()
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ steps.staging-create-stack-comment.outputs.comment-id }}
+          comment-id: ${{ steps.preview-create-stack-comment-update.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Staging - Stack
-            ❌ Staging stack creation encountered an error.
+            ## Preview - Stack
+            ❌ Preview stack creation encountered an error.
 
             🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
           edit-mode: replace

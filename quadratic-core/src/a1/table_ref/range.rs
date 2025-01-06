@@ -72,9 +72,17 @@ pub enum RowRange {
 
 impl RowRange {
     /// Returns a list of (start, end) pairs for the row range.
-    pub fn to_rows(&self, current_row: i64, table: &TableMapEntry) -> (i64, i64) {
+    pub fn to_rows(&self, current_row: i64, table: &TableMapEntry, headers: bool) -> (i64, i64) {
         match self {
-            RowRange::All => (table.bounds.min.y, table.bounds.max.y),
+            RowRange::All => {
+                let y_start = table.bounds.min.y
+                    + if !headers && table.show_headers && table.bounds.height() > 1 {
+                        1
+                    } else {
+                        0
+                    };
+                (y_start, table.bounds.max.y)
+            }
             RowRange::CurrentRow => (current_row, current_row),
             RowRange::Rows(ranges) => (
                 table.bounds.min.y + ranges.start.coord - 1,
@@ -102,7 +110,7 @@ pub enum ColRange {
     All,
     Col(String),
     ColRange(String, String),
-    ColumnToEnd(String),
+    ColToEnd(String),
 }
 
 impl ColRange {
@@ -119,7 +127,7 @@ impl ColRange {
                     return col >= col1_index && col <= col2_index;
                 }
             }
-            ColRange::ColumnToEnd(col_name) => {
+            ColRange::ColToEnd(col_name) => {
                 if let Some((start, end)) = table.try_col_range_to_end(col_name) {
                     return col >= start && col <= end;
                 }
@@ -135,7 +143,7 @@ impl fmt::Display for ColRange {
             ColRange::All => String::default(),
             ColRange::Col(col) => format!("[{}]", col),
             ColRange::ColRange(start, end) => format!("[{}]:[{}]", start, end),
-            ColRange::ColumnToEnd(col) => format!("[{}]:", col),
+            ColRange::ColToEnd(col) => format!("[{}]:", col),
         };
         write!(f, "{}", s)
     }
@@ -189,11 +197,15 @@ mod tests {
         let table = TableMapEntry::test("test", &["A"], None, Rect::test_a1("A1:A5"));
 
         let row_range = RowRange::All;
-        let rows = row_range.to_rows(1, &table);
+        let rows = row_range.to_rows(1, &table, false);
+        assert_eq!(rows, (2, 5));
+
+        let row_range = RowRange::All;
+        let rows = row_range.to_rows(1, &table, true);
         assert_eq!(rows, (1, 5));
 
         let row_range = RowRange::CurrentRow;
-        let rows = row_range.to_rows(1, &table);
+        let rows = row_range.to_rows(1, &table, false);
         assert_eq!(rows, (1, 1));
     }
 
@@ -240,6 +252,6 @@ mod tests {
         );
 
         // Test column to end
-        assert_eq!(ColRange::ColumnToEnd("B".to_string()).to_string(), "[B]:");
+        assert_eq!(ColRange::ColToEnd("B".to_string()).to_string(), "[B]:");
     }
 }

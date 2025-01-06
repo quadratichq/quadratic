@@ -62,7 +62,10 @@ impl Grid {
             })
             .collect_vec();
 
-        unique_name(name, all_names, require_number)
+        let name = unique_name(name, all_names, require_number);
+
+        // replace spaces with underscores
+        name.replace(' ', "_")
     }
 
     pub fn update_data_table_name(
@@ -562,7 +565,6 @@ pub mod test {
         let code_run = CodeRun {
             std_out: None,
             std_err: None,
-            formatted_code_string: None,
             cells_accessed: Default::default(),
             error: None,
             return_type: Some("number".into()),
@@ -595,7 +597,6 @@ pub mod test {
         let code_run = CodeRun {
             std_out: None,
             std_err: None,
-            formatted_code_string: None,
             cells_accessed: Default::default(),
             error: None,
             return_type: Some("number".into()),
@@ -633,7 +634,6 @@ pub mod test {
     fn test_output_sheet_rect_spill_error() {
         let sheet_id = SheetId::new();
         let code_run = CodeRun {
-            formatted_code_string: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),

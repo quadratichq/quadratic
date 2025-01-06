@@ -13,7 +13,7 @@ mod mutate;
 mod parse;
 mod query;
 mod select;
-mod table;
+mod select_table;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]

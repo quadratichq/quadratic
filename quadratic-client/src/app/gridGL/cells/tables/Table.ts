@@ -223,7 +223,9 @@ export class Table extends Container {
     if (result?.type === 'table-name') {
       return { table: this.codeCell, type: 'table-name' };
     }
-    return this.columnHeaders.pointerDown(world);
+    if (this.codeCell.show_header) {
+      return this.columnHeaders.pointerDown(world);
+    }
   }
 
   intersectsTableName(world: Point): TablePointerDownResult | undefined {

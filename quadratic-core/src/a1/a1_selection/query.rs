@@ -686,7 +686,7 @@ mod tests {
                 RefRangeBounds::test_a1("A1"),
                 RefRangeBounds::test_a1("B2"),
                 RefRangeBounds::test_a1("C3"),
-                RefRangeBounds::test_a1("A1:C3")
+                RefRangeBounds::test_a1("A2:C3")
             ]
         );
     }

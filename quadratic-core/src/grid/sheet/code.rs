@@ -319,7 +319,6 @@ mod test {
         let code_run = CodeRun {
             std_err: None,
             std_out: None,
-            formatted_code_string: None,
             cells_accessed: Default::default(),
             error: None,
             return_type: Some("number".into()),
@@ -360,7 +359,6 @@ mod test {
         let code_run = CodeRun {
             std_err: None,
             std_out: None,
-            formatted_code_string: None,
             cells_accessed: Default::default(),
             error: None,
             return_type: Some("number".into()),
@@ -454,7 +452,6 @@ mod test {
         let code_run = CodeRun {
             std_err: None,
             std_out: None,
-            formatted_code_string: None,
             cells_accessed: Default::default(),
             error: None,
             return_type: Some("number".into()),
@@ -492,7 +489,6 @@ mod test {
         let code_run = CodeRun {
             std_err: None,
             std_out: None,
-            formatted_code_string: None,
             cells_accessed: Default::default(),
             error: None,
             return_type: Some("number".into()),

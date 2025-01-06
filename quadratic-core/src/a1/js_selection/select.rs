@@ -95,13 +95,20 @@ impl JsSelection {
         &mut self,
         table_name: &str,
         col: Option<String>,
-        append: bool,
         context: &str,
         screen_row_top: i32,
+        shift_key: bool,
+        ctrl_key: bool,
     ) {
         if let Ok(context) = serde_json::from_str::<A1Context>(context) {
-            self.selection
-                .select_table(table_name, col, append, &context, screen_row_top as i64);
+            self.selection.select_table(
+                table_name,
+                col,
+                &context,
+                screen_row_top as i64,
+                shift_key,
+                ctrl_key,
+            );
         }
     }
 }

@@ -260,7 +260,6 @@ impl GridController {
         let new_code_run = match code_run {
             Some(old_code_run) => {
                 CodeRun {
-                    formatted_code_string: old_code_run.formatted_code_string.clone(),
                     error: Some(error.to_owned()),
                     return_type: None,
                     line_number: old_code_run.line_number,
@@ -273,7 +272,6 @@ impl GridController {
                 }
             }
             None => CodeRun {
-                formatted_code_string: None,
                 error: Some(error.to_owned()),
                 return_type: None,
                 line_number: error
@@ -325,7 +323,6 @@ impl GridController {
             // todo: this is probably not the best place to handle this
             // sheet may have been deleted before the async operation completed
             let code_run = CodeRun {
-                formatted_code_string: None,
                 error: Some(RunError {
                     span: None,
                     msg: RunErrorMsg::CodeRunError(
@@ -398,7 +395,6 @@ impl GridController {
         });
 
         let code_run = CodeRun {
-            formatted_code_string: None,
             error,
             return_type,
             line_number: js_code_result.line_number,
@@ -465,7 +461,6 @@ mod test {
 
         // test finalize_code_cell
         let new_code_run = CodeRun {
-            formatted_code_string: None,
             std_err: None,
             std_out: None,
             error: None,
@@ -476,7 +471,7 @@ mod test {
         };
         let new_data_table = DataTable::new(
             DataTableKind::CodeRun(new_code_run),
-            "Table 1",
+            "Table_1",
             Value::Single(CellValue::Text("delete me".to_string())),
             false,
             false,
@@ -501,7 +496,6 @@ mod test {
 
         // test finalize_code_cell
         let new_code_run = CodeRun {
-            formatted_code_string: None,
             std_err: None,
             std_out: None,
             error: None,
@@ -512,7 +506,7 @@ mod test {
         };
         let new_data_table = DataTable::new(
             DataTableKind::CodeRun(new_code_run),
-            "Table 2",
+            "Table_2",
             Value::Single(CellValue::Text("replace me".to_string())),
             false,
             false,

@@ -890,7 +890,6 @@ mod tests {
             line_number: None,
             output_type: None,
             cells_accessed: Default::default(),
-            formatted_code_string: None,
         };
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run.clone()),
@@ -1011,7 +1010,7 @@ mod tests {
     fn test_execute_update_data_table_name() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        let updated_name = "My Table";
+        let updated_name = "My_Table";
 
         assert_eq!(&data_table.name, "simple.csv");
         println!("Initial data table name: {}", &data_table.name);
@@ -1051,7 +1050,7 @@ mod tests {
         gc.execute_data_table_meta(&mut transaction, op).unwrap();
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
         // todo: this was wrong. the same data table should not conflict with itself (it used to be "My Table1")
-        assert_eq!(&data_table.name, "My Table");
+        assert_eq!(&data_table.name, "My_Table");
 
         // ensure numbers aren't added for unique names
         let op = Operation::DataTableMeta {
@@ -1086,7 +1085,7 @@ mod tests {
             .unwrap();
 
         print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
-        assert_data_table_column_width(&gc, sheet_id, pos, 5, index, "Column");
+        assert_data_table_column_width(&gc, sheet_id, pos, 5, index, "Column 1");
 
         // undo, the value should be a data table again
         execute_reverse_operations(&mut gc, &transaction);
@@ -1096,7 +1095,7 @@ mod tests {
         // redo, the value should be on the grid
         execute_forward_operations(&mut gc, &mut transaction);
         print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
-        assert_data_table_column_width(&gc, sheet_id, pos, 5, index, "Column");
+        assert_data_table_column_width(&gc, sheet_id, pos, 5, index, "Column 1");
     }
 
     #[test]

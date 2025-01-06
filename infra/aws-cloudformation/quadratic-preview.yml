@@ -103,7 +103,7 @@ Resources:
           sudo usermod -aG docker ubuntu
 
           # Download Quadratic initialization script
-          curl -sSf https://raw.githubusercontent.com/quadratichq/quadratic-selfhost/main/init-aws-staging.sh -o init.sh
+          curl -sSf https://raw.githubusercontent.com/quadratichq/quadratic-selfhost/main/init-aws-preview.sh -o init.sh
 
           # Fetch License Key
           LICENSE_KEY="$(aws ssm get-parameter --name "/quadratic-development/QUADRATIC_LICENSE_KEY" --with-decryption --query "Parameter.Value" --output text)"
@@ -138,11 +138,11 @@ Resources:
           EOF
 
           chmod +x /quadratic-selfhost/login.sh
-          chmod +x /quadratic-selfhost/start.sh
+          chmod +x /quadratic-selfhost/pull_start.sh
 
           cd /quadratic-selfhost
           ./login.sh
-          ./start.sh
+          ./pull_start.sh
 
   # Global Accelerator
   GlobalAccelerator:

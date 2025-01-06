@@ -39,9 +39,11 @@ type DataTableSpec = Pick<
   | Action.RenameTableColumn
   | Action.SortTableColumnAscending
   | Action.SortTableColumnDescending
-  | Action.InsertTableColumn
+  | Action.InsertTableColumnLeft
+  | Action.InsertTableColumnRight
   | Action.RemoveTableColumn
-  | Action.InsertTableRow
+  | Action.InsertTableRowAbove
+  | Action.InsertTableRowBelow
   | Action.RemoveTableRow
   | Action.HideTableColumn
   | Action.ShowAllColumns
@@ -281,19 +283,40 @@ export const dataTableSpec: DataTableSpec = {
       }
     },
   },
-  [Action.InsertTableColumn]: {
-    label: 'Insert column',
+  [Action.InsertTableColumnLeft]: {
+    label: 'Insert column to the left',
     Icon: AddIcon,
     run: () => {
       const table = getTable();
       const column = getColumn();
 
-      if (table && column) {
+      if (table && column !== undefined) {
         quadraticCore.dataTableMutations(
           sheets.sheet.id,
           table.x,
           table.y,
           column,
+          undefined,
+          undefined,
+          undefined,
+          sheets.getCursorPosition()
+        );
+      }
+    },
+  },
+  [Action.InsertTableColumnRight]: {
+    label: 'Insert column to the right',
+    Icon: AddIcon,
+    run: () => {
+      const table = getTable();
+      const column = getColumn();
+
+      if (table && column !== undefined) {
+        quadraticCore.dataTableMutations(
+          sheets.sheet.id,
+          table.x,
+          table.y,
+          column + 1,
           undefined,
           undefined,
           undefined,
@@ -309,7 +332,7 @@ export const dataTableSpec: DataTableSpec = {
       const table = getTable();
       const column = getColumn();
 
-      if (table && column) {
+      if (table && column !== undefined) {
         quadraticCore.dataTableMutations(
           sheets.sheet.id,
           table.x,
@@ -392,14 +415,35 @@ export const dataTableSpec: DataTableSpec = {
       }
     },
   },
-  [Action.InsertTableRow]: {
-    label: 'Insert row',
+  [Action.InsertTableRowAbove]: {
+    label: 'Insert row above',
     Icon: AddIcon,
     run: () => {
       const table = getTable();
       const row = getRow();
 
-      if (table && row) {
+      if (table && row !== undefined) {
+        quadraticCore.dataTableMutations(
+          sheets.sheet.id,
+          table.x,
+          table.y,
+          undefined,
+          undefined,
+          row - 1,
+          undefined,
+          sheets.getCursorPosition()
+        );
+      }
+    },
+  },
+  [Action.InsertTableRowBelow]: {
+    label: 'Insert row below',
+    Icon: AddIcon,
+    run: () => {
+      const table = getTable();
+      const row = getRow();
+
+      if (table && row !== undefined) {
         quadraticCore.dataTableMutations(
           sheets.sheet.id,
           table.x,
@@ -420,7 +464,7 @@ export const dataTableSpec: DataTableSpec = {
       const table = getTable();
       const row = getRow();
 
-      if (table && row) {
+      if (table && row !== undefined) {
         quadraticCore.dataTableMutations(
           sheets.sheet.id,
           table.x,

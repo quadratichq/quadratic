@@ -15,8 +15,6 @@ use super::cells_accessed::CellsAccessed;
 // This is a deprecated version of CodeRun that is only used for file v1.7 and below.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CodeRunOld {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub formatted_code_string: Option<String>,
     pub std_out: Option<String>,
     pub std_err: Option<String>,
     pub cells_accessed: Vec<SheetRect>,
@@ -45,7 +43,6 @@ impl From<CodeRunOld> for CodeRun {
             CodeRunResult::Err(e) => Some(e),
         };
         Self {
-            formatted_code_string: old.formatted_code_string,
             std_out: old.std_out,
             std_err: old.std_err,
             cells_accessed: old.cells_accessed.into(),
@@ -86,9 +83,6 @@ impl CodeRunResult {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
 pub struct CodeRun {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub formatted_code_string: Option<String>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub std_out: Option<String>,
 

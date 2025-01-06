@@ -62,7 +62,6 @@ mod test {
         };
         cells_accessed.add_sheet_rect(sheet_rect);
         let code_run = CodeRun {
-            formatted_code_string: None,
             std_err: None,
             std_out: None,
             error: None,

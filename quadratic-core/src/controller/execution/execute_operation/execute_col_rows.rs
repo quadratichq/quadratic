@@ -455,7 +455,6 @@ mod tests {
             line_number: None,
             output_type: None,
             cells_accessed,
-            formatted_code_string: None,
         };
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
@@ -539,7 +538,6 @@ mod tests {
             line_number: None,
             output_type: None,
             cells_accessed,
-            formatted_code_string: None,
         };
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),

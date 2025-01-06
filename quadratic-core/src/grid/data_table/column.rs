@@ -94,7 +94,7 @@ pub mod test {
         pretty_print_data_table(&data_table, Some("Data Table with New Column"), None);
 
         // there should be a "Column" header
-        let header = data_table.get_header_by_name("Column");
+        let header = data_table.get_header_by_name("Column 1");
         assert!(header.is_some());
 
         // this should be a 5x4 array

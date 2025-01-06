@@ -18,8 +18,8 @@ export class PointerTable {
   private doubleClickTimeout: number | undefined;
   private tableNameDown: { column: number; row: number; point: Point } | undefined;
 
-  private pointerDownTableName(world: Point, tableDown: TablePointerDownResult, append: boolean) {
-    sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, append);
+  private pointerDownTableName(world: Point, tableDown: TablePointerDownResult, shiftKey: boolean, ctrlKey: boolean) {
+    sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, tableDown.table.y, shiftKey, ctrlKey);
     pixiApp.cellsSheet().tables.ensureActive(tableDown.table);
     if (this.doubleClickTimeout) {
       events.emit('contextMenu', {
@@ -50,7 +50,7 @@ export class PointerTable {
     });
   }
 
-  private pointerDownColumnName(world: Point, tableDown: TablePointerDownResult, append: boolean) {
+  private pointerDownColumnName(world: Point, tableDown: TablePointerDownResult, shiftKey: boolean, ctrlKey: boolean) {
     if (tableDown.column === undefined) {
       throw new Error('Expected column to be defined in pointerTable');
     }
@@ -67,7 +67,7 @@ export class PointerTable {
     } else {
       // move cursor to column header
       const columnName = tableDown.table.columns[tableDown.column].name;
-      sheets.sheet.cursor.selectTable(tableDown.table.name, columnName, append);
+      sheets.sheet.cursor.selectTable(tableDown.table.name, columnName, tableDown.table.y, shiftKey, ctrlKey);
 
       this.doubleClickTimeout = window.setTimeout(() => {
         this.doubleClickTimeout = undefined;
@@ -108,13 +108,13 @@ export class PointerTable {
     }
 
     if (tableDown.type === 'table-name') {
-      this.pointerDownTableName(world, tableDown, event.shiftKey);
+      this.pointerDownTableName(world, tableDown, event.shiftKey, event.ctrlKey || event.metaKey);
     } else if (tableDown.type === 'dropdown') {
       this.pointerDownDropdown(world, tableDown);
     } else if (tableDown.type === 'sort') {
       // tables doesn't have to do anything with sort; it's handled in TableColumnHeader
     } else if (tableDown.type === 'column-name') {
-      this.pointerDownColumnName(world, tableDown, event.shiftKey);
+      this.pointerDownColumnName(world, tableDown, event.shiftKey, event.ctrlKey || event.metaKey);
     }
     return true;
   }

@@ -12,7 +12,7 @@ pub struct TableMapEntry {
     pub visible_columns: Vec<String>,
     pub all_columns: Vec<String>,
     pub bounds: Rect,
-    pub show_header: bool,
+    pub show_headers: bool,
 }
 
 impl TableMapEntry {
@@ -125,7 +125,7 @@ impl TableMapEntry {
             visible_columns,
             all_columns,
             bounds,
-            show_header: true,
+            show_headers: true,
         }
     }
 }
@@ -143,7 +143,7 @@ impl TableMap {
             visible_columns: table.columns_map(false),
             all_columns: table.columns_map(true),
             bounds: table.output_rect(pos, true),
-            show_header: table.show_header,
+            show_headers: table.show_header,
         });
     }
 

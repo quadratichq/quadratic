@@ -28,7 +28,6 @@ impl GridController {
                         std_out: None,
                         std_err: (!errors.is_empty())
                             .then(|| errors.into_iter().map(|e| e.to_string()).join("\n")),
-                        formatted_code_string: None,
                         cells_accessed: transaction.cells_accessed.clone(),
                         error: None,
                         return_type: None,
@@ -322,7 +321,6 @@ mod test {
             CodeCellLanguage::Javascript,
         );
         let code_run = CodeRun {
-            formatted_code_string: None,
             return_type: Some("array".into()),
             output_type: Some("array".into()),
             ..Default::default()
