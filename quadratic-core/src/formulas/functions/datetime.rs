@@ -466,6 +466,18 @@ fn get_functions() -> Vec<FormulaFunction> {
         ),
         // Arithmetic
         formula_fn!(
+            /// Adds a number of months to a date.
+            ///
+            /// If the date goes past the end of the month, the last day in the
+            /// month is returned.
+            #[examples("EDATE(DATE(2024, 04, 08), 8)")]
+            #[zip_map]
+            fn EDATE(span: Span, [day]: NaiveDate, [months_offset]: i64) {
+                add_months_offset_to_day(day, months_offset)
+                    .ok_or_else(|| RunErrorMsg::Overflow.with_span(span))?
+            }
+        ),
+        formula_fn!(
             /// Returns the last day of the month that is `months_offset` months
             /// after `day`.
             ///
@@ -478,26 +490,29 @@ fn get_functions() -> Vec<FormulaFunction> {
             #[examples("EOMONTH(DATE(2024, 04, 08))", "EOMONTH(DATE(2024, 04, 08), 8)")]
             #[zip_map]
             fn EOMONTH(span: Span, [day]: NaiveDate, [months_offset]: (Option<i64>)) {
-                // Add `months_offset`
-                let day = match months_offset {
-                    None => Some(day),
-                    Some(x) => {
-                        if let Ok(m) = u32::try_from(x) {
-                            day.checked_add_months(Months::new(m))
-                        } else if let Ok(m) = u32::try_from(x.saturating_neg()) {
-                            dbg!(dbg!(day).checked_sub_months(dbg!(Months::new(m))))
-                        } else {
-                            None
-                        }
-                    }
-                }
-                .ok_or_else(|| RunErrorMsg::Overflow.with_span(span))?;
+                let day = add_months_offset_to_day(day, months_offset.unwrap_or(0))
+                    .ok_or_else(|| RunErrorMsg::Overflow.with_span(span))?;
 
                 // Find last day of month
                 (1..=31).rev().find_map(|i| day.with_day(i))
             }
         ),
     ]
+}
+
+/// Adds a number of months to a date, or returns `None` in the case of
+/// overflow.
+///
+/// If the date goes past the end of the month, the last day in the month is
+/// returned.
+fn add_months_offset_to_day(day: NaiveDate, months: i64) -> Option<NaiveDate> {
+    if let Ok(m) = u32::try_from(months) {
+        day.checked_add_months(Months::new(m))
+    } else if let Ok(m) = u32::try_from(months.saturating_neg()) {
+        day.checked_sub_months(Months::new(m))
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]
@@ -800,6 +815,31 @@ mod tests {
         assert_eq!(
             "2008-02-29",
             eval_to_string(&g, "EOMONTH(DATE(2008, 01, 15), 1)"),
+        );
+    }
+
+    #[test]
+    fn test_formula_edate() {
+        let g = Grid::new();
+        assert_eq!(
+            "2008-02-29",
+            eval_to_string(&g, "EDATE(DATE(2008, 01, 31), 1)"),
+        );
+        assert_eq!(
+            "2008-03-31",
+            eval_to_string(&g, "EDATE(DATE(2008, 01, 31), 2)"),
+        );
+        assert_eq!(
+            "2008-02-28",
+            eval_to_string(&g, "EDATE(DATE(2008, 01, 28), 1)"),
+        );
+        assert_eq!(
+            "2008-03-28",
+            eval_to_string(&g, "EDATE(DATE(2008, 01, 28), 2)"),
+        );
+        assert_eq!(
+            "2008-02-29",
+            eval_to_string(&g, "EDATE(DATE(2008, 03, 30), -1)"),
         );
     }
 }
