@@ -19,6 +19,26 @@ jobs:
     env:
       STACK_NAME: pr-${{ github.event.pull_request.number }}
     steps:
+      - name: Find Create Stack Comment
+        uses: peter-evans/find-comment@v3
+        id: staging-create-stack-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Staging - Stack"
+
+      - name: Comment on create stack start
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.staging-create-stack-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Staging - Stack
+            ⏳ Stack creation in progress...
+
+            🔍 Track progress in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          edit-mode: replace
+
       - uses: actions/checkout@v4
 
       - name: Configure AWS Credentials
@@ -77,15 +97,7 @@ jobs:
             exit 1
           fi
 
-      - name: Find Create Stack Comment
-        uses: peter-evans/find-comment@v3
-        id: staging-create-stack-comment
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          comment-author: "github-actions[bot]"
-          body-includes: "Staging - Stack"
-
-      - name: Create or update comment on create stack success
+      - name: Update comment on create stack success
         if: success()
         uses: peter-evans/create-or-update-comment@v3
         with:
@@ -98,7 +110,7 @@ jobs:
             🔗 URL: ${{ steps.create-stack.outputs.WebsiteURL }}
           edit-mode: replace
 
-      - name: Create or update comment on create stack failure
+      - name: Update comment on create stack failure
         if: failure()
         uses: peter-evans/create-or-update-comment@v3
         with:
@@ -106,7 +118,7 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Staging - Stack
-            ❌ The staging stack creation encountered an error.
+            ❌ Staging stack creation encountered an error.
 
             🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
           edit-mode: replace
