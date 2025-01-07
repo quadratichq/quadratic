@@ -94,7 +94,7 @@ const AIMessageInternalSchema = z.object({
 });
 export type AIMessageInternal = z.infer<typeof AIMessageInternalSchema>;
 
-const AIMessagePromptSchema = z.object({
+export const AIMessagePromptSchema = z.object({
   role: z.literal('assistant'),
   content: z.string(),
   contextType: UserPromptContextTypeSchema,

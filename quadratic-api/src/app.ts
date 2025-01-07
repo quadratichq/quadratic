@@ -69,7 +69,7 @@ app.get('/', (req, res) => {
 
 // App routes
 // TODO: eventually move all of these into the `v0` directory and register them dynamically
-app.use('/v0/ai', ai_router);
+app.use('/ai', ai_router);
 // Internal routes
 app.use('/v0/internal', internal_router);
 

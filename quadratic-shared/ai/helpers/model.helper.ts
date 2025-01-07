@@ -12,7 +12,7 @@ export function isBedrockModel(model: AIModel): model is BedrockModel {
   return MODEL_OPTIONS[model].provider === 'bedrock';
 }
 
-export function isAnthropicBedrockModel(model: AIModel): model is BedrockAnthropicModel {
+export function isBedrockAnthropicModel(model: AIModel): model is BedrockAnthropicModel {
   return MODEL_OPTIONS[model].provider === 'bedrock-anthropic';
 }
 

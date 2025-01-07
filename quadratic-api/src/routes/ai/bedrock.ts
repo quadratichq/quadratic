@@ -2,11 +2,15 @@ import { AnthropicBedrock } from '@anthropic-ai/bedrock-sdk';
 import Anthropic from '@anthropic-ai/sdk';
 import { BedrockRuntimeClient, ConverseCommand, ConverseStreamCommand } from '@aws-sdk/client-bedrock-runtime';
 import { type Response } from 'express';
-import { getAnthropicApiArgs } from 'quadratic-shared/ai/helpers/anthropic.helper';
-import { getBedrockApiArgs } from 'quadratic-shared/ai/helpers/bedrock.helper';
-import { getModelOptions, isAnthropicBedrockModel } from 'quadratic-shared/ai/helpers/model.helper';
-import { type AIAutoCompleteRequestBody, type BedrockModel } from 'quadratic-shared/typesAndSchemasAI';
+import { getModelOptions, isBedrockAnthropicModel } from 'quadratic-shared/ai/helpers/model.helper';
+import {
+  type AIAutoCompleteRequestBody,
+  type AIMessagePrompt,
+  type BedrockModel,
+} from 'quadratic-shared/typesAndSchemasAI';
 import { AWS_S3_ACCESS_KEY_ID, AWS_S3_REGION, AWS_S3_SECRET_ACCESS_KEY } from '../../env-vars';
+import { getAnthropicApiArgs, parseAnthropicResponse, parseAnthropicStream } from './helpers/anthropic.helper';
+import { getBedrockApiArgs, parseBedrockResponse, parseBedrockStream } from './helpers/bedrock.helper';
 
 // aws-sdk for bedrock, generic for all models
 const bedrock = new BedrockRuntimeClient({
@@ -25,10 +29,10 @@ export const handleBedrockRequest = async (
   model: BedrockModel,
   args: Omit<AIAutoCompleteRequestBody, 'model'>,
   response: Response
-) => {
+): Promise<AIMessagePrompt | undefined> => {
   const { stream, temperature, max_tokens } = getModelOptions(model, args);
 
-  if (isAnthropicBedrockModel(model)) {
+  if (isBedrockAnthropicModel(model)) {
     const { system, messages, tools, tool_choice } = getAnthropicApiArgs(args);
     if (stream) {
       try {
@@ -46,17 +50,9 @@ export const handleBedrockRequest = async (
         response.setHeader('Content-Type', 'text/event-stream');
         response.setHeader('Cache-Control', 'no-cache');
         response.setHeader('Connection', 'keep-alive');
-        for await (const chunk of chunks) {
-          if (!response.writableEnded) {
-            response.write(`data: ${JSON.stringify(chunk)}\n\n`);
-          } else {
-            break;
-          }
-        }
 
-        if (!response.writableEnded) {
-          response.end();
-        }
+        const responseMessage = await parseAnthropicStream(chunks, response);
+        return responseMessage;
       } catch (error: any) {
         if (!response.headersSent) {
           if (error instanceof Anthropic.APIError) {
@@ -81,7 +77,8 @@ export const handleBedrockRequest = async (
           tools,
           tool_choice,
         });
-        response.json(result.content);
+        const responseMessage = parseAnthropicResponse(result, response);
+        return responseMessage;
       } catch (error: any) {
         if (error instanceof Anthropic.APIError) {
           response.status(error.status ?? 400).json(error.message);
@@ -113,17 +110,9 @@ export const handleBedrockRequest = async (
         response.setHeader('Content-Type', 'text/event-stream');
         response.setHeader('Cache-Control', 'no-cache');
         response.setHeader('Connection', 'keep-alive');
-        for await (const chunk of chunks) {
-          if (!response.writableEnded) {
-            response.write(`data: ${JSON.stringify(chunk)}\n\n`);
-          } else {
-            break;
-          }
-        }
 
-        if (!response.writableEnded) {
-          response.end();
-        }
+        const responseMessage = await parseBedrockStream(chunks, response);
+        return responseMessage;
       } catch (error: any) {
         if (!response.headersSent) {
           if (error.response) {
@@ -152,7 +141,8 @@ export const handleBedrockRequest = async (
         });
 
         const result = await bedrock.send(command);
-        response.json(result.output);
+        const responseMessage = parseBedrockResponse(result.output, response);
+        return responseMessage;
       } catch (error: any) {
         if (error.response) {
           response.status(error.response.status).json(error.response.data);

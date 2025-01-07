@@ -1,9 +1,13 @@
 import { type Response } from 'express';
 import OpenAI from 'openai';
 import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
-import { getOpenAIApiArgs } from 'quadratic-shared/ai/helpers/openai.helper';
-import { type AIAutoCompleteRequestBody, type OpenAIModel } from 'quadratic-shared/typesAndSchemasAI';
+import {
+  type AIAutoCompleteRequestBody,
+  type AIMessagePrompt,
+  type OpenAIModel,
+} from 'quadratic-shared/typesAndSchemasAI';
 import { OPENAI_API_KEY } from '../../env-vars';
+import { getOpenAIApiArgs, parseOpenAIResponse, parseOpenAIStream } from './helpers/openai.helper';
 
 const openai = new OpenAI({
   apiKey: OPENAI_API_KEY || '',
@@ -13,7 +17,7 @@ export const handleOpenAIRequest = async (
   model: OpenAIModel,
   args: Omit<AIAutoCompleteRequestBody, 'model'>,
   response: Response
-) => {
+): Promise<AIMessagePrompt | undefined> => {
   const { messages, tools, tool_choice } = getOpenAIApiArgs(args);
   const { stream, temperature } = getModelOptions(model, args);
 
@@ -31,17 +35,9 @@ export const handleOpenAIRequest = async (
       response.setHeader('Content-Type', 'text/event-stream');
       response.setHeader('Cache-Control', 'no-cache');
       response.setHeader('Connection', 'keep-alive');
-      for await (const chunk of completion) {
-        if (!response.writableEnded) {
-          response.write(`data: ${JSON.stringify(chunk)}\n\n`);
-        } else {
-          break;
-        }
-      }
 
-      if (!response.writableEnded) {
-        response.end();
-      }
+      const responseMessage = await parseOpenAIStream(completion, response);
+      return responseMessage;
     } catch (error: any) {
       if (!response.headersSent) {
         if (error instanceof OpenAI.APIError) {
@@ -64,7 +60,8 @@ export const handleOpenAIRequest = async (
         tools,
         tool_choice,
       });
-      response.json(result.choices[0].message);
+      const responseMessage = parseOpenAIResponse(result, response);
+      return responseMessage;
     } catch (error: any) {
       if (error instanceof OpenAI.APIError) {
         response.status(error.status ?? 400).json(error.message);
