@@ -417,6 +417,7 @@ impl Sheet {
             sort: data_table.sort.clone(),
             alternating_colors,
             readonly: data_table.readonly,
+            is_html_image: data_table.is_html() || data_table.is_image(),
         })
     }
 
@@ -1086,6 +1087,7 @@ mod tests {
                 sort: None,
                 alternating_colors: true,
                 readonly: true,
+                is_html_image: false,
             })
         );
     }

@@ -351,6 +351,14 @@ impl A1Selection {
             })
             .collect()
     }
+
+    /// Returns true if the selection is on an image.
+    pub fn cursor_is_on_html_image(&self, context: &A1Context) -> bool {
+        let table = context
+            .tables()
+            .find(|table| table.contains(self.cursor.to_sheet_pos(self.sheet_id)));
+        table.is_some_and(|table| table.is_html_image)
+    }
 }
 
 #[cfg(test)]
@@ -688,6 +696,31 @@ mod tests {
                 RefRangeBounds::test_a1("C3"),
                 RefRangeBounds::test_a1("A2:C3")
             ]
+        );
+    }
+
+    #[test]
+    fn test_is_on_html_image() {
+        // Create a context with a table that has an HTML image
+        let mut context = A1Context::test(
+            &[("Sheet1", SheetId::test()), ("Sheet2", SheetId::new())],
+            &[("Table1", &["A"], Rect::test_a1("B2:D4"))],
+        );
+        context.table_map.tables.first_mut().unwrap().is_html_image = true;
+
+        // Test position inside the table
+        assert!(A1Selection::test_a1("B2").cursor_is_on_html_image(&context));
+        assert!(A1Selection::test_a1("C3").cursor_is_on_html_image(&context));
+        assert!(A1Selection::test_a1("D4").cursor_is_on_html_image(&context));
+
+        // Test positions outside the table
+        assert!(!A1Selection::test_a1("A2").cursor_is_on_html_image(&context));
+        assert!(!A1Selection::test_a1("B5").cursor_is_on_html_image(&context));
+        assert!(!A1Selection::test_a1("E3").cursor_is_on_html_image(&context));
+
+        // Test with wrong sheet_id
+        assert!(
+            !A1Selection::test_a1_context("Sheet2!B2", &context).cursor_is_on_html_image(&context)
         );
     }
 }

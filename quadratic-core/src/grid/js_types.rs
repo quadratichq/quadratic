@@ -225,6 +225,7 @@ pub struct JsRenderCodeCell {
     pub sort: Option<Vec<DataTableSort>>,
     pub alternating_colors: bool,
     pub readonly: bool,
+    pub is_html_image: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]

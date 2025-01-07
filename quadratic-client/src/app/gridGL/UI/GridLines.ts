@@ -129,10 +129,12 @@ export class GridLines extends Graphics {
   private drawHorizontalLines(bounds: Rectangle): [number, number] {
     const sheet = sheets.sheet;
     const offsets = sheet.offsets;
+    const startX = offsets.getColumnFromScreen(bounds.left);
+    const endX = offsets.getColumnFromScreen(bounds.right);
     const rowPlacement = offsets.getYPlacement(bounds.top);
     const index = rowPlacement.index;
     const position = rowPlacement.position;
-    // const gridOverflowLines = sheets.sheet.gridOverflowLines;
+    const gridOverflowLines = sheets.sheet.gridOverflowLines;
 
     const left = bounds.left <= sheet.clamp.left ? sheet.clamp.left : bounds.left;
 
@@ -148,8 +150,18 @@ export class GridLines extends Graphics {
     for (let y = bounds.top; y <= bounds.bottom + size - 1; y += size) {
       // don't draw grid lines when hidden
       if (size !== 0) {
-        this.moveTo(left, y - offset);
-        this.lineTo(bounds.right, y - offset);
+        const lines = gridOverflowLines.getRowHorizontalRange(row, [startX, endX]);
+        if (lines) {
+          for (const [x0, x1] of lines) {
+            const start = offsets.getColumnPlacement(x0).position;
+            const end = offsets.getColumnPlacement(x1 + 1).position;
+            this.moveTo(start, y - offset);
+            this.lineTo(end, y - offset);
+          }
+        } else {
+          this.moveTo(left, y - offset);
+          this.lineTo(bounds.right, y - offset);
+        }
         this.gridLinesY.push({ row, x: bounds.left, y: y - offset, w: bounds.right - left, h: 1 });
       }
       size = offsets.getRowHeight(row);
