@@ -4,22 +4,32 @@ import { TABLE_NAME_FONT_SIZE, TABLE_NAME_PADDING } from '@/app/gridGL/cells/tab
 import { PixiRename } from '@/app/gridGL/HTMLGrid/contextMenus/PixiRename';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { useMemo } from 'react';
+import type { Rectangle } from 'pixi.js';
+import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export const TableRename = () => {
   const contextMenu = useRecoilValue(contextMenuAtom);
 
-  const position = useMemo(() => {
-    if (
-      contextMenu.type !== ContextMenuType.Table ||
-      !contextMenu.rename ||
-      !contextMenu.table ||
-      contextMenu.selectedColumn !== undefined
-    ) {
-      return;
-    }
-    return pixiApp.cellsSheets.current?.tables.getTableNamePosition(contextMenu.table.x, contextMenu.table.y);
+  const [position, setPosition] = useState<Rectangle | undefined>(undefined);
+  useEffect(() => {
+    const updatePosition = () => {
+      if (
+        contextMenu.type !== ContextMenuType.Table ||
+        !contextMenu.rename ||
+        !contextMenu.table ||
+        contextMenu.selectedColumn !== undefined
+      ) {
+        setPosition(undefined);
+      } else {
+        setPosition(pixiApp.cellsSheets.current?.tables.getTableNamePosition(contextMenu.table.x, contextMenu.table.y));
+      }
+    };
+    updatePosition();
+    events.on('viewportChangedReady', updatePosition);
+    return () => {
+      events.off('viewportChangedReady', updatePosition);
+    };
   }, [contextMenu]);
 
   if (contextMenu.type !== ContextMenuType.Table || !contextMenu.rename || !contextMenu.table) {
