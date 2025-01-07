@@ -1,5 +1,6 @@
-import { MODEL_OPTIONS } from 'quadratic-shared/AI_MODELS';
-import {
+import { MODEL_OPTIONS } from 'quadratic-shared/ai/AI_MODELS';
+import type {
+  AIAutoCompleteRequestBody,
   AIModel,
   AnthropicModel,
   BedrockAnthropicModel,
@@ -22,3 +23,23 @@ export function isAnthropicModel(model: AIModel): model is AnthropicModel {
 export function isOpenAIModel(model: AIModel): model is OpenAIModel {
   return MODEL_OPTIONS[model].provider === 'openai';
 }
+
+export const getModelOptions = (
+  model: AIModel,
+  args: Pick<AIAutoCompleteRequestBody, 'useTools' | 'useStream'>
+): {
+  stream: boolean;
+  temperature: number;
+  max_tokens: number;
+} => {
+  const { canStream, canStreamWithToolCalls, temperature, max_tokens } = MODEL_OPTIONS[model];
+
+  const { useTools, useStream } = args;
+  const stream = canStream
+    ? useTools
+      ? canStreamWithToolCalls && (useStream ?? canStream)
+      : useStream ?? canStream
+    : false;
+
+  return { stream, temperature, max_tokens };
+};

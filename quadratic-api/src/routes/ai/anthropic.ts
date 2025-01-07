@@ -1,53 +1,24 @@
 import Anthropic from '@anthropic-ai/sdk';
-import express from 'express';
-import { MODEL_OPTIONS } from 'quadratic-shared/AI_MODELS';
-import { AnthropicAutoCompleteRequestBodySchema } from 'quadratic-shared/typesAndSchemasAI';
+import { type Response } from 'express';
+import { getAnthropicApiArgs } from 'quadratic-shared/ai/anthropic.helper';
+import { getModelOptions } from 'quadratic-shared/ai/model.helper';
+import type { AIAutoCompleteRequestBody, AnthropicModel } from 'quadratic-shared/typesAndSchemasAI';
 import { ANTHROPIC_API_KEY } from '../../env-vars';
-import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { Request } from '../../types/Request';
-import { ai_rate_limiter } from './aiRateLimiter';
-
-const anthropic_router = express.Router();
 
 const anthropic = new Anthropic({
   apiKey: ANTHROPIC_API_KEY,
 });
 
-anthropic_router.post('/anthropic/chat', validateAccessToken, ai_rate_limiter, async (request, response) => {
-  try {
-    const { model, system, messages, tools, tool_choice } = AnthropicAutoCompleteRequestBodySchema.parse(request.body);
-    const { temperature, max_tokens } = MODEL_OPTIONS[model];
-    const result = await anthropic.messages.create({
-      model,
-      system,
-      messages,
-      temperature,
-      max_tokens,
-      tools,
-      tool_choice,
-    });
-    response.json(result.content);
-  } catch (error: any) {
-    if (error instanceof Anthropic.APIError) {
-      response.status(error.status ?? 400).json(error.message);
-      console.log(error.status, error.message);
-    } else {
-      response.status(400).json(error);
-      console.log(error);
-    }
-  }
-});
+export const handleAnthropicRequest = async (
+  model: AnthropicModel,
+  args: Omit<AIAutoCompleteRequestBody, 'model'>,
+  response: Response
+) => {
+  const { system, messages, tools, tool_choice } = getAnthropicApiArgs(args);
+  const { stream, temperature, max_tokens } = getModelOptions(model, args);
 
-anthropic_router.post(
-  '/anthropic/chat/stream',
-  validateAccessToken,
-  ai_rate_limiter,
-  async (request: Request, response) => {
+  if (stream) {
     try {
-      const { model, system, messages, tools, tool_choice } = AnthropicAutoCompleteRequestBodySchema.parse(
-        request.body
-      );
-      const { temperature, max_tokens } = MODEL_OPTIONS[model];
       const chunks = await anthropic.messages.create({
         model,
         system,
@@ -87,7 +58,27 @@ anthropic_router.post(
         console.error('Error occurred after headers were sent:', error);
       }
     }
-  }
-);
+  } else {
+    try {
+      const result = await anthropic.messages.create({
+        model,
+        system,
+        messages,
+        temperature,
+        max_tokens,
+        tools,
+        tool_choice,
+      });
 
-export default anthropic_router;
+      response.json(result.content);
+    } catch (error: any) {
+      if (error instanceof Anthropic.APIError) {
+        response.status(error.status ?? 400).json(error.message);
+        console.log(error.status, error.message);
+      } else {
+        response.status(400).json(error);
+        console.log(error);
+      }
+    }
+  }
+};

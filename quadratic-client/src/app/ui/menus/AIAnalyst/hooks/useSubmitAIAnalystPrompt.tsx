@@ -6,9 +6,8 @@ import { useQuadraticContextMessages } from '@/app/ai/hooks/useQuadraticContextM
 import { useSelectionContextMessages } from '@/app/ai/hooks/useSelectionContextMessages';
 import { useToolUseMessages } from '@/app/ai/hooks/useToolUseMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
-import { AITool } from '@/app/ai/tools/aiTools';
-import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
-import { getMessagesForModel, getPromptMessages } from '@/app/ai/tools/message.helper';
+import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
+
 import {
   aiAnalystAbortControllerAtom,
   aiAnalystCurrentChatAtom,
@@ -18,6 +17,8 @@ import {
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { AITool, aiToolsSpec } from 'quadratic-shared/ai/aiToolsSpec';
+import { getPromptMessages } from 'quadratic-shared/ai/message.helper';
 import {
   AIMessage,
   AIMessagePrompt,
@@ -136,11 +137,9 @@ export function useSubmitAIAnalystPrompt() {
         try {
           // Send user prompt to API
           const updatedMessages = await updateInternalContext({ context });
-          const { system, messages } = getMessagesForModel(model, updatedMessages);
           const response = await handleAIRequestToAPI({
             model,
-            system,
-            messages,
+            messages: updatedMessages,
             setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
             signal: abortController.signal,
             useStream: true,
@@ -165,7 +164,7 @@ export function useSubmitAIAnalystPrompt() {
                 const aiTool = toolCall.name as AITool;
                 const argsObject = JSON.parse(toolCall.arguments);
                 const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
-                const result = await aiToolsSpec[aiTool].action(args as any);
+                const result = await aiToolsActions[aiTool](args as any);
                 toolResultMessage.content.push({
                   id: toolCall.id,
                   content: result,
@@ -183,11 +182,9 @@ export function useSubmitAIAnalystPrompt() {
 
             // Send tool call results to API
             const updatedMessages = await updateInternalContext({ context });
-            const { system, messages } = getMessagesForModel(model, updatedMessages);
             const response = await handleAIRequestToAPI({
               model,
-              system,
-              messages,
+              messages: updatedMessages,
               setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
               signal: abortController.signal,
               useStream: true,

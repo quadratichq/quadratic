@@ -1,4 +1,4 @@
-import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
+import { aiToolsSpec } from 'quadratic-shared/ai/aiToolsSpec';
 import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 

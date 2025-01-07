@@ -1,5 +1,5 @@
-import { NextFunction, Response } from 'express';
-import { Request } from '../types/Request';
+import type { NextFunction, Response } from 'express';
+import type { Request } from '../types/Request';
 import { validateAccessToken } from './validateAccessToken';
 
 export const validateOptionalAccessToken = (req: Request, res: Response, next: NextFunction) => {

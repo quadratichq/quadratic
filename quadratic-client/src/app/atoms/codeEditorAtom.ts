@@ -1,10 +1,10 @@
-import { getPromptMessages } from '@/app/ai/tools/message.helper';
 import { events } from '@/app/events/events';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { JsCellsAccessed, JsCoordinate } from '@/app/quadratic-core-types';
 import { PanelTab } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
+import { getPromptMessages } from 'quadratic-shared/ai/message.helper';
 import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
 

@@ -1,15 +1,14 @@
 import * as Sentry from '@sentry/node';
 import * as Tracing from '@sentry/tracing';
 import cors from 'cors';
-import express, { NextFunction, Request, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
+import express from 'express';
 import 'express-async-errors';
 import fs from 'fs';
 import helmet from 'helmet';
 import path from 'path';
 import { CORS, NODE_ENV, SENTRY_DSN } from './env-vars';
-import anthropic_router from './routes/ai/anthropic';
-import bedrock_router from './routes/ai/bedrock';
-import openai_router from './routes/ai/openai';
+import ai_router from './routes/ai/ai';
 import internal_router from './routes/internal';
 import { ApiError } from './utils/ApiError';
 export const app = express();
@@ -70,9 +69,7 @@ app.get('/', (req, res) => {
 
 // App routes
 // TODO: eventually move all of these into the `v0` directory and register them dynamically
-app.use('/ai', bedrock_router);
-app.use('/ai', anthropic_router);
-app.use('/ai', openai_router);
+app.use('/v0/ai', ai_router);
 // Internal routes
 app.use('/v0/internal', internal_router);
 

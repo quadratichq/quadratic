@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { UserTeamRole } from 'quadratic-shared/typesAndSchemas';
+import type { UserTeamRole } from 'quadratic-shared/typesAndSchemas';
 import dbClient from '../dbClient';
 import { encryptFromEnv } from '../utils/crypto';
 

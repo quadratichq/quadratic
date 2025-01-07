@@ -4,7 +4,6 @@ import { useCodeCellContextMessages } from '@/app/ai/hooks/useCodeCellContextMes
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useQuadraticContextMessages } from '@/app/ai/hooks/useQuadraticContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
-import { getMessagesForModel, getPromptMessages } from '@/app/ai/tools/message.helper';
 import {
   aiAssistantAbortControllerAtom,
   aiAssistantLoadingAtom,
@@ -16,6 +15,7 @@ import {
 import { sheets } from '@/app/grid/controller/Sheets';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
+import { getPromptMessages } from 'quadratic-shared/ai/message.helper';
 import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 
@@ -97,12 +97,10 @@ export function useSubmitAIAssistantPrompt() {
           return updatedMessages;
         });
 
-        const { system, messages } = getMessagesForModel(model, updatedMessages);
         try {
           await handleAIRequestToAPI({
             model,
-            system,
-            messages,
+            messages: updatedMessages,
             setMessages: (updater) => set(aiAssistantMessagesAtom, updater),
             signal: abortController.signal,
           });

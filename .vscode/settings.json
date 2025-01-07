@@ -41,6 +41,7 @@
     "initdb",
     "isready",
     "itertools",
+    "jamba",
     "jwks",
     "keyrings",
     "localstack",
@@ -102,7 +103,8 @@
     "zstd"
   ],
   "editor.codeActionsOnSave": {
-    "source.organizeImports": "explicit"
+    "source.organizeImports": "explicit",
+    "source.fixAll.eslint": "always"
   },
   "rust-analyzer.check.extraArgs": ["--target-dir=target/rust-analyzer"],
   "rust-analyzer.checkOnSave": true,
@@ -115,6 +117,7 @@
   },
   "jest.rootPath": "quadratic-client",
   "typescript.preferences.importModuleSpecifier": "non-relative",
+  "typescript.preferences.preferTypeOnlyAutoImports": true,
   "editor.defaultFormatter": null,
   "[rust]": {
     "editor.defaultFormatter": "rust-lang.rust-analyzer",

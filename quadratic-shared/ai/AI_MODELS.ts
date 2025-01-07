@@ -1,4 +1,4 @@
-import { AIModel, AIProviders } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIModel, AIProviders } from 'quadratic-shared/typesAndSchemasAI';
 
 export const DEFAULT_MODEL: AIModel = 'claude-3-5-sonnet-20241022';
 

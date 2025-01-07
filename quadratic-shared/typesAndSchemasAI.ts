@@ -1,3 +1,4 @@
+import { AIToolSchema } from 'quadratic-shared/ai/aiToolsSpec';
 import { z } from 'zod';
 
 const AIProvidersSchema = z.enum(['bedrock', 'bedrock-anthropic', 'anthropic', 'openai']).default('openai');
@@ -257,13 +258,14 @@ const BedrockToolChoiceSchema = z
   .or(z.object({ tool: z.object({ name: z.string() }) }));
 export type BedrockToolChoice = z.infer<typeof BedrockToolChoiceSchema>;
 
-export const BedrockAutoCompleteRequestBodySchema = z.object({
+const BedrockAutoCompleteRequestBodySchema = z.object({
   model: BedrockModelSchema,
   system: z.array(z.object({ text: z.string() })),
   messages: z.array(BedrockPromptMessageSchema),
   tools: z.array(BedrockToolSchema).optional(),
   tool_choice: BedrockToolChoiceSchema.optional(),
 });
+export type BedrockAutoCompleteRequestBody = z.infer<typeof BedrockAutoCompleteRequestBodySchema>;
 
 const AnthropicToolSchema = z.object({
   name: z.string(),
@@ -285,21 +287,23 @@ const AnthropicToolChoiceSchema = z.discriminatedUnion('type', [
 ]);
 export type AnthropicToolChoice = z.infer<typeof AnthropicToolChoiceSchema>;
 
-export const AnthropicAutoCompleteRequestBodySchema = z.object({
+const AnthropicAutoCompleteRequestBodySchema = z.object({
   model: AnthropicModelSchema,
   system: z.string().or(z.array(z.object({ type: z.literal('text'), text: z.string() }))),
   messages: z.array(AnthropicPromptMessageSchema),
   tools: z.array(AnthropicToolSchema).optional(),
   tool_choice: AnthropicToolChoiceSchema.optional(),
 });
+export type AnthropicAutoCompleteRequestBody = z.infer<typeof AnthropicAutoCompleteRequestBodySchema>;
 
-export const BedrockAnthropicAutoCompleteRequestBodySchema = z.object({
+const BedrockAnthropicAutoCompleteRequestBodySchema = z.object({
   model: BedrockAnthropicModelSchema,
   system: z.string().or(z.array(z.object({ type: z.literal('text'), text: z.string() }))),
   messages: z.array(AnthropicPromptMessageSchema),
   tools: z.array(AnthropicToolSchema).optional(),
   tool_choice: AnthropicToolChoiceSchema.optional(),
 });
+export type BedrockAnthropicAutoCompleteRequestBody = z.infer<typeof BedrockAnthropicAutoCompleteRequestBodySchema>;
 
 const OpenAIToolSchema = z.object({
   type: z.literal('function'),
@@ -327,18 +331,28 @@ const OpenAIToolChoiceSchema = z.union([
 ]);
 export type OpenAIToolChoice = z.infer<typeof OpenAIToolChoiceSchema>;
 
-export const OpenAIAutoCompleteRequestBodySchema = z.object({
+const OpenAIAutoCompleteRequestBodySchema = z.object({
   model: OpenAIModelSchema,
   messages: z.array(OpenAIPromptMessageSchema),
   tools: z.array(OpenAIToolSchema).optional(),
   tool_choice: OpenAIToolChoiceSchema.optional(),
 });
+export type OpenAIAutoCompleteRequestBody = z.infer<typeof OpenAIAutoCompleteRequestBodySchema>;
 
-const AIToolSchema = BedrockToolSchema.or(AnthropicToolSchema).or(OpenAIToolSchema);
-export type AITool = z.infer<typeof AIToolSchema>;
+export const AIAutoCompleteRequestBodySchema = z.object({
+  model: z.union([BedrockModelSchema, AnthropicModelSchema, OpenAIModelSchema]),
+  messages: z.array(ChatMessageSchema),
+  useStream: z.boolean().optional(),
+  useTools: z.boolean().optional(),
+  toolName: AIToolSchema.optional(),
+});
+export type AIAutoCompleteRequestBody = z.infer<typeof AIAutoCompleteRequestBodySchema>;
 
-const AIToolChoiceSchema = BedrockToolChoiceSchema.or(AnthropicToolChoiceSchema).or(OpenAIToolChoiceSchema);
-export type AIToolChoice = z.infer<typeof AIToolChoiceSchema>;
+const AIModelToolSchema = BedrockToolSchema.or(AnthropicToolSchema).or(OpenAIToolSchema);
+export type AIModelTool = z.infer<typeof AIModelToolSchema>;
+
+const AIModelToolChoiceSchema = BedrockToolChoiceSchema.or(AnthropicToolChoiceSchema).or(OpenAIToolChoiceSchema);
+export type AIModelToolChoice = z.infer<typeof AIModelToolChoiceSchema>;
 
 const AIPromptMessageSchema = BedrockPromptMessageSchema.or(AnthropicPromptMessageSchema).or(OpenAIPromptMessageSchema);
 export type AIPromptMessage = z.infer<typeof AIPromptMessageSchema>;

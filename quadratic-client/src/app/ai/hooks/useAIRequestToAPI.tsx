@@ -1,22 +1,25 @@
-import { AITool } from '@/app/ai/tools/aiTools';
-import { getAIProviderEndpoint } from '@/app/ai/tools/endpoint.helper';
-import { isAnthropicBedrockModel, isAnthropicModel, isBedrockModel, isOpenAIModel } from '@/app/ai/tools/model.helper';
-import { getToolChoice, getTools } from '@/app/ai/tools/tool.helpers';
 import { authClient } from '@/auth/auth';
-import { MODEL_OPTIONS } from 'quadratic-shared/AI_MODELS';
-import { AIMessagePrompt, AIModel, AIPromptMessage, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { apiClient } from '@/shared/api/apiClient';
+import { AITool } from 'quadratic-shared/ai/aiToolsSpec';
+import {
+  getModelOptions,
+  isAnthropicBedrockModel,
+  isAnthropicModel,
+  isBedrockModel,
+  isOpenAIModel,
+} from 'quadratic-shared/ai/model.helper';
+import { AIAutoCompleteRequestBody, AIMessagePrompt, AIModel, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 import { SetterOrUpdater } from 'recoil';
 
 type HandleAIPromptProps = {
   model: AIModel;
-  system?: string | { text: string }[];
-  messages: AIPromptMessage[];
+  messages: ChatMessage[];
   setMessages?: SetterOrUpdater<ChatMessage[]> | ((value: React.SetStateAction<ChatMessage[]>) => void);
   signal: AbortSignal;
   useStream?: boolean;
   useTools?: boolean;
-  toolChoice?: AITool;
+  toolName?: AITool;
 };
 
 export function useAIRequestToAPI() {
@@ -317,13 +320,12 @@ export function useAIRequestToAPI() {
   const handleAIRequestToAPI = useCallback(
     async ({
       model,
-      system,
       messages,
       setMessages,
       signal,
       useStream,
       useTools,
-      toolChoice,
+      toolName,
     }: HandleAIPromptProps): Promise<{
       error?: boolean;
       content: AIMessagePrompt['content'];
@@ -338,21 +340,14 @@ export function useAIRequestToAPI() {
       setMessages?.((prev) => [...prev, { ...responseMessage, content: '' }]);
 
       try {
+        const endpoint = `${apiClient.getApiUrl()}/v0/ai`;
         const token = await authClient.getTokenOrRedirect();
-        const { canStream, canStreamWithToolCalls } = MODEL_OPTIONS[model];
-        const stream = canStream
-          ? useTools
-            ? canStreamWithToolCalls && (useStream ?? canStream)
-            : useStream ?? canStream
-          : false;
-        const tools = !useTools ? undefined : getTools(model, toolChoice);
-        const tool_choice = !useTools ? undefined : getToolChoice(model, toolChoice);
-        const endpoint = getAIProviderEndpoint(model, stream);
+        const args: AIAutoCompleteRequestBody = { model, messages, useStream, useTools, toolName };
         const response = await fetch(endpoint, {
           method: 'POST',
           signal,
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model, system, messages, tools, tool_choice }),
+          body: JSON.stringify(args),
         });
 
         if (!response.ok) {
@@ -373,6 +368,7 @@ export function useAIRequestToAPI() {
         const isBedrockAnthropic = isAnthropicBedrockModel(model);
         const isAnthropic = isAnthropicModel(model);
         const isOpenAI = isOpenAIModel(model);
+        const { stream } = getModelOptions(model, { useTools, useStream });
 
         // handle streaming response
         if (stream) {

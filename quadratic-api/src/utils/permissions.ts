@@ -1,13 +1,14 @@
 import * as Sentry from '@sentry/node';
-import {
+import type {
   FilePermission,
-  FilePermissionSchema,
   PublicLinkAccess,
   TeamPermission,
-  TeamPermissionSchema,
   UserFileRole,
+  UserTeamRole} from 'quadratic-shared/typesAndSchemas';
+import {
+  FilePermissionSchema,
+  TeamPermissionSchema,
   UserFileRoleSchema,
-  UserTeamRole,
   UserTeamRoleSchema,
 } from 'quadratic-shared/typesAndSchemas';
 const { TEAM_EDIT, TEAM_DELETE, TEAM_BILLING_EDIT, TEAM_VIEW } = TeamPermissionSchema.enum;
