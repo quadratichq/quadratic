@@ -166,12 +166,6 @@ export async function parseAnthropicStream(
           toolCalls.push(toolCall);
           responseMessage.toolCalls = toolCalls;
         }
-      } else if (chunk.type === 'message_start') {
-        // message start
-      } else if (chunk.type === 'message_delta') {
-        // message delta
-      } else if (chunk.type === 'message_stop') {
-        // message stop
       }
 
       response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
