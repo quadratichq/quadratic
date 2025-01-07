@@ -160,10 +160,9 @@ export async function parseAnthropicStream(
         }
       } else if (chunk.type === 'content_block_stop') {
         const toolCalls = [...responseMessage.toolCalls];
-        let toolCall = toolCalls.pop();
+        const toolCall = toolCalls.pop();
         if (toolCall) {
-          toolCall = { ...toolCall, loading: false };
-          toolCalls.push(toolCall);
+          toolCalls.push({ ...toolCall, loading: false });
           responseMessage.toolCalls = toolCalls;
         }
       }
@@ -177,9 +176,8 @@ export async function parseAnthropicStream(
   if (!responseMessage.content) {
     responseMessage.content =
       responseMessage.toolCalls.length > 0 ? '' : "I'm sorry, I don't have a response for that.";
+    response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
   }
-
-  response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
 
   if (!response.writableEnded) {
     response.end();

@@ -181,9 +181,8 @@ export async function parseOpenAIStream(
   if (!responseMessage.content) {
     responseMessage.content =
       responseMessage.toolCalls.length > 0 ? '' : "I'm sorry, I don't have a response for that.";
+    response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
   }
-
-  response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
 
   if (!response.writableEnded) {
     response.end();
