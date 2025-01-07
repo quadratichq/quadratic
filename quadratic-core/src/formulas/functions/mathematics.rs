@@ -10,6 +10,7 @@ pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
 
 fn get_functions() -> Vec<FormulaFunction> {
     vec![
+        // Basic operators
         formula_fn!(
             /// Adds all values.
             /// Returns `0` if given no values.
@@ -95,6 +96,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 number.sqrt()
             }
         ),
+        // Rounding
         formula_fn!(
             /// Rounds a number up to the next multiple of `increment`. If
             /// `number` and `increment` are both negative, rounds the number
@@ -230,6 +232,30 @@ fn get_functions() -> Vec<FormulaFunction> {
                 number.floor()
             }
         ),
+        formula_fn!(
+            /// Rounds a number to the specified number of digits after the
+            /// decimal point.
+            ///
+            /// - If `digits = 0`, then the number is rounded to the nearest
+            ///   integer. For example, `ROUND(x, 0)` rounds `x` to the nearest
+            ///   integer.
+            /// - If `digits > 0`, then the number is rounded to a digit after
+            ///   the decimal point. For example, `ROUND(x, 2)` rounds `x` to
+            ///   the nearest multiple of 0.01.
+            /// - If `digits < 0`, then the number is rounded to a digit before
+            ///   the decimal point. For example, `ROUND(x, -2)` rounds `x` to
+            ///   the nearest multiple of 100.
+            ///
+            /// Ties are broken by rounding away from zero. For example,
+            /// `ROUND(50, -2)` rounds to `100`.
+            #[examples("ROUND(6.553, 2)")]
+            #[zip_map]
+            fn ROUND([number]: f64, [digits]: i64) {
+                let q = (10_f64).powf(digits as f64);
+                (number * q).round() / q // `f64::round()` ties away from zero
+            }
+        ),
+        // Other operators
         formula_fn!(
             /// Returns the remainder after dividing `number` by `divisor`. The
             /// result always has the same sign as `divisor`.
@@ -653,6 +679,36 @@ mod tests {
             "{-3, -2, -1, 0, 0, 1, 2}",
             eval_to_string(&g, "INT({-2.9, -1.1, -0.1, 0, 0.1, 1.1, 2.9})")
         );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_round() {
+        let test_values = [
+            -2025.0, -10.0, -5.0, -0.8, -0.5, -0.3, 0.0, 0.3, 0.5, 0.8, 5.0, 10.0, 2025.0,
+        ];
+        let g = Grid::new();
+
+        #[rustfmt::skip]
+        let test_cases = [
+            (-2, [-2000.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2000.0]),
+            (-1, [-2030.0, -10.0, -10.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 10.0, 10.0, 2030.0]),
+            (0, [-2025.0, -10.0, -5.0, -1.0, -1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 5.0, 10.0, 2025.0]),
+            (1, [-2025.0, -10.0, -5.0, -0.8, -0.5, -0.3, 0.0, 0.3, 0.5, 0.8, 5.0, 10.0, 2025.0]),
+            (2, [-2025.0, -10.0, -5.0, -0.8, -0.5, -0.3, 0.0, 0.3, 0.5, 0.8, 5.0, 10.0, 2025.0]),
+        ];
+
+        for (digits, expected_results) in test_cases {
+            for (input, expected_output) in std::iter::zip(test_values, expected_results) {
+                crate::util::assert_f64_approx_eq(
+                    expected_output as f64,
+                    &eval_to_string(&g, &format!("ROUND({input}, {digits})")),
+                    // .parse::<f64>()
+                    // .unwrap(),
+                    // "wrong result from ROUND()",
+                );
+            }
+        }
     }
 
     #[test]
