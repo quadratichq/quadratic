@@ -100,6 +100,11 @@ const isAlternatingColorsShowing = (): boolean => {
   return !!table?.alternating_colors;
 };
 
+const isReadOnly = (): boolean => {
+  const table = getTable();
+  return !!table?.readonly;
+};
+
 export const dataTableSpec: DataTableSpec = {
   [Action.FlattenTable]: {
     label: 'Flatten to sheet data',
@@ -286,6 +291,7 @@ export const dataTableSpec: DataTableSpec = {
   [Action.InsertTableColumnLeft]: {
     label: 'Insert column to the left',
     Icon: AddIcon,
+    isAvailable: () => !isReadOnly(),
     run: () => {
       const table = getTable();
       const column = getColumn();
@@ -307,6 +313,7 @@ export const dataTableSpec: DataTableSpec = {
   [Action.InsertTableColumnRight]: {
     label: 'Insert column to the right',
     Icon: AddIcon,
+    isAvailable: () => !isReadOnly(),
     run: () => {
       const table = getTable();
       const column = getColumn();
@@ -328,6 +335,7 @@ export const dataTableSpec: DataTableSpec = {
   [Action.RemoveTableColumn]: {
     label: 'Remove column',
     Icon: DeleteIcon,
+    isAvailable: () => !isReadOnly(),
     run: () => {
       const table = getTable();
       const column = getColumn();
@@ -399,25 +407,10 @@ export const dataTableSpec: DataTableSpec = {
       }
     },
   },
-  [Action.EditTableCode]: {
-    label: 'Edit code',
-    Icon: EditIcon,
-    run: () => {
-      const table = getTable();
-      if (table) {
-        const column = table.x;
-        const row = table.y;
-        quadraticCore.getCodeCell(sheets.sheet.id, column, row).then((code) => {
-          if (code) {
-            doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
-          }
-        });
-      }
-    },
-  },
   [Action.InsertTableRowAbove]: {
     label: 'Insert row above',
     Icon: AddIcon,
+    isAvailable: () => !isReadOnly(),
     run: () => {
       const table = getTable();
       const row = getRow();
@@ -439,6 +432,7 @@ export const dataTableSpec: DataTableSpec = {
   [Action.InsertTableRowBelow]: {
     label: 'Insert row below',
     Icon: AddIcon,
+    isAvailable: () => !isReadOnly(),
     run: () => {
       const table = getTable();
       const row = getRow();
@@ -460,6 +454,7 @@ export const dataTableSpec: DataTableSpec = {
   [Action.RemoveTableRow]: {
     label: 'Remove row',
     Icon: DeleteIcon,
+    isAvailable: () => !isReadOnly(),
     run: () => {
       const table = getTable();
       const row = getRow();
@@ -475,6 +470,22 @@ export const dataTableSpec: DataTableSpec = {
           row - 1,
           sheets.getCursorPosition()
         );
+      }
+    },
+  },
+  [Action.EditTableCode]: {
+    label: 'Edit code',
+    Icon: EditIcon,
+    run: () => {
+      const table = getTable();
+      if (table) {
+        const column = table.x;
+        const row = table.y;
+        quadraticCore.getCodeCell(sheets.sheet.id, column, row).then((code) => {
+          if (code) {
+            doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
+          }
+        });
       }
     },
   },

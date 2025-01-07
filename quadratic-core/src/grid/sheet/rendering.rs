@@ -416,6 +416,7 @@ impl Sheet {
             show_header: data_table.show_header,
             sort: data_table.sort.clone(),
             alternating_colors,
+            readonly: data_table.readonly,
         })
     }
 
@@ -1084,6 +1085,7 @@ mod tests {
                 show_header: true,
                 sort: None,
                 alternating_colors: true,
+                readonly: true,
             })
         );
     }
