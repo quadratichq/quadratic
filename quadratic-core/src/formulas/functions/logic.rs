@@ -156,7 +156,7 @@ mod tests {
 
         g.sheets_mut()[0].set_cell_value(
             pos![A6],
-            CellValue::Error(Box::new(RunErrorMsg::Infinity.without_span())),
+            CellValue::Error(Box::new(RunErrorMsg::NaN.without_span())),
         );
         assert_eq!("42", eval_to_string(&g, "IFERROR(A6, 42)"));
         assert_eq!(
