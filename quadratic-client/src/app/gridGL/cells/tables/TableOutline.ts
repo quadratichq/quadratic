@@ -1,12 +1,15 @@
 //! Draws a table outline, including the spill error boundaries.
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { sheets } from '@/app/grid/controller/Sheets';
 import type { Table } from '@/app/gridGL/cells/tables/Table';
 import { generatedTextures } from '@/app/gridGL/generateTextures';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { colors } from '@/app/theme/colors';
 import { sharedEvents } from '@/shared/sharedEvents';
-import { Graphics, Rectangle } from 'pixi.js';
+import { Graphics, Point, Rectangle } from 'pixi.js';
+import { intersects } from '../../helpers/intersects';
+import { pixiApp } from '../../pixiApp/PixiApp';
 
 const SPILL_HIGHLIGHT_THICKNESS = 2;
 const SPILL_FILL_ALPHA = 0.05;
@@ -42,6 +45,15 @@ export class TableOutline extends Graphics {
     if (!chart) {
       this.lineStyle({ color: getCSSVariableTint('primary'), width, alignment: 0 });
       this.drawShape(new Rectangle(0, 0, this.table.tableBounds.width, this.table.tableBounds.height));
+    }
+
+    // draw the drag handle
+    if (this.active) {
+      this.beginFill(getCSSVariableTint('primary'), 1);
+      this.drawShape(new Rectangle(this.table.tableBounds.width - 4, this.table.tableBounds.height - 4, 8, 8));
+      this.endFill();
+
+      // TODO(ddimaria): create something like PointerAutoComplete to handle the drag handle
     }
 
     // draw the spill error boundaries
