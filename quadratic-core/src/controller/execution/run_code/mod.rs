@@ -66,6 +66,31 @@ impl GridController {
             }
         }
 
+        // preserve some settings from the previous code run
+        if let (Some(old_data_table), Some(new_data_table)) =
+            (sheet.data_table(pos), &mut new_data_table)
+        {
+            new_data_table.show_header = old_data_table.show_header;
+            new_data_table.alternating_colors = old_data_table.alternating_colors;
+            new_data_table.header_is_first_row = old_data_table.header_is_first_row;
+
+            // if the width of the old and new data tables are the same,
+            // then we can preserve other user-selected properties
+            if old_data_table.output_size().w == new_data_table.output_size().w {
+                new_data_table.column_headers = old_data_table.column_headers.to_owned();
+                new_data_table.formats = old_data_table.formats.to_owned();
+
+                // actually apply the sort if it's set
+                if let Some(sort) = old_data_table.sort.to_owned() {
+                    new_data_table.sort = Some(sort);
+
+                    if let Err(e) = new_data_table.sort_all() {
+                        dbgjs!(format!("Error sorting data table: {}", e));
+                    }
+                }
+            }
+        }
+
         let old_data_table = if let Some(new_data_table) = &new_data_table {
             let (old_index, old_data_table) =
                 sheet.data_tables.insert_full(pos, new_data_table.clone());
