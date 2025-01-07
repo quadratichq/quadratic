@@ -2,9 +2,9 @@ import { AnthropicBedrock } from '@anthropic-ai/bedrock-sdk';
 import Anthropic from '@anthropic-ai/sdk';
 import { BedrockRuntimeClient, ConverseCommand, ConverseStreamCommand } from '@aws-sdk/client-bedrock-runtime';
 import { type Response } from 'express';
-import { getAnthropicApiArgs } from 'quadratic-shared/ai/anthropic.helper';
-import { getBedrockApiArgs } from 'quadratic-shared/ai/bedrock.helper';
-import { getModelOptions, isAnthropicBedrockModel } from 'quadratic-shared/ai/model.helper';
+import { getAnthropicApiArgs } from 'quadratic-shared/ai/helpers/anthropic.helper';
+import { getBedrockApiArgs } from 'quadratic-shared/ai/helpers/bedrock.helper';
+import { getModelOptions, isAnthropicBedrockModel } from 'quadratic-shared/ai/helpers/model.helper';
 import { type AIAutoCompleteRequestBody, type BedrockModel } from 'quadratic-shared/typesAndSchemasAI';
 import { AWS_S3_ACCESS_KEY_ID, AWS_S3_REGION, AWS_S3_SECRET_ACCESS_KEY } from '../../env-vars';
 

@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { type Response } from 'express';
-import { getAnthropicApiArgs } from 'quadratic-shared/ai/anthropic.helper';
-import { getModelOptions } from 'quadratic-shared/ai/model.helper';
+import { getAnthropicApiArgs } from 'quadratic-shared/ai/helpers/anthropic.helper';
+import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AIAutoCompleteRequestBody, AnthropicModel } from 'quadratic-shared/typesAndSchemasAI';
 import { ANTHROPIC_API_KEY } from '../../env-vars';
 

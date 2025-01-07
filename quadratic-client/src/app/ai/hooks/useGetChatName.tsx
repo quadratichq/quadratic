@@ -1,8 +1,8 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { aiAnalystCurrentChatMessagesAtom } from '@/app/atoms/aiAnalystAtom';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/aiToolsSpec';
-import { getPromptMessages } from 'quadratic-shared/ai/message.helper';
+import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 

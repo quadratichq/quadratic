@@ -4,7 +4,7 @@ import { focusGrid } from '@/app/helpers/focusGrid';
 import { JsCellsAccessed, JsCoordinate } from '@/app/quadratic-core-types';
 import { PanelTab } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
-import { getPromptMessages } from 'quadratic-shared/ai/message.helper';
+import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
 

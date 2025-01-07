@@ -1,4 +1,4 @@
-import { MODEL_OPTIONS } from 'quadratic-shared/ai/AI_MODELS';
+import { MODEL_OPTIONS } from 'quadratic-shared/ai/models/AI_MODELS';
 import type {
   AIAutoCompleteRequestBody,
   AIModel,

@@ -1,4 +1,4 @@
-import { AIToolSchema } from 'quadratic-shared/ai/aiToolsSpec';
+import { AIToolSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { z } from 'zod';
 
 const AIProvidersSchema = z.enum(['bedrock', 'bedrock-anthropic', 'anthropic', 'openai']).default('openai');
@@ -339,12 +339,18 @@ const OpenAIAutoCompleteRequestBodySchema = z.object({
 });
 export type OpenAIAutoCompleteRequestBody = z.infer<typeof OpenAIAutoCompleteRequestBodySchema>;
 
+const CodeCellTypeSchema = z.enum(['Python', 'Javascript', 'Formula', 'Connection']);
+export type CodeCellType = z.infer<typeof CodeCellTypeSchema>;
+
 export const AIAutoCompleteRequestBodySchema = z.object({
   model: z.union([BedrockModelSchema, AnthropicModelSchema, OpenAIModelSchema]),
   messages: z.array(ChatMessageSchema),
+  language: CodeCellTypeSchema.optional(),
+  useQuadraticContext: z.boolean().optional(),
   useStream: z.boolean().optional(),
   useTools: z.boolean().optional(),
   toolName: AIToolSchema.optional(),
+  useToolUsePrompt: z.boolean().optional(),
 });
 export type AIAutoCompleteRequestBody = z.infer<typeof AIAutoCompleteRequestBodySchema>;
 

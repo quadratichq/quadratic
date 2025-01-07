@@ -3,7 +3,7 @@ import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { SheetRect } from '@/app/quadratic-core-types';
 import { stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { AITool, AIToolsArgsSchema } from 'quadratic-shared/ai/aiToolsSpec';
+import { AITool, AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { z } from 'zod';
 
 export type AIToolActionsRecord = {

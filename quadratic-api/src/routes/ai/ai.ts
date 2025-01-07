@@ -4,7 +4,9 @@ import {
   isAnthropicModel,
   isBedrockModel,
   isOpenAIModel,
-} from 'quadratic-shared/ai/model.helper';
+} from 'quadratic-shared/ai/helpers/model.helper';
+import { getQuadraticContext } from 'quadratic-shared/ai/helpers/quadraticContext.helper';
+import { getToolUseContext } from 'quadratic-shared/ai/helpers/toolUseContext.helper';
 import { AIAutoCompleteRequestBodySchema } from 'quadratic-shared/typesAndSchemasAI';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import type { Request } from '../../types/Request';
@@ -18,6 +20,14 @@ const ai_router = express.Router();
 ai_router.post('/', validateAccessToken, ai_rate_limiter, async (request: Request, response: Response) => {
   try {
     const { model, ...args } = AIAutoCompleteRequestBodySchema.parse(request.body);
+    if (args.useToolUsePrompt) {
+      const toolUseContext = getToolUseContext();
+      args.messages = [...toolUseContext, ...args.messages];
+    }
+    if (args.useQuadraticContext) {
+      const quadraticContext = getQuadraticContext(args.language);
+      args.messages = [...quadraticContext, ...args.messages];
+    }
 
     switch (true) {
       case isAnthropicBedrockModel(model) || isBedrockModel(model):

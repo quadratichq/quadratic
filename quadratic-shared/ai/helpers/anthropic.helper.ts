@@ -1,6 +1,6 @@
-import type { AITool } from 'quadratic-shared/ai/aiToolsSpec';
-import { aiToolsSpec } from 'quadratic-shared/ai/aiToolsSpec';
-import { getSystemPromptMessages } from 'quadratic-shared/ai/message.helper';
+import { getSystemPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
   AIAutoCompleteRequestBody,
   AnthropicAutoCompleteRequestBody,

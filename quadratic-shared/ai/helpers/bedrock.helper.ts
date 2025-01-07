@@ -1,5 +1,5 @@
-import type { AITool } from 'quadratic-shared/ai/aiToolsSpec';
-import { aiToolsSpec } from 'quadratic-shared/ai/aiToolsSpec';
+import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
   AIAutoCompleteRequestBody,
   BedrockAutoCompleteRequestBody,

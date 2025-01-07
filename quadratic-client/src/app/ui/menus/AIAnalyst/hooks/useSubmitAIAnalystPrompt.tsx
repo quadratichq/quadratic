@@ -2,9 +2,7 @@ import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
-import { useQuadraticContextMessages } from '@/app/ai/hooks/useQuadraticContextMessages';
 import { useSelectionContextMessages } from '@/app/ai/hooks/useSelectionContextMessages';
-import { useToolUseMessages } from '@/app/ai/hooks/useToolUseMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
 
@@ -17,8 +15,8 @@ import {
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/aiToolsSpec';
-import { getPromptMessages } from 'quadratic-shared/ai/message.helper';
+import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import {
   AIMessage,
   AIMessagePrompt,
@@ -39,8 +37,6 @@ export type SubmitAIAnalystPromptArgs = {
 
 export function useSubmitAIAnalystPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
-  const { getQuadraticContext } = useQuadraticContextMessages();
-  const { getToolUsePrompt } = useToolUseMessages();
   const { getOtherSheetsContext } = useOtherSheetsContextMessages();
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
@@ -50,8 +46,6 @@ export function useSubmitAIAnalystPrompt() {
   const updateInternalContext = useRecoilCallback(
     ({ set }) =>
       async ({ context }: { context: Context }): Promise<ChatMessage[]> => {
-        const quadraticContext = getQuadraticContext();
-        const toolUsePrompt = getToolUsePrompt();
         const otherSheetsContext = await getOtherSheetsContext({ sheetNames: context.sheets });
         const currentSheetContext = await getCurrentSheetContext({ currentSheetName: context.currentSheet });
         const visibleContext = await getVisibleContext();
@@ -62,8 +56,6 @@ export function useSubmitAIAnalystPrompt() {
           prevMessages = getPromptMessages(prevMessages);
 
           updatedMessages = [
-            ...quadraticContext,
-            ...toolUsePrompt,
             ...otherSheetsContext,
             ...currentSheetContext,
             ...visibleContext,
@@ -76,14 +68,7 @@ export function useSubmitAIAnalystPrompt() {
 
         return updatedMessages;
       },
-    [
-      getQuadraticContext,
-      getToolUsePrompt,
-      getOtherSheetsContext,
-      getCurrentSheetContext,
-      getVisibleContext,
-      getSelectionContext,
-    ]
+    [getOtherSheetsContext, getCurrentSheetContext, getVisibleContext, getSelectionContext]
   );
 
   const submitPrompt = useRecoilCallback(
@@ -140,10 +125,12 @@ export function useSubmitAIAnalystPrompt() {
           const response = await handleAIRequestToAPI({
             model,
             messages: updatedMessages,
-            setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
-            signal: abortController.signal,
+            language: undefined,
+            useQuadraticContext: true,
             useStream: true,
             useTools: true,
+            setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
+            signal: abortController.signal,
           });
           let toolCalls: AIMessagePrompt['toolCalls'] = response.toolCalls;
 
@@ -185,10 +172,13 @@ export function useSubmitAIAnalystPrompt() {
             const response = await handleAIRequestToAPI({
               model,
               messages: updatedMessages,
-              setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
-              signal: abortController.signal,
+              language: undefined,
+              useQuadraticContext: true,
               useStream: true,
               useTools: true,
+              useToolUsePrompt: true,
+              setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
+              signal: abortController.signal,
             });
             toolCalls = response.toolCalls;
           }

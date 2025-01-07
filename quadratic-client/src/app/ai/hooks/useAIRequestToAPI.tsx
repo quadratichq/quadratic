@@ -1,25 +1,19 @@
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
-import { AITool } from 'quadratic-shared/ai/aiToolsSpec';
 import {
   getModelOptions,
   isAnthropicBedrockModel,
   isAnthropicModel,
   isBedrockModel,
   isOpenAIModel,
-} from 'quadratic-shared/ai/model.helper';
-import { AIAutoCompleteRequestBody, AIMessagePrompt, AIModel, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+} from 'quadratic-shared/ai/helpers/model.helper';
+import { AIAutoCompleteRequestBody, AIMessagePrompt, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 import { SetterOrUpdater } from 'recoil';
 
-type HandleAIPromptProps = {
-  model: AIModel;
-  messages: ChatMessage[];
+type HandleAIPromptProps = AIAutoCompleteRequestBody & {
   setMessages?: SetterOrUpdater<ChatMessage[]> | ((value: React.SetStateAction<ChatMessage[]>) => void);
   signal: AbortSignal;
-  useStream?: boolean;
-  useTools?: boolean;
-  toolName?: AITool;
 };
 
 export function useAIRequestToAPI() {
@@ -319,13 +313,9 @@ export function useAIRequestToAPI() {
 
   const handleAIRequestToAPI = useCallback(
     async ({
-      model,
-      messages,
       setMessages,
       signal,
-      useStream,
-      useTools,
-      toolName,
+      ...args
     }: HandleAIPromptProps): Promise<{
       error?: boolean;
       content: AIMessagePrompt['content'];
@@ -338,11 +328,11 @@ export function useAIRequestToAPI() {
         toolCalls: [],
       };
       setMessages?.((prev) => [...prev, { ...responseMessage, content: '' }]);
+      const { model, useStream, useTools } = args;
 
       try {
         const endpoint = `${apiClient.getApiUrl()}/v0/ai`;
         const token = await authClient.getTokenOrRedirect();
-        const args: AIAutoCompleteRequestBody = { model, messages, useStream, useTools, toolName };
         const response = await fetch(endpoint, {
           method: 'POST',
           signal,

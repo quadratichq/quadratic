@@ -2,7 +2,6 @@ import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useCodeCellContextMessages } from '@/app/ai/hooks/useCodeCellContextMessages';
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
-import { useQuadraticContextMessages } from '@/app/ai/hooks/useQuadraticContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import {
   aiAssistantAbortControllerAtom,
@@ -15,13 +14,12 @@ import {
 import { sheets } from '@/app/grid/controller/Sheets';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
-import { getPromptMessages } from 'quadratic-shared/ai/message.helper';
+import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 
 export function useSubmitAIAssistantPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
-  const { getQuadraticContext } = useQuadraticContextMessages();
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
   const { getCodeCellContext } = useCodeCellContextMessages();
@@ -69,7 +67,6 @@ export function useSubmitAIAssistantPrompt() {
           codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
         }
 
-        const quadraticContext = getQuadraticContext(getLanguage(codeCell.language));
         const currentSheetContext = await getCurrentSheetContext({ currentSheetName: sheets.sheet.name });
         const visibleContext = await getVisibleContext();
         const codeContext = await getCodeCellContext({ codeCell });
@@ -86,7 +83,6 @@ export function useSubmitAIAssistantPrompt() {
           ];
 
           updatedMessages = [
-            ...quadraticContext,
             ...currentSheetContext,
             ...visibleContext,
             ...prevMessages,
@@ -101,6 +97,8 @@ export function useSubmitAIAssistantPrompt() {
           await handleAIRequestToAPI({
             model,
             messages: updatedMessages,
+            language: getLanguage(codeCell.language),
+            useQuadraticContext: true,
             setMessages: (updater) => set(aiAssistantMessagesAtom, updater),
             signal: abortController.signal,
           });
@@ -111,7 +109,7 @@ export function useSubmitAIAssistantPrompt() {
         set(aiAssistantAbortControllerAtom, undefined);
         set(aiAssistantLoadingAtom, false);
       },
-    [handleAIRequestToAPI, getQuadraticContext, getCurrentSheetContext, getVisibleContext, getCodeCellContext, model]
+    [handleAIRequestToAPI, getCurrentSheetContext, getVisibleContext, getCodeCellContext, model]
   );
 
   return { submitPrompt };

@@ -1,13 +1,11 @@
-import { aiToolsSpec } from 'quadratic-shared/ai/aiToolsSpec';
-import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
-import { useCallback } from 'react';
+import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 
-export function useToolUseMessages() {
-  const getToolUsePrompt = useCallback((): ChatMessage[] => {
-    return [
-      {
-        role: 'user',
-        content: `Note: This is an internal message for context. Do not quote it in your response.\n\n
+export const getToolUseContext = (): ChatMessage[] => {
+  return [
+    {
+      role: 'user',
+      content: `Note: This is an internal message for context. Do not quote it in your response.\n\n
 Following are the tools you should use to do actions in the spreadsheet, use them to respond to the user prompt.\n
 
 Include a concise explanation of the actions you are taking to respond to the user prompt. Never guess the answer itself, just the actions you are taking to respond to the user prompt and what the user can do next.\n
@@ -23,16 +21,13 @@ ${Object.entries(aiToolsSpec)
 
 All tool actions take place in the currently open sheet only.\n
 `,
-        contextType: 'toolUse',
-      },
-      {
-        role: 'assistant',
-        content:
-          'I understand these tools are available to me for taking actions on the spreadsheet. How can I help you?',
-        contextType: 'toolUse',
-      },
-    ];
-  }, []);
-
-  return { getToolUsePrompt };
-}
+      contextType: 'toolUse',
+    },
+    {
+      role: 'assistant',
+      content:
+        'I understand these tools are available to me for taking actions on the spreadsheet. How can I help you?',
+      contextType: 'toolUse',
+    },
+  ];
+};

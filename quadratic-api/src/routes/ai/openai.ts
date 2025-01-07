@@ -1,7 +1,7 @@
 import { type Response } from 'express';
 import OpenAI from 'openai';
-import { getModelOptions } from 'quadratic-shared/ai/model.helper';
-import { getOpenAIApiArgs } from 'quadratic-shared/ai/openai.helper';
+import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
+import { getOpenAIApiArgs } from 'quadratic-shared/ai/helpers/openai.helper';
 import { type AIAutoCompleteRequestBody, type OpenAIModel } from 'quadratic-shared/typesAndSchemasAI';
 import { OPENAI_API_KEY } from '../../env-vars';
 

@@ -8,7 +8,7 @@ import {
 import { cn } from '@/shared/shadcn/utils';
 import { CaretDownIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
-import { MODEL_OPTIONS } from 'quadratic-shared/ai/AI_MODELS';
+import { MODEL_OPTIONS } from 'quadratic-shared/ai/models/AI_MODELS';
 import { useMemo } from 'react';
 
 interface SelectAIModelMenuProps {
