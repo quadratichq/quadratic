@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     grid::{DataTable, SheetId},
-    Pos, Rect,
+    Pos, Rect, SheetPos,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -13,6 +13,7 @@ pub struct TableMapEntry {
     pub all_columns: Vec<String>,
     pub bounds: Rect,
     pub show_headers: bool,
+    pub is_html_image: bool,
 }
 
 impl TableMapEntry {
@@ -108,6 +109,11 @@ impl TableMapEntry {
         Some((start, end))
     }
 
+    /// Returns true if the table contains the given position.
+    pub fn contains(&self, pos: SheetPos) -> bool {
+        self.sheet_id == pos.sheet_id && self.bounds.contains(pos.into())
+    }
+
     #[cfg(test)]
     pub fn test(
         table_name: &str,
@@ -126,6 +132,7 @@ impl TableMapEntry {
             all_columns,
             bounds,
             show_headers: true,
+            is_html_image: false,
         }
     }
 }
@@ -144,6 +151,7 @@ impl TableMap {
             all_columns: table.columns_map(true),
             bounds: table.output_rect(pos, true),
             show_headers: table.show_header,
+            is_html_image: table.is_html() || table.is_image(),
         });
     }
 

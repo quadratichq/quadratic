@@ -246,4 +246,13 @@ impl JsSelection {
         let default_sheet_id = SheetId::from_str(&default_sheet_id).map_err(|e| e.to_string())?;
         Ok(self.selection.to_string(Some(default_sheet_id), &context))
     }
+
+    #[wasm_bindgen(js_name = "cursorIsOnHtmlImage")]
+    pub fn cursor_is_on_html_image(&self, context: &str) -> bool {
+        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
+            dbgjs!("Unable to parse context in is_on_html_image");
+            return false;
+        };
+        self.selection.cursor_is_on_html_image(&context)
+    }
 }
