@@ -146,7 +146,9 @@ export class Table extends Container {
 
   showActive(isSelected: boolean) {
     this.outline.activate(true);
-    this.tableName.show();
+    if (!this.shouldHideTableName()) {
+      this.tableName.show();
+    }
     htmlCellsHandler.showActive(this.codeCell, isSelected);
     pixiApp.setViewportDirty();
   }
@@ -208,6 +210,10 @@ export class Table extends Container {
   }
 
   pointerMove(world: Point): 'table-name' | boolean {
+    if (this.shouldHideTableName()) {
+      return false;
+    }
+
     const name = this.tableName.intersects(world);
     if (name?.type === 'dropdown') {
       this.columnHeaders.clearSortButtons();
@@ -228,6 +234,9 @@ export class Table extends Container {
   }
 
   pointerDown(world: Point): TablePointerDownResult | undefined {
+    if (this.shouldHideTableName()) {
+      return undefined;
+    }
     const result = this.tableName.intersects(world);
     if (result?.type === 'table-name') {
       return { table: this.codeCell, type: 'table-name' };
@@ -238,6 +247,9 @@ export class Table extends Container {
   }
 
   intersectsTableName(world: Point): TablePointerDownResult | undefined {
+    if (this.shouldHideTableName()) {
+      return undefined;
+    }
     return this.tableName.intersects(world);
   }
 
@@ -273,5 +285,10 @@ export class Table extends Container {
       cell.x < this.codeCell.x + this.codeCell.w &&
       cell.y < this.codeCell.y + this.codeCell.h
     );
+  }
+
+  shouldHideTableName(): boolean {
+    const code = this.codeCell;
+    return !code.show_header && code.w === 1 && code.h === 1 && !!code.language && !code.is_html_image;
   }
 }

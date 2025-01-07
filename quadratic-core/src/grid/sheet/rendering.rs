@@ -416,6 +416,7 @@ impl Sheet {
             show_header: data_table.show_header,
             sort: data_table.sort.clone(),
             alternating_colors,
+            is_html_image: data_table.is_html() || data_table.is_image(),
         })
     }
 
@@ -1084,6 +1085,7 @@ mod tests {
                 show_header: true,
                 sort: None,
                 alternating_colors: true,
+                is_html_image: false,
             })
         );
     }
