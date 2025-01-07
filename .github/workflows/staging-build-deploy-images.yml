@@ -225,7 +225,7 @@ jobs:
 
       - name: Find Build & Deploy Images Comment
         uses: peter-evans/find-comment@v3
-        if: always()
+        if: failure()
         id: preview-build-deploy-images-comment
         with:
           issue-number: ${{ github.event.pull_request.number }}
@@ -456,7 +456,7 @@ jobs:
 
       - name: Find Build & Deploy Images Comment
         uses: peter-evans/find-comment@v3
-        if: always()
+        if: success() || failure()
         id: preview-build-deploy-images-comment-update
         with:
           issue-number: ${{ github.event.pull_request.number }}

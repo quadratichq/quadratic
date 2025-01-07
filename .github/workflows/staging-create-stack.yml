@@ -99,7 +99,7 @@ jobs:
 
       - name: Find Create Stack Comment
         uses: peter-evans/find-comment@v3
-        if: always()
+        if: success() || failure()
         id: preview-create-stack-comment-update
         with:
           issue-number: ${{ github.event.pull_request.number }}
