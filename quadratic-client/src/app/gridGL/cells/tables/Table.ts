@@ -190,12 +190,21 @@ export class Table extends Container {
 
   // Gets the table name bounds
   getTableNameBounds(): Rectangle {
-    return this.tableName.tableNameBounds;
+    const bounds = this.tableName.tableNameBounds.clone();
+    if (this.inOverHeadings) {
+      const bounds = pixiApp.viewport.getVisibleBounds();
+      bounds.y = bounds.top;
+    }
+    return bounds;
   }
 
   // Gets the column header bounds
   getColumnHeaderBounds(index: number): Rectangle {
-    return this.columnHeaders.getColumnHeaderBounds(index);
+    const bounds = this.columnHeaders.getColumnHeaderBounds(index);
+    if (this.inOverHeadings) {
+      bounds.y = this.columnHeaders.y;
+    }
+    return bounds;
   }
 
   pointerMove(world: Point): 'table-name' | boolean {

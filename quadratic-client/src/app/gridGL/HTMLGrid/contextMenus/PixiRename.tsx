@@ -7,6 +7,10 @@ import type { Rectangle } from 'pixi.js';
 import type { KeyboardEvent } from 'react';
 import { useCallback, useEffect, useRef } from 'react';
 
+// todo: ideally, position would be set via ref instead of render so it doesn't
+// flicker when renaming heading or table name where the heading is off the
+// screen.
+
 interface Props {
   position?: Rectangle;
   defaultValue?: string;

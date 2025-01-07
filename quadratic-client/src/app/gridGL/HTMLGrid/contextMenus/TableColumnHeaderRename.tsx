@@ -7,27 +7,38 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { cssVariableWithLuminosity } from '@/app/helpers/convertColor';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { FONT_SIZE } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
-import { useMemo } from 'react';
+import type { Rectangle } from 'pixi.js';
+import { useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export const TableColumnHeaderRename = () => {
   const contextMenu = useRecoilValue(contextMenuAtom);
 
-  // todo: use state for position, and reset it when the viewport changes
-  const position = useMemo(() => {
-    if (
-      contextMenu.type !== ContextMenuType.TableColumn ||
-      !contextMenu.rename ||
-      !contextMenu.table ||
-      contextMenu.selectedColumn === undefined
-    ) {
-      return;
-    }
-    return pixiApp.cellsSheets.current?.tables.getTableColumnHeaderPosition(
-      contextMenu.table.x,
-      contextMenu.table.y,
-      contextMenu.selectedColumn
-    );
+  const [position, setPosition] = useState<Rectangle | undefined>(undefined);
+  useEffect(() => {
+    const updatePosition = () => {
+      if (
+        contextMenu.type !== ContextMenuType.TableColumn ||
+        !contextMenu.rename ||
+        !contextMenu.table ||
+        contextMenu.selectedColumn === undefined
+      ) {
+        setPosition(undefined);
+      } else {
+        setPosition(
+          pixiApp.cellsSheets.current?.tables.getTableColumnHeaderPosition(
+            contextMenu.table.x,
+            contextMenu.table.y,
+            contextMenu.selectedColumn
+          )
+        );
+      }
+    };
+    updatePosition();
+    events.on('viewportChangedReady', updatePosition);
+    return () => {
+      events.off('viewportChangedReady', updatePosition);
+    };
   }, [contextMenu]);
 
   const originalHeaderName = useMemo(() => {
