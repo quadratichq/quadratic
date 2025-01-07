@@ -41,7 +41,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       const { uuid, name } = await apiClient.examples.duplicate({
         publicFileUrlInProduction: exampleUrl,
         teamUuid,
-        isPrivate: true,
+        isPrivate,
       });
       mixpanel.track('[Files].newExampleFile', { fileName: name });
       return replace(ROUTES.FILE(uuid));
