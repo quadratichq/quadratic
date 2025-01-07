@@ -1,7 +1,7 @@
-use anyhow::{bail, Result};
+use anyhow::Result;
 
 use super::DataTable;
-use crate::{CellValue, Value};
+use crate::CellValue;
 
 impl DataTable {
     /// Get the values of a row (does not include the header)
@@ -31,11 +31,8 @@ impl DataTable {
             row_index += 1;
         }
 
-        if let Value::Array(array) = &mut self.value {
-            array.insert_row(row_index, values)?;
-        } else {
-            bail!("Expected an array");
-        }
+        let array = self.mut_value_as_array()?;
+        array.insert_row(row_index, values)?;
 
         self.display_buffer = None;
 
@@ -48,12 +45,8 @@ impl DataTable {
             row_index += 1;
         }
 
-        if let Value::Array(array) = &mut self.value {
-            array.delete_row(row_index)?;
-        } else {
-            bail!("Expected an array");
-        }
-
+        let array = self.mut_value_as_array()?;
+        array.delete_row(row_index)?;
         self.display_buffer = None;
 
         Ok(())

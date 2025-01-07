@@ -227,10 +227,16 @@ impl DataTable {
         }
     }
 
-    pub fn height(&self) -> usize {
+    pub fn height(&self, exclude_header: bool) -> usize {
         match &self.value {
             Value::Single(_) => 1,
-            Value::Array(array) => array.height() as usize,
+            Value::Array(array) => {
+                if exclude_header && self.header_is_first_row {
+                    array.height() as usize - 1
+                } else {
+                    array.height() as usize
+                }
+            }
             Value::Tuple(_) => 0,
         }
     }
@@ -407,6 +413,13 @@ impl DataTable {
 
     pub fn value_as_array(&self) -> Result<&Array> {
         match &self.value {
+            Value::Array(array) => Ok(array),
+            _ => bail!("Expected an array"),
+        }
+    }
+
+    pub fn mut_value_as_array(&mut self) -> Result<&mut Array> {
+        match &mut self.value {
             Value::Array(array) => Ok(array),
             _ => bail!("Expected an array"),
         }

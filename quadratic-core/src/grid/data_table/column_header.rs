@@ -25,6 +25,13 @@ impl DataTableColumnHeader {
 }
 
 impl DataTable {
+    pub fn column_headers_len(&self) -> u32 {
+        self.column_headers
+            .as_ref()
+            .and_then(|headers| Some(headers.len() as u32))
+            .unwrap_or(0)
+    }
+
     /// Takes the first row of the array and sets it as the column headings.
     pub fn apply_first_row_as_header(&mut self) {
         self.header_is_first_row = true;

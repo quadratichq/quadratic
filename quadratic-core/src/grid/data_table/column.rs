@@ -1,7 +1,7 @@
-use anyhow::{bail, Result};
+use anyhow::Result;
 
 use super::{column_header::DataTableColumnHeader, DataTable};
-use crate::{CellValue, Value};
+use crate::CellValue;
 
 impl DataTable {
     /// Get the values of a column
@@ -28,12 +28,8 @@ impl DataTable {
             .unique_column_header_name(column_header.as_deref())
             .to_string();
 
-        if let Value::Array(array) = &mut self.value {
-            array.insert_column(column_index, values)?;
-        } else {
-            bail!("Expected an array");
-        }
-
+        let array = self.mut_value_as_array()?;
+        array.insert_column(column_index, values)?;
         self.display_buffer = None;
 
         if let Some(headers) = &mut self.column_headers {
@@ -52,12 +48,8 @@ impl DataTable {
 
     /// Remove a column at the given index.
     pub fn delete_column(&mut self, column_index: usize) -> Result<()> {
-        if let Value::Array(array) = &mut self.value {
-            array.delete_column(column_index)?;
-        } else {
-            bail!("Expected an array");
-        }
-
+        let array = self.mut_value_as_array()?;
+        array.delete_column(column_index)?;
         self.display_buffer = None;
 
         if let Some(headers) = &mut self.column_headers {

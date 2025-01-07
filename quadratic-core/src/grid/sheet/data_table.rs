@@ -22,7 +22,7 @@ impl Sheet {
         self.data_tables.get(&pos)
     }
 
-    /// Returns a DataTable at a Pos
+    /// Returns a DataTable at a Pos as a result
     pub fn data_table_result(&self, pos: Pos) -> Result<&DataTable> {
         self.data_tables
             .get(&pos)
