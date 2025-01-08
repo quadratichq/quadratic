@@ -15,6 +15,10 @@ export const TeamPermissionSchema = z.enum([
   'TEAM_VIEW',
   // Edit attributes of a team, like name/picture, as well as its share users and files
   'TEAM_EDIT',
+  // Manage a team, like turn on/off preferences, manage billing, and delete the team
+  'TEAM_MANAGE',
+
+  // TODO: deprecate these in a subseqnent release after shipping TEAM_MANAGE
   // Delete a team
   'TEAM_DELETE',
   // Edit the billing info on a team

@@ -1,4 +1,5 @@
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
+import { SettingPanel } from '@/dashboard/components/SettingsPanel';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { getActionUpdateTeam } from '@/routes/teams.$teamUuid';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -6,6 +7,7 @@ import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
+import { cn } from '@/shared/shadcn/utils';
 import { ReactNode, useEffect, useState } from 'react';
 import { Navigate, useFetcher, useSubmit } from 'react-router-dom';
 
@@ -41,7 +43,7 @@ export const Component = () => {
 
   // One day, when we have billing, we can add something akin to this
   //
-  // {teamPermissions.includes('TEAM_BILLING_EDIT') && (
+  // {teamPermissions.includes('TEAM_MANAGE') && (
   //   <DropdownMenuItem
   //     onClick={() => {
   //       // Get the billing session URL
@@ -69,7 +71,7 @@ export const Component = () => {
   return (
     <>
       <DashboardHeader title="Team settings" />
-      <div className={`mt-6 flex flex-col gap-6`}>
+      <div className={`mt-6 flex flex-col gap-8`}>
         <Row>
           <Type variant="body2" className="font-bold">
             Name
@@ -81,14 +83,79 @@ export const Component = () => {
             </Button>
           </form>
         </Row>
+
+        {teamPermissions.includes('TEAM_MANAGE') && (
+          <Row>
+            <Type variant="body2" className="font-bold">
+              AI features
+            </Type>
+            <div className="flex flex-col gap-3 rounded border border-border p-4 shadow-sm">
+              <SettingPanel
+                label="Chat"
+                description={
+                  <>
+                    Enable team members to use AI chat (where available). Some sheet data may be shared with AI models.{' '}
+                    <a href="TODO:value-here" target="_blank" className="underline hover:text-primary">
+                      Learn more.
+                    </a>
+                  </>
+                }
+                onCheckedChange={(checked) => {
+                  console.log('checked', checked);
+                }}
+                checked={true}
+              />
+              <hr />
+              <SettingPanel
+                label="Prompt logs"
+                description={
+                  <>
+                    Help improve AI by allowing Quadratic to store and analyze anonymized user prompts.{' '}
+                    <a href="TODO:value-here" target="_blank" className="underline hover:text-primary">
+                      Learn more
+                    </a>
+                    .
+                  </>
+                }
+                onCheckedChange={(checked) => {
+                  console.log('checked', checked);
+                }}
+                checked={true}
+              />
+              <hr />
+              <SettingPanel
+                label="Research (coming soon)"
+                disabled={true}
+                description={
+                  <>
+                    Enable team members to research information from the internet using prompts on individual cells.{' '}
+                    <a
+                      href="TODO:value-here"
+                      target="_blank"
+                      className="pointer-events-none underline hover:text-primary"
+                    >
+                      Learn more.
+                    </a>
+                  </>
+                }
+                onCheckedChange={(checked) => {
+                  console.log('checked', checked);
+                }}
+                checked={false}
+              />
+            </div>
+          </Row>
+        )}
       </div>
     </>
   );
 };
 
-function Row(props: { children: ReactNode }) {
+function Row(props: { children: ReactNode; className?: string }) {
   return (
-    <div className={`flex grid-cols-[160px_1fr] flex-col gap-2 sm:grid sm:max-w-lg sm:items-center`}>
+    <div
+      className={cn(`flex grid-cols-[160px_1fr] flex-col gap-2 sm:grid sm:max-w-2xl sm:items-center`, props.className)}
+    >
       {props.children}
     </div>
   );
