@@ -211,19 +211,17 @@ export class Table extends Container {
   }
 
   pointerMove(world: Point): 'table-name' | boolean {
-    if (this.shouldHideTableName()) {
-      return false;
-    }
-
-    const name = this.tableName.intersects(world);
-    if (name?.type === 'dropdown') {
-      this.columnHeaders.clearSortButtons();
-      this.tableCursor = 'pointer';
-      return 'table-name';
-    } else if (name?.type === 'table-name') {
-      this.tableCursor = undefined;
-      this.columnHeaders.clearSortButtons();
-      return 'table-name';
+    if (!this.shouldHideTableName()) {
+      const name = this.tableName.intersects(world);
+      if (name?.type === 'dropdown') {
+        this.columnHeaders.clearSortButtons();
+        this.tableCursor = 'pointer';
+        return 'table-name';
+      } else if (name?.type === 'table-name') {
+        this.tableCursor = undefined;
+        this.columnHeaders.clearSortButtons();
+        return 'table-name';
+      }
     }
     const result = this.columnHeaders.pointerMove(world);
     if (result) {
@@ -236,11 +234,10 @@ export class Table extends Container {
 
   pointerDown(world: Point): TablePointerDownResult | undefined {
     if (this.shouldHideTableName()) {
-      return undefined;
-    }
-    const result = this.tableName.intersects(world);
-    if (result?.type === 'table-name') {
-      return { table: this.codeCell, type: 'table-name' };
+      const result = this.tableName.intersects(world);
+      if (result?.type === 'table-name') {
+        return { table: this.codeCell, type: 'table-name' };
+      }
     }
     if (this.codeCell.show_header) {
       return this.columnHeaders.pointerDown(world);
