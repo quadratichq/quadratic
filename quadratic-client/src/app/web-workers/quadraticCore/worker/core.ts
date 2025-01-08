@@ -15,6 +15,7 @@ import type {
   CellVerticalAlign,
   CellWrap,
   CodeCellLanguage,
+  Direction,
   Format,
   JsCellValue,
   JsCellValuePosAIContext,
@@ -24,7 +25,6 @@ import type {
   JsCoordinate,
   JsRenderCell,
   JsSummarizeSelectionResult,
-  JumpDirection,
   SearchOptions,
   SheetPos,
   Validation,
@@ -818,11 +818,21 @@ class Core {
     });
   }
 
-  jumpCursor(sheetId: string, current: JsCoordinate, direction: JumpDirection): Promise<JsCoordinate | undefined> {
+  jumpCursor(
+    sheetId: string,
+    current: JsCoordinate,
+    jump: boolean,
+    direction: Direction
+  ): Promise<JsCoordinate | undefined> {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        const pos = this.gridController.jumpCursor(sheetId, posToPos(current.x, current.y), JSON.stringify(direction));
+        const pos = this.gridController.jumpCursor(
+          sheetId,
+          posToPos(current.x, current.y),
+          jump,
+          JSON.stringify(direction)
+        );
         resolve({ x: Number(pos.x), y: Number(pos.y) });
       });
     });

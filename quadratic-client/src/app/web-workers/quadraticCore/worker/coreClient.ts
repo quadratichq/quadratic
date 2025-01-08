@@ -424,7 +424,7 @@ class CoreClient {
         this.send({
           type: 'coreClientJumpCursor',
           id: e.data.id,
-          coordinate: await core.jumpCursor(e.data.sheetId, e.data.current, e.data.direction),
+          coordinate: await core.jumpCursor(e.data.sheetId, e.data.current, e.data.jump, e.data.direction),
         });
         return;
 
@@ -432,7 +432,7 @@ class CoreClient {
         this.send({
           type: 'coreClientJumpCursor',
           id: e.data.id,
-          coordinate: await core.jumpCursor(e.data.sheetId, e.data.current, e.data.direction),
+          coordinate: await core.jumpCursor(e.data.sheetId, e.data.current, true, e.data.direction),
         });
         return;
 

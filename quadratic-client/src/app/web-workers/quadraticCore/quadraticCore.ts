@@ -16,6 +16,7 @@ import type {
   CellVerticalAlign,
   CellWrap,
   CodeCellLanguage,
+  Direction,
   Format,
   JsCellValue,
   JsCellValuePosAIContext,
@@ -24,7 +25,6 @@ import type {
   JsCoordinate,
   JsRenderCell,
   JsSummarizeSelectionResult,
-  JumpDirection,
   MinMax,
   PasteSpecial,
   Pos,
@@ -1030,7 +1030,12 @@ class QuadraticCore {
     });
   }
 
-  jumpCursor(sheetId: string, current: JsCoordinate, direction: JumpDirection): Promise<JsCoordinate | undefined> {
+  jumpCursor(
+    sheetId: string,
+    current: JsCoordinate,
+    jump: boolean,
+    direction: Direction
+  ): Promise<JsCoordinate | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: CoreClientJumpCursor) => {
@@ -1042,6 +1047,7 @@ class QuadraticCore {
         current,
         direction,
         id,
+        jump,
       });
     });
   }

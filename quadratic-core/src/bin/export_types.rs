@@ -31,7 +31,7 @@ use quadratic_core::grid::sheet::borders::CellBorderLine;
 use quadratic_core::grid::sheet::borders::JsBorderHorizontal;
 use quadratic_core::grid::sheet::borders::JsBorderVertical;
 use quadratic_core::grid::sheet::borders::JsBordersSheet;
-use quadratic_core::grid::sheet::jump_cursor::JumpDirection;
+use quadratic_core::grid::sheet::keyboard::Direction;
 use quadratic_core::grid::sheet::search::SearchOptions;
 use quadratic_core::grid::sheet::validations::validation::{
     Validation, ValidationError, ValidationMessage, ValidationStyle,
@@ -132,7 +132,7 @@ fn main() {
         JsSheetFill,
         JsSummarizeSelectionResult,
         JsValidationWarning,
-        JumpDirection,
+        Direction,
         MinMax,
         NumberRange,
         NumericFormat,
