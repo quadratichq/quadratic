@@ -5,6 +5,7 @@ import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
+import { v4 } from 'uuid';
 
 export const useGetChatName = () => {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
@@ -30,6 +31,8 @@ ${JSON.stringify(chatPromptMessages)}
 
         const abortController = new AbortController();
         const response = await handleAIRequestToAPI({
+          chatId: v4(),
+          source: 'getChatName',
           model,
           messages,
           signal: abortController.signal,

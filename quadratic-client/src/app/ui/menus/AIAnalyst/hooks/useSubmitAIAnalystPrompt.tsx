@@ -5,7 +5,6 @@ import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsCont
 import { useSelectionContextMessages } from '@/app/ai/hooks/useSelectionContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
-
 import {
   aiAnalystAbortControllerAtom,
   aiAnalystCurrentChatAtom,
@@ -25,6 +24,7 @@ import {
   ToolResultMessage,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
+import { v4 } from 'uuid';
 
 const MAX_TOOL_CALL_ITERATIONS = 25;
 
@@ -86,7 +86,7 @@ export function useSubmitAIAnalystPrompt() {
 
         if (clearMessages) {
           set(aiAnalystCurrentChatAtom, {
-            id: '',
+            id: v4(),
             name: '',
             lastUpdated: Date.now(),
             messages: [],
@@ -97,7 +97,7 @@ export function useSubmitAIAnalystPrompt() {
         if (messageIndex !== undefined) {
           set(aiAnalystCurrentChatAtom, (prev) => {
             return {
-              id: '',
+              id: v4(),
               name: '',
               lastUpdated: Date.now(),
               messages: prev.messages.slice(0, messageIndex),
@@ -119,10 +119,22 @@ export function useSubmitAIAnalystPrompt() {
           },
         ]);
 
+        let chatId = '';
+        set(aiAnalystCurrentChatAtom, (prev) => {
+          chatId = prev.id ?? v4();
+          return {
+            ...prev,
+            id: chatId,
+            lastUpdated: Date.now(),
+          };
+        });
+
         try {
           // Send user prompt to API
           const updatedMessages = await updateInternalContext({ context });
           const response = await handleAIRequestToAPI({
+            chatId,
+            source: 'aiAnalyst',
             model,
             messages: updatedMessages,
             language: undefined,
@@ -170,6 +182,8 @@ export function useSubmitAIAnalystPrompt() {
             // Send tool call results to API
             const updatedMessages = await updateInternalContext({ context });
             const response = await handleAIRequestToAPI({
+              chatId,
+              source: 'aiAnalyst',
               model,
               messages: updatedMessages,
               language: undefined,

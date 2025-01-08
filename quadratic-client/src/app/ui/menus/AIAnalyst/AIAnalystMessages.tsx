@@ -1,4 +1,5 @@
 import {
+  aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
   aiAnalystCurrentChatMessagesCountAtom,
   aiAnalystLoadingAtom,
@@ -8,9 +9,13 @@ import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
 import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
+import { apiClient } from '@/shared/api/apiClient';
+import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
+import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
+import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilCallback, useRecoilValue } from 'recoil';
 
 type AIAnalystMessagesProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
@@ -20,6 +25,7 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
+  const [showFeedback, setShowFeedback] = useState(false);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((div: HTMLDivElement | null) => {
@@ -60,6 +66,7 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
     if (loading) {
       shouldAutoScroll.current = true;
       scrollToBottom(true);
+      setShowFeedback(true);
     }
   }, [loading, scrollToBottom]);
 
@@ -72,6 +79,21 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
   useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
+
+  const handleFeedback = useRecoilCallback(
+    ({ snapshot }) =>
+      (like: boolean) => {
+        setShowFeedback(false);
+        const messages = snapshot.getLoadable(aiAnalystCurrentChatMessagesAtom).getValue();
+
+        const promptMessageLength = getPromptMessages(messages).length;
+        if (promptMessageLength === 0) return;
+
+        const chatId = snapshot.getLoadable(aiAnalystCurrentChatAtom).getValue().id;
+        apiClient.ai.feedback({ chatId, like, messageIndex: promptMessageLength });
+      },
+    []
+  );
 
   if (messagesCount === 0) {
     return <AIAnalystExamplePrompts />;
@@ -147,6 +169,20 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
         <span className="h-2 w-2 animate-bounce bg-primary/60 delay-100" />
         <span className="h-2 w-2 animate-bounce bg-primary/20 delay-200" />
       </div>
+
+      {messages.length > 0 && !loading && showFeedback && (
+        <div className="flex flex-row justify-end gap-1 px-2">
+          <div className="flex flex-row gap-1">
+            <Button onClick={() => handleFeedback(false)} variant="destructive" size="sm">
+              <ThumbDownIcon className="mr-1" />
+            </Button>
+
+            <Button onClick={() => handleFeedback(true)} variant="success" size="sm">
+              <ThumbUpIcon className="mr-1" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

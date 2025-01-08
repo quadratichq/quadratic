@@ -397,6 +397,18 @@ export const ApiSchemas = {
   '/v0/education.GET.response': z.object({
     eduStatus: EduStatusSchema.optional(),
   }),
+
+  /**
+   * AI
+   */
+  '/ai/feedback.POST.request': z.object({
+    chatId: z.string().uuid(),
+    like: z.boolean(),
+    messageIndex: z.number(),
+  }),
+  '/ai/feedback.POST.response': z.object({
+    message: z.string(),
+  }),
 };
 
 /**

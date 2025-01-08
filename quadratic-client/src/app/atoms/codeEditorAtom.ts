@@ -17,6 +17,7 @@ export interface CodeEditorState {
   aiAssistant: {
     abortController?: AbortController;
     loading: boolean;
+    id: string;
     messages: ChatMessage[];
   };
   showCodeEditor: boolean;
@@ -49,6 +50,7 @@ export const defaultCodeEditorState: CodeEditorState = {
   aiAssistant: {
     abortController: undefined,
     loading: false,
+    id: '',
     messages: [],
   },
   showCodeEditor: false,
@@ -56,7 +58,7 @@ export const defaultCodeEditorState: CodeEditorState = {
   loading: false,
   codeCell: {
     sheetId: '',
-    pos: { x: 0, y: 0 },
+    pos: { x: 1, y: 1 },
     language: 'Python',
   },
   codeString: undefined,
@@ -119,6 +121,7 @@ const createAIAssistantSelector = <T extends keyof CodeEditorState['aiAssistant'
   });
 export const aiAssistantAbortControllerAtom = createAIAssistantSelector('abortController');
 export const aiAssistantLoadingAtom = createAIAssistantSelector('loading');
+export const aiAssistantIdAtom = createAIAssistantSelector('id');
 export const aiAssistantMessagesAtom = createAIAssistantSelector('messages');
 export const aiAssistantCurrentChatMessagesCountAtom = selector<number>({
   key: 'aiAssistantCurrentChatMessagesCountAtom',

@@ -249,7 +249,7 @@ export const aiAnalystCurrentChatMessagesAtom = selector<ChatMessage[]>({
 
       // update current chat
       const currentChat: Chat = {
-        id: prev.currentChat.id ? prev.currentChat.id : v4(),
+        id: !!prev.currentChat.id ? prev.currentChat.id : v4(),
         name: prev.currentChat.name,
         lastUpdated: Date.now(),
         messages: newValue,
