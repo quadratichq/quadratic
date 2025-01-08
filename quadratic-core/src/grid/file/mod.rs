@@ -220,6 +220,13 @@ pub fn export(grid: Grid) -> Result<Vec<u8>> {
     Ok(data)
 }
 
+pub fn export_json(grid: Grid) -> Result<Vec<u8>> {
+    let converted = serialize::export(grid)?;
+    let json = serde_json::to_vec(&converted)?;
+
+    Ok(json)
+}
+
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
