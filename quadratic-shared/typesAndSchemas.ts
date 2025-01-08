@@ -17,12 +17,6 @@ export const TeamPermissionSchema = z.enum([
   'TEAM_EDIT',
   // Manage a team, like turn on/off preferences, manage billing, and delete the team
   'TEAM_MANAGE',
-
-  // TODO: deprecate these in a subseqnent release after shipping TEAM_MANAGE
-  // Delete a team
-  'TEAM_DELETE',
-  // Edit the billing info on a team
-  'TEAM_BILLING_EDIT',
 ]);
 export type TeamPermission = z.infer<typeof TeamPermissionSchema>;
 
@@ -107,6 +101,12 @@ const TeamUserMakingRequestSchema = z.object({
 });
 
 export const TeamClientDataKvSchema = z.record(z.any());
+
+const TeamPreferencesSchema = z.object({
+  aiSaveUserPromptsEnabled: z.boolean(),
+  // aiProcessors: z.array(z.enum(['OPENAI', 'ANTRHOPIC', 'EXA', 'AWS_BEDROCK'])),
+});
+export type TeamPreferences = z.infer<typeof TeamPreferencesSchema>;
 
 export const LicenseSchema = z.object({
   limits: z.object({
@@ -340,14 +340,28 @@ export const ApiSchemas = {
     license: LicenseSchema,
     connections: ConnectionListSchema,
     clientDataKv: TeamClientDataKvSchema,
+    preferences: TeamPreferencesSchema,
   }),
-  '/v0/teams/:uuid.PATCH.request': z.object({
-    name: TeamSchema.shape.name.optional(),
-    clientDataKv: TeamClientDataKvSchema.optional(),
-  }),
+  '/v0/teams/:uuid.PATCH.request': z
+    .object({
+      name: TeamSchema.shape.name.optional(),
+      clientDataKv: TeamClientDataKvSchema.optional(),
+      preferences: TeamPreferencesSchema.partial().optional(),
+    })
+    .refine(
+      (data) => {
+        const keys = Object.keys(data) as Array<keyof typeof data>;
+        return keys.some((key) => data[key] !== undefined);
+      },
+      {
+        message: 'At least one supported field must be provided for the update.',
+        path: [],
+      }
+    ),
   '/v0/teams/:uuid.PATCH.response': z.object({
     name: TeamSchema.shape.name,
     clientDataKv: TeamClientDataKvSchema,
+    preferences: TeamPreferencesSchema,
   }),
   '/v0/teams/:uuid/invites.POST.request': TeamUserSchema.pick({ email: true, role: true }),
   '/v0/teams/:uuid/invites.POST.response': z

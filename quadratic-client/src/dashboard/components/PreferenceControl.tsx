@@ -4,21 +4,10 @@ import { cn } from '@/shared/shadcn/utils';
 import { ReactNode, useId } from 'react';
 
 /**
- * Component that renders a setting panel (a label, description, and a switch)
- * Optionally may include a "body" (for example, when enabled it shows additional
- * informational content).
- */
-type SettingPanelProps = {
-  label: string;
-  description: string | ReactNode;
-  onCheckedChange: (checked: boolean) => void;
-  checked: boolean;
-  children?: ReactNode;
-  className?: string;
-  disabled?: boolean;
-};
+ * Component that renders a preference control (a label, description, and a switch)
 
-export function SettingPanel({
+ */
+export function PreferenceControl({
   label,
   description,
   onCheckedChange,
@@ -26,7 +15,15 @@ export function SettingPanel({
   children,
   className,
   disabled,
-}: SettingPanelProps) {
+}: {
+  label: string;
+  description: string | ReactNode;
+  onCheckedChange: (checked: boolean) => void;
+  checked: boolean;
+  children?: ReactNode;
+  className?: string;
+  disabled?: boolean;
+}) {
   const reactId = useId();
   const id = `setting-panel-${reactId}`;
 

@@ -1,5 +1,5 @@
-import { Request, Response } from 'express';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { Request, Response } from 'express';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import { getUsers } from '../../auth/auth';
 import dbClient from '../../dbClient';
@@ -9,10 +9,10 @@ import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import { getPresignedFileUrl } from '../../storage/storage';
-import { RequestWithUser } from '../../types/Request';
-import { ResponseError } from '../../types/Response';
-import { getFilePermissions } from '../../utils/permissions';
+import type { RequestWithUser } from '../../types/Request';
+import type { ResponseError } from '../../types/Response';
 import { ApiError } from '../../utils/ApiError';
+import { getFilePermissions } from '../../utils/permissions';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -193,6 +193,9 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       type: connection.type,
     })),
     clientDataKv: isObject(dbTeam.clientDataKv) ? dbTeam.clientDataKv : {},
+    preferences: {
+      aiSaveUserPromptsEnabled: dbTeam.preferenceAiSaveUserPromptsEnabled,
+    },
   };
 
   return res.status(200).json(response);

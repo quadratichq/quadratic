@@ -1,13 +1,14 @@
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
-import { SettingPanel } from '@/dashboard/components/SettingsPanel';
+import { PreferenceControl } from '@/dashboard/components/PreferenceControl';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
-import { getActionUpdateTeam } from '@/routes/teams.$teamUuid';
+import { getActionUpdateTeam, type TeamAction } from '@/routes/teams.$teamUuid';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
+import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { ReactNode, useEffect, useState } from 'react';
 import { Navigate, useFetcher, useSubmit } from 'react-router-dom';
 
@@ -16,13 +17,25 @@ export const Component = () => {
     activeTeam: {
       team,
       userMakingRequest: { teamPermissions },
+      preferences,
     },
   } = useDashboardRouteLoaderData();
+
   const submit = useSubmit();
   const fetcher = useFetcher({ key: 'update-team' });
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [value, setValue] = useState<string>(team.name);
   const disabled = value === '' || value === team.name || fetcher.state !== 'idle';
+
+  // Optimistic UI
+  let optimisticPreferences = preferences;
+  if (fetcher.state !== 'idle' && isJsonObject(fetcher.json)) {
+    const optimisticData = fetcher.json as TeamAction['request.update-team'];
+
+    if (optimisticData.preferences) {
+      optimisticPreferences = { ...preferences, ...optimisticData.preferences };
+    }
+  }
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -32,6 +45,17 @@ export const Component = () => {
     }
 
     const data = getActionUpdateTeam({ name: value });
+    submit(data, {
+      method: 'POST',
+      action: ROUTES.TEAM(team.uuid),
+      encType: 'application/json',
+      fetcherKey: `update-team`,
+      navigate: false,
+    });
+  };
+
+  const handleUpdatePreference = (key: string, checked: boolean) => {
+    const data = getActionUpdateTeam({ preferences: { [key]: checked } });
     submit(data, {
       method: 'POST',
       action: ROUTES.TEAM(team.uuid),
@@ -59,7 +83,7 @@ export const Component = () => {
   // If for some reason it failed, display an error
   useEffect(() => {
     if (fetcher.data && fetcher.data.ok === false) {
-      addGlobalSnackbar('Failed to update team name. Try again later.', { severity: 'error' });
+      addGlobalSnackbar('Failed to save. Try again later.', { severity: 'error' });
     }
   }, [fetcher.data, addGlobalSnackbar]);
 
@@ -87,63 +111,26 @@ export const Component = () => {
         {teamPermissions.includes('TEAM_MANAGE') && (
           <Row>
             <Type variant="body2" className="font-bold">
-              AI features
+              Privacy
             </Type>
-            <div className="flex flex-col gap-3 rounded border border-border p-4 shadow-sm">
-              <SettingPanel
-                label="Chat"
-                description={
-                  <>
-                    Enable team members to use AI chat (where available). Some sheet data may be shared with AI models.{' '}
-                    <a href="TODO:value-here" target="_blank" className="underline hover:text-primary">
-                      Learn more.
-                    </a>
-                  </>
-                }
-                onCheckedChange={(checked) => {
-                  console.log('checked', checked);
-                }}
-                checked={true}
-              />
-              <hr />
-              <SettingPanel
-                label="Prompt logs"
-                description={
-                  <>
-                    Help improve AI by allowing Quadratic to store and analyze anonymized user prompts.{' '}
-                    <a href="TODO:value-here" target="_blank" className="underline hover:text-primary">
-                      Learn more
-                    </a>
-                    .
-                  </>
-                }
-                onCheckedChange={(checked) => {
-                  console.log('checked', checked);
-                }}
-                checked={true}
-              />
-              <hr />
-              <SettingPanel
-                label="Research (coming soon)"
-                disabled={true}
-                description={
-                  <>
-                    Enable team members to research information from the internet using prompts on individual cells.{' '}
-                    <a
-                      href="TODO:value-here"
-                      target="_blank"
-                      className="pointer-events-none underline hover:text-primary"
-                    >
-                      Learn more.
-                    </a>
-                  </>
-                }
-                onCheckedChange={(checked) => {
-                  console.log('checked', checked);
-                }}
-                checked={false}
-              />
-            </div>
+
+            <PreferenceControl
+              label="Improve AI results"
+              description={
+                <>
+                  Help improve AI results by allowing Quadratic to store and analyze anonymized user prompts.{' '}
+                  <a href="TODO:value-here" target="_blank" className="underline hover:text-primary">
+                    Learn more
+                  </a>
+                  .
+                </>
+              }
+              onCheckedChange={(checked) => {
+                handleUpdatePreference('aiSaveUserPromptsEnabled', checked);
+              }}
+              checked={optimisticPreferences.aiSaveUserPromptsEnabled}
+              className="rounded border border-border p-3 shadow-sm"
+            />
           </Row>
         )}
       </div>

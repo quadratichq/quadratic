@@ -107,6 +107,8 @@ registerRoutes().then(() => {
     if (err instanceof ApiError) {
       res.status(err.status).json({ error: { message: err.message, ...(err.meta ? { meta: err.meta } : {}) } });
     } else {
+      console.error(err);
+
       // Generic error handling
       res.status(err.status || 500).json({
         error: {

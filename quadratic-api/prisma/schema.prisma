@@ -123,6 +123,9 @@ model Team {
     // Use for client-specific data that is not useful to the server or other services
     clientDataKv Json @default("{}") @map("client_data_kv")
 
+    // Preferences
+    preferenceAiSaveUserPromptsEnabled Boolean @default(true) @map("preference_ai_save_user_prompts_enabled")
+
     @@index([uuid])
 }
 
