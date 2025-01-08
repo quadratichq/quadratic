@@ -343,6 +343,8 @@ const CodeCellTypeSchema = z.enum(['Python', 'Javascript', 'Formula', 'Connectio
 export type CodeCellType = z.infer<typeof CodeCellTypeSchema>;
 
 export const AIAutoCompleteRequestBodySchema = z.object({
+  chatId: z.string().uuid(),
+  source: z.enum(['aiAssistant', 'aiAnalyst', 'getChatName']),
   model: z.union([BedrockModelSchema, AnthropicModelSchema, OpenAIModelSchema]),
   messages: z.array(ChatMessageSchema),
   language: CodeCellTypeSchema.optional(),

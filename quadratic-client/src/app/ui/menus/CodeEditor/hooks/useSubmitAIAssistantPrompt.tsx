@@ -5,6 +5,7 @@ import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetCo
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import {
   aiAssistantAbortControllerAtom,
+  aiAssistantIdAtom,
   aiAssistantLoadingAtom,
   aiAssistantMessagesAtom,
   codeEditorCodeCellAtom,
@@ -17,6 +18,7 @@ import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
+import { v4 } from 'uuid';
 
 export function useSubmitAIAssistantPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
@@ -48,11 +50,13 @@ export function useSubmitAIAssistantPrompt() {
         set(aiAssistantAbortControllerAtom, abortController);
 
         if (clearMessages) {
+          set(aiAssistantIdAtom, v4());
           set(aiAssistantMessagesAtom, []);
         }
 
         // fork chat, if we are editing an existing chat
         if (messageIndex !== undefined) {
+          set(aiAssistantIdAtom, v4());
           set(aiAssistantMessagesAtom, (prev) => prev.slice(0, messageIndex));
         }
 
@@ -93,8 +97,16 @@ export function useSubmitAIAssistantPrompt() {
           return updatedMessages;
         });
 
+        let chatId = '';
+        set(aiAssistantIdAtom, (prev) => {
+          chatId = prev ?? v4();
+          return chatId;
+        });
+
         try {
           await handleAIRequestToAPI({
+            chatId,
+            source: 'aiAssistant',
             model,
             messages: updatedMessages,
             language: getLanguage(codeCell.language),

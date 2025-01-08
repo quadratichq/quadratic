@@ -61,8 +61,9 @@ export function useAIRequestToAPI() {
 
         const { stream } = getModelOptions(model, { useTools, useStream });
 
-        // handle streaming response
         if (stream) {
+          // handle streaming response
+
           const reader = response.body?.getReader();
           if (!reader) throw new Error('Response body is not readable');
 
@@ -84,10 +85,9 @@ export function useAIRequestToAPI() {
           }
 
           return { content: responseMessage.content, toolCalls: responseMessage.toolCalls };
-        }
+        } else {
+          // handle non-streaming response
 
-        // handle non-streaming response
-        else {
           const data = await response.json();
           const newResponseMessage = AIMessagePromptSchema.parse(data);
           setMessages?.((prev) => [...prev.slice(0, -1), { ...newResponseMessage }]);

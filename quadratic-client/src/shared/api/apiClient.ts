@@ -362,6 +362,16 @@ export const apiClient = {
     },
   },
 
+  ai: {
+    feedback(body: ApiTypes['/ai/feedback.POST.request']) {
+      return fetchFromApi(
+        `/ai/feedback`,
+        { method: 'POST', body: JSON.stringify(body) },
+        ApiSchemas['/ai/feedback.POST.response']
+      );
+    },
+  },
+
   async postFeedback(body: ApiTypes['/v0/feedback.POST.request']) {
     return fetchFromApi(
       `/v0/feedback`,
