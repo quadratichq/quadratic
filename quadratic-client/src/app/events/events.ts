@@ -141,6 +141,10 @@ interface EventTypes {
   viewportChangedReady: () => void;
   hashContentChanged: (sheetId: string, hashX: number, hashY: number) => void;
 
+  aiAnalystInitialized: () => void;
+
+  pixiAppSettingsInitialized: () => void;
+
   requestAIResearcherResult: (args: AIResearcherRequestArgs) => void;
 }
 

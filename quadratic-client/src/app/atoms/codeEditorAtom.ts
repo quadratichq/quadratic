@@ -1,5 +1,4 @@
 import { getPromptMessages } from '@/app/ai/tools/message.helper';
-import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { CodeCell } from '@/app/gridGL/types/codeCell';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import type { JsCellsAccessed, JsCoordinate } from '@/app/quadratic-core-types';
@@ -174,16 +173,8 @@ export const codeEditorShowDiffEditorAtom = selector<boolean>({
 export const codeEditorUnsavedChangesAtom = selector<boolean>({
   key: 'codeEditorUnsavedChangesAtom',
   get: ({ get }) => {
-    const { editorContent, codeString, codeCell } = get(codeEditorAtom);
-    const unsavedChanges = editorContent !== codeString && codeCell.language !== 'AIResearcher';
-
-    if (unsavedChanges) {
-      pixiAppSettings.unsavedEditorChanges = editorContent;
-    } else {
-      pixiAppSettings.unsavedEditorChanges = undefined;
-    }
-
-    return unsavedChanges;
+    const { editorContent, codeString } = get(codeEditorAtom);
+    return editorContent !== codeString;
   },
 });
 

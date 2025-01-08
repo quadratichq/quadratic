@@ -1,6 +1,7 @@
 import { Action } from '@/app/actions/actions';
 import {
   presentationModeAtom,
+  showAIAnalystOnStartupAtom,
   showCellTypeOutlinesAtom,
   showCodePeekAtom,
   showGridLinesAtom,
@@ -33,6 +34,7 @@ export const ViewMenubarMenu = () => {
   const [showGridLines, setShowGridLines] = useRecoilState(showGridLinesAtom);
   const [showCellTypeOutlines, setShowCellTypeOutlines] = useRecoilState(showCellTypeOutlinesAtom);
   const [showCodePeek, setShowCodePeek] = useRecoilState(showCodePeekAtom);
+  const [showAIAnalystOnStartup, setShowAIAnalystOnStartup] = useRecoilState(showAIAnalystOnStartupAtom);
   const setPresentationMode = useSetRecoilState(presentationModeAtom);
 
   return (
@@ -49,6 +51,10 @@ export const ViewMenubarMenu = () => {
         <MenubarItem onClick={() => setShowCellTypeOutlines((prev) => !prev)}>
           <MenubarItemCheckbox checked={showCellTypeOutlines} />
           Show code cell outlines
+        </MenubarItem>
+        <MenubarItem onClick={() => setShowAIAnalystOnStartup((prev) => !prev)}>
+          <MenubarItemCheckbox checked={showAIAnalystOnStartup} />
+          Show AI on startup
         </MenubarItem>
         <MenubarItem onClick={() => setShowCodePeek((prev) => !prev)}>
           <MenubarItemCheckbox checked={showCodePeek} />

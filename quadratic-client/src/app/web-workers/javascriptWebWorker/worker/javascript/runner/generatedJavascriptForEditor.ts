@@ -85,7 +85,16 @@ declare global {
      * @param a1 A string representing a cell or range of cells.
      * @returns For single returns: the value of the cell referenced. For multiple returns: An array of the cells referenced.
      */
-    static cells(a1: string): (number | string | boolean | Date | undefined)[] | (number | string | boolean | Date | undefined)[][] | number | string | boolean | Date | undefined;
+    static cells(
+      a1: string
+    ):
+      | (number | string | boolean | Date | undefined)[]
+      | (number | string | boolean | Date | undefined)[][]
+      | number
+      | string
+      | boolean
+      | Date
+      | undefined;
 
     /**
      * Gets the position of the code cell
@@ -124,23 +133,25 @@ function lineNumber(): number | undefined {
   }
 }
 
-const createConversionError = (
-  funcName: string,
-  a1Params: string,
-  oldFuncParams: string,
-  sheetName?: string
-) => {
+const createConversionError = (funcName: string, a1Params: string, oldFuncParams: string, sheetName?: string) => {
   const oldFunc = funcName + '(' + oldFuncParams + ')';
   let params = a1Params;
-  
+
   if (sheetName) params = sheetName + ':' + params;
-  
+
   const newFunc = "q.cells('" + params + "')";
-  
+
   q.conversionError(oldFunc, newFunc);
 };
 
-const getCellsConversionError = (funcName: string, x0: number, y0: number, x1: number, y1?: number, sheetName?: string) => {
+const getCellsConversionError = (
+  funcName: string,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1?: number,
+  sheetName?: string
+) => {
   const a1_0 = q.toA1(x0, y0);
   const a1_1 = q.toA1(x1, y1);
 
@@ -159,47 +170,28 @@ const getCellConversionError = (funcName: string, x: number, y: number, sheetNam
   createConversionError(funcName, a1, oldFuncParams, sheetName);
 };
 
-export const getCells = (
-  x0: number,
-  y0: number,
-  x1: number,
-  y1?: number,
-  sheetName?: string
-) => {
+export const getCells = (x0: number, y0: number, x1: number, y1?: number, sheetName?: string) => {
   getCellsConversionError('getCells', x0, y0, x1, y1, sheetName);
 };
 
-
-export const cells = (
-  x0: number,
-  y0: number,
-  x1: number,
-  y1?: number,
-  sheetName?: string
-) => {
+export const cells = (x0: number, y0: number, x1: number, y1?: number, sheetName?: string) => {
   getCellsConversionError('cells', x0, y0, x1, y1, sheetName);
 };
 
-export const getCellsWithHeadings = (
-  x0: number,
-  y0: number,
-  x1: number,
-  y1?: number,
-  sheetName?: string
-) => {
+export const getCellsWithHeadings = (x0: number, y0: number, x1: number, y1?: number, sheetName?: string) => {
   getCellsConversionError('getCellsWithHeadings', x0, y0, x1, y1, sheetName);
 };
 
 export const getCell = (x: number, y: number, sheetName?: string) => {
-    getCellConversionError('getCell', x, y, sheetName);
+  getCellConversionError('getCell', x, y, sheetName);
 };
 
 export const cell = (x: number, y: number, sheetName?: string) => {
-    getCellConversionError('cell', x, y, sheetName);
+  getCellConversionError('cell', x, y, sheetName);
 };
 
 export const c = (x: number, y: number, sheetName?: string) => {
-    getCellConversionError('c', x, y, sheetName);
+  getCellConversionError('c', x, y, sheetName);
 };
 
 // This is hard coded here, but is replaced with the correct x,y coordinates elsewhere
@@ -230,38 +222,50 @@ export class q {
    * @param a1 A string representing a cell or range of cells.
    * @returns For single returns: the value of the cell referenced. For multiple returns: An array of the cells referenced.
    */
-  static cells(a1: string): (number | string | boolean | Date | undefined)[] | (number | string | boolean | Date | undefined)[][] | number | string | boolean | Date | undefined {
+  static cells(
+    a1: string
+  ):
+    | (number | string | boolean | Date | undefined)[]
+    | (number | string | boolean | Date | undefined)[][]
+    | number
+    | string
+    | boolean
+    | Date
+    | undefined {
     if (typeof a1 !== 'string') {
       const line = lineNumber();
-      
+
       throw new Error(
-        'q.cell requires at least 1 argument, received q.cell(' + a1 + ')' + (line !== undefined ? ' at line ' + (line - 1) : '')
+        'q.cell requires at least 1 argument, received q.cell(' +
+          a1 +
+          ')' +
+          (line !== undefined ? ' at line ' + (line - 1) : '')
       );
     }
-  
+
     try {
       let sharedBuffer: SharedArrayBuffer | undefined = new SharedArrayBuffer(4 + 4 + 4);
       let int32View: Int32Array | undefined = new Int32Array(sharedBuffer, 0, 3);
       Atomics.store(int32View, 0, 0);
-  
+
       self.postMessage({ type: 'getCellsA1Length', sharedBuffer, a1 });
       let result = Atomics.wait(int32View, 0, 0);
       const length = int32View[1];
       if (result !== 'ok' || length === 0) return [];
-  
+
       const id = int32View[2];
-  
+
       // New shared buffer, which is sized to hold the cells string
       sharedBuffer = new SharedArrayBuffer(4 + length);
       int32View = new Int32Array(sharedBuffer, 0, 1);
       Atomics.store(int32View, 0, 0);
-  
+
       self.postMessage({ type: 'getCellsData', id, sharedBuffer });
       result = Atomics.wait(int32View, 0, 0);
       if (result !== 'ok') return [];
-  
+
       let uint8View: Uint8Array | undefined = new Uint8Array(sharedBuffer, 4, length);
-  
+
       // Copy the data to a non-shared buffer, for decoding
       const nonSharedBuffer = new ArrayBuffer(uint8View.byteLength);
       const nonSharedView = new Uint8Array(nonSharedBuffer);
@@ -269,10 +273,15 @@ export class q {
       sharedBuffer = undefined;
       int32View = undefined;
       uint8View = undefined;
-  
+
       const decoder = new TextDecoder();
-      const cellsStringified = decoder.decode(nonSharedView);
-      const cells = convertNullToUndefined(JSON.parse(cellsStringified) as (number | string | boolean | Date | null)[][]);
+      const resultsStringified = decoder.decode(nonSharedView);
+      const results = JSON.parse(resultsStringified) as {
+        cells: (number | string | boolean | Date | null)[][];
+        two_dimensional: boolean;
+      };
+      const cells = convertNullToUndefined(results.cells);
+
       cells.forEach((row) => {
         row.forEach((cell, i) => {
           if (typeof cell === 'string' && cell.startsWith('___date___')) {
@@ -280,8 +289,25 @@ export class q {
           }
         });
       });
-      if (cells.length === 1 && cells[0].length === 1) {
-        return cells[0][0];
+
+      // Convert to two dimensional if a single row or column and not
+      // two-dimensional set. Two dimensional is set when there is an unbounded
+      // range that may result in more than two columns or rows--eg, "B:" even
+      // where there is only content in the B-column.
+      if (!results.two_dimensional) {
+        if (cells.length === 1 && cells[0].length === 1) {
+          return cells[0][0];
+        }
+
+        // one column result
+        else if (cells.every((row) => row.length === 1)) {
+          return cells.map((row) => row[0]);
+        }
+
+        // one row result
+        else if (cells.length === 1) {
+          return cells[0];
+        }
       }
       return cells;
     } catch (e) {
@@ -297,7 +323,7 @@ export class q {
    * @returns The A1 string.
    */
   static toA1(x: number, y?: number, absolute: boolean = true): string {
-    let column = "";
+    let column = '';
 
     if (!absolute) {
       const p = pos();
@@ -306,9 +332,9 @@ export class q {
     }
 
     while (x > 0) {
-        x--; // adjust for 1-based index
-        column = String.fromCharCode((x % 26) + 65) + column;
-        x = Math.floor(x / 26);
+      x--; // adjust for 1-based index
+      column = String.fromCharCode((x % 26) + 65) + column;
+      x = Math.floor(x / 26);
     }
 
     return column + y;
@@ -326,7 +352,12 @@ export class q {
    * Show a conversion error message when the user tries to use an old function.
    */
   static conversionError(oldFunc: string, newFunc: string): void {
-    const message = oldFunc + ' functionality is no longer supported. Use ' + newFunc + ' instead.';
+    const message =
+      oldFunc +
+      ' functionality is no longer supported. Use ' +
+      newFunc +
+      ' instead.  Refer to the documentation at {COMMUNITY_A1_FILE_UPDATE_URL}' +
+      ' for more details.';
     throw new Error(message);
   }
 }

@@ -62,7 +62,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
               <FormItem>
                 <FormLabel>Account Identifier</FormLabel>
                 <FormControl>
-                  <Input autoComplete="off" {...field} />
+                  <Input autoComplete="off" placeholder="e.g. jovlpvc-axb93678" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

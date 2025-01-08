@@ -132,14 +132,17 @@ impl GridController {
         });
 
         let response = if let Some(rect) = rects.first() {
-            // cases for forced two-dimensional get_cells:
-            // 1. rect.width > 1
-            // 2. any range where end.col is unbounded
-            let two_dimensional = if rect.width() > 1 {
-                true
-            } else if let Some(range) = selection.ranges.first() {
+            // Tracks whether to force the get_cells call to return a 2D array.
+            // The use case is where the rect is currently one-dimensional, but
+            // the selection may change to two-dimensional based on data bounds.
+            // For example, "2:" or "B5:".
+            let two_dimensional = if let Some(range) = selection.ranges.first() {
                 match range {
-                    CellRefRange::Sheet { range } => range.end.col.is_unbounded(),
+                    CellRefRange::Sheet { range } => {
+                        (range.end.col.is_unbounded() && range.end.row.is_unbounded())
+                            || !(range.start.row.coord == range.end.row.coord
+                                || range.start.col.coord == range.end.col.coord)
+                    }
                 }
             } else {
                 false
@@ -494,7 +497,7 @@ mod test {
         gc.set_cell_value(
             SheetPos {
                 x: 2,
-                y: 1,
+                y: 2,
                 sheet_id,
             },
             "test".to_string(),
@@ -508,23 +511,34 @@ mod test {
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
-        let result =
-            gc.calculation_get_cells_a1(transaction_id.to_string(), "B:".to_string(), None);
-        assert_eq!(
-            result,
-            Ok(CellA1Response {
-                cells: vec![JsGetCellResponse {
-                    x: 2,
-                    y: 1,
-                    value: "test".into(),
-                    type_name: "text".into()
-                }],
-                x: 2,
-                y: 1,
-                w: 1,
-                h: 1,
-                two_dimensional: true,
-            })
-        );
+        let result = gc
+            .calculation_get_cells_a1(transaction_id.to_string(), "B:".to_string(), None)
+            .unwrap();
+        assert!(result.two_dimensional);
+
+        let result = gc
+            .calculation_get_cells_a1(transaction_id.to_string(), "B".to_string(), None)
+            .unwrap();
+        assert!(!result.two_dimensional);
+
+        let result = gc
+            .calculation_get_cells_a1(transaction_id.to_string(), "2:".to_string(), None)
+            .unwrap();
+        assert!(result.two_dimensional);
+
+        let result = gc
+            .calculation_get_cells_a1(transaction_id.to_string(), "2".to_string(), None)
+            .unwrap();
+        assert!(!result.two_dimensional);
+
+        let result = gc
+            .calculation_get_cells_a1(transaction_id.to_string(), "D5:E5".to_string(), None)
+            .unwrap();
+        assert!(!result.two_dimensional);
+
+        let result = gc
+            .calculation_get_cells_a1(transaction_id.to_string(), "D5:".to_string(), None)
+            .unwrap();
+        assert!(result.two_dimensional);
     }
 }

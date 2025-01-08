@@ -34,6 +34,7 @@ export type RequestWithAuth = JWTRequest & {
 
 export type RequestWithUser = RequestWithAuth & {
   user: User;
+  userCreated: boolean;
 };
 
 export type RequestWithOptionalUser = RequestWithOptionalAuth & {

@@ -288,4 +288,14 @@ export class SheetCursor {
       return [];
     }
   }
+
+  getRanges(): CellRefRange[] {
+    const rangesStringified = this.jsSelection.getRanges();
+    try {
+      return JSON.parse(rangesStringified);
+    } catch (e) {
+      console.error(e);
+      return [];
+    }
+  }
 }
