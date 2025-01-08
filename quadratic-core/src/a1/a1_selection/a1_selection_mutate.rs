@@ -85,11 +85,25 @@ impl A1Selection {
         selection.translate_in_place(x, y);
         selection
     }
+
+    pub fn adjust_column_row_in_place(
+        &mut self,
+        column: Option<i64>,
+        row: Option<i64>,
+        delta: i64,
+    ) {
+        self.cursor.adjust_column_row_in_place(column, row, delta);
+        self.ranges.iter_mut().for_each(|range| {
+            range.adjust_column_row_in_place(column, row, delta);
+        });
+    }
 }
 
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
+    use crate::{grid::SheetId, SheetNameIdMap};
+
     use super::*;
 
     #[test]
@@ -425,5 +439,35 @@ mod tests {
         let translated = selection.translate(-10, -10);
         assert_eq!(translated, A1Selection::test_a1("A1"));
         assert_eq!(selection, A1Selection::test_a1("A1"));
+    }
+
+    #[test]
+    fn test_adjust_column_row() {
+        let sheet_id = SheetId::test();
+        let sheet_map = SheetNameIdMap::new();
+
+        let mut selection = A1Selection::test_a1("B3");
+        selection.adjust_column_row_in_place(Some(2), None, 1);
+        assert_eq!(selection.to_string(Some(sheet_id), &sheet_map), "C3");
+
+        let mut selection = A1Selection::test_a1("B3");
+        selection.adjust_column_row_in_place(None, Some(2), 1);
+        assert_eq!(selection.to_string(Some(sheet_id), &sheet_map), "B4");
+
+        let mut selection = A1Selection::test_a1("B3");
+        selection.adjust_column_row_in_place(Some(3), None, 1);
+        assert_eq!(selection.to_string(Some(sheet_id), &sheet_map), "B3");
+
+        let mut selection = A1Selection::test_a1("B3");
+        selection.adjust_column_row_in_place(None, Some(4), 1);
+        assert_eq!(selection.to_string(Some(sheet_id), &sheet_map), "B3");
+
+        let mut selection = A1Selection::test_a1("B3");
+        selection.adjust_column_row_in_place(Some(1), None, -1);
+        assert_eq!(selection.to_string(Some(sheet_id), &sheet_map), "A3");
+
+        let mut selection = A1Selection::test_a1("B3");
+        selection.adjust_column_row_in_place(None, Some(1), -1);
+        assert_eq!(selection.to_string(Some(sheet_id), &sheet_map), "B2");
     }
 }

@@ -1487,7 +1487,16 @@ version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0700ddab506f33b20a03b13996eccd309a48e5ff77d0d95926aa0210fb4e95f1"
 dependencies = [
- "bit-vec",
+ "bit-vec 0.6.3",
+]
+
+[[package]]
+name = "bit-set"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "08807e080ed7f9d5433fa9b275196cfc35414f66a0c79d864dc51a0d825231a3"
+dependencies = [
+ "bit-vec 0.8.0",
 ]
 
 [[package]]
@@ -1495,6 +1504,12 @@ name = "bit-vec"
 version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "349f9b6a179ed607305526ca489b34ad0a41aed5f7980fa90eb03160b69598fb"
+
+[[package]]
+name = "bit-vec"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5e764a1d40d510daf35e07be9eb06e75770908c27d411ee6c92109c9840eaaf7"
 
 [[package]]
 name = "bitflags"
@@ -2437,6 +2452,17 @@ dependencies = [
  "deunicode",
  "dummy",
  "rand 0.8.5",
+]
+
+[[package]]
+name = "fancy-regex"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e24cb5a94bcae1e5408b0effca5cd7172ea3c5755049c5f3af4cd283a165298"
+dependencies = [
+ "bit-set 0.8.0",
+ "regex-automata 0.4.8",
+ "regex-syntax 0.8.5",
 ]
 
 [[package]]
@@ -4415,8 +4441,8 @@ version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4c2511913b88df1637da85cc8d96ec8e43a3f8bb8ccb71ee1ac240d6f3df58d"
 dependencies = [
- "bit-set",
- "bit-vec",
+ "bit-set 0.5.3",
+ "bit-vec 0.6.3",
  "bitflags 2.6.0",
  "lazy_static",
  "num-traits",
@@ -4478,7 +4504,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-connection"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "arrow 51.0.0",
  "arrow-schema 51.0.0",
@@ -4520,7 +4546,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-core"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "anyhow",
  "arrow-array 51.0.0",
@@ -4537,6 +4563,7 @@ dependencies = [
  "criterion",
  "csv",
  "dateparser",
+ "fancy-regex",
  "flate2",
  "futures",
  "getrandom 0.2.15",
@@ -4574,7 +4601,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-files"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "axum",
  "axum-extra",
@@ -4608,7 +4635,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-multiplayer"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "axum",
  "axum-extra",
@@ -4642,7 +4669,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-rust-client"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "chrono",
  "console_error_panic_hook",
@@ -4657,7 +4684,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-rust-shared"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "aes",
  "arrow 53.2.0",
