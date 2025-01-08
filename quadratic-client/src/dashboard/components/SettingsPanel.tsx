@@ -14,8 +14,8 @@ type SettingPanelProps = {
   onCheckedChange: (checked: boolean) => void;
   checked: boolean;
   children?: ReactNode;
-  isNested?: boolean;
   className?: string;
+  disabled?: boolean;
 };
 
 export function SettingPanel({
@@ -24,17 +24,17 @@ export function SettingPanel({
   onCheckedChange,
   checked,
   children,
-  isNested,
   className,
+  disabled,
 }: SettingPanelProps) {
   const reactId = useId();
   const id = `setting-panel-${reactId}`;
 
   return (
-    <div className={cn('space-y-3 rounded-lg border p-3 shadow-sm', className)}>
-      <div className="flex w-full flex-row items-center justify-between gap-3">
-        <div className="mr-auto space-y-0.5 text-sm">
-          <Label htmlFor={id} className="font-semibold">
+    <div className={cn('space-y-3', className)}>
+      <div className="flex w-full flex-row items-center justify-between gap-4">
+        <div className="mr-auto text-sm">
+          <Label htmlFor={id} className="font-medium">
             {label}
           </Label>
           <p className="text-muted-foreground">{description}</p>
@@ -42,6 +42,7 @@ export function SettingPanel({
 
         <Switch
           id={id}
+          disabled={disabled}
           checked={checked}
           onCheckedChange={(checked) => {
             onCheckedChange(checked);
