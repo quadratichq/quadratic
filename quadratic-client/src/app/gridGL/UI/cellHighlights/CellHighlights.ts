@@ -1,3 +1,4 @@
+import { bigIntReplacer } from '@/app/bigint';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { DASHED } from '@/app/gridGL/generateTextures';
@@ -52,7 +53,11 @@ export class CellHighlights extends Container {
 
   private convertCellRefRangeToRefRangeBounds(cellRefRange: CellRefRange): RefRangeBounds | undefined {
     try {
-      const refRangeBoundsStringified = cellRefRangeToRefRangeBounds(JSON.stringify(cellRefRange), 0, sheets.a1Context);
+      const refRangeBoundsStringified = cellRefRangeToRefRangeBounds(
+        JSON.stringify(cellRefRange, bigIntReplacer),
+        0,
+        sheets.a1Context
+      );
       const refRangeBounds = JSON.parse(refRangeBoundsStringified);
       return refRangeBounds;
     } catch (e) {
