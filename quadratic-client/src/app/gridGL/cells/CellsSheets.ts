@@ -29,6 +29,7 @@ export class CellsSheets extends Container<CellsSheet> {
   }
 
   async create() {
+    this.children.forEach((child) => child.destroy());
     this.removeChildren();
     for (const sheet of sheets.sheets) {
       const child = this.addChild(new CellsSheet(sheet.id));
