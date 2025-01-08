@@ -1,6 +1,8 @@
 use crate::{
     controller::{active_transactions::transaction_name::TransactionName, GridController},
-    grid::{data_table::column_header::DataTableColumnHeader, sort::DataTableSort},
+    grid::{
+        data_table::column_header::DataTableColumnHeader, sort::DataTableSort, DataTableShowUI,
+    },
     Pos, SheetPos, SheetRect,
 };
 
@@ -55,6 +57,7 @@ impl GridController {
         alternating_colors: Option<bool>,
         columns: Option<Vec<DataTableColumnHeader>>,
         show_header: Option<bool>,
+        show_ui: Option<DataTableShowUI>,
         cursor: Option<String>,
     ) {
         let ops = self.data_table_meta_operations(
@@ -63,7 +66,7 @@ impl GridController {
             alternating_colors,
             columns,
             show_header,
-            cursor.to_owned(),
+            show_ui,
         );
         self.start_user_transaction(ops, cursor, TransactionName::DataTableMeta);
     }

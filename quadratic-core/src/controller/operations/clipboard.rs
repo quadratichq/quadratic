@@ -254,6 +254,7 @@ impl GridController {
                                             alternating_colors: None,
                                             columns: Some(headers.to_vec()),
                                             show_header: None,
+                                            show_ui: None,
                                         });
                                     }
 

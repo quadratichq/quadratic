@@ -27,19 +27,7 @@ export const GridContextMenu = () => {
       setColumnRowAvailable(sheets.sheet.cursor.hasOneColumnRowSelection(true));
       setCanConvertToDataTable(sheets.sheet.cursor.canConvertToDataTable());
       const codeCell = pixiApp.cellsSheet().cursorOnDataTable();
-      // don't show the table menu if it's a single-value code table
-      if (
-        codeCell &&
-        !codeCell.show_header &&
-        codeCell.w === 1 &&
-        codeCell.h === 1 &&
-        !!codeCell.language &&
-        !codeCell.is_html_image
-      ) {
-        setTable(undefined);
-      } else {
-        setTable(codeCell);
-      }
+      setTable(codeCell);
     };
 
     updateCursor();

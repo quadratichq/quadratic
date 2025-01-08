@@ -59,6 +59,7 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
       const { x, y } = sheets.sheet.cursor.position;
       quadraticCore.getCodeCell(sheets.sheet.id, x, y).then((code) => {
         if (code) {
+          // const table = sheets.getById(sheets.sheet.id);
           doubleClickCell({
             column: Number(code.x),
             row: Number(code.y),

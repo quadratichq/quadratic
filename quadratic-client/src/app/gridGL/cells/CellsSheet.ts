@@ -57,7 +57,7 @@ export class CellsSheet extends Container {
 
   destroy() {
     events.off('renderValidationWarnings', this.renderValidations);
-    super.destroy();
+    super.destroy({ children: true });
   }
 
   // used to render all cellsTextHashes to warm up the GPU

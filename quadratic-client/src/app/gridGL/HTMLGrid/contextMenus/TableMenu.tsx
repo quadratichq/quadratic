@@ -58,6 +58,7 @@ export const TableMenu = (props: Props) => {
         <ContextMenuItemAction action={Action.ShowAllColumns} />
       )}
       {!isImageOrHtmlCell && !spillError && <DropdownMenuSeparator />}
+      {!spillError && <ContextMenuItemAction action={Action.ToggleTableUI} />}
       {!isImageOrHtmlCell && !spillError && <ContextMenuItemAction action={Action.ToggleHeaderTable} />}
       {!isImageOrHtmlCell && !spillError && <ContextMenuItemAction action={Action.ToggleFirstRowAsHeaderTable} />}
       {!isImageOrHtmlCell && !spillError && <ContextMenuItemAction action={Action.ToggleTableAlternatingColors} />}

@@ -359,6 +359,7 @@ pub(crate) fn import_data_table_builder(
             name: data_table.name,
             header_is_first_row: data_table.header_is_first_row,
             show_header: data_table.show_header,
+            show_ui: data_table.show_ui.into(),
             readonly: data_table.readonly,
             last_modified: data_table.last_modified.unwrap_or(Utc::now()), // this is required but fall back to now if failed
             spill_error: data_table.spill_error,
@@ -616,6 +617,7 @@ pub(crate) fn export_data_tables(
                 name: data_table.name,
                 header_is_first_row: data_table.header_is_first_row,
                 show_header: data_table.show_header,
+                show_ui: data_table.show_ui.into(),
                 columns,
                 sort,
                 display_buffer: data_table.display_buffer,

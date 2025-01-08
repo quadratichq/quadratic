@@ -189,7 +189,7 @@ export class CellsFills extends Container {
   // this is called by Table.ts
   updateAlternatingColors = (x: number, y: number, table?: JsRenderCodeCell) => {
     const key = `${x},${y}`;
-    if (table) {
+    if (table?.show_ui && table?.alternating_colors) {
       this.alternatingColors.set(key, table);
       this.dirtyTables = true;
     } else {

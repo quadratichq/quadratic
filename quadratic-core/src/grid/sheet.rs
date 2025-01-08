@@ -30,7 +30,7 @@ pub mod code;
 pub mod col_row;
 pub mod data_table;
 pub mod formats;
-pub mod jump_cursor;
+pub mod keyboard;
 pub mod rendering;
 pub mod rendering_date_time;
 pub mod row_resize;

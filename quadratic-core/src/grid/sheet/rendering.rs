@@ -3,7 +3,7 @@ use crate::grid::js_types::{
     JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
     JsRenderCodeCellState, JsRenderFill, JsSheetFill, JsValidationWarning,
 };
-use crate::grid::{CellAlign, CellWrap, CodeCellLanguage, DataTable};
+use crate::grid::{CellAlign, CellWrap, CodeCellLanguage, DataTable, DataTableShowUI};
 use crate::renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
 use crate::{CellValue, Pos, Rect, RunError, RunErrorMsg, Value};
 
@@ -398,16 +398,23 @@ impl Sheet {
             && !data_table.is_html()
             && data_table.alternating_colors;
 
+        let language = match code {
+            CellValue::Code(code) => code.language,
+            CellValue::Import(_) => CodeCellLanguage::Import,
+            _ => return None,
+        };
         Some(JsRenderCodeCell {
             x: pos.x as i32,
             y: pos.y as i32,
             w,
             h,
-            language: match code {
-                CellValue::Code(code) => code.language,
-                CellValue::Import(_) => CodeCellLanguage::Import,
-                _ => return None,
+            show_ui: match data_table.show_ui {
+                // show UI for non-formula code cells by default
+                DataTableShowUI::Default => language != CodeCellLanguage::Formula,
+                DataTableShowUI::Show => true,
+                DataTableShowUI::Hide => false,
             },
+            language,
             state,
             spill_error,
             name: data_table.name.clone(),
@@ -1088,6 +1095,7 @@ mod tests {
                 alternating_colors: true,
                 readonly: true,
                 is_html_image: false,
+                show_ui: true,
             })
         );
     }

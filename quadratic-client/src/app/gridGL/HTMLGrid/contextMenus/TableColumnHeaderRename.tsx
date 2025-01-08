@@ -1,6 +1,7 @@
 import { getDisplayColumns } from '@/app/actions/dataTableSpec';
 import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { COLUMN_HEADER_BACKGROUND_LUMINOSITY } from '@/app/gridGL/cells/tables/TableColumnHeaders';
 import { PixiRename } from '@/app/gridGL/HTMLGrid/contextMenus/PixiRename';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -79,11 +80,8 @@ export const TableColumnHeaderRename = () => {
               pixiApp.cellsSheets.current?.sheetId,
               contextMenu.table.x,
               contextMenu.table.y,
-              undefined,
-              undefined,
-              columns,
-              undefined,
-              ''
+              { columns },
+              sheets.getCursorPosition()
             );
           }
         }

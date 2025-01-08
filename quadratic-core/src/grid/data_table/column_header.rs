@@ -152,7 +152,7 @@ pub mod test {
     use super::*;
     use crate::{
         cellvalue::Import,
-        grid::{test::new_data_table, DataTableKind, Sheet},
+        grid::{test::new_data_table, DataTableKind, DataTableShowUI, Sheet},
         Array, Pos,
     };
     use chrono::Utc;
@@ -251,6 +251,7 @@ pub mod test {
             formats: Default::default(),
             chart_output: None,
             chart_pixel_output: None,
+            show_ui: DataTableShowUI::Default,
         };
         sheet.set_cell_value(
             pos,

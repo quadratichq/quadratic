@@ -63,6 +63,24 @@ export class Tables extends Container<Table> {
     events.on('updateImage', this.updateImage);
   }
 
+  destroy() {
+    events.off('renderCodeCells', this.renderCodeCells);
+    events.off('updateCodeCell', this.updateCodeCell);
+
+    events.off('cursorPosition', this.cursorPosition);
+    events.off('sheetOffsets', this.sheetOffsets);
+    events.off('changeSheet', this.changeSheet);
+
+    events.off('contextMenu', this.contextMenu);
+    events.off('contextMenuClose', this.contextMenu);
+
+    events.off('htmlOutput', this.htmlOutput);
+    events.off('htmlUpdate', this.htmlUpdate);
+    events.off('updateImage', this.updateImage);
+
+    super.destroy();
+  }
+
   private htmlOutput = (output: JsHtmlOutput[]) => {
     this.htmlOrImage.clear();
     output.forEach((htmlOutput) => {
@@ -95,7 +113,8 @@ export class Tables extends Container<Table> {
   get sheet(): Sheet {
     const sheet = sheets.getById(this.cellsSheet.sheetId);
     if (!sheet) {
-      throw new Error('Sheet not found in Tables');
+      debugger;
+      throw new Error(`Sheet ${this.cellsSheet.sheetId} not found in Tables.ts`);
     }
     return sheet;
   }

@@ -12,23 +12,9 @@
 //! The above checks are always made relative to the original cursor position
 //! (the highlighted cell)
 
-// TODO: charts code is left intact and should be uncommented after merging with
-// data tables.
+use crate::{grid::Sheet, Pos};
 
-use serde::{Deserialize, Serialize};
-use ts_rs::TS;
-
-use crate::Pos;
-
-use super::Sheet;
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, TS)]
-pub enum JumpDirection {
-    Up,
-    Down,
-    Left,
-    Right,
-}
+use super::Direction;
 
 impl Sheet {
     fn jump_up(&self, current: Pos) -> Pos {
@@ -219,12 +205,12 @@ impl Sheet {
     }
 
     /// Returns the Pos after a jump (ctrl/cmd + arrow key)
-    pub fn jump_cursor(&self, current: Pos, direction: JumpDirection) -> Pos {
+    pub fn jump_cursor(&self, current: Pos, direction: Direction) -> Pos {
         match direction {
-            JumpDirection::Up => self.jump_up(current),
-            JumpDirection::Down => self.jump_down(current),
-            JumpDirection::Left => self.jump_left(current),
-            JumpDirection::Right => self.jump_right(current),
+            Direction::Up => self.jump_up(current),
+            Direction::Down => self.jump_down(current),
+            Direction::Left => self.jump_left(current),
+            Direction::Right => self.jump_right(current),
         }
     }
 }

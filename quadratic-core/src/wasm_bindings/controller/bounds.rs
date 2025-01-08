@@ -1,5 +1,5 @@
 use a1::A1Selection;
-use sheet::jump_cursor::JumpDirection;
+use sheet::keyboard::Direction;
 use ts_rs::TS;
 use wasm_bindgen::prelude::*;
 
@@ -74,8 +74,8 @@ impl GridController {
         }
     }
 
-    #[wasm_bindgen(js_name = "jumpCursor")]
-    pub fn js_jump_cursor(
+    #[wasm_bindgen(js_name = "moveCursor")]
+    pub fn js_move_cursor(
         &self,
         sheet_id: String,
         pos: String,
@@ -86,11 +86,31 @@ impl GridController {
             .ok_or_else(|| JsValue::from_str("Sheet not found"))?;
         let pos: Pos = serde_json::from_str(&pos)
             .map_err(|e| JsValue::from_str(&format!("Invalid current position: {}", e)))?;
-        let direction: JumpDirection = serde_json::from_str(&direction)
+        let direction: Direction = serde_json::from_str(&direction)
             .map_err(|e| JsValue::from_str(&format!("Invalid direction: {}", e)))?;
-        let next = sheet.jump_cursor(pos, direction);
+        Ok(sheet.move_cursor(pos, direction))
+    }
 
-        Ok(next)
+    #[wasm_bindgen(js_name = "jumpCursor")]
+    pub fn js_jump_cursor(
+        &self,
+        sheet_id: String,
+        pos: String,
+        jump: bool,
+        direction: String,
+    ) -> Result<Pos, JsValue> {
+        let sheet = self
+            .try_sheet_from_string_id(sheet_id)
+            .ok_or_else(|| JsValue::from_str("Sheet not found"))?;
+        let pos: Pos = serde_json::from_str(&pos)
+            .map_err(|e| JsValue::from_str(&format!("Invalid current position: {}", e)))?;
+        let direction: Direction = serde_json::from_str(&direction)
+            .map_err(|e| JsValue::from_str(&format!("Invalid direction: {}", e)))?;
+        if jump {
+            Ok(sheet.jump_cursor(pos, direction))
+        } else {
+            Ok(sheet.move_cursor(pos, direction))
+        }
     }
 
     /// finds nearest column that can be used to place a rect

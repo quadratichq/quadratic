@@ -6,6 +6,7 @@ import type {
   CellVerticalAlign,
   CellWrap,
   CodeCellLanguage,
+  Direction,
   Format,
   JsBordersSheet,
   JsCellValue,
@@ -20,7 +21,6 @@ import type {
   JsSheetFill,
   JsSummarizeSelectionResult,
   JsValidationWarning,
-  JumpDirection,
   MinMax,
   SearchOptions,
   SheetBounds,
@@ -718,7 +718,8 @@ export interface ClientCoreJumpCursor {
   id: number;
   sheetId: string;
   current: JsCoordinate;
-  direction: JumpDirection;
+  direction: Direction;
+  jump: boolean;
 }
 
 export interface CoreClientJumpCursor {
@@ -732,7 +733,7 @@ export interface ClientCoreFindNextColumn {
   id: number;
   sheetId: string;
   current: JsCoordinate;
-  direction: JumpDirection;
+  direction: Direction;
 }
 
 export interface CoreClientJumpCursor {
@@ -1124,6 +1125,7 @@ export interface ClientCoreDataTableMeta {
     valueIndex: number;
   }[];
   showHeader?: boolean;
+  showUI?: boolean;
   cursor: string;
 }
 

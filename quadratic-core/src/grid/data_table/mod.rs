@@ -99,12 +99,20 @@ pub enum DataTableKind {
     Import(Import),
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Display)]
+pub enum DataTableShowUI {
+    Show,
+    Hide,
+    Default,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct DataTable {
     pub kind: DataTableKind,
     pub name: String,
     pub header_is_first_row: bool,
     pub show_header: bool,
+    pub show_ui: DataTableShowUI,
     pub column_headers: Option<Vec<DataTableColumnHeader>>,
     pub sort: Option<Vec<DataTableSort>>,
     pub display_buffer: Option<Vec<u64>>,
@@ -188,6 +196,7 @@ impl DataTable {
             formats: Default::default(),
             chart_output: None,
             chart_pixel_output,
+            show_ui: DataTableShowUI::Default,
         };
 
         if header_is_first_row {
@@ -195,8 +204,6 @@ impl DataTable {
         } else if show_header {
             data_table.apply_default_header();
         }
-
-        // data_table.toggle_first_row_as_header(header_is_first_row);
 
         data_table
     }
