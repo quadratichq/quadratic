@@ -18,7 +18,7 @@ use crate::{
             },
             validations::validation::Validation,
         },
-        CodeRunOld, DataTable, DataTableKind, Sheet, SheetId,
+        CodeRunOld, DataTable, DataTableKind, DataTableShowUI, Sheet, SheetId,
     },
     selection::OldSelection,
     CellValue, CopyFormats, SheetPos, SheetRect,
@@ -74,6 +74,7 @@ pub enum Operation {
         alternating_colors: Option<bool>,
         columns: Option<Vec<DataTableColumnHeader>>,
         show_header: Option<bool>,
+        show_ui: Option<DataTableShowUI>,
     },
     SortDataTable {
         sheet_pos: SheetPos,
@@ -326,11 +327,12 @@ impl fmt::Display for Operation {
                 alternating_colors,
                 columns,
                 show_header,
+                show_ui,
             } => {
                 write!(
                     fmt,
-                    "DataTableMeta {{ sheet_pos: {} name: {:?} alternating_colors: {:?} columns: {:?} show_header: {:?} }}",
-                    sheet_pos, name, alternating_colors, columns, show_header
+                    "DataTableMeta {{ sheet_pos: {} name: {:?} alternating_colors: {:?} columns: {:?} show_header: {:?} show_ui: {:?} }}",
+                    sheet_pos, name, alternating_colors, columns, show_header, show_ui
                 )
             }
             Operation::SortDataTable { sheet_pos, sort } => {

@@ -48,6 +48,7 @@ type DataTableSpec = Pick<
   | Action.HideTableColumn
   | Action.ShowAllColumns
   | Action.EditTableCode
+  | Action.ToggleTableUI
 >;
 
 export const getTable = (): JsRenderCodeCell | undefined => {
@@ -103,6 +104,11 @@ const isAlternatingColorsShowing = (): boolean => {
 const isReadOnly = (): boolean => {
   const table = getTable();
   return !!table?.readonly;
+};
+
+const isTableUIShowing = (): boolean => {
+  const table = getTable();
+  return !!table?.show_ui;
 };
 
 export const dataTableSpec: DataTableSpec = {
@@ -172,10 +178,7 @@ export const dataTableSpec: DataTableSpec = {
           sheets.sheet.id,
           table.x,
           table.y,
-          undefined,
-          undefined,
-          undefined,
-          !isHeadingShowing(),
+          { showHeader: !isHeadingShowing() },
           sheets.getCursorPosition()
         );
       }
@@ -223,10 +226,7 @@ export const dataTableSpec: DataTableSpec = {
           sheets.sheet.id,
           table.x,
           table.y,
-          undefined,
-          !isAlternatingColorsShowing(),
-          undefined,
-          undefined,
+          { alternatingColors: !isAlternatingColorsShowing() },
           sheets.getCursorPosition()
         );
       }
@@ -365,16 +365,7 @@ export const dataTableSpec: DataTableSpec = {
       if (table && columns && selectedColumn !== undefined && columns[selectedColumn]) {
         columns[selectedColumn].display = false;
 
-        quadraticCore.dataTableMeta(
-          sheets.sheet.id,
-          table.x,
-          table.y,
-          undefined,
-          undefined,
-          columns,
-          undefined,
-          sheets.getCursorPosition()
-        );
+        quadraticCore.dataTableMeta(sheets.sheet.id, table.x, table.y, { columns }, sheets.getCursorPosition());
       }
     },
   },
@@ -394,16 +385,7 @@ export const dataTableSpec: DataTableSpec = {
           column.display = true;
         });
 
-        quadraticCore.dataTableMeta(
-          sheets.sheet.id,
-          table.x,
-          table.y,
-          undefined,
-          undefined,
-          columns,
-          undefined,
-          sheets.getCursorPosition()
-        );
+        quadraticCore.dataTableMeta(sheets.sheet.id, table.x, table.y, { columns }, sheets.getCursorPosition());
       }
     },
   },
@@ -486,6 +468,22 @@ export const dataTableSpec: DataTableSpec = {
             doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
           }
         });
+      }
+    },
+  },
+  [Action.ToggleTableUI]: {
+    label: 'Show table UI',
+    checkbox: isTableUIShowing,
+    run: () => {
+      const table = getTable();
+      if (table) {
+        quadraticCore.dataTableMeta(
+          sheets.sheet.id,
+          table.x,
+          table.y,
+          { showUI: !table.show_ui },
+          sheets.getCursorPosition()
+        );
       }
     },
   },

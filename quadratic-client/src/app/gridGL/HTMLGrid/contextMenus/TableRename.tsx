@@ -1,5 +1,6 @@
 import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { TABLE_NAME_FONT_SIZE, TABLE_NAME_PADDING } from '@/app/gridGL/cells/tables/TableName';
 import { PixiRename } from '@/app/gridGL/HTMLGrid/contextMenus/PixiRename';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -48,11 +49,8 @@ export const TableRename = () => {
             pixiApp.cellsSheets.current?.sheetId,
             contextMenu.table.x,
             contextMenu.table.y,
-            value,
-            undefined,
-            undefined,
-            undefined,
-            ''
+            { name: value },
+            sheets.getCursorPosition()
           );
         }
       }}

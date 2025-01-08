@@ -226,6 +226,7 @@ pub struct JsRenderCodeCell {
     pub alternating_colors: bool,
     pub readonly: bool,
     pub is_html_image: bool,
+    pub show_ui: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]

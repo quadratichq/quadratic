@@ -71,6 +71,7 @@ export class Table extends Container {
         this.codeCell.alternating_colors ? this.codeCell : undefined
       );
     }
+    this.outline.visible = this.codeCell.show_ui;
   };
 
   // places column headers back into the table (instead of the overHeadings container)
@@ -288,7 +289,6 @@ export class Table extends Container {
   }
 
   shouldHideTableName(): boolean {
-    const code = this.codeCell;
-    return !code.show_header && code.w === 1 && code.h === 1 && !!code.language && !code.is_html_image;
+    return !this.codeCell.show_ui;
   }
 }

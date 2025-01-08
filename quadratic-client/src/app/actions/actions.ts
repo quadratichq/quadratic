@@ -146,6 +146,7 @@ export enum Action {
   ToggleFirstRowAsHeaderTable = 'toggle_first_row_as_header_table',
   RenameTable = 'rename_table',
   ToggleHeaderTable = 'toggle_header_table',
+  ToggleTableUI = 'toggle_table_ui',
   DeleteDataTable = 'delete_table',
   CodeToDataTable = 'code_to_data_table',
   SortTable = 'table_sort',

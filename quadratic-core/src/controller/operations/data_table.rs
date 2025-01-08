@@ -4,7 +4,7 @@ use crate::{
     controller::GridController,
     grid::{
         data_table::{column_header::DataTableColumnHeader, sort::DataTableSort},
-        DataTableKind,
+        DataTableKind, DataTableShowUI,
     },
     CellValue, SheetPos, SheetRect,
 };
@@ -53,7 +53,7 @@ impl GridController {
         alternating_colors: Option<bool>,
         columns: Option<Vec<DataTableColumnHeader>>,
         show_header: Option<bool>,
-        _cursor: Option<String>,
+        show_ui: Option<DataTableShowUI>,
     ) -> Vec<Operation> {
         vec![Operation::DataTableMeta {
             sheet_pos,
@@ -61,6 +61,7 @@ impl GridController {
             alternating_colors,
             columns,
             show_header,
+            show_ui,
         }]
     }
 

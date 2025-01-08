@@ -646,6 +646,7 @@ class CoreClient {
           e.data.alternatingColors,
           e.data.columns,
           e.data.showHeader,
+          e.data.showUI,
           e.data.cursor
         );
         return;

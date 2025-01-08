@@ -1326,10 +1326,13 @@ class QuadraticCore {
     sheetId: string,
     x: number,
     y: number,
-    name?: string,
-    alternatingColors?: boolean,
-    columns?: { name: string; display: boolean; valueIndex: number }[],
-    showHeader?: boolean,
+    options: {
+      name?: string;
+      alternatingColors?: boolean;
+      columns?: { name: string; display: boolean; valueIndex: number }[];
+      showHeader?: boolean;
+      showUI?: boolean;
+    },
     cursor?: string
   ) {
     this.send({
@@ -1337,10 +1340,11 @@ class QuadraticCore {
       sheetId,
       x,
       y,
-      name,
-      alternatingColors,
-      columns,
-      showHeader,
+      name: options.name,
+      alternatingColors: options.alternatingColors,
+      columns: options.columns,
+      showUI: options.showUI,
+      showHeader: options.showHeader,
       cursor: cursor || '',
     });
   }

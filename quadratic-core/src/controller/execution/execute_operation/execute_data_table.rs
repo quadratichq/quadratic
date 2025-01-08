@@ -363,6 +363,7 @@ impl GridController {
             ref alternating_colors,
             ref columns,
             ref show_header,
+            ref show_ui,
         } = op
         {
             // get unique name first since it requires an immutable reference to the grid
@@ -405,6 +406,13 @@ impl GridController {
                 old_show_header
             });
 
+            let old_show_ui = show_ui.as_ref().map(|show_ui| {
+                let old_show_ui = data_table.show_ui.to_owned();
+                data_table.show_ui = show_ui.to_owned();
+
+                old_show_ui
+            });
+
             let data_table_rect = data_table
                 .output_rect(sheet_pos.into(), true)
                 .to_sheet_rect(sheet_id);
@@ -419,6 +427,7 @@ impl GridController {
                 alternating_colors: old_alternating_colors,
                 columns: old_columns,
                 show_header: old_show_header,
+                show_ui: old_show_ui,
             }];
 
             self.data_table_operations(
@@ -1023,6 +1032,7 @@ mod tests {
             alternating_colors: None,
             columns: None,
             show_header: None,
+            show_ui: None,
         };
         let mut transaction = PendingTransaction::default();
         gc.execute_data_table_meta(&mut transaction, op.clone())
@@ -1060,6 +1070,7 @@ mod tests {
             alternating_colors: None,
             columns: None,
             show_header: None,
+            show_ui: None,
         };
         let mut transaction = PendingTransaction::default();
         gc.execute_data_table_meta(&mut transaction, op).unwrap();

@@ -100,6 +100,7 @@ impl GridController {
         alternating_colors: Option<bool>,
         columns_js: Option<String>,
         show_header: Option<bool>,
+        show_ui: Option<bool>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
@@ -112,6 +113,13 @@ impl GridController {
                     .map(|c| c.into_iter().map(|c| c.into()).collect())
             })
             .transpose()?;
+        let show_ui = show_ui.map(|show_ui| {
+            if show_ui {
+                DataTableShowUI::Show
+            } else {
+                DataTableShowUI::Hide
+            }
+        });
 
         self.data_table_meta(
             pos.to_sheet_pos(sheet_id),
@@ -119,6 +127,7 @@ impl GridController {
             alternating_colors,
             columns,
             show_header,
+            show_ui,
             cursor,
         );
 
