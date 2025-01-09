@@ -5,6 +5,7 @@ import { getActionUpdateTeam, type TeamAction } from '@/routes/teams.$teamUuid';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
+import { DOCUMENTATION_ANALYTICS_AI } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
@@ -119,7 +120,7 @@ export const Component = () => {
               description={
                 <>
                   Help improve AI results by allowing Quadratic to store and analyze user prompts.{' '}
-                  <a href="TODO:value-here" target="_blank" className="underline hover:text-primary">
+                  <a href={DOCUMENTATION_ANALYTICS_AI} target="_blank" className="underline hover:text-primary">
                     Learn more
                   </a>
                   .
