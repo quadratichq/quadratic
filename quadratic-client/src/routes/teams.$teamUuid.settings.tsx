@@ -109,7 +109,7 @@ export const Component = () => {
           </form>
         </Row>
 
-        {teamPermissions.includes('TEAM_MANAGE') && optimisticSettings && (
+        {teamPermissions.includes('TEAM_MANAGE') && (
           <Row>
             <Type variant="body2" className="font-bold">
               Privacy
