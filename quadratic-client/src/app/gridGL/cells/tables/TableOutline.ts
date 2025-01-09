@@ -8,7 +8,7 @@ import { colors } from '@/app/theme/colors';
 import { sharedEvents } from '@/shared/sharedEvents';
 import { Graphics, Rectangle } from 'pixi.js';
 
-const SPILL_HIGHLIGHT_THICKNESS = 2;
+const SPILL_HIGHLIGHT_THICKNESS = 1;
 const SPILL_FILL_ALPHA = 0.05;
 
 export class TableOutline extends Graphics {

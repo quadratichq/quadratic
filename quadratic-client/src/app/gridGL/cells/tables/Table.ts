@@ -71,6 +71,7 @@ export class Table extends Container {
         this.codeCell.alternating_colors ? this.codeCell : undefined
       );
     }
+    this.outline.update();
   };
 
   // places column headers back into the table (instead of the overHeadings container)
