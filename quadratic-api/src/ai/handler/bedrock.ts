@@ -2,15 +2,19 @@ import { AnthropicBedrock } from '@anthropic-ai/bedrock-sdk';
 import Anthropic from '@anthropic-ai/sdk';
 import { BedrockRuntimeClient, ConverseCommand, ConverseStreamCommand } from '@aws-sdk/client-bedrock-runtime';
 import { type Response } from 'express';
-import { getModelOptions, isBedrockAnthropicModel } from 'quadratic-shared/ai/helpers/model.helper';
 import {
-  type AIAutoCompleteRequestBody,
-  type AIMessagePrompt,
-  type BedrockModel,
-} from 'quadratic-shared/typesAndSchemasAI';
-import { AWS_S3_ACCESS_KEY_ID, AWS_S3_REGION, AWS_S3_SECRET_ACCESS_KEY } from '../../env-vars';
-import { getAnthropicApiArgs, parseAnthropicResponse, parseAnthropicStream } from './helpers/anthropic.helper';
-import { getBedrockApiArgs, parseBedrockResponse, parseBedrockStream } from './helpers/bedrock.helper';
+  getAnthropicApiArgs,
+  parseAnthropicResponse,
+  parseAnthropicStream,
+} from 'quadratic-api/src/ai/helpers/anthropic.helper';
+import {
+  getBedrockApiArgs,
+  parseBedrockResponse,
+  parseBedrockStream,
+} from 'quadratic-api/src/ai/helpers/bedrock.helper';
+import { AWS_S3_ACCESS_KEY_ID, AWS_S3_REGION, AWS_S3_SECRET_ACCESS_KEY } from 'quadratic-api/src/env-vars';
+import { getModelOptions, isBedrockAnthropicModel } from 'quadratic-shared/ai/helpers/model.helper';
+import type { AIMessagePrompt, AIRequestBody, BedrockModel } from 'quadratic-shared/typesAndSchemasAI';
 
 // aws-sdk for bedrock, generic for all models
 const bedrock = new BedrockRuntimeClient({
@@ -27,7 +31,7 @@ const bedrock_anthropic = new AnthropicBedrock({
 
 export const handleBedrockRequest = async (
   model: BedrockModel,
-  args: Omit<AIAutoCompleteRequestBody, 'model'>,
+  args: Omit<AIRequestBody, 'model'>,
   response: Response
 ): Promise<AIMessagePrompt | undefined> => {
   const { stream, temperature, max_tokens } = getModelOptions(model, args);
@@ -51,7 +55,7 @@ export const handleBedrockRequest = async (
         response.setHeader('Cache-Control', 'no-cache');
         response.setHeader('Connection', 'keep-alive');
 
-        const responseMessage = await parseAnthropicStream(chunks, response);
+        const responseMessage = await parseAnthropicStream(chunks, response, model);
         return responseMessage;
       } catch (error: any) {
         if (!response.headersSent) {
@@ -77,7 +81,7 @@ export const handleBedrockRequest = async (
           tools,
           tool_choice,
         });
-        const responseMessage = parseAnthropicResponse(result, response);
+        const responseMessage = parseAnthropicResponse(result, response, model);
         return responseMessage;
       } catch (error: any) {
         if (error instanceof Anthropic.APIError) {
@@ -111,7 +115,7 @@ export const handleBedrockRequest = async (
         response.setHeader('Cache-Control', 'no-cache');
         response.setHeader('Connection', 'keep-alive');
 
-        const responseMessage = await parseBedrockStream(chunks, response);
+        const responseMessage = await parseBedrockStream(chunks, response, model);
         return responseMessage;
       } catch (error: any) {
         if (!response.headersSent) {
@@ -141,7 +145,7 @@ export const handleBedrockRequest = async (
         });
 
         const result = await bedrock.send(command);
-        const responseMessage = parseBedrockResponse(result.output, response);
+        const responseMessage = parseBedrockResponse(result.output, response, model);
         return responseMessage;
       } catch (error: any) {
         if (error.response) {

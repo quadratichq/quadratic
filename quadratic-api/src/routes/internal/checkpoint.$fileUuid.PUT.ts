@@ -1,10 +1,11 @@
-import express, { Response } from 'express';
+import type { Response } from 'express';
+import express from 'express';
 import { param, validationResult } from 'express-validator';
+import dbClient from 'quadratic-api/src/dbClient';
+import { validateM2MAuth } from 'quadratic-api/src/internal/validateM2MAuth';
+import { validateRequestSchema } from 'quadratic-api/src/middleware/validateRequestSchema';
+import type { Request } from 'quadratic-api/src/types/Request';
 import { z } from 'zod';
-import dbClient from '../../dbClient';
-import { validateRequestSchema } from '../../middleware/validateRequestSchema';
-import { Request } from '../../types/Request';
-import { validateM2MAuth } from '../../internal/validateM2MAuth';
 
 export const validateUUID = () => param('uuid').isUUID(4);
 

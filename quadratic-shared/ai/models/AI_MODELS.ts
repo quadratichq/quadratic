@@ -16,7 +16,7 @@ export const MODEL_OPTIONS: {
     provider: AIProviders;
   };
 } = {
-  'gpt-4o-2024-08-06': {
+  'gpt-4o-2024-11-20': {
     displayName: 'OpenAI: GPT-4o',
     temperature: 0,
     max_tokens: 4096, // not used for openai
@@ -50,15 +50,6 @@ export const MODEL_OPTIONS: {
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: true,
-    provider: 'bedrock-anthropic',
-  },
-  'anthropic.claude-3-5-sonnet-20240620-v1:0': {
-    displayName: `Anthropic: Claude 3.5 Sonnet`,
-    temperature: 0,
-    max_tokens: 4096,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: false,
     provider: 'bedrock-anthropic',
   },
   'ai21.jamba-1-5-large-v1:0': {

@@ -1,8 +1,9 @@
-import express, { Response } from 'express';
+import type { Response } from 'express';
+import express from 'express';
 import { param, validationResult } from 'express-validator';
-import dbClient from '../../dbClient';
-import { Request } from '../../types/Request';
-import { validateM2MAuth } from '../../internal/validateM2MAuth';
+import dbClient from 'quadratic-api/src/dbClient';
+import { validateM2MAuth } from 'quadratic-api/src/internal/validateM2MAuth';
+import type { Request } from 'quadratic-api/src/types/Request';
 
 export const validateUUID = () => param('uuid').isUUID(4);
 

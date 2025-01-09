@@ -3,12 +3,12 @@
 //! Modifying this license check is violating the Quadratic Terms and Conditions and is stealing software, and we will come after you.
 
 import axios from 'axios';
+import dbClient from 'quadratic-api/src/dbClient';
+import { LICENSE_API_URI, LICENSE_KEY } from 'quadratic-api/src/env-vars';
+import { ApiError } from 'quadratic-api/src/utils/ApiError';
+import { hash } from 'quadratic-api/src/utils/crypto';
 import { LicenseSchema } from 'quadratic-shared/typesAndSchemas';
-import z from 'zod';
-import dbClient from './dbClient';
-import { LICENSE_API_URI, LICENSE_KEY } from './env-vars';
-import { hash } from './utils/crypto';
-import { ApiError } from './utils/ApiError';
+import type z from 'zod';
 
 type LicenseResponse = z.infer<typeof LicenseSchema>;
 

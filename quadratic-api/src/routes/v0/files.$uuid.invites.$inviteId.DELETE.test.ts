@@ -1,9 +1,9 @@
-import { LinkPermission } from '@prisma/client';
+import type { LinkPermission } from '@prisma/client';
+import { app } from 'quadratic-api/src/app';
+import dbClient from 'quadratic-api/src/dbClient';
+import { expectError } from 'quadratic-api/src/tests/helpers';
+import { clearDb, createFile, createTeam, createUser } from 'quadratic-api/src/tests/testDataGenerator';
 import request from 'supertest';
-import { app } from '../../app';
-import dbClient from '../../dbClient';
-import { expectError } from '../../tests/helpers';
-import { clearDb, createFile, createTeam, createUser } from '../../tests/testDataGenerator';
 
 const getInviteIdByEmail = async (email: string) => {
   const invite = await dbClient.fileInvite.findFirst({

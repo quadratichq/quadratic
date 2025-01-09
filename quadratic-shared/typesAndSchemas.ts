@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { AIMessagePromptSchema, AIRequestBodySchema } from './typesAndSchemasAI';
 import { ApiSchemasConnections, ConnectionListSchema } from './typesAndSchemasConnections';
 
 export const UserFileRoleSchema = z.enum(['EDITOR', 'VIEWER']);
@@ -419,12 +420,15 @@ export const ApiSchemas = {
   /**
    * AI
    */
-  '/ai/feedback.POST.request': z.object({
+  '/v0/ai/chat.POST.request': AIRequestBodySchema,
+  '/v0/ai/chat.POST.response': AIMessagePromptSchema,
+
+  '/v0/ai/feedback.POST.request': z.object({
     chatId: z.string().uuid(),
     like: z.boolean(),
     messageIndex: z.number(),
   }),
-  '/ai/feedback.POST.response': z.object({
+  '/v0/ai/feedback.POST.response': z.object({
     message: z.string(),
   }),
 };

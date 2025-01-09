@@ -5,17 +5,17 @@ import { getSystemPromptMessages } from 'quadratic-shared/ai/helpers/message.hel
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
-  AIAutoCompleteRequestBody,
   AIMessagePrompt,
-  AnthropicAutoCompleteRequestBody,
+  AIRequestBody,
+  AnthropicModel,
   AnthropicPromptMessage,
+  AnthropicRequestBody,
   AnthropicTool,
   AnthropicToolChoice,
+  BedrockAnthropicModel,
 } from 'quadratic-shared/typesAndSchemasAI';
 
-export function getAnthropicApiArgs(
-  args: Omit<AIAutoCompleteRequestBody, 'model'>
-): Omit<AnthropicAutoCompleteRequestBody, 'model'> {
+export function getAnthropicApiArgs(args: Omit<AIRequestBody, 'model'>): Omit<AnthropicRequestBody, 'model'> {
   const { messages: chatMessages, useTools, toolName } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
@@ -116,13 +116,15 @@ function getAnthropicToolChoice(useTools?: boolean, name?: AITool): AnthropicToo
 
 export async function parseAnthropicStream(
   chunks: Stream<Anthropic.Messages.RawMessageStreamEvent>,
-  response: Response
+  response: Response,
+  model: AnthropicModel | BedrockAnthropicModel
 ) {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: '',
     contextType: 'userPrompt',
     toolCalls: [],
+    model,
   };
 
   for await (const chunk of chunks) {
@@ -186,12 +188,17 @@ export async function parseAnthropicStream(
   return responseMessage;
 }
 
-export function parseAnthropicResponse(result: Anthropic.Messages.Message, response: Response): AIMessagePrompt {
+export function parseAnthropicResponse(
+  result: Anthropic.Messages.Message,
+  response: Response,
+  model: AnthropicModel | BedrockAnthropicModel
+): AIMessagePrompt {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: '',
     contextType: 'userPrompt',
     toolCalls: [],
+    model,
   };
 
   result.content?.forEach(

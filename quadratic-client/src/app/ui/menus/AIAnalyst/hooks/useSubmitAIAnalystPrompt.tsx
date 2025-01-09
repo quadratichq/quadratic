@@ -137,10 +137,11 @@ export function useSubmitAIAnalystPrompt() {
             source: 'aiAnalyst',
             model,
             messages: updatedMessages,
-            language: undefined,
-            useQuadraticContext: true,
             useStream: true,
             useTools: true,
+            useToolsPrompt: true,
+            language: undefined,
+            useQuadraticContext: true,
             setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
             signal: abortController.signal,
           });
@@ -186,11 +187,11 @@ export function useSubmitAIAnalystPrompt() {
               source: 'aiAnalyst',
               model,
               messages: updatedMessages,
-              language: undefined,
-              useQuadraticContext: true,
               useStream: true,
               useTools: true,
-              useToolUsePrompt: true,
+              useToolsPrompt: true,
+              language: undefined,
+              useQuadraticContext: true,
               setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
               signal: abortController.signal,
             });
@@ -203,6 +204,7 @@ export function useSubmitAIAnalystPrompt() {
               content: 'Looks like there was a problem. Please try again.',
               contextType: 'userPrompt',
               toolCalls: [],
+              model,
             };
 
             const lastMessage = prevMessages.at(-1);

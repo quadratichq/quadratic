@@ -4,17 +4,16 @@ import { getSystemPromptMessages } from 'quadratic-shared/ai/helpers/message.hel
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
-  AIAutoCompleteRequestBody,
   AIMessagePrompt,
-  BedrockAutoCompleteRequestBody,
+  AIRequestBody,
+  BedrockModel,
   BedrockPromptMessage,
+  BedrockRequestBody,
   BedrockTool,
   BedrockToolChoice,
 } from 'quadratic-shared/typesAndSchemasAI';
 
-export function getBedrockApiArgs(
-  args: Omit<AIAutoCompleteRequestBody, 'model'>
-): Omit<BedrockAutoCompleteRequestBody, 'model'> {
+export function getBedrockApiArgs(args: Omit<AIRequestBody, 'model'>): Omit<BedrockRequestBody, 'model'> {
   const { messages: chatMessages, useTools, toolName } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
@@ -114,12 +113,17 @@ function getBedrockToolChoice(useTools?: boolean, name?: AITool): BedrockToolCho
   return toolChoice;
 }
 
-export async function parseBedrockStream(chunks: AsyncIterable<ConverseStreamOutput> | never[], response: Response) {
+export async function parseBedrockStream(
+  chunks: AsyncIterable<ConverseStreamOutput> | never[],
+  response: Response,
+  model: BedrockModel
+) {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: '',
     contextType: 'userPrompt',
     toolCalls: [],
+    model,
   };
 
   for await (const chunk of chunks) {
@@ -185,12 +189,17 @@ export async function parseBedrockStream(chunks: AsyncIterable<ConverseStreamOut
   return responseMessage;
 }
 
-export function parseBedrockResponse(result: ConverseOutput | undefined, response: Response): AIMessagePrompt {
+export function parseBedrockResponse(
+  result: ConverseOutput | undefined,
+  response: Response,
+  model: BedrockModel
+): AIMessagePrompt {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: '',
     contextType: 'userPrompt',
     toolCalls: [],
+    model,
   };
 
   result?.message?.content?.forEach((contentBlock) => {

@@ -16,7 +16,7 @@ import type { UploadFileResponse } from './storage';
 const endpoint = AWS_S3_ENDPOINT;
 let s3Client: S3Client;
 
-// Get S3 client slngleton
+// Get S3 client singleton
 const getS3Client = () => {
   if (!s3Client) {
     s3Client = new S3Client({

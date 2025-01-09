@@ -7,10 +7,9 @@ import 'express-async-errors';
 import fs from 'fs';
 import helmet from 'helmet';
 import path from 'path';
+import internal_router from 'quadratic-api/src/routes/internal';
+import { ApiError } from 'quadratic-api/src/utils/ApiError';
 import { CORS, NODE_ENV, SENTRY_DSN } from './env-vars';
-import ai_router from './routes/ai/ai';
-import internal_router from './routes/internal';
-import { ApiError } from './utils/ApiError';
 export const app = express();
 
 // Configure Sentry
@@ -68,8 +67,6 @@ app.get('/', (req, res) => {
 });
 
 // App routes
-// TODO: eventually move all of these into the `v0` directory and register them dynamically
-app.use('/ai', ai_router);
 // Internal routes
 app.use('/v0/internal', internal_router);
 

@@ -1,7 +1,7 @@
 import { MODEL_OPTIONS } from 'quadratic-shared/ai/models/AI_MODELS';
 import type {
-  AIAutoCompleteRequestBody,
   AIModel,
+  AIRequestBody,
   AnthropicModel,
   BedrockAnthropicModel,
   BedrockModel,
@@ -26,7 +26,7 @@ export function isOpenAIModel(model: AIModel): model is OpenAIModel {
 
 export const getModelOptions = (
   model: AIModel,
-  args: Pick<AIAutoCompleteRequestBody, 'useTools' | 'useStream'>
+  args: Pick<AIRequestBody, 'useTools' | 'useStream'>
 ): {
   stream: boolean;
   temperature: number;
