@@ -135,6 +135,7 @@ impl<'ctx> Ctx<'ctx> {
         if self.skip_computation {
             return Ok(CellValue::Blank.into()).with_span(span);
         }
+        self.cells_accessed.add_sheet_rect(rect);
 
         let mut bounded_rect = rect;
 
@@ -176,7 +177,6 @@ impl<'ctx> Ctx<'ctx> {
                 );
             }
         }
-        self.cells_accessed.add_sheet_rect(bounded_rect);
 
         Ok(Array::new_row_major(array_size, flat_array)?).with_span(span)
     }
