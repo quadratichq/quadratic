@@ -1,5 +1,5 @@
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
-import { PreferenceControl } from '@/dashboard/components/PreferenceControl';
+import { SettingControl } from '@/dashboard/components/SettingControl';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { getActionUpdateTeam, type TeamAction } from '@/routes/teams.$teamUuid';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -115,7 +115,7 @@ export const Component = () => {
               Privacy
             </Type>
 
-            <PreferenceControl
+            <SettingControl
               label="Improve AI results"
               description={
                 <>

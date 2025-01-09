@@ -7,7 +7,7 @@ import { ReactNode, useId } from 'react';
  * Component that renders a preference control (a label, description, and a switch)
 
  */
-export function PreferenceControl({
+export function SettingControl({
   label,
   description,
   onCheckedChange,
