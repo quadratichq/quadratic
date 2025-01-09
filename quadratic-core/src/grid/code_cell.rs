@@ -47,8 +47,6 @@ impl CodeCellValue {
                 let full_match = &caps[0]; // Capture the entire match
                 let a1_str = &caps[2]; // Capture the first argument which is inside quotes
 
-                dbg!(&a1_str);
-
                 match A1Selection::from_str(a1_str, default_sheet_id, sheet_map) {
                     Ok(mut a1_selection) => {
                         a1_selection.translate_in_place(delta_x, delta_y);
