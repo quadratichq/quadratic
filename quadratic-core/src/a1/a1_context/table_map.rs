@@ -167,6 +167,13 @@ impl TableMap {
         self.tables.iter().map(|t| t.table_name.clone()).collect()
     }
 
+    /// Finds a table by position
+    pub fn table_from_pos(&self, sheet_pos: SheetPos) -> Option<&TableMapEntry> {
+        self.tables.iter().find(|table| {
+            table.sheet_id == sheet_pos.sheet_id && table.bounds.contains(sheet_pos.into())
+        })
+    }
+
     /// Inserts a test table into the table map.
     ///
     /// if all_columns is None, then it uses visible_columns.
