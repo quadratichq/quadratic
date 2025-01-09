@@ -1,12 +1,16 @@
-FROM rust:latest as builder
+FROM rust:latest AS builder
 
-RUN USER=root cargo new --bin quadratic-files
-COPY . /quadratic-files
+WORKDIR /quadratic
+COPY ./quadratic-files/. ./quadratic-files/
+COPY ./quadratic-core/. ./quadratic-core/
+COPY ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
+COPY ./quadratic-rust-shared/. ./quadratic-rust-shared/
 RUN rustup component add rustfmt
-WORKDIR /quadratic-files
-RUN cargo build --release --package quadratic-files
 
-FROM debian:stable-slim as runtime
-COPY --from=builder /quadratic-files/target/release/quadratic-files .
+WORKDIR /quadratic/quadratic-files
+RUN cargo build --release
+
+FROM debian:stable-slim AS runtime
+COPY --from=builder /quadratic/quadratic-files/target/release/quadratic-files .
 RUN apt-get update && apt install -y ca-certificates
 CMD ["./quadratic-files"]
