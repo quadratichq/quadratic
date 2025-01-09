@@ -64,6 +64,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
   const connectionsFetcher = useConnectionsFetcher();
 
   const a1Pos = useMemo(() => {
+    const pos = xyToA1(codeCellState.pos.x, codeCellState.pos.y);
     const tableName = getTableNameFromPos(
       sheets.a1Context,
       codeCellState.sheetId,
@@ -71,9 +72,9 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
       codeCellState.pos.y
     );
     if (tableName) {
-      return tableName;
+      return `${tableName} (${pos})`;
     } else {
-      return `Cell ${xyToA1(codeCellState.pos.x, codeCellState.pos.y)}`;
+      return `Cell ${pos}`;
     }
   }, [codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId]);
 
