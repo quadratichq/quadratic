@@ -21,7 +21,7 @@ const schema = z.object({
 
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:uuid.PATCH.response']>) {
   const {
-    body: { name, clientDataKv, preferences },
+    body: { name, clientDataKv, settings },
     params: { uuid },
   } = parseRequest(req, schema);
   const {
@@ -36,7 +36,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   if (!permissions.includes('TEAM_EDIT')) {
     throw new ApiError(403, 'User does not have permission to edit this team.');
   }
-  if (preferences && !permissions.includes('TEAM_MANAGE')) {
+  if (settings && !permissions.includes('TEAM_MANAGE')) {
     throw new ApiError(403, 'User does not have permission to edit this team’s preferences.');
   }
 
@@ -51,7 +51,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
     data: {
       ...(name ? { name } : {}),
       ...(clientDataKv ? { clientDataKv: { ...validatedExisitingClientDataKv, ...clientDataKv } } : {}),
-      ...(preferences ? { preferenceAiSaveUserPromptsEnabled: preferences.aiSaveUserPromptsEnabled } : {}),
+      ...(settings ? { settingAnalyticsAi: settings.analyticsAi } : {}),
     },
   });
 
@@ -61,8 +61,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   return res.status(200).json({
     name: newTeam.name,
     clientDataKv: newClientDataKv,
-    preferences: {
-      aiSaveUserPromptsEnabled: newTeam.preferenceAiSaveUserPromptsEnabled,
+    settings: {
+      analyticsAi: newTeam.settingAnalyticsAi,
     },
   });
 }

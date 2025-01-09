@@ -9,6 +9,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
+import type { TeamSettings } from 'quadratic-shared/typesAndSchemas';
 import { ReactNode, useEffect, useState } from 'react';
 import { Navigate, useFetcher, useSubmit } from 'react-router-dom';
 
@@ -17,7 +18,6 @@ export const Component = () => {
     activeTeam: {
       team,
       userMakingRequest: { teamPermissions },
-      preferences,
     },
   } = useDashboardRouteLoaderData();
 
@@ -28,12 +28,12 @@ export const Component = () => {
   const disabled = value === '' || value === team.name || fetcher.state !== 'idle';
 
   // Optimistic UI
-  let optimisticPreferences = preferences;
+  let optimisticSettings = team.settings;
   if (fetcher.state !== 'idle' && isJsonObject(fetcher.json)) {
     const optimisticData = fetcher.json as TeamAction['request.update-team'];
 
-    if (optimisticData.preferences) {
-      optimisticPreferences = { ...preferences, ...optimisticData.preferences };
+    if (optimisticData.settings) {
+      optimisticSettings = { ...optimisticSettings, ...optimisticData.settings };
     }
   }
 
@@ -54,8 +54,8 @@ export const Component = () => {
     });
   };
 
-  const handleUpdatePreference = (key: string, checked: boolean) => {
-    const data = getActionUpdateTeam({ preferences: { [key]: checked } });
+  const handleUpdatePreference = (key: keyof TeamSettings, checked: boolean) => {
+    const data = getActionUpdateTeam({ settings: { [key]: checked } });
     submit(data, {
       method: 'POST',
       action: ROUTES.TEAM(team.uuid),
@@ -108,7 +108,7 @@ export const Component = () => {
           </form>
         </Row>
 
-        {teamPermissions.includes('TEAM_MANAGE') && (
+        {teamPermissions.includes('TEAM_MANAGE') && optimisticSettings && (
           <Row>
             <Type variant="body2" className="font-bold">
               Privacy
@@ -118,7 +118,7 @@ export const Component = () => {
               label="Improve AI results"
               description={
                 <>
-                  Help improve AI results by allowing Quadratic to store and analyze anonymized user prompts.{' '}
+                  Help improve AI results by allowing Quadratic to store and analyze user prompts.{' '}
                   <a href="TODO:value-here" target="_blank" className="underline hover:text-primary">
                     Learn more
                   </a>
@@ -126,9 +126,9 @@ export const Component = () => {
                 </>
               }
               onCheckedChange={(checked) => {
-                handleUpdatePreference('aiSaveUserPromptsEnabled', checked);
+                handleUpdatePreference('analyticsAi', checked);
               }}
-              checked={optimisticPreferences.aiSaveUserPromptsEnabled}
+              checked={optimisticSettings.analyticsAi}
               className="rounded border border-border p-3 shadow-sm"
             />
           </Row>
