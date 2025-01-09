@@ -26,7 +26,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 let cell_ref = CellRef::parse_a1(&cellref_string.inner, ctx.sheet_pos.into())
                     .ok_or(RunErrorMsg::BadCellReference.with_span(span))?;
                 let pos = ctx.resolve_ref(&cell_ref, span)?.inner;
-                ctx.get_cell(pos, span).inner
+                ctx.get_cell(pos, span, true).inner
             }
         ),
         formula_fn!(
