@@ -27,7 +27,7 @@ impl Sheet {
         value: &CellValue,
         language: Option<CodeCellLanguage>,
         special: Option<JsRenderCellSpecial>,
-        from_table: bool,
+        from_table: Option<(Pos, &DataTable)>,
     ) -> JsRenderCell {
         if let CellValue::Html(_) = value {
             return JsRenderCell {
@@ -82,7 +82,17 @@ impl Sheet {
                 })
         });
 
-        let mut format = self.formats.try_format(Pos { x, y }).unwrap_or_default();
+        let mut format = if let Some((table_pos, table)) = from_table {
+            let pos = Pos {
+                x: x - table_pos.x + 1,
+                y: y - table_pos.y + 1,
+            };
+            let mut format = table.formats.try_format(pos).unwrap_or_default();
+            format.wrap = format.wrap.or(Some(CellWrap::Clip));
+            format
+        } else {
+            self.formats.try_format(Pos { x, y }).unwrap_or_default()
+        };
         let mut number: Option<JsNumber> = None;
         let value = match &value {
             CellValue::Number(_) => {
@@ -97,18 +107,13 @@ impl Sheet {
             }
             _ => value.to_display(),
         };
-        let wrap = if from_table {
-            Some(CellWrap::Clip)
-        } else {
-            format.wrap
-        };
         JsRenderCell {
             x,
             y,
             value,
             language,
             align: format.align.or(align),
-            wrap,
+            wrap: format.wrap,
             bold: format.bold,
             italic: format.italic,
             text_color: format.text_color,
@@ -141,7 +146,7 @@ impl Sheet {
                     })),
                     Some(code_cell_value.language),
                     None,
-                    false,
+                    None,
                 ));
             } else if let Some(error) = data_table.get_error() {
                 cells.push(self.get_render_cell(
@@ -150,7 +155,7 @@ impl Sheet {
                     &CellValue::Error(Box::new(error)),
                     Some(code_cell_value.language),
                     None,
-                    false,
+                    None,
                 ));
             } else {
                 // find overlap of code_rect into rect
@@ -199,7 +204,14 @@ impl Sheet {
                             } else {
                                 None
                             };
-                            cells.push(self.get_render_cell(x, y, &value, language, special, true));
+                            cells.push(self.get_render_cell(
+                                x,
+                                y,
+                                &value,
+                                language,
+                                special,
+                                Some((code_rect.min, data_table)),
+                            ));
                         }
                     }
                 }
@@ -223,7 +235,7 @@ impl Sheet {
                     if !matches!(value, CellValue::Code(_))
                         && !matches!(value, CellValue::Import(_))
                     {
-                        render_cells.push(self.get_render_cell(x, *y, value, None, None, false));
+                        render_cells.push(self.get_render_cell(x, *y, value, None, None, None));
                     }
                 });
             });

@@ -43,8 +43,6 @@ impl GridController {
         if let Ok(sheet) = self.try_sheet_mut_result(sheet_pos.sheet_id) {
             if pos.x > 1 && pos.y > 1 {
                 let data_table_left = sheet.first_data_table_within(Pos::new(pos.x - 1, pos.y));
-                dbgjs!(format!("{:?}", data_table_left));
-
                 if let Ok(data_table_left) = data_table_left {
                     sheet
                         .data_table(data_table_left)

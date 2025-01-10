@@ -86,7 +86,9 @@ impl JsSelection {
             .filter(|r| r.is_finite())
             .filter_map(|range| match range {
                 CellRefRange::Sheet { range } => Some(*range),
-                CellRefRange::Table { range } => range.convert_to_ref_range_bounds(0, &context),
+                CellRefRange::Table { range } => {
+                    range.convert_to_ref_range_bounds(0, false, &context)
+                }
             })
             .collect::<Vec<_>>();
         serde_json::to_string(&ranges).map_err(|e| e.to_string())

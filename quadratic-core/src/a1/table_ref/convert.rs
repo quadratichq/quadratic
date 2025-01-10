@@ -1,4 +1,4 @@
-use crate::a1::{A1Context, RefRangeBounds};
+use crate::a1::{A1Context, RefRangeBounds, UNBOUNDED};
 
 use super::*;
 
@@ -7,6 +7,7 @@ impl TableRef {
     pub fn convert_to_ref_range_bounds(
         &self,
         current_row: i64,
+        use_unbounded: bool,
         context: &A1Context,
     ) -> Option<RefRangeBounds> {
         let Some(table) = context.try_table(&self.table_name) else {
@@ -20,8 +21,12 @@ impl TableRef {
                 let range = RefRangeBounds::new_relative(
                     table.bounds.min.x,
                     y_start,
-                    table.bounds.max.x,
-                    y_end,
+                    if use_unbounded {
+                        UNBOUNDED
+                    } else {
+                        table.bounds.max.x
+                    },
+                    if use_unbounded { UNBOUNDED } else { y_end },
                 );
                 Some(range)
             }
@@ -30,7 +35,7 @@ impl TableRef {
                     col + table.bounds.min.x,
                     y_start,
                     col + table.bounds.min.x,
-                    y_end,
+                    if use_unbounded { UNBOUNDED } else { y_end },
                 )
             }),
             ColRange::ColRange(col_range_start, col_range_end) => {
@@ -39,7 +44,7 @@ impl TableRef {
                         start + table.bounds.min.x,
                         y_start,
                         end + table.bounds.min.x,
-                        y_end,
+                        if use_unbounded { UNBOUNDED } else { y_end },
                     ))
                 } else {
                     None
@@ -50,8 +55,12 @@ impl TableRef {
                     Some(RefRangeBounds::new_relative(
                         start + table.bounds.min.x,
                         y_start,
-                        end + table.bounds.min.x,
-                        y_end,
+                        if use_unbounded {
+                            UNBOUNDED
+                        } else {
+                            end + table.bounds.min.x
+                        },
+                        if use_unbounded { UNBOUNDED } else { y_end },
                     ))
                 } else {
                     None
@@ -86,7 +95,7 @@ mod tests {
         };
 
         assert_eq!(
-            table_ref.convert_to_ref_range_bounds(0, &context),
+            table_ref.convert_to_ref_range_bounds(0, false, &context),
             Some(RefRangeBounds::test_a1("A2:C3"))
         );
 
@@ -100,7 +109,7 @@ mod tests {
         };
 
         assert_eq!(
-            table_ref.convert_to_ref_range_bounds(0, &context),
+            table_ref.convert_to_ref_range_bounds(0, false, &context),
             Some(RefRangeBounds::test_a1("A1:C3"))
         );
     }
@@ -120,12 +129,12 @@ mod tests {
         };
 
         assert_eq!(
-            table_ref.convert_to_ref_range_bounds(0, &context),
+            table_ref.convert_to_ref_range_bounds(0, false, &context),
             Some(RefRangeBounds::test_a1("A1:C3"))
         );
 
         assert_eq!(
-            table_ref.convert_to_ref_range_bounds(0, &context),
+            table_ref.convert_to_ref_range_bounds(0, false, &context),
             Some(RefRangeBounds::test_a1("A1:C3"))
         );
     }
@@ -144,7 +153,7 @@ mod tests {
         };
 
         assert_eq!(
-            table_ref.convert_to_ref_range_bounds(0, &context),
+            table_ref.convert_to_ref_range_bounds(0, false, &context),
             Some(RefRangeBounds::test_a1("A2:A4"))
         );
 
@@ -158,7 +167,7 @@ mod tests {
         };
 
         assert_eq!(
-            table_ref.convert_to_ref_range_bounds(0, &context),
+            table_ref.convert_to_ref_range_bounds(0, false, &context),
             Some(RefRangeBounds::test_a1("A1:A4"))
         );
     }
@@ -177,8 +186,12 @@ mod tests {
         };
 
         assert_eq!(
-            table_ref.convert_to_ref_range_bounds(0, &context),
+            table_ref.convert_to_ref_range_bounds(0, false, &context),
             Some(RefRangeBounds::test_a1("A2:B4"))
+        );
+        assert_eq!(
+            table_ref.convert_to_ref_range_bounds(0, true, &context),
+            Some(RefRangeBounds::test_a1("A2:"))
         );
 
         let table_ref = TableRef {
@@ -191,7 +204,7 @@ mod tests {
         };
 
         assert_eq!(
-            table_ref.convert_to_ref_range_bounds(0, &context),
+            table_ref.convert_to_ref_range_bounds(0, false, &context),
             Some(RefRangeBounds::test_a1("A1:B4"))
         );
     }
@@ -210,7 +223,7 @@ mod tests {
         };
 
         assert_eq!(
-            table_ref.convert_to_ref_range_bounds(0, &context),
+            table_ref.convert_to_ref_range_bounds(0, false, &context),
             Some(RefRangeBounds::test_a1("B2:C4"))
         );
 
@@ -224,7 +237,7 @@ mod tests {
         };
 
         assert_eq!(
-            table_ref.convert_to_ref_range_bounds(0, &context),
+            table_ref.convert_to_ref_range_bounds(0, false, &context),
             Some(RefRangeBounds::test_a1("B1:C4"))
         );
     }
@@ -243,7 +256,7 @@ mod tests {
         };
 
         assert_eq!(
-            table_ref.convert_to_ref_range_bounds(2, &context),
+            table_ref.convert_to_ref_range_bounds(2, false, &context),
             Some(RefRangeBounds::test_a1("A2:C2"))
         );
     }
@@ -261,6 +274,9 @@ mod tests {
             totals: false,
         };
 
-        assert_eq!(table_ref.convert_to_ref_range_bounds(0, &context), None);
+        assert_eq!(
+            table_ref.convert_to_ref_range_bounds(0, false, &context),
+            None
+        );
     }
 }

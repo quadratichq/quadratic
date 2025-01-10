@@ -87,7 +87,8 @@ impl<T: Default + Clone + PartialEq + Debug> Contiguous2D<T> {
                 };
                 c.set_rect(start_col, start_row, end_col, end_row, value.clone());
             }
-            // todo: not sure what this should do
+            // this is handled separately as we need to create different format
+            // operations for tables
             CellRefRange::Table { .. } => (),
         });
         c
