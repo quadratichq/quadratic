@@ -175,8 +175,12 @@ RUN echo 'Building front-end...' && npm run build --workspace=quadratic-client
 ###########################################################################################
 # Runner - Serve the client with nginx
 ###########################################################################################
-FROM nginx:stable-alpine
+FROM fholzer/nginx-brotli
 
+# Install curl for healthcheck
+RUN apk add --no-cache curl
+
+# Copy build directory
 COPY --from=vite-builder /quadratic/build /usr/share/nginx/html
 
 EXPOSE 80 443 3000

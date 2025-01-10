@@ -88,8 +88,9 @@ services:
       VITE_SENTRY_AUTH_TOKEN: ${SENTRY_AUTH_TOKEN}
     ports:
       - 3000:80
+    entrypoint: []
     command: >
-      sh -c "/client/scripts/replace_env_vars.sh &&
+      /bin/sh -c "/client/scripts/replace_env_vars.sh &&
             nginx -g \"daemon off;\""
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://host.docker.internal:3000/ || exit 1" ]
@@ -98,6 +99,7 @@ services:
     restart: "always"
     volumes:
       - ./docker/client:/client
+      - ./docker/client/config/nginx.conf:/etc/nginx/nginx.conf
       - ./docker/client/config/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       quadratic-api:

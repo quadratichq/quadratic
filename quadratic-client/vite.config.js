@@ -3,8 +3,11 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
 import checker from 'vite-plugin-checker';
+import { compression } from 'vite-plugin-compression2';
 import svgr from 'vite-plugin-svgr';
 import tsconfigPaths from 'vite-tsconfig-paths';
+
+const COMPRESS_FILE_TYPES = ['wasm', 'whl', 'css', 'json', 'html', 'svg', 'ttf', 'otf', 'eot', 'woff', 'woff2'];
 
 export default defineConfig(() => {
   const plugins = [
@@ -27,7 +30,56 @@ export default defineConfig(() => {
         });
       },
     },
+    // Compress build files (excluding JS)
+    compression({
+      algorithm: 'gzip',
+      include: [new RegExp(`\\.(${COMPRESS_FILE_TYPES.join('|')})$`, 'i')],
+      exclude: [/\.(js|mjs|cjs|ts|map)$/], // Exclude JS from build
+      threshold: 0,
+      compressionOptions: {
+        level: 9,
+      },
+      deleteOriginalAssets: false,
+      skipIfLargerOrEqual: false,
+      success: () => console.log('Build files Gzip compression completed'),
+    }),
+    compression({
+      algorithm: 'brotliCompress',
+      include: [new RegExp(`\\.(${COMPRESS_FILE_TYPES.join('|')})$`, 'i')],
+      exclude: [/\.(js|mjs|cjs|ts|map)$/], // Exclude JS from build
+      threshold: 0,
+      compressionOptions: {
+        level: 11,
+      },
+      deleteOriginalAssets: false,
+      skipIfLargerOrEqual: false,
+      success: () => console.log('Build files Brotli compression completed'),
+    }),
+    // Compress all public folder files
+    compression({
+      algorithm: 'gzip',
+      include: [/public\/.*/], // Include all files from public
+      threshold: 0,
+      compressionOptions: {
+        level: 9,
+      },
+      deleteOriginalAssets: false,
+      skipIfLargerOrEqual: false,
+      success: () => console.log('Public files Gzip compression completed'),
+    }),
+    compression({
+      algorithm: 'brotliCompress',
+      include: [/public\/.*/], // Include all files from public
+      threshold: 0,
+      compressionOptions: {
+        level: 11,
+      },
+      deleteOriginalAssets: false,
+      skipIfLargerOrEqual: false,
+      success: () => console.log('Public files Brotli compression completed'),
+    }),
   ];
+
   if (process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_AUTH_TOKEN !== 'none') {
     plugins.push(
       sentryVitePlugin({
