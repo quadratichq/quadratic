@@ -32,7 +32,7 @@ ${JSON.stringify(chatPromptMessages)}
         const abortController = new AbortController();
         const response = await handleAIRequestToAPI({
           chatId: v4(),
-          source: 'getChatName',
+          source: 'GetChatName',
           model,
           messages,
           signal: abortController.signal,

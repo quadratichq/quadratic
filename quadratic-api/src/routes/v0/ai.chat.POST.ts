@@ -1,13 +1,4 @@
 import type { Response } from 'express';
-import { handleAnthropicRequest } from 'quadratic-api/src/ai/handler/anthropic';
-import { handleBedrockRequest } from 'quadratic-api/src/ai/handler/bedrock';
-import { handleOpenAIRequest } from 'quadratic-api/src/ai/handler/openai';
-import { getQuadraticContext, getToolUseContext } from 'quadratic-api/src/ai/helpers/context.helper';
-import { ai_rate_limiter } from 'quadratic-api/src/ai/middleware/aiRateLimiter';
-import { userMiddleware } from 'quadratic-api/src/middleware/user';
-import { validateAccessToken } from 'quadratic-api/src/middleware/validateAccessToken';
-import { parseRequest } from 'quadratic-api/src/middleware/validateRequestSchema';
-import type { RequestWithUser } from 'quadratic-api/src/types/Request';
 import {
   isAnthropicModel,
   isBedrockAnthropicModel,
@@ -18,6 +9,17 @@ import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import { type AIMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
+import { handleAnthropicRequest } from '../../ai/handler/anthropic';
+import { handleBedrockRequest } from '../../ai/handler/bedrock';
+import { handleOpenAIRequest } from '../../ai/handler/openai';
+import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
+import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
+import dbClient from '../../dbClient';
+import { getFile } from '../../middleware/getFile';
+import { userMiddleware } from '../../middleware/user';
+import { validateAccessToken } from '../../middleware/validateAccessToken';
+import { parseRequest } from '../../middleware/validateRequestSchema';
+import type { RequestWithUser } from '../../types/Request';
 
 export default [validateAccessToken, ai_rate_limiter, userMiddleware, handler];
 
@@ -31,7 +33,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   } = req;
 
   const { body } = parseRequest(req, schema);
-  const { model, ...args } = body;
+  const { chatId, fileUuid, source, model, ...args } = body;
 
   if (args.useToolsPrompt) {
     const toolUseContext = getToolUseContext();
@@ -58,9 +60,30 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     args.messages.push(responseMessage);
   }
 
-  // todo(ayush): check for permission and then log chats
-  console.log(userId);
-  console.log(args.chatId);
-  console.log(args.fileUuid);
-  console.log(args.source);
+  const {
+    file: { id: fileId, ownerTeam },
+  } = await getFile({ uuid: fileUuid, userId });
+
+  console.log('ownerTeam', ownerTeam);
+
+  if (ownerTeam.preferenceAiSaveUserPromptsEnabled) {
+    // todo(ayush): upload to s3 / file-storage
+
+    await dbClient.analyticsAIChat.upsert({
+      where: {
+        chatId,
+      },
+      create: {
+        userId,
+        fileId,
+        chatId,
+        source,
+        s3Key: '',
+      },
+      update: {
+        s3Key: '',
+        updatedDate: new Date(),
+      },
+    });
+  }
 }

@@ -1,6 +1,6 @@
-import { ResponseError } from '@sendgrid/mail';
-import { Response } from 'express';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { ResponseError } from '@sendgrid/mail';
+import type { Response } from 'express';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import dbClient from '../../dbClient';
 import { licenseClient } from '../../licenseClient';
@@ -9,7 +9,7 @@ import { userOptionalMiddleware } from '../../middleware/user';
 import { validateOptionalAccessToken } from '../../middleware/validateOptionalAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { getFileUrl } from '../../storage/storage';
-import { RequestWithOptionalUser } from '../../types/Request';
+import type { RequestWithOptionalUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
 
 export default [

@@ -15,7 +15,9 @@ import type {
   BedrockAnthropicModel,
 } from 'quadratic-shared/typesAndSchemasAI';
 
-export function getAnthropicApiArgs(args: Omit<AIRequestBody, 'model'>): Omit<AnthropicRequestBody, 'model'> {
+export function getAnthropicApiArgs(
+  args: Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'source' | 'model'>
+): Omit<AnthropicRequestBody, 'model'> {
   const { messages: chatMessages, useTools, toolName } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);

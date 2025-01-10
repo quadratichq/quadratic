@@ -1,10 +1,10 @@
-import { ConnectionDocs } from 'quadratic-api/src/ai/docs/ConnectionDocs';
-import { FormulaDocs } from 'quadratic-api/src/ai/docs/FormulaDocs';
-import { JavascriptDocs } from 'quadratic-api/src/ai/docs/JavascriptDocs';
-import { PythonDocs } from 'quadratic-api/src/ai/docs/PythonDocs';
-import { QuadraticDocs } from 'quadratic-api/src/ai/docs/QuadraticDocs';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ChatMessage, CodeCellType } from 'quadratic-shared/typesAndSchemasAI';
+import { ConnectionDocs } from '../docs/ConnectionDocs';
+import { FormulaDocs } from '../docs/FormulaDocs';
+import { JavascriptDocs } from '../docs/JavascriptDocs';
+import { PythonDocs } from '../docs/PythonDocs';
+import { QuadraticDocs } from '../docs/QuadraticDocs';
 
 export const getQuadraticContext = (language?: CodeCellType): ChatMessage[] => [
   {

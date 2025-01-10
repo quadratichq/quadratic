@@ -134,7 +134,7 @@ export function useSubmitAIAnalystPrompt() {
           const updatedMessages = await updateInternalContext({ context });
           const response = await handleAIRequestToAPI({
             chatId,
-            source: 'aiAnalyst',
+            source: 'AIAnalyst',
             model,
             messages: updatedMessages,
             useStream: true,
@@ -184,7 +184,7 @@ export function useSubmitAIAnalystPrompt() {
             const updatedMessages = await updateInternalContext({ context });
             const response = await handleAIRequestToAPI({
               chatId,
-              source: 'aiAnalyst',
+              source: 'AIAnalyst',
               model,
               messages: updatedMessages,
               useStream: true,

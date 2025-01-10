@@ -2,19 +2,11 @@ import { AnthropicBedrock } from '@anthropic-ai/bedrock-sdk';
 import Anthropic from '@anthropic-ai/sdk';
 import { BedrockRuntimeClient, ConverseCommand, ConverseStreamCommand } from '@aws-sdk/client-bedrock-runtime';
 import { type Response } from 'express';
-import {
-  getAnthropicApiArgs,
-  parseAnthropicResponse,
-  parseAnthropicStream,
-} from 'quadratic-api/src/ai/helpers/anthropic.helper';
-import {
-  getBedrockApiArgs,
-  parseBedrockResponse,
-  parseBedrockStream,
-} from 'quadratic-api/src/ai/helpers/bedrock.helper';
-import { AWS_S3_ACCESS_KEY_ID, AWS_S3_REGION, AWS_S3_SECRET_ACCESS_KEY } from 'quadratic-api/src/env-vars';
 import { getModelOptions, isBedrockAnthropicModel } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AIMessagePrompt, AIRequestBody, BedrockModel } from 'quadratic-shared/typesAndSchemasAI';
+import { AWS_S3_ACCESS_KEY_ID, AWS_S3_REGION, AWS_S3_SECRET_ACCESS_KEY } from '../../env-vars';
+import { getAnthropicApiArgs, parseAnthropicResponse, parseAnthropicStream } from '../helpers/anthropic.helper';
+import { getBedrockApiArgs, parseBedrockResponse, parseBedrockStream } from '../helpers/bedrock.helper';
 
 // aws-sdk for bedrock, generic for all models
 const bedrock = new BedrockRuntimeClient({
@@ -31,7 +23,7 @@ const bedrock_anthropic = new AnthropicBedrock({
 
 export const handleBedrockRequest = async (
   model: BedrockModel,
-  args: Omit<AIRequestBody, 'model'>,
+  args: Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'source' | 'model'>,
   response: Response
 ): Promise<AIMessagePrompt | undefined> => {
   const { stream, temperature, max_tokens } = getModelOptions(model, args);

@@ -106,7 +106,7 @@ export function useSubmitAIAssistantPrompt() {
         try {
           await handleAIRequestToAPI({
             chatId,
-            source: 'aiAssistant',
+            source: 'AIAssistant',
             model,
             messages: updatedMessages,
             language: getLanguage(codeCell.language),

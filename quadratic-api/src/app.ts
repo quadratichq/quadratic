@@ -7,9 +7,9 @@ import 'express-async-errors';
 import fs from 'fs';
 import helmet from 'helmet';
 import path from 'path';
-import internal_router from 'quadratic-api/src/routes/internal';
-import { ApiError } from 'quadratic-api/src/utils/ApiError';
 import { CORS, NODE_ENV, SENTRY_DSN } from './env-vars';
+import internal_router from './routes/internal';
+import { ApiError } from './utils/ApiError';
 export const app = express();
 
 // Configure Sentry

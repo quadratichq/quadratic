@@ -1,13 +1,13 @@
 import type { Response } from 'express';
-import dbClient from 'quadratic-api/src/dbClient';
-import { getFile } from 'quadratic-api/src/middleware/getFile';
-import { userMiddleware } from 'quadratic-api/src/middleware/user';
-import { validateAccessToken } from 'quadratic-api/src/middleware/validateAccessToken';
-import { validateRequestSchema } from 'quadratic-api/src/middleware/validateRequestSchema';
-import type { RequestWithUser } from 'quadratic-api/src/types/Request';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
+import dbClient from '../../dbClient';
+import { getFile } from '../../middleware/getFile';
+import { userMiddleware } from '../../middleware/user';
+import { validateAccessToken } from '../../middleware/validateAccessToken';
+import { validateRequestSchema } from '../../middleware/validateRequestSchema';
+import type { RequestWithUser } from '../../types/Request';
 const { FILE_DELETE } = FilePermissionSchema.enum;
 
 export default [

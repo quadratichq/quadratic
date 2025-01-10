@@ -1,18 +1,18 @@
 import * as Sentry from '@sentry/node';
 import type { Response } from 'express';
-import { getUsers, getUsersByEmail } from 'quadratic-api/src/auth/auth';
-import dbClient from 'quadratic-api/src/dbClient';
-import { sendEmail } from 'quadratic-api/src/email/sendEmail';
-import { templates } from 'quadratic-api/src/email/templates';
-import { getFile } from 'quadratic-api/src/middleware/getFile';
-import { userMiddleware } from 'quadratic-api/src/middleware/user';
-import { validateAccessToken } from 'quadratic-api/src/middleware/validateAccessToken';
-import { parseRequest } from 'quadratic-api/src/middleware/validateRequestSchema';
-import type { RequestWithUser } from 'quadratic-api/src/types/Request';
-import { ApiError } from 'quadratic-api/src/utils/ApiError';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas, FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
+import { getUsers, getUsersByEmail } from '../../auth/auth';
+import dbClient from '../../dbClient';
+import { sendEmail } from '../../email/sendEmail';
+import { templates } from '../../email/templates';
+import { getFile } from '../../middleware/getFile';
+import { userMiddleware } from '../../middleware/user';
+import { validateAccessToken } from '../../middleware/validateAccessToken';
+import { parseRequest } from '../../middleware/validateRequestSchema';
+import type { RequestWithUser } from '../../types/Request';
+import { ApiError } from '../../utils/ApiError';
 const { FILE_EDIT } = FilePermissionSchema.enum;
 
 export default [validateAccessToken, userMiddleware, handler];

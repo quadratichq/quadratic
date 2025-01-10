@@ -1,6 +1,6 @@
 import rateLimit from 'express-rate-limit';
-import { RATE_LIMIT_AI_REQUESTS_MAX, RATE_LIMIT_AI_WINDOW_MS } from 'quadratic-api/src/env-vars';
-import type { Request } from 'quadratic-api/src/types/Request';
+import { RATE_LIMIT_AI_REQUESTS_MAX, RATE_LIMIT_AI_WINDOW_MS } from '../../env-vars';
+import type { Request } from '../../types/Request';
 
 export const ai_rate_limiter = rateLimit({
   windowMs: Number(RATE_LIMIT_AI_WINDOW_MS) || 3 * 60 * 60 * 1000, // 3 hours

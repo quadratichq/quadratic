@@ -1,13 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { Response } from 'express';
-import {
-  getAnthropicApiArgs,
-  parseAnthropicResponse,
-  parseAnthropicStream,
-} from 'quadratic-api/src/ai/helpers/anthropic.helper';
-import { ANTHROPIC_API_KEY } from 'quadratic-api/src/env-vars';
 import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
-import type { AIMessagePrompt, AIRequestBody, AnthropicModel } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIMessagePrompt, AIRequestHelperArgs, AnthropicModel } from 'quadratic-shared/typesAndSchemasAI';
+import { ANTHROPIC_API_KEY } from '../../env-vars';
+import { getAnthropicApiArgs, parseAnthropicResponse, parseAnthropicStream } from '../helpers/anthropic.helper';
 
 const anthropic = new Anthropic({
   apiKey: ANTHROPIC_API_KEY,
@@ -15,7 +11,7 @@ const anthropic = new Anthropic({
 
 export const handleAnthropicRequest = async (
   model: AnthropicModel,
-  args: Omit<AIRequestBody, 'model'>,
+  args: AIRequestHelperArgs,
   response: Response
 ): Promise<AIMessagePrompt | undefined> => {
   const { system, messages, tools, tool_choice } = getAnthropicApiArgs(args);

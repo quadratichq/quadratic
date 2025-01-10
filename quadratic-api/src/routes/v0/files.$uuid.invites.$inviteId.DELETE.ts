@@ -1,15 +1,15 @@
 import { Prisma } from '@prisma/client';
 import type { Request, Response } from 'express';
-import dbClient from 'quadratic-api/src/dbClient';
-import { getFile } from 'quadratic-api/src/middleware/getFile';
-import { userMiddleware } from 'quadratic-api/src/middleware/user';
-import { validateAccessToken } from 'quadratic-api/src/middleware/validateAccessToken';
-import { validateRequestSchema } from 'quadratic-api/src/middleware/validateRequestSchema';
-import type { RequestWithUser } from 'quadratic-api/src/types/Request';
-import { ApiError } from 'quadratic-api/src/utils/ApiError';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
+import dbClient from '../../dbClient';
+import { getFile } from '../../middleware/getFile';
+import { userMiddleware } from '../../middleware/user';
+import { validateAccessToken } from '../../middleware/validateAccessToken';
+import { validateRequestSchema } from '../../middleware/validateRequestSchema';
+import type { RequestWithUser } from '../../types/Request';
+import { ApiError } from '../../utils/ApiError';
 const { FILE_EDIT } = FilePermissionSchema.enum;
 
 export default [

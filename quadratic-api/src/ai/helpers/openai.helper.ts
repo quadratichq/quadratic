@@ -6,7 +6,7 @@ import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
   AIMessagePrompt,
-  AIRequestBody,
+  AIRequestHelperArgs,
   OpenAIModel,
   OpenAIPromptMessage,
   OpenAIRequestBody,
@@ -14,7 +14,7 @@ import type {
   OpenAIToolChoice,
 } from 'quadratic-shared/typesAndSchemasAI';
 
-export function getOpenAIApiArgs(args: Omit<AIRequestBody, 'model'>): Omit<OpenAIRequestBody, 'model'> {
+export function getOpenAIApiArgs(args: AIRequestHelperArgs): Omit<OpenAIRequestBody, 'model'> {
   const { messages: chatMessages, useTools, toolName } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);

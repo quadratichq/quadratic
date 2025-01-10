@@ -1,8 +1,8 @@
 import type { Response } from 'express';
-import { userMiddleware } from 'quadratic-api/src/middleware/user';
-import { validateAccessToken } from 'quadratic-api/src/middleware/validateAccessToken';
-import type { RequestWithUser } from 'quadratic-api/src/types/Request';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { userMiddleware } from '../../middleware/user';
+import { validateAccessToken } from '../../middleware/validateAccessToken';
+import type { RequestWithUser } from '../../types/Request';
 
 export default [validateAccessToken, userMiddleware, handler];
 

@@ -345,7 +345,7 @@ export type CodeCellType = z.infer<typeof CodeCellTypeSchema>;
 export const AIRequestBodySchema = z.object({
   chatId: z.string().uuid(),
   fileUuid: z.string().uuid(),
-  source: z.enum(['aiAssistant', 'aiAnalyst', 'getChatName']),
+  source: z.enum(['AIAssistant', 'AIAnalyst', 'AIResearcher', 'GetChatName', 'GetFileName']),
   model: z.union([BedrockModelSchema, AnthropicModelSchema, OpenAIModelSchema]),
   messages: z.array(ChatMessageSchema),
   useStream: z.boolean().optional(),
@@ -356,6 +356,7 @@ export const AIRequestBodySchema = z.object({
   useQuadraticContext: z.boolean().optional(),
 });
 export type AIRequestBody = z.infer<typeof AIRequestBodySchema>;
+export type AIRequestHelperArgs = Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'source' | 'model'>;
 
 const AIModelToolSchema = BedrockToolSchema.or(AnthropicToolSchema).or(OpenAIToolSchema);
 export type AIModelTool = z.infer<typeof AIModelToolSchema>;

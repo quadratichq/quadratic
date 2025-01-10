@@ -9,14 +9,15 @@ datasource db {
 }
 
 model User {
-    id           Int            @id @default(autoincrement())
-    auth0Id      String         @unique @map("auth0_id")
-    eduStatus    EduStatus?     @map("edu_status")
-    ownedFiles   File[]         @relation(name: "OwnerRelation")
-    createdFiles File[]         @relation(name: "CreatorRelation")
-    QFeedback    QFeedback[]
-    UserTeamRole UserTeamRole[]
-    UserFileRole UserFileRole[]
+    id              Int               @id @default(autoincrement())
+    auth0Id         String            @unique @map("auth0_id")
+    eduStatus       EduStatus?        @map("edu_status")
+    ownedFiles      File[]            @relation(name: "OwnerRelation")
+    createdFiles    File[]            @relation(name: "CreatorRelation")
+    QFeedback       QFeedback[]
+    UserTeamRole    UserTeamRole[]
+    UserFileRole    UserFileRole[]
+    AnalyticsAIChat AnalyticsAIChat[]
 
     @@index([auth0Id])
 }
@@ -62,12 +63,13 @@ model File {
     ownerTeam   Team  @relation(fields: [ownerTeamId], references: [id])
     ownerTeamId Int   @map("owner_team_id")
 
-    publicLinkAccess LinkPermission   @default(NOT_SHARED) @map("public_link_access")
-    times_updated    Int              @default(1) // unused to delete
+    publicLinkAccess LinkPermission    @default(NOT_SHARED) @map("public_link_access")
+    times_updated    Int               @default(1) // unused to delete
     version          String? // unused to delete
     FileCheckpoint   FileCheckpoint[]
     UserFileRole     UserFileRole[]
     FileInvite       FileInvite[]
+    AnalyticsAIChat  AnalyticsAIChat[]
 
     @@index([uuid])
 }
@@ -255,4 +257,50 @@ model QFile {
     // analytics fields
     times_updated Int      @default(1)
     version       String?
+}
+
+model AnalyticsAIChat {
+    id          Int                      @id @default(autoincrement())
+    userId      Int                      @map("user_id")
+    user        User                     @relation(fields: [userId], references: [id])
+    fileId      Int                      @map("file_id")
+    file        File                     @relation(fields: [fileId], references: [id])
+    chatId      String                   @unique @map("chat_id")
+    source      AIChatSource
+    s3Key       String                   @map("s3_key")
+    messages    AnalyticsAIChatMessage[]
+    createdDate DateTime                 @default(now()) @map("created_date")
+    updatedDate DateTime                 @default(now()) @map("updated_date")
+
+    @@index([chatId])
+    @@index([userId])
+    @@index([fileId])
+    @@index([source])
+}
+
+enum AIChatSource {
+    AIAssistant  @map("ai_assistant")
+    AIAnalyst    @map("ai_analyst")
+    AIResearcher @map("ai_researcher")
+    GetChatName  @map("get_chat_name")
+    GetFileName  @map("get_file_name")
+}
+
+model AnalyticsAIChatMessage {
+    id            Int             @id @default(autoincrement())
+    chatId        Int             @map("chat_id")
+    chat          AnalyticsAIChat @relation(fields: [chatId], references: [id])
+    model         String
+    messageIndex  Int             @map("message_index")
+    like          Boolean?
+    undo          Boolean?
+    codeRunError  String?         @map("code_run_error")
+    responseError String?         @map("response_error")
+    createdDate   DateTime        @default(now()) @map("created_date")
+    updatedDate   DateTime        @default(now()) @map("updated_date")
+
+    @@unique([chatId, messageIndex], name: "chatId_messageIndex")
+    @@index([chatId, messageIndex])
+    @@index([chatId])
+    @@index([model])
 }

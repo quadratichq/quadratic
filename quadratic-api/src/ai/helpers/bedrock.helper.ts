@@ -5,7 +5,7 @@ import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
   AIMessagePrompt,
-  AIRequestBody,
+  AIRequestHelperArgs,
   BedrockModel,
   BedrockPromptMessage,
   BedrockRequestBody,
@@ -13,7 +13,7 @@ import type {
   BedrockToolChoice,
 } from 'quadratic-shared/typesAndSchemasAI';
 
-export function getBedrockApiArgs(args: Omit<AIRequestBody, 'model'>): Omit<BedrockRequestBody, 'model'> {
+export function getBedrockApiArgs(args: AIRequestHelperArgs): Omit<BedrockRequestBody, 'model'> {
   const { messages: chatMessages, useTools, toolName } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);

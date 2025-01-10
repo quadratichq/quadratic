@@ -1,15 +1,15 @@
 import type { Response } from 'express';
-import dbClient from 'quadratic-api/src/dbClient';
-import { getConnection } from 'quadratic-api/src/middleware/getConnection';
-import { userMiddleware } from 'quadratic-api/src/middleware/user';
-import { validateAccessToken } from 'quadratic-api/src/middleware/validateAccessToken';
-import { parseRequest } from 'quadratic-api/src/middleware/validateRequestSchema';
-import type { RequestWithUser } from 'quadratic-api/src/types/Request';
-import { ApiError } from 'quadratic-api/src/utils/ApiError';
-import { encryptFromEnv } from 'quadratic-api/src/utils/crypto';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
+import dbClient from '../../dbClient';
+import { getConnection } from '../../middleware/getConnection';
+import { userMiddleware } from '../../middleware/user';
+import { validateAccessToken } from '../../middleware/validateAccessToken';
+import { parseRequest } from '../../middleware/validateRequestSchema';
+import type { RequestWithUser } from '../../types/Request';
+import { ApiError } from '../../utils/ApiError';
+import { encryptFromEnv } from '../../utils/crypto';
 
 export default [validateAccessToken, userMiddleware, handler];
 

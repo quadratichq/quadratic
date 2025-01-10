@@ -1,3 +1,4 @@
+import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import {
   aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
@@ -25,6 +26,7 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
+  const [model] = useAIModel();
   const [showFeedback, setShowFeedback] = useState(false);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
@@ -90,9 +92,10 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
         if (promptMessageLength === 0) return;
 
         const chatId = snapshot.getLoadable(aiAnalystCurrentChatAtom).getValue().id;
-        apiClient.ai.feedback({ chatId, like, messageIndex: promptMessageLength });
+        console.log('chatId', chatId, model);
+        apiClient.ai.feedback({ chatId, model, messageIndex: promptMessageLength, like });
       },
-    []
+    [apiClient, model]
   );
 
   if (messagesCount === 0) {

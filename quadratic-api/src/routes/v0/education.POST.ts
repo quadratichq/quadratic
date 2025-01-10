@@ -1,12 +1,12 @@
 import type { Response } from 'express';
-import { getUsers } from 'quadratic-api/src/auth/auth';
-import universityDomains from 'quadratic-api/src/data/universityDomains';
-import dbClient from 'quadratic-api/src/dbClient';
-import { userMiddleware } from 'quadratic-api/src/middleware/user';
-import { validateAccessToken } from 'quadratic-api/src/middleware/validateAccessToken';
-import type { RequestWithUser } from 'quadratic-api/src/types/Request';
 import { sanityClient } from 'quadratic-shared/sanityClient';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { getUsers } from '../../auth/auth';
+import universityDomains from '../../data/universityDomains';
+import dbClient from '../../dbClient';
+import { userMiddleware } from '../../middleware/user';
+import { validateAccessToken } from '../../middleware/validateAccessToken';
+import type { RequestWithUser } from '../../types/Request';
 
 export default [validateAccessToken, userMiddleware, handler];
 

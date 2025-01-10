@@ -1,9 +1,9 @@
 import { type Response } from 'express';
 import OpenAI from 'openai';
-import { getOpenAIApiArgs, parseOpenAIResponse, parseOpenAIStream } from 'quadratic-api/src/ai/helpers/openai.helper';
-import { OPENAI_API_KEY } from 'quadratic-api/src/env-vars';
 import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
-import type { AIMessagePrompt, AIRequestBody, OpenAIModel } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIMessagePrompt, AIRequestHelperArgs, OpenAIModel } from 'quadratic-shared/typesAndSchemasAI';
+import { OPENAI_API_KEY } from '../../env-vars';
+import { getOpenAIApiArgs, parseOpenAIResponse, parseOpenAIStream } from '../helpers/openai.helper';
 
 const openai = new OpenAI({
   apiKey: OPENAI_API_KEY || '',
@@ -11,7 +11,7 @@ const openai = new OpenAI({
 
 export const handleOpenAIRequest = async (
   model: OpenAIModel,
-  args: Omit<AIRequestBody, 'model'>,
+  args: AIRequestHelperArgs,
   response: Response
 ): Promise<AIMessagePrompt | undefined> => {
   const { messages, tools, tool_choice } = getOpenAIApiArgs(args);
