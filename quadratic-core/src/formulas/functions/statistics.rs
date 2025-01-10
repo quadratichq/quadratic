@@ -147,6 +147,50 @@ fn get_functions() -> Vec<FormulaFunction> {
                 numbers.try_fold(-f64::INFINITY, |a, b| Ok(f64::max(a, b?)))
             }
         ),
+        formula_fn!(
+            /// Returns the variance of all values (sample variance).
+            /// Uses the formula: Σ(x - μ)²/(n-1) where μ is the mean and n is the count.
+            #[examples("VAR(A1:A6)", "VAR(1, 2, 3, 4, 5)")]
+            fn VAR(numbers: (Iter<f64>)) {
+                let mut sum = 0.0;
+                let mut sum_sq = 0.0;
+                let mut count = 0;
+
+                for num in numbers {
+                    let val = num?;
+                    sum += val;
+                    sum_sq += val * val;
+                    count += 1;
+                }
+
+                let mean = sum / (count as f64);
+                let variance = (sum_sq - sum * mean) / ((count - 1) as f64);
+                Ok(CellValue::from(variance))
+            }
+        ),
+        formula_fn!(
+            /// Returns the standard deviation of all values (sample standard deviation).
+            /// Uses the formula: √(Σ(x - μ)²/(n-1)) where μ is the mean and n is the count.
+            #[examples("STDEV(A1:A6)", "STDEV(1, 2, 3, 4, 5)")]
+            fn STDEV(numbers: (Iter<f64>)) {
+                let mut sum = 0.0;
+                let mut sum_sq = 0.0;
+                let mut count = 0;
+
+                for x in numbers {
+                    let x = x?;
+                    sum += x;
+                    sum_sq += x * x;
+                    count += 1;
+                }
+
+                let mean = sum / (count as f64);
+                let variance = (sum_sq - sum * mean) / ((count - 1) as f64);
+                let stdev = variance.sqrt();
+
+                Ok(CellValue::from(stdev))
+            }
+        ),
     ]
 }
 
@@ -416,5 +460,23 @@ mod tests {
     fn test_max() {
         let g = Grid::new();
         assert_eq!("3", eval_to_string(&g, "MAX(1, 3, 2)"));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_var() {
+        let g = Grid::new();
+
+        // Test basic variance calculation
+        assert_eq!("7", eval_to_string(&g, "VAR(9, 5, 4)"));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_stdev() {
+        let g = Grid::new();
+
+        // Test basic standard deviation calculation
+        assert_eq!("2", eval_to_string(&g, "STDEV(1, 3, 5)"));
     }
 }

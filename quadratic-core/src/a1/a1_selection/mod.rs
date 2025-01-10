@@ -188,9 +188,12 @@ impl A1Selection {
         let mut current_segment = String::new();
         let mut in_quotes = false;
 
-        for c in a1.chars() {
+        for (i, c) in a1.trim().chars().enumerate() {
             match c {
                 '\'' => {
+                    if !in_quotes && i > 0 {
+                        return Err(A1Error::InvalidSheetName(a1.to_string()));
+                    }
                     in_quotes = !in_quotes;
                     current_segment.push(c);
                 }
@@ -629,6 +632,14 @@ mod tests {
         assert_eq!(
             selection.to_string(Some(sheet_id), &HashMap::new()),
             "A1,B1,C1",
+        );
+    }
+
+    #[test]
+    fn test_invalid_sheet_name() {
+        assert_eq!(
+            A1Selection::from_str("Sheet' 1'!A1", &SheetId::test(), &HashMap::new()),
+            Err(A1Error::InvalidSheetName("Sheet' 1'!A1".to_string())),
         );
     }
 
