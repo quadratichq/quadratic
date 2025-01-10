@@ -103,11 +103,10 @@ const TeamUserMakingRequestSchema = z.object({
 
 export const TeamClientDataKvSchema = z.record(z.any());
 
-const TeamPreferencesSchema = z.object({
-  aiSaveUserPromptsEnabled: z.boolean(),
-  // aiProcessors: z.array(z.enum(['OPENAI', 'ANTRHOPIC', 'EXA', 'AWS_BEDROCK'])),
+const TeamSettingsSchema = z.object({
+  analyticsAi: z.boolean(),
 });
-export type TeamPreferences = z.infer<typeof TeamPreferencesSchema>;
+export type TeamSettings = z.infer<typeof TeamSettingsSchema>;
 
 export const LicenseSchema = z.object({
   limits: z.object({
@@ -314,7 +313,7 @@ export const ApiSchemas = {
   }),
   '/v0/teams.POST.response': TeamSchema.pick({ uuid: true, name: true }),
   '/v0/teams/:uuid.GET.response': z.object({
-    team: TeamSchema.pick({ id: true, uuid: true, name: true }),
+    team: TeamSchema.pick({ id: true, uuid: true, name: true }).merge(z.object({ settings: TeamSettingsSchema })),
     userMakingRequest: z.object({
       id: TeamUserSchema.shape.id,
       teamPermissions: z.array(TeamPermissionSchema),
@@ -341,13 +340,12 @@ export const ApiSchemas = {
     license: LicenseSchema,
     connections: ConnectionListSchema,
     clientDataKv: TeamClientDataKvSchema,
-    preferences: TeamPreferencesSchema,
   }),
   '/v0/teams/:uuid.PATCH.request': z
     .object({
       name: TeamSchema.shape.name.optional(),
       clientDataKv: TeamClientDataKvSchema.optional(),
-      preferences: TeamPreferencesSchema.partial().optional(),
+      settings: TeamSettingsSchema.partial().optional(),
     })
     .refine(
       (data) => {
@@ -362,7 +360,7 @@ export const ApiSchemas = {
   '/v0/teams/:uuid.PATCH.response': z.object({
     name: TeamSchema.shape.name,
     clientDataKv: TeamClientDataKvSchema,
-    preferences: TeamPreferencesSchema,
+    settings: TeamSettingsSchema,
   }),
   '/v0/teams/:uuid/invites.POST.request': TeamUserSchema.pick({ email: true, role: true }),
   '/v0/teams/:uuid/invites.POST.response': z

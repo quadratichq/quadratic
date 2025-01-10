@@ -13,6 +13,7 @@ import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUser
 import { apiClient } from '@/shared/api/apiClient';
 import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -27,7 +28,6 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
   const [model] = useAIModel();
-  const [showFeedback, setShowFeedback] = useState(false);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((div: HTMLDivElement | null) => {
@@ -68,7 +68,6 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
     if (loading) {
       shouldAutoScroll.current = true;
       scrollToBottom(true);
-      setShowFeedback(true);
     }
   }, [loading, scrollToBottom]);
 
@@ -85,7 +84,6 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
   const handleFeedback = useRecoilCallback(
     ({ snapshot }) =>
       (like: boolean) => {
-        setShowFeedback(false);
         const messages = snapshot.getLoadable(aiAnalystCurrentChatMessagesAtom).getValue();
 
         const promptMessageLength = getPromptMessages(messages).length;
@@ -167,25 +165,13 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
         );
       })}
 
+      {messages.length > 0 && !loading && <FeedbackButtons handleFeedback={handleFeedback} />}
+
       <div className={cn('flex flex-row gap-1 px-2 transition-opacity', !loading && 'opacity-0')}>
         <span className="h-2 w-2 animate-bounce bg-primary" />
         <span className="h-2 w-2 animate-bounce bg-primary/60 delay-100" />
         <span className="h-2 w-2 animate-bounce bg-primary/20 delay-200" />
       </div>
-
-      {messages.length > 0 && !loading && showFeedback && (
-        <div className="flex flex-row justify-end gap-1 px-2">
-          <div className="flex flex-row gap-1">
-            <Button onClick={() => handleFeedback(false)} variant="destructive" size="sm">
-              <ThumbDownIcon className="mr-1" />
-            </Button>
-
-            <Button onClick={() => handleFeedback(true)} variant="success" size="sm">
-              <ThumbUpIcon className="mr-1" />
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -193,4 +179,39 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
 function MarkdownContent({ children }: { children: string }) {
   // Classes applied in Markdown.scss
   return <Markdown>{children}</Markdown>;
+}
+
+function FeedbackButtons({ handleFeedback }: { handleFeedback: (like: boolean) => void }) {
+  const [liked, setLiked] = useState<boolean | null>(null);
+
+  return (
+    <div className="relative flex flex-row items-center px-2">
+      <TooltipPopover label="Good response">
+        <Button
+          onClick={() => {
+            setLiked((val) => (val === true ? null : true));
+          }}
+          variant="ghost"
+          size="icon-sm"
+          className={cn('hover:text-success', liked === true ? 'text-success' : 'text-muted-foreground')}
+          disabled={liked === false}
+        >
+          <ThumbUpIcon className="scale-75" />
+        </Button>
+      </TooltipPopover>
+      <TooltipPopover label="Bad response">
+        <Button
+          onClick={() => {
+            setLiked((val) => (val === false ? null : false));
+          }}
+          variant="ghost"
+          size="icon-sm"
+          className={cn('hover:text-destructive', liked === false ? 'text-destructive' : 'text-muted-foreground')}
+          disabled={liked === true}
+        >
+          <ThumbDownIcon className="scale-75" />
+        </Button>
+      </TooltipPopover>
+    </div>
+  );
 }

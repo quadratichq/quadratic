@@ -129,6 +129,9 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       id: team.id,
       uuid,
       name: team.name,
+      settings: {
+        analyticsAi: dbTeam.settingAnalyticsAi,
+      },
     },
     billing: {
       status: dbTeam.stripeSubscriptionStatus || undefined,
@@ -193,9 +196,6 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       type: connection.type,
     })),
     clientDataKv: isObject(dbTeam.clientDataKv) ? dbTeam.clientDataKv : {},
-    preferences: {
-      aiSaveUserPromptsEnabled: dbTeam.preferenceAiSaveUserPromptsEnabled,
-    },
   };
 
   return res.status(200).json(response);
