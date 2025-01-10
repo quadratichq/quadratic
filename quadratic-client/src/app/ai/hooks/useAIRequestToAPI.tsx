@@ -75,9 +75,13 @@ export function useAIRequestToAPI() {
               const lines = chunk.split('\n');
               for (const line of lines) {
                 if (line.startsWith('data: ')) {
-                  const newResponseMessage = AIMessagePromptSchema.parse(JSON.parse(line.slice(6)));
-                  setMessages?.((prev) => [...prev.slice(0, -1), { ...newResponseMessage }]);
-                  responseMessage = newResponseMessage;
+                  try {
+                    const newResponseMessage = AIMessagePromptSchema.parse(JSON.parse(line.slice(6)));
+                    setMessages?.((prev) => [...prev.slice(0, -1), { ...newResponseMessage }]);
+                    responseMessage = newResponseMessage;
+                  } catch (error) {
+                    console.error('Error parsing AI response: ', { error, line, lines });
+                  }
                 }
               }
             }
