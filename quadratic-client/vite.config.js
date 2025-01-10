@@ -34,49 +34,22 @@ export default defineConfig(() => {
     compression({
       algorithm: 'gzip',
       include: [new RegExp(`\\.(${COMPRESS_FILE_TYPES.join('|')})$`, 'i')],
-      exclude: [/\.(js|mjs|cjs|ts|map)$/], // Exclude JS from build
-      threshold: 0,
+      threshold: 10 * 1000 * 1000,
       compressionOptions: {
         level: 9,
       },
       deleteOriginalAssets: false,
       skipIfLargerOrEqual: false,
-      success: () => console.log('Build files Gzip compression completed'),
     }),
     compression({
       algorithm: 'brotliCompress',
       include: [new RegExp(`\\.(${COMPRESS_FILE_TYPES.join('|')})$`, 'i')],
-      exclude: [/\.(js|mjs|cjs|ts|map)$/], // Exclude JS from build
-      threshold: 0,
+      threshold: 10 * 1000 * 1000,
       compressionOptions: {
         level: 11,
       },
       deleteOriginalAssets: false,
       skipIfLargerOrEqual: false,
-      success: () => console.log('Build files Brotli compression completed'),
-    }),
-    // Compress all public folder files
-    compression({
-      algorithm: 'gzip',
-      include: [/public\/.*/], // Include all files from public
-      threshold: 0,
-      compressionOptions: {
-        level: 9,
-      },
-      deleteOriginalAssets: false,
-      skipIfLargerOrEqual: false,
-      success: () => console.log('Public files Gzip compression completed'),
-    }),
-    compression({
-      algorithm: 'brotliCompress',
-      include: [/public\/.*/], // Include all files from public
-      threshold: 0,
-      compressionOptions: {
-        level: 11,
-      },
-      deleteOriginalAssets: false,
-      skipIfLargerOrEqual: false,
-      success: () => console.log('Public files Brotli compression completed'),
     }),
   ];
 
