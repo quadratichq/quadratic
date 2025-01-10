@@ -1,10 +1,10 @@
-import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import {
   aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
   aiAnalystCurrentChatMessagesCountAtom,
   aiAnalystLoadingAtom,
 } from '@/app/atoms/aiAnalystAtom';
+import { editorInteractionStateSettingsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { debugShowAIInternalContext } from '@/app/debugFlags';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
@@ -16,6 +16,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import type { AIMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 
@@ -27,7 +28,7 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
-  const [model] = useAIModel();
+  const settings = useRecoilValue(editorInteractionStateSettingsAtom);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((div: HTMLDivElement | null) => {
@@ -81,21 +82,6 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  const handleFeedback = useRecoilCallback(
-    ({ snapshot }) =>
-      (like: boolean) => {
-        const messages = snapshot.getLoadable(aiAnalystCurrentChatMessagesAtom).getValue();
-
-        const promptMessageLength = getPromptMessages(messages).length;
-        if (promptMessageLength === 0) return;
-
-        const chatId = snapshot.getLoadable(aiAnalystCurrentChatAtom).getValue().id;
-        console.log('chatId', chatId, model);
-        apiClient.ai.feedback({ chatId, model, messageIndex: promptMessageLength, like });
-      },
-    [apiClient, model]
-  );
-
   if (messagesCount === 0) {
     return <AIAnalystExamplePrompts />;
   }
@@ -142,13 +128,13 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
                   textareaRef={textareaRef}
                 />
               ) : Array.isArray(message.content) ? (
-                message.content.map(({ content }) => <MarkdownContent key={content}>{content}</MarkdownContent>)
+                message.content.map(({ content }) => <Markdown key={content}>{content}</Markdown>)
               ) : (
-                <MarkdownContent key={message.content}>{message.content}</MarkdownContent>
+                <Markdown key={message.content}>{message.content}</Markdown>
               )
             ) : (
               <>
-                {message.content && <MarkdownContent key={message.content}>{message.content}</MarkdownContent>}
+                {message.content && <Markdown key={message.content}>{message.content}</Markdown>}
 
                 {message.contextType === 'userPrompt' &&
                   message.toolCalls.map((toolCall) => (
@@ -165,7 +151,7 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
         );
       })}
 
-      {messages.length > 0 && !loading && <FeedbackButtons handleFeedback={handleFeedback} />}
+      {settings.analyticsAi && messages.length > 0 && !loading && <FeedbackButtons />}
 
       <div className={cn('flex flex-row gap-1 px-2 transition-opacity', !loading && 'opacity-0')}>
         <span className="h-2 w-2 animate-bounce bg-primary" />
@@ -176,38 +162,71 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
   );
 }
 
-function MarkdownContent({ children }: { children: string }) {
-  // Classes applied in Markdown.scss
-  return <Markdown>{children}</Markdown>;
-}
+function FeedbackButtons() {
+  const [like, setLike] = useState<boolean | null>(null);
 
-function FeedbackButtons({ handleFeedback }: { handleFeedback: (like: boolean) => void }) {
-  const [liked, setLiked] = useState<boolean | null>(null);
+  const handleFeedback = useRecoilCallback(
+    ({ snapshot }) =>
+      (like: boolean | null) => {
+        const messages = snapshot.getLoadable(aiAnalystCurrentChatMessagesAtom).getValue();
+
+        const promptMessage = getPromptMessages(messages);
+        const promptMessageLength = promptMessage.length;
+        if (promptMessageLength === 0) return;
+
+        const lastAIPromptMessage = promptMessage
+          .reverse()
+          .find(
+            (message): message is AIMessagePrompt =>
+              message.role === 'assistant' && message.contextType === 'userPrompt'
+          );
+
+        if (!lastAIPromptMessage) return;
+
+        const chatId = snapshot.getLoadable(aiAnalystCurrentChatAtom).getValue().id;
+        apiClient.ai.feedback({
+          chatId,
+          model: lastAIPromptMessage.model,
+          messageIndex: promptMessageLength,
+          like,
+        });
+      },
+    [apiClient]
+  );
 
   return (
     <div className="relative flex flex-row items-center px-2">
       <TooltipPopover label="Good response">
         <Button
           onClick={() => {
-            setLiked((val) => (val === true ? null : true));
+            setLike((prev) => {
+              const newLike = prev === true ? null : true;
+              handleFeedback(newLike);
+              return newLike;
+            });
           }}
           variant="ghost"
           size="icon-sm"
-          className={cn('hover:text-success', liked === true ? 'text-success' : 'text-muted-foreground')}
-          disabled={liked === false}
+          className={cn('hover:text-success', like === true ? 'text-success' : 'text-muted-foreground')}
+          disabled={like === false}
         >
           <ThumbUpIcon className="scale-75" />
         </Button>
       </TooltipPopover>
+
       <TooltipPopover label="Bad response">
         <Button
           onClick={() => {
-            setLiked((val) => (val === false ? null : false));
+            setLike((prev) => {
+              const newLike = prev === false ? null : false;
+              handleFeedback(newLike);
+              return newLike;
+            });
           }}
           variant="ghost"
           size="icon-sm"
-          className={cn('hover:text-destructive', liked === false ? 'text-destructive' : 'text-muted-foreground')}
-          disabled={liked === true}
+          className={cn('hover:text-destructive', like === false ? 'text-destructive' : 'text-muted-foreground')}
+          disabled={like === true}
         >
           <ThumbDownIcon className="scale-75" />
         </Button>

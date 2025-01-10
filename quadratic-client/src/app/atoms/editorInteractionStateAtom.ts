@@ -1,7 +1,7 @@
 import { focusGrid } from '@/app/helpers/focusGrid.js';
 import { SearchOptions } from '@/app/quadratic-core-types';
 import { User } from '@/auth/auth';
-import { FilePermission } from 'quadratic-shared/typesAndSchemas';
+import { FilePermission, type TeamSettings } from 'quadratic-shared/typesAndSchemas';
 import { atom, DefaultValue, selector } from 'recoil';
 
 export interface EditorInteractionState {
@@ -18,6 +18,7 @@ export interface EditorInteractionState {
   showValidation: boolean | string;
   annotationState?: 'dropdown' | 'date-format' | 'calendar' | 'calendar-time';
   permissions: FilePermission[];
+  settings: TeamSettings;
   user?: User;
   uuid: string;
   follow?: string;
@@ -39,6 +40,9 @@ export const defaultEditorInteractionState: EditorInteractionState = {
   showValidation: false,
   annotationState: undefined,
   permissions: ['FILE_VIEW'], // FYI: when we call <RecoilRoot> we initialize this with the value from the server
+  settings: {
+    analyticsAi: false,
+  },
   user: undefined,
   uuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
   follow: undefined,
@@ -107,6 +111,7 @@ export const editorInteractionStateShowValidationAtom = createSelector('showVali
 
 export const editorInteractionStateAnnotationStateAtom = createSelector('annotationState');
 export const editorInteractionStatePermissionsAtom = createSelector('permissions');
+export const editorInteractionStateSettingsAtom = createSelector('settings');
 export const editorInteractionStateUserAtom = createSelector('user');
 export const editorInteractionStateUuidAtom = createSelector('uuid');
 export const editorInteractionStateFollowAtom = createSelector('follow');

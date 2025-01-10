@@ -156,7 +156,9 @@ export const ApiSchemas = {
     file: FileSchema.extend({
       ownerUserId: BaseUserSchema.shape.id.optional(),
     }),
-    team: TeamSchema.pick({ uuid: true, name: true }),
+    team: TeamSchema.pick({ uuid: true, name: true }).extend({
+      settings: TeamSettingsSchema,
+    }),
     userMakingRequest: z.object({
       id: BaseUserSchema.shape.id.optional(),
       filePermissions: z.array(FilePermissionSchema),
@@ -425,7 +427,7 @@ export const ApiSchemas = {
     chatId: z.string().uuid(),
     model: z.string(),
     messageIndex: z.number(),
-    like: z.boolean(),
+    like: z.boolean().nullable(),
   }),
   '/v0/ai/feedback.POST.response': z.object({
     message: z.string(),

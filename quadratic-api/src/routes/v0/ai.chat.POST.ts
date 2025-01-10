@@ -66,7 +66,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
 
   console.log('ownerTeam', ownerTeam);
 
-  if (ownerTeam.preferenceAiSaveUserPromptsEnabled) {
+  if (ownerTeam.settingAnalyticsAi) {
     // todo(ayush): upload to s3 / file-storage
 
     await dbClient.analyticsAIChat.upsert({
