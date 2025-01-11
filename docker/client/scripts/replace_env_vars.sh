@@ -28,7 +28,9 @@ replace_env_vars() {
       sed -i "s/${appended_var}/${escaped_val}/g" "$file"
     done
   done
+}
 
+compress_js_files() {
   find "/usr/share/nginx/html" -type f \( \
     -name "*.js" -o \
     -name "*.mjs" -o \
@@ -46,3 +48,6 @@ replace_env_vars() {
 
 echo "Replacing .env values in $ENV_PATH"
 replace_env_vars
+
+echo "Compressing js files"
+compress_js_files
