@@ -36,7 +36,7 @@ export default defineConfig(() => {
       include: [new RegExp(`\\.(${COMPRESS_FILE_TYPES.join('|')})$`, 'i')],
       threshold: 10 * 1000 * 1000,
       compressionOptions: {
-        level: 9,
+        level: 6,
       },
       deleteOriginalAssets: false,
       skipIfLargerOrEqual: false,
@@ -46,7 +46,7 @@ export default defineConfig(() => {
       include: [new RegExp(`\\.(${COMPRESS_FILE_TYPES.join('|')})$`, 'i')],
       threshold: 10 * 1000 * 1000,
       compressionOptions: {
-        level: 11,
+        level: 9,
       },
       deleteOriginalAssets: false,
       skipIfLargerOrEqual: false,
