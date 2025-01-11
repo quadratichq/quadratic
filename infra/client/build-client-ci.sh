@@ -26,20 +26,7 @@ rustup target add wasm32-unknown-unknown
 echo 'Packaging quadratic_py'
 ./quadratic-kernels/python-wasm/package.sh --no-poetry
 
-# cd quadratic-core
-
-# echo 'Building wasm...'
-# wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-core
-
-# echo 'Exporting TS/Rust types...'
-# cargo run --bin export_types
-
-# cd ..
-
-# echo 'Building quadratic-rust-client...'
-# npm run build --workspace=quadratic-rust-client
-
-echo 'Starting rust builds...'
+echo 'Starting parallel rust builds...'
 (echo 'Building core...' && npm run build --workspace=quadratic-core) & \
 (echo 'Building TS/Rust types...' && npm run export_types --workspace=quadratic-core) & \
 (echo 'Building rust-client...' && npm run build --workspace=quadratic-rust-client) & \
@@ -48,49 +35,3 @@ wait
 echo 'Building front-end...'
 npm ci --no-audit --no-fund
 npm run build --workspace=quadratic-client
-
-# Install compression tools
-# echo 'Installing compression tools...'
-# sudo apt-get update && sudo apt-get install -y brotli pigz
-
-# Compress files
-# find "./build" -type f \( \
-#   -name "*.js" -o \
-#   -name "*.mjs" -o \
-#   -name "*.cjs" -o \
-#   -name "*.jsx" -o \
-#   -name "*.ts" -o \
-#   -name "*.tsx" -o \
-#   -name "*.wasm" -o \
-#   -name "*.whl" -o \
-#   -name "*.json" -o \
-#   -name "*.css" -o \
-#   -name "*.html" -o \
-#   -name "*.svg" -o \
-#   -name "*.txt" -o \
-#   -name "*.map" -o \
-#   -name "*.py" -o \
-#   -name "*.pyc" -o \
-#   -name "*.pyi" -o \
-#   -name "*.pth" -o \
-#   -name "*.data" -o \
-#   -name "*.mem" -o \
-#   -name "*.wat" -o \
-#   -name "*.md" -o \
-#   -name "*.rst" -o \
-#   -name "*.rtf" -o \
-#   -name "*.csv" -o \
-#   -name "*.tsv" -o \
-#   -name "*.eot" -o \
-#   -name "*.ttf" -o \
-#   -name "*.otf" -o \
-#   -name "*.woff" -o \
-#   -name "*.woff2" -o \
-#   -name "*.font" -o \
-#   -name "*.font-sfnt" \
-# \) -print0 | xargs -0 -n1 -P$(nproc) -I {} sh -c '\
-#   echo "Compressing: {}" && \
-#   brotli -q 9 -w 24 -f "{}" && \
-#   pigz -6kf "{}" && \
-#   echo "Created: {}.br and {}.gz" \
-# '
