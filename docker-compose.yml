@@ -90,8 +90,7 @@ services:
       - 3000:80
     entrypoint: []
     command: >
-      /bin/sh -c "/client/scripts/replace_env_vars.sh &&
-            nginx -g \"daemon off;\""
+      /bin/sh -c "/client/scripts/replace_env_vars.sh && nginx -g \"daemon off;\""
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://host.docker.internal:3000/ || exit 1" ]
       interval: 10s

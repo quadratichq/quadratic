@@ -28,6 +28,20 @@ replace_env_vars() {
       sed -i "s/${appended_var}/${escaped_val}/g" "$file"
     done
   done
+
+  find "/usr/share/nginx/html" -type f \( \
+    -name "*.js" -o \
+    -name "*.mjs" -o \
+    -name "*.cjs" -o \
+    -name "*.jsx" -o \
+    -name "*.ts" -o \
+    -name "*.tsx" \
+  \) -print0 | xargs -0 -n1 -P$(nproc) -I {} sh -c '\
+    echo "Compressing: {}" && \
+    brotli -q 9 -w 24 -f "{}" && \
+    pigz -6kf "{}" && \
+    echo "Created: {}.br and {}.gz" \
+  '
 }
 
 echo "Replacing .env values in $ENV_PATH"

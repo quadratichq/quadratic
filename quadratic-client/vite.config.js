@@ -3,11 +3,8 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
 import checker from 'vite-plugin-checker';
-import { compression } from 'vite-plugin-compression2';
 import svgr from 'vite-plugin-svgr';
 import tsconfigPaths from 'vite-tsconfig-paths';
-
-const COMPRESS_FILE_TYPES = ['wasm', 'whl', 'css', 'json', 'html', 'svg', 'ttf', 'otf', 'eot', 'woff', 'woff2'];
 
 export default defineConfig(() => {
   const plugins = [
@@ -30,27 +27,6 @@ export default defineConfig(() => {
         });
       },
     },
-    // Compress build files (excluding JS)
-    compression({
-      algorithm: 'gzip',
-      include: [new RegExp(`\\.(${COMPRESS_FILE_TYPES.join('|')})$`, 'i')],
-      threshold: 10 * 1000 * 1000,
-      compressionOptions: {
-        level: 6,
-      },
-      deleteOriginalAssets: false,
-      skipIfLargerOrEqual: false,
-    }),
-    compression({
-      algorithm: 'brotliCompress',
-      include: [new RegExp(`\\.(${COMPRESS_FILE_TYPES.join('|')})$`, 'i')],
-      threshold: 10 * 1000 * 1000,
-      compressionOptions: {
-        level: 9,
-      },
-      deleteOriginalAssets: false,
-      skipIfLargerOrEqual: false,
-    }),
   ];
 
   if (process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_AUTH_TOKEN !== 'none') {
