@@ -15,7 +15,7 @@ impl TableRef {
             return None;
         };
 
-        let (y_start, y_end) = self.row_range.to_rows(current_row, table, self.headers);
+        let (y_start, y_end) = self.row_range.to_rows(current_row, table);
         match &self.col_range {
             ColRange::All => {
                 let range = RefRangeBounds::new_relative(
@@ -191,7 +191,7 @@ mod tests {
         );
         assert_eq!(
             table_ref.convert_to_ref_range_bounds(0, true, &context),
-            Some(RefRangeBounds::test_a1("A2:"))
+            Some(RefRangeBounds::test_a1("A2:B"))
         );
 
         let table_ref = TableRef {

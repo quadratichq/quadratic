@@ -28,11 +28,13 @@ impl GridController {
         let tables = selection.separate_table_ranges();
         for table_ref in tables {
             if let Some(table) = context.try_table(&table_ref.table_name) {
+                dbgjs!(&table_ref);
                 let range =
                     table_ref.convert_to_ref_range_bounds(selection.cursor.y, true, &context);
                 if let Some(range) = range {
                     // translate the range to 1-based compared to the table position
                     let range = range.translate(-table.bounds.min.x + 1, -table.bounds.min.y + 1);
+                    dbgjs!(&range);
                     let formats = SheetFormatUpdates::from_selection(
                         &A1Selection::from_range(
                             CellRefRange::Sheet { range },
@@ -802,9 +804,7 @@ mod test {
             format_update.clone(),
         );
         assert_eq!(ops.len(), 1);
-        // format updates are translated to 1,1
-        let formats =
-            SheetFormatUpdates::from_selection(&A1Selection::test_a1("A1:C3"), format_update);
+        let formats = SheetFormatUpdates::from_selection(&A1Selection::test_a1("*"), format_update);
         assert_eq!(
             ops[0],
             Operation::DataTableFormats {

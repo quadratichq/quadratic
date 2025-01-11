@@ -72,17 +72,9 @@ pub enum RowRange {
 
 impl RowRange {
     /// Returns a list of (start, end) pairs for the row range.
-    pub fn to_rows(&self, current_row: i64, table: &TableMapEntry, headers: bool) -> (i64, i64) {
+    pub fn to_rows(&self, current_row: i64, table: &TableMapEntry) -> (i64, i64) {
         match self {
-            RowRange::All => {
-                let y_start = table.bounds.min.y
-                    + if !headers && table.show_headers && table.bounds.height() > 1 {
-                        1
-                    } else {
-                        0
-                    };
-                (y_start, table.bounds.max.y)
-            }
+            RowRange::All => (table.bounds.min.y, table.bounds.max.y),
             RowRange::CurrentRow => (current_row, current_row),
             RowRange::Rows(ranges) => (
                 table.bounds.min.y + ranges.start.coord - 1,
@@ -197,15 +189,11 @@ mod tests {
         let table = TableMapEntry::test("test", &["A"], None, Rect::test_a1("A1:A5"));
 
         let row_range = RowRange::All;
-        let rows = row_range.to_rows(1, &table, false);
+        let rows = row_range.to_rows(1, &table);
         assert_eq!(rows, (2, 5));
 
-        let row_range = RowRange::All;
-        let rows = row_range.to_rows(1, &table, true);
-        assert_eq!(rows, (1, 5));
-
         let row_range = RowRange::CurrentRow;
-        let rows = row_range.to_rows(1, &table, false);
+        let rows = row_range.to_rows(1, &table);
         assert_eq!(rows, (1, 1));
     }
 
