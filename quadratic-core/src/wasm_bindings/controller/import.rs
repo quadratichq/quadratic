@@ -27,6 +27,7 @@ impl GridController {
         file: Vec<u8>,
         file_name: &str,
         delimiter: Option<u8>,
+        has_heading: Option<bool>,
     ) -> Result<GridController, JsValue> {
         let mut grid = Grid::new_blank();
         let sheet_id = grid.add_sheet(None);
@@ -34,7 +35,15 @@ impl GridController {
 
         let mut grid_controller = GridController::from_grid(grid, 0);
         grid_controller
-            .import_csv(sheet_id, file, file_name, insert_at, None, delimiter)
+            .import_csv(
+                sheet_id,
+                file,
+                file_name,
+                insert_at,
+                None,
+                delimiter,
+                has_heading,
+            )
             .map_err(|e| e.to_string())?;
 
         Ok(grid_controller)
@@ -52,11 +61,20 @@ impl GridController {
         insert_at: &str,
         cursor: Option<String>,
         delimiter: Option<u8>,
+        has_heading: Option<bool>,
     ) -> Result<(), JsValue> {
         let sheet_id = SheetId::from_str(sheet_id).map_err(|e| e.to_string())?;
         let insert_at = serde_json::from_str::<Pos>(insert_at).map_err(|e| e.to_string())?;
-        self.import_csv(sheet_id, file, file_name, insert_at, cursor, delimiter)
-            .map_err(|e| e.to_string())?;
+        self.import_csv(
+            sheet_id,
+            file,
+            file_name,
+            insert_at,
+            cursor,
+            delimiter,
+            has_heading,
+        )
+        .map_err(|e| e.to_string())?;
 
         Ok(())
     }

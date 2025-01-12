@@ -80,6 +80,7 @@ impl GridController {
         file_name: &str,
         insert_at: Pos,
         delimiter: Option<u8>,
+        has_heading: Option<bool>,
     ) -> Result<Vec<Operation>> {
         let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
         let import = Import::new(file_name.into());
@@ -93,6 +94,7 @@ impl GridController {
                         file_name,
                         insert_at,
                         delimiter,
+                        has_heading,
                     );
                 }
                 &file
@@ -180,6 +182,10 @@ impl GridController {
 
         // finally add the final operation
         let mut data_table = DataTable::from((import.to_owned(), cell_values, &self.grid));
+        if Some(true) == has_heading {
+            data_table.apply_first_row_as_header();
+        }
+
         data_table.name = file_name.to_string();
         let sheet_pos = SheetPos::from((insert_at, sheet_id));
 
@@ -571,6 +577,7 @@ mod test {
                 file_name,
                 pos,
                 Some(b','),
+                Some(false),
             )
             .unwrap();
 
@@ -623,6 +630,7 @@ mod test {
             file_name,
             pos,
             Some(b','),
+            Some(false),
         );
 
         let import = Import::new(file_name.into());
@@ -661,6 +669,7 @@ mod test {
             pos,
             None,
             Some(b','),
+            Some(false),
         )
         .unwrap();
 

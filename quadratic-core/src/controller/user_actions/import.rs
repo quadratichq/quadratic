@@ -17,8 +17,16 @@ impl GridController {
         insert_at: Pos,
         cursor: Option<String>,
         delimiter: Option<u8>,
+        has_heading: Option<bool>,
     ) -> Result<()> {
-        let ops = self.import_csv_operations(sheet_id, file, file_name, insert_at, delimiter)?;
+        let ops = self.import_csv_operations(
+            sheet_id,
+            file,
+            file_name,
+            insert_at,
+            delimiter,
+            has_heading,
+        )?;
         if cursor.is_some() {
             self.start_user_transaction(ops, cursor, TransactionName::Import);
         } else {
@@ -126,6 +134,7 @@ pub(crate) mod tests {
             pos,
             None,
             Some(b','),
+            Some(false),
         )
         .unwrap();
 
@@ -181,6 +190,7 @@ pub(crate) mod tests {
             pos,
             None,
             Some(b','),
+            Some(false),
         );
         assert!(result.is_err());
     }
@@ -206,6 +216,7 @@ pub(crate) mod tests {
             Pos { x: 0, y: 0 },
             None,
             Some(b','),
+            Some(false),
         )
         .unwrap();
 
@@ -224,6 +235,7 @@ pub(crate) mod tests {
                 "bad line",
                 Pos { x: 0, y: 0 },
                 Some(b','),
+                Some(false),
             )
             .unwrap();
         let op = &ops[0];
@@ -483,6 +495,7 @@ pub(crate) mod tests {
             pos,
             None,
             Some(b','),
+            Some(false),
         )
         .unwrap();
 
@@ -516,6 +529,7 @@ pub(crate) mod tests {
             pos,
             None,
             Some(b','),
+            Some(false),
         )
         .unwrap();
 
@@ -550,6 +564,7 @@ pub(crate) mod tests {
             pos,
             None,
             Some(b','),
+            Some(false),
         )
         .unwrap();
 
