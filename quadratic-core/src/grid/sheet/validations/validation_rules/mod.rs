@@ -52,6 +52,15 @@ impl ValidationRule {
         matches!(self, ValidationRule::Logical(_))
     }
 
+    /// Returns true if the validation rule has a UI element.
+    pub fn has_ui(&self) -> bool {
+        match self {
+            ValidationRule::List(list) => list.drop_down,
+            ValidationRule::Logical(logical) => logical.show_checkbox,
+            _ => false,
+        }
+    }
+
     pub fn allow_blank(&self) -> bool {
         match self {
             ValidationRule::List(list) => list.ignore_blank,
@@ -68,7 +77,7 @@ impl ValidationRule {
 mod tests {
     use validation_list::ValidationListSource;
 
-    use crate::selection::Selection;
+    use crate::a1::A1Selection;
 
     use super::*;
 
@@ -90,8 +99,8 @@ mod tests {
     #[test]
     fn validate_list_selection() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value((0, 0).into(), "test");
-        let selection = Selection::pos(0, 0, sheet.id);
+        sheet.set_cell_value((1, 1).into(), "test");
+        let selection = A1Selection::test_a1("A1");
 
         let list = ValidationList {
             source: ValidationListSource::Selection(selection),

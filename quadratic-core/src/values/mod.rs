@@ -18,7 +18,7 @@ mod time;
 
 pub use array::Array;
 pub use array_size::{ArraySize, Axis};
-pub use cellvalue::{CellValue, CellValueHash, CodeCellValue};
+pub use cellvalue::{CellValue, CellValueHash};
 pub use convert::CoerceInto;
 pub use isblank::IsBlank;
 pub use time::{Duration, Instant};
@@ -166,6 +166,18 @@ impl Value {
             w: Array::common_len(Axis::X, values.into_iter().filter_map(|v| v.as_array()))?,
             h: Array::common_len(Axis::Y, values.into_iter().filter_map(|v| v.as_array()))?,
         })
+    }
+
+    /// Returns the size of the value.
+    pub fn size(&self) -> ArraySize {
+        match self {
+            Value::Single(_) => ArraySize::_1X1,
+            Value::Array(array) => array.size(),
+            Value::Tuple(t) => t
+                .first()
+                .unwrap_or(&Array::new_empty(ArraySize::_1X1))
+                .size(),
+        }
     }
 
     /// Returns the contained error, or panics the value is not just a single

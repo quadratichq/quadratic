@@ -1,11 +1,9 @@
 use criterion::{criterion_group, criterion_main, Bencher, Criterion};
 use quadratic_core::controller::operations::clipboard::PasteSpecial;
 use quadratic_core::controller::GridController;
-use quadratic_core::grid::formats::format_update::FormatUpdate;
-use quadratic_core::grid::formats::Formats;
+use quadratic_core::grid::js_types::JsClipboard;
 use quadratic_core::grid::{CellAlign, Grid};
-use quadratic_core::selection::Selection;
-use quadratic_core::{Pos, Rect, SheetRect};
+use quadratic_core::{a1::A1Selection, Pos, Rect, SheetRect};
 use std::time::Duration;
 
 criterion_group!(benches, criterion_benchmark);
@@ -57,15 +55,17 @@ fn criterion_benchmark(c: &mut Criterion) {
                 max: Pos { x: 10, y: 10 },
                 sheet_id,
             };
-            let pos = Pos { x: 10000, y: 10000 };
+
             let sheet = gc.try_sheet(sheet_id).unwrap();
-            let contents = sheet
-                .copy_to_clipboard(&Selection::sheet_rect(sheet_rect))
+            let JsClipboard { plain_text, html } = sheet
+                .copy_to_clipboard(&A1Selection::from_rect(sheet_rect))
                 .unwrap();
+
+            let pos = Pos { x: 10000, y: 10000 };
             gc.paste_from_clipboard(
-                Selection::rect(pos.into(), sheet_id),
-                Some(contents.0),
-                Some(contents.1),
+                &A1Selection::from_xy(pos.x, pos.y, sheet_id),
+                Some(plain_text),
+                Some(html),
                 PasteSpecial::None,
                 None,
             );
@@ -81,15 +81,17 @@ fn criterion_benchmark(c: &mut Criterion) {
                 max: Pos { x: 100, y: 100 },
                 sheet_id,
             };
-            let pos = Pos { x: 10000, y: 10000 };
+
             let sheet = gc.try_sheet(sheet_id).unwrap();
-            let contents = sheet
-                .copy_to_clipboard(&Selection::sheet_rect(sheet_rect))
+            let JsClipboard { plain_text, html } = sheet
+                .copy_to_clipboard(&A1Selection::from_rect(sheet_rect))
                 .unwrap();
+
+            let pos = Pos { x: 10000, y: 10000 };
             gc.paste_from_clipboard(
-                Selection::rect(pos.into(), sheet_id),
-                Some(contents.0),
-                Some(contents.1),
+                &A1Selection::from_xy(pos.x, pos.y, sheet_id),
+                Some(plain_text),
+                Some(html),
                 PasteSpecial::None,
                 None,
             );
@@ -129,7 +131,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             },
             |(mut gc, sheet_rect)| {
                 // Test
-                gc.delete_cells(&Selection::sheet_rect(sheet_rect), None);
+                gc.delete_cells(&A1Selection::from_rect(sheet_rect), None);
             },
             criterion::BatchSize::SmallInput,
         )
@@ -149,7 +151,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     max: Pos { x: 10000, y: 10000 },
                     sheet_id,
                 };
-                gc.delete_cells(&Selection::sheet_rect(sheet_rect), None);
+                gc.delete_cells(&A1Selection::from_rect(sheet_rect), None);
                 gc
             },
             |mut gc| {
@@ -174,7 +176,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     max: Pos { x: 10000, y: 10000 },
                     sheet_id,
                 };
-                gc.delete_cells(&Selection::sheet_rect(sheet_rect), None);
+                gc.delete_cells(&A1Selection::from_rect(sheet_rect), None);
                 gc.undo(None);
                 gc
             },
@@ -206,24 +208,32 @@ fn criterion_benchmark(c: &mut Criterion) {
         let sheet_id = gc.sheet_ids()[0];
 
         let small_selection = Rect {
-            min: Pos { x: 0, y: 0 },
-            max: Pos { x: 10, y: 10 },
+            min: Pos { x: 1, y: 1 },
+            max: Pos { x: 11, y: 11 },
         };
         // add some data
         let sheet = gc.try_sheet_mut(sheet_id).unwrap();
         sheet.random_numbers(&small_selection);
-        let formats = Formats::repeat(
-            FormatUpdate {
-                bold: Some(Some(true)),
-                italic: Some(Some(true)),
-                text_color: Some(Some("blue".to_string())),
-                align: Some(Some(CellAlign::Center)),
-                fill_color: Some(Some("red".to_string())),
-                ..Default::default()
-            },
-            small_selection.len() as usize,
-        );
-        sheet.set_formats_rects(&[small_selection], &formats);
+        sheet
+            .formats
+            .bold
+            .set_rect(1, 1, Some(11), Some(11), Some(true));
+        sheet
+            .formats
+            .italic
+            .set_rect(1, 1, Some(11), Some(11), Some(true));
+        sheet
+            .formats
+            .text_color
+            .set_rect(1, 1, Some(11), Some(11), Some("blue".to_string()));
+        sheet
+            .formats
+            .align
+            .set_rect(1, 1, Some(11), Some(11), Some(CellAlign::Center));
+        sheet
+            .formats
+            .fill_color
+            .set_rect(1, 1, Some(11), Some(11), Some("red".to_string()));
 
         let expand_to = Rect {
             min: Pos { x: 0, y: 0 },
@@ -262,7 +272,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             },
             |(mut gc, sheet_rect)| {
                 // Test
-                gc.clear_formatting(&Selection::sheet_rect(sheet_rect), None);
+                gc.clear_formatting(&A1Selection::from_rect(sheet_rect), None);
             },
             criterion::BatchSize::SmallInput,
         )

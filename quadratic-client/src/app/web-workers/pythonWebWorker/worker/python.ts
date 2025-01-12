@@ -1,12 +1,18 @@
 import { debugWebWorkers } from '@/app/debugFlags';
-import { JsGetCellResponse } from '@/app/quadratic-core-types';
+import type { JsGetCellResponse } from '@/app/quadratic-core-types';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
-import { LanguageState } from '@/app/web-workers/languageTypes';
-import { PyodideInterface, loadPyodide } from 'pyodide';
-import type { CorePythonRun } from '../pythonCoreMessages';
-import type { InspectPython, PythonError, PythonSuccess, outputType } from '../pythonTypes';
-import { pythonClient } from './pythonClient';
-import { pythonCore } from './pythonCore';
+import type { LanguageState } from '@/app/web-workers/languageTypes';
+import type { CorePythonRun } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
+import type {
+  InspectPython,
+  PythonError,
+  PythonSuccess,
+  outputType,
+} from '@/app/web-workers/pythonWebWorker/pythonTypes';
+import { pythonClient } from '@/app/web-workers/pythonWebWorker/worker/pythonClient';
+import { pythonCore } from '@/app/web-workers/pythonWebWorker/worker/pythonCore';
+import type { PyodideInterface } from 'pyodide';
+import { loadPyodide } from 'pyodide';
 
 const TRY_AGAIN_TIMEOUT = 500;
 const IS_TEST = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
@@ -30,28 +36,17 @@ class Python {
     this.init();
   }
 
-  private getCells = (
-    x0: number,
-    y0: number,
-    x1: number,
-    y1: number,
-    sheet?: string,
+  private getCellsA1 = (
+    a1: string,
     lineNumber?: number
-  ): JsGetCellResponse[] | undefined => {
+  ): { cells: JsGetCellResponse[]; x: number; y: number; w: number; h: number } | undefined => {
     if (!this.transactionId) {
-      throw new Error('No transactionId in getCells');
+      throw new Error('No transactionId in getCellsA1');
     }
-    const cells = pythonCore.getCells(this.transactionId, x0, y0, x1 - x0 + 1, y1 - y0 + 1, sheet, lineNumber);
-    if (!cells) {
-      // we reload pyodide if there is an error getting cells
-      this.init();
-      pythonClient.sendPythonState('ready');
-    } else {
-      return cells;
-    }
+    return pythonCore.sendGetCellsA1(this.transactionId, a1, lineNumber);
   };
 
-  init = async () => {
+  private init = async () => {
     const jwt = await pythonClient.getJwt();
 
     // patch XMLHttpRequest to send requests to the proxy
@@ -77,12 +72,31 @@ class Python {
           },
         });
 
+        xhr.setRequestHeader = new Proxy(xhr.setRequestHeader, {
+          apply: function (target, thisArg, args: [string, string]) {
+            // apply quadratic-authorization header as the only authorization header
+            // this is required for authentication with the proxy server
+            if (args[0] === 'Quadratic-Authorization') {
+              args[0] = 'Authorization';
+            } else {
+              // apply all headers on the original request prefixed with X-Proxy
+              args[0] = `X-Proxy-${args[0]}`;
+            }
+            return target.apply(thisArg, args);
+          },
+        });
+
         xhr.onreadystatechange = function () {
           if (xhr.readyState === XMLHttpRequest.OPENED) {
-            xhr.setRequestHeader('Proxy', (xhr as any).__url);
-            xhr.setRequestHeader('Authorization', `Bearer ${jwt}`);
+            // this applies the quadratic-authorization header as the only authorization header
+            // this is required for authentication with the proxy server
+            xhr.setRequestHeader('Quadratic-Authorization', `Bearer ${jwt}`);
+
+            // this applies the original request URL as the x-proxy-url header
+            // this will get prefixed with X-Proxy due to above setRequestHeader override
+            xhr.setRequestHeader('Url', (xhr as any).__url);
           }
-          // After complition of XHR request
+          // After completion of XHR request
           if (xhr.readyState === 4) {
             if (xhr.status === 401) {
             }
@@ -105,7 +119,7 @@ class Python {
       ],
     });
 
-    this.pyodide.registerJsModule('getCellsDB', this.getCells);
+    this.pyodide.registerJsModule('getCellsA1', this.getCellsA1);
 
     // patch requests https://github.com/koenvo/pyodide-http
     await this.pyodide.runPythonAsync('import pyodide_http; pyodide_http.patch_all();');
@@ -115,8 +129,13 @@ class Python {
 
     try {
       // make run_python easier to call later
-      await this.pyodide.runPython('from quadratic_py.run_python import run_python');
-      await this.pyodide.runPythonAsync('from quadratic_py.inspect_python import inspect_python');
+      await this.pyodide.runPythonAsync(`
+        from quadratic_py.run_python import run_python
+        from quadratic_py.inspect_python import inspect_python
+        import sys
+        sys.modules['__main__'].run_python = run_python
+        sys.modules['__main__'].inspect_python = inspect_python
+      `);
     } catch (e: any) {
       pythonClient.sendPythonLoadError(e?.message);
       console.warn(`[Python WebWorker] failed to load`, e);
@@ -125,7 +144,7 @@ class Python {
       return;
     }
 
-    const pythonVersion = this.pyodide.runPython('import platform; platform.python_version()');
+    const pythonVersion = await this.pyodide.runPythonAsync('import platform; platform.python_version()');
     const pyodideVersion = this.pyodide.version;
 
     if (debugWebWorkers) console.log(`[Python] loaded Python v.${pythonVersion} via Pyodide v.${pyodideVersion}`);
@@ -133,7 +152,7 @@ class Python {
     pythonClient.sendInit(pythonVersion);
     pythonClient.sendPythonState('ready');
     this.state = 'ready';
-    this.next();
+    await this.next();
   };
 
   private corePythonRunToCodeRun = (corePythonRun: CorePythonRun): CodeRun => {
@@ -167,7 +186,7 @@ class Python {
     if (!this.pyodide) {
       console.warn('Python not loaded');
     } else {
-      const output = await this.pyodide.globals.get('inspect_python')(pythonCode);
+      const output = await this.pyodide.runPythonAsync(`inspect_python(${JSON.stringify(pythonCode)})`);
 
       if (output === undefined) {
         return undefined;
@@ -202,7 +221,9 @@ class Python {
     let inspectionResults: InspectPython | undefined;
 
     try {
-      result = await this.pyodide.globals.get('run_python')(message.code, { x: message.x, y: message.y });
+      result = await this.pyodide.runPythonAsync(
+        `run_python(${JSON.stringify(message.code)}, (${message.x}, ${message.y}))`
+      );
       output = Object.fromEntries(result.toJs()) as PythonSuccess | PythonError;
       inspectionResults = await this.inspectPython(message.code || '');
       let outputType = output?.output_type || '';

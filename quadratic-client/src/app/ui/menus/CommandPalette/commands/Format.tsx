@@ -1,3 +1,17 @@
+import { isAvailableBecauseCanEditFile } from '@/app/actions';
+import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import {
+  clearFormattingAndBorders,
+  removeNumericFormat,
+  setCellCommas,
+  textFormatDecreaseDecimalPlaces,
+  textFormatIncreaseDecimalPlaces,
+  textFormatSetCurrency,
+  textFormatSetExponential,
+  textFormatSetPercentage,
+} from '@/app/ui/helpers/formatCells';
+import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import {
   CurrencyIcon,
   DecimalDecreaseIcon,
@@ -8,19 +22,6 @@ import {
   PercentIcon,
   ScientificIcon,
 } from '@/shared/components/Icons';
-import { isAvailableBecauseCanEditFile } from '../../../../actions';
-import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import {
-  clearFormattingAndBorders,
-  removeCellNumericFormat,
-  setCellCommas,
-  textFormatDecreaseDecimalPlaces,
-  textFormatIncreaseDecimalPlaces,
-  textFormatSetCurrency,
-  textFormatSetExponential,
-  textFormatSetPercentage,
-} from '../../../helpers/formatCells';
-import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 import DateRangeIcon from '@mui/icons-material/DateRange';
 
 const commands: CommandGroup = {
@@ -45,9 +46,7 @@ const commands: CommandGroup = {
       label: 'Automatic',
       isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
-        return (
-          <CommandPaletteListItem {...props} action={removeCellNumericFormat} icon={<FormatNumberAutomaticIcon />} />
-        );
+        return <CommandPaletteListItem {...props} action={removeNumericFormat} icon={<FormatNumberAutomaticIcon />} />;
       },
     },
     {

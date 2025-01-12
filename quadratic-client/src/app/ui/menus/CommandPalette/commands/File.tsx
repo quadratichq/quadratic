@@ -1,13 +1,15 @@
 import { createNewFileAction, deleteFile, duplicateFileAction, isAvailableBecauseCanEditFile } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateUserAtom, editorInteractionStateUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useFileContext } from '@/app/ui/components/FileProvider';
-import { CommandGroup, CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { DeleteIcon, DraftIcon, FileCopyIcon } from '@/shared/components/Icons';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { useParams, useSubmit } from 'react-router-dom';
-import { useSetRecoilState } from 'recoil';
+import { useRecoilValue } from 'recoil';
 
 // TODO: make the types better here so it knows whether this exists
 const renameFileActionSpec = defaultActionSpec[Action.FileRename];
@@ -21,8 +23,10 @@ const commands: CommandGroup = {
       keywords: ['New file', 'Create file'],
       isAvailable: createNewFileAction.isAvailable,
       Component: (props) => {
-        const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
-        const action = () => createNewFileAction.run({ setEditorInteractionState });
+        const {
+          team: { uuid: teamUuid },
+        } = useFileRouteLoaderData();
+        const action = () => createNewFileAction.run({ teamUuid });
         return <CommandPaletteListItem {...props} icon={<DraftIcon />} action={action} />;
       },
     },
@@ -69,9 +73,12 @@ const commands: CommandGroup = {
       label: deleteFile.label,
       isAvailable: deleteFile.isAvailable,
       Component: (props: any) => {
-        const { uuid } = useParams() as { uuid: string };
+        const uuid = useRecoilValue(editorInteractionStateUuidAtom);
+        const user = useRecoilValue(editorInteractionStateUserAtom);
+        const submit = useSubmit();
         const { addGlobalSnackbar } = useGlobalSnackbar();
-        const action = () => deleteFile.run({ uuid, addGlobalSnackbar });
+        const action = () =>
+          deleteFile.run({ uuid, userEmail: user?.email ?? '', redirect: true, submit, addGlobalSnackbar });
         return <CommandPaletteListItem {...props} action={action} icon={<DeleteIcon />} />;
       },
     },

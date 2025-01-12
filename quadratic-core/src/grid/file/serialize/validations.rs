@@ -317,7 +317,7 @@ mod tests {
     use serial_test::parallel;
     use uuid::Uuid;
 
-    use crate::{grid::SheetId, selection::Selection, Rect};
+    use crate::a1::A1Selection;
 
     use super::*;
 
@@ -331,25 +331,9 @@ mod tests {
         let validations = Validations {
             validations: vec![Validation {
                 id: validation_id,
-                selection: Selection {
-                    sheet_id: SheetId::test(),
-                    x: 1,
-                    y: 2,
-                    rects: Some(vec![Rect::new(3, 4, 5, 6), Rect::new(7, 8, 9, 10)]),
-                    rows: Some(vec![1, 2, 3]),
-                    columns: Some(vec![4, 5, 6]),
-                    all: true,
-                },
+                selection: A1Selection::test_a1("A2,C4:D6,F7:H9"),
                 rule: ValidationRule::List(ValidationList {
-                    source: ValidationListSource::Selection(Selection {
-                        sheet_id: SheetId::test(),
-                        x: 1,
-                        y: 2,
-                        rects: Some(vec![Rect::new(3, 4, 5, 6), Rect::new(7, 8, 9, 10)]),
-                        rows: Some(vec![1, 2, 3]),
-                        columns: Some(vec![4, 5, 6]),
-                        all: true,
-                    }),
+                    source: ValidationListSource::Selection(A1Selection::test_a1("A2,C4:D6,F7:H9")),
                     ignore_blank: true,
                     drop_down: true,
                 }),
@@ -381,15 +365,7 @@ mod tests {
         let validations = Validations {
             validations: vec![Validation {
                 id: validation_id,
-                selection: Selection {
-                    sheet_id: SheetId::test(),
-                    x: 1,
-                    y: 2,
-                    rects: Some(vec![Rect::new(3, 4, 5, 6), Rect::new(7, 8, 9, 10)]),
-                    rows: Some(vec![1, 2, 3]),
-                    columns: Some(vec![4, 5, 6]),
-                    all: true,
-                },
+                selection: A1Selection::test_a1("A2,C4:D6,F7:H9"),
                 rule: ValidationRule::Number(ValidationNumber {
                     ignore_blank: true,
                     ranges: vec![
@@ -425,15 +401,7 @@ mod tests {
         let validations = Validations {
             validations: vec![Validation {
                 id: validation_id,
-                selection: Selection {
-                    sheet_id: SheetId::test(),
-                    x: 1,
-                    y: 2,
-                    rects: Some(vec![Rect::new(3, 4, 5, 6), Rect::new(7, 8, 9, 10)]),
-                    rows: Some(vec![1, 2, 3]),
-                    columns: Some(vec![4, 5, 6]),
-                    all: true,
-                },
+                selection: A1Selection::test_a1("A2,C4:D6,F7:H9"),
                 rule: ValidationRule::Text(ValidationText {
                     ignore_blank: true,
                     text_match: vec![
@@ -483,15 +451,7 @@ mod tests {
         let validations = Validations {
             validations: vec![Validation {
                 id: validation_id,
-                selection: Selection {
-                    sheet_id: SheetId::test(),
-                    x: 1,
-                    y: 2,
-                    rects: Some(vec![Rect::new(3, 4, 5, 6), Rect::new(7, 8, 9, 10)]),
-                    rows: Some(vec![1, 2, 3]),
-                    columns: Some(vec![4, 5, 6]),
-                    all: true,
-                },
+                selection: A1Selection::test_a1("A2,C4:D6,F7:H9"),
                 rule: ValidationRule::DateTime(ValidationDateTime {
                     ignore_blank: true,
                     require_date: true,

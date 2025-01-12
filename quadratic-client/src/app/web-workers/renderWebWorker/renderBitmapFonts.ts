@@ -1,7 +1,8 @@
 // Converts BitmapFont information to a simplified format that can be sent over
 // to the render web worker
 
-import { BitmapFont, IBitmapFontCharacter } from 'pixi.js';
+import type { IBitmapFontCharacter } from 'pixi.js';
+import { BitmapFont } from 'pixi.js';
 
 export interface RenderBitmapChar {
   textureUid: number;

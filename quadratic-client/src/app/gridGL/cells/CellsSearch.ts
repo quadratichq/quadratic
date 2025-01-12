@@ -1,9 +1,9 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import type { SheetPosTS } from '@/app/gridGL/types/size';
 import { colors } from '@/app/theme/colors';
 import { Graphics } from 'pixi.js';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { SheetPosTS } from '../types/size';
 
 export class CellsSearch extends Graphics {
   private sheetId: string;
@@ -12,6 +12,11 @@ export class CellsSearch extends Graphics {
     super();
     this.sheetId = sheetId;
     events.on('search', this.handleSearch);
+  }
+
+  destroy() {
+    events.off('search', this.handleSearch);
+    super.destroy();
   }
 
   private handleSearch = (found?: SheetPosTS[], current?: number) => {

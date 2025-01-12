@@ -9,6 +9,7 @@ mod macros;
 mod array;
 mod datetime;
 pub mod excel;
+mod financial;
 mod logic;
 mod lookup;
 mod mathematics;
@@ -44,6 +45,7 @@ pub const CATEGORIES: &[FormulaFunctionCategory] = &[
     array::CATEGORY,
     datetime::CATEGORY,
     lookup::CATEGORY,
+    financial::CATEGORY,
     #[cfg(test)]
     tests::CATEGORY,
 ];

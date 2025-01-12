@@ -2,11 +2,36 @@ use crate::controller::active_transactions::pending_transaction::PendingTransact
 use crate::controller::operations::operation::Operation;
 use crate::controller::GridController;
 
+/// Asserts that an operation is a particular type, and unpacks its contents
+/// into the current scope.
+///
+/// # Examples
+///
+/// ```ignore
+/// fn set_cell_values(transaction: &mut PendingTransaction, op: Operation) {
+///     // panic if `op` is not `SetCellValues`
+///     unwrap_op!(let SetCellValues { sheet_pos, values } = op);
+///
+///     println!("sheet_pos: {:?}", sheet_pos);
+///     println!("values: {:?}", values);
+/// }
+/// ```
+macro_rules! unwrap_op {
+    (let $op_type:ident $contents:tt = $op:ident) => {
+        let $crate::controller::operations::operation::Operation::$op_type $contents = $op else {
+            unreachable!("expected {}; got {:?}", stringify!($op_type), $op);
+        };
+    };
+}
+
 mod execute_borders;
+mod execute_borders_old;
 mod execute_code;
 mod execute_col_rows;
 mod execute_cursor;
+mod execute_data_table;
 mod execute_formats;
+mod execute_formats_old;
 mod execute_move_cells;
 mod execute_offsets;
 mod execute_sheets;
@@ -14,6 +39,13 @@ mod execute_validation;
 mod execute_values;
 
 impl GridController {
+    #[track_caller]
+    pub fn handle_execution_operation_result(result: anyhow::Result<()>) {
+        if let Err(error) = result {
+            dbgjs!(&format!("Error in execute_operation: {:?}", &error));
+        }
+    }
+
     /// Executes the given operation.
     ///
     pub fn execute_operation(&mut self, transaction: &mut PendingTransaction) {
@@ -24,15 +56,66 @@ impl GridController {
             match op {
                 Operation::SetCellValues { .. } => self.execute_set_cell_values(transaction, op),
                 Operation::SetCodeRun { .. } => self.execute_set_code_run(transaction, op),
+                Operation::SetChartSize { .. } => self.execute_set_chart_size(transaction, op),
+                Operation::SetDataTableAt { .. } => Self::handle_execution_operation_result(
+                    self.execute_set_data_table_at(transaction, op),
+                ),
+                Operation::FlattenDataTable { .. } => Self::handle_execution_operation_result(
+                    self.execute_flatten_data_table(transaction, op),
+                ),
+                Operation::SwitchDataTableKind { .. } => Self::handle_execution_operation_result(
+                    self.execute_code_data_table_to_data_table(transaction, op),
+                ),
+                Operation::GridToDataTable { .. } => Self::handle_execution_operation_result(
+                    self.execute_grid_to_data_table(transaction, op),
+                ),
+                Operation::DataTableMeta { .. } => Self::handle_execution_operation_result(
+                    self.execute_data_table_meta(transaction, op),
+                ),
+                Operation::SortDataTable { .. } => Self::handle_execution_operation_result(
+                    self.execute_sort_data_table(transaction, op),
+                ),
+                Operation::InsertDataTableColumn { .. } => Self::handle_execution_operation_result(
+                    self.execute_insert_data_table_column(transaction, op),
+                ),
+                Operation::DeleteDataTableColumn { .. } => Self::handle_execution_operation_result(
+                    self.execute_delete_data_table_column(transaction, op),
+                ),
+                Operation::InsertDataTableRow { .. } => Self::handle_execution_operation_result(
+                    self.execute_insert_data_table_row(transaction, op),
+                ),
+                Operation::DeleteDataTableRow { .. } => Self::handle_execution_operation_result(
+                    self.execute_delete_data_table_row(transaction, op),
+                ),
+                Operation::DataTableFirstRowAsHeader { .. } => {
+                    Self::handle_execution_operation_result(
+                        self.execute_data_table_first_row_as_header(transaction, op),
+                    );
+                }
+                Operation::DataTableFormats { .. } => {
+                    Self::handle_execution_operation_result(
+                        self.execute_data_table_format(transaction, op),
+                    );
+                }
                 Operation::ComputeCode { .. } => self.execute_compute_code(transaction, op),
-                Operation::SetCellFormats { .. } => self.execute_set_cell_formats(transaction, op),
+                Operation::SetCellFormats { .. } => {}
                 Operation::SetCellFormatsSelection { .. } => {
                     self.execute_set_cell_formats_selection(transaction, op);
                 }
-                Operation::SetBorders { .. } => self.execute_set_borders(transaction, op),
+                Operation::SetCodeRunVersion { .. } => {
+                    self.execute_set_code_run_version(transaction, op);
+                }
+                Operation::SetDataTable { .. } => {
+                    self.execute_set_data_table(transaction, op);
+                }
+                Operation::SetCellFormatsA1 { .. } => {
+                    self.execute_set_cell_formats_a1(transaction, op);
+                }
+                Operation::SetBorders { .. } => (), // we no longer support this (12/9/2024)
                 Operation::SetBordersSelection { .. } => {
                     self.execute_set_borders_selection(transaction, op);
                 }
+                Operation::SetBordersA1 { .. } => self.execute_set_borders_a1(transaction, op),
 
                 Operation::MoveCells { .. } => self.execute_move_cells(transaction, op),
 
@@ -53,6 +136,7 @@ impl GridController {
                 Operation::SetCursorSelection { .. } => {
                     self.execute_set_cursor_selection(transaction, op);
                 }
+                Operation::SetCursorA1 { .. } => self.execute_set_cursor_a1(transaction, op),
 
                 Operation::SetValidation { .. } => self.execute_set_validation(transaction, op),
                 Operation::RemoveValidation { .. } => {
@@ -67,13 +151,24 @@ impl GridController {
                 Operation::InsertColumn { .. } => self.execute_insert_column(transaction, op),
                 Operation::InsertRow { .. } => self.execute_insert_row(transaction, op),
             }
-
-            if cfg!(target_family = "wasm") || cfg!(test) {
-                crate::wasm_bindings::js::jsTransactionProgress(
-                    transaction.id.to_string(),
-                    transaction.operations.len() as i32,
-                );
-            }
         }
     }
+}
+
+#[cfg(test)]
+pub fn execute_reverse_operations(gc: &mut GridController, transaction: &PendingTransaction) {
+    let mut undo_transaction = PendingTransaction {
+        operations: transaction.reverse_operations.clone().into(),
+        ..Default::default()
+    };
+    gc.execute_operation(&mut undo_transaction);
+}
+
+#[cfg(test)]
+pub fn execute_forward_operations(gc: &mut GridController, transaction: &mut PendingTransaction) {
+    let mut undo_transaction = PendingTransaction {
+        operations: transaction.forward_operations.clone().into(),
+        ..Default::default()
+    };
+    gc.execute_operation(&mut undo_transaction);
 }

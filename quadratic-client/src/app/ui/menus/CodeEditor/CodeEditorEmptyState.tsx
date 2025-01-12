@@ -1,7 +1,9 @@
 import {
   codeEditorCodeCellAtom,
+  codeEditorDiffEditorContentAtom,
   codeEditorEditorContentAtom,
   codeEditorLoadingAtom,
+  codeEditorShowDiffEditorAtom,
   codeEditorShowSnippetsPopoverAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
@@ -23,7 +25,7 @@ import {
 import { Button } from '@/shared/shadcn/ui/button';
 import { ApiOutlined, BarChartOutlined, IntegrationInstructionsOutlined } from '@mui/icons-material';
 import mixpanel from 'mixpanel-browser';
-import * as monaco from 'monaco-editor';
+import type * as monaco from 'monaco-editor';
 import { useCallback, useMemo } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
@@ -37,17 +39,20 @@ export function CodeEditorEmptyState({ editorInst }: CodeEditorEmptyStateProps) 
   const codeCell = useMemo(() => getCodeCell(language), [language]);
   const setShowSnippetsPopover = useSetRecoilState(codeEditorShowSnippetsPopoverAtom);
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
+  const setDiffEditorContent = useSetRecoilState(codeEditorDiffEditorContentAtom);
+  const showDiffEditor = useRecoilValue(codeEditorShowDiffEditorAtom);
 
   const fillWithSnippet = useCallback(
     (code: string) => {
       setEditorContent(code);
+      setDiffEditorContent(undefined);
       editorInst?.focus();
     },
-    [editorInst, setEditorContent]
+    [editorInst, setEditorContent, setDiffEditorContent]
   );
 
   // Must meet these criteria to even show in the UI
-  if (editorContent !== '' || loading) {
+  if (editorContent !== '' || showDiffEditor || loading) {
     return null;
   }
   if (!(codeCell?.id === 'Javascript' || codeCell?.id === 'Python')) {
@@ -64,7 +69,7 @@ export function CodeEditorEmptyState({ editorInst }: CodeEditorEmptyStateProps) 
       },
     },
     {
-      label: 'Return to sheet',
+      label: 'Output to sheet',
       Icon: SheetComeFromIcon,
       onClick: () => {
         if (codeCell.id === 'Javascript') fillWithSnippet(SNIPPET_JS_RETURN);

@@ -1,8 +1,9 @@
 import { editorInteractionStateShowValidationAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { getSelectionString } from '@/app/grid/sheet/selection';
-import { Validation } from '@/app/quadratic-core-types';
+import { sheets } from '@/app/grid/controller/Sheets';
+import type { Validation } from '@/app/quadratic-core-types';
+import { A1SelectionToJsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { validationRuleSimple } from '@/app/ui/menus/Validations/Validation/validationType';
-import { ValidationsData } from '@/app/ui/menus/Validations/Validations/useValidationsData';
+import type { ValidationsData } from '@/app/ui/menus/Validations/Validations/useValidationsData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -46,11 +47,22 @@ export const ValidationEntry = (props: Props) => {
 
   const title = useMemo(() => validationText(validation), [validation]);
 
-  const selection = useMemo(() => getSelectionString(validation.selection), [validation.selection]);
+  const selection = useMemo(() => {
+    const selection = A1SelectionToJsSelection(validation.selection);
+    return selection.toA1String(sheets.current, sheets.a1Context);
+  }, [validation.selection]);
 
   const selectValidation = useCallback(() => {
     setShowValidation(validation.id);
   }, [setShowValidation, validation.id]);
+
+  const handleDeleteValidation = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      deleteValidation(validation.id);
+    },
+    [deleteValidation, validation.id]
+  );
 
   const ref = useCallback(
     (node: HTMLButtonElement) => {
@@ -78,10 +90,7 @@ export const ValidationEntry = (props: Props) => {
             className="invisible px-1 hover:bg-white group-hover:visible"
             asChild
             variant="outline"
-            onClick={(e) => {
-              deleteValidation(validation.id);
-              e.stopPropagation();
-            }}
+            onClick={handleDeleteValidation}
           >
             <span>
               <DeleteIcon className="text-gray-400" />

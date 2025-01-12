@@ -1,16 +1,27 @@
-import { CodeEditorState, defaultCodeEditorState } from '@/app/atoms/codeEditorAtom';
-import { EditorInteractionState, editorInteractionStateDefault } from '@/app/atoms/editorInteractionStateAtom';
-import { defaultGridPanMode, GridPanMode, PanMode } from '@/app/atoms/gridPanModeAtom';
-import { defaultGridSettings, GridSettings } from '@/app/atoms/gridSettingsAtom';
-import { defaultInlineEditor, InlineEditorState } from '@/app/atoms/inlineEditorAtom';
+import type { AIAnalystState } from '@/app/atoms/aiAnalystAtom';
+import { defaultAIAnalystState } from '@/app/atoms/aiAnalystAtom';
+import type { CodeEditorState } from '@/app/atoms/codeEditorAtom';
+import { defaultCodeEditorState } from '@/app/atoms/codeEditorAtom';
+import type { ContextMenuOptions, ContextMenuState } from '@/app/atoms/contextMenuAtom';
+import { ContextMenuType, defaultContextMenuState } from '@/app/atoms/contextMenuAtom';
+import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import { defaultEditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import type { GridPanMode } from '@/app/atoms/gridPanModeAtom';
+import { defaultGridPanMode, PanMode } from '@/app/atoms/gridPanModeAtom';
+import type { GridSettings } from '@/app/atoms/gridSettingsAtom';
+import { defaultGridSettings } from '@/app/atoms/gridSettingsAtom';
+import type { InlineEditorState } from '@/app/atoms/inlineEditorAtom';
+import { defaultInlineEditor } from '@/app/atoms/inlineEditorAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import type { SubmitAIAnalystPromptArgs } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { SetterOrUpdater } from 'recoil';
+import type { GlobalSnackbar, SnackbarOptions } from '@/shared/components/GlobalSnackbarProvider';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { SetterOrUpdater } from 'recoil';
 
 interface Input {
   show: boolean;
@@ -27,6 +38,10 @@ class PixiAppSettings {
   private lastSettings: GridSettings;
   private _panMode: PanMode;
   private _input: Input;
+  private waitingForSnackbar: {
+    message: JSX.Element | string;
+    options: SnackbarOptions;
+  }[] = [];
 
   // Keeps track of code editor content. This is used when moving code cells to
   // keep track of any unsaved changes, and keyboardCell.
@@ -40,7 +55,7 @@ class PixiAppSettings {
   gridSettings = defaultGridSettings;
   setGridSettings?: SetterOrUpdater<GridSettings>;
 
-  editorInteractionState = editorInteractionStateDefault;
+  editorInteractionState = defaultEditorInteractionState;
   setEditorInteractionState?: SetterOrUpdater<EditorInteractionState>;
 
   addGlobalSnackbar?: GlobalSnackbar['addGlobalSnackbar'];
@@ -51,6 +66,12 @@ class PixiAppSettings {
   codeEditorState = defaultCodeEditorState;
   setCodeEditorState?: SetterOrUpdater<CodeEditorState>;
 
+  contextMenu = defaultContextMenuState;
+  setContextMenu?: SetterOrUpdater<ContextMenuOptions>;
+  aiAnalystState = defaultAIAnalystState;
+  setAIAnalystState?: SetterOrUpdater<AIAnalystState>;
+  submitAIAnalystPrompt?: (prompt: SubmitAIAnalystPromptArgs) => Promise<void>;
+
   constructor() {
     const settings = localStorage.getItem('viewSettings');
     if (settings) {
@@ -60,12 +81,13 @@ class PixiAppSettings {
     }
     this.lastSettings = this.settings;
     events.on('gridSettings', this.getSettings);
+    events.on('contextMenu', this.getContextSettings);
     this._input = { show: false };
     this._panMode = PanMode.Disabled;
   }
 
   destroy() {
-    window.removeEventListener('gridSettings', this.getSettings);
+    events.off('gridSettings', this.getSettings);
   }
 
   private getSettings = (): void => {
@@ -76,16 +98,15 @@ class PixiAppSettings {
       this.settings = defaultGridSettings;
     }
     pixiApp.gridLines.dirty = true;
-    pixiApp.axesLines.dirty = true;
     pixiApp.headings.dirty = true;
 
-    if (
-      (this.lastSettings && this.lastSettings.showCellTypeOutlines !== this.settings.showCellTypeOutlines) ||
-      (this.lastSettings && this.lastSettings.presentationMode !== this.settings.presentationMode)
-    ) {
-      pixiApp.cellsSheets.updateCellsArray();
-      pixiApp.viewport.dirty = true;
-    }
+    // todo: not sure what to do with this...
+    // if (
+    //   (this.lastSettings && this.lastSettings.showCellTypeOutlines !== this.settings.showCellTypeOutlines) ||
+    //   (this.lastSettings && this.lastSettings.presentationMode !== this.settings.presentationMode)
+    // ) {
+    //   pixiApp.viewport.dirty = true;
+    // }
     this.lastSettings = this.settings;
   };
 
@@ -133,11 +154,18 @@ class PixiAppSettings {
     this.setCodeEditorState = setCodeEditorState;
   }
 
+  updateAIAnalystState(
+    aiAnalystState: AIAnalystState,
+    setAIAnalystState: SetterOrUpdater<AIAnalystState>,
+    submitAIAnalystPrompt: (prompt: SubmitAIAnalystPromptArgs) => Promise<void>
+  ): void {
+    this.aiAnalystState = aiAnalystState;
+    this.setAIAnalystState = setAIAnalystState;
+    this.submitAIAnalystPrompt = submitAIAnalystPrompt;
+  }
+
   get showGridLines(): boolean {
     return !this.settings.presentationMode && this.settings.showGridLines;
-  }
-  get showGridAxes(): boolean {
-    return !this.settings.presentationMode && this.settings.showGridAxes;
   }
   get showHeadings(): boolean {
     return !this.settings.presentationMode && this.settings.showHeadings;
@@ -177,7 +205,7 @@ class PixiAppSettings {
     }
   }
 
-  changeInput(input: boolean, initialValue?: string) {
+  changeInput(input: boolean, initialValue?: string, cursorMode?: CursorMode) {
     if (input === false) {
       multiplayer.sendEndCellEdit();
     }
@@ -190,8 +218,8 @@ class PixiAppSettings {
       pixiApp.cellsSheets.showLabel(this._input.x, this._input.y, this._input.sheetId, true);
     }
     if (input === true) {
-      const x = sheets.sheet.cursor.cursorPosition.x;
-      const y = sheets.sheet.cursor.cursorPosition.y;
+      const x = sheets.sheet.cursor.position.x;
+      const y = sheets.sheet.cursor.position.y;
       if (multiplayer.cellIsBeingEdited(x, y, sheets.sheet.id)) {
         this._input = { show: false };
       } else {
@@ -204,7 +232,7 @@ class PixiAppSettings {
     this.setDirty({ cursor: true });
 
     // this is used by CellInput to control visibility
-    events.emit('changeInput', input, initialValue);
+    events.emit('changeInput', input, initialValue, cursorMode);
   }
 
   get input() {
@@ -213,6 +241,40 @@ class PixiAppSettings {
 
   get panMode() {
     return this._panMode;
+  }
+
+  updateContextMenu(contextMenu: ContextMenuState, setContextMenu: SetterOrUpdater<ContextMenuOptions>) {
+    this.contextMenu = contextMenu;
+    this.setContextMenu = setContextMenu;
+  }
+
+  // We need this to ensure contextMenu is updated immediately to the state. The
+  // above function waits a tick.
+  private getContextSettings = (contextMenu: ContextMenuState) => {
+    this.contextMenu = contextMenu;
+  };
+
+  isRenamingTable(): boolean {
+    return !!(
+      (this.contextMenu.type === ContextMenuType.Table || this.contextMenu.type === ContextMenuType.TableColumn) &&
+      this.contextMenu.rename
+    );
+  }
+
+  setGlobalSnackbar(addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar']) {
+    this.addGlobalSnackbar = addGlobalSnackbar;
+    for (const snackbar of this.waitingForSnackbar) {
+      this.addGlobalSnackbar(snackbar.message, snackbar.options);
+    }
+    this.waitingForSnackbar = [];
+  }
+
+  snackbar(message: string, options: SnackbarOptions) {
+    if (this.addGlobalSnackbar) {
+      this.addGlobalSnackbar(message, options);
+    } else {
+      this.waitingForSnackbar.push({ message, options });
+    }
   }
 }
 

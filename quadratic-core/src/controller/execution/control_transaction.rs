@@ -1,18 +1,17 @@
-use chrono::Utc;
 use uuid::Uuid;
 
-use super::{GridController, TransactionType};
+use super::{GridController, TransactionSource};
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::operation::Operation;
 use crate::controller::transaction::Transaction;
 use crate::controller::transaction_types::JsCodeResult;
-use crate::error_core::Result;
+use crate::error_core::{CoreError, Result};
 use crate::grid::js_types::JsHtmlOutput;
-use crate::grid::{CodeRun, CodeRunResult};
+use crate::grid::{CodeCellLanguage, CodeRun, ConnectionKind, DataTable, DataTableKind};
 use crate::parquet::parquet_to_vec;
 use crate::renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
-use crate::{Pos, RunError, RunErrorMsg, Value};
+use crate::{CellValue, Pos, RunError, RunErrorMsg, Value};
 
 impl GridController {
     // loop compute cycle until complete or an async call is made
@@ -33,7 +32,7 @@ impl GridController {
             }
 
             self.execute_operation(transaction);
-
+            self.send_transaction_progress(transaction);
             self.process_visible_dirty_hashes(transaction);
 
             if transaction.has_async > 0 {
@@ -84,8 +83,8 @@ impl GridController {
         }
 
         if transaction.complete {
-            match transaction.transaction_type {
-                TransactionType::User => {
+            match transaction.source {
+                TransactionSource::User => {
                     let undo = transaction.to_undo_transaction();
                     self.undo_stack.push(undo);
                     self.redo_stack.clear();
@@ -93,28 +92,28 @@ impl GridController {
                         .unsaved_transactions
                         .insert_or_replace(&transaction, true);
                 }
-                TransactionType::Unsaved => {
+                TransactionSource::Unsaved => {
                     let undo = transaction.to_undo_transaction();
                     self.undo_stack.push(undo);
                     self.redo_stack.clear();
                 }
-                TransactionType::Undo => {
+                TransactionSource::Undo => {
                     let undo = transaction.to_undo_transaction();
                     self.redo_stack.push(undo);
                     self.transactions
                         .unsaved_transactions
                         .insert_or_replace(&transaction, true);
                 }
-                TransactionType::Redo => {
+                TransactionSource::Redo => {
                     let undo = transaction.to_undo_transaction();
                     self.undo_stack.push(undo);
                     self.transactions
                         .unsaved_transactions
                         .insert_or_replace(&transaction, true);
                 }
-                TransactionType::Multiplayer => (),
-                TransactionType::Server => (),
-                TransactionType::Unset => panic!("Expected a transaction type"),
+                TransactionSource::Multiplayer => (),
+                TransactionSource::Server => (),
+                TransactionSource::Unset => panic!("Expected a transaction type"),
             }
         }
 
@@ -138,22 +137,6 @@ impl GridController {
                     self.send_offsets_modified(*sheet_id, offsets);
                 });
 
-            self.process_visible_dirty_hashes(&mut transaction);
-            self.process_remaining_dirty_hashes(&mut transaction);
-
-            transaction.validations.iter().for_each(|sheet_id| {
-                if let Some(sheet) = self.try_sheet(*sheet_id) {
-                    sheet.send_all_validations();
-                    sheet.send_all_validation_warnings();
-                }
-            });
-
-            transaction.sheet_borders.iter().for_each(|sheet_id| {
-                if let Some(sheet) = self.try_sheet(*sheet_id) {
-                    sheet.borders.send_sheet_borders(*sheet_id);
-                }
-            });
-
             // todo: this can be sent in less calls
             transaction
                 .code_cells
@@ -165,6 +148,31 @@ impl GridController {
                         });
                     }
                 });
+
+            self.process_visible_dirty_hashes(&mut transaction);
+            self.process_remaining_dirty_hashes(&mut transaction);
+
+            transaction.validations.iter().for_each(|sheet_id| {
+                if let Some(sheet) = self.try_sheet(*sheet_id) {
+                    sheet.send_all_validations();
+                }
+            });
+
+            transaction
+                .validations_warnings
+                .iter()
+                .for_each(|(sheet_id, warnings)| {
+                    let warnings = warnings.values().cloned().collect::<Vec<_>>();
+                    if let Some(sheet) = self.try_sheet(*sheet_id) {
+                        sheet.send_validation_warnings(warnings);
+                    }
+                });
+
+            transaction.sheet_borders.iter().for_each(|sheet_id| {
+                if let Some(sheet) = self.try_sheet(*sheet_id) {
+                    sheet.borders.send_sheet_borders(*sheet_id);
+                }
+            });
 
             // todo: this can be sent in less calls
             transaction
@@ -208,6 +216,15 @@ impl GridController {
                     sheet.resend_fills();
                 }
             });
+
+            if let Some(selection) = transaction.update_selection {
+                crate::wasm_bindings::js::jsSetCursor(selection);
+            }
+
+            // send updated TableMap to client
+            if !transaction.code_cells.is_empty() || !transaction.offsets_modified.is_empty() {
+                self.send_a1_context();
+            }
         }
     }
 
@@ -218,7 +235,7 @@ impl GridController {
         transaction_name: TransactionName,
     ) {
         let mut transaction = PendingTransaction {
-            transaction_type: TransactionType::User,
+            source: TransactionSource::User,
             operations: operations.into(),
             cursor,
             transaction_name,
@@ -231,7 +248,7 @@ impl GridController {
     pub fn start_undo_transaction(
         &mut self,
         transaction: Transaction,
-        transaction_type: TransactionType,
+        transaction_type: TransactionSource,
         cursor: Option<String>,
     ) {
         let mut pending = transaction.to_undo_transaction(transaction_type, cursor);
@@ -279,27 +296,57 @@ impl GridController {
                 return_type = format!("{return_type}\n{extra}");
             }
 
-            let result = if let Some(error_msg) = &std_err {
-                let msg = RunErrorMsg::CodeRunError(error_msg.clone().into());
-                CodeRunResult::Err(RunError { span: None, msg })
-            } else {
-                CodeRunResult::Ok(Value::Array(array.into()))
-            };
+            let error = std_err.to_owned().map(|msg| RunError {
+                span: None,
+                msg: RunErrorMsg::CodeRunError(msg.into()),
+            });
 
             let code_run = CodeRun {
-                formatted_code_string: None,
-                result,
-                return_type: Some(return_type.clone()),
+                error,
+                return_type: Some(return_type.to_owned()),
                 line_number: Some(1),
                 output_type: Some(return_type),
                 std_out,
-                std_err,
-                spill_error: false,
-                last_modified: Utc::now(),
-                cells_accessed: transaction.cells_accessed.clone(),
+                std_err: std_err.to_owned(),
+                cells_accessed: transaction.cells_accessed.to_owned(),
+            };
+            let value = if std_err.is_some() {
+                Value::default() // TODO(ddimaria): this will be an empty vec
+            } else {
+                Value::Array(array.into())
             };
 
-            self.finalize_code_run(&mut transaction, current_sheet_pos, Some(code_run), None);
+            let Some(sheet) = self.try_sheet(current_sheet_pos.sheet_id) else {
+                return Err(CoreError::CodeCellSheetError("Sheet not found".to_string()));
+            };
+            let Some(CellValue::Code(code)) = sheet.cell_value_ref(current_sheet_pos.into()) else {
+                return Err(CoreError::CodeCellSheetError(
+                    "Code cell not found".to_string(),
+                ));
+            };
+
+            let name = match code.language {
+                CodeCellLanguage::Connection { kind, .. } => match kind {
+                    ConnectionKind::Postgres => "Postgres1",
+                    ConnectionKind::Mysql => "MySQL1",
+                    ConnectionKind::Mssql => "MSSQL1",
+                    ConnectionKind::Snowflake => "Snowflake1",
+                },
+                // this should not happen
+                _ => "Connection 1",
+            };
+            let data_table = DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                name,
+                value,
+                false,
+                true,
+                true,
+                None,
+            );
+
+            self.finalize_code_run(&mut transaction, current_sheet_pos, Some(data_table), None);
+            transaction.cells_accessed.clear();
             transaction.waiting_for_async = None;
             self.start_transaction(&mut transaction);
             self.finalize_transaction(transaction);
@@ -363,7 +410,7 @@ mod tests {
 
         // TransactionType::User
         let mut transaction = PendingTransaction {
-            transaction_type: TransactionType::User,
+            source: TransactionSource::User,
             operations: vec![operation].into(),
             ..Default::default()
         };
@@ -376,7 +423,7 @@ mod tests {
 
         // TransactionType::Undo
         let mut transaction = PendingTransaction {
-            transaction_type: TransactionType::Undo,
+            source: TransactionSource::Undo,
             operations: vec![operation_undo.clone()].into(),
             ..Default::default()
         };
@@ -390,7 +437,7 @@ mod tests {
 
         // TransactionType::Redo
         let mut transaction = PendingTransaction {
-            transaction_type: TransactionType::Redo,
+            source: TransactionSource::Redo,
             operations: vec![operation_undo.clone()].into(),
             ..Default::default()
         };
@@ -436,7 +483,7 @@ mod tests {
         assert_eq!(gc.grid().sheets()[0].bounds(true), GridBounds::Empty);
 
         let mut transaction = PendingTransaction {
-            transaction_type: TransactionType::User,
+            source: TransactionSource::User,
             operations: vec![operation.clone()].into(),
             ..Default::default()
         };
@@ -477,17 +524,12 @@ mod tests {
 
         let transaction_id = gc.last_transaction().unwrap().id;
 
-        let result = gc.calculation_complete(JsCodeResult::new(
-            transaction_id.to_string(),
-            true,
-            None,
-            None,
-            Some(vec!["1".into(), "number".into()]),
-            None,
-            None,
-            None,
-            None,
-        ));
+        let result = gc.calculation_complete(JsCodeResult {
+            transaction_id: transaction_id.to_string(),
+            success: true,
+            output_value: Some(vec!["1".into(), "number".into()]),
+            ..Default::default()
+        });
         assert!(result.is_ok());
     }
 

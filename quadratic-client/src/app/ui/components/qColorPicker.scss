@@ -29,6 +29,39 @@
   }
 }
 
+/* Adds a slight border to the color picker so white colors are still visible */
+.color-picker-submenu > div > span > div > div {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Overrides the last color to add the transparency indicator */
+.color-picker-submenu > div > span:last-of-type > div {
+  background: white !important;
+
+  &:before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 1px;
+    background: #fff;
+    box-shadow: inset 0 0 0 1px rgba(0 0 0 / 10%);
+    height: 15px;
+    width: 15px;
+    overflow: hidden;
+  }
+  &:after {
+    content: '';
+    width: 2px;
+    height: calc(100% + 2px);
+    position: absolute;
+    top: 1px;
+    left: 0;
+    background: red;
+    transform: rotate(45deg) translate(3px, -6px);
+    border-radius: 2px;
+  }
+}
+
 .color-picker-clear {
   display: flex;
   margin-bottom: 5px;

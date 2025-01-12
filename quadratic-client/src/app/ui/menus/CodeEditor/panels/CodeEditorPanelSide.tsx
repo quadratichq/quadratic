@@ -1,5 +1,5 @@
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
-import { AIAssistant } from '@/app/ui/menus/AIAssistant/AIAssistant';
+import { AIAssistant } from '@/app/ui/menus/CodeEditor/AIAssistant/AIAssistant';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { PanelBox, calculatePanelBoxMinimizedSize } from '@/app/ui/menus/CodeEditor/panels/PanelBox';
 import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
@@ -116,6 +116,7 @@ export function CodeEditorPanelSide({ codeEditorRef, schemaBrowser, showAIAssist
       >
         <Console />
       </PanelBox>
+
       {showAIAssistant && (
         <>
           <ResizeControl
@@ -126,7 +127,7 @@ export function CodeEditorPanelSide({ codeEditorRef, schemaBrowser, showAIAssist
           />
           <PanelBox
             id="panel-1"
-            title="AI Assistant"
+            title="Chat"
             open={panels[1].open}
             toggleOpen={panels[1].toggleOpen}
             height={panels[1].height}

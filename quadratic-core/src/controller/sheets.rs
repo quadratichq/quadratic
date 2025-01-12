@@ -2,6 +2,8 @@ use super::GridController;
 use crate::grid::Sheet;
 use crate::grid::SheetId;
 
+use anyhow::{anyhow, Result};
+
 impl GridController {
     pub fn sheet_ids(&self) -> Vec<SheetId> {
         self.grid.sheets().iter().map(|sheet| sheet.id).collect()
@@ -11,8 +13,19 @@ impl GridController {
         self.grid.try_sheet(sheet_id)
     }
 
+    pub fn try_sheet_result(&self, sheet_id: SheetId) -> Result<&Sheet> {
+        self.grid
+            .try_sheet(sheet_id)
+            .ok_or_else(|| anyhow!("Sheet with id {:?} not found", sheet_id))
+    }
+
     pub fn try_sheet_mut(&mut self, sheet_id: SheetId) -> Option<&mut Sheet> {
         self.grid.try_sheet_mut(sheet_id)
+    }
+
+    pub fn try_sheet_mut_result(&mut self, sheet_id: SheetId) -> Result<&mut Sheet> {
+        self.try_sheet_mut(sheet_id)
+            .ok_or_else(|| anyhow!("Sheet with id {:?} not found", sheet_id))
     }
 
     pub fn try_sheet_from_name(&mut self, name: String) -> Option<&Sheet> {

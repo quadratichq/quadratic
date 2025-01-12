@@ -1,4 +1,5 @@
-import { FileImportSettings, filesImportSettingsAtom } from '@/dashboard/atoms/filesImportSettingsAtom';
+import type { FileImportSettings } from '@/dashboard/atoms/filesImportSettingsAtom';
+import { filesImportSettingsAtom } from '@/dashboard/atoms/filesImportSettingsAtom';
 import { useRecoilCallback } from 'recoil';
 
 export const useGetCSVImportSettings = () => {

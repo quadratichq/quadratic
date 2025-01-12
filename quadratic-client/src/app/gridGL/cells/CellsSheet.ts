@@ -1,16 +1,16 @@
 import { events } from '@/app/events/events';
-import { JsValidationWarning } from '@/app/quadratic-core-types';
+import { Borders } from '@/app/gridGL/cells/Borders';
+import { CellsFills } from '@/app/gridGL/cells/CellsFills';
+import type { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
+import { CellsImages } from '@/app/gridGL/cells/cellsImages/CellsImages';
+import { CellsLabels } from '@/app/gridGL/cells/cellsLabel/CellsLabels';
+import { CellsMarkers } from '@/app/gridGL/cells/CellsMarkers';
+import { CellsSearch } from '@/app/gridGL/cells/CellsSearch';
+import { Tables } from '@/app/gridGL/cells/tables/Tables';
+import type { JsRenderCodeCell, JsValidationWarning } from '@/app/quadratic-core-types';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { Container, Rectangle, Sprite } from 'pixi.js';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { CellsArray } from './CellsArray';
-import { Borders } from './borders/Borders';
-import { CellsFills } from './CellsFills';
-import { CellsImage } from './cellsImages/CellsImage';
-import { CellsImages } from './cellsImages/CellsImages';
-import { CellsLabels } from './cellsLabel/CellsLabels';
-import { CellsMarkers } from './CellsMarkers';
-import { CellsSearch } from './CellsSearch';
+import type { Rectangle, Sprite } from 'pixi.js';
+import { Container } from 'pixi.js';
 
 export interface ErrorMarker {
   triangle?: Sprite;
@@ -25,13 +25,14 @@ export interface ErrorValidation {
 }
 
 export class CellsSheet extends Container {
-  private cellsFills: CellsFills;
   private borders: Borders;
-  cellsArray: CellsArray;
+  cellsFills: CellsFills;
   cellsImages: CellsImages;
 
   cellsMarkers: CellsMarkers;
   cellsLabels: CellsLabels;
+
+  tables: Tables;
 
   sheetId: string;
 
@@ -44,13 +45,19 @@ export class CellsSheet extends Container {
     this.addChild(new CellsSearch(sheetId));
 
     this.cellsLabels = this.addChild(new CellsLabels(this));
-    this.cellsArray = this.addChild(new CellsArray(this));
+    this.cellsImages = this.addChild(new CellsImages(this));
+    this.tables = this.addChild(new Tables(this));
+
     this.borders = this.addChild(new Borders(this));
     this.cellsMarkers = this.addChild(new CellsMarkers());
-    this.cellsImages = new CellsImages(this);
     this.visible = false;
 
     events.on('renderValidationWarnings', this.renderValidations);
+  }
+
+  destroy() {
+    events.off('renderValidationWarnings', this.renderValidations);
+    super.destroy({ children: true });
   }
 
   // used to render all cellsTextHashes to warm up the GPU
@@ -62,11 +69,8 @@ export class CellsSheet extends Container {
   show(bounds: Rectangle): void {
     this.visible = true;
     this.cellsLabels.show(bounds);
-    this.cellsArray.visible = true;
-    this.cellsArray.cheapCull(bounds);
     this.cellsFills.cheapCull(bounds);
     this.cellsImages.cheapCull(bounds);
-    pixiApp.changeCellImages(this.cellsImages);
   }
 
   hide(): void {
@@ -74,8 +78,8 @@ export class CellsSheet extends Container {
   }
 
   toggleOutlines(off?: boolean) {
-    this.cellsArray.visible = off ?? true;
     this.cellsMarkers.visible = off ?? true;
+    this.tables.toggleOutlines();
   }
 
   showLabel(x: number, y: number, show: boolean) {
@@ -87,20 +91,17 @@ export class CellsSheet extends Container {
   }
 
   adjustOffsets() {
-    this.borders.setDirty();
-  }
-
-  updateCellsArray() {
-    this.cellsArray.updateCellsArray();
+    this.tables.sheetOffsets(this.sheetId);
   }
 
   getCellsImages(): CellsImage[] {
     return this.cellsImages.children;
   }
 
-  update() {
+  update(dirtyViewport: boolean) {
     this.cellsFills.update();
     this.borders.update();
+    this.tables.update(dirtyViewport);
   }
 
   private renderValidations = (
@@ -124,5 +125,10 @@ export class CellsSheet extends Container {
 
   getErrorMarkerValidation(x: number, y: number): boolean {
     return this.cellsLabels.getErrorMarker(x, y) !== undefined;
+  }
+
+  // Returns the table that the cursor is on, or undefined if the cursor is not on a table.
+  cursorOnDataTable(): JsRenderCodeCell | undefined {
+    return this.tables.cursorOnDataTable();
   }
 }

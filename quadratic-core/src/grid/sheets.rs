@@ -31,6 +31,7 @@ impl Grid {
     }
 
     pub fn try_sheet_from_name(&self, name: String) -> Option<&Sheet> {
+        let name = name.trim();
         self.sheets.iter().find(|sheet| sheet.name == name)
     }
 
@@ -163,12 +164,11 @@ impl Grid {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod test {
     use super::*;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_try_sheet_from_id() {
         let grid = Grid::new();
         let id = grid.first_sheet_id();
@@ -178,7 +178,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_try_sheet_mut_from_id() {
         let mut grid = Grid::new();
         let id = grid.first_sheet_id();
@@ -199,7 +198,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_order_add_sheet() {
         let grid = create_three_sheets();
         let sheet_0 = &grid.sheets[0];
@@ -210,7 +208,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_order_move_sheet() {
         // starting as name = 0, 1, 2
         let mut grid = create_three_sheets();
@@ -248,21 +245,18 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_first_sheet() {
         let grid = create_three_sheets();
         assert_eq!(grid.first_sheet().name, String::from('0'));
     }
 
     #[test]
-    #[parallel]
     fn test_first_sheet_id() {
         let grid = create_three_sheets();
         assert_eq!(grid.first_sheet_id(), grid.sheets[0].id);
     }
 
     #[test]
-    #[parallel]
     fn test_previous_sheet_order() {
         let grid = create_three_sheets();
         assert_eq!(grid.previous_sheet_order(grid.sheets[0].id), None);
@@ -277,7 +271,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_next_sheet() {
         let grid = create_three_sheets();
         assert_eq!(grid.next_sheet(grid.sheets[0].id), Some(&grid.sheets[1]));
@@ -286,7 +279,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_sort_sheets() {
         let mut grid = create_three_sheets();
         grid.sheets[0].order = String::from("a2");
@@ -299,7 +291,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_move_sheet() {
         let mut grid = create_three_sheets();
         grid.move_sheet(
@@ -316,7 +307,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn add_sheet_adds_suffix_if_name_already_in_use() {
         let mut grid = Grid::new();
         grid.add_sheet(Some(Sheet::new(

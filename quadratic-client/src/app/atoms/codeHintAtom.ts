@@ -3,7 +3,7 @@ import { codeEditorShowSnippetsPopoverAtom } from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { SheetBounds } from '@/app/quadratic-core-types';
+import type { SheetBounds } from '@/app/quadratic-core-types';
 import { atom, DefaultValue, selector } from 'recoil';
 
 interface CodeHintState {
@@ -12,7 +12,7 @@ interface CodeHintState {
 }
 
 const defaultCodeHintState: CodeHintState = {
-  sheetEmpty: sheets.sheet.bounds.type === 'empty',
+  sheetEmpty: sheets.initialized ? sheets.sheet.bounds.type === 'empty' : false,
   multipleSelection: false,
 };
 
@@ -22,8 +22,7 @@ export const codeHintAtom = atom({
   effects: [
     ({ setSelf }) => {
       const updateMultipleSelection = () => {
-        const multipleSelection =
-          sheets.sheet.cursor.multiCursor !== undefined || sheets.sheet.cursor.columnRow !== undefined;
+        const multipleSelection = sheets.sheet.cursor.isMultiCursor();
         setSelf((prev) => {
           if (prev instanceof DefaultValue) return prev;
           return { ...prev, multipleSelection, sheetEmpty: sheets.sheet.bounds.type === 'empty' };

@@ -2,15 +2,10 @@
  * Conversion between Rust types and TS types.
  */
 
-import { RectangleLike } from '@/app/grid/sheet/SheetCursor';
-import { Pos, Rect, SheetRect } from '@/app/quadratic-core-types';
+import { bigIntReplacer } from '@/app/bigint';
+import type { RectangleLike } from '@/app/grid/sheet/SheetCursor';
+import type { Pos, Rect, SheetPos, SheetRect } from '@/app/quadratic-core-types';
 import { Point, Rectangle } from 'pixi.js';
-
-// Used to coerce bigints to numbers for JSON.stringify; see
-// https://github.com/GoogleChromeLabs/jsbi/issues/30#issuecomment-2064279949.
-const bigIntReplacer = (_key: string, value: any): any => {
-  return typeof value === 'bigint' ? Number(value) : value;
-};
 
 export function rectangleToRect(rectangle: Rectangle | RectangleLike): Rect {
   return {
@@ -76,7 +71,16 @@ export function rectToPoint(rect: Rect): Point {
 export function rectToSheetRect(rectangle: Rectangle, sheetId: string): SheetRect {
   return {
     min: { x: BigInt(rectangle.x), y: BigInt(rectangle.y) },
-    max: { x: BigInt(rectangle.x + rectangle.width), y: BigInt(rectangle.y + rectangle.height) },
+    max: { x: BigInt(rectangle.x + rectangle.width - 1), y: BigInt(rectangle.y + rectangle.height - 1) },
     sheet_id: { id: sheetId },
   };
+}
+
+export function toSheetPos(x: number, y: number, sheetId: string): string {
+  const sheetPos: SheetPos = {
+    x: BigInt(x),
+    y: BigInt(y),
+    sheet_id: { id: sheetId },
+  };
+  return JSON.stringify(sheetPos, bigIntReplacer);
 }

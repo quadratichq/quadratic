@@ -1,10 +1,11 @@
 import Anthropic from '@anthropic-ai/sdk';
 import express from 'express';
-import rateLimit from 'express-rate-limit';
+import { MODEL_OPTIONS } from 'quadratic-shared/AI_MODELS';
 import { AnthropicAutoCompleteRequestBodySchema } from 'quadratic-shared/typesAndSchemasAI';
-import { ANTHROPIC_API_KEY, RATE_LIMIT_AI_REQUESTS_MAX, RATE_LIMIT_AI_WINDOW_MS } from '../../env-vars';
+import { ANTHROPIC_API_KEY } from '../../env-vars';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { Request } from '../../types/Request';
+import { ai_rate_limiter } from './aiRateLimiter';
 
 const anthropic_router = express.Router();
 
@@ -12,33 +13,27 @@ const anthropic = new Anthropic({
   apiKey: ANTHROPIC_API_KEY,
 });
 
-const ai_rate_limiter = rateLimit({
-  windowMs: Number(RATE_LIMIT_AI_WINDOW_MS) || 3 * 60 * 60 * 1000, // 3 hours
-  max: Number(RATE_LIMIT_AI_REQUESTS_MAX) || 25, // Limit number of requests per windowMs
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  keyGenerator: (request: Request) => {
-    return request.auth?.sub || 'anonymous';
-  },
-});
-
 anthropic_router.post('/anthropic/chat', validateAccessToken, ai_rate_limiter, async (request, response) => {
   try {
-    const { model, messages, temperature } = AnthropicAutoCompleteRequestBodySchema.parse(request.body);
+    const { model, system, messages, tools, tool_choice } = AnthropicAutoCompleteRequestBodySchema.parse(request.body);
+    const { temperature, max_tokens } = MODEL_OPTIONS[model];
     const result = await anthropic.messages.create({
       model,
+      system,
       messages,
       temperature,
-      max_tokens: 8192,
+      max_tokens,
+      tools,
+      tool_choice,
     });
-    response.json(result.content[0]);
+    response.json(result.content);
   } catch (error: any) {
-    if (error.response) {
-      response.status(error.response.status).json(error.response.data);
-      console.log(error.response.status, error.response.data);
+    if (error instanceof Anthropic.APIError) {
+      response.status(error.status ?? 400).json(error.message);
+      console.log(error.status, error.message);
     } else {
-      response.status(400).json(error.message);
-      console.log(error.message);
+      response.status(400).json(error);
+      console.log(error);
     }
   }
 });
@@ -49,30 +44,47 @@ anthropic_router.post(
   ai_rate_limiter,
   async (request: Request, response) => {
     try {
-      const { model, messages, temperature } = AnthropicAutoCompleteRequestBodySchema.parse(request.body);
+      const { model, system, messages, tools, tool_choice } = AnthropicAutoCompleteRequestBodySchema.parse(
+        request.body
+      );
+      const { temperature, max_tokens } = MODEL_OPTIONS[model];
       const chunks = await anthropic.messages.create({
         model,
+        system,
         messages,
         temperature,
-        max_tokens: 8192,
+        max_tokens,
         stream: true,
+        tools,
+        tool_choice,
       });
 
       response.setHeader('Content-Type', 'text/event-stream');
       response.setHeader('Cache-Control', 'no-cache');
       response.setHeader('Connection', 'keep-alive');
       for await (const chunk of chunks) {
-        response.write(`data: ${JSON.stringify(chunk)}\n\n`);
+        if (!response.writableEnded) {
+          response.write(`data: ${JSON.stringify(chunk)}\n\n`);
+        } else {
+          break;
+        }
       }
 
-      response.end();
+      if (!response.writableEnded) {
+        response.end();
+      }
     } catch (error: any) {
-      if (error.response) {
-        response.status(error.response.status).json(error.response.data);
-        console.log(error.response.status, error.response.data);
+      if (!response.headersSent) {
+        if (error instanceof Anthropic.APIError) {
+          response.status(error.status ?? 400).json(error.message);
+          console.log(error.status, error.message);
+        } else {
+          response.status(400).json(error);
+          console.log(error);
+        }
       } else {
-        response.status(400).json(error.message);
-        console.log(error.message);
+        response.status(500).json('Error occurred after headers were sent');
+        console.error('Error occurred after headers were sent:', error);
       }
     }
   }

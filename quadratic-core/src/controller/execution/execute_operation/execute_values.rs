@@ -50,9 +50,9 @@ impl GridController {
                             .push(Operation::SetCellValues { sheet_pos, values });
 
                         if transaction.is_user() {
-                            self.check_deleted_code_runs(transaction, &sheet_rect);
+                            self.check_deleted_data_tables(transaction, &sheet_rect);
                             self.add_compute_operations(transaction, &sheet_rect, None);
-                            self.check_all_spills(transaction, sheet_rect.sheet_id, true);
+                            self.check_all_spills(transaction, sheet_rect.sheet_id);
                         }
 
                         transaction
@@ -63,7 +63,7 @@ impl GridController {
                             });
                     }
 
-                    transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
+                    transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
 
                     if !transaction.is_server() {
                         self.send_updated_bounds(sheet_rect.sheet_id);
@@ -72,7 +72,8 @@ impl GridController {
 
                         if transaction.is_user() {
                             if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
-                                let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into());
+                                let rows =
+                                    sheet.get_rows_with_wrap_in_rect(&sheet_rect.into(), true);
                                 if !rows.is_empty() {
                                     let resize_rows = transaction
                                         .resize_rows

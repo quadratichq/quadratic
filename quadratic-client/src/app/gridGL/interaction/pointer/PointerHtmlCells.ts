@@ -1,11 +1,11 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
 import { sheets } from '@/app/grid/controller/Sheets.js';
-import { HtmlCell } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCell';
+import type { HtmlCell } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCell';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { DOUBLE_CLICK_TIME } from '@/app/gridGL/interaction/pointer/pointerUtils.js';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { InteractionEvent, Rectangle } from 'pixi.js';
+import type { InteractionEvent } from 'pixi.js';
 
 export class PointerHtmlCells {
   private resizing: HtmlCell | undefined; // cell that is being resized
@@ -25,7 +25,6 @@ export class PointerHtmlCells {
     }
 
     this.clicked = undefined;
-    if (this.active) return true;
 
     const cells = htmlCellsHandler.getCells();
     for (const cell of cells) {
@@ -84,7 +83,7 @@ export class PointerHtmlCells {
       // select code cell, move chart to top and start double click timer
       if (target === 'body') {
         const cursor = sheets.sheet.cursor;
-        const cursorPosition = cursor.cursorPosition;
+
         // double click
         if (this.clicked === cell) {
           this.clicked = undefined;
@@ -94,24 +93,13 @@ export class PointerHtmlCells {
         // click with meta / ctrl key
         // select cell and add to selection
         else if (event.metaKey || event.ctrlKey) {
-          const multiCursor = cursor.multiCursor
-            ? [...cursor.multiCursor]
-            : [new Rectangle(cursorPosition.x, cursorPosition.y, 1, 1)];
-          multiCursor.push(new Rectangle(cell.x, cell.y, 1, 1));
-          cursor.changePosition({
-            cursorPosition: { x: cell.x, y: cell.y },
-            multiCursor,
-          });
+          cursor.moveTo(cell.x, cell.y, true);
         }
         // click without meta / ctrl key
         // select cell and clear selection
         else {
           this.active = cell;
-          cursor.changePosition({
-            cursorPosition: { x: cell.x, y: cell.y },
-            columnRow: null,
-            multiCursor: null,
-          });
+          cursor.moveTo(cell.x, cell.y);
         }
         // move chart to top, useful in case of overlapping charts
         htmlCellsHandler.movetoTop(cell);

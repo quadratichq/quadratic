@@ -7,7 +7,7 @@
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
-import {
+import type {
   JsBordersSheet,
   JsCodeCell,
   JsHtmlOutput,
@@ -17,20 +17,23 @@ import {
   JsRenderFill,
   JsSheetFill,
   JsValidationWarning,
-  Selection,
   SheetBounds,
   SheetInfo,
   TransactionName,
   Validation,
 } from '@/app/quadratic-core-types';
+import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
+import type {
+  ClientCoreGetJwt,
+  ClientCoreMessage,
+  CoreClientMessage,
+} from '@/app/web-workers/quadraticCore/coreClientMessages';
+import { core } from '@/app/web-workers/quadraticCore/worker/core';
 import { coreConnection } from '@/app/web-workers/quadraticCore/worker/coreConnection';
-import { MultiplayerState } from '../../multiplayerWebWorker/multiplayerClientMessages';
-import { ClientCoreGetJwt, ClientCoreMessage, CoreClientMessage } from '../coreClientMessages';
-import { core } from './core';
-import { coreJavascript } from './coreJavascript';
-import { coreMultiplayer } from './coreMultiplayer';
-import { corePython } from './corePython';
-import { offline } from './offline';
+import { coreJavascript } from '@/app/web-workers/quadraticCore/worker/coreJavascript';
+import { coreMultiplayer } from '@/app/web-workers/quadraticCore/worker/coreMultiplayer';
+import { corePython } from '@/app/web-workers/quadraticCore/worker/corePython';
+import { offline } from '@/app/web-workers/quadraticCore/worker/offline';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
@@ -47,10 +50,10 @@ declare var self: WorkerGlobalScope &
     sendDeleteSheetClient: (sheetId: string, user: boolean) => void;
     sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
     sendSheetInfoClient: (sheetInfo: SheetInfo[]) => void;
+    sendA1Context: (tableMap: string) => void;
     sendSheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
-    sendSheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
+    sendSheetMetaFills: (sheetId: string, fills: JsSheetFill[]) => void;
     sendSetCursor: (cursor: string) => void;
-    sendSetCursorSelection: (selection: Selection) => void;
     sendSheetOffsetsClient: (sheetId: string, offsets: JsOffset[]) => void;
     sendSheetHtml: (html: JsHtmlOutput[]) => void;
     sendUpdateHtml: (html: JsHtmlOutput) => void;
@@ -86,6 +89,7 @@ declare var self: WorkerGlobalScope &
       validationWarnings: JsValidationWarning[]
     ) => void;
     sendMultiplayerSynced: () => void;
+    sendClientMessage: (message: string, error: boolean) => void;
   };
 
 class CoreClient {
@@ -102,8 +106,8 @@ class CoreClient {
     self.sendSheetFills = coreClient.sendSheetFills;
     self.sendSheetMetaFills = coreClient.sendSheetMetaFills;
     self.sheetInfoUpdate = coreClient.sendSheetInfoUpdate;
+    self.sendA1Context = coreClient.sendA1Context;
     self.sendSetCursor = coreClient.sendSetCursor;
-    self.sendSetCursorSelection = coreClient.sendSetCursorSelection;
     self.sendSheetOffsetsClient = coreClient.sendSheetOffsets;
     self.sendSheetHtml = coreClient.sendSheetHtml;
     self.sendUpdateHtml = coreClient.sendUpdateHtml;
@@ -120,6 +124,7 @@ class CoreClient {
     self.sendSheetValidations = coreClient.sendSheetValidations;
     self.sendRenderValidationWarnings = coreClient.sendRenderValidationWarnings;
     self.sendMultiplayerSynced = coreClient.sendMultiplayerSynced;
+    self.sendClientMessage = coreClient.sendClientMessage;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -175,6 +180,10 @@ class CoreClient {
         await core.setCellValue(e.data.sheetId, e.data.x, e.data.y, e.data.value, e.data.cursor);
         return;
 
+      case 'clientCoreSetCellValues':
+        await core.setCellValues(e.data.sheetId, e.data.x, e.data.y, e.data.values, e.data.cursor);
+        return;
+
       case 'clientCoreGetEditCell':
         this.send({
           type: 'coreClientGetEditCell',
@@ -187,31 +196,7 @@ class CoreClient {
         this.send({
           type: 'coreClientGetCellFormatSummary',
           id: e.data.id,
-          formatSummary: await core.getCellFormatSummary(e.data.sheetId, e.data.x, e.data.y, e.data.withSheetInfo),
-        });
-        return;
-
-      case 'clientCoreGetFormatAll':
-        this.send({
-          type: 'coreClientGetFormatAll',
-          id: e.data.id,
-          format: await core.getFormatAll(e.data.sheetId),
-        });
-        return;
-
-      case 'clientCoreGetFormatColumn':
-        this.send({
-          type: 'coreClientGetFormatColumn',
-          id: e.data.id,
-          format: await core.getFormatColumn(e.data.sheetId, e.data.column),
-        });
-        return;
-
-      case 'clientCoreGetFormatRow':
-        this.send({
-          type: 'coreClientGetFormatRow',
-          id: e.data.id,
-          format: await core.getFormatRow(e.data.sheetId, e.data.row),
+          formatSummary: await core.getCellFormatSummary(e.data.sheetId, e.data.x, e.data.y),
         });
         return;
 
@@ -240,27 +225,27 @@ class CoreClient {
         return;
 
       case 'clientCoreSetCellBold':
-        await core.setCellBold(e.data.selection, e.data.bold, e.data.cursor);
+        await core.setBold(e.data.selection, e.data.bold, e.data.cursor);
         return;
 
       case 'clientCoreSetCellItalic':
-        await core.setCellItalic(e.data.selection, e.data.italic, e.data.cursor);
+        await core.setItalic(e.data.selection, e.data.italic, e.data.cursor);
         return;
 
       case 'clientCoreSetCellTextColor':
-        await core.setCellTextColor(e.data.selection, e.data.color, e.data.cursor);
+        await core.setTextColor(e.data.selection, e.data.color, e.data.cursor);
         return;
 
       case 'clientCoreSetCellUnderline':
-        await core.setCellUnderline(e.data.selection, e.data.underline, e.data.cursor);
+        await core.setUnderline(e.data.selection, e.data.underline, e.data.cursor);
         return;
 
       case 'clientCoreSetCellStrikeThrough':
-        await core.setCellStrikeThrough(e.data.selection, e.data.strikeThrough, e.data.cursor);
+        await core.setStrikeThrough(e.data.selection, e.data.strikeThrough, e.data.cursor);
         return;
 
       case 'clientCoreSetCellFillColor':
-        await core.setCellFillColor(e.data.selection, e.data.fillColor, e.data.cursor);
+        await core.setFillColor(e.data.selection, e.data.fillColor, e.data.cursor);
         return;
 
       case 'clientCoreSetCommas':
@@ -358,29 +343,37 @@ class CoreClient {
         return;
 
       case 'clientCoreSetCellAlign':
-        await core.setCellAlign(e.data.selection, e.data.align, e.data.cursor);
+        await core.setAlign(e.data.selection, e.data.align, e.data.cursor);
         return;
 
       case 'clientCoreSetCellVerticalAlign':
-        await core.setCellVerticalAlign(e.data.selection, e.data.verticalAlign, e.data.cursor);
+        await core.setVerticalAlign(e.data.selection, e.data.verticalAlign, e.data.cursor);
         break;
 
       case 'clientCoreSetCellWrap':
-        await core.setCellWrap(e.data.selection, e.data.wrap, e.data.cursor);
+        await core.setWrap(e.data.selection, e.data.wrap, e.data.cursor);
         break;
 
       case 'clientCoreCopyToClipboard':
-        const result = await core.copyToClipboard(e.data.selection);
-        this.send({ type: 'coreClientCopyToClipboard', id: e.data.id, ...result });
+        const copyResult = await core.copyToClipboard(e.data.selection);
+        this.send({
+          type: 'coreClientCopyToClipboard',
+          id: e.data.id,
+          ...copyResult,
+        });
         return;
 
       case 'clientCoreCutToClipboard':
         const cutResult = await core.cutToClipboard(e.data.selection, e.data.cursor);
-        this.send({ type: 'coreClientCutToClipboard', id: e.data.id, ...cutResult });
+        this.send({
+          type: 'coreClientCutToClipboard',
+          id: e.data.id,
+          ...cutResult,
+        });
         return;
 
       case 'clientCorePasteFromClipboard':
-        await core.pasteFromClipboard(e.data.selection, e.data.plainText, e.data.html, e.data.special, e.data.cursor);
+        await core.pasteFromClipboard(e.data);
         return;
 
       case 'clientCoreSetBorders':
@@ -388,7 +381,7 @@ class CoreClient {
         return;
 
       case 'clientCoreSetCellRenderResize':
-        await core.setCellRenderSize(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        await core.setChartSize(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
         return;
 
       case 'clientCoreAutocomplete':
@@ -427,19 +420,35 @@ class CoreClient {
         });
         return;
 
-      case 'clientCoreFindNextColumn':
+      case 'clientCoreJumpCursor':
         this.send({
-          type: 'coreClientFindNextColumn',
+          type: 'coreClientJumpCursor',
           id: e.data.id,
-          column: await core.findNextColumn(e.data),
+          coordinate: await core.jumpCursor(e.data.sheetId, e.data.current, e.data.jump, e.data.direction),
         });
         return;
 
-      case 'clientCoreFindNextRow':
+      case 'clientCoreFindNextColumn':
         this.send({
-          type: 'coreClientFindNextRow',
+          type: 'coreClientJumpCursor',
           id: e.data.id,
-          row: await core.findNextRow(e.data),
+          coordinate: await core.jumpCursor(e.data.sheetId, e.data.current, true, e.data.direction),
+        });
+        return;
+
+      case 'clientCoreFindNextColumnForRect':
+        this.send({
+          type: 'coreClientFindNextColumnForRect',
+          id: e.data.id,
+          column: await core.findNextColumnForRect(e.data),
+        });
+        return;
+
+      case 'clientCoreFindNextRowForRect':
+        this.send({
+          type: 'coreClientFindNextRowForRect',
+          id: e.data.id,
+          row: await core.findNextRowForRect(e.data),
         });
         return;
 
@@ -485,7 +494,7 @@ class CoreClient {
         return;
 
       case 'clientCoreChangeDecimals':
-        core.changeDecimals(e.data.selection, e.data.delta, e.data.cursor);
+        core.changeDecimalPlaces(e.data.selection, e.data.delta, e.data.cursor);
         return;
 
       case 'clientCoreSetPercentage':
@@ -497,11 +506,27 @@ class CoreClient {
         return;
 
       case 'clientCoreRemoveCellNumericFormat':
-        core.removeCellNumericFormat(e.data.selection, e.data.cursor);
+        core.removeNumericFormat(e.data.selection, e.data.cursor);
         return;
 
       case 'clientCoreMoveCells':
         core.moveCells(e.data);
+        return;
+
+      case 'clientCoreMoveCodeCellVertically':
+        this.send({
+          type: 'coreClientMoveCodeCellVertically',
+          pos: core.moveCodeCellVertically(e.data),
+          id: e.data.id,
+        });
+        return;
+
+      case 'clientCoreMoveCodeCellHorizontally':
+        this.send({
+          type: 'coreClientMoveCodeCellHorizontally',
+          pos: core.moveCodeCellHorizontally(e.data),
+          id: e.data.id,
+        });
         return;
 
       case 'clientCoreSetDateTimeFormat':
@@ -568,6 +593,22 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreGetAIContextRectsInSelections':
+        this.send({
+          type: 'coreClientGetAIContextRectsInSelections',
+          id: e.data.id,
+          value: core.getAIContextRectsInSelection(e.data.selections, e.data.maxRects),
+        });
+        return;
+
+      case 'clientCoreGetErroredCodeCellsInSelections':
+        this.send({
+          type: 'coreClientGetErroredCodeCellsInSelections',
+          id: e.data.id,
+          value: core.getErroredCodeCellsInSelection(e.data.selections),
+        });
+        return;
+
       case 'clientCoreDeleteColumns':
         core.deleteColumns(e.data.sheetId, e.data.columns, e.data.cursor);
         return;
@@ -582,6 +623,61 @@ class CoreClient {
 
       case 'clientCoreInsertRow':
         core.insertRow(e.data.sheetId, e.data.row, e.data.below, e.data.cursor);
+        return;
+
+      case 'clientCoreFlattenDataTable':
+        core.flattenDataTable(e.data.sheetId, e.data.x, e.data.y, e.data.cursor);
+        return;
+
+      case 'clientCoreCodeDataTableToDataTable':
+        core.codeDataTableToDataTable(e.data.sheetId, e.data.x, e.data.y, e.data.cursor);
+        return;
+
+      case 'clientCoreGridToDataTable':
+        core.gridToDataTable(e.data.sheetRect, e.data.cursor);
+        return;
+
+      case 'clientCoreDataTableMeta':
+        core.dataTableMeta(
+          e.data.sheetId,
+          e.data.x,
+          e.data.y,
+          e.data.name,
+          e.data.alternatingColors,
+          e.data.columns,
+          e.data.showHeader,
+          e.data.showUI,
+          e.data.cursor
+        );
+        return;
+
+      case 'clientCoreDataTableMutations':
+        core.dataTableMutations(
+          e.data.sheetId,
+          e.data.x,
+          e.data.y,
+          e.data.column_to_add,
+          e.data.column_to_remove,
+          e.data.row_to_add,
+          e.data.row_to_remove,
+          e.data.cursor
+        );
+        return;
+
+      case 'clientCoreSortDataTable':
+        core.sortDataTable(e.data.sheetId, e.data.x, e.data.y, e.data.sort, e.data.cursor);
+        return;
+
+      case 'clientCoreDataTableFirstRowAsHeader':
+        core.dataTableFirstRowAsHeader(e.data.sheetId, e.data.x, e.data.y, e.data.firstRowAsHeader, e.data.cursor);
+        return;
+
+      case 'clientCoreFiniteRectFromSelection':
+        this.send({
+          type: 'coreClientFiniteRectFromSelection',
+          id: e.data.id,
+          rect: core.finiteRectFromSelection(e.data.selection),
+        });
         return;
 
       default:
@@ -627,7 +723,7 @@ class CoreClient {
     this.send({ type: 'coreClientSheetFills', sheetId, fills });
   };
 
-  sendSheetMetaFills = (sheetId: string, fills: JsSheetFill) => {
+  sendSheetMetaFills = (sheetId: string, fills: JsSheetFill[]) => {
     this.send({ type: 'coreClientSheetMetaFills', sheetId, fills });
   };
 
@@ -637,10 +733,6 @@ class CoreClient {
 
   sendSetCursor = (cursor: string) => {
     this.send({ type: 'coreClientSetCursor', cursor });
-  };
-
-  sendSetCursorSelection = (selection: Selection) => {
-    this.send({ type: 'coreClientSetCursorSelection', selection });
   };
 
   sendSheetOffsets = (sheetId: string, offsets: JsOffset[]) => {
@@ -749,6 +841,14 @@ class CoreClient {
 
   sendMultiplayerSynced = () => {
     this.send({ type: 'coreClientMultiplayerSynced' });
+  };
+
+  sendClientMessage = (message: string, error: boolean) => {
+    this.send({ type: 'coreClientClientMessage', message, error });
+  };
+
+  sendA1Context = (context: string) => {
+    this.send({ type: 'coreClientA1Context', context });
   };
 }
 

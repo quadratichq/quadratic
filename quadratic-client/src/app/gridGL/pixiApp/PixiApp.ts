@@ -1,4 +1,4 @@
-import { editorInteractionStateDefault } from '@/app/atoms/editorInteractionStateAtom';
+import { defaultEditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import {
   copyToClipboardEvent,
@@ -7,32 +7,33 @@ import {
 } from '@/app/grid/actions/clipboard/clipboard';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
-import { AxesLines } from '@/app/gridGL/UI/AxesLines';
+import { Background } from '@/app/gridGL/UI/Background';
 import { Cursor } from '@/app/gridGL/UI/Cursor';
 import { GridLines } from '@/app/gridGL/UI/GridLines';
 import { HtmlPlaceholders } from '@/app/gridGL/UI/HtmlPlaceholders';
 import { UICellImages } from '@/app/gridGL/UI/UICellImages';
 import { UICellMoving } from '@/app/gridGL/UI/UICellMoving';
+import { UICopy } from '@/app/gridGL/UI/UICopy';
 import { UIMultiPlayerCursor } from '@/app/gridGL/UI/UIMultiplayerCursor';
 import { UIValidations } from '@/app/gridGL/UI/UIValidations';
 import { BoxCells } from '@/app/gridGL/UI/boxCells';
 import { CellHighlights } from '@/app/gridGL/UI/cellHighlights/CellHighlights';
 import { GridHeadings } from '@/app/gridGL/UI/gridHeadings/GridHeadings';
+import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { CellsSheets } from '@/app/gridGL/cells/CellsSheets';
-import { CellsImages } from '@/app/gridGL/cells/cellsImages/CellsImages';
 import { Pointer } from '@/app/gridGL/interaction/pointer/Pointer';
 import { ensureVisible } from '@/app/gridGL/interaction/viewportHelper';
+import { MomentumScrollDetector } from '@/app/gridGL/pixiApp/MomentumScrollDetector';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Update } from '@/app/gridGL/pixiApp/Update';
-import { Viewport } from '@/app/gridGL/pixiApp/Viewport';
 import { urlParams } from '@/app/gridGL/pixiApp/urlParams/urlParams';
-import { Coordinate } from '@/app/gridGL/types/size';
+import { Viewport } from '@/app/gridGL/pixiApp/viewport/Viewport';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { isEmbed } from '@/app/helpers/isEmbed';
+import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { HEADING_SIZE } from '@/shared/constants/gridConstants';
 import { sharedEvents } from '@/shared/sharedEvents';
 import { Container, Graphics, Rectangle, Renderer, utils } from 'pixi.js';
 import './pixiApp.css';
@@ -52,11 +53,17 @@ export class PixiApp {
 
   canvas!: HTMLCanvasElement;
   viewport!: Viewport;
-  gridLines!: GridLines;
-  axesLines!: AxesLines;
+  gridLines: GridLines;
+  background: Background;
   cursor!: Cursor;
   cellHighlights!: CellHighlights;
   multiplayerCursor!: UIMultiPlayerCursor;
+
+  // this is used to display content over the headings (eg, table name when off
+  // the screen)
+  overHeadingsColumnsHeaders: Container;
+  overHeadingsTableNames: Container;
+
   cellMoving!: UICellMoving;
   headings!: GridHeadings;
   boxCells!: BoxCells;
@@ -67,8 +74,10 @@ export class PixiApp {
   imagePlaceholders!: Container;
   cellImages!: UICellImages;
   validations: UIValidations;
+  copy: UICopy;
 
   renderer!: Renderer;
+  momentumDetector: MomentumScrollDetector;
   stage = new Container();
   loading = true;
   destroyed = false;
@@ -87,9 +96,15 @@ export class PixiApp {
   constructor() {
     // This is created first so it can listen to messages from QuadraticCore.
     this.cellsSheets = new CellsSheets();
+    this.gridLines = new GridLines();
     this.cellImages = new UICellImages();
     this.validations = new UIValidations();
+    this.overHeadingsColumnsHeaders = new Container();
+    this.overHeadingsTableNames = new Container();
     this.viewport = new Viewport();
+    this.background = new Background();
+    this.momentumDetector = new MomentumScrollDetector();
+    this.copy = new UICopy();
   }
 
   init() {
@@ -111,17 +126,17 @@ export class PixiApp {
   }
 
   // called after RenderText has no more updates to send
-  firstRenderComplete() {
+  firstRenderComplete = () => {
     if (this.waitingForFirstRender) {
       // perform a render to warm up the GPU
       this.cellsSheets.showAll(sheets.sheet.id);
-      pixiApp.renderer.render(pixiApp.stage);
+      this.renderer.render(this.stage);
       this.waitingForFirstRender();
       this.waitingForFirstRender = undefined;
     } else {
       this.alreadyRendered = true;
     }
-  }
+  };
 
   private initCanvas() {
     this.canvas = document.createElement('canvas');
@@ -145,14 +160,22 @@ export class PixiApp {
     // this holds the viewport's contents
     this.viewportContents = this.viewport.addChild(new Container());
 
+    this.background = this.viewportContents.addChild(this.background);
+
     // useful for debugging at viewport locations
     this.debug = this.viewportContents.addChild(new Graphics());
 
     this.cellsSheets = this.viewportContents.addChild(this.cellsSheets);
-    this.gridLines = this.viewportContents.addChild(new GridLines());
-    this.axesLines = this.viewportContents.addChild(new AxesLines());
+    this.gridLines = this.viewportContents.addChild(this.gridLines);
+
+    // this is a hack to ensure that table column names appears over the column
+    // headings, but under the row headings
+    const gridHeadings = new GridHeadings();
+    this.viewportContents.addChild(gridHeadings.gridHeadingsRows);
+
     this.boxCells = this.viewportContents.addChild(new BoxCells());
     this.cellImages = this.viewportContents.addChild(this.cellImages);
+    this.copy = this.viewportContents.addChild(this.copy);
     this.multiplayerCursor = this.viewportContents.addChild(new UIMultiPlayerCursor());
     this.cursor = this.viewportContents.addChild(new Cursor());
     this.htmlPlaceholders = this.viewportContents.addChild(new HtmlPlaceholders());
@@ -160,7 +183,9 @@ export class PixiApp {
     this.cellHighlights = this.viewportContents.addChild(new CellHighlights());
     this.cellMoving = this.viewportContents.addChild(new UICellMoving());
     this.validations = this.viewportContents.addChild(this.validations);
-    this.headings = this.viewportContents.addChild(new GridHeadings());
+    this.headings = this.viewportContents.addChild(gridHeadings);
+    this.viewportContents.addChild(this.overHeadingsColumnsHeaders);
+    this.viewportContents.addChild(this.overHeadingsTableNames);
 
     this.reset();
 
@@ -186,6 +211,22 @@ export class PixiApp {
     document.removeEventListener('cut', cutToClipboardEvent);
   }
 
+  // calculate sheet rectangle, without heading, factoring in scale
+  getViewportRectangle(): Rectangle {
+    const headingSize = this.headings.headingSize;
+    const scale = this.viewport.scale.x;
+
+    const viewportBounds = this.viewport.getVisibleBounds();
+    const rectangle = new Rectangle(
+      viewportBounds.left + headingSize.width / scale,
+      viewportBounds.top + headingSize.height / scale,
+      viewportBounds.width - headingSize.width / scale,
+      viewportBounds.height - headingSize.height / scale
+    );
+
+    return rectangle;
+  }
+
   setViewportDirty(): void {
     this.viewport.dirty = true;
   }
@@ -193,13 +234,17 @@ export class PixiApp {
   viewportChanged = (): void => {
     this.viewport.dirty = true;
     this.gridLines.dirty = true;
-    this.axesLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
     this.cellHighlights.dirty = true;
     this.cellsSheets?.cull(this.viewport.getVisibleBounds());
-    sheets.sheet.cursor.viewport = this.viewport.lastViewport!;
-    multiplayer.sendViewport(this.saveMultiplayerViewport());
+
+    // we only set the viewport if update has completed firstRenderComplete
+    // (otherwise we can't get this.headings.headingSize) -- this is a hack
+    if (this.update.firstRenderComplete) {
+      sheets.sheet.cursor.viewport = this.viewport.lastViewport!;
+      multiplayer.sendViewport(this.saveMultiplayerViewport());
+    }
   };
 
   attach(parent: HTMLDivElement): void {
@@ -229,7 +274,6 @@ export class PixiApp {
     const accentColor = getCSSVariableTint('primary');
     this.accentColor = accentColor;
     this.gridLines.dirty = true;
-    this.axesLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
     this.cellHighlights.dirty = true;
@@ -245,7 +289,6 @@ export class PixiApp {
     this.renderer.resize(width, height);
     this.viewport.resize(width, height);
     this.gridLines.dirty = true;
-    this.axesLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
     this.cellHighlights.dirty = true;
@@ -255,7 +298,6 @@ export class PixiApp {
   // called before and after a render
   prepareForCopying(options?: { gridLines?: boolean; cull?: Rectangle }): Container {
     this.gridLines.visible = options?.gridLines ?? false;
-    this.axesLines.visible = false;
     this.cursor.visible = false;
     this.cellHighlights.visible = false;
     this.multiplayerCursor.visible = false;
@@ -271,7 +313,6 @@ export class PixiApp {
 
   cleanUpAfterCopying(culled?: boolean): void {
     this.gridLines.visible = true;
-    this.axesLines.visible = true;
     this.cursor.visible = true;
     this.cellHighlights.visible = true;
     this.multiplayerCursor.visible = true;
@@ -295,16 +336,13 @@ export class PixiApp {
 
   reset(): void {
     this.viewport.scale.set(1);
-    const { x, y } = this.getStartingViewport();
-    this.viewport.position.set(x, y);
-    pixiAppSettings.setEditorInteractionState?.(editorInteractionStateDefault);
+    pixiAppSettings.setEditorInteractionState?.(defaultEditorInteractionState);
   }
 
   rebuild() {
     this.paused = true;
     this.viewport.dirty = true;
     this.gridLines.dirty = true;
-    this.axesLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
     this.cellHighlights.dirty = true;
@@ -313,14 +351,6 @@ export class PixiApp {
     this.paused = false;
     this.reset();
     this.setViewportDirty();
-  }
-
-  getStartingViewport(): { x: number; y: number } {
-    if (pixiAppSettings.showHeadings) {
-      return { x: HEADING_SIZE + 1, y: HEADING_SIZE + 1 };
-    } else {
-      return { x: 1, y: 1 };
-    }
   }
 
   saveMultiplayerViewport(): string {
@@ -333,13 +363,10 @@ export class PixiApp {
     });
   }
 
-  updateCursorPosition(visible: boolean | Coordinate = true) {
+  updateCursorPosition(visible: boolean | JsCoordinate = true) {
     this.cursor.dirty = true;
     this.cellHighlights.dirty = true;
     this.headings.dirty = true;
-    if (!pixiAppSettings.showCellTypeOutlines) {
-      this.cellsSheets.updateCellsArray();
-    }
     if (visible) ensureVisible(visible !== true ? visible : undefined);
     events.emit('cursorPosition');
   }
@@ -358,16 +385,12 @@ export class PixiApp {
     }
   }
 
-  // this shows the CellImages of the current sheet, removing any old ones. This
-  // is needed to ensure the proper z-index for the images (ie, so it shows over
-  // the grid lines).
-  changeCellImages(cellsImages: CellsImages) {
-    this.imagePlaceholders.removeChildren();
-    this.imagePlaceholders.addChild(cellsImages);
-  }
-
   isCursorOnCodeCell(): boolean {
     return this.cellsSheets.isCursorOnCodeCell();
+  }
+
+  isCursorOnCodeCellOutput(): boolean {
+    return this.cellsSheets.isCursorOnCodeCellOutput();
   }
 
   // called when the viewport is loaded from the URL
@@ -381,6 +404,13 @@ export class PixiApp {
         scaleY: this.viewport.scale.y,
       };
     }
+  }
+
+  cellsSheet(): CellsSheet {
+    if (!this.cellsSheets.current) {
+      throw new Error('cellSheet not found in pixiApp');
+    }
+    return this.cellsSheets.current;
   }
 }
 

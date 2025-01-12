@@ -11,9 +11,10 @@ import {
 } from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStateShowCellTypeMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
-import { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
+import type { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { useUpdateCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useUpdateCodeEditor';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -48,7 +49,7 @@ export const CodeEditorEffects = () => {
     }) => {
       const { sheetId, x, y, codeCell: codeCellCore } = options;
       if (showCodeEditor && sheetId === codeCell.sheetId && x === codeCell.pos.x && y === codeCell.pos.y) {
-        updateCodeEditor(sheetId, x, y, codeCellCore, undefined);
+        updateCodeEditor(sheetId, x, y, codeCellCore, undefined, true);
       }
     };
 
@@ -84,6 +85,7 @@ export const CodeEditorEffects = () => {
             waitingForEditorClose: undefined,
             showCodeEditor: false,
           }));
+          pixiApp.cellHighlights.clear();
         } else {
           setShowCellTypeMenu(waitingForEditorClose.showCellTypeMenu);
           setCodeEditorState((prev) => ({
@@ -93,6 +95,7 @@ export const CodeEditorEffects = () => {
             initialCode: waitingForEditorClose.initialCode,
             waitingForEditorClose: undefined,
           }));
+          pixiApp.cellHighlights.clear();
         }
       }
     }

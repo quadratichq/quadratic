@@ -1,7 +1,10 @@
-import { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
-import { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
-import { SheetPosTS } from '@/app/gridGL/types/size';
-import {
+import type { ContextMenuOptions } from '@/app/atoms/contextMenuAtom';
+import type { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
+import type { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
+import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
+import type { CodeCell } from '@/app/gridGL/types/codeCell';
+import type { SheetPosTS } from '@/app/gridGL/types/size';
+import type {
   JsBordersSheet,
   JsCodeCell,
   JsHtmlOutput,
@@ -11,23 +14,22 @@ import {
   JsRenderFill,
   JsSheetFill,
   JsValidationWarning,
-  Selection,
   SheetBounds,
   SheetInfo,
   Validation,
 } from '@/app/quadratic-core-types';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
-import { LanguageState } from '@/app/web-workers/languageTypes';
-import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
-import { CellEdit, MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
-import {
+import type { LanguageState } from '@/app/web-workers/languageTypes';
+import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
+import type { CellEdit, MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import type {
   CoreClientImage,
   CoreClientImportProgress,
   CoreClientTransactionProgress,
   CoreClientTransactionStart,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import EventEmitter from 'eventemitter3';
-import { Point, Rectangle } from 'pixi.js';
+import type { Point, Rectangle } from 'pixi.js';
 
 interface EventTypes {
   needRefresh: (state: 'required' | 'recommended' | 'force') => void;
@@ -35,6 +37,7 @@ interface EventTypes {
   search: (found?: SheetPosTS[], current?: number) => void;
   hoverCell: (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => void;
   hoverTooltip: (rect?: Rectangle, text?: string, subtext?: string) => void;
+  hoverTable: (table?: JsRenderCodeCell) => void;
 
   zoom: (scale: number) => void;
 
@@ -47,16 +50,16 @@ interface EventTypes {
   changeSheet: (sheetId: string) => void;
   sheetBounds: (sheetBounds: SheetBounds) => void;
 
-  setCursor: (cursor?: string, selection?: Selection) => void;
+  setCursor: (selection?: string) => void;
   cursorPosition: () => void;
   generateThumbnail: () => void;
-  changeInput: (input: boolean, initialValue?: string) => void;
+  changeInput: (input: boolean, initialValue?: string, cursorMode?: CursorMode) => void;
   headingSize: (width: number, height: number) => void;
   gridSettings: () => void;
 
   sheetOffsets: (sheetId: string, offsets: JsOffset[]) => void;
   sheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
-  sheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
+  sheetMetaFills: (sheetId: string, fills: JsSheetFill[]) => void;
   htmlOutput: (html: JsHtmlOutput[]) => void;
   htmlUpdate: (html: JsHtmlOutput) => void;
   bordersSheet: (sheetId: string, borders?: JsBordersSheet) => void;
@@ -123,10 +126,25 @@ interface EventTypes {
   // when validation changes state
   validation: (validation: string | boolean) => void;
 
-  // context menu opens on a grid heading
-  gridContextMenu: (world: Point, row: number | null, column: number | null) => void;
+  // trigger a context menu
+  contextMenu: (options: ContextMenuOptions) => void;
+  contextMenuClose: () => void;
 
   suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;
+
+  // use this to set a drawing element to dirty
+  viewportChanged: () => void;
+
+  // use this only if you need to immediately get the viewport's value (ie, from React)
+  viewportChangedReady: () => void;
+  hashContentChanged: (sheetId: string, hashX: number, hashY: number) => void;
+
+  codeEditorCodeCell: (codeCell?: CodeCell) => void;
+
+  a1Context: (context: string) => void;
+
+  aiAnalystInitialized: () => void;
+  pixiAppSettingsInitialized: () => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

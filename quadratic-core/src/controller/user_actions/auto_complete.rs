@@ -14,30 +14,33 @@ impl GridController {
     pub fn autocomplete(
         &mut self,
         sheet_id: SheetId,
-        selection: Rect,
-        range: Rect,
+        initial_range: Rect,
+        final_range: Rect,
         cursor: Option<String>,
     ) -> Result<()> {
-        let ops = self.autocomplete_operations(sheet_id, selection, range)?;
+        let ops = self.autocomplete_operations(sheet_id, initial_range, final_range)?;
         self.start_user_transaction(ops, cursor, TransactionName::Autocomplete);
         Ok(())
     }
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
     use super::*;
     use crate::{
+        a1::A1Selection,
         array,
-        grid::{BorderSelection, BorderStyle, CodeCellLanguage},
-        selection::Selection,
+        grid::{
+            sheet::borders::{BorderSelection, BorderStyle},
+            CodeCellLanguage, CodeCellValue,
+        },
         test_util::{
             assert_cell_format_bold_row, assert_cell_format_cell_fill_color_row,
             assert_cell_value_row, assert_code_cell_value, assert_display_cell_value, print_table,
         },
-        CodeCellValue, Pos, SheetPos, SheetRect,
+        CellValue, Pos, SheetPos, SheetRect,
     };
-    use serial_test::parallel;
 
     fn test_setup_rect(selection: &Rect) -> (GridController, SheetId) {
         let vals = vec!["a", "h", "x", "g", "f", "z", "r", "b"];
@@ -84,15 +87,15 @@ mod tests {
                 if let Some(is_bold) = bolds.get(count) {
                     if *is_bold {
                         grid_controller
-                            .set_bold_selection(Selection::sheet_pos(sheet_pos), true, None)
+                            .set_bold(&A1Selection::from_single_cell(sheet_pos), true, None)
                             .unwrap();
                     }
                 }
 
                 if let Some(fill_color) = fill_colors.get(count) {
                     grid_controller
-                        .set_fill_color_selection(
-                            Selection::sheet_pos(sheet_pos),
+                        .set_fill_color(
+                            &A1Selection::from_single_cell(sheet_pos),
                             Some(fill_color.to_lowercase()),
                             None,
                         )
@@ -116,7 +119,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_cell_values_in_rect() {
         let selected: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 2, y: 1 });
         let (grid_controller, sheet_id) = test_setup_rect(&selected);
@@ -131,7 +133,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_expand_code_cell() {
         let selected: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 1 });
         let range: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 10, y: 10 });
@@ -156,32 +157,30 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_expand_left_only() {
-        let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
-        let range: Rect = Rect::new_span(Pos { x: -3, y: 1 }, Pos { x: 5, y: 2 });
+        let selected: Rect = Rect::new_span(Pos { x: 12, y: 11 }, Pos { x: 15, y: 12 });
+        let range: Rect = Rect::new_span(Pos { x: 7, y: 11 }, Pos { x: 15, y: 12 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
         print_table(
             &grid,
             sheet_id,
-            Rect::new_span(Pos { x: -3, y: 1 }, Pos { x: 5, y: 2 }),
+            Rect::new_span(Pos { x: 7, y: 11 }, Pos { x: 15, y: 12 }),
         );
 
         let expected = vec!["g", "a", "h", "x", "g", "a", "h", "x", "g"];
         let expected_bold = vec![true, true, false, false, true, true, false, false, true];
-        assert_cell_value_row(&grid, sheet_id, -3, 5, 1, expected.clone());
-        assert_cell_format_bold_row(&grid, sheet_id, -3, 5, 1, expected_bold.clone());
+        assert_cell_value_row(&grid, sheet_id, 7, 15, 11, expected.clone());
+        assert_cell_format_bold_row(&grid, sheet_id, 7, 15, 11, expected_bold.clone());
 
         let expected = vec!["b", "f", "z", "r", "b", "f", "z", "r", "b"];
         let expected_bold = vec![false, false, true, true, false, false, true, true, false];
-        assert_cell_format_bold_row(&grid, sheet_id, -3, 5, 2, expected_bold);
-        assert_cell_value_row(&grid, sheet_id, -3, 5, 2, expected);
+        assert_cell_format_bold_row(&grid, sheet_id, 7, 15, 12, expected_bold);
+        assert_cell_value_row(&grid, sheet_id, 7, 15, 12, expected);
     }
 
     #[test]
-    #[parallel]
     fn test_expand_right_only() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 10, y: 2 });
@@ -205,10 +204,9 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_expand_up_only() {
-        let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
-        let range: Rect = Rect::new_span(Pos { x: 2, y: -7 }, Pos { x: 5, y: 2 });
+        let selected: Rect = Rect::new_span(Pos { x: 12, y: 11 }, Pos { x: 15, y: 12 });
+        let range: Rect = Rect::new_span(Pos { x: 12, y: 3 }, Pos { x: 15, y: 12 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
@@ -216,25 +214,24 @@ mod tests {
 
         let expected = vec!["a", "h", "x", "g"];
         let expected_bold = vec![true, false, false, true];
-        assert_cell_value_row(&grid, sheet_id, 2, 5, -7, expected.clone());
-        assert_cell_format_bold_row(&grid, sheet_id, 2, 5, -7, expected_bold.clone());
-        assert_cell_value_row(&grid, sheet_id, 2, 5, -5, expected.clone());
-        assert_cell_format_bold_row(&grid, sheet_id, 2, 5, -5, expected_bold.clone());
-        assert_cell_value_row(&grid, sheet_id, 2, 5, -1, expected.clone());
-        assert_cell_format_bold_row(&grid, sheet_id, 2, 5, -1, expected_bold.clone());
+        assert_cell_value_row(&grid, sheet_id, 12, 15, 3, expected.clone());
+        assert_cell_format_bold_row(&grid, sheet_id, 12, 15, 3, expected_bold.clone());
+        assert_cell_value_row(&grid, sheet_id, 12, 15, 13, expected.clone());
+        assert_cell_format_bold_row(&grid, sheet_id, 12, 15, 5, expected_bold.clone());
+        assert_cell_value_row(&grid, sheet_id, 12, 15, 11, expected.clone());
+        assert_cell_format_bold_row(&grid, sheet_id, 12, 15, 11, expected_bold.clone());
 
         let expected = vec!["f", "z", "r", "b"];
         let expected_bold = vec![false, true, true, false];
-        assert_cell_format_bold_row(&grid, sheet_id, 2, 5, -6, expected_bold.clone());
-        assert_cell_value_row(&grid, sheet_id, 2, 5, -6, expected.clone());
-        assert_cell_format_bold_row(&grid, sheet_id, 2, 5, -4, expected_bold.clone());
-        assert_cell_value_row(&grid, sheet_id, 2, 5, -4, expected.clone());
-        assert_cell_format_bold_row(&grid, sheet_id, 2, 5, 0, expected_bold.clone());
-        assert_cell_value_row(&grid, sheet_id, 2, 5, 0, expected.clone());
+        assert_cell_format_bold_row(&grid, sheet_id, 12, 15, 4, expected_bold.clone());
+        assert_cell_value_row(&grid, sheet_id, 12, 15, 4, expected.clone());
+        assert_cell_format_bold_row(&grid, sheet_id, 12, 15, 6, expected_bold.clone());
+        assert_cell_value_row(&grid, sheet_id, 12, 15, 6, expected.clone());
+        assert_cell_format_bold_row(&grid, sheet_id, 12, 15, 10, expected_bold.clone());
+        assert_cell_value_row(&grid, sheet_id, 12, 15, 10, expected.clone());
     }
 
     #[test]
-    #[parallel]
     fn test_expand_down_only() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 10 });
@@ -263,7 +260,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_expand_down_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(selected.min, Pos { x: 14, y: 10 });
@@ -282,7 +278,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_expand_formatting_only() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let vals = vec!["", "", "", "", "", "", "", ""];
@@ -294,7 +289,7 @@ mod tests {
         let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors, &[]);
         let range: Rect = Rect::new_span(selected.min, Pos { x: 7, y: 6 });
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
-        let range_over: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 9, y: 8 });
+        let range_over: Rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 9, y: 8 });
         print_table(&grid, sheet_id, range_over);
 
         let expected = vec!["white", "red", "blue", "green", "white", "red"];
@@ -314,9 +309,9 @@ mod tests {
         let expected = vec!["yellow", "white", "red", "blue", "yellow", "white"];
         assert_cell_format_cell_fill_color_row(&grid, sheet_id, 2, 7, 1, expected);
         let expected = vec!["white", "red", "blue", "green", "white", "red"];
-        assert_cell_format_cell_fill_color_row(&grid, sheet_id, 2, 7, 0, expected);
+        assert_cell_format_cell_fill_color_row(&grid, sheet_id, 2, 7, 2, expected);
         let expected = vec!["yellow", "white", "red", "blue", "yellow", "white"];
-        assert_cell_format_cell_fill_color_row(&grid, sheet_id, 2, 7, -1, expected);
+        assert_cell_format_cell_fill_color_row(&grid, sheet_id, 2, 7, 3, expected);
 
         // down + left
         let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors, &[]);
@@ -348,40 +343,38 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_expand_up_and_right() {
-        let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
-        let range: Rect = Rect::new_span(Pos { x: 2, y: -7 }, Pos { x: 10, y: 3 });
+        let selected: Rect = Rect::new_span(Pos { x: 12, y: 12 }, Pos { x: 15, y: 13 });
+        let range: Rect = Rect::new_span(Pos { x: 12, y: 3 }, Pos { x: 20, y: 13 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
         print_table(
             &grid,
             sheet_id,
-            Rect::new_span(Pos { x: 2, y: 3 }, Pos { x: 10, y: -7 }),
+            Rect::new_span(Pos { x: 12, y: 13 }, Pos { x: 20, y: 3 }),
         );
 
         let expected = vec!["f", "z", "r", "b", "f", "z", "r", "b", "f"];
         let expected_bold = vec![false, true, true, false, false, true, true, false, false];
 
-        assert_cell_value_row(&grid, sheet_id, 2, 10, -7, expected.clone());
-        assert_cell_value_row(&grid, sheet_id, 2, 10, 3, expected);
-        assert_cell_format_bold_row(&grid, sheet_id, 2, 10, -7, expected_bold.clone());
-        assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 3, expected_bold);
+        assert_cell_value_row(&grid, sheet_id, 12, 20, 3, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 12, 20, 13, expected);
+        assert_cell_format_bold_row(&grid, sheet_id, 12, 20, 3, expected_bold.clone());
+        assert_cell_format_bold_row(&grid, sheet_id, 12, 20, 13, expected_bold);
     }
 
     #[test]
-    #[parallel]
     fn test_expand_down_and_left() {
-        let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
-        let range: Rect = Rect::new_span(Pos { x: -7, y: 20 }, Pos { x: 5, y: 10 });
+        let selected: Rect = Rect::new_span(Pos { x: 12, y: 12 }, Pos { x: 15, y: 13 });
+        let range: Rect = Rect::new_span(Pos { x: 3, y: 30 }, Pos { x: 15, y: 20 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
         print_table(
             &grid,
             sheet_id,
-            Rect::new_span(Pos { x: -7, y: 2 }, Pos { x: 5, y: 10 }),
+            Rect::new_span(Pos { x: 3, y: 12 }, Pos { x: 15, y: 20 }),
         );
 
         let expected = vec![
@@ -391,17 +384,16 @@ mod tests {
             true, true, false, false, true, true, false, false, true, true, false, false, true,
         ];
 
-        assert_cell_value_row(&grid, sheet_id, -7, 5, 2, expected.clone());
-        assert_cell_value_row(&grid, sheet_id, -7, 5, 10, expected);
-        assert_cell_format_bold_row(&grid, sheet_id, -7, 5, 2, expected_bold.clone());
-        assert_cell_format_bold_row(&grid, sheet_id, -7, 5, 10, expected_bold);
+        assert_cell_value_row(&grid, sheet_id, 3, 15, 12, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 3, 15, 20, expected);
+        assert_cell_format_bold_row(&grid, sheet_id, 3, 15, 12, expected_bold.clone());
+        assert_cell_format_bold_row(&grid, sheet_id, 3, 15, 20, expected_bold);
     }
 
     #[test]
-    #[parallel]
     fn test_expand_up_and_left() {
-        let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
-        let range: Rect = Rect::new_span(Pos { x: -7, y: -7 }, selected.max);
+        let selected: Rect = Rect::new_span(Pos { x: 12, y: 12 }, Pos { x: 15, y: 13 });
+        let range: Rect = Rect::new_span(Pos { x: 3, y: 3 }, selected.max);
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
@@ -414,14 +406,13 @@ mod tests {
             false, false, true, true, false, false, true, true, false, false, true, true, false,
         ];
 
-        assert_cell_value_row(&grid, sheet_id, -7, 5, -7, expected.clone());
-        assert_cell_value_row(&grid, sheet_id, -7, 5, 3, expected);
-        assert_cell_format_bold_row(&grid, sheet_id, -7, 5, -7, expected_bold.clone());
-        assert_cell_format_bold_row(&grid, sheet_id, -7, 5, 3, expected_bold);
+        assert_cell_value_row(&grid, sheet_id, 3, 15, 3, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 3, 15, 13, expected);
+        assert_cell_format_bold_row(&grid, sheet_id, 3, 15, 3, expected_bold.clone());
+        assert_cell_format_bold_row(&grid, sheet_id, 3, 15, 13, expected_bold);
     }
 
     #[test]
-    #[parallel]
     fn test_expand_horizontal_series_down_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 6 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 9, y: 10 });
@@ -447,7 +438,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_expand_horizontal_series_up_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 6, y: 15 }, Pos { x: 9, y: 19 });
         let range: Rect = Rect::new_span(Pos { x: 6, y: 12 }, Pos { x: 15, y: 19 });
@@ -476,7 +466,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_expand_horizontal_series_up_and_left() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 6 });
         let range: Rect = Rect::new_span(Pos { x: -4, y: -8 }, Pos { x: 5, y: 6 });
@@ -511,7 +500,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_expand_vertical_series_down_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 2, y: 4 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 9, y: 10 });
@@ -526,7 +514,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_shrink_width() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 7 });
@@ -561,7 +548,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_shrink_height() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 7 });
@@ -593,7 +579,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_shrink_width_and_height() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 7 });
@@ -625,7 +610,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_autocomplete_sheet_id_not_found() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 7 });
@@ -636,13 +620,12 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn expand_right_borders() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(1, 1, 3, 3, sheet_id)),
+        gc.set_borders(
+            A1Selection::from_rect(SheetRect::new(1, 1, 3, 3, sheet_id)),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
@@ -652,74 +635,129 @@ mod tests {
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        // it's +1, +1 because we the bounds is calculated from the top/left of
-        // the cell (so bottom/right is +1)
-        assert_eq!(sheet.borders.bounds(), Some(Rect::new(1, 1, 6, 4)));
+
+        assert_eq!(sheet.borders.finite_bounds(), Some(Rect::new(1, 1, 5, 3)));
     }
 
     #[test]
-    #[parallel]
-    fn expand_left_borders() {
+    fn test_expand_left_borders() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(3, 1, 6, 1, sheet_id)),
+        gc.set_borders(
+            A1Selection::test_a1("C1:F1"),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
         );
 
-        gc.autocomplete(sheet_id, Rect::new(3, 1, 6, 1), Rect::new(1, 1, 5, 1), None)
-            .unwrap();
+        gc.autocomplete(
+            sheet_id,
+            Rect::test_a1("C1:F1"),
+            Rect::test_a1("A1:F1"),
+            None,
+        )
+        .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        // it's +1, +1 because we the bounds is calculated from the top/left of
-        // the cell (so bottom/right is +1)
-        assert_eq!(sheet.borders.bounds(), Some(Rect::new(1, 1, 7, 2)));
+
+        assert_eq!(sheet.borders.finite_bounds(), Some(Rect::test_a1("A1:F1")));
     }
 
     #[test]
-    #[parallel]
-    fn expand_up_borders() {
+    fn test_expand_up_borders() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(1, 3, 1, 6, sheet_id)),
+        gc.set_borders(
+            A1Selection::test_a1("A3:A6"),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
         );
 
-        gc.autocomplete(sheet_id, Rect::new(1, 3, 1, 6), Rect::new(1, 1, 1, 5), None)
-            .unwrap();
+        gc.autocomplete(
+            sheet_id,
+            Rect::test_a1("A3:A6"),
+            Rect::test_a1("A1:A6"),
+            None,
+        )
+        .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        // it's +1, +1 because we the bounds is calculated from the top/left of
-        // the cell (so bottom/right is +1)
-        assert_eq!(sheet.borders.bounds(), Some(Rect::new(1, 1, 2, 7)));
+
+        assert_eq!(sheet.borders.finite_bounds(), Some(Rect::test_a1("A1:A6")));
     }
 
     #[test]
-    #[parallel]
-    fn expand_down_borders() {
+    fn test_expand_down_borders() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(1, 3, 1, 6, sheet_id)),
+        gc.set_borders(
+            A1Selection::test_a1("A1:A3"),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
         );
 
-        gc.autocomplete(sheet_id, Rect::new(1, 3, 1, 6), Rect::new(1, 1, 1, 5), None)
+        gc.autocomplete(
+            sheet_id,
+            Rect::test_a1("A1:A3"),
+            Rect::test_a1("A1:A5"),
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.borders.finite_bounds(), Some(Rect::test_a1("A1:A5")));
+    }
+
+    #[test]
+    fn update_code_cell_references_python() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_code_cell(
+            pos![C3].to_sheet_pos(sheet_id),
+            CodeCellLanguage::Python,
+            r#"q.cells("A1:B2", first_row_header=True)"#.to_string(),
+            None,
+        );
+
+        gc.autocomplete(sheet_id, Rect::new(3, 3, 3, 4), Rect::new(3, 3, 4, 4), None)
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        // it's +1, +1 because we the bounds is calculated from the top/left of
-        // the cell (so bottom/right is +1)
-        assert_eq!(sheet.borders.bounds(), Some(Rect::new(1, 1, 2, 7)));
+        match sheet.cell_value(pos![D3]) {
+            Some(CellValue::Code(code_cell)) => {
+                assert_eq!(code_cell.code, r#"q.cells("B1:C2", first_row_header=True)"#);
+            }
+            _ => panic!("expected code cell"),
+        }
+    }
+
+    #[test]
+    fn update_code_cell_references_javascript() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_code_cell(
+            pos![C4].to_sheet_pos(sheet_id),
+            CodeCellLanguage::Javascript,
+            r#"return q.cells("A1:B2");"#.to_string(),
+            None,
+        );
+
+        gc.autocomplete(sheet_id, Rect::new(3, 3, 3, 4), Rect::new(3, 3, 4, 4), None)
+            .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        match sheet.cell_value(pos![D4]) {
+            Some(CellValue::Code(code_cell)) => {
+                assert_eq!(code_cell.code, r#"return q.cells("B1:C2");"#);
+            }
+            _ => panic!("expected code cell"),
+        }
     }
 }

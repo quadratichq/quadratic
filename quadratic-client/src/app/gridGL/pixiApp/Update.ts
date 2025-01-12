@@ -1,7 +1,3 @@
-import { events } from '@/app/events/events';
-import { sheets } from '@/app/grid/controller/Sheets';
-import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { Point } from 'pixi.js';
 import { debugShowFPS, debugShowWhyRendering } from '../../debugFlags';
 import { FPS } from '../helpers/Fps';
 import {
@@ -17,15 +13,8 @@ import { thumbnail } from './thumbnail';
 export class Update {
   private raf?: number;
   private fps?: FPS;
-  private lastViewportPosition: Point = new Point();
 
-  // setting this to 0 ensures that on initial render, the viewport is properly scaled and updated
-  private lastViewportScale = 0;
-
-  private lastScreenWidth = 0;
-  private lastScreenHeight = 0;
-
-  private lastSheetId = '';
+  firstRenderComplete = false;
 
   constructor() {
     if (debugShowFPS) {
@@ -46,42 +35,6 @@ export class Update {
     }
   }
 
-  sendRenderViewport() {
-    const bounds = pixiApp.viewport.getVisibleBounds();
-    const scale = pixiApp.viewport.scale.x;
-    renderWebWorker.updateViewport(sheets.sheet.id, bounds, scale);
-  }
-
-  updateViewport(): void {
-    const { viewport } = pixiApp;
-    let dirty = false;
-    if (this.lastViewportScale !== viewport.scale.x) {
-      this.lastViewportScale = viewport.scale.x;
-      dirty = true;
-
-      // this is used to trigger changes to ZoomDropdown
-      events.emit('zoom', viewport.scale.x);
-    }
-    if (this.lastViewportPosition.x !== viewport.x || this.lastViewportPosition.y !== viewport.y) {
-      this.lastViewportPosition.x = viewport.x;
-      this.lastViewportPosition.y = viewport.y;
-      dirty = true;
-    }
-    if (this.lastScreenWidth !== viewport.screenWidth || this.lastScreenHeight !== viewport.screenHeight) {
-      this.lastScreenWidth = viewport.screenWidth;
-      this.lastScreenHeight = viewport.screenHeight;
-      dirty = true;
-    }
-    if (this.lastSheetId !== sheets.sheet.id) {
-      this.lastSheetId = sheets.sheet.id;
-      dirty = true;
-    }
-    if (dirty) {
-      pixiApp.viewportChanged();
-      this.sendRenderViewport();
-    }
-  }
-
   // update loop w/debug checks
   private update = (): void => {
     if (pixiApp.destroyed) return;
@@ -96,12 +49,10 @@ export class Update {
       this.raf = requestAnimationFrame(this.update);
       return;
     }
-
-    this.updateViewport();
+    pixiApp.viewport.updateViewport();
 
     let rendererDirty =
       pixiApp.gridLines.dirty ||
-      pixiApp.axesLines.dirty ||
       pixiApp.headings.dirty ||
       pixiApp.boxCells.dirty ||
       pixiApp.multiplayerCursor.dirty ||
@@ -116,7 +67,6 @@ export class Update {
         `dirty: ${[
           pixiApp.viewport.dirty && 'viewport',
           pixiApp.gridLines.dirty && 'gridLines',
-          pixiApp.axesLines.dirty && 'axesLines',
           pixiApp.headings.dirty && 'headings',
           pixiApp.boxCells.dirty && 'boxCells',
           pixiApp.multiplayerCursor.dirty && 'multiplayerCursor',
@@ -134,8 +84,6 @@ export class Update {
     debugTimeReset();
     pixiApp.gridLines.update();
     debugTimeCheck('[Update] gridLines');
-    pixiApp.axesLines.update();
-    debugTimeCheck('[Update] axesLines');
     pixiApp.headings.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] headings');
     pixiApp.boxCells.update();
@@ -150,9 +98,13 @@ export class Update {
     debugTimeCheck('[Update] uiImageResize');
     pixiApp.cellMoving.update();
     debugTimeCheck('[Update] cellMoving');
-    pixiApp.cellsSheets.update();
+    pixiApp.cellsSheets.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] cellsSheets');
     pixiApp.validations.update(pixiApp.viewport.dirty);
+    debugTimeCheck('[Update] backgrounds');
+    pixiApp.background.update(pixiApp.viewport.dirty);
+    debugTimeCheck('[Update] copy');
+    pixiApp.copy.update();
 
     if (pixiApp.viewport.dirty || rendererDirty) {
       debugTimeReset();
@@ -166,6 +118,11 @@ export class Update {
     } else {
       debugRendererLight(false);
       thumbnail.check();
+    }
+
+    if (!this.firstRenderComplete) {
+      this.firstRenderComplete = true;
+      pixiApp.viewport.loadViewport();
     }
 
     this.raf = requestAnimationFrame(this.update);

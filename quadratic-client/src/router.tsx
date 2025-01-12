@@ -1,20 +1,14 @@
+import { protectedRouteLoaderWrapper } from '@/auth/auth';
 import { BrowserCompatibilityLayoutRoute } from '@/dashboard/components/BrowserCompatibilityLayoutRoute';
 import * as Page404 from '@/routes/404';
+import * as RootRoute from '@/routes/_root';
 import * as Login from '@/routes/login';
 import * as LoginResult from '@/routes/login-result';
 import * as Logout from '@/routes/logout';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
-import {
-  Navigate,
-  Route,
-  ShouldRevalidateFunctionArgs,
-  createBrowserRouter,
-  createRoutesFromElements,
-  redirect,
-} from 'react-router-dom';
-import { protectedRouteLoaderWrapper } from './auth/auth';
-import * as RootRoute from './routes/_root';
+import type { ShouldRevalidateFunctionArgs } from 'react-router-dom';
+import { Navigate, Route, createBrowserRouter, createRoutesFromElements, redirect } from 'react-router-dom';
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -68,6 +62,9 @@ export const router = createBrowserRouter(
             />
           </Route>
 
+          {/* Route to redirect to a new file in the app */}
+          <Route path="files/create" lazy={() => import('./routes/files.create')} />
+
           {/* Dashboard UI routes */}
           <Route path="/" id={ROUTE_LOADER_IDS.DASHBOARD} lazy={() => import('./routes/_dashboard')}>
             <Route
@@ -98,9 +95,8 @@ export const router = createBrowserRouter(
               </Route>
             </Route>
           </Route>
+          <Route path="*" Component={Page404.Component} />
         </Route>
-
-        <Route path="*" Component={Page404.Component} />
       </Route>
       <Route path={ROUTES.LOGIN} loader={Login.loader} />
       <Route path={ROUTES.LOGIN_RESULT} loader={LoginResult.loader} />

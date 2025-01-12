@@ -5,7 +5,8 @@ import { ROUTES } from '@/shared/constants/routes';
 import { initMixpanelAnalytics } from '@/shared/utils/analytics';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
-import { ActionFunctionArgs, LoaderFunctionArgs, replace } from 'react-router-dom';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router-dom';
+import { replace } from 'react-router-dom';
 
 const getFailUrl = (path: string = '/') => {
   let params = new URLSearchParams();
@@ -66,10 +67,19 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     const {
       file: { uuid },
     } = await apiClient.files.create({ teamUuid, isPrivate });
-    // If there's a `state=...` query param, for starting a file in a specific
-    // state, pass that along
+
+    // Pass along a few of the search params
+    let searchParamsToPass = new URLSearchParams();
     const state = searchParams.get('state');
-    return replace(ROUTES.FILE(uuid) + (state ? `?state=${state}` : ''));
+    if (state) {
+      searchParamsToPass.set('state', state);
+    }
+    const prompt = searchParams.get('prompt');
+    if (prompt) {
+      searchParamsToPass.set('prompt', prompt);
+    }
+
+    return replace(ROUTES.FILE(uuid) + (searchParamsToPass ? '?' + searchParamsToPass.toString() : ''));
   } catch (error) {
     return replace(getFailUrl(ROUTES.TEAM(teamUuid)));
   }

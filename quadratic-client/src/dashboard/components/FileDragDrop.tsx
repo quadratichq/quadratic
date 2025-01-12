@@ -1,9 +1,9 @@
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
-import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
+import { fileDragDropModalAtom } from '@/dashboard/atoms/fileDragDropModalAtom';
 import { cn } from '@/shared/shadcn/utils';
-import { DragEvent, useCallback } from 'react';
-import { useRecoilState, useSetRecoilState } from 'recoil';
-import { fileDragDropModalAtom } from '../atoms/fileDragDropModalAtom';
+import type { DragEvent } from 'react';
+import { useCallback } from 'react';
+import { useRecoilState } from 'recoil';
 
 interface FileDragDropProps {
   className?: string;
@@ -11,7 +11,6 @@ interface FileDragDropProps {
 
 export function FileDragDrop({ className }: FileDragDropProps) {
   const [fileDragDropModal, setFileDragDropModal] = useRecoilState(fileDragDropModalAtom);
-  const setNewFileDialogState = useSetRecoilState(newFileDialogAtom);
   const handleFileImport = useFileImport();
 
   const handleDrag = useCallback(
@@ -32,13 +31,12 @@ export function FileDragDrop({ className }: FileDragDropProps) {
       e.stopPropagation();
 
       setFileDragDropModal({ show: false, teamUuid: undefined, isPrivate: undefined });
-      setNewFileDialogState((prev) => ({ ...prev, show: false }));
 
       const files = e.dataTransfer.files;
       const { isPrivate, teamUuid } = fileDragDropModal;
       handleFileImport({ files, isPrivate, teamUuid });
     },
-    [fileDragDropModal, handleFileImport, setFileDragDropModal, setNewFileDialogState]
+    [fileDragDropModal, handleFileImport, setFileDragDropModal]
   );
 
   if (!fileDragDropModal.show) return null;
@@ -59,7 +57,7 @@ export function FileDragDrop({ className }: FileDragDropProps) {
         onDrop={handleDrop}
         onDragLeave={handleDrag}
       >
-        <div className="pointer-events-none flex h-full w-full flex-col items-center justify-center gap-4">
+        <div className="pointer-events-none flex h-full w-full flex-col items-center justify-center gap-2">
           <span className="text-2xl font-bold text-[#020817]">Drop file here</span>
 
           <span className="pl-4 pr-4 text-center text-base font-medium text-[#6A778B]">

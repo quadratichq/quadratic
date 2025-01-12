@@ -1,9 +1,9 @@
-import { CellFormatSummary } from '@/app/quadratic-core-types';
+import { sheets } from '@/app/grid/controller/Sheets';
+import type { MultiplayerCell } from '@/app/gridGL/HTMLGrid/multiplayerInput/MultiplayerCellEdits';
+import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
+import type { CellFormatSummary } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useEffect, useRef, useState } from 'react';
-import { sheets } from '../../../grid/controller/Sheets';
-import { CURSOR_THICKNESS } from '../../UI/Cursor';
-import { MultiplayerCell } from './MultiplayerCellEdits';
 
 interface Props {
   multiplayerCellInput: MultiplayerCell;
@@ -19,7 +19,7 @@ export const MultiplayerCellEdit = (props: Props) => {
   const [formatting, setFormatting] = useState<CellFormatSummary | undefined>();
   useEffect(() => {
     (async () => {
-      const format = await quadraticCore.getCellFormatSummary(sheet.id, input.location.x, input.location.y, true);
+      const format = await quadraticCore.getCellFormatSummary(sheet.id, input.location.x, input.location.y);
       setFormatting(format);
     })();
   }, [input.location, sheet.id]);

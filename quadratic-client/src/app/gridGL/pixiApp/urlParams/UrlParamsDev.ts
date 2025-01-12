@@ -2,18 +2,16 @@
 
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { SheetCursorSave } from '@/app/grid/sheet/SheetCursor';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { IViewportTransformState } from 'pixi-viewport';
+import type { IViewportTransformState } from 'pixi-viewport';
 
 const URL_STATE_PARAM = 'state';
 const WAIT_FOR_SET_EDITOR_INTERACTION_STATE_TIMEOUT_MS = 100;
 
 interface SheetState {
-  cursor: SheetCursorSave;
+  cursor: string;
   viewport?: IViewportTransformState;
 }
 
@@ -111,8 +109,8 @@ export class UrlParamsDev {
 
   private loadCodeAndRun() {
     if (this.state.insertAndRunCodeInNewSheet) {
-      const x = 0;
-      const y = 0;
+      const x = 1;
+      const y = 1;
       const sheetId = sheets.current;
       const { language, codeString } = this.state.insertAndRunCodeInNewSheet;
 
@@ -166,8 +164,7 @@ export class UrlParamsDev {
     events.on('changeSheet', this.updateSheet);
     events.on('codeEditor', this.updateCode);
     events.on('validation', this.updateValidation);
-    pixiApp.viewport.on('moved', this.updateCursorViewport);
-    pixiApp.viewport.on('zoomed', this.updateCursorViewport);
+    events.on('viewportChangedReady', this.updateCursorViewport);
   }
 
   private updateCursorViewport = () => {

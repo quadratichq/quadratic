@@ -1,5 +1,6 @@
 import { getExtension, stripExtension } from '@/app/helpers/files';
-import { FileImportProgress, filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAtom';
+import type { FileImportProgress } from '@/dashboard/atoms/filesImportProgressAtom';
+import { filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAtom';
 import { filesImportProgressListAtom } from '@/dashboard/atoms/filesImportProgressListAtom';
 import { ROUTES } from '@/shared/constants/routes';
 import {

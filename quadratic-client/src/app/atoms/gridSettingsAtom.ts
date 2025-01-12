@@ -1,28 +1,29 @@
 import { debugGridSettings } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { AtomEffect, DefaultValue, atom, selector } from 'recoil';
+import type { AtomEffect } from 'recoil';
+import { DefaultValue, atom, selector } from 'recoil';
 
 const SETTINGS_KEY = 'viewSettings';
 
-export interface GridSettings {
-  showGridAxes: boolean;
+export type GridSettings = {
   showHeadings: boolean;
   showGridLines: boolean;
   showCellTypeOutlines: boolean;
   showA1Notation: boolean;
   showCodePeek: boolean;
   presentationMode: boolean;
-}
+  showAIAnalystOnStartup: boolean;
+};
 
 export const defaultGridSettings: GridSettings = {
-  showGridAxes: true,
   showHeadings: true,
   showGridLines: true,
   showCellTypeOutlines: true,
   showA1Notation: false,
   showCodePeek: false,
   presentationMode: false,
+  showAIAnalystOnStartup: true,
 };
 
 // Persist the GridSettings
@@ -72,10 +73,10 @@ const createSelector = <T extends keyof GridSettings>(key: T) =>
     },
   });
 
-export const showGridAxesAtom = createSelector('showGridAxes');
 export const showHeadingsAtom = createSelector('showHeadings');
 export const showGridLinesAtom = createSelector('showGridLines');
 export const showCellTypeOutlinesAtom = createSelector('showCellTypeOutlines');
 export const showA1NotationAtom = createSelector('showA1Notation');
 export const showCodePeekAtom = createSelector('showCodePeek');
 export const presentationModeAtom = createSelector('presentationMode');
+export const showAIAnalystOnStartupAtom = createSelector('showAIAnalystOnStartup');

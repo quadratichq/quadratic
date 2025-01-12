@@ -1,5 +1,5 @@
-import { ColumnRowCursor, RectangleLike } from '@/app/grid/sheet/SheetCursor';
-import { Coordinate, SheetPosTS } from '@/app/gridGL/types/size';
+import type { SheetPosTS } from '@/app/gridGL/types/size';
+import type { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 
 export interface CellEdit {
   active: boolean;
@@ -38,7 +38,7 @@ export interface MultiplayerUser extends MultiplayerUserServer {
   index: number;
   colorString: string;
   parsedCodeRunning: SheetPosTS[];
-  parsedSelection?: { cursorPosition: Coordinate; multiCursor?: RectangleLike[]; columnRow?: ColumnRowCursor };
+  parsedSelection?: JsSelection;
 }
 
 export interface Version {

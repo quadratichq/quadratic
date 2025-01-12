@@ -1,6 +1,7 @@
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
-import { FocusEvent, forwardRef, Ref, useCallback, useEffect, useRef } from 'react';
+import type { FocusEvent, KeyboardEvent, Ref } from 'react';
+import { forwardRef, useCallback, useEffect, useRef } from 'react';
 
 interface ValidationInputProps {
   className?: string;
@@ -15,8 +16,8 @@ interface ValidationInputProps {
 
   // used to update whenever the input is changed (ie, a character is changes within the input box)
   onInput?: (value: string) => void;
-
-  onEnter?: () => void;
+  onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
+  onEnter?: (value: string) => void;
 
   footer?: string | JSX.Element;
   height?: string;
@@ -46,6 +47,7 @@ export const ValidationInput = forwardRef((props: ValidationInputProps, ref: Ref
     readOnly,
     type,
     clear,
+    onKeyDown,
   } = props;
 
   const parentRef = useRef<HTMLDivElement>(null);
@@ -105,10 +107,12 @@ export const ValidationInput = forwardRef((props: ValidationInputProps, ref: Ref
                 }
 
                 // timeout is needed to ensure the state updates before the onEnter function is called
-                setTimeout(onEnter, 0);
+                const savedValue = e.currentTarget.value;
+                setTimeout(() => onEnter?.(savedValue), 0);
                 e.preventDefault();
                 e.stopPropagation();
               }
+              onKeyDown?.(e);
             }}
           />
         </div>

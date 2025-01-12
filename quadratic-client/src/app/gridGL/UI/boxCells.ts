@@ -1,9 +1,10 @@
 //! Used to draw autocomplete box.
 
-import { Graphics, Rectangle } from 'pixi.js';
-import { sheets } from '../../grid/controller/Sheets';
-import { colors } from '../../theme/colors';
-import { pixiApp } from '../pixiApp/PixiApp';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { colors } from '@/app/theme/colors';
+import type { Rectangle } from 'pixi.js';
+import { Graphics } from 'pixi.js';
 
 const thickness = 3;
 
@@ -42,12 +43,7 @@ export class BoxCells extends Graphics {
 
   private drawRectangle(): void {
     if (!this.gridRectangle) return;
-    const screenRectangle = sheets.sheet.getScreenRectangle(
-      this.gridRectangle.x,
-      this.gridRectangle.y,
-      this.gridRectangle.width,
-      this.gridRectangle.height
-    );
+    const screenRectangle = sheets.sheet.getScreenRectangleFromRect(this.gridRectangle);
     this.dirty = false;
     this.clear();
     this.lineStyle({
@@ -74,12 +70,7 @@ export class BoxCells extends Graphics {
     this.lineStyle(0);
     this.deleteRectangles?.forEach((rectangle) => {
       this.beginFill(colors.boxCellsDeleteColor, colors.boxCellsAlpha);
-      const screenRectangle = sheets.sheet.getScreenRectangle(
-        rectangle.x,
-        rectangle.y,
-        rectangle.width,
-        rectangle.height
-      );
+      const screenRectangle = sheets.sheet.getScreenRectangleFromRect(rectangle);
       screenRectangle.height++;
       this.drawShape(screenRectangle);
       this.endFill();

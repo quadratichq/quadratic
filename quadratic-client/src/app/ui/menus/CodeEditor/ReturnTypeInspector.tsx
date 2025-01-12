@@ -1,34 +1,80 @@
 import {
+  aiAssistantLoadingAtom,
   codeEditorCodeCellAtom,
+  codeEditorConsoleOutputAtom,
   codeEditorEditorContentAtom,
   codeEditorEvaluationResultAtom,
   codeEditorLoadingAtom,
+  codeEditorSpillErrorAtom,
   codeEditorUnsavedChangesAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
+import { FixSpillError } from '@/app/ui/components/FixSpillError';
+import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/CodeEditor/hooks/useSubmitAIAssistantPrompt';
+import { codeEditorBaseStyles } from '@/app/ui/menus/CodeEditor/styles';
 import { DOCUMENTATION_JAVASCRIPT_RETURN_DATA, DOCUMENTATION_URL } from '@/shared/constants/urls';
+import { Button } from '@/shared/shadcn/ui/button';
+import { cn } from '@/shared/shadcn/utils';
 import { useTheme } from '@mui/material';
-import { ReactNode, useMemo } from 'react';
+import type { ReactNode } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-import { codeEditorBaseStyles } from './styles';
 
 export function ReturnTypeInspector() {
   const theme = useTheme();
   const loading = useRecoilValue(codeEditorLoadingAtom);
   const { language } = useRecoilValue(codeEditorCodeCellAtom);
   const mode = useMemo(() => getLanguage(language), [language]);
-
+  const spillError = useRecoilValue(codeEditorSpillErrorAtom);
   const editorContent = useRecoilValue(codeEditorEditorContentAtom);
-
   const evaluationResult = useRecoilValue(codeEditorEvaluationResultAtom);
   const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
+  const consoleOutput = useRecoilValue(codeEditorConsoleOutputAtom);
+  const codeCellRecoil = useRecoilValue(codeEditorCodeCellAtom);
+  const aiAssistantLoading = useRecoilValue(aiAssistantLoadingAtom);
+
+  const { submitPrompt } = useSubmitAIAssistantPrompt();
 
   const show = evaluationResult?.line_number && evaluationResult?.output_type && !unsavedChanges;
 
   let message: JSX.Element | undefined = undefined;
+  let action: JSX.Element | undefined = undefined;
+  let hasError = false;
 
-  if (mode === 'Python') {
+  if (consoleOutput?.stdErr) {
+    hasError = true;
+    message = (
+      <p>
+        Returned <ReturnType isError>error</ReturnType>{' '}
+      </p>
+    );
+    action = (
+      <Button
+        size="sm"
+        variant="destructive"
+        className="ml-auto"
+        onClick={() =>
+          submitPrompt({
+            userPrompt: 'Fix the error in the code cell',
+            clearMessages: true,
+            codeCell: codeCellRecoil,
+          }).catch(console.error)
+        }
+        disabled={aiAssistantLoading}
+      >
+        Fix in AI chat
+      </Button>
+    );
+  } else if (spillError) {
+    hasError = true;
+    message = (
+      <p>
+        Returned <ReturnType isError>error</ReturnType> (spill)
+      </p>
+    );
+    action = <FixSpillError codeCell={codeCellRecoil} evaluationResult={evaluationResult ?? {}} />;
+  } else if (mode === 'Python') {
     message = show ? (
       <>
         {evaluationResult.line_number ? `Line ${evaluationResult.line_number} returned ` : 'Returned '}
@@ -93,17 +139,25 @@ export function ReturnTypeInspector() {
 
   return (
     <div
-      className="flex gap-6 whitespace-pre-wrap px-6 py-2 text-muted-foreground outline-none"
+      className={cn(
+        'flex h-10 items-center gap-6 whitespace-pre-wrap px-6 text-muted-foreground outline-none',
+        hasError && 'text-destructive'
+      )}
       style={{
         ...codeEditorBaseStyles,
       }}
     >
       <span style={{ transform: 'scaleX(-1)', display: 'inline-block', fontSize: '10px' }}>⮐</span>
       <span className="leading-snug">{message}</span>
+      {action && <span className="ml-auto font-sans">{action}</span>}
     </div>
   );
 }
 
-function ReturnType({ children }: { children: ReactNode }) {
-  return <span className="rounded-md bg-accent px-1 py-0.5">{children}</span>;
+function ReturnType({ children, isError }: { children: ReactNode; isError?: boolean }) {
+  return (
+    <span className={cn('rounded-md px-1 py-0.5', isError ? 'bg-destructive-foreground' : 'bg-accent')}>
+      {children}
+    </span>
+  );
 }

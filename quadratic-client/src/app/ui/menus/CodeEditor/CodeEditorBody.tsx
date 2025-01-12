@@ -1,23 +1,22 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import {
-  codeEditorCellsAccessedAtom,
   codeEditorCodeCellAtom,
+  codeEditorDiffEditorContentAtom,
   codeEditorEditorContentAtom,
   codeEditorLoadingAtom,
   codeEditorShowCodeEditorAtom,
-  codeEditorUnsavedChangesAtom,
+  codeEditorShowDiffEditorAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
-import { CodeCell } from '@/app/gridGL/types/codeCell';
+import type { CodeCell } from '@/app/gridGL/types/codeCell';
 import { codeCellIsAConnection, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { CodeEditorPlaceholder } from '@/app/ui/menus/CodeEditor/CodeEditorPlaceholder';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
 import { useCloseCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useCloseCodeEditor';
 import { useEditorCellHighlights } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
-import { useEditorOnSelectionChange } from '@/app/ui/menus/CodeEditor/hooks/useEditorOnSelectionChange';
 import { useEditorReturn } from '@/app/ui/menus/CodeEditor/hooks/useEditorReturn';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import {
@@ -30,7 +29,8 @@ import { javascriptLibraryForEditor } from '@/app/web-workers/javascriptWebWorke
 import { pyrightWorker, uri } from '@/app/web-workers/pythonLanguageServer/worker';
 import useEventListener from '@/shared/hooks/useEventListener';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import Editor, { Monaco } from '@monaco-editor/react';
+import type { Monaco } from '@monaco-editor/react';
+import Editor, { DiffEditor } from '@monaco-editor/react';
 import { CircularProgress } from '@mui/material';
 import * as monaco from 'monaco-editor';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -46,6 +46,7 @@ const registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
   Formula: false,
   Python: false,
   Javascript: false,
+  Import: false,
 };
 
 export const CodeEditorBody = (props: CodeEditorBodyProps) => {
@@ -55,13 +56,9 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   const monacoLanguage = useMemo(() => getLanguageForMonaco(codeCell.language), [codeCell.language]);
   const isConnection = useMemo(() => codeCellIsAConnection(codeCell.language), [codeCell.language]);
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
-  const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
+  const showDiffEditor = useRecoilValue(codeEditorShowDiffEditorAtom);
+  const diffEditorContent = useRecoilValue(codeEditorDiffEditorContentAtom);
   const loading = useRecoilValue(codeEditorLoadingAtom);
-  const cellsAccessedState = useRecoilValue(codeEditorCellsAccessedAtom);
-  const cellsAccessed = useMemo(
-    () => (!unsavedChanges ? cellsAccessedState : []),
-    [cellsAccessedState, unsavedChanges]
-  );
   const {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
@@ -74,8 +71,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
 
   const [isValidRef, setIsValidRef] = useState(false);
   const [monacoInst, setMonacoInst] = useState<Monaco | null>(null);
-  useEditorCellHighlights(isValidRef, editorInst, monacoInst, cellsAccessed);
-  useEditorOnSelectionChange(isValidRef, editorInst, monacoInst);
+  useEditorCellHighlights(isValidRef, editorInst, monacoInst);
   useEditorReturn(isValidRef, editorInst, monacoInst);
 
   const { closeEditor } = useCloseCodeEditor({
@@ -93,13 +89,13 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   useEffect(() => {
     const insertText = (text: string) => {
       if (!editorInst) return;
-      const position = editorInst.getPosition();
-      const model = editorInst.getModel();
-      if (!position || !model) return;
+      const line = editorInst.getPosition();
+      if (!line) return;
       const selection = editorInst.getSelection();
-      const range =
-        selection || new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column);
-      model.applyEdits([{ range, text }]);
+      const range = new monaco.Range(line.lineNumber, line.column, line.lineNumber, line.column);
+      const id = { major: 1, minor: 1 };
+      const op = { identifier: id, range: selection || range, text: text, forceMoveMarkers: true };
+      editorInst.executeEdits('insertCelRef', [op]);
       editorInst.focus();
     };
     events.on('insertCodeEditorText', insertText);
@@ -143,10 +139,10 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
         '!findWidgetVisible && !inReferenceSearchEditor && !editorHasSelection && !suggestWidgetVisible'
       );
       editor.addCommand(monaco.KeyCode.KeyL | monaco.KeyMod.CtrlCmd, () => {
-        insertCellRef(codeCell.pos, codeCell.sheetId, codeCell.language);
+        insertCellRef(codeCell.sheetId, codeCell.language);
       });
     },
-    [closeEditor, codeCell.language, codeCell.pos, codeCell.sheetId]
+    [closeEditor, codeCell.language, codeCell.sheetId]
   );
 
   const runEditorAction = useCallback((e: CustomEvent<string>) => editorInst?.getAction(e.detail)?.run(), [editorInst]);
@@ -167,6 +163,42 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
       monaco.editor.setTheme('quadratic');
 
       addCommands(editor, monaco);
+      // this adds a cursor when the editor is not focused (useful when using insertCellRef button)
+      const decorationCollection = editor.createDecorationsCollection();
+
+      let position: monaco.Position | null = null;
+
+      const updateCursorIndicator = () => {
+        position = editor.getPosition();
+      };
+
+      const hideCursorIndicator = () => decorationCollection.set([]);
+
+      const showCursorIndicator = () => {
+        if (!position) return;
+
+        // Define the decoration that represents the visual indicator
+        const decoration = {
+          range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column + 1),
+          options: {
+            isWholeLine: false,
+            className: 'w-0',
+            before: {
+              content: ' ',
+              backgroundColor: 'transparent',
+              inlineClassName: 'inline-block w-cursor bg-black h-full',
+              inlineClassNameAffectsLetterSpacing: false,
+            },
+          },
+        };
+
+        // Update the decoration collection
+        decorationCollection.set([decoration]);
+      };
+
+      editor.onDidChangeCursorPosition(updateCursorIndicator);
+      editor.onDidFocusEditorText(hideCursorIndicator);
+      editor.onDidBlurEditorText(showCursorIndicator);
 
       // Only register language once
       if (monacoLanguage === 'formula' && !registered.Formula) {
@@ -210,7 +242,25 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
     [addCommands, monacoLanguage, setEditorInst]
   );
 
-  if (editorContent === undefined || loading) {
+  const addCommandsDiff = useCallback(
+    (editor: monaco.editor.IStandaloneDiffEditor, monaco: Monaco) => {
+      editor.addCommand(
+        monaco.KeyCode.Escape,
+        () => closeEditor(false),
+        '!findWidgetVisible && !inReferenceSearchEditor && !editorHasSelection && !suggestWidgetVisible'
+      );
+    },
+    [closeEditor]
+  );
+
+  const onMountDiff = useCallback(
+    (editor: monaco.editor.IStandaloneDiffEditor, monaco: Monaco) => {
+      addCommandsDiff(editor, monaco);
+    },
+    [addCommandsDiff]
+  );
+
+  if (!showDiffEditor && (editorContent === undefined || loading)) {
     return (
       <div className="flex justify-center">
         <CircularProgress style={{ width: '18px', height: '18px' }} />
@@ -227,31 +277,57 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
       }}
       className="dark-mode-hack"
     >
-      <Editor
-        height="100%"
-        width="100%"
-        language={monacoLanguage}
-        value={editorContent}
-        onChange={setEditorContent}
-        onMount={onMount}
-        loading={<CircularProgress style={{ width: '18px', height: '18px' }} />}
-        options={{
-          theme: 'light',
-          readOnly: !canEdit,
-          minimap: { enabled: true },
-          overviewRulerLanes: 0,
-          hideCursorInOverviewRuler: true,
-          overviewRulerBorder: false,
-          scrollbar: {
-            horizontal: 'hidden',
-          },
-          wordWrap: 'on',
+      {!showDiffEditor ? (
+        <>
+          <Editor
+            height="100%"
+            width="100%"
+            language={monacoLanguage}
+            value={editorContent}
+            onChange={setEditorContent}
+            onMount={onMount}
+            loading={<CircularProgress style={{ width: '18px', height: '18px' }} />}
+            options={{
+              theme: 'light',
+              readOnly: !canEdit,
+              minimap: { enabled: true },
+              overviewRulerLanes: 0,
+              hideCursorInOverviewRuler: true,
+              overviewRulerBorder: false,
+              scrollbar: {
+                horizontal: 'hidden',
+              },
+              wordWrap: 'on',
 
-          // need to ignore unused b/c of the async wrapper around the code and import code
-          showUnused: codeCell.language === 'Javascript' ? false : true,
-        }}
-      />
-      <CodeEditorPlaceholder />
+              // need to ignore unused b/c of the async wrapper around the code and import code
+              showUnused: codeCell.language === 'Javascript' ? false : true,
+            }}
+          />
+          <CodeEditorPlaceholder />
+        </>
+      ) : (
+        <DiffEditor
+          height="100%"
+          width="100%"
+          language={monacoLanguage}
+          original={diffEditorContent?.isApplied ? diffEditorContent.editorContent : editorContent}
+          modified={diffEditorContent?.isApplied ? editorContent : diffEditorContent?.editorContent}
+          onMount={onMountDiff}
+          options={{
+            renderSideBySide: false,
+            readOnly: true,
+            minimap: { enabled: true },
+            overviewRulerLanes: 0,
+            hideCursorInOverviewRuler: true,
+            overviewRulerBorder: false,
+            scrollbar: {
+              horizontal: 'hidden',
+            },
+            wordWrap: 'on',
+            showUnused: codeCell.language === 'Javascript' ? false : true,
+          }}
+        />
+      )}
     </div>
   );
 };

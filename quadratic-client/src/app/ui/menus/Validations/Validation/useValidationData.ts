@@ -6,19 +6,17 @@ import {
   editorInteractionStatePermissionsAtom,
   editorInteractionStateShowValidationAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
+import { bigIntReplacer } from '@/app/bigint';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { getSelectionString } from '@/app/grid/sheet/selection';
-import { Selection, Validation, ValidationRule } from '@/app/quadratic-core-types';
-import {
-  validationRuleSimple,
-  ValidationRuleSimple,
-  ValidationRuleSimpleValues,
-  ValidationUndefined,
-} from '@/app/ui/menus/Validations/Validation/validationType';
+import type { Validation, ValidationRule } from '@/app/quadratic-core-types';
+import type { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { ValidationRuleSimple, ValidationUndefined } from '@/app/ui/menus/Validations/Validation/validationType';
+import { validationRuleSimple, ValidationRuleSimpleValues } from '@/app/ui/menus/Validations/Validation/validationType';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { v4 as uuid } from 'uuid';
+import { v4 } from 'uuid';
 
 export type SetState<T> = Dispatch<SetStateAction<T>>;
 
@@ -27,7 +25,7 @@ export interface ValidationData {
   validation: ValidationUndefined | undefined;
   rule: ValidationRuleSimple;
   setValidation: SetState<ValidationUndefined | undefined>;
-  setSelection: (selection: Selection | undefined) => void;
+  setSelection: (jsSelection: JsSelection | undefined) => void;
   changeRule: (rule: ValidationRuleSimple) => void;
   showUI: boolean;
   changeShowUI: (checked: boolean) => void;
@@ -57,12 +55,6 @@ export const useValidationData = (): ValidationData => {
     setMoreOptions((old) => !old);
   }, []);
 
-  // Used to coerce bigints to numbers for JSON.stringify; see
-  // https://github.com/GoogleChromeLabs/jsbi/issues/30#issuecomment-2064279949.
-  const bigIntReplacer = (_key: string, value: any): any => {
-    return typeof value === 'bigint' ? Number(value) : value;
-  };
-
   const unsaved = useMemo(() => {
     if (originalValidation && validation) {
       return JSON.stringify(originalValidation, bigIntReplacer) !== JSON.stringify(validation, bigIntReplacer);
@@ -75,12 +67,6 @@ export const useValidationData = (): ValidationData => {
   // Validates the input against the current validation
   const validate = useCallback((): boolean => {
     if (!validation || !('rule' in validation) || !validation.rule) {
-      setTriggerError(true);
-      return false;
-    }
-
-    // if selection is empty, then show error
-    if (getSelectionString(validation.selection) === '') {
       setTriggerError(true);
       return false;
     }
@@ -104,7 +90,7 @@ export const useValidationData = (): ValidationData => {
       if ('source' in validation.rule.List) {
         if ('Selection' in validation.rule.List.source) {
           const selection = validation.rule.List.source.Selection;
-          if (!selection.columns?.length && !selection.rows?.length && !selection.rects?.length && !selection.all) {
+          if (!selection.ranges?.length) {
             setTriggerError(true);
             return false;
           }
@@ -131,6 +117,7 @@ export const useValidationData = (): ValidationData => {
   const changeRule = useCallback(
     (type: ValidationRuleSimple) => {
       let rule: ValidationRule;
+      console.log(type);
       switch (type) {
         case 'none':
           rule = 'None';
@@ -154,12 +141,11 @@ export const useValidationData = (): ValidationData => {
               source: {
                 Selection: {
                   sheet_id: { id: sheetId },
-                  x: BigInt(0),
-                  y: BigInt(0),
-                  rects: null,
-                  rows: null,
-                  columns: null,
-                  all: false,
+                  cursor: {
+                    x: BigInt(0),
+                    y: BigInt(0),
+                  },
+                  ranges: [],
                 },
               },
               ignore_blank: true,
@@ -285,20 +271,19 @@ export const useValidationData = (): ValidationData => {
 
   // Set the selection for the validation. Note: we use Selection: { x, y,
   // sheet_id, ..default } to indicate that the Selection is blank.
-  const setSelection = (selection: Selection | undefined) => {
-    if (!selection) {
+  const setSelection = (jsSelection: JsSelection | undefined) => {
+    if (!jsSelection) {
       setValidation((old) => {
         if (old) {
           return {
             ...old,
             selection: {
               sheet_id: { id: sheets.sheet.id },
-              x: BigInt(0),
-              y: BigInt(0),
-              all: false,
-              columns: null,
-              rows: null,
-              rects: null,
+              cursor: {
+                x: BigInt(0),
+                y: BigInt(0),
+              },
+              ranges: [],
             },
           };
         }
@@ -306,7 +291,7 @@ export const useValidationData = (): ValidationData => {
     } else {
       setValidation((old) => {
         if (old) {
-          return { ...old, selection };
+          return { ...old, selection: jsSelection.selection() };
         }
       });
     }
@@ -329,9 +314,9 @@ export const useValidationData = (): ValidationData => {
         setOriginalValidation(v);
       } else {
         v = {
-          id: uuid(),
-          selection: sheets.getRustSelection(),
-          rule: undefined,
+          id: v4(),
+          selection: sheets.sheet.cursor.selection(),
+          rule: 'None',
           message: {
             show: true,
             title: '',

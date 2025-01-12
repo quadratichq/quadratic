@@ -1,15 +1,17 @@
-import { Coordinate } from '@/app/gridGL/types/size';
 import { getFileType, stripExtension, supportedFileTypes, uploadFile } from '@/app/helpers/files';
+import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { useGetCSVImportSettings } from '@/app/ui/hooks/useGetCSVImportSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { FileImportProgress, filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAtom';
+import type { FileImportProgress } from '@/dashboard/atoms/filesImportProgressAtom';
+import { filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAtom';
 import { filesImportProgressListAtom } from '@/dashboard/atoms/filesImportProgressListAtom';
-import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { apiClient } from '@/shared/api/apiClient';
 import { ApiError } from '@/shared/api/fetchFromApi';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
+import * as Sentry from '@sentry/react';
 import { Buffer } from 'buffer';
+import mixpanel from 'mixpanel-browser';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useRecoilCallback } from 'recoil';
 
@@ -32,18 +34,18 @@ export function useFileImport() {
       }: {
         files?: FileList | File[];
         sheetId?: string;
-        insertAt?: Coordinate;
+        insertAt?: JsCoordinate;
         cursor?: string; // cursor is available when importing into a existing file, it is also being used as a flag to denote this
         isPrivate?: boolean;
         teamUuid?: string;
       }) => {
-        reset(newFileDialogAtom);
         quadraticCore.initWorker();
 
         if (!files) files = await uploadFile(supportedFileTypes);
         if (files.length === 0) {
           return;
         }
+        files = Array.from(files);
 
         const firstFileType = getFileType(files[0]);
         const createNewFile =
@@ -53,6 +55,14 @@ export function useFileImport() {
         if (userOnTeamsPage) {
           set(filesImportProgressListAtom, { show: true });
         }
+
+        mixpanel.track('[ImportData].useFileImport', {
+          files: files.map((file) => ({
+            type: getFileType(file),
+            size: file.size,
+          })),
+          location: createNewFile ? 'Dashboard' : 'In sheet',
+        });
 
         if (!createNewFile && firstFileType === 'grid') {
           addGlobalSnackbar(`Error importing ${files[0].name}: Cannot import grid file into existing file`, {
@@ -66,7 +76,7 @@ export function useFileImport() {
         if (!createNewFile && files.length > 1) {
           if (firstFileType === 'excel') {
             // importing into a existing file, use only excel files
-            files = [...files].filter((file) => {
+            files = files.filter((file) => {
               if (getFileType(file) === 'excel') {
                 return true;
               } else {
@@ -91,8 +101,6 @@ export function useFileImport() {
             files = [files[0]];
           }
         }
-
-        files = Array.from(files);
         const totalFiles = files.length;
 
         let csvDelimiter: number | undefined = ','.charCodeAt(0);
@@ -158,6 +166,7 @@ export function useFileImport() {
           try {
             const fileName = file.name;
             const fileType = getFileType(file);
+            const fileSize = file.size;
             const arrayBuffer = await file.arrayBuffer().catch(console.error);
             file = undefined;
             if (!arrayBuffer) {
@@ -180,11 +189,11 @@ export function useFileImport() {
                 hasHeading,
               });
             } else {
-              throw new Error(`Error importing ${fileName}: Unsupported file type`);
+              throw new Error(`Error importing ${fileName} (${fileSize} bytes): Unsupported file type.`);
             }
 
             if (result?.error !== undefined) {
-              throw new Error(`Error importing ${fileName}: ${result.error}`);
+              throw new Error(`Error importing ${fileName} (${fileSize} bytes): ${result.error}`);
             }
 
             // contents and version are returned when importing into a new file
@@ -215,7 +224,9 @@ export function useFileImport() {
                   if (openImportedFile) {
                     reset(filesImportProgressAtom);
                     reset(filesImportProgressListAtom);
-                    window.location.href = ROUTES.FILE(uuid);
+
+                    const params = quadraticCore.receivedClientMessage ? `?negative_offsets` : '';
+                    window.location.href = `${ROUTES.FILE(uuid)}${params}`;
                   }
                 })
                 .catch((error) => {
@@ -224,7 +235,7 @@ export function useFileImport() {
                   updateCurrentFileState({ step, progress: 0, abortController: undefined });
 
                   if (step !== 'cancel') {
-                    throw new Error(`Error importing ${fileName}: ${error}`);
+                    throw new Error(`Error importing ${fileName} (${fileSize} bytes): ${error}`);
                   }
                 });
 
@@ -236,6 +247,7 @@ export function useFileImport() {
             }
           } catch (e) {
             if (e instanceof Error) {
+              Sentry.captureException(e);
               updateCurrentFileState({ step: 'error', progress: 0, abortController: undefined });
               addGlobalSnackbar(e.message, { severity: 'warning' });
             }
@@ -247,6 +259,7 @@ export function useFileImport() {
           try {
             await uploadFilePromise;
           } catch (e) {
+            Sentry.captureException(e);
             console.error(e);
           }
         }

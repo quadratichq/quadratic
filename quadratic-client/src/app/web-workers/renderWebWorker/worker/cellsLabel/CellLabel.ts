@@ -9,20 +9,27 @@
 
 import { Bounds } from '@/app/grid/sheet/Bounds';
 import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
-import { Coordinate } from '@/app/gridGL/types/size';
 import { convertColorStringToTint, convertTintToArray } from '@/app/helpers/convertColor';
 import { isFloatGreaterThan, isFloatLessThan } from '@/app/helpers/float';
-import { CellAlign, CellVerticalAlign, CellWrap, JsNumber, JsRenderCell } from '@/app/quadratic-core-types';
+import type {
+  CellAlign,
+  CellVerticalAlign,
+  CellWrap,
+  JsCoordinate,
+  JsNumber,
+  JsRenderCell,
+} from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
-import { RenderBitmapChar } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
+import type { RenderBitmapChar } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
 import {
   extractCharCode,
   splitTextToCharacters,
 } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/bitmapTextUtils';
-import { CellsLabels } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsLabels';
+import type { CellsLabels } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsLabels';
 import { convertNumber, reduceDecimals } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/convertNumber';
-import { LabelMeshEntry } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/LabelMeshEntry';
-import { LabelMeshes } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/LabelMeshes';
+import type { LabelMeshEntry } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/LabelMeshEntry';
+import type { LabelMeshes } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/LabelMeshes';
+import { renderClient } from '@/app/web-workers/renderWebWorker/worker/renderClient';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { removeItems } from '@pixi/utils';
 import { Point, Rectangle } from 'pixi.js';
@@ -41,7 +48,6 @@ export const OPEN_SANS_FIX = { x: 1.8, y: -1.8 };
 
 const SPILL_ERROR_TEXT = ' #SPILL';
 const RUN_ERROR_TEXT = ' #ERROR';
-const CHART_TEXT = ' CHART';
 
 // values based on line position and thickness in monaco editor
 const HORIZONTAL_LINE_THICKNESS = 1;
@@ -53,6 +59,8 @@ const STRIKE_THROUGH_OFFSET = 32;
 // todo: make this part of the cell's style data structure
 export const FONT_SIZE = 14;
 export const LINE_HEIGHT = 16;
+
+const URL_REGEX = /^(https?:\/\/|www\.)[^\s<>'"]+\.[^\s<>'"]+$/i;
 
 export class CellLabel {
   private cellsLabels: CellsLabels;
@@ -72,7 +80,7 @@ export class CellLabel {
   tint: number;
   private maxWidth?: number;
   private roundPixels?: boolean;
-  location: Coordinate;
+  location: JsCoordinate;
   AABB: Rectangle;
 
   clipLeft?: number;
@@ -108,8 +116,9 @@ export class CellLabel {
   textHeight = 0;
   unwrappedTextWidth = 0;
 
-  overflowRight = 0;
-  overflowLeft = 0;
+  // overflow values
+  private overflowRight = 0;
+  private overflowLeft = 0;
 
   // bounds with overflow
   private actualLeft: number;
@@ -118,8 +127,8 @@ export class CellLabel {
   private actualBottom: number;
 
   // bounds after clipping
-  private textLeft: number;
-  private textRight: number;
+  textLeft: number;
+  textRight: number;
   private textTop: number;
   private textBottom: number;
 
@@ -130,7 +139,7 @@ export class CellLabel {
       case 'RunError':
         return RUN_ERROR_TEXT;
       case 'Chart':
-        return CHART_TEXT;
+        return '';
       default:
         if (cell.value !== undefined && cell.number) {
           this.number = cell.number;
@@ -165,6 +174,8 @@ export class CellLabel {
       this.tint = convertColorStringToTint(cell.textColor);
     } else if (this.link) {
       this.tint = convertColorStringToTint(colors.link);
+    } else if (cell.special === 'TableColumnHeader') {
+      this.tint = renderClient.tableColumnHeaderForeground;
     } else {
       this.tint = 0;
     }
@@ -209,7 +220,8 @@ export class CellLabel {
   };
 
   private updateCellLimits = () => {
-    this.cellClipLeft = this.wrap === 'clip' && this.align !== 'left' ? this.AABB.left : undefined;
+    this.cellClipLeft =
+      (this.wrap === 'clip' && this.align !== 'left') || this.location.x === 1 ? this.AABB.left : undefined;
     this.cellClipRight = this.wrap === 'clip' && this.align !== 'right' ? this.AABB.right : undefined;
     this.cellClipTop = this.AABB.top;
     this.cellClipBottom = this.AABB.bottom;
@@ -218,6 +230,7 @@ export class CellLabel {
 
   private isLink = (cell: JsRenderCell): boolean => {
     if (cell.number !== undefined || cell.special !== undefined) return false;
+    if (!URL_REGEX.test(cell.value)) return false;
     try {
       new URL(cell.value);
       return true;

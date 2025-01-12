@@ -17,7 +17,7 @@ impl GridController {
     ) -> Result<GridController, JsValue> {
         let mut grid = Grid::new_blank();
         let sheet_id = grid.add_sheet(None);
-        let insert_at = Pos { x: 0, y: 0 };
+        let insert_at = pos![A1];
 
         let mut grid_controller = GridController::from_grid(grid, 0);
         grid_controller
@@ -85,7 +85,7 @@ impl GridController {
     pub fn js_import_parquet(file: Vec<u8>, file_name: &str) -> Result<GridController, JsValue> {
         let mut grid = Grid::new_blank();
         let sheet_id = grid.add_sheet(None);
-        let insert_at = Pos { x: 0, y: 0 };
+        let insert_at = pos![A1];
 
         let mut grid_controller = GridController::from_grid(grid, 0);
         grid_controller

@@ -1,3 +1,4 @@
+import { getTable } from '@/app/actions/dataTableSpec';
 import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -25,6 +26,7 @@ interface MoveCells {
   toColumn: number;
   toRow: number;
   offset: { x: number; y: number };
+  table?: { offsetX: number; offsetY: number };
 }
 
 export class PointerCellMoving {
@@ -41,6 +43,30 @@ export class PointerCellMoving {
       default:
         return undefined;
     }
+  }
+
+  // Starts a table move.
+  tableMove(column: number, row: number, point: Point) {
+    if (this.state) return false;
+    this.state = 'move';
+    this.startCell = new Point(column, row);
+    const offset = sheets.sheet.getCellOffsets(column, row);
+    this.movingCells = {
+      column,
+      row,
+      width: 1,
+      height: 1,
+      toColumn: column,
+      toRow: row,
+      offset: { x: 0, y: 0 },
+      table: { offsetX: point.x - offset.x, offsetY: point.y - offset.y },
+    };
+    events.emit('cellMoving', true);
+    pixiApp.viewport.mouseEdges({
+      distance: MOUSE_EDGES_DISTANCE,
+      allowButtons: true,
+      speed: MOUSE_EDGES_SPEED / pixiApp.viewport.scale.x,
+    });
   }
 
   findCorner(world: Point): Point {
@@ -148,14 +174,11 @@ export class PointerCellMoving {
   }
 
   private pointerMoveHover(world: Point): boolean {
-    const sheet = sheets.sheet;
-    const rectangles = sheet.cursor.getRectangles();
-
     // we do not move if there are multiple rectangles (for now)
-    if (rectangles.length > 1) return false;
-    const rectangle = rectangles[0];
+    const rectangle = sheets.sheet.cursor.getSingleRectangleOrCursor();
+    if (!rectangle) return false;
 
-    const origin = sheet.cursor.getCursor();
+    const origin = sheets.sheet.cursor.position;
     const column = origin.x;
     const row = origin.y;
 
@@ -208,37 +231,37 @@ export class PointerCellMoving {
         this.movingCells &&
         (this.startCell.x !== this.movingCells.toColumn || this.startCell.y !== this.movingCells.toRow)
       ) {
-        const rectangle = sheets.sheet.cursor.getLargestMultiCursorRectangle();
+        const table = getTable();
+        const rectangle = sheets.sheet.cursor.getLargestRectangle();
+
+        if (table) {
+          rectangle.width = table.w;
+          rectangle.height = table.h;
+        }
+
         quadraticCore.moveCells(
-          rectToSheetRect(
-            new Rectangle(rectangle.x, rectangle.y, rectangle.width - 1, rectangle.height - 1),
-            sheets.sheet.id
-          ),
+          rectToSheetRect(rectangle, sheets.sheet.id),
           this.movingCells.toColumn,
           this.movingCells.toRow,
           sheets.sheet.id
         );
 
-        // if we moved the code cell, we need to repopulate the code editor with
-        // unsaved content.
-        if (pixiAppSettings.unsavedEditorChanges) {
-          const { codeCell } = pixiAppSettings.codeEditorState;
-          if (
-            codeCell.sheetId === sheets.current &&
-            intersects.rectanglePoint(rectangle, new Point(codeCell.pos.x, codeCell.pos.y))
-          ) {
-            pixiAppSettings.setCodeEditorState?.({
-              ...pixiAppSettings.codeEditorState,
-              initialCode: pixiAppSettings.unsavedEditorChanges ?? '',
-              codeCell: {
-                ...codeCell,
-                pos: {
-                  x: codeCell.pos.x + this.movingCells.toColumn - this.movingCells.column,
-                  y: codeCell.pos.y + this.movingCells.toRow - this.movingCells.row,
-                },
+        const { showCodeEditor, codeCell } = pixiAppSettings.codeEditorState;
+        if (
+          showCodeEditor &&
+          codeCell.sheetId === sheets.current &&
+          intersects.rectanglePoint(rectangle, new Point(codeCell.pos.x, codeCell.pos.y))
+        ) {
+          pixiAppSettings.setCodeEditorState?.({
+            ...pixiAppSettings.codeEditorState,
+            codeCell: {
+              ...codeCell,
+              pos: {
+                x: codeCell.pos.x + this.movingCells.toColumn - this.movingCells.column,
+                y: codeCell.pos.y + this.movingCells.toRow - this.movingCells.row,
               },
-            });
-          }
+            },
+          });
         }
       }
       this.reset();

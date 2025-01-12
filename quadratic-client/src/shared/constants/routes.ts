@@ -1,6 +1,5 @@
-import { UrlParamsDevState } from '@/app/gridGL/pixiApp/urlParams/UrlParamsDev';
-import { apiClient } from '@/shared/api/apiClient';
-import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import type { UrlParamsDevState } from '@/app/gridGL/pixiApp/urlParams/UrlParamsDev';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 
 // Any routes referenced outside of the root router are stored here
 export const ROUTES = {
@@ -12,14 +11,30 @@ export const ROUTES = {
   FILES_SHARED_WITH_ME: '/files/shared-with-me',
   FILE: (uuid: string) => `/file/${uuid}`,
 
-  CREATE_FILE: (teamUuid: string, state?: UrlParamsDevState['insertAndRunCodeInNewSheet']) =>
-    `/teams/${teamUuid}/files/create` +
-    (state ? `?state=${btoa(JSON.stringify({ insertAndRunCodeInNewSheet: state }))}` : ''),
-  CREATE_FILE_EXAMPLE: (teamUuid: string, publicFileUrlInProduction: string, isPrivate: boolean) =>
-    `/teams/${teamUuid}/files/create?example=${publicFileUrlInProduction}${isPrivate ? '&private' : ''}`,
-  CREATE_FILE_PRIVATE: (teamUuid: string, state?: UrlParamsDevState['insertAndRunCodeInNewSheet']) =>
-    `/teams/${teamUuid}/files/create?private` +
-    (state ? `&state=${btoa(JSON.stringify({ insertAndRunCodeInNewSheet: state }))}` : ''),
+  CREATE_FILE: (
+    teamUuid: string,
+    searchParams: {
+      state?: UrlParamsDevState['insertAndRunCodeInNewSheet'];
+      prompt?: string | null;
+      private?: boolean;
+    } = {}
+  ) => {
+    let url = new URL(window.location.origin + `/teams/${teamUuid}/files/create`);
+
+    if (searchParams.state) {
+      url.searchParams.set('state', btoa(JSON.stringify({ insertAndRunCodeInNewSheet: searchParams.state })));
+    }
+    if (searchParams.prompt) {
+      url.searchParams.set('prompt', searchParams.prompt);
+    }
+    if (searchParams.private) {
+      url.searchParams.set('private', 'true');
+    }
+
+    return url.toString();
+  },
+  CREATE_FILE_EXAMPLE: (teamUuid: string, publicFileUrlInProduction: string) =>
+    `/teams/${teamUuid}/files/create?example=${publicFileUrlInProduction}&private`,
   TEAMS: `/teams`,
   TEAMS_CREATE: `/teams/create`,
   TEAM: (teamUuid: string) => `/teams/${teamUuid}`,
@@ -32,12 +47,6 @@ export const ROUTES = {
   TEAM_FILES_PRIVATE: (teamUuid: string) => `/teams/${teamUuid}/files/private`,
   TEAM_MEMBERS: (teamUuid: string) => `/teams/${teamUuid}/members`,
   TEAM_SETTINGS: (teamUuid: string) => `/teams/${teamUuid}/settings`,
-  // This is a way to navigate to a team route without necessariliy knowing
-  // the teamUuid upfront. It’s useful from the app-side when you want to navigate
-  // back to the dashboard.
-  TEAM_SHORTCUT: {
-    CONNECTIONS: `/?team-shortcut=connections`,
-  },
   EDIT_TEAM: (teamUuid: string) => `/teams/${teamUuid}/edit`,
   EXAMPLES: '/examples',
   ACCOUNT: '/account',
@@ -63,12 +72,20 @@ export const SEARCH_PARAMS = {
 };
 
 export const AI = {
-  OPENAI: {
-    CHAT: `${apiClient.getApiUrl()}/ai/openai/chat`,
-    STREAM: `${apiClient.getApiUrl()}/ai/openai/chat/stream`,
+  BEDROCK: {
+    CHAT: `${import.meta.env.VITE_QUADRATIC_API_URL}/ai/bedrock/chat`,
+    STREAM: `${import.meta.env.VITE_QUADRATIC_API_URL}/ai/bedrock/chat/stream`,
+    ANTHROPIC: {
+      CHAT: `${import.meta.env.VITE_QUADRATIC_API_URL}/ai/bedrock/anthropic/chat`,
+      STREAM: `${import.meta.env.VITE_QUADRATIC_API_URL}/ai/bedrock/anthropic/chat/stream`,
+    },
   },
   ANTHROPIC: {
-    CHAT: `${apiClient.getApiUrl()}/ai/anthropic/chat`,
-    STREAM: `${apiClient.getApiUrl()}/ai/anthropic/chat/stream`,
+    CHAT: `${import.meta.env.VITE_QUADRATIC_API_URL}/ai/anthropic/chat`,
+    STREAM: `${import.meta.env.VITE_QUADRATIC_API_URL}/ai/anthropic/chat/stream`,
+  },
+  OPENAI: {
+    CHAT: `${import.meta.env.VITE_QUADRATIC_API_URL}/ai/openai/chat`,
+    STREAM: `${import.meta.env.VITE_QUADRATIC_API_URL}/ai/openai/chat/stream`,
   },
 };

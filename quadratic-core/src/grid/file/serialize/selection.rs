@@ -1,31 +1,44 @@
-use super::current;
-use crate::selection::Selection;
+use std::str::FromStr;
 
-pub fn import_selection(selection: current::SelectionSchema) -> Selection {
-    Selection {
-        sheet_id: selection.sheet_id.to_owned(),
-        x: selection.x,
-        y: selection.y,
-        rects: selection
-            .rects
-            .map(|rects| rects.iter().map(|r| r.into()).collect()),
-        rows: selection.rows,
-        columns: selection.columns,
-        all: selection.all,
+use crate::{
+    a1::{A1Selection, CellRefCoord, CellRefRange, CellRefRangeEnd, RefRangeBounds},
+    grid::SheetId,
+    Pos,
+};
+
+use super::{
+    current,
+    data_table::{export_cell_ref_range, import_cell_ref_range},
+};
+
+pub fn import_selection(selection: current::A1SelectionSchema) -> A1Selection {
+    A1Selection {
+        // todo: handle error more gracefully
+        sheet_id: SheetId::from_str(&selection.sheet_id.to_string()).unwrap(),
+        cursor: Pos {
+            x: selection.cursor.x,
+            y: selection.cursor.y,
+        },
+        ranges: selection
+            .ranges
+            .into_iter()
+            .map(import_cell_ref_range)
+            .collect(),
     }
 }
 
-pub fn export_selection(selection: Selection) -> current::SelectionSchema {
-    current::SelectionSchema {
-        sheet_id: selection.sheet_id,
-        x: selection.x,
-        y: selection.y,
-        rects: selection
-            .rects
-            .map(|rects| rects.iter().map(|r| r.into()).collect()),
-        rows: selection.rows,
-        columns: selection.columns,
-        all: selection.all,
+pub fn export_selection(selection: A1Selection) -> current::A1SelectionSchema {
+    current::A1SelectionSchema {
+        sheet_id: selection.sheet_id.to_string().into(),
+        cursor: current::PosSchema {
+            x: selection.cursor.x,
+            y: selection.cursor.y,
+        },
+        ranges: selection
+            .ranges
+            .into_iter()
+            .map(export_cell_ref_range)
+            .collect(),
     }
 }
 
@@ -34,20 +47,11 @@ mod tests {
     use serial_test::parallel;
 
     use super::*;
-    use crate::{grid::SheetId, Rect};
 
     #[test]
     #[parallel]
     fn import_export_selection() {
-        let selection = Selection {
-            sheet_id: SheetId::test(),
-            x: 1,
-            y: 2,
-            rects: Some(vec![Rect::new(3, 4, 5, 6), Rect::new(7, 8, 9, 10)]),
-            rows: Some(vec![1, 2, 3]),
-            columns: Some(vec![4, 5, 6]),
-            all: true,
-        };
+        let selection = A1Selection::test_a1("A2,C4:E6,G8:I10,1:3,D:E");
         let imported = import_selection(export_selection(selection.clone()));
         assert_eq!(selection, imported);
     }

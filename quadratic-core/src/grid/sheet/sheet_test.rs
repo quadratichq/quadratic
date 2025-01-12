@@ -1,13 +1,15 @@
 use super::Sheet;
 
+use crate::{
+    grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
+    Array, ArraySize, CellValue, Pos, Value,
+};
+use bigdecimal::BigDecimal;
+use std::str::FromStr;
+
 impl Sheet {
     /// Sets a test value in the sheet of &str converted to a BigDecimal.
-    #[cfg(test)]
     pub fn test_set_value_number(&mut self, x: i64, y: i64, s: &str) {
-        use crate::{CellValue, Pos};
-        use bigdecimal::BigDecimal;
-        use std::str::FromStr;
-
         if s.is_empty() {
             return;
         }
@@ -22,7 +24,6 @@ impl Sheet {
 
     /// Sets values in a rectangle starting at (x, y) with width w and height h.
     /// Rectangle is formed row first (so for x then for y).
-    #[cfg(test)]
     pub fn test_set_values(&mut self, x: i64, y: i64, w: i64, h: i64, s: Vec<&str>) {
         assert!(
             w * h == s.len() as i64,
@@ -36,70 +37,50 @@ impl Sheet {
                 }
             }
         }
-        self.calculate_bounds();
-    }
-
-    #[cfg(test)]
-    pub fn test_set_format(
-        &mut self,
-        x: i64,
-        y: i64,
-        update: crate::grid::formats::format_update::FormatUpdate,
-    ) {
-        self.set_format_cell(crate::grid::Pos { x, y }, &update, true);
+        self.recalculate_bounds();
     }
 
     /// Sets a code run and CellValue::Code with an empty code string, a single value result.
-    #[cfg(test)]
     pub fn test_set_code_run_single(&mut self, x: i64, y: i64, value: crate::grid::CellValue) {
         self.set_cell_value(
             crate::Pos { x, y },
-            crate::CellValue::Code(crate::CodeCellValue {
-                language: crate::grid::CodeCellLanguage::Formula,
+            crate::CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
                 code: "".to_string(),
             }),
         );
 
-        self.set_code_run(
+        let code_run = CodeRun {
+            std_out: None,
+            std_err: None,
+            cells_accessed: Default::default(),
+            error: None,
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
+        };
+
+        self.set_data_table(
             crate::Pos { x, y },
-            Some(crate::grid::CodeRun {
-                std_out: None,
-                std_err: None,
-                formatted_code_string: None,
-                cells_accessed: std::collections::HashSet::new(),
-                result: crate::grid::CodeRunResult::Ok(crate::Value::Single(value)),
-                return_type: Some("number".into()),
-                line_number: None,
-                output_type: None,
-                spill_error: false,
-                last_modified: chrono::Utc::now(),
-            }),
+            Some(DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                "Table1",
+                Value::Single(value),
+                false,
+                false,
+                false,
+                None,
+            )),
         );
     }
 
     /// Sets a code run and CellValue::Code with an empty code string and a single value BigDecimal::from_str(n) result.
-    #[cfg(test)]
     pub fn test_set_code_run_number(&mut self, x: i64, y: i64, n: &str) {
-        use std::str::FromStr;
-
-        self.test_set_code_run_single(
-            x,
-            y,
-            crate::grid::CellValue::Number(bigdecimal::BigDecimal::from_str(n).unwrap()),
-        );
+        self.test_set_code_run_single(x, y, CellValue::Number(BigDecimal::from_str(n).unwrap()));
     }
 
     /// Sets a code run array with code string of "" and an array output of the given values.
-    #[cfg(test)]
     pub fn test_set_code_run_array(&mut self, x: i64, y: i64, n: Vec<&str>, vertical: bool) {
-        use crate::{
-            grid::{CodeCellLanguage, CodeRun, CodeRunResult},
-            Array, ArraySize, CellValue, CodeCellValue, Pos, Value,
-        };
-        use bigdecimal::BigDecimal;
-        use chrono::Utc;
-        use std::{collections::HashSet, str::FromStr};
-
         let array_size = if vertical {
             ArraySize::new(1, n.len() as u32).unwrap()
         } else {
@@ -127,33 +108,33 @@ impl Sheet {
                 code: "code".to_string(),
             }),
         );
-        self.set_code_run(
+
+        let code_run = CodeRun {
+            std_out: None,
+            std_err: None,
+            cells_accessed: Default::default(),
+            error: None,
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
+        };
+
+        self.set_data_table(
             Pos { x, y },
-            Some(CodeRun {
-                std_out: None,
-                std_err: None,
-                formatted_code_string: None,
-                cells_accessed: HashSet::new(),
-                result: CodeRunResult::Ok(Value::Array(array)),
-                return_type: Some("number".into()),
-                line_number: None,
-                output_type: None,
-                spill_error: false,
-                last_modified: Utc::now(),
-            }),
+            Some(DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                "Table1",
+                Value::Array(array),
+                false,
+                false,
+                false,
+                None,
+            )),
         );
+        self.recalculate_bounds();
     }
 
-    #[cfg(test)]
     pub fn test_set_code_run_array_2d(&mut self, x: i64, y: i64, w: u32, h: u32, n: Vec<&str>) {
-        use crate::{
-            grid::{CodeCellLanguage, CodeRun, CodeRunResult},
-            Array, ArraySize, CellValue, CodeCellValue, Pos, Value,
-        };
-        use bigdecimal::BigDecimal;
-        use chrono::Utc;
-        use std::{collections::HashSet, str::FromStr};
-
         self.set_cell_value(
             Pos { x, y },
             CellValue::Code(CodeCellValue {
@@ -175,21 +156,61 @@ impl Sheet {
             }
         }
 
-        self.set_code_run(
+        let code_run = CodeRun {
+            std_out: None,
+            std_err: None,
+            cells_accessed: Default::default(),
+            error: None,
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
+        };
+
+        self.set_data_table(
             Pos { x, y },
-            Some(CodeRun {
-                std_out: None,
-                std_err: None,
-                formatted_code_string: None,
-                cells_accessed: HashSet::new(),
-                result: CodeRunResult::Ok(Value::Array(array)),
-                return_type: Some("number".into()),
-                line_number: None,
-                output_type: None,
-                spill_error: false,
-                last_modified: Utc::now(),
+            Some(DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                "Table1",
+                Value::Array(array),
+                false,
+                false,
+                false,
+                None,
+            )),
+        );
+    }
+
+    /// Sets a JS chart at the given position with the given width and height (in cells).
+    pub fn test_set_chart(&mut self, pos: Pos, w: u32, h: u32) {
+        self.set_cell_value(
+            pos,
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Javascript,
+                code: "code".to_string(),
             }),
         );
+        let code_run = CodeRun {
+            std_out: None,
+            std_err: None,
+            cells_accessed: Default::default(),
+            error: None,
+            return_type: None,
+            line_number: None,
+            output_type: None,
+        };
+        self.set_data_table(
+            pos,
+            Some(DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                "Chart 1",
+                Value::Single(CellValue::Image("chart".to_string())),
+                false,
+                false,
+                true,
+                Some((1.0, 1.0)),
+            )),
+        );
+        self.data_tables.get_mut(&pos).unwrap().chart_output = Some((w, h));
     }
 }
 

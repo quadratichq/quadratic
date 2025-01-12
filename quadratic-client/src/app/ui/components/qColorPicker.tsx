@@ -1,4 +1,5 @@
-import { ColorChangeHandler, CompactPicker } from 'react-color';
+import type { ColorChangeHandler } from 'react-color';
+import { CompactPicker } from 'react-color';
 import './qColorPicker.scss';
 
 interface IProps {
@@ -57,12 +58,13 @@ export const QColorPicker = (props: IProps) => {
           '#34495E',
           '#000000' /* sixth row of colors */,
           '#333333',
-          '#4d4d4d',
+          // '#4d4d4d', // removed so we can add clear color at end
           '#737373',
           '#cccccc',
           '#dddddd',
           '#eeeeee',
           '#ffffff',
+          '#123456', // special indicator for color color. See useBorders.tsx#CLEAR_COLOR
         ]}
       />
       {props.onClear && (

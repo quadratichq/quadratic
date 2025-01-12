@@ -69,7 +69,6 @@ extern "C" {
     );
     pub fn jsOffsetsModified(sheet_id: String, offsets: String /* Vec<JsOffset> */);
     pub fn jsSetCursor(cursor: String);
-    pub fn jsSetCursorSelection(selection: String);
     pub fn jsUpdateHtml(html: String /*JsHtmlOutput*/);
     pub fn jsClearHtml(sheet_id: String, x: i64, y: i64);
     pub fn jsHtmlOutput(html: String /*Vec<JsHtmlOutput>*/);
@@ -110,8 +109,8 @@ extern "C" {
         x: i32,
         y: i32,
         image: Option<String>,
-        w: Option<String>,
-        h: Option<String>,
+        w: Option<f32>,
+        h: Option<f32>,
     );
 
     // rows: Vec<i64>
@@ -131,10 +130,14 @@ extern "C" {
 
     pub fn jsMultiplayerSynced();
 
-    // hashes: Vec<JsPos>
+    // hashes: Vec<Pos>
     pub fn jsHashesDirty(sheet_id: String, hashes: String);
 
     pub fn jsSendViewportBuffer(buffer: SharedArrayBuffer);
+
+    pub fn jsClientMessage(message: String, error: bool);
+
+    pub fn jsA1Context(context: String);
 }
 
 #[cfg(test)]
@@ -149,6 +152,7 @@ lazy_static! {
 }
 
 #[cfg(test)]
+#[track_caller]
 pub fn expect_js_call(name: &str, args: String, clear: bool) {
     let result = TestFunction {
         name: name.to_string(),
@@ -170,6 +174,7 @@ pub fn expect_js_call(name: &str, args: String, clear: bool) {
 }
 
 #[cfg(test)]
+#[track_caller]
 pub fn expect_js_call_count(name: &str, count: usize, clear: bool) {
     let mut found = 0;
     TEST_ARRAY.lock().unwrap().retain(|x| {
@@ -192,6 +197,7 @@ use js_types::JsOffset;
 use std::collections::HashMap;
 
 #[cfg(test)]
+#[track_caller]
 pub fn expect_js_offsets(
     sheet_id: SheetId,
     offsets: HashMap<(Option<i64>, Option<i64>), f64>,
@@ -413,15 +419,6 @@ pub fn jsSetCursor(cursor: String) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSetCursorSelection(selection: String) {
-    TEST_ARRAY
-        .lock()
-        .unwrap()
-        .push(TestFunction::new("jsSetCursorSelection", selection));
-}
-
-#[cfg(test)]
-#[allow(non_snake_case)]
 pub fn jsUpdateHtml(html: String /*JsHtmlOutput*/) {
     TEST_ARRAY
         .lock()
@@ -570,8 +567,8 @@ pub fn jsSendImage(
     x: i32,
     y: i32,
     image: Option<String>,
-    w: Option<String>,
-    h: Option<String>,
+    w: Option<f32>,
+    h: Option<f32>,
 ) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsSendImage",
@@ -582,7 +579,7 @@ pub fn jsSendImage(
             y,
             image.is_some(),
             w,
-            h
+            h,
         ),
     ));
 }
@@ -652,7 +649,7 @@ pub fn jsMultiplayerSynced() {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsHashesDirty(sheet_id: String, hashes: String /*Vec<JsPos>*/) {
+pub fn jsHashesDirty(sheet_id: String, hashes: String /*Vec<Pos>*/) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsHashesDirty",
         format!("{},{}", sheet_id, hashes),
@@ -666,4 +663,22 @@ pub fn jsSendViewportBuffer(buffer: [u8; 112]) {
         "jsSendViewportBuffer",
         format!("{:?}", buffer),
     ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsClientMessage(message: String, error: bool) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsClientMessage",
+        format!("{},{}", message, error),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsA1Context(context: String) {
+    TEST_ARRAY
+        .lock()
+        .unwrap()
+        .push(TestFunction::new("jsA1Context", context));
 }

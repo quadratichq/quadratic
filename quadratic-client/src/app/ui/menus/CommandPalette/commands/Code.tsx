@@ -1,8 +1,9 @@
+import { rerunAction, rerunCellAction, rerunSheetAction } from '@/app/actions';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { rerunAction, rerunCellAction, rerunSheetAction } from '../../../../actions';
-import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
 const commands: CommandGroup = {
   heading: 'Code',
@@ -17,8 +18,8 @@ const commands: CommandGroup = {
             action={() =>
               quadraticCore.rerunCodeCells(
                 sheets.sheet.id,
-                sheets.sheet.cursor.cursorPosition.x,
-                sheets.sheet.cursor.cursorPosition.y,
+                sheets.sheet.cursor.position.x,
+                sheets.sheet.cursor.position.y,
                 sheets.getCursorPosition()
               )
             }

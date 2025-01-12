@@ -10,7 +10,7 @@ import { ValidationMessage } from '@/app/ui/menus/Validations/Validation/Validat
 import { ValidationNone } from '@/app/ui/menus/Validations/Validation/ValidationNone';
 import { ValidationNumber } from '@/app/ui/menus/Validations/Validation/ValidationNumber';
 import { ValidationText } from '@/app/ui/menus/Validations/Validation/ValidationText';
-import { ValidationRuleSimple } from '@/app/ui/menus/Validations/Validation/validationType';
+import type { ValidationRuleSimple } from '@/app/ui/menus/Validations/Validation/validationType';
 import { ValidationDropdown } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationUI';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -66,7 +66,8 @@ export const Validation = () => {
           changeCursor={true}
           readOnly={readOnly}
           onEnter={onEnter}
-          requireSheetId={sheetId}
+          onlyCurrentSheet={sheetId}
+          onlyCurrentSheetError="Range must be on the same sheet"
         />
         <ValidationDropdown
           label="Criteria"

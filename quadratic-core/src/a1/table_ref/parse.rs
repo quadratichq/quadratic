@@ -1,0 +1,245 @@
+use lazy_static::lazy_static;
+use regex::Regex;
+
+use crate::a1::{A1Context, A1Error};
+
+use super::{tokenize::Token, ColRange, RowRange, RowRangeEntry, TableRef};
+
+lazy_static! {
+    static ref TABLE_NAME_PATTERN: Regex =
+        Regex::new(r"^([a-zA-Z0-9_]{1,255})(?:\[(.*)\])?$").unwrap();
+}
+
+impl TableRef {
+    /// Parses the table name using a regex from the start of the string.
+    /// Returns the table name and the remaining string.
+    fn parse_table_name(s: &str) -> Result<(String, &str), A1Error> {
+        if let Some(captures) = TABLE_NAME_PATTERN.captures(s) {
+            if let Some(name) = captures.get(1) {
+                let remaining = captures.get(2).map_or("", |m| m.as_str()).trim();
+                return Ok((name.as_str().to_string(), remaining));
+            }
+        }
+        Err(A1Error::InvalidTableRef("Invalid table name".into()))
+    }
+
+    /// Parse a table reference and returns a list of TableRefs. A list is
+    /// required because we break non-rectangular regions into multiple
+    /// TableRefs, For example: `Table1[[Column 1],[Column 3]]` will become
+    /// `Table1[Column 1]` and `Table1[Column 3]`.
+    pub fn parse(s: &str, context: &A1Context) -> Result<TableRef, A1Error> {
+        let (table_name, remaining) = Self::parse_table_name(s)?;
+        let table_name = if let Some(entry) = context.try_table(&table_name) {
+            entry.table_name.clone()
+        } else {
+            return Err(A1Error::TableNotFound(table_name.clone()));
+        };
+
+        // if it's just the table name, return the entire TableRef
+        if remaining.trim().is_empty() {
+            return Ok(Self {
+                table_name,
+                data: true,
+                headers: false,
+                totals: false,
+                row_range: RowRange::All,
+                col_range: ColRange::All,
+            });
+        }
+
+        let mut row_range = None;
+        let mut col_range = None;
+        let mut data = None;
+        let mut headers = false;
+        let mut totals = false;
+
+        for token in Self::tokenize(remaining)? {
+            match token {
+                Token::RowRange(start, end) => {
+                    if row_range.is_some() {
+                        return Err(A1Error::MultipleRowDefinitions);
+                    }
+                    row_range = Some(RowRange::Rows(RowRangeEntry::new_rel(start, end)));
+                }
+                Token::Column(name) => {
+                    if col_range.is_some() {
+                        return Err(A1Error::MultipleColumnDefinitions);
+                    }
+                    col_range = Some(ColRange::Col(name));
+                }
+                Token::ColumnRange(start, end) => {
+                    if col_range.is_some() {
+                        return Err(A1Error::MultipleColumnDefinitions);
+                    }
+                    col_range = Some(ColRange::ColRange(start, end));
+                }
+                Token::ColumnToEnd(name) => {
+                    if col_range.is_some() {
+                        return Err(A1Error::MultipleColumnDefinitions);
+                    }
+                    col_range = Some(ColRange::ColToEnd(name));
+                }
+                Token::All => {
+                    headers = true;
+                    data = Some(true);
+                    totals = true;
+                }
+                Token::Headers => {
+                    if data.is_none() {
+                        data = Some(false);
+                    }
+                    headers = true;
+                }
+                Token::Totals => {
+                    if data.is_none() {
+                        data = Some(false);
+                    }
+                    totals = true;
+                }
+                Token::Data => {
+                    data = Some(true);
+                }
+                Token::ThisRow => {
+                    if row_range.is_some() {
+                        return Err(A1Error::MultipleRowDefinitions);
+                    }
+                    row_range = Some(RowRange::CurrentRow);
+                }
+            }
+        }
+
+        Ok(TableRef {
+            table_name: table_name.clone(),
+            data: data.unwrap_or(true),
+            headers,
+            totals,
+            row_range: row_range.unwrap_or(RowRange::All),
+            col_range: col_range.unwrap_or(ColRange::All),
+        })
+    }
+}
+
+#[cfg(test)]
+#[serial_test::parallel]
+mod tests {
+    use crate::Rect;
+
+    use super::*;
+
+    #[test]
+    fn test_parse_table_name() {
+        let (table_name, remaining) = TableRef::parse_table_name("Table1[Column 1]").unwrap();
+        assert_eq!(table_name, "Table1");
+        assert_eq!(remaining, "Column 1");
+    }
+
+    #[test]
+    fn test_simple_table_ref() {
+        let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
+        let table_ref = TableRef::parse("Table1", &context).unwrap();
+        assert_eq!(table_ref.table_name, "Table1");
+        assert!(table_ref.data);
+        assert!(!table_ref.headers);
+        assert_eq!(table_ref.col_range, ColRange::All);
+    }
+
+    #[test]
+    fn test_table_name_case_insensitive() {
+        let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
+        let table_ref = TableRef::parse("table1", &context).unwrap();
+        assert_eq!(table_ref.table_name, "Table1");
+    }
+
+    #[test]
+    fn test_table_name_not_found() {
+        let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
+        let result = TableRef::parse("Table2", &context);
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err(),
+            A1Error::TableNotFound("Table2".to_string())
+        );
+    }
+
+    #[test]
+    fn test_table_with_column() {
+        let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
+        let table_ref = TableRef::parse("Table1[Column Name]", &context).unwrap();
+        assert_eq!(table_ref.table_name, "Table1");
+        assert_eq!(
+            table_ref.col_range,
+            ColRange::Col("Column Name".to_string())
+        );
+    }
+
+    #[test]
+    fn test_table_with_headers() {
+        let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
+        let table_ref = TableRef::parse("Table1[[#HEADERS]]", &context).unwrap();
+        assert_eq!(table_ref.table_name, "Table1");
+        assert!(table_ref.headers);
+    }
+
+    #[test]
+    fn test_table_with_row_range() {
+        let context = A1Context::test(
+            &[],
+            &[
+                ("Table1", &["A", "B"], Rect::test_a1("A1:B2")),
+                ("Table2", &["C", "D"], Rect::test_a1("C3:D4")),
+                ("Table3", &["E", "F"], Rect::test_a1("E5:F6")),
+            ],
+        );
+
+        let variations = [
+            (
+                "Table1[[#12:15],[Column 1]]",
+                TableRef {
+                    table_name: "Table1".to_string(),
+                    data: true,
+                    headers: false,
+                    totals: false,
+                    row_range: RowRange::Rows(RowRangeEntry::new_rel(12, 15)),
+                    col_range: ColRange::Col("Column 1".to_string()),
+                },
+            ),
+            (
+                "TABLE2[ [#12:15], [Column 2]]",
+                TableRef {
+                    table_name: "Table2".to_string(),
+                    data: true,
+                    headers: false,
+                    totals: false,
+                    row_range: RowRange::Rows(RowRangeEntry::new_rel(12, 15)),
+                    col_range: ColRange::Col("Column 2".to_string()),
+                },
+            ),
+            (
+                "table3[[#12:15],[Column 3]]",
+                TableRef {
+                    table_name: "Table3".to_string(),
+                    data: true,
+                    headers: false,
+                    totals: false,
+                    row_range: RowRange::Rows(RowRangeEntry::new_rel(12, 15)),
+                    col_range: ColRange::Col("Column 3".to_string()),
+                },
+            ),
+        ];
+
+        for (s, expected) in variations.iter() {
+            let table_ref = TableRef::parse(s, &context).unwrap();
+            assert_eq!(table_ref, *expected, "{}", s);
+        }
+    }
+
+    #[test]
+    fn test_table_parameters() {
+        let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
+        let table_ref = TableRef::parse("Table1[[#DATA],[#HEADERS],[Col1]]", &context).unwrap();
+        assert_eq!(table_ref.table_name, "Table1");
+        assert!(table_ref.data);
+        assert!(table_ref.headers);
+        assert_eq!(table_ref.col_range, ColRange::Col("Col1".to_string()));
+    }
+}

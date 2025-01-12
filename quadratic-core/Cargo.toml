@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-core"
-version = "0.5.2"
+version = "0.6.1"
 authors = ["Andrew Farkas <andrew.farkas@quadratic.to>"]
 edition = "2021"
 description = "Infinite data grid with Python, JavaScript, and SQL built-in"
@@ -23,6 +23,14 @@ path = "src/bin/export_types.rs"
 [[bin]]
 name = "generate_blank_current_file"
 path = "src/bin/generate_blank_current_file.rs"
+
+[[bin]]
+name = "convert_grid_to_json"
+path = "src/bin/convert_grid_to_json.rs"
+
+[[bin]]
+name = "upgrade_file"
+path = "src/bin/upgrade_file.rs"
 
 [features]
 default = ["console_error_panic_hook", "js"]
@@ -86,12 +94,14 @@ bincode = "1.3.3"
 flate2 = "1.0.30"
 serde_with = "3.8.1"
 dateparser = "0.2.1"
+fancy-regex = "0.14.0"
 csv-sniffer = "0.3.1"
 
 [dev-dependencies]
 criterion = { version = "0.4", default-features = false }
 tokio-test = "0.4.3"
 serial_test = "3.0.0"
+memory-stats = "1.2.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 proptest = "1.2.0"
@@ -104,6 +114,11 @@ harness = false
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ['-Os', '-g'] # TODO: -g seems to fix the name mangling problem
 
+[package.metadata.wasm-pack.profile.release.wasm-bindgen]
+debug-js-glue = false
+demangle-name-section = true
+dwarf-debug-info = false
+
 [package.metadata.wasm-pack.profile.dev]
 wasm-opt = false
 
@@ -113,14 +128,12 @@ demangle-name-section = true
 dwarf-debug-info = true
 
 [package.metadata.wasm-pack.profile.profiling]
-wasm-opt = ['-O', '-g']
+wasm-opt = ['-O0', '-g']
 
 [package.metadata.wasm-pack.profile.profiling.wasm-bindgen]
 debug-js-glue = false
 demangle-name-section = true
 dwarf-debug-info = true
 
-[package.metadata.wasm-pack.profile.release.wasm-bindgen]
-debug-js-glue = false
-demangle-name-section = true
-dwarf-debug-info = false
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(wasm_bindgen_unstable_test_coverage)'] }

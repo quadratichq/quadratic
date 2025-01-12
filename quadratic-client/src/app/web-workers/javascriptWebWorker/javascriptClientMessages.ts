@@ -1,4 +1,4 @@
-import { CodeRun } from '../CodeRun';
+import type { CodeRun } from '@/app/web-workers/CodeRun';
 
 export interface JavascriptClientLoadError {
   type: 'javascriptClientLoadError';
@@ -22,15 +22,31 @@ export interface JavascriptClientState {
   version?: string;
 }
 
-export interface ClientJavascriptCoreChannel {
-  type: 'clientJavascriptCoreChannel';
-}
-
 export interface JavascriptClientInit {
   type: 'javascriptClientInit';
   version: string;
 }
 
-export type JavascriptClientMessage = JavascriptClientLoadError | JavascriptClientState | JavascriptClientInit;
+export interface ClientJavascriptCoreChannel {
+  type: 'clientJavascriptCoreChannel';
+  env: ImportMetaEnv;
+}
 
-export type ClientJavascriptMessage = ClientJavascriptCoreChannel;
+export interface ClientJavascriptGetJwt {
+  type: 'clientJavascriptGetJwt';
+  id: number;
+  jwt: string;
+}
+
+export interface JavascriptClientGetJwt {
+  type: 'javascriptClientGetJwt';
+  id: number;
+}
+
+export type JavascriptClientMessage =
+  | JavascriptClientLoadError
+  | JavascriptClientState
+  | JavascriptClientInit
+  | JavascriptClientGetJwt;
+
+export type ClientJavascriptMessage = ClientJavascriptCoreChannel | ClientJavascriptGetJwt;

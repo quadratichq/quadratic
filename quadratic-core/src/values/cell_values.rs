@@ -1,10 +1,11 @@
 //! CellValues is a 2D array of CellValue used for Operation::SetCellValues.
 //! The width and height may grow as needed.
 
-use crate::CellValue;
+use crate::{Array, ArraySize, CellValue, Rect};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
+/// Sparsely-populated rectangle of [`CellValue`]s.
 #[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CellValues {
     pub columns: Vec<BTreeMap<u64, CellValue>>,
@@ -42,6 +43,64 @@ impl CellValues {
             .and_then(|col| col.get(&(y as u64)))
     }
 
+    pub fn safe_get(&self, x: u32, y: u32) -> anyhow::Result<&CellValue> {
+        if !(x < self.w && y < self.h) {
+            anyhow::bail!(
+                "CellValues::safe_get out of bounds: w={}, h={}, x={}, y={}",
+                self.w,
+                self.h,
+                x,
+                y
+            );
+        }
+
+        let cell_value = self
+            .columns
+            .get(x as usize)
+            .and_then(|col| col.get(&(y as u64)))
+            .ok_or_else(|| anyhow::anyhow!("No value found at ({x}, {y})"))?;
+
+        Ok(cell_value)
+    }
+
+    pub fn get_owned(&mut self, x: u32, y: u32) -> anyhow::Result<&mut CellValue> {
+        if !(x < self.w && y < self.h) {
+            anyhow::bail!(
+                "CellValues::safe_get out of bounds: w={}, h={}, x={}, y={}",
+                self.w,
+                self.h,
+                x,
+                y
+            );
+        }
+
+        let column = self
+            .columns
+            .get_mut(x as usize)
+            .ok_or_else(|| anyhow::anyhow!("No column found at {x}"))?;
+
+        column
+            .get_mut(&(y as u64))
+            .ok_or_else(|| anyhow::anyhow!("No value found at ({x}, {y})"))
+    }
+
+    pub fn get_rect(&mut self, rect: Rect) -> Vec<Vec<CellValue>> {
+        // let size = rect.size();
+        // let mut values = CellValues::new(size.w.get(), size.h.get());
+        let mut values =
+            vec![vec![CellValue::Blank; rect.width() as usize]; rect.height() as usize];
+
+        for (y_index, y) in rect.y_range().enumerate() {
+            for (x_index, x) in rect.x_range().enumerate() {
+                let new_x = u32::try_from(x).unwrap_or(0);
+                let new_y = u32::try_from(y).unwrap_or(0);
+
+                values[y_index][x_index] = self.remove(new_x, new_y).unwrap_or(CellValue::Blank);
+            }
+        }
+        values
+    }
+
     pub fn set(&mut self, x: u32, y: u32, value: CellValue) {
         if y >= self.h {
             self.h = y + 1;
@@ -57,9 +116,14 @@ impl CellValues {
         self.columns[x as usize].insert(y as u64, value);
     }
 
-    pub fn remove(&mut self, x: u32, y: u32) {
-        assert!(x < self.w && y < self.h, "CellValues::remove out of bounds");
-        self.columns[x as usize].remove(&(y as u64));
+    pub fn remove(&mut self, x: u32, y: u32) -> Option<CellValue> {
+        assert!(
+            x < self.w && y < self.h,
+            "CellValues::remove out of bounds: x={x}, y={y}, w={}, h={}",
+            self.w,
+            self.h
+        );
+        self.columns[x as usize].remove(&(y as u64))
     }
 
     pub fn size(&self) -> u32 {
@@ -70,7 +134,9 @@ impl CellValues {
     pub fn from_flat_array(w: u32, h: u32, values: Vec<CellValue>) -> Self {
         assert!(
             w * h == values.len() as u32,
-            "CellValues::flat_array size mismatch"
+            "CellValues::flat_array size mismatch, expected {}, got {}",
+            w * h,
+            values.len()
         );
         let mut columns = vec![BTreeMap::new(); w as usize];
         for (i, value) in values.into_iter().enumerate() {
@@ -93,6 +159,13 @@ impl CellValues {
             col.into_iter()
                 .map(move |(y, value)| (x as u32, y as u32, value))
         })
+    }
+
+    pub fn into_vec(&mut self) -> Vec<Vec<CellValue>> {
+        let width = self.w as i64;
+        let height = self.h as i64;
+
+        self.get_rect(Rect::new(0, 0, width, height))
     }
 
     #[cfg(test)]
@@ -169,6 +242,21 @@ impl From<CellValue> for CellValues {
             c.set(0, 0, value);
         }
         c
+    }
+}
+
+impl From<Array> for CellValues {
+    fn from(array: Array) -> Self {
+        let ArraySize { w, h } = array.size();
+        let cell_values_vec = array.into_cell_values_vec().into_vec();
+
+        CellValues::from_flat_array(w.get(), h.get(), cell_values_vec)
+    }
+}
+
+impl From<CellValues> for Vec<Vec<CellValue>> {
+    fn from(mut cell_values: CellValues) -> Self {
+        cell_values.into_vec()
     }
 }
 

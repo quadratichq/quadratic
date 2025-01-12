@@ -1,12 +1,17 @@
-import { Link } from '@/app/gridGL/types/links';
-import { Coordinate, DrawRects } from '@/app/gridGL/types/size';
-import { Rectangle } from 'pixi.js';
-import { RenderBitmapFonts } from './renderBitmapFonts';
-import type { RenderSpecial } from './worker/cellsLabel/CellsTextHashSpecial';
+import type { Link } from '@/app/gridGL/types/links';
+import type { DrawRects } from '@/app/gridGL/types/size';
+import type { JsCoordinate } from '@/app/quadratic-core-types';
+import type { RenderBitmapFonts } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
+import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
+import type { Rectangle } from 'pixi.js';
 
 export interface ClientRenderInit {
   type: 'clientRenderInit';
   bitmapFonts: RenderBitmapFonts;
+
+  // this is taken from the CSS variable (which is not accessible in the
+  // worker): --table-column-header-foreground
+  tableColumnHeaderForeground: number;
 }
 
 // also includes sending the data as transferable ArrayBuffers
@@ -31,7 +36,7 @@ export interface RenderClientCellsTextHashClear {
   hashX: number;
   hashY: number;
   viewRectangle: { x: number; y: number; width: number; height: number };
-  overflowGridLines: Coordinate[];
+  overflowGridLines: JsCoordinate[];
   content: Uint32Array;
   links: Link[];
   drawRects: DrawRects[];

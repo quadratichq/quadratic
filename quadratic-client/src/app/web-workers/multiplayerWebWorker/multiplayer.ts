@@ -5,22 +5,25 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { MULTIPLAYER_COLORS, MULTIPLAYER_COLORS_TINT } from '@/app/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { SheetPosTS } from '@/app/gridGL/types/size';
+import type { SheetPosTS } from '@/app/gridGL/types/size';
+import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
-import { LanguageState } from '@/app/web-workers/languageTypes';
-import { User, authClient, parseDomain } from '@/auth/auth';
-import { displayName } from '@/shared/utils/userUtil';
-import * as Sentry from '@sentry/react';
-import { v4 as uuid } from 'uuid';
-import updateAlertVersion from '../../../../../updateAlertVersion.json';
-import { quadraticCore } from '../quadraticCore/quadraticCore';
-import {
+import type { LanguageState } from '@/app/web-workers/languageTypes';
+import type {
   ClientMultiplayerMessage,
   MultiplayerClientMessage,
   MultiplayerClientUserUpdate,
   MultiplayerState,
-} from './multiplayerClientMessages';
-import { MultiplayerUser, ReceiveRoom } from './multiplayerTypes';
+} from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
+import type { MultiplayerUser, ReceiveRoom } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import type { User } from '@/auth/auth';
+import { authClient } from '@/auth/auth';
+import { parseDomain } from '@/auth/auth.helper';
+import { displayName } from '@/shared/utils/userUtil';
+import * as Sentry from '@sentry/react';
+import { v4 as uuid } from 'uuid';
+import updateAlertVersion from '../../../../../updateAlertVersion.json';
 
 export class Multiplayer {
   private worker?: Worker;
@@ -202,7 +205,8 @@ export class Multiplayer {
   cellIsBeingEdited(x: number, y: number, sheetId: string): { codeEditor: boolean; user: string } | undefined {
     for (const player of this.users.values()) {
       if (player.sheet_id === sheetId && player.cell_edit.active && player.parsedSelection) {
-        if (player.parsedSelection.cursorPosition.x === x && player.parsedSelection.cursorPosition.y === y) {
+        const cursor = player.parsedSelection.getCursor();
+        if (cursor.x === x && cursor.y === y) {
           const user = displayName(player, false);
           return { codeEditor: player.cell_edit.code_editor, user };
         }
@@ -321,7 +325,10 @@ export class Multiplayer {
 
     if (update.selection) {
       player.selection = update.selection;
-      player.parsedSelection = player.selection ? JSON.parse(player.selection) : undefined;
+      player.parsedSelection = new JsSelection(player.sheet_id);
+      if (player.selection) {
+        player.parsedSelection.load(player.selection);
+      }
       if (player.sheet_id === sheets.sheet.id) {
         pixiApp.multiplayerCursor.dirty = true;
       }
@@ -332,12 +339,8 @@ export class Multiplayer {
       if (!update.cell_edit.code_editor) {
         if (player.parsedSelection) {
           // hide the label if the player is editing the cell
-          pixiApp.cellsSheets.showLabel(
-            player.parsedSelection.cursorPosition.x,
-            player.parsedSelection.cursorPosition.y,
-            player.sheet_id,
-            !player.cell_edit.active
-          );
+          const cursor = player.parsedSelection.getCursor();
+          pixiApp.cellsSheets.showLabel(cursor.x, cursor.y, player.sheet_id, !player.cell_edit.active);
         }
         events.emit('multiplayerCellEdit', update.cell_edit, player);
       }
@@ -379,13 +382,17 @@ export class Multiplayer {
         this.colorString = MULTIPLAYER_COLORS[user.index % MULTIPLAYER_COLORS.length];
       } else {
         let player = this.users.get(user.session_id);
+        const parsedSelection = new JsSelection(user.sheet_id);
+        if (user.selection) {
+          parsedSelection.load(user.selection);
+        }
         if (player) {
           player.first_name = user.first_name;
           player.last_name = user.last_name;
           player.image = user.image;
           player.sheet_id = user.sheet_id;
           player.selection = user.selection;
-          player.parsedSelection = user.selection ? JSON.parse(user.selection) : undefined;
+          player.parsedSelection = parsedSelection;
           remaining.delete(user.session_id);
           if (debugShowMultiplayer) console.log(`[Multiplayer] Updated player ${user.first_name}.`);
         } else {
@@ -399,7 +406,7 @@ export class Multiplayer {
             image: user.image,
             sheet_id: user.sheet_id,
             selection: user.selection,
-            parsedSelection: user.selection ? JSON.parse(user.selection) : undefined,
+            parsedSelection,
             cell_edit: user.cell_edit,
             x: 0,
             y: 0,

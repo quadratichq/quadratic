@@ -3,7 +3,7 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    grid::{file::sheet_schema::export_sheet, GridBounds, Sheet, SheetId},
+    grid::{file::sheet_schema::export_sheet, Sheet, SheetId},
 };
 use lexicon_fractional_index::key_between;
 
@@ -19,14 +19,14 @@ impl GridController {
                 // sheet already exists (unlikely but possible if this operation is run twice)
                 return;
             }
-            let sheet_id = self.grid.add_sheet(Some(sheet.clone()));
+            let sheet_id = self.grid.add_sheet(Some((*sheet).clone()));
 
             self.send_add_sheet(sheet_id, transaction);
 
             transaction
                 .forward_operations
                 .push(Operation::AddSheetSchema {
-                    schema: export_sheet(sheet),
+                    schema: Box::new(export_sheet(*sheet)),
                 });
             transaction
                 .reverse_operations
@@ -46,14 +46,10 @@ impl GridController {
                     return;
                 }
                 let sheet_id = sheet.id;
-                let sheet_bounds = sheet.bounds(false);
                 self.grid.add_sheet(Some(sheet));
 
                 self.send_add_sheet(sheet_id, transaction);
-
-                if let GridBounds::NonEmpty(bounds) = sheet_bounds {
-                    self.send_fill_cells(&bounds.to_sheet_rect(sheet_id));
-                }
+                self.send_all_fills(sheet_id);
 
                 transaction
                     .forward_operations
@@ -91,7 +87,7 @@ impl GridController {
             transaction
                 .reverse_operations
                 .push(Operation::AddSheetSchema {
-                    schema: export_sheet(deleted_sheet),
+                    schema: Box::new(export_sheet(deleted_sheet)),
                 });
 
             // create a sheet if we deleted the last one (only for user actions)
@@ -103,7 +99,7 @@ impl GridController {
                 self.grid.add_sheet(Some(new_first_sheet.clone()));
 
                 transaction.forward_operations.push(Operation::AddSheet {
-                    sheet: new_first_sheet,
+                    sheet: Box::new(new_first_sheet),
                 });
                 transaction.reverse_operations.push(Operation::DeleteSheet {
                     sheet_id: new_first_sheet_id,
@@ -317,8 +313,8 @@ mod tests {
         gc.set_cell_value(
             SheetPos {
                 sheet_id,
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
             },
             "1".to_string(),
             None,
@@ -326,25 +322,25 @@ mod tests {
         gc.set_cell_value(
             SheetPos {
                 sheet_id,
-                x: 0,
-                y: 1,
+                x: 1,
+                y: 2,
             },
             "1".to_string(),
             None,
         );
         let sheet_pos = SheetPos {
             sheet_id,
-            x: 1,
-            y: 0,
+            x: 2,
+            y: 1,
         };
         gc.set_code_cell(
             sheet_pos,
             CodeCellLanguage::Formula,
-            "A0 + A1".to_string(),
+            "A1 + A2".to_string(),
             None,
         );
         assert_eq!(
-            gc.sheet(sheet_id).get_code_cell_value((1, 0).into()),
+            gc.sheet(sheet_id).get_code_cell_value((2, 1).into()),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
         gc.delete_sheet(sheet_id, None);
@@ -498,8 +494,8 @@ mod tests {
         gc.set_code_cell(
             SheetPos {
                 sheet_id,
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
             },
             CodeCellLanguage::Formula,
             "10 + 10".to_string(),

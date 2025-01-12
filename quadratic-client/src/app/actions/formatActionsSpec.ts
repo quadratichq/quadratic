@@ -1,10 +1,10 @@
 import { Action } from '@/app/actions/actions';
-import { ActionSpecRecord } from '@/app/actions/actionsSpec';
+import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { convertReactColorToString } from '@/app/helpers/convertColor';
 import {
   clearFormattingAndBorders,
-  removeCellNumericFormat,
+  removeNumericFormat,
   setAlign,
   setBold,
   setCellCommas,
@@ -21,7 +21,7 @@ import {
   textFormatSetExponential,
   textFormatSetPercentage,
 } from '@/app/ui/helpers/formatCells';
-import { UseBordersResults } from '@/app/ui/hooks/useBorders';
+import type { UseBordersResults } from '@/app/ui/hooks/useBorders';
 import {
   BorderAllIcon,
   BorderBottomIcon,
@@ -59,7 +59,7 @@ import {
   VerticalAlignMiddleIcon,
   VerticalAlignTopIcon,
 } from '@/shared/components/Icons';
-import { ColorResult } from 'react-color';
+import type { ColorResult } from 'react-color';
 
 type FormatActionSpec = Pick<
   ActionSpecRecord,
@@ -212,7 +212,7 @@ export const formatActionsSpec: FormatActionSpec = {
     label: 'Automatic',
     Icon: FormatNumberAutomaticIcon,
     run: () => {
-      removeCellNumericFormat();
+      removeNumericFormat();
     },
   },
   [Action.FormatNumberCurrency]: {

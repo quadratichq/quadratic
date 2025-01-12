@@ -1,7 +1,8 @@
 import { Action } from '@/app/actions/actions';
-import { ActionArgs } from '@/app/actions/actionsSpec';
+import type { ActionArgs } from '@/app/actions/actionsSpec';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { events } from '@/app/events/events';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { ArrowDropDownIcon } from '@/shared/components/Icons';
 import {
@@ -14,7 +15,6 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useState } from 'react';
-import { focusGrid } from '../../../helpers/focusGrid';
 
 export const ZoomMenu = () => {
   const [zoom, setZoom] = useState(1);
@@ -75,6 +75,12 @@ export const ZoomMenu = () => {
         <DropdownMenuItemFromAction
           mixpanelEvent="[ZoomDropdown].zoomTo200%"
           action={Action.ZoomTo200}
+          actionArgs={undefined}
+        />
+        <DropdownMenuSeparator />
+        <DropdownMenuItemFromAction
+          mixpanelEvent="[ZoomDropdown].zoomReset"
+          action={Action.ZoomReset}
           actionArgs={undefined}
         />
       </DropdownMenuContent>

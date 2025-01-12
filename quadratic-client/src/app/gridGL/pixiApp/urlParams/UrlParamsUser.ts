@@ -4,16 +4,21 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 
 export class UrlParamsUser {
+  private pixiAppSettingsInitialized = false;
+  private aiAnalystInitialized = false;
+  private aiAnalystPromptLoaded = false;
+
   dirty = false;
 
   constructor(params: URLSearchParams) {
     this.loadSheet(params);
     this.loadCursor(params);
     this.loadCode(params);
-    this.setupListeners();
+    this.loadAIAnalystPrompt(params);
+    this.setupListeners(params);
   }
 
   private loadSheet(params: URLSearchParams) {
@@ -31,11 +36,7 @@ export class UrlParamsUser {
     const x = parseInt(params.get('x') ?? '');
     const y = parseInt(params.get('y') ?? '');
     if (!isNaN(x) && !isNaN(y)) {
-      sheets.sheet.cursor.changePosition({
-        cursorPosition: { x, y },
-        keyboardMovePosition: { x, y },
-        ensureVisible: true,
-      });
+      sheets.sheet.cursor.moveTo(x, y);
     }
   }
 
@@ -50,7 +51,7 @@ export class UrlParamsUser {
         if (!pixiAppSettings.setEditorInteractionState) {
           throw new Error('Expected setEditorInteractionState to be set in urlParams.loadCode');
         }
-        const { x, y } = sheets.sheet.cursor.cursorPosition;
+        const { x, y } = sheets.sheet.cursor.position;
         pixiAppSettings.setCodeEditorState?.((prev) => ({
           ...prev,
           showCodeEditor: true,
@@ -65,10 +66,51 @@ export class UrlParamsUser {
     }
   }
 
-  private setupListeners() {
+  private loadAIAnalystPrompt = (params: URLSearchParams) => {
+    if (!this.pixiAppSettingsInitialized || !this.aiAnalystInitialized) return;
+    if (this.aiAnalystPromptLoaded) return;
+    if (!pixiAppSettings.permissions.includes('FILE_EDIT')) return;
+
+    const prompt = params.get('prompt');
+    if (!prompt) return;
+
+    const { submitAIAnalystPrompt } = pixiAppSettings;
+    if (!submitAIAnalystPrompt) {
+      throw new Error('Expected submitAIAnalystPrompt to be set in urlParams.loadAIAnalystPrompt');
+    }
+
+    submitAIAnalystPrompt({
+      userPrompt: prompt,
+      context: {
+        sheets: [],
+        currentSheet: sheets.sheet.name,
+        selection: undefined,
+      },
+      clearMessages: true,
+    });
+
+    // Remove the `prompt` param when we're done
+    const url = new URL(window.location.href);
+    params.delete('prompt');
+    url.search = params.toString();
+    window.history.replaceState(null, '', url.toString());
+
+    this.aiAnalystPromptLoaded = true;
+  };
+
+  private setupListeners(params: URLSearchParams) {
     events.on('cursorPosition', this.setDirty);
     events.on('changeSheet', this.setDirty);
     events.on('codeEditor', this.setDirty);
+
+    events.on('pixiAppSettingsInitialized', () => {
+      this.pixiAppSettingsInitialized = true;
+      this.loadAIAnalystPrompt(params);
+    });
+    events.on('aiAnalystInitialized', () => {
+      this.aiAnalystInitialized = true;
+      this.loadAIAnalystPrompt(params);
+    });
   }
 
   private setDirty = () => {
@@ -99,7 +141,7 @@ export class UrlParamsUser {
 
       // otherwise we use the normal cursor
       else {
-        const cursor = sheets.sheet.cursor.cursorPosition;
+        const cursor = sheets.sheet.cursor.position;
         url.set('x', cursor.x.toString());
         url.set('y', cursor.y.toString());
         if (sheets.sheet !== sheets.getFirst()) {

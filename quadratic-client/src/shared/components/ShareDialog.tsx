@@ -1,5 +1,5 @@
-import { Action as FileShareAction } from '@/routes/api.files.$uuid.sharing';
-import { TeamAction } from '@/routes/teams.$teamUuid';
+import type { Action as FileShareAction } from '@/routes/api.files.$uuid.sharing';
+import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { Avatar } from '@/shared/components/Avatar';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { Type } from '@/shared/components/Type';
@@ -29,18 +29,18 @@ import {
   PersonIcon,
 } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
-import {
+import type {
   ApiTypes,
   PublicLinkAccess,
   TeamPermission,
   UserFileRole,
-  UserFileRoleSchema,
   UserTeamRole,
-  UserTeamRoleSchema,
-  emailSchema,
 } from 'quadratic-shared/typesAndSchemas';
-import React, { Children, FormEvent, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FetcherSubmitFunction, useFetcher, useFetchers, useSubmit } from 'react-router-dom';
+import { UserFileRoleSchema, UserTeamRoleSchema, emailSchema } from 'quadratic-shared/typesAndSchemas';
+import type { FormEvent, ReactNode } from 'react';
+import React, { Children, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { FetcherSubmitFunction } from 'react-router-dom';
+import { useFetcher, useFetchers, useSubmit } from 'react-router-dom';
 
 function getRoleLabel(role: UserTeamRole | UserFileRole) {
   // prettier-ignore
@@ -120,7 +120,7 @@ export function ShareTeamDialog({ data }: { data: ApiTypes['/v0/teams/:uuid.GET.
       )}
 
       {license.status === 'exceeded' && (
-        <div className="relative rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700" role="alert">
+        <div className="relative rounded border border-red-400 bg-red-100 px-4 py-3 text-sm text-red-700" role="alert">
           <div>
             <strong className="font-bold">Over the user limit!</strong>
           </div>
@@ -132,7 +132,7 @@ export function ShareTeamDialog({ data }: { data: ApiTypes['/v0/teams/:uuid.GET.
       )}
 
       {license.status === 'revoked' && (
-        <div className="relative rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700" role="alert">
+        <div className="relative rounded border border-red-400 bg-red-100 px-4 py-3 text-sm text-red-700" role="alert">
           <div>
             <strong className="font-bold">License Revoked!</strong>
           </div>

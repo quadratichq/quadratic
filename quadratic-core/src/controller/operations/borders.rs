@@ -1,336 +1,407 @@
 use crate::{
+    a1::{A1Selection, CellRefRange, RefRangeBounds},
     controller::GridController,
-    grid::{
-        sheet::borders::{
-            BorderSelection, BorderSide, BorderStyle, BorderStyleCellUpdate,
-            BorderStyleCellUpdates, BorderStyleTimestamp,
-        },
-        CellBorderLine, Sheet, SheetId,
-    },
-    selection::Selection,
-    Rect,
+    grid::sheet::borders::{BorderSelection, BorderStyle, BordersUpdates},
+    ClearOption,
 };
 
 use super::operation::Operation;
+
 impl GridController {
-    // gets a border style for Selection.all, rows, or columns
-    fn border_style_sheet(
+    /// Populates the BordersUpdates for a range.
+    fn a1_border_style_range(
+        &self,
         border_selection: BorderSelection,
         style: Option<BorderStyle>,
-        borders: &mut BorderStyleCellUpdates,
+        range: &RefRangeBounds,
+        borders: &mut BordersUpdates,
+        clear_neighbors: bool,
     ) {
-        let style = style.map_or(Some(None), |s| Some(Some(s.into())));
-        let mut border_style = BorderStyleCellUpdate::default();
+        // original style is used to determine if we should clear the borders by
+        // clearing the neighboring cell. We do not have to do this if we are
+        // setting a style since we track timestamps. This is only necessary if
+        // we are clearing a style.
+        let clear_neighbors = clear_neighbors && style.is_none();
+
+        let style = style.map_or(Some(ClearOption::Clear), |s| {
+            Some(ClearOption::Some(s.into()))
+        });
+        let (x1, y1, x2, y2) = range.to_contiguous2d_coords();
         match border_selection {
-            // Inner and Outer are not as interesting for sheet-wide borders
-            BorderSelection::All | BorderSelection::Inner | BorderSelection::Outer => {
-                border_style.top = style;
-                border_style.bottom = style;
-                border_style.left = style;
-                border_style.right = style;
+            BorderSelection::All => {
+                borders
+                    .top
+                    .get_or_insert_default()
+                    .set_rect(x1, y1, x2, y2, style);
+                borders
+                    .bottom
+                    .get_or_insert_default()
+                    .set_rect(x1, y1, x2, y2, style);
+                borders
+                    .left
+                    .get_or_insert_with(Default::default)
+                    .set_rect(x1, y1, x2, y2, style);
+                borders
+                    .right
+                    .get_or_insert_with(Default::default)
+                    .set_rect(x1, y1, x2, y2, style);
+                if clear_neighbors {
+                    if x1 > 1 {
+                        borders.right.get_or_insert_default().set_rect(
+                            x1 - 1,
+                            y1,
+                            Some(x1 - 1),
+                            y2,
+                            Some(ClearOption::Clear),
+                        );
+                    }
+                    if y1 > 1 {
+                        borders.bottom.get_or_insert_default().set_rect(
+                            x1,
+                            y1 - 1,
+                            x2,
+                            Some(y1 - 1),
+                            Some(ClearOption::Clear),
+                        );
+                    }
+                    if let Some(x2) = x2 {
+                        borders.left.get_or_insert_default().set_rect(
+                            x2 + 1,
+                            y1,
+                            Some(x2 + 1),
+                            y2,
+                            Some(ClearOption::Clear),
+                        );
+                    }
+                    if let Some(y2) = y2 {
+                        borders.top.get_or_insert_default().set_rect(
+                            x1,
+                            y2 + 1,
+                            x2,
+                            Some(y2 + 1),
+                            Some(ClearOption::Clear),
+                        );
+                    }
+                }
+            }
+            BorderSelection::Inner => {
+                borders
+                    .left
+                    .get_or_insert_default()
+                    .set_rect(x1 + 1, y1, x2, y2, style);
+                if let Some(x2) = x2 {
+                    borders.right.get_or_insert_default().set_rect(
+                        x1,
+                        y1,
+                        Some((x2 - 1).max(1)),
+                        y2,
+                        style,
+                    );
+                }
+                borders
+                    .top
+                    .get_or_insert_default()
+                    .set_rect(x1, y1 + 1, x2, y2, style);
+                if let Some(y2) = y2 {
+                    borders.bottom.get_or_insert_default().set_rect(
+                        x1,
+                        y1,
+                        x2,
+                        Some((y2 - 1).max(1)),
+                        style,
+                    );
+                }
+            }
+            BorderSelection::Outer => {
+                if let Some(x2) = x2 {
+                    borders
+                        .left
+                        .get_or_insert_default()
+                        .set_rect(x1, y1, Some(x1), y2, style);
+                    borders
+                        .right
+                        .get_or_insert_default()
+                        .set_rect(x2, y1, Some(x2), y2, style);
+                }
+                borders
+                    .top
+                    .get_or_insert_default()
+                    .set_rect(x1, y1, x2, Some(y1), style);
+                if let Some(y2) = y2 {
+                    borders
+                        .bottom
+                        .get_or_insert_default()
+                        .set_rect(x1, y2, x2, Some(y2), style);
+                }
+                if clear_neighbors {
+                    if x1 > 1 {
+                        borders.right.get_or_insert_default().set_rect(
+                            x1 - 1,
+                            y1,
+                            Some(x1 - 1),
+                            y2,
+                            Some(ClearOption::Clear),
+                        );
+                    }
+                    if y1 > 1 {
+                        borders.bottom.get_or_insert_default().set_rect(
+                            x1,
+                            y1 - 1,
+                            x2,
+                            Some(y1 - 1),
+                            Some(ClearOption::Clear),
+                        );
+                    }
+                    if let Some(x2) = x2 {
+                        borders.left.get_or_insert_default().set_rect(
+                            x2 + 1,
+                            y1,
+                            Some(x2 + 1),
+                            y2,
+                            Some(ClearOption::Clear),
+                        );
+                    }
+                    if let Some(y2) = y2 {
+                        borders.top.get_or_insert_default().set_rect(
+                            x1,
+                            y2 + 1,
+                            x2,
+                            Some(y2 + 1),
+                            Some(ClearOption::Clear),
+                        );
+                    }
+                }
             }
             BorderSelection::Horizontal => {
-                border_style.top = style;
-                border_style.bottom = style;
+                borders
+                    .top
+                    .get_or_insert_default()
+                    .set_rect(x1, y1 + 1, x2, y2, style);
+                if clear_neighbors {
+                    if let Some(y2) = y2 {
+                        borders.bottom.get_or_insert_default().set_rect(
+                            x1,
+                            y1,
+                            x2,
+                            Some((y2 - 1).max(1)),
+                            Some(ClearOption::Clear),
+                        );
+                    }
+                }
             }
             BorderSelection::Vertical => {
-                border_style.left = style;
-                border_style.right = style;
+                borders
+                    .left
+                    .get_or_insert_default()
+                    .set_rect(x1 + 1, y1, x2, y2, style);
+                if clear_neighbors {
+                    if let Some(x2) = x2 {
+                        borders.right.get_or_insert_default().set_rect(
+                            x1,
+                            y1,
+                            Some((x2 - 1).max(1)),
+                            y2,
+                            Some(ClearOption::Clear),
+                        );
+                    }
+                }
             }
             BorderSelection::Left => {
-                border_style.left = style;
+                borders
+                    .left
+                    .get_or_insert_default()
+                    .set_rect(x1, y1, Some(x1), y2, style);
+                if clear_neighbors && x1 > 1 {
+                    borders.right.get_or_insert_default().set_rect(
+                        x1 - 1,
+                        y1,
+                        Some(x1 - 1),
+                        y2,
+                        Some(ClearOption::Clear),
+                    );
+                }
             }
             BorderSelection::Top => {
-                border_style.top = style;
+                borders
+                    .top
+                    .get_or_insert_default()
+                    .set_rect(x1, y1, x2, Some(y1), style);
+                if clear_neighbors && y1 > 1 {
+                    borders.bottom.get_or_insert_default().set_rect(
+                        x1,
+                        y1 - 1,
+                        x2,
+                        Some(y1 - 1),
+                        Some(ClearOption::Clear),
+                    );
+                }
             }
             BorderSelection::Right => {
-                border_style.right = style;
+                if let Some(x2) = x2 {
+                    borders
+                        .right
+                        .get_or_insert_default()
+                        .set_rect(x2, y1, Some(x2), y2, style);
+                }
+                if clear_neighbors {
+                    if let Some(x2) = x2 {
+                        borders.left.get_or_insert_default().set_rect(
+                            x2 + 1,
+                            y1,
+                            Some(x2 + 1),
+                            y2,
+                            Some(ClearOption::Clear),
+                        );
+                    }
+                }
             }
             BorderSelection::Bottom => {
-                border_style.bottom = style;
+                if let Some(y2) = y2 {
+                    borders
+                        .bottom
+                        .get_or_insert_default()
+                        .set_rect(x1, y2, x2, Some(y2), style);
+                }
+                if clear_neighbors {
+                    if let Some(y2) = y2 {
+                        borders.top.get_or_insert_default().set_rect(
+                            x1,
+                            y2 + 1,
+                            x2,
+                            Some(y2 + 1),
+                            Some(ClearOption::Clear),
+                        );
+                    }
+                }
             }
-
-            // For simplicity, we always set the border to clear and let the
-            // timestamp comparison handle conflicts. We use the more
-            // complicated logic for rects so we don't end up with too many
-            // BorderLineStyle::Clear scattered throughout the sheet (see
-            // check_sheet--the logic here would be even more complicated).
+            // for clear, we need to remove any borders that are at the edges of
+            // the range--eg, the left border at the next column to the right of the range
             BorderSelection::Clear => {
-                border_style.top = Some(Some(BorderStyleTimestamp::clear()));
-                border_style.bottom = Some(Some(BorderStyleTimestamp::clear()));
-                border_style.left = Some(Some(BorderStyleTimestamp::clear()));
-                border_style.right = Some(Some(BorderStyleTimestamp::clear()));
-            }
-        }
-        borders.push(border_style);
-    }
-
-    /// We need to determine how to clear the border based on the sheet's border
-    /// settings, and any neighboring borders. We either clear the border, or we
-    /// set it to BorderLineStyle::Clear.
-    fn check_sheet(
-        sheet: &Sheet,
-        x: i64,
-        y: i64,
-        side: BorderSide,
-    ) -> Option<Option<BorderStyleTimestamp>> {
-        match side {
-            BorderSide::Top => {
-                if sheet.borders.all.top.is_some()
-                    || sheet.borders.all.bottom.is_some()
-                    || sheet
-                        .borders
-                        .columns
-                        .get(&x)
-                        .is_some_and(|c| c.top.is_some() || c.bottom.is_some())
-                    || sheet.borders.rows.get(&y).is_some_and(|r| r.top.is_some())
-                    || sheet
-                        .borders
-                        .rows
-                        .get(&(y - 1))
-                        .is_some_and(|r| r.bottom.is_some())
-                    || sheet.borders.get(x, y - 1).bottom.is_some()
-                {
-                    Some(Some(BorderStyleTimestamp::clear()))
-                } else {
-                    Some(None)
-                }
-            }
-            BorderSide::Bottom => {
-                if sheet.borders.all.bottom.is_some()
-                    || sheet.borders.all.top.is_some()
-                    || sheet
-                        .borders
-                        .columns
-                        .get(&x)
-                        .is_some_and(|c| c.bottom.is_some() || c.top.is_some())
-                    || sheet
-                        .borders
-                        .rows
-                        .get(&y)
-                        .is_some_and(|r| r.bottom.is_some())
-                    || sheet
-                        .borders
-                        .rows
-                        .get(&(y + 1))
-                        .is_some_and(|r| r.top.is_some())
-                    || sheet.borders.get(x, y + 1).top.is_some()
-                {
-                    Some(Some(BorderStyleTimestamp::clear()))
-                } else {
-                    Some(None)
-                }
-            }
-            BorderSide::Left => {
-                if sheet.borders.all.left.is_some()
-                    || sheet.borders.all.right.is_some()
-                    || sheet
-                        .borders
-                        .rows
-                        .get(&y)
-                        .is_some_and(|r| r.left.is_some() || r.right.is_some())
-                    || sheet
-                        .borders
-                        .columns
-                        .get(&x)
-                        .is_some_and(|c| c.left.is_some())
-                    || sheet
-                        .borders
-                        .columns
-                        .get(&(x - 1))
-                        .is_some_and(|c| c.right.is_some())
-                    || sheet.borders.get(x - 1, y).right.is_some()
-                {
-                    Some(Some(BorderStyleTimestamp::clear()))
-                } else {
-                    Some(None)
-                }
-            }
-            BorderSide::Right => {
-                if sheet.borders.all.right.is_some()
-                    || sheet.borders.all.left.is_some()
-                    || sheet
-                        .borders
-                        .rows
-                        .get(&y)
-                        .is_some_and(|r| r.right.is_some() || r.left.is_some())
-                    || sheet
-                        .borders
-                        .columns
-                        .get(&x)
-                        .is_some_and(|c| c.right.is_some())
-                    || sheet
-                        .borders
-                        .columns
-                        .get(&(x + 1))
-                        .is_some_and(|c| c.left.is_some())
-                    || sheet.borders.get(x + 1, y).left.is_some()
-                {
-                    Some(Some(BorderStyleTimestamp::clear()))
-                } else {
-                    Some(None)
-                }
-            }
-        }
-    }
-
-    /// Gets a border style for a rect
-    fn border_style_rect(
-        &self,
-        sheet_id: SheetId,
-        border_selection: BorderSelection,
-        style: Option<BorderStyle>,
-        rect: &Rect,
-        borders: &mut BorderStyleCellUpdates,
-    ) {
-        let Some(sheet) = self.try_sheet(sheet_id) else {
-            return;
-        };
-
-        let style = style.map_or(Some(None), |s| Some(Some(s.into())));
-        rect.iter().for_each(|pos| {
-            let mut border_style = BorderStyleCellUpdate::default();
-            match border_selection {
-                BorderSelection::All => {
-                    border_style.top = style;
-                    border_style.bottom = style;
-                    border_style.left = style;
-                    border_style.right = style;
-                }
-                BorderSelection::Inner => {
-                    if pos.x > rect.min.x {
-                        border_style.left = style;
-                    }
-                    if pos.x < rect.max.x {
-                        border_style.right = style;
-                    }
-                    if pos.y > rect.min.y {
-                        border_style.top = style;
-                    }
-                    if pos.y < rect.max.y {
-                        border_style.bottom = style;
-                    }
-                }
-                BorderSelection::Outer => {
-                    if pos.x == rect.min.x {
-                        border_style.left = style;
-                    }
-                    if pos.x == rect.max.x {
-                        border_style.right = style;
-                    }
-                    if pos.y == rect.min.y {
-                        border_style.top = style;
-                    }
-                    if pos.y == rect.max.y {
-                        border_style.bottom = style;
-                    }
-                }
-                BorderSelection::Horizontal => {
-                    if pos.y < rect.max.y {
-                        border_style.bottom = style;
-                    }
-                    if pos.y > rect.min.y {
-                        border_style.top = style;
-                    }
-                }
-                BorderSelection::Vertical => {
-                    if pos.x < rect.max.x {
-                        border_style.right = style;
-                    }
-                    if pos.x > rect.min.x {
-                        border_style.left = style;
-                    }
-                }
-                BorderSelection::Left => {
-                    if pos.x == rect.min.x {
-                        border_style.left = style;
-                    }
-                }
-                BorderSelection::Top => {
-                    if pos.y == rect.min.y {
-                        border_style.top = style;
-                    }
-                }
-                BorderSelection::Right => {
-                    if pos.x == rect.max.x {
-                        border_style.right = style;
-                    }
-                }
-                BorderSelection::Bottom => {
-                    if pos.y == rect.max.y {
-                        border_style.bottom = style;
-                    }
-                }
-
-                // For clear, we need to do a bit more work to check whether we
-                // can clear the border or if we have to use
-                // BorderCellLine::Clear (which will override neighboring borders).
-                BorderSelection::Clear => {
-                    border_style.top = Self::check_sheet(sheet, pos.x, pos.y, BorderSide::Top);
-                    border_style.bottom =
-                        Self::check_sheet(sheet, pos.x, pos.y, BorderSide::Bottom);
-                    border_style.left = Self::check_sheet(sheet, pos.x, pos.y, BorderSide::Left);
-                    border_style.right = Self::check_sheet(sheet, pos.x, pos.y, BorderSide::Right);
-                }
-            }
-            borders.push(border_style);
-        });
-    }
-
-    /// Creates border operations. Returns None if selection is empty.
-    pub fn set_borders_selection_operations(
-        &self,
-        selection: Selection,
-        border_selection: BorderSelection,
-        style: Option<BorderStyle>,
-    ) -> Option<Vec<Operation>> {
-        // Check if the borders are already set to the same style. If they are,
-        // toggle them off.
-        let sheet = self.try_sheet(selection.sheet_id)?;
-        let (style_sheet, style_rect) =
-            if sheet
-                .borders
-                .is_toggle_borders(&selection, border_selection, style)
-            {
-                (
-                    None,
-                    Some(BorderStyle {
-                        line: CellBorderLine::Clear,
-                        ..Default::default()
-                    }),
-                )
-            } else {
-                (style, style)
-            };
-
-        let mut borders = BorderStyleCellUpdates::default();
-
-        if selection.all {
-            Self::border_style_sheet(border_selection, style_sheet, &mut borders);
-        }
-        if let Some(columns) = selection.columns.as_ref() {
-            for _ in columns {
-                Self::border_style_sheet(border_selection, style_sheet, &mut borders);
-            }
-        }
-        if let Some(rows) = selection.rows.as_ref() {
-            for _ in rows {
-                Self::border_style_sheet(border_selection, style_sheet, &mut borders);
-            }
-        }
-        if let Some(rects) = selection.rects.as_ref() {
-            for rect in rects {
-                self.border_style_rect(
-                    selection.sheet_id,
-                    border_selection,
-                    style_rect,
-                    rect,
-                    &mut borders,
+                borders.top.get_or_insert_default().set_rect(
+                    x1,
+                    y1,
+                    x2,
+                    y2.map(|y2| y2 + 1),
+                    Some(ClearOption::Clear),
+                );
+                borders.bottom.get_or_insert_default().set_rect(
+                    x1,
+                    (y1 - 1).max(1),
+                    x2,
+                    y2,
+                    Some(ClearOption::Clear),
+                );
+                borders.left.get_or_insert_default().set_rect(
+                    x1,
+                    y1,
+                    x2.map(|x2| x2 + 1),
+                    y2,
+                    Some(ClearOption::Clear),
+                );
+                borders.right.get_or_insert_default().set_rect(
+                    (x1 - 1).max(1),
+                    y1,
+                    x2,
+                    y2,
+                    Some(ClearOption::Clear),
                 );
             }
         }
+    }
+
+    /// Creates border operations to clear the selection of any borders.
+    pub fn clear_borders_a1_operations(&self, selection: &A1Selection) -> Vec<Operation> {
+        let mut borders: BordersUpdates = BordersUpdates::default();
+        selection.ranges.iter().for_each(|range| match range {
+            CellRefRange::Table { .. } => todo!(),
+            CellRefRange::Sheet { range } => {
+                let (x1, y1, x2, y2) = range.to_contiguous2d_coords();
+                borders.top.get_or_insert_default().set_rect(
+                    x1,
+                    y1,
+                    x2,
+                    y2.map(|y2| y2 + 1),
+                    Some(ClearOption::Clear),
+                );
+                borders.bottom.get_or_insert_default().set_rect(
+                    x1,
+                    (y1 - 1).max(1),
+                    x2,
+                    y2,
+                    Some(ClearOption::Clear),
+                );
+                borders.left.get_or_insert_default().set_rect(
+                    x1,
+                    y1,
+                    x2.map(|x2| x2 + 1),
+                    y2,
+                    Some(ClearOption::Clear),
+                );
+                borders.right.get_or_insert_default().set_rect(
+                    (x1 - 1).max(1),
+                    y1,
+                    x2,
+                    y2,
+                    Some(ClearOption::Clear),
+                );
+            }
+        });
+        vec![Operation::SetBordersA1 {
+            sheet_id: selection.sheet_id,
+            borders,
+        }]
+    }
+
+    /// Creates border operations. Returns None if selection is empty.
+    pub fn set_borders_a1_selection_operations(
+        &self,
+        selection: A1Selection,
+        border_selection: BorderSelection,
+        style: Option<BorderStyle>,
+        clear_neighbors: bool,
+    ) -> Option<Vec<Operation>> {
+        let sheet = self.try_sheet(selection.sheet_id)?;
+
+        // Mutable so we can clear it if the style is toggled.
+        let mut style = style;
+
+        if style.is_some() {
+            // If we have a style update, then we check if we should toggle
+            // instead of setting the style.
+            let mut borders: BordersUpdates = BordersUpdates::default();
+
+            // We compare w/o clear_neighbors since we don't care about the
+            // neighbors when toggling.
+            selection.ranges.iter().for_each(|range| match range {
+                CellRefRange::Sheet { range } => {
+                    self.a1_border_style_range(border_selection, style, range, &mut borders, false);
+                }
+                CellRefRange::Table { .. } => todo!(),
+            });
+            if sheet.borders.is_toggle_borders(&borders) {
+                style = None;
+            }
+        }
+
+        let mut borders = BordersUpdates::default();
+        selection.ranges.iter().for_each(|range| match range {
+            CellRefRange::Sheet { range } => {
+                self.a1_border_style_range(
+                    border_selection,
+                    style,
+                    range,
+                    &mut borders,
+                    clear_neighbors,
+                );
+            }
+            CellRefRange::Table { .. } => (),
+        });
+
         if !borders.is_empty() {
-            Some(vec![Operation::SetBordersSelection { selection, borders }])
+            Some(vec![Operation::SetBordersA1 {
+                sheet_id: selection.sheet_id,
+                borders,
+            }])
         } else {
             None
         }
@@ -338,472 +409,185 @@ impl GridController {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
-    use serial_test::parallel;
 
-    use crate::grid::sheet::borders::BorderStyleCell;
+    use crate::{grid::SheetId, Pos};
 
     use super::*;
 
-    fn test_border(
-        update: &BorderStyleCellUpdate,
-        top: Option<BorderStyle>,
-        bottom: Option<BorderStyle>,
-        left: Option<BorderStyle>,
-        right: Option<BorderStyle>,
-    ) -> bool {
-        let top_match = match (update.top, top) {
-            (Some(Some(u)), Some(t)) => u.color == t.color && u.line == t.line,
-            (Some(None), None) => true,
-            (None, _) => true,
-            _ => false,
-        };
-
-        let bottom_match = match (update.bottom, bottom) {
-            (Some(Some(u)), Some(b)) => u.color == b.color && u.line == b.line,
-            (Some(None), None) => true,
-            (None, _) => true,
-            _ => false,
-        };
-
-        let left_match = match (update.left, left) {
-            (Some(Some(u)), Some(l)) => u.color == l.color && u.line == l.line,
-            (Some(None), None) => true,
-            (None, _) => true,
-            _ => false,
-        };
-
-        let right_match = match (update.right, right) {
-            (Some(Some(u)), Some(r)) => u.color == r.color && u.line == r.line,
-            (Some(None), None) => true,
-            (None, _) => true,
-            _ => false,
-        };
-
-        top_match && bottom_match && left_match && right_match
+    #[track_caller]
+    fn assert_borders(borders: &BordersUpdates, pos: Pos, side: &str) {
+        let top = side.contains("top");
+        let bottom = side.contains("bottom");
+        let left = side.contains("left");
+        let right = side.contains("right");
+        if top {
+            assert!(
+                borders.top.as_ref().unwrap().get(pos).is_some(),
+                "Expected top border at {} but found none",
+                pos.a1_string()
+            );
+        } else {
+            assert!(
+                borders.top.is_none() || borders.top.as_ref().unwrap().get(pos).is_none(),
+                "Expected no top border at {} but found one",
+                pos.a1_string()
+            );
+        }
+        if bottom {
+            assert!(
+                borders.bottom.as_ref().unwrap().get(pos).is_some(),
+                "Expected bottom border at {} but found none",
+                pos.a1_string()
+            );
+        } else {
+            assert!(
+                borders.bottom.is_none() || borders.bottom.as_ref().unwrap().get(pos).is_none(),
+                "Expected no bottom border at {} but found one",
+                pos.a1_string()
+            );
+        }
+        if left {
+            assert!(
+                borders.left.as_ref().unwrap().get(pos).is_some(),
+                "Expected left border at {} but found none",
+                pos.a1_string()
+            );
+        } else {
+            assert!(
+                borders.left.is_none() || borders.left.as_ref().unwrap().get(pos).is_none(),
+                "Expected no left border at {} but found one",
+                pos.a1_string()
+            );
+        }
+        if right {
+            assert!(
+                borders.right.as_ref().unwrap().get(pos).is_some(),
+                "Expected right border at {} but found none",
+                pos.a1_string()
+            );
+        } else {
+            assert!(
+                borders.right.is_none() || borders.right.as_ref().unwrap().get(pos).is_none(),
+                "Expected no right border at {} but found one",
+                pos.a1_string()
+            );
+        }
     }
 
     #[test]
-    #[parallel]
-    fn test_borders_operations_all() {
+    fn test_borders_operations_all_all() {
         let gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        let selection = Selection::all(sheet_id);
         let ops = gc
-            .set_borders_selection_operations(
-                selection.clone(),
+            .set_borders_a1_selection_operations(
+                A1Selection::test_a1("*"),
                 BorderSelection::All,
                 Some(BorderStyle::default()),
+                true,
             )
             .unwrap();
         assert_eq!(ops.len(), 1);
-        let Operation::SetBordersSelection {
-            selection: selection_op,
-            borders,
-        } = ops[0].clone()
-        else {
-            panic!("Expected SetBordersSelection")
+        let Operation::SetBordersA1 { sheet_id, borders } = ops[0].clone() else {
+            panic!("Expected SetBordersA1")
         };
-        assert_eq!(selection_op, selection);
-        assert_eq!(borders.size(), 1);
-        let expected = BorderStyle::default();
-        let border = borders.get_at(0).unwrap();
-        assert!(test_border(
-            border,
-            Some(expected),
-            Some(expected),
-            Some(expected),
-            Some(expected)
-        ));
+        assert_eq!(sheet_id, SheetId::TEST);
+        assert_borders(&borders, pos![A1], "top,bottom,left,right");
+        assert_borders(&borders, pos![ZZZZ10000], "top,bottom,left,right");
+    }
 
+    #[test]
+    fn test_borders_operations_all_left() {
+        let gc = GridController::test();
         let ops = gc
-            .set_borders_selection_operations(
-                selection.clone(),
+            .set_borders_a1_selection_operations(
+                A1Selection::test_a1("*"),
                 BorderSelection::Left,
                 Some(BorderStyle::default()),
+                true,
             )
             .unwrap();
         assert_eq!(ops.len(), 1);
-        let Operation::SetBordersSelection {
-            selection: selection_op,
-            borders,
-        } = ops[0].clone()
-        else {
-            panic!("Expected SetBordersSelection")
+        let Operation::SetBordersA1 { sheet_id, borders } = ops[0].clone() else {
+            panic!("Expected SetBordersA1")
         };
-        assert_eq!(selection_op, selection);
-        assert_eq!(borders.size(), 1);
-        let border = borders.get_at(0).unwrap();
-        assert!(test_border(border, None, None, Some(expected), None));
+        assert_eq!(sheet_id, SheetId::TEST);
+        assert_borders(&borders, pos![A1], "left");
+        assert_borders(&borders, pos![A100000], "left");
+        assert!(borders.right.is_none());
+        assert!(borders.top.is_none());
+        assert!(borders.bottom.is_none());
     }
 
     #[test]
-    #[parallel]
-    fn borders_operations_columns() {
+    fn test_borders_operations_columns() {
         let gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        let selection = Selection::columns(&[0, 1], sheet_id);
         let ops = gc
-            .set_borders_selection_operations(
-                selection.clone(),
-                BorderSelection::All,
+            .set_borders_a1_selection_operations(
+                A1Selection::test_a1("C:E"),
+                BorderSelection::Right,
                 Some(BorderStyle::default()),
+                true,
             )
             .unwrap();
         assert_eq!(ops.len(), 1);
-        let Operation::SetBordersSelection {
-            selection: selection_op,
-            borders,
-        } = ops[0].clone()
-        else {
-            panic!("Expected SetBordersSelection")
+        let Operation::SetBordersA1 { sheet_id, borders } = ops[0].clone() else {
+            panic!("Expected SetBordersA1")
         };
-        assert_eq!(selection_op, selection);
-        assert_eq!(borders.size(), 2);
-        let column_1 = borders.get_at(0).unwrap();
-        let expected = BorderStyle::default();
-        assert!(test_border(
-            column_1,
-            Some(expected),
-            Some(expected),
-            Some(expected),
-            Some(expected)
-        ));
-        let column_2 = borders.get_at(1).unwrap();
-        assert!(test_border(
-            column_2,
-            Some(expected),
-            Some(expected),
-            Some(expected),
-            Some(expected)
-        ));
-
-        let ops = gc
-            .set_borders_selection_operations(
-                selection.clone(),
-                BorderSelection::Vertical,
-                Some(BorderStyle::default()),
-            )
-            .unwrap();
-        assert_eq!(ops.len(), 1);
-        let Operation::SetBordersSelection {
-            selection: selection_op,
-            borders,
-        } = ops[0].clone()
-        else {
-            panic!("Expected SetBordersSelection")
-        };
-        assert_eq!(selection_op, selection);
-        assert_eq!(borders.size(), 2);
-        let column_1 = borders.get_at(0).unwrap();
-        let column_2 = borders.get_at(1).unwrap();
-        assert!(test_border(
-            column_1,
-            None,
-            None,
-            Some(expected),
-            Some(expected)
-        ));
-        assert!(test_border(
-            column_2,
-            None,
-            None,
-            Some(expected),
-            Some(expected)
-        ));
+        assert_eq!(sheet_id, SheetId::TEST);
+        assert_borders(&borders, pos![E1], "right");
+        assert_borders(&borders, pos![E100000], "right");
+        assert_borders(&borders, pos![A1], "");
+        assert!(borders.left.is_none());
+        assert!(borders.top.is_none());
+        assert!(borders.bottom.is_none());
     }
 
     #[test]
-    #[parallel]
-    fn borders_operations_rows() {
+    fn test_borders_operations_rows() {
         let gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        let selection = Selection::rows(&[0, 1], sheet_id);
         let ops = gc
-            .set_borders_selection_operations(
-                selection.clone(),
-                BorderSelection::All,
+            .set_borders_a1_selection_operations(
+                A1Selection::test_a1("2:4"),
+                BorderSelection::Bottom,
                 Some(BorderStyle::default()),
+                true,
             )
             .unwrap();
         assert_eq!(ops.len(), 1);
-        let Operation::SetBordersSelection {
-            selection: selection_op,
-            borders,
-        } = ops[0].clone()
-        else {
-            panic!("Expected SetBordersSelection")
+        let Operation::SetBordersA1 { sheet_id, borders } = ops[0].clone() else {
+            panic!("Expected SetBordersA1")
         };
-        assert_eq!(selection_op, selection);
-        assert_eq!(borders.size(), 2);
-        let row_1 = borders.get_at(0).unwrap();
-        let row_2 = borders.get_at(1).unwrap();
-        let expected = BorderStyle::default();
-        assert!(test_border(
-            row_1,
-            Some(expected),
-            Some(expected),
-            Some(expected),
-            Some(expected)
-        ));
-        assert!(test_border(
-            row_2,
-            Some(expected),
-            Some(expected),
-            Some(expected),
-            Some(expected)
-        ));
-
-        let ops = gc
-            .set_borders_selection_operations(
-                selection.clone(),
-                BorderSelection::Horizontal,
-                Some(BorderStyle::default()),
-            )
-            .unwrap();
-        assert_eq!(ops.len(), 1);
-        let Operation::SetBordersSelection {
-            selection: selection_op,
-            borders,
-        } = ops[0].clone()
-        else {
-            panic!("Expected SetBordersSelection")
-        };
-        assert_eq!(selection_op, selection);
-        assert_eq!(borders.size(), 2);
-        let row_1 = borders.get_at(0).unwrap();
-        let row_2 = borders.get_at(1).unwrap();
-        assert!(test_border(
-            row_1,
-            Some(expected),
-            Some(expected),
-            None,
-            None
-        ));
-        assert!(test_border(
-            row_2,
-            Some(expected),
-            Some(expected),
-            None,
-            None
-        ));
+        assert_eq!(sheet_id, SheetId::TEST);
+        assert_borders(&borders, pos![A1], "");
+        assert_borders(&borders, pos![A2], "");
+        assert_borders(&borders, pos![A3], "");
+        assert_borders(&borders, pos![A4], "bottom");
+        assert_borders(&borders, pos![ZZZZZ4], "bottom");
+        assert!(borders.left.is_none());
+        assert!(borders.right.is_none());
+        assert!(borders.top.is_none());
     }
 
     #[test]
-    #[parallel]
-    fn borders_operations_rects() {
+    fn test_borders_operations_rects() {
         let gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        let rect = Rect::from_numbers(0, 0, 2, 2);
-        let selection = Selection::rect(rect, sheet_id);
-        let expected = BorderStyle::default();
-
-        // Test BorderSelection::All
         let ops = gc
-            .set_borders_selection_operations(
-                selection.clone(),
-                BorderSelection::All,
-                Some(expected),
-            )
-            .unwrap();
-        assert_eq!(ops.len(), 1);
-        let Operation::SetBordersSelection {
-            selection: selection_op,
-            borders,
-        } = ops[0].clone()
-        else {
-            panic!("Expected SetBordersSelection")
-        };
-        assert_eq!(selection_op, selection);
-        assert_eq!(borders.size(), 4);
-        for i in 0..4 {
-            let border = borders.get_at(i).unwrap();
-            assert!(test_border(
-                border,
-                Some(expected),
-                Some(expected),
-                Some(expected),
-                Some(expected)
-            ));
-        }
-
-        // Test BorderSelection::Outer
-        let ops = gc
-            .set_borders_selection_operations(
-                selection.clone(),
+            .set_borders_a1_selection_operations(
+                A1Selection::test_a1("B3:D5"),
                 BorderSelection::Outer,
-                Some(expected),
+                Some(BorderStyle::default()),
+                true,
             )
             .unwrap();
         assert_eq!(ops.len(), 1);
-        let Operation::SetBordersSelection {
-            selection: selection_op,
-            borders,
-        } = ops[0].clone()
-        else {
-            panic!("Expected SetBordersSelection")
+        let Operation::SetBordersA1 { sheet_id, borders } = ops[0].clone() else {
+            panic!("Expected SetBordersA1")
         };
-        assert_eq!(selection_op, selection);
-        assert_eq!(borders.size(), 4);
-        let top_left = borders.get_at(0).unwrap();
-        let top_right = borders.get_at(1).unwrap();
-        let bottom_left = borders.get_at(2).unwrap();
-        let bottom_right = borders.get_at(3).unwrap();
-        assert!(test_border(
-            top_left,
-            Some(expected),
-            None,
-            Some(expected),
-            None
-        ));
-        assert!(test_border(
-            top_right,
-            Some(expected),
-            None,
-            None,
-            Some(expected)
-        ));
-        assert!(test_border(
-            bottom_left,
-            None,
-            Some(expected),
-            Some(expected),
-            None
-        ));
-        assert!(test_border(
-            bottom_right,
-            None,
-            Some(expected),
-            None,
-            Some(expected)
-        ));
-
-        // Test BorderSelection::Inner
-        let ops = gc
-            .set_borders_selection_operations(
-                selection.clone(),
-                BorderSelection::Inner,
-                Some(expected),
-            )
-            .unwrap();
-        assert_eq!(ops.len(), 1);
-        let Operation::SetBordersSelection {
-            selection: selection_op,
-            borders,
-        } = ops[0].clone()
-        else {
-            panic!("Expected SetBordersSelection")
-        };
-        assert_eq!(selection_op, selection);
-        assert_eq!(borders.size(), 4);
-        let top_left = borders.get_at(0).unwrap();
-        let top_right = borders.get_at(1).unwrap();
-        let bottom_left = borders.get_at(2).unwrap();
-        let bottom_right = borders.get_at(3).unwrap();
-        assert!(test_border(
-            top_left,
-            None,
-            Some(expected),
-            None,
-            Some(expected)
-        ));
-        assert!(test_border(
-            top_right,
-            None,
-            Some(expected),
-            Some(expected),
-            None
-        ));
-        assert!(test_border(
-            bottom_left,
-            Some(expected),
-            None,
-            None,
-            Some(expected)
-        ));
-        assert!(test_border(
-            bottom_right,
-            Some(expected),
-            None,
-            Some(expected),
-            None
-        ));
-    }
-
-    #[test]
-    #[parallel]
-    fn check_sheet() {
-        let mut sheet = Sheet::test();
-
-        // Test for Top border
-        assert_eq!(
-            GridController::check_sheet(&sheet, 0, 0, BorderSide::Top),
-            Some(None)
-        );
-        sheet.borders.all.top = Some(BorderStyleTimestamp::default());
-        assert_eq!(
-            GridController::check_sheet(&sheet, 0, 0, BorderSide::Top),
-            Some(Some(BorderStyleTimestamp::clear()))
-        );
-
-        // Test for Bottom border
-        let mut sheet = Sheet::test();
-        assert_eq!(
-            GridController::check_sheet(&sheet, 0, 0, BorderSide::Bottom),
-            Some(None)
-        );
-        sheet.borders.all.bottom = Some(BorderStyleTimestamp::default());
-        assert_eq!(
-            GridController::check_sheet(&sheet, 0, 0, BorderSide::Bottom),
-            Some(Some(BorderStyleTimestamp::clear()))
-        );
-
-        // Test for Left border
-        let mut sheet = Sheet::test();
-        assert_eq!(
-            GridController::check_sheet(&sheet, 0, 0, BorderSide::Left),
-            Some(None)
-        );
-        sheet.borders.all.left = Some(BorderStyleTimestamp::default());
-        assert_eq!(
-            GridController::check_sheet(&sheet, 0, 0, BorderSide::Left),
-            Some(Some(BorderStyleTimestamp::clear()))
-        );
-
-        // Test for Right border
-        let mut sheet = Sheet::test();
-        assert_eq!(
-            GridController::check_sheet(&sheet, 0, 0, BorderSide::Right),
-            Some(None)
-        );
-        sheet.borders.all.right = Some(BorderStyleTimestamp::default());
-        assert_eq!(
-            GridController::check_sheet(&sheet, 0, 0, BorderSide::Right),
-            Some(Some(BorderStyleTimestamp::clear()))
-        );
-
-        // Test for column-specific borders
-        let mut sheet = Sheet::test();
-        assert_eq!(
-            GridController::check_sheet(&sheet, 0, 0, BorderSide::Top),
-            Some(None)
-        );
-        sheet.borders.columns.insert(0, BorderStyleCell::all());
-        assert_eq!(
-            GridController::check_sheet(&sheet, 0, 0, BorderSide::Top),
-            Some(Some(BorderStyleTimestamp::clear()))
-        );
-
-        // Test for row-specific borders
-        let mut sheet = Sheet::test();
-        assert_eq!(
-            GridController::check_sheet(&sheet, 0, 0, BorderSide::Bottom),
-            Some(None)
-        );
-        sheet.borders.rows.insert(0, BorderStyleCell::all());
-        assert_eq!(
-            GridController::check_sheet(&sheet, 0, 0, BorderSide::Top),
-            Some(Some(BorderStyleTimestamp::clear()))
-        );
+        assert_eq!(sheet_id, SheetId::TEST);
+        assert_borders(&borders, pos![B3], "left,top");
+        assert_borders(&borders, pos![C3], "top");
+        assert_borders(&borders, pos![D5], "right,bottom");
+        assert_borders(&borders, pos![C5], "bottom");
     }
 }

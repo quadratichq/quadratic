@@ -1,8 +1,8 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
-import { LanguageState } from '@/app/web-workers/languageTypes';
-import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import type { LanguageState } from '@/app/web-workers/languageTypes';
+import type { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import { CircularProgress } from '@mui/material';
 import { useEffect, useState } from 'react';
 import './CodeRunning.css';
@@ -51,6 +51,12 @@ export const CodeRunning = () => {
     events.on('pythonState', updateRunningState);
     events.on('javascriptState', updateRunningState);
     events.on('connectionState', updateRunningState);
+
+    return () => {
+      events.off('pythonState', updateRunningState);
+      events.off('javascriptState', updateRunningState);
+      events.off('connectionState', updateRunningState);
+    };
   }, []);
 
   // update multiplayer's code runs
@@ -107,7 +113,7 @@ export const CodeRunning = () => {
     events.on('multiplayerCodeRunning', updateMultiplayerCodeRunning);
 
     return () => {
-      events.on('multiplayerUpdate', updateMultiplayerUsers);
+      events.off('multiplayerUpdate', updateMultiplayerUsers);
       events.off('multiplayerCodeRunning', updateMultiplayerCodeRunning);
     };
   }, [playerCode?.length]);

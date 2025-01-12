@@ -1,0 +1,133 @@
+name: Create Stack
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}-stack
+
+jobs:
+  create_stack:
+    name: Create Stack - Preview
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    timeout-minutes: 30
+    env:
+      STACK_NAME: pr-${{ github.event.pull_request.number }}
+    steps:
+      - name: Find Create Stack Comment
+        uses: peter-evans/find-comment@v3
+        id: preview-create-stack-comment-start
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Preview - Stack"
+
+      - name: Comment on create stack start
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.preview-create-stack-comment-start.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Preview - Stack
+            ⏳ Stack creation in progress...
+
+            🔍 Track progress in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          edit-mode: replace
+
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Delete Stack if Exists
+        id: check-stack
+        run: |
+          if aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} 2>/dev/null; then
+            STACK_STATUS=$(aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} --query 'Stacks[0].StackStatus' --output text)
+            echo "Current stack status: $STACK_STATUS"
+            
+            echo "Stack exists. Attempting deletion..."
+            if aws cloudformation delete-stack --stack-name ${{ env.STACK_NAME }}; then
+              echo "Waiting for stack deletion to complete..."
+              if aws cloudformation wait stack-delete-complete --stack-name ${{ env.STACK_NAME }}; then
+                echo "Stack deleted successfully"
+                echo "deleted=true" >> $GITHUB_OUTPUT
+              else
+                echo "::error::Stack deletion wait timed out"
+                exit 1
+              fi
+            else
+              echo "::error::Failed to initiate stack deletion"
+              exit 1
+            fi
+          else
+            echo "Stack does not exist"
+            echo "deleted=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Stack
+        id: create-stack
+        uses: aws-actions/aws-cloudformation-github-deploy@v1
+        with:
+          name: ${{ env.STACK_NAME }}
+          template: infra/aws-cloudformation/quadratic-preview.yml
+          parameter-overrides: >-
+            ImageTag=pr-${{ github.event.pull_request.number }}
+          capabilities: CAPABILITY_IAM
+          no-fail-on-empty-changeset: "1"
+          disable-rollback: false
+          termination-protection: false
+
+      - name: Verify Stack Creation
+        if: success()
+        run: |
+          STACK_STATUS=$(aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} --query 'Stacks[0].StackStatus' --output text)
+          echo "Final stack status: $STACK_STATUS"
+          if [ "$STACK_STATUS" != "CREATE_COMPLETE" ] && [ "$STACK_STATUS" != "UPDATE_COMPLETE" ]; then
+            echo "Stack creation did not complete successfully. Status: $STACK_STATUS"
+            exit 1
+          fi
+
+      - name: Find Create Stack Comment
+        uses: peter-evans/find-comment@v3
+        if: success() || failure()
+        id: preview-create-stack-comment-update
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Preview - Stack"
+
+      - name: Update comment on create stack success
+        if: success()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.preview-create-stack-comment-update.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Preview - Stack
+            ✅ Preview stack created successfully.
+
+            🔗 URL: ${{ steps.create-stack.outputs.WebsiteURL }}
+          edit-mode: replace
+
+      - name: Update comment on create stack failure
+        if: failure()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.preview-create-stack-comment-update.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Preview - Stack
+            ❌ Preview stack creation encountered an error.
+
+            🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+          edit-mode: replace

@@ -1,11 +1,15 @@
 import { sheets } from '@/app/grid/controller/Sheets';
-import { defaultSelection } from '@/app/grid/sheet/selection';
-import { Selection, ValidationRule } from '@/app/quadratic-core-types';
+import type { ValidationRule } from '@/app/quadratic-core-types';
+import type { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { newSingleSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { SheetRange } from '@/app/ui/components/SheetRange';
+import type { ValidationData } from '@/app/ui/menus/Validations/Validation/useValidationData';
+import { ValidationInput } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationInput';
+import {
+  ValidationMoreOptions,
+  ValidationUICheckbox,
+} from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationUI';
 import { useMemo } from 'react';
-import { ValidationData } from './useValidationData';
-import { ValidationInput } from './ValidationUI/ValidationInput';
-import { ValidationMoreOptions, ValidationUICheckbox } from './ValidationUI/ValidationUI';
 
 interface Props {
   validationData: ValidationData;
@@ -75,10 +79,10 @@ export const ValidationList = (props: Props) => {
     }
   }, [validation]);
 
-  const changeSelection = (selection: Selection | undefined) => {
+  const changeSelection = (jsSelection: JsSelection | undefined) => {
     const rule: ValidationRule = {
       List: {
-        source: { Selection: selection ?? defaultSelection(sheets.sheet.id) },
+        source: { Selection: (jsSelection ?? newSingleSelection(sheets.sheet.id, 1, 1)).selection() },
         ignore_blank: ignoreBlank,
         drop_down: showDropdown,
       },
@@ -104,7 +108,6 @@ export const ValidationList = (props: Props) => {
           changeCursor={sheetId}
           readOnly={readOnly}
           onEnter={onEnter}
-          requireSheetId={sheetId}
         />
       )}
       {rule === 'list' && <ValidationListInput validationData={props.validationData} onEnter={onEnter} />}

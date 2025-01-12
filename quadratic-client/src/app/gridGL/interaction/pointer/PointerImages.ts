@@ -1,10 +1,10 @@
 import { hasPermissionToEditFile } from '@/app/actions';
-import { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
+import type { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { Point } from 'pixi.js';
+import type { Point } from 'pixi.js';
 
 const MIN_SIZE = 100;
 
@@ -66,26 +66,24 @@ export class PointerImages {
       }
       this.resizing.image.temporaryResize(width, height);
       pixiApp.cellImages.dirtyResizing = true;
-      pixiApp.cellImages.dirtyBorders = true;
+      pixiApp.cellsSheet().tables.resizeTable(this.resizing.image.column, this.resizing.image.row, width, height);
       pixiApp.setViewportDirty();
       return true;
     }
 
     const search = this.findImage(point);
-    if (search) {
-      if (search.side) {
-        pixiApp.cellImages.activate(search.image);
-        switch (search.side) {
-          case 'bottom':
-            this.cursor = 'ns-resize';
-            break;
-          case 'right':
-            this.cursor = 'ew-resize';
-            break;
-          case 'corner':
-            this.cursor = 'nwse-resize';
-            break;
-        }
+    if (search?.side) {
+      pixiApp.cellImages.activate(search.image);
+      switch (search.side) {
+        case 'bottom':
+          this.cursor = 'ns-resize';
+          break;
+        case 'right':
+          this.cursor = 'ew-resize';
+          break;
+        case 'corner':
+          this.cursor = 'nwse-resize';
+          break;
       }
       return true;
     }
@@ -98,11 +96,9 @@ export class PointerImages {
     if (!hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions)) return false;
 
     const search = this.findImage(point);
-    if (search) {
-      if (search.side) {
-        this.resizing = { point, image: search.image, side: search.side };
-        pixiApp.cellImages.activate(search.image);
-      }
+    if (search && search.side) {
+      this.resizing = { point, image: search.image, side: search.side };
+      pixiApp.cellImages.activate(search.image);
       return true;
     }
     return false;
@@ -129,7 +125,7 @@ export class PointerImages {
       this.resizing.image.width = this.resizing.image.viewBounds.width;
       this.resizing.image.height = this.resizing.image.viewBounds.height;
       pixiApp.cellImages.dirtyResizing = true;
-      pixiApp.cellImages.dirtyBorders = true;
+      // pixiApp.cellImages.dirtyBorders = true;
       this.resizing = undefined;
       return true;
     }

@@ -1,8 +1,8 @@
-import { useEffect } from 'react';
-import { HtmlValidationsData } from './useHtmlValidations';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import type { HtmlValidationsData } from '@/app/gridGL/HTMLGrid/validations/useHtmlValidations';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { useEffect } from 'react';
 
 interface Props {
   htmlValidationsData: HtmlValidationsData;

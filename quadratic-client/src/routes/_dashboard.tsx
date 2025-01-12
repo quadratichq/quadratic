@@ -1,12 +1,11 @@
 import initRustClient from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { CSVImportSettings } from '@/app/ui/components/CSVImportSettings';
 import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/auth';
-import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { Empty } from '@/dashboard/components/Empty';
 import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
-import { NewFileDialog } from '@/dashboard/components/NewFileDialog';
+import getActiveTeam from '@/dashboard/shared/getActiveTeam';
 import { apiClient } from '@/shared/api/apiClient';
 import { MenuIcon } from '@/shared/components/Icons';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
@@ -16,14 +15,13 @@ import { Sheet, SheetContent, SheetTrigger } from '@/shared/shadcn/ui/sheet';
 import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
-import * as Sentry from '@sentry/react';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useEffect, useRef, useState } from 'react';
+import { isMobile } from 'react-device-detect';
+import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router-dom';
 import {
   Link,
-  LoaderFunctionArgs,
   Outlet,
-  ShouldRevalidateFunctionArgs,
   isRouteErrorResponse,
   redirect,
   useLocation,
@@ -33,7 +31,7 @@ import {
   useRouteLoaderData,
   useSearchParams,
 } from 'react-router-dom';
-import { RecoilRoot, useRecoilState } from 'recoil';
+import { RecoilRoot } from 'recoil';
 
 export const DRAWER_WIDTH = 264;
 export const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
@@ -57,7 +55,6 @@ type LoaderData = {
   teams: ApiTypes['/v0/teams.GET.response']['teams'];
   userMakingRequest: ApiTypes['/v0/teams.GET.response']['userMakingRequest'];
   eduStatus: ApiTypes['/v0/education.GET.response']['eduStatus'];
-  initialActiveTeamUuid: string;
   activeTeam: ApiTypes['/v0/teams/:uuid.GET.response'];
 };
 
@@ -71,68 +68,32 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
   ]);
 
   /**
-   * Determine what the active team is
+   * Handle a few cases
    */
-  let initialActiveTeamUuid = undefined;
-  const uuidFromUrl = params.teamUuid;
-  const uuidFromLocalStorage = localStorage.getItem(ACTIVE_TEAM_UUID_KEY);
+  let { teamUuid, teamCreated } = await getActiveTeam(teams, params.teamUuid);
 
-  // 1) Check the URL for a team UUID
-  // FYI: if you have a UUID in the URL or localstorage, it doesn’t mean you
-  // have access to it (maybe you were removed from a team, so it’s a 404)
-  // So we have to ensure we A) have a UUID, and B) it's in the list of teams
-  // we have access to from the server.
-  if (uuidFromUrl) {
-    initialActiveTeamUuid = uuidFromUrl;
-
-    // 2) Check localstorage for a team UUID
-    // If what's in localstorage is not in the list of teams — e.g. you lost
-    // access to a team —  we'll skip this step
-  } else if (uuidFromLocalStorage && teams.find((team) => team.team.uuid === uuidFromLocalStorage)) {
-    initialActiveTeamUuid = uuidFromLocalStorage;
-
-    // 3) there's no default preference (yet), so pick the 1st one in the API
-  } else if (teams.length > 0) {
-    initialActiveTeamUuid = teams[0].team.uuid;
-
-    // 4) there's no teams in the API, so create one and send the user to it
-  } else if (teams.length === 0) {
-    const newTeam = await apiClient.teams.create({ name: 'My Team' });
-    return redirect(ROUTES.TEAM(newTeam.uuid));
-  }
-
-  // This should never happen, but if it does, we'll log it to sentry
-  if (initialActiveTeamUuid === undefined) {
-    Sentry.captureEvent({
-      message: 'No active team was found or could be created.',
-      level: 'fatal',
-    });
-    throw new Error('No active team could be found or created.');
+  // If a team was created, it was probably a first time user so send them to
+  // the team dashboard if mobile, otherwise to a new file
+  if (teamCreated) {
+    return isMobile ? redirect(ROUTES.TEAM(teamUuid)) : redirect(ROUTES.CREATE_FILE(teamUuid));
   }
 
   // If this was a request to the root of the app, re-route to the active team
   const url = new URL(request.url);
   if (url.pathname === '/') {
     // If there are search params, keep 'em
-    return redirect(ROUTES.TEAM(initialActiveTeamUuid) + url.search);
-  }
-  // If it was a shortcut team route, redirect there
-  // e.g. /?team-shortcut=connections
-  const teamShortcut = url.searchParams.get('team-shortcut');
-  if (teamShortcut) {
-    url.searchParams.delete('team-shortcut');
-    return redirect(ROUTES.TEAM_CONNECTIONS(initialActiveTeamUuid) + url.search);
+    return redirect(ROUTES.TEAM(teamUuid) + url.search);
   }
 
   /**
    * Get data for the active team
    */
   const activeTeam = await apiClient.teams
-    .get(initialActiveTeamUuid)
+    .get(teamUuid)
     .then((data) => {
       // If we got to here, we successfully loaded the active team so now this is
       // the one we keep in localstorage for when the page loads anew
-      localStorage.setItem(ACTIVE_TEAM_UUID_KEY, initialActiveTeamUuid);
+      localStorage.setItem(ACTIVE_TEAM_UUID_KEY, teamUuid);
 
       // Sort the users so the logged-in user is first in the list
       data.users.sort((a, b) => {
@@ -159,7 +120,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
   // Initialize Rust client
   await initRustClient();
 
-  return { teams, userMakingRequest, eduStatus, initialActiveTeamUuid, activeTeam };
+  return { teams, userMakingRequest, eduStatus, activeTeam };
 };
 export const useDashboardRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.DASHBOARD) as LoaderData;
 
@@ -230,34 +191,12 @@ export const Component = () => {
           </div>
           {searchParams.get(SEARCH_PARAMS.DIALOG.KEY) === SEARCH_PARAMS.DIALOG.VALUES.EDUCATION && <EducationDialog />}
         </div>
-        <NewFileDialogWrapper />
         <CSVImportSettings />
         <ImportProgressList />
       </TooltipProvider>
     </RecoilRoot>
   );
 };
-
-function NewFileDialogWrapper() {
-  const [newFileDialogState, setNewFileDialogState] = useRecoilState(newFileDialogAtom);
-  const {
-    activeTeam: {
-      connections,
-      team: { uuid: teamUuid },
-    },
-  } = useDashboardRouteLoaderData();
-
-  if (!newFileDialogState.show) return null;
-
-  return (
-    <NewFileDialog
-      connections={connections}
-      teamUuid={teamUuid}
-      onClose={() => setNewFileDialogState((prev) => ({ ...prev, show: false }))}
-      isPrivate={newFileDialogState.isPrivate}
-    />
-  );
-}
 
 export const ErrorBoundary = () => {
   const error = useRouteError();

@@ -1,6 +1,8 @@
 use quadratic_core::{controller::GridController, sheet_offsets::SheetOffsets};
 use wasm_bindgen::prelude::*;
 
+pub use quadratic_core::a1::js_selection::JsSelection;
+
 pub mod date_time;
 pub mod jsexpr;
 pub mod lsp;
@@ -43,4 +45,9 @@ impl GridControllerWasm {
             Err(e) => Err(JsValue::from_str(&e.to_string())),
         }
     }
+}
+
+#[wasm_bindgen(start)]
+pub fn start() {
+    console_error_panic_hook::set_once();
 }

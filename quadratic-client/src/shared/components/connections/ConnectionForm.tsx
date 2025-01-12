@@ -1,12 +1,13 @@
 import { getCreateConnectionAction, getUpdateConnectionAction } from '@/routes/api.connections';
 import { ConnectionFormActions } from '@/shared/components/connections/ConnectionFormActions';
 import { ConnectionHeader } from '@/shared/components/connections/ConnectionHeader';
-import { ConnectionFormValues, connectionsByType } from '@/shared/components/connections/connectionsByType';
+import type { ConnectionFormValues } from '@/shared/components/connections/connectionsByType';
+import { connectionsByType } from '@/shared/components/connections/connectionsByType';
 import { ROUTES } from '@/shared/constants/routes';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import mixpanel from 'mixpanel-browser';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useEffect } from 'react';
 import { useFetcher, useSubmit } from 'react-router-dom';
 

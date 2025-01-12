@@ -1,7 +1,8 @@
 use super::current;
 use crate::{
-    grid::{CodeCellLanguage, ConnectionKind},
-    CellValue, CodeCellValue,
+    cellvalue::Import,
+    grid::{CodeCellLanguage, CodeCellValue, ConnectionKind},
+    CellValue,
 };
 use bigdecimal::BigDecimal;
 use std::str::FromStr;
@@ -15,11 +16,11 @@ pub fn export_cell_value(cell_value: CellValue) -> current::CellValueSchema {
         CellValue::Code(cell_code) => current::CellValueSchema::Code(current::CodeCellSchema {
             code: cell_code.code,
             language: match cell_code.language {
-                CodeCellLanguage::Python => current::CodeCellLanguageSchema::Python,
-                CodeCellLanguage::Formula => current::CodeCellLanguageSchema::Formula,
-                CodeCellLanguage::Javascript => current::CodeCellLanguageSchema::Javascript,
+                CodeCellLanguage::Python => current::CodeCellLanguage::Python,
+                CodeCellLanguage::Formula => current::CodeCellLanguage::Formula,
+                CodeCellLanguage::Javascript => current::CodeCellLanguage::Javascript,
                 CodeCellLanguage::Connection { kind, id } => {
-                    current::CodeCellLanguageSchema::Connection {
+                    current::CodeCellLanguage::Connection {
                         kind: match kind {
                             ConnectionKind::Postgres => current::ConnectionKindSchema::Postgres,
                             ConnectionKind::Mysql => current::ConnectionKindSchema::Mysql,
@@ -29,6 +30,7 @@ pub fn export_cell_value(cell_value: CellValue) -> current::CellValueSchema {
                         id,
                     }
                 }
+                CodeCellLanguage::Import => current::CodeCellLanguage::Import,
             },
         }),
         CellValue::Logical(logical) => current::CellValueSchema::Logical(logical),
@@ -41,6 +43,9 @@ pub fn export_cell_value(cell_value: CellValue) -> current::CellValueSchema {
             current::CellValueSchema::Error(current::RunErrorSchema::from_grid_run_error(*error))
         }
         CellValue::Image(image) => current::CellValueSchema::Image(image),
+        CellValue::Import(import) => current::CellValueSchema::Import(current::ImportSchema {
+            file_name: import.file_name,
+        }),
     }
 }
 
@@ -65,10 +70,10 @@ pub fn import_cell_value(value: current::CellValueSchema) -> CellValue {
         current::CellValueSchema::Code(code_cell) => CellValue::Code(CodeCellValue {
             code: code_cell.code,
             language: match code_cell.language {
-                current::CodeCellLanguageSchema::Python => CodeCellLanguage::Python,
-                current::CodeCellLanguageSchema::Formula => CodeCellLanguage::Formula,
-                current::CodeCellLanguageSchema::Javascript => CodeCellLanguage::Javascript,
-                current::CodeCellLanguageSchema::Connection { kind, id } => {
+                current::CodeCellLanguage::Python => CodeCellLanguage::Python,
+                current::CodeCellLanguage::Formula => CodeCellLanguage::Formula,
+                current::CodeCellLanguage::Javascript => CodeCellLanguage::Javascript,
+                current::CodeCellLanguage::Connection { kind, id } => {
                     CodeCellLanguage::Connection {
                         kind: match kind {
                             current::ConnectionKindSchema::Postgres => ConnectionKind::Postgres,
@@ -79,6 +84,7 @@ pub fn import_cell_value(value: current::CellValueSchema) -> CellValue {
                         id,
                     }
                 }
+                current::CodeCellLanguage::Import => CodeCellLanguage::Import,
             },
         }),
         current::CellValueSchema::Logical(logical) => CellValue::Logical(logical),
@@ -93,21 +99,22 @@ pub fn import_cell_value(value: current::CellValueSchema) -> CellValue {
         current::CellValueSchema::DateTime(dt) => CellValue::DateTime(dt),
         current::CellValueSchema::Error(error) => CellValue::Error(Box::new(error.into())),
         current::CellValueSchema::Image(text) => CellValue::Image(text),
+        current::CellValueSchema::Import(current::ImportSchema { file_name }) => {
+            CellValue::Import(Import::new(file_name))
+        }
     }
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
-    use serial_test::parallel;
-
-    use crate::{controller::GridController, grid::file, selection::Selection};
+    use crate::{a1::A1Selection, controller::GridController, grid::file};
 
     #[test]
-    #[parallel]
-    fn import_and_export_date_time() {
+    fn test_import_and_export_date_time() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_date_time_format(Selection::pos(0, 0, sheet_id), Some("%H".to_string()), None)
+        gc.set_date_time_format(&A1Selection::test_a1("A1"), Some("%H".to_string()), None)
             .unwrap();
         let grid = gc.grid().clone();
         let exported = file::export(grid).unwrap();

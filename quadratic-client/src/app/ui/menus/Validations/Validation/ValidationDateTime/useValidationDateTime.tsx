@@ -1,6 +1,6 @@
-import { ValidationDateTime } from '@/app/quadratic-core-types';
+import type { ValidationDateTime } from '@/app/quadratic-core-types';
 import { numberToDate, numberToTime } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import { ValidationData } from '@/app/ui/menus/Validations/Validation/useValidationData';
+import type { ValidationData } from '@/app/ui/menus/Validations/Validation/useValidationData';
 import { Tooltip } from '@mui/material';
 import { InfoCircledIcon } from '@radix-ui/react-icons';
 import { useMemo } from 'react';

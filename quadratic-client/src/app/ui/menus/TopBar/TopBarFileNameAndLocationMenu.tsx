@@ -6,7 +6,8 @@ import { useRootRouteLoaderData } from '@/routes/_root';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 
@@ -151,7 +152,7 @@ function FileNameInput({ setIsRenaming }: { setIsRenaming: Dispatch<SetStateActi
       defaultValue={name}
       ref={inputRef}
       autoFocus
-      className="w-full text-center text-sm outline-none"
+      className="w-full bg-transparent text-center text-sm text-foreground outline-none "
     />
   );
 }

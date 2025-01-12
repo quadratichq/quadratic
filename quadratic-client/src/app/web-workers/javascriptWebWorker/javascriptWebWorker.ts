@@ -1,8 +1,13 @@
 import { events } from '@/app/events/events';
+import type {
+  ClientJavascriptMessage,
+  JavascriptClientGetJwt,
+  JavascriptClientMessage,
+} from '@/app/web-workers/javascriptWebWorker/javascriptClientMessages';
+import type { LanguageState } from '@/app/web-workers/languageTypes';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { authClient } from '@/auth/auth';
 import mixpanel from 'mixpanel-browser';
-import { LanguageState } from '../languageTypes';
-import { quadraticCore } from '../quadraticCore/quadraticCore';
-import { ClientJavascriptMessage, JavascriptClientMessage } from './javascriptClientMessages';
 
 class JavascriptWebWorker {
   state: LanguageState = 'loading';
@@ -30,6 +35,14 @@ class JavascriptWebWorker {
         events.emit('javascriptState', message.data.state, message.data.current, message.data.awaitingExecution);
         break;
 
+      case 'javascriptClientGetJwt':
+        authClient.getTokenOrRedirect().then((jwt) => {
+          const data = message.data as JavascriptClientGetJwt;
+          this.send({ type: 'clientJavascriptGetJwt', id: data.id, jwt });
+        });
+
+        break;
+
       default:
         throw new Error(`Unhandled message type ${message.type}`);
     }
@@ -40,7 +53,7 @@ class JavascriptWebWorker {
     this.worker.onmessage = this.handleMessage;
 
     const JavascriptCoreChannel = new MessageChannel();
-    this.send({ type: 'clientJavascriptCoreChannel' }, JavascriptCoreChannel.port1);
+    this.send({ type: 'clientJavascriptCoreChannel', env: import.meta.env }, JavascriptCoreChannel.port1);
     quadraticCore.sendJavascriptInit(JavascriptCoreChannel.port2);
   }
 

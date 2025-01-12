@@ -2,7 +2,7 @@ import { hasPermissionToEditFile } from '@/app/actions';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Sheet } from '@/app/grid/sheet/Sheet';
+import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { SheetBarButton } from '@/app/ui/menus/SheetBar/SheetBarButton';
 import { SheetBarTab } from '@/app/ui/menus/SheetBar/SheetBarTab';
@@ -67,7 +67,7 @@ export const SheetBar = (): JSX.Element => {
     },
     [sheetTabs]
   );
-  const sheetsRef = useCallback(
+  const sheetTabsRef = useCallback(
     (node: HTMLDivElement) => {
       setSheetTabs(node);
       if (!node) return;
@@ -86,6 +86,7 @@ export const SheetBar = (): JSX.Element => {
     },
     [leftArrow, rightArrow]
   );
+  const sheetBarRef = useRef<HTMLDivElement>(null);
 
   // return tab to original spot when pressing Escape
   useEffect(() => {
@@ -170,7 +171,7 @@ export const SheetBar = (): JSX.Element => {
       const tab = event.currentTarget;
       if (tab) {
         const rect = tab.getBoundingClientRect();
-        rect.x -= sheetTabs.offsetLeft;
+        rect.x -= sheetBarRef.current?.getBoundingClientRect().left ?? 0;
         const originalOrderIndex = getOrderIndex(sheet.order);
         down.current = {
           tab,
@@ -266,9 +267,10 @@ export const SheetBar = (): JSX.Element => {
 
         // when dragging, scroll the sheets div if necessary
         if (sheetTabs.offsetWidth !== down.current.scrollWidth) {
+          const sheetTabsLeft = sheetTabs.getBoundingClientRect().left;
           // scroll to the right if necessary
           if (
-            event.clientX > sheetTabs.offsetLeft + sheetTabs.offsetWidth &&
+            event.clientX > sheetTabsLeft + sheetTabs.offsetWidth &&
             sheetTabs.scrollLeft < down.current.scrollWidth - sheetTabs.offsetWidth
           ) {
             if (scrolling.current) return;
@@ -287,7 +289,7 @@ export const SheetBar = (): JSX.Element => {
           }
 
           // scroll to the left
-          else if (event.clientX < sheetTabs.offsetLeft && sheetTabs.scrollLeft !== 0) {
+          else if (event.clientX < sheetTabsLeft && sheetTabs.scrollLeft !== 0) {
             clearScrollingInterval();
             scrolling.current = window.setInterval(() => {
               if (!down.current) return;
@@ -389,7 +391,10 @@ export const SheetBar = (): JSX.Element => {
   const clearRename = useCallback(() => setForceRename(undefined), []);
 
   return (
-    <div className="align-stretch z-[1] flex h-8 flex-shrink-0 select-none flex-row justify-between bg-background text-xs text-muted-foreground">
+    <div
+      ref={sheetBarRef}
+      className="align-stretch z-[1] flex h-8 flex-shrink-0 select-none flex-row justify-between bg-background text-xs text-muted-foreground"
+    >
       {hasPermission && (
         <SheetBarButton
           onClick={() => {
@@ -405,8 +410,8 @@ export const SheetBar = (): JSX.Element => {
       )}
 
       <div
+        ref={sheetTabsRef}
         className="-ml-[1px] flex flex-shrink flex-grow flex-row overflow-hidden pt-[1px] shadow-[inset_0_1px_0_hsl(var(--border))]"
-        ref={sheetsRef}
         onWheel={(e) => {
           if (!sheetTabs) return;
           if (e.deltaX) {

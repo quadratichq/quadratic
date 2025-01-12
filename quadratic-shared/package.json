@@ -1,6 +1,6 @@
 {
   "name": "quadratic-shared",
-  "version": "0.5.2",
+  "version": "0.6.1",
   "description": "Code shared between quadratic-api and quadratic-client (each app has to compile this code itself)",
   "main": "index.js",
   "scripts": {
@@ -8,7 +8,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "typescript": "^5.6.2",
+    "typescript": "^5.4.5",
     "zod": "^3.23.8"
   },
   "author": "",

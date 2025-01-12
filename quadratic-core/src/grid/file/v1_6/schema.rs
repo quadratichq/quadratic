@@ -1,13 +1,14 @@
-use std::collections::HashMap;
-use std::fmt::{self, Display};
-
-use crate::grid::file::v1_5::schema as v1_5;
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::fmt::{self, Display};
 use uuid::Uuid;
-pub use v1_5::RunErrorMsg;
 
 use super::schema_validation::Validations;
+pub use crate::grid::file::v1_5::run_error::Axis;
+use crate::grid::file::v1_5::schema as v1_5;
+pub use v1_5::RunErrorMsg;
+pub use v1_5::Span;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GridSchema {
@@ -15,7 +16,7 @@ pub struct GridSchema {
     pub version: Option<String>,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, Hash, Eq)]
 pub struct Id {
     pub id: String,
 }
@@ -89,8 +90,6 @@ pub type SheetRect = v1_5::SheetRect;
 pub type Offsets = v1_5::Offsets;
 pub type Borders = v1_5::Borders;
 pub type RunError = v1_5::RunError;
-pub type Span = v1_5::Span;
-pub type Axis = v1_5::Axis;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Format {
@@ -265,6 +264,7 @@ pub enum CodeCellLanguage {
     Formula,
     Javascript,
     Connection { kind: ConnectionKind, id: String },
+    Import,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

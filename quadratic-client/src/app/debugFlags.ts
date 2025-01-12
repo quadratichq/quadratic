@@ -65,7 +65,7 @@ export const debugGridSettings = debug && false;
 
 export const debugShowMultiplayer = debug && false;
 
-export const debugSaveURLState = (debug && false) || url.has('state');
+export const debugSaveURLState = debug && false;
 
 // --------
 // UI
@@ -80,3 +80,9 @@ export const debugShowUILogs = debug && false;
 export const debugWebWorkers = debug && false;
 
 export const debugWebWorkersMessages = debug && false;
+
+// -----------
+// AI
+// -----------
+
+export const debugShowAIInternalContext = debug && false;

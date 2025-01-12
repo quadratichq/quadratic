@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use super::active_transactions::pending_transaction::PendingTransaction;
-use super::execution::TransactionType;
+use super::execution::TransactionSource;
 use super::operations::operation::Operation;
 use super::GridController;
 use crate::compression::{
@@ -34,14 +34,14 @@ pub struct Transaction {
 impl Transaction {
     pub fn to_undo_transaction(
         &self,
-        transaction_type: TransactionType,
+        transaction_type: TransactionSource,
         cursor: Option<String>,
     ) -> PendingTransaction {
         PendingTransaction {
             id: self.id,
             cursor,
             cursor_undo_redo: self.cursor.clone(),
-            transaction_type,
+            source: transaction_type,
             operations: self.operations.clone().into(),
             ..Default::default()
         }
@@ -114,8 +114,8 @@ mod tests {
     use serial_test::parallel;
 
     use crate::{
-        grid::{sheet::borders::BorderStyleCellUpdate, SheetId},
-        selection::Selection,
+        grid::{sheet::borders::borders_old::BorderStyleCellUpdate, SheetId},
+        selection::OldSelection,
         RunLengthEncoding,
     };
 
@@ -125,7 +125,7 @@ mod tests {
     #[parallel]
     fn serialize_and_compress_borders_selection() {
         let operations = vec![Operation::SetBordersSelection {
-            selection: Selection::new_sheet_pos(1, 1, SheetId::test()),
+            selection: OldSelection::new_sheet_pos(1, 1, SheetId::test()),
             borders: RunLengthEncoding::repeat(BorderStyleCellUpdate::clear(false), 1),
         }];
 

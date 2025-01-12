@@ -1,5 +1,5 @@
 import { Action } from '@/app/actions/actions';
-import { ActionArgs } from '@/app/actions/actionsSpec';
+import type { ActionArgs } from '@/app/actions/actionsSpec';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
@@ -24,7 +24,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popo
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import mixpanel from 'mixpanel-browser';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 export const FormattingBar = () => {
   return (
@@ -298,7 +298,7 @@ function FormatDateAndTimePickerButton() {
   );
 }
 
-function TooltipContents({ label, keyboardShortcut }: { label: string; keyboardShortcut?: string }) {
+export function TooltipContents({ label, keyboardShortcut }: { label: string; keyboardShortcut?: string }) {
   return (
     <p>
       {label}{' '}

@@ -3,7 +3,8 @@ import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { editorInteractionStateShowSearchAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { SearchOptions, SheetPos } from '@/app/quadratic-core-types';
+import { focusGrid } from '@/app/helpers/focusGrid';
+import type { SearchOptions, SheetPos } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
@@ -61,10 +62,7 @@ export function Search() {
     if (sheets.sheet.id !== pos.sheet_id.id) {
       sheets.current = pos.sheet_id.id;
     }
-    sheets.sheet.cursor.changePosition({
-      cursorPosition: { x: Number(pos.x), y: Number(pos.y) },
-      ensureVisible: true,
-    });
+    sheets.sheet.cursor.moveTo(Number(pos.x), Number(pos.y));
   };
 
   const navigate = (delta: 1 | -1) => {
@@ -108,6 +106,7 @@ export function Search() {
 
   const closeSearch = () => {
     events.emit('search');
+    focusGrid();
   };
 
   useEffect(() => {
@@ -163,7 +162,7 @@ export function Search() {
           if (e.key === 'f' && (e.ctrlKey || e.metaKey)) {
             e.preventDefault();
             inputRef.current?.focus();
-
+            inputRef.current?.select();
             // shift+cmd+f let's you change to all sheets search mode while in the dialog box
             if (e.shiftKey) {
               setSearchOptions((prev) => {

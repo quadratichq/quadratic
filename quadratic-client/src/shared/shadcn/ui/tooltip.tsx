@@ -2,6 +2,7 @@ import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import * as React from 'react';
 
 import { cn } from '@/shared/shadcn/utils';
+import type { PopperContentProps } from '@radix-ui/react-popover';
 
 const TooltipProvider = TooltipPrimitive.Provider;
 
@@ -29,7 +30,6 @@ TooltipContent.displayName = TooltipPrimitive.Content.displayName;
 
 /**
  * Convenience component for simple tooltips
- * Eventually this should replace `<TooltipHint>` as used from MUI
  * @example
  * <TooltipPopover label="This is a tooltip">
  *   <Button>Hover me</Button>
@@ -39,16 +39,18 @@ const TooltipPopover = ({
   label,
   children,
   shortcut,
+  side,
 }: {
   label: string;
   children: React.ReactNode;
   shortcut?: string;
+  side?: PopperContentProps['side'];
 }) => {
   return (
     <Tooltip>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
       <TooltipPortal>
-        <TooltipContent>
+        <TooltipContent side={side}>
           <p>
             {label} {shortcut && <span className="opacity-50">({shortcut})</span>}
           </p>

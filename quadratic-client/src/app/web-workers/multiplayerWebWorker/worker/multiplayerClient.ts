@@ -3,10 +3,14 @@
  */
 
 import { debugWebWorkersMessages } from '@/app/debugFlags';
-import { ClientMultiplayerMessage, MultiplayerClientMessage, MultiplayerState } from '../multiplayerClientMessages';
-import { MessageUserUpdate, ReceiveRoom } from '../multiplayerTypes';
-import { multiplayerCore } from './multiplayerCore';
-import { cellEditDefault, multiplayerServer } from './multiplayerServer';
+import type {
+  ClientMultiplayerMessage,
+  MultiplayerClientMessage,
+  MultiplayerState,
+} from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
+import type { MessageUserUpdate, ReceiveRoom } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import { multiplayerCore } from '@/app/web-workers/multiplayerWebWorker/worker/multiplayerCore';
+import { cellEditDefault, multiplayerServer } from '@/app/web-workers/multiplayerWebWorker/worker/multiplayerServer';
 
 declare var self: WorkerGlobalScope & typeof globalThis;
 

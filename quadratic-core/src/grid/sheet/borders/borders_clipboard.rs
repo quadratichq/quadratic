@@ -1,44 +1,21 @@
-use crate::selection::Selection;
+use crate::{a1::A1Selection, grid::Sheet, Pos};
 
-use super::{BorderStyleCell, BorderStyleCellUpdates, Borders};
+use super::{Borders, BordersUpdates};
 
 impl Borders {
     /// Prepares borders within the selection for copying to the clipboard.
     ///
     /// Returns `None` if there are no borders to copy.
-    pub fn to_clipboard(&self, selection: &Selection) -> Option<BorderStyleCellUpdates> {
-        let mut updates = BorderStyleCellUpdates::default();
+    pub fn to_clipboard(&self, sheet: &Sheet, selection: &A1Selection) -> Option<BordersUpdates> {
+        let mut updates = BordersUpdates::default();
+        for rect in sheet.selection_to_rects(selection) {
+            for x in rect.x_range() {
+                for y in rect.y_range() {
+                    updates.set_style_cell(Pos::new(x, y), self.get_style_cell(Pos::new(x, y)));
+                }
+            }
+        }
 
-        if selection.all {
-            updates.push(self.all.override_border(false));
-        }
-        if let Some(column) = selection.columns.as_ref() {
-            for col in column {
-                if let Some(border_col) = self.columns.get(col) {
-                    updates.push(border_col.override_border(false));
-                } else {
-                    updates.push(BorderStyleCell::clear());
-                }
-            }
-        }
-        if let Some(row) = selection.rows.as_ref() {
-            for row in row {
-                if let Some(border_row) = self.rows.get(row) {
-                    updates.push(border_row.override_border(false));
-                } else {
-                    updates.push(BorderStyleCell::clear());
-                }
-            }
-        }
-        if let Some(rects) = selection.rects.as_ref() {
-            for rect in rects {
-                for row in rect.min.y..=rect.max.y {
-                    for col in rect.min.x..=rect.max.x {
-                        updates.push(self.update_override(col, row));
-                    }
-                }
-            }
-        }
         if updates.is_empty() {
             None
         } else {
@@ -53,8 +30,9 @@ mod tests {
 
     use super::*;
     use crate::{
+        color::Rgba,
         controller::GridController,
-        grid::{BorderSelection, BorderStyle, CellBorderLine},
+        grid::sheet::borders::{BorderSelection, BorderStyle, CellBorderLine},
         SheetRect,
     };
 
@@ -64,19 +42,108 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(1, 1, 10, 10, sheet_id)),
+        gc.set_borders(
+            A1Selection::test_a1("A1:B2"),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
         );
 
         let sheet = gc.sheet(sheet_id);
-        let copy = sheet
+        let clipboard = gc
+            .sheet(sheet_id)
             .borders
-            .to_clipboard(&Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)));
+            .to_clipboard(sheet, &A1Selection::test_a1("A1:C3"))
+            .unwrap();
 
-        dbg!(&copy);
+        assert_eq!(
+            clipboard
+                .clone()
+                .top
+                .unwrap()
+                .get(Pos::new(1, 1))
+                .unwrap()
+                .unwrap()
+                .line,
+            CellBorderLine::default()
+        );
+        assert_eq!(
+            clipboard
+                .clone()
+                .top
+                .unwrap()
+                .get(Pos::new(1, 1))
+                .unwrap()
+                .unwrap()
+                .color,
+            Rgba::default()
+        );
+        assert_eq!(
+            clipboard
+                .clone()
+                .left
+                .unwrap()
+                .get(Pos::new(1, 1))
+                .unwrap()
+                .unwrap()
+                .line,
+            CellBorderLine::default()
+        );
+        assert_eq!(
+            clipboard
+                .clone()
+                .left
+                .unwrap()
+                .get(Pos::new(1, 1))
+                .unwrap()
+                .unwrap()
+                .color,
+            Rgba::default()
+        );
+        assert_eq!(
+            clipboard
+                .clone()
+                .bottom
+                .unwrap()
+                .get(Pos::new(1, 1))
+                .unwrap()
+                .unwrap()
+                .line,
+            CellBorderLine::default()
+        );
+        assert_eq!(
+            clipboard
+                .clone()
+                .bottom
+                .unwrap()
+                .get(Pos::new(1, 1))
+                .unwrap()
+                .unwrap()
+                .color,
+            Rgba::default()
+        );
+        assert_eq!(
+            clipboard
+                .clone()
+                .right
+                .unwrap()
+                .get(Pos::new(1, 1))
+                .unwrap()
+                .unwrap()
+                .line,
+            CellBorderLine::default()
+        );
+        assert_eq!(
+            clipboard
+                .clone()
+                .right
+                .unwrap()
+                .get(Pos::new(1, 1))
+                .unwrap()
+                .unwrap()
+                .color,
+            Rgba::default()
+        );
     }
 
     #[test]
@@ -85,8 +152,8 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)),
+        gc.set_borders(
+            A1Selection::from_rect(SheetRect::new(1, 1, 1, 1, sheet_id)),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
@@ -95,19 +162,41 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         let copy = sheet
             .borders
-            .to_clipboard(&Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)))
+            .to_clipboard(
+                sheet,
+                &A1Selection::from_rect(SheetRect::new(1, 1, 1, 1, sheet_id)),
+            )
             .unwrap();
 
-        assert_eq!(copy.size(), 1);
-        let first = copy.get_at(0).unwrap();
-        assert_eq!(first.top.unwrap().unwrap().line, CellBorderLine::default());
         assert_eq!(
-            first.bottom.unwrap().unwrap().line,
+            copy.top.unwrap().get(Pos::new(1, 1)).unwrap().unwrap().line,
             CellBorderLine::default()
         );
-        assert_eq!(first.left.unwrap().unwrap().line, CellBorderLine::default());
         assert_eq!(
-            first.right.unwrap().unwrap().line,
+            copy.bottom
+                .unwrap()
+                .get(Pos::new(1, 1))
+                .unwrap()
+                .unwrap()
+                .line,
+            CellBorderLine::default()
+        );
+        assert_eq!(
+            copy.left
+                .unwrap()
+                .get(Pos::new(1, 1))
+                .unwrap()
+                .unwrap()
+                .line,
+            CellBorderLine::default()
+        );
+        assert_eq!(
+            copy.right
+                .unwrap()
+                .get(Pos::new(1, 1))
+                .unwrap()
+                .unwrap()
+                .line,
             CellBorderLine::default()
         );
     }

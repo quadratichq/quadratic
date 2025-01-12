@@ -32,10 +32,11 @@ mod tests {
     use super::*;
     use crate::{
         controller::{
-            execution::run_code::get_cells::JsGetCellResponse, transaction_types::JsCodeResult,
+            execution::run_code::get_cells::{CellA1Response, JsGetCellResponse},
+            transaction_types::JsCodeResult,
         },
         grid::js_types::JsRenderCell,
-        ArraySize, CellValue, Pos, Rect,
+        ArraySize, CellValue, Rect,
     };
     use bigdecimal::BigDecimal;
     use serial_test::parallel;
@@ -46,27 +47,18 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let sheet_pos = SheetPos {
-            x: 0,
-            y: 0,
-            sheet_id,
-        };
-        let code = "print(1)".to_string();
+        let sheet_pos = pos![A1].to_sheet_pos(sheet_id);
+        let code = "print('test')".to_string();
         gc.set_code_cell(sheet_pos, CodeCellLanguage::Python, code.clone(), None);
 
         let transaction = gc.async_transactions().first().unwrap();
         let transaction_id = transaction.id;
-        gc.calculation_complete(JsCodeResult::new(
-            transaction.id.to_string(),
-            true,
-            None,
-            None,
-            Some(vec!["test".into(), "text".into()]),
-            None,
-            None,
-            None,
-            None,
-        ))
+        gc.calculation_complete(JsCodeResult {
+            transaction_id: transaction.id.to_string(),
+            success: true,
+            output_value: Some(vec!["test".into(), "text".into()]),
+            ..Default::default()
+        })
         .ok();
 
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
@@ -79,7 +71,7 @@ mod tests {
             }
             _ => panic!("expected code cell"),
         }
-        let code_run = sheet.code_runs.get(&pos).unwrap();
+        let code_run = sheet.data_tables.get(&pos).unwrap();
         assert_eq!(code_run.output_size(), ArraySize::_1X1);
         assert_eq!(
             code_run.cell_value_at(0, 0),
@@ -98,11 +90,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            SheetPos {
-                x: 0,
-                y: 1,
-                sheet_id,
-            },
+            pos![A1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "print('hello world')".into(),
             None,
@@ -111,21 +99,16 @@ mod tests {
         // transaction for its id
         let transaction_id = gc.async_transactions()[0].id;
 
-        let summary = gc.calculation_complete(JsCodeResult::new(
-            transaction_id.to_string(),
-            true,
-            None,
-            None,
-            Some(vec!["hello world".into(), "text".into()]),
-            None,
-            None,
-            None,
-            None,
-        ));
+        let summary = gc.calculation_complete(JsCodeResult {
+            transaction_id: transaction_id.to_string(),
+            success: true,
+            output_value: Some(vec!["hello world".into(), "text".into()]),
+            ..Default::default()
+        });
         assert!(summary.is_ok());
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_code_cell_value(Pos { x: 0, y: 1 }),
+            sheet.get_code_cell_value(pos![A1]),
             Some(CellValue::Text("hello world".into()))
         );
 
@@ -140,26 +123,14 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        // set (0, 0) = 9
-        gc.set_cell_value(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            },
-            "9".into(),
-            None,
-        );
+        // set A1 = 9
+        gc.set_cell_value(pos![A1].to_sheet_pos(sheet_id), "9".into(), None);
 
-        // create a python program at (0, 1) that adds (0, 0) + 1
+        // create a python program at A2 that adds A1 + 1
         gc.set_code_cell(
-            SheetPos {
-                x: 0,
-                y: 1,
-                sheet_id,
-            },
+            pos![A2].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
-            "c(0, 0) + 1".into(),
+            "q.cells('A1') + 1".into(),
             None,
         );
 
@@ -167,38 +138,39 @@ mod tests {
         let transaction_id = gc.async_transactions()[0].id;
 
         // mock the get_cells request from python
-        let cells =
-            gc.calculation_get_cells(transaction_id.to_string(), 0, 0, 1, Some(1), None, None);
+        let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None);
         assert!(cells.is_ok());
         assert_eq!(
             cells,
-            Ok(vec![JsGetCellResponse {
-                x: 0,
-                y: 0,
-                value: "9".into(),
-                type_name: "number".into(),
-            }])
+            Ok(CellA1Response {
+                cells: vec![JsGetCellResponse {
+                    x: 1,
+                    y: 1,
+                    value: "9".into(),
+                    type_name: "number".into(),
+                }],
+                x: 1,
+                y: 1,
+                w: 1,
+                h: 1,
+                two_dimensional: false,
+            })
         );
 
         // mock the python calculation returning the result
         assert!(gc
-            .calculation_complete(JsCodeResult::new(
-                transaction_id.to_string(),
-                true,
-                None,
-                None,
-                Some(vec!["10".into(), "number".into()]),
-                None,
-                None,
-                None,
-                None,
-            ))
+            .calculation_complete(JsCodeResult {
+                transaction_id: transaction_id.to_string(),
+                success: true,
+                output_value: Some(vec!["10".into(), "number".into()]),
+                ..Default::default()
+            })
             .is_ok());
 
-        // check that the value at (0, 1) contains the expected output
+        // check that the value at A2 contains the expected output
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 1 }),
+            sheet.display_value(pos![A2]),
             Some(CellValue::Number(BigDecimal::from(10)))
         );
 
@@ -213,26 +185,14 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        // set (0, 0) = 9
-        gc.set_cell_value(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            },
-            "9".into(),
-            None,
-        );
+        // set A1 = 9
+        gc.set_cell_value(pos![A1].to_sheet_pos(sheet_id), "9".into(), None);
 
-        // create a python program at (0, 1) that adds (0, 0) + 1
+        // create a javascript program at A2 that adds A1 + 1
         gc.set_code_cell(
-            SheetPos {
-                x: 0,
-                y: 1,
-                sheet_id,
-            },
+            pos![A2].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
-            "c(0, 0) + 1".into(),
+            "q.cells('A1') + 1".into(),
             None,
         );
 
@@ -240,63 +200,51 @@ mod tests {
         let transaction_id = gc.async_transactions()[0].id;
 
         // mock the get_cells to populate dependencies
-        let _ = gc.calculation_get_cells(transaction_id.to_string(), 0, 0, 1, Some(1), None, None);
+        let _ = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None);
         // mock the calculation_complete
-        let _ = gc.calculation_complete(JsCodeResult::new(
-            transaction_id.to_string(),
-            true,
-            None,
-            None,
-            Some(vec!["10".into(), "number".into()]),
-            None,
-            None,
-            None,
-            None,
-        ));
+        let _ = gc.calculation_complete(JsCodeResult {
+            transaction_id: transaction_id.to_string(),
+            success: true,
+            output_value: Some(vec!["10".into(), "number".into()]),
+            ..Default::default()
+        });
 
-        // replace the value in (0, 0) to trigger the python calculation
-        gc.set_cell_value(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            },
-            "10".into(),
-            None,
-        );
+        // replace the value in A1 to trigger the python calculation
+        gc.set_cell_value(pos![A1].to_sheet_pos(sheet_id), "10".into(), None);
         assert_eq!(gc.async_transactions().len(), 1);
 
         let transaction_id = gc.async_transactions()[0].id;
 
-        let cells =
-            gc.calculation_get_cells(transaction_id.to_string(), 0, 0, 1, Some(1), None, None);
+        let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None);
         assert_eq!(
             cells,
-            Ok(vec![JsGetCellResponse {
-                x: 0,
-                y: 0,
-                value: "10".into(),
-                type_name: "number".into(),
-            }])
+            Ok(CellA1Response {
+                cells: vec![JsGetCellResponse {
+                    x: 1,
+                    y: 1,
+                    value: "10".into(),
+                    type_name: "number".into(),
+                }],
+                x: 1,
+                y: 1,
+                w: 1,
+                h: 1,
+                two_dimensional: false,
+            })
         );
         assert!(gc
-            .calculation_complete(JsCodeResult::new(
-                transaction_id.to_string(),
-                true,
-                None,
-                None,
-                Some(vec!["11".into(), "number".into()]),
-                None,
-                None,
-                None,
-                None,
-            ))
+            .calculation_complete(JsCodeResult {
+                transaction_id: transaction_id.to_string(),
+                success: true,
+                output_value: Some(vec!["11".into(), "number".into()]),
+                ..Default::default()
+            })
             .is_ok());
 
-        // check that the value at (0, 1) contains the expected output
+        // check that the value at A2 contains the expected output
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 1 }),
+            sheet.display_value(pos![A2]),
             Some(CellValue::Number(BigDecimal::from(11)))
         );
 
@@ -318,13 +266,9 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        // creates a python program that outputs an array of length 10 from (0, 0) -> (2, 0)
+        // creates a python program that outputs an array of length 10 from A1 -> C1
         gc.set_code_cell(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            },
+            pos![A1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "create an array output".into(),
             None,
@@ -335,28 +279,30 @@ mod tests {
 
         // mock the python calculation returning the result
         assert!(gc
-            .calculation_complete(JsCodeResult::new(
-                transaction_id.to_string(),
-                true,
-                None,
-                None,
-                None,
-                Some(python_array(vec![1, 2, 3])),
-                None,
-                None,
-                None,
-            ))
+            .calculation_complete(JsCodeResult {
+                transaction_id: transaction_id.to_string(),
+                success: true,
+                output_value: None,
+                output_array: Some(python_array(vec![1, 2, 3])),
+                ..Default::default()
+            })
             .is_ok());
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        let cells = sheet.get_render_cells(Rect::from_numbers(0, 0, 1, 3));
+        let cells = sheet.get_render_cells(Rect::from_numbers(1, 1, 1, 3));
         assert_eq!(cells.len(), 3);
         assert_eq!(
             cells[0],
-            JsRenderCell::new_number(0, 0, 1, Some(CodeCellLanguage::Python))
+            JsRenderCell::new_number(1, 1, 1, Some(CodeCellLanguage::Python), None, true)
         );
-        assert_eq!(cells[1], JsRenderCell::new_number(0, 1, 2, None));
-        assert_eq!(cells[2], JsRenderCell::new_number(0, 2, 3, None));
+        assert_eq!(
+            cells[1],
+            JsRenderCell::new_number(1, 2, 2, None, None, true)
+        );
+        assert_eq!(
+            cells[2],
+            JsRenderCell::new_number(1, 3, 3, None, None, true)
+        );
 
         // transaction should be completed
         let async_transaction = gc.transactions.get_async_transaction(transaction_id);
@@ -370,33 +316,25 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            },
+            pos![A1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "dummy calculation".into(),
             None,
         );
         let transaction_id = gc.async_transactions()[0].id;
         // mock the python result
-        let result = JsCodeResult::new(
-            transaction_id.to_string(),
-            true,
-            None,
-            None,
-            Some(vec!["".into(), "blank".into()]),
-            None,
-            None,
-            None,
-            Some(true),
-        );
+        let result = JsCodeResult {
+            transaction_id: transaction_id.to_string(),
+            success: true,
+            output_value: Some(vec!["".into(), "blank".into()]),
+            cancel_compute: Some(true),
+            ..Default::default()
+        };
         gc.calculation_complete(result).unwrap();
         assert!(gc.async_transactions().is_empty());
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert!(sheet
-            .display_value(Pos { x: 0, y: 0 })
+            .display_value(pos![A1])
             .unwrap()
             .is_blank_or_empty_string());
 
@@ -413,11 +351,7 @@ mod tests {
 
         // creates a python program that outputs a string
         gc.set_code_cell(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            },
+            pos![A1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "print('original output')".into(),
             None,
@@ -428,40 +362,31 @@ mod tests {
 
         // mock the python calculation returning the result
         assert!(gc
-            .calculation_complete(JsCodeResult::new(
-                transaction_id.to_string(),
-                true,
-                None,
-                None,
-                Some(vec!["original output".into(), "text".into()]),
-                None,
-                None,
-                None,
-                None,
-            ))
+            .calculation_complete(JsCodeResult {
+                transaction_id: transaction_id.to_string(),
+                success: true,
+                output_value: Some(vec!["original output".into(), "text".into()]),
+                ..Default::default()
+            })
             .is_ok());
 
-        // check that the value at (0, 0) contains the expected output
+        // check that the value at A1 contains the expected output
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(pos![A1]),
             Some(CellValue::Text("original output".into()))
         );
         gc.set_code_cell(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            },
+            pos![A1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "print('new output')".into(),
             None,
         );
 
-        // check that the value at (0, 0) contains the original output
+        // check that the value at A1 contains the original output
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(pos![A1]),
             Some(CellValue::Text("original output".into()))
         );
 
@@ -469,40 +394,31 @@ mod tests {
 
         // mock the python calculation returning the result
         assert!(gc
-            .calculation_complete(JsCodeResult::new(
-                transaction_id.to_string(),
-                true,
-                None,
-                None,
-                Some(vec!["new output".into(), "text".into()]),
-                None,
-                None,
-                None,
-                None,
-            ))
+            .calculation_complete(JsCodeResult {
+                transaction_id: transaction_id.to_string(),
+                success: true,
+                output_value: Some(vec!["new output".into(), "text".into()]),
+                ..Default::default()
+            })
             .is_ok());
 
         // repeat the same action to find a bug that occurs on second change
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(pos![A1]),
             Some(CellValue::Text("new output".into()))
         );
         gc.set_code_cell(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            },
+            pos![A1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "print('new output second time')".into(),
             None,
         );
 
-        // check that the value at (0, 0) contains the original output
+        // check that the value at A1 contains the original output
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(pos![A1]),
             Some(CellValue::Text("new output".into()))
         );
 
@@ -510,23 +426,18 @@ mod tests {
 
         // mock the python calculation returning the result
         assert!(gc
-            .calculation_complete(JsCodeResult::new(
-                transaction_id.to_string(),
-                true,
-                None,
-                None,
-                Some(vec!["new output second time".into(), "text".into()]),
-                None,
-                None,
-                None,
-                None,
-            ))
+            .calculation_complete(JsCodeResult {
+                transaction_id: transaction_id.to_string(),
+                success: true,
+                output_value: Some(vec!["new output second time".into(), "text".into()]),
+                ..Default::default()
+            })
             .is_ok());
 
-        // check that the value at (0, 0) contains the original output
+        // check that the value at A1 contains the original output
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(pos![A1]),
             Some(CellValue::Text("new output second time".into()))
         );
 
@@ -538,96 +449,82 @@ mod tests {
     #[test]
     #[parallel]
     fn test_python_multiple_calculations() {
-        // Tests in column 0, and y: 0 = "1", y: 1 = "c(0,0) + 1", y: 2 = "c(0, 1) + 1"
+        // Tests in column A, and y: 1 = "1", y: 2 = "q.cells('A1') + 1", y: 3 = "q.cells('A2') + 1"
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_value(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            },
-            "1".to_string(),
-            None,
-        );
+        gc.set_cell_value(pos![A1].to_sheet_pos(sheet_id), "1".to_string(), None);
         gc.set_code_cell(
-            SheetPos {
-                x: 0,
-                y: 1,
-                sheet_id,
-            },
+            pos![A2].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
-            "c(0, 0) + 1".into(),
+            "q.cells('A1') + 1".into(),
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
 
         let result = gc
-            .calculation_get_cells(transaction_id.to_string(), 0, 0, 1, Some(1), None, None)
+            .calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None)
             .ok()
             .unwrap();
-        assert_eq!(result.len(), 1);
+        assert_eq!(result.cells.len(), 1);
         assert_eq!(
-            result[0],
+            result.cells[0],
             JsGetCellResponse {
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
                 value: "1".into(),
                 type_name: "number".into(),
             }
         );
-        let result = gc.calculation_complete(JsCodeResult::new(
-            transaction_id.to_string(),
-            true,
-            None,
-            None,
-            Some(vec!["2".into(), "number".into()]),
-            None,
-            None,
-            None,
-            None,
-        ));
+        let result = gc.calculation_complete(JsCodeResult {
+            transaction_id: transaction_id.to_string(),
+            success: true,
+            output_value: Some(vec!["2".into(), "number".into()]),
+            std_out: None,
+            std_err: None,
+            output_array: None,
+            line_number: None,
+            output_display_type: None,
+            cancel_compute: None,
+            chart_pixel_output: None,
+        });
         assert!(result.is_ok());
 
         // todo...
         // assert!(result.ok().unwrap().generate_thumbnail);
 
         gc.set_code_cell(
-            SheetPos {
-                x: 0,
-                y: 2,
-                sheet_id,
-            },
+            pos![A3].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
-            "c(0, 1) + 1".into(),
+            "q.cells('A2') + 1".into(),
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         let result = gc
-            .calculation_get_cells(transaction_id.to_string(), 0, 1, 1, Some(1), None, None)
+            .calculation_get_cells_a1(transaction_id.to_string(), "A2".to_string(), None)
             .ok()
             .unwrap();
-        assert_eq!(result.len(), 1);
+        assert_eq!(result.cells.len(), 1);
         assert_eq!(
-            result[0],
+            result.cells[0],
             JsGetCellResponse {
-                x: 0,
-                y: 1,
+                x: 1,
+                y: 2,
                 value: "2".into(),
                 type_name: "number".into(),
             }
         );
-        let result = gc.calculation_complete(JsCodeResult::new(
-            transaction_id.to_string(),
-            true,
-            None,
-            None,
-            Some(vec!["3".into(), "number".into()]),
-            None,
-            None,
-            None,
-            None,
-        ));
+        let result = gc.calculation_complete(JsCodeResult {
+            transaction_id: transaction_id.to_string(),
+            success: true,
+            output_value: Some(vec!["3".into(), "number".into()]),
+            std_out: None,
+            std_err: None,
+            output_array: None,
+            line_number: None,
+            output_display_type: None,
+            cancel_compute: None,
+            chart_pixel_output: None,
+        });
         assert!(result.is_ok());
 
         // todo...
@@ -635,15 +532,15 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(pos![A1]),
             Some(CellValue::Number(BigDecimal::from(1)))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 1 }),
+            sheet.display_value(pos![A2]),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 2 }),
+            sheet.display_value(pos![A3]),
             Some(CellValue::Number(BigDecimal::from(3)))
         );
 

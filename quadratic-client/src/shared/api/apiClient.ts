@@ -1,45 +1,40 @@
 import { downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
+import { ApiError, fetchFromApi } from '@/shared/api/fetchFromApi';
 import { xhrFromApi } from '@/shared/api/xhrFromApi';
 import * as Sentry from '@sentry/react';
 import { Buffer } from 'buffer';
 import mixpanel from 'mixpanel-browser';
-import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { ApiError, fetchFromApi } from './fetchFromApi';
+import { ApiSchemas, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 
 // TODO(ddimaria): make this dynamic
 const CURRENT_FILE_VERSION = '1.6';
 
 export const apiClient = {
   teams: {
-    async list() {
+    list() {
       return fetchFromApi(`/v0/teams`, { method: 'GET' }, ApiSchemas['/v0/teams.GET.response']);
     },
     async get(uuid: string) {
-      try {
-        const response = await fetchFromApi(
-          `/v0/teams/${uuid}`,
-          { method: 'GET' },
-          ApiSchemas['/v0/teams/:uuid.GET.response']
-        );
+      const response = await fetchFromApi(
+        `/v0/teams/${uuid}`,
+        { method: 'GET' },
+        ApiSchemas['/v0/teams/:uuid.GET.response']
+      );
 
-        if (response.license.status === 'revoked') {
-          throw new ApiError('License Revoked', 402, undefined);
-        }
-
-        return response;
-      } catch (err) {
-        console.error('Error retrieving license key', err);
+      if (response.license.status === 'revoked') {
         throw new ApiError('License Revoked', 402, undefined);
       }
+
+      return response;
     },
-    async update(uuid: string, body: ApiTypes['/v0/teams/:uuid.PATCH.request']) {
+    update(uuid: string, body: ApiTypes['/v0/teams/:uuid.PATCH.request']) {
       return fetchFromApi(
         `/v0/teams/${uuid}`,
         { method: 'PATCH', body: JSON.stringify(body) },
         ApiSchemas['/v0/teams/:uuid.PATCH.response']
       );
     },
-    async create(body: ApiTypes['/v0/teams.POST.request']) {
+    create(body: ApiTypes['/v0/teams.POST.request']) {
       return fetchFromApi(
         `/v0/teams`,
         { method: 'POST', body: JSON.stringify(body) },
@@ -47,14 +42,14 @@ export const apiClient = {
       );
     },
     billing: {
-      async getPortalSessionUrl(uuid: string) {
+      getPortalSessionUrl(uuid: string) {
         return fetchFromApi(
           `/v0/teams/${uuid}/billing/portal/session`,
           { method: 'GET' },
           ApiSchemas['/v0/teams/:uuid/billing/portal/session.GET.response']
         );
       },
-      async getCheckoutSessionUrl(uuid: string) {
+      getCheckoutSessionUrl(uuid: string) {
         return fetchFromApi(
           `/v0/teams/${uuid}/billing/checkout/session`,
           { method: 'GET' },
@@ -63,7 +58,7 @@ export const apiClient = {
       },
     },
     invites: {
-      async create(uuid: string, body: ApiTypes['/v0/teams/:uuid/invites.POST.request']) {
+      create(uuid: string, body: ApiTypes['/v0/teams/:uuid/invites.POST.request']) {
         return fetchFromApi(
           `/v0/teams/${uuid}/invites`,
           {
@@ -73,7 +68,7 @@ export const apiClient = {
           ApiSchemas['/v0/teams/:uuid/invites.POST.response']
         );
       },
-      async delete(uuid: string, inviteId: string) {
+      delete(uuid: string, inviteId: string) {
         return fetchFromApi(
           `/v0/teams/${uuid}/invites/${inviteId}`,
           {
@@ -84,14 +79,14 @@ export const apiClient = {
       },
     },
     users: {
-      async update(uuid: string, userId: string, body: ApiTypes['/v0/teams/:uuid/users/:userId.PATCH.request']) {
+      update(uuid: string, userId: string, body: ApiTypes['/v0/teams/:uuid/users/:userId.PATCH.request']) {
         return fetchFromApi(
           `/v0/teams/${uuid}/users/${userId}`,
           { method: 'PATCH', body: JSON.stringify(body) },
           ApiSchemas['/v0/teams/:uuid/users/:userId.PATCH.response']
         );
       },
-      async delete(uuid: string, userId: string) {
+      delete(uuid: string, userId: string) {
         return fetchFromApi(
           `/v0/teams/${uuid}/users/${userId}`,
           { method: 'DELETE' },
@@ -102,29 +97,24 @@ export const apiClient = {
   },
 
   files: {
-    async list({ shared }: { shared?: 'with-me' } = {}) {
+    list({ shared }: { shared?: 'with-me' } = {}) {
       const url = `/v0/files${shared ? `?shared=${shared}` : ''}`;
       return fetchFromApi(url, { method: 'GET' }, ApiSchemas['/v0/files.GET.response']);
     },
     async get(uuid: string) {
-      try {
-        let response = await fetchFromApi(
-          `/v0/files/${uuid}`,
-          { method: 'GET' },
-          ApiSchemas['/v0/files/:uuid.GET.response']
-        );
+      let response = await fetchFromApi(
+        `/v0/files/${uuid}`,
+        { method: 'GET' },
+        ApiSchemas['/v0/files/:uuid.GET.response']
+      );
 
-        if (response.license.status === 'revoked') {
-          throw new ApiError('License Revoked', 402, undefined);
-        }
-
-        return response;
-      } catch (err) {
-        console.error('Error retrieving license key', err);
+      if (response.license.status === 'revoked') {
         throw new ApiError('License Revoked', 402, undefined);
       }
+
+      return response;
     },
-    async create({
+    create({
       file,
       teamUuid,
       isPrivate,
@@ -156,10 +146,12 @@ export const apiClient = {
         ApiSchemas['/v0/files.POST.response']
       );
     },
-    async delete(uuid: string) {
+
+    delete(uuid: string) {
       mixpanel.track('[Files].deleteFile', { id: uuid });
       return fetchFromApi(`/v0/files/${uuid}`, { method: 'DELETE' }, ApiSchemas['/v0/files/:uuid.DELETE.response']);
     },
+
     async download(uuid: string) {
       mixpanel.track('[Files].downloadFile', { id: uuid });
       const { file } = await this.get(uuid);
@@ -167,6 +159,7 @@ export const apiClient = {
       const checkpointData = await fetch(checkpointUrl).then((res) => res.arrayBuffer());
       downloadQuadraticFile(file.name, new Uint8Array(checkpointData));
     },
+
     async duplicate(uuid: string, isPrivate?: boolean) {
       mixpanel.track('[Files].duplicateFile', { id: uuid });
       // Get the file we want to duplicate
@@ -211,7 +204,8 @@ export const apiClient = {
 
       return { uuid: newFileUuid };
     },
-    async update(uuid: string, body: ApiTypes['/v0/files/:uuid.PATCH.request']) {
+
+    update(uuid: string, body: ApiTypes['/v0/files/:uuid.PATCH.request']) {
       return fetchFromApi(
         `/v0/files/${uuid}`,
         {
@@ -221,8 +215,9 @@ export const apiClient = {
         ApiSchemas['/v0/files/:uuid.PATCH.response']
       );
     },
+
     thumbnail: {
-      async update(uuid: string, thumbnail: Blob) {
+      update(uuid: string, thumbnail: Blob) {
         const formData = new FormData();
         formData.append('thumbnail', thumbnail, 'thumbnail.png');
 
@@ -236,8 +231,9 @@ export const apiClient = {
         );
       },
     },
+
     sharing: {
-      async get(uuid: string) {
+      get(uuid: string) {
         return fetchFromApi(
           `/v0/files/${uuid}/sharing`,
           {
@@ -246,7 +242,7 @@ export const apiClient = {
           ApiSchemas['/v0/files/:uuid/sharing.GET.response']
         );
       },
-      async update(uuid: string, body: ApiTypes['/v0/files/:uuid/sharing.PATCH.request']) {
+      update(uuid: string, body: ApiTypes['/v0/files/:uuid/sharing.PATCH.request']) {
         mixpanel.track('[FileSharing].publicLinkAccess.update', { value: body.publicLinkAccess });
         return fetchFromApi(
           `/v0/files/${uuid}/sharing`,
@@ -258,8 +254,9 @@ export const apiClient = {
         );
       },
     },
+
     invites: {
-      async create(uuid: string, body: ApiTypes['/v0/files/:uuid/invites.POST.request']) {
+      create(uuid: string, body: ApiTypes['/v0/files/:uuid/invites.POST.request']) {
         mixpanel.track('[FileSharing].invite.create');
         return fetchFromApi(
           `/v0/files/${uuid}/invites`,
@@ -270,7 +267,7 @@ export const apiClient = {
           ApiSchemas['/v0/files/:uuid/invites.POST.response']
         );
       },
-      async delete(uuid: string, inviteId: string) {
+      delete(uuid: string, inviteId: string) {
         mixpanel.track('[FileSharing].invite.delete');
         return fetchFromApi(
           `/v0/files/${uuid}/invites/${inviteId}`,
@@ -281,8 +278,9 @@ export const apiClient = {
         );
       },
     },
+
     users: {
-      async update(uuid: string, userId: string, body: ApiTypes['/v0/files/:uuid/users/:userId.PATCH.request']) {
+      update(uuid: string, userId: string, body: ApiTypes['/v0/files/:uuid/users/:userId.PATCH.request']) {
         mixpanel.track('[FileSharing].users.updateRole');
         return fetchFromApi(
           `/v0/files/${uuid}/users/${userId}`,
@@ -290,7 +288,7 @@ export const apiClient = {
           ApiSchemas['/v0/files/:uuid/users/:userId.PATCH.response']
         );
       },
-      async delete(uuid: string, userId: string) {
+      delete(uuid: string, userId: string) {
         mixpanel.track('[FileSharing].users.remove');
         return fetchFromApi(
           `/v0/files/${uuid}/users/${userId}`,
@@ -302,7 +300,7 @@ export const apiClient = {
   },
 
   examples: {
-    async duplicate(body: ApiTypes['/v0/examples.POST.request']) {
+    duplicate(body: ApiTypes['/v0/examples.POST.request']) {
       return fetchFromApi(
         `/v0/examples`,
         { method: 'POST', body: JSON.stringify(body) },
@@ -312,49 +310,50 @@ export const apiClient = {
   },
 
   users: {
-    async acknowledge() {
+    acknowledge() {
       return fetchFromApi(`/v0/users/acknowledge`, { method: 'GET' }, ApiSchemas['/v0/users/acknowledge.GET.response']);
     },
   },
+
   education: {
-    async get() {
+    get() {
       return fetchFromApi(`/v0/education`, { method: 'GET' }, ApiSchemas['/v0/education.GET.response']);
     },
-    async refresh() {
+    refresh() {
       return fetchFromApi(`/v0/education`, { method: 'POST' }, ApiSchemas['/v0/education.POST.response']);
     },
   },
 
   connections: {
-    async list(teamUuid: string) {
+    list(teamUuid: string) {
       return fetchFromApi(
         `/v0/teams/${teamUuid}/connections`,
         { method: 'GET' },
         ApiSchemas['/v0/teams/:uuid/connections.GET.response']
       );
     },
-    async get(uuid: string) {
+    get(uuid: string) {
       return fetchFromApi(
         `/v0/connections/${uuid}`,
         { method: 'GET' },
         ApiSchemas['/v0/connections/:uuid.GET.response']
       );
     },
-    async create(body: ApiTypes['/v0/team/:uuid/connections.POST.request'], teamUuid: string) {
+    create(body: ApiTypes['/v0/team/:uuid/connections.POST.request'], teamUuid: string) {
       return fetchFromApi(
         `/v0/teams/${teamUuid}/connections`,
         { method: 'POST', body: JSON.stringify(body) },
         ApiSchemas['/v0/connections.POST.response']
       );
     },
-    async update(uuid: string, body: ApiTypes['/v0/connections/:uuid.PUT.request']) {
+    update(uuid: string, body: ApiTypes['/v0/connections/:uuid.PUT.request']) {
       return fetchFromApi(
         `/v0/connections/${uuid}`,
         { method: 'PUT', body: JSON.stringify(body) },
         ApiSchemas['/v0/connections/:uuid.PUT.response']
       );
     },
-    async delete(uuid: string) {
+    delete(uuid: string) {
       return fetchFromApi(
         `/v0/connections/${uuid}`,
         { method: 'DELETE' },
@@ -363,7 +362,7 @@ export const apiClient = {
     },
   },
 
-  async postFeedback(body: ApiTypes['/v0/feedback.POST.request']) {
+  postFeedback(body: ApiTypes['/v0/feedback.POST.request']) {
     return fetchFromApi(
       `/v0/feedback`,
       { method: 'POST', body: JSON.stringify(body) },

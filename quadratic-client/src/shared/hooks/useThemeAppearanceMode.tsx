@@ -22,7 +22,7 @@ export const useThemeAppearanceMode = () => {
 export const ThemeAppearanceModeEffects = () => {
   const [featureFlag] = useFeatureFlag('themeAppearanceMode');
   const [appearanceMode, setAppearanceMode] = useThemeAppearanceMode();
-  const userPrefesDarkMode = window.matchMedia('(prefers-color-scheme: dark)');
+  const userPrefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)');
 
   // If the user turns the feature off, reset it to the default
   useEffect(() => {
@@ -36,9 +36,9 @@ export const ThemeAppearanceModeEffects = () => {
     if (appearanceMode === 'dark' || appearanceMode === 'light') {
       changeAppearanceModeInDom(appearanceMode);
     } else if (appearanceMode === 'system') {
-      changeAppearanceModeInDom(userPrefesDarkMode.matches ? 'dark' : 'light');
+      changeAppearanceModeInDom(userPrefersDarkMode.matches ? 'dark' : 'light');
     }
-  }, [appearanceMode, userPrefesDarkMode]);
+  }, [appearanceMode, userPrefersDarkMode]);
 
   // User changes their preference via _their_ system (browser or OS)
   useEffect(() => {
@@ -48,11 +48,11 @@ export const ThemeAppearanceModeEffects = () => {
       }
     };
 
-    userPrefesDarkMode.addEventListener('change', handleMatch);
+    userPrefersDarkMode.addEventListener('change', handleMatch);
     return () => {
-      userPrefesDarkMode.removeEventListener('change', handleMatch);
+      userPrefersDarkMode.removeEventListener('change', handleMatch);
     };
-  }, [appearanceMode, userPrefesDarkMode]);
+  }, [appearanceMode, userPrefersDarkMode]);
 
   useEffect(() => {
     const metaTag = document.querySelector('meta[name="theme-color"]');
@@ -66,7 +66,7 @@ export const ThemeAppearanceModeEffects = () => {
       meta.content = hexColor;
       document.head.appendChild(meta);
     }
-  }, [appearanceMode, userPrefesDarkMode]);
+  }, [appearanceMode, userPrefersDarkMode]);
 
   return null;
 };

@@ -1,8 +1,12 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
-import { LanguageState } from '@/app/web-workers/languageTypes';
-import type { ClientPythonGetJwt, ClientPythonMessage, PythonClientMessage } from '../pythonClientMessages';
-import { pythonCore } from './pythonCore';
+import type { LanguageState } from '@/app/web-workers/languageTypes';
+import type {
+  ClientPythonGetJwt,
+  ClientPythonMessage,
+  PythonClientMessage,
+} from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
+import { pythonCore } from '@/app/web-workers/pythonWebWorker/worker/pythonCore';
 
 declare var self: WorkerGlobalScope & typeof globalThis & {};
 
@@ -14,7 +18,11 @@ declare var self: WorkerGlobalScope & typeof globalThis & {};
 class PythonClient {
   private id = 0;
   private waitingForResponse: Record<number, Function> = {};
-  env: Record<string, string> = {};
+  private _env: Record<string, string> = {};
+
+  get env() {
+    return this._env;
+  }
 
   start() {
     self.onmessage = this.handleMessage;
@@ -38,7 +46,7 @@ class PythonClient {
         break;
 
       case 'clientPythonInit':
-        this.env = e.data.env;
+        this._env = e.data.env;
         return;
 
       default:
@@ -47,7 +55,7 @@ class PythonClient {
             this.waitingForResponse[e.data.id](e.data);
             delete this.waitingForResponse[e.data.id];
           } else {
-            console.warn('No resolve for message in pythonClient', e.data.id);
+            console.warn('No resolve for message in pythonClient', e.data.type);
           }
         } else {
           console.warn('[pythonClient] Unhandled message type', e.data);

@@ -6,11 +6,8 @@ import {
   editorInteractionStateShowCommandPaletteAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
-import {
-  Command,
-  CommandPaletteListItem,
-  CommandPaletteListItemDynamicProps,
-} from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import type { Command, CommandPaletteListItemDynamicProps } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { BordersHook } from '@/app/ui/menus/CommandPalette/commands/Borders';
 import codeCommandGroup from '@/app/ui/menus/CommandPalette/commands/Code';
 import columnRowCommandGroup from '@/app/ui/menus/CommandPalette/commands/ColumnRow';

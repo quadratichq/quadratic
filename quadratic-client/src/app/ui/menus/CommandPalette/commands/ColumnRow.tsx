@@ -1,7 +1,8 @@
 import { resizeColumnAction } from '@/app/actions';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { CommandGroup, CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 
 const columnRowCommandGroup: CommandGroup = {
   heading: 'Column',
@@ -13,7 +14,7 @@ const columnRowCommandGroup: CommandGroup = {
         return (
           <CommandPaletteListItem
             {...props}
-            action={() => pixiApp.pointer.pointerHeading.autoResizeColumn(sheets.sheet.cursor.cursorPosition.x)}
+            action={() => pixiApp.pointer.pointerHeading.autoResizeColumn(sheets.sheet.cursor.position.x)}
           />
         );
       },

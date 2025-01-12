@@ -3,15 +3,11 @@ use std::collections::{HashMap, HashSet};
 use itertools::Itertools;
 
 use crate::{
-    grid::{
-        js_types::{JsOffset, JsPos, JsRenderFill},
-        RenderSize, SheetId,
-    },
+    grid::{js_types::JsOffset, SheetId},
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-    selection::Selection,
     viewport::ViewportBuffer,
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
-    CellValue, Pos, Rect, SheetPos, SheetRect,
+    Pos, SheetPos, SheetRect,
 };
 
 use super::{active_transactions::pending_transaction::PendingTransaction, GridController};
@@ -121,11 +117,7 @@ impl GridController {
             return;
         }
 
-        let hashes = dirty_hashes
-            .iter()
-            .map(|pos| JsPos::from(*pos))
-            .collect::<Vec<JsPos>>();
-
+        let hashes = dirty_hashes.iter().cloned().collect::<Vec<Pos>>();
         if let Ok(hashes_string) = serde_json::to_string(&hashes) {
             crate::wasm_bindings::js::jsHashesDirty(sheet_id.to_string(), hashes_string);
         }
@@ -133,24 +125,9 @@ impl GridController {
 
     pub fn send_render_cells_from_hash(&self, sheet_id: SheetId, modified: &HashSet<Pos>) {
         // send the modified cells to the render web worker
-        modified.iter().for_each(|modified| {
+        modified.iter().for_each(|hash| {
             if let Some(sheet) = self.try_sheet(sheet_id) {
-                let rect = Rect::from_numbers(
-                    modified.x * CELL_SHEET_WIDTH as i64,
-                    modified.y * CELL_SHEET_HEIGHT as i64,
-                    CELL_SHEET_WIDTH as i64,
-                    CELL_SHEET_HEIGHT as i64,
-                );
-                let render_cells = sheet.get_render_cells(rect);
-                if let Ok(cells) = serde_json::to_string(&render_cells) {
-                    crate::wasm_bindings::js::jsRenderCellSheets(
-                        sheet_id.to_string(),
-                        modified.x,
-                        modified.y,
-                        cells,
-                    );
-                }
-                sheet.send_validation_warnings(modified.x, modified.y, rect);
+                sheet.send_render_cells_in_hash(*hash);
             }
         });
     }
@@ -176,86 +153,21 @@ impl GridController {
         self.send_render_cells_from_hash(sheet_rect.sheet_id, &modified);
     }
 
-    /// Sends the modified cell sheets to the render web worker based on a
-    /// selection.
-    ///
-    /// TODO: this is only implemented when only_rects == true; add
-    /// only_rects == false when needed.
-    pub fn send_render_cells_selection(&self, selection: &Selection, only_rects: bool) {
+    pub fn send_all_fills(&self, sheet_id: SheetId) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
-        assert!(only_rects, "only_rects == false not implemented");
-        let mut modified = HashSet::new();
-        if let Some(rects) = selection.rects.as_ref() {
-            for rect in rects {
-                for y in rect.y_range() {
-                    let y_hash = (y as f64 / CELL_SHEET_HEIGHT as f64).floor() as i64;
-                    for x in rect.x_range() {
-                        let x_hash = (x as f64 / CELL_SHEET_WIDTH as f64).floor() as i64;
-                        modified.insert(Pos {
-                            x: x_hash,
-                            y: y_hash,
-                        });
-                    }
-                }
-            }
-        }
-        self.send_render_cells_from_hash(selection.sheet_id, &modified);
-    }
 
-    /// Sends the modified fills to the client
-    pub fn send_fill_cells(&self, sheet_rect: &SheetRect) {
-        if !cfg!(target_family = "wasm") && !cfg!(test) {
-            return;
-        }
-        if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
+        if let Some(sheet) = self.try_sheet(sheet_id) {
             let fills = sheet.get_all_render_fills();
             if let Ok(fills) = serde_json::to_string(&fills) {
-                crate::wasm_bindings::js::jsSheetFills(sheet_rect.sheet_id.to_string(), fills);
+                crate::wasm_bindings::js::jsSheetFills(sheet_id.to_string(), fills);
+            }
+            let sheet_fills = sheet.get_all_sheet_fills();
+            if let Ok(sheet_fills) = serde_json::to_string(&sheet_fills) {
+                crate::wasm_bindings::js::jsSheetMetaFills(sheet_id.to_string(), sheet_fills);
             }
         }
-    }
-
-    /// Sends all fills to the client
-    pub fn sheet_fills(&self, sheet_id: SheetId) -> Vec<JsRenderFill> {
-        if let Some(sheet) = self.try_sheet(sheet_id) {
-            sheet.get_all_render_fills()
-        } else {
-            Vec::new()
-        }
-    }
-
-    pub fn send_updated_bounds_rect(&mut self, sheet_rect: &SheetRect, format: bool) {
-        let recalculated = if let Some(sheet) = self.try_sheet_mut(sheet_rect.sheet_id) {
-            sheet.recalculate_add_bounds((*sheet_rect).into(), format)
-        } else {
-            false
-        };
-
-        if cfg!(target_family = "wasm") && recalculated {
-            if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
-                if let Ok(sheet_info) = serde_json::to_string(&SheetBounds::from(sheet)) {
-                    crate::wasm_bindings::js::jsSheetBoundsUpdate(sheet_info);
-                }
-            }
-        };
-    }
-
-    pub fn send_updated_bounds_selection(&mut self, selection: &Selection, format: bool) {
-        let recalculated = if let Some(sheet) = self.try_sheet_mut(selection.sheet_id) {
-            sheet.recalculate_add_bounds_selection(selection, format)
-        } else {
-            false
-        };
-
-        if cfg!(target_family = "wasm") && recalculated {
-            if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-                if let Ok(sheet_info) = serde_json::to_string(&SheetBounds::from(sheet)) {
-                    crate::wasm_bindings::js::jsSheetBoundsUpdate(sheet_info);
-                }
-            }
-        };
     }
 
     /// Recalculates sheet bounds, and if changed then sends to TS.
@@ -359,30 +271,28 @@ impl GridController {
     pub fn send_image(&self, sheet_pos: SheetPos) {
         if cfg!(target_family = "wasm") || cfg!(test) {
             if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
-                let image = sheet.code_run(sheet_pos.into()).and_then(|code_run| {
-                    code_run
-                        .cell_value_at(0, 0)
-                        .and_then(|cell_value| match cell_value {
-                            CellValue::Image(image) => Some(image.clone()),
-                            _ => None,
-                        })
-                });
-                let (w, h) = if let Some(size) =
-                    sheet.get_formatting_value::<RenderSize>(sheet_pos.into())
-                {
-                    (Some(size.w), Some(size.h))
-                } else {
-                    (None, None)
-                };
+                sheet.send_image(sheet_pos.into());
+            }
+        }
+    }
 
-                crate::wasm_bindings::js::jsSendImage(
-                    sheet_pos.sheet_id.to_string(),
-                    sheet_pos.x as i32,
-                    sheet_pos.y as i32,
-                    image,
-                    w,
-                    h,
-                );
+    /// Send transaction progress to client
+    pub fn send_transaction_progress(&self, transaction: &PendingTransaction) {
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+            return;
+        }
+
+        crate::wasm_bindings::js::jsTransactionProgress(
+            transaction.id.to_string(),
+            transaction.operations.len() as i32,
+        );
+    }
+
+    pub fn send_a1_context(&self) {
+        if cfg!(target_family = "wasm") || cfg!(test) {
+            let context = self.grid().a1_context();
+            if let Ok(context) = serde_json::to_string(&context) {
+                crate::wasm_bindings::js::jsA1Context(context);
             }
         }
     }
@@ -393,23 +303,17 @@ mod test {
     use crate::{
         controller::{
             active_transactions::pending_transaction::PendingTransaction,
-            execution::TransactionType, transaction_types::JsCodeResult, GridController,
+            execution::TransactionSource, transaction_types::JsCodeResult, GridController,
         },
         grid::{
             js_types::{JsHtmlOutput, JsRenderCell},
-            sheet::validations::{
-                validation::Validation,
-                validation_rules::{validation_logical::ValidationLogical, ValidationRule},
-            },
-            RenderSize, SheetId,
+            SheetId,
         },
-        selection::Selection,
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
-        Pos, Rect,
+        Pos, SheetPos,
     };
     use serial_test::serial;
     use std::collections::HashSet;
-    use uuid::Uuid;
 
     #[test]
     #[serial]
@@ -446,7 +350,7 @@ mod test {
 
         // Server transaction
         let mut transaction = PendingTransaction {
-            transaction_type: TransactionType::Server,
+            source: TransactionSource::Server,
             ..Default::default()
         };
         transaction.add_dirty_hashes_from_sheet_cell_positions(
@@ -528,38 +432,6 @@ mod test {
 
     #[test]
     #[serial]
-    fn send_fill_cells() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-
-        gc.set_cell_fill_color((0, 0, 1, 1, sheet_id).into(), Some("red".to_string()), None);
-        expect_js_call(
-            "jsSheetFills",
-            format!(
-                "{},{}",
-                sheet_id, r#"[{"x":0,"y":0,"w":1,"h":1,"color":"red"}]"#
-            ),
-            true,
-        );
-
-        gc.set_cell_fill_color(
-            (100, 100, 1, 1, sheet_id).into(),
-            Some("green".to_string()),
-            None,
-        );
-        expect_js_call(
-            "jsSheetFills",
-            format!(
-                "{},{}",
-                sheet_id,
-                r#"[{"x":0,"y":0,"w":1,"h":1,"color":"red"},{"x":100,"y":100,"w":1,"h":1,"color":"green"}]"#
-            ),
-            true,
-        );
-    }
-
-    #[test]
-    #[serial]
     fn send_html_output_rect() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -574,13 +446,8 @@ mod test {
         let _ = gc.calculation_complete(JsCodeResult {
             transaction_id,
             success: true,
-            std_err: None,
-            std_out: None,
             output_value: Some(vec!["<html></html>".to_string(), "text".to_string()]),
-            output_array: None,
-            line_number: None,
-            output_display_type: None,
-            cancel_compute: None,
+            ..Default::default()
         });
 
         expect_js_call(
@@ -605,30 +472,28 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_code_cell(
-            (0, 0, sheet_id).into(),
+            (1, 1, sheet_id).into(),
             crate::grid::CodeCellLanguage::Python,
             "test".to_string(),
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id.to_string();
-        let _ = gc.calculation_complete(JsCodeResult {
+        gc.calculation_complete(JsCodeResult {
             transaction_id,
             success: true,
-            std_err: None,
-            std_out: None,
             output_value: Some(vec!["<html></html>".to_string(), "text".to_string()]),
-            output_array: None,
-            line_number: None,
-            output_display_type: None,
-            cancel_compute: None,
-        });
+            ..Default::default()
+        })
+        .unwrap();
 
-        gc.set_cell_render_size(
-            (0, 0, 1, 1, sheet_id).into(),
-            Some(RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string(),
-            }),
+        gc.set_chart_size(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            1.0,
+            2.0,
             None,
         );
 
@@ -636,11 +501,11 @@ mod test {
             "jsUpdateHtml",
             serde_json::to_string(&JsHtmlOutput {
                 sheet_id: sheet_id.to_string(),
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
                 html: Some("<html></html>".to_string()),
-                w: Some("1".to_string()),
-                h: Some("2".to_string()),
+                w: Some(1.0),
+                h: Some(2.0),
             })
             .unwrap(),
             true,
@@ -677,37 +542,6 @@ mod test {
         expect_js_call(
             "jsRenderCellSheets",
             format!("{},{},{},{}", sheet_id, 6, 3, hash_test(&result)),
-            true,
-        );
-    }
-
-    #[test]
-    #[serial]
-    fn send_render_cells_selection() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-
-        let rect = Rect::new(1, 1, 2, 2);
-        let selection = Selection::rect(rect, sheet_id);
-        gc.update_validation(
-            Validation {
-                id: Uuid::new_v4(),
-                selection: selection.clone(),
-                rule: ValidationRule::Logical(ValidationLogical {
-                    show_checkbox: true,
-                    ignore_blank: true,
-                }),
-                message: Default::default(),
-                error: Default::default(),
-            },
-            None,
-        );
-
-        let sheet = gc.sheet(sheet_id);
-        let send = serde_json::to_string(&sheet.get_render_cells(rect)).unwrap();
-        expect_js_call(
-            "jsRenderCellSheets",
-            format!("{},{},{},{}", sheet_id, 0, 0, hash_test(&send)),
             true,
         );
     }

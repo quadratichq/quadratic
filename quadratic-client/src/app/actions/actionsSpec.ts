@@ -1,9 +1,9 @@
 // Note: this is a new pattern that should replace the old `actions.ts` file
-import { Action } from '@/app/actions/actions';
-import { FileActionArgs } from '@/app/actions/fileActionsSpec';
-import { FormatActionArgs } from '@/app/actions/formatActionsSpec';
-import { IconComponent } from '@/shared/components/Icons';
-import { ApiTypes, FilePermission, TeamPermission } from 'quadratic-shared/typesAndSchemas';
+import type { Action } from '@/app/actions/actions';
+import type { FileActionArgs } from '@/app/actions/fileActionsSpec';
+import type { FormatActionArgs } from '@/app/actions/formatActionsSpec';
+import type { IconComponent } from '@/shared/components/Icons';
+import type { ApiTypes, FilePermission, TeamPermission } from 'quadratic-shared/typesAndSchemas';
 
 /**
  * Every action _may_ have an `isAvailable` key.
@@ -40,6 +40,14 @@ export type ActionSpec<ActionArgsType> = {
   // return `<Icon className="custom-style-class" />`
   // ```
   Icon?: IconComponent;
+
+  // use a checkbox instead of an Icon
+  checkbox?: boolean | (() => boolean);
+
+  // defaultOption will bold the name (this is usually used to indicate that
+  // double clicking will trigger the action)
+  defaultOption?: boolean;
+
   isAvailable?: (args: ActionAvailabilityArgs) => boolean;
   // Used for command palette search
   keywords?: string[];

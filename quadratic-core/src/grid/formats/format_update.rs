@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::format::Format;
-use crate::grid::{CellAlign, CellVerticalAlign, CellWrap, NumericFormat, RenderSize};
+use crate::grid::{formatting::RenderSize, CellAlign, CellVerticalAlign, CellWrap, NumericFormat};
 
 /// Used to store changes from a Format to another Format.
 #[derive(Deserialize, Serialize, Default, Debug, Clone, Eq, PartialEq)]
@@ -179,7 +179,7 @@ impl FormatUpdate {
             italic: self.italic.or(other.italic),
             text_color: self.text_color.clone().or(other.text_color.clone()),
             fill_color: self.fill_color.clone().or(other.fill_color.clone()),
-            render_size: self.render_size.clone().or(other.render_size.clone()),
+            render_size: None,
             date_time: self.date_time.clone().or(other.date_time.clone()),
             underline: self.underline.or(other.underline),
             strike_through: self.strike_through.or(other.strike_through),
@@ -249,7 +249,6 @@ impl From<&FormatUpdate> for Format {
             italic: update.italic.unwrap_or(None),
             text_color: update.text_color.clone().unwrap_or(None),
             fill_color: update.fill_color.clone().unwrap_or(None),
-            render_size: update.render_size.clone().unwrap_or(None),
             date_time: update.date_time.clone().unwrap_or(None),
             underline: update.underline.unwrap_or(None),
             strike_through: update.strike_through.unwrap_or(None),
@@ -258,14 +257,12 @@ impl From<&FormatUpdate> for Format {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
-    use serial_test::parallel;
-
     use super::*;
     use crate::grid::NumericFormatKind;
 
     #[test]
-    #[parallel]
     fn is_default() {
         let format = FormatUpdate::default();
         assert!(format.is_default());
@@ -278,7 +275,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn cleared() {
         assert_eq!(
             FormatUpdate::cleared(),
@@ -302,29 +298,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
-    fn html_changed() {
-        let format = FormatUpdate {
-            render_size: Some(Some(RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string(),
-            })),
-            ..Default::default()
-        };
-        assert!(format.html_changed());
-
-        let format = FormatUpdate {
-            render_size: Some(None),
-            ..Default::default()
-        };
-        assert!(format.html_changed());
-
-        let format = FormatUpdate::default();
-        assert!(!format.html_changed());
-    }
-
-    #[test]
-    #[parallel]
     fn render_cells_changed() {
         let format = FormatUpdate {
             align: Some(None),
@@ -409,7 +382,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn fill_changed() {
         let format = FormatUpdate {
             fill_color: Some(None),
@@ -434,7 +406,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn combine() {
         let format1 = FormatUpdate {
             align: Some(Some(CellAlign::Center)),
@@ -450,10 +421,7 @@ mod tests {
             italic: Some(Some(true)),
             text_color: Some(Some("red".to_string())),
             fill_color: Some(Some("blue".to_string())),
-            render_size: Some(Some(RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string(),
-            })),
+            render_size: None,
             date_time: Some(Some("%H".to_string())),
             underline: Some(Some(true)),
             strike_through: Some(Some(true)),
@@ -473,10 +441,7 @@ mod tests {
             italic: Some(Some(false)),
             text_color: Some(Some("blue".to_string())),
             fill_color: Some(Some("red".to_string())),
-            render_size: Some(Some(RenderSize {
-                w: "3".to_string(),
-                h: "4".to_string(),
-            })),
+            render_size: None,
             date_time: Some(Some("%M".to_string())),
             underline: Some(Some(false)),
             strike_through: Some(Some(false)),
@@ -503,20 +468,13 @@ mod tests {
         assert_eq!(combined.italic, Some(Some(true)));
         assert_eq!(combined.text_color, Some(Some("red".to_string())));
         assert_eq!(combined.fill_color, Some(Some("blue".to_string())));
-        assert_eq!(
-            combined.render_size,
-            Some(Some(RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string()
-            }))
-        );
+        assert_eq!(combined.render_size, None);
         assert_eq!(combined.date_time, Some(Some("%H".to_string())));
         assert_eq!(combined.underline, Some(Some(true)));
         assert_eq!(combined.strike_through, Some(Some(true)));
     }
 
     #[test]
-    #[parallel]
     fn clear_update() {
         let format = FormatUpdate {
             align: Some(Some(CellAlign::Center)),
@@ -532,10 +490,7 @@ mod tests {
             italic: Some(Some(true)),
             text_color: Some(Some("red".to_string())),
             fill_color: Some(Some("blue".to_string())),
-            render_size: Some(Some(RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string(),
-            })),
+            render_size: None,
             date_time: Some(Some("%H".to_string())),
             underline: Some(Some(true)),
             strike_through: Some(Some(true)),
@@ -553,14 +508,13 @@ mod tests {
         assert_eq!(cleared.italic, Some(None));
         assert_eq!(cleared.text_color, Some(None));
         assert_eq!(cleared.fill_color, Some(None));
-        assert_eq!(cleared.render_size, Some(None));
+        assert_eq!(cleared.render_size, None);
         assert_eq!(cleared.date_time, Some(None));
         assert_eq!(cleared.underline, Some(None));
         assert_eq!(cleared.strike_through, Some(None));
     }
 
     #[test]
-    #[parallel]
     fn format_update_to_format() {
         let update = FormatUpdate {
             align: Some(Some(CellAlign::Center)),
@@ -576,10 +530,7 @@ mod tests {
             italic: Some(Some(true)),
             text_color: Some(Some("red".to_string())),
             fill_color: Some(Some("blue".to_string())),
-            render_size: Some(Some(RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string(),
-            })),
+            render_size: None,
             date_time: Some(Some("%H".to_string())),
             underline: Some(Some(true)),
             strike_through: Some(Some(true)),
@@ -603,20 +554,12 @@ mod tests {
         assert_eq!(format.italic, Some(true));
         assert_eq!(format.text_color, Some("red".to_string()));
         assert_eq!(format.fill_color, Some("blue".to_string()));
-        assert_eq!(
-            format.render_size,
-            Some(RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string()
-            })
-        );
         assert_eq!(format.date_time, Some("%H".to_string()));
         assert_eq!(format.underline, Some(true));
         assert_eq!(format.strike_through, Some(true));
     }
 
     #[test]
-    #[parallel]
     fn serialize_format_update() {
         let update = FormatUpdate {
             align: Some(None),

@@ -4,17 +4,17 @@
 
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { intersects } from '@/app/gridGL/helpers/intersects';
+import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
-import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
-import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
+import { CursorMode, inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
+import { inlineEditorMonaco, PADDING_FOR_INLINE_EDITOR } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { SheetPosTS } from '@/app/gridGL/types/size';
+import type { SheetPosTS } from '@/app/gridGL/types/size';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { convertColorStringToHex } from '@/app/helpers/convertColor';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { CellFormatSummary } from '@/app/quadratic-core-types';
+import type { CellFormatSummary } from '@/app/quadratic-core-types';
 import { createFormulaStyleHighlights } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -22,10 +22,6 @@ import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLab
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
 import mixpanel from 'mixpanel-browser';
 import { Rectangle } from 'pixi.js';
-import { inlineEditorEvents } from './inlineEditorEvents';
-
-// Minimum amount to scroll viewport when cursor is near the edge.
-const MINIMUM_MOVE_VIEWPORT = 50;
 
 class InlineEditorHandler {
   private div?: HTMLDivElement;
@@ -88,7 +84,6 @@ class InlineEditorHandler {
     inlineEditorFormula.clearDecorations();
     window.removeEventListener('keydown', inlineEditorKeyboard.keyDown);
     multiplayer.sendEndCellEdit();
-    pixiApp.cellsSheets.updateCellsArray();
     this.hideDiv();
   }
 
@@ -96,42 +91,62 @@ class InlineEditorHandler {
   keepCursorVisible = () => {
     if (sheets.sheet.id !== this.location?.sheetId || !this.showing) return;
 
-    const { position, bounds } = inlineEditorMonaco.getEditorSizing();
+    const sheetRectangle = pixiApp.getViewportRectangle();
+    const scale = pixiApp.viewport.scale.x;
     const canvas = pixiApp.canvas.getBoundingClientRect();
-    const cursor = position.left + bounds.left;
-    const worldCursorTop = pixiApp.viewport.toWorld(cursor, bounds.top - canvas.top);
-    const worldCursorBottom = pixiApp.viewport.toWorld(cursor, bounds.bottom - canvas.top);
-    const viewportBounds = pixiApp.viewport.getVisibleBounds();
 
-    if (
-      intersects.rectangleRectangle(
-        viewportBounds,
-        new Rectangle(
-          worldCursorTop.x,
-          worldCursorTop.y,
-          worldCursorBottom.x - worldCursorTop.x,
-          worldCursorBottom.y - worldCursorTop.y
-        )
-      )
-    ) {
-      return;
+    // calculate inline editor rectangle, factoring in scale
+    const { bounds, position } = inlineEditorMonaco.getEditorSizing();
+    const editorWidth = this.width * scale;
+    const editorTopLeft = pixiApp.viewport.toWorld(bounds.left - canvas.left, bounds.top - canvas.top);
+    const editorBottomRight = pixiApp.viewport.toWorld(
+      bounds.left + editorWidth - canvas.left,
+      bounds.bottom - canvas.top
+    );
+    const editorRectangle = new Rectangle(
+      editorTopLeft.x,
+      editorTopLeft.y,
+      editorBottomRight.x - editorTopLeft.x,
+      editorBottomRight.y - editorTopLeft.y
+    );
+
+    let x = 0;
+    if (editorRectangle.left - PADDING_FOR_INLINE_EDITOR <= sheetRectangle.left) {
+      x = sheetRectangle.left + -(editorRectangle.left - PADDING_FOR_INLINE_EDITOR);
+    } else if (editorRectangle.right + PADDING_FOR_INLINE_EDITOR >= sheetRectangle.right) {
+      x = sheetRectangle.right - (editorRectangle.right + PADDING_FOR_INLINE_EDITOR);
     }
 
-    let x = 0,
-      y = 0;
-    if (worldCursorTop.x > viewportBounds.right) {
-      x = viewportBounds.right - (worldCursorTop.x + MINIMUM_MOVE_VIEWPORT);
-    } else if (worldCursorTop.x < viewportBounds.left) {
-      x = viewportBounds.left + MINIMUM_MOVE_VIEWPORT - worldCursorTop.x;
+    let y = 0;
+    // check if the editor is too tall to fit in the viewport
+    if (editorRectangle.height + PADDING_FOR_INLINE_EDITOR <= sheetRectangle.height) {
+      // keep the editor in view
+      if (editorRectangle.top - PADDING_FOR_INLINE_EDITOR <= sheetRectangle.top) {
+        y = sheetRectangle.top - (editorRectangle.top - PADDING_FOR_INLINE_EDITOR);
+      } else if (editorRectangle.bottom + PADDING_FOR_INLINE_EDITOR >= sheetRectangle.bottom) {
+        y = sheetRectangle.bottom - (editorRectangle.bottom + PADDING_FOR_INLINE_EDITOR);
+      }
+    } else {
+      // just keep the cursor in view
+      const cursorTop = pixiApp.viewport.toWorld(
+        position.left * scale + bounds.left - canvas.left,
+        position.top * scale + bounds.top - canvas.top
+      );
+      const cursorBottom = pixiApp.viewport.toWorld(
+        position.left * scale + bounds.left - canvas.left,
+        position.top * scale + position.height * scale + bounds.top - canvas.top
+      );
+      if (cursorTop.y < sheetRectangle.top) {
+        y = sheetRectangle.top - cursorTop.y;
+      } else if (cursorBottom.y > sheetRectangle.bottom) {
+        y = sheetRectangle.bottom - cursorBottom.y;
+      }
     }
-    if (worldCursorBottom.y > viewportBounds.bottom) {
-      y = viewportBounds.bottom - (worldCursorBottom.y + MINIMUM_MOVE_VIEWPORT);
-    } else if (worldCursorTop.y < viewportBounds.top) {
-      y = viewportBounds.top + MINIMUM_MOVE_VIEWPORT - worldCursorTop.y;
-    }
+
     if (x || y) {
-      pixiApp.viewport.x += x;
-      pixiApp.viewport.y += y;
+      const { width, height } = pixiApp.headings.headingSize;
+      pixiApp.viewport.x = Math.min(pixiApp.viewport.x + x * scale, width);
+      pixiApp.viewport.y = Math.min(pixiApp.viewport.y + y * scale, height);
       pixiApp.setViewportDirty();
     }
   };
@@ -156,7 +171,7 @@ class InlineEditorHandler {
   };
 
   // Handler for the changeInput event.
-  private changeInput = async (input: boolean, initialValue?: string) => {
+  private changeInput = async (input: boolean, initialValue?: string, cursorMode?: CursorMode) => {
     if (!input && !this.open) return;
 
     if (initialValue) {
@@ -172,7 +187,7 @@ class InlineEditorHandler {
     if (input) {
       this.open = true;
       const sheet = sheets.sheet;
-      const cursor = sheet.cursor.getCursor();
+      const cursor = sheet.cursor.position;
       this.location = {
         sheetId: sheet.id,
         x: cursor.x,
@@ -182,7 +197,7 @@ class InlineEditorHandler {
       let changeToFormula = false;
       if (initialValue) {
         value = initialValue;
-        this.changeToFormula(value[0] === '=');
+        changeToFormula = value[0] === '=';
       } else {
         const formula = await quadraticCore.getCodeCell(this.location.sheetId, this.location.x, this.location.y);
         if (formula?.language === 'Formula') {
@@ -190,13 +205,26 @@ class InlineEditorHandler {
           changeToFormula = true;
         } else {
           value = (await quadraticCore.getEditCell(this.location.sheetId, this.location.x, this.location.y)) || '';
+          changeToFormula = false;
         }
       }
+
+      if (cursorMode === undefined) {
+        if (changeToFormula) {
+          cursorMode = value.length > 1 ? CursorMode.Edit : CursorMode.Enter;
+        } else {
+          cursorMode = value ? CursorMode.Edit : CursorMode.Enter;
+        }
+      }
+      pixiAppSettings.setInlineEditorState?.((prev) => ({
+        ...prev,
+        editMode: cursorMode === CursorMode.Edit,
+      }));
+
       this.formatSummary = await quadraticCore.getCellFormatSummary(
         this.location.sheetId,
         this.location.x,
-        this.location.y,
-        true
+        this.location.y
       );
       this.temporaryBold = this.formatSummary?.bold || undefined;
       this.temporaryItalic = this.formatSummary?.italic || undefined;
@@ -208,7 +236,6 @@ class InlineEditorHandler {
         this.formatSummary.fillColor ? convertColorStringToHex(this.formatSummary.fillColor) : '#ffffff'
       );
       this.updateFont();
-      pixiApp.cellsSheets.updateCellsArray();
       this.sendMultiplayerUpdate();
       this.showDiv();
       this.changeToFormula(changeToFormula);
@@ -343,8 +370,8 @@ class InlineEditorHandler {
     pixiAppSettings.setInlineEditorState((prev) => ({
       ...prev,
       left: this.x,
-      top: this.y + OPEN_SANS_FIX.y / 3,
-      lineHeight: this.height,
+      top: this.y,
+      height: this.height,
     }));
 
     pixiApp.cursor.dirty = true;
@@ -469,16 +496,8 @@ class InlineEditorHandler {
 
     // Update Grid Interaction state, reset input value state
     if (deltaX || deltaY) {
-      const position = sheets.sheet.cursor.cursorPosition;
-      sheets.sheet.cursor.changePosition({
-        multiCursor: null,
-        columnRow: null,
-        cursorPosition: {
-          x: position.x + deltaX,
-          y: position.y + deltaY,
-        },
-        ensureVisible: true,
-      });
+      const position = sheets.sheet.cursor.position;
+      sheets.sheet.cursor.moveTo(position.x + deltaX, position.y + deltaY);
     }
 
     // Set focus back to Grid
@@ -487,10 +506,12 @@ class InlineEditorHandler {
   };
 
   // Handler for the click for the expand code editor button.
-  openCodeEditor = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-    e.stopPropagation();
+  openCodeEditor = () => {
     if (!pixiAppSettings.setCodeEditorState) {
       throw new Error('Expected setCodeEditorState to be defined in openCodeEditor');
+    }
+    if (!pixiAppSettings.setCodeEditorState) {
+      throw new Error('Expected setEditorInteractionState to be defined in openCodeEditor');
     }
     if (!this.location) {
       throw new Error('Expected location to be defined in openCodeEditor');
@@ -498,6 +519,7 @@ class InlineEditorHandler {
     const { sheetId, x, y } = this.location;
     pixiAppSettings.setCodeEditorState({
       ...pixiAppSettings.codeEditorState,
+      diffEditorContent: undefined,
       waitingForEditorClose: {
         codeCell: {
           sheetId,

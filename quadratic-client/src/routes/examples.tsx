@@ -1,4 +1,5 @@
-import { ExampleFilesList, FilesListExampleFile } from '@/dashboard/components/FilesList';
+import type { FilesListExampleFile } from '@/dashboard/components/FilesList';
+import { ExampleFilesList } from '@/dashboard/components/FilesList';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { ROUTES } from '@/shared/constants/routes';
 import { sanityClient } from 'quadratic-shared/sanityClient';
@@ -20,7 +21,7 @@ export const Component = () => {
 
   const files: FilesListExampleFile[] = examples.map(({ name, description, thumbnail, url }, i) => ({
     description,
-    href: ROUTES.CREATE_FILE_EXAMPLE(activeTeamUuid, url, true),
+    href: ROUTES.CREATE_FILE_EXAMPLE(activeTeamUuid, url),
     name,
     thumbnail: thumbnail + '?w=800&h=450&fit=crop&auto=format', // 16/9 aspect ratio
   }));

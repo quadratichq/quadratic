@@ -11,7 +11,19 @@ export const loader = async () => {
     if (isAuthenticated) {
       // Acknowledge the user has just logged in. The backend may need
       // to run some logic before making any other API calls in parallel
-      await apiClient.users.acknowledge();
+      const { userCreated } = await apiClient.users.acknowledge();
+
+      // Special case for first-time users
+      if (userCreated) {
+        try {
+          // @ts-expect-error
+          window.dataLayer.push({
+            event: 'registrationComplete',
+          });
+        } catch (e) {
+          // No google analytics available
+        }
+      }
 
       let redirectTo = new URLSearchParams(window.location.search).get('redirectTo') || '/';
       return redirect(redirectTo);

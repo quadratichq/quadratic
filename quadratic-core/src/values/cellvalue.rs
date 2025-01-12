@@ -1,6 +1,6 @@
-use std::fmt;
 use std::hash::Hash;
 use std::str::FromStr;
+use std::{fmt, fmt::Display};
 
 use anyhow::Result;
 use bigdecimal::{BigDecimal, Signed, ToPrimitive, Zero};
@@ -8,10 +8,11 @@ use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use serde::{Deserialize, Serialize};
 
 use super::{Duration, Instant, IsBlank};
+use crate::grid::{CodeCellLanguage, CodeCellValue};
 use crate::{
     date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
-    grid::{CodeCellLanguage, NumericFormat, NumericFormatKind},
-    CodeResult, RunError, RunErrorMsg, Span, Spanned,
+    grid::{js_types::JsCellValuePos, NumericFormat, NumericFormatKind},
+    CodeResult, Pos, RunError, RunErrorMsg, Span, Spanned,
 };
 
 // todo: fill this out
@@ -19,9 +20,20 @@ const CURRENCY_SYMBOLS: &str = "$€£¥";
 const PERCENTAGE_SYMBOL: char = '%';
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct CodeCellValue {
-    pub language: CodeCellLanguage,
-    pub code: String,
+pub struct Import {
+    pub file_name: String,
+}
+
+impl Display for Import {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Import({})", self.file_name)
+    }
+}
+
+impl Import {
+    pub fn new(file_name: String) -> Self {
+        Self { file_name }
+    }
 }
 
 /// Non-array value in the formula language.
@@ -41,7 +53,7 @@ pub enum CellValue {
     Number(BigDecimal),
     /// Logical value.
     Logical(bool),
-    /// Instant in time. TODO: remove
+    /// **Deprecated** Nov 2024 in favor of `DateTime`.
     #[cfg_attr(test, proptest(skip))]
     Instant(Instant),
     // Date + time.
@@ -63,6 +75,8 @@ pub enum CellValue {
     Code(CodeCellValue),
     #[cfg_attr(test, proptest(skip))]
     Image(String),
+    #[cfg_attr(test, proptest(skip))]
+    Import(Import),
 }
 impl fmt::Display for CellValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -81,6 +95,7 @@ impl fmt::Display for CellValue {
             CellValue::Html(s) => write!(f, "{}", s),
             CellValue::Code(code) => write!(f, "{:?}", code),
             CellValue::Image(s) => write!(f, "{}", s),
+            CellValue::Import(import) => write!(f, "{:?}", import),
         }
     }
 }
@@ -109,6 +124,7 @@ impl CellValue {
             CellValue::Date(_) => "date",
             CellValue::Time(_) => "time",
             CellValue::DateTime(_) => "date time",
+            CellValue::Import(_) => "import",
         }
     }
     /// Returns a formula-source-code representation of the value.
@@ -119,15 +135,16 @@ impl CellValue {
             CellValue::Number(n) => n.to_string(),
             CellValue::Logical(true) => "TRUE".to_string(),
             CellValue::Logical(false) => "FALSE".to_string(),
-            CellValue::Instant(_) => todo!("repr of Instant"),
+            CellValue::Instant(_) => "[deprecated]".to_string(),
             CellValue::Duration(d) => d.to_string(),
             CellValue::Error(_) => "[error]".to_string(),
             CellValue::Html(s) => s.clone(),
-            CellValue::Code(_) => todo!("repr of code"),
-            CellValue::Image(_) => todo!("repr of image"),
+            CellValue::Code(_) => "[code cell]".to_string(),
+            CellValue::Image(_) => "[image]".to_string(),
             CellValue::Date(d) => d.to_string(),
             CellValue::Time(d) => d.to_string(),
             CellValue::DateTime(d) => d.to_string(),
+            CellValue::Import(import) => import.to_string(),
         }
     }
 
@@ -175,6 +192,7 @@ impl CellValue {
             CellValue::Date(d) => d.format(DEFAULT_DATE_FORMAT).to_string(),
             CellValue::Time(d) => d.format(DEFAULT_TIME_FORMAT).to_string(),
             CellValue::DateTime(d) => d.format(DEFAULT_DATE_TIME_FORMAT).to_string(),
+            CellValue::Import(import) => import.to_string(),
 
             // these should not render
             CellValue::Code(_) => String::new(),
@@ -279,6 +297,7 @@ impl CellValue {
 
             CellValue::Duration(d) => d.to_string(),
             CellValue::Error(_) => "[error]".to_string(),
+            CellValue::Import(import) => import.to_string(),
 
             // this should not be editable
             CellValue::Code(_) => String::new(),
@@ -304,7 +323,16 @@ impl CellValue {
 
             // these should not return a value
             CellValue::Code(_) => String::new(),
+            CellValue::Import(_) => String::new(),
             CellValue::Image(_) => String::new(),
+        }
+    }
+
+    pub fn to_cell_value_pos(self, pos: Pos) -> JsCellValuePos {
+        JsCellValuePos {
+            value: self.to_string(),
+            kind: self.type_name().to_string(),
+            pos: pos.a1_string(),
         }
     }
 
@@ -416,6 +444,7 @@ impl CellValue {
             CellValue::Html(_) => 9,
             CellValue::Code(_) => 10,
             CellValue::Image(_) => 11,
+            CellValue::Import(_) => 12,
         }
     }
 
@@ -868,6 +897,14 @@ impl CellValue {
         }
         crate::formulas::util::checked_div(span, sum, count as f64)
     }
+
+    pub fn code_cell_value(&self) -> Option<CodeCellValue> {
+        match self {
+            CellValue::Code(code) => Some(code.to_owned()),
+            CellValue::Import(_) => Some(CodeCellValue::new(CodeCellLanguage::Import, "".into())),
+            _ => None,
+        }
+    }
 }
 
 /// Unique hash of [`CellValue`], for performance optimization. This is
@@ -926,7 +963,7 @@ mod test {
                     symbol: Some(String::from("$")),
                 }),
                 Some(2),
-                None
+                None,
             ),
             String::from("$123,123.12")
         );
@@ -937,7 +974,7 @@ mod test {
                     symbol: Some(String::from("$")),
                 }),
                 Some(2),
-                Some(false)
+                Some(false),
             ),
             String::from("$123123.12")
         );
@@ -949,7 +986,7 @@ mod test {
                     symbol: Some(String::from("$")),
                 }),
                 Some(2),
-                None
+                None,
             ),
             String::from("-$123,123.12")
         );
@@ -960,7 +997,7 @@ mod test {
                     symbol: Some(String::from("$")),
                 }),
                 Some(2),
-                Some(true)
+                Some(true),
             ),
             String::from("-$123,123.12")
         );
@@ -971,7 +1008,7 @@ mod test {
                     symbol: Some(String::from("$")),
                 }),
                 Some(2),
-                Some(false)
+                Some(false),
             ),
             String::from("-$123123.12")
         );
@@ -983,7 +1020,7 @@ mod test {
                     symbol: Some(String::from("$")),
                 }),
                 Some(2),
-                None
+                None,
             ),
             String::from("$123.13")
         );
@@ -995,7 +1032,7 @@ mod test {
                     symbol: Some(String::from("$")),
                 }),
                 Some(2),
-                None
+                None,
             ),
             String::from("$123.00")
         );
@@ -1054,7 +1091,7 @@ mod test {
                     symbol: None,
                 }),
                 None,
-                None
+                None,
             ),
             String::from("1.23e7")
         );
@@ -1066,7 +1103,7 @@ mod test {
                     symbol: None,
                 }),
                 Some(3),
-                None
+                None,
             ),
             String::from("1.235e7")
         );
@@ -1079,7 +1116,7 @@ mod test {
                     symbol: None,
                 }),
                 None,
-                None
+                None,
             ),
             String::from("-1.23e7")
         );
@@ -1092,7 +1129,7 @@ mod test {
                     symbol: None,
                 }),
                 None,
-                None
+                None,
             ),
             String::from("1.00e6")
         );

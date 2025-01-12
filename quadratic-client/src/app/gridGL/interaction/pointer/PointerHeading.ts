@@ -1,34 +1,22 @@
+import { hasPermissionToEditFile } from '@/app/actions';
+import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { zoomToFit } from '@/app/gridGL/helpers/zoom';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { TransientResize } from '@/app/quadratic-core-types/index.js';
+import { DOUBLE_CLICK_TIME } from '@/app/gridGL/interaction/pointer/pointerUtils';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import type { TransientResize } from '@/app/quadratic-core-types/index.js';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { isMac } from '@/shared/utils/isMac';
-import { InteractivePointerEvent, Point } from 'pixi.js';
-import { hasPermissionToEditFile } from '../../../actions';
-import { sheets } from '../../../grid/controller/Sheets';
-import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectCells';
-import { zoomToFit } from '../../helpers/zoom';
-import { pixiApp } from '../../pixiApp/PixiApp';
-import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
-import { DOUBLE_CLICK_TIME } from './pointerUtils';
+import type { InteractivePointerEvent, Point } from 'pixi.js';
 
 const MINIMUM_COLUMN_SIZE = 20;
-
-// Returns an array with all numbers inclusive of start to end
-function fillArray(start: number, end: number): number[] {
-  const result = [];
-  if (start > end) {
-    [start, end] = [end, start];
-  }
-  for (let i = start; i <= end; i++) {
-    result.push(i);
-  }
-  return result;
-}
 
 export interface ResizeHeadingColumnEvent extends CustomEvent {
   detail: number;
@@ -77,6 +65,7 @@ export class PointerHeading {
 
     // exit out of inline editor
     inlineEditorHandler.closeIfOpen();
+    const cursor = sheets.sheet.cursor;
 
     const hasPermission = hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions);
     const headingResize = !hasPermission ? undefined : headings.intersectsHeadingGridLine(world);
@@ -111,7 +100,7 @@ export class PointerHeading {
           this.downTimeout = undefined;
           zoomToFit();
         } else {
-          selectAllCells();
+          cursor.selectAll(event.shiftKey);
           this.downTimeout = window.setTimeout(() => {
             if (this.downTimeout) {
               this.downTimeout = undefined;
@@ -120,111 +109,30 @@ export class PointerHeading {
         }
       }
 
-      const cursor = sheets.sheet.cursor;
-
       // Selects multiple columns or rows. If ctrl/meta is pressed w/o shift,
       // then it add or removes the clicked column or row. If shift is pressed,
       // then it selects all columns or rows between the last clicked column or
       // row and the current one.
       const isRightClick =
         (event as MouseEvent).button === 2 || (isMac && (event as MouseEvent).button === 0 && event.ctrlKey);
-      if (event.ctrlKey || event.metaKey || isRightClick) {
-        if (intersects.column !== null) {
-          let column = intersects.column;
-          const columns = cursor.columnRow?.columns || [];
-          if (event.shiftKey) {
-            if (columns.length === 0) {
-              selectColumns([column], undefined, true);
-            } else {
-              const lastColumn = columns[columns.length - 1];
-              if (lastColumn < column) {
-                selectColumns([...columns, ...fillArray(lastColumn + 1, column)], undefined, true);
-              } else {
-                selectColumns([...columns, ...fillArray(column, lastColumn - 1)], undefined, true);
-              }
-            }
-          } else {
-            if (columns.includes(column)) {
-              if (isRightClick) {
-                events.emit('gridContextMenu', world, column, null);
-              } else {
-                selectColumns(
-                  columns.filter((c) => c !== column),
-                  undefined,
-                  true
-                );
-              }
-            } else {
-              if (isRightClick) {
-                selectColumns([column], undefined, true);
-                // need the timeout to allow the cursor events to complete
-                setTimeout(() => events.emit('gridContextMenu', world, column, null));
-              } else {
-                selectColumns([...columns, column], undefined, true);
-              }
-            }
-          }
-        } else if (intersects.row !== null) {
-          let row = intersects.row;
-          const rows = cursor.columnRow?.rows || [];
-          if (event.shiftKey) {
-            if (rows.length === 0) {
-              selectRows([row], undefined, true);
-            } else {
-              const lastRow = rows[rows.length - 1];
-              if (lastRow < row) {
-                selectRows([...rows, ...fillArray(lastRow + 1, row)], undefined, true);
-              } else {
-                selectRows([...rows, ...fillArray(row, lastRow - 1)], undefined, true);
-              }
-            }
-          } else {
-            if (rows.includes(row)) {
-              if (isRightClick) {
-                events.emit('gridContextMenu', world, null, row);
-              } else {
-                selectRows(
-                  rows.filter((c) => c !== row),
-                  undefined,
-                  true
-                );
-              }
-            } else {
-              if (isRightClick) {
-                selectRows([row], undefined, true);
-                // need the timeout to allow the cursor events to complete
-                setTimeout(() => events.emit('gridContextMenu', world, null, row));
-              } else {
-                selectRows([...rows, row], undefined, true);
-              }
-            }
-          }
-        }
+      const bounds = pixiApp.viewport.getVisibleBounds();
+      const headingSize = pixiApp.headings.headingSize;
+      if (intersects.column !== null) {
+        const top = sheets.sheet.getRowFromScreen(bounds.top + headingSize.height);
+        cursor.selectColumn(intersects.column, event.ctrlKey || event.metaKey, event.shiftKey, isRightClick, top);
+      } else if (intersects.row !== null) {
+        const left = sheets.sheet.getColumnFromScreen(bounds.left);
+        cursor.selectRow(intersects.row, event.ctrlKey || event.metaKey, event.shiftKey, isRightClick, left);
       }
-
-      // If a column/row is not selected, then it selects that column/row.
-      // Otherwise it selects between the last selected column/row and the
-      // current one.
-      else if (event.shiftKey) {
-        if (intersects.column !== null) {
-          let x1 = cursor.cursorPosition.x;
-          let x2 = intersects.column;
-          selectColumns(fillArray(x1, x2), x1);
-        } else if (intersects.row !== null) {
-          let y1 = cursor.cursorPosition.y;
-          let y2 = intersects.row;
-          selectRows(fillArray(y1, y2), y1);
-        }
-      }
-
-      // Otherwise, it selects the column/row.
-      else {
-        if (intersects.column !== null) {
-          selectColumns([intersects.column]);
-          // check if we're trying to open the context menu
-        } else if (intersects.row !== null) {
-          selectRows([intersects.row]);
-        }
+      if (isRightClick) {
+        setTimeout(() =>
+          events.emit('contextMenu', {
+            world,
+            column: intersects.column ?? undefined,
+            row: intersects.row ?? undefined,
+            type: ContextMenuType.Grid,
+          })
+        );
       }
     }
 

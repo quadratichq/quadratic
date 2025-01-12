@@ -1,4 +1,4 @@
-import { languages } from 'monaco-editor';
+import type { languages } from 'monaco-editor';
 
 export const FormulaLanguageConfig = {
   comments: {
@@ -51,7 +51,7 @@ export const FormulaTokenizerConfig = {
   tokenizer: {
     root: [
       // cell reference
-      [/\$?n?[A-Z]+\$?n?\d+/, 'cell.reference'],
+      [/\$?n?[a-zA-Z]+\$?n?\d+?/, 'cell.reference'],
 
       [/[a-zA-Z_$][\w$]*/, { cases: { '@keywords': 'keyword', '@default': 'unknown' } }],
 

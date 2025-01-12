@@ -7,6 +7,13 @@
 import { cn } from '@/shared/shadcn/utils';
 import './icons.css';
 
+// const sizes = {
+//   sm: '20',
+//   md: '24',
+//   lg: '40',
+//   xl: '48',
+// };
+
 /**
  * Base icon component, used to render icons from the Material Symbols font.
  */
@@ -14,13 +21,15 @@ interface BaseIconProps extends React.HTMLAttributes<HTMLSpanElement> {
   children: string;
   // TODO: if and when we need to use other sizes, we'll have this as a prop
   // Note: we'll have to load the additional sizes via the font loader in `index.html`
-  //e.g. size: 'sm' | 'md' | 'lg' | 'xl' -> '20' '24' '40' '48';
+  // size?: keyof typeof sizes;
 }
 
 const Icon = (props: BaseIconProps) => {
   const { children, className, ...rest } = props;
+  const _size = '20'; // size ? sizes[size] : sizes['sm'];
+
   return (
-    <span className={`material-symbols-outlined material-symbols-20 ${className ? className : ''}`} {...rest}>
+    <span className={`material-symbols-outlined material-symbols-${_size} ${className ? className : ''}`} {...rest}>
       {children}
     </span>
   );
@@ -40,6 +49,9 @@ export const AddIcon: IconComponent = (props) => {
   return <Icon {...props}>add</Icon>;
 };
 
+export const AIIcon: IconComponent = (props) => {
+  return <Icon {...props}>auto_awesome</Icon>;
+};
 export const AppearanceLightModeIcon: IconComponent = (props) => {
   return <Icon {...props}>light_mode</Icon>;
 };
@@ -62,6 +74,14 @@ export const ArrowDropDownIcon: IconComponent = (props) => {
 
 export const ArrowDropDownCircleIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_drop_down_circle</Icon>;
+};
+
+export const ArrowUpwardIcon: IconComponent = (props) => {
+  return <Icon {...props}>arrow_upward</Icon>;
+};
+
+export const BackspaceIcon: IconComponent = (props) => {
+  return <Icon {...props}>backspace</Icon>;
 };
 
 export const BorderAllIcon: IconComponent = (props) => {
@@ -110,6 +130,10 @@ export const BorderStyleIcon: IconComponent = (props) => {
 
 export const BorderColorIcon: IconComponent = (props) => {
   return <Icon {...props}>border_color</Icon>;
+};
+
+export const CheckBoxEmptyIcon: IconComponent = (props) => {
+  return <Icon {...props}>check_box_outline_blank</Icon>;
 };
 
 export const CheckBoxIcon: IconComponent = (props) => {
@@ -196,8 +220,24 @@ export const DecimalIncreaseIcon: IconComponent = (props) => {
   return <Icon {...props}>decimal_increase</Icon>;
 };
 
+export const DockToLeftIcon: IconComponent = (props) => {
+  return <Icon {...props}>dock_to_left</Icon>;
+};
+
 export const DeleteIcon: IconComponent = (props) => {
   return <Icon {...props}>delete</Icon>;
+};
+
+export const DiffIcon: IconComponent = (props) => {
+  return <Icon {...props}>difference</Icon>;
+};
+
+export const DockToBottomIcon: IconComponent = (props) => {
+  return <Icon {...props}>dock_to_bottom</Icon>;
+};
+
+export const DockToRightIcon: IconComponent = (props) => {
+  return <Icon {...props}>dock_to_right</Icon>;
 };
 
 export const DownloadIcon: IconComponent = (props) => {
@@ -218,6 +258,22 @@ export const EducationIcon: IconComponent = (props) => {
 
 export const ExamplesIcon: IconComponent = (props) => {
   return <Icon {...props}>view_carousel</Icon>;
+};
+
+export const ExpandIcon: IconComponent = (props) => {
+  return <Icon {...props}>unfold_less</Icon>;
+};
+
+export const CollapseIcon: IconComponent = (props) => {
+  return <Icon {...props}>unfold_more</Icon>;
+};
+
+export const ExpandCircleDownIcon: IconComponent = (props) => {
+  return <Icon {...props}>expand_circle_down</Icon>;
+};
+
+export const ExpandCircleUpIcon: IconComponent = (props) => {
+  return <Icon {...props}>expand_circle_up</Icon>;
 };
 
 export const ExternalLinkIcon: IconComponent = (props) => {
@@ -308,8 +364,16 @@ export const GoToIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_top_right</Icon>;
 };
 
+export const GridActionIcon: IconComponent = (props) => {
+  return <Icon {...props}>keyboard_double_arrow_right</Icon>;
+};
+
 export const GroupIcon: IconComponent = (props) => {
   return <Icon {...props}>group</Icon>;
+};
+
+export const HistoryIcon: IconComponent = (props) => {
+  return <Icon {...props}>history</Icon>;
 };
 
 export const ImportIcon: IconComponent = (props) => {
@@ -318,6 +382,10 @@ export const ImportIcon: IconComponent = (props) => {
 
 export const InsertChartIcon: IconComponent = (props) => {
   return <Icon {...props}>insert_chart</Icon>;
+};
+
+export const InsertCellRefIcon: IconComponent = (props) => {
+  return <Icon {...props}>ink_selection</Icon>;
 };
 
 export const LogoutIcon: IconComponent = (props) => {
@@ -399,6 +467,14 @@ export const RefreshIcon: IconComponent = (props) => {
   return <Icon {...props}>refresh</Icon>;
 };
 
+export const SaveAndRunIcon: IconComponent = (props) => {
+  return <Icon {...props}>play_arrow</Icon>;
+};
+
+export const SaveAndRunStopIcon: IconComponent = (props) => {
+  return <Icon {...props}>stop</Icon>;
+};
+
 export const ScientificIcon: IconComponent = (props) => {
   return <Icon {...props}>functions</Icon>;
 };
@@ -411,12 +487,36 @@ export const SheetIcon: IconComponent = (props) => {
   return <Icon {...props}>tab</Icon>;
 };
 
+export const SnippetsIcon: IconComponent = (props) => {
+  return <Icon {...props}>integration_instructions</Icon>;
+};
+
+export const SpillErrorMoveIcon: IconComponent = (props) => {
+  return <Icon {...props}>vertical_align_bottom</Icon>;
+};
+
+export const StopIcon: IconComponent = (props) => {
+  return <Icon {...props}>stop</Icon>;
+};
+
 export const StopCircleIcon: IconComponent = (props) => {
   return <Icon {...props}>stop_circle</Icon>;
 };
 
+export const TableIcon: IconComponent = (props) => {
+  return <Icon {...props}>table</Icon>;
+};
+
 export const ThemeIcon: IconComponent = (props) => {
   return <Icon {...props}>contrast</Icon>;
+};
+
+export const ThumbUpIcon: IconComponent = (props) => {
+  return <Icon {...props}>thumb_up_alt</Icon>;
+};
+
+export const ThumbDownIcon: IconComponent = (props) => {
+  return <Icon {...props}>thumb_down_alt</Icon>;
 };
 
 export const VerticalAlignBottomIcon: IconComponent = (props) => {
@@ -449,4 +549,69 @@ export const ZoomInIcon: IconComponent = (props) => {
 
 export const ZoomOutIcon: IconComponent = (props) => {
   return <Icon {...props}>zoom_out</Icon>;
+};
+
+export const TableEditIcon: IconComponent = (props) => {
+  return <Icon {...props}>table_edit</Icon>;
+};
+
+export const TableConvertIcon: IconComponent = (props) => {
+  return <Icon {...props}>table_convert</Icon>;
+};
+
+export const FlattenTableIcon: IconComponent = (props) => {
+  return <Icon {...props}>view_compact</Icon>;
+};
+
+export const SortIcon: IconComponent = (props) => {
+  return <Icon {...props}>sort</Icon>;
+};
+
+export const SortDescendingIcon: IconComponent = (props) => {
+  return <Icon {...props}>sort</Icon>;
+};
+
+export const SortAscendingIcon: IconComponent = (props) => {
+  const { className, ...rest } = props;
+  return (
+    <Icon {...rest} className={cn(className, 'rotate-180 scale-x-[-1]')}>
+      sort
+    </Icon>
+  );
+};
+
+export const DragIndicatorIcon: IconComponent = (props) => {
+  return <Icon {...props}>drag_indicator</Icon>;
+};
+
+export const UpArrowIcon: IconComponent = (props) => {
+  return <Icon {...props}>arrow_upward</Icon>;
+};
+
+export const DownArrowIcon: IconComponent = (props) => {
+  return <Icon {...props}>arrow_downward</Icon>;
+};
+
+export const HideIcon: IconComponent = (props) => {
+  return <Icon {...props}>visibility_off</Icon>;
+};
+
+export const ShowIcon: IconComponent = (props) => {
+  return <Icon {...props}>visibility</Icon>;
+};
+
+export const ArrowRight: IconComponent = (props) => {
+  return <Icon {...props}>keyboard_arrow_right</Icon>;
+};
+
+export const ArrowDoubleRight: IconComponent = (props) => {
+  return <Icon {...props}>keyboard_double_arrow_right</Icon>;
+};
+
+export const ArrowDown: IconComponent = (props) => {
+  return <Icon {...props}>keyboard_arrow_down</Icon>;
+};
+
+export const ArrowDoubleDown: IconComponent = (props) => {
+  return <Icon {...props}>keyboard_double_arrow_down</Icon>;
 };

@@ -1,18 +1,14 @@
 // Messages sent between the javascript web worker and the javascript runner
 // (which is where the user code is executed).
 
-import { CellType } from './javascriptAPI';
+import type { CellType } from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascriptAPI';
 
 export type JavascriptRunnerGetCells = CellType[][] | undefined;
 
-export interface RunnerJavascriptGetCellsLength {
-  type: 'getCellsLength';
+export interface RunnerJavascriptGetCellsA1Length {
+  type: 'getCellsA1Length';
   sharedBuffer: SharedArrayBuffer;
-  x0: number;
-  y0: number;
-  x1: number;
-  y1: number;
-  sheetName?: string;
+  a1: string;
 }
 
 export interface RunnerJavascriptGetCellsData {
@@ -26,6 +22,7 @@ export interface RunnerJavascriptResults {
   results: any;
   console: string;
   lineNumber?: number;
+  chartPixelOutput?: [number, number];
 }
 
 export interface RunnerJavascriptError {
@@ -36,7 +33,7 @@ export interface RunnerJavascriptError {
 }
 
 export type RunnerJavascriptMessage =
-  | RunnerJavascriptGetCellsLength
+  | RunnerJavascriptGetCellsA1Length
   | RunnerJavascriptGetCellsData
   | RunnerJavascriptResults
   | RunnerJavascriptError;

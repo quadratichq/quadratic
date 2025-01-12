@@ -4,7 +4,7 @@ import {
   editorInteractionStateShowCellTypeMenuAtom,
   editorInteractionStateShowConnectionsMenuAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { LinkNewTab } from '@/app/ui/components/LinkNewTab';
@@ -31,6 +31,7 @@ import {
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
+
 export interface CellTypeOption {
   name: string;
   searchStrings?: string[];
@@ -216,7 +217,7 @@ function CommandItemWrapper({
         <span className="flex items-center">
           {name}{' '}
           {experimental && (
-            <Badge variant="outline" className="ml-2">
+            <Badge variant="secondary" className="ml-2">
               Experimental
             </Badge>
           )}

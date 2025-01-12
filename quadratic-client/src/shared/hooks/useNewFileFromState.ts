@@ -1,7 +1,7 @@
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { ROUTES } from '@/shared/constants/routes';
-import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 
 /**
  * @returns {string} A `to` link for use with a `Link` component
@@ -12,9 +12,7 @@ export const useNewFileFromStatePythonApi = ({ isPrivate, teamUuid }: { isPrivat
     language: 'Python' as CodeCellLanguage,
   };
 
-  const to = isPrivate
-    ? ROUTES.CREATE_FILE_PRIVATE(teamUuid, stateUrlParam)
-    : ROUTES.CREATE_FILE(teamUuid, stateUrlParam);
+  const to = ROUTES.CREATE_FILE(teamUuid, { state: stateUrlParam, private: isPrivate });
 
   return to;
 };
@@ -40,9 +38,7 @@ export const newNewFileFromStateConnection = ({
     language: { Connection: { kind: connectionType, id: connectionUuid } },
   };
 
-  const to = isPrivate
-    ? ROUTES.CREATE_FILE_PRIVATE(teamUuid, stateUrlParam)
-    : ROUTES.CREATE_FILE(teamUuid, stateUrlParam);
+  const to = ROUTES.CREATE_FILE(teamUuid, { state: stateUrlParam, private: isPrivate });
 
   return to;
 };
