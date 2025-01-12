@@ -430,6 +430,20 @@ export interface CoreClientImportFile {
   error?: string;
 }
 
+export interface ClientCoreGetCSVPreview {
+  type: 'clientCoreGetCSVPreview';
+  file: ArrayBuffer;
+  maxRows: number;
+  delimiter: number | undefined;
+  id: number;
+}
+
+export interface CoreClientGetCSVPreview {
+  type: 'coreClientGetCSVPreview';
+  preview: string[][] | undefined;
+  id: number;
+}
+
 export interface ClientCoreDeleteCellValues {
   type: 'clientCoreDeleteCellValues';
   selection: string;
@@ -1277,7 +1291,8 @@ export type ClientCoreMessage =
   | ClientCoreFindNextRowForRect
   | ClientCoreMoveCodeCellVertically
   | ClientCoreMoveCodeCellHorizontally
-  | ClientCoreFiniteRectFromSelection;
+  | ClientCoreFiniteRectFromSelection
+  | ClientCoreGetCSVPreview;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1344,4 +1359,5 @@ export type CoreClientMessage =
   | CoreClientMoveCodeCellVertically
   | CoreClientMoveCodeCellHorizontally
   | CoreClientFiniteRectFromSelection
-  | CoreClientA1Context;
+  | CoreClientA1Context
+  | CoreClientGetCSVPreview;

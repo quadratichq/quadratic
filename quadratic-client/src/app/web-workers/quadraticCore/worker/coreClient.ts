@@ -266,6 +266,11 @@ class CoreClient {
         this.send({ type: 'coreClientImportFile', id: e.data.id, ...fileResult }, fileResult.contents);
         return;
 
+      case 'clientCoreGetCSVPreview':
+        const preview = await core.getCSVPreview(e.data);
+        this.send({ type: 'coreClientGetCSVPreview', id: e.data.id, preview });
+        return;
+
       case 'clientCoreDeleteCellValues':
         await core.deleteCellValues(e.data.selection, e.data.cursor);
         return;

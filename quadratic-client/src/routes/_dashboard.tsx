@@ -1,4 +1,3 @@
-import initRustClient from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { CSVImportSettings } from '@/app/ui/components/CSVImportSettings';
 import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/auth';
 import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
@@ -116,9 +115,6 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
       if (status >= 400 && status < 500) throw new Response('4xx level error', { status });
       throw error;
     });
-
-  // Initialize Rust client
-  await initRustClient();
 
   return { teams, userMakingRequest, eduStatus, activeTeam };
 };

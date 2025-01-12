@@ -1,4 +1,4 @@
-use quadratic_core::{controller::GridController, sheet_offsets::SheetOffsets};
+use quadratic_core::sheet_offsets::SheetOffsets;
 use wasm_bindgen::prelude::*;
 
 pub use quadratic_core::a1::js_selection::JsSelection;
@@ -25,25 +25,6 @@ impl SheetOffsetsWasm {
     #[wasm_bindgen(js_name = "empty")]
     pub fn new_sheet_offsets() -> SheetOffsets {
         SheetOffsets::default()
-    }
-}
-
-#[wasm_bindgen]
-pub struct GridControllerWasm {}
-
-#[wasm_bindgen]
-impl GridControllerWasm {
-    #[wasm_bindgen(js_name = "getCSVPreview")]
-    pub fn js_get_csv_preview(
-        file: Vec<u8>,
-        max_rows: u32,
-        delimiter: Option<u8>,
-    ) -> Result<JsValue, JsValue> {
-        let preview = GridController::get_csv_preview(file, max_rows, delimiter);
-        match preview {
-            Ok(preview) => Ok(serde_wasm_bindgen::to_value(&preview)?),
-            Err(e) => Err(JsValue::from_str(&e.to_string())),
-        }
     }
 }
 

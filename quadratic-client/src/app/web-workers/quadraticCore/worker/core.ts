@@ -38,6 +38,7 @@ import type {
 import type {
   ClientCoreFindNextColumnForRect,
   ClientCoreFindNextRowForRect,
+  ClientCoreGetCSVPreview,
   ClientCoreImportFile,
   ClientCoreLoad,
   ClientCoreMoveCells,
@@ -526,6 +527,18 @@ class Core {
           }
         });
       });
+    }
+  }
+
+  async getCSVPreview({ file, maxRows, delimiter }: ClientCoreGetCSVPreview): Promise<string[][] | undefined> {
+    try {
+      await initCore();
+      return GridController.getCSVPreview(new Uint8Array(file), maxRows, delimiter);
+    } catch (error: unknown) {
+      console.error(error);
+      reportError(error);
+      Sentry.captureException(error);
+      return undefined;
     }
   }
 

@@ -1,4 +1,4 @@
-import { GridControllerWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { filesImportSettingsAtom } from '@/dashboard/atoms/filesImportSettingsAtom';
 import {
   AlertDialog,
@@ -85,8 +85,14 @@ export const CSVImportSettings = () => {
         const delimiter = csvDelimiter === 'custom' ? customCsvDelimiter.charCodeAt(0) : csvDelimiter.charCodeAt(0);
         if (isNaN(delimiter)) return;
 
-        const arrayBuffer = await csvFile.arrayBuffer();
-        const preview = GridControllerWasm.getCSVPreview(new Uint8Array(arrayBuffer), DEFAULT_MAX_ROWS, delimiter);
+        const file = await csvFile.arrayBuffer();
+
+        quadraticCore.initWorker();
+        const preview = await quadraticCore.getCSVPreview({
+          file,
+          maxRows: DEFAULT_MAX_ROWS,
+          delimiter,
+        });
 
         if (!abortSignal.aborted) {
           setCsvPreview(preview);
