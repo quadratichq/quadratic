@@ -1,9 +1,9 @@
 import type { AIModel, AIProviders } from 'quadratic-shared/typesAndSchemasAI';
 
-export const DEFAULT_MODEL: AIModel = 'claude-3-5-sonnet-20241022';
+export const DEFAULT_MODEL: AIModel = 'anthropic.claude-3-5-sonnet-20241022-v2:0';
 
 // updating this will force the model to be reset to the default model in local storage
-export const DEFAULT_MODEL_VERSION = 1;
+export const DEFAULT_MODEL_VERSION = 2;
 
 export const MODEL_OPTIONS: {
   [key in AIModel]: {
