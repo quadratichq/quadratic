@@ -108,7 +108,6 @@ export class CellsFills extends Container {
   private drawCells = () => {
     this.cellsContainer.removeChildren();
     this.cells.forEach((fill) => {
-      console.log(fill)
       const sprite = this.cellsContainer.addChild(new Sprite(Texture.WHITE)) as SpriteBounds;
       sprite.tint = this.getColor(fill.color);
       const screen = this.sheet.getScreenRectangle(Number(fill.x), Number(fill.y), fill.w, fill.h);
