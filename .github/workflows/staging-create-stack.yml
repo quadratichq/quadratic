@@ -80,9 +80,7 @@ jobs:
           # Sanitize branch name for DNS
           BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
           SANITIZED_BRANCH_NAME=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/-\+/-/g' | sed 's/^-\|-$//')
-
           echo "SubDomainName=${SANITIZED_BRANCH_NAME}" >> $GITHUB_OUTPUT
-          echo "ImageTag=pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
 
       - name: Create Stack
         id: create-stack
@@ -91,8 +89,8 @@ jobs:
           name: ${{ env.STACK_NAME }}
           template: infra/aws-cloudformation/quadratic-preview.yml
           parameter-overrides: >-
-            SubDomainName=${{ steps.params.outputs.SubDomainName }}
-            ImageTag=${{ steps.params.outputs.ImageTag }}
+            SubDomainName=${{ steps.params.outputs.SubDomainName }},
+            ImageTag=${{ env.STACK_NAME }}
           capabilities: CAPABILITY_IAM
           no-fail-on-empty-changeset: "1"
           disable-rollback: false
