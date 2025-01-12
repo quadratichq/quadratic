@@ -8,6 +8,7 @@ type FileData = Parameters<typeof dbClient.file.create>[0]['data'];
 type TeamData = Parameters<typeof dbClient.team.create>[0]['data'];
 type ConnectionData = Parameters<typeof dbClient.connection.create>[0]['data'];
 type ConnectionType = ConnectionData['type'];
+type AnalyticsAIChatData = Parameters<typeof dbClient.analyticsAIChat.create>[0]['data'];
 
 /**
  *
@@ -162,6 +163,28 @@ function getDefaultConnectionTypeDetails(type: ConnectionType) {
 
 /**
  *
+ * Creating an Analytics AI chat
+ *
+ */
+
+export async function createAIChat(data: Partial<AnalyticsAIChatData>) {
+  const user = await createUser({ auth0Id: 'user' });
+  const team = await createTeam({ users: [{ userId: user.id, role: 'OWNER' }] });
+  const file = await createFile({ data: { name: 'Untitled', ownerTeamId: team.id, creatorUserId: user.id } });
+  const aiChat = await dbClient.analyticsAIChat.create({
+    data: {
+      userId: user.id,
+      fileId: file.id,
+      source: 'AIAnalyst',
+      s3Key: '',
+      chatId: data.chatId ?? randomUUID(),
+    },
+  });
+  return aiChat;
+}
+
+/**
+ *
  * Single function for clearing the database. Not every test will use all these
  * tables, but it's easier to clear everything in one reusable function and
  * ensure things are deleted in the proper order.
@@ -169,6 +192,8 @@ function getDefaultConnectionTypeDetails(type: ConnectionType) {
  */
 export async function clearDb() {
   await dbClient.$transaction([
+    dbClient.analyticsAIChatMessage.deleteMany(),
+    dbClient.analyticsAIChat.deleteMany(),
     dbClient.fileCheckpoint.deleteMany(),
     dbClient.fileInvite.deleteMany(),
     dbClient.userFileRole.deleteMany(),

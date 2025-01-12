@@ -1,0 +1,123 @@
+import request from 'supertest';
+import { app } from '../../app';
+import dbClient from '../../dbClient';
+import { clearDb, createAIChat } from '../../tests/testDataGenerator';
+
+let chatId: number;
+const chatUuid = '00000000-0000-0000-0000-000000000000';
+const model = 'anthropic.claude-3-5-sonnet-20241022-v2:0';
+const messageIndex = 1;
+
+const payload = {
+  chatId: chatUuid,
+  model,
+  messageIndex,
+};
+
+beforeAll(async () => {
+  const aiChat = await createAIChat({
+    chatId: chatUuid,
+  });
+  chatId = aiChat.id;
+});
+
+afterAll(clearDb);
+
+describe('POST /v0/ai/feedback', () => {
+  describe('an unauthorized user', () => {
+    it('responds with a 401', async () => {
+      await request(app)
+        .post('/v0/ai/feedback')
+        .send({
+          ...payload,
+          like: true,
+        })
+        .set('Authorization', `Bearer InvalidToken user`)
+        .expect(401);
+    });
+  });
+
+  describe('saves the feedback', () => {
+    it('saves a like', async () => {
+      let message = await dbClient.analyticsAIChatMessage.findUnique({
+        where: {
+          chatId_messageIndex: {
+            chatId,
+            messageIndex,
+          },
+        },
+      });
+      expect(message?.like).toBe(undefined);
+
+      // create a like
+      await request(app)
+        .post('/v0/ai/feedback')
+        .send({
+          ...payload,
+          like: true,
+        })
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken user`)
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.message).toBe('Feedback received');
+        });
+      message = await dbClient.analyticsAIChatMessage.findUnique({
+        where: {
+          chatId_messageIndex: {
+            chatId,
+            messageIndex,
+          },
+        },
+      });
+      expect(message).toBeDefined();
+      expect(message?.like).toBe(true);
+
+      // set to dislike
+      await request(app)
+        .post('/v0/ai/feedback')
+        .send({
+          ...payload,
+          like: false,
+        })
+        .set('Authorization', `Bearer ValidToken user`)
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.message).toBe('Feedback received');
+        });
+      message = await dbClient.analyticsAIChatMessage.findUnique({
+        where: {
+          chatId_messageIndex: {
+            chatId,
+            messageIndex,
+          },
+        },
+      });
+      expect(message).toBeDefined();
+      expect(message?.like).toBe(false);
+
+      // unset like
+      await request(app)
+        .post('/v0/ai/feedback')
+        .send({
+          ...payload,
+          like: null,
+        })
+        .set('Authorization', `Bearer ValidToken user`)
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.message).toBe('Feedback received');
+        });
+      message = await dbClient.analyticsAIChatMessage.findUnique({
+        where: {
+          chatId_messageIndex: {
+            chatId,
+            messageIndex,
+          },
+        },
+      });
+      expect(message).toBeDefined();
+      expect(message?.like).toBe(null);
+    });
+  });
+});
