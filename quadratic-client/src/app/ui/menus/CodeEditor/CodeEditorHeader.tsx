@@ -9,7 +9,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { codeCellIsAConnection, getCodeCell, getConnectionUuid, getLanguage } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
-import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { getTableNameFromPos, xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
@@ -63,10 +63,20 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
   const { panelPosition, setPanelPosition } = useCodeEditorPanelData();
   const connectionsFetcher = useConnectionsFetcher();
 
-  const a1Pos = useMemo(
-    () => xyToA1(codeCellState.pos.x, codeCellState.pos.y),
-    [codeCellState.pos.x, codeCellState.pos.y]
-  );
+  const a1Pos = useMemo(() => {
+    const pos = xyToA1(codeCellState.pos.x, codeCellState.pos.y);
+    const tableName = getTableNameFromPos(
+      sheets.a1Context,
+      codeCellState.sheetId,
+      codeCellState.pos.x,
+      codeCellState.pos.y
+    );
+    if (tableName) {
+      return `${tableName} (${pos})`;
+    } else {
+      return `Cell ${pos}`;
+    }
+  }, [codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId]);
 
   // Get the connection name (it's possible the user won't have access to it
   // because they're in a file they have access to but not the team — or
@@ -217,7 +227,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
 
       <div className="mx-2 flex flex-col truncate">
         <div className="text-sm font-medium leading-4">
-          {`Cell ${a1Pos}`}
+          {a1Pos}
           {currentCodeEditorCellIsNotInActiveSheet && (
             <span className="ml-1 min-w-0 truncate">- {currentSheetNameOfActiveCodeEditorCell}</span>
           )}

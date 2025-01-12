@@ -7,8 +7,6 @@ use serde::{Deserialize, Serialize};
 use super::format_update::FormatUpdate;
 use crate::grid::{CellAlign, CellVerticalAlign, CellWrap, NumericFormat};
 
-// TODO: consider making `bold`, `italic`, `underline`, and `strikethrough` into
-//       just `bool` instead of `Option<bool>`
 #[derive(Default, Serialize, Deserialize, Debug, Clone, Eq, PartialEq, ts_rs::TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub struct Format {

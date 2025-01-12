@@ -9,7 +9,7 @@ pub mod column_header;
 pub mod display_value;
 pub mod row;
 pub mod sort;
-pub mod table_formats;
+
 use std::num::NonZeroU32;
 
 use crate::cellvalue::Import;
@@ -25,7 +25,6 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use sort::DataTableSort;
 use strum_macros::Display;
-use table_formats::TableFormats;
 
 #[cfg(test)]
 use tabled::{
@@ -33,7 +32,7 @@ use tabled::{
     settings::{Color, Modify, Style},
 };
 
-use super::{CodeRunOld, CodeRunResult, Grid};
+use super::{CodeRunOld, CodeRunResult, Grid, SheetFormatting};
 
 impl Grid {
     /// Returns a unique name for the data table, taking into account its
@@ -121,7 +120,7 @@ pub struct DataTable {
     pub spill_error: bool,
     pub last_modified: DateTime<Utc>,
     pub alternating_colors: bool,
-    pub formats: TableFormats,
+    pub formats: SheetFormatting,
 
     // width and height of the chart (html or image) output
     pub chart_pixel_output: Option<(f32, f32)>,

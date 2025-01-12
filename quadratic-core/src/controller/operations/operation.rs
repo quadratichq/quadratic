@@ -76,6 +76,10 @@ pub enum Operation {
         show_header: Option<bool>,
         show_ui: Option<DataTableShowUI>,
     },
+    DataTableFormats {
+        sheet_pos: SheetPos,
+        formats: SheetFormatUpdates,
+    },
     SortDataTable {
         sheet_pos: SheetPos,
         sort: Option<Vec<DataTableSort>>,
@@ -333,6 +337,13 @@ impl fmt::Display for Operation {
                     fmt,
                     "DataTableMeta {{ sheet_pos: {} name: {:?} alternating_colors: {:?} columns: {:?} show_header: {:?} show_ui: {:?} }}",
                     sheet_pos, name, alternating_colors, columns, show_header, show_ui
+                )
+            }
+            Operation::DataTableFormats { sheet_pos, formats } => {
+                write!(
+                    fmt,
+                    "DataTableFormat {{ sheet_pos: {}, formats: {:?} }}",
+                    sheet_pos, formats
                 )
             }
             Operation::SortDataTable { sheet_pos, sort } => {

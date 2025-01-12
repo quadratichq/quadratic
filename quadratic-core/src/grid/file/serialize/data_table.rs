@@ -17,7 +17,6 @@ use crate::{
             column_header::DataTableColumnHeader,
             sort::{DataTableSort, SortDirection},
         },
-        table_formats::TableFormats,
         CellsAccessed, CodeRun, ColumnData, DataTable, DataTableKind, SheetId,
     },
     ArraySize, Axis, Pos, RunError, RunErrorMsg, Value,
@@ -26,6 +25,7 @@ use crate::{
 use super::{
     cell_value::{export_cell_value, import_cell_value},
     current,
+    formats::{export_formats, import_formats},
     // format::{export_format, import_format},
 };
 
@@ -292,37 +292,6 @@ pub(crate) fn import_code_run_builder(code_run: current::CodeRunSchema) -> Resul
     Ok(code_run)
 }
 
-// pub(crate) fn import_formats(
-//     column: HashMap<i64, current::ColumnRepeatSchema<current::FormatSchema>>,
-// ) -> ColumnData<SameValue<Format>> {
-//     let mut data = ColumnData::new();
-//     column.into_iter().for_each(|(start, schema)| {
-//         let value = import_format(schema.value);
-//         let len = schema.len as usize;
-//         data.insert_block(start, len, value);
-//     });
-//     data
-// }
-
-// fn import_data_table_formats(formats: current::TableFormatsSchema) -> TableFormats {
-//     let table = formats.table.map(import_format);
-//     let columns: HashMap<usize, Format> = formats
-//         .columns
-//         .into_iter()
-//         .map(|(key, format)| (key as usize, import_format(format)))
-//         .collect();
-//     let cells: HashMap<usize, ColumnData<SameValue<Format>>> = formats
-//         .cells
-//         .into_iter()
-//         .map(|(key, formats)| (key as usize, import_formats(formats)))
-//         .collect();
-//     TableFormats {
-//         table,
-//         columns,
-//         cells,
-//     }
-// }
-
 pub(crate) fn import_data_table_builder(
     data_tables: Vec<(current::PosSchema, current::DataTableSchema)>,
 ) -> Result<IndexMap<Pos, DataTable>> {
@@ -392,10 +361,9 @@ pub(crate) fn import_data_table_builder(
             }),
             display_buffer: data_table.display_buffer,
             alternating_colors: data_table.alternating_colors,
-            // formats: import_data_table_formats(data_table.formats),
+            formats: import_formats(data_table.formats),
             chart_pixel_output: data_table.chart_pixel_output,
             chart_output: data_table.chart_output,
-            formats: Default::default(),
         };
 
         new_data_tables.insert(Pos { x: pos.x, y: pos.y }, data_table);
@@ -515,38 +483,6 @@ pub(crate) fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
     }
 }
 
-// pub(crate) fn export_formats(
-//     formats: ColumnData<SameValue<Format>>,
-// ) -> HashMap<i64, current::ColumnRepeatSchema<current::FormatSchema>> {
-//     formats
-//         .into_blocks()
-//         .filter_map(|block| {
-//             let len = block.len() as u32;
-//             if let Some(format) = export_format(block.content.value) {
-//                 Some((block.y, current::ColumnRepeatSchema { value: format, len }))
-//             } else {
-//                 None
-//             }
-//         })
-//         .collect()
-// }
-
-// pub(crate) fn export_data_table_formats(formats: TableFormats) -> current::TableFormatsSchema {
-//     current::TableFormatsSchema {
-//         table: formats.table.and_then(export_format),
-//         columns: formats
-//             .columns
-//             .into_iter()
-//             .filter_map(|(key, format)| export_format(format).map(|f| (key as i64, f)))
-//             .collect(),
-//         cells: formats
-//             .cells
-//             .into_iter()
-//             .map(|(key, formats)| (key as i64, export_formats(formats)))
-//             .collect(),
-//     }
-// }
-
 pub(crate) fn export_data_tables(
     data_tables: IndexMap<Pos, DataTable>,
 ) -> Vec<(current::PosSchema, current::DataTableSchema)> {
@@ -626,8 +562,7 @@ pub(crate) fn export_data_tables(
                 spill_error: data_table.spill_error,
                 value,
                 alternating_colors: data_table.alternating_colors,
-                // formats: export_data_table_formats(data_table.formats),
-                formats: Default::default(),
+                formats: export_formats(data_table.formats),
                 chart_pixel_output: data_table.chart_pixel_output,
                 chart_output: data_table.chart_output,
             };

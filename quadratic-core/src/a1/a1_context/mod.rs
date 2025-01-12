@@ -12,7 +12,7 @@ pub mod wasm_bindings;
 pub use sheet_map::*;
 pub use table_map::*;
 
-use crate::grid::SheetId;
+use crate::{grid::SheetId, SheetPos};
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct A1Context {
@@ -47,6 +47,10 @@ impl A1Context {
             .iter()
             .map(|table| table.table_name.clone())
             .collect()
+    }
+
+    pub fn table_from_pos(&self, sheet_pos: SheetPos) -> Option<&TableMapEntry> {
+        self.table_map.table_from_pos(sheet_pos)
     }
 
     /// Creates an A1Context for testing.

@@ -225,7 +225,7 @@ impl TableRef {
 
     /// Tries to convert the TableRef to a Pos.
     pub fn try_to_pos(&self, context: &A1Context) -> Option<Pos> {
-        let range = self.convert_to_ref_range_bounds(0, context)?;
+        let range = self.convert_to_ref_range_bounds(0, false, context)?;
         range.try_to_pos()
     }
 }
@@ -398,7 +398,7 @@ mod tests {
             totals: false,
         };
 
-        let ranges = table_ref.convert_to_ref_range_bounds(1, &context);
+        let ranges = table_ref.convert_to_ref_range_bounds(1, false, &context);
         assert_eq!(ranges, Some(RefRangeBounds::test_a1("B2:B3")));
 
         // Test case 2: Column range with specific rows
@@ -411,7 +411,7 @@ mod tests {
             totals: false,
         };
 
-        let ranges = table_ref.convert_to_ref_range_bounds(1, &context);
+        let ranges = table_ref.convert_to_ref_range_bounds(1, false, &context);
         assert_eq!(ranges, Some(RefRangeBounds::new_relative(1, 1, 3, 2)));
 
         // Test case 3: Column to end
@@ -424,7 +424,7 @@ mod tests {
             totals: false,
         };
 
-        let ranges = table_ref.convert_to_ref_range_bounds(2, &context);
+        let ranges = table_ref.convert_to_ref_range_bounds(2, false, &context);
         assert_eq!(ranges, Some(RefRangeBounds::new_relative(2, 2, 3, 2)));
     }
 

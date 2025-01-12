@@ -1,6 +1,6 @@
 //! Mutation methods that insert or delete columns and rows from a selection.
 
-use crate::a1::A1Context;
+use crate::a1::{A1Context, CellRefRange, TableRef};
 
 use super::A1Selection;
 
@@ -105,6 +105,18 @@ impl A1Selection {
         self.ranges.iter_mut().for_each(|range| {
             range.adjust_column_row_in_place(column, row, delta);
         });
+    }
+
+    /// Returns a vector of TableRef contained within the selection.
+    pub fn separate_table_ranges(&self) -> Vec<TableRef> {
+        let mut ranges = Vec::new();
+        for range in self.ranges.iter() {
+            match range {
+                CellRefRange::Table { range } => ranges.push(range.clone()),
+                CellRefRange::Sheet { .. } => (),
+            }
+        }
+        ranges
     }
 }
 

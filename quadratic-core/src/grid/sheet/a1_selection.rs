@@ -187,7 +187,7 @@ impl Sheet {
 
     pub fn table_ref_to_rect(&self, range: &TableRef) -> Option<Rect> {
         range
-            .convert_to_ref_range_bounds(1, &self.a1_context())
+            .convert_to_ref_range_bounds(1, false, &self.a1_context())
             .and_then(|range| range.to_rect())
     }
 
