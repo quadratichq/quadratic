@@ -455,12 +455,11 @@ impl GridController {
                                         },
                                     );
                                 } else {
-                                    let sheet_map = self.grid.sheet_name_id_map();
                                     code_cell.update_cell_references(
                                         delta_x,
                                         delta_y,
                                         &selection.sheet_id,
-                                        &sheet_map,
+                                        &context,
                                     );
                                 }
                             }

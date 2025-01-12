@@ -190,8 +190,10 @@ mod tests {
 
     #[test]
     fn test_invalid_sheet_name() {
+        let sheet_id = SheetId::test();
+        let context = A1Context::default();
         assert_eq!(
-            A1Selection::from_str("Sheet' 1'!A1", &SheetId::test(), &HashMap::new()),
+            A1Selection::parse("Sheet' 1'!A1", &sheet_id, &context),
             Err(A1Error::InvalidSheetName("Sheet' 1'!A1".to_string())),
         );
     }

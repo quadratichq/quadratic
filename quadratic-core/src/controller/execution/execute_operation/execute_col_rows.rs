@@ -125,9 +125,9 @@ impl GridController {
                                 }
                                 _ => {
                                     let mut new_code = code.clone();
-                                    let sheet_map = self.grid.sheet_name_id_map();
+                                    let context = self.grid.a1_context();
                                     new_code.adjust_code_cell_column_row(
-                                        column, row, delta, &sheet_id, &sheet_map,
+                                        column, row, delta, &sheet_id, &context,
                                     );
                                     new_code.code
                                 }
