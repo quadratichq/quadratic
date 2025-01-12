@@ -287,13 +287,13 @@ pub fn set_panic_hook() {
 }
 
 #[cfg(test)]
-pub(crate) fn assert_f64_approx_eq(expected: f64, actual: &str) {
+pub(crate) fn assert_f64_approx_eq(expected: f64, actual: f64, message: &str) {
     const EPSILON: f64 = 0.0001;
 
-    let actual = actual.parse::<f64>().unwrap();
     assert!(
         (expected - actual).abs() < EPSILON,
-        "expected {expected} but got {actual}",
+        "{}: expected {expected} but got {actual}",
+        message
     );
 }
 #[cfg(test)]

@@ -12,6 +12,12 @@ jobs:
   create_deployment:
     name: Create Deployment - Preview
     runs-on: blacksmith-2vcpu-ubuntu-2204
+    if: |
+      github.event.action == 'opened' || 
+      github.event.action == 'synchronize' || 
+      github.event.action == 'reopened' || 
+      (github.event.action == 'labeled' && startsWith(github.event.label.name, 'build:')) ||
+      (github.event.action == 'unlabeled' && startsWith(github.event.label.name, 'build:'))
     permissions:
       contents: read
       pull-requests: write
@@ -96,7 +102,6 @@ jobs:
   build_images:
     name: Build Images - Preview
     needs: create_deployment
-    if: (github.event.action != 'labeled' && github.event.action != 'unlabeled') || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && (startsWith(github.event.label.name, 'build:')))
     permissions:
       contents: read
       pull-requests: write
@@ -194,7 +199,6 @@ jobs:
           push: true
           tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}
           build-args: |
-            BUILDKIT_INLINE_CACHE=1
             BUILD_TIME=${{ steps.build-metadata.outputs.BUILD_TIME }}
             GIT_SHA_SHORT=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
             BRANCH_NAME=${{ steps.build-metadata.outputs.BRANCH_NAME }}
@@ -213,7 +217,6 @@ jobs:
           push: true
           tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}
           build-args: |
-            BUILDKIT_INLINE_CACHE=1
             BUILD_TIME=${{ steps.build-metadata.outputs.BUILD_TIME }}
             GIT_SHA_SHORT=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
             BRANCH_NAME=${{ steps.build-metadata.outputs.BRANCH_NAME }}
@@ -452,7 +455,7 @@ jobs:
       - name: Generate Deploy Metadata
         id: deploy-metadata
         run: |
-          echo "DEPLOY_TIME=$(date -u +'%B %d, %Y at %H:%M UTC')" >> $GITHUB_OUTPUT
+          echo "DEPLOY_TIME=$(date -u +'%b %d, %Y at %I:%M %p UTC')" >> $GITHUB_OUTPUT
 
       - name: Find Build & Deploy Images Comment
         uses: peter-evans/find-comment@v3

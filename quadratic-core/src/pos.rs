@@ -90,6 +90,24 @@ impl Pos {
         pos
     }
 
+    pub fn adjust_column_row_in_place(
+        &mut self,
+        column: Option<i64>,
+        row: Option<i64>,
+        delta: i64,
+    ) {
+        if let Some(column) = column {
+            if self.x >= column {
+                self.x = self.x.saturating_add(delta).max(1);
+            }
+        }
+        if let Some(row) = row {
+            if self.y >= row {
+                self.y = self.y.saturating_add(delta).max(1);
+            }
+        }
+    }
+
     /// Returns a new Pos with the minimum x and y values.
     pub fn min(self, other: Self) -> Self {
         Pos {
@@ -455,5 +473,32 @@ mod test {
         let pos1 = Pos::new(3, 3);
         let pos2 = Pos::new(3, 3);
         assert_eq!(pos1.max(pos2), Pos::new(3, 3));
+    }
+
+    #[test]
+    fn test_adjust_column_row() {
+        let mut pos = pos![B3];
+        pos.adjust_column_row_in_place(Some(2), None, 1);
+        assert_eq!(pos, pos![C3]);
+
+        let mut pos = pos![B3];
+        pos.adjust_column_row_in_place(None, Some(2), 1);
+        assert_eq!(pos, pos![B4]);
+
+        let mut pos = pos![B3];
+        pos.adjust_column_row_in_place(Some(3), None, 1);
+        assert_eq!(pos, pos![B3]);
+
+        let mut pos = pos![B3];
+        pos.adjust_column_row_in_place(None, Some(4), 1);
+        assert_eq!(pos, pos![B3]);
+
+        let mut pos = pos![B3];
+        pos.adjust_column_row_in_place(Some(1), None, -1);
+        assert_eq!(pos, pos![A3]);
+
+        let mut pos = pos![B3];
+        pos.adjust_column_row_in_place(None, Some(1), -1);
+        assert_eq!(pos, pos![B2]);
     }
 }

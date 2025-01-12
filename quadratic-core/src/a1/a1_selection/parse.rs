@@ -20,7 +20,7 @@ impl A1Selection {
         let mut in_quotes = false;
         let mut in_table = 0;
 
-        for (i, c) in a1.chars().enumerate() {
+        for (i, c) in a1.trim().chars().enumerate() {
             match c {
                 '[' => {
                     if !in_quotes && i != 0 && a1.chars().nth(i - 1).unwrap() != '\'' {
@@ -36,6 +36,9 @@ impl A1Selection {
                 }
                 '\'' => {
                     if in_table == 0 {
+                        if !in_quotes && i > 0 {
+                            return Err(A1Error::InvalidSheetName(a1.to_string()));
+                        }
                         in_quotes = !in_quotes;
                         current_segment.push(c);
                     }
@@ -182,6 +185,14 @@ mod tests {
         assert_eq!(
             A1Selection::parse("'Second'!A1", &sheet_id, &context),
             Ok(A1Selection::from_xy(1, 1, sheet_id2)),
+        );
+    }
+
+    #[test]
+    fn test_invalid_sheet_name() {
+        assert_eq!(
+            A1Selection::from_str("Sheet' 1'!A1", &SheetId::test(), &HashMap::new()),
+            Err(A1Error::InvalidSheetName("Sheet' 1'!A1".to_string())),
         );
     }
 

@@ -1,4 +1,5 @@
 use bigdecimal::{BigDecimal, ToPrimitive, Zero};
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use itertools::Itertools;
 
 use super::{CellValue, Duration, IsBlank, Value};
@@ -214,6 +215,57 @@ impl<'a> TryFrom<&'a CellValue> for bool {
     }
 }
 
+impl<'a> TryFrom<&'a CellValue> for NaiveDateTime {
+    type Error = RunErrorMsg;
+
+    fn try_from(value: &'a CellValue) -> Result<Self, Self::Error> {
+        match value {
+            CellValue::DateTime(naive_date_time) => Ok(*naive_date_time),
+            CellValue::Date(naive_date) => Ok((*naive_date).into()),
+            _ => Err(RunErrorMsg::Expected {
+                expected: "date time".into(),
+                got: Some(value.type_name().into()),
+            }),
+        }
+    }
+}
+impl<'a> TryFrom<&'a CellValue> for NaiveDate {
+    type Error = RunErrorMsg;
+
+    fn try_from(value: &'a CellValue) -> Result<Self, Self::Error> {
+        Ok(NaiveDateTime::try_from(value)?.date())
+    }
+}
+impl<'a> TryFrom<&'a CellValue> for NaiveTime {
+    type Error = RunErrorMsg;
+
+    fn try_from(value: &'a CellValue) -> Result<Self, Self::Error> {
+        match value {
+            CellValue::DateTime(naive_date_time) => Ok(naive_date_time.time()),
+            CellValue::Date(_) => Ok(NaiveTime::MIN),
+            CellValue::Time(naive_time) => Ok(*naive_time),
+            _ => Err(RunErrorMsg::Expected {
+                expected: "time".into(),
+                got: Some(value.type_name().into()),
+            }),
+        }
+    }
+}
+impl<'a> TryFrom<&'a CellValue> for Duration {
+    type Error = RunErrorMsg;
+
+    fn try_from(value: &'a CellValue) -> Result<Self, Self::Error> {
+        match value {
+            CellValue::Number(big_decimal) => Ok(Duration::from_days_bigdec(big_decimal)),
+            CellValue::Duration(duration) => Ok(*duration),
+            _ => Err(RunErrorMsg::Expected {
+                expected: "duration".into(),
+                got: Some(value.type_name().into()),
+            }),
+        }
+    }
+}
+
 impl TryFrom<CellValue> for String {
     type Error = RunErrorMsg;
 
@@ -360,7 +412,7 @@ impl CoerceInto for Spanned<Value> {
 
 #[cfg(test)]
 mod test {
-    use crate::CellValue;
+    use super::*;
     use serial_test::parallel;
 
     #[test]
@@ -369,5 +421,58 @@ mod test {
         assert_eq!(CellValue::from("$1.22"), CellValue::Text("$1.22".into()));
 
         assert_eq!(CellValue::from("10%"), CellValue::Text("10%".into()));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_datetime_conversions() {
+        let time = NaiveTime::from_hms_opt(3, 15, 6).unwrap();
+        let date = NaiveDate::from_ymd_opt(2010, 04, 01).unwrap();
+        let datetime = NaiveDateTime::new(date, time);
+        let duration = Duration::from_days(30.5);
+
+        let datetime_value = CellValue::from(datetime);
+        let date_value = CellValue::from(date);
+        let time_value = CellValue::from(time);
+        let duration_value = CellValue::from(duration);
+        let number_value = CellValue::from(30.5);
+        let string_value = CellValue::from("hi!");
+
+        let midnight = NaiveTime::from_hms_opt(0, 0, 0).unwrap();
+
+        // Test conversion to datetime
+        assert_eq!(
+            NaiveDateTime::new(date, midnight),
+            NaiveDateTime::try_from(&date_value).unwrap()
+        );
+        NaiveDateTime::try_from(&time_value).unwrap_err();
+        assert_eq!(datetime, NaiveDateTime::try_from(&datetime_value).unwrap());
+        NaiveDateTime::try_from(&duration_value).unwrap_err();
+        NaiveDateTime::try_from(&number_value).unwrap_err();
+        NaiveDateTime::try_from(&string_value).unwrap_err();
+
+        // Test conversion to date
+        assert_eq!(date, NaiveDate::try_from(&date_value).unwrap());
+        NaiveDate::try_from(&time_value).unwrap_err();
+        assert_eq!(date, NaiveDate::try_from(&datetime_value).unwrap());
+        NaiveDate::try_from(&duration_value).unwrap_err();
+        NaiveDate::try_from(&number_value).unwrap_err();
+        NaiveDate::try_from(&string_value).unwrap_err();
+
+        // Test conversion to time
+        assert_eq!(midnight, NaiveTime::try_from(&date_value).unwrap());
+        assert_eq!(time, NaiveTime::try_from(&time_value).unwrap());
+        assert_eq!(time, NaiveTime::try_from(&datetime_value).unwrap());
+        NaiveTime::try_from(&duration_value).unwrap_err();
+        NaiveTime::try_from(&number_value).unwrap_err();
+        NaiveTime::try_from(&string_value).unwrap_err();
+
+        // Test conversion to duration
+        Duration::try_from(&date_value).unwrap_err();
+        Duration::try_from(&time_value).unwrap_err();
+        Duration::try_from(&datetime_value).unwrap_err();
+        assert_eq!(duration, Duration::try_from(&duration_value).unwrap());
+        assert_eq!(duration, Duration::try_from(&number_value).unwrap());
+        Duration::try_from(&string_value).unwrap_err();
     }
 }
