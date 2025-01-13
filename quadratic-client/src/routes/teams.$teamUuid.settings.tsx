@@ -135,8 +135,7 @@ export const Component = () => {
                 className="rounded border border-border px-3 py-2 shadow-sm"
               />
               <p className="mt-2 text-sm text-muted-foreground">
-                When using AI features your data is sent to our providers, all of which have a zero-data data retention
-                policy. These include:
+                When using AI features your data is sent to our AI providers:
               </p>
               <ul className="mt-2 text-sm text-muted-foreground">
                 {['OpenAI', 'Anthropic', 'AWS Bedrock'].map((item, i) => (
