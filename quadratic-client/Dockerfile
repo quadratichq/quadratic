@@ -137,10 +137,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy updateAlertVersion.json
 COPY updateAlertVersion.json .
 
-# Copy package.json and package-lock.json
-COPY package.json .
-COPY package-lock.json .
-
 # Copy all package.json files
 COPY package.json .
 COPY package-lock.json .
