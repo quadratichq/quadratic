@@ -363,11 +363,11 @@ export const apiClient = {
   },
 
   ai: {
-    feedback(body: ApiTypes['/v0/ai/feedback.POST.request']) {
+    feedback(body: ApiTypes['/v0/ai/feedback.PATCH.request']) {
       return fetchFromApi(
         `/v0/ai/feedback`,
-        { method: 'POST', body: JSON.stringify(body) },
-        ApiSchemas['/v0/ai/feedback.POST.response']
+        { method: 'PATCH', body: JSON.stringify(body) },
+        ApiSchemas['/v0/ai/feedback.PATCH.response']
       );
     },
   },

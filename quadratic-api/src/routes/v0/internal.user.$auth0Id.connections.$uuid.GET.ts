@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import z from 'zod';
 import dbClient from '../../dbClient';
 import { validateM2MAuth } from '../../internal/validateM2MAuth';

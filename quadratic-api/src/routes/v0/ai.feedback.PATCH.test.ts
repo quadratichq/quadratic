@@ -23,15 +23,15 @@ beforeAll(async () => {
 afterAll(clearDb);
 
 describe('POST /v0/ai/feedback', () => {
-  describe('an unauthorized user', () => {
-    it('responds with a 401', async () => {
+  describe('authentication', () => {
+    it('responds with a 401 when the token is invalid', async () => {
       await request(app)
-        .post('/v0/ai/feedback')
+        .patch('/v0/ai/feedback')
+        .set('Authorization', `Bearer InvalidToken user`)
         .send({
           ...payload,
           like: true,
         })
-        .set('Authorization', `Bearer InvalidToken user`)
         .expect(401);
     });
   });
@@ -51,13 +51,12 @@ describe('POST /v0/ai/feedback', () => {
 
       // create a like
       await request(app)
-        .post('/v0/ai/feedback')
+        .patch('/v0/ai/feedback')
+        .set('Authorization', `Bearer ValidToken user`)
         .send({
           ...payload,
           like: true,
         })
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken user`)
         .expect(200)
         .expect(({ body }) => {
           expect(body.message).toBe('Feedback received');
@@ -75,12 +74,12 @@ describe('POST /v0/ai/feedback', () => {
 
       // set to dislike
       await request(app)
-        .post('/v0/ai/feedback')
+        .patch('/v0/ai/feedback')
+        .set('Authorization', `Bearer ValidToken user`)
         .send({
           ...payload,
           like: false,
         })
-        .set('Authorization', `Bearer ValidToken user`)
         .expect(200)
         .expect(({ body }) => {
           expect(body.message).toBe('Feedback received');
@@ -98,12 +97,12 @@ describe('POST /v0/ai/feedback', () => {
 
       // unset like
       await request(app)
-        .post('/v0/ai/feedback')
+        .patch('/v0/ai/feedback')
+        .set('Authorization', `Bearer ValidToken user`)
         .send({
           ...payload,
           like: null,
         })
-        .set('Authorization', `Bearer ValidToken user`)
         .expect(200)
         .expect(({ body }) => {
           expect(body.message).toBe('Feedback received');

@@ -29,7 +29,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   } = req;
   const {
     userMakingRequest: { permissions },
-    team: { clientDataKv: exisitingClientDataKv },
+    team: { clientDataKv: existingClientDataKv },
   } = await getTeam({ uuid, userId });
 
   // Can they make the edits they’re trying to make?
@@ -40,8 +40,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
     throw new ApiError(403, 'User does not have permission to edit this team’s settings.');
   }
 
-  // Validate exisiting data in the db
-  const validatedExisitingClientDataKv = validateClientDataKv(exisitingClientDataKv);
+  // Validate existing data in the db
+  const validatedExistingClientDataKv = validateClientDataKv(existingClientDataKv);
 
   // Update the team with supplied data
   const newTeam = await dbClient.team.update({
@@ -50,7 +50,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
     },
     data: {
       ...(name ? { name } : {}),
-      ...(clientDataKv ? { clientDataKv: { ...validatedExisitingClientDataKv, ...clientDataKv } } : {}),
+      ...(clientDataKv ? { clientDataKv: { ...validatedExistingClientDataKv, ...clientDataKv } } : {}),
       ...(settings ? { settingAnalyticsAi: settings.analyticsAi } : {}),
     },
   });

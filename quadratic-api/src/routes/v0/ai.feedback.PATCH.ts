@@ -10,10 +10,10 @@ import type { RequestWithUser } from '../../types/Request';
 export default [validateAccessToken, handler];
 
 const schema = z.object({
-  body: ApiSchemas['/v0/ai/feedback.POST.request'],
+  body: ApiSchemas['/v0/ai/feedback.PATCH.request'],
 });
 
-async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/feedback.POST.response']>) {
+async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/feedback.PATCH.response']>) {
   const {
     body: { chatId, messageIndex, like },
   } = parseRequest(req, schema);

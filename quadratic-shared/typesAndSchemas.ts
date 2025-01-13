@@ -423,12 +423,12 @@ export const ApiSchemas = {
   '/v0/ai/chat.POST.request': AIRequestBodySchema,
   '/v0/ai/chat.POST.response': AIMessagePromptSchema,
 
-  '/v0/ai/feedback.POST.request': z.object({
+  '/v0/ai/feedback.PATCH.request': z.object({
     chatId: z.string().uuid(),
     messageIndex: z.number(),
     like: z.boolean().nullable(),
   }),
-  '/v0/ai/feedback.POST.response': z.object({
+  '/v0/ai/feedback.PATCH.response': z.object({
     message: z.string(),
   }),
 };
