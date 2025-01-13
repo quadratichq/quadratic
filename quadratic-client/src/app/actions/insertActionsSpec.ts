@@ -1,6 +1,7 @@
 import { Action } from '@/app/actions/actions';
 import { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { FILE_INPUT_ID } from '@/app/gridGL/HTMLGrid/GridFileInput';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import { SNIPPET_JS_API, SNIPPET_JS_CHART } from '@/app/ui/menus/CodeEditor/snippetsJS';
@@ -31,6 +32,7 @@ type InsertActionSpec = Pick<
   | Action.RemoveInsertedCells
   | Action.InsertToday
   | Action.InsertTodayTime
+  | Action.InsertFile
 >;
 
 export const insertActionsSpec: InsertActionSpec = {
@@ -142,6 +144,16 @@ export const insertActionsSpec: InsertActionSpec = {
           initialCode: SNIPPET_JS_CHART,
         },
       }));
+    },
+  },
+  [Action.InsertFile]: {
+    label: 'From file (CSV, Excel, or Parquet)',
+    labelVerbose: 'Insert file (CSV, Excel, or Parquet)',
+    run: () => {
+      const el = document.getElementById(FILE_INPUT_ID) as HTMLInputElement;
+      if (el) {
+        el.click();
+      }
     },
   },
   [Action.InsertApiRequestJavascript]: {
