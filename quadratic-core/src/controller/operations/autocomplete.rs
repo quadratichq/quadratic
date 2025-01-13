@@ -645,7 +645,13 @@ impl GridController {
             .filter_map(|(i, Pos { x, y })| {
                 if let Some((CellValue::Code(code_cell), original_pos)) = series.get_mut(i) {
                     if let Some(original_pos) = original_pos {
-                        code_cell.update_cell_references(x - original_pos.x, y - original_pos.y);
+                        let sheet_map = self.grid.sheet_name_id_map();
+                        code_cell.update_cell_references(
+                            x - original_pos.x,
+                            y - original_pos.y,
+                            &sheet_id,
+                            &sheet_map,
+                        );
                         original_pos.x = x;
                         original_pos.y = y;
                     }
