@@ -133,10 +133,6 @@ COPY --from=core-builder /quadratic/quadratic-client/src/app/quadratic-core/. ./
 COPY --from=ts-rust-types-builder /quadratic/quadratic-client/src/app/quadratic-core-types/. ./quadratic-client/src/app/quadratic-core-types
 COPY --from=rust-client-builder /quadratic/quadratic-client/src/app/quadratic-rust-client/. ./quadratic-client/src/app/quadratic-rust-client
 
-# Copy package.json and package-lock.json
-COPY package.json .
-COPY package-lock.json .
-
 # Copy all package.json files
 COPY package.json .
 COPY package-lock.json .
