@@ -167,7 +167,7 @@ function getDefaultConnectionTypeDetails(type: ConnectionType) {
  *
  */
 
-export async function createAIChat(data: Partial<AnalyticsAIChatData>) {
+export async function createAIChat(data: Partial<AnalyticsAIChatData> & { messageIndex: number }) {
   const user = await createUser({ auth0Id: 'user' });
   const team = await createTeam({ users: [{ userId: user.id, role: 'OWNER' }] });
   const file = await createFile({ data: { name: 'Untitled', ownerTeamId: team.id, creatorUserId: user.id } });
@@ -175,9 +175,15 @@ export async function createAIChat(data: Partial<AnalyticsAIChatData>) {
     data: {
       userId: user.id,
       fileId: file.id,
-      source: 'AIAnalyst',
-      s3Key: '',
       chatId: data.chatId ?? randomUUID(),
+      source: 'AIAnalyst',
+      messages: {
+        create: {
+          model: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
+          messageIndex: data.messageIndex,
+          s3Key: 'test-key',
+        },
+      },
     },
   });
   return aiChat;

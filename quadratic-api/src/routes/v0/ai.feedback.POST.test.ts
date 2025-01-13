@@ -5,18 +5,17 @@ import { clearDb, createAIChat } from '../../tests/testDataGenerator';
 
 let chatId: number;
 const chatUuid = '00000000-0000-0000-0000-000000000000';
-const model = 'anthropic.claude-3-5-sonnet-20241022-v2:0';
 const messageIndex = 1;
 
 const payload = {
   chatId: chatUuid,
-  model,
   messageIndex,
 };
 
 beforeAll(async () => {
   const aiChat = await createAIChat({
     chatId: chatUuid,
+    messageIndex,
   });
   chatId = aiChat.id;
 });
@@ -47,7 +46,8 @@ describe('POST /v0/ai/feedback', () => {
           },
         },
       });
-      expect(message?.like).toBe(undefined);
+      expect(message).toBeDefined();
+      expect(message?.like).toBe(null);
 
       // create a like
       await request(app)

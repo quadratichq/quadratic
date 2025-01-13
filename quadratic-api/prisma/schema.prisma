@@ -267,7 +267,6 @@ model AnalyticsAIChat {
     file        File                     @relation(fields: [fileId], references: [id])
     chatId      String                   @unique @map("chat_id")
     source      AIChatSource
-    s3Key       String                   @map("s3_key")
     messages    AnalyticsAIChatMessage[]
     createdDate DateTime                 @default(now()) @map("created_date")
     updatedDate DateTime                 @default(now()) @map("updated_date")
@@ -292,6 +291,7 @@ model AnalyticsAIChatMessage {
     chat          AnalyticsAIChat @relation(fields: [chatId], references: [id])
     model         String
     messageIndex  Int             @map("message_index")
+    s3Key         String          @map("s3_key")
     like          Boolean?
     undo          Boolean?
     codeRunError  String?         @map("code_run_error")

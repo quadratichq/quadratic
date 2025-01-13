@@ -425,7 +425,6 @@ export const ApiSchemas = {
 
   '/v0/ai/feedback.POST.request': z.object({
     chatId: z.string().uuid(),
-    model: z.string(),
     messageIndex: z.number(),
     like: z.boolean().nullable(),
   }),

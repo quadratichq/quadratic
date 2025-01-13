@@ -1,4 +1,5 @@
 import type { Response } from 'express';
+import { getLastUserPromptMessageIndex } from 'quadratic-shared/ai/helpers/message.helper';
 import {
   isAnthropicModel,
   isBedrockAnthropicModel,
@@ -19,6 +20,7 @@ import { getFile } from '../../middleware/getFile';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
+import { uploadFile } from '../../storage/storage';
 import type { RequestWithUser } from '../../types/Request';
 
 export default [validateAccessToken, ai_rate_limiter, userMiddleware, handler];
@@ -64,10 +66,22 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     file: { id: fileId, ownerTeam },
   } = await getFile({ uuid: fileUuid, userId });
 
-  console.log('ownerTeam', ownerTeam);
+  if (!ownerTeam.settingAnalyticsAi) {
+    return;
+  }
 
-  if (ownerTeam.settingAnalyticsAi) {
-    // todo(ayush): upload to s3 / file-storage
+  const jwt = req.header('Authorization');
+  if (!jwt) {
+    return;
+  }
+
+  try {
+    // key: <fileUuid>-<source>_<chatUuid>_<messageIndex>.json
+    const messageIndex = getLastUserPromptMessageIndex(args.messages);
+    const key = `${fileUuid}-${source}_${chatId.replace(/-/g, '_')}_${messageIndex}.json`;
+
+    const contents = Buffer.from(JSON.stringify(args)).toString('base64');
+    const response = await uploadFile(key, contents, jwt);
 
     await dbClient.analyticsAIChat.upsert({
       where: {
@@ -78,12 +92,26 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
         fileId,
         chatId,
         source,
-        s3Key: '',
+        messages: {
+          create: {
+            model,
+            messageIndex,
+            s3Key: response.key,
+          },
+        },
       },
       update: {
-        s3Key: '',
+        messages: {
+          create: {
+            model,
+            messageIndex,
+            s3Key: response.key,
+          },
+        },
         updatedDate: new Date(),
       },
     });
+  } catch (e) {
+    console.error(e);
   }
 }

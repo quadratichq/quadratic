@@ -15,31 +15,29 @@ const schema = z.object({
 
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/feedback.POST.response']>) {
   const {
-    body: { chatId, model, messageIndex, like },
+    body: { chatId, messageIndex, like },
   } = parseRequest(req, schema);
 
   const chat = await dbClient.analyticsAIChat.findUniqueOrThrow({
     where: { chatId },
-  });
-
-  await dbClient.analyticsAIChatMessage.upsert({
-    where: {
-      chatId_messageIndex: {
-        chatId: chat.id,
-        messageIndex,
-      },
-    },
-    update: {
-      like,
-    },
-    create: {
-      chat: {
-        connect: {
-          id: chat.id,
+    include: {
+      messages: {
+        where: {
+          messageIndex,
         },
       },
-      model,
-      messageIndex,
+    },
+  });
+  const message = chat.messages[0];
+  if (!message) {
+    return res.status(404).json({ message: 'Message not found' });
+  }
+
+  await dbClient.analyticsAIChatMessage.update({
+    where: {
+      id: message.id,
+    },
+    data: {
       like,
     },
   });

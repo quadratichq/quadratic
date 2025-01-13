@@ -8,7 +8,6 @@ CREATE TABLE "AnalyticsAIChat" (
     "file_id" INTEGER NOT NULL,
     "chat_id" TEXT NOT NULL,
     "source" "AIChatSource" NOT NULL,
-    "s3_key" TEXT NOT NULL,
     "created_date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -21,6 +20,7 @@ CREATE TABLE "AnalyticsAIChatMessage" (
     "chat_id" INTEGER NOT NULL,
     "model" TEXT NOT NULL,
     "message_index" INTEGER NOT NULL,
+    "s3_key" TEXT NOT NULL,
     "like" BOOLEAN,
     "undo" BOOLEAN,
     "code_run_error" TEXT,

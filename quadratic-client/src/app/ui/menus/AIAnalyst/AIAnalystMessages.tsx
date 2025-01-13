@@ -15,8 +15,7 @@ import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
-import type { AIMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
+import { getLastUserPromptMessageIndex } from 'quadratic-shared/ai/helpers/message.helper';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 
@@ -169,25 +168,13 @@ function FeedbackButtons() {
     ({ snapshot }) =>
       (like: boolean | null) => {
         const messages = snapshot.getLoadable(aiAnalystCurrentChatMessagesAtom).getValue();
-
-        const promptMessage = getPromptMessages(messages);
-        const promptMessageLength = promptMessage.length;
-        if (promptMessageLength === 0) return;
-
-        const lastAIPromptMessage = promptMessage
-          .reverse()
-          .find(
-            (message): message is AIMessagePrompt =>
-              message.role === 'assistant' && message.contextType === 'userPrompt'
-          );
-
-        if (!lastAIPromptMessage) return;
+        const messageIndex = getLastUserPromptMessageIndex(messages);
+        if (messageIndex < 0) return;
 
         const chatId = snapshot.getLoadable(aiAnalystCurrentChatAtom).getValue().id;
         apiClient.ai.feedback({
           chatId,
-          model: lastAIPromptMessage.model,
-          messageIndex: promptMessageLength,
+          messageIndex,
           like,
         });
       },
