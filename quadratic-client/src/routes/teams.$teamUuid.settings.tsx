@@ -3,6 +3,7 @@ import { SettingControl } from '@/dashboard/components/SettingControl';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { getActionUpdateTeam, type TeamAction } from '@/routes/teams.$teamUuid';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { CheckIcon } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { DOCUMENTATION_ANALYTICS_AI } from '@/shared/constants/urls';
@@ -115,23 +116,36 @@ export const Component = () => {
               Privacy
             </Type>
 
-            <SettingControl
-              label="Improve AI results"
-              description={
-                <>
-                  Help improve AI results by allowing Quadratic to store and analyze user prompts.{' '}
-                  <a href={DOCUMENTATION_ANALYTICS_AI} target="_blank" className="underline hover:text-primary">
-                    Learn more
-                  </a>
-                  .
-                </>
-              }
-              onCheckedChange={(checked) => {
-                handleUpdatePreference('analyticsAi', checked);
-              }}
-              checked={optimisticSettings.analyticsAi}
-              className="rounded border border-border p-3 shadow-sm"
-            />
+            <div>
+              <SettingControl
+                label="Improve AI results"
+                description={
+                  <>
+                    Help improve AI results by allowing Quadratic to store and analyze user prompts.{' '}
+                    <a href={DOCUMENTATION_ANALYTICS_AI} target="_blank" className="underline hover:text-primary">
+                      Learn more
+                    </a>
+                    .
+                  </>
+                }
+                onCheckedChange={(checked) => {
+                  handleUpdatePreference('analyticsAi', checked);
+                }}
+                checked={optimisticSettings.analyticsAi}
+                className="rounded border border-border px-3 py-2 shadow-sm"
+              />
+              <p className="mt-2 text-sm text-muted-foreground">
+                When using AI features your data is sent to our providers, all of which have a zero-data data retention
+                policy. These include:
+              </p>
+              <ul className="mt-2 text-sm text-muted-foreground">
+                {['OpenAI', 'Anthropic', 'AWS Bedrock'].map((item, i) => (
+                  <li className="flex items-center gap-2" key={i}>
+                    <CheckIcon /> <span className="font-semibold">{item}:</span> zero-day data retention
+                  </li>
+                ))}
+              </ul>
+            </div>
           </Row>
         )}
       </div>
@@ -139,12 +153,15 @@ export const Component = () => {
   );
 };
 
-function Row(props: { children: ReactNode; className?: string }) {
+function Row(props: { children: ReactNode[]; className?: string }) {
+  if (props.children.length !== 2) {
+    throw new Error('Row must have exactly two children');
+  }
+
   return (
-    <div
-      className={cn(`flex grid-cols-[160px_1fr] flex-col gap-2 sm:grid sm:max-w-2xl sm:items-center`, props.className)}
-    >
-      {props.children}
+    <div className={cn(`flex grid-cols-[160px_1fr] flex-col gap-2 sm:grid sm:max-w-2xl`, props.className)}>
+      <div className="pt-2">{props.children[0]}</div>
+      <div className="">{props.children[1]}</div>
     </div>
   );
 }
