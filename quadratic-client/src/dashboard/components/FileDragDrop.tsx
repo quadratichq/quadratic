@@ -32,7 +32,7 @@ export function FileDragDrop({ className }: FileDragDropProps) {
 
       setFileDragDropModal({ show: false, teamUuid: undefined, isPrivate: undefined });
 
-      const files = e.dataTransfer.files;
+      const files = Array.from(e.dataTransfer.files);
       const { isPrivate, teamUuid } = fileDragDropModal;
       handleFileImport({ files, isPrivate, teamUuid });
     },

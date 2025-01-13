@@ -129,7 +129,7 @@ function UploadFileButton({ teamUuid }: { teamUuid: string }) {
           const files = e.target.files;
           if (files) {
             handleFileImport({
-              files,
+              files: Array.from(files),
               sheetId: sheets.sheet.id,
               insertAt: { x: 1, y: 1 },
               cursor: sheets.getCursorPosition(),
