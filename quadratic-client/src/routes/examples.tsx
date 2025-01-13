@@ -20,7 +20,7 @@ export const Component = () => {
 
   const files: FilesListExampleFile[] = examples.map(({ name, description, thumbnail, url }, i) => ({
     description,
-    href: ROUTES.CREATE_FILE_EXAMPLE(activeTeamUuid, url, true),
+    href: ROUTES.CREATE_FILE_EXAMPLE(activeTeamUuid, url),
     name,
     thumbnail: thumbnail + '?w=800&h=450&fit=crop&auto=format', // 16/9 aspect ratio
   }));
