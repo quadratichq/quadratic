@@ -221,6 +221,13 @@ impl SheetFormatUpdates {
         Self::translate_rect_item(&mut self.underline, x, y);
         Self::translate_rect_item(&mut self.strike_through, x, y);
     }
+
+    /// Whether the update includes any fill color changes
+    pub fn has_fills(&self) -> bool {
+        self.fill_color
+            .as_ref()
+            .is_some_and(|fills| !fills.is_all_default())
+    }
 }
 
 #[cfg(test)]
@@ -264,5 +271,20 @@ mod tests {
         assert!(updates.vertical_align.is_none());
         assert!(updates.wrap.is_none());
         assert!(updates.numeric_format.is_none());
+    }
+
+    #[test]
+    fn test_has_fills() {
+        let updates = SheetFormatUpdates::default();
+        assert!(!updates.has_fills());
+
+        let updates = SheetFormatUpdates::from_selection(
+            &A1Selection::test_a1("A1:B2"),
+            FormatUpdate {
+                fill_color: Some(Some("red".to_string())),
+                ..Default::default()
+            },
+        );
+        assert!(updates.has_fills());
     }
 }

@@ -249,6 +249,7 @@ pub mod test {
             header_is_first_row: true,
             alternating_colors: true,
             formats: Default::default(),
+            borders: Default::default(),
             chart_output: None,
             chart_pixel_output: None,
             show_ui: DataTableShowUI::Default,
