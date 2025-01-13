@@ -42,11 +42,6 @@ pub mod summarize;
 pub mod validations;
 
 /// Sheet in a file.
-///
-/// Internal invariants (not an exhaustive list):
-/// - `infinite_sheet_format`, `infinite_column_formats`,
-///   `infinite_row_formats`, and formatting in stored in `columns` must never
-///   overlap
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Sheet {
     pub id: SheetId,
@@ -66,7 +61,6 @@ pub struct Sheet {
     /// Formatting for the entire sheet.
     pub formats: SheetFormatting,
 
-    #[serde(default)]
     pub validations: Validations,
 
     // bounds for the grid with only data

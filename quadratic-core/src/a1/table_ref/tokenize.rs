@@ -1,7 +1,5 @@
 //! Tokenizes a table reference after the table_name has been removed.
 
-use crate::a1::UNBOUNDED;
-
 use super::*;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -10,56 +8,12 @@ pub(crate) enum Token {
     Headers,
     Data,
     Totals,
-    ThisRow,
     Column(String),
     ColumnRange(String, String),
     ColumnToEnd(String),
-    RowRange(i64, i64),
 }
 
 impl TableRef {
-    /// Tokenizes rows.
-    fn tokenize_rows(s: &str) -> Result<Token, A1Error> {
-        let s = s.trim().to_ascii_uppercase();
-
-        // Handle single number case
-        if let Ok(num) = s.parse::<i64>() {
-            return Ok(Token::RowRange(num, num));
-        }
-
-        if s == "LAST" {
-            return Ok(Token::RowRange(UNBOUNDED, UNBOUNDED));
-        }
-
-        if s == "THIS ROW" {
-            return Ok(Token::ThisRow);
-        }
-
-        // Handle range cases (contains ':')
-        if let Some((start, end)) = s.split_once(':') {
-            let start = start.trim();
-            let end = end.trim();
-
-            let start_num = start
-                .parse::<i64>()
-                .map_err(|_| A1Error::InvalidTableRef("Invalid row number".into()))?;
-
-            // Handle cases like "5:"
-            if end.is_empty() {
-                return Ok(Token::RowRange(start_num, UNBOUNDED));
-            }
-
-            // Handle "5:10"
-            let end_num = end
-                .parse::<i64>()
-                .map_err(|_| A1Error::InvalidTableRef("Invalid row number".into()))?;
-
-            return Ok(Token::RowRange(start_num, end_num));
-        }
-
-        Err(A1Error::InvalidTableRef("Invalid row specification".into()))
-    }
-
     /// Separates bracketed entries, allowing double brackets and ' to escape
     /// special characters. Returns a list of Strings that can be tokenized.
     fn bracketed_entries(s: &str) -> Result<Vec<String>, A1Error> {
@@ -175,8 +129,8 @@ impl TableRef {
                     if s.is_empty() {
                         continue;
                     }
-                    if let Some(s) = s.strip_prefix('#') {
-                        tokens.push(Self::tokenize_rows(s)?);
+                    if s.strip_prefix('#').is_some() {
+                        return Err(A1Error::InvalidTableRef("Unexpected #".into()));
                     } else if iter.peek().is_some_and(|s| **s == ":") {
                         // skip the colon
                         iter.next();
@@ -288,28 +242,6 @@ mod tests {
     }
 
     #[test]
-    fn test_tokenize_rows() {
-        let rows = [
-            ("1", Token::RowRange(1, 1)),
-            ("1:10", Token::RowRange(1, 10)),
-            ("1:", Token::RowRange(1, UNBOUNDED)),
-            ("2:", Token::RowRange(2, UNBOUNDED)),
-            ("LAST", Token::RowRange(UNBOUNDED, UNBOUNDED)),
-            ("This Row", Token::ThisRow),
-        ];
-        for (s, expected) in rows {
-            assert_eq!(
-                TableRef::tokenize_rows(s)
-                    .unwrap_or_else(|e| panic!("Failed to tokenize rows '{}': {}", s, e)),
-                expected.clone(),
-                "Expected {:?} for {}",
-                expected,
-                s
-            );
-        }
-    }
-
-    #[test]
     fn test_tokenize_columns() {
         let columns = [
             ("[Column 1]", vec![Token::Column("Column 1".to_string())]),
@@ -333,42 +265,6 @@ mod tests {
             assert_eq!(
                 TableRef::tokenize(s).unwrap(),
                 expected.clone(),
-                "Expected {:?} for {}",
-                expected,
-                s
-            );
-        }
-    }
-
-    #[test]
-    fn test_tokenize_rows_columns() {
-        let column_rows = [
-            (
-                "[#12],[Column 1]",
-                vec![
-                    Token::RowRange(12, 12),
-                    Token::Column("Column 1".to_string()),
-                ],
-            ),
-            (
-                "[#12:15],[Column 1]:[Column 2]",
-                vec![
-                    Token::RowRange(12, 15),
-                    Token::ColumnRange("Column 1".to_string(), "Column 2".to_string()),
-                ],
-            ),
-            (
-                "[#12:15],[Column 1]:",
-                vec![
-                    Token::RowRange(12, 15),
-                    Token::ColumnToEnd("Column 1".to_string()),
-                ],
-            ),
-        ];
-        for (s, expected) in column_rows {
-            assert_eq!(
-                TableRef::tokenize(s).unwrap(),
-                expected,
                 "Expected {:?} for {}",
                 expected,
                 s

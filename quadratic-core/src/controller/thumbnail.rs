@@ -42,8 +42,7 @@ impl GridController {
             A1Selection::from_rect(sheet.offsets.thumbnail().to_sheet_rect(sheet.id));
 
         let context = self.grid().a1_context();
-        // todo: not sure what to do with current_row here...
-        selection.overlaps_a1_selection(&thumbnail_a1, 1, &context)
+        selection.overlaps_a1_selection(&thumbnail_a1, &context)
     }
 
     /// Returns whether the thumbnail contains any intersection with

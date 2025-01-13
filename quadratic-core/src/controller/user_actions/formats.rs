@@ -4,7 +4,7 @@
 
 use wasm_bindgen::JsValue;
 
-use crate::a1::{A1Selection, CellRefRange};
+use crate::a1::{A1Selection, CellRefRange, RefRangeBounds};
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::operation::Operation;
 use crate::controller::GridController;
@@ -25,16 +25,15 @@ impl GridController {
     ) -> Vec<Operation> {
         let mut ops = Vec::new();
         let context = self.grid.a1_context();
-        let tables = selection.separate_table_ranges();
+        let (tables, non_tables) = selection.separate_table_ranges();
+
+        // set table ranges
         for table_ref in tables {
             if let Some(table) = context.try_table(&table_ref.table_name) {
-                dbgjs!(&table_ref);
-                let range =
-                    table_ref.convert_to_ref_range_bounds(selection.cursor.y, true, &context);
+                let range = table_ref.convert_to_ref_range_bounds(true, &context);
                 if let Some(range) = range {
                     // translate the range to 1-based compared to the table position
                     let range = range.translate(-table.bounds.min.x + 1, -table.bounds.min.y + 1);
-                    dbgjs!(&range);
                     let formats = SheetFormatUpdates::from_selection(
                         &A1Selection::from_range(
                             CellRefRange::Sheet { range },
@@ -46,6 +45,47 @@ impl GridController {
                     ops.push(Operation::DataTableFormats {
                         sheet_pos: table.bounds.min.to_sheet_pos(table.sheet_id),
                         formats,
+                    });
+
+                    // check if we need to clear the underlying sheet formatting
+                    if let Some(cleared) = format_update.only_cleared() {
+                        ops.push(Operation::SetCellFormatsA1 {
+                            sheet_id: table.sheet_id,
+                            formats: SheetFormatUpdates::from_selection(
+                                &A1Selection::from_range(
+                                    CellRefRange::Sheet { range },
+                                    table.sheet_id,
+                                    &context,
+                                ),
+                                cleared,
+                            ),
+                        });
+                    }
+                }
+            }
+        }
+
+        // clear table formats for sheet ranges that overlap tables
+        let clear_format_update = format_update.clear_update();
+        for range in non_tables {
+            let rect = range.to_rect_unbounded();
+            for table in context.tables() {
+                if let Some(intersection) = table.bounds.intersection(&rect) {
+                    let range = RefRangeBounds::new_relative_rect(intersection);
+
+                    // normalize the range to the table position
+                    let range = range.translate(-table.bounds.min.x + 1, -table.bounds.min.y + 1);
+
+                    ops.push(Operation::DataTableFormats {
+                        sheet_pos: table.bounds.min.to_sheet_pos(table.sheet_id),
+                        formats: SheetFormatUpdates::from_selection(
+                            &A1Selection::from_range(
+                                CellRefRange::Sheet { range },
+                                table.sheet_id,
+                                &context,
+                            ),
+                            clear_format_update.clone(),
+                        ),
                     });
                 }
             }

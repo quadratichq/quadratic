@@ -1,4 +1,4 @@
-use crate::a1::{A1Context, ColRange, RowRange, TableRef};
+use crate::a1::{A1Context, ColRange, TableRef};
 
 use super::*;
 
@@ -22,7 +22,7 @@ impl A1Selection {
         if shift_key {
             if let Some(col) = &col {
                 if let Some(CellRefRange::Table { range: table_ref }) = last {
-                    if table_ref.table_name == table_name && table_ref.row_range == RowRange::All {
+                    if table_ref.table_name == table_name {
                         match &table_ref.col_range {
                             ColRange::ColRange(start, end) => {
                                 // if we already have a range, then we change the end to the new col
@@ -35,7 +35,6 @@ impl A1Selection {
                                     data: true,
                                     headers: false,
                                     totals: false,
-                                    row_range: RowRange::All,
                                     col_range: ColRange::ColRange(start.clone(), col.clone()),
                                 };
                                 self.ranges.push(CellRefRange::Table { range: table_ref });
@@ -54,7 +53,6 @@ impl A1Selection {
                                     data: true,
                                     headers: false,
                                     totals: false,
-                                    row_range: RowRange::All,
                                     col_range: ColRange::ColRange(
                                         existing_col.clone(),
                                         col.clone(),
@@ -73,7 +71,6 @@ impl A1Selection {
                                         data: true,
                                         headers: false,
                                         totals: false,
-                                        row_range: RowRange::All,
                                         col_range: ColRange::Col(col.clone()),
                                     };
                                     self.ranges.push(CellRefRange::Table { range: table_ref });
@@ -84,7 +81,6 @@ impl A1Selection {
                                         data: true,
                                         headers: false,
                                         totals: false,
-                                        row_range: RowRange::All,
                                         col_range: ColRange::ColRange(
                                             existing_col.clone(),
                                             col.clone(),
@@ -141,7 +137,6 @@ impl A1Selection {
             data: true,
             headers,
             totals: false,
-            row_range: RowRange::All,
             col_range,
         };
         self.ranges.push(CellRefRange::Table { range: table_ref });
@@ -202,7 +197,6 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
-            row_range: RowRange::All,
             col_range: ColRange::Col("Col1".to_string()),
         };
         assert_eq!(
@@ -263,7 +257,6 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
-            row_range: RowRange::All,
             col_range: ColRange::Col("Col1".to_string()),
         };
         assert_eq!(
@@ -284,7 +277,6 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
-            row_range: RowRange::All,
             col_range: ColRange::Col("Col2".to_string()),
         };
         assert_eq!(

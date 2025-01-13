@@ -73,7 +73,7 @@ export type SortDirection = "Ascending" | "Descending" | "None";
 export interface DataTableSort { column_index: number, direction: SortDirection, }
 export type SmallTimestamp = number;
 export interface Span { start: number, end: number, }
-export interface TableRef { table_name: string, data: boolean, headers: boolean, totals: boolean, row_range: RowRange, col_range: ColRange, }
+export interface TableRef { table_name: string, data: boolean, headers: boolean, totals: boolean, col_range: ColRange, }
 export type TextCase = { "CaseInsensitive": Array<string> } | { "CaseSensitive": Array<string> };
 export type TextMatch = { "Exactly": TextCase } | { "Contains": TextCase } | { "NotContains": TextCase } | { "TextLength": { min: number | null, max: number | null, } };
 export type TransactionName = "Unknown" | "ResizeColumn" | "ResizeRow" | "ResizeRows" | "Autocomplete" | "SetBorders" | "SetCells" | "SetFormats" | "SetDataTableAt" | "CutClipboard" | "PasteClipboard" | "SetCode" | "RunCode" | "FlattenDataTable" | "SwitchDataTableKind" | "GridToDataTable" | "DataTableMeta" | "DataTableMutations" | "DataTableFirstRowAsHeader" | "Import" | "SetSheetMetadata" | "SheetAdd" | "SheetDelete" | "DuplicateSheet" | "MoveCells" | "Validation" | "ManipulateColumnRow";

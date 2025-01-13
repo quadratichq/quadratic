@@ -1,6 +1,6 @@
 //! Mutation methods that insert or delete columns and rows from a selection.
 
-use crate::a1::{A1Context, CellRefRange, TableRef};
+use crate::a1::{A1Context, CellRefRange, RefRangeBounds, TableRef};
 
 use super::A1Selection;
 
@@ -107,23 +107,24 @@ impl A1Selection {
         });
     }
 
-    /// Returns a vector of TableRef contained within the selection.
-    pub fn separate_table_ranges(&self) -> Vec<TableRef> {
-        let mut ranges = Vec::new();
+    /// Returns (vector of TableRef, vector of CellRefRange) contained within the selection.
+    pub fn separate_table_ranges(&self) -> (Vec<TableRef>, Vec<RefRangeBounds>) {
+        let mut table_ranges = Vec::new();
+        let mut non_table_ranges = Vec::new();
         for range in self.ranges.iter() {
             match range {
-                CellRefRange::Table { range } => ranges.push(range.clone()),
-                CellRefRange::Sheet { .. } => (),
+                CellRefRange::Table { range } => table_ranges.push(range.clone()),
+                CellRefRange::Sheet { range } => non_table_ranges.push(range.clone()),
             }
         }
-        ranges
+        (table_ranges, non_table_ranges)
     }
 }
 
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
-    use crate::grid::SheetId;
+    use crate::{grid::SheetId, Rect};
 
     use super::*;
 
@@ -494,5 +495,17 @@ mod tests {
         let mut selection = A1Selection::test_a1("B3");
         selection.adjust_column_row_in_place(None, Some(1), -1);
         assert_eq!(selection.to_string(Some(sheet_id), &a1_context), "B2");
+    }
+
+    #[test]
+    fn test_separate_table_ranges() {
+        let context = A1Context::test(
+            &[],
+            &[("Table1", &["col1", "col2"], Rect::test_a1("A1:B2"))],
+        );
+        let selection = A1Selection::test_a1_context("D5,E5,Table1", &context);
+        let (table_ranges, non_table_ranges) = selection.separate_table_ranges();
+        assert_eq!(table_ranges.len(), 1);
+        assert_eq!(non_table_ranges.len(), 2);
     }
 }

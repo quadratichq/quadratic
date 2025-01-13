@@ -7,10 +7,7 @@ use itertools::Itertools;
 use std::str::FromStr;
 
 use crate::{
-    a1::{
-        CellRefCoord, CellRefRange, CellRefRangeEnd, ColRange, RefRangeBounds, RowRange,
-        RowRangeEntry, TableRef,
-    },
+    a1::{CellRefCoord, CellRefRange, CellRefRangeEnd, ColRange, RefRangeBounds, TableRef},
     grid::{
         block::SameValue,
         data_table::{
@@ -36,21 +33,6 @@ fn import_cell_ref_coord(coord: current::CellRefCoordSchema) -> CellRefCoord {
     }
 }
 
-fn import_row_range_entry(range: current::RowRangeEntrySchema) -> RowRangeEntry {
-    RowRangeEntry {
-        start: import_cell_ref_coord(range.start),
-        end: import_cell_ref_coord(range.end),
-    }
-}
-
-fn import_row_range(range: current::RowRangeSchema) -> RowRange {
-    match range {
-        current::RowRangeSchema::All => RowRange::All,
-        current::RowRangeSchema::CurrentRow => RowRange::CurrentRow,
-        current::RowRangeSchema::Rows(range) => RowRange::Rows(import_row_range_entry(range)),
-    }
-}
-
 fn import_col_range(range: current::ColRangeSchema) -> ColRange {
     match range {
         current::ColRangeSchema::All => ColRange::All,
@@ -66,7 +48,6 @@ pub(crate) fn import_table_ref(table_ref: current::TableRefSchema) -> TableRef {
         data: table_ref.data,
         headers: table_ref.headers,
         totals: table_ref.totals,
-        row_range: import_row_range(table_ref.row_range),
         col_range: import_col_range(table_ref.col_range),
     }
 }
@@ -199,21 +180,6 @@ fn export_cell_ref_coord(coord: CellRefCoord) -> current::CellRefCoordSchema {
     }
 }
 
-fn export_row_range_entry(range: RowRangeEntry) -> current::RowRangeEntrySchema {
-    current::RowRangeEntrySchema {
-        start: export_cell_ref_coord(range.start),
-        end: export_cell_ref_coord(range.end),
-    }
-}
-
-fn export_row_range(range: RowRange) -> current::RowRangeSchema {
-    match range {
-        RowRange::All => current::RowRangeSchema::All,
-        RowRange::CurrentRow => current::RowRangeSchema::CurrentRow,
-        RowRange::Rows(range) => current::RowRangeSchema::Rows(export_row_range_entry(range)),
-    }
-}
-
 fn export_col_range(range: ColRange) -> current::ColRangeSchema {
     match range {
         ColRange::All => current::ColRangeSchema::All,
@@ -243,7 +209,6 @@ pub(crate) fn export_cell_ref_range(range: CellRefRange) -> current::CellRefRang
                 data: range.data,
                 headers: range.headers,
                 totals: range.totals,
-                row_range: export_row_range(range.row_range),
                 col_range: export_col_range(range.col_range),
             })
         }

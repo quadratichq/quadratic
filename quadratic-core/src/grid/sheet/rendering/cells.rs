@@ -81,17 +81,19 @@ impl Sheet {
                 })
         });
 
-        let mut format = if let Some((table_pos, table)) = from_table {
+        let mut format = self.formats.try_format(Pos { x, y }).unwrap_or_default();
+
+        if let Some((table_pos, table)) = from_table {
             let pos = Pos {
                 x: x - table_pos.x + 1,
                 y: y - table_pos.y + 1,
             };
-            let mut format = table.formats.try_format(pos).unwrap_or_default();
-            format.wrap = format.wrap.or(Some(CellWrap::Clip));
-            format
-        } else {
-            self.formats.try_format(Pos { x, y }).unwrap_or_default()
-        };
+            if let Some(mut table_format) = table.formats.try_format(pos) {
+                table_format.wrap = table_format.wrap.or(Some(CellWrap::Clip));
+                format = table_format.combine(&format);
+            }
+        }
+
         let mut number: Option<JsNumber> = None;
         let value = match &value {
             CellValue::Number(_) => {
