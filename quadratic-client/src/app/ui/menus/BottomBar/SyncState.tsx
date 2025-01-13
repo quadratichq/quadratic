@@ -4,13 +4,12 @@ import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer'
 import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { CloseIcon } from '@/shared/components/Icons';
+import { CloseIcon, SpinnerIcon } from '@/shared/components/Icons';
 import { ShowAfter } from '@/shared/components/ShowAfter';
 import { DOCUMENTATION_OFFLINE } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { timeAgo } from '@/shared/utils/timeAgo';
-import { CircularProgress } from '@mui/material';
 import { useEffect, useState } from 'react';
 import BottomBarItem from './BottomBarItem';
 
@@ -85,7 +84,11 @@ export default function SyncState() {
   let icon = null;
   let className = '';
 
-  const loadingIcon = <CircularProgress size="0.5rem" />;
+  const loadingIcon = (
+    <span className="flex scale-75 items-center">
+      <SpinnerIcon className="text-primary" />
+    </span>
+  );
 
   if (syncState === 'connected') {
     message = 'Connected';
