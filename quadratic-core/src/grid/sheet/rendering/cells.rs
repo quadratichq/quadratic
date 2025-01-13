@@ -91,6 +91,8 @@ impl Sheet {
             if let Some(mut table_format) = table.formats.try_format(pos) {
                 table_format.wrap = table_format.wrap.or(Some(CellWrap::Clip));
                 format = table_format.combine(&format);
+            } else {
+                format.wrap = format.wrap.or(Some(CellWrap::Clip));
             }
         }
 
@@ -508,7 +510,6 @@ mod tests {
                 language: Some(CodeCellLanguage::Formula),
                 align: Some(CellAlign::Right),
                 number: Some(JsNumber::default()),
-                // TODO(ddimaria): this is returning `wrap: None` instead of `wrap: Some(Clip)`
                 wrap: Some(CellWrap::Clip),
                 ..Default::default()
             }]
