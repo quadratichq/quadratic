@@ -1,14 +1,12 @@
 //! Draws a table outline, including the spill error boundaries.
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { sheets } from '@/app/grid/controller/Sheets';
 import type { Table } from '@/app/gridGL/cells/tables/Table';
 import { generatedTextures } from '@/app/gridGL/generateTextures';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { colors } from '@/app/theme/colors';
 import { sharedEvents } from '@/shared/sharedEvents';
 import { Graphics, Point, Rectangle } from 'pixi.js';
-import { intersects } from '../../helpers/intersects';
 import { pixiApp } from '../../pixiApp/PixiApp';
 
 const SPILL_HIGHLIGHT_THICKNESS = 2;
@@ -39,6 +37,8 @@ export class TableOutline extends Graphics {
   update = () => {
     this.clear();
 
+    // pixiApp.pointer.pointerDataTable.active = this.active;
+
     // draw the table selected outline
     const width = this.active ? 2 : 1;
     const chart = this.table.codeCell.state === 'HTML';
@@ -49,11 +49,32 @@ export class TableOutline extends Graphics {
 
     // draw the drag handle
     if (this.active) {
-      this.beginFill(getCSSVariableTint('primary'), 1);
-      this.drawShape(new Rectangle(this.table.tableBounds.width - 4, this.table.tableBounds.height - 4, 8, 8));
-      this.endFill();
+      const cornerHandle = new Rectangle(
+        this.table.tableBounds.x + this.table.tableBounds.width - 4,
+        this.table.tableBounds.y + this.table.tableBounds.height - 4,
+        8,
+        8
+      );
+      const rightHandle = new Rectangle(
+        this.table.tableBounds.x + this.table.tableBounds.width - 4,
+        this.table.tableBounds.y,
+        8,
+        this.table.tableBounds.height - 8
+      );
+      const bottomHandle = new Rectangle(
+        this.table.tableBounds.x,
+        this.table.tableBounds.y + this.table.tableBounds.height - 4,
+        this.table.tableBounds.width - 8,
+        8
+      );
 
-      // TODO(ddimaria): create something like PointerAutoComplete to handle the drag handle
+      pixiApp.pointer.pointerDataTable.selection = cornerHandle;
+      pixiApp.pointer.pointerDataTable.selectionRight = rightHandle;
+      pixiApp.pointer.pointerDataTable.selectionBottom = bottomHandle;
+      pixiApp.pointer.pointerDataTable.tableBounds = this.table.sheet.getColumnRowFromScreen(
+        this.table.tableBounds.x,
+        this.table.tableBounds.y
+      );
     }
 
     // draw the spill error boundaries

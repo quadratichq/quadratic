@@ -119,6 +119,7 @@ export class Sheets {
         const a1Selection = JSON.parse(selection) as A1Selection;
         const sheetId = a1Selection.sheet_id.id;
         const sheet = this.getById(sheetId);
+
         if (sheet) {
           this.current = sheetId;
           sheet.cursor.load(selection);

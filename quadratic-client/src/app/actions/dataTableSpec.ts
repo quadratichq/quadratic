@@ -301,7 +301,7 @@ export const dataTableSpec: DataTableSpec = {
           sheets.sheet.id,
           table.x,
           table.y,
-          column,
+          [column],
           undefined,
           undefined,
           undefined,
@@ -317,13 +317,14 @@ export const dataTableSpec: DataTableSpec = {
     run: () => {
       const table = getTable();
       const column = getColumn();
+      console.log('column', column);
 
       if (table && column !== undefined) {
         quadraticCore.dataTableMutations(
           sheets.sheet.id,
           table.x,
           table.y,
-          column + 1,
+          [column + 1],
           undefined,
           undefined,
           undefined,
@@ -346,7 +347,7 @@ export const dataTableSpec: DataTableSpec = {
           table.x,
           table.y,
           undefined,
-          column,
+          [column],
           undefined,
           undefined,
           sheets.getCursorPosition()
@@ -404,7 +405,7 @@ export const dataTableSpec: DataTableSpec = {
           table.y,
           undefined,
           undefined,
-          row - 1,
+          [row - 1],
           undefined,
           sheets.getCursorPosition()
         );
@@ -426,7 +427,7 @@ export const dataTableSpec: DataTableSpec = {
           table.y,
           undefined,
           undefined,
-          row,
+          [row],
           undefined,
           sheets.getCursorPosition()
         );
@@ -449,7 +450,7 @@ export const dataTableSpec: DataTableSpec = {
           undefined,
           undefined,
           undefined,
-          row - 1,
+          [row - 1],
           sheets.getCursorPosition()
         );
       }

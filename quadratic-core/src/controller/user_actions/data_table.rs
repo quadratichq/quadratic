@@ -74,18 +74,18 @@ impl GridController {
     pub fn data_table_mutations(
         &mut self,
         sheet_pos: SheetPos,
-        column_to_add: Option<u32>,
-        column_to_remove: Option<u32>,
-        row_to_add: Option<u32>,
-        row_to_remove: Option<u32>,
+        columns_to_add: Option<Vec<u32>>,
+        columns_to_remove: Option<Vec<u32>>,
+        rows_to_add: Option<Vec<u32>>,
+        rows_to_remove: Option<Vec<u32>>,
         cursor: Option<String>,
     ) {
         let ops = self.data_table_mutations_operations(
             sheet_pos,
-            column_to_add,
-            column_to_remove,
-            row_to_add,
-            row_to_remove,
+            columns_to_add,
+            columns_to_remove,
+            rows_to_add,
+            rows_to_remove,
             cursor.to_owned(),
         );
 
@@ -122,7 +122,7 @@ impl GridController {
 mod tests {
     use crate::{
         cellvalue::Import,
-        controller::GridController,
+        controller::{user_actions::import::tests::simple_csv, GridController},
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
         test_util::{assert_cell_value, assert_data_table_cell_value_row, print_data_table},
         Array, CellValue, Pos, Rect, SheetPos, Value,
@@ -187,5 +187,48 @@ mod tests {
         // redo, the value should be a data table
         gc.redo(None);
         assert_cell_value(&gc, sheet_id, 0, 0, CellValue::Import(import));
+    }
+
+    #[test]
+    #[serial_test::parallel]
+    fn test_insert_data_table_column_and_row() {
+        let (mut gc, sheet_id, pos, _) = simple_csv();
+
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 5, 15));
+        assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().height(true), 10);
+        assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().width(), 4);
+
+        let sheet_pos = SheetPos::from((pos, sheet_id));
+        let columns_to_add = Some(vec![4]);
+        let columns_to_remove = None;
+        let rows_to_add = Some(vec![11]);
+        let rows_to_remove = None;
+        let cursor = None;
+        gc.data_table_mutations(
+            sheet_pos,
+            columns_to_add,
+            columns_to_remove,
+            rows_to_add,
+            rows_to_remove,
+            cursor,
+        );
+
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 5, 15));
+        assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().height(true), 11);
+        assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().width(), 5);
+
+        gc.undo(None);
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 5, 15));
+        assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().height(true), 10);
+        assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().width(), 4);
+
+        gc.redo(None);
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 5, 15));
+        assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().height(true), 11);
+        assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().width(), 5);
+
+        // let data_table = sheet.data_table_mut(data_table_pos).unwrap();
+        // data_table.insert_column(0, "Column 1".into());
+        // data_table.insert_row(0, vec!["1", "2", "3"]);
     }
 }
