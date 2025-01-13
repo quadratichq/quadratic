@@ -17,6 +17,12 @@ pub struct TableMapEntry {
 }
 
 impl TableMapEntry {
+    /// Returns the start and end of the table in row coordinates relative to
+    /// the sheet.
+    pub fn to_sheet_rows(&self) -> (i64, i64) {
+        (self.bounds.min.y, self.bounds.max.y)
+    }
+
     /// Tries to get the visible_columns index for the given column name.
     /// Returns None if the range is not visible or no longer exists.
     ///
@@ -346,5 +352,13 @@ mod tests {
 
         // Test non-existent column
         assert_eq!(table.try_col_closest("X", false), None);
+    }
+
+    #[test]
+    fn test_to_sheet_rows() {
+        let mut map = TableMap::default();
+        map.test_insert("test", &["A"], None, Rect::test_a1("A1:C5"));
+        let table = map.try_table("test").unwrap();
+        assert_eq!(table.to_sheet_rows(), (1, 5));
     }
 }

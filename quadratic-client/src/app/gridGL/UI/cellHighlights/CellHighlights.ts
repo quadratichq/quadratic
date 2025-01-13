@@ -55,7 +55,6 @@ export class CellHighlights extends Container {
     try {
       const refRangeBoundsStringified = cellRefRangeToRefRangeBounds(
         JSON.stringify(cellRefRange, bigIntReplacer),
-        0,
         sheets.a1Context
       );
       const refRangeBounds = JSON.parse(refRangeBoundsStringified);

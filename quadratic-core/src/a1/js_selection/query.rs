@@ -86,9 +86,7 @@ impl JsSelection {
             .filter(|r| r.is_finite())
             .filter_map(|range| match range {
                 CellRefRange::Sheet { range } => Some(*range),
-                CellRefRange::Table { range } => {
-                    range.convert_to_ref_range_bounds(0, false, &context)
-                }
+                CellRefRange::Table { range } => range.convert_to_ref_range_bounds(false, &context),
             })
             .collect::<Vec<_>>();
         serde_json::to_string(&ranges).map_err(|e| e.to_string())
@@ -128,9 +126,7 @@ impl JsSelection {
         let Ok(context) = serde_json::from_str::<A1Context>(context) else {
             return Err("Unable to parse context".to_string());
         };
-        Ok(self
-            .selection
-            .overlaps_a1_selection(&selection, self.selection.cursor.y, &context))
+        Ok(self.selection.overlaps_a1_selection(&selection, &context))
     }
 
     #[wasm_bindgen(js_name = "bottomRightCell")]
