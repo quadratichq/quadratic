@@ -1,6 +1,7 @@
+use std::str::FromStr;
+
 use itertools::Itertools;
 use serial_test::parallel;
-use std::str::FromStr;
 
 pub(crate) use super::*;
 pub(crate) use crate::grid::Grid;
@@ -65,7 +66,11 @@ pub(crate) fn check_syntax_to_err(grid: &Grid, s: &str) -> RunError {
 
 #[track_caller]
 pub(crate) fn assert_f64_eval(grid: &Grid, expected: f64, s: &str) {
-    crate::util::assert_f64_approx_eq(expected, &eval_to_string(grid, s));
+    crate::util::assert_f64_approx_eq(
+        expected,
+        &eval_to_string(grid, s),
+        &format!("wrong result for formula {s:?}"),
+    );
 }
 
 /// Parses a date from a string such as `2024-12-31`.
