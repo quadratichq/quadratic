@@ -7,6 +7,7 @@ use crate::cell_values::CellValues;
 use crate::controller::GridController;
 use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
 use crate::grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind};
+use crate::Pos;
 use crate::{a1::A1Selection, CellValue, SheetPos};
 
 // when a number's decimal is larger than this value, then it will treat it as text (this avoids an attempt to allocate a huge vector)
@@ -138,15 +139,24 @@ impl GridController {
                 let cell_values = CellValues::new(rect.width(), rect.height());
                 let sheet_pos = SheetPos::from((rect.min.x, rect.min.y, selection.sheet_id));
 
+                // deleteable if this is not a data table source cell, or if the data table is readonly (code cell)
+                let can_delete = sheet
+                    .data_tables
+                    .get(&Pos::from(sheet_pos))
+                    .map(|dt| dt.readonly)
+                    .unwrap_or(true);
+
                 // TODO(ddimaria): remove this once we have a way to delete data tables
-                ops.push(Operation::SetCellValues {
-                    sheet_pos,
-                    values: cell_values.to_owned(),
-                });
-                ops.push(Operation::SetDataTableAt {
-                    sheet_pos,
-                    values: cell_values,
-                });
+                if can_delete {
+                    ops.push(Operation::SetCellValues {
+                        sheet_pos,
+                        values: cell_values.to_owned(),
+                    });
+                    ops.push(Operation::SetDataTableAt {
+                        sheet_pos,
+                        values: cell_values,
+                    });
+                }
             }
         };
         ops
