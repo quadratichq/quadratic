@@ -28,7 +28,7 @@ impl DataTable {
     pub fn column_headers_len(&self) -> u32 {
         self.column_headers
             .as_ref()
-            .and_then(|headers| Some(headers.len() as u32))
+            .map(|headers| headers.len() as u32)
             .unwrap_or(0)
     }
 
@@ -250,6 +250,7 @@ pub mod test {
             header_is_first_row: true,
             alternating_colors: true,
             formats: Default::default(),
+            borders: Default::default(),
             chart_output: None,
             chart_pixel_output: None,
             show_ui: DataTableShowUI::Default,

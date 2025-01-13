@@ -136,14 +136,14 @@ impl GridController {
             transaction.add_from_code_run(
                 sheet_id,
                 pos,
-                old_data_table.as_ref().map_or(false, |dt| dt.is_image()),
-                old_data_table.as_ref().map_or(false, |dt| dt.is_html()),
+                old_data_table.as_ref().is_some_and(|dt| dt.is_image()),
+                old_data_table.as_ref().is_some_and(|dt| dt.is_html()),
             );
             transaction.add_from_code_run(
                 sheet_id,
                 pos,
-                new_data_table.as_ref().map_or(false, |dt| dt.is_image()),
-                new_data_table.as_ref().map_or(false, |dt| dt.is_html()),
+                new_data_table.as_ref().is_some_and(|dt| dt.is_image()),
+                new_data_table.as_ref().is_some_and(|dt| dt.is_html()),
             );
 
             self.send_updated_bounds(sheet_rect.sheet_id);

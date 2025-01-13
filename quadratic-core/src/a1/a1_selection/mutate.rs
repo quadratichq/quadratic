@@ -1,6 +1,6 @@
 //! Mutation methods that insert or delete columns and rows from a selection.
 
-use crate::a1::A1Context;
+use crate::a1::{A1Context, CellRefRange, RefRangeBounds, TableRef};
 
 use super::A1Selection;
 
@@ -94,11 +94,38 @@ impl A1Selection {
         selection.translate_in_place(x, y);
         selection
     }
+
+    pub fn adjust_column_row_in_place(
+        &mut self,
+        column: Option<i64>,
+        row: Option<i64>,
+        delta: i64,
+    ) {
+        self.cursor.adjust_column_row_in_place(column, row, delta);
+        self.ranges.iter_mut().for_each(|range| {
+            range.adjust_column_row_in_place(column, row, delta);
+        });
+    }
+
+    /// Returns (vector of TableRef, vector of CellRefRange) contained within the selection.
+    pub fn separate_table_ranges(&self) -> (Vec<TableRef>, Vec<RefRangeBounds>) {
+        let mut table_ranges = Vec::new();
+        let mut non_table_ranges = Vec::new();
+        for range in self.ranges.iter() {
+            match range {
+                CellRefRange::Table { range } => table_ranges.push(range.clone()),
+                CellRefRange::Sheet { range } => non_table_ranges.push(*range),
+            }
+        }
+        (table_ranges, non_table_ranges)
+    }
 }
 
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
+    use crate::{grid::SheetId, Rect};
+
     use super::*;
 
     #[test]
@@ -438,5 +465,47 @@ mod tests {
         let translated = selection.translate(-10, -10);
         assert_eq!(translated, A1Selection::test_a1("A1"));
         assert_eq!(selection, A1Selection::test_a1("A1"));
+    }
+
+    #[test]
+    fn test_adjust_column_row() {
+        let sheet_id = SheetId::test();
+        let a1_context = A1Context::default();
+
+        let mut selection = A1Selection::test_a1("B3");
+        selection.adjust_column_row_in_place(Some(2), None, 1);
+        assert_eq!(selection.to_string(Some(sheet_id), &a1_context), "C3");
+
+        let mut selection = A1Selection::test_a1("B3");
+        selection.adjust_column_row_in_place(None, Some(2), 1);
+        assert_eq!(selection.to_string(Some(sheet_id), &a1_context), "B4");
+
+        let mut selection = A1Selection::test_a1("B3");
+        selection.adjust_column_row_in_place(Some(3), None, 1);
+        assert_eq!(selection.to_string(Some(sheet_id), &a1_context), "B3");
+
+        let mut selection = A1Selection::test_a1("B3");
+        selection.adjust_column_row_in_place(None, Some(4), 1);
+        assert_eq!(selection.to_string(Some(sheet_id), &a1_context), "B3");
+
+        let mut selection = A1Selection::test_a1("B3");
+        selection.adjust_column_row_in_place(Some(1), None, -1);
+        assert_eq!(selection.to_string(Some(sheet_id), &a1_context), "A3");
+
+        let mut selection = A1Selection::test_a1("B3");
+        selection.adjust_column_row_in_place(None, Some(1), -1);
+        assert_eq!(selection.to_string(Some(sheet_id), &a1_context), "B2");
+    }
+
+    #[test]
+    fn test_separate_table_ranges() {
+        let context = A1Context::test(
+            &[],
+            &[("Table1", &["col1", "col2"], Rect::test_a1("A1:B2"))],
+        );
+        let selection = A1Selection::test_a1_context("D5,E5,Table1", &context);
+        let (table_ranges, non_table_ranges) = selection.separate_table_ranges();
+        assert_eq!(table_ranges.len(), 1);
+        assert_eq!(non_table_ranges.len(), 2);
     }
 }

@@ -67,18 +67,16 @@ impl CellRefRange {
                     range.start.is_pos(p1) && range.end.is_pos(p1)
                 }
             }
-            Self::Table { range } => {
-                range
-                    .convert_to_ref_range_bounds(0, context)
-                    .is_some_and(|range| {
-                        if let Some(p2) = p2 {
-                            range.start.is_pos(p1) && range.end.is_pos(p2)
-                                || range.end.is_pos(p1) && range.start.is_pos(p2)
-                        } else {
-                            range.start.is_pos(p1) && range.end.is_pos(p1)
-                        }
-                    })
-            }
+            Self::Table { range } => range
+                .convert_to_ref_range_bounds(false, context)
+                .is_some_and(|range| {
+                    if let Some(p2) = p2 {
+                        range.start.is_pos(p1) && range.end.is_pos(p2)
+                            || range.end.is_pos(p1) && range.start.is_pos(p2)
+                    } else {
+                        range.start.is_pos(p1) && range.end.is_pos(p1)
+                    }
+                }),
         }
     }
 

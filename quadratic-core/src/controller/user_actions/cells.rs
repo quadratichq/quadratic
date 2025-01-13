@@ -43,68 +43,63 @@ impl GridController {
         if let Ok(sheet) = self.try_sheet_mut_result(sheet_pos.sheet_id) {
             if pos.x > 1 && pos.y > 1 {
                 let data_table_left = sheet.first_data_table_within(Pos::new(pos.x - 1, pos.y));
-                dbgjs!(format!("{:?}", data_table_left));
-
                 if let Ok(data_table_left) = data_table_left {
-                    sheet
+                    if let Some(data_table) = sheet
                         .data_table(data_table_left)
                         .filter(|data_table| !data_table.readonly)
-                        .map(|data_table| {
-                            let y = pos.y - data_table_left.y;
+                    {
+                        let y = pos.y - data_table_left.y;
 
-                            // header row
-                            if y == 0 {
-                                let value_index = data_table.column_headers_len();
-                                let column_header =
-                                    DataTableColumnHeader::new(value.to_owned(), true, value_index);
-                                let columns =
-                                    data_table
-                                        .column_headers
-                                        .to_owned()
-                                        .and_then(|mut headers| {
-                                            headers.push(column_header);
-                                            Some(headers)
-                                        });
-
-                                data_table_ops.push(Operation::DataTableMeta {
-                                    sheet_pos: (data_table_left, sheet_pos.sheet_id).into(),
-                                    name: None,
-                                    alternating_colors: None,
-                                    columns,
-                                    show_header: None,
-                                    show_ui: None,
+                        // header row
+                        if y == 0 {
+                            let value_index = data_table.column_headers_len();
+                            let column_header =
+                                DataTableColumnHeader::new(value.to_owned(), true, value_index);
+                            let columns =
+                                data_table.column_headers.to_owned().map(|mut headers| {
+                                    headers.push(column_header);
+                                    headers
                                 });
-                            } else {
-                                let mut values = vec![CellValue::Blank; data_table.height(true)];
-                                values[y as usize] = value.to_owned().into();
 
-                                data_table_ops.push(Operation::InsertDataTableColumn {
-                                    sheet_pos: (data_table_left, sheet_pos.sheet_id).into(),
-                                    index: (data_table.width()) as u32,
-                                    column_header: None,
-                                    values: Some(values),
-                                });
-                            }
-                        });
+                            data_table_ops.push(Operation::DataTableMeta {
+                                sheet_pos: (data_table_left, sheet_pos.sheet_id).into(),
+                                name: None,
+                                alternating_colors: None,
+                                columns,
+                                show_header: None,
+                                show_ui: None,
+                            });
+                        } else {
+                            let mut values = vec![CellValue::Blank; data_table.height(true)];
+                            values[y as usize] = value.to_owned().into();
+
+                            data_table_ops.push(Operation::InsertDataTableColumn {
+                                sheet_pos: (data_table_left, sheet_pos.sheet_id).into(),
+                                index: (data_table.width()) as u32,
+                                column_header: None,
+                                values: Some(values),
+                            });
+                        }
+                    }
                 }
 
                 let data_table_above = sheet.first_data_table_within(Pos::new(pos.x, pos.y - 1));
 
                 if let Ok(data_table_above) = data_table_above {
-                    sheet
+                    if let Some(data_table) = sheet
                         .data_table(data_table_above)
                         .filter(|data_table| !data_table.readonly)
-                        .map(|data_table| {
-                            let x = pos.x - data_table_above.x;
-                            let mut values = vec![CellValue::Blank; data_table.width()];
-                            values[x as usize] = value.to_owned().into();
+                    {
+                        let x = pos.x - data_table_above.x;
+                        let mut values = vec![CellValue::Blank; data_table.width()];
+                        values[x as usize] = value.to_owned().into();
 
-                            data_table_ops.push(Operation::InsertDataTableRow {
-                                sheet_pos: (data_table_above, sheet_pos.sheet_id).into(),
-                                index: data_table.height(true) as u32,
-                                values: Some(values),
-                            });
+                        data_table_ops.push(Operation::InsertDataTableRow {
+                            sheet_pos: (data_table_above, sheet_pos.sheet_id).into(),
+                            index: data_table.height(true) as u32,
+                            values: Some(values),
                         });
+                    }
                 }
             }
         }

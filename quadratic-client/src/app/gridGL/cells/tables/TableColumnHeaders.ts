@@ -41,17 +41,20 @@ export class TableColumnHeaders extends Container {
     this.background.clear();
     const color = getCSSVariableTint('primary', { luminosity: COLUMN_HEADER_BACKGROUND_LUMINOSITY });
 
+    this.background.lineStyle();
     this.background.beginFill(color);
     // need to adjust so the outside border is still visible
     this.background.drawShape(new Rectangle(0.5, 0, this.table.tableBounds.width - 1, this.headerHeight));
     this.background.endFill();
 
     // draw borders on the top and bottom of the column headers (either active or inactive)
-    if (this.table.inOverHeadings && pixiApp.cellsSheet().tables.isActive(this.table)) {
-      this.background.lineStyle({ color: getCSSVariableTint('primary'), width: 2, alignment: 1 });
+    const active = pixiApp.cellsSheet().tables.isActive(this.table);
+    if ((this.table.inOverHeadings && active) || this.table.codeCell.show_ui) {
+      const width = active ? 2 : 1;
+      this.background.lineStyle({ color: getCSSVariableTint('primary'), width, alignment: 1 });
       this.background.moveTo(0, 0);
       this.background.lineTo(0, this.headerHeight);
-      this.background.lineStyle({ color: getCSSVariableTint('primary'), width: 2, alignment: 0 });
+      this.background.lineStyle({ color: getCSSVariableTint('primary'), width, alignment: 0 });
       this.background.moveTo(this.table.tableBounds.width, 0);
       this.background.lineTo(this.table.tableBounds.width, this.headerHeight);
     }

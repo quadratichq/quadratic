@@ -144,7 +144,7 @@ impl AstNode {
             // Single cell references return 1x1 arrays for Excel compatibility.
             AstNodeContents::CellRef(cell_ref) => {
                 let pos = ctx.resolve_ref(cell_ref, self.span)?.inner;
-                Array::from(ctx.get_cell(pos, self.span).inner).into()
+                Array::from(ctx.get_cell(pos, self.span, true).inner).into()
             }
 
             AstNodeContents::String(s) => Value::from(s.to_string()),

@@ -50,6 +50,7 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::GridToDataTable);
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn data_table_meta(
         &mut self,
         sheet_pos: SheetPos,

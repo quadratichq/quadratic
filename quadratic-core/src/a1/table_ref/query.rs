@@ -1,3 +1,5 @@
+//! Querying a TableRef.
+
 use crate::{
     a1::{A1Context, UNBOUNDED},
     Pos, Rect,
@@ -70,24 +72,13 @@ impl TableRef {
 
         if let Some(table) = context.try_table(&self.table_name) {
             let bounds = table.bounds;
-            if bounds.min.y > to || bounds.max.y < from {
+            let min_y = bounds.min.y + if table.show_headers { 1 } else { 0 };
+            if min_y > to || bounds.max.y < from {
                 return rows;
             }
-            match &self.row_range {
-                RowRange::All => {
-                    let start = bounds.min.y.max(from);
-                    let end = bounds.max.y.min(to);
-                    rows.extend(start..=end);
-                }
-                RowRange::CurrentRow => {
-                    // this one doesn't make sense in this context
-                }
-                RowRange::Rows(range) => {
-                    let start = range.start.coord.max(from);
-                    let end = range.end.coord.min(to);
-                    rows.extend(start..=end);
-                }
-            }
+            let start = min_y.max(from);
+            let end = bounds.max.y.min(to);
+            rows.extend(start..=end);
         }
 
         rows
@@ -98,49 +89,46 @@ impl TableRef {
         self.selected_rows(1, UNBOUNDED, context)
     }
 
+    /// Whether the TableRef has more than one cell.
     pub fn is_multi_cursor(&self, context: &A1Context) -> bool {
         let Some(table_entry) = context.try_table(&self.table_name) else {
             return false;
         };
-        let cols = match &self.col_range {
-            ColRange::All => table_entry.bounds.width() as i64,
-            ColRange::Col(_) => 1,
+        if self.headers && self.data {
+            return true;
+        }
+        match &self.col_range {
+            ColRange::Col(_) => (),
+            ColRange::All => {
+                if table_entry.bounds.width() > 1 {
+                    return true;
+                }
+            }
             ColRange::ColRange(start, end) => {
                 let start = table_entry.try_col_index(start).unwrap_or(0);
                 let end = table_entry.try_col_index(end).unwrap_or(0);
-                end - start
+                if end - start != 0 {
+                    return true;
+                }
             }
             ColRange::ColToEnd(col) => {
-                table_entry.visible_columns.len() as i64
+                if table_entry.visible_columns.len() as i64
                     - table_entry.try_col_index(col).unwrap_or(0)
+                    != 0
+                {
+                    return true;
+                }
             }
         };
 
-        if cols > 1 {
-            return true;
-        }
-
-        // If just the last row and one column, then it's not a multi-cursor
-        match &self.row_range {
-            RowRange::All => {
-                if let Some(table_entry) = context.try_table(&self.table_name) {
-                    table_entry.bounds.height() > 1
-                } else {
-                    false
-                }
-            }
-            RowRange::CurrentRow => false,
-            RowRange::Rows(range) => range.start.coord != range.end.coord,
-        }
+        table_entry.bounds.height() != if table_entry.show_headers { 2 } else { 1 }
     }
 
-    pub fn to_largest_rect(&self, current_row: i64, context: &A1Context) -> Option<Rect> {
+    pub fn to_largest_rect(&self, context: &A1Context) -> Option<Rect> {
         let table = context.try_table(&self.table_name)?;
         let bounds = table.bounds;
         let mut min_x = bounds.max.x;
-        let mut min_y = bounds.max.y;
         let mut max_x = bounds.min.x;
-        let mut max_y = bounds.min.y;
 
         match &self.col_range {
             ColRange::All => {
@@ -174,24 +162,9 @@ impl TableRef {
                 max_x = min_x.max(bounds.min.x + table.visible_columns.len() as i64);
             }
         }
-        match &self.row_range {
-            RowRange::All => {
-                min_y = bounds.min.y;
-                max_y = bounds.max.y;
-            }
-            RowRange::CurrentRow => {
-                min_y = current_row;
-                max_y = current_row;
-            }
-            RowRange::Rows(range) => {
-                min_y = min_y.min(range.start.coord);
-                if range.end.coord == UNBOUNDED {
-                    max_y = bounds.max.y;
-                } else {
-                    max_y = max_y.max(range.end.coord);
-                }
-            }
-        }
+
+        let min_y = bounds.min.y + if table.show_headers { 1 } else { 0 };
+        let max_y = bounds.max.y;
         Some(Rect::new(min_x, min_y, max_x, max_y))
     }
 
@@ -225,7 +198,7 @@ impl TableRef {
 
     /// Tries to convert the TableRef to a Pos.
     pub fn try_to_pos(&self, context: &A1Context) -> Option<Pos> {
-        let range = self.convert_to_ref_range_bounds(0, context)?;
+        let range = self.convert_to_ref_range_bounds(false, context)?;
         range.try_to_pos()
     }
 }
@@ -264,7 +237,6 @@ mod tests {
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::Col("B".to_string()),
-            row_range: RowRange::All,
             data: true,
             headers: false,
             totals: false,
@@ -280,7 +252,6 @@ mod tests {
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::Col("C".to_string()),
-            row_range: RowRange::All,
             data: true,
             headers: false,
             totals: false,
@@ -292,77 +263,56 @@ mod tests {
     }
 
     #[test]
-    fn test_selected_rows() {
-        let context = setup_test_context();
-        let table_ref = TableRef {
-            table_name: "test_table".to_string(),
-            col_range: ColRange::Col("A".to_string()),
-            row_range: RowRange::Rows(RowRangeEntry::new_rel(1, 2)),
-            data: true,
-            headers: false,
-            totals: false,
-        };
-
-        let rows = table_ref.selected_rows(1, 3, &context);
-        assert_eq!(rows, vec![1, 2]);
-    }
-
-    #[test]
     fn test_is_multi_cursor() {
-        let context = setup_test_context();
+        let mut context = A1Context::default();
+        // the context is A1:B2 because show_headers is true
+        context
+            .table_map
+            .test_insert("test_table", &["A", "B"], None, Rect::test_a1("A1:B2"));
 
-        // Single column, single row
+        // One column, one row--note, table has headers, but they're not selected
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::Col("A".to_string()),
-            row_range: RowRange::CurrentRow,
             data: true,
             headers: false,
             totals: false,
         };
         assert!(!table_ref.is_multi_cursor(&context));
 
-        // Multiple columns
+        context
+            .table_map
+            .test_insert("test_table", &["A", "B"], None, Rect::test_a1("A1:B2"));
+
+        // Two columns, one row--note, table has headers, but they're not selected
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::ColRange("A".to_string(), "B".to_string()),
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        assert!(table_ref.is_multi_cursor(&context));
+
+        // One column, one row, and headers are selected
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::Col("A".to_string()),
-            row_range: RowRange::CurrentRow,
             data: true,
-            headers: false,
+            headers: true,
+            totals: false,
+        };
+        assert!(table_ref.is_multi_cursor(&context));
+
+        // One column, one row, and only headers are selected
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::Col("A".to_string()),
+            data: false,
+            headers: true,
             totals: false,
         };
         assert!(!table_ref.is_multi_cursor(&context));
-
-        // Multiple rows
-        let table_ref = TableRef {
-            table_name: "test_table".to_string(),
-            col_range: ColRange::Col("A".to_string()),
-            row_range: RowRange::Rows(RowRangeEntry::new_rel(0, 1)),
-            data: true,
-            headers: false,
-            totals: false,
-        };
-        assert!(table_ref.is_multi_cursor(&context));
-
-        let table_ref = TableRef {
-            table_name: "test_table".to_string(),
-            col_range: ColRange::Col("A".to_string()),
-            row_range: RowRange::Rows(RowRangeEntry::new_rel(1, 2)),
-            data: true,
-            headers: false,
-            totals: false,
-        };
-        assert!(table_ref.is_multi_cursor(&context));
-
-        let table_ref = TableRef {
-            table_name: "test_table".to_string(),
-            col_range: ColRange::Col("A".to_string()),
-            row_range: RowRange::Rows(RowRangeEntry::new_rel(1, 2)),
-            data: true,
-            headers: false,
-            totals: false,
-        };
-        assert!(table_ref.is_multi_cursor(&context));
     }
 
     #[test]
@@ -371,14 +321,13 @@ mod tests {
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::ColRange("A".to_string(), "B".to_string()),
-            row_range: RowRange::All,
             data: true,
             headers: false,
             totals: false,
         };
 
-        let rect = table_ref.to_largest_rect(1, &context);
-        assert_eq!(rect.unwrap(), Rect::test_a1("A1:B3"));
+        let rect = table_ref.to_largest_rect(&context);
+        assert_eq!(rect.unwrap(), Rect::test_a1("A2:B3"));
     }
 
     #[test]
@@ -388,44 +337,29 @@ mod tests {
             .table_map
             .test_insert("test_table", &["A", "B", "C"], None, Rect::test_a1("A1:C3"));
 
-        // Test case 1: Single column with all rows
+        // Single column with all rows
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::Col("B".to_string()),
-            row_range: RowRange::All,
             data: true,
             headers: false,
             totals: false,
         };
 
-        let ranges = table_ref.convert_to_ref_range_bounds(1, &context);
+        let ranges = table_ref.convert_to_ref_range_bounds(false, &context);
         assert_eq!(ranges, Some(RefRangeBounds::test_a1("B2:B3")));
 
-        // Test case 2: Column range with specific rows
-        let table_ref = TableRef {
-            table_name: "test_table".to_string(),
-            col_range: ColRange::ColRange("A".to_string(), "C".to_string()),
-            row_range: RowRange::Rows(RowRangeEntry::new_rel(1, 2)),
-            data: true,
-            headers: false,
-            totals: false,
-        };
-
-        let ranges = table_ref.convert_to_ref_range_bounds(1, &context);
-        assert_eq!(ranges, Some(RefRangeBounds::new_relative(1, 1, 3, 2)));
-
-        // Test case 3: Column to end
+        // Column to end
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::ColToEnd("B".to_string()),
-            row_range: RowRange::CurrentRow,
             data: true,
             headers: false,
             totals: false,
         };
 
-        let ranges = table_ref.convert_to_ref_range_bounds(2, &context);
-        assert_eq!(ranges, Some(RefRangeBounds::new_relative(2, 2, 3, 2)));
+        let ranges = table_ref.convert_to_ref_range_bounds(false, &context);
+        assert_eq!(ranges, Some(RefRangeBounds::test_a1("B2:C3")));
     }
 
     #[test]
@@ -434,7 +368,6 @@ mod tests {
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::Col("A".to_string()),
-            row_range: RowRange::All,
             data: true,
             headers: false,
             totals: false,
@@ -445,7 +378,6 @@ mod tests {
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::ColRange("A".to_string(), "C".to_string()),
-            row_range: RowRange::All,
             data: true,
             headers: false,
             totals: false,
@@ -456,7 +388,6 @@ mod tests {
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::ColToEnd("B".to_string()),
-            row_range: RowRange::All,
             data: true,
             headers: false,
             totals: false,
@@ -470,12 +401,11 @@ mod tests {
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::Col("B".to_string()),
-            row_range: RowRange::Rows(RowRangeEntry::new_rel(1, 1)),
             data: true,
             headers: false,
             totals: false,
         };
-        assert_eq!(table_ref.try_to_pos(&context).unwrap(), pos![B1]);
+        assert_eq!(table_ref.try_to_pos(&context), None);
     }
 
     #[test]
@@ -484,7 +414,6 @@ mod tests {
         let mut table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::Col("B".to_string()),
-            row_range: RowRange::All,
             data: true,
             headers: false,
             totals: false,

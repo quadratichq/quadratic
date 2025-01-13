@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::grid::file::v1_7_1;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -71,8 +69,6 @@ pub type SpanSchema = v1_7_1::SpanSchema;
 pub type RowsResizeSchema = v1_7_1::RowsResizeSchema;
 pub type CellRefRangeSchema = v1_7_1::CellRefRangeSchema;
 pub type TableRefSchema = v1_7_1::TableRefSchema;
-pub type RowRangeSchema = v1_7_1::RowRangeSchema;
-pub type RowRangeEntrySchema = v1_7_1::RowRangeEntrySchema;
 pub type ColRangeSchema = v1_7_1::ColRangeSchema;
 
 #[derive(Default, Debug, PartialEq, Serialize, Deserialize, Clone)]
@@ -157,9 +153,7 @@ pub struct FormatSchema {
 }
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TableFormatsSchema {
-    pub table: Option<FormatSchema>,
-    pub columns: HashMap<i64, FormatSchema>,
-    pub cells: HashMap<i64, HashMap<i64, ColumnRepeatSchema<FormatSchema>>>,
+    pub formats: FormatSchema,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -204,7 +198,8 @@ pub struct DataTableSchema {
     pub spill_error: bool,
     pub last_modified: Option<DateTime<Utc>>,
     pub alternating_colors: bool,
-    pub formats: TableFormatsSchema,
+    pub formats: SheetFormattingSchema,
+    pub borders: BordersSchema,
     pub chart_pixel_output: Option<(f32, f32)>,
     pub chart_output: Option<(u32, u32)>,
 }

@@ -20,7 +20,7 @@ impl A1Selection {
         let mut in_quotes = false;
         let mut in_table = 0;
 
-        for (i, c) in a1.chars().enumerate() {
+        for (i, c) in a1.trim().chars().enumerate() {
             match c {
                 '[' => {
                     if !in_quotes && i != 0 && a1.chars().nth(i - 1).unwrap() != '\'' {
@@ -36,6 +36,9 @@ impl A1Selection {
                 }
                 '\'' => {
                     if in_table == 0 {
+                        if !in_quotes && i > 0 {
+                            return Err(A1Error::InvalidSheetName(a1.to_string()));
+                        }
                         in_quotes = !in_quotes;
                         current_segment.push(c);
                     }
@@ -43,11 +46,9 @@ impl A1Selection {
                 ',' => {
                     if in_quotes || in_table != 0 {
                         current_segment.push(c);
-                    } else {
-                        if !current_segment.is_empty() {
-                            segments.push(current_segment);
-                            current_segment = String::new();
-                        }
+                    } else if !current_segment.is_empty() {
+                        segments.push(current_segment);
+                        current_segment = String::new();
                     }
                 }
                 _ => current_segment.push(c),
@@ -182,6 +183,16 @@ mod tests {
         assert_eq!(
             A1Selection::parse("'Second'!A1", &sheet_id, &context),
             Ok(A1Selection::from_xy(1, 1, sheet_id2)),
+        );
+    }
+
+    #[test]
+    fn test_invalid_sheet_name() {
+        let sheet_id = SheetId::test();
+        let context = A1Context::default();
+        assert_eq!(
+            A1Selection::parse("Sheet' 1'!A1", &sheet_id, &context),
+            Err(A1Error::InvalidSheetName("Sheet' 1'!A1".to_string())),
         );
     }
 

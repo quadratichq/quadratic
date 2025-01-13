@@ -10,9 +10,6 @@ impl RefRangeBounds {
 
     /// Returns whether `self` is a multi-cursor.
     pub fn is_multi_cursor(&self) -> bool {
-        if self.start.is_unbounded() {
-            return true;
-        }
         self.start != self.end
     }
 

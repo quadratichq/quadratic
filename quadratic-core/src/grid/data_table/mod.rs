@@ -9,7 +9,7 @@ pub mod column_header;
 pub mod display_value;
 pub mod row;
 pub mod sort;
-pub mod table_formats;
+
 use std::num::NonZeroU32;
 
 use crate::cellvalue::Import;
@@ -25,7 +25,6 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use sort::DataTableSort;
 use strum_macros::Display;
-use table_formats::TableFormats;
 
 #[cfg(test)]
 use tabled::{
@@ -33,7 +32,8 @@ use tabled::{
     settings::{Color, Modify, Style},
 };
 
-use super::{CodeRunOld, CodeRunResult, Grid};
+use super::sheet::borders::Borders;
+use super::{CodeRunOld, CodeRunResult, Grid, SheetFormatting};
 
 impl Grid {
     /// Returns a unique name for the data table, taking into account its
@@ -99,8 +99,9 @@ pub enum DataTableKind {
     Import(Import),
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Display)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Display)]
 pub enum DataTableShowUI {
+    #[default]
     Show,
     Hide,
     Default,
@@ -121,7 +122,8 @@ pub struct DataTable {
     pub spill_error: bool,
     pub last_modified: DateTime<Utc>,
     pub alternating_colors: bool,
-    pub formats: TableFormats,
+    pub formats: SheetFormatting,
+    pub borders: Borders,
 
     // width and height of the chart (html or image) output
     pub chart_pixel_output: Option<(f32, f32)>,
@@ -185,17 +187,18 @@ impl DataTable {
             name: name.into(),
             header_is_first_row,
             show_header,
-            column_headers: None,
-            sort: None,
-            display_buffer: None,
+            chart_pixel_output,
             value,
             readonly,
             spill_error,
-            alternating_colors: true,
             last_modified: Utc::now(),
+            column_headers: None,
+            sort: None,
+            display_buffer: None,
+            alternating_colors: true,
             formats: Default::default(),
+            borders: Default::default(),
             chart_output: None,
-            chart_pixel_output,
             show_ui: DataTableShowUI::Default,
         };
 

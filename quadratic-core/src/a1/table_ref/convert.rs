@@ -1,4 +1,4 @@
-use crate::a1::{A1Context, RefRangeBounds};
+use crate::a1::{A1Context, RefRangeBounds, UNBOUNDED};
 
 use super::*;
 
@@ -6,7 +6,7 @@ impl TableRef {
     /// Converts the table ref to a list of CellRefRange::RefRangeBounds
     pub fn convert_to_ref_range_bounds(
         &self,
-        current_row: i64,
+        use_unbounded: bool,
         context: &A1Context,
     ) -> Option<RefRangeBounds> {
         let Some(table) = context.try_table(&self.table_name) else {
@@ -14,14 +14,25 @@ impl TableRef {
             return None;
         };
 
-        let (y_start, y_end) = self.row_range.to_rows(current_row, table, self.headers);
+        let (y_start, y_end) = table.to_sheet_rows();
+        let y_start = y_start
+            + if !table.show_headers || self.headers {
+                0
+            } else {
+                1
+            };
+        let y_end = if !self.data { y_start } else { y_end };
         match &self.col_range {
             ColRange::All => {
                 let range = RefRangeBounds::new_relative(
                     table.bounds.min.x,
                     y_start,
-                    table.bounds.max.x,
-                    y_end,
+                    if use_unbounded {
+                        UNBOUNDED
+                    } else {
+                        table.bounds.max.x
+                    },
+                    if use_unbounded { UNBOUNDED } else { y_end },
                 );
                 Some(range)
             }
@@ -30,7 +41,7 @@ impl TableRef {
                     col + table.bounds.min.x,
                     y_start,
                     col + table.bounds.min.x,
-                    y_end,
+                    if use_unbounded { UNBOUNDED } else { y_end },
                 )
             }),
             ColRange::ColRange(col_range_start, col_range_end) => {
@@ -39,7 +50,7 @@ impl TableRef {
                         start + table.bounds.min.x,
                         y_start,
                         end + table.bounds.min.x,
-                        y_end,
+                        if use_unbounded { UNBOUNDED } else { y_end },
                     ))
                 } else {
                     None
@@ -50,8 +61,12 @@ impl TableRef {
                     Some(RefRangeBounds::new_relative(
                         start + table.bounds.min.x,
                         y_start,
-                        end + table.bounds.min.x,
-                        y_end,
+                        if use_unbounded {
+                            UNBOUNDED
+                        } else {
+                            end + table.bounds.min.x
+                        },
+                        if use_unbounded { UNBOUNDED } else { y_end },
                     ))
                 } else {
                     None
@@ -79,28 +94,26 @@ mod tests {
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::All,
-            row_range: RowRange::All,
             data: true,
             headers: false,
             totals: false,
         };
 
         assert_eq!(
-            table_ref.convert_to_ref_range_bounds(0, &context),
+            table_ref.convert_to_ref_range_bounds(false, &context),
             Some(RefRangeBounds::test_a1("A2:C3"))
         );
 
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::All,
-            row_range: RowRange::All,
             data: true,
             headers: true,
             totals: false,
         };
 
         assert_eq!(
-            table_ref.convert_to_ref_range_bounds(0, &context),
+            table_ref.convert_to_ref_range_bounds(false, &context),
             Some(RefRangeBounds::test_a1("A1:C3"))
         );
     }
@@ -113,19 +126,26 @@ mod tests {
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::All,
-            row_range: RowRange::All,
             data: true,
             headers: false,
             totals: false,
         };
 
         assert_eq!(
-            table_ref.convert_to_ref_range_bounds(0, &context),
+            table_ref.convert_to_ref_range_bounds(false, &context),
             Some(RefRangeBounds::test_a1("A1:C3"))
         );
 
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::All,
+            data: true,
+            headers: true,
+            totals: false,
+        };
+
         assert_eq!(
-            table_ref.convert_to_ref_range_bounds(0, &context),
+            table_ref.convert_to_ref_range_bounds(false, &context),
             Some(RefRangeBounds::test_a1("A1:C3"))
         );
     }
@@ -137,28 +157,26 @@ mod tests {
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::Col("Col1".to_string()),
-            row_range: RowRange::All,
             data: true,
             headers: false,
             totals: false,
         };
 
         assert_eq!(
-            table_ref.convert_to_ref_range_bounds(0, &context),
+            table_ref.convert_to_ref_range_bounds(false, &context),
             Some(RefRangeBounds::test_a1("A2:A4"))
         );
 
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::Col("Col1".to_string()),
-            row_range: RowRange::All,
             data: true,
             headers: true,
             totals: false,
         };
 
         assert_eq!(
-            table_ref.convert_to_ref_range_bounds(0, &context),
+            table_ref.convert_to_ref_range_bounds(false, &context),
             Some(RefRangeBounds::test_a1("A1:A4"))
         );
     }
@@ -170,28 +188,30 @@ mod tests {
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::ColRange("Col1".to_string(), "Col2".to_string()),
-            row_range: RowRange::All,
             data: true,
             headers: false,
             totals: false,
         };
 
         assert_eq!(
-            table_ref.convert_to_ref_range_bounds(0, &context),
+            table_ref.convert_to_ref_range_bounds(false, &context),
             Some(RefRangeBounds::test_a1("A2:B4"))
+        );
+        assert_eq!(
+            table_ref.convert_to_ref_range_bounds(true, &context),
+            Some(RefRangeBounds::test_a1("A2:B"))
         );
 
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::ColRange("Col1".to_string(), "Col2".to_string()),
-            row_range: RowRange::All,
             data: true,
             headers: true,
             totals: false,
         };
 
         assert_eq!(
-            table_ref.convert_to_ref_range_bounds(0, &context),
+            table_ref.convert_to_ref_range_bounds(false, &context),
             Some(RefRangeBounds::test_a1("A1:B4"))
         );
     }
@@ -203,48 +223,27 @@ mod tests {
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::ColToEnd("Col2".to_string()),
-            row_range: RowRange::All,
             data: true,
             headers: false,
             totals: false,
         };
 
         assert_eq!(
-            table_ref.convert_to_ref_range_bounds(0, &context),
+            table_ref.convert_to_ref_range_bounds(false, &context),
             Some(RefRangeBounds::test_a1("B2:C4"))
         );
 
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::ColToEnd("Col2".to_string()),
-            row_range: RowRange::All,
             data: true,
             headers: true,
             totals: false,
         };
 
         assert_eq!(
-            table_ref.convert_to_ref_range_bounds(0, &context),
+            table_ref.convert_to_ref_range_bounds(false, &context),
             Some(RefRangeBounds::test_a1("B1:C4"))
-        );
-    }
-
-    #[test]
-    fn test_convert_current_row() {
-        let context = create_test_context(Rect::test_a1("A1:C4"));
-
-        let table_ref = TableRef {
-            table_name: "test_table".to_string(),
-            col_range: ColRange::All,
-            row_range: RowRange::CurrentRow,
-            data: true,
-            headers: false,
-            totals: false,
-        };
-
-        assert_eq!(
-            table_ref.convert_to_ref_range_bounds(2, &context),
-            Some(RefRangeBounds::test_a1("A2:C2"))
         );
     }
 
@@ -255,12 +254,11 @@ mod tests {
         let table_ref = TableRef {
             table_name: "nonexistent".to_string(),
             col_range: ColRange::All,
-            row_range: RowRange::All,
             data: true,
             headers: false,
             totals: false,
         };
 
-        assert_eq!(table_ref.convert_to_ref_range_bounds(0, &context), None);
+        assert_eq!(table_ref.convert_to_ref_range_bounds(false, &context), None);
     }
 }

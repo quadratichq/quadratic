@@ -690,6 +690,41 @@ impl GridController {
 
         bail!("Expected Operation::DataTableFirstRowAsHeader in execute_data_table_first_row_as_header");
     }
+
+    pub(super) fn execute_data_table_format(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
+        if let Operation::DataTableFormats { sheet_pos, formats } = op.to_owned() {
+            let sheet_id = sheet_pos.sheet_id;
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
+            let data_table = sheet.data_table_mut(data_table_pos)?;
+            let forward_operations = vec![op];
+            let reverse_formats = data_table.formats.apply_updates(&formats);
+
+            if transaction.is_user_undo_redo() {
+                let reverse_operations = Operation::DataTableFormats {
+                    sheet_pos,
+                    formats: reverse_formats,
+                };
+                transaction.forward_operations.extend(forward_operations);
+                transaction.reverse_operations.push(reverse_operations);
+            }
+
+            let data_table_rect = data_table.output_sheet_rect(sheet_pos, false);
+            self.send_to_wasm(transaction, &data_table_rect)?;
+
+            if formats.has_fills() {
+                self.send_all_fills(sheet_pos.sheet_id);
+            }
+
+            return Ok(());
+        };
+
+        bail!("Expected Operation::DataTableFormat in execute_data_table_format");
+    }
 }
 
 #[cfg(test)]

@@ -650,6 +650,7 @@ impl GridController {
                         code_cell.update_cell_references(
                             x - original_pos.x,
                             y - original_pos.y,
+                            &sheet_id,
                             &context,
                         );
                         original_pos.x = x;

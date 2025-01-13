@@ -92,6 +92,11 @@ impl GridController {
                         self.execute_data_table_first_row_as_header(transaction, op),
                     );
                 }
+                Operation::DataTableFormats { .. } => {
+                    Self::handle_execution_operation_result(
+                        self.execute_data_table_format(transaction, op),
+                    );
+                }
                 Operation::ComputeCode { .. } => self.execute_compute_code(transaction, op),
                 Operation::SetCellFormats { .. } => {}
                 Operation::SetCellFormatsSelection { .. } => {

@@ -80,7 +80,7 @@ export function EmptyGridMessage() {
       </div>
       <h2 className="text-md font-semibold">Import data</h2>
       <p className="text-sm text-muted-foreground">
-        Bring in your own data via a file (CSV, Excel, Parquet) or a connection (Postgres, MySQL, and more).
+        Drag and drop a file (CSV, Excel, Parquet) or use a connection (Postgres, MySQL, and more).
       </p>
       <div className="mt-2 flex w-full flex-col justify-center gap-2">
         <UploadFileButton teamUuid={teamUuid} />

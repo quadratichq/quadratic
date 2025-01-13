@@ -7,47 +7,29 @@ use itertools::Itertools;
 use std::str::FromStr;
 
 use crate::{
-    a1::{
-        CellRefCoord, CellRefRange, CellRefRangeEnd, ColRange, RefRangeBounds, RowRange,
-        RowRangeEntry, TableRef,
-    },
+    a1::{CellRefCoord, CellRefRange, CellRefRangeEnd, ColRange, RefRangeBounds, TableRef},
     grid::{
         block::SameValue,
         data_table::{
             column_header::DataTableColumnHeader,
             sort::{DataTableSort, SortDirection},
         },
-        table_formats::TableFormats,
         CellsAccessed, CodeRun, ColumnData, DataTable, DataTableKind, SheetId,
     },
     ArraySize, Axis, Pos, RunError, RunErrorMsg, Value,
 };
 
 use super::{
+    borders::{export_borders, import_borders},
     cell_value::{export_cell_value, import_cell_value},
     current,
-    // format::{export_format, import_format},
+    formats::{export_formats, import_formats}, // format::{export_format, import_format},
 };
 
 fn import_cell_ref_coord(coord: current::CellRefCoordSchema) -> CellRefCoord {
     CellRefCoord {
         coord: coord.coord,
         is_absolute: coord.is_absolute,
-    }
-}
-
-fn import_row_range_entry(range: current::RowRangeEntrySchema) -> RowRangeEntry {
-    RowRangeEntry {
-        start: import_cell_ref_coord(range.start),
-        end: import_cell_ref_coord(range.end),
-    }
-}
-
-fn import_row_range(range: current::RowRangeSchema) -> RowRange {
-    match range {
-        current::RowRangeSchema::All => RowRange::All,
-        current::RowRangeSchema::CurrentRow => RowRange::CurrentRow,
-        current::RowRangeSchema::Rows(range) => RowRange::Rows(import_row_range_entry(range)),
     }
 }
 
@@ -66,7 +48,6 @@ pub(crate) fn import_table_ref(table_ref: current::TableRefSchema) -> TableRef {
         data: table_ref.data,
         headers: table_ref.headers,
         totals: table_ref.totals,
-        row_range: import_row_range(table_ref.row_range),
         col_range: import_col_range(table_ref.col_range),
     }
 }
@@ -199,21 +180,6 @@ fn export_cell_ref_coord(coord: CellRefCoord) -> current::CellRefCoordSchema {
     }
 }
 
-fn export_row_range_entry(range: RowRangeEntry) -> current::RowRangeEntrySchema {
-    current::RowRangeEntrySchema {
-        start: export_cell_ref_coord(range.start),
-        end: export_cell_ref_coord(range.end),
-    }
-}
-
-fn export_row_range(range: RowRange) -> current::RowRangeSchema {
-    match range {
-        RowRange::All => current::RowRangeSchema::All,
-        RowRange::CurrentRow => current::RowRangeSchema::CurrentRow,
-        RowRange::Rows(range) => current::RowRangeSchema::Rows(export_row_range_entry(range)),
-    }
-}
-
 fn export_col_range(range: ColRange) -> current::ColRangeSchema {
     match range {
         ColRange::All => current::ColRangeSchema::All,
@@ -243,7 +209,6 @@ pub(crate) fn export_cell_ref_range(range: CellRefRange) -> current::CellRefRang
                 data: range.data,
                 headers: range.headers,
                 totals: range.totals,
-                row_range: export_row_range(range.row_range),
                 col_range: export_col_range(range.col_range),
             })
         }
@@ -291,37 +256,6 @@ pub(crate) fn import_code_run_builder(code_run: current::CodeRunSchema) -> Resul
 
     Ok(code_run)
 }
-
-// pub(crate) fn import_formats(
-//     column: HashMap<i64, current::ColumnRepeatSchema<current::FormatSchema>>,
-// ) -> ColumnData<SameValue<Format>> {
-//     let mut data = ColumnData::new();
-//     column.into_iter().for_each(|(start, schema)| {
-//         let value = import_format(schema.value);
-//         let len = schema.len as usize;
-//         data.insert_block(start, len, value);
-//     });
-//     data
-// }
-
-// fn import_data_table_formats(formats: current::TableFormatsSchema) -> TableFormats {
-//     let table = formats.table.map(import_format);
-//     let columns: HashMap<usize, Format> = formats
-//         .columns
-//         .into_iter()
-//         .map(|(key, format)| (key as usize, import_format(format)))
-//         .collect();
-//     let cells: HashMap<usize, ColumnData<SameValue<Format>>> = formats
-//         .cells
-//         .into_iter()
-//         .map(|(key, formats)| (key as usize, import_formats(formats)))
-//         .collect();
-//     TableFormats {
-//         table,
-//         columns,
-//         cells,
-//     }
-// }
 
 pub(crate) fn import_data_table_builder(
     data_tables: Vec<(current::PosSchema, current::DataTableSchema)>,
@@ -392,10 +326,10 @@ pub(crate) fn import_data_table_builder(
             }),
             display_buffer: data_table.display_buffer,
             alternating_colors: data_table.alternating_colors,
-            // formats: import_data_table_formats(data_table.formats),
+            formats: import_formats(data_table.formats),
+            borders: import_borders(data_table.borders),
             chart_pixel_output: data_table.chart_pixel_output,
             chart_output: data_table.chart_output,
-            formats: Default::default(),
         };
 
         new_data_tables.insert(Pos { x: pos.x, y: pos.y }, data_table);
@@ -515,38 +449,6 @@ pub(crate) fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
     }
 }
 
-// pub(crate) fn export_formats(
-//     formats: ColumnData<SameValue<Format>>,
-// ) -> HashMap<i64, current::ColumnRepeatSchema<current::FormatSchema>> {
-//     formats
-//         .into_blocks()
-//         .filter_map(|block| {
-//             let len = block.len() as u32;
-//             if let Some(format) = export_format(block.content.value) {
-//                 Some((block.y, current::ColumnRepeatSchema { value: format, len }))
-//             } else {
-//                 None
-//             }
-//         })
-//         .collect()
-// }
-
-// pub(crate) fn export_data_table_formats(formats: TableFormats) -> current::TableFormatsSchema {
-//     current::TableFormatsSchema {
-//         table: formats.table.and_then(export_format),
-//         columns: formats
-//             .columns
-//             .into_iter()
-//             .filter_map(|(key, format)| export_format(format).map(|f| (key as i64, f)))
-//             .collect(),
-//         cells: formats
-//             .cells
-//             .into_iter()
-//             .map(|(key, formats)| (key as i64, export_formats(formats)))
-//             .collect(),
-//     }
-// }
-
 pub(crate) fn export_data_tables(
     data_tables: IndexMap<Pos, DataTable>,
 ) -> Vec<(current::PosSchema, current::DataTableSchema)> {
@@ -626,8 +528,8 @@ pub(crate) fn export_data_tables(
                 spill_error: data_table.spill_error,
                 value,
                 alternating_colors: data_table.alternating_colors,
-                // formats: export_data_table_formats(data_table.formats),
-                formats: Default::default(),
+                formats: export_formats(data_table.formats),
+                borders: export_borders(data_table.borders),
                 chart_pixel_output: data_table.chart_pixel_output,
                 chart_output: data_table.chart_output,
             };
@@ -635,24 +537,4 @@ pub(crate) fn export_data_tables(
             (current::PosSchema::from(pos), data_table)
         })
         .collect()
-}
-
-#[cfg(test)]
-mod tests {
-    // use serial_test::parallel;
-
-    // use super::*;
-
-    // #[test]
-    // #[parallel]
-    // fn test_empty_table_formats_serialized() {
-    //     let formats = TableFormats {
-    //         table: None,
-    //         columns: HashMap::new(),
-    //         cells: HashMap::new(),
-    //     };
-    //     let serialized = export_data_table_formats(formats.clone());
-    //     let import = import_data_table_formats(serialized);
-    //     assert_eq!(import, formats);
-    // }
 }

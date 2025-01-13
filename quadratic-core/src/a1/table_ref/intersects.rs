@@ -45,7 +45,6 @@ mod tests {
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::Col("A".to_string()),
-            row_range: RowRange::All,
             data: true,
             headers: false,
             totals: false,

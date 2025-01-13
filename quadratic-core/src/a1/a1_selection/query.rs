@@ -73,7 +73,7 @@ impl A1Selection {
                 }
             }
             CellRefRange::Table { range } => {
-                if let Some(table_rect) = range.to_largest_rect(self.cursor.y, context) {
+                if let Some(table_rect) = range.to_largest_rect(context) {
                     rect = rect.union(&table_rect);
                 }
             }
@@ -163,7 +163,7 @@ impl A1Selection {
                     }
                 }
                 CellRefRange::Table { range } => {
-                    if let Some(range) = range.convert_to_ref_range_bounds(0, context) {
+                    if let Some(range) = range.convert_to_ref_range_bounds(false, context) {
                         Pos {
                             x: range.end.col(),
                             y: range.end.row(),
@@ -347,7 +347,7 @@ impl A1Selection {
                         None
                     }
                 }
-                CellRefRange::Table { range } => range.convert_to_ref_range_bounds(0, context),
+                CellRefRange::Table { range } => range.convert_to_ref_range_bounds(false, context),
             })
             .collect()
     }

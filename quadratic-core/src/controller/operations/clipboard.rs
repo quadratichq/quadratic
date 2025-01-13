@@ -455,7 +455,12 @@ impl GridController {
                                         },
                                     );
                                 } else {
-                                    code_cell.update_cell_references(delta_x, delta_y, &context);
+                                    code_cell.update_cell_references(
+                                        delta_x,
+                                        delta_y,
+                                        &selection.sheet_id,
+                                        &context,
+                                    );
                                 }
                             }
                             _ => { /* noop */ }
@@ -706,7 +711,7 @@ mod test {
         gc.set_code_cell(
             pos![C3].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
-            "q.cells('A1:B2', first_row_header=True)".to_string(),
+            r#"q.cells("A1:B2", first_row_header=True)"#.to_string(),
             None,
         );
 
@@ -724,7 +729,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         match sheet.cell_value(pos![G8]) {
             Some(CellValue::Code(code_cell)) => {
-                assert_eq!(code_cell.code, "q.cells('E6:F7', first_row_header=True)");
+                assert_eq!(code_cell.code, r#"q.cells("E6:F7", first_row_header=True)"#);
             }
             _ => panic!("expected code cell"),
         }
@@ -800,7 +805,7 @@ mod test {
         gc.set_code_cell(
             pos![C3].to_sheet_pos(sheet_id),
             CodeCellLanguage::Javascript,
-            "return q.cells('A1:B2');".to_string(),
+            r#"return q.cells("A1:B2");"#.to_string(),
             None,
         );
 
@@ -818,7 +823,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         match sheet.cell_value(pos![G8]) {
             Some(CellValue::Code(code_cell)) => {
-                assert_eq!(code_cell.code, "return q.cells('E6:F7');");
+                assert_eq!(code_cell.code, r#"return q.cells("E6:F7");"#);
             }
             _ => panic!("expected code cell"),
         }

@@ -7,11 +7,7 @@ use super::*;
 impl TableRef {
     /// Returns true if the table reference is the default table reference.
     pub fn is_default(&self) -> bool {
-        self.data
-            && !self.headers
-            && !self.totals
-            && self.row_range == RowRange::All
-            && self.col_range == ColRange::All
+        self.data && !self.headers && !self.totals && self.col_range == ColRange::All
     }
 }
 
@@ -39,16 +35,9 @@ impl fmt::Display for TableRef {
                 }
             }
         }
-        if entries.is_empty()
-            && self.row_range == RowRange::All
-            && matches!(self.col_range, ColRange::Col(_))
-        {
+        if entries.is_empty() && matches!(self.col_range, ColRange::Col(_)) {
             write!(f, "{}{}", self.table_name, self.col_range)
         } else {
-            let row = self.row_range.to_string();
-            if !row.is_empty() {
-                entries.push(row);
-            }
             let col = self.col_range.to_string();
             if !col.is_empty() {
                 entries.push(col);
@@ -79,9 +68,6 @@ mod tests {
         let context = A1Context::test(&[], &[("Table1", &["A"], Rect::test_a1("A1"))]);
         let tests = [
             "Table1[Column 1]",
-            "Table1[[#12]]",
-            "Table1[[#12:]]",
-            "Table1[[#12:15]]",
             "Table1[[#ALL]]",
             "Table1[[#HEADERS],[#TOTALS]]",
             "Table1[[#HEADERS],[Column 1]]",
