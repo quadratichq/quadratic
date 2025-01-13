@@ -49,8 +49,8 @@ export class TableOutline extends Graphics {
       }
     }
 
-    // draw the drag handle
-    if (this.active) {
+    // create the drag handles
+    if (this.active && this.table && !this.table.codeCell.readonly) {
       const cornerHandle = new Rectangle(
         this.table.tableBounds.x + this.table.tableBounds.width - 4,
         this.table.tableBounds.y + this.table.tableBounds.height - 4,
