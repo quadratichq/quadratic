@@ -114,7 +114,7 @@ impl A1Selection {
         for range in self.ranges.iter() {
             match range {
                 CellRefRange::Table { range } => table_ranges.push(range.clone()),
-                CellRefRange::Sheet { range } => non_table_ranges.push(range.clone()),
+                CellRefRange::Sheet { range } => non_table_ranges.push(*range),
             }
         }
         (table_ranges, non_table_ranges)

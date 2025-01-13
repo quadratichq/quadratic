@@ -46,11 +46,9 @@ impl A1Selection {
                 ',' => {
                     if in_quotes || in_table != 0 {
                         current_segment.push(c);
-                    } else {
-                        if !current_segment.is_empty() {
-                            segments.push(current_segment);
-                            current_segment = String::new();
-                        }
+                    } else if !current_segment.is_empty() {
+                        segments.push(current_segment);
+                        current_segment = String::new();
                     }
                 }
                 _ => current_segment.push(c),

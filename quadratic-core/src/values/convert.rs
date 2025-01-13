@@ -427,7 +427,7 @@ mod test {
     #[parallel]
     fn test_datetime_conversions() {
         let time = NaiveTime::from_hms_opt(3, 15, 6).unwrap();
-        let date = NaiveDate::from_ymd_opt(2010, 04, 01).unwrap();
+        let date = NaiveDate::from_ymd_opt(2010, 4, 1).unwrap();
         let datetime = NaiveDateTime::new(date, time);
         let duration = Duration::from_days(30.5);
 

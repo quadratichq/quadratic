@@ -12,21 +12,19 @@ impl Sheet {
             Direction::Up => {
                 if pos.y == 1 {
                     pos
-                } else {
-                    if let Some((chart_pos, _)) = self.chart_at(pos) {
-                        if chart_pos.y == 1 {
-                            pos
-                        } else {
-                            Pos {
-                                x: pos.x,
-                                y: chart_pos.y - 1,
-                            }
-                        }
+                } else if let Some((chart_pos, _)) = self.chart_at(pos) {
+                    if chart_pos.y == 1 {
+                        pos
                     } else {
                         Pos {
                             x: pos.x,
-                            y: pos.y - 1,
+                            y: chart_pos.y - 1,
                         }
+                    }
+                } else {
+                    Pos {
+                        x: pos.x,
+                        y: pos.y - 1,
                     }
                 }
             }
@@ -47,17 +45,15 @@ impl Sheet {
             Direction::Left => {
                 if pos.x == 1 {
                     pos
+                } else if let Some((chart_pos, _)) = self.chart_at(pos) {
+                    Pos {
+                        x: chart_pos.x - 1,
+                        y: pos.y,
+                    }
                 } else {
-                    if let Some((chart_pos, _)) = self.chart_at(pos) {
-                        Pos {
-                            x: chart_pos.x - 1,
-                            y: pos.y,
-                        }
-                    } else {
-                        Pos {
-                            x: pos.x - 1,
-                            y: pos.y,
-                        }
+                    Pos {
+                        x: pos.x - 1,
+                        y: pos.y,
                     }
                 }
             }
