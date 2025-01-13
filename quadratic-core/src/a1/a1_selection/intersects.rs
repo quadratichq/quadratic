@@ -23,10 +23,37 @@ impl A1Selection {
                                 });
                             }
                         }
-                        CellRefRange::Table { .. } => (),
+                        CellRefRange::Table { range: other_range } => {
+                            if let Some(rect) = other_range.to_largest_rect(context) {
+                                if let Some(intersection) =
+                                    RefRangeBounds::new_relative_rect(rect).intersection(range)
+                                {
+                                    ranges.push(CellRefRange::Sheet {
+                                        range: intersection,
+                                    });
+                                }
+                            }
+                        }
                     });
             }
-            CellRefRange::Table { .. } => (),
+            CellRefRange::Table { range } => {
+                if let Some(range) = range.convert_to_ref_range_bounds(false, context) {
+                    other
+                        .ranges
+                        .iter()
+                        .for_each(|other_range| match other_range {
+                            CellRefRange::Sheet { range: other_range } => {
+                                if let Some(intersection) = range.intersection(other_range) {
+                                    ranges.push(CellRefRange::Sheet {
+                                        range: intersection,
+                                    });
+                                }
+                            }
+                            // two tables cannot overlap
+                            CellRefRange::Table { .. } => (),
+                        });
+                }
+            }
         });
         if ranges.is_empty() {
             None
@@ -107,6 +134,8 @@ impl A1Selection {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
+    use crate::Rect;
+
     use super::*;
 
     #[test]
@@ -361,5 +390,31 @@ mod tests {
             sel1.overlaps_a1_selection(&sel2, &context),
             "Column should overlap with intersecting rectangle"
         );
+    }
+
+    #[test]
+    fn test_intersection_table_ref() {
+        let context = A1Context::test(
+            &[],
+            &[("Table1", &["Col1", "Col2"], Rect::test_a1("A1:B2"))],
+        );
+
+        let sel1 = A1Selection::test_a1_context("Table1", &context);
+        let sel2 = A1Selection::test_a1("A1:D4");
+        assert_eq!(
+            sel1.intersection(&sel2, &context).unwrap().test_to_string(),
+            "A2:B2",
+        );
+
+        let sel1 = A1Selection::test_a1("A1:D4");
+        let sel2 = A1Selection::test_a1_context("Table1", &context);
+        assert_eq!(
+            sel1.intersection(&sel2, &context).unwrap().test_to_string(),
+            "A2:B2",
+        );
+
+        let sel1 = A1Selection::test_a1("D1:E1");
+        let sel2 = A1Selection::test_a1_context("Table1", &context);
+        assert_eq!(sel1.intersection(&sel2, &context), None);
     }
 }

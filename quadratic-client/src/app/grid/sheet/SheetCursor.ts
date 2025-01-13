@@ -128,7 +128,7 @@ export class SheetCursor {
   // Returns rectangle in case of single finite range selection having more than one cell
   // Returns undefined if there are multiple ranges or infinite range selection
   getSingleRectangle = (): Rectangle | undefined => {
-    const rect = this.jsSelection.getSingleRectangle(this.sheet.sheets.a1Context);
+    const rect = this.jsSelection.getSingleRectangleOrCursor(this.sheet.sheets.a1Context);
     return rect ? rectToRectangle(rect) : undefined;
   };
 
@@ -295,8 +295,6 @@ export class SheetCursor {
 
   // Returns true if there is one multiselect of > 1 size
   canConvertToDataTable = (): boolean => {
-    const tables = pixiApp.cellsSheets.current?.tables;
-    if (!tables) return false;
     return !!this.sheet.cursor.getSingleRectangle();
   };
 
