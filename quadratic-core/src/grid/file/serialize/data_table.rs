@@ -20,10 +20,10 @@ use crate::{
 };
 
 use super::{
+    borders::{export_borders, import_borders},
     cell_value::{export_cell_value, import_cell_value},
     current,
-    formats::{export_formats, import_formats},
-    // format::{export_format, import_format},
+    formats::{export_formats, import_formats}, // format::{export_format, import_format},
 };
 
 fn import_cell_ref_coord(coord: current::CellRefCoordSchema) -> CellRefCoord {
@@ -327,6 +327,7 @@ pub(crate) fn import_data_table_builder(
             display_buffer: data_table.display_buffer,
             alternating_colors: data_table.alternating_colors,
             formats: import_formats(data_table.formats),
+            borders: import_borders(data_table.borders),
             chart_pixel_output: data_table.chart_pixel_output,
             chart_output: data_table.chart_output,
         };
@@ -528,6 +529,7 @@ pub(crate) fn export_data_tables(
                 value,
                 alternating_colors: data_table.alternating_colors,
                 formats: export_formats(data_table.formats),
+                borders: export_borders(data_table.borders),
                 chart_pixel_output: data_table.chart_pixel_output,
                 chart_output: data_table.chart_output,
             };
@@ -535,24 +537,4 @@ pub(crate) fn export_data_tables(
             (current::PosSchema::from(pos), data_table)
         })
         .collect()
-}
-
-#[cfg(test)]
-mod tests {
-    // use serial_test::parallel;
-
-    // use super::*;
-
-    // #[test]
-    // #[parallel]
-    // fn test_empty_table_formats_serialized() {
-    //     let formats = TableFormats {
-    //         table: None,
-    //         columns: HashMap::new(),
-    //         cells: HashMap::new(),
-    //     };
-    //     let serialized = export_data_table_formats(formats.clone());
-    //     let import = import_data_table_formats(serialized);
-    //     assert_eq!(import, formats);
-    // }
 }

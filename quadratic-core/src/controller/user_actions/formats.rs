@@ -17,15 +17,25 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
     }
 
-    /// Applies the format update to the table ranges in the selection.
-    pub(crate) fn apply_table_formats(
+    /// Separately apply sheet and table formats.
+    fn format_ops(
         &mut self,
         selection: &A1Selection,
         format_update: FormatUpdate,
     ) -> Vec<Operation> {
-        let mut ops = Vec::new();
-        let context = self.grid.a1_context();
         let (tables, non_tables) = selection.separate_table_ranges();
+        let mut ops = vec![];
+
+        // create ops for the sheet if needed (ignoring TableRefs)
+        if !non_tables.is_empty() {
+            ops.push(Operation::SetCellFormatsA1 {
+                sheet_id: selection.sheet_id,
+                // from_selection ignores TableRefs
+                formats: SheetFormatUpdates::from_selection(selection, format_update.clone()),
+            });
+        }
+
+        let context = self.grid.a1_context();
 
         // set table ranges
         for table_ref in tables {
@@ -103,14 +113,7 @@ impl GridController {
             align: Some(Some(align)),
             ..Default::default()
         };
-        // tables are handled below
-        let mut ops = vec![Operation::SetCellFormatsA1 {
-            sheet_id: selection.sheet_id,
-            formats: SheetFormatUpdates::from_selection(selection, format_update.clone()),
-        }];
-
-        ops.extend(self.apply_table_formats(selection, format_update));
-
+        let ops = self.format_ops(selection, format_update);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -125,11 +128,7 @@ impl GridController {
             vertical_align: Some(Some(vertical_align)),
             ..Default::default()
         };
-        let mut ops = vec![Operation::SetCellFormatsA1 {
-            sheet_id: selection.sheet_id,
-            formats: SheetFormatUpdates::from_selection(selection, format_update.clone()),
-        }];
-        ops.extend(self.apply_table_formats(selection, format_update));
+        let ops = self.format_ops(selection, format_update);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -144,11 +143,7 @@ impl GridController {
             bold: Some(Some(bold)),
             ..Default::default()
         };
-        let mut ops = vec![Operation::SetCellFormatsA1 {
-            sheet_id: selection.sheet_id,
-            formats: SheetFormatUpdates::from_selection(selection, format_update.clone()),
-        }];
-        ops.extend(self.apply_table_formats(selection, format_update));
+        let ops = self.format_ops(selection, format_update);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -163,11 +158,7 @@ impl GridController {
             italic: Some(Some(italic)),
             ..Default::default()
         };
-        let mut ops = vec![Operation::SetCellFormatsA1 {
-            sheet_id: selection.sheet_id,
-            formats: SheetFormatUpdates::from_selection(selection, format_update.clone()),
-        }];
-        ops.extend(self.apply_table_formats(selection, format_update));
+        let ops = self.format_ops(selection, format_update);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -182,11 +173,7 @@ impl GridController {
             wrap: Some(Some(wrap)),
             ..Default::default()
         };
-        let mut ops = vec![Operation::SetCellFormatsA1 {
-            sheet_id: selection.sheet_id,
-            formats: SheetFormatUpdates::from_selection(selection, format_update.clone()),
-        }];
-        ops.extend(self.apply_table_formats(selection, format_update));
+        let ops = self.format_ops(selection, format_update);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -207,11 +194,7 @@ impl GridController {
             numeric_decimals: Some(Some(2)),
             ..Default::default()
         };
-        let mut ops = vec![Operation::SetCellFormatsA1 {
-            sheet_id: selection.sheet_id,
-            formats: SheetFormatUpdates::from_selection(selection, format_update.clone()),
-        }];
-        ops.extend(self.apply_table_formats(selection, format_update));
+        let ops = self.format_ops(selection, format_update);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -227,11 +210,7 @@ impl GridController {
             numeric_format: Some(Some(NumericFormat { kind, symbol })),
             ..Default::default()
         };
-        let mut ops = vec![Operation::SetCellFormatsA1 {
-            sheet_id: selection.sheet_id,
-            formats: SheetFormatUpdates::from_selection(selection, format_update.clone()),
-        }];
-        ops.extend(self.apply_table_formats(selection, format_update));
+        let ops = self.format_ops(selection, format_update);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -246,11 +225,7 @@ impl GridController {
             numeric_commas: Some(Some(commas)),
             ..Default::default()
         };
-        let mut ops = vec![Operation::SetCellFormatsA1 {
-            sheet_id: selection.sheet_id,
-            formats: SheetFormatUpdates::from_selection(selection, format_update.clone()),
-        }];
-        ops.extend(self.apply_table_formats(selection, format_update));
+        let ops = self.format_ops(selection, format_update);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -265,11 +240,7 @@ impl GridController {
             text_color: Some(color),
             ..Default::default()
         };
-        let mut ops = vec![Operation::SetCellFormatsA1 {
-            sheet_id: selection.sheet_id,
-            formats: SheetFormatUpdates::from_selection(selection, format_update.clone()),
-        }];
-        ops.extend(self.apply_table_formats(selection, format_update));
+        let ops = self.format_ops(selection, format_update);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -284,11 +255,7 @@ impl GridController {
             fill_color: Some(color),
             ..Default::default()
         };
-        let mut ops = vec![Operation::SetCellFormatsA1 {
-            sheet_id: selection.sheet_id,
-            formats: SheetFormatUpdates::from_selection(selection, format_update.clone()),
-        }];
-        ops.extend(self.apply_table_formats(selection, format_update));
+        let ops = self.format_ops(selection, format_update);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -302,11 +269,7 @@ impl GridController {
             numeric_format: Some(None),
             ..Default::default()
         };
-        let mut ops = vec![Operation::SetCellFormatsA1 {
-            sheet_id: selection.sheet_id,
-            formats: SheetFormatUpdates::from_selection(selection, format_update.clone()),
-        }];
-        ops.extend(self.apply_table_formats(selection, format_update));
+        let ops = self.format_ops(selection, format_update);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -329,11 +292,7 @@ impl GridController {
             numeric_decimals: Some(Some(new_precision)),
             ..Default::default()
         };
-        let mut ops = vec![Operation::SetCellFormatsA1 {
-            sheet_id: selection.sheet_id,
-            formats: SheetFormatUpdates::from_selection(selection, format_update.clone()),
-        }];
-        ops.extend(self.apply_table_formats(selection, format_update));
+        let ops = self.format_ops(selection, format_update);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -348,11 +307,7 @@ impl GridController {
             date_time: Some(date_time),
             ..Default::default()
         };
-        let mut ops = vec![Operation::SetCellFormatsA1 {
-            sheet_id: selection.sheet_id,
-            formats: SheetFormatUpdates::from_selection(selection, format_update.clone()),
-        }];
-        ops.extend(self.apply_table_formats(selection, format_update));
+        let ops = self.format_ops(selection, format_update);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -367,11 +322,7 @@ impl GridController {
             underline: Some(Some(underline)),
             ..Default::default()
         };
-        let mut ops = vec![Operation::SetCellFormatsA1 {
-            sheet_id: selection.sheet_id,
-            formats: SheetFormatUpdates::from_selection(selection, format_update.clone()),
-        }];
-        ops.extend(self.apply_table_formats(selection, format_update));
+        let ops = self.format_ops(selection, format_update);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -386,11 +337,7 @@ impl GridController {
             strike_through: Some(Some(strike_through)),
             ..Default::default()
         };
-        let mut ops = vec![Operation::SetCellFormatsA1 {
-            sheet_id: selection.sheet_id,
-            formats: SheetFormatUpdates::from_selection(selection, format_update.clone()),
-        }];
-        ops.extend(self.apply_table_formats(selection, format_update));
+        let ops = self.format_ops(selection, format_update);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -839,7 +786,7 @@ mod test {
             bold: Some(Some(true)),
             ..Default::default()
         };
-        let ops = gc.apply_table_formats(
+        let ops = gc.format_ops(
             &A1Selection::test_a1_context("Table1", &gc.grid.a1_context()),
             format_update.clone(),
         );

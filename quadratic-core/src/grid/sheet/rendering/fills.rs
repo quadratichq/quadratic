@@ -47,7 +47,7 @@ impl Sheet {
                         }
                         let rect = dt.output_rect(*pos, true);
                         let x = rect.min.x + x0 - 1;
-                        let y = rect.min.y + y0 - 1 + if dt.show_header { 1 } else { 0 };
+                        let y = rect.min.y + y0 - 1;
                         let x1 = x1.map_or(rect.max.x, |x1| rect.min.x + x1 - 1);
                         let y1 = y1.map_or(rect.max.y, |y1| rect.min.y + y1 - 1);
                         Some(JsRenderFill {

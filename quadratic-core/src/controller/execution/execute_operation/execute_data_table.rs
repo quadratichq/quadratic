@@ -716,6 +716,10 @@ impl GridController {
             let data_table_rect = data_table.output_sheet_rect(sheet_pos, false);
             self.send_to_wasm(transaction, &data_table_rect)?;
 
+            if formats.has_fills() {
+                self.send_all_fills(sheet_pos.sheet_id);
+            }
+
             return Ok(());
         };
 
