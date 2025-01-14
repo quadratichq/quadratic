@@ -80,6 +80,10 @@ pub enum Operation {
         sheet_pos: SheetPos,
         formats: SheetFormatUpdates,
     },
+    DataTableBorders {
+        sheet_pos: SheetPos,
+        borders: BordersUpdates,
+    },
     SortDataTable {
         sheet_pos: SheetPos,
         sort: Option<Vec<DataTableSort>>,
@@ -344,6 +348,13 @@ impl fmt::Display for Operation {
                     fmt,
                     "DataTableFormat {{ sheet_pos: {}, formats: {:?} }}",
                     sheet_pos, formats
+                )
+            }
+            Operation::DataTableBorders { sheet_pos, borders } => {
+                write!(
+                    fmt,
+                    "DataTableBorders {{ sheet_pos: {}, borders: {:?} }}",
+                    sheet_pos, borders
                 )
             }
             Operation::SortDataTable { sheet_pos, sort } => {

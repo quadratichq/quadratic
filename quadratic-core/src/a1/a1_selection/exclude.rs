@@ -75,7 +75,7 @@ impl A1Selection {
         if range.end.col() > exclude.max.x {
             let start = CellRefRangeEnd::new_relative_xy(
                 exclude.max.x + 1,
-                top.unwrap_or(range.start.row()),
+                top.unwrap_or(bottom.unwrap_or(range.start.row())),
             );
             let end = CellRefRangeEnd {
                 col: range.end.col,
@@ -91,7 +91,12 @@ impl A1Selection {
     }
 
     /// Removes the given rectangle from the selection.
-    fn remove_rect(range: CellRefRange, p1: Pos, p2: Pos) -> Vec<CellRefRange> {
+    fn remove_rect(
+        range: CellRefRange,
+        p1: Pos,
+        p2: Pos,
+        context: &A1Context,
+    ) -> Vec<CellRefRange> {
         let mut ranges = Vec::new();
         let exclude_rect = Rect { min: p1, max: p2 };
 
@@ -99,9 +104,12 @@ impl A1Selection {
             CellRefRange::Sheet { range } => {
                 ranges.extend(A1Selection::find_excluded_rects(range, exclude_rect));
             }
-            CellRefRange::Table { .. } => (),
+            CellRefRange::Table { range } => {
+                if let Some(table_range) = range.convert_to_ref_range_bounds(false, context) {
+                    ranges.extend(A1Selection::find_excluded_rects(table_range, exclude_rect));
+                }
+            }
         }
-
         ranges
     }
 
@@ -131,12 +139,12 @@ impl A1Selection {
             {
                 if let Some(p2) = p2 {
                     if range.might_intersect_rect(Rect { min: p1, max: p2 }, context) {
-                        ranges.extend(A1Selection::remove_rect(range, p1, p2));
+                        ranges.extend(A1Selection::remove_rect(range, p1, p2, context));
                     } else {
                         ranges.push(range);
                     }
                 } else if range.might_contain_pos(p1, context) {
-                    ranges.extend(A1Selection::remove_rect(range, p1, p1));
+                    ranges.extend(A1Selection::remove_rect(range, p1, p1, context));
                 } else {
                     ranges.push(range);
                 }
@@ -563,6 +571,20 @@ mod test {
                 CellRefRange::test_a1("A2:C2"),
                 CellRefRange::test_a1("E2:2")
             ]
+        );
+    }
+
+    #[test]
+    fn test_exclude_cells_table() {
+        let context = A1Context::test(
+            &[],
+            &[("Table1", &["Col1", "Col2"], Rect::test_a1("A1:B2"))],
+        );
+        let mut selection = A1Selection::test_a1_context("Table1", &context);
+        selection.exclude_cells(pos![A1], None, &context);
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test_a1("A2:B2"), CellRefRange::test_a1("B1")]
         );
     }
 

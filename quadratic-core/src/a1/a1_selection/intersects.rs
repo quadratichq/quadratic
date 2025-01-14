@@ -23,10 +23,37 @@ impl A1Selection {
                                 });
                             }
                         }
-                        CellRefRange::Table { .. } => (),
+                        CellRefRange::Table { range: other_range } => {
+                            if let Some(rect) = other_range.to_largest_rect(context) {
+                                if let Some(intersection) =
+                                    RefRangeBounds::new_relative_rect(rect).intersection(range)
+                                {
+                                    ranges.push(CellRefRange::Sheet {
+                                        range: intersection,
+                                    });
+                                }
+                            }
+                        }
                     });
             }
-            CellRefRange::Table { .. } => (),
+            CellRefRange::Table { range } => {
+                if let Some(range) = range.convert_to_ref_range_bounds(false, context) {
+                    other
+                        .ranges
+                        .iter()
+                        .for_each(|other_range| match other_range {
+                            CellRefRange::Sheet { range: other_range } => {
+                                if let Some(intersection) = range.intersection(other_range) {
+                                    ranges.push(CellRefRange::Sheet {
+                                        range: intersection,
+                                    });
+                                }
+                            }
+                            // two tables cannot overlap
+                            CellRefRange::Table { .. } => (),
+                        });
+                }
+            }
         });
         if ranges.is_empty() {
             None
@@ -64,11 +91,10 @@ impl A1Selection {
     fn overlap_ref_range_bounds_table_ref(
         range: &RefRangeBounds,
         other_range: &TableRef,
-        current_row: i64,
         context: &A1Context,
     ) -> bool {
         let rect = range.to_rect_unbounded();
-        if let Some(other_rect) = other_range.to_largest_rect(current_row, context) {
+        if let Some(other_rect) = other_range.to_largest_rect(context) {
             rect.intersects(other_rect)
         } else {
             false
@@ -76,12 +102,7 @@ impl A1Selection {
     }
 
     /// Returns `true` if the two selections overlap.
-    pub fn overlaps_a1_selection(
-        &self,
-        other: &Self,
-        current_row: i64,
-        context: &A1Context,
-    ) -> bool {
+    pub fn overlaps_a1_selection(&self, other: &Self, context: &A1Context) -> bool {
         if self.sheet_id != other.sheet_id {
             return false;
         }
@@ -93,24 +114,14 @@ impl A1Selection {
                         range.intersection(other_range).is_some()
                     }
                     CellRefRange::Table { range: other_range } => {
-                        A1Selection::overlap_ref_range_bounds_table_ref(
-                            range,
-                            other_range,
-                            current_row,
-                            context,
-                        )
+                        A1Selection::overlap_ref_range_bounds_table_ref(range, other_range, context)
                     }
                 })
             }
             CellRefRange::Table { range } => {
                 other.ranges.iter().any(|other_range| match other_range {
                     CellRefRange::Sheet { range: other_range } => {
-                        A1Selection::overlap_ref_range_bounds_table_ref(
-                            other_range,
-                            range,
-                            current_row,
-                            context,
-                        )
+                        A1Selection::overlap_ref_range_bounds_table_ref(other_range, range, context)
                     }
                     // two tables cannot overlap
                     CellRefRange::Table { .. } => false,
@@ -123,6 +134,8 @@ impl A1Selection {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
+    use crate::Rect;
+
     use super::*;
 
     #[test]
@@ -262,7 +275,7 @@ mod tests {
         let sel1 = A1Selection::test_a1_sheet_id("A1:B2", &SheetId::new());
         let sel2 = A1Selection::test_a1_sheet_id("B2:C3", &SheetId::new());
         assert!(
-            !sel1.overlaps_a1_selection(&sel2, 1, &context),
+            !sel1.overlaps_a1_selection(&sel2, &context),
             "Different sheets should not overlap"
         );
 
@@ -270,7 +283,7 @@ mod tests {
         let sel1 = A1Selection::test_a1("A1:B2");
         let sel2 = A1Selection::test_a1("C3:D4");
         assert!(
-            !sel1.overlaps_a1_selection(&sel2, 1, &context),
+            !sel1.overlaps_a1_selection(&sel2, &context),
             "Non-overlapping rectangles should not overlap"
         );
 
@@ -278,7 +291,7 @@ mod tests {
         let sel1 = A1Selection::test_a1("A1:C3");
         let sel2 = A1Selection::test_a1("B2:D4");
         assert!(
-            sel1.overlaps_a1_selection(&sel2, 1, &context),
+            sel1.overlaps_a1_selection(&sel2, &context),
             "Overlapping rectangles should overlap"
         );
 
@@ -286,7 +299,7 @@ mod tests {
         let sel1 = A1Selection::test_a1("A1:D4");
         let sel2 = A1Selection::test_a1("B2:C3");
         assert!(
-            sel1.overlaps_a1_selection(&sel2, 1, &context),
+            sel1.overlaps_a1_selection(&sel2, &context),
             "Nested rectangles should overlap"
         );
 
@@ -294,7 +307,7 @@ mod tests {
         let sel1 = A1Selection::test_a1("A:C");
         let sel2 = A1Selection::test_a1("B:D");
         assert!(
-            sel1.overlaps_a1_selection(&sel2, 1, &context),
+            sel1.overlaps_a1_selection(&sel2, &context),
             "Overlapping columns should overlap"
         );
 
@@ -302,7 +315,7 @@ mod tests {
         let sel1 = A1Selection::test_a1("A:B");
         let sel2 = A1Selection::test_a1("C:D");
         assert!(
-            !sel1.overlaps_a1_selection(&sel2, 1, &context),
+            !sel1.overlaps_a1_selection(&sel2, &context),
             "Non-overlapping columns should not overlap"
         );
 
@@ -310,7 +323,7 @@ mod tests {
         let sel1 = A1Selection::test_a1("1:3");
         let sel2 = A1Selection::test_a1("2:4");
         assert!(
-            sel1.overlaps_a1_selection(&sel2, 1, &context),
+            sel1.overlaps_a1_selection(&sel2, &context),
             "Overlapping rows should overlap"
         );
 
@@ -318,7 +331,7 @@ mod tests {
         let sel1 = A1Selection::test_a1("1:2");
         let sel2 = A1Selection::test_a1("3:4");
         assert!(
-            !sel1.overlaps_a1_selection(&sel2, 1, &context),
+            !sel1.overlaps_a1_selection(&sel2, &context),
             "Non-overlapping rows should not overlap"
         );
 
@@ -326,7 +339,7 @@ mod tests {
         let sel1 = A1Selection::test_a1("A1:B2");
         let sel2 = A1Selection::test_a1("B2");
         assert!(
-            sel1.overlaps_a1_selection(&sel2, 1, &context),
+            sel1.overlaps_a1_selection(&sel2, &context),
             "Single cell should overlap with containing rectangle"
         );
 
@@ -334,7 +347,7 @@ mod tests {
         let sel1 = A1Selection::test_a1("A1:C3,E1:G3");
         let sel2 = A1Selection::test_a1("B2:F2");
         assert!(
-            sel1.overlaps_a1_selection(&sel2, 1, &context),
+            sel1.overlaps_a1_selection(&sel2, &context),
             "Disjoint ranges should overlap when intersecting"
         );
 
@@ -342,7 +355,7 @@ mod tests {
         let sel1 = A1Selection::test_a1("A1:B2,D1:E2");
         let sel2 = A1Selection::test_a1("F1:G2,H1:I2");
         assert!(
-            !sel1.overlaps_a1_selection(&sel2, 1, &context),
+            !sel1.overlaps_a1_selection(&sel2, &context),
             "Disjoint ranges should not overlap when separate"
         );
 
@@ -350,7 +363,7 @@ mod tests {
         let sel1 = A1Selection::test_a1("A1:C3,E:G,2:4");
         let sel2 = A1Selection::test_a1("B2:D4,F:H,3:5");
         assert!(
-            sel1.overlaps_a1_selection(&sel2, 1, &context),
+            sel1.overlaps_a1_selection(&sel2, &context),
             "Complex selections should detect overlap correctly"
         );
 
@@ -358,7 +371,7 @@ mod tests {
         let sel1 = A1Selection::test_a1("*");
         let sel2 = A1Selection::test_a1("B2:C3");
         assert!(
-            sel1.overlaps_a1_selection(&sel2, 1, &context),
+            sel1.overlaps_a1_selection(&sel2, &context),
             "All (*) should overlap with any selection"
         );
 
@@ -366,7 +379,7 @@ mod tests {
         let sel1 = A1Selection::test_a1("2:4");
         let sel2 = A1Selection::test_a1("B2:C3");
         assert!(
-            sel1.overlaps_a1_selection(&sel2, 1, &context),
+            sel1.overlaps_a1_selection(&sel2, &context),
             "Row should overlap with intersecting rectangle"
         );
 
@@ -374,8 +387,34 @@ mod tests {
         let sel1 = A1Selection::test_a1("B:D");
         let sel2 = A1Selection::test_a1("B2:C3");
         assert!(
-            sel1.overlaps_a1_selection(&sel2, 1, &context),
+            sel1.overlaps_a1_selection(&sel2, &context),
             "Column should overlap with intersecting rectangle"
         );
+    }
+
+    #[test]
+    fn test_intersection_table_ref() {
+        let context = A1Context::test(
+            &[],
+            &[("Table1", &["Col1", "Col2"], Rect::test_a1("A1:B2"))],
+        );
+
+        let sel1 = A1Selection::test_a1_context("Table1", &context);
+        let sel2 = A1Selection::test_a1("A1:D4");
+        assert_eq!(
+            sel1.intersection(&sel2, &context).unwrap().test_to_string(),
+            "A2:B2",
+        );
+
+        let sel1 = A1Selection::test_a1("A1:D4");
+        let sel2 = A1Selection::test_a1_context("Table1", &context);
+        assert_eq!(
+            sel1.intersection(&sel2, &context).unwrap().test_to_string(),
+            "A2:B2",
+        );
+
+        let sel1 = A1Selection::test_a1("D1:E1");
+        let sel2 = A1Selection::test_a1_context("Table1", &context);
+        assert_eq!(sel1.intersection(&sel2, &context), None);
     }
 }

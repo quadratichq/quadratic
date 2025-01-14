@@ -399,15 +399,19 @@ impl Array {
     }
     /// Delete a row at the given index.
     pub fn delete_row(&mut self, remove_at_index: usize) -> Result<()> {
-        let width = (self.width() as usize).min(self.values.len());
-        let start = remove_at_index * width;
-        let end = start + width;
+        let values_len = self.values.len();
+        let width = (self.width() as usize).min(values_len);
         let height = NonZeroU32::new(self.height() - 1);
 
         match height {
             Some(h) => {
-                self.values.drain(start..end);
-                self.size.h = h;
+                let start = remove_at_index * width - width;
+                let end = std::cmp::min(start + width, values_len);
+
+                if start <= end {
+                    self.values.drain(start..end);
+                    self.size.h = h;
+                }
             }
             None => bail!("Cannot remove a row from a single row array"),
         }
@@ -459,7 +463,9 @@ impl Array {
         let start = index * width;
 
         for (i, value) in values.iter().enumerate() {
-            self.values[start + i] = value.to_owned();
+            if let Some(cell) = self.values.get_mut(start + i) {
+                *cell = value.to_owned();
+            }
         }
 
         Ok(())

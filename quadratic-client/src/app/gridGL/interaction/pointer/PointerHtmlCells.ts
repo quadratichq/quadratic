@@ -37,7 +37,7 @@ export class PointerHtmlCells {
           this.hovering.clearHighlightEdges();
         }
         this.hovering = cell;
-        this.cursor = target === 'corner' ? 'nwse-resize' : target === 'right' ? 'col-resize' : 'row-resize';
+        this.cursor = target === 'corner' ? 'all-scroll' : target === 'right' ? 'col-resize' : 'row-resize';
         return true;
       }
 

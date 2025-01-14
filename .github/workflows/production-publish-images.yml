@@ -10,10 +10,20 @@ concurrency:
 
 jobs:
   publish_images:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
-        service: [multiplayer, files, connection, client, api]
+        include:
+          - service: client
+            runner: blacksmith-8vcpu-ubuntu-2204
+          - service: api
+            runner: blacksmith-2vcpu-ubuntu-2204
+          - service: connection
+            runner: blacksmith-4vcpu-ubuntu-2204
+          - service: files
+            runner: blacksmith-4vcpu-ubuntu-2204
+          - service: multiplayer
+            runner: blacksmith-4vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
 

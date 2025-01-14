@@ -91,7 +91,7 @@ impl GridController {
                             sheet.send_all_validation_warnings();
 
                             // sends all borders to the client
-                            sheet.borders.send_sheet_borders(*sheet_id);
+                            sheet.send_sheet_borders(*sheet_id);
                         }
                     });
                 }

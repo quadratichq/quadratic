@@ -27,11 +27,11 @@ import {
 import { QuadraticEditorTheme } from '@/app/ui/menus/CodeEditor/quadraticEditorTheme';
 import { javascriptLibraryForEditor } from '@/app/web-workers/javascriptWebWorker/worker/javascript/runner/generatedJavascriptForEditor';
 import { pyrightWorker, uri } from '@/app/web-workers/pythonLanguageServer/worker';
+import { SpinnerIcon } from '@/shared/components/Icons';
 import useEventListener from '@/shared/hooks/useEventListener';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import type { Monaco } from '@monaco-editor/react';
 import Editor, { DiffEditor } from '@monaco-editor/react';
-import { CircularProgress } from '@mui/material';
 import * as monaco from 'monaco-editor';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
@@ -263,7 +263,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   if (!showDiffEditor && (editorContent === undefined || loading)) {
     return (
       <div className="flex justify-center">
-        <CircularProgress style={{ width: '18px', height: '18px' }} />
+        <SpinnerIcon className="text-primary" />
       </div>
     );
   }
@@ -286,7 +286,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
             value={editorContent}
             onChange={setEditorContent}
             onMount={onMount}
-            loading={<CircularProgress style={{ width: '18px', height: '18px' }} />}
+            loading={<SpinnerIcon className="text-primary" />}
             options={{
               theme: 'light',
               readOnly: !canEdit,

@@ -282,7 +282,7 @@ mod test {
             );
         };
 
-        // (1, 1, sheet 2) = sheet 1:A1
+        // (1, 1, Sheet2) = Sheet1:A1
         let third = |gc: &mut GridController| {
             let sheet_id_2 = gc.sheet_ids()[1];
             gc.set_code_cell(
@@ -292,7 +292,7 @@ mod test {
                     sheet_id: sheet_id_2,
                 },
                 CodeCellLanguage::Formula,
-                "'Sheet 1'!A1".to_string(),
+                "'Sheet1'!A1".to_string(),
                 None,
             );
         };

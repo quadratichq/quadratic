@@ -140,10 +140,10 @@ impl GridController {
         &mut self,
         sheet_id: String,
         pos: String,
-        column_to_add: Option<u32>,
-        column_to_remove: Option<u32>,
-        row_to_add: Option<u32>,
-        row_to_remove: Option<u32>,
+        columns_to_add: Option<Vec<u32>>,
+        columns_to_remove: Option<Vec<u32>>,
+        rows_to_add: Option<Vec<u32>>,
+        rows_to_remove: Option<Vec<u32>>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
@@ -151,10 +151,10 @@ impl GridController {
 
         self.data_table_mutations(
             pos.to_sheet_pos(sheet_id),
-            column_to_add,
-            column_to_remove,
-            row_to_add,
-            row_to_remove,
+            columns_to_add,
+            columns_to_remove,
+            rows_to_add,
+            rows_to_remove,
             cursor,
         );
 

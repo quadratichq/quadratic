@@ -25,7 +25,7 @@ impl DataTable {
         values: Option<Vec<CellValue>>,
     ) -> Result<()> {
         let column_name = self
-            .unique_column_header_name(column_header.as_deref())
+            .unique_column_header_name(column_header.as_deref(), column_index + 1)
             .to_string();
 
         let array = self.mut_value_as_array()?;
@@ -86,7 +86,7 @@ pub mod test {
         pretty_print_data_table(&data_table, Some("Data Table with New Column"), None);
 
         // there should be a "Column" header
-        let header = data_table.get_header_by_name("Column 1");
+        let header = data_table.get_header_by_name("Column 5");
         assert!(header.is_some());
 
         // this should be a 5x4 array

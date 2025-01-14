@@ -1,15 +1,15 @@
+import { Action } from '@/app/actions/actions';
+import { insertActionsSpec } from '@/app/actions/insertActionsSpec';
 import {
   editorInteractionStateShowCellTypeMenuAtom,
   editorInteractionStateShowConnectionsMenuAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { supportedFileTypes } from '@/app/helpers/files';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
-import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useSetRecoilState } from 'recoil';
 
@@ -20,7 +20,6 @@ const fileHasData = () => sheets.sheets.filter((sheet) => sheet.bounds.type === 
 export function EmptyGridMessage() {
   const {
     userMakingRequest: { filePermissions },
-    team: { uuid: teamUuid },
   } = useFileRouteLoaderData();
   const canEdit = filePermissions.includes('FILE_EDIT');
   const [open, setOpen] = useState(fileHasData() ? false : true);
@@ -83,7 +82,14 @@ export function EmptyGridMessage() {
         Drag and drop a file (CSV, Excel, Parquet) or use a connection (Postgres, MySQL, and more).
       </p>
       <div className="mt-2 flex w-full flex-col justify-center gap-2">
-        <UploadFileButton teamUuid={teamUuid} />
+        <Button
+          className="w-full"
+          onClick={() => {
+            insertActionsSpec[Action.InsertFile].run();
+          }}
+        >
+          Upload file
+        </Button>
 
         {connections.length === 0 ? (
           <Button
@@ -108,36 +114,5 @@ export function EmptyGridMessage() {
         )}
       </div>
     </div>
-  );
-}
-
-function UploadFileButton({ teamUuid }: { teamUuid: string }) {
-  const handleFileImport = useFileImport();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  return (
-    <>
-      <Button className="w-full" onClick={() => fileInputRef.current?.click()}>
-        Upload file
-      </Button>
-      <input
-        ref={fileInputRef}
-        type="file"
-        hidden
-        accept={supportedFileTypes.join(',')}
-        onChange={(e) => {
-          const files = e.target.files;
-          if (files) {
-            handleFileImport({
-              files: Array.from(files),
-              sheetId: sheets.sheet.id,
-              insertAt: { x: 1, y: 1 },
-              cursor: sheets.getCursorPosition(),
-              teamUuid,
-            });
-          }
-        }}
-      />
-    </>
   );
 }

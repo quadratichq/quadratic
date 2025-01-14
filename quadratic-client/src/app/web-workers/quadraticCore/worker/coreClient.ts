@@ -661,10 +661,10 @@ class CoreClient {
           e.data.sheetId,
           e.data.x,
           e.data.y,
-          e.data.column_to_add,
-          e.data.column_to_remove,
-          e.data.row_to_add,
-          e.data.row_to_remove,
+          e.data.columns_to_add,
+          e.data.columns_to_remove,
+          e.data.rows_to_add,
+          e.data.rows_to_remove,
           e.data.cursor
         );
         return;

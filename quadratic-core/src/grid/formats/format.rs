@@ -59,6 +59,25 @@ impl Format {
         self.strike_through = None;
     }
 
+    /// Combines two formats. The first takes precedence over the second.
+    pub fn combine(&self, other: &Format) -> Format {
+        Format {
+            align: self.align.or(other.align),
+            vertical_align: self.vertical_align.or(other.vertical_align),
+            wrap: self.wrap.or(other.wrap),
+            numeric_format: self.numeric_format.clone().or(other.numeric_format.clone()),
+            numeric_decimals: self.numeric_decimals.or(other.numeric_decimals),
+            numeric_commas: self.numeric_commas.or(other.numeric_commas),
+            bold: self.bold.or(other.bold),
+            italic: self.italic.or(other.italic),
+            text_color: self.text_color.clone().or(other.text_color.clone()),
+            fill_color: self.fill_color.clone().or(other.fill_color.clone()),
+            date_time: self.date_time.clone().or(other.date_time.clone()),
+            underline: self.underline.or(other.underline),
+            strike_through: self.strike_through.or(other.strike_through),
+        }
+    }
+
     /// Applies a [`FormatUpdate`] and returns a [`FormatUpdate`] to undo the
     /// change.
     pub fn apply_update(&mut self, update: &FormatUpdate) -> FormatUpdate {
@@ -272,21 +291,18 @@ impl From<Format> for FormatUpdate {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod test {
-    use serial_test::parallel;
-
     use super::*;
     use crate::grid::{CellAlign, CellWrap, NumericFormat, NumericFormatKind};
 
     #[test]
-    #[parallel]
     fn is_default() {
         let format = Format::default();
         assert!(format.is_default());
     }
 
     #[test]
-    #[parallel]
     fn clear() {
         let mut format = Format {
             align: Some(CellAlign::Center),
@@ -325,7 +341,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn needs_to_clear_cell_format_for_parent() {
         let format = Format {
             align: Some(CellAlign::Center),
@@ -391,7 +406,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_apply_update() {
         let mut format = Format::default();
         let update = FormatUpdate {
@@ -442,7 +456,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn format_to_format_update_ref() {
         let format = Format {
             align: Some(CellAlign::Center),
@@ -487,7 +500,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn format_to_format_update() {
         let format = Format {
             align: Some(CellAlign::Center),
@@ -532,7 +544,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn to_replace() {
         let format_update: FormatUpdate = Format::default().to_replace();
         assert_eq!(
@@ -552,6 +563,29 @@ mod test {
                 date_time: Some(None),
                 underline: Some(None),
                 strike_through: Some(None),
+            }
+        );
+    }
+
+    #[test]
+    fn test_combine() {
+        let format = Format {
+            align: Some(CellAlign::Center),
+            italic: Some(true),
+            ..Default::default()
+        };
+        let format2 = Format {
+            align: Some(CellAlign::Right),
+            bold: Some(true),
+            ..Default::default()
+        };
+        assert_eq!(
+            format.combine(&format2),
+            Format {
+                align: Some(CellAlign::Center),
+                italic: Some(true),
+                bold: Some(true),
+                ..Default::default()
             }
         );
     }

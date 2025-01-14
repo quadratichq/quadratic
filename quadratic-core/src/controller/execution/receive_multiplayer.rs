@@ -379,7 +379,7 @@ mod tests {
         );
 
         let mut gc2 = GridController::test();
-        // set gc2's sheet 1's id to gc1 sheet 1's id
+        // set gc2's Sheet1's id to gc1 Sheet1's id
         gc2.grid.try_sheet_mut(gc2.sheet_ids()[0]).unwrap().id = sheet_id;
         gc2.set_cell_value(
             SheetPos {

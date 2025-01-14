@@ -1199,20 +1199,20 @@ class Core {
     sheetId: string,
     x: number,
     y: number,
-    column_to_add?: number,
-    column_to_remove?: number,
-    row_to_add?: number,
-    row_to_remove?: number,
+    columns_to_add?: number[],
+    columns_to_remove?: number[],
+    rows_to_add?: number[],
+    rows_to_remove?: number[],
     cursor?: string
   ) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.dataTableMutations(
       sheetId,
       posToPos(x, y),
-      column_to_add,
-      column_to_remove,
-      row_to_add,
-      row_to_remove,
+      columns_to_add ? new Uint32Array(columns_to_add) : undefined,
+      columns_to_remove ? new Uint32Array(columns_to_remove) : undefined,
+      rows_to_add ? new Uint32Array(rows_to_add) : undefined,
+      rows_to_remove ? new Uint32Array(rows_to_remove) : undefined,
       cursor
     );
   }

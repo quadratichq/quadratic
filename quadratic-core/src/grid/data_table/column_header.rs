@@ -104,8 +104,9 @@ impl DataTable {
             .collect()
     }
 
-    pub fn unique_column_header_name(&self, name: Option<&str>) -> String {
-        let name = name.unwrap_or("Column 1");
+    pub fn unique_column_header_name(&self, name: Option<&str>, index: usize) -> String {
+        let default_name = format!("Column {index}");
+        let name = name.unwrap_or(&default_name);
 
         if let Some(columns) = self.column_headers.as_ref() {
             let all_names = columns
@@ -249,6 +250,7 @@ pub mod test {
             header_is_first_row: true,
             alternating_colors: true,
             formats: Default::default(),
+            borders: Default::default(),
             chart_output: None,
             chart_pixel_output: None,
             show_ui: DataTableShowUI::Default,

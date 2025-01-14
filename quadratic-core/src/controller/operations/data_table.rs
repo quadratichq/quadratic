@@ -68,43 +68,45 @@ impl GridController {
     pub fn data_table_mutations_operations(
         &self,
         sheet_pos: SheetPos,
-        column_to_add: Option<u32>,
-        column_to_remove: Option<u32>,
-        row_to_add: Option<u32>,
-        row_to_remove: Option<u32>,
+        columns_to_add: Option<Vec<u32>>,
+        columns_to_remove: Option<Vec<u32>>,
+        rows_to_add: Option<Vec<u32>>,
+        rows_to_remove: Option<Vec<u32>>,
         _cursor: Option<String>,
     ) -> Vec<Operation> {
         let mut ops = vec![];
 
-        if let Some(column_to_add) = column_to_add {
-            ops.push(Operation::InsertDataTableColumn {
-                sheet_pos,
-                index: column_to_add,
-                column_header: None,
-                values: None,
-            });
+        if let Some(columns_to_add) = columns_to_add {
+            for index in columns_to_add {
+                ops.push(Operation::InsertDataTableColumn {
+                    sheet_pos,
+                    index,
+                    column_header: None,
+                    values: None,
+                });
+            }
         }
 
-        if let Some(column_to_remove) = column_to_remove {
-            ops.push(Operation::DeleteDataTableColumn {
-                sheet_pos,
-                index: column_to_remove,
-            });
+        if let Some(columns_to_remove) = columns_to_remove {
+            for index in columns_to_remove {
+                ops.push(Operation::DeleteDataTableColumn { sheet_pos, index });
+            }
         }
 
-        if let Some(row_to_add) = row_to_add {
-            ops.push(Operation::InsertDataTableRow {
-                sheet_pos,
-                index: row_to_add,
-                values: None,
-            });
+        if let Some(rows_to_add) = rows_to_add {
+            for index in rows_to_add {
+                ops.push(Operation::InsertDataTableRow {
+                    sheet_pos,
+                    index,
+                    values: None,
+                });
+            }
         }
 
-        if let Some(row_to_remove) = row_to_remove {
-            ops.push(Operation::DeleteDataTableRow {
-                sheet_pos,
-                index: row_to_remove,
-            });
+        if let Some(rows_to_remove) = rows_to_remove {
+            for index in rows_to_remove {
+                ops.push(Operation::DeleteDataTableRow { sheet_pos, index });
+            }
         }
 
         ops

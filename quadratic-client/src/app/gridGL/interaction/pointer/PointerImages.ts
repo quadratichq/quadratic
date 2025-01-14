@@ -76,13 +76,13 @@ export class PointerImages {
       pixiApp.cellImages.activate(search.image);
       switch (search.side) {
         case 'bottom':
-          this.cursor = 'ns-resize';
+          this.cursor = 'row-resize';
           break;
         case 'right':
-          this.cursor = 'ew-resize';
+          this.cursor = 'col-resize';
           break;
         case 'corner':
-          this.cursor = 'nwse-resize';
+          this.cursor = 'all-scroll';
           break;
       }
       return true;

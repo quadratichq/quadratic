@@ -183,11 +183,12 @@ impl RunErrorSchema {
                 crate::RunErrorMsg::Overflow => RunErrorMsgSchema::Overflow,
                 crate::RunErrorMsg::DivideByZero => RunErrorMsgSchema::DivideByZero,
                 crate::RunErrorMsg::NegativeExponent => RunErrorMsgSchema::NegativeExponent,
-                crate::RunErrorMsg::NotANumber => RunErrorMsgSchema::NotANumber,
-                crate::RunErrorMsg::Infinity => RunErrorMsgSchema::Infinity,
                 crate::RunErrorMsg::IndexOutOfBounds => RunErrorMsgSchema::IndexOutOfBounds,
                 crate::RunErrorMsg::NoMatch => RunErrorMsgSchema::NoMatch,
                 crate::RunErrorMsg::InvalidArgument => RunErrorMsgSchema::InvalidArgument,
+
+                crate::RunErrorMsg::NotANumber => RunErrorMsgSchema::NotANumber,
+                crate::RunErrorMsg::Infinity => RunErrorMsgSchema::Infinity,
             },
         }
     }
@@ -292,8 +293,8 @@ impl From<RunErrorSchema> for crate::RunError {
                 RunErrorMsgSchema::Overflow => crate::RunErrorMsg::Overflow,
                 RunErrorMsgSchema::DivideByZero => crate::RunErrorMsg::DivideByZero,
                 RunErrorMsgSchema::NegativeExponent => crate::RunErrorMsg::NegativeExponent,
-                RunErrorMsgSchema::NotANumber => crate::RunErrorMsg::NotANumber,
-                RunErrorMsgSchema::Infinity => crate::RunErrorMsg::Infinity,
+                RunErrorMsgSchema::NotANumber => crate::RunErrorMsg::NaN,
+                RunErrorMsgSchema::Infinity => crate::RunErrorMsg::NaN,
                 RunErrorMsgSchema::IndexOutOfBounds => crate::RunErrorMsg::IndexOutOfBounds,
                 RunErrorMsgSchema::NoMatch => crate::RunErrorMsg::NoMatch,
                 RunErrorMsgSchema::InvalidArgument => crate::RunErrorMsg::InvalidArgument,

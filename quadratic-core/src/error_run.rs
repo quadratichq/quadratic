@@ -77,8 +77,6 @@ pub enum RunErrorMsg {
         ty2: Option<Cow<'static, str>>,
         use_duration_instead: bool,
     },
-    /// NaN or ±Infinity
-    NaN,
 
     // Array size errors
     ExactArraySizeMismatch {
@@ -105,11 +103,14 @@ pub enum RunErrorMsg {
     Overflow,
     DivideByZero,
     NegativeExponent,
-    NotANumber,
-    Infinity,
+    /// NaN or ±Infinity
+    NaN,
     IndexOutOfBounds,
     NoMatch,
     InvalidArgument,
+
+    NotANumber,
+    Infinity,
 }
 
 impl fmt::Display for RunErrorMsg {
@@ -250,12 +251,6 @@ impl fmt::Display for RunErrorMsg {
             Self::NegativeExponent => {
                 write!(f, "Negative exponent")
             }
-            Self::NotANumber => {
-                write!(f, "NaN")
-            }
-            Self::Infinity => {
-                write!(f, "Infinite value")
-            }
             Self::IndexOutOfBounds => {
                 write!(f, "Index out of bounds")
             }
@@ -264,6 +259,12 @@ impl fmt::Display for RunErrorMsg {
             }
             Self::InvalidArgument => {
                 write!(f, "Invalid argument")
+            }
+            Self::NotANumber => {
+                write!(f, "Not a number")
+            }
+            Self::Infinity => {
+                write!(f, "Unexpected Infinity")
             }
         }
     }

@@ -116,6 +116,32 @@ impl FormatUpdate {
         }
     }
 
+    /// If the format update has any cleared fields (ie, Some(None)), then it
+    /// returns a FormatUpdate only with those cleared fields.
+    pub fn only_cleared(&self) -> Option<FormatUpdate> {
+        let update = Self {
+            align: self.align.filter(|a| a.is_none()),
+            vertical_align: self.vertical_align.filter(|a| a.is_none()),
+            wrap: self.wrap.filter(|a| a.is_none()),
+            numeric_format: self.numeric_format.clone().filter(|a| a.is_none()),
+            numeric_decimals: self.numeric_decimals.filter(|a| a.is_none()),
+            numeric_commas: self.numeric_commas.filter(|a| a.is_none()),
+            bold: self.bold.filter(|a| a.is_none()),
+            italic: self.italic.filter(|a| a.is_none()),
+            text_color: self.text_color.clone().filter(|a| a.is_none()),
+            fill_color: self.fill_color.clone().filter(|a| a.is_none()),
+            render_size: self.render_size.clone().filter(|a| a.is_none()),
+            date_time: self.date_time.clone().filter(|a| a.is_none()),
+            underline: self.underline.filter(|a| a.is_none()),
+            strike_through: self.strike_through.filter(|a| a.is_none()),
+        };
+        if update.is_default() {
+            None
+        } else {
+            Some(update)
+        }
+    }
+
     pub fn is_default(&self) -> bool {
         self.align.is_none()
             && self.vertical_align.is_none()
@@ -571,5 +597,24 @@ mod tests {
         let update_deserialized = serde_json::from_str::<FormatUpdate>(&serialized).unwrap();
         assert_eq!(update_deserialized.align, Some(None));
         assert_eq!(update_deserialized.wrap, None);
+    }
+
+    #[test]
+    fn test_only_clear() {
+        let update = FormatUpdate::default();
+        assert_eq!(update.only_cleared(), None);
+
+        let update = FormatUpdate {
+            align: Some(None),
+            bold: Some(Some(true)),
+            ..Default::default()
+        };
+        assert_eq!(
+            update.only_cleared(),
+            Some(FormatUpdate {
+                align: Some(None),
+                ..Default::default()
+            })
+        );
     }
 }

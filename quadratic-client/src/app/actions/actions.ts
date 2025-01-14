@@ -6,6 +6,7 @@ export enum Action {
   InsertCodePython = 'insert_code_python',
   InsertCodeJavascript = 'insert_code_javascript',
   InsertCodeFormula = 'insert_code_formula',
+  InsertFile = 'insert_file',
   InsertSheet = 'insert_sheet',
   InsertChartPython = 'insert_chart_python',
   InsertChartJavascript = 'insert_chart_javascript',

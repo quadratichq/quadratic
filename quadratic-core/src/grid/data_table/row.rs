@@ -86,7 +86,7 @@ pub mod test {
         pretty_print_data_table(&source_data_table, Some("Original Data Table"), None);
 
         let mut data_table = source_data_table.clone();
-        data_table.delete_row(2).unwrap();
+        data_table.delete_row(3).unwrap();
         pretty_print_data_table(&data_table, Some("Data Table without Seattle row"), None);
 
         // this should be a 4x3 array, includes the header row
@@ -94,7 +94,7 @@ pub mod test {
         assert_eq!(data_table.output_size(), expected_size);
 
         let mut data_table = source_data_table.clone();
-        data_table.delete_row(1).unwrap();
+        data_table.delete_row(2).unwrap();
         pretty_print_data_table(&data_table, Some("Data Table without Denver row"), None);
 
         // this should be a 4x3 array, includes the header row

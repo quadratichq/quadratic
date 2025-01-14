@@ -69,8 +69,6 @@ pub type SpanSchema = v1_7_1::SpanSchema;
 pub type RowsResizeSchema = v1_7_1::RowsResizeSchema;
 pub type CellRefRangeSchema = v1_7_1::CellRefRangeSchema;
 pub type TableRefSchema = v1_7_1::TableRefSchema;
-pub type RowRangeSchema = v1_7_1::RowRangeSchema;
-pub type RowRangeEntrySchema = v1_7_1::RowRangeEntrySchema;
 pub type ColRangeSchema = v1_7_1::ColRangeSchema;
 
 #[derive(Default, Debug, PartialEq, Serialize, Deserialize, Clone)]
@@ -201,6 +199,7 @@ pub struct DataTableSchema {
     pub last_modified: Option<DateTime<Utc>>,
     pub alternating_colors: bool,
     pub formats: SheetFormattingSchema,
+    pub borders: BordersSchema,
     pub chart_pixel_output: Option<(f32, f32)>,
     pub chart_output: Option<(u32, u32)>,
 }

@@ -3,6 +3,7 @@ use crate::{a1::A1Context, Pos, Rect};
 use super::*;
 
 impl TableRef {
+    /// Returns true if the table intersects the rectangle.
     pub fn intersect_rect(&self, rect: Rect, context: &A1Context) -> bool {
         let Some(table) = context.try_table(&self.table_name) else {
             return false;
@@ -10,14 +11,15 @@ impl TableRef {
         table.bounds.intersects(rect)
     }
 
+    /// Returns true if the table contains the position.
     pub fn contains_pos(&self, pos: Pos, context: &A1Context) -> bool {
         let Some(table) = context.try_table(&self.table_name) else {
             return false;
         };
-        if !self.col_range.has_col(pos.x, table) {
+        if !self.col_range.has_col(pos.x - table.bounds.min.x, table) {
             return false;
         }
-        false
+        true
     }
 }
 
@@ -45,7 +47,6 @@ mod tests {
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::Col("A".to_string()),
-            row_range: RowRange::All,
             data: true,
             headers: false,
             totals: false,
@@ -56,5 +57,28 @@ mod tests {
 
         // Non-intersecting rectangle
         assert!(!table_ref.intersect_rect(Rect::new(10, 10, 11, 11), &context));
+    }
+
+    #[test]
+    fn test_contains_pos() {
+        let (context, _) = setup_test_context();
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::Col("A".to_string()),
+            data: true,
+            headers: false,
+            totals: false,
+        };
+
+        // Position within column A
+        assert!(table_ref.contains_pos(pos![A1], &context));
+        assert!(table_ref.contains_pos(pos![A1], &context));
+
+        // Position outside column A
+        assert!(!table_ref.contains_pos(pos![B1], &context));
+        assert!(!table_ref.contains_pos(pos![C1], &context));
+
+        // Position completely outside table
+        assert!(!table_ref.contains_pos(Pos::new(10, 10), &context));
     }
 }

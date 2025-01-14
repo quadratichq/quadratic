@@ -7,10 +7,7 @@ use itertools::Itertools;
 use std::str::FromStr;
 
 use crate::{
-    a1::{
-        CellRefCoord, CellRefRange, CellRefRangeEnd, ColRange, RefRangeBounds, RowRange,
-        RowRangeEntry, TableRef,
-    },
+    a1::{CellRefCoord, CellRefRange, CellRefRangeEnd, ColRange, RefRangeBounds, TableRef},
     grid::{
         block::SameValue,
         data_table::{
@@ -23,31 +20,16 @@ use crate::{
 };
 
 use super::{
+    borders::{export_borders, import_borders},
     cell_value::{export_cell_value, import_cell_value},
     current,
-    formats::{export_formats, import_formats},
-    // format::{export_format, import_format},
+    formats::{export_formats, import_formats}, // format::{export_format, import_format},
 };
 
 fn import_cell_ref_coord(coord: current::CellRefCoordSchema) -> CellRefCoord {
     CellRefCoord {
         coord: coord.coord,
         is_absolute: coord.is_absolute,
-    }
-}
-
-fn import_row_range_entry(range: current::RowRangeEntrySchema) -> RowRangeEntry {
-    RowRangeEntry {
-        start: import_cell_ref_coord(range.start),
-        end: import_cell_ref_coord(range.end),
-    }
-}
-
-fn import_row_range(range: current::RowRangeSchema) -> RowRange {
-    match range {
-        current::RowRangeSchema::All => RowRange::All,
-        current::RowRangeSchema::CurrentRow => RowRange::CurrentRow,
-        current::RowRangeSchema::Rows(range) => RowRange::Rows(import_row_range_entry(range)),
     }
 }
 
@@ -66,7 +48,6 @@ pub(crate) fn import_table_ref(table_ref: current::TableRefSchema) -> TableRef {
         data: table_ref.data,
         headers: table_ref.headers,
         totals: table_ref.totals,
-        row_range: import_row_range(table_ref.row_range),
         col_range: import_col_range(table_ref.col_range),
     }
 }
@@ -199,21 +180,6 @@ fn export_cell_ref_coord(coord: CellRefCoord) -> current::CellRefCoordSchema {
     }
 }
 
-fn export_row_range_entry(range: RowRangeEntry) -> current::RowRangeEntrySchema {
-    current::RowRangeEntrySchema {
-        start: export_cell_ref_coord(range.start),
-        end: export_cell_ref_coord(range.end),
-    }
-}
-
-fn export_row_range(range: RowRange) -> current::RowRangeSchema {
-    match range {
-        RowRange::All => current::RowRangeSchema::All,
-        RowRange::CurrentRow => current::RowRangeSchema::CurrentRow,
-        RowRange::Rows(range) => current::RowRangeSchema::Rows(export_row_range_entry(range)),
-    }
-}
-
 fn export_col_range(range: ColRange) -> current::ColRangeSchema {
     match range {
         ColRange::All => current::ColRangeSchema::All,
@@ -243,7 +209,6 @@ pub(crate) fn export_cell_ref_range(range: CellRefRange) -> current::CellRefRang
                 data: range.data,
                 headers: range.headers,
                 totals: range.totals,
-                row_range: export_row_range(range.row_range),
                 col_range: export_col_range(range.col_range),
             })
         }
@@ -362,6 +327,7 @@ pub(crate) fn import_data_table_builder(
             display_buffer: data_table.display_buffer,
             alternating_colors: data_table.alternating_colors,
             formats: import_formats(data_table.formats),
+            borders: import_borders(data_table.borders),
             chart_pixel_output: data_table.chart_pixel_output,
             chart_output: data_table.chart_output,
         };
@@ -563,6 +529,7 @@ pub(crate) fn export_data_tables(
                 value,
                 alternating_colors: data_table.alternating_colors,
                 formats: export_formats(data_table.formats),
+                borders: export_borders(data_table.borders),
                 chart_pixel_output: data_table.chart_pixel_output,
                 chart_output: data_table.chart_output,
             };
@@ -570,24 +537,4 @@ pub(crate) fn export_data_tables(
             (current::PosSchema::from(pos), data_table)
         })
         .collect()
-}
-
-#[cfg(test)]
-mod tests {
-    // use serial_test::parallel;
-
-    // use super::*;
-
-    // #[test]
-    // #[parallel]
-    // fn test_empty_table_formats_serialized() {
-    //     let formats = TableFormats {
-    //         table: None,
-    //         columns: HashMap::new(),
-    //         cells: HashMap::new(),
-    //     };
-    //     let serialized = export_data_table_formats(formats.clone());
-    //     let import = import_data_table_formats(serialized);
-    //     assert_eq!(import, formats);
-    // }
 }

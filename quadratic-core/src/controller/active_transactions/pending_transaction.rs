@@ -484,7 +484,7 @@ mod tests {
     #[test]
     fn test_to_transaction() {
         let sheet_id = SheetId::new();
-        let name = "Sheet 1".to_string();
+        let name = "Sheet1".to_string();
 
         let mut transaction = PendingTransaction::default();
         let forward_operations = vec![

@@ -105,6 +105,7 @@ fn upgrade_code_runs(
                 last_modified: code_run.last_modified,
                 alternating_colors: true,
                 formats: Default::default(),
+                borders: Default::default(),
                 chart_pixel_output,
                 chart_output: None,
                 show_ui: DataTableShowUISchema::Default,

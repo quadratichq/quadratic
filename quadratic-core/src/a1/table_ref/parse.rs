@@ -3,7 +3,7 @@ use regex::Regex;
 
 use crate::a1::{A1Context, A1Error};
 
-use super::{tokenize::Token, ColRange, RowRange, RowRangeEntry, TableRef};
+use super::{tokenize::Token, ColRange, TableRef};
 
 lazy_static! {
     static ref TABLE_NAME_PATTERN: Regex =
@@ -42,12 +42,10 @@ impl TableRef {
                 data: true,
                 headers: false,
                 totals: false,
-                row_range: RowRange::All,
                 col_range: ColRange::All,
             });
         }
 
-        let mut row_range = None;
         let mut col_range = None;
         let mut data = None;
         let mut headers = false;
@@ -55,12 +53,6 @@ impl TableRef {
 
         for token in Self::tokenize(remaining)? {
             match token {
-                Token::RowRange(start, end) => {
-                    if row_range.is_some() {
-                        return Err(A1Error::MultipleRowDefinitions);
-                    }
-                    row_range = Some(RowRange::Rows(RowRangeEntry::new_rel(start, end)));
-                }
                 Token::Column(name) => {
                     if col_range.is_some() {
                         return Err(A1Error::MultipleColumnDefinitions);
@@ -99,12 +91,6 @@ impl TableRef {
                 Token::Data => {
                     data = Some(true);
                 }
-                Token::ThisRow => {
-                    if row_range.is_some() {
-                        return Err(A1Error::MultipleRowDefinitions);
-                    }
-                    row_range = Some(RowRange::CurrentRow);
-                }
             }
         }
 
@@ -113,7 +99,6 @@ impl TableRef {
             data: data.unwrap_or(true),
             headers,
             totals,
-            row_range: row_range.unwrap_or(RowRange::All),
             col_range: col_range.unwrap_or(ColRange::All),
         })
     }
@@ -178,59 +163,6 @@ mod tests {
         let table_ref = TableRef::parse("Table1[[#HEADERS]]", &context).unwrap();
         assert_eq!(table_ref.table_name, "Table1");
         assert!(table_ref.headers);
-    }
-
-    #[test]
-    fn test_table_with_row_range() {
-        let context = A1Context::test(
-            &[],
-            &[
-                ("Table1", &["A", "B"], Rect::test_a1("A1:B2")),
-                ("Table2", &["C", "D"], Rect::test_a1("C3:D4")),
-                ("Table3", &["E", "F"], Rect::test_a1("E5:F6")),
-            ],
-        );
-
-        let variations = [
-            (
-                "Table1[[#12:15],[Column 1]]",
-                TableRef {
-                    table_name: "Table1".to_string(),
-                    data: true,
-                    headers: false,
-                    totals: false,
-                    row_range: RowRange::Rows(RowRangeEntry::new_rel(12, 15)),
-                    col_range: ColRange::Col("Column 1".to_string()),
-                },
-            ),
-            (
-                "TABLE2[ [#12:15], [Column 2]]",
-                TableRef {
-                    table_name: "Table2".to_string(),
-                    data: true,
-                    headers: false,
-                    totals: false,
-                    row_range: RowRange::Rows(RowRangeEntry::new_rel(12, 15)),
-                    col_range: ColRange::Col("Column 2".to_string()),
-                },
-            ),
-            (
-                "table3[[#12:15],[Column 3]]",
-                TableRef {
-                    table_name: "Table3".to_string(),
-                    data: true,
-                    headers: false,
-                    totals: false,
-                    row_range: RowRange::Rows(RowRangeEntry::new_rel(12, 15)),
-                    col_range: ColRange::Col("Column 3".to_string()),
-                },
-            ),
-        ];
-
-        for (s, expected) in variations.iter() {
-            let table_ref = TableRef::parse(s, &context).unwrap();
-            assert_eq!(table_ref, *expected, "{}", s);
-        }
     }
 
     #[test]

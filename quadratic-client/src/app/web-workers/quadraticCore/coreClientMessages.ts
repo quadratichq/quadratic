@@ -1150,10 +1150,10 @@ export interface ClientCoreDataTableMutations {
   sheetId: string;
   x: number;
   y: number;
-  column_to_add?: number;
-  column_to_remove?: number;
-  row_to_add?: number;
-  row_to_remove?: number;
+  columns_to_add?: number[];
+  columns_to_remove?: number[];
+  rows_to_add?: number[];
+  rows_to_remove?: number[];
   cursor?: string;
 }
 
