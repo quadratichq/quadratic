@@ -10,6 +10,7 @@ import { TableContextMenu } from '@/app/gridGL/HTMLGrid/contextMenus/TableContex
 import { TableRename } from '@/app/gridGL/HTMLGrid/contextMenus/TableRename';
 import { TableSort } from '@/app/gridGL/HTMLGrid/contextMenus/tableSort/TableSort';
 import { EmptyGridMessage } from '@/app/gridGL/HTMLGrid/EmptyGridMessage';
+import { GridFileInput } from '@/app/gridGL/HTMLGrid/GridFileInput';
 import { HoverCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import { HoverTooltip } from '@/app/gridGL/HTMLGrid/hoverTooltip/HoverTooltip';
 import { HtmlCells } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCells';
@@ -128,6 +129,8 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
           </div>
         </div>
       </div>
+
+      <GridFileInput />
 
       <Following />
 

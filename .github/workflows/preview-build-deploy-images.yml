@@ -1,8 +1,10 @@
-name: Build & Deploy Images
+name: Preview
 
 on:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
+    branches-ignore:
+      - "main"
 
 concurrency:
   group: pr-${{ github.event.pull_request.number }}-build-images
@@ -10,7 +12,7 @@ concurrency:
 
 jobs:
   create_deployment:
-    name: Create Deployment - Preview
+    name: Create Deployment
     runs-on: blacksmith-2vcpu-ubuntu-2204
     if: |
       github.event.action == 'opened' || 
@@ -100,7 +102,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build_images:
-    name: Build Images - Preview
+    name: Build Images
     needs: create_deployment
     permissions:
       contents: read
@@ -264,7 +266,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   deploy_images:
-    name: Deploy Images - Preview
+    name: Deploy Images
     needs: [create_deployment, build_images]
     permissions:
       contents: read
@@ -455,6 +457,11 @@ jobs:
       - name: Generate Deploy Metadata
         id: deploy-metadata
         run: |
+          # Sanitize branch name for DNS
+          BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
+          SANITIZED_BRANCH_NAME=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/-\+/-/g' | sed 's/^-\|-$//')
+
+          echo "WebsiteURL=https://${SANITIZED_BRANCH_NAME}.quadratic-preview.com" >> $GITHUB_OUTPUT
           echo "DEPLOY_TIME=$(date -u +'%b %d, %Y at %I:%M %p UTC')" >> $GITHUB_OUTPUT
 
       - name: Find Build & Deploy Images Comment
@@ -479,7 +486,7 @@ jobs:
 
             🕒 Last deployed: ${{ steps.deploy-metadata.outputs.DEPLOY_TIME }}
 
-            🔗 URL: https://pr-${{ github.event.pull_request.number }}.quadratic-preview.com
+            🔗 URL: ${{ steps.deploy-metadata.outputs.WebsiteURL }}
           edit-mode: replace
 
       - name: Update comment on deploy images failure
@@ -504,7 +511,7 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
             -f state="success" \
-            -f environment_url="https://pr-${{ github.event.pull_request.number }}.quadratic-preview.com" \
+            -f environment_url="${{ steps.deploy-metadata.outputs.WebsiteURL }}" \
             -f description="Deployment successful!" \
             -f environment=preview \
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

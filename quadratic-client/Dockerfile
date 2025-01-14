@@ -120,22 +120,22 @@ RUN if [ "$CLIENT_DEV" = "true" ]; then \
 ###########################################################################################
 FROM node:18 AS vite-builder
 
-# Install python
-RUN apt-get update && apt-get install -y --no-install-recommends python-is-python3 python3-pip
-
 WORKDIR /quadratic
-
-# Copy updateAlertVersion.json
-COPY updateAlertVersion.json .
 
 # Copy files from core, ts/rust types, and rust client builders
 COPY --from=core-builder /quadratic/quadratic-client/src/app/quadratic-core/. ./quadratic-client/src/app/quadratic-core
 COPY --from=ts-rust-types-builder /quadratic/quadratic-client/src/app/quadratic-core-types/. ./quadratic-client/src/app/quadratic-core-types
 COPY --from=rust-client-builder /quadratic/quadratic-client/src/app/quadratic-rust-client/. ./quadratic-client/src/app/quadratic-rust-client
 
-# Copy package.json and package-lock.json
-COPY package.json .
-COPY package-lock.json .
+# Install system brotli instead of Rust version
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  python-is-python3 \
+  python3-pip \
+  brotli \
+  pigz
+
+# Copy updateAlertVersion.json
+COPY updateAlertVersion.json .
 
 # Copy all package.json files
 COPY package.json .
@@ -165,18 +165,64 @@ ENV VITE_DEBUG=VITE_DEBUG_VAL
 ENV VITE_QUADRATIC_API_URL=VITE_QUADRATIC_API_URL_VAL
 ENV VITE_QUADRATIC_MULTIPLAYER_URL=VITE_QUADRATIC_MULTIPLAYER_URL_VAL
 ENV VITE_QUADRATIC_CONNECTION_URL=VITE_QUADRATIC_CONNECTION_URL_VAL
-ENV VITE_AUTH_TYPE=VITE_AUTH_TYPE_VAL
 ENV VITE_STORAGE_TYPE=VITE_STORAGE_TYPE_VAL
+ENV VITE_AUTH_TYPE=VITE_AUTH_TYPE_VAL
+ENV VITE_AUTH0_ISSUER=VITE_AUTH0_ISSUER_VAL
+ENV VITE_AUTH0_DOMAIN=VITE_AUTH0_DOMAIN_VAL
+ENV VITE_AUTH0_CLIENT_ID=VITE_AUTH0_CLIENT_ID_VAL
+ENV VITE_AUTH0_AUDIENCE=VITE_AUTH0_AUDIENCE_VAL
 ENV VITE_ORY_HOST=VITE_ORY_HOST_VAL
 ENV VITE_SENTRY_AUTH_TOKEN=VITE_SENTRY_AUTH_TOKEN_VAL
 RUN echo 'Building front-end...' && npm run build --workspace=quadratic-client
+
+# Compress files (except js/mjs/cjs/jsx/ts/tsx, these are done in replace_env_vars.sh)
+RUN find /quadratic/build -type f \
+  \( \
+  -name "*.wasm" -o \
+  -name "*.whl" -o \
+  -name "*.json" -o \
+  -name "*.css" -o \
+  -name "*.html" -o \
+  -name "*.svg" -o \
+  -name "*.txt" -o \
+  -name "*.map" -o \
+  -name "*.py" -o \
+  -name "*.pyc" -o \
+  -name "*.pyi" -o \
+  -name "*.pth" -o \
+  -name "*.data" -o \
+  -name "*.mem" -o \
+  -name "*.wat" -o \
+  -name "*.md" -o \
+  -name "*.rst" -o \
+  -name "*.rtf" -o \
+  -name "*.csv" -o \
+  -name "*.tsv" -o \
+  -name "*.eot" -o \
+  -name "*.ttf" -o \
+  -name "*.otf" -o \
+  -name "*.woff" -o \
+  -name "*.woff2" -o \
+  -name "*.font" -o \
+  -name "*.font-sfnt" \
+  \) -print0 | \
+  xargs -0 -n1 -P$(nproc) -I {} sh -c '\
+  echo "Compressing: {}" && \
+  brotli -q 9 -w 24 -f "{}" && \
+  pigz -6kf "{}" && \
+  echo "Created: {}.br and {}.gz" \
+  '
 
 
 ###########################################################################################
 # Runner - Serve the client with nginx
 ###########################################################################################
-FROM nginx:stable-alpine
+FROM fholzer/nginx-brotli
 
+# Install curl for healthcheck
+RUN apk add --no-cache curl brotli pigz
+
+# Copy build directory
 COPY --from=vite-builder /quadratic/build /usr/share/nginx/html
 
 EXPOSE 80 443 3000
