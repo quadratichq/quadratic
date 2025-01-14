@@ -1,15 +1,17 @@
-name: Delete Stack
+name: Preview
 
 on:
   pull_request:
     types: [closed]
+    branches-ignore:
+      - "main"
 
 concurrency:
   group: pr-${{ github.event.pull_request.number }}-stack
 
 jobs:
   delete_stack:
-    name: Delete Stack - Preview
+    name: Delete Stack
     permissions:
       contents: read
       pull-requests: write

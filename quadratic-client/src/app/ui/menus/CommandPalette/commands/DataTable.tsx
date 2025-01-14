@@ -9,6 +9,15 @@ import {
   toggleTableAlternatingColorsAction,
   sortTableColumnAscendingAction,
   sortTableColumnDescendingAction,
+  insertTableColumnLeftAction,
+  insertTableColumnRightAction,
+  removeTableColumnAction,
+  hideTableColumnAction,
+  showAllTableColumnsAction,
+  insertTableRowAboveAction,
+  insertTableRowBelowAction,
+  removeTableRowAction,
+  toggleTableUIAction,
 } from '@/app/actions';
 import {
   gridToDataTable,
@@ -21,6 +30,13 @@ import {
   codeToDataTable,
   sortTableColumnDescending,
   sortTableColumnAscending,
+  insertTableColumn,
+  removeTableColumn,
+  hideTableColumn,
+  showAllTableColumns,
+  insertTableRow,
+  removeTableRow,
+  toggleTableUI,
 } from '@/app/actions/dataTableSpec';
 import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
@@ -96,6 +112,69 @@ const dataTableCommandGroup: CommandGroup = {
       isAvailable: sortTableColumnDescendingAction.isAvailable,
       Component: (props) => {
         return <CommandPaletteListItem {...props} action={sortTableColumnDescending} />;
+      },
+    },
+    {
+      label: insertTableColumnLeftAction.label,
+      isAvailable: insertTableColumnLeftAction.isAvailable,
+      Component: (props) => {
+        return <CommandPaletteListItem {...props} action={insertTableColumn} />;
+      },
+    },
+    {
+      label: insertTableColumnRightAction.label,
+      isAvailable: insertTableColumnRightAction.isAvailable,
+      Component: (props) => {
+        return <CommandPaletteListItem {...props} action={() => insertTableColumn(1)} />;
+      },
+    },
+    {
+      label: removeTableColumnAction.label,
+      isAvailable: removeTableColumnAction.isAvailable,
+      Component: (props) => {
+        return <CommandPaletteListItem {...props} action={removeTableColumn} />;
+      },
+    },
+    {
+      label: hideTableColumnAction.label,
+      isAvailable: hideTableColumnAction.isAvailable,
+      Component: (props) => {
+        return <CommandPaletteListItem {...props} action={hideTableColumn} />;
+      },
+    },
+    {
+      label: showAllTableColumnsAction.label,
+      isAvailable: showAllTableColumnsAction.isAvailable,
+      Component: (props) => {
+        return <CommandPaletteListItem {...props} action={showAllTableColumns} />;
+      },
+    },
+    {
+      label: insertTableRowAboveAction.label,
+      isAvailable: insertTableRowAboveAction.isAvailable,
+      Component: (props) => {
+        return <CommandPaletteListItem {...props} action={() => insertTableRow(-1)} />;
+      },
+    },
+    {
+      label: insertTableRowBelowAction.label,
+      isAvailable: insertTableRowBelowAction.isAvailable,
+      Component: (props) => {
+        return <CommandPaletteListItem {...props} action={insertTableRow} />;
+      },
+    },
+    {
+      label: removeTableRowAction.label,
+      isAvailable: removeTableRowAction.isAvailable,
+      Component: (props) => {
+        return <CommandPaletteListItem {...props} action={removeTableRow} />;
+      },
+    },
+    {
+      label: toggleTableUIAction.label,
+      isAvailable: toggleTableUIAction.isAvailable,
+      Component: (props) => {
+        return <CommandPaletteListItem {...props} action={toggleTableUI} />;
       },
     },
   ],

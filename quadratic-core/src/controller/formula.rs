@@ -132,7 +132,7 @@ mod tests {
     #[test]
     #[parallel]
     fn test_parse_formula_output() {
-        let result = parse("'Sheet 2'!A0");
+        let result = parse("'Sheet2'!A0");
         assert_eq!(result.parse_error_msg, None);
         assert_eq!(result.parse_error_span, None);
         assert_eq!(result.cell_refs.len(), 1);

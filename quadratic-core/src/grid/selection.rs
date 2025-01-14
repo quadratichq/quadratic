@@ -25,7 +25,7 @@ mod test {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let selection = gc
-            .a1_selection_from_string("'Sheet 1'!A1:B2", &sheet_id)
+            .a1_selection_from_string("'Sheet1'!A1:B2", &sheet_id)
             .unwrap();
         assert_eq!(selection.sheet_id, sheet_id);
         assert_eq!(selection.cursor, pos![A1]);

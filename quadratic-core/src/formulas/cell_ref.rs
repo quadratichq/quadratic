@@ -344,20 +344,20 @@ mod tests {
     #[test]
     #[parallel]
     fn test_a1_sheet_parsing() {
-        let pos = CellRef::parse_a1("'Sheet 2'!A1", pos![A1]);
+        let pos = CellRef::parse_a1("'Sheet2'!A1", pos![A1]);
         assert_eq!(
             pos,
             Some(CellRef {
-                sheet: Some("Sheet 2".to_string()),
+                sheet: Some("Sheet2".to_string()),
                 x: CellRefCoord::Relative(0),
                 y: CellRefCoord::Relative(0),
             })
         );
-        let pos = CellRef::parse_a1("\"Sheet 2\"!A1", pos![A1]);
+        let pos = CellRef::parse_a1("\"Sheet2\"!A1", pos![A1]);
         assert_eq!(
             pos,
             Some(CellRef {
-                sheet: Some("Sheet 2".to_string()),
+                sheet: Some("Sheet2".to_string()),
                 x: CellRefCoord::Relative(0),
                 y: CellRefCoord::Relative(0),
             })

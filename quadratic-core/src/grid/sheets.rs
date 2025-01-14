@@ -93,7 +93,7 @@ impl Grid {
         let mut sheet = sheet.unwrap_or_else(|| {
             Sheet::new(
                 SheetId::new(),
-                format!("Sheet {}", self.sheets.len() + 1),
+                format!("Sheet{}", self.sheets.len() + 1),
                 self.end_order(),
             )
         });
@@ -311,15 +311,15 @@ mod test {
         let mut grid = Grid::new();
         grid.add_sheet(Some(Sheet::new(
             SheetId::new(),
-            "Sheet 1".to_string(),
+            "Sheet1".to_string(),
             "a1".to_string(),
         )));
         grid.add_sheet(Some(Sheet::new(
             SheetId::new(),
-            "Sheet 1".to_string(),
+            "Sheet1".to_string(),
             "a1".to_string(),
         )));
-        assert_eq!(grid.sheets[0].name, "Sheet 1".to_string());
-        assert_eq!(grid.sheets[1].name, "Sheet 1 (1)".to_string());
+        assert_eq!(grid.sheets[0].name, "Sheet1".to_string());
+        assert_eq!(grid.sheets[1].name, "Sheet1 (1)".to_string());
     }
 }

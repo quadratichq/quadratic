@@ -28,12 +28,12 @@ import {
   DockToRightIcon,
   SaveAndRunIcon,
   SaveAndRunStopIcon,
+  SpinnerIcon,
 } from '@/shared/components/Icons';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { CircularProgress } from '@mui/material';
 import type * as monaco from 'monaco-editor';
 import type { MouseEvent } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -241,7 +241,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
       <div className="ml-auto flex flex-shrink-0 items-center gap-1 py-1">
         {isRunningComputation && (
           <TooltipPopover label={`${language} executing…`} side="bottom">
-            <CircularProgress size="1rem" color={'primary'} className={`mr-2`} />
+            <SpinnerIcon className="mr-2 text-primary" />
           </TooltipPopover>
         )}
 

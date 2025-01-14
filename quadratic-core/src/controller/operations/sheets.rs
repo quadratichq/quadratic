@@ -169,21 +169,21 @@ mod test {
     #[test]
     #[parallel]
     fn get_sheet_next_name() {
-        // Sheet 1
+        // Sheet1
         let mut gc = GridController::test();
         gc.add_sheet(None);
-        // Sheet 1 | Sheet 2
-        assert_eq!(gc.sheet_index(1).name, "Sheet 2");
-        gc.sheet_mut(gc.sheet_ids()[1]).name = "Sheet 2 modified".to_string();
-        // Sheet 1 | Sheet 2 modified
+        // Sheet1 | Sheet2
+        assert_eq!(gc.sheet_index(1).name, "Sheet2");
+        gc.sheet_mut(gc.sheet_ids()[1]).name = "Sheet2 modified".to_string();
+        // Sheet1 | Sheet2 modified
         gc.add_sheet(None);
-        // Sheet 1 | Sheet 2 modified | Sheet 2
-        assert_eq!(gc.sheet_index(2).name, "Sheet 2");
+        // Sheet1 | Sheet2 modified | Sheet2
+        assert_eq!(gc.sheet_index(2).name, "Sheet2");
         gc.delete_sheet(gc.sheet_ids()[0], None);
-        // Sheet 2 modified | Sheet 2
+        // Sheet2 modified | Sheet2
         gc.add_sheet(None);
-        // Sheet 2 modified | Sheet 2 | Sheet 3
-        assert_eq!(gc.sheet_index(2).name, "Sheet 3");
+        // Sheet2 modified | Sheet2 | Sheet3
+        assert_eq!(gc.sheet_index(2).name, "Sheet3");
     }
 
     #[test]
@@ -192,6 +192,6 @@ mod test {
         let mut gc = GridController::test();
         gc.add_sheet(None);
         gc.add_sheet(None);
-        assert_eq!(gc.sheet_names(), vec!["Sheet 1", "Sheet 2", "Sheet 3"]);
+        assert_eq!(gc.sheet_names(), vec!["Sheet1", "Sheet2", "Sheet3"]);
     }
 }

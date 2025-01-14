@@ -1,9 +1,7 @@
 import { Action } from '@/app/actions/actions';
 import { editorInteractionStateShowCellTypeMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
-import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CodeIcon, DataObjectIcon, InsertChartIcon } from '@/shared/components/Icons';
-import { IMPORT_MESSAGE } from '@/shared/constants/appConstants';
 import {
   MenubarContent,
   MenubarItem,
@@ -18,7 +16,7 @@ import { useSetRecoilState } from 'recoil';
 
 export const InsertMenubarMenu = () => {
   const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
-  const { addGlobalSnackbar } = useGlobalSnackbar();
+
   return (
     <MenubarMenu>
       <MenubarTrigger>Insert</MenubarTrigger>
@@ -49,9 +47,8 @@ export const InsertMenubarMenu = () => {
             Data
           </MenubarSubTrigger>
           <MenubarSubContent>
-            <MenubarItem onClick={() => addGlobalSnackbar(IMPORT_MESSAGE)}>
-              From file (CSV, Excel, or Parquet)
-            </MenubarItem>
+            <MenubarItemAction action={Action.InsertFile} actionArgs={undefined} />
+
             <MenubarSeparator />
             <MenubarItemAction action={Action.InsertApiRequestJavascript} actionArgs={undefined} />
             <MenubarItemAction action={Action.InsertApiRequestPython} actionArgs={undefined} />
