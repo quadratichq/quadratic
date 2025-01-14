@@ -10,21 +10,30 @@ on:
       - main
   pull_request:
 
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
-  test_rust:
-    runs-on: ubuntu-latest-8-cores
-    timeout-minutes: 15
+  test_core:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+
+      - uses: useblacksmith/setup-node@v5
         with:
           node-version: 18
+          cache: "npm"
 
       - name: Set up Rust
-        uses: moonrepo/setup-rust@v1
+        uses: actions-rs/toolchain@v1
         with:
+          toolchain: stable
           components: clippy, llvm-tools-preview
-          cache: false
+          override: true
+
+      - uses: useblacksmith/rust-cache@v3
 
       - name: Install grcov
         run: if ! which grcov; then cargo install grcov; fi
@@ -43,18 +52,20 @@ jobs:
           LLVM_PROFILE_FILE: grcov-%p-%m.profraw
           RUSTFLAGS: -Cinstrument-coverage
           RUSTC_BOOTSTRAP: 1
+          CARGO_BUILD_JOBS: 4
         run: |
           cd quadratic-core
-          cargo test
+          cargo test -- --test-threads=2
 
       - name: Generate coverage for quadratic-core
         env:
           RUSTC_BOOTSTRAP: 1
         run: |
-          grcov $(find . -name "grcov-*.profraw" -print) \
+          cd quadratic-core
+          grcov $(find . ../quadratic-rust-client ../quadratic-rust-shared -name "grcov-*.profraw" -print) \
             --branch \
             --ignore-not-existing \
-            --binary-path ./target/debug/ \
+            --binary-path ../target/debug/ \
             -s . \
             -t lcov \
             --ignore "/*" \
@@ -63,67 +74,163 @@ jobs:
             --ignore "./docker/*" \
             -o lcov.info
 
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v3
+      - name: Upload coverage reports to Codecov quadratic-core
+        uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  test_multiplayer:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: useblacksmith/setup-node@v5
+        with:
+          node-version: 18
+          cache: "npm"
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy, llvm-tools-preview
+          override: true
+
+      - uses: useblacksmith/rust-cache@v3
+
+      - name: Install grcov
+        run: if ! which grcov; then cargo install grcov; fi
+
+      - name: Install llvm-tools-preview
+        run: if ! which llvm-tools-preview; then rustup component add llvm-tools-preview; fi
+
+      - name: Install pkg-config
+        if: github.runner.isHosted == true
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config
 
       - name: Test quadratic-multiplayer
         env:
           LLVM_PROFILE_FILE: grcov-%p-%m.profraw
           RUSTFLAGS: -Cinstrument-coverage
           RUSTC_BOOTSTRAP: 1
+          CARGO_BUILD_JOBS: 4
         run: |
           cd quadratic-multiplayer
           npm run docker:test
 
-      - name: Generate coverage quadratic-multiplayer
+      - name: Generate coverage for quadratic-multiplayer
         env:
           RUSTC_BOOTSTRAP: 1
         run: |
-          grcov $(find . -name "grcov-*.profraw" -print) \
+          cd quadratic-multiplayer
+          grcov $(find . ../quadratic-rust-shared -name "grcov-*.profraw" -print) \
             --branch \
             --ignore-not-existing \
-            --binary-path ./target/debug/ \
+            --binary-path ../target/debug/ \
             -s . \
             -t lcov \
             --ignore "/*" \
             --ignore "./src/wasm_bindings/*" \
             --ignore "./src/bin/*" \
             --ignore "./docker/*" \
-            --ignore "./../docker/*" \
             -o lcov.info
 
       - name: Upload coverage reports to Codecov quadratic-multiplayer
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  test_connection:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: useblacksmith/setup-node@v5
+        with:
+          node-version: 18
+          cache: "npm"
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy, llvm-tools-preview
+          override: true
+
+      - uses: useblacksmith/rust-cache@v3
+
+      - name: Install grcov
+        run: if ! which grcov; then cargo install grcov; fi
+
+      - name: Install llvm-tools-preview
+        run: if ! which llvm-tools-preview; then rustup component add llvm-tools-preview; fi
+
+      - name: Install pkg-config
+        if: github.runner.isHosted == true
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config
 
       - name: Test quadratic-connection
         env:
           LLVM_PROFILE_FILE: grcov-%p-%m.profraw
           RUSTFLAGS: -Cinstrument-coverage
           RUSTC_BOOTSTRAP: 1
+          CARGO_BUILD_JOBS: 4
         run: |
           cd quadratic-connection
-          npm run test:docker:ci
+          npm run docker:test
+
+      - name: Generate coverage for quadratic-connection
+        env:
+          RUSTC_BOOTSTRAP: 1
+        run: |
+          cd quadratic-connection
+          grcov $(find . ../quadratic-rust-shared -name "grcov-*.profraw" -print) \
+            --branch \
+            --ignore-not-existing \
+            --binary-path ../target/debug/ \
+            -s . \
+            -t lcov \
+            --ignore "/*" \
+            --ignore "./src/wasm_bindings/*" \
+            --ignore "./src/bin/*" \
+            --ignore "./docker/*" \
+            -o lcov.info
+
+      - name: Upload coverage reports to Codecov quadratic-connection
+        uses: codecov/codecov-action@v5
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   test_unit:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: blacksmith-2vcpu-ubuntu-2204
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+
+      - uses: useblacksmith/setup-node@v5
         with:
           node-version: 18
-      - uses: actions/setup-python@v5
+          cache: "npm"
+
+      - uses: useblacksmith/setup-python@v6
         with:
           python-version: "3.11.3"
+          cache: "pip"
 
       - name: Set up Rust
-        uses: moonrepo/setup-rust@v1
+        uses: actions-rs/toolchain@v1
         with:
-          channel: "nightly"
+          toolchain: stable
+          target: wasm32-unknown-unknown
+          override: true
+
+      - uses: useblacksmith/rust-cache@v3
 
       - uses: jetli/wasm-pack-action@v0.4.0
 
@@ -145,14 +252,17 @@ jobs:
           npm run test:ts
 
   test_python:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: blacksmith-2vcpu-ubuntu-2204
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+
+      - uses: useblacksmith/setup-node@v5
         with:
           node-version: 18
-      - uses: actions/setup-python@v5
+          cache: "npm"
+
+      - uses: useblacksmith/setup-python@v6
         with:
           python-version: "3.11.3"
           cache: "pip"
@@ -163,13 +273,15 @@ jobs:
           npm run test
 
   test_api:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: blacksmith-2vcpu-ubuntu-2204
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+
+      - uses: useblacksmith/setup-node@v5
         with:
           node-version: 18
+          cache: "npm"
 
       - name: Run npm test:ci in quadratic-api
         run: |
@@ -178,15 +290,19 @@ jobs:
           npm run docker:test:ci
 
   lint_rust:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: blacksmith-2vcpu-ubuntu-2204
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Rust
-        uses: moonrepo/setup-rust@v1
+        uses: actions-rs/toolchain@v1
         with:
+          toolchain: stable
           components: clippy
-          cache: false
+          override: true
+
+      - uses: useblacksmith/rust-cache@v3
 
       - name: Run cargo clippy in quadratic-core
         run: |
@@ -194,17 +310,26 @@ jobs:
           cargo clippy -- -D warnings
 
   lint:
-    runs-on: ubuntu-latest-8-cores
-    timeout-minutes: 15
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+
+      - uses: useblacksmith/setup-node@v5
         with:
           node-version: 18
+          cache: "npm"
+
       - name: Set up Rust
-        uses: moonrepo/setup-rust@v1
+        uses: actions-rs/toolchain@v1
         with:
-          cache: false
+          toolchain: stable
+          components: clippy
+          target: wasm32-unknown-unknown
+          override: true
+
+      - uses: useblacksmith/rust-cache@v3
+
       - uses: jetli/wasm-pack-action@v0.4.0
         with:
           version: "latest"
@@ -225,46 +350,48 @@ jobs:
           npm run lint:ts
 
   check-version-increment:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    timeout-minutes: 10
     # If we are merging into main, but not pushed on main
     if: github.base_ref == 'main' && github.ref != 'refs/heads/main'
     steps:
-    - name: Checkout current branch
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
+      - name: Checkout current branch
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-    - name: Get current VERSION
-      id: current_version
-      run: echo "CURRENT_VERSION=$(cat VERSION)" >> $GITHUB_OUTPUT
+      - name: Get current VERSION
+        id: current_version
+        run: echo "CURRENT_VERSION=$(cat VERSION)" >> $GITHUB_OUTPUT
 
-    - name: Checkout main branch
-      uses: actions/checkout@v3
-      with:
-        ref: main
-        fetch-depth: 1
+      - name: Checkout main branch
+        uses: actions/checkout@v3
+        with:
+          ref: main
+          fetch-depth: 1
 
-    - name: Get main VERSION
-      id: main_version
-      run: echo "MAIN_VERSION=$(cat VERSION)" >> $GITHUB_OUTPUT
+      - name: Get main VERSION
+        id: main_version
+        run: echo "MAIN_VERSION=$(cat VERSION)" >> $GITHUB_OUTPUT
 
-    - name: Compare versions to main, verify this version is higher
-      run: |
-        current_version="${{ steps.current_version.outputs.CURRENT_VERSION }}"
-        main_version="${{ steps.main_version.outputs.MAIN_VERSION }}"
-        if [ "$(printf '%s\n' "$main_version" "$current_version" | sort -V | tail -n1)" != "$current_version" ]; then
-          echo "Error: VERSION in the current branch ($current_version) is not greater than VERSION in main ($main_version)"
-          exit 1
-        else
-          echo "VERSION check passed: Current branch ($current_version) > main ($main_version)"
-        fi
+      - name: Compare versions to main, verify this version is higher
+        run: |
+          current_version="${{ steps.current_version.outputs.CURRENT_VERSION }}"
+          main_version="${{ steps.main_version.outputs.MAIN_VERSION }}"
+          if [ "$(printf '%s\n' "$main_version" "$current_version" | sort -V | tail -n1)" != "$current_version" ]; then
+            echo "Error: VERSION in the current branch ($current_version) is not greater than VERSION in main ($main_version)"
+            exit 1
+          else
+            echo "VERSION check passed: Current branch ($current_version) > main ($main_version)"
+          fi
 
   check-versions-match:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    timeout-minutes: 10
 
     steps:
-    - name: Checkout current branch
-      uses: actions/checkout@v3
+      - name: Checkout current branch
+        uses: actions/checkout@v3
 
-    - name: Verify that all versions match
-      run: ./bump.sh verify
+      - name: Verify that all versions match
+        run: ./bump.sh verify

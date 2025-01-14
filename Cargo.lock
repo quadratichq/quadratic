@@ -4527,7 +4527,6 @@ dependencies = [
  "log",
  "openssl",
  "parquet 51.0.0",
- "quadratic-core",
  "quadratic-rust-shared",
  "reqwest 0.11.27",
  "serde",

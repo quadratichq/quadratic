@@ -1,6 +1,6 @@
 {
   "buildCommand": "./infra/client/build-client-ci.sh",
-  "installCommand": "npm install",
+  "installCommand": "npm install --no-audit --no-fund",
   "outputDirectory": "build",
   "headers": [
     {
