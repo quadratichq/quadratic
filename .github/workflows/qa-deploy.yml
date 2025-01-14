@@ -3,7 +3,7 @@ name: QA
 on:
   pull_request:
     branches:
-      - qa
+      - main
 
 # Use runs on `ubuntu-latest-8-cores`. All of our self hosted runners use this tag.
 # Our runners pick up jobs first, and if all our runners are being used or are down

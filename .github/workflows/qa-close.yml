@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [closed]
     branches:
-      - qa
+      - main
 
 # Require previous builds and deployments to finish before starting a new one
 # Close can not run concurrently with Create or Update Infrastructure with Pulumi

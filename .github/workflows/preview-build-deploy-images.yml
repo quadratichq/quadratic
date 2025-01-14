@@ -3,9 +3,6 @@ name: Preview
 on:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
-    branches-ignore:
-      - "main"
-      - "qa"
 
 concurrency:
   group: pr-${{ github.event.pull_request.number }}-build-images
@@ -16,11 +13,12 @@ jobs:
     name: Create Deployment
     runs-on: blacksmith-2vcpu-ubuntu-2204
     if: |
-      github.event.action == 'opened' || 
+      github.event.pull_request.head.ref != 'main' &&
+      (github.event.action == 'opened' || 
       github.event.action == 'synchronize' || 
       github.event.action == 'reopened' || 
       (github.event.action == 'labeled' && startsWith(github.event.label.name, 'build:')) ||
-      (github.event.action == 'unlabeled' && startsWith(github.event.label.name, 'build:'))
+      (github.event.action == 'unlabeled' && startsWith(github.event.label.name, 'build:')))
     permissions:
       contents: read
       pull-requests: write

@@ -18,6 +18,7 @@ jobs:
       pull-requests: write
       issues: write
     runs-on: blacksmith-2vcpu-ubuntu-2204
+    if: github.event.pull_request.head.ref != 'main'
     timeout-minutes: 30
     env:
       STACK_NAME: pr-${{ github.event.pull_request.number }}
