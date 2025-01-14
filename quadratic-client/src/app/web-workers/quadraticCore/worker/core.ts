@@ -38,7 +38,7 @@ import type {
 import type {
   ClientCoreFindNextColumnForRect,
   ClientCoreFindNextRowForRect,
-  ClientCoreGetCSVPreview,
+  ClientCoreGetCsvPreview,
   ClientCoreImportFile,
   ClientCoreLoad,
   ClientCoreMoveCells,
@@ -532,10 +532,10 @@ class Core {
     }
   }
 
-  async getCSVPreview({ file, maxRows, delimiter }: ClientCoreGetCSVPreview): Promise<string[][] | undefined> {
+  async getCsvPreview({ file, maxRows, delimiter }: ClientCoreGetCsvPreview): Promise<string[][] | undefined> {
     try {
       await initCore();
-      return GridController.getCSVPreview(new Uint8Array(file), maxRows, delimiter);
+      return GridController.getCsvPreview(new Uint8Array(file), maxRows, delimiter);
     } catch (error: unknown) {
       console.error(error);
       reportError(error);

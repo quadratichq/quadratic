@@ -52,7 +52,7 @@ import type {
   CoreClientGetCellFormatSummary,
   CoreClientGetCodeCell,
   CoreClientGetColumnsBounds,
-  CoreClientGetCSVPreview,
+  CoreClientGetCsvPreview,
   CoreClientGetDisplayCell,
   CoreClientGetEditCell,
   CoreClientGetJwt,
@@ -548,7 +548,7 @@ class QuadraticCore {
     });
   };
 
-  getCSVPreview({
+  getCsvPreview({
     file,
     maxRows,
     delimiter,
@@ -556,13 +556,13 @@ class QuadraticCore {
     file: ArrayBuffer;
     maxRows: number;
     delimiter: number | undefined;
-  }): Promise<CoreClientGetCSVPreview['preview']> {
+  }): Promise<CoreClientGetCsvPreview['preview']> {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: CoreClientGetCSVPreview) => {
+      this.waitingForResponse[id] = (message: CoreClientGetCsvPreview) => {
         resolve(message.preview);
       };
-      this.send({ type: 'clientCoreGetCSVPreview', file, maxRows, delimiter, id }, file);
+      this.send({ type: 'clientCoreGetCsvPreview', file, maxRows, delimiter, id }, file);
     });
   }
 

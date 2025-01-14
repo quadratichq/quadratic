@@ -88,7 +88,7 @@ export const CSVImportSettings = () => {
         const file = await csvFile.arrayBuffer();
 
         quadraticCore.initWorker();
-        const preview = await quadraticCore.getCSVPreview({
+        const preview = await quadraticCore.getCsvPreview({
           file,
           maxRows: DEFAULT_MAX_ROWS,
           delimiter,

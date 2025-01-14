@@ -9,7 +9,7 @@ use crate::Pos;
 
 #[wasm_bindgen]
 impl GridController {
-    #[wasm_bindgen(js_name = "getCSVPreview")]
+    #[wasm_bindgen(js_name = "getCsvPreview")]
     pub fn js_get_csv_preview(
         file: Vec<u8>,
         max_rows: u32,

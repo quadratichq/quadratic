@@ -430,16 +430,16 @@ export interface CoreClientImportFile {
   error?: string;
 }
 
-export interface ClientCoreGetCSVPreview {
-  type: 'clientCoreGetCSVPreview';
+export interface ClientCoreGetCsvPreview {
+  type: 'clientCoreGetCsvPreview';
   file: ArrayBuffer;
   maxRows: number;
   delimiter: number | undefined;
   id: number;
 }
 
-export interface CoreClientGetCSVPreview {
-  type: 'coreClientGetCSVPreview';
+export interface CoreClientGetCsvPreview {
+  type: 'coreClientGetCsvPreview';
   preview: string[][] | undefined;
   id: number;
 }
@@ -1292,7 +1292,7 @@ export type ClientCoreMessage =
   | ClientCoreMoveCodeCellVertically
   | ClientCoreMoveCodeCellHorizontally
   | ClientCoreFiniteRectFromSelection
-  | ClientCoreGetCSVPreview;
+  | ClientCoreGetCsvPreview;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1360,4 +1360,4 @@ export type CoreClientMessage =
   | CoreClientMoveCodeCellHorizontally
   | CoreClientFiniteRectFromSelection
   | CoreClientA1Context
-  | CoreClientGetCSVPreview;
+  | CoreClientGetCsvPreview;
