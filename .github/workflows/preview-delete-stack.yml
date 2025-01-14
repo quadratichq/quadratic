@@ -21,26 +21,6 @@ jobs:
     env:
       STACK_NAME: pr-${{ github.event.pull_request.number }}
     steps:
-      - name: Find Delete Stack Comment
-        uses: peter-evans/find-comment@v3
-        id: preview-delete-stack-comment-start
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          comment-author: "github-actions[bot]"
-          body-includes: "Preview - Stack"
-
-      - name: Comment on delete stack start
-        uses: peter-evans/create-or-update-comment@v3
-        with:
-          comment-id: ${{ steps.preview-delete-stack-comment-start.outputs.comment-id }}
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ## Preview - Stack
-            ⏳ Stack deletion in progress...
-
-            🔍 Track progress in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-          edit-mode: replace
-
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -64,36 +44,3 @@ jobs:
           else
             echo "Stack ${{ env.STACK_NAME }} does not exist"
           fi
-
-      - name: Find Delete Stack Comment
-        uses: peter-evans/find-comment@v3
-        if: success() || failure()
-        id: preview-delete-stack-comment-update
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          comment-author: "github-actions[bot]"
-          body-includes: "Preview - Stack"
-
-      - name: Update comment on delete stack success
-        if: success()
-        uses: peter-evans/create-or-update-comment@v3
-        with:
-          comment-id: ${{ steps.preview-delete-stack-comment-update.outputs.comment-id }}
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ## Preview - Stack
-            ✅ Preview stack deleted successfully.
-          edit-mode: replace
-
-      - name: Update comment on delete stack failure
-        if: failure()
-        uses: peter-evans/create-or-update-comment@v3
-        with:
-          comment-id: ${{ steps.preview-delete-stack-comment-update.outputs.comment-id }}
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ## Preview - Stack
-            ❌ Preview stack deletion encountered an error.
-
-            🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
-          edit-mode: replace

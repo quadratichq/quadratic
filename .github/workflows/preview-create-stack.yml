@@ -21,26 +21,6 @@ jobs:
     env:
       STACK_NAME: pr-${{ github.event.pull_request.number }}
     steps:
-      - name: Find Create Stack Comment
-        uses: peter-evans/find-comment@v3
-        id: preview-create-stack-comment-start
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          comment-author: "github-actions[bot]"
-          body-includes: "Preview - Stack"
-
-      - name: Comment on create stack start
-        uses: peter-evans/create-or-update-comment@v3
-        with:
-          comment-id: ${{ steps.preview-create-stack-comment-start.outputs.comment-id }}
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ## Preview - Stack
-            ⏳ Stack creation in progress...
-
-            🔍 Track progress in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-          edit-mode: replace
-
       - uses: actions/checkout@v4
 
       - name: Configure AWS Credentials
@@ -107,38 +87,3 @@ jobs:
             echo "Stack creation did not complete successfully. Status: $STACK_STATUS"
             exit 1
           fi
-
-      - name: Find Create Stack Comment
-        uses: peter-evans/find-comment@v3
-        if: success() || failure()
-        id: preview-create-stack-comment-update
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          comment-author: "github-actions[bot]"
-          body-includes: "Preview - Stack"
-
-      - name: Update comment on create stack success
-        if: success()
-        uses: peter-evans/create-or-update-comment@v3
-        with:
-          comment-id: ${{ steps.preview-create-stack-comment-update.outputs.comment-id }}
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ## Preview - Stack
-            ✅ Preview stack created successfully.
-
-            🔗 URL: ${{ steps.create-stack.outputs.WebsiteURL }}
-          edit-mode: replace
-
-      - name: Update comment on create stack failure
-        if: failure()
-        uses: peter-evans/create-or-update-comment@v3
-        with:
-          comment-id: ${{ steps.preview-create-stack-comment-update.outputs.comment-id }}
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ## Preview - Stack
-            ❌ Preview stack creation encountered an error.
-
-            🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
-          edit-mode: replace
