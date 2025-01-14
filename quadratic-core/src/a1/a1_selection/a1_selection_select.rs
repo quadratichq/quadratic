@@ -238,11 +238,21 @@ impl A1Selection {
         // top of the screen to change the cursor position when selecting a column
         top: i64,
     ) {
-        if is_right_click || (!ctrl_key && !shift_key) {
-            self.ranges.clear();
-            self.ranges.push(CellRefRange::new_relative_column(col));
-            self.cursor.x = col;
-            self.cursor.y = top;
+        let select_only_column = |selection: &mut A1Selection, col: i64, top: i64| {
+            selection.ranges.clear();
+            selection
+                .ranges
+                .push(CellRefRange::new_relative_column(col));
+            selection.cursor.x = col;
+            selection.cursor.y = top;
+        };
+
+        if is_right_click {
+            if !self.ranges.iter().any(|range| range.has_column_range(col)) {
+                select_only_column(self, col, top);
+            }
+        } else if !ctrl_key && !shift_key {
+            select_only_column(self, col, top);
         } else if ctrl_key && !shift_key {
             self.add_or_remove_column(col, top);
         } else if shift_key {
@@ -284,11 +294,19 @@ impl A1Selection {
         // left of the screen to change the cursor position when selecting a row
         left: i64,
     ) {
-        if is_right_click || (!ctrl_key && !shift_key) {
-            self.ranges.clear();
-            self.ranges.push(CellRefRange::new_relative_row(row));
-            self.cursor.x = left;
-            self.cursor.y = row;
+        let select_only_row = |selection: &mut A1Selection, row: i64, left: i64| {
+            selection.ranges.clear();
+            selection.ranges.push(CellRefRange::new_relative_row(row));
+            selection.cursor.x = left;
+            selection.cursor.y = row;
+        };
+
+        if is_right_click {
+            if !self.ranges.iter().any(|range| range.has_row_range(row)) {
+                select_only_row(self, row, left);
+            }
+        } else if !ctrl_key && !shift_key {
+            select_only_row(self, row, left);
         } else if ctrl_key && !shift_key {
             self.add_or_remove_row(row, left);
         } else if shift_key {
@@ -764,5 +782,25 @@ mod tests {
                 CellRefRange::test_a1("B")
             ]
         );
+    }
+
+    #[test]
+    fn test_right_click_column_selection() {
+        let mut selection = A1Selection::test_a1("A:D");
+        selection.select_column(col![B], false, false, true, 1);
+        assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A:D")]);
+
+        selection.select_column(col![F], false, false, true, 1);
+        assert_eq!(selection.ranges, vec![CellRefRange::test_a1("F")]);
+    }
+
+    #[test]
+    fn test_right_click_row_selection() {
+        let mut selection = A1Selection::test_a1("1:4");
+        selection.select_row(2, false, false, true, 1);
+        assert_eq!(selection.ranges, vec![CellRefRange::test_a1("1:4")]);
+
+        selection.select_row(6, false, false, true, 1);
+        assert_eq!(selection.ranges, vec![CellRefRange::test_a1("6")]);
     }
 }

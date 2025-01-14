@@ -83,3 +83,4 @@ export const uploadFile = async (fileTypes: string[]): Promise<File[]> => {
 };
 
 export const supportedFileTypes = ['.grid', '.xlsx', '.xls', '.csv', '.parquet', '.parq', '.pqt'];
+export const supportedFileTypesFromGrid = supportedFileTypes.filter((type) => type !== '.grid');

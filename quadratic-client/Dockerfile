@@ -133,10 +133,6 @@ COPY --from=core-builder /quadratic/quadratic-client/src/app/quadratic-core/. ./
 COPY --from=ts-rust-types-builder /quadratic/quadratic-client/src/app/quadratic-core-types/. ./quadratic-client/src/app/quadratic-core-types
 COPY --from=rust-client-builder /quadratic/quadratic-client/src/app/quadratic-rust-client/. ./quadratic-client/src/app/quadratic-rust-client
 
-# Copy package.json and package-lock.json
-COPY package.json .
-COPY package-lock.json .
-
 # Copy all package.json files
 COPY package.json .
 COPY package-lock.json .
@@ -165,8 +161,12 @@ ENV VITE_DEBUG=VITE_DEBUG_VAL
 ENV VITE_QUADRATIC_API_URL=VITE_QUADRATIC_API_URL_VAL
 ENV VITE_QUADRATIC_MULTIPLAYER_URL=VITE_QUADRATIC_MULTIPLAYER_URL_VAL
 ENV VITE_QUADRATIC_CONNECTION_URL=VITE_QUADRATIC_CONNECTION_URL_VAL
-ENV VITE_AUTH_TYPE=VITE_AUTH_TYPE_VAL
 ENV VITE_STORAGE_TYPE=VITE_STORAGE_TYPE_VAL
+ENV VITE_AUTH_TYPE=VITE_AUTH_TYPE_VAL
+ENV VITE_AUTH0_ISSUER=VITE_AUTH0_ISSUER_VAL
+ENV VITE_AUTH0_DOMAIN=VITE_AUTH0_DOMAIN_VAL
+ENV VITE_AUTH0_CLIENT_ID=VITE_AUTH0_CLIENT_ID_VAL
+ENV VITE_AUTH0_AUDIENCE=VITE_AUTH0_AUDIENCE_VAL
 ENV VITE_ORY_HOST=VITE_ORY_HOST_VAL
 ENV VITE_SENTRY_AUTH_TOKEN=VITE_SENTRY_AUTH_TOKEN_VAL
 RUN echo 'Building front-end...' && npm run build --workspace=quadratic-client

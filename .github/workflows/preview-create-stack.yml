@@ -1,4 +1,4 @@
-name: Create Stack
+name: Preview
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ concurrency:
 
 jobs:
   create_stack:
-    name: Create Stack - Preview
+    name: Create Stack
     permissions:
       contents: read
       pull-requests: write
