@@ -13,7 +13,7 @@ pub(crate) fn try_check_syntax(grid: &Grid, s: &str) -> CodeResult<()> {
     println!("Checking syntax of formula {s:?}");
     let mut ctx = Ctx::new_for_syntax_check(grid);
     parse_formula(s, Pos::ORIGIN)?
-        .eval(&mut ctx, None)
+        .eval(&mut ctx)
         .into_non_error_value()
         .map(|_| ())
 }
@@ -23,7 +23,7 @@ pub(crate) fn eval_at(grid: &Grid, pos: SheetPos, s: &str) -> Value {
     println!("Evaluating formula {s:?}");
     let mut ctx = Ctx::new(grid, pos);
     match parse_formula(s, Pos::ORIGIN) {
-        Ok(formula) => formula.eval(&mut ctx, None).inner,
+        Ok(formula) => formula.eval(&mut ctx).inner,
         Err(e) => e.into(),
     }
 }
@@ -96,7 +96,7 @@ fn test_formula_cell_ref() {
 
     // Evaluate at ORIGIN
     let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(sheet_id));
-    assert_eq!("11111".to_string(), form.eval(&mut ctx, None).to_string(),);
+    assert_eq!("11111".to_string(), form.eval(&mut ctx).to_string(),);
 }
 
 #[test]
@@ -108,7 +108,7 @@ fn test_formula_circular_array_ref() {
     let mut ctx = Ctx::new(&g, pos![B2].to_sheet_pos(g.sheets()[0].id));
     assert_eq!(
         RunErrorMsg::CircularReference,
-        form.eval(&mut ctx, None).inner.cell_values_slice().unwrap()[4]
+        form.eval(&mut ctx).inner.cell_values_slice().unwrap()[4]
             .clone()
             .unwrap_err()
             .msg,
