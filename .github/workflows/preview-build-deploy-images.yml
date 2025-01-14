@@ -1,0 +1,533 @@
+name: Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+    branches-ignore:
+      - "main"
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}-build-images
+  cancel-in-progress: ${{ (github.event.action != 'labeled' && github.event.action !=  'unlabeled') || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && startsWith(github.event.label.name, 'build:')) }}
+
+jobs:
+  create_deployment:
+    name: Create Deployment
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    if: |
+      github.event.action == 'opened' || 
+      github.event.action == 'synchronize' || 
+      github.event.action == 'reopened' || 
+      (github.event.action == 'labeled' && startsWith(github.event.label.name, 'build:')) ||
+      (github.event.action == 'unlabeled' && startsWith(github.event.label.name, 'build:'))
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      deployments: write
+    outputs:
+      deployment_id: ${{ steps.deployment.outputs.id }}
+    steps:
+      - name: Find Build & Deploy Images Comment
+        uses: peter-evans/find-comment@v3
+        id: preview-build-deploy-images-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Preview - Build & Deploy Images"
+
+      - name: Create initial status comment
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.preview-build-deploy-images-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Preview - Build & Deploy Images
+            ⏳ Building images...
+            ⏳ Deploy images
+
+            🔍 Track progress in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          edit-mode: replace
+
+      - name: Deactivate previous deployments
+        run: |
+          gh api \
+            --method GET \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/deployments \
+            -f ref="${{ github.event.pull_request.head.ref }}" \
+            -f environment=preview \
+            --jq '.[] | .id' | while read -r id; do
+              gh api \
+                --method POST \
+                -H "Accept: application/vnd.github+json" \
+                /repos/${{ github.repository }}/deployments/$id/statuses \
+                -f state="inactive" \
+                -f environment="preview" \
+                -f description="Superseded by newer deployment"
+            done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create deployment
+        id: deployment
+        run: |
+          DEPLOYMENT_ID=$(gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/deployments \
+            -f ref="${{ github.event.pull_request.head.ref }}" \
+            -f description="Building and deploying PR #${{ github.event.pull_request.number }} (${GITHUB_SHA::7})" \
+            -F auto_merge=false \
+            -f required_contexts\[\] \
+            -f environment=preview \
+            -F transient_environment=true \
+            -F production_environment=false \
+            --jq '.id')
+          echo "id=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update deployment status (building images)
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/deployments/${{ steps.deployment.outputs.id }}/statuses \
+            -f state="in_progress" \
+            -f description="Building Docker images..." \
+            -f environment=preview \
+            -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build_images:
+    name: Build Images
+    needs: create_deployment
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        include:
+          - service: client
+            runner: blacksmith-8vcpu-ubuntu-2204
+          - service: api
+            runner: blacksmith-2vcpu-ubuntu-2204
+          - service: connection
+            runner: blacksmith-4vcpu-ubuntu-2204
+          - service: files
+            runner: blacksmith-4vcpu-ubuntu-2204
+          - service: multiplayer
+            runner: blacksmith-4vcpu-ubuntu-2204
+      fail-fast: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for build:wasm-opt:disabled label
+        id: build-wasm-opt-disabled
+        run: |
+          if [[ ${{ contains(github.event.pull_request.labels.*.name, 'build:wasm-opt:disabled') }} == true ]]; then
+            echo "CLIENT_DEV=true" >> $GITHUB_OUTPUT
+          else
+            echo "CLIENT_DEV=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check for build:cache:disabled label
+        id: build-cache
+        run: |
+          if [[ ${{ contains(github.event.pull_request.labels.*.name, 'build:cache:disabled') }} == true ]]; then
+            echo "CACHE_DISABLED=true" >> $GITHUB_OUTPUT
+          else
+            echo "CACHE_DISABLED=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate Build Metadata
+        id: build-metadata
+        run: |
+          echo "BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+          echo "GIT_SHA_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "BRANCH_NAME=$(echo "${{ github.head_ref }}" | tr '/' '-')" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR Private
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Define repository name
+        id: repo-name
+        run: |
+          echo "REPO_NAME=quadratic-${{ matrix.service }}" >> $GITHUB_OUTPUT
+
+      - name: Create Private ECR Repository
+        id: create-ecr
+        env:
+          REPO_NAME: ${{ steps.repo-name.outputs.REPO_NAME }}
+        run: |
+          # Try to describe the repository first
+          if ! aws ecr describe-repositories --repository-names $REPO_NAME 2>/dev/null; then
+            # Repository doesn't exist, create it
+            aws ecr create-repository --repository-name $REPO_NAME || true
+          fi
+
+          # Get the repository URI either way
+          REPO_INFO=$(aws ecr describe-repositories --repository-names $REPO_NAME)
+          ECR_URL=$(echo $REPO_INFO | jq -r '.repositories[0].repositoryUri')
+          echo "ECR_URL=$ECR_URL" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
+            network=host
+
+      - name: Build and push (with cache)
+        if: steps.build-cache.outputs.CACHE_DISABLED == 'false'
+        uses: useblacksmith/build-push-action@v1
+        with:
+          context: .
+          file: quadratic-${{ matrix.service }}/Dockerfile
+          push: true
+          tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}
+          build-args: |
+            BUILD_TIME=${{ steps.build-metadata.outputs.BUILD_TIME }}
+            GIT_SHA_SHORT=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
+            BRANCH_NAME=${{ steps.build-metadata.outputs.BRANCH_NAME }}
+            PR_NUMBER=${{ github.event.pull_request.number }}
+            CLIENT_DEV=${{ steps.build-wasm-opt-disabled.outputs.CLIENT_DEV }}
+          labels: |
+            org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
+            org.opencontainers.image.revision=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
+
+      - name: Build and push (without cache)
+        if: steps.build-cache.outputs.CACHE_DISABLED == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: quadratic-${{ matrix.service }}/Dockerfile
+          push: true
+          tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}
+          build-args: |
+            BUILD_TIME=${{ steps.build-metadata.outputs.BUILD_TIME }}
+            GIT_SHA_SHORT=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
+            BRANCH_NAME=${{ steps.build-metadata.outputs.BRANCH_NAME }}
+            PR_NUMBER=${{ github.event.pull_request.number }}
+            CLIENT_DEV=${{ steps.build-wasm-opt-disabled.outputs.CLIENT_DEV }}
+          labels: |
+            org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
+            org.opencontainers.image.revision=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
+
+      - name: Find Build & Deploy Images Comment
+        uses: peter-evans/find-comment@v3
+        if: failure()
+        id: preview-build-deploy-images-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Preview - Build & Deploy Images"
+
+      - name: Update comment on build images failure
+        if: failure()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.preview-build-deploy-images-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Preview - Build & Deploy Images
+            ❌ Build images
+            ❌ Deploy images
+
+            🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+          edit-mode: replace
+
+      - name: Update deployment status (failure)
+        if: failure()
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
+            -f state="failure" \
+            -f description="Failed to build ${{ matrix.service }} image" \
+            -f environment=preview \
+            -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy_images:
+    name: Deploy Images
+    needs: [create_deployment, build_images]
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      deployments: write
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    timeout-minutes: 30
+    env:
+      STACK_NAME: pr-${{ github.event.pull_request.number }}
+      MAX_ATTEMPTS: 50
+    steps:
+      - name: Find Build & Deploy Images Comment
+        uses: peter-evans/find-comment@v3
+        id: preview-build-deploy-images-comment-start
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Preview - Build & Deploy Images"
+
+      - name: Update comment on deploy images start
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.preview-build-deploy-images-comment-start.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Preview - Build & Deploy Images
+            ✅ Build images
+            ⏳ Deploying images...
+
+            🔍 Track progress in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          edit-mode: replace
+
+      - name: Update deployment status (deploying)
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
+            -f state="in_progress" \
+            -f description="Deploying images..." \
+            -f environment=preview \
+            -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Wait for stack deployment
+        id: check-stack
+        run: |
+          ATTEMPTS=0
+          echo "Waiting for stack deployment..."
+          while [ $ATTEMPTS -lt ${{ env.MAX_ATTEMPTS }} ]; do
+            if ! STATUS=$(aws cloudformation describe-stacks \
+              --stack-name ${{ env.STACK_NAME }} \
+              --query 'Stacks[0].StackStatus' \
+              --output text 2>&1); then
+              echo "Error getting stack status: $STATUS"
+              echo "Stack might not exist yet. Waiting..."
+              sleep 30
+              ATTEMPTS=$((ATTEMPTS + 1))
+              continue
+            fi
+            
+            echo "Current stack status: $STATUS"
+            
+            # Fail if stack is in a failed or rollback state
+            if [[ $STATUS == *FAILED* ]] || [[ $STATUS == *ROLLBACK* ]]; then
+              echo "::error::Stack is in a failed or rollback state: $STATUS"
+              exit 1
+            fi
+            
+            # Continue if stack is ready
+            if [[ $STATUS == "CREATE_COMPLETE" ]] || [[ $STATUS == "UPDATE_COMPLETE" ]]; then
+              echo "::notice::Stack is ready with status: $STATUS"
+              break
+            fi
+            
+            # Wait and check again if stack is still being created/updated
+            if [[ $STATUS == *IN_PROGRESS* ]]; then
+              echo "Stack operation in progress. Waiting 30 seconds..."
+              sleep 30
+              ATTEMPTS=$((ATTEMPTS + 1))
+              continue
+            fi
+          done
+
+          if [ $ATTEMPTS -eq ${{ env.MAX_ATTEMPTS }} ]; then
+            echo "::error::Timeout waiting for stack to be ready"
+            exit 1
+          fi
+
+      - name: Get EC2 Instance ID
+        id: get-instance
+        run: |
+          INSTANCE_ID=$(aws cloudformation describe-stack-resources \
+            --stack-name ${{ env.STACK_NAME }} \
+            --logical-resource-id EC2Instance \
+            --query 'StackResources[0].PhysicalResourceId' \
+            --output text)
+          if [ -z "$INSTANCE_ID" ]; then
+            echo "::error::Failed to get EC2 instance ID"
+            exit 1
+          fi
+          echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
+
+      - name: Wait for instance to be ready
+        run: |
+          aws ec2 wait instance-status-ok \
+            --instance-ids ${{ steps.get-instance.outputs.instance_id }}
+
+      - name: Run deployment script on EC2
+        id: deploy
+        run: |
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids ${{ steps.get-instance.outputs.instance_id }} \
+            --document-name "AWS-RunShellScript" \
+            --parameters commands=["cd /quadratic-selfhost && ./login.sh && ./pull_start.sh"] \
+            --comment "Deploying new images after build" \
+            --query 'Command.CommandId' \
+            --output text)
+
+          # Wait for command completion
+          ATTEMPTS=0
+          echo "Waiting for deployment command to complete..."
+          while [ $ATTEMPTS -lt ${{ env.MAX_ATTEMPTS }} ]; do
+            STATUS=$(aws ssm get-command-invocation \
+              --command-id "$COMMAND_ID" \
+              --instance-id ${{ steps.get-instance.outputs.instance_id }} \
+              --query "Status" \
+              --output text 2>/dev/null || echo "Pending")
+            
+            echo "Command status: $STATUS"
+            
+            if [ "$STATUS" = "Success" ]; then
+              echo "Deployment completed successfully"
+              exit 0
+            elif [ "$STATUS" = "Failed" ] || [ "$STATUS" = "Cancelled" ] || [ "$STATUS" = "TimedOut" ]; then
+              echo "Deployment failed with status: $STATUS"
+              
+              # Get command output for debugging
+              aws ssm get-command-invocation \
+                --command-id "$COMMAND_ID" \
+                --instance-id ${{ steps.get-instance.outputs.instance_id }} \
+                --query "StandardOutputContent" \
+                --output text
+                
+              exit 1
+            fi
+            
+            echo "Waiting for deployment to complete... (Attempt $((ATTEMPTS + 1))/${{ env.MAX_ATTEMPTS }})"
+            sleep 30
+            ATTEMPTS=$((ATTEMPTS + 1))
+          done
+
+          echo "Deployment timed out after ${{ env.MAX_ATTEMPTS }} attempts"
+          exit 1
+
+      - name: Delete untagged (old) images
+        run: |
+          for service in client api connection files multiplayer; do
+            REPO_NAME="quadratic-${service}"
+            
+            # Get list of untagged image digests
+            UNTAGGED_IMAGES=$(aws ecr list-images \
+              --repository-name "$REPO_NAME" \
+              --filter "tagStatus=UNTAGGED" \
+              --query 'imageIds[*].imageDigest' \
+              --output json)
+            
+            # Delete untagged images if any exist
+            if [ "$UNTAGGED_IMAGES" != "[]" ]; then
+              echo "Deleting untagged images from $REPO_NAME"
+              aws ecr batch-delete-image \
+                --repository-name "$REPO_NAME" \
+                --image-ids "$(echo $UNTAGGED_IMAGES | jq -r 'map({imageDigest: .}) | @json')"
+            else
+              echo "No untagged images found in $REPO_NAME"
+            fi
+          done
+
+      - name: Generate Deploy Metadata
+        id: deploy-metadata
+        run: |
+          # Sanitize branch name for DNS
+          BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
+          SANITIZED_BRANCH_NAME=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/-\+/-/g' | sed 's/^-\|-$//')
+
+          echo "WebsiteURL=https://${SANITIZED_BRANCH_NAME}.quadratic-preview.com" >> $GITHUB_OUTPUT
+          echo "DEPLOY_TIME=$(date -u +'%b %d, %Y at %I:%M %p UTC')" >> $GITHUB_OUTPUT
+
+      - name: Find Build & Deploy Images Comment
+        uses: peter-evans/find-comment@v3
+        if: success() || failure()
+        id: preview-build-deploy-images-comment-update
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Preview - Build & Deploy Images"
+
+      - name: Update comment on deploy images success
+        if: success()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.preview-build-deploy-images-comment-update.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Preview - Build & Deploy Images
+            ✅ Build images
+            ✅ Deploy images
+
+            🕒 Last deployed: ${{ steps.deploy-metadata.outputs.DEPLOY_TIME }}
+
+            🔗 URL: ${{ steps.deploy-metadata.outputs.WebsiteURL }}
+          edit-mode: replace
+
+      - name: Update comment on deploy images failure
+        if: failure()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.preview-build-deploy-images-comment-update.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Preview - Build & Deploy Images
+            ✅ Build images
+            ❌ Deploy images
+
+            🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+          edit-mode: replace
+
+      - name: Update deployment status (success)
+        if: success()
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
+            -f state="success" \
+            -f environment_url="${{ steps.deploy-metadata.outputs.WebsiteURL }}" \
+            -f description="Deployment successful!" \
+            -f environment=preview \
+            -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update deployment status (failure)
+        if: failure()
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
+            -f state="failure" \
+            -f description="Deployment failed" \
+            -f environment=preview \
+            -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
