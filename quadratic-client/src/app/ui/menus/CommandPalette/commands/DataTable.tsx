@@ -8,6 +8,7 @@ import {
   sortDataTableAction,
   toggleTableAlternatingColorsAction,
   sortTableColumnAscendingAction,
+  sortTableColumnDescendingAction,
 } from '@/app/actions';
 import {
   gridToDataTable,
@@ -18,6 +19,7 @@ import {
   sortDataTable,
   toggleTableAlternatingColors,
   codeToDataTable,
+  sortTableColumnDescending,
   sortTableColumnAscending,
 } from '@/app/actions/dataTableSpec';
 import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
@@ -80,6 +82,20 @@ const dataTableCommandGroup: CommandGroup = {
       isAvailable: toggleTableAlternatingColorsAction.isAvailable,
       Component: (props) => {
         return <CommandPaletteListItem {...props} action={toggleTableAlternatingColors} />;
+      },
+    },
+    {
+      label: sortTableColumnAscendingAction.label,
+      isAvailable: sortTableColumnAscendingAction.isAvailable,
+      Component: (props) => {
+        return <CommandPaletteListItem {...props} action={sortTableColumnAscending} />;
+      },
+    },
+    {
+      label: sortTableColumnDescendingAction.label,
+      isAvailable: sortTableColumnDescendingAction.isAvailable,
+      Component: (props) => {
+        return <CommandPaletteListItem {...props} action={sortTableColumnDescending} />;
       },
     },
   ],

@@ -171,7 +171,7 @@ export const toggleHeaderTableAction = {
 };
 
 export const deleteDataTableAction = {
-  label: 'Delete Data Table',
+  label: 'Delete',
   isAvailable: isAvailableBecauseCanEditFile,
 };
 
@@ -187,5 +187,15 @@ export const sortDataTableAction = {
 
 export const toggleTableAlternatingColorsAction = {
   label: 'Toggle show alternating colors',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const sortTableColumnAscendingAction = {
+  label: 'Sort column ascending',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const sortTableColumnDescendingAction = {
+  label: 'Sort column descending',
   isAvailable: isAvailableBecauseCanEditFile,
 };

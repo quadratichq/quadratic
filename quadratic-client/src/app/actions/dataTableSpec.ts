@@ -65,14 +65,21 @@ export const getRow = (): number | undefined => {
   return row ? row - table.y : table.h;
 };
 
+// returns the column index of the selected column, starting from 0
 export const getColumn = (): number | undefined => {
   const table = getTable();
 
   if (!table) return undefined;
 
-  const column = pixiAppSettings.contextMenu?.column;
+  const columnIndex = pixiAppSettings.contextMenu?.selectedColumn;
 
-  return column ? column - table.x : table.w;
+  if (columnIndex !== undefined) {
+    return columnIndex;
+  }
+
+  const columnX = pixiAppSettings.contextMenu?.column || JSON.parse(sheets.getRustSelection()).cursor.x;
+
+  return columnX - table.x;
 };
 
 export const getColumns = (): JsDataTableColumnHeader[] | undefined => {
@@ -205,33 +212,39 @@ export const toggleTableAlternatingColors = () => {
 
 export const renameTableColumn = () => {
   const table = getTable();
-  if (table) {
-    const selectedColumn = pixiAppSettings.contextMenu?.selectedColumn;
+  const column = getColumn();
 
-    if (selectedColumn !== undefined) {
+  if (table && column !== undefined) {
+    setTimeout(() => {
       setTimeout(() => {
-        const contextMenu = { type: ContextMenuType.TableColumn, rename: true, table, selectedColumn };
+        const contextMenu = { type: ContextMenuType.TableColumn, rename: true, table, column };
         events.emit('contextMenu', contextMenu);
       });
-    }
+    });
+  }
+};
+
+export const sortTableColumn = (direction: 'Ascending' | 'Descending') => {
+  const table = getTable();
+  const column = getColumn();
+
+  if (table && column !== undefined) {
+    quadraticCore.sortDataTable(
+      sheets.sheet.id,
+      table.x,
+      table.y,
+      [{ column_index: column, direction }],
+      sheets.getCursorPosition()
+    );
   }
 };
 
 export const sortTableColumnAscending = () => {
-  const table = getTable();
-  if (table) {
-    const selectedColumn = pixiAppSettings.contextMenu?.selectedColumn;
-    console.log('selectedColumn', sheets.getRustSelection());
-    if (selectedColumn !== undefined) {
-      quadraticCore.sortDataTable(
-        sheets.sheet.id,
-        table.x,
-        table.y,
-        [{ column_index: selectedColumn, direction: 'Ascending' }],
-        sheets.getCursorPosition()
-      );
-    }
-  }
+  sortTableColumn('Ascending');
+};
+
+export const sortTableColumnDescending = () => {
+  sortTableColumn('Descending');
 };
 
 export const dataTableSpec: DataTableSpec = {
@@ -295,21 +308,7 @@ export const dataTableSpec: DataTableSpec = {
   [Action.SortTableColumnDescending]: {
     label: 'Sort column descending',
     Icon: SortDescendingIcon,
-    run: () => {
-      const table = getTable();
-      if (table) {
-        const selectedColumn = pixiAppSettings.contextMenu?.selectedColumn;
-        if (selectedColumn !== undefined) {
-          quadraticCore.sortDataTable(
-            sheets.sheet.id,
-            table.x,
-            table.y,
-            [{ column_index: selectedColumn, direction: 'Descending' }],
-            sheets.getCursorPosition()
-          );
-        }
-      }
-    },
+    run: sortTableColumnDescending,
   },
   [Action.InsertTableColumnLeft]: {
     label: 'Insert column to the left',
