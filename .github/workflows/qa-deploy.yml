@@ -1,4 +1,4 @@
-name: Deploy Preview Branch
+name: QA
 
 on:
   pull_request:
@@ -20,7 +20,7 @@ jobs:
       - files_preview
       - multiplayer_preview
       - connection_preview
-    name: Create or Update Infrastructure with Pulumi
+    name: Create or Update Pulumi Infrastructure Stack
     runs-on: blacksmith-2vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
@@ -66,6 +66,7 @@ jobs:
           PR_ID: ${{ github.event.pull_request.number }}
 
   multiplayer_preview:
+    name: Build Multiplayer
     runs-on: blacksmith-4vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
@@ -94,6 +95,7 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
   files_preview:
+    name: Build Files
     runs-on: blacksmith-4vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
@@ -122,6 +124,7 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
   connection_preview:
+    name: Build Connection
     runs-on: blacksmith-4vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4

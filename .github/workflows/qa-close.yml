@@ -1,4 +1,4 @@
-name: Destroy Preview Branch
+name: QA
 
 on:
   pull_request:
