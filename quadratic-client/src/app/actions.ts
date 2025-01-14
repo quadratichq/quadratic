@@ -199,3 +199,48 @@ export const sortTableColumnDescendingAction = {
   label: 'Sort column descending',
   isAvailable: isAvailableBecauseCanEditFile,
 };
+
+export const insertTableColumnLeftAction = {
+  label: 'Insert column left',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const insertTableColumnRightAction = {
+  label: 'Insert column right',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const removeTableColumnAction = {
+  label: 'Remove column',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const hideTableColumnAction = {
+  label: 'Hide column',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const showAllTableColumnsAction = {
+  label: 'Show all columns',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const insertTableRowAboveAction = {
+  label: 'Insert row above',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const insertTableRowBelowAction = {
+  label: 'Insert row below',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const removeTableRowAction = {
+  label: 'Remove row',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const toggleTableUIAction = {
+  label: 'Toggle show table UI',
+  isAvailable: isAvailableBecauseCanEditFile,
+};

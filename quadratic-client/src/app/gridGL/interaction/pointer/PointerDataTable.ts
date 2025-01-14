@@ -113,9 +113,7 @@ export class PointerDataTable {
 
     this.applyState(world);
 
-    if (!this.active && this.selection) {
-      return false;
-    }
+    if (!this.active && this.selection) return false;
 
     if (this.active && this.tableBounds && this.selection && this.selectionRight && this.selectionBottom) {
       const { column, row } = sheets.sheet.getColumnRowFromScreen(world.x, world.y);
@@ -163,7 +161,7 @@ export class PointerDataTable {
       let deleteRectangles: Rectangle[] = [];
 
       const boxCellsRectangle = selection.clone();
-      boxCellsRectangle.height += 1;
+      boxCellsRectangle.height += 2;
       boxCellsRectangle.width += 1;
 
       // Handle changes in rows

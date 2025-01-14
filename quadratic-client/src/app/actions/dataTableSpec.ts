@@ -60,9 +60,9 @@ export const getRow = (): number | undefined => {
 
   if (!table) return undefined;
 
-  let row = pixiAppSettings.contextMenu?.row;
+  let row = pixiAppSettings.contextMenu?.row || JSON.parse(sheets.getRustSelection()).cursor.y;
 
-  return row ? row - table.y : table.h;
+  return row - table.y;
 };
 
 // returns the column index of the selected column, starting from 0
@@ -111,6 +111,11 @@ const isAlternatingColorsShowing = (): boolean => {
 const isReadOnly = (): boolean => {
   const table = getTable();
   return !!table?.readonly;
+};
+
+const isWithinTable = (): boolean => {
+  // getRow() returns zero if outside of the table
+  return !!getRow();
 };
 
 const isTableUIShowing = (): boolean => {
@@ -247,6 +252,133 @@ export const sortTableColumnDescending = () => {
   sortTableColumn('Descending');
 };
 
+export const insertTableColumn = (increment: number = 0) => {
+  const table = getTable();
+  const column = getColumn();
+
+  if (table && column !== undefined) {
+    quadraticCore.dataTableMutations(
+      sheets.sheet.id,
+      table.x,
+      table.y,
+      [column + increment],
+      undefined,
+      undefined,
+      undefined,
+      sheets.getCursorPosition()
+    );
+  }
+};
+
+export const removeTableColumn = () => {
+  const table = getTable();
+  const column = getColumn();
+
+  if (table && column !== undefined) {
+    quadraticCore.dataTableMutations(
+      sheets.sheet.id,
+      table.x,
+      table.y,
+      undefined,
+      [column],
+      undefined,
+      undefined,
+      sheets.getCursorPosition()
+    );
+  }
+};
+
+export const hideTableColumn = () => {
+  const table = getTable();
+  const column = getColumn();
+  const columns = getDisplayColumns();
+
+  if (table && columns && column !== undefined && columns[column]) {
+    columns[column].display = false;
+
+    quadraticCore.dataTableMeta(sheets.sheet.id, table.x, table.y, { columns }, sheets.getCursorPosition());
+  }
+};
+
+export const showAllTableColumns = () => {
+  const table = getTable();
+  const columns = JSON.parse(JSON.stringify(getColumns())) as {
+    name: string;
+    display: boolean;
+    valueIndex: number;
+  }[];
+
+  if (table && columns) {
+    columns.forEach((column) => (column.display = true));
+
+    quadraticCore.dataTableMeta(sheets.sheet.id, table.x, table.y, { columns }, sheets.getCursorPosition());
+  }
+};
+
+export const insertTableRow = (increment: number = 0) => {
+  const table = getTable();
+  const row = getRow();
+
+  if (table && row !== undefined) {
+    quadraticCore.dataTableMutations(
+      sheets.sheet.id,
+      table.x,
+      table.y,
+      undefined,
+      undefined,
+      [row + increment],
+      undefined,
+      sheets.getCursorPosition()
+    );
+  }
+};
+
+export const removeTableRow = () => {
+  const table = getTable();
+  const row = getRow();
+
+  if (table && row !== undefined) {
+    quadraticCore.dataTableMutations(
+      sheets.sheet.id,
+      table.x,
+      table.y,
+      undefined,
+      undefined,
+      undefined,
+      [row - 1],
+      sheets.getCursorPosition()
+    );
+  }
+};
+
+export const editTableCode = () => {
+  const table = getTable();
+
+  if (table) {
+    const column = table.x;
+    const row = table.y;
+
+    quadraticCore.getCodeCell(sheets.sheet.id, column, row).then((code) => {
+      if (code) {
+        doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
+      }
+    });
+  }
+};
+
+export const toggleTableUI = () => {
+  const table = getTable();
+  if (table) {
+    quadraticCore.dataTableMeta(
+      sheets.sheet.id,
+      table.x,
+      table.y,
+      { showUI: !table.show_ui },
+      sheets.getCursorPosition()
+    );
+  }
+};
+
 export const dataTableSpec: DataTableSpec = {
   [Action.FlattenTable]: {
     label: 'Flatten to sheet data',
@@ -313,201 +445,57 @@ export const dataTableSpec: DataTableSpec = {
   [Action.InsertTableColumnLeft]: {
     label: 'Insert column to the left',
     Icon: AddIcon,
-    isAvailable: () => !isReadOnly(),
-    run: () => {
-      const table = getTable();
-      const column = getColumn();
-
-      if (table && column !== undefined) {
-        quadraticCore.dataTableMutations(
-          sheets.sheet.id,
-          table.x,
-          table.y,
-          [column],
-          undefined,
-          undefined,
-          undefined,
-          sheets.getCursorPosition()
-        );
-      }
-    },
+    isAvailable: () => !isReadOnly() && isWithinTable(),
+    run: () => insertTableColumn(-1),
   },
   [Action.InsertTableColumnRight]: {
     label: 'Insert column to the right',
     Icon: AddIcon,
-    isAvailable: () => !isReadOnly(),
-    run: () => {
-      const table = getTable();
-      const column = getColumn();
-      console.log('column', column);
-
-      if (table && column !== undefined) {
-        quadraticCore.dataTableMutations(
-          sheets.sheet.id,
-          table.x,
-          table.y,
-          [column + 1],
-          undefined,
-          undefined,
-          undefined,
-          sheets.getCursorPosition()
-        );
-      }
-    },
+    isAvailable: () => !isReadOnly() && isWithinTable(),
+    run: () => insertTableColumn(1),
   },
   [Action.RemoveTableColumn]: {
     label: 'Remove column',
     Icon: DeleteIcon,
-    isAvailable: () => !isReadOnly(),
-    run: () => {
-      const table = getTable();
-      const column = getColumn();
-
-      if (table && column !== undefined) {
-        quadraticCore.dataTableMutations(
-          sheets.sheet.id,
-          table.x,
-          table.y,
-          undefined,
-          [column],
-          undefined,
-          undefined,
-          sheets.getCursorPosition()
-        );
-      }
-    },
+    isAvailable: () => !isReadOnly() && isWithinTable(),
+    run: removeTableColumn,
   },
   [Action.HideTableColumn]: {
     label: 'Hide column',
     Icon: HideIcon,
-    run: () => {
-      const table = getTable();
-      const columns = getDisplayColumns();
-      const selectedColumn = pixiAppSettings.contextMenu?.selectedColumn;
-
-      if (table && columns && selectedColumn !== undefined && columns[selectedColumn]) {
-        columns[selectedColumn].display = false;
-
-        quadraticCore.dataTableMeta(sheets.sheet.id, table.x, table.y, { columns }, sheets.getCursorPosition());
-      }
-    },
+    run: hideTableColumn,
   },
   [Action.ShowAllColumns]: {
     label: 'Show all columns',
     Icon: ShowIcon,
-    run: () => {
-      const table = getTable();
-      const columns = JSON.parse(JSON.stringify(getColumns())) as {
-        name: string;
-        display: boolean;
-        valueIndex: number;
-      }[];
-
-      if (table && columns) {
-        columns.forEach((column) => {
-          column.display = true;
-        });
-
-        quadraticCore.dataTableMeta(sheets.sheet.id, table.x, table.y, { columns }, sheets.getCursorPosition());
-      }
-    },
+    run: showAllTableColumns,
   },
   [Action.InsertTableRowAbove]: {
     label: 'Insert row above',
     Icon: AddIcon,
-    isAvailable: () => !isReadOnly(),
-    run: () => {
-      const table = getTable();
-      const row = getRow();
-
-      if (table && row !== undefined) {
-        quadraticCore.dataTableMutations(
-          sheets.sheet.id,
-          table.x,
-          table.y,
-          undefined,
-          undefined,
-          [row - 1],
-          undefined,
-          sheets.getCursorPosition()
-        );
-      }
-    },
+    isAvailable: () => !isReadOnly() && isWithinTable(),
+    run: () => insertTableRow(-1),
   },
   [Action.InsertTableRowBelow]: {
     label: 'Insert row below',
     Icon: AddIcon,
-    isAvailable: () => !isReadOnly(),
-    run: () => {
-      const table = getTable();
-      const row = getRow();
-
-      if (table && row !== undefined) {
-        quadraticCore.dataTableMutations(
-          sheets.sheet.id,
-          table.x,
-          table.y,
-          undefined,
-          undefined,
-          [row],
-          undefined,
-          sheets.getCursorPosition()
-        );
-      }
-    },
+    isAvailable: () => !isReadOnly() && isWithinTable(),
+    run: () => insertTableRow(0),
   },
   [Action.RemoveTableRow]: {
     label: 'Remove row',
     Icon: DeleteIcon,
-    isAvailable: () => !isReadOnly(),
-    run: () => {
-      const table = getTable();
-      const row = getRow();
-
-      if (table && row !== undefined) {
-        quadraticCore.dataTableMutations(
-          sheets.sheet.id,
-          table.x,
-          table.y,
-          undefined,
-          undefined,
-          undefined,
-          [row - 1],
-          sheets.getCursorPosition()
-        );
-      }
-    },
+    isAvailable: () => !isReadOnly() && isWithinTable(),
+    run: removeTableRow,
   },
   [Action.EditTableCode]: {
     label: 'Edit code',
     Icon: EditIcon,
-    run: () => {
-      const table = getTable();
-      if (table) {
-        const column = table.x;
-        const row = table.y;
-        quadraticCore.getCodeCell(sheets.sheet.id, column, row).then((code) => {
-          if (code) {
-            doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
-          }
-        });
-      }
-    },
+    run: editTableCode,
   },
   [Action.ToggleTableUI]: {
     label: 'Show table UI',
     checkbox: isTableUIShowing,
-    run: () => {
-      const table = getTable();
-      if (table) {
-        quadraticCore.dataTableMeta(
-          sheets.sheet.id,
-          table.x,
-          table.y,
-          { showUI: !table.show_ui },
-          sheets.getCursorPosition()
-        );
-      }
-    },
+    run: toggleTableUI,
   },
 };
