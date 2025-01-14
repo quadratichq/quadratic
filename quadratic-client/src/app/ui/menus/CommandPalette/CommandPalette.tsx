@@ -28,6 +28,7 @@ import fuzzysort from 'fuzzysort';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+import dataTableCommandGroup from './commands/DataTable';
 
 export const CommandPalette = () => {
   const [showCommandPalette, setShowCommandPalette] = useRecoilState(editorInteractionStateShowCommandPaletteAtom);
@@ -70,6 +71,7 @@ export const CommandPalette = () => {
       helpCommandGroup,
       codeCommandGroup,
       columnRowCommandGroup,
+      dataTableCommandGroup,
       validationCommandGroup,
     ],
     [borderCommandGroup, sheetsCommandGroup]

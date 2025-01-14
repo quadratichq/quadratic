@@ -147,3 +147,45 @@ export const validationAction = {
   label: 'Data Validations',
   isAvailable: isAvailableBecauseCanEditFile,
 };
+
+// Data Table Actions
+
+export const gridToDataTableAction = {
+  label: 'Convert to data table',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const flattenDataTableAction = {
+  label: 'Flatten to sheet data',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const toggleFirstRowAsHeaderAction = {
+  label: 'Toggle 1st row as column headers',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const toggleHeaderTableAction = {
+  label: 'Toggle show column headings',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const deleteDataTableAction = {
+  label: 'Delete Data Table',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const codeToDataTableAction = {
+  label: 'Flatten to table data',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const sortDataTableAction = {
+  label: 'Sort Data Table',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const toggleTableAlternatingColorsAction = {
+  label: 'Toggle show alternating colors',
+  isAvailable: isAvailableBecauseCanEditFile,
+};

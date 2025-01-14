@@ -111,163 +111,186 @@ const isTableUIShowing = (): boolean => {
   return !!table?.show_ui;
 };
 
+export const gridToDataTable = () => {
+  const rectangle = sheets.sheet.cursor.getSingleRectangle();
+  if (rectangle) {
+    const sheetRect: SheetRect = {
+      sheet_id: { id: sheets.sheet.id },
+      min: { x: BigInt(rectangle.x), y: BigInt(rectangle.y) },
+      max: { x: BigInt(rectangle.x + rectangle.width - 1), y: BigInt(rectangle.y + rectangle.height - 1) },
+    };
+    quadraticCore.gridToDataTable(JSON.stringify(sheetRect, bigIntReplacer), sheets.getCursorPosition());
+  }
+};
+
+export const flattenDataTable = () => {
+  const table = getTable();
+  if (table) {
+    quadraticCore.flattenDataTable(sheets.sheet.id, table.x, table.y, sheets.getCursorPosition());
+  }
+};
+
+export const toggleFirstRowAsHeader = () => {
+  const table = getTable();
+  if (table) {
+    quadraticCore.dataTableFirstRowAsHeader(
+      sheets.sheet.id,
+      table.x,
+      table.y,
+      !isFirstRowHeader(),
+      sheets.getCursorPosition()
+    );
+  }
+};
+
+export const renameTable = () => {
+  const table = getTable();
+  const contextMenu = pixiAppSettings.contextMenu;
+  if (contextMenu) {
+    setTimeout(() => {
+      const newContextMenu = { type: ContextMenuType.Table, rename: true, table };
+      events.emit('contextMenu', newContextMenu);
+    });
+  }
+};
+
+export const deleteDataTable = () => {
+  const table = getTable();
+  if (table) {
+    const selection = newSingleSelection(sheets.sheet.id, table.x, table.y).save();
+    quadraticCore.deleteCellValues(selection, sheets.getCursorPosition());
+  }
+};
+
+export const toggleHeaderTable = () => {
+  const table = getTable();
+  if (table) {
+    quadraticCore.dataTableMeta(
+      sheets.sheet.id,
+      table.x,
+      table.y,
+      { showHeader: !isHeadingShowing() },
+      sheets.getCursorPosition()
+    );
+  }
+};
+
+export const codeToDataTable = () => {
+  const table = getTable();
+  if (table) {
+    quadraticCore.codeDataTableToDataTable(sheets.sheet.id, table.x, table.y, sheets.getCursorPosition());
+  }
+};
+
+export const sortDataTable = () => {
+  const table = getTable();
+  setTimeout(() => {
+    const contextMenu = { type: ContextMenuType.TableSort, table };
+    events.emit('contextMenu', contextMenu);
+  });
+};
+
+export const toggleTableAlternatingColors = () => {
+  const table = getTable();
+  if (table) {
+    quadraticCore.dataTableMeta(
+      sheets.sheet.id,
+      table.x,
+      table.y,
+      { alternatingColors: !isAlternatingColorsShowing() },
+      sheets.getCursorPosition()
+    );
+  }
+};
+
+export const renameTableColumn = () => {
+  const table = getTable();
+  if (table) {
+    const selectedColumn = pixiAppSettings.contextMenu?.selectedColumn;
+
+    if (selectedColumn !== undefined) {
+      setTimeout(() => {
+        const contextMenu = { type: ContextMenuType.TableColumn, rename: true, table, selectedColumn };
+        events.emit('contextMenu', contextMenu);
+      });
+    }
+  }
+};
+
+export const sortTableColumnAscending = () => {
+  const table = getTable();
+  if (table) {
+    const selectedColumn = pixiAppSettings.contextMenu?.selectedColumn;
+    console.log('selectedColumn', sheets.getRustSelection());
+    if (selectedColumn !== undefined) {
+      quadraticCore.sortDataTable(
+        sheets.sheet.id,
+        table.x,
+        table.y,
+        [{ column_index: selectedColumn, direction: 'Ascending' }],
+        sheets.getCursorPosition()
+      );
+    }
+  }
+};
+
 export const dataTableSpec: DataTableSpec = {
   [Action.FlattenTable]: {
     label: 'Flatten to sheet data',
     Icon: FlattenTableIcon,
-    run: () => {
-      const table = getTable();
-      if (table) {
-        quadraticCore.flattenDataTable(sheets.sheet.id, table.x, table.y, sheets.getCursorPosition());
-      }
-    },
+    run: flattenDataTable,
   },
   [Action.GridToDataTable]: {
     label: 'Convert to table',
     Icon: TableConvertIcon,
-    run: () => {
-      const rectangle = sheets.sheet.cursor.getSingleRectangle();
-      if (rectangle) {
-        const sheetRect: SheetRect = {
-          sheet_id: { id: sheets.sheet.id },
-          min: { x: BigInt(rectangle.x), y: BigInt(rectangle.y) },
-          max: { x: BigInt(rectangle.x + rectangle.width - 1), y: BigInt(rectangle.y + rectangle.height - 1) },
-        };
-        quadraticCore.gridToDataTable(JSON.stringify(sheetRect, bigIntReplacer), sheets.getCursorPosition());
-      }
-    },
+    run: gridToDataTable,
   },
   [Action.ToggleFirstRowAsHeaderTable]: {
     label: 'Use 1st row as column headers',
     checkbox: isFirstRowHeader,
-    run: () => {
-      const table = getTable();
-      if (table) {
-        quadraticCore.dataTableFirstRowAsHeader(
-          sheets.sheet.id,
-          table.x,
-          table.y,
-          !isFirstRowHeader(),
-          sheets.getCursorPosition()
-        );
-      }
-    },
+    run: toggleFirstRowAsHeader,
   },
   [Action.RenameTable]: {
     label: 'Rename',
     defaultOption: true,
     Icon: FileRenameIcon,
-    run: () => {
-      const table = getTable();
-      const contextMenu = pixiAppSettings.contextMenu;
-      if (contextMenu) {
-        setTimeout(() => {
-          const newContextMenu = { type: ContextMenuType.Table, rename: true, table };
-          events.emit('contextMenu', newContextMenu);
-        });
-      }
-    },
+    run: renameTable,
   },
   [Action.ToggleHeaderTable]: {
     label: 'Show column headings',
     checkbox: isHeadingShowing,
-    run: () => {
-      const table = getTable();
-      if (table) {
-        quadraticCore.dataTableMeta(
-          sheets.sheet.id,
-          table.x,
-          table.y,
-          { showHeader: !isHeadingShowing() },
-          sheets.getCursorPosition()
-        );
-      }
-    },
+    run: toggleHeaderTable,
   },
   [Action.DeleteDataTable]: {
     label: 'Delete',
     Icon: DeleteIcon,
-    run: () => {
-      const table = getTable();
-      if (table) {
-        const selection = newSingleSelection(sheets.sheet.id, table.x, table.y).save();
-        quadraticCore.deleteCellValues(selection, sheets.getCursorPosition());
-      }
-    },
+    run: deleteDataTable,
   },
   [Action.CodeToDataTable]: {
     label: 'Flatten to table data',
     Icon: TableIcon,
-    run: () => {
-      const table = getTable();
-      if (table) {
-        quadraticCore.codeDataTableToDataTable(sheets.sheet.id, table.x, table.y, sheets.getCursorPosition());
-      }
-    },
+    run: codeToDataTable,
   },
   [Action.SortTable]: {
     label: 'Sort',
     Icon: SortIcon,
-    run: () => {
-      const table = getTable();
-      setTimeout(() => {
-        const contextMenu = { type: ContextMenuType.TableSort, table };
-        events.emit('contextMenu', contextMenu);
-      });
-    },
+    run: sortDataTable,
   },
   [Action.ToggleTableAlternatingColors]: {
     label: 'Show alternating colors',
     checkbox: isAlternatingColorsShowing,
-    run: () => {
-      const table = getTable();
-      if (table) {
-        quadraticCore.dataTableMeta(
-          sheets.sheet.id,
-          table.x,
-          table.y,
-          { alternatingColors: !isAlternatingColorsShowing() },
-          sheets.getCursorPosition()
-        );
-      }
-    },
+    run: toggleTableAlternatingColors,
   },
   [Action.RenameTableColumn]: {
     label: 'Rename column',
     defaultOption: true,
     Icon: FileRenameIcon,
-    run: () => {
-      const table = getTable();
-      if (table) {
-        const selectedColumn = pixiAppSettings.contextMenu?.selectedColumn;
-
-        if (selectedColumn !== undefined) {
-          setTimeout(() => {
-            const contextMenu = { type: ContextMenuType.TableColumn, rename: true, table, selectedColumn };
-            events.emit('contextMenu', contextMenu);
-          });
-        }
-      }
-    },
+    run: renameTableColumn,
   },
   [Action.SortTableColumnAscending]: {
     label: 'Sort column ascending',
     Icon: SortAscendingIcon,
-    run: () => {
-      const table = getTable();
-      if (table) {
-        const selectedColumn = pixiAppSettings.contextMenu?.selectedColumn;
-        if (selectedColumn !== undefined) {
-          quadraticCore.sortDataTable(
-            sheets.sheet.id,
-            table.x,
-            table.y,
-            [{ column_index: selectedColumn, direction: 'Ascending' }],
-            sheets.getCursorPosition()
-          );
-        }
-      }
-    },
+    run: sortTableColumnAscending,
   },
   [Action.SortTableColumnDescending]: {
     label: 'Sort column descending',
