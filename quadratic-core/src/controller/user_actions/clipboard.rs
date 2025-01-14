@@ -537,7 +537,7 @@ mod test {
         );
 
         let sheet = gc.sheet(sheet_id_1);
-        let borders = sheet.borders.borders_in_sheet().unwrap();
+        let borders = sheet.borders_in_sheet().unwrap();
         let mut horizontal_borders = borders.horizontal.as_ref().unwrap().iter();
         let mut vertical_borders = borders.vertical.as_ref().unwrap().iter();
 
@@ -576,7 +576,7 @@ mod test {
         );
 
         let sheet = gc.sheet(sheet_id_2);
-        let borders = sheet.borders.borders_in_sheet().unwrap();
+        let borders = sheet.borders_in_sheet().unwrap();
         let mut horizontal_borders = borders.horizontal.as_ref().unwrap().iter();
         let mut vertical_borders = borders.vertical.as_ref().unwrap().iter();
 

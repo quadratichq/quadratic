@@ -352,6 +352,62 @@ impl GridController {
         }]
     }
 
+    /// Whether the borders should be toggled.
+    fn should_toggle_borders(
+        &self,
+        selection: &A1Selection,
+        border_selection: BorderSelection,
+        style: BorderStyle,
+    ) -> bool {
+        let Some(sheet) = self.try_sheet(selection.sheet_id) else {
+            return false;
+        };
+
+        // If we have a style update, then we check if we should toggle
+        // instead of setting the style.
+        let mut borders: BordersUpdates = BordersUpdates::default();
+
+        let context = self.grid().a1_context();
+
+        // We compare w/o clear_neighbors since we don't care about the
+        // neighbors when toggling.
+        for range in selection.ranges.iter() {
+            match range {
+                CellRefRange::Sheet { range } => {
+                    self.a1_border_style_range(
+                        border_selection,
+                        Some(style),
+                        range,
+                        &mut borders,
+                        false,
+                    );
+                }
+                CellRefRange::Table { range } => {
+                    if let Some((pos, table)) = sheet.data_table_by_name(range.table_name.clone()) {
+                        if let Some(range) = range.convert_to_ref_range_bounds(true, &context) {
+                            let range = range.translate(-pos.x, -pos.y);
+                            self.a1_border_style_range(
+                                border_selection,
+                                Some(style),
+                                &range,
+                                &mut borders,
+                                false,
+                            );
+                            if !table.borders.is_toggle_borders(&borders) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if sheet.borders.is_toggle_borders(&borders) {
+            true
+        } else {
+            false
+        }
+    }
+
     /// Creates border operations. Returns None if selection is empty.
     pub fn set_borders_a1_selection_operations(
         &self,
@@ -360,50 +416,62 @@ impl GridController {
         style: Option<BorderStyle>,
         clear_neighbors: bool,
     ) -> Option<Vec<Operation>> {
-        let sheet = self.try_sheet(selection.sheet_id)?;
-
         // Mutable so we can clear it if the style is toggled.
         let mut style = style;
 
-        if style.is_some() {
-            // If we have a style update, then we check if we should toggle
-            // instead of setting the style.
-            let mut borders: BordersUpdates = BordersUpdates::default();
-
-            // We compare w/o clear_neighbors since we don't care about the
-            // neighbors when toggling.
-            selection.ranges.iter().for_each(|range| match range {
-                CellRefRange::Sheet { range } => {
-                    self.a1_border_style_range(border_selection, style, range, &mut borders, false);
-                }
-                CellRefRange::Table { .. } => todo!(),
-            });
-            if sheet.borders.is_toggle_borders(&borders) {
-                style = None;
-            }
+        if style
+            .is_some_and(|style| self.should_toggle_borders(&selection, border_selection, style))
+        {
+            style = None;
         }
 
-        let mut borders = BordersUpdates::default();
+        let context = self.grid().a1_context();
+        let mut ops = vec![];
+
+        let mut sheet_borders = BordersUpdates::default();
         selection.ranges.iter().for_each(|range| match range {
             CellRefRange::Sheet { range } => {
                 self.a1_border_style_range(
                     border_selection,
                     style,
                     range,
-                    &mut borders,
+                    &mut sheet_borders,
                     clear_neighbors,
                 );
             }
-            CellRefRange::Table { .. } => (),
+            CellRefRange::Table { range } => {
+                if let (Some(entry), Some(range)) = (
+                    context.try_table(&range.table_name),
+                    range.convert_to_ref_range_bounds(true, &context),
+                ) {
+                    let range = range.translate(-entry.bounds.min.x, -entry.bounds.min.y);
+                    let mut borders = BordersUpdates::default();
+                    self.a1_border_style_range(
+                        border_selection,
+                        style,
+                        &range,
+                        &mut borders,
+                        clear_neighbors,
+                    );
+                    ops.push(Operation::DataTableBorders {
+                        sheet_pos: entry.bounds.min.to_sheet_pos(entry.sheet_id),
+                        borders,
+                    });
+                }
+            }
         });
 
-        if !borders.is_empty() {
-            Some(vec![Operation::SetBordersA1 {
+        if !sheet_borders.is_empty() {
+            ops.push(Operation::SetBordersA1 {
                 sheet_id: selection.sheet_id,
-                borders,
-            }])
-        } else {
+                borders: sheet_borders,
+            });
+        }
+
+        if ops.is_empty() {
             None
+        } else {
+            Some(ops)
         }
     }
 }

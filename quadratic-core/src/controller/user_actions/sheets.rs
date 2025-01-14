@@ -279,11 +279,7 @@ mod test {
             false,
         );
         // should send borders for the duplicated sheet
-        let borders = gc
-            .sheet(duplicated_sheet_id)
-            .borders
-            .borders_in_sheet()
-            .unwrap();
+        let borders = gc.sheet(duplicated_sheet_id).borders_in_sheet().unwrap();
         let borders_str = serde_json::to_string(&borders).unwrap();
         expect_js_call(
             "jsBordersSheet",

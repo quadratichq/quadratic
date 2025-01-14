@@ -97,6 +97,11 @@ impl GridController {
                         self.execute_data_table_format(transaction, op),
                     );
                 }
+                Operation::DataTableBorders { .. } => {
+                    Self::handle_execution_operation_result(
+                        self.execute_data_table_borders(transaction, op),
+                    );
+                }
                 Operation::ComputeCode { .. } => self.execute_compute_code(transaction, op),
                 Operation::SetCellFormats { .. } => {}
                 Operation::SetCellFormatsSelection { .. } => {
