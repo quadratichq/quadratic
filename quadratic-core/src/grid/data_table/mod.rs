@@ -421,6 +421,21 @@ impl DataTable {
         }
     }
 
+    /// Returns a Rect for the data table's output size, excluding the header.
+    pub fn data_rect(&self, pos: Pos) -> Rect {
+        let size = self.output_size();
+        Rect {
+            min: Pos {
+                x: pos.x,
+                y: if self.show_header { pos.y + 1 } else { pos.y },
+            },
+            max: Pos {
+                x: pos.x + size.w.get() as i64 - 1,
+                y: pos.y + size.h.get() as i64 - 1,
+            },
+        }
+    }
+
     pub fn value_as_array(&self) -> Result<&Array> {
         match &self.value {
             Value::Array(array) => Ok(array),
@@ -495,6 +510,7 @@ impl DataTable {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 pub mod test {
 
     use super::*;
@@ -503,7 +519,6 @@ pub mod test {
         grid::{Sheet, SheetId},
         Array,
     };
-    use serial_test::parallel;
 
     pub fn test_csv_values() -> Vec<Vec<&'static str>> {
         vec![
@@ -551,7 +566,6 @@ pub mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_import_data_table() {
         // test data table without column headings
         let (_, data_table) = new_data_table();
@@ -582,7 +596,6 @@ pub mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_output_size() {
         let sheet_id = SheetId::new();
         let code_run = CodeRun {
@@ -653,7 +666,6 @@ pub mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_output_sheet_rect_spill_error() {
         let sheet_id = SheetId::new();
         let code_run = CodeRun {
@@ -686,5 +698,22 @@ pub mod test {
             data_table.output_sheet_rect(sheet_pos, true),
             SheetRect::new(1, 2, 10, 13, sheet_id)
         );
+    }
+
+    #[test]
+    fn test_data_rect() {
+        // 4x4 imported data table w/generated header
+        let (_, mut data_table) = new_data_table();
+        let rect = data_table.data_rect((1, 1).into());
+        assert_eq!(rect, Rect::new(1, 2, 4, 5));
+
+        data_table.apply_first_row_as_header();
+        let rect = data_table.data_rect((1, 1).into());
+        assert_eq!(rect, Rect::new(1, 2, 4, 4));
+
+        // 4x4 imported data table w/o header
+        data_table.show_header = false;
+        let rect = data_table.data_rect((1, 1).into());
+        assert_eq!(rect, Rect::new(1, 1, 4, 3));
     }
 }

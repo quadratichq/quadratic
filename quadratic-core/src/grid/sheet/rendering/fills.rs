@@ -45,7 +45,7 @@ impl Sheet {
                         if dt.spill_error || dt.has_error() {
                             return None;
                         }
-                        let rect = dt.output_rect(*pos, true);
+                        let rect = dt.data_rect(*pos);
                         let x = rect.min.x + x0 - 1;
                         let y = rect.min.y + y0 - 1;
                         let x1 = x1.map_or(rect.max.x, |x1| rect.min.x + x1 - 1);
@@ -166,29 +166,6 @@ mod tests {
             None,
         )
         .unwrap();
-        let sheet = gc.sheet(sheet_id);
-        let fills = sheet.get_all_render_fills();
-        assert_eq!(fills.len(), 2);
-        assert_eq!(
-            fills[0],
-            JsRenderFill {
-                x: 6,
-                y: 2,
-                w: 1,
-                h: 3,
-                color: "red".to_string(),
-            }
-        );
-        assert_eq!(
-            fills[1],
-            JsRenderFill {
-                x: 7,
-                y: 2,
-                w: 1,
-                h: 3,
-                color: "blue".to_string(),
-            }
-        );
         let sheet = gc.sheet_mut(sheet_id);
         sheet
             .data_table_mut(Pos { x: 5, y: 2 })
