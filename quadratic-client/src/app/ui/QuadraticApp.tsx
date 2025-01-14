@@ -99,6 +99,5 @@ export function QuadraticApp() {
   if (offlineLoading || multiplayerLoading) {
     return <QuadraticLoading />;
   }
-  console.log('QuadraticUIContext');
   return <QuadraticUIContext />;
 }
