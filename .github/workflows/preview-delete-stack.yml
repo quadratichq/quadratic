@@ -1,4 +1,4 @@
-name: Delete Stack
+name: Preview
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ concurrency:
 
 jobs:
   delete_stack:
-    name: Delete Stack - Preview
+    name: Delete Stack
     permissions:
       contents: read
       pull-requests: write
