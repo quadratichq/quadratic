@@ -79,7 +79,7 @@ mod test {
 
         g.undo(None);
         let sheet = g.sheet(s1);
-        assert_eq!(sheet.name, "Sheet 1");
+        assert_eq!(sheet.name, "Sheet1");
 
         g.redo(None);
         let sheet = g.sheet(s1);
@@ -410,7 +410,7 @@ mod test {
 
         gc.duplicate_sheet(sheet_id, None);
         assert_eq!(gc.grid.sheets().len(), 2);
-        assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy");
+        assert_eq!(gc.grid.sheets()[1].name, "Sheet1 Copy");
         let duplicated_sheet_id = gc.grid.sheets()[1].id;
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id));
         expect_js_call(

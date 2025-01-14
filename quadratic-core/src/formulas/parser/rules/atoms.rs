@@ -50,7 +50,7 @@ impl SyntaxRule for NumericLiteral {
 /// reference.
 #[derive(Debug, Copy, Clone)]
 pub struct SheetRefPrefix;
-impl_display!(for SheetRefPrefix, "sheet reference such as 'MySheet!' or '\"Sheet 2\"!'");
+impl_display!(for SheetRefPrefix, "sheet reference such as 'MySheet!' or '\"Sheet2\"!'");
 impl SyntaxRule for SheetRefPrefix {
     type Output = String;
 

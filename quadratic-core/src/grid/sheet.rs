@@ -95,7 +95,7 @@ impl Sheet {
 
     /// Creates a sheet for testing.
     pub fn test() -> Self {
-        Sheet::new(SheetId::TEST, String::from("Sheet 1"), String::from("a0"))
+        Sheet::new(SheetId::TEST, String::from("Sheet1"), String::from("a0"))
     }
 
     /// Populates the current sheet with random values

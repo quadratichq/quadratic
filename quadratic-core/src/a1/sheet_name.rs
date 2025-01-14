@@ -78,8 +78,8 @@ mod tests {
             Ok((Some("sheet1".to_string()), "A1"))
         );
         assert_eq!(
-            parse_optional_sheet_name("'Sheet 1'!A1"),
-            Ok((Some("Sheet 1".to_string()), "A1"))
+            parse_optional_sheet_name("'Sheet1'!A1"),
+            Ok((Some("Sheet1".to_string()), "A1"))
         );
         assert_eq!(parse_optional_sheet_name("A1"), Ok((None, "A1")));
         assert_eq!(
@@ -93,9 +93,9 @@ mod tests {
             ))
         );
         assert_eq!(
-            parse_optional_sheet_name("Sheet1!Sheet2!A1"),
+            parse_optional_sheet_name("Sheet 1!Sheet 2!A1"),
             Err(A1Error::InvalidSheetNameMissingQuotes(
-                "Sheet1!Sheet2".to_string()
+                "Sheet 1!Sheet 2".to_string()
             ))
         );
         assert_eq!(
@@ -112,13 +112,13 @@ mod tests {
     fn test_parse_optional_sheet_id() {
         let sheet_1 = SheetId::new();
         let sheet_2 = SheetId::new();
-        let map = A1Context::test(&[("sheet1", sheet_1), ("sheet 2", sheet_2)], &[]);
+        let map = A1Context::test(&[("sheet1", sheet_1), ("Sheet2", sheet_2)], &[]);
         assert_eq!(
             parse_optional_sheet_name_to_id("SHEET1!A1", &sheet_1, &map),
             Ok((sheet_1, "A1"))
         );
         assert_eq!(
-            parse_optional_sheet_name_to_id("'SHEET 2'!A1", &sheet_1, &map),
+            parse_optional_sheet_name_to_id("'Sheet2'!A1", &sheet_1, &map),
             Ok((sheet_2, "A1"))
         );
         assert_eq!(
@@ -134,10 +134,8 @@ mod tests {
             Ok((sheet_1, "Sheet2A1"))
         );
         assert_eq!(
-            parse_optional_sheet_name_to_id("Sheet 1!A1", &sheet_1, &map),
-            Err(A1Error::InvalidSheetNameMissingQuotes(
-                "Sheet 1".to_string()
-            ))
+            parse_optional_sheet_name_to_id("Sheet1!A1", &sheet_1, &map),
+            Err(A1Error::InvalidSheetNameMissingQuotes("Sheet1".to_string()))
         );
         assert_eq!(
             parse_optional_sheet_name_to_id("sheet1!A1", &sheet_1, &map),
