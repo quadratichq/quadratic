@@ -3,6 +3,9 @@ name: Preview
 on:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
+    branches-ignore:
+      - "main"
+      - "qa"
 
 concurrency:
   group: pr-${{ github.event.pull_request.number }}-build-images

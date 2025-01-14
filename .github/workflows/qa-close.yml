@@ -3,8 +3,8 @@ name: QA
 on:
   pull_request:
     types: [closed]
-
-# todo(ayush): after moving all open PRs to new infra, add branches:-qa to this workflow
+    branches:
+      - qa
 
 # Require previous builds and deployments to finish before starting a new one
 # Close can not run concurrently with Create or Update Infrastructure with Pulumi

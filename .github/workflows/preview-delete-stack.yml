@@ -3,6 +3,9 @@ name: Preview
 on:
   pull_request:
     types: [closed]
+    branches-ignore:
+      - "main"
+      - "qa"
 
 concurrency:
   group: pr-${{ github.event.pull_request.number }}-stack
