@@ -566,7 +566,7 @@ mod tests {
 
         gc.redo(None);
         assert_eq!(gc.grid.sheets().len(), 3);
-        assert_eq!(gc.grid.sheets()[1].name, "Sheet1 Copy 1");
+        assert_eq!(gc.grid.sheets()[1].name, "Sheet1 Copy1");
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id3));
         expect_js_call(
             "jsAddSheet",

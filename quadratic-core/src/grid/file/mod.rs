@@ -563,7 +563,7 @@ mod tests {
             sheet1.cell_value(pos![K28]).unwrap(),
             CellValue::Code(CodeCellValue {
                 language: CodeCellLanguage::Python,
-                code: "q.cells(\"F6\") + q.cells(\"\'Sheet2\'!D5\") + cell(-12, -12) + cell(-86, -85, sheet=\"Sheet 2\")".to_string(),
+                code: "q.cells(\"F6\") + q.cells(\"\'Sheet 2\'!D5\") + cell(-12, -12) + cell(-86, -85, sheet=\"Sheet 2\")".to_string(),
             })
         );
 

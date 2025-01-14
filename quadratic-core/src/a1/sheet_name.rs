@@ -134,8 +134,10 @@ mod tests {
             Ok((sheet_1, "Sheet2A1"))
         );
         assert_eq!(
-            parse_optional_sheet_name_to_id("Sheet1!A1", &sheet_1, &map),
-            Err(A1Error::InvalidSheetNameMissingQuotes("Sheet1".to_string()))
+            parse_optional_sheet_name_to_id("Sheet 1!A1", &sheet_1, &map),
+            Err(A1Error::InvalidSheetNameMissingQuotes(
+                "Sheet 1".to_string()
+            ))
         );
         assert_eq!(
             parse_optional_sheet_name_to_id("sheet1!A1", &sheet_1, &map),
