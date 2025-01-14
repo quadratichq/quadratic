@@ -251,7 +251,7 @@ impl A1Selection {
         };
 
         if is_right_click {
-            if !self.ranges.iter().any(|range| range.has_column_range(col)) {
+            if !self.ranges.iter().any(|range| range.has_col_range(col)) {
                 select_only_column(self, col, top);
             }
         } else if !ctrl_key && !shift_key {
@@ -814,21 +814,23 @@ mod tests {
 
     #[test]
     fn test_right_click_column_selection() {
+        let context = A1Context::default();
         let mut selection = A1Selection::test_a1("A:D");
-        selection.select_column(col![B], false, false, true, 1);
+        selection.select_column(col![B], false, false, true, 1, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A:D")]);
 
-        selection.select_column(col![F], false, false, true, 1);
+        selection.select_column(col![F], false, false, true, 1, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("F")]);
     }
 
     #[test]
     fn test_right_click_row_selection() {
+        let context = A1Context::default();
         let mut selection = A1Selection::test_a1("1:4");
-        selection.select_row(2, false, false, true, 1);
+        selection.select_row(2, false, false, true, 1, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("1:4")]);
 
-        selection.select_row(6, false, false, true, 1);
+        selection.select_row(6, false, false, true, 1, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("6")]);
     }
 }

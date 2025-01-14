@@ -105,14 +105,14 @@ mod tests {
     fn insert_column_empty() {
         let mut borders = Borders::default();
         borders.insert_column(1, CopyFormats::None);
-        assert_eq!(borders, Borders::default());
+        assert!(borders.is_default());
     }
 
     #[test]
     fn delete_column_empty() {
         let mut borders = Borders::default();
         borders.remove_column(1);
-        assert_eq!(borders, Borders::default());
+        assert!(borders.is_default());
     }
 
     #[test]
@@ -139,7 +139,10 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders, sheet_expected.borders);
+        assert!(Borders::compare_borders(
+            &sheet.borders,
+            &sheet_expected.borders
+        ));
     }
 
     #[test]
@@ -172,7 +175,10 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders, sheet_expected.borders);
+        assert!(Borders::compare_borders(
+            &sheet.borders,
+            &sheet_expected.borders
+        ));
     }
 
     #[test]
@@ -199,7 +205,10 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders, sheet_expected.borders);
+        assert!(Borders::compare_borders(
+            &sheet.borders,
+            &sheet_expected.borders
+        ));
     }
 
     #[test]
@@ -226,7 +235,10 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders, sheet_expected.borders);
+        assert!(Borders::compare_borders(
+            &sheet.borders,
+            &sheet_expected.borders
+        ));
     }
 
     #[test]
@@ -253,7 +265,10 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders, sheet_expected.borders);
+        assert!(Borders::compare_borders(
+            &sheet.borders,
+            &sheet_expected.borders
+        ));
     }
 
     #[test]
@@ -280,14 +295,17 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders, sheet_expected.borders);
+        assert!(Borders::compare_borders(
+            &sheet.borders,
+            &sheet_expected.borders
+        ));
     }
 
     #[test]
     fn insert_row_empty() {
         let mut borders = Borders::default();
         borders.insert_row(0, CopyFormats::None);
-        assert_eq!(borders, Borders::default());
+        assert!(borders.is_default());
     }
 
     #[test]
@@ -314,7 +332,10 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders, sheet_expected.borders);
+        assert!(Borders::compare_borders(
+            &sheet.borders,
+            &sheet_expected.borders
+        ));
     }
 
     #[test]
@@ -347,7 +368,10 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders, sheet_expected.borders);
+        assert!(Borders::compare_borders(
+            &sheet.borders,
+            &sheet_expected.borders
+        ));
     }
 
     #[test]
@@ -384,7 +408,7 @@ mod tests {
     fn remove_row_empty() {
         let mut borders = Borders::default();
         borders.remove_row(0);
-        assert_eq!(borders, Borders::default());
+        assert!(borders.is_default());
     }
 
     #[test]
@@ -411,7 +435,10 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders, sheet_expected.borders);
+        assert!(Borders::compare_borders(
+            &sheet.borders,
+            &sheet_expected.borders
+        ));
     }
 
     #[test]
@@ -438,7 +465,10 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders, sheet_expected.borders);
+        assert!(Borders::compare_borders(
+            &sheet.borders,
+            &sheet_expected.borders
+        ));
     }
 
     #[test]
@@ -465,7 +495,10 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders, sheet_expected.borders);
+        assert!(Borders::compare_borders(
+            &sheet.borders,
+            &sheet_expected.borders
+        ));
     }
 
     #[test]
@@ -646,6 +679,9 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders, sheet_expected.borders);
+        assert!(Borders::compare_borders(
+            &sheet.borders,
+            &sheet_expected.borders
+        ));
     }
 }

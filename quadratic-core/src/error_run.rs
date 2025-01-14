@@ -108,6 +108,9 @@ pub enum RunErrorMsg {
     IndexOutOfBounds,
     NoMatch,
     InvalidArgument,
+
+    NotANumber,
+    Infinity,
 }
 
 impl fmt::Display for RunErrorMsg {
@@ -256,6 +259,12 @@ impl fmt::Display for RunErrorMsg {
             }
             Self::InvalidArgument => {
                 write!(f, "Invalid argument")
+            }
+            Self::NotANumber => {
+                write!(f, "Not a number")
+            }
+            Self::Infinity => {
+                write!(f, "Unexpected Infinity")
             }
         }
     }
