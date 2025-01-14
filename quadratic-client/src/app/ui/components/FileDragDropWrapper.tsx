@@ -82,7 +82,7 @@ export const FileDragDropWrapper = (props: PropsWithChildren) => {
         const cursor = sheets.getCursorPosition();
         const { column, row } = getColumnRowFromScreen(e);
         const insertAt = { x: column, y: row } as JsCoordinate;
-        handleFileImport({ files, insertAt, sheetId, cursor });
+        handleFileImport({ files: Array.from(files), insertAt, sheetId, cursor });
       }
     },
     [getColumnRowFromScreen, handleFileImport, setUserMessageState]

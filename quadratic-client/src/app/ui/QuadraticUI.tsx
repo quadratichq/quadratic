@@ -8,6 +8,7 @@ import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import QuadraticGrid from '@/app/gridGL/QuadraticGrid';
 import { isEmbed } from '@/app/helpers/isEmbed';
+import { CSVImportSettings } from '@/app/ui/components/CSVImportSettings';
 import { FileDragDropWrapper } from '@/app/ui/components/FileDragDropWrapper';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import { PermissionOverlay } from '@/app/ui/components/PermissionOverlay';
@@ -120,6 +121,7 @@ export default function QuadraticUI() {
       {!isEmbed && <PermissionOverlay />}
       <UpdateAlertVersion />
       <UserMessage />
+      <CSVImportSettings />
     </div>
   );
 }
