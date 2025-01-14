@@ -2,9 +2,9 @@ name: QA
 
 on:
   pull_request:
-    types: [closed]
     branches:
       - main
+    types: [closed]
 
 # Require previous builds and deployments to finish before starting a new one
 # Close can not run concurrently with Create or Update Infrastructure with Pulumi
@@ -15,6 +15,7 @@ jobs:
   teardown:
     name: Destroy Pulumi Infrastructure Stack
     runs-on: blacksmith-2vcpu-ubuntu-2204
+    if: github.head_ref == 'qa' && github.base_ref == 'main'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

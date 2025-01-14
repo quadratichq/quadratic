@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+    types: [opened, synchronize, reopened]
 
 # Use runs on `ubuntu-latest-8-cores`. All of our self hosted runners use this tag.
 # Our runners pick up jobs first, and if all our runners are being used or are down
@@ -22,6 +23,7 @@ jobs:
       - connection_preview
     name: Create or Update Pulumi Infrastructure Stack
     runs-on: blacksmith-2vcpu-ubuntu-2204
+    if: github.head_ref == 'qa' && github.base_ref == 'main'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -68,6 +70,7 @@ jobs:
   multiplayer_preview:
     name: Build Multiplayer
     runs-on: blacksmith-4vcpu-ubuntu-2204
+    if: github.head_ref == 'qa' && github.base_ref == 'main'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -97,6 +100,7 @@ jobs:
   files_preview:
     name: Build Files
     runs-on: blacksmith-4vcpu-ubuntu-2204
+    if: github.head_ref == 'qa' && github.base_ref == 'main'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -126,6 +130,7 @@ jobs:
   connection_preview:
     name: Build Connection
     runs-on: blacksmith-4vcpu-ubuntu-2204
+    if: github.head_ref == 'qa' && github.base_ref == 'main'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
