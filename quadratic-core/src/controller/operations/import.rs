@@ -30,7 +30,7 @@ impl GridController {
         max_rows: u32,
         delimiter: Option<u8>,
     ) -> Result<Vec<Vec<String>>> {
-        let error = |message: String| anyhow!("Error parsing CSV file: {}", message);
+        let error = |message: String| anyhow!("Error parsing CSV file for preview: {}", message);
         let file: &[u8] = match String::from_utf8_lossy(&file) {
             std::borrow::Cow::Borrowed(_) => &file,
             std::borrow::Cow::Owned(_) => {
