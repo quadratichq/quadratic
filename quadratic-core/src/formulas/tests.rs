@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use bigdecimal::ToPrimitive;
 use itertools::Itertools;
 use serial_test::parallel;
 
@@ -66,9 +67,13 @@ pub(crate) fn check_syntax_to_err(grid: &Grid, s: &str) -> RunError {
 
 #[track_caller]
 pub(crate) fn assert_f64_eval(grid: &Grid, expected: f64, s: &str) {
+    let output = eval(grid, s).into_cell_value().unwrap();
+    let CellValue::Number(n) = output else {
+        panic!("expected number; got {output}");
+    };
     crate::util::assert_f64_approx_eq(
         expected,
-        &eval_to_string(grid, s),
+        n.to_f64().unwrap(),
         &format!("wrong result for formula {s:?}"),
     );
 }
