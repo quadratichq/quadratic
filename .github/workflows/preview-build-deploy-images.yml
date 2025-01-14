@@ -10,7 +10,7 @@ concurrency:
 
 jobs:
   create_deployment:
-    name: Create Deployment - Preview
+    name: Preview - Create Deployment
     runs-on: blacksmith-2vcpu-ubuntu-2204
     if: |
       github.event.action == 'opened' || 
@@ -100,7 +100,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build_images:
-    name: Build Images - Preview
+    name: Preview - Build Images
     needs: create_deployment
     permissions:
       contents: read
@@ -264,7 +264,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   deploy_images:
-    name: Deploy Images - Preview
+    name: Preview - Deploy Images
     needs: [create_deployment, build_images]
     permissions:
       contents: read

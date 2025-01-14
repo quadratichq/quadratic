@@ -9,7 +9,7 @@ concurrency:
 
 jobs:
   delete_stack:
-    name: Delete Stack - Preview
+    name: Preview - Delete Stack
     permissions:
       contents: read
       pull-requests: write
