@@ -7,7 +7,7 @@ use crate::{
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     viewport::ViewportBuffer,
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
-    A1Selection, CellValue, Pos, Rect, SheetPos, SheetRect,
+    CellValue, Pos, SheetPos, SheetRect,
 };
 
 use super::{active_transactions::pending_transaction::PendingTransaction, GridController};
@@ -125,24 +125,9 @@ impl GridController {
 
     pub fn send_render_cells_from_hash(&self, sheet_id: SheetId, modified: &HashSet<Pos>) {
         // send the modified cells to the render web worker
-        modified.iter().for_each(|modified| {
+        modified.iter().for_each(|hash| {
             if let Some(sheet) = self.try_sheet(sheet_id) {
-                let rect = Rect::from_numbers(
-                    modified.x * CELL_SHEET_WIDTH as i64,
-                    modified.y * CELL_SHEET_HEIGHT as i64,
-                    CELL_SHEET_WIDTH as i64,
-                    CELL_SHEET_HEIGHT as i64,
-                );
-                let render_cells = sheet.get_render_cells(rect);
-                if let Ok(cells) = serde_json::to_string(&render_cells) {
-                    crate::wasm_bindings::js::jsRenderCellSheets(
-                        sheet_id.to_string(),
-                        modified.x,
-                        modified.y,
-                        cells,
-                    );
-                }
-                sheet.send_validation_warnings(modified.x, modified.y, rect);
+                sheet.send_render_cells_in_hash(*hash);
             }
         });
     }
@@ -166,34 +151,6 @@ impl GridController {
             }
         }
         self.send_render_cells_from_hash(sheet_rect.sheet_id, &modified);
-    }
-
-    /// Sends the modified cell sheets to the render web worker based on a
-    /// selection.
-    ///
-    /// TODO: this is only implemented when only_rects == true; add
-    /// only_rects == false when needed.
-    pub fn send_render_cells_selection(&self, selection: &A1Selection, only_rects: bool) {
-        if !cfg!(target_family = "wasm") && !cfg!(test) {
-            return;
-        }
-        assert!(only_rects, "only_rects == false not implemented");
-        let mut modified = HashSet::new();
-        selection.ranges.iter().for_each(|range| {
-            if let Some(rect) = range.to_rect() {
-                for y in rect.y_range() {
-                    let y_hash = (y as f64 / CELL_SHEET_HEIGHT as f64).floor() as i64;
-                    for x in rect.x_range() {
-                        let x_hash = (x as f64 / CELL_SHEET_WIDTH as f64).floor() as i64;
-                        modified.insert(Pos {
-                            x: x_hash,
-                            y: y_hash,
-                        });
-                    }
-                }
-            }
-        });
-        self.send_render_cells_from_hash(selection.sheet_id, &modified);
     }
 
     pub fn send_all_fills(&self, sheet_id: SheetId) {
@@ -362,18 +319,13 @@ mod test {
         },
         grid::{
             js_types::{JsHtmlOutput, JsRenderCell},
-            sheet::validations::{
-                validation::Validation,
-                validation_rules::{validation_logical::ValidationLogical, ValidationRule},
-            },
             RenderSize, SheetId,
         },
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
-        A1Selection, Pos, SheetRect,
+        A1Selection, Pos,
     };
     use serial_test::serial;
     use std::collections::HashSet;
-    use uuid::Uuid;
 
     #[test]
     #[serial]
@@ -611,37 +563,6 @@ mod test {
         expect_js_call(
             "jsRenderCellSheets",
             format!("{},{},{},{}", sheet_id, 6, 3, hash_test(&result)),
-            true,
-        );
-    }
-
-    #[test]
-    #[serial]
-    fn send_render_cells_selection() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-
-        let rect = SheetRect::new(1, 1, 2, 2, sheet_id);
-        let selection = A1Selection::from_rect(rect);
-        gc.update_validation(
-            Validation {
-                id: Uuid::new_v4(),
-                selection: selection.clone(),
-                rule: ValidationRule::Logical(ValidationLogical {
-                    show_checkbox: true,
-                    ignore_blank: true,
-                }),
-                message: Default::default(),
-                error: Default::default(),
-            },
-            None,
-        );
-
-        let sheet = gc.sheet(sheet_id);
-        let send = serde_json::to_string(&sheet.get_render_cells(rect.into())).unwrap();
-        expect_js_call(
-            "jsRenderCellSheets",
-            format!("{},{},{},{}", sheet_id, 0, 0, hash_test(&send)),
             true,
         );
     }

@@ -137,7 +137,7 @@ impl Sheet {
     }
 
     pub(crate) fn delete_row(&mut self, transaction: &mut PendingTransaction, row: i64) {
-        // create undo operations for the deleted column (only when needed since
+        // create undo operations for the deleted row (only when needed since
         // it's a bit expensive)
         if transaction.is_user_undo_redo() {
             transaction
@@ -152,13 +152,6 @@ impl Sheet {
             transaction
                 .reverse_operations
                 .extend(self.reverse_code_runs_ops_for_row(row));
-
-            // reverse operation to create the column (this will also shift all impacted columns)
-            transaction.reverse_operations.push(Operation::InsertRow {
-                sheet_id: self.id,
-                row,
-                copy_formats: CopyFormats::None,
-            });
         }
 
         self.delete_row_offset(transaction, row);
@@ -170,7 +163,7 @@ impl Sheet {
         self.formats.remove_row(row);
         transaction.fill_cells.insert(self.id);
 
-        // remove the column's borders from the sheet
+        // remove the row's borders from the sheet
         self.borders.remove_row(row);
         transaction.sheet_borders.insert(self.id);
 
@@ -230,6 +223,15 @@ impl Sheet {
 
         let changed_selections = self.validations.remove_row(transaction, self.id, row);
         transaction.add_dirty_hashes_from_selections(self, changed_selections);
+
+        if transaction.is_user_undo_redo() {
+            // reverse operation to create the row (this will also shift all impacted rows)
+            transaction.reverse_operations.push(Operation::InsertRow {
+                sheet_id: self.id,
+                row,
+                copy_formats: CopyFormats::None,
+            });
+        }
     }
 
     /// Removes any value at row and shifts the remaining values up by 1.
@@ -264,15 +266,6 @@ impl Sheet {
         row: i64,
         copy_formats: CopyFormats,
     ) {
-        // create undo operations for the inserted column
-        if transaction.is_user_undo_redo() {
-            // reverse operation to delete the row (this will also shift all impacted rows)
-            transaction.reverse_operations.push(Operation::DeleteRow {
-                sheet_id: self.id,
-                row,
-            });
-        }
-
         // mark hashes of existing rows dirty
         transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
 
@@ -327,6 +320,15 @@ impl Sheet {
         if !changes.is_empty() {
             changes.iter().for_each(|(index, size)| {
                 transaction.offsets_modified(self.id, None, Some(*index), Some(*size));
+            });
+        }
+
+        // create undo operations for the inserted column
+        if transaction.is_user_undo_redo() {
+            // reverse operation to delete the row (this will also shift all impacted rows)
+            transaction.reverse_operations.push(Operation::DeleteRow {
+                sheet_id: self.id,
+                row,
             });
         }
     }

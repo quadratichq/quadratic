@@ -5,7 +5,8 @@ node_modules
 **/node_modules
 /.pnp
 .pnp.js
-
+.cache
+.cargo
 # testing
 /coverage
 

@@ -151,6 +151,7 @@ lazy_static! {
 }
 
 #[cfg(test)]
+#[track_caller]
 pub fn expect_js_call(name: &str, args: String, clear: bool) {
     let result = TestFunction {
         name: name.to_string(),
@@ -172,6 +173,7 @@ pub fn expect_js_call(name: &str, args: String, clear: bool) {
 }
 
 #[cfg(test)]
+#[track_caller]
 pub fn expect_js_call_count(name: &str, count: usize, clear: bool) {
     let mut found = 0;
     TEST_ARRAY.lock().unwrap().retain(|x| {
@@ -194,6 +196,7 @@ use js_types::JsOffset;
 use std::collections::HashMap;
 
 #[cfg(test)]
+#[track_caller]
 pub fn expect_js_offsets(
     sheet_id: SheetId,
     offsets: HashMap<(Option<i64>, Option<i64>), f64>,
