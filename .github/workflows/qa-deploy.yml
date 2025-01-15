@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+    types: [opened, synchronize, reopened]
 
 # Use runs on `ubuntu-latest-8-cores`. All of our self hosted runners use this tag.
 # Our runners pick up jobs first, and if all our runners are being used or are down
@@ -12,16 +13,14 @@ on:
 # Require previous builds and deployments to finish before starting a new one
 # Not sure how Pulumi would handle being terminated when changing a stack.
 concurrency:
-  group: pr-${{ github.event.pull_request.number }}
+  group: qa
 
 jobs:
   infra:
-    needs:
-      - files_preview
-      - multiplayer_preview
-      - connection_preview
+    needs: [build_preview_images]
     name: Create or Update Pulumi Infrastructure Stack
     runs-on: blacksmith-2vcpu-ubuntu-2204
+    if: github.head_ref == 'qa' && github.base_ref == 'main'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -36,7 +35,7 @@ jobs:
 
           pulumi org set-default quadratic
 
-          STACK_NAME="preview-pr-${{ env.PR_ID }}"
+          STACK_NAME="quadratic-qa"
           if ! pulumi stack ls | grep -q "^$STACK_NAME"; then
             echo "Stack $STACK_NAME does not exist. Initializing..."
             pulumi stack init $STACK_NAME
@@ -51,11 +50,11 @@ jobs:
             - aws-infra-development
           EOF
 
-          pulumi config set multiplayer-subdomain multiplayer-pr-${{ env.PR_ID }}
-          pulumi config set files-subdomain files-pr-${{ env.PR_ID }}
-          pulumi config set connection-subdomain connection-pr-${{ env.PR_ID }}
-          pulumi config set docker-image-tag pr-${{ env.PR_ID }}
-          pulumi config set quadratic-api-uri https://api.qa.quadratic-preview.com
+          pulumi config set multiplayer-subdomain multiplayer-pr-qa
+          pulumi config set files-subdomain files-pr-qa
+          pulumi config set connection-subdomain connection-pr-qa
+          pulumi config set docker-image-tag pr-qa
+          pulumi config set quadratic-api-uri https://quadratic-staging.herokuapp.com
           pulumi config set is-preview true
 
           pulumi up -y
@@ -65,9 +64,13 @@ jobs:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
           PR_ID: ${{ github.event.pull_request.number }}
 
-  multiplayer_preview:
-    name: Build Multiplayer
+  build_preview_images:
+    name: Build ${{ matrix.service }}
     runs-on: blacksmith-4vcpu-ubuntu-2204
+    if: github.head_ref == 'qa' && github.base_ref == 'main'
+    strategy:
+      matrix:
+        service: [multiplayer, files, connection]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -88,112 +91,8 @@ jobs:
       - name: Build, Tag, and Push Image to Amazon ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: quadratic-multiplayer-development
-          IMAGE_TAG: pr-${{ github.event.pull_request.number }}
+          ECR_REPOSITORY: quadratic-${{ matrix.service }}-development
+          IMAGE_TAG: pr-qa
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f quadratic-multiplayer/Dockerfile .
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f quadratic-${{ matrix.service }}/Dockerfile .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
-  files_preview:
-    name: Build Files
-    runs-on: blacksmith-4vcpu-ubuntu-2204
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build, Tag, and Push Image to Amazon ECR
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: quadratic-files-development
-          IMAGE_TAG: pr-${{ github.event.pull_request.number }}
-        run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f quadratic-files/Dockerfile .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
-  connection_preview:
-    name: Build Connection
-    runs-on: blacksmith-4vcpu-ubuntu-2204
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build, Tag, and Push Image to Amazon ECR
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: quadratic-connection-development
-          IMAGE_TAG: pr-${{ github.event.pull_request.number }}
-        run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f quadratic-connection/Dockerfile .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
-  # client_preview:
-  #   needs: infra
-  #   runs-on: blacksmith-4vcpu-ubuntu-2204
-  #   steps:
-  #   - uses: actions/checkout@v4
-  #   - uses: actions/setup-node@v4
-  #     with:
-  #       node-version: 18
-
-  #   - name: Set up Rust
-  #     uses: moonrepo/setup-rust@v1
-  #     with:
-  #       cache: false
-  #   - uses: jetli/wasm-pack-action@v0.4.0
-  #     with:
-  #       version: 'latest'
-
-  #   - name: Build Client
-  #     working-directory: quadratic-client
-  #     run: |
-  #       npm ci
-  #       npm run build:wasm:javascript
-  #       npm run build:wasm:types
-  #       npm run build
-  #     env:
-  #       VITE_ENVIRONMENT: preview
-  #       VITE_QUADRATIC_API_URL: https://quadratic-api-dev-pr-${{ github.event.pull_request.number }}.herokuapp.com
-  #       VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
-  #       VITE_AUTH0_CLIENT_ID: ${{ secrets.VITE_AUTH0_CLIENT_ID }}
-  #       VITE_AUTH0_AUDIENCE: ${{ secrets.VITE_AUTH0_AUDIENCE }}
-  #       VITE_AUTH0_ISSUER: ${{ secrets.VITE_AUTH0_ISSUER }}
-  #       VITE_AUTH0_DOMAIN: ${{ secrets.VITE_AUTH0_DOMAIN }}
-
-  #   # Set up AWS credentials
-  #   - name: Set up AWS credentials
-  #     uses: aws-actions/configure-aws-credentials@v1
-  #     with:
-  #       aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #       aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #       aws-region: your-aws-region
-
-  # # Deploy to S3
-  # - name: Deploy to S3
-  #   run: |
-  #     aws s3 sync ./path-to-your-static-files/ s3://your-s3-bucket-name --delete
