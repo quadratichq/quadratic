@@ -30,7 +30,7 @@ jobs:
 
           pulumi org set-default quadratic
 
-          STACK_NAME="preview-pr-${{ env.PR_ID }}"
+          STACK_NAME="quadratic-qa"
           pulumi stack select $STACK_NAME
           pulumi config set aws:region us-west-2
 
