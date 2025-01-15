@@ -57,7 +57,7 @@ jobs:
           pulumi config set files-subdomain files-pr-qa
           pulumi config set connection-subdomain connection-pr-qa
           pulumi config set docker-image-tag pr-qa
-          pulumi config set quadratic-api-uri https://api.qa.quadratic-preview.com
+          pulumi config set quadratic-api-uri https://quadratic-staging.herokuapp.com
           pulumi config set is-preview true
 
           pulumi up -y
