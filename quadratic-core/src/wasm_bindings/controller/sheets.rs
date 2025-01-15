@@ -9,9 +9,9 @@ impl GridController {
     }
     /// Gets a list of ordered sheet ids
     #[wasm_bindgen(js_name = "getSheetIds")]
-    pub fn js_get_sheet_ids(&mut self) -> Result<String, JsValue> {
+    pub fn js_get_sheet_ids(&mut self) -> Result<JsValue, JsValue> {
         let sheet_ids: Vec<String> = self.sheet_ids().iter().map(|id| id.to_string()).collect();
-        Ok(serde_json::to_string(&sheet_ids).map_err(|e| e.to_string())?)
+        Ok(serde_wasm_bindgen::to_value(&sheet_ids).map_err(|e| e.to_string())?)
     }
     /// Deletes a sheet from the the grid. Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "deleteSheet")]

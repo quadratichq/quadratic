@@ -5,13 +5,19 @@
 
 use axum::{
     http::{header::AUTHORIZATION, Method},
+    middleware::map_response,
+    response::Response,
     routing::{any, get, post},
     Extension, Json, Router,
+};
+use http::{
+    header::{CACHE_CONTROL, PRAGMA},
+    HeaderName, HeaderValue,
 };
 use quadratic_rust_shared::auth::jwt::get_jwks;
 use quadratic_rust_shared::sql::Connection;
 use serde::{Deserialize, Serialize};
-use std::{iter::once, time::Duration};
+use std::time::Duration;
 use tokio::time;
 use tower_http::{
     cors::{Any, CorsLayer},
@@ -85,6 +91,12 @@ pub(crate) fn app(state: State) -> Result<Router> {
     // get the auth middleware
     let auth = get_middleware(state.clone());
 
+    // sensitive headers, that are excluded from tracing logs
+    let sensitive_headers = [
+        AUTHORIZATION,
+        HeaderName::from_static("x-proxy-authorization"),
+    ];
+
     // Routes apply in reverse order, so placing a route before the middleware
     // usurps the middleware.
     let app = Router::new()
@@ -126,7 +138,20 @@ pub(crate) fn app(state: State) -> Result<Router> {
         .route("/health", get(healthcheck))
         //
         // don't show authorization header in logs
-        .layer(SetSensitiveHeadersLayer::new(once(AUTHORIZATION)))
+        .layer(SetSensitiveHeadersLayer::new(
+            sensitive_headers.iter().cloned(),
+        ))
+        //
+        // cache control - disable client side caching
+        .layer(map_response(|mut response: Response| async move {
+            let headers = response.headers_mut();
+            headers.insert(
+                CACHE_CONTROL,
+                HeaderValue::from_static("no-cache, no-store, must-revalidate"),
+            );
+            headers.insert(PRAGMA, HeaderValue::from_static("no-cache"));
+            response
+        }))
         //
         // cors
         .layer(cors)

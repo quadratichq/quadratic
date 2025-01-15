@@ -34,7 +34,7 @@ export class Javascript {
     this.api = new JavascriptAPI(this);
   }
 
-  init = async () => {
+  private init = async () => {
     await esbuild.initialize({
       wasmURL: '/esbuild.wasm',
       // this would create another worker to run the actual code. I don't
@@ -97,11 +97,14 @@ export class Javascript {
     this.row = message.y;
 
     try {
-      const code = prepareJavascriptCode(transformedCode, message.x, message.y, this.withLineNumbers);
+      const proxyUrl = `${javascriptClient.env.VITE_QUADRATIC_CONNECTION_URL}/proxy`;
+      const jwt = await javascriptClient.getJwt();
+      const code = prepareJavascriptCode(transformedCode, message.x, message.y, this.withLineNumbers, proxyUrl, jwt);
       const runner = new Worker(URL.createObjectURL(new Blob([code], { type: 'application/javascript' })), {
         type: 'module',
         name: 'javascriptWorker',
       });
+
       runner.onerror = (e) => {
         if (this.withLineNumbers) {
           runner.terminate();
@@ -114,6 +117,7 @@ export class Javascript {
         this.state = 'ready';
         setTimeout(this.next, 0);
       };
+
       runner.onmessage = (e: MessageEvent<RunnerJavascriptMessage>) => {
         if (e.data.type === 'results') {
           javascriptResults(
@@ -127,12 +131,12 @@ export class Javascript {
           this.state = 'ready';
           setTimeout(this.next, 0);
           runner.terminate();
-        } else if (e.data.type === 'getCellsLength') {
-          const { sharedBuffer, x0, y0, x1, y1, sheetName } = e.data;
-          this.api.getCells(x0, y0, x1, y1, sheetName).then((cells) => {
+        } else if (e.data.type === 'getCellsA1Length') {
+          const { sharedBuffer, a1 } = e.data;
+          this.api.getCellsA1(a1).then((results) => {
             const int32View = new Int32Array(sharedBuffer, 0, 3);
-            if (cells) {
-              const cellsString = JSON.stringify(cells);
+            if (results) {
+              const cellsString = JSON.stringify(results);
               const length = cellsString.length;
               Atomics.store(int32View, 1, length);
               const id = this.id++;

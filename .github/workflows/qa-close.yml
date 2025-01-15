@@ -1,0 +1,43 @@
+name: QA
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [closed]
+
+# Require previous builds and deployments to finish before starting a new one
+# Close can not run concurrently with Create or Update Infrastructure with Pulumi
+concurrency:
+  group: qa
+
+jobs:
+  teardown:
+    name: Destroy Pulumi Infrastructure Stack
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    if: github.head_ref == 'qa' && github.base_ref == 'main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - uses: blacksmith-2vcpu-ubuntu-2204
+
+      - name: Destroy Infrastructure Stack
+        working-directory: infra
+        run: |
+          npm ci
+
+          pulumi org set-default quadratic
+
+          STACK_NAME="quadratic-qa"
+          pulumi stack select $STACK_NAME
+          pulumi config set aws:region us-west-2
+
+          pulumi destroy -y --remove
+
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          PR_ID: ${{ github.event.pull_request.number }}

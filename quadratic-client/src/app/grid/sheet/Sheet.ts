@@ -1,13 +1,11 @@
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { GridOverflowLines } from '@/app/grid/sheet/GridOverflowLines';
-import { intersects } from '@/app/gridGL/helpers/intersects';
-import { ColumnRow, GridBounds, SheetBounds, SheetInfo, Validation } from '@/app/quadratic-core-types';
-import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { SheetCursor } from '@/app/grid/sheet/SheetCursor';
+import { ColumnRow, GridBounds, JsCoordinate, SheetBounds, SheetInfo, Validation } from '@/app/quadratic-core-types';
+import { SheetOffsets, SheetOffsetsWasm, stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
-import { Coordinate } from '../../gridGL/types/size';
-import { sheets } from '../controller/Sheets';
-import { RectangleLike, SheetCursor } from './SheetCursor';
 
 export class Sheet {
   id: string;
@@ -26,6 +24,9 @@ export class Sheet {
 
   validations: Validation[] = [];
 
+  // clamp is the area that the cursor can move around in
+  clamp: Rectangle;
+
   constructor(info: SheetInfo, testSkipOffsetsLoad = false) {
     this.id = info.sheet_id;
     this.name = info.name;
@@ -36,6 +37,10 @@ export class Sheet {
     this.bounds = info.bounds;
     this.boundsWithoutFormatting = info.bounds_without_formatting;
     this.gridOverflowLines = new GridOverflowLines();
+
+    // this will be imported via SheetInfo in the future
+    this.clamp = new Rectangle(1, 1, Infinity, Infinity);
+
     events.on('sheetBounds', this.updateBounds);
     events.on('sheetValidations', this.sheetValidations);
   }
@@ -49,13 +54,8 @@ export class Sheet {
   // Returns all validations that intersect with the given point.
   getValidation(x: number, y: number): Validation[] | undefined {
     return this.validations.filter((v) => {
-      const selection = v.selection;
-      return (
-        selection.all ||
-        selection.columns?.find((c) => Number(c) === x) ||
-        selection.rows?.find((r) => Number(r) === y) ||
-        selection.rects?.find((r) => intersects.rectPoint(r, { x, y }))
-      );
+      const selection = stringToSelection(v.selection.toString(), this.id, sheets.getSheetIdNameMap());
+      return selection.contains(x, y);
     });
   }
 
@@ -101,7 +101,7 @@ export class Sheet {
   //#endregion
 
   //#region get grid information
-  getMinMax(onlyData: boolean): Coordinate[] | undefined {
+  getMinMax(onlyData: boolean): JsCoordinate[] | undefined {
     const bounds = onlyData ? this.boundsWithoutFormatting : this.bounds;
     if (bounds.type === 'empty') return;
     return [
@@ -116,8 +116,8 @@ export class Sheet {
     return new Rectangle(
       Number(bounds.min.x),
       Number(bounds.min.y),
-      Number(bounds.max.x) - Number(bounds.min.x),
-      Number(bounds.max.y) - Number(bounds.min.y)
+      Number(bounds.max.x) - Number(bounds.min.x) + 1,
+      Number(bounds.max.y) - Number(bounds.min.y) + 1
     );
   }
 
@@ -142,24 +142,27 @@ export class Sheet {
     return this.offsets.getRowPlacement(y).position;
   }
 
-  // todo: change this to a JsValue instead of a Rust struct
-  getColumnRow(x: number, y: number): Coordinate {
+  getColumnRow(x: number, y: number): JsCoordinate {
     const columnRowStringified = this.offsets.getColumnRowFromScreen(x, y);
     const columnRow: ColumnRow = JSON.parse(columnRowStringified);
     return { x: columnRow.column, y: columnRow.row };
   }
 
   // @returns screen rectangle for a column/row rectangle
-  getScreenRectangle(column: number | RectangleLike, row?: number, width?: number, height?: number): Rectangle {
-    if (typeof column === 'object') {
-      row = column.y;
-      width = column.width;
-      height = column.height;
-      column = column.x;
-    }
-    const topLeft = this.getCellOffsets(column, row!);
-    const bottomRight = this.getCellOffsets(column + width!, row! + height!);
-    return new Rectangle(topLeft.left, topLeft.top, bottomRight.right - topLeft.left, bottomRight.bottom - topLeft.top);
+  getScreenRectangle(
+    column: number | BigInt,
+    row: number | BigInt,
+    width: number | BigInt,
+    height: number | BigInt
+  ): Rectangle {
+    const topLeft = this.getCellOffsets(Number(column), Number(row));
+    const bottomRight = this.getCellOffsets(Number(column) + Number(width), Number(row) + Number(height));
+    return new Rectangle(topLeft.left, topLeft.top, bottomRight.left - topLeft.left, bottomRight.top - topLeft.top);
+  }
+
+  // @returns screen rectangle from a selection rectangle
+  getScreenRectangleFromRect(rect: Rectangle): Rectangle {
+    return this.getScreenRectangle(rect.x, rect.y, rect.width, rect.height);
   }
 
   updateSheetOffsets(column: number | null, row: number | null, size: number) {
@@ -168,6 +171,14 @@ export class Sheet {
     } else if (row !== null) {
       this.offsets.setRowHeight(row, size);
     }
+  }
+
+  getColumnFromScreen(x: number): number {
+    return this.offsets.getColumnFromScreen(x);
+  }
+
+  getRowFromScreen(y: number): number {
+    return this.offsets.getRowFromScreen(y);
   }
 
   getColumnRowFromScreen(x: number, y: number): ColumnRow {

@@ -1,6 +1,7 @@
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { borderMenuAtom } from '@/app/atoms/borderMenuAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { QColorPicker } from '@/app/ui/components/qColorPicker';
 import { useBorders } from '@/app/ui/hooks/useBorders';
 import { CheckSmallIcon } from '@/shared/components/Icons';
@@ -10,7 +11,6 @@ import { cn } from '@/shared/shadcn/utils';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import { useRecoilValue } from 'recoil';
 import './borderMenuStyles.scss';
-import { sheets } from '@/app/grid/controller/Sheets';
 
 const borderActionKeys = [
   Action.FormatBorderAll,
@@ -41,7 +41,7 @@ export const BorderMenu = () => {
 
   // this doesn't need to be an effect since the menu is closed when the cursor
   // changes
-  const singleSelection = sheets.sheet.cursor.onlySingleSelection();
+  const singleSelection = sheets.sheet.cursor.isSingleSelection();
 
   return (
     <div>

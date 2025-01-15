@@ -4,6 +4,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { colors } from '@/app/theme/colors';
 import { SidebarToggle, SidebarTooltip } from '@/app/ui/QuadraticSidebar';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
@@ -119,11 +120,11 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
               <TooltipTrigger>
                 <div className="ml-5 text-sm">
                   <StopIcon style={{ color: colors.darkGray }} />
-                  cell({pythonCodeRunning.sheetPos.x}, {pythonCodeRunning.sheetPos.y}
+                  Cell {xyToA1(pythonCodeRunning.sheetPos.x, pythonCodeRunning.sheetPos.y)}
                   {pythonCodeRunning.sheetPos.sheetId !== sheets.sheet.id
                     ? `, "${sheets.getById(pythonCodeRunning.sheetPos.sheetId)?.name || ''}"`
                     : ''}
-                  ) is running...
+                  {' is running...'}
                 </div>
               </TooltipTrigger>
             </Tooltip>
@@ -142,11 +143,11 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
               <TooltipTrigger>
                 <div className="ml-5 text-sm">
                   <StopIcon style={{ color: colors.darkGray }} />
-                  cell({javascriptCodeRunning.sheetPos.x}, {javascriptCodeRunning.sheetPos.y}
+                  Cell {xyToA1(javascriptCodeRunning.sheetPos.x, javascriptCodeRunning.sheetPos.y)}
                   {javascriptCodeRunning.sheetPos.sheetId !== sheets.sheet.id
                     ? `, "${sheets.getById(javascriptCodeRunning.sheetPos.sheetId)?.name || ''}"`
                     : ''}
-                  ) is running...
+                  {' is running...'}
                 </div>
               </TooltipTrigger>
             </Tooltip>
@@ -165,11 +166,11 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
               <TooltipTrigger>
                 <div className="ml-5 text-sm">
                   <StopIcon style={{ color: colors.darkGray }} />
-                  cell({connectionCodeRunning.sheetPos.x}, {connectionCodeRunning.sheetPos.y}
+                  Cell {xyToA1(connectionCodeRunning.sheetPos.x, connectionCodeRunning.sheetPos.y)}
                   {connectionCodeRunning.sheetPos.sheetId !== sheets.sheet.id
                     ? `, "${sheets.getById(connectionCodeRunning.sheetPos.sheetId)?.name || ''}"`
                     : ''}
-                  ) is running...
+                  {' is running...'}
                 </div>
               </TooltipTrigger>
             </Tooltip>
@@ -181,8 +182,8 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
           onClick={() =>
             quadraticCore.rerunCodeCells(
               sheets.sheet.id,
-              sheets.sheet.cursor.cursorPosition.x,
-              sheets.sheet.cursor.cursorPosition.y,
+              sheets.sheet.cursor.position.x,
+              sheets.sheet.cursor.position.y,
               sheets.getCursorPosition()
             )
           }

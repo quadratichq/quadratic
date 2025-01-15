@@ -2,6 +2,7 @@
 //! handles when the cursorIsMoving outside of the inline formula edit box.
 
 import { Action } from '@/app/actions/actions';
+import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getSingleSelection } from '@/app/grid/sheet/selection';
@@ -15,17 +16,23 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
+export enum CursorMode {
+  Enter,
+  Edit,
+}
+
 class InlineEditorKeyboard {
   escapeBackspacePressed = false;
+  cursorMode: CursorMode = CursorMode.Enter;
 
   private handleArrowHorizontal = async (isRight: boolean, e: KeyboardEvent) => {
-    const target = isRight ? inlineEditorMonaco.getLastColumn() : 2;
+    // formula
     if (inlineEditorHandler.isEditingFormula()) {
       if (inlineEditorHandler.cursorIsMoving) {
         e.stopPropagation();
         e.preventDefault();
         keyboardPosition(e);
-      } else {
+      } else if (this.cursorMode === CursorMode.Enter) {
         const column = inlineEditorMonaco.getCursorColumn();
         e.stopPropagation();
         e.preventDefault();
@@ -39,9 +46,10 @@ class InlineEditorKeyboard {
           inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
         }
       }
-    } else {
-      const column = inlineEditorMonaco.getCursorColumn();
-      if (column === target) {
+    }
+    // text
+    else {
+      if (this.cursorMode === CursorMode.Enter) {
         e.stopPropagation();
         e.preventDefault();
         if (!(await this.handleValidationError())) {
@@ -60,12 +68,13 @@ class InlineEditorKeyboard {
       return;
     }
 
+    // formula
     if (inlineEditorHandler.isEditingFormula()) {
       e.stopPropagation();
       e.preventDefault();
       if (inlineEditorHandler.cursorIsMoving) {
         keyboardPosition(e);
-      } else {
+      } else if (this.cursorMode === CursorMode.Enter) {
         // If we're not moving and the formula doesn't want a cell reference,
         // close the editor. We can't just use "is the formula syntactically
         // valid" because many formulas are syntactically valid even though
@@ -87,11 +96,15 @@ class InlineEditorKeyboard {
           return;
         }
       }
-    } else {
-      e.stopPropagation();
-      e.preventDefault();
-      if (!(await this.handleValidationError())) {
-        inlineEditorHandler.close(0, isDown ? 1 : -1, false);
+    }
+    // text
+    else {
+      if (this.cursorMode === CursorMode.Enter) {
+        e.stopPropagation();
+        e.preventDefault();
+        if (!(await this.handleValidationError())) {
+          inlineEditorHandler.close(0, isDown ? 1 : -1, false);
+        }
       }
     }
   };
@@ -113,6 +126,13 @@ class InlineEditorKeyboard {
     return false;
   }
 
+  toggleArrowMode = () => {
+    pixiAppSettings.setInlineEditorState?.((prev) => ({
+      ...prev,
+      editMode: !prev.editMode,
+    }));
+  };
+
   // Keyboard event for inline editor (via either Monaco's keyDown event or,
   // when on a different sheet, via window's keyDown listener).
   keyDown = async (e: KeyboardEvent) => {
@@ -131,6 +151,14 @@ class InlineEditorKeyboard {
       this.escapeBackspacePressed = ['Escape', 'Backspace'].includes(e.code);
     } else {
       this.escapeBackspacePressed = false;
+    }
+
+    const position = inlineEditorMonaco.getPosition();
+    if (e.code === 'Equal' && position.lineNumber === 1 && position.column === 1) {
+      pixiAppSettings.setInlineEditorState?.((prev) => ({
+        ...prev,
+        editMode: false,
+      }));
     }
 
     // Escape key
@@ -165,6 +193,12 @@ class InlineEditorKeyboard {
       if (!(await this.handleValidationError())) {
         inlineEditorHandler.close(0, -1, false);
       }
+    }
+
+    // toggle arrow mode
+    else if (matchShortcut(Action.ToggleArrowMode, e)) {
+      e.stopPropagation();
+      this.toggleArrowMode();
     }
 
     // Tab key
@@ -258,7 +292,7 @@ class InlineEditorKeyboard {
           inlineEditorHandler.location.x,
           inlineEditorHandler.location.y
         );
-        quadraticCore.setCellItalic(selection, !!inlineEditorHandler.temporaryItalic);
+        quadraticCore.setItalic(selection, !!inlineEditorHandler.temporaryItalic);
       }
     }
 
@@ -273,7 +307,7 @@ class InlineEditorKeyboard {
           inlineEditorHandler.location.x,
           inlineEditorHandler.location.y
         );
-        quadraticCore.setCellBold(selection, !!inlineEditorHandler.temporaryBold);
+        quadraticCore.setBold(selection, !!inlineEditorHandler.temporaryBold);
       }
     }
 
@@ -288,7 +322,7 @@ class InlineEditorKeyboard {
           inlineEditorHandler.location.x,
           inlineEditorHandler.location.y
         );
-        quadraticCore.setCellUnderline(selection, !!inlineEditorHandler.temporaryUnderline);
+        quadraticCore.setUnderline(selection, !!inlineEditorHandler.temporaryUnderline);
       }
     }
 
@@ -303,8 +337,35 @@ class InlineEditorKeyboard {
           inlineEditorHandler.location.x,
           inlineEditorHandler.location.y
         );
-        quadraticCore.setCellStrikeThrough(selection, !!inlineEditorHandler.temporaryStrikeThrough);
+        quadraticCore.setStrikeThrough(selection, !!inlineEditorHandler.temporaryStrikeThrough);
       }
+    }
+
+    // show go to menu
+    else if (matchShortcut(Action.ShowGoToMenu, e)) {
+      e.stopPropagation();
+      e.preventDefault();
+      inlineEditorHandler.close(0, 0, false).then(() => {
+        defaultActionSpec[Action.ShowGoToMenu].run();
+      });
+    }
+
+    // show find in current sheet
+    else if (matchShortcut(Action.FindInCurrentSheet, e)) {
+      e.stopPropagation();
+      e.preventDefault();
+      inlineEditorHandler.close(0, 0, false).then(() => {
+        defaultActionSpec[Action.FindInCurrentSheet].run();
+      });
+    }
+
+    // show command palette
+    else if (matchShortcut(Action.ShowCommandPalette, e)) {
+      e.stopPropagation();
+      e.preventDefault();
+      inlineEditorHandler.close(0, 0, false).then(() => {
+        defaultActionSpec[Action.ShowCommandPalette].run();
+      });
     }
 
     // trigger cell type menu
@@ -312,7 +373,7 @@ class InlineEditorKeyboard {
       e.preventDefault();
       e.stopPropagation();
       pixiAppSettings.changeInput(false);
-      const cursor = sheets.sheet.cursor.getCursor();
+      const cursor = sheets.sheet.cursor.position;
       pixiAppSettings.setEditorInteractionState?.({
         ...pixiAppSettings.editorInteractionState,
         showCellTypeMenu: true,
@@ -358,19 +419,12 @@ class InlineEditorKeyboard {
     if (!location) return;
 
     inlineEditorHandler.cursorIsMoving = false;
-    pixiApp.cellHighlights.clearHighlightedCell();
+    pixiApp.cellHighlights.clearSelectedCell();
     const editingSheet = sheets.getById(location.sheetId);
     if (!editingSheet) {
       throw new Error('Expected editingSheet to be defined in resetKeyboardPosition');
     }
-    const position = { x: location.x, y: location.y };
-    editingSheet.cursor.changePosition({
-      cursorPosition: position,
-      multiCursor: null,
-      columnRow: null,
-      keyboardMovePosition: position,
-      ensureVisible: true,
-    });
+    editingSheet.cursor.moveTo(location.x, location.y);
     if (sheets.sheet.id !== location.sheetId) {
       sheets.current = location.sheetId;
 

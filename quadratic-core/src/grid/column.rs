@@ -11,9 +11,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
-use super::formats::format::Format;
-use super::formatting::*;
-use super::{Block, BlockContent, SameValue};
+use super::block::{Block, BlockContent, SameValue};
 use crate::grid::block::{contiguous_optional_blocks, OptionBlock};
 use crate::{CellValue, IsBlank};
 
@@ -21,23 +19,6 @@ use crate::{CellValue, IsBlank};
 pub struct Column {
     pub x: i64,
     pub values: BTreeMap<i64, CellValue>,
-
-    // should have 12 format options
-    pub align: ColumnData<SameValue<CellAlign>>,
-    pub vertical_align: ColumnData<SameValue<CellVerticalAlign>>,
-    pub wrap: ColumnData<SameValue<CellWrap>>,
-    pub numeric_format: ColumnData<SameValue<NumericFormat>>,
-    pub numeric_decimals: ColumnData<SameValue<i16>>,
-    pub numeric_commas: ColumnData<SameValue<bool>>,
-    pub bold: ColumnData<SameValue<bool>>,
-    pub italic: ColumnData<SameValue<bool>>,
-    pub text_color: ColumnData<SameValue<String>>,
-    pub fill_color: ColumnData<SameValue<String>>,
-    pub render_size: ColumnData<SameValue<RenderSize>>,
-    #[serde(default)]
-    pub date_time: ColumnData<SameValue<String>>,
-    pub underline: ColumnData<SameValue<bool>>,
-    pub strike_through: ColumnData<SameValue<bool>>,
 }
 
 impl Column {
@@ -58,97 +39,12 @@ impl Column {
         }
     }
 
-    pub fn range(&self, ignore_formatting: bool) -> Option<Range<i64>> {
-        if ignore_formatting {
-            self.values_range()
-        } else {
-            crate::util::union_ranges([
-                self.values_range(),
-                self.align.range(),
-                self.vertical_align.range(),
-                self.wrap.range(),
-                self.numeric_format.range(),
-                self.numeric_decimals.range(),
-                self.bold.range(),
-                self.italic.range(),
-                self.text_color.range(),
-                self.fill_color.range(),
-                self.render_size.range(),
-                self.date_time.range(),
-                self.underline.range(),
-                self.strike_through.range(),
-            ])
-        }
-    }
-
-    /// Returns the range for format values within the column.
-    pub fn format_range(&self) -> Option<Range<i64>> {
-        crate::util::union_ranges([
-            self.align.range(),
-            self.vertical_align.range(),
-            self.wrap.range(),
-            self.numeric_format.range(),
-            self.numeric_decimals.range(),
-            self.bold.range(),
-            self.italic.range(),
-            self.text_color.range(),
-            self.fill_color.range(),
-            self.render_size.range(),
-            self.date_time.range(),
-            self.underline.range(),
-            self.strike_through.range(),
-        ])
+    pub fn range(&self) -> Option<Range<i64>> {
+        self.values_range()
     }
 
     pub fn has_data_in_row(&self, y: i64) -> bool {
         self.values.get(&y).is_some_and(|v| !v.is_blank())
-    }
-
-    /// Returns true if the column has any format options set in the given row.
-    pub fn has_format_in_row(&self, y: i64) -> bool {
-        self.align.get(y).is_some()
-            || self.vertical_align.get(y).is_some()
-            || self.wrap.get(y).is_some()
-            || self.numeric_format.get(y).is_some()
-            || self.numeric_decimals.get(y).is_some()
-            || self.numeric_commas.get(y).is_some()
-            || self.bold.get(y).is_some()
-            || self.italic.get(y).is_some()
-            || self.text_color.get(y).is_some()
-            || self.fill_color.get(y).is_some()
-            || self.render_size.get(y).is_some()
-            || self.date_time.get(y).is_some()
-            || self.underline.get(y).is_some()
-            || self.strike_through.get(y).is_some()
-    }
-
-    pub fn has_anything_in_row(&self, y: i64) -> bool {
-        self.has_data_in_row(y) || self.has_format_in_row(y)
-    }
-
-    /// Gets the Format for a column (which will eventually replace the data structure)
-    pub fn format(&self, y: i64) -> Option<Format> {
-        let format = Format {
-            align: self.align.get(y),
-            vertical_align: self.vertical_align.get(y),
-            wrap: self.wrap.get(y),
-            numeric_format: self.numeric_format.get(y),
-            numeric_decimals: self.numeric_decimals.get(y),
-            numeric_commas: self.numeric_commas.get(y),
-            bold: self.bold.get(y),
-            italic: self.italic.get(y),
-            text_color: self.text_color.get(y),
-            fill_color: self.fill_color.get(y),
-            render_size: self.render_size.get(y),
-            date_time: self.date_time.get(y),
-            underline: self.underline.get(y),
-            strike_through: self.strike_through.get(y),
-        };
-        if format.is_default() {
-            None
-        } else {
-            Some(format)
-        }
     }
 }
 
@@ -566,117 +462,6 @@ mod test {
 
     #[test]
     #[parallel]
-    fn format() {
-        let mut cd: Column = Column::new(0);
-
-        cd.align
-            .set_range(Range { start: 0, end: 10 }, CellAlign::Center);
-        cd.vertical_align
-            .set_range(Range { start: 0, end: 10 }, CellVerticalAlign::Middle);
-        cd.wrap
-            .set_range(Range { start: 0, end: 10 }, CellWrap::Wrap);
-        cd.numeric_format.set_range(
-            Range { start: 0, end: 10 },
-            NumericFormat {
-                kind: NumericFormatKind::Percentage,
-                symbol: None,
-            },
-        );
-        cd.numeric_decimals
-            .set_range(Range { start: 0, end: 10 }, 2);
-        cd.numeric_commas
-            .set_range(Range { start: 0, end: 10 }, true);
-        cd.bold.set_range(Range { start: 0, end: 10 }, true);
-        cd.italic.set_range(Range { start: 0, end: 10 }, true);
-        cd.text_color
-            .set_range(Range { start: 0, end: 10 }, "red".to_string());
-        cd.fill_color
-            .set_range(Range { start: 0, end: 10 }, "blue".to_string());
-        cd.render_size.set_range(
-            Range { start: 0, end: 10 },
-            RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string(),
-            },
-        );
-        cd.underline.set_range(Range { start: 0, end: 10 }, true);
-        cd.strike_through
-            .set_range(Range { start: 0, end: 10 }, true);
-
-        let format = cd.format(0).unwrap();
-        assert_eq!(format.align, Some(CellAlign::Center));
-        assert_eq!(format.vertical_align, Some(CellVerticalAlign::Middle));
-        assert_eq!(format.wrap, Some(CellWrap::Wrap));
-        assert_eq!(
-            format.numeric_format,
-            Some(NumericFormat {
-                kind: NumericFormatKind::Percentage,
-                symbol: None
-            })
-        );
-        assert_eq!(format.numeric_decimals, Some(2));
-        assert_eq!(format.numeric_commas, Some(true));
-        assert_eq!(format.bold, Some(true));
-        assert_eq!(format.italic, Some(true));
-        assert_eq!(format.text_color, Some("red".to_string()));
-        assert_eq!(format.fill_color, Some("blue".to_string()));
-        assert_eq!(
-            format.render_size,
-            Some(RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string()
-            })
-        );
-        assert_eq!(format.underline, Some(true));
-        assert_eq!(format.strike_through, Some(true));
-    }
-
-    #[test]
-    #[parallel]
-    fn format_range() {
-        let mut cd: Column = Column::new(0);
-
-        cd.align
-            .set_range(Range { start: 0, end: 10 }, CellAlign::Center);
-        cd.vertical_align
-            .set_range(Range { start: 0, end: 10 }, CellVerticalAlign::Middle);
-        cd.wrap
-            .set_range(Range { start: 0, end: 10 }, CellWrap::Wrap);
-        cd.numeric_format.set_range(
-            Range { start: 0, end: 10 },
-            NumericFormat {
-                kind: NumericFormatKind::Percentage,
-                symbol: None,
-            },
-        );
-        cd.numeric_decimals
-            .set_range(Range { start: 0, end: 10 }, 2);
-        cd.numeric_commas
-            .set_range(Range { start: 0, end: 10 }, true);
-        cd.bold.set_range(Range { start: 0, end: 10 }, true);
-        cd.italic.set_range(Range { start: 0, end: 10 }, true);
-        cd.text_color
-            .set_range(Range { start: 0, end: 10 }, "red".to_string());
-        cd.fill_color
-            .set_range(Range { start: 0, end: 10 }, "blue".to_string());
-        cd.render_size.set_range(
-            Range { start: 0, end: 10 },
-            RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string(),
-            },
-        );
-        cd.underline.set_range(Range { start: 0, end: 10 }, true);
-        cd.strike_through
-            .set_range(Range { start: 0, end: 10 }, true);
-
-        let range = cd.format_range().unwrap();
-        assert_eq!(range.start, 0);
-        assert_eq!(range.end, 10);
-    }
-
-    #[test]
-    #[parallel]
     fn min_max() {
         let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
 
@@ -802,48 +587,6 @@ mod test {
         assert_eq!(cd.get(3), None);
         assert_eq!(cd.get(4), Some(false));
         assert_eq!(cd.get(5), None);
-    }
-
-    #[test]
-    #[parallel]
-    fn has_format_in_row() {
-        let mut cd: Column = Column::new(0);
-        cd.align.set(1, Some(CellAlign::Center));
-        cd.vertical_align.set(2, Some(CellVerticalAlign::Middle));
-        cd.wrap.set(3, Some(CellWrap::Wrap));
-        cd.numeric_format.set(
-            4,
-            Some(NumericFormat {
-                kind: NumericFormatKind::Percentage,
-                symbol: None,
-            }),
-        );
-        cd.numeric_decimals.set(5, Some(2));
-        cd.numeric_commas.set(6, Some(true));
-        cd.bold.set(7, Some(true));
-        cd.italic.set(8, Some(true));
-        cd.text_color.set(9, Some("red".to_string()));
-        cd.fill_color.set(10, Some("blue".to_string()));
-        cd.render_size.set(
-            11,
-            Some(RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string(),
-            }),
-        );
-
-        assert!(cd.has_format_in_row(1));
-        assert!(cd.has_format_in_row(2));
-        assert!(cd.has_format_in_row(3));
-        assert!(cd.has_format_in_row(4));
-        assert!(cd.has_format_in_row(5));
-        assert!(cd.has_format_in_row(6));
-        assert!(cd.has_format_in_row(7));
-        assert!(cd.has_format_in_row(8));
-        assert!(cd.has_format_in_row(9));
-        assert!(cd.has_format_in_row(10));
-        assert!(cd.has_format_in_row(11));
-        assert!(!cd.has_format_in_row(12));
     }
 
     #[test]

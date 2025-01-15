@@ -19,14 +19,15 @@ export const SuggestionDropDown = () => {
   const [offsets, setOffsets] = useState<Rectangle | undefined>();
   useEffect(() => {
     const populateList = async () => {
-      const cursor = sheets.sheet.cursor;
-      if (cursor.multiCursor || cursor.columnRow) {
+      const sheet = sheets.sheet;
+      const cursor = sheet.cursor;
+      if (cursor.isMultiCursor()) {
         setList(undefined);
         inlineEditorMonaco.autocompleteShowingList = false;
         return;
       }
 
-      const pos = cursor.cursorPosition;
+      const pos = sheet.cursor.position;
 
       // if there are validations, don't autocomplete
       // todo: we can make this better by showing only validated values

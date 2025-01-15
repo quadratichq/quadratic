@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 use chrono::{Duration, TimeDelta, Utc};
 use uuid::Uuid;
 
-use super::TransactionType;
+use super::TransactionSource;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::active_transactions::unsaved_transactions::UnsavedTransaction;
@@ -23,7 +23,7 @@ impl GridController {
     ) {
         let mut transaction = PendingTransaction {
             id: transaction_id,
-            transaction_type: TransactionType::Multiplayer,
+            source: TransactionSource::Multiplayer,
             operations: operations.into(),
             ..Default::default()
         };
@@ -32,7 +32,7 @@ impl GridController {
     }
 
     /// Rolls back unsaved transactions to apply earlier transactions received from the server.
-    fn rollback_unsaved_transactions(&mut self) {
+    fn rollback_unsaved_transactions(&mut self, transaction: &mut PendingTransaction) {
         if self.transactions.unsaved_transactions.is_empty() {
             return;
         }
@@ -44,16 +44,17 @@ impl GridController {
             .flat_map(|unsaved_transaction| unsaved_transaction.reverse.operations.clone())
             .collect::<VecDeque<_>>();
         let mut rollback = PendingTransaction {
-            transaction_type: TransactionType::Multiplayer,
+            source: TransactionSource::Multiplayer,
             operations,
             ..Default::default()
         };
         self.start_transaction(&mut rollback);
         rollback.send_transaction();
+        transaction.add_updates_from_transaction(rollback);
     }
 
     /// Reapplies the rolled-back unsaved transactions after adding earlier transactions.
-    fn reapply_unsaved_transactions(&mut self) {
+    fn reapply_unsaved_transactions(&mut self, transaction: &mut PendingTransaction) {
         if self.transactions.unsaved_transactions.is_empty() {
             return;
         }
@@ -68,12 +69,13 @@ impl GridController {
             // Note: setting this to multiplayer makes it so the calculations are not rerun when reapplied.
             // This seems the right approach, otherwise we may end up with long running calculations
             // having to be sent to the server multiple times when multiple users are making changes.
-            transaction_type: TransactionType::Multiplayer,
+            source: TransactionSource::Multiplayer,
             operations: operations.into(),
             ..Default::default()
         };
         self.start_transaction(&mut reapply);
         reapply.send_transaction();
+        transaction.add_updates_from_transaction(reapply);
     }
 
     /// Used by the server to apply transactions. Since the server owns the sequence_num,
@@ -84,7 +86,7 @@ impl GridController {
         transaction_name: Option<TransactionName>,
     ) {
         let mut transaction = PendingTransaction {
-            transaction_type: TransactionType::Server,
+            source: TransactionSource::Server,
             operations: operations.into(),
             transaction_name: transaction_name.unwrap_or(TransactionName::Unknown),
             ..Default::default()
@@ -123,7 +125,11 @@ impl GridController {
 
     /// Check the out_of_order_transactions to see if they are next in order. If so, we remove them from
     /// out_of_order_transactions and apply their operations.
-    fn apply_out_of_order_transactions(&mut self, mut sequence_num: u64) {
+    fn apply_out_of_order_transactions(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        mut sequence_num: u64,
+    ) {
         // nothing to do here
         if self.transactions.out_of_order_transactions.is_empty() {
             self.transactions.last_sequence_num = sequence_num;
@@ -148,13 +154,13 @@ impl GridController {
             }
         });
         let mut out_of_order_transaction = PendingTransaction {
-            transaction_type: TransactionType::Multiplayer,
+            source: TransactionSource::Multiplayer,
             operations,
             ..Default::default()
         };
         self.start_transaction(&mut out_of_order_transaction);
         out_of_order_transaction.send_transaction();
-
+        transaction.add_updates_from_transaction(out_of_order_transaction);
         self.transactions.last_sequence_num = sequence_num;
     }
 
@@ -176,23 +182,23 @@ impl GridController {
                 if index == 0 {
                     self.transactions.unsaved_transactions.remove(index);
                     self.mark_transaction_sent(transaction.id);
-                    self.apply_out_of_order_transactions(sequence_num);
+                    self.apply_out_of_order_transactions(transaction, sequence_num);
                 }
                 // otherwise we need to rollback all transaction and properly apply it
                 else {
-                    self.rollback_unsaved_transactions();
+                    self.rollback_unsaved_transactions(transaction);
                     self.transactions.unsaved_transactions.remove(index);
                     self.mark_transaction_sent(transaction.id);
                     self.start_transaction(transaction);
-                    self.apply_out_of_order_transactions(sequence_num);
-                    self.reapply_unsaved_transactions();
+                    self.apply_out_of_order_transactions(transaction, sequence_num);
+                    self.reapply_unsaved_transactions(transaction);
                 }
             } else {
                 // If the transaction is not one of ours, then we just apply the transaction after rolling back any unsaved transactions
-                self.rollback_unsaved_transactions();
+                self.rollback_unsaved_transactions(transaction);
                 self.start_transaction(transaction);
-                self.apply_out_of_order_transactions(sequence_num);
-                self.reapply_unsaved_transactions();
+                self.apply_out_of_order_transactions(transaction, sequence_num);
+                self.reapply_unsaved_transactions(transaction);
 
                 // We do not need to render a thumbnail unless we have outstanding unsaved transactions.
                 // Note: this may result in a thumbnail being unnecessarily generated by a user who's
@@ -224,11 +230,11 @@ impl GridController {
     /// Received transactions from the server
     pub fn received_transactions(&mut self, transactions: Vec<TransactionServer>) {
         // used to track client changes when combining transactions
-        let results = PendingTransaction {
-            transaction_type: TransactionType::Multiplayer,
+        let mut results = PendingTransaction {
+            source: TransactionSource::Multiplayer,
             ..Default::default()
         };
-        self.rollback_unsaved_transactions();
+        self.rollback_unsaved_transactions(&mut results);
 
         // combine all transaction into one transaction
         transactions.into_iter().for_each(|t| {
@@ -238,20 +244,21 @@ impl GridController {
             if let Ok(operations) = operations {
                 let mut transaction = PendingTransaction {
                     id: t.id,
-                    transaction_type: TransactionType::Multiplayer,
+                    source: TransactionSource::Multiplayer,
                     operations: operations.into(),
                     cursor: None,
                     ..Default::default()
                 };
 
                 self.client_apply_transaction(&mut transaction, t.sequence_num);
+                results.add_updates_from_transaction(transaction);
             } else {
                 dbgjs!(
                     "Unable to decompress and deserialize operations in received_transactions()"
                 );
             }
         });
-        self.reapply_unsaved_transactions();
+        self.reapply_unsaved_transactions(&mut results);
         self.finalize_transaction(results);
     }
 
@@ -280,7 +287,7 @@ impl GridController {
         } else {
             let mut transaction = PendingTransaction {
                 id: transaction_id,
-                transaction_type: TransactionType::Unsaved,
+                source: TransactionSource::Unsaved,
                 ..Default::default()
             };
             transaction
@@ -303,9 +310,9 @@ mod tests {
     use crate::controller::transaction::Transaction;
     use crate::controller::transaction_types::JsCodeResult;
     use crate::controller::GridController;
-    use crate::grid::{CodeCellLanguage, Sheet};
+    use crate::grid::{CodeCellLanguage, CodeCellValue, Sheet};
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
-    use crate::{CellValue, CodeCellValue, Pos, SheetPos};
+    use crate::{CellValue, Pos, SheetPos};
 
     #[test]
     #[parallel]
@@ -822,11 +829,7 @@ mod tests {
         let mut other = GridController::test();
         other.grid_mut().sheets_mut()[0].id = sheet_id;
         other.set_cell_value(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            },
+            pos![A1].to_sheet_pos(sheet_id),
             "From other".to_string(),
             None,
         );
@@ -835,21 +838,14 @@ mod tests {
             Transaction::serialize_and_compress(&other_operations).unwrap();
 
         client.set_code_cell(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            },
+            pos![A1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "start this before receiving multiplayer".to_string(),
             None,
         );
 
         // ensure code_cell exists
-        let code_cell = client
-            .try_sheet(sheet_id)
-            .unwrap()
-            .cell_value(Pos { x: 0, y: 0 });
+        let code_cell = client.try_sheet(sheet_id).unwrap().cell_value(pos![A1]);
         assert_eq!(
             code_cell,
             Some(CellValue::Code(CodeCellValue {
@@ -870,18 +866,12 @@ mod tests {
 
         // expect this to be None since the async client.set_code_cell overwrites the other's multiplayer transaction
         assert_eq!(
-            client
-                .try_sheet(sheet_id)
-                .unwrap()
-                .display_value(Pos { x: 0, y: 0 }),
+            client.try_sheet(sheet_id).unwrap().display_value(pos![A1]),
             None
         );
 
         // ensure code_cell still exists
-        let code_cell = client
-            .try_sheet(sheet_id)
-            .unwrap()
-            .cell_value(Pos { x: 0, y: 0 });
+        let code_cell = client.try_sheet(sheet_id).unwrap().cell_value(pos![A1]);
         assert!(matches!(code_cell, Some(CellValue::Code(_))));
 
         // mock the python calculation returning the result
@@ -899,49 +889,34 @@ mod tests {
         assert!(result.is_ok());
 
         assert_eq!(
-            client
-                .try_sheet(sheet_id)
-                .unwrap()
-                .display_value(Pos { x: 0, y: 0 }),
+            client.try_sheet(sheet_id).unwrap().display_value(pos![A1]),
             Some(CellValue::Text("async output".to_string()))
         );
     }
 
     // used for the following tests to create multiplayer transactions
     // extension of test_python_multiple_calculations in run_python.rs
-    // Tests in column 0, and y: 0 = "1", y: 1 = "c(0,0) + 1", y: 2 = "c(0, 1) + 1"
+    // Tests in column A, and y: 1 = "1", y: 2 = "q.cells("A1") + 1", y: 3 = "q.cells("A2") + 1"
 
-    // creates 0,0 = "1"
+    // creates A1 = "1"
     fn create_multiple_calculations_0(gc: &mut GridController) -> (Uuid, Vec<Operation>) {
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_value(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            },
-            "1".to_string(),
-            None,
-        );
+        gc.set_cell_value(pos![A1].to_sheet_pos(sheet_id), "1".to_string(), None);
         let transaction = gc.last_transaction().unwrap();
         (transaction.id, transaction.operations.clone())
     }
 
-    // creates 0,1 = "c(0,0) + 1"
+    // creates A2 = "q.cells("A1") + 1"
     fn create_multiple_calculations_1(gc: &mut GridController) -> (Uuid, Vec<Operation>) {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            SheetPos {
-                x: 0,
-                y: 1,
-                sheet_id,
-            },
+            pos![A2].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
-            "c(0, 0) + 1".into(),
+            "q.cells(\"A1\") + 1".into(),
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
-        gc.calculation_get_cells(transaction_id.to_string(), 0, 0, 1, Some(1), None, None)
+        gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None)
             .ok()
             .unwrap();
 
@@ -962,22 +937,18 @@ mod tests {
         (transaction_id, transaction.operations.clone())
     }
 
-    // creates 0,2 = "c(0,1) + 1"
+    // creates A3 = "q.cells("A2") + 1"
     fn create_multiple_calculations_2(gc: &mut GridController) -> (Uuid, Vec<Operation>) {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            SheetPos {
-                x: 0,
-                y: 2,
-                sheet_id,
-            },
+            pos![A3].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
-            "c(0, 1) + 1".into(),
+            "q.cells(\"A2\") + 1".into(),
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         let _ = gc
-            .calculation_get_cells(transaction_id.to_string(), 0, 1, 1, Some(1), None, None)
+            .calculation_get_cells_a1(transaction_id.to_string(), "A2".to_string(), None)
             .ok()
             .unwrap();
 
@@ -1022,15 +993,15 @@ mod tests {
 
         let sheet = gc.grid.first_sheet();
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(pos![A1]),
             Some(CellValue::Number(BigDecimal::from(1)))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 1 }),
+            sheet.display_value(pos![A2]),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 2 }),
+            sheet.display_value(pos![A3]),
             Some(CellValue::Number(BigDecimal::from(3)))
         );
     }
@@ -1050,15 +1021,15 @@ mod tests {
 
         let sheet = gc.grid.first_sheet();
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(pos![A1]),
             Some(CellValue::Number(BigDecimal::from(1)))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 1 }),
+            sheet.display_value(pos![A2]),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 2 }),
+            sheet.display_value(pos![A3]),
             Some(CellValue::Number(BigDecimal::from(3)))
         );
     }
@@ -1189,15 +1160,15 @@ mod tests {
 
         let sheet = gc.grid.first_sheet();
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(pos![A1]),
             Some(CellValue::Number(BigDecimal::from(1)))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 1 }),
+            sheet.display_value(pos![A2]),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 2 }),
+            sheet.display_value(pos![A3]),
             Some(CellValue::Number(BigDecimal::from(3)))
         );
     }

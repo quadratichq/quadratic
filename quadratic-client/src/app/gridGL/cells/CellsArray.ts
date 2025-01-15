@@ -1,18 +1,17 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Sheet } from '@/app/grid/sheet/Sheet';
+import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
+import { BorderCull, borderLineWidth, drawBorder, drawLine } from '@/app/gridGL/cells/drawBorders';
+import { generatedTextures } from '@/app/gridGL/generateTextures';
+import { intersects } from '@/app/gridGL/helpers/intersects';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { Coordinate } from '@/app/gridGL/types/size';
-import { JsCodeCell, JsRenderCodeCell, RunError } from '@/app/quadratic-core-types';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { JsCodeCell, JsCoordinate, JsRenderCodeCell, RunError } from '@/app/quadratic-core-types';
+import { colors } from '@/app/theme/colors';
 import mixpanel from 'mixpanel-browser';
 import { Container, Graphics, ParticleContainer, Point, Rectangle, Sprite, Texture } from 'pixi.js';
-import { colors } from '../../theme/colors';
-import { generatedTextures } from '../generateTextures';
-import { intersects } from '../helpers/intersects';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
-import { CellsSheet } from './CellsSheet';
-import { BorderCull, borderLineWidth, drawBorder, drawLine } from './drawBorders';
 
 const SPILL_HIGHLIGHT_THICKNESS = 1;
 const SPILL_HIGHLIGHT_COLOR = colors.cellColorError;
@@ -115,7 +114,7 @@ export class CellsArray extends Container {
       return;
     }
 
-    const cursor = sheets.sheet.cursor.getCursor();
+    const cursor = sheets.sheet.cursor.position;
     codeCells?.forEach((codeCell) => {
       const cell = inlineEditorHandler.getShowing();
       const editingCell = cell && codeCell.x === cell.x && codeCell.y === cell.y && cell.sheetId === this.sheetId;
@@ -141,7 +140,7 @@ export class CellsArray extends Container {
     return sheet;
   }
 
-  private draw(codeCell: JsRenderCodeCell, cursor: Coordinate, editingCell?: boolean): void {
+  private draw(codeCell: JsRenderCodeCell, cursor: JsCoordinate, editingCell?: boolean): void {
     const start = this.sheet.getCellOffsets(Number(codeCell.x), Number(codeCell.y));
 
     const overlapTest = new Rectangle(Number(codeCell.x), Number(codeCell.y), codeCell.w - 1, codeCell.h - 1);
@@ -172,7 +171,7 @@ export class CellsArray extends Container {
     }
     const end = this.sheet.getCellOffsets(Number(codeCell.x) + codeCell.w, Number(codeCell.y) + codeCell.h);
     if (codeCell.spill_error) {
-      const cursorPosition = sheets.sheet.cursor.cursorPosition;
+      const cursorPosition = sheets.sheet.cursor.position;
       if (cursorPosition.x !== Number(codeCell.x) || cursorPosition.y !== Number(codeCell.y)) {
         this.lines.push(
           ...drawBorder({

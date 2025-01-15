@@ -52,15 +52,7 @@ export type ContextType = z.infer<typeof ContextTypeSchema>;
 const ContextSchema = z.object({
   sheets: z.array(z.string()),
   currentSheet: z.string(),
-  selection: z
-    .object({
-      sheet_id: z.object({
-        id: z.string().uuid(),
-      }),
-      min: z.object({ x: z.number(), y: z.number() }),
-      max: z.object({ x: z.number(), y: z.number() }),
-    })
-    .optional(),
+  selection: z.string().optional(),
 });
 export type Context = z.infer<typeof ContextSchema>;
 

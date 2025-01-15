@@ -2,8 +2,8 @@ import { Action } from '@/app/actions/actions';
 import { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { zoomIn, zoomInOut, zoomOut, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
-import { moveViewport } from '@/app/gridGL/interaction/viewportHelper';
+import { zoomIn, zoomInOut, zoomOut, zoomReset, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
+import { pageUpDown } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { CodeIcon, GoToIcon } from '@/shared/components/Icons';
@@ -18,6 +18,7 @@ type ViewActionSpec = Pick<
   | Action.ZoomTo50
   | Action.ZoomTo100
   | Action.ZoomTo200
+  | Action.ZoomReset
   | Action.GridPanMode
   | Action.ShowCommandPalette
   | Action.TogglePresentationMode
@@ -78,6 +79,10 @@ export const viewActionsSpec: ViewActionSpec = {
       zoomInOut(2);
     },
   },
+  [Action.ZoomReset]: {
+    label: 'Reset location',
+    run: () => zoomReset(),
+  },
   [Action.GridPanMode]: {
     label: 'Grid pan mode',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
@@ -123,7 +128,6 @@ export const viewActionsSpec: ViewActionSpec = {
           showConnectionsMenu: false,
           showGoToMenu: false,
           showFeedbackMenu: false,
-          showNewFileMenu: false,
           showRenameFileMenu: false,
           showShareFileMenu: false,
           showSearch: false,
@@ -152,15 +156,11 @@ export const viewActionsSpec: ViewActionSpec = {
   },
   [Action.PageUp]: {
     label: 'Page up',
-    run: () => {
-      moveViewport({ pageUp: true });
-    },
+    run: () => pageUpDown(true),
   },
   [Action.PageDown]: {
     label: 'Page down',
-    run: () => {
-      moveViewport({ pageDown: true });
-    },
+    run: () => pageUpDown(false),
   },
   [Action.ShowGoToMenu]: {
     label: 'Go to',

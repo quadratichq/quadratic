@@ -62,14 +62,14 @@ export const DateFormat = (props: DateFormatProps) => {
   const [original, setOriginal] = useState<string | undefined>(defaultDate);
   const [current, setCurrent] = useState<string | undefined>();
   const findCurrent = useCallback(async () => {
-    const cursorPosition = sheets.sheet.cursor.cursorPosition;
+    const cursorPosition = sheets.sheet.cursor.position;
     const date = await quadraticCore.getEditCell(sheets.sheet.id, cursorPosition.x, cursorPosition.y);
     if (date) {
       setOriginal(date);
     } else {
       setOriginal(defaultDate);
     }
-    const summary = await quadraticCore.getCellFormatSummary(sheets.sheet.id, cursorPosition.x, cursorPosition.y, true);
+    const summary = await quadraticCore.getCellFormatSummary(sheets.sheet.id, cursorPosition.x, cursorPosition.y);
     let updatedDate = DATE_FORMATS[0].value;
     let updatedTime = TIME_FORMATS[0].value;
 
@@ -227,9 +227,17 @@ export const DateFormat = (props: DateFormatProps) => {
             <ValidationInput
               ref={ref}
               placeholder="%d, %B %Y"
-              onChange={changeCustom}
+              onInput={changeCustom}
               value={custom ?? ''}
-              onEnter={closeMenu}
+              onEnter={(value) => {
+                changeCustom(value);
+                apply();
+                closeMenu();
+              }}
+              onKeyDown={(e) => {
+                // ensures that the menu does not close when the user presses keys like arrow
+                e.stopPropagation();
+              }}
             />
             <p className="text-xs text-muted-foreground ">
               Learn custom date and time formatting{' '}

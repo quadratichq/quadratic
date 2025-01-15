@@ -1,7 +1,8 @@
 import { aiAnalystOfflineChats } from '@/app/ai/offline/aiAnalystChats';
 import { getPromptMessages } from '@/app/ai/tools/message.helper';
 import { editorInteractionStateUserAtom, editorInteractionStateUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { sheets } from '@/app/grid/controller/Sheets';
+import { showAIAnalystOnStartupAtom } from '@/app/atoms/gridSettingsAtom';
+import { events } from '@/app/events/events';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { Chat, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
@@ -34,15 +35,13 @@ export const aiAnalystAtom = atom<AIAnalystState>({
   key: 'aiAnalystAtom',
   default: defaultAIAnalystState,
   effects: [
-    async ({ getPromise, setSelf, trigger }) => {
+    async ({ getPromise, setSelf, trigger, getLoadable }) => {
       if (trigger === 'get') {
-        const isSheetEmpty = sheets.sheet.bounds.type === 'empty';
-        if (isSheetEmpty) {
-          setSelf({
-            ...defaultAIAnalystState,
-            showAIAnalyst: true,
-          });
-        }
+        const showAIAnalyst = await getPromise(showAIAnalystOnStartupAtom);
+        setSelf({
+          ...defaultAIAnalystState,
+          showAIAnalyst,
+        });
 
         const user = await getPromise(editorInteractionStateUserAtom);
         const uuid = await getPromise(editorInteractionStateUuidAtom);
@@ -52,13 +51,14 @@ export const aiAnalystAtom = atom<AIAnalystState>({
             const chats = await aiAnalystOfflineChats.loadChats();
             setSelf({
               ...defaultAIAnalystState,
-              showAIAnalyst: isSheetEmpty,
+              showAIAnalyst,
               chats,
             });
           } catch (error) {
             console.error('[AIAnalystOfflineChats]: ', error);
           }
         }
+        events.emit('aiAnalystInitialized');
       }
     },
     ({ onSet }) => {
@@ -271,3 +271,14 @@ export const aiAnalystCurrentChatMessagesCountAtom = selector<number>({
   key: 'aiAnalystCurrentChatMessagesCountAtom',
   get: ({ get }) => getPromptMessages(get(aiAnalystCurrentChatAtom).messages).length,
 });
+
+const STORAGE_KEY = 'aiAnalystOpenCount';
+export function getAiAnalystOpenCount() {
+  const count = window.localStorage.getItem(STORAGE_KEY);
+  return count ? parseInt(count) : 0;
+}
+export function incrementAiAnalystOpenCount() {
+  const count = getAiAnalystOpenCount();
+  const newCount = count + 1;
+  window.localStorage.setItem(STORAGE_KEY, newCount.toString());
+}

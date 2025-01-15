@@ -216,12 +216,24 @@ export const DecimalIncreaseIcon: IconComponent = (props) => {
   return <Icon {...props}>decimal_increase</Icon>;
 };
 
+export const DockToLeftIcon: IconComponent = (props) => {
+  return <Icon {...props}>dock_to_left</Icon>;
+};
+
 export const DeleteIcon: IconComponent = (props) => {
   return <Icon {...props}>delete</Icon>;
 };
 
 export const DiffIcon: IconComponent = (props) => {
   return <Icon {...props}>difference</Icon>;
+};
+
+export const DockToBottomIcon: IconComponent = (props) => {
+  return <Icon {...props}>dock_to_bottom</Icon>;
+};
+
+export const DockToRightIcon: IconComponent = (props) => {
+  return <Icon {...props}>dock_to_right</Icon>;
 };
 
 export const DownloadIcon: IconComponent = (props) => {
@@ -477,6 +489,14 @@ export const SnippetsIcon: IconComponent = (props) => {
 
 export const SpillErrorMoveIcon: IconComponent = (props) => {
   return <Icon {...props}>vertical_align_bottom</Icon>;
+};
+
+export const SpinnerIcon: IconComponent = (props) => {
+  return (
+    <Icon {...props} className={cn(props.className, 'animate-spin')}>
+      progress_activity
+    </Icon>
+  );
 };
 
 export const StopIcon: IconComponent = (props) => {

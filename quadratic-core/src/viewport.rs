@@ -1,5 +1,6 @@
 #[cfg(not(test))]
 use wasm_bindgen::prelude::*;
+// TODO: replace this whole file with `bytemuck`
 
 use crate::{grid::SheetId, Pos};
 
@@ -129,10 +130,6 @@ impl ViewportBuffer {
     }
 
     pub fn get_viewport(&self) -> Option<(Pos, Pos, SheetId)> {
-        Some((
-            Pos { x: -10, y: -10 },
-            Pos { x: 10, y: 10 },
-            SheetId::test(),
-        ))
+        Some((Pos { x: -10, y: -10 }, Pos { x: 10, y: 10 }, SheetId::TEST))
     }
 }

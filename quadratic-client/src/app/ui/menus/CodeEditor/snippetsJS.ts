@@ -53,8 +53,8 @@ new Chart(canvas, {
 // return chart to the sheet
 return canvas;`;
 
-export const SNIPPET_JS_READ = `let my_value = cell(0, 0);
-let my_range = cells(0, 0, 1, 10);
+export const SNIPPET_JS_READ = `let my_value = q.cells('A1');
+let my_range = q.cells('A1:A10');
 return my_range;
 
 // Learn more:
@@ -83,29 +83,6 @@ export const snippetsJS = [
     label: 'Make a GET request',
     keywords: 'fetch data api network json',
     code: SNIPPET_JS_API,
-  },
-  {
-    label: 'Make a relative reference',
-    keywords: 'relative reference position cell',
-    code: `// c is the cell one cell to the left of the current cell, use either rel_cell or rc
-let d = rc(-1, 0);
-
-// above for one cell to the left is equivalent to the following
-let cellPos = pos();
-let data = cell(cellPos['x'] - 1, cellPos['y']);
-
-// one cell left
-let d_left = rc(-1, 0);
-// one cell up
-let d_up = rc(0, -1);
-// one cell right
-let d_right = rc(1, 0);
-// one cell down
-let d_down = rc(0, 1);
-// five cells left, five cells down
-let d_left_down = rc(-5, 5);
-
-return d_left_down;`,
   },
   {
     label: 'Create a line chart',

@@ -1,6 +1,8 @@
 use quadratic_core::sheet_offsets::SheetOffsets;
 use wasm_bindgen::prelude::*;
 
+pub use quadratic_core::a1::JsSelection;
+
 pub mod date_time;
 pub mod jsexpr;
 pub mod lsp;
@@ -24,4 +26,9 @@ impl SheetOffsetsWasm {
     pub fn new_sheet_offsets() -> SheetOffsets {
         SheetOffsets::default()
     }
+}
+
+#[wasm_bindgen(start)]
+pub fn start() {
+    console_error_panic_hook::set_once();
 }

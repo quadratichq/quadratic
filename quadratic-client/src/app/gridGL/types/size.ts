@@ -1,12 +1,10 @@
+import type { JsCoordinate } from '@/app/quadratic-core-types';
+import type { Rectangle } from 'pixi.js';
+
 export interface SheetPosTS {
   x: number;
   y: number;
   sheetId: string;
-}
-
-export interface Coordinate {
-  x: number;
-  y: number;
 }
 
 export interface Size {
@@ -14,20 +12,8 @@ export interface Size {
   height: number;
 }
 
-export interface Rectangle {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-export function coordinateEqual(a: Coordinate, b: Coordinate): boolean {
+export function coordinateEqual(a: JsCoordinate, b: JsCoordinate): boolean {
   return a.x === b.x && a.y === b.y;
-}
-
-export interface MinMax {
-  min: number;
-  max: number;
 }
 
 export interface DrawRects {

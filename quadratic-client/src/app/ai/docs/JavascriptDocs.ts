@@ -12,31 +12,33 @@ In Quadratic, reference individual cells from Javascript for single values or re
 
 Referencing individual cells
 
-To reference an individual cell, use the global function \`cell\` (or \`c\` for short) which returns the cell value.
+To reference an individual cell, use the global function \`q.cells\` which returns the cell value.
 
 \`\`\`javascript
-// NOTE: cell is (x,y), so cell(2,3) means column 2, row 3 
-let data = cell(2, 3);
+// NOTE: uses the same A1 notation as Formulas
+// Following function reads the value in cell A1 and places in variable x 
+let x = q.cells('A1')
 
-return data;
+# return statement gets returned to the sheet
+return x;
 \`\`\`
-
-You can reference cells and use them directly. 
-
-\`\`\`javascript
-let data = c(0, 0) + c(0, 1) # Adds cell 0, 0 and cell 0, 1
-
-let data = c(0, 0) == c(0, 1) # Is cell 0, 0 equal to cell 0, 1 ?
-\`\`\`
-
-Any time cells dependent on other cells update the dependent cell will also update. This means your code will execute in one cell if it is dependent on another. This is the behavior you want in almost all situations, including user inputs in the sheet that cause calculation in a Javascript cell. 
 
 Referencing a range of cells
 
-To reference a range of cells, use the global function \`cells\`. This returns an array.
+To reference a range of cells, use the global function \`q.cells\`. This returns an array.
 
 \`\`\`javascript
-let data = cells(x1, y1, x2, y2)
+let let x = q.cells('A1:A5') // Returns a 1x5 array spanning from A1 to A5
+
+let let x = q.cells('A1:C7') // Returns a 3x7 array of arrays spanning from A1 to C7
+
+let let x = q.cells('A') // Returns all values in column A into a single-column DataFrame
+
+let let x = q.cells('A:C') // Returns all values in columns A to C into a three-column DataFrame
+
+let let x = q.cells('A5:A') // Returns all values in column A starting at A5 and going down
+
+let let x = q.cells('A5:C') // Returns all values in column A to C, starting at A5 and going down
 \`\`\`
 
 Referencing another sheet
@@ -44,47 +46,47 @@ Referencing another sheet
 To reference another sheet's cells or range of cells use the following: 
 
 \`\`\`javascript
-let data = cells(x1, y1, x2, y2, 'sheet_name')
+// Use the sheet name as an argument for referencing range of cells 
+let x = q.cells("'Sheet_name_here'!A1:C9")
+
+// For individual cell reference 
+let x = q.cells("'Sheet_name_here'!A1")
 \`\`\`
 
-Relative references
+Column references
 
-Reference cells relative to the cell you're currently in with relative cell references in JavaScript. 
+To reference all the data in a column or set of columns without defining the range, use the following syntax. 
 
-Get position of current cell
-
-Keyword \`pos()\` returns the current cell's position. 
+Column references span from row 1 to wherever the content in that column ends. 
 
 \`\`\`javascript
-// if the current position is cell (1,1) this would return an object with values 1,1
-let cellPos = pos();
+// references all values in the column from row 1 to the end of the content 
+let x = q.cells('A') // returns all the data in the column starting from row 1 to end of data 
+
+let x = q.cells('A:D') // returns all the data in columns A to D starting from row 1 to end of data in longest column
+
+let x = q.cells('A5:A') // returns all values from A5 to the end of the content in column A 
+
+let x = q.cells('A5:C') // returns all values from A5 to end of content in C
+
+let x = q.cells("'Sheet2'!A:C") // same rules to reference in other sheets apply
 \`\`\`
 
-Reference values in relative cells
+Relative vs absolute references
 
-Reference the values of cells relative the current position. 
+By default when you copy paste a reference it will update the row reference unless you use $ notation in your references. 
 
-\`\`\`javascript
-// c is the cell one cell to the left of the current cell, use either rel_cell or rc
-let d = rc(-1, 0);
+// Copy pasting this one row down will change reference to A2
+let x = q.cells('A1')
 
-// above for one cell to the left is equivalent to the following 
-let cellPos = pos();
-let data = cell(cellPos['x'] - 1, cellPos['y']);
+// Copy pasting this one row down will keep reference as A1
+let x = q.cells('A$1')
 
-// one cell left
-let d = rc(-1, 0);
-// one cell up 
-let d = rc(0, -1);
-// one cell right 
-let d = rc(1, 0);
-// one cell down
-let d = rc(0, 1);
-// five cells left, five cells down
-let d = rc(-5, 5);
+// Example using ranges - row references will not change
+let x = q.cells('A$1:B$20)
 
-return d;
-\`\`\`
+// Only A reference will change when copied down
+let x = q.cells('A1:B$20')
 
 # Return data to the sheet
 

@@ -41,18 +41,6 @@ export function AIAnalystHeader({ textareaRef }: AIAnalystHeaderProps) {
       </span>
 
       <div className="flex items-center gap-2">
-        <TooltipPopover label="Previous chats">
-          <Button
-            variant={showChatHistory ? 'default' : 'ghost'}
-            size="icon-sm"
-            className={cn(!showChatHistory && 'text-muted-foreground hover:text-foreground')}
-            disabled={!showChatHistory && (loading || chatsCount === 0)}
-            onClick={() => setShowChatHistory((prev) => !prev)}
-          >
-            <HistoryIcon />
-          </Button>
-        </TooltipPopover>
-
         <TooltipPopover label="New chat">
           <Button
             variant="ghost"
@@ -70,6 +58,18 @@ export function AIAnalystHeader({ textareaRef }: AIAnalystHeaderProps) {
             }}
           >
             <AddIcon />
+          </Button>
+        </TooltipPopover>
+
+        <TooltipPopover label="Previous chats">
+          <Button
+            variant={showChatHistory ? 'default' : 'ghost'}
+            size="icon-sm"
+            className={cn(!showChatHistory && 'text-muted-foreground hover:text-foreground')}
+            disabled={!showChatHistory && (loading || chatsCount === 0)}
+            onClick={() => setShowChatHistory((prev) => !prev)}
+          >
+            <HistoryIcon />
           </Button>
         </TooltipPopover>
 

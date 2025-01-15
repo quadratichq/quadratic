@@ -176,7 +176,7 @@ mod tests {
     #[test]
     #[parallel]
     #[allow(clippy::identity_op)]
-    fn test_formula_math_operators() {
+    fn test_formula_math_operators__() {
         let g = Grid::new();
 
         assert_eq!(

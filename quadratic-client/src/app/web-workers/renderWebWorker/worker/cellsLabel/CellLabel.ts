@@ -9,10 +9,16 @@
 
 import { Bounds } from '@/app/grid/sheet/Bounds';
 import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
-import { Coordinate } from '@/app/gridGL/types/size';
 import { convertColorStringToTint, convertTintToArray } from '@/app/helpers/convertColor';
 import { isFloatGreaterThan, isFloatLessThan } from '@/app/helpers/float';
-import { CellAlign, CellVerticalAlign, CellWrap, JsNumber, JsRenderCell } from '@/app/quadratic-core-types';
+import {
+  CellAlign,
+  CellVerticalAlign,
+  CellWrap,
+  JsCoordinate,
+  JsNumber,
+  JsRenderCell,
+} from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { RenderBitmapChar } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
 import {
@@ -74,7 +80,7 @@ export class CellLabel {
   tint: number;
   private maxWidth?: number;
   private roundPixels?: boolean;
-  location: Coordinate;
+  location: JsCoordinate;
   AABB: Rectangle;
 
   clipLeft?: number;
@@ -212,7 +218,8 @@ export class CellLabel {
   };
 
   private updateCellLimits = () => {
-    this.cellClipLeft = this.wrap === 'clip' && this.align !== 'left' ? this.AABB.left : undefined;
+    this.cellClipLeft =
+      (this.wrap === 'clip' && this.align !== 'left') || this.location.x === 1 ? this.AABB.left : undefined;
     this.cellClipRight = this.wrap === 'clip' && this.align !== 'right' ? this.AABB.right : undefined;
     this.cellClipTop = this.AABB.top;
     this.cellClipBottom = this.AABB.bottom;

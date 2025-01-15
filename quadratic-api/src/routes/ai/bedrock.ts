@@ -1,4 +1,5 @@
 import { AnthropicBedrock } from '@anthropic-ai/bedrock-sdk';
+import Anthropic from '@anthropic-ai/sdk';
 import { BedrockRuntimeClient, ConverseCommand, ConverseStreamCommand } from '@aws-sdk/client-bedrock-runtime';
 import express from 'express';
 import { MODEL_OPTIONS } from 'quadratic-shared/AI_MODELS';
@@ -125,12 +126,12 @@ bedrock_router.post('/bedrock/anthropic/chat', validateAccessToken, ai_rate_limi
     });
     response.json(result.content);
   } catch (error: any) {
-    if (error.response) {
-      response.status(error.response.status).json(error.response.data);
-      console.log(error.response.status, error.response.data);
+    if (error instanceof Anthropic.APIError) {
+      response.status(error.status ?? 400).json(error.message);
+      console.log(error.status, error.message);
     } else {
-      response.status(400).json(error.message);
-      console.log(error.message);
+      response.status(400).json(error);
+      console.log(error);
     }
   }
 });
@@ -173,12 +174,12 @@ bedrock_router.post(
       }
     } catch (error: any) {
       if (!response.headersSent) {
-        if (error.response) {
-          response.status(error.response.status).json(error.response.data);
-          console.log(error.response.status, error.response.data);
+        if (error instanceof Anthropic.APIError) {
+          response.status(error.status ?? 400).json(error.message);
+          console.log(error.status, error.message);
         } else {
-          response.status(400).json(error.message);
-          console.log(error.message);
+          response.status(400).json(error);
+          console.log(error);
         }
       } else {
         console.error('Error occurred after headers were sent:', error);

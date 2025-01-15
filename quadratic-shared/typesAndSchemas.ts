@@ -377,7 +377,7 @@ export const ApiSchemas = {
    * Users
    * ===========================================================================
    */
-  '/v0/users/acknowledge.GET.response': z.object({ message: z.string() }),
+  '/v0/users/acknowledge.GET.response': z.object({ message: z.string(), userCreated: z.boolean() }),
 
   /**
    * ===========================================================================

@@ -1,7 +1,7 @@
 import { isAvailableBecauseCanEditFile, isAvailableBecauseFileLocationIsAccessibleAndWriteable } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
-import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
+import { incrementAiAnalystOpenCount, showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import {
   editorInteractionStateShowCommandPaletteAtom,
@@ -22,13 +22,13 @@ import {
   DatabaseIcon,
   ManageSearch,
   MemoryIcon,
+  SpinnerIcon,
 } from '@/shared/components/Icons';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { ShowAfter } from '@/shared/components/ShowAfter';
 import { Toggle } from '@/shared/shadcn/ui/toggle';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { CircularProgress } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
 import React from 'react';
 import { Link } from 'react-router-dom';
@@ -64,7 +64,7 @@ export const QuadraticSidebar = () => {
             {isRunningAsyncAction && (
               <ShowAfter delay={300}>
                 <div className="absolute left-0 top-0 flex h-full w-full items-center justify-center bg-accent group-hover:hidden">
-                  <CircularProgress style={{ width: 18, height: 18 }} />
+                  <SpinnerIcon className="text-primary" />
                 </div>
               </ShowAfter>
             )}
@@ -75,7 +75,19 @@ export const QuadraticSidebar = () => {
       <div className="mt-2 flex flex-col items-center gap-1">
         {canEditFile && isAuthenticated && (
           <SidebarTooltip label={toggleAIChat.label} shortcut={keyboardShortcutEnumToDisplay(Action.ToggleAIAnalyst)}>
-            <SidebarToggle pressed={showAIAnalyst} onPressedChange={() => setShowAIAnalyst((prev) => !prev)}>
+            <SidebarToggle
+              pressed={showAIAnalyst}
+              onPressedChange={() => {
+                setShowAIAnalyst((prevShowAiAnalyst) => {
+                  // if it's hidden and therefore being opened by the user, count it!
+                  if (prevShowAiAnalyst === false) {
+                    incrementAiAnalystOpenCount();
+                  }
+
+                  return !prevShowAiAnalyst;
+                });
+              }}
+            >
               <AIIcon />
             </SidebarToggle>
           </SidebarTooltip>

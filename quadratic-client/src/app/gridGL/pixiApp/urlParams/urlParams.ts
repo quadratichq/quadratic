@@ -19,7 +19,7 @@ class UrlParams {
 
   show() {
     const params = new URLSearchParams(window.location.search);
-    if (debugSaveURLState) {
+    if (debugSaveURLState || params.has('state')) {
       this.urlParamsDev = new UrlParamsDev(params);
       if (this.urlParamsDev.noUpdates) return;
     } else {

@@ -113,12 +113,10 @@ impl Sheet {
         let value = self.display_value(pos)?;
         match value {
             CellValue::Number(_) => {
-                let format = self.format_cell(pos.x, pos.y, true);
-                Some(value.to_number_display(
-                    format.numeric_format,
-                    format.numeric_decimals,
-                    format.numeric_commas,
-                ))
+                let numeric_format = self.formats.numeric_format.get(pos);
+                let numeric_decimals = self.formats.numeric_decimals.get(pos);
+                let numeric_commas = self.formats.numeric_commas.get(pos);
+                Some(value.to_number_display(numeric_format, numeric_decimals, numeric_commas))
             }
             _ => Some(value.to_display()),
         }
@@ -131,13 +129,11 @@ mod test {
 
     use crate::{
         grid::{
-            formats::format_update::FormatUpdate,
             sheet::validations::{validation::Validation, validation_rules::ValidationRule},
             NumericFormat,
         },
-        selection::Selection,
         wasm_bindings::js::expect_js_call,
-        CellValue, Rect,
+        A1Selection, CellValue,
     };
 
     use super::*;
@@ -185,24 +181,20 @@ mod test {
     }
 
     #[test]
-    fn rendered_value() {
+    fn test_rendered_value() {
         let mut sheet = Sheet::test();
-        let pos = Pos { x: 0, y: 0 };
+        let pos = Pos { x: 1, y: 1 };
         sheet.set_cell_value(
             pos,
             CellValue::Number(BigDecimal::from_str("123.456").unwrap()),
         );
 
-        sheet.set_format_cell(
+        sheet.formats.numeric_format.set(
             pos,
-            &FormatUpdate {
-                numeric_format: Some(Some(NumericFormat {
-                    kind: crate::grid::NumericFormatKind::Currency,
-                    symbol: Some("$".to_string()),
-                })),
-                ..Default::default()
-            },
-            false,
+            Some(NumericFormat {
+                kind: crate::grid::NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }),
         );
 
         // no format for to_display
@@ -222,7 +214,7 @@ mod test {
 
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: Selection::rect(Rect::new(0, 0, 2, 0), sheet.id),
+            selection: A1Selection::test_a1_sheet_id("A1:C1", &sheet.id),
             rule: ValidationRule::Logical(Default::default()),
             message: Default::default(),
             error: Default::default(),
@@ -235,15 +227,15 @@ mod test {
             CellValue::Logical(true),
         ]]);
         let mut transaction = PendingTransaction::default();
-        sheet.merge_cell_values(&mut transaction, Pos { x: 0, y: 0 }, &cell_values, true);
+        sheet.merge_cell_values(&mut transaction, Pos { x: 1, y: 1 }, &cell_values, true);
 
         assert_eq!(
-            sheet.cell_value(Pos { x: 2, y: 0 }),
+            sheet.cell_value(Pos { x: 3, y: 1 }),
             Some(CellValue::Logical(true))
         );
 
         assert_eq!(sheet.validations.warnings.len(), 2);
-        let warnings = vec![(0, 0, validation.id, false), (1, 0, validation.id, false)];
+        let warnings = vec![(1, 1, validation.id, false), (2, 1, validation.id, false)];
         expect_js_call(
             "jsValidationWarning",
             format!("{},{}", sheet.id, serde_json::to_string(&warnings).unwrap()),

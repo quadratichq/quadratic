@@ -13,7 +13,7 @@ const columnRowCommandGroup: CommandGroup = {
         return (
           <CommandPaletteListItem
             {...props}
-            action={() => pixiApp.pointer.pointerHeading.autoResizeColumn(sheets.sheet.cursor.cursorPosition.x)}
+            action={() => pixiApp.pointer.pointerHeading.autoResizeColumn(sheets.sheet.cursor.position.x)}
           />
         );
       },

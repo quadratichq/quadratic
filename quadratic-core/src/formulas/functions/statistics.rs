@@ -147,6 +147,50 @@ fn get_functions() -> Vec<FormulaFunction> {
                 numbers.try_fold(-f64::INFINITY, |a, b| Ok(f64::max(a, b?)))
             }
         ),
+        formula_fn!(
+            /// Returns the variance of all values (sample variance).
+            /// Uses the formula: Σ(x - μ)²/(n-1) where μ is the mean and n is the count.
+            #[examples("VAR(A1:A6)", "VAR(1, 2, 3, 4, 5)")]
+            fn VAR(numbers: (Iter<f64>)) {
+                let mut sum = 0.0;
+                let mut sum_sq = 0.0;
+                let mut count = 0;
+
+                for num in numbers {
+                    let val = num?;
+                    sum += val;
+                    sum_sq += val * val;
+                    count += 1;
+                }
+
+                let mean = sum / (count as f64);
+                let variance = (sum_sq - sum * mean) / ((count - 1) as f64);
+                Ok(CellValue::from(variance))
+            }
+        ),
+        formula_fn!(
+            /// Returns the standard deviation of all values (sample standard deviation).
+            /// Uses the formula: √(Σ(x - μ)²/(n-1)) where μ is the mean and n is the count.
+            #[examples("STDEV(A1:A6)", "STDEV(1, 2, 3, 4, 5)")]
+            fn STDEV(numbers: (Iter<f64>)) {
+                let mut sum = 0.0;
+                let mut sum_sq = 0.0;
+                let mut count = 0;
+
+                for x in numbers {
+                    let x = x?;
+                    sum += x;
+                    sum_sq += x * x;
+                    count += 1;
+                }
+
+                let mean = sum / (count as f64);
+                let variance = (sum_sq - sum * mean) / ((count - 1) as f64);
+                let stdev = variance.sqrt();
+
+                Ok(CellValue::from(stdev))
+            }
+        ),
     ]
 }
 
@@ -160,19 +204,25 @@ mod tests {
     #[test]
     #[parallel]
     fn test_formula_average() {
-        let form = parse_formula("AVERAGE(3, B1:D3)", pos![nAn1]).unwrap();
+        let form = parse_formula("AVERAGE(3, A1:C3)", pos![A10]).unwrap();
 
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];
         for x in 1..=3 {
             for y in 1..=3 {
                 let _ = sheet.set_cell_value(Pos { x, y }, x * 3 + y);
+                println!(
+                    "({},{})={:?}",
+                    x,
+                    y,
+                    sheet.cell_value(Pos { x, y }).unwrap()
+                );
             }
         }
         let sheet_id = sheet.id;
 
-        let mut ctx = Ctx::new(&g, pos![nAn1].to_sheet_pos(sheet_id));
-        assert_eq!("7.5".to_string(), form.eval(&mut ctx).to_string());
+        let mut ctx = Ctx::new(&g, pos![A10].to_sheet_pos(sheet_id));
+        assert_eq!("7.5".to_string(), form.eval(&mut ctx, None).to_string());
 
         assert_eq!(
             "17",
@@ -196,7 +246,7 @@ mod tests {
             },
             parse_formula("AVERAGE()", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx)
+                .eval(&mut ctx, None)
                 .unwrap_err()
                 .msg,
         );
@@ -215,15 +265,15 @@ mod tests {
         {
             let mut g = Grid::new();
             let sheet = &mut g.sheets_mut()[0];
-            for y in 0..=10 {
-                let _ = sheet.set_cell_value(Pos { x: 1, y }, y);
+            for y in 1..=11 {
+                let _ = sheet.set_cell_value(Pos { x: 1, y }, y - 1);
             }
-            assert_eq!("2.5", eval_to_string(&g, "AVERAGEIF(Bn5:B10, \"<=5\")"));
+            assert_eq!("2.5", eval_to_string(&g, "AVERAGEIF(A1:A10, \"<=5\")"));
         }
         let g = Grid::new();
         assert_eq!(
             "7.5",
-            eval_to_string(&g, "AVERAGEIF({0, 0, 0}, \"<=5\", {5, 10, B3})"),
+            eval_to_string(&g, "AVERAGEIF({0, 0, 0}, \"<=5\", {5, 10, A2})"),
         );
 
         // Error on range size mismatch.
@@ -263,7 +313,7 @@ mod tests {
             },
             parse_formula("COUNT()", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx)
+                .eval(&mut ctx, None)
                 .unwrap_err()
                 .msg,
         );
@@ -291,7 +341,7 @@ mod tests {
             },
             parse_formula("COUNTA()", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx)
+                .eval(&mut ctx, None)
                 .unwrap_err()
                 .msg,
         );
@@ -311,17 +361,17 @@ mod tests {
     #[test]
     #[parallel]
     fn test_countif() {
-        let g = Grid::new();
+        let g: Grid = Grid::new();
         assert_eq!("6", eval_to_string(&g, "COUNTIF(0..10, \"<=5\")"));
         assert_eq!("6", eval_to_string(&g, "COUNTIF(0..10, \"<=5\")"));
 
         // Test that blank cells are ignored
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];
-        for y in 0..=10 {
-            let _ = sheet.set_cell_value(Pos { x: 1, y }, y);
+        for y in 1..=11 {
+            let _ = sheet.set_cell_value(Pos { x: 1, y }, y - 1);
         }
-        assert_eq!("6", eval_to_string(&g, "COUNTIF(Bn5:B10, \"<=5\")"));
+        assert_eq!("6", eval_to_string(&g, "COUNTIF(A1:A10, \"<=5\")"));
     }
 
     #[test]
@@ -410,5 +460,23 @@ mod tests {
     fn test_max() {
         let g = Grid::new();
         assert_eq!("3", eval_to_string(&g, "MAX(1, 3, 2)"));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_var() {
+        let g = Grid::new();
+
+        // Test basic variance calculation
+        assert_eq!("7", eval_to_string(&g, "VAR(9, 5, 4)"));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_stdev() {
+        let g = Grid::new();
+
+        // Test basic standard deviation calculation
+        assert_eq!("2", eval_to_string(&g, "STDEV(1, 3, 5)"));
     }
 }

@@ -1,5 +1,5 @@
 import { events } from '@/app/events/events';
-import { Borders } from '@/app/gridGL/cells/borders/Borders';
+import { Borders } from '@/app/gridGL/cells/Borders';
 import { CellsArray } from '@/app/gridGL/cells/CellsArray';
 import { CellsFills } from '@/app/gridGL/cells/CellsFills';
 import { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
@@ -92,7 +92,7 @@ export class CellsSheet extends Container {
   }
 
   adjustOffsets() {
-    this.borders.setDirty();
+    this.borders.sheetOffsetsChanged(this.sheetId);
   }
 
   updateCellsArray() {

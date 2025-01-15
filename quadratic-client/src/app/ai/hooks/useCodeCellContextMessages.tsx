@@ -1,5 +1,6 @@
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { getConnectionInfo, getConnectionKind } from '@/app/helpers/codeCellLanguage';
+import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -27,7 +28,7 @@ export function useCodeCellContextMessages() {
       }
       const schemaJsonForAi = schemaData ? JSON.stringify(schemaData) : undefined;
 
-      const { x, y } = pos;
+      const a1Pos = xyToA1(pos.x, pos.y);
       const language = getConnectionKind(cellLanguage);
       const consoleHasOutput = consoleOutput.std_out !== '' || consoleOutput.std_err !== '';
 
@@ -36,7 +37,7 @@ export function useCodeCellContextMessages() {
           role: 'user',
           content: `Note: This is an internal message for context. Do not quote it in your response.\n\n
 Currently, you are in a code cell that is being edited.\n
-The code cell type is ${language}. The code cell is located at ${x}, ${y}.\n
+The code cell type is ${language}. The code cell is located at ${a1Pos}.\n
 ${
   schemaJsonForAi
     ? `The schema for the database is:
@@ -68,6 +69,7 @@ Use any functions that are part of the ${language} library.\n
 A code cell can return only one type of value as specified in the Quadratic documentation.\n
 A code cell cannot display both a chart and return a data frame at the same time.\n
 A code cell cannot display multiple charts at the same time.\n
+Do not use conditional returns in code cells.\n
 Do not use any markdown syntax besides triple backticks for ${language} code blocks.\n
 Do not reply code blocks in plain text, use markdown with triple backticks and language name ${language}.`
 }

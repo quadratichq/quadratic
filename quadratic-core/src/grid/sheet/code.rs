@@ -16,7 +16,7 @@ impl Sheet {
     /// Returns the old value if it was set.
     pub fn set_code_run(&mut self, pos: Pos, code_run: Option<CodeRun>) -> Option<CodeRun> {
         if let Some(code_run) = code_run {
-            self.code_runs.insert(pos, code_run)
+            self.code_runs.insert_sorted(pos, code_run).1
         } else {
             self.code_runs.shift_remove(&pos)
         }
@@ -71,6 +71,15 @@ impl Sheet {
         }
     }
 
+    /// Returns true if the tables contain any cell at Pos (ie, not blank). Uses
+    /// the DataTable's output_rect for the check to ensure that charts are
+    /// included.
+    pub fn has_table_content(&self, pos: Pos) -> bool {
+        self.code_runs.iter().any(|(code_cell_pos, data_table)| {
+            data_table.output_rect(*code_cell_pos, false).contains(pos)
+        })
+    }
+
     /// Returns the CellValue for a CodeRun (if it exists) at the Pos.
     ///
     /// Note: spill error will return a CellValue::Blank to ensure calculations can continue.
@@ -100,8 +109,7 @@ impl Sheet {
 
     /// returns the render-size for a html-like cell
     pub fn render_size(&self, pos: Pos) -> Option<RenderSize> {
-        let column = self.get_column(pos.x)?;
-        column.render_size.get(pos.y)
+        self.formats.render_size.get(pos)
     }
 
     /// Returns whether a rect overlaps the output of a code cell.
@@ -174,7 +182,7 @@ impl Sheet {
                             line_number: code_run.line_number,
                             output_type: code_run.output_type.clone(),
                         }),
-                        cells_accessed: Some(code_run.cells_accessed.iter().copied().collect()),
+                        cells_accessed: Some(code_run.cells_accessed.clone().into()),
                     })
                 } else {
                     Some(JsCodeCell {
@@ -201,13 +209,16 @@ mod test {
     use super::*;
     use crate::{
         controller::GridController,
-        grid::{js_types::JsRenderCellSpecial, CodeCellLanguage, CodeRunResult, RenderSize},
-        Array, CodeCellValue, SheetPos, Value,
+        grid::{
+            js_types::JsRenderCellSpecial, CodeCellLanguage, CodeCellValue, CodeRunResult,
+            RenderSize,
+        },
+        A1Selection, Array, SheetPos, Value,
     };
     use bigdecimal::BigDecimal;
     use chrono::Utc;
     use serial_test::parallel;
-    use std::{collections::HashSet, vec};
+    use std::vec;
 
     #[test]
     #[parallel]
@@ -216,29 +227,25 @@ mod test {
 
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_render_size(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            }
-            .into(),
-            Some(crate::grid::RenderSize {
+        gc.set_render_size(
+            &A1Selection::from_xy(1, 1, sheet_id),
+            Some(RenderSize {
                 w: "10".to_string(),
                 h: "20".to_string(),
             }),
             None,
-        );
+        )
+        .unwrap();
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.render_size(Pos { x: 0, y: 0 }),
+            sheet.render_size(Pos { x: 1, y: 1 }),
             Some(RenderSize {
                 w: "10".to_string(),
                 h: "20".to_string()
             })
         );
-        assert_eq!(sheet.render_size(Pos { x: 1, y: 1 }), None);
+        assert_eq!(sheet.render_size(Pos { x: 2, y: 2 }), None);
     }
 
     #[test]
@@ -252,7 +259,7 @@ mod test {
             std_err: None,
             formatted_code_string: None,
             last_modified: Utc::now(),
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             result: CodeRunResult::Ok(Value::Single(CellValue::Number(BigDecimal::from(2)))),
             return_type: Some("number".into()),
             line_number: None,
@@ -276,7 +283,7 @@ mod test {
             std_err: None,
             std_out: None,
             formatted_code_string: None,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             result: CodeRunResult::Ok(Value::Single(CellValue::Number(BigDecimal::from(2)))),
             return_type: Some("number".into()),
             line_number: None,
@@ -310,7 +317,7 @@ mod test {
             std_err: None,
             std_out: None,
             formatted_code_string: None,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             result: CodeRunResult::Ok(Value::Array(Array::from(vec![vec!["1", "2", "3"]]))),
             return_type: Some("number".into()),
             line_number: None,
@@ -331,7 +338,7 @@ mod test {
                 evaluation_result: Some("{\"size\":{\"w\":3,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"1\"},{\"type\":\"text\",\"value\":\"2\"},{\"type\":\"text\",\"value\":\"3\"}]}".to_string()),
                 spill_error: None,
                 return_info: Some(JsReturnInfo { line_number: None, output_type: None }),
-                cells_accessed: Some(vec![])
+                cells_accessed: Some(Default::default())
             })
         );
         assert_eq!(
@@ -346,7 +353,7 @@ mod test {
                 evaluation_result: Some("{\"size\":{\"w\":3,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"1\"},{\"type\":\"text\",\"value\":\"2\"},{\"type\":\"text\",\"value\":\"3\"}]}".to_string()),
                 spill_error: None,
                 return_info: Some(JsReturnInfo { line_number: None, output_type: None }),
-                cells_accessed: Some(vec![])
+                cells_accessed: Some(Default::default())
             })
         );
         assert_eq!(sheet.edit_code_value(Pos { x: 2, y: 2 }), None);
@@ -397,7 +404,7 @@ mod test {
             std_err: None,
             std_out: None,
             formatted_code_string: None,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             result: CodeRunResult::Ok(Value::Array(Array::from(vec![
                 vec!["1"],
                 vec!["2"],
@@ -432,7 +439,7 @@ mod test {
             std_err: None,
             std_out: None,
             formatted_code_string: None,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             result: CodeRunResult::Ok(Value::Array(Array::from(vec![vec!["1", "2", "3'"]]))),
             return_type: Some("number".into()),
             line_number: None,

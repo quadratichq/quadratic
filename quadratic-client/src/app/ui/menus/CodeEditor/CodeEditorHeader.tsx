@@ -9,25 +9,32 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { codeCellIsAConnection, getCodeCell, getConnectionUuid, getLanguage } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
-import { CodeEditorDiffButtons } from '@/app/ui/menus/CodeEditor/CodeEditorDiffButtons';
 import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
 import { SnippetsPopover } from '@/app/ui/menus/CodeEditor/SnippetsPopover';
 import { useCancelRun } from '@/app/ui/menus/CodeEditor/hooks/useCancelRun';
 import { useCloseCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useCloseCodeEditor';
 import { useSaveAndRunCell } from '@/app/ui/menus/CodeEditor/hooks/useSaveAndRunCell';
+import { PanelPosition, useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
-import { CloseIcon, SaveAndRunIcon, SaveAndRunStopIcon } from '@/shared/components/Icons';
+import {
+  CloseIcon,
+  DockToBottomIcon,
+  DockToRightIcon,
+  SaveAndRunIcon,
+  SaveAndRunStopIcon,
+  SpinnerIcon,
+} from '@/shared/components/Icons';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { CircularProgress } from '@mui/material';
 import * as monaco from 'monaco-editor';
-import { useEffect, useMemo, useState } from 'react';
+import { MouseEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 interface CodeEditorHeaderProps {
@@ -51,8 +58,13 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
     () => hasPermissionToEditFile(permissions) && (isConnection ? teamPermissions?.includes('TEAM_EDIT') : true),
     [permissions, teamPermissions, isConnection]
   );
-
+  const { panelPosition, setPanelPosition } = useCodeEditorPanelData();
   const connectionsFetcher = useConnectionsFetcher();
+
+  const a1Pos = useMemo(
+    () => xyToA1(codeCellState.pos.x, codeCellState.pos.y),
+    [codeCellState.pos.x, codeCellState.pos.y]
+  );
 
   // Get the connection name (it's possible the user won't have access to it
   // because they're in a file they have access to but not the team — or
@@ -159,8 +171,16 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
     };
   }, [codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId]);
 
+  const changePanelPosition = useCallback(
+    (e: MouseEvent<HTMLButtonElement>) => {
+      setPanelPosition((prev: PanelPosition) => (prev === 'left' ? 'bottom' : 'left'));
+      e.currentTarget.blur();
+    },
+    [setPanelPosition]
+  );
+
   return (
-    <div className="flex items-center py-1 pl-3 pr-2">
+    <div className="flex items-center border-l border-border py-1 pl-3 pr-2">
       <div
         className={cn(
           `relative`,
@@ -177,7 +197,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
 
       <div className="mx-2 flex flex-col truncate">
         <div className="text-sm font-medium leading-4">
-          Cell ({codeCellState.pos.x}, {codeCellState.pos.y})
+          {`Cell ${a1Pos}`}
           {currentCodeEditorCellIsNotInActiveSheet && (
             <span className="ml-1 min-w-0 truncate">- {currentSheetNameOfActiveCodeEditorCell}</span>
           )}
@@ -191,46 +211,48 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
       <div className="ml-auto flex flex-shrink-0 items-center gap-1 py-1">
         {isRunningComputation && (
           <TooltipPopover label={`${language} executing…`} side="bottom">
-            <CircularProgress size="1rem" color={'primary'} className={`mr-2`} />
+            <SpinnerIcon className="mr-2 text-primary" />
           </TooltipPopover>
         )}
 
-        {hasPermission && (
+        {hasPermission && !showDiffEditor && (
           <>
-            {showDiffEditor ? (
-              <CodeEditorDiffButtons />
+            {['Python', 'Javascript', 'Formula', 'Connection'].includes(language as string) && <CodeEditorRefButton />}
+
+            {['Python', 'Javascript'].includes(language as string) && <SnippetsPopover editorInst={editorInst} />}
+
+            {!isRunningComputation ? (
+              <TooltipPopover
+                label={`Save & run`}
+                shortcut={`${KeyboardSymbols.Command}${KeyboardSymbols.Enter}`}
+                side="bottom"
+              >
+                <Button
+                  id="QuadraticCodeEditorRunButtonID"
+                  onClick={saveAndRunCell}
+                  size="icon-sm"
+                  className="mx-1 rounded-full"
+                >
+                  <SaveAndRunIcon />
+                </Button>
+              </TooltipPopover>
             ) : (
-              <>
-                {['Python', 'Javascript', 'Formula'].includes(language as string) && <CodeEditorRefButton />}
-
-                {['Python', 'Javascript'].includes(language as string) && <SnippetsPopover editorInst={editorInst} />}
-
-                {!isRunningComputation ? (
-                  <TooltipPopover
-                    label={`Save & run`}
-                    shortcut={`${KeyboardSymbols.Command}${KeyboardSymbols.Enter}`}
-                    side="bottom"
-                  >
-                    <Button
-                      id="QuadraticCodeEditorRunButtonID"
-                      onClick={saveAndRunCell}
-                      size="icon-sm"
-                      className="mx-1 rounded-full"
-                    >
-                      <SaveAndRunIcon />
-                    </Button>
-                  </TooltipPopover>
-                ) : (
-                  <TooltipPopover label={`Cancel execution`} shortcut={`${KeyboardSymbols.Command} Esc`} side="bottom">
-                    <Button onClick={cancelRun} size="icon-sm" className="mx-1 rounded-full">
-                      <SaveAndRunStopIcon />
-                    </Button>
-                  </TooltipPopover>
-                )}
-              </>
+              <TooltipPopover label={`Cancel execution`} shortcut={`${KeyboardSymbols.Command} Esc`} side="bottom">
+                <Button onClick={cancelRun} size="icon-sm" className="mx-1 rounded-full">
+                  <SaveAndRunStopIcon />
+                </Button>
+              </TooltipPopover>
             )}
           </>
         )}
+
+        <hr className="mx-2 h-4 border-l border-border" />
+
+        <TooltipPopover label={`Move panel ${panelPosition === 'left' ? 'to bottom' : 'to left'}`} side="bottom">
+          <Button onClick={changePanelPosition} size="icon-sm" variant="ghost" className="text-muted-foreground">
+            {panelPosition === 'left' ? <DockToBottomIcon /> : <DockToRightIcon />}
+          </Button>
+        </TooltipPopover>
 
         <TooltipPopover label={`Close`} shortcut={`Esc`} side="bottom">
           <Button

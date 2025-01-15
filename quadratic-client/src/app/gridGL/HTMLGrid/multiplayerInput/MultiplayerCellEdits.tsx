@@ -19,13 +19,14 @@ export const MultiplayerCellEdits = () => {
     const updateMultiplayerCellEdit = (cellEdit: CellEdit, player: MultiplayerUser) => {
       setMultiplayerCellInput((prev) => {
         if (player.x === undefined || player.y === undefined || !player.parsedSelection) return prev;
+        const cursor = player.parsedSelection.getCursor();
         const updatedCellEdit: MultiplayerCell = {
           sessionId: player.session_id,
           sheetId: player.sheet_id,
           cellEdit,
           location: {
-            x: player.parsedSelection.cursorPosition.x,
-            y: player.parsedSelection.cursorPosition.y,
+            x: cursor.x,
+            y: cursor.y,
             sheetId: player.sheet_id,
           },
           playerColor: player.colorString,

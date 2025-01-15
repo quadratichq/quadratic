@@ -1,9 +1,9 @@
 import { getDeleteConnectionAction } from '@/routes/api.connections';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { ConnectionFormValues } from '@/shared/components/connections/connectionsByType';
+import { SpinnerIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
-import { CircularProgress } from '@mui/material';
 import { CheckCircledIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
@@ -74,7 +74,7 @@ export function ConnectionFormActions({
                   <CheckCircledIcon className="mr-1" /> Connected
                 </>
               ) : connectionState === 'loading' ? (
-                <CircularProgress style={{ width: 18, height: 18 }} />
+                <SpinnerIcon className="text-primary" />
               ) : (
                 'Test'
               )}

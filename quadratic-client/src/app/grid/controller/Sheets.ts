@@ -1,13 +1,16 @@
 import { events } from '@/app/events/events';
+import { getRectSelection } from '@/app/grid/sheet/selection';
 import { Sheet } from '@/app/grid/sheet/Sheet';
-import { SheetCursorSave } from '@/app/grid/sheet/SheetCursor';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { JsOffset, Rect, Selection, SheetInfo, SheetRect } from '@/app/quadratic-core-types';
+import { A1Selection, JsOffset, Rect, SheetInfo } from '@/app/quadratic-core-types';
+import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { Rectangle } from 'pixi.js';
 
 class Sheets {
+  initialized: boolean;
   sheets: Sheet[];
 
   // current sheet id
@@ -25,6 +28,7 @@ class Sheets {
     events.on('sheetInfoUpdate', this.updateSheet);
     events.on('setCursor', this.setCursor);
     events.on('sheetOffsets', this.updateOffsets);
+    this.initialized = false;
   }
 
   private create = (sheetInfo: SheetInfo[]) => {
@@ -36,6 +40,7 @@ class Sheets {
     this.sort();
     this._current = this.sheets[0].id;
     pixiApp.cellsSheets.create();
+    this.initialized = true;
   };
 
   private addSheet = (sheetInfo: SheetInfo, user: boolean) => {
@@ -99,34 +104,19 @@ class Sheets {
     pixiApp.multiplayerCursor.dirty = true;
   };
 
-  private setCursor = (cursorStringified?: string, selection?: Selection) => {
+  private setCursor = (selection?: string) => {
     if (selection !== undefined) {
-      this.sheet.cursor.loadFromSelection(selection);
-    } else if (cursorStringified !== undefined) {
-      const cursor: SheetCursorSave = JSON.parse(cursorStringified);
-      if (cursor.sheetId !== this.current) {
-        this.current = cursor.sheetId;
+      try {
+        const a1Selection = JSON.parse(selection) as A1Selection;
+        const sheetId = a1Selection.sheet_id.id;
+        const sheet = this.getById(sheetId);
+        if (sheet) {
+          this.current = sheetId;
+          sheet.cursor.load(selection);
+        }
+      } catch (e) {
+        console.error('Error loading cursor', e);
       }
-      // need to convert from old style multiCursor from Rust to new style
-      if ((cursor.multiCursor as any)?.originPosition) {
-        const multiCursor = cursor.multiCursor as any;
-        const convertedCursor = {
-          ...cursor,
-          multiCursor: [
-            new Rectangle(
-              multiCursor.originPosition.x,
-              multiCursor.originPosition.y,
-              multiCursor.terminalPosition.x - multiCursor.originPosition.x + 1,
-              multiCursor.terminalPosition.y - multiCursor.originPosition.y + 1
-            ),
-          ],
-        };
-        this.sheet.cursor.load(convertedCursor);
-      } else {
-        this.sheet.cursor.load(cursor);
-      }
-    } else {
-      throw new Error('Expected setCursor in Sheets.ts to have cursorStringified or selection defined');
     }
   };
 
@@ -175,7 +165,6 @@ class Sheets {
       this._current = value;
       pixiApp.viewport.dirty = true;
       pixiApp.gridLines.dirty = true;
-      pixiApp.axesLines.dirty = true;
       pixiApp.headings.dirty = true;
       pixiApp.cursor.dirty = true;
       pixiApp.multiplayerCursor.dirty = true;
@@ -269,11 +258,11 @@ class Sheets {
   }
 
   userAddSheet() {
-    quadraticCore.addSheet(sheets.getCursorPosition());
+    quadraticCore.addSheet(this.getCursorPosition());
   }
 
   duplicate() {
-    quadraticCore.duplicateSheet(this.current, sheets.getCursorPosition());
+    quadraticCore.duplicateSheet(this.current, this.getCursorPosition());
   }
 
   userDeleteSheet(id: string) {
@@ -312,18 +301,44 @@ class Sheets {
   }
 
   getCursorPosition(): string {
-    return JSON.stringify(this.sheet.cursor.save());
+    return this.sheet.cursor.save();
   }
 
   getMultiplayerSelection(): string {
-    return this.sheet.cursor.getMultiplayerSelection();
+    return this.sheet.cursor.save();
   }
 
-  getRustSelection(): Selection {
-    return this.sheet.cursor.getRustSelection();
-  }
+  getA1String = (sheetId = this.current): string => {
+    return this.sheet.cursor.jsSelection.toA1String(sheetId, this.getSheetIdNameMap());
+  };
 
-  getVisibleRect(): Rect {
+  /// Gets a stringified SheetIdNameMap for Rust's A1 functions
+  getSheetIdNameMap = (): string => {
+    const sheetMap: Record<string, { id: string }> = {};
+    this.sheets.forEach((sheet) => (sheetMap[sheet.name] = { id: sheet.id }));
+    return JSON.stringify(sheetMap);
+  };
+
+  // Changes the cursor to the incoming selection
+  changeSelection = (jsSelection: JsSelection, ensureVisible = true) => {
+    // change the sheet id if needed
+    const sheetId = jsSelection.getSheetId();
+    if (sheetId !== this.current) {
+      if (this.getById(sheetId)) {
+        this.current = sheetId;
+      }
+    }
+
+    const cursor = this.sheet.cursor;
+    cursor.loadFromSelection(jsSelection);
+    cursor.updatePosition(true);
+  };
+
+  getRustSelection = (): string => {
+    return this.sheet.cursor.save();
+  };
+
+  getVisibleRect = (): Rect => {
     const { left, top, right, bottom } = pixiApp.viewport.getVisibleBounds();
     const scale = pixiApp.viewport.scale.x;
     let { width: leftHeadingWidth, height: topHeadingHeight } = pixiApp.headings.headingSize;
@@ -335,29 +350,31 @@ class Sheets {
       min: { x: BigInt(top_left_cell.x), y: BigInt(top_left_cell.y) },
       max: { x: BigInt(bottom_right_cell.x), y: BigInt(bottom_right_cell.y) },
     };
-  }
+  };
 
-  getVisibleSheetRect(): SheetRect | undefined {
+  getVisibleRectangle = (): Rectangle => {
+    const visibleRect = this.getVisibleRect();
+    return rectToRectangle(visibleRect);
+  };
+
+  getVisibleSelection = (): string | undefined => {
     const sheetBounds = this.sheet.boundsWithoutFormatting;
     if (sheetBounds.type === 'empty') {
       return undefined;
     }
+
     const sheetBoundsRect: Rect = {
       min: sheetBounds.min,
       max: sheetBounds.max,
     };
-
     const visibleRect = this.getVisibleRect();
     if (!intersects.rectRect(sheetBoundsRect, visibleRect)) {
       return undefined;
     }
 
-    const visibleSheetRect: SheetRect = {
-      sheet_id: { id: this.sheet.id },
-      ...visibleRect,
-    };
-    return visibleSheetRect;
-  }
+    const visibleRectSelection = getRectSelection(this.current, visibleRect);
+    return visibleRectSelection;
+  };
 }
 
 export const sheets = new Sheets();
