@@ -75,7 +75,7 @@ impl A1Selection {
         if range.end.col() > exclude.max.x {
             let start = CellRefRangeEnd::new_relative_xy(
                 exclude.max.x + 1,
-                top.unwrap_or(bottom.unwrap_or(range.start.row())),
+                top.unwrap_or(range.start.row()),
             );
             let end = CellRefRangeEnd {
                 col: range.end.col,
@@ -335,7 +335,7 @@ mod test {
             vec![
                 // bottom
                 CellRefRange::Sheet {
-                    range: RefRangeBounds::test_a1("4:")
+                    range: RefRangeBounds::test_a1("A4:")
                 },
                 // right
                 CellRefRange::Sheet {
