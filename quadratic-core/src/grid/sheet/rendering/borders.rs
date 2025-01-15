@@ -21,13 +21,13 @@ impl Sheet {
         self.data_tables.iter().for_each(|(pos, table)| {
             if let Some(h) = table
                 .borders
-                .horizontal_borders(Some(table.output_rect(*pos, true)))
+                .horizontal_borders(Some(table.output_rect(*pos, true, true)))
             {
                 horizontal.extend(h);
             }
             if let Some(v) = table
                 .borders
-                .vertical_borders(Some(table.output_rect(*pos, true)))
+                .vertical_borders(Some(table.output_rect(*pos, true, true)))
             {
                 vertical.extend(v);
             }

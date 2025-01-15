@@ -79,7 +79,7 @@ impl Sheet {
 
             if !skip_code_runs {
                 for (pos, code_run) in self.data_tables.iter() {
-                    let code_rect = code_run.output_rect(*pos, false);
+                    let code_rect = code_run.output_rect(*pos, false, true);
                     for x in code_rect.x_range() {
                         for y in code_rect.y_range() {
                             if rect.is_some_and(|rect| rect.contains(Pos { x, y })) {

@@ -30,7 +30,7 @@ impl Sheet {
             }
             Direction::Down => {
                 if let Some((chart_pos, dt)) = self.chart_at(pos) {
-                    let output_size = dt.output_size();
+                    let output_size = dt.output_size(true);
                     Pos {
                         x: pos.x,
                         y: chart_pos.y + output_size.h.get() as i64,
@@ -59,7 +59,7 @@ impl Sheet {
             }
             Direction::Right => {
                 if let Some((chart_pos, dt)) = self.chart_at(pos) {
-                    let output_size = dt.output_size();
+                    let output_size = dt.output_size(true);
                     Pos {
                         x: chart_pos.x + output_size.w.get() as i64,
                         y: pos.y,

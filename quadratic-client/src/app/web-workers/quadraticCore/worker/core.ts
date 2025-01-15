@@ -38,6 +38,7 @@ import type {
 import type {
   ClientCoreFindNextColumnForRect,
   ClientCoreFindNextRowForRect,
+  ClientCoreGetCsvPreview,
   ClientCoreImportFile,
   ClientCoreLoad,
   ClientCoreMoveCells,
@@ -450,6 +451,8 @@ class Core {
     sheetId,
     location,
     cursor,
+    csvDelimiter,
+    hasHeading,
   }: ClientCoreImportFile): Promise<{ contents?: ArrayBuffer; version?: string; error?: string }> {
     if (cursor === undefined) {
       try {
@@ -460,7 +463,7 @@ class Core {
             gc = GridController.importExcel(new Uint8Array(file), fileName);
             break;
           case 'csv':
-            gc = GridController.importCsv(new Uint8Array(file), fileName);
+            gc = GridController.importCsv(new Uint8Array(file), fileName, csvDelimiter, hasHeading);
             break;
           case 'parquet':
             gc = GridController.importParquet(new Uint8Array(file), fileName);
@@ -495,7 +498,9 @@ class Core {
                   fileName,
                   sheetId,
                   posToPos(location.x, location.y),
-                  cursor
+                  cursor,
+                  csvDelimiter,
+                  hasHeading
                 );
                 break;
               case 'parquet':
@@ -524,6 +529,18 @@ class Core {
           }
         });
       });
+    }
+  }
+
+  async getCsvPreview({ file, maxRows, delimiter }: ClientCoreGetCsvPreview): Promise<string[][] | undefined> {
+    try {
+      await initCore();
+      return GridController.getCsvPreview(new Uint8Array(file), maxRows, delimiter);
+    } catch (error: unknown) {
+      console.error(error);
+      reportError(error);
+      Sentry.captureException(error);
+      return undefined;
     }
   }
 

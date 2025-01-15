@@ -76,7 +76,7 @@ impl GridController {
 
             // if the width of the old and new data tables are the same,
             // then we can preserve other user-selected properties
-            if old_data_table.output_size().w == new_data_table.output_size().w {
+            if old_data_table.output_size(true).w == new_data_table.output_size(true).w {
                 new_data_table.column_headers = old_data_table.column_headers.to_owned();
                 new_data_table.formats = old_data_table.formats.to_owned();
 
@@ -114,13 +114,15 @@ impl GridController {
 
         let sheet_rect = match (&old_data_table, &new_data_table) {
             (None, None) => sheet_pos.into(),
-            (None, Some(code_cell_value)) => code_cell_value.output_sheet_rect(sheet_pos, false),
+            (None, Some(code_cell_value)) => {
+                code_cell_value.output_sheet_rect(sheet_pos, false, true)
+            }
             (Some(old_code_cell_value), None) => {
-                old_code_cell_value.output_sheet_rect(sheet_pos, false)
+                old_code_cell_value.output_sheet_rect(sheet_pos, false, true)
             }
             (Some(old_code_cell_value), Some(code_cell_value)) => {
-                let old = old_code_cell_value.output_sheet_rect(sheet_pos, false);
-                let new = code_cell_value.output_sheet_rect(sheet_pos, false);
+                let old = old_code_cell_value.output_sheet_rect(sheet_pos, false, true);
+                let new = code_cell_value.output_sheet_rect(sheet_pos, false, true);
                 SheetRect {
                     min: sheet_pos.into(),
                     max: Pos {

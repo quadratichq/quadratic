@@ -155,7 +155,7 @@ impl TableMap {
             table_name: table.name.clone(),
             visible_columns: table.columns_map(false),
             all_columns: table.columns_map(true),
-            bounds: table.output_rect(pos, true),
+            bounds: table.output_rect(pos, true, true),
             show_headers: table.show_header,
             is_html_image: table.is_html() || table.is_image(),
         });

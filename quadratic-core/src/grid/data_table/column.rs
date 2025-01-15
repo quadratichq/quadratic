@@ -91,7 +91,7 @@ pub mod test {
 
         // this should be a 5x4 array
         let expected_size = ArraySize::new(5, 4).unwrap();
-        assert_eq!(data_table.output_size(), expected_size);
+        assert_eq!(data_table.output_size(true), expected_size);
 
         // there is no data at position (0, 4)
         assert!(data_table.cell_value_at(0, 4).is_none());
@@ -115,7 +115,7 @@ pub mod test {
 
         // this should be a 5x4 array
         let expected_size = ArraySize::new(3, 4).unwrap();
-        assert_eq!(data_table.output_size(), expected_size);
+        assert_eq!(data_table.output_size(true), expected_size);
 
         let mut data_table = source_data_table.clone();
         data_table.delete_column(0).unwrap();
@@ -127,7 +127,7 @@ pub mod test {
 
         // this should be a 5x4 array
         let expected_size = ArraySize::new(3, 4).unwrap();
-        assert_eq!(data_table.output_size(), expected_size);
+        assert_eq!(data_table.output_size(true), expected_size);
 
         // there is no data at position (0, 0)
         assert_eq!(
@@ -145,7 +145,7 @@ pub mod test {
 
         // this should be a 5x4 array
         let expected_size = ArraySize::new(3, 4).unwrap();
-        assert_eq!(data_table.output_size(), expected_size);
+        assert_eq!(data_table.output_size(true), expected_size);
 
         // there is no data at position (0, 0)
         assert_eq!(

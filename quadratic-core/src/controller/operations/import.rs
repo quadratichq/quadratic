@@ -2,6 +2,7 @@ use std::{borrow::Cow, io::Cursor};
 
 use anyhow::{anyhow, bail, Result};
 use chrono::{NaiveDate, NaiveTime};
+use csv_sniffer::Sniffer;
 
 use crate::{
     arrow::arrow_col_to_cell_value_vec,
@@ -24,6 +25,53 @@ use super::operation::Operation;
 const IMPORT_LINES_PER_OPERATION: u32 = 10000;
 
 impl GridController {
+    pub fn get_csv_preview(
+        file: Vec<u8>,
+        max_rows: u32,
+        delimiter: Option<u8>,
+    ) -> Result<Vec<Vec<String>>> {
+        let error = |message: String| anyhow!("Error parsing CSV file for preview: {}", message);
+        let file: &[u8] = match String::from_utf8_lossy(&file) {
+            std::borrow::Cow::Borrowed(_) => &file,
+            std::borrow::Cow::Owned(_) => {
+                if let Some(utf) = read_utf16(&file) {
+                    return Self::get_csv_preview(utf.as_bytes().to_vec(), max_rows, delimiter);
+                }
+                &file
+            }
+        };
+
+        let delimiter = match delimiter {
+            Some(d) => d,
+            None => {
+                // auto detect the delimiter, default to ',' if it fails
+                let cursor = Cursor::new(&file);
+                Sniffer::new()
+                    .sniff_reader(cursor)
+                    .map_or_else(|_| b',', |metadata| metadata.dialect.delimiter)
+            }
+        };
+
+        let mut reader = csv::ReaderBuilder::new()
+            .delimiter(delimiter)
+            .has_headers(false)
+            .flexible(true)
+            .from_reader(file);
+
+        let mut preview = vec![];
+        for (i, entry) in reader.records().enumerate() {
+            if i >= max_rows as usize {
+                break;
+            }
+            match entry {
+                Err(e) => return Err(error(format!("line {}: {}", i + 1, e))),
+                Ok(record) => preview.push(record.iter().map(|s| s.to_string()).collect()),
+            }
+        }
+
+        Ok(preview)
+    }
+
     /// Imports a CSV file into the grid.
     pub fn import_csv_operations(
         &mut self,
@@ -31,6 +79,8 @@ impl GridController {
         file: Vec<u8>,
         file_name: &str,
         insert_at: Pos,
+        delimiter: Option<u8>,
+        has_heading: Option<bool>,
     ) -> Result<Vec<Operation>> {
         let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
         let import = Import::new(file_name.into());
@@ -43,19 +93,33 @@ impl GridController {
                         utf.as_bytes().to_vec(),
                         file_name,
                         insert_at,
+                        delimiter,
+                        has_heading,
                     );
                 }
                 &file
             }
         };
+
+        let delimiter = match delimiter {
+            Some(d) => d,
+            None => {
+                // auto detect the delimiter, default to ',' if it fails
+                let cursor = Cursor::new(&file);
+                Sniffer::new()
+                    .sniff_reader(cursor)
+                    .map_or_else(|_| b',', |metadata| metadata.dialect.delimiter)
+            }
+        };
+
         let reader = |flexible| {
             csv::ReaderBuilder::new()
+                .delimiter(delimiter)
                 .has_headers(false)
                 .flexible(flexible)
                 .from_reader(file)
         };
 
-        // first get the total number of lines so we can provide progress
         let height = reader(false).records().count() as u32;
 
         // since the first row or more can be headers, look at the width of the last row
@@ -118,6 +182,10 @@ impl GridController {
 
         // finally add the final operation
         let mut data_table = DataTable::from((import.to_owned(), cell_values, &self.grid));
+        if Some(true) == has_heading {
+            data_table.apply_first_row_as_header();
+        }
+
         data_table.name = file_name.to_string();
         let sheet_pos = SheetPos::from((insert_at, sheet_id));
 
@@ -442,6 +510,50 @@ mod test {
 
     #[test]
     #[parallel]
+    fn test_get_csv_preview_with_valid_csv() {
+        let csv_data = b"header1,header2\nvalue1,value2\nvalue3,value4";
+        let result = GridController::get_csv_preview(csv_data.to_vec(), 6, Some(b','));
+        assert!(result.is_ok());
+        let preview = result.unwrap();
+        assert_eq!(preview.len(), 3);
+        assert_eq!(preview[0], vec!["header1", "header2"]);
+        assert_eq!(preview[1], vec!["value1", "value2"]);
+        assert_eq!(preview[2], vec!["value3", "value4"]);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_get_csv_preview_with_auto_delimiter() {
+        let csv_data = b"header1\theader2\nvalue1\tvalue2\nvalue3\tvalue4";
+        let result = GridController::get_csv_preview(csv_data.to_vec(), 6, None);
+        assert!(result.is_ok());
+        let preview = result.unwrap();
+        assert_eq!(preview.len(), 3);
+        assert_eq!(preview[0], vec!["header1", "header2"]);
+        assert_eq!(preview[1], vec!["value1", "value2"]);
+        assert_eq!(preview[2], vec!["value3", "value4"]);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_get_csv_preview_with_utf16() {
+        let utf16_data: Vec<u8> = vec![
+            0xFF, 0xFE, 0x68, 0x00, 0x65, 0x00, 0x61, 0x00, 0x64, 0x00, 0x65, 0x00, 0x72, 0x00,
+            0x31, 0x00, 0x2C, 0x00, 0x68, 0x00, 0x65, 0x00, 0x61, 0x00, 0x64, 0x00, 0x65, 0x00,
+            0x72, 0x00, 0x32, 0x00, 0x0A, 0x00, 0x76, 0x00, 0x61, 0x00, 0x6C, 0x00, 0x75, 0x00,
+            0x65, 0x00, 0x31, 0x00, 0x2C, 0x00, 0x76, 0x00, 0x61, 0x00, 0x6C, 0x00, 0x75, 0x00,
+            0x65, 0x00, 0x32, 0x00,
+        ];
+        let result = GridController::get_csv_preview(utf16_data, 6, Some(b','));
+        assert!(result.is_ok());
+        let preview = result.unwrap();
+        assert_eq!(preview.len(), 2);
+        assert_eq!(preview[0], vec!["header1", "header2"]);
+        assert_eq!(preview[1], vec!["value1", "value2"]);
+    }
+
+    #[test]
+    #[parallel]
     fn transmute_u8_to_u16() {
         let result = read_utf16(INVALID_ENCODING_FILE).unwrap();
         assert_eq!("issue, test, value\r\n0, 1, Invalid\r\n0, 2, Valid", result);
@@ -459,7 +571,14 @@ mod test {
             "city,region,country,population\nSouthborough,MA,United States,a lot of people";
 
         let ops = gc
-            .import_csv_operations(sheet_id, SIMPLE_CSV.as_bytes().to_vec(), file_name, pos)
+            .import_csv_operations(
+                sheet_id,
+                SIMPLE_CSV.as_bytes().to_vec(),
+                file_name,
+                pos,
+                Some(b','),
+                Some(false),
+            )
             .unwrap();
 
         let values = vec![
@@ -505,7 +624,14 @@ mod test {
             csv.push_str(&format!("city{},MA,United States,{}\n", i, i * 1000));
         }
 
-        let ops = gc.import_csv_operations(sheet_id, csv.as_bytes().to_vec(), file_name, pos);
+        let ops = gc.import_csv_operations(
+            sheet_id,
+            csv.as_bytes().to_vec(),
+            file_name,
+            pos,
+            Some(b','),
+            Some(false),
+        );
 
         let import = Import::new(file_name.into());
         let cell_value = CellValue::Import(import.clone());
@@ -536,8 +662,16 @@ mod test {
 
         let pos = pos![A1];
         let csv = "2024-12-21,13:23:00,2024-12-21 13:23:00\n".to_string();
-        gc.import_csv(sheet_id, csv.as_bytes().to_vec(), "csv", pos, None)
-            .unwrap();
+        gc.import_csv(
+            sheet_id,
+            csv.as_bytes().to_vec(),
+            "csv",
+            pos,
+            None,
+            Some(b','),
+            Some(false),
+        )
+        .unwrap();
 
         let value = CellValue::Date(NaiveDate::parse_from_str("2024-12-21", "%Y-%m-%d").unwrap());
         assert_data_table_cell_value(&gc, sheet_id, 1, 1, &value.to_string());
