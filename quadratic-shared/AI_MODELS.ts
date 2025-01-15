@@ -25,13 +25,13 @@ export const MODEL_OPTIONS: {
     enabled: true,
     provider: 'openai',
   },
-  'o1-preview': {
-    displayName: 'OpenAI: o1-preview',
-    temperature: 1, // only temperature 1 is supported for o1-preview
+  o1: {
+    displayName: 'OpenAI: o1',
+    temperature: 1, // only temperature 1 is supported for o1
     max_tokens: 4096, // not used for openai
-    canStream: false, // stream is not supported for o1-preview
-    canStreamWithToolCalls: true,
-    enabled: false,
+    canStream: false, // stream is not supported for o1
+    canStreamWithToolCalls: false,
+    enabled: true,
     provider: 'openai',
   },
   'claude-3-5-sonnet-20241022': {
