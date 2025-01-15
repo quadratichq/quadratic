@@ -82,15 +82,19 @@ services:
       VITE_QUADRATIC_API_URL: ${QUADRATIC_API_URL_EXTERNAL}
       VITE_QUADRATIC_MULTIPLAYER_URL: ${QUADRATIC_MULTIPLAYER_URL_EXTERNAL}
       VITE_QUADRATIC_CONNECTION_URL: ${QUADRATIC_CONNECTION_URL_EXTERNAL}
-      VITE_AUTH_TYPE: ${AUTH_TYPE}
       VITE_STORAGE_TYPE: ${STORAGE_TYPE}
+      VITE_AUTH_TYPE: ${AUTH_TYPE}
+      VITE_AUTH0_ISSUER: ${AUTH0_ISSUER}
+      VITE_AUTH0_DOMAIN: ${VITE_AUTH0_DOMAIN}
+      VITE_AUTH0_CLIENT_ID: ${VITE_AUTH0_CLIENT_ID}
+      VITE_AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
       VITE_ORY_HOST: ${KRATOS_URL_EXTERNAL}
       VITE_SENTRY_AUTH_TOKEN: ${SENTRY_AUTH_TOKEN}
     ports:
       - 3000:80
+    entrypoint: []
     command: >
-      sh -c "/client/scripts/replace_env_vars.sh &&
-            nginx -g \"daemon off;\""
+      /bin/sh -c "/client/scripts/replace_env_vars.sh && nginx -g \"daemon off;\""
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://host.docker.internal:3000/ || exit 1" ]
       interval: 10s
@@ -98,6 +102,7 @@ services:
     restart: "always"
     volumes:
       - ./docker/client:/client
+      - ./docker/client/config/nginx.conf:/etc/nginx/nginx.conf
       - ./docker/client/config/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       quadratic-api:
@@ -117,7 +122,7 @@ services:
       service: quadratic-api
     container_name: api
     environment:
-      CORS: "*"
+      CORS: ${QUADRATIC_API_CORS}
       DATABASE_URL: ${DATABASE_DSN}
       ENVIRONMENT: ${ENVIRONMENT}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
@@ -132,6 +137,12 @@ services:
       M2M_AUTH_TOKEN: ${M2M_AUTH_TOKEN}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       AUTH_TYPE: ${AUTH_TYPE}
+      AUTH0_JWKS_URI: ${JWKS_URI}
+      AUTH0_ISSUER: ${AUTH0_ISSUER}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN}
+      AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID}
+      AUTH0_CLIENT_SECRET: ${AUTH0_CLIENT_SECRET}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
       ORY_JWKS_URI: ${JWKS_URI}
       ORY_ADMIN_HOST: ${ORY_ADMIN_HOST}
       STORAGE_TYPE: ${STORAGE_TYPE}
@@ -288,8 +299,12 @@ services:
       VITE_QUADRATIC_API_URL: ${QUADRATIC_API_URL_EXTERNAL}
       VITE_QUADRATIC_MULTIPLAYER_URL: ${QUADRATIC_MULTIPLAYER_URL_EXTERNAL}
       VITE_QUADRATIC_CONNECTION_URL: ${QUADRATIC_CONNECTION_URL_EXTERNAL}
-      VITE_AUTH_TYPE: ${AUTH_TYPE}
       VITE_STORAGE_TYPE: ${STORAGE_TYPE}
+      VITE_AUTH_TYPE: ${AUTH_TYPE}
+      VITE_AUTH0_ISSUER: ${AUTH0_ISSUER}
+      VITE_AUTH0_DOMAIN: ${VITE_AUTH0_DOMAIN}
+      VITE_AUTH0_CLIENT_ID: ${VITE_AUTH0_CLIENT_ID}
+      VITE_AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
       VITE_ORY_HOST: ${KRATOS_URL_EXTERNAL}
       VITE_SENTRY_AUTH_TOKEN: ${SENTRY_AUTH_TOKEN}
       # api
@@ -307,6 +322,12 @@ services:
       M2M_AUTH_TOKEN: ${M2M_AUTH_TOKEN}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       AUTH_TYPE: ${AUTH_TYPE}
+      AUTH0_JWKS_URI: ${JWKS_URI}
+      AUTH0_ISSUER: ${AUTH0_ISSUER}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN}
+      AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID}
+      AUTH0_CLIENT_SECRET: ${AUTH0_CLIENT_SECRET}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
       ORY_JWKS_URI: ${JWKS_URI}
       ORY_ADMIN_HOST: ${ORY_ADMIN_HOST}
       STORAGE_TYPE: ${STORAGE_TYPE}

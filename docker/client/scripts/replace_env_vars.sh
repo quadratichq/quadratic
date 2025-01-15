@@ -30,5 +30,24 @@ replace_env_vars() {
   done
 }
 
+compress_js_files() {
+  find "/usr/share/nginx/html" -type f \( \
+    -name "*.js" -o \
+    -name "*.mjs" -o \
+    -name "*.cjs" -o \
+    -name "*.jsx" -o \
+    -name "*.ts" -o \
+    -name "*.tsx" \
+  \) -print0 | xargs -0 -n1 -P$(nproc) -I {} sh -c '\
+    echo "Compressing: {}" && \
+    brotli -q 9 -w 24 -f "{}" && \
+    pigz -6kf "{}" && \
+    echo "Created: {}.br and {}.gz" \
+  '
+}
+
 echo "Replacing .env values in $ENV_PATH"
 replace_env_vars
+
+echo "Compressing js files"
+compress_js_files

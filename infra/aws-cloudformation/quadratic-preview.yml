@@ -2,6 +2,9 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: Quadratic Preview - Docker Deployment Template
 
 Parameters:
+  SubDomainName:
+    Type: String
+    Description: Subdomain name, used as https://<subdomain>.quadratic-preview.com
   ImageTag:
     Type: String
     Description: Image tag to use for all services
@@ -109,7 +112,7 @@ Resources:
           LICENSE_KEY="$(aws ssm get-parameter --name "/quadratic-development/QUADRATIC_LICENSE_KEY" --with-decryption --query "Parameter.Value" --output text)"
 
           # Generate Domain Name
-          DOMAIN_NAME="${ImageTag}.quadratic-preview.com"
+          DOMAIN_NAME="${SubDomainName}.quadratic-preview.com"
 
           # Run Quadratic initialization script
           chmod +x init.sh
@@ -120,6 +123,16 @@ Resources:
           AWS_S3_REGION=$(aws ssm get-parameter --name "/quadratic-development/AWS_S3_REGION" --with-decryption --query "Parameter.Value" --output text)
           AWS_S3_ACCESS_KEY_ID=$(aws ssm get-parameter --name "/quadratic-development/AWS_S3_ACCESS_KEY_ID" --with-decryption --query "Parameter.Value" --output text)
           AWS_S3_SECRET_ACCESS_KEY=$(aws ssm get-parameter --name "/quadratic-development/AWS_S3_SECRET_ACCESS_KEY" --with-decryption --query "Parameter.Value" --output text)
+
+          # auth0
+          JWKS_URI=$(aws ssm get-parameter --name "/quadratic-development/AUTH0_JWKS_URI" --with-decryption --query "Parameter.Value" --output text)
+          AUTH0_ISSUER=$(aws ssm get-parameter --name "/quadratic-development/AUTH0_ISSUER" --with-decryption --query "Parameter.Value" --output text)
+          AUTH0_AUDIENCE=$(aws ssm get-parameter --name "/quadratic-development/AUTH0_AUDIENCE" --with-decryption --query "Parameter.Value" --output text)
+          VITE_AUTH0_DOMAIN=$(aws ssm get-parameter --name "/quadratic-development/VITE_AUTH0_DOMAIN" --with-decryption --query "Parameter.Value" --output text)
+          VITE_AUTH0_CLIENT_ID=$(aws ssm get-parameter --name "/quadratic-development/VITE_AUTH0_CLIENT_ID" --with-decryption --query "Parameter.Value" --output text)
+          AUTH0_DOMAIN=$(aws ssm get-parameter --name "/quadratic-development/AUTH0_DOMAIN" --with-decryption --query "Parameter.Value" --output text)
+          AUTH0_CLIENT_ID=$(aws ssm get-parameter --name "/quadratic-development/AUTH0_CLIENT_ID" --with-decryption --query "Parameter.Value" --output text)
+          AUTH0_CLIENT_SECRET=$(aws ssm get-parameter --name "/quadratic-development/AUTH0_CLIENT_SECRET" --with-decryption --query "Parameter.Value" --output text)
 
           # ai api keys
           OPENAI_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/OPENAI_API_KEY" --with-decryption --query "Parameter.Value" --output text)
@@ -190,7 +203,7 @@ Resources:
     UpdateReplacePolicy: Delete
     Properties:
       HostedZoneId: Z0126430TJ1UYIMO3SYX
-      Name: !Sub "${ImageTag}.quadratic-preview.com."
+      Name: !Sub "${SubDomainName}.quadratic-preview.com."
       Type: A
       AliasTarget:
         DNSName: !GetAtt GlobalAccelerator.DnsName
@@ -204,7 +217,7 @@ Resources:
     UpdateReplacePolicy: Delete
     Properties:
       HostedZoneId: Z0126430TJ1UYIMO3SYX
-      Name: !Sub "*.${ImageTag}.quadratic-preview.com."
+      Name: !Sub "*.${SubDomainName}.quadratic-preview.com."
       Type: A
       AliasTarget:
         DNSName: !GetAtt GlobalAccelerator.DnsName
@@ -214,4 +227,4 @@ Resources:
 Outputs:
   WebsiteURL:
     Description: Website URL
-    Value: !Sub "https://${ImageTag}.quadratic-preview.com"
+    Value: !Sub "https://${SubDomainName}.quadratic-preview.com"

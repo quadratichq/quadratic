@@ -90,12 +90,14 @@ impl<'ctx> Ctx<'ctx> {
     }
 
     /// Fetches the contents of the cell at `pos` evaluated at `self.sheet_pos`,
-    /// or returns an error in the case of a circular reference.
+    /// or returns an error in the case of a circular reference. If
+    /// add_cells_accessed is true, it will add the cell reference to
+    /// cells_accessed. Otherwise, it needs to be added manually.
     pub fn get_cell(
         &mut self,
         pos: SheetPos,
         span: Span,
-        add_to_cells_accessed: bool,
+        add_cells_accessed: bool,
     ) -> Spanned<CellValue> {
         if self.skip_computation {
             let value = CellValue::Blank;
@@ -114,7 +116,7 @@ impl<'ctx> Ctx<'ctx> {
             return error_value(RunErrorMsg::CircularReference);
         }
 
-        if add_to_cells_accessed {
+        if add_cells_accessed {
             self.cells_accessed.add_sheet_pos(pos);
         }
 
@@ -133,6 +135,7 @@ impl<'ctx> Ctx<'ctx> {
         if self.skip_computation {
             return Ok(CellValue::Blank.into()).with_span(span);
         }
+        self.cells_accessed.add_sheet_rect(rect);
 
         let mut bounded_rect = rect;
 
@@ -173,9 +176,6 @@ impl<'ctx> Ctx<'ctx> {
                 );
             }
         }
-
-        self.cells_accessed
-            .add_sheet_rect(SheetRect::new_pos_span(rect.min, rect.max, sheet_id));
 
         Ok(Array::new_row_major(array_size, flat_array)?).with_span(span)
     }

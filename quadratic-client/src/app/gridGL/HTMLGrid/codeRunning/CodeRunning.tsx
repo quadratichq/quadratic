@@ -4,7 +4,8 @@ import { JsCodeRun } from '@/app/quadratic-core-types';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
-import { CircularProgress } from '@mui/material';
+import { SpinnerIcon } from '@/shared/components/Icons';
+import { cn } from '@/shared/shadcn/utils';
 import { useEffect, useState } from 'react';
 import './CodeRunning.css';
 
@@ -146,14 +147,19 @@ export const CodeRunning = () => {
         .filter((code) => {
           return code.sheetId === sheets.sheet.id;
         })
-        .map((code, index) => (
-          <CircularProgress
-            color={code.color === 'black' ? 'primary' : undefined}
-            size={`${CIRCULAR_PROGRESS_SIZE}px`}
-            key={index}
-            sx={{ position: 'absolute', left: code.left, top: code.top, color: code.color, opacity: code.alpha }}
-          />
-        ))}
+        .map((code, index) => {
+          return (
+            <span
+              className="-translate-x-[2px] -translate-y-[4px] scale-75"
+              style={{ position: 'absolute', left: code.left, top: code.top }}
+            >
+              <SpinnerIcon
+                className={cn(code.color === 'black' && 'text-primary')}
+                style={{ color: code.color, opacity: code.alpha }}
+              />
+            </span>
+          );
+        })}
     </div>
   );
 };
