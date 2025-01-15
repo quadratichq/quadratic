@@ -74,7 +74,7 @@ pub mod test {
 
         // this should be a 5x4 array
         let expected_size = ArraySize::new(4, 5).unwrap();
-        assert_eq!(data_table.output_size(), expected_size);
+        assert_eq!(data_table.output_size(true), expected_size);
     }
 
     #[test]
@@ -91,7 +91,7 @@ pub mod test {
 
         // this should be a 4x3 array, includes the header row
         let expected_size = ArraySize::new(4, 3).unwrap();
-        assert_eq!(data_table.output_size(), expected_size);
+        assert_eq!(data_table.output_size(true), expected_size);
 
         let mut data_table = source_data_table.clone();
         data_table.delete_row(2).unwrap();
@@ -99,7 +99,7 @@ pub mod test {
 
         // this should be a 4x3 array, includes the header row
         let expected_size = ArraySize::new(4, 3).unwrap();
-        assert_eq!(data_table.output_size(), expected_size);
+        assert_eq!(data_table.output_size(true), expected_size);
 
         // Denver should no longer be at (0, 1)
         assert_eq!(

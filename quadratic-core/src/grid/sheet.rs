@@ -506,7 +506,6 @@ mod test {
 
     use bigdecimal::BigDecimal;
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
-    use serial_test::parallel;
 
     use super::*;
     use crate::a1::A1Selection;
@@ -960,7 +959,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_has_content() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -1011,7 +1009,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn js_cell_value_pos() {
         let mut sheet = Sheet::test();
         let pos = pos![A1];
@@ -1052,7 +1049,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn get_js_cell_value_pos_in_rect() {
         let mut sheet = Sheet::test();
         sheet.set_cell_values(

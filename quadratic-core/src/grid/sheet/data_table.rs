@@ -65,7 +65,7 @@ impl Sheet {
             .iter()
             .filter_map(|(data_table_pos, data_table)| {
                 data_table
-                    .output_rect(*data_table_pos, false)
+                    .output_rect(*data_table_pos, false, true)
                     .contains(pos)
                     .then_some(*data_table_pos)
             })
@@ -97,7 +97,7 @@ impl Sheet {
             if !data_table.is_html_or_image() {
                 return false;
             }
-            let output_rect = data_table.output_rect(*data_table_pos, false);
+            let output_rect = data_table.output_rect(*data_table_pos, false, true);
             if output_rect.contains(Pos { x, y }) {
                 if let Some(exclude_x) = exclude_x {
                     if exclude_x >= output_rect.min.x && exclude_x <= output_rect.max.x {
@@ -118,6 +118,7 @@ impl Sheet {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod test {
     use super::*;
     use crate::{
@@ -126,11 +127,9 @@ mod test {
         CellValue, Value,
     };
     use bigdecimal::BigDecimal;
-    use serial_test::parallel;
     use std::vec;
 
     #[test]
-    #[parallel]
     fn test_set_data_table() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -161,7 +160,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_get_data_table() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -184,12 +182,12 @@ mod test {
             true,
             None,
         );
-        sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
+        sheet.set_data_table(pos![A1], Some(data_table.clone()));
         assert_eq!(
-            sheet.get_code_cell_value(Pos { x: 0, y: 0 }),
+            sheet.get_code_cell_value(pos![A2]),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
-        assert_eq!(sheet.data_table(Pos { x: 0, y: 0 }), Some(&data_table));
-        assert_eq!(sheet.data_table(Pos { x: 1, y: 1 }), None);
+        assert_eq!(sheet.data_table(pos![A1]), Some(&data_table));
+        assert_eq!(sheet.data_table(pos![B2]), None);
     }
 }

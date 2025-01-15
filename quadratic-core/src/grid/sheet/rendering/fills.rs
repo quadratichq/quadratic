@@ -45,7 +45,7 @@ impl Sheet {
                         if dt.spill_error || dt.has_error() {
                             return None;
                         }
-                        let rect = dt.data_rect(*pos);
+                        let rect = dt.output_rect(*pos, false, false);
                         let x = rect.min.x + x0 - 1;
                         let y = rect.min.y + y0 - 1;
                         let x1 = x1.map_or(rect.max.x, |x1| rect.min.x + x1 - 1);

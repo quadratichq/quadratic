@@ -50,9 +50,10 @@ impl Sheet {
     // Returns data for rendering a code cell.
     fn render_code_cell(&self, pos: Pos, data_table: &DataTable) -> Option<JsRenderCodeCell> {
         let code = self.cell_value(pos)?;
-        let output_size = data_table.output_size();
+        let output_size = data_table.output_size(true);
         let (state, w, h, spill_error) = if data_table.spill_error {
-            let reasons = self.find_spill_error_reasons(&data_table.output_rect(pos, true), pos);
+            let reasons =
+                self.find_spill_error_reasons(&data_table.output_rect(pos, true, true), pos);
             (
                 JsRenderCodeCellState::SpillError,
                 output_size.w.get(),

@@ -348,7 +348,7 @@ impl DataTable {
 
     /// Returns the size of the output array, or defaults to `_1X1` (since output always includes the code_cell).
     /// Note: this does not take spill_error into account.
-    pub fn output_size(&self) -> ArraySize {
+    pub fn output_size(&self, include_header: bool) -> ArraySize {
         if let Some((w, h)) = self.chart_output {
             if w == 0 || h == 0 {
                 ArraySize::_1X1
@@ -360,10 +360,17 @@ impl DataTable {
                 Value::Array(a) => {
                     let mut size = a.size();
 
-                    let height = match (self.show_header, self.header_is_first_row) {
-                        (true, false) => size.h.get() + 1,
-                        (false, true) => size.h.get() - 1,
-                        _ => size.h.get(),
+                    let height = match (include_header, self.show_header, self.header_is_first_row)
+                    {
+                        (false, true, true) => size.h.get() - 1,
+                        (false, false, true) => size.h.get() - 1,
+                        (true, false, true) => size.h.get() - 1,
+                        (true, true, false) => size.h.get() + 1,
+
+                        (false, true, false) => size.h.get(),
+                        (true, false, false) => size.h.get(),
+                        (false, false, false) => size.h.get(),
+                        (true, true, true) => size.h.get(),
                     };
                     size.h = NonZeroU32::new(height).unwrap_or(ArraySize::_1X1.h);
 
@@ -403,36 +410,34 @@ impl DataTable {
 
     /// returns a SheetRect for the output size of a code cell (defaults to 1x1)
     /// Note: this returns a 1x1 if there is a spill_error.
-    pub fn output_sheet_rect(&self, sheet_pos: SheetPos, ignore_spill: bool) -> SheetRect {
+    pub fn output_sheet_rect(
+        &self,
+        sheet_pos: SheetPos,
+        ignore_spill: bool,
+        include_header: bool,
+    ) -> SheetRect {
         if !ignore_spill && self.spill_error {
             SheetRect::from_sheet_pos_and_size(sheet_pos, ArraySize::_1X1)
         } else {
-            SheetRect::from_sheet_pos_and_size(sheet_pos, self.output_size())
+            SheetRect::from_sheet_pos_and_size(sheet_pos, self.output_size(include_header))
         }
     }
 
     /// returns a SheetRect for the output size of a code cell (defaults to 1x1)
     /// Note: this returns a 1x1 if there is a spill_error.
-    pub fn output_rect(&self, pos: Pos, ignore_spill: bool) -> Rect {
+    pub fn output_rect(&self, pos: Pos, ignore_spill: bool, include_header: bool) -> Rect {
         if !ignore_spill && self.spill_error {
             Rect::from_pos_and_size(pos, ArraySize::_1X1)
         } else {
-            Rect::from_pos_and_size(pos, self.output_size())
-        }
-    }
-
-    /// Returns a Rect for the data table's output size, excluding the header.
-    pub fn data_rect(&self, pos: Pos) -> Rect {
-        let size = self.output_size();
-        Rect {
-            min: Pos {
-                x: pos.x,
-                y: if self.show_header { pos.y + 1 } else { pos.y },
-            },
-            max: Pos {
-                x: pos.x + size.w.get() as i64 - 1,
-                y: pos.y + size.h.get() as i64 - 1,
-            },
+            let pos = if !include_header && self.show_header && !self.is_html_or_image() {
+                Pos {
+                    x: pos.x,
+                    y: pos.y + 1,
+                }
+            } else {
+                pos
+            };
+            Rect::from_pos_and_size(pos, self.output_size(include_header))
         }
     }
 
@@ -585,7 +590,7 @@ pub mod test {
         .with_last_modified(data_table.last_modified);
         let expected_array_size = ArraySize::new(4, 5).unwrap();
         assert_eq!(data_table, expected_data_table);
-        assert_eq!(data_table.output_size(), expected_array_size);
+        assert_eq!(data_table.output_size(true), expected_array_size);
 
         pretty_print_data_table(&data_table, None, None);
 
@@ -617,7 +622,7 @@ pub mod test {
             None,
         );
 
-        assert_eq!(data_table.output_size(), ArraySize::_1X1);
+        assert_eq!(data_table.output_size(true), ArraySize::_1X1);
         assert_eq!(
             data_table.output_sheet_rect(
                 SheetPos {
@@ -625,6 +630,7 @@ pub mod test {
                     y: -2,
                     sheet_id
                 },
+                false,
                 false
             ),
             SheetRect::from_numbers(-1, -2, 1, 1, sheet_id)
@@ -650,8 +656,8 @@ pub mod test {
             None,
         );
 
-        assert_eq!(data_table.output_size().w.get(), 10);
-        assert_eq!(data_table.output_size().h.get(), 12);
+        assert_eq!(data_table.output_size(true).w.get(), 10);
+        assert_eq!(data_table.output_size(true).h.get(), 12);
         assert_eq!(
             data_table.output_sheet_rect(
                 SheetPos {
@@ -659,7 +665,8 @@ pub mod test {
                     y: 2,
                     sheet_id
                 },
-                false
+                false,
+                true
             ),
             SheetRect::new(1, 2, 10, 13, sheet_id)
         );
@@ -688,32 +695,15 @@ pub mod test {
         );
         let sheet_pos = SheetPos::from((1, 2, sheet_id));
 
-        assert_eq!(data_table.output_size().w.get(), 10);
-        assert_eq!(data_table.output_size().h.get(), 12);
+        assert_eq!(data_table.output_size(true).w.get(), 10);
+        assert_eq!(data_table.output_size(true).h.get(), 12);
         assert_eq!(
-            data_table.output_sheet_rect(sheet_pos, false),
+            data_table.output_sheet_rect(sheet_pos, false, true),
             SheetRect::new(1, 2, 1, 2, sheet_id)
         );
         assert_eq!(
-            data_table.output_sheet_rect(sheet_pos, true),
+            data_table.output_sheet_rect(sheet_pos, true, true),
             SheetRect::new(1, 2, 10, 13, sheet_id)
         );
-    }
-
-    #[test]
-    fn test_data_rect() {
-        // 4x4 imported data table w/generated header
-        let (_, mut data_table) = new_data_table();
-        let rect = data_table.data_rect((1, 1).into());
-        assert_eq!(rect, Rect::new(1, 2, 4, 5));
-
-        data_table.apply_first_row_as_header();
-        let rect = data_table.data_rect((1, 1).into());
-        assert_eq!(rect, Rect::new(1, 2, 4, 4));
-
-        // 4x4 imported data table w/o header
-        data_table.show_header = false;
-        let rect = data_table.data_rect((1, 1).into());
-        assert_eq!(rect, Rect::new(1, 1, 4, 3));
     }
 }
