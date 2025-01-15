@@ -1,0 +1,19 @@
+# used to pull production images from ECR
+
+services:
+  # quadratic services - client, api, multiplayer, files, connection
+
+  quadratic-client:
+    image: ${ECR_URL}/quadratic-client:${IMAGE_TAG}
+
+  quadratic-api:
+    image: ${ECR_URL}/quadratic-api:${IMAGE_TAG}
+
+  quadratic-multiplayer:
+    image: ${ECR_URL}/quadratic-multiplayer:${IMAGE_TAG}
+
+  quadratic-files:
+    image: ${ECR_URL}/quadratic-files:${IMAGE_TAG}
+
+  quadratic-connection:
+    image: ${ECR_URL}/quadratic-connection:${IMAGE_TAG}

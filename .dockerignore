@@ -1,2 +1,42 @@
+# Environment files
+.env*
+**/.env*
+
+# Docker files
+.dockerignore
+**/.dockerignore
+Dockerfile*
+**/Dockerfile*
+docker-compose*
+**/docker-compose*
+
+# Build outputs
+build/
+**/build/
+dist/
+**/dist/
 target/
 **/target/
+
+# Dependencies
+node_modules/
+**/node_modules/
+vendor/
+**/vendor/
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# TS/Rust types, this is generated during the build process
+quadratic-client/src/app/quadratic-core/
+quadratic-client/src/app/quadratic-core-types/
+quadratic-client/src/app/quadratic-rust-client/

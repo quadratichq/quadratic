@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       bump_type:
-        description: 'Type of version bump'
+        description: "Type of version bump"
         default: patch
         type: choice
         options:
@@ -18,7 +18,7 @@ on:
 
 jobs:
   bump-version:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2204
     permissions:
       contents: write
     steps:
