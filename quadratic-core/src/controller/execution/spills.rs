@@ -88,7 +88,7 @@ impl GridController {
                     || sheet.has_code_cell_in_rect(&output, *pos)
                 {
                     // if spill error has not been set, then set it and start the more expensive checks for all later code_cells.
-                    if data_table.readonly && !data_table.spill_error {
+                    if !data_table.spill_error {
                         return Some(true);
                     }
                 } else if data_table.spill_error {
