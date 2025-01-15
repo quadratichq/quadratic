@@ -1,12 +1,17 @@
-FROM rust:latest as builder
+FROM rust:latest AS builder
 
-RUN USER=root cargo new --bin quadratic-multiplayer
-COPY . /quadratic-multiplayer
+WORKDIR /quadratic
+COPY updateAlertVersion.json .
+COPY ./quadratic-multiplayer/. ./quadratic-multiplayer/
+COPY ./quadratic-core/. ./quadratic-core/
+COPY ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
+COPY ./quadratic-rust-shared/. ./quadratic-rust-shared/
 RUN rustup component add rustfmt
-WORKDIR /quadratic-multiplayer
-RUN cargo build --release --package quadratic-multiplayer
 
-FROM debian:stable-slim as runtime
-COPY --from=builder /quadratic-multiplayer/target/release/quadratic-multiplayer .
+WORKDIR /quadratic/quadratic-multiplayer
+RUN cargo build --release
+
+FROM debian:stable-slim AS runtime
+COPY --from=builder /quadratic/quadratic-multiplayer/target/release/quadratic-multiplayer .
 RUN apt-get update && apt install -y ca-certificates
 CMD ["./quadratic-multiplayer"]

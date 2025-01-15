@@ -361,6 +361,12 @@ Returns the counterclockwise angle, in radians, from the X axis to the point \`(
 
 If both arguments are zero, returns zero.
 
+## Financial functions
+
+| **Function** | **Description** |
+| ------------ | --------------- |
+| \`PMT(rate, nper, pv, [fv], [type])\` | Calculates the payment for a loan based on constant payments and a constant interest rate. Rate is the interest rate per period (e.g., 0.08/12 for 8% annual rate with monthly payments), nper is the total number of payments (e.g., 5*12 for 5 years of monthly payments), pv is the present value (loan amount), fv is the future value (default 0), and type indicates when payments are due (0=end of period, 1=beginning of period, default 0). Returns the negative of the payment amount. |
+
 ## Statistics functions
 
 | **Function** | **Description** |
@@ -371,6 +377,8 @@ If both arguments are zero, returns zero.
 | \`COUNTIFS(eval_range1, criteria1, [more_eval_ranges_and_criteria...])\` | Evaluates multiple values on they're respective criteria, and then counts how many sets of values met all their criteria. See [the documentation](https://docs.quadratichq.com/formulas) for more details about how criteria work in formulas. |
 | \`MIN([numbers...])\` | Returns the smallest value. Returns +∞ if given no values. |
 | \`MAX([numbers...])\` | Returns the largest value. Returns -∞ if given no values. |
+| \`STDEV([numbers...])\` | Returns the standard deviation of all values. |
+| \`VAR([numbers...])\` | Returns the variance of all values. |
 
 ### COUNT
 

@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use uuid::Uuid;
 
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
@@ -8,7 +6,6 @@ use crate::controller::GridController;
 use crate::grid::js_types::JsValidationWarning;
 use crate::grid::sheet::validations::validation::Validation;
 use crate::grid::SheetId;
-use crate::{Pos, SheetRect};
 
 impl GridController {
     // Remove old warnings from the validation. Adds to client_warnings as necessary.
@@ -17,7 +14,6 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         validation_id: Uuid,
-        client_warnings: &mut HashMap<Pos, JsValidationWarning>,
     ) {
         if let Some(sheet) = self.try_sheet_mut(sheet_id) {
             sheet.validations.warnings.retain(|pos, id| {
@@ -34,15 +30,7 @@ impl GridController {
                             sheet_pos: pos.to_sheet_pos(sheet_id),
                             validation_id: Some(validation_id),
                         });
-                    client_warnings.insert(
-                        *pos,
-                        JsValidationWarning {
-                            x: pos.x,
-                            y: pos.y,
-                            style: None,
-                            validation: None,
-                        },
-                    );
+                    transaction.validation_warning_deleted(sheet_id, *pos);
                     false
                 } else {
                     true
@@ -57,7 +45,6 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         validation: Validation,
-        client_warnings: &mut HashMap<Pos, JsValidationWarning>,
     ) {
         if let Some(sheet) = self.try_sheet_mut(sheet_id) {
             let mut warnings = vec![];
@@ -68,6 +55,11 @@ impl GridController {
                     }
                 });
             }
+            let validation_warnings = transaction
+                .validations_warnings
+                .entry(sheet_id)
+                .or_default();
+
             warnings.iter().for_each(|(pos, validation_id)| {
                 let sheet_pos = pos.to_sheet_pos(sheet_id);
                 let old = sheet
@@ -77,10 +69,10 @@ impl GridController {
                     .forward_operations
                     .push(Operation::SetValidationWarning {
                         sheet_pos,
-                        validation_id: Some(validation.id),
+                        validation_id: Some(*validation_id),
                     });
                 transaction.reverse_operations.push(old);
-                client_warnings.insert(
+                validation_warnings.insert(
                     *pos,
                     JsValidationWarning {
                         x: pos.x,
@@ -100,13 +92,7 @@ impl GridController {
     ) {
         if let Operation::SetValidation { validation } = op {
             let sheet_id = validation.selection.sheet_id;
-            let mut client_warnings = HashMap::new();
-            self.remove_validation_warnings(
-                transaction,
-                sheet_id,
-                validation.id,
-                &mut client_warnings,
-            );
+            self.remove_validation_warnings(transaction, sheet_id, validation.id);
             if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
                 transaction
                     .forward_operations
@@ -120,27 +106,14 @@ impl GridController {
                 transaction.validations.insert(sheet_id);
 
                 if !transaction.is_server() {
+                    transaction.add_dirty_hashes_from_selections(
+                        sheet,
+                        vec![validation.selection.clone()],
+                    );
                     self.send_updated_bounds(sheet_id);
-                    self.send_render_cells_selection(&validation.selection, true);
                 }
             }
-            self.apply_validation_warnings(transaction, sheet_id, validation, &mut client_warnings);
-
-            Self::send_client_warnings(transaction, sheet_id, client_warnings);
-        }
-    }
-
-    /// Sends client warnings to the client.
-    fn send_client_warnings(
-        transaction: &PendingTransaction,
-        sheet_id: SheetId,
-        client_warnings: HashMap<Pos, JsValidationWarning>,
-    ) {
-        if !transaction.is_server() && !client_warnings.is_empty() {
-            let warnings = client_warnings.values().collect::<Vec<_>>();
-            if let Ok(warnings) = serde_json::to_string(&warnings) {
-                crate::wasm_bindings::js::jsValidationWarning(sheet_id.to_string(), warnings);
-            }
+            self.apply_validation_warnings(transaction, sheet_id, validation);
         }
     }
 
@@ -154,13 +127,7 @@ impl GridController {
             validation_id,
         } = op
         {
-            let mut client_warnings = HashMap::new();
-            self.remove_validation_warnings(
-                transaction,
-                sheet_id,
-                validation_id,
-                &mut client_warnings,
-            );
+            self.remove_validation_warnings(transaction, sheet_id, validation_id);
             if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
                 transaction
                     .forward_operations
@@ -182,11 +149,10 @@ impl GridController {
 
                 if !transaction.is_server() {
                     if let Some(selection) = selection {
-                        self.send_updated_bounds(selection.sheet_id);
-                        self.send_render_cells_selection(&selection, true);
+                        transaction.add_dirty_hashes_from_selections(sheet, vec![selection]);
+                        self.send_updated_bounds(sheet_id);
                     }
                 }
-                Self::send_client_warnings(transaction, sheet_id, client_warnings);
             };
         }
     }
@@ -213,8 +179,24 @@ impl GridController {
                 transaction.reverse_operations.push(old);
 
                 if !transaction.is_server() {
+                    if let Some(validation_id) = validation_id {
+                        if let Some(validation) = sheet.validations.validation(validation_id) {
+                            let warning = JsValidationWarning {
+                                x: sheet_pos.x,
+                                y: sheet_pos.y,
+                                validation: Some(validation_id),
+                                style: Some(validation.error.style.clone()),
+                            };
+                            transaction.validation_warning_added(sheet_pos.sheet_id, warning);
+                        } else {
+                            transaction
+                                .validation_warning_deleted(sheet_pos.sheet_id, sheet_pos.into());
+                        }
+                    } else {
+                        transaction
+                            .validation_warning_deleted(sheet_pos.sheet_id, sheet_pos.into());
+                    }
                     self.send_updated_bounds(sheet_pos.sheet_id);
-                    self.send_render_cells(&SheetRect::single_sheet_pos(sheet_pos));
                 }
             }
         }
@@ -227,7 +209,7 @@ mod tests {
     use serial_test::serial;
 
     use crate::grid::sheet::validations::validation_rules::ValidationRule;
-    use crate::wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count};
+    use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
     use crate::{A1Selection, CellValue};
 
     #[test]
@@ -236,10 +218,9 @@ mod tests {
         clear_js_calls();
 
         let mut gc = GridController::default();
-        let mut transaction = PendingTransaction::default();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("test".to_string()));
+        sheet.set_cell_value(pos![A1], CellValue::Text("test".to_string()));
 
         let validation = Validation {
             id: Uuid::new_v4(),
@@ -251,17 +232,50 @@ mod tests {
         let op = Operation::SetValidation {
             validation: validation.clone(),
         };
-        gc.execute_set_validation(&mut transaction, op);
+        let mut transaction = PendingTransaction::default();
+        transaction.operations.push_back(op);
 
+        gc.start_transaction(&mut transaction);
         assert_eq!(transaction.forward_operations.len(), 2);
         assert_eq!(transaction.reverse_operations.len(), 2);
+        gc.finalize_transaction(transaction);
 
-        expect_js_call_count("jsRenderCellSheets", 1, false);
+        expect_js_call(
+            "jsSheetValidations",
+            format!(
+                "{},{}",
+                sheet_id,
+                serde_json::to_string(&vec![validation.clone()]).unwrap()
+            ),
+            false,
+        );
         let warnings = vec![JsValidationWarning {
             x: 1,
             y: 1,
             validation: Some(validation.id),
             style: Some(validation.error.style.clone()),
+        }];
+        expect_js_call(
+            "jsValidationWarning",
+            format!("{},{}", sheet_id, serde_json::to_string(&warnings).unwrap()),
+            true,
+        );
+
+        gc.undo(None);
+        expect_js_call(
+            "jsSheetValidations",
+            format!(
+                "{},{}",
+                sheet_id,
+                serde_json::to_string(&Vec::<Validation>::new()).unwrap()
+            ),
+            false,
+        );
+        let warnings = vec![JsValidationWarning {
+            x: 1,
+            y: 1,
+            validation: None,
+            style: None,
         }];
         expect_js_call(
             "jsValidationWarning",
@@ -276,11 +290,11 @@ mod tests {
         clear_js_calls();
 
         let mut gc = GridController::default();
-        let mut transaction = PendingTransaction::default();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("test".to_string()));
+        sheet.set_cell_value(pos![A1], CellValue::Text("test".to_string()));
 
+        // set validation
         let validation = Validation {
             id: Uuid::new_v4(),
             selection: A1Selection::test_a1_sheet_id("A1", &sheet_id),
@@ -291,18 +305,101 @@ mod tests {
         let op = Operation::SetValidation {
             validation: validation.clone(),
         };
-        gc.execute_set_validation(&mut transaction, op);
+        let mut transaction = PendingTransaction::default();
+        transaction.operations.push_back(op);
 
+        gc.start_transaction(&mut transaction);
+        assert_eq!(transaction.forward_operations.len(), 2);
+        assert_eq!(transaction.reverse_operations.len(), 2);
+        gc.finalize_transaction(transaction);
+
+        expect_js_call(
+            "jsSheetValidations",
+            format!(
+                "{},{}",
+                sheet_id,
+                serde_json::to_string(&vec![validation.clone()]).unwrap()
+            ),
+            false,
+        );
+        let warnings = vec![JsValidationWarning {
+            x: 1,
+            y: 1,
+            validation: Some(validation.id),
+            style: Some(validation.error.style.clone()),
+        }];
+        expect_js_call(
+            "jsValidationWarning",
+            format!("{},{}", sheet_id, serde_json::to_string(&warnings).unwrap()),
+            true,
+        );
+
+        // remove validation
         let op = Operation::RemoveValidation {
             sheet_id,
             validation_id: validation.id,
         };
-        gc.execute_remove_validation(&mut transaction, op);
+        let mut transaction = PendingTransaction::default();
+        transaction.operations.push_back(op);
 
-        assert_eq!(transaction.forward_operations.len(), 4);
-        assert_eq!(transaction.reverse_operations.len(), 4);
+        gc.start_transaction(&mut transaction);
+        assert_eq!(transaction.forward_operations.len(), 2);
+        assert_eq!(transaction.reverse_operations.len(), 2);
+        gc.finalize_transaction(transaction);
 
-        expect_js_call_count("jsRenderCellSheets", 2, false);
+        expect_js_call(
+            "jsSheetValidations",
+            format!(
+                "{},{}",
+                sheet_id,
+                serde_json::to_string(&Vec::<Validation>::new()).unwrap()
+            ),
+            false,
+        );
+        let warnings = vec![JsValidationWarning {
+            x: 1,
+            y: 1,
+            validation: None,
+            style: None,
+        }];
+        expect_js_call(
+            "jsValidationWarning",
+            format!("{},{}", sheet_id, serde_json::to_string(&warnings).unwrap()),
+            true,
+        );
+
+        gc.undo(None);
+        expect_js_call(
+            "jsSheetValidations",
+            format!(
+                "{},{}",
+                sheet_id,
+                serde_json::to_string(&vec![validation.clone()]).unwrap()
+            ),
+            false,
+        );
+        let warnings = vec![JsValidationWarning {
+            x: 1,
+            y: 1,
+            validation: Some(validation.id),
+            style: Some(validation.error.style.clone()),
+        }];
+        expect_js_call(
+            "jsValidationWarning",
+            format!("{},{}", sheet_id, serde_json::to_string(&warnings).unwrap()),
+            true,
+        );
+
+        gc.undo(None);
+        expect_js_call(
+            "jsSheetValidations",
+            format!(
+                "{},{}",
+                sheet_id,
+                serde_json::to_string(&Vec::<Validation>::new()).unwrap()
+            ),
+            false,
+        );
         let warnings = vec![JsValidationWarning {
             x: 1,
             y: 1,

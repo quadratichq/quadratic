@@ -31,7 +31,11 @@ pub(crate) fn config() -> Result<Config> {
     dotenv::from_filename(filename).ok();
     dotenv().ok();
 
-    let config = envy::from_env::<Config>().map_err(|e| ConnectionError::Config(e.to_string()))?;
+    // Try prefixed first, fall back to non-prefixed if that fails
+    let config = envy::prefixed("CONNECTION__")
+        .from_env::<Config>()
+        .or_else(|_| envy::from_env::<Config>())
+        .map_err(|e| ConnectionError::Config(e.to_string()))?;
     Ok(config)
 }
 
