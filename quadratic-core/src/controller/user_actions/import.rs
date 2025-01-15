@@ -16,8 +16,17 @@ impl GridController {
         file_name: &str,
         insert_at: Pos,
         cursor: Option<String>,
+        delimiter: Option<u8>,
+        has_heading: Option<bool>,
     ) -> Result<()> {
-        let ops = self.import_csv_operations(sheet_id, file, file_name, insert_at)?;
+        let ops = self.import_csv_operations(
+            sheet_id,
+            file,
+            file_name,
+            insert_at,
+            delimiter,
+            has_heading,
+        )?;
         if cursor.is_some() {
             self.start_user_transaction(ops, cursor, TransactionName::Import);
         } else {
@@ -118,8 +127,16 @@ pub(crate) mod tests {
         let sheet_id = gc.grid.sheets()[0].id;
         let file_name = "simple.csv";
 
-        gc.import_csv(sheet_id, csv_file.as_slice().to_vec(), file_name, pos, None)
-            .unwrap();
+        gc.import_csv(
+            sheet_id,
+            csv_file.as_slice().to_vec(),
+            file_name,
+            pos,
+            None,
+            Some(b','),
+            Some(false),
+        )
+        .unwrap();
 
         let sheet = gc.sheet_mut(sheet_id);
         let data_table_pos = sheet.first_data_table_within(pos).unwrap();
@@ -166,8 +183,15 @@ pub(crate) mod tests {
         let sheet_id = grid_controller.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
 
-        let result =
-            grid_controller.import_csv(sheet_id, "".as_bytes().to_vec(), "smallpop.csv", pos, None);
+        let result = grid_controller.import_csv(
+            sheet_id,
+            "".as_bytes().to_vec(),
+            "smallpop.csv",
+            pos,
+            None,
+            Some(b','),
+            Some(false),
+        );
         assert!(result.is_err());
     }
 
@@ -191,6 +215,8 @@ pub(crate) mod tests {
             "large.csv",
             Pos { x: 0, y: 0 },
             None,
+            Some(b','),
+            Some(false),
         )
         .unwrap();
 
@@ -208,6 +234,8 @@ pub(crate) mod tests {
                 csv.as_bytes().to_vec(),
                 "bad line",
                 Pos { x: 0, y: 0 },
+                Some(b','),
+                Some(false),
             )
             .unwrap();
         let op = &ops[0];
@@ -460,8 +488,16 @@ pub(crate) mod tests {
         let sheet_id = gc.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
 
-        gc.import_csv(sheet_id, csv_file.as_slice().to_vec(), file_name, pos, None)
-            .unwrap();
+        gc.import_csv(
+            sheet_id,
+            csv_file.as_slice().to_vec(),
+            file_name,
+            pos,
+            None,
+            Some(b','),
+            Some(false),
+        )
+        .unwrap();
 
         print_data_table(&gc, sheet_id, Rect::new_span(pos, Pos { x: 3, y: 4 }));
 
@@ -486,8 +522,16 @@ pub(crate) mod tests {
         let sheet_id = gc.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
 
-        gc.import_csv(sheet_id, csv_file.as_slice().to_vec(), file_name, pos, None)
-            .unwrap();
+        gc.import_csv(
+            sheet_id,
+            csv_file.as_slice().to_vec(),
+            file_name,
+            pos,
+            None,
+            Some(b','),
+            Some(false),
+        )
+        .unwrap();
 
         print_data_table(&gc, sheet_id, Rect::new_span(pos, Pos { x: 3, y: 4 }));
 
@@ -513,8 +557,16 @@ pub(crate) mod tests {
         let sheet_id = gc.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
 
-        gc.import_csv(sheet_id, csv_file.as_slice().to_vec(), file_name, pos, None)
-            .unwrap();
+        gc.import_csv(
+            sheet_id,
+            csv_file.as_slice().to_vec(),
+            file_name,
+            pos,
+            None,
+            Some(b','),
+            Some(false),
+        )
+        .unwrap();
 
         print_table(&gc, sheet_id, Rect::new_span(pos, Pos { x: 2, y: 3 }));
 

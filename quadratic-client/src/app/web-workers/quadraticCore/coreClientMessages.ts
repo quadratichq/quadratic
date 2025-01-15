@@ -418,6 +418,8 @@ export interface ClientCoreImportFile {
   location?: JsCoordinate;
   cursor?: string;
   id: number;
+  csvDelimiter?: number;
+  hasHeading?: boolean;
 }
 
 export interface CoreClientImportFile {
@@ -426,6 +428,20 @@ export interface CoreClientImportFile {
   contents?: ArrayBuffer;
   version?: string;
   error?: string;
+}
+
+export interface ClientCoreGetCsvPreview {
+  type: 'clientCoreGetCsvPreview';
+  file: ArrayBuffer;
+  maxRows: number;
+  delimiter: number | undefined;
+  id: number;
+}
+
+export interface CoreClientGetCsvPreview {
+  type: 'coreClientGetCsvPreview';
+  preview: string[][] | undefined;
+  id: number;
 }
 
 export interface ClientCoreDeleteCellValues {
@@ -1275,7 +1291,8 @@ export type ClientCoreMessage =
   | ClientCoreFindNextRowForRect
   | ClientCoreMoveCodeCellVertically
   | ClientCoreMoveCodeCellHorizontally
-  | ClientCoreFiniteRectFromSelection;
+  | ClientCoreFiniteRectFromSelection
+  | ClientCoreGetCsvPreview;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1342,4 +1359,5 @@ export type CoreClientMessage =
   | CoreClientMoveCodeCellVertically
   | CoreClientMoveCodeCellHorizontally
   | CoreClientFiniteRectFromSelection
-  | CoreClientA1Context;
+  | CoreClientA1Context
+  | CoreClientGetCsvPreview;
