@@ -3,7 +3,6 @@ name: Build and Publish Images to ECR
 on:
   push:
     branches:
-      - self-hosting-setup #remove
       - main
 
 concurrency:
@@ -11,50 +10,60 @@ concurrency:
 
 jobs:
   publish_images:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
-        service: [multiplayer, files, connection, client, api]
+        include:
+          - service: client
+            runner: blacksmith-8vcpu-ubuntu-2204
+          - service: api
+            runner: blacksmith-2vcpu-ubuntu-2204
+          - service: connection
+            runner: blacksmith-4vcpu-ubuntu-2204
+          - service: files
+            runner: blacksmith-4vcpu-ubuntu-2204
+          - service: multiplayer
+            runner: blacksmith-4vcpu-ubuntu-2204
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
-    - name: Login to Amazon ECR Public
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v2
-      with:
-        registry-type: public
+      - name: Login to Amazon ECR Public
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry-type: public
 
-    - name: Define repository name
-      id: repo-name
-      run: |
-        echo "REPO_NAME=quadratic-${{ matrix.service }}" >> $GITHUB_OUTPUT
+      - name: Define repository name
+        id: repo-name
+        run: |
+          echo "REPO_NAME=quadratic-${{ matrix.service }}" >> $GITHUB_OUTPUT
 
-    - name: Create Public ECR Repository if not exists
-      id: create-ecr
-      env:
-        REPO_NAME: ${{ steps.repo-name.outputs.REPO_NAME }}
-      run: |
-        aws ecr-public create-repository --repository-name $REPO_NAME || true
-        REPO_INFO=$(aws ecr-public describe-repositories --repository-names $REPO_NAME)
-        ECR_URL=$(echo $REPO_INFO | jq -r '.repositories[0].repositoryUri')
-        echo "ECR_URL=$ECR_URL" >> $GITHUB_OUTPUT
-  
-    - name: Read VERSION file
-      id: version
-      run: echo "VERSION=$(cat VERSION)" >> $GITHUB_OUTPUT
+      - name: Create Public ECR Repository if not exists
+        id: create-ecr
+        env:
+          REPO_NAME: ${{ steps.repo-name.outputs.REPO_NAME }}
+        run: |
+          aws ecr-public create-repository --repository-name $REPO_NAME || true
+          REPO_INFO=$(aws ecr-public describe-repositories --repository-names $REPO_NAME)
+          ECR_URL=$(echo $REPO_INFO | jq -r '.repositories[0].repositoryUri')
+          echo "ECR_URL=$ECR_URL" >> $GITHUB_OUTPUT
 
-    - name: Build, Tag, and Push Image to Amazon ECR Public
-      env:
-        ECR_URL: ${{ steps.create-ecr.outputs.ECR_URL }}
-        IMAGE_TAG: ${{ steps.version.outputs.VERSION }}
-      run: |
-        docker build -t $ECR_URL:$IMAGE_TAG -t $ECR_URL:latest -f quadratic-${{ matrix.service }}/Dockerfile .
-        docker push $ECR_URL:$IMAGE_TAG
-        docker push $ECR_URL:latest
+      - name: Read VERSION file
+        id: version
+        run: echo "VERSION=$(cat VERSION)" >> $GITHUB_OUTPUT
+
+      - name: Build, Tag, and Push Image to Amazon ECR Public
+        env:
+          ECR_URL: ${{ steps.create-ecr.outputs.ECR_URL }}
+          IMAGE_TAG: ${{ steps.version.outputs.VERSION }}
+        run: |
+          docker build -t $ECR_URL:$IMAGE_TAG -t $ECR_URL:latest -f quadratic-${{ matrix.service }}/Dockerfile .
+          docker push $ECR_URL:$IMAGE_TAG
+          docker push $ECR_URL:latest

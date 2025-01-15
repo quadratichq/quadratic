@@ -65,7 +65,7 @@ ts-rs = { git = "https://github.com/quadratichq/ts-rs/", rev = "812c1a8", option
   "uuid-impl",
   "smallvec-impl",
 ] }
-wasm-bindgen = { version = "0.2.87", optional = true }
+wasm-bindgen = { version = "0.2.100", optional = true }
 wasm-bindgen-futures = { version = "0.4.33", optional = true }
 lexicon_fractional_index = "0.0.3"
 htmlescape = "0.3.1"
@@ -86,6 +86,7 @@ bincode = "1.3.3"
 flate2 = "1.0.30"
 serde_with = "3.8.1"
 dateparser = "0.2.1"
+fancy-regex = "0.14.0"
 
 [dev-dependencies]
 criterion = { version = "0.4", default-features = false }
@@ -103,6 +104,11 @@ harness = false
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ['-Os', '-g'] # TODO: -g seems to fix the name mangling problem
 
+[package.metadata.wasm-pack.profile.release.wasm-bindgen]
+debug-js-glue = false
+demangle-name-section = true
+dwarf-debug-info = false
+
 [package.metadata.wasm-pack.profile.dev]
 wasm-opt = false
 
@@ -112,14 +118,9 @@ demangle-name-section = true
 dwarf-debug-info = true
 
 [package.metadata.wasm-pack.profile.profiling]
-wasm-opt = ['-O', '-g']
+wasm-opt = ['-O0', '-g']
 
 [package.metadata.wasm-pack.profile.profiling.wasm-bindgen]
 debug-js-glue = false
 demangle-name-section = true
 dwarf-debug-info = true
-
-[package.metadata.wasm-pack.profile.release.wasm-bindgen]
-debug-js-glue = false
-demangle-name-section = true
-dwarf-debug-info = false

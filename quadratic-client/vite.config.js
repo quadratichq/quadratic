@@ -28,6 +28,7 @@ export default defineConfig(() => {
       },
     },
   ];
+
   if (process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_AUTH_TOKEN !== 'none') {
     plugins.push(
       sentryVitePlugin({
@@ -48,6 +49,7 @@ export default defineConfig(() => {
     publicDir: './public',
     assetsInclude: ['**/*.py'],
     server: {
+      host: '0.0.0.0',
       port: 3000,
     },
     resolve: {

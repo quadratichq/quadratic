@@ -5,10 +5,15 @@
 
 use axum::{
     http::{header::AUTHORIZATION, Method},
+    middleware::map_response,
+    response::Response,
     routing::{any, get, post},
     Extension, Json, Router,
 };
-use http::HeaderName;
+use http::{
+    header::{CACHE_CONTROL, PRAGMA},
+    HeaderName, HeaderValue,
+};
 use quadratic_rust_shared::auth::jwt::get_jwks;
 use quadratic_rust_shared::sql::Connection;
 use serde::{Deserialize, Serialize};
@@ -136,6 +141,17 @@ pub(crate) fn app(state: State) -> Result<Router> {
         .layer(SetSensitiveHeadersLayer::new(
             sensitive_headers.iter().cloned(),
         ))
+        //
+        // cache control - disable client side caching
+        .layer(map_response(|mut response: Response| async move {
+            let headers = response.headers_mut();
+            headers.insert(
+                CACHE_CONTROL,
+                HeaderValue::from_static("no-cache, no-store, must-revalidate"),
+            );
+            headers.insert(PRAGMA, HeaderValue::from_static("no-cache"));
+            response
+        }))
         //
         // cors
         .layer(cors)

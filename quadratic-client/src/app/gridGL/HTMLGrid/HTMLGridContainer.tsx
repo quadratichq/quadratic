@@ -5,6 +5,7 @@ import { CodeHint } from '@/app/gridGL/HTMLGrid/CodeHint';
 import { CodeRunning } from '@/app/gridGL/HTMLGrid/codeRunning/CodeRunning';
 import { EmptyGridMessage } from '@/app/gridGL/HTMLGrid/EmptyGridMessage';
 import { GridContextMenu } from '@/app/gridGL/HTMLGrid/GridContextMenu';
+import { GridFileInput } from '@/app/gridGL/HTMLGrid/GridFileInput';
 import { HoverCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import { HoverTooltip } from '@/app/gridGL/HTMLGrid/hoverTooltip/HoverTooltip';
 import { HtmlCells } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCells';
@@ -122,6 +123,8 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
           </div>
         </div>
       </div>
+
+      <GridFileInput />
 
       <Following />
 

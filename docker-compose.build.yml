@@ -1,0 +1,37 @@
+# used to build the images locally
+
+services:
+  # quadratic services - client, api, multiplayer, files, connection
+
+  quadratic-client:
+    build:
+      context: .
+      dockerfile: quadratic-client/Dockerfile
+      args:
+        CLIENT_DEV: ${CLIENT_DEV}
+
+  quadratic-api:
+    build:
+      context: .
+      dockerfile: quadratic-api/Dockerfile
+
+  quadratic-multiplayer:
+    build:
+      context: .
+      dockerfile: quadratic-multiplayer/Dockerfile
+      args:
+        - binary=quadratic-multiplayer
+
+  quadratic-files:
+    build:
+      context: .
+      dockerfile: quadratic-files/Dockerfile
+      args:
+        - binary=quadratic-files
+
+  quadratic-connection:
+    build:
+      context: .
+      dockerfile: quadratic-connection/Dockerfile
+      args:
+        - binary=quadratic-connection

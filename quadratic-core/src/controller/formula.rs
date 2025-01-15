@@ -87,7 +87,7 @@ mod tests {
 
     fn parse(s: &str) -> FormulaParseResult {
         println!("Parsing {s}");
-        
+
         parse_formula(s, crate::Pos::ORIGIN)
     }
 
