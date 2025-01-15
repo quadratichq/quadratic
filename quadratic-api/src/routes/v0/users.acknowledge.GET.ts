@@ -19,5 +19,5 @@ export default [validateAccessToken, userMiddleware, handler];
  * been created yet or associated with teams and/or files.
  */
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/users/acknowledge.GET.response']>) {
-  return res.status(200).json({ message: 'acknowledged' });
+  return res.status(200).json({ message: 'acknowledged', userCreated: req.userCreated });
 }

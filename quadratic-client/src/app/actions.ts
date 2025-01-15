@@ -67,7 +67,7 @@ export const createNewFileAction = {
   label: 'New',
   isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
   run({ teamUuid }: { teamUuid: string }) {
-    window.location.href = ROUTES.CREATE_FILE_PRIVATE(teamUuid);
+    window.location.href = ROUTES.CREATE_FILE(teamUuid, { private: true });
   },
 };
 

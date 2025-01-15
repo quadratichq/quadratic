@@ -351,7 +351,12 @@ export class q {
    * Show a conversion error message when the user tries to use an old function.
    */
   static conversionError(oldFunc: string, newFunc: string): void {
-    const message = oldFunc + ' functionality is no longer supported. Use ' + newFunc + ' instead.';
+    const message =
+      oldFunc +
+      ' functionality is no longer supported. Use ' +
+      newFunc +
+      ' instead.  Refer to the documentation at {COMMUNITY_A1_FILE_UPDATE_URL}' +
+      ' for more details.';
     throw new Error(message);
   }
 }

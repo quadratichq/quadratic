@@ -120,7 +120,10 @@ impl GridController {
                                 }
                                 _ => {
                                     let mut new_code = code.clone();
-                                    new_code.adjust_code_cell_column_row(column, row, delta);
+                                    let sheet_map = self.grid.sheet_name_id_map();
+                                    new_code.adjust_code_cell_column_row(
+                                        column, row, delta, &sheet_id, &sheet_map,
+                                    );
                                     new_code.code
                                 }
                             };
@@ -434,7 +437,7 @@ mod tests {
         gc.set_code_cell(
             sheet_pos,
             CodeCellLanguage::Python,
-            "q.cells('B1:B2')".into(),
+            r#"q.cells("B1:B2")"#.into(),
             None,
         );
 
@@ -470,7 +473,7 @@ mod tests {
                 sheet_pos,
                 values: CellValue::Code(CodeCellValue {
                     language: CodeCellLanguage::Python,
-                    code: "q.cells('B1:B3')".to_string()
+                    code: r#"q.cells("B1:B3")"#.to_string()
                 })
                 .into(),
             }
@@ -510,7 +513,7 @@ mod tests {
         gc.set_code_cell(
             sheet_pos,
             CodeCellLanguage::Javascript,
-            "return q.cells('B1:B2');".into(),
+            r#"return q.cells("B1:B2");"#.into(),
             None,
         );
 
@@ -546,7 +549,7 @@ mod tests {
                 sheet_pos,
                 values: CellValue::Code(CodeCellValue {
                     language: CodeCellLanguage::Javascript,
-                    code: "return q.cells('B1:B3');".to_string()
+                    code: r#"return q.cells("B1:B3");"#.to_string()
                 })
                 .into(),
             }

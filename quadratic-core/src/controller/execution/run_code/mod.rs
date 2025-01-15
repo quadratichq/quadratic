@@ -81,7 +81,7 @@ impl GridController {
             transaction.add_from_code_run(sheet_id, pos, &old_code_run);
             transaction.add_from_code_run(sheet_id, pos, &new_code_run);
 
-            self.send_updated_bounds_rect(&sheet_rect, false);
+            self.send_updated_bounds(sheet_rect.sheet_id);
             transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
             if transaction.is_user() {
                 if let Some(sheet) = self.try_sheet(sheet_id) {

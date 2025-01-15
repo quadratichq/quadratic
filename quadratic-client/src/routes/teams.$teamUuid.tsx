@@ -5,7 +5,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { ActionFunctionArgs, Link, Outlet, redirectDocument } from 'react-router-dom';
+import { ActionFunctionArgs, Link, Outlet, redirectDocument, useRouteError } from 'react-router-dom';
 
 export type TeamAction = {
   'request.update-team': ReturnType<typeof getActionUpdateTeam>;
@@ -139,6 +139,8 @@ export const Component = () => {
 };
 
 export const ErrorBoundary = () => {
+  const error = useRouteError();
+  console.error(error);
   // Maybe we log this to Sentry?
   return (
     <Empty
