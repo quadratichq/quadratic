@@ -13,7 +13,7 @@ on:
 # Require previous builds and deployments to finish before starting a new one
 # Not sure how Pulumi would handle being terminated when changing a stack.
 concurrency:
-  group: pr-${{ github.event.pull_request.number }}
+  group: qa
 
 jobs:
   infra:
@@ -35,7 +35,7 @@ jobs:
 
           pulumi org set-default quadratic
 
-          STACK_NAME="preview-pr-${{ env.PR_ID }}"
+          STACK_NAME="quadratic-qa"
           if ! pulumi stack ls | grep -q "^$STACK_NAME"; then
             echo "Stack $STACK_NAME does not exist. Initializing..."
             pulumi stack init $STACK_NAME

@@ -9,7 +9,7 @@ on:
 # Require previous builds and deployments to finish before starting a new one
 # Close can not run concurrently with Create or Update Infrastructure with Pulumi
 concurrency:
-  group: pr-${{ github.event.pull_request.number }}
+  group: qa
 
 jobs:
   teardown:
@@ -30,7 +30,7 @@ jobs:
 
           pulumi org set-default quadratic
 
-          STACK_NAME="preview-pr-${{ env.PR_ID }}"
+          STACK_NAME="quadratic-qa"
           pulumi stack select $STACK_NAME
           pulumi config set aws:region us-west-2
 
