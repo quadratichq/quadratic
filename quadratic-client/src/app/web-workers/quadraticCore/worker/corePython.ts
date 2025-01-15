@@ -16,12 +16,12 @@ class CorePython {
   // last running transaction (used to cancel execution)
   lastTransactionId?: string;
 
-  init(pythonPort: MessagePort) {
+  init = (pythonPort: MessagePort) => {
     this.corePythonPort = pythonPort;
     this.corePythonPort.onmessage = this.handleMessage;
-    self.sendRunPython = corePython.sendRunPython;
+    self.sendRunPython = this.sendRunPython;
     if (debugWebWorkers) console.log('[corePython] initialized');
-  }
+  };
 
   private handleMessage = (e: MessageEvent<PythonCoreMessage>) => {
     switch (e.data.type) {
@@ -59,21 +59,12 @@ class CorePython {
         core.calculationComplete(codeResult);
         break;
 
-      case 'pythonCoreGetCellsLength':
-        this.sendGetCellsLength(
-          e.data.sharedBuffer,
-          e.data.transactionId,
-          e.data.x,
-          e.data.y,
-          e.data.w,
-          e.data.h,
-          e.data.sheet,
-          e.data.lineNumber
-        );
+      case 'pythonCoreGetCellsA1Length':
+        this.sendGetCellsA1Length(e.data.sharedBuffer, e.data.transactionId, e.data.a1, e.data.lineNumber);
         break;
 
-      case 'pythonCoreGetCellsData':
-        this.sendGetCellsData(e.data.id, e.data.sharedBuffer);
+      case 'pythonCoreGetCellsA1Data':
+        this.sendGetCellsA1Data(e.data.id, e.data.sharedBuffer);
         break;
 
       default:
@@ -89,45 +80,41 @@ class CorePython {
     this.corePythonPort.postMessage(message);
   }
 
-  private sendGetCellsLength(
+  private sendGetCellsA1Length(
     sharedBuffer: SharedArrayBuffer,
     transactionId: string,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    sheet?: string,
+    a1: string,
     lineNumber?: number
   ) {
     const int32View = new Int32Array(sharedBuffer, 0, 3);
     try {
-      const cells = core.getCells(transactionId, x, y, w, h, sheet, lineNumber);
+      const cellsString = core.getCellsA1(transactionId, a1, lineNumber);
 
       // need to get the bytes of the string (which covers unicode characters)
-      const length = new Blob([cells]).size;
+      const length = new Blob([cellsString]).size;
 
       Atomics.store(int32View, 1, length);
       if (length !== 0) {
         const id = this.id++;
-        this.getCellsResponses[id] = cells;
+        this.getCellsResponses[id] = cellsString;
         Atomics.store(int32View, 2, id);
       }
       Atomics.store(int32View, 0, 1);
-    } catch (e) {
-      console.warn('[corePython] Error getting cells:', e);
+    } catch (_e) {
+      // core threw and handled the error
     }
     Atomics.notify(int32View, 0, 1);
   }
 
-  private sendGetCellsData(id: number, sharedBuffer: SharedArrayBuffer) {
-    const cells = this.getCellsResponses[id];
+  private sendGetCellsA1Data(id: number, sharedBuffer: SharedArrayBuffer) {
+    const cellsString = this.getCellsResponses[id];
     delete this.getCellsResponses[id];
     const int32View = new Int32Array(sharedBuffer, 0, 1);
-    if (cells === undefined) {
+    if (cellsString === undefined) {
       console.warn('[corePython] No cells found for id:', id);
     } else {
       const encoder = new TextEncoder();
-      const encodedCells = encoder.encode(cells);
+      const encodedCells = encoder.encode(cellsString);
       const uint8View = new Uint8Array(sharedBuffer, 4, encodedCells.length);
       uint8View.set(encodedCells);
     }

@@ -6,8 +6,11 @@ use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
 use crate::{
     controller::operations::operation::Operation,
-    grid::{formatting::CellFmtArray, NumericFormat, NumericFormatKind, Sheet},
-    Pos, RunLengthEncoding,
+    grid::{
+        formats::{FormatUpdate, SheetFormatUpdates},
+        NumericFormat, NumericFormatKind, Sheet,
+    },
+    A1Selection, Pos,
 };
 
 use super::CellValue;
@@ -48,7 +51,6 @@ impl CellValue {
         sheet: &mut Sheet,
     ) -> Result<(CellValue, Vec<Operation>)> {
         let mut ops = vec![];
-        let sheet_rect = crate::SheetRect::single_pos(pos, sheet.id);
 
         let cell_value = match js_type {
             "text" => {
@@ -68,14 +70,20 @@ impl CellValue {
                         kind: NumericFormatKind::Currency,
                         symbol: Some(currency),
                     };
-                    sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
+                    sheet
+                        .formats
+                        .numeric_format
+                        .set(pos, Some(numeric_format.clone()));
 
-                    ops.push(Operation::SetCellFormats {
-                        sheet_rect,
-                        attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
-                            Some(numeric_format),
-                            1,
-                        )),
+                    ops.push(Operation::SetCellFormatsA1 {
+                        sheet_id: sheet.id,
+                        formats: SheetFormatUpdates::from_selection(
+                            &A1Selection::from_single_cell(pos.to_sheet_pos(sheet.id)),
+                            FormatUpdate {
+                                numeric_format: Some(Some(numeric_format.clone())),
+                                ..Default::default()
+                            },
+                        ),
                     });
 
                     // We no longer automatically set numeric decimals for
@@ -90,13 +98,19 @@ impl CellValue {
                         kind: NumericFormatKind::Percentage,
                         symbol: None,
                     };
-                    sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
-                    ops.push(Operation::SetCellFormats {
-                        sheet_rect,
-                        attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
-                            Some(numeric_format),
-                            1,
-                        )),
+                    sheet
+                        .formats
+                        .numeric_format
+                        .set(pos, Some(numeric_format.clone()));
+                    ops.push(Operation::SetCellFormatsA1 {
+                        sheet_id: sheet.id,
+                        formats: SheetFormatUpdates::from_selection(
+                            &A1Selection::from_single_cell(pos.to_sheet_pos(sheet.id)),
+                            FormatUpdate {
+                                numeric_format: Some(Some(numeric_format.clone())),
+                                ..Default::default()
+                            },
+                        ),
                     });
 
                     CellValue::Number(number)

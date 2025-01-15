@@ -1,6 +1,9 @@
 import { debugWebWorkers } from '@/app/debugFlags';
-import { JsGetCellResponse } from '@/app/quadratic-core-types';
-import { CoreJavascriptMessage, JavascriptCoreMessage } from '../../javascriptWebWorker/javascriptCoreMessages';
+import { CellA1Response } from '@/app/quadratic-core-types';
+import {
+  CoreJavascriptMessage,
+  JavascriptCoreMessage,
+} from '@/app/web-workers/javascriptWebWorker/javascriptCoreMessages';
 import { core } from './core';
 
 declare var self: WorkerGlobalScope &
@@ -14,12 +17,12 @@ class CoreJavascript {
   // last running transaction (used to cancel execution)
   lastTransactionId?: string;
 
-  init(JavascriptPort: MessagePort) {
+  init = (JavascriptPort: MessagePort) => {
     this.coreJavascriptPort = JavascriptPort;
     this.coreJavascriptPort.onmessage = this.handleMessage;
-    self.sendRunJavascript = coreJavascript.sendRunJavascript;
+    self.sendRunJavascript = this.sendRunJavascript;
     if (debugWebWorkers) console.log('[coreJavascript] initialized');
-  }
+  };
 
   private handleMessage = (e: MessageEvent<JavascriptCoreMessage>) => {
     switch (e.data.type) {
@@ -30,17 +33,8 @@ class CoreJavascript {
         core.calculationComplete(e.data.results);
         break;
 
-      case 'javascriptCoreGetCells':
-        this.handleGetCellsResponse(
-          e.data.id,
-          e.data.transactionId,
-          e.data.x,
-          e.data.y,
-          e.data.w,
-          e.data.h,
-          e.data.sheet,
-          e.data.lineNumber
-        );
+      case 'javascriptCoreGetCellsA1':
+        this.handleGetCellsA1Response(e.data.id, e.data.transactionId, e.data.a1, e.data.lineNumber);
         break;
 
       default:
@@ -56,27 +50,25 @@ class CoreJavascript {
     this.coreJavascriptPort.postMessage(message);
   }
 
-  handleGetCellsResponse = (
-    id: number,
-    transactionId: string,
-    x: number,
-    y: number,
-    w: number,
-    h?: number,
-    sheet?: string,
-    lineNumber?: number
-  ) => {
-    let cellsString = '';
+  private handleGetCellsA1Response = (id: number, transactionId: string, a1: string, lineNumber?: number) => {
+    let cells: CellA1Response | undefined;
     try {
-      cellsString = core.getCells(transactionId, x, y, w, h, sheet, lineNumber);
-    } catch (e) {
-      console.warn('[coreJavascript] Error getting cells:', e);
+      const cellsString = core.getCellsA1(transactionId, a1, lineNumber);
+      if (cellsString) {
+        cells = JSON.parse(cellsString) as CellA1Response;
+      }
+    } catch (_e) {
+      // core threw and handled the error
     }
-    const cells = cellsString.length > 0 ? (JSON.parse(cellsString) as JsGetCellResponse[]) : undefined;
     this.send({
-      type: 'coreJavascriptGetCells',
+      type: 'coreJavascriptGetCellsA1',
       id,
-      cells,
+      cells: cells?.cells,
+      x: cells ? Number(cells.x) : undefined,
+      y: cells ? Number(cells.y) : undefined,
+      w: cells ? Number(cells.w) : undefined,
+      h: cells ? Number(cells.h) : undefined,
+      two_dimensional: cells ? cells.two_dimensional : false,
     });
   };
 
@@ -91,14 +83,6 @@ class CoreJavascript {
       code,
     });
   };
-
-  sendGetCells(id: number, cells?: JsGetCellResponse[]) {
-    this.send({
-      type: 'coreJavascriptGetCells',
-      id,
-      cells,
-    });
-  }
 
   cancelExecution() {
     // It's possible that the transaction was completed before the message was

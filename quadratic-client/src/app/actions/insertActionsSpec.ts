@@ -1,6 +1,7 @@
 import { Action } from '@/app/actions/actions';
 import { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { FILE_INPUT_ID } from '@/app/gridGL/HTMLGrid/GridFileInput';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import { SNIPPET_JS_API, SNIPPET_JS_CHART } from '@/app/ui/menus/CodeEditor/snippetsJS';
@@ -31,6 +32,7 @@ type InsertActionSpec = Pick<
   | Action.RemoveInsertedCells
   | Action.InsertToday
   | Action.InsertTodayTime
+  | Action.InsertFile
 >;
 
 export const insertActionsSpec: InsertActionSpec = {
@@ -39,7 +41,7 @@ export const insertActionsSpec: InsertActionSpec = {
     labelVerbose: 'Insert Python code',
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
-      const cursor = sheets.sheet.cursor.getCursor();
+      const cursor = sheets.sheet.cursor.position;
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
         diffEditorContent: undefined,
@@ -61,7 +63,7 @@ export const insertActionsSpec: InsertActionSpec = {
     labelVerbose: 'Insert JavaScript code',
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
-      const cursor = sheets.sheet.cursor.getCursor();
+      const cursor = sheets.sheet.cursor.position;
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
         diffEditorContent: undefined,
@@ -83,7 +85,7 @@ export const insertActionsSpec: InsertActionSpec = {
     labelVerbose: 'Insert Formula',
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
-      const cursor = sheets.sheet.cursor.getCursor();
+      const cursor = sheets.sheet.cursor.position;
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
         diffEditorContent: undefined,
@@ -105,7 +107,7 @@ export const insertActionsSpec: InsertActionSpec = {
     labelVerbose: 'Insert Python chart (Plotly)',
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
-      const cursor = sheets.sheet.cursor.getCursor();
+      const cursor = sheets.sheet.cursor.position;
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
         diffEditorContent: undefined,
@@ -127,7 +129,7 @@ export const insertActionsSpec: InsertActionSpec = {
     labelVerbose: 'Insert JavaScript chart (Chart.js)',
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
-      const cursor = sheets.sheet.cursor.getCursor();
+      const cursor = sheets.sheet.cursor.position;
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
         diffEditorContent: undefined,
@@ -144,12 +146,22 @@ export const insertActionsSpec: InsertActionSpec = {
       }));
     },
   },
+  [Action.InsertFile]: {
+    label: 'From file (CSV, Excel, or Parquet)',
+    labelVerbose: 'Insert file (CSV, Excel, or Parquet)',
+    run: () => {
+      const el = document.getElementById(FILE_INPUT_ID) as HTMLInputElement;
+      if (el) {
+        el.click();
+      }
+    },
+  },
   [Action.InsertApiRequestJavascript]: {
     label: 'From JavaScript API request',
     labelVerbose: 'Insert JavaScript API request',
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
-      const cursor = sheets.sheet.cursor.getCursor();
+      const cursor = sheets.sheet.cursor.position;
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
         diffEditorContent: undefined,
@@ -171,7 +183,7 @@ export const insertActionsSpec: InsertActionSpec = {
     labelVerbose: 'Insert Python API request',
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
-      const cursor = sheets.sheet.cursor.getCursor();
+      const cursor = sheets.sheet.cursor.position;
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
         diffEditorContent: undefined,
@@ -237,8 +249,8 @@ export const insertActionsSpec: InsertActionSpec = {
     labelVerbose: 'Insert cell reference',
     run: () => {
       if (pixiAppSettings.codeEditorState.showCodeEditor) {
-        const { sheetId, pos, language } = pixiAppSettings.codeEditorState.codeCell;
-        insertCellRef(pos, sheetId, language);
+        const { sheetId, language } = pixiAppSettings.codeEditorState.codeCell;
+        insertCellRef(sheetId, language);
       }
     },
   },
@@ -254,7 +266,7 @@ export const insertActionsSpec: InsertActionSpec = {
       const cursor = sheet.cursor;
       const today = new Date();
       const formattedDate = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
-      quadraticCore.setCellValue(sheet.id, cursor.cursorPosition.x, cursor.cursorPosition.y, formattedDate);
+      quadraticCore.setCellValue(sheet.id, cursor.position.x, cursor.position.y, formattedDate);
     },
   },
   [Action.InsertTodayTime]: {
@@ -265,7 +277,7 @@ export const insertActionsSpec: InsertActionSpec = {
       const cursor = sheet.cursor;
       const today = new Date();
       const formattedTime = `${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}`;
-      quadraticCore.setCellValue(sheet.id, cursor.cursorPosition.x, cursor.cursorPosition.y, formattedTime);
+      quadraticCore.setCellValue(sheet.id, cursor.position.x, cursor.position.y, formattedTime);
     },
   },
 };

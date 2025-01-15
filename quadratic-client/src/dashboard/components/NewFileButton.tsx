@@ -36,7 +36,7 @@ export default function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
 
   return (
     <div className="flex flex-row-reverse gap-2">
-      <Link to={isPrivate ? ROUTES.CREATE_FILE_PRIVATE(teamUuid) : ROUTES.CREATE_FILE(teamUuid)} reloadDocument>
+      <Link to={ROUTES.CREATE_FILE(teamUuid, { private: isPrivate })} reloadDocument>
         <Button variant="default">New file</Button>
       </Link>
       <input
@@ -72,11 +72,7 @@ export default function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
             <DropdownMenuItem asChild>
               <Link
                 reloadDocument
-                to={
-                  isPrivate
-                    ? ROUTES.CREATE_FILE_PRIVATE(teamUuid, stateToInsertAndRun)
-                    : ROUTES.CREATE_FILE(teamUuid, stateToInsertAndRun)
-                }
+                to={ROUTES.CREATE_FILE(teamUuid, { state: stateToInsertAndRun, private: isPrivate })}
               >
                 <ApiIcon className="mr-3 text-primary" />
                 <span className="flex flex-col">

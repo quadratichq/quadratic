@@ -36,26 +36,18 @@ impl Sheet {
                 }
             }
         }
-        self.calculate_bounds();
-    }
-
-    #[cfg(test)]
-    pub fn test_set_format(
-        &mut self,
-        x: i64,
-        y: i64,
-        update: crate::grid::formats::format_update::FormatUpdate,
-    ) {
-        self.set_format_cell(crate::grid::Pos { x, y }, &update, true);
+        self.recalculate_bounds();
     }
 
     /// Sets a code run and CellValue::Code with an empty code string, a single value result.
     #[cfg(test)]
     pub fn test_set_code_run_single(&mut self, x: i64, y: i64, value: crate::grid::CellValue) {
+        use crate::grid::{CodeCellLanguage, CodeCellValue};
+
         self.set_cell_value(
             crate::Pos { x, y },
-            crate::CellValue::Code(crate::CodeCellValue {
-                language: crate::grid::CodeCellLanguage::Formula,
+            crate::CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
                 code: "".to_string(),
             }),
         );
@@ -66,7 +58,7 @@ impl Sheet {
                 std_out: None,
                 std_err: None,
                 formatted_code_string: None,
-                cells_accessed: std::collections::HashSet::new(),
+                cells_accessed: Default::default(),
                 result: crate::grid::CodeRunResult::Ok(crate::Value::Single(value)),
                 return_type: Some("number".into()),
                 line_number: None,
@@ -93,12 +85,12 @@ impl Sheet {
     #[cfg(test)]
     pub fn test_set_code_run_array(&mut self, x: i64, y: i64, n: Vec<&str>, vertical: bool) {
         use crate::{
-            grid::{CodeCellLanguage, CodeRun, CodeRunResult},
-            Array, ArraySize, CellValue, CodeCellValue, Pos, Value,
+            grid::{CodeCellLanguage, CodeCellValue, CodeRun, CodeRunResult},
+            Array, ArraySize, CellValue, Pos, Value,
         };
         use bigdecimal::BigDecimal;
         use chrono::Utc;
-        use std::{collections::HashSet, str::FromStr};
+        use std::str::FromStr;
 
         let array_size = if vertical {
             ArraySize::new(1, n.len() as u32).unwrap()
@@ -133,7 +125,7 @@ impl Sheet {
                 std_out: None,
                 std_err: None,
                 formatted_code_string: None,
-                cells_accessed: HashSet::new(),
+                cells_accessed: Default::default(),
                 result: CodeRunResult::Ok(Value::Array(array)),
                 return_type: Some("number".into()),
                 line_number: None,
@@ -142,17 +134,18 @@ impl Sheet {
                 last_modified: Utc::now(),
             }),
         );
+        self.recalculate_bounds();
     }
 
     #[cfg(test)]
     pub fn test_set_code_run_array_2d(&mut self, x: i64, y: i64, w: u32, h: u32, n: Vec<&str>) {
         use crate::{
-            grid::{CodeCellLanguage, CodeRun, CodeRunResult},
-            Array, ArraySize, CellValue, CodeCellValue, Pos, Value,
+            grid::{CodeCellLanguage, CodeCellValue, CodeRun, CodeRunResult},
+            Array, ArraySize, CellValue, Pos, Value,
         };
         use bigdecimal::BigDecimal;
         use chrono::Utc;
-        use std::{collections::HashSet, str::FromStr};
+        use std::str::FromStr;
 
         self.set_cell_value(
             Pos { x, y },
@@ -181,7 +174,7 @@ impl Sheet {
                 std_out: None,
                 std_err: None,
                 formatted_code_string: None,
-                cells_accessed: HashSet::new(),
+                cells_accessed: Default::default(),
                 result: CodeRunResult::Ok(Value::Array(array)),
                 return_type: Some("number".into()),
                 line_number: None,

@@ -5,7 +5,7 @@ use number_series::find_number_series;
 use string_series::find_string_series;
 use time_series::find_time_series;
 
-use crate::CellValue;
+use crate::{CellValue, Pos};
 
 pub mod date_series;
 pub mod date_time_series;
@@ -15,12 +15,12 @@ pub mod time_series;
 
 #[derive(Debug, Clone)]
 pub struct SeriesOptions {
-    pub series: Vec<CellValue>,
+    pub series: Vec<(CellValue, Option<Pos>)>,
     pub spaces: i32,
     pub negative: bool,
 }
 
-pub(crate) fn copy_series(options: SeriesOptions) -> Vec<CellValue> {
+fn copy_series(options: SeriesOptions) -> Vec<(CellValue, Option<Pos>)> {
     let SeriesOptions {
         series,
         spaces,
@@ -46,72 +46,75 @@ pub(crate) fn copy_series(options: SeriesOptions) -> Vec<CellValue> {
             .into_iter()
             .cycle()
             .take(spaces as usize)
-            .collect::<Vec<CellValue>>()
+            .collect::<Vec<(CellValue, Option<Pos>)>>()
     }
 }
 
 /// Finds auto complete series.
-pub fn find_auto_complete(options: SeriesOptions) -> Vec<CellValue> {
+pub fn find_auto_complete(options: SeriesOptions) -> Vec<(CellValue, Option<Pos>)> {
     // if cells are missing, just copy series
-    if options.series.iter().all(|s| *s == CellValue::Blank) {
+    if options.series.iter().all(|s| s.0 == CellValue::Blank) {
         return copy_series(options);
     }
 
     // number series first
-    if options
+    let results = if options
         .series
         .iter()
-        .all(|s| matches!(s, CellValue::Number(_)))
+        .all(|s| matches!(s.0, CellValue::Number(_)))
     {
-        return find_number_series(options);
+        find_number_series(&options)
     }
-
     // date series
-    if options
+    else if options
         .series
         .iter()
-        .all(|s| matches!(*s, CellValue::Date(_)))
+        .all(|s| matches!(s.0, CellValue::Date(_)))
     {
-        return find_date_series(options);
+        find_date_series(&options)
     }
-
     // time series
-    if options
+    else if options
         .series
         .iter()
-        .all(|s| matches!(*s, CellValue::Time(_)))
+        .all(|s| matches!(s.0, CellValue::Time(_)))
     {
-        return find_time_series(options);
+        find_time_series(&options)
     }
-
     // date time series
-    if options
+    else if options
         .series
         .iter()
-        .all(|s| matches!(*s, CellValue::DateTime(_)))
+        .all(|s| matches!(s.0, CellValue::DateTime(_)))
     {
-        return find_date_time_series(options);
-    }
+        find_date_time_series(&options)
+    } else {
+        find_string_series(&options)
+    };
 
-    find_string_series(options)
+    if let Some(results) = results {
+        results.into_iter().map(|v| (v, None)).collect()
+    } else {
+        copy_series(options)
+    }
 }
 
 #[cfg(test)]
-pub(crate) fn cell_value_number(values: Vec<i32>) -> Vec<CellValue> {
+pub(crate) fn cell_value_number(values: Vec<i32>) -> Vec<(CellValue, Option<Pos>)> {
     use bigdecimal::BigDecimal;
 
     values
         .iter()
-        .map(|s| CellValue::Number(BigDecimal::from(s)))
-        .collect::<Vec<CellValue>>()
+        .map(|s| (CellValue::Number(BigDecimal::from(s)), None))
+        .collect()
 }
 
 #[cfg(test)]
-pub(crate) fn cell_value_text(values: Vec<&str>) -> Vec<CellValue> {
+pub(crate) fn cell_value_text(values: Vec<&str>) -> Vec<(CellValue, Option<Pos>)> {
     values
         .iter()
-        .map(|s| CellValue::Text(s.to_string()))
-        .collect::<Vec<CellValue>>()
+        .map(|s| (CellValue::Text(s.to_string()), None))
+        .collect()
 }
 
 #[cfg(test)]

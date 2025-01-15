@@ -17,6 +17,7 @@ import {
   aiAnalystShowChatHistoryAtom,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
 import {
   AIMessage,
   AIMessagePrompt,
@@ -26,7 +27,14 @@ import {
 } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 
-const MAX_TOOL_CALL_ITERATIONS = 5;
+const MAX_TOOL_CALL_ITERATIONS = 25;
+
+export type SubmitAIAnalystPromptArgs = {
+  userPrompt: string;
+  context: Context;
+  messageIndex?: number;
+  clearMessages?: boolean;
+};
 
 export function useSubmitAIAnalystPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
@@ -46,7 +54,7 @@ export function useSubmitAIAnalystPrompt() {
         const otherSheetsContext = await getOtherSheetsContext({ sheetNames: context.sheets });
         const currentSheetContext = await getCurrentSheetContext({ currentSheetName: context.currentSheet });
         const visibleContext = await getVisibleContext();
-        const selectionContext = await getSelectionContext({ selectionSheetRect: context.selection });
+        const selectionContext = await getSelectionContext({ selection: context.selection });
 
         let updatedMessages: ChatMessage[] = [];
         set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {
@@ -79,17 +87,7 @@ export function useSubmitAIAnalystPrompt() {
 
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
-      async ({
-        userPrompt,
-        context,
-        messageIndex,
-        clearMessages,
-      }: {
-        userPrompt: string;
-        context: Context;
-        messageIndex?: number;
-        clearMessages?: boolean;
-      }) => {
+      async ({ userPrompt, context, messageIndex, clearMessages }: SubmitAIAnalystPromptArgs) => {
         set(showAIAnalystAtom, true);
         set(aiAnalystShowChatHistoryAtom, false);
 
@@ -128,9 +126,9 @@ export function useSubmitAIAnalystPrompt() {
             content: userPrompt,
             contextType: 'userPrompt' as const,
             context: {
-              ...context,
               sheets: context.currentSheet ? [context.currentSheet, ...context.sheets] : context.sheets,
               currentSheet: '',
+              selection: context.selection ?? sheets.sheet.cursor.save(),
             },
           },
         ]);

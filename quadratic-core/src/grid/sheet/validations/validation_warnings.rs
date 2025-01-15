@@ -39,16 +39,16 @@ mod tests {
                 validation::Validation,
                 validation_rules::{validation_logical::ValidationLogical, ValidationRule},
             },
-            Sheet, SheetId,
+            Sheet,
         },
-        selection::Selection,
+        A1Selection,
     };
 
     use super::*;
 
     fn create_validation() -> Validation {
         Validation {
-            selection: Selection::pos(0, 0, SheetId::test()),
+            selection: A1Selection::test_a1("A1"),
             id: Uuid::new_v4(),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,

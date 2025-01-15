@@ -120,7 +120,7 @@ export function ShareTeamDialog({ data }: { data: ApiTypes['/v0/teams/:uuid.GET.
       )}
 
       {license.status === 'exceeded' && (
-        <div className="relative rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700" role="alert">
+        <div className="relative rounded border border-red-400 bg-red-100 px-4 py-3 text-sm text-red-700" role="alert">
           <div>
             <strong className="font-bold">Over the user limit!</strong>
           </div>
@@ -132,7 +132,7 @@ export function ShareTeamDialog({ data }: { data: ApiTypes['/v0/teams/:uuid.GET.
       )}
 
       {license.status === 'revoked' && (
-        <div className="relative rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700" role="alert">
+        <div className="relative rounded border border-red-400 bg-red-100 px-4 py-3 text-sm text-red-700" role="alert">
           <div>
             <strong className="font-bold">License Revoked!</strong>
           </div>

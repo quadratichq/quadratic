@@ -3,6 +3,8 @@
   "private": true,
   "scripts": {
     "build": "wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-rust-client --weak-refs",
-    "dev": "cargo watch -s 'wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-rust-client --weak-refs'"
+    "build:dev": "wasm-pack build --profiling --target web --out-dir ../quadratic-client/src/app/quadratic-rust-client --weak-refs",
+    "dev": "cargo watch -s 'wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-rust-client --weak-refs'",
+    "dev:perf": "cargo watch -s 'wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-rust-client --weak-refs'"
   }
 }

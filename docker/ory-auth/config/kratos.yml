@@ -70,7 +70,7 @@ selfservice:
       ui_url: http://localhost:4455/verification
       use: link
       after:
-        default_browser_return_url: http://localhost:3000
+        default_browser_return_url: http://localhost:3000/login-result
 
     logout:
       after:
@@ -99,6 +99,10 @@ session:
           jwks_url: http://host.docker.internal:3000/.well-known/jwks.json
           # claims_mapper_url: base64://... # A JsonNet template for modifying the claims
           ttl: 24h # 24 hours (defaults to 10 minutes)
+cookies:
+  domain: "localhost"
+  path: /
+  same_site: Lax
 
 log:
   level: debug

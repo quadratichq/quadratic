@@ -47,7 +47,6 @@ pub type ValidationDateTimeSchema = v1_6_validation::ValidationDateTime;
 pub type ValidationNumberSchema = v1_6_validation::ValidationNumber;
 pub type ValidationTextSchema = v1_6_validation::ValidationText;
 pub type ValidationLogicalSchema = v1_6_validation::ValidationLogical;
-pub type ValidationListSchema = v1_6_validation::ValidationList;
 pub type ValidationListSourceSchema = v1_6_validation::ValidationListSource;
 pub type TextMatchSchema = v1_6_validation::TextMatch;
 pub type TextCaseSchema = v1_6_validation::TextCase;

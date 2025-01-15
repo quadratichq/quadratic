@@ -2,11 +2,10 @@ import {
   presentationModeAtom,
   showCellTypeOutlinesAtom,
   showCodePeekAtom,
-  showGridAxesAtom,
   showGridLinesAtom,
   showHeadingsAtom,
 } from '@/app/atoms/gridSettingsAtom';
-import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
+import { zoomIn, zoomOut, zoomReset, zoomTo100, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { CommandGroup, CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { ZoomInIcon, ZoomOutIcon } from '@/shared/components/Icons';
@@ -25,20 +24,6 @@ const commands: CommandGroup = {
             {...props}
             icon={<Checkbox checked={showHeadings} />}
             action={() => setShowHeadings((prev) => !prev)}
-          />
-        );
-      },
-    },
-
-    {
-      label: 'Axis',
-      Component: (props) => {
-        const [showGridAxes, setShowGridAxes] = useRecoilState(showGridAxesAtom);
-        return (
-          <CommandPaletteListItem
-            {...props}
-            icon={<Checkbox checked={showGridAxes} />}
-            action={() => setShowGridAxes((prev) => !prev)}
           />
         );
       },
@@ -164,6 +149,10 @@ const commands: CommandGroup = {
           shortcutModifiers={[KeyboardSymbols.Command]}
         />
       ),
+    },
+    {
+      label: 'Reset Viewport',
+      Component: (props) => <CommandPaletteListItem {...props} action={() => zoomReset()} />,
     },
   ],
 };

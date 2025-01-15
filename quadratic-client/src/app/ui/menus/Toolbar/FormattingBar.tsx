@@ -298,7 +298,7 @@ function FormatDateAndTimePickerButton() {
   );
 }
 
-function TooltipContents({ label, keyboardShortcut }: { label: string; keyboardShortcut?: string }) {
+export function TooltipContents({ label, keyboardShortcut }: { label: string; keyboardShortcut?: string }) {
   return (
     <p>
       {label}{' '}

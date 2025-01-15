@@ -12,7 +12,7 @@ export const openCodeEditor = async () => {
     throw new Error('Expected setEditorInteractionState to be defined in openCodeEditor');
   }
 
-  const { x, y } = sheets.sheet.cursor.cursorPosition;
+  const { x, y } = sheets.sheet.cursor.position;
   const codeCell = await quadraticCore.getCodeCell(sheets.sheet.id, x, y);
   if (codeCell) {
     const {

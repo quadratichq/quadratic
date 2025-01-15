@@ -96,11 +96,14 @@ export function javascriptConvertOutputArray(
   if (!Array.isArray(value[0]) && typeof value[0] === 'object' && !isExpectedObjectType(value[0])) {
     const keys = Object.keys(value[0]);
     output.push(keys.map((key) => [key, 'text']));
+
     for (const [y, v] of value.entries()) {
       const rowEntry: any[] = [];
       output.push(rowEntry);
+
       for (const key of keys) {
         const outputValue = javascriptConvertOutputType(message, v[key], column, row, 0, y);
+
         if (outputValue) {
           types.add(outputValue.displayType);
           rowEntry.push(outputValue.output);
@@ -128,8 +131,10 @@ export function javascriptConvertOutputArray(
   // 2D array of values
   else {
     const longest = Math.max(...value.map((v) => v.length));
+
     for (const [y, v] of value.entries()) {
       output.push([]);
+
       for (let i = 0; i < longest; i++) {
         if (v.length <= i) {
           output[y].push(['', 'blank']);
@@ -147,6 +152,7 @@ export function javascriptConvertOutputArray(
       }
     }
   }
+
   return {
     output,
     displayType: javascriptFormatDisplayType(types, false),

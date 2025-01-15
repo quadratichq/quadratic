@@ -1,6 +1,6 @@
 import { AITool } from '@/app/ai/tools/aiTools';
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
-import { getRowColSentence, ToolCard } from '@/app/ui/menus/AIAnalyst/toolCards/ToolCard';
+import { ToolCard } from '@/app/ui/menus/AIAnalyst/toolCards/ToolCard';
 import { GridActionIcon } from '@/shared/components/Icons';
 import { useEffect, useState } from 'react';
 import { z } from 'zod';
@@ -42,17 +42,11 @@ export const MoveCells = ({ args, loading }: MoveCellsProps) => {
     return <ToolCard icon={icon} label={label} isLoading />;
   }
 
-  const rows = toolArgs.data.source_bottom_right_y - toolArgs.data.source_top_left_y + 1;
-  const cols = toolArgs.data.source_bottom_right_x - toolArgs.data.source_top_left_x + 1;
   return (
     <ToolCard
       icon={icon}
       label={label}
-      description={
-        getRowColSentence({ rows, cols }) +
-        ` from (${toolArgs.data.source_top_left_x}, ${toolArgs.data.source_top_left_y})` +
-        ` to (${toolArgs.data.target_top_left_x}, ${toolArgs.data.target_top_left_y})`
-      }
+      description={` from ${toolArgs.data.source_selection_rect} to ${toolArgs.data.target_top_left_position}`}
     />
   );
 };

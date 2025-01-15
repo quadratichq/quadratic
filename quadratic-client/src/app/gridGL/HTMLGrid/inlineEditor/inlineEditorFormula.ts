@@ -7,9 +7,8 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { SheetPosTS } from '@/app/gridGL/types/size';
-import { getA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
-import { ParseFormulaReturnType } from '@/app/helpers/formulaNotation';
+import type { SheetPosTS } from '@/app/gridGL/types/size';
+import { parseFormulaReturnToCellsAccessed, type ParseFormulaReturnType } from '@/app/helpers/formulaNotation';
 import { checkFormula, parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { colors } from '@/app/theme/colors';
 import { extractCellsFromParseFormula } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
@@ -24,12 +23,17 @@ class InlineEditorFormula {
     events.on('cursorPosition', this.cursorMoved);
   }
 
-  async cellHighlights(location: SheetPosTS, formula: string) {
-    const parsed = (await parseFormula(formula, location.x, location.y)) as ParseFormulaReturnType;
+  cellHighlights(location: SheetPosTS, formula: string) {
+    const parsed = JSON.parse(parseFormula(formula, location.x, location.y)) as ParseFormulaReturnType;
     if (parsed) {
-      pixiApp.cellHighlights.fromFormula(parsed, { x: location.x, y: location.y }, location.sheetId);
+      const cellsAccessed = parseFormulaReturnToCellsAccessed(
+        parsed,
+        { x: location.x, y: location.y },
+        location.sheetId
+      );
+      pixiApp.cellHighlights.fromCellsAccessed(cellsAccessed);
 
-      const extractedCells = extractCellsFromParseFormula(parsed, { x: location.x, y: location.y }, location.sheetId);
+      const extractedCells = extractCellsFromParseFormula(parsed, { x: location.x, y: location.y });
       const newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
       const cellColorReferences = new Map<string, number>();
 
@@ -61,7 +65,7 @@ class InlineEditorFormula {
         const editorCursorPosition = inlineEditorMonaco.getPosition();
 
         if (editorCursorPosition && range.containsPosition(editorCursorPosition)) {
-          pixiApp.cellHighlights.setHighlightedCell(index);
+          pixiApp.cellHighlights.setSelectedCell(index);
         }
       });
 
@@ -119,23 +123,7 @@ class InlineEditorFormula {
 
       inlineEditorHandler.cursorIsMoving = true;
       inlineEditorMonaco.removeSelection();
-      let sheet = '';
-      if (location.sheetId !== sheets.sheet.id) {
-        sheet = `'${sheets.sheet.name}'!`;
-      }
-      if (cursor.multiCursor) {
-        let coords = '';
-        cursor.multiCursor.forEach((c, i) => {
-          const start = getA1Notation(c.left, c.top);
-          const end = getA1Notation(c.right - 1, c.bottom - 1);
-          coords += `${start}:${end}${i !== cursor.multiCursor!.length - 1 ? ',' : ''}`;
-        });
-        this.insertInsertingCells(`${sheet}${coords}`);
-      } else {
-        const location = cursor.getCursor();
-        const a1Notation = getA1Notation(location.x, location.y);
-        this.insertInsertingCells(`${sheet}${a1Notation}`);
-      }
+      this.insertInsertingCells(cursor.toA1String());
 
       inlineEditorHandler.sendMultiplayerUpdate();
 

@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-connection"
-version = "0.5.4"
+version = "0.6.1"
 edition = "2021"
 authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 
@@ -15,10 +15,7 @@ chrono = { version = "0.4.31", features = ["serde"] }
 dotenv = "0.15.0"
 envy = "0.4.2"
 futures = "0.3.29"
-futures-util = { version = "0.3.29", default-features = false, features = [
-    "sink",
-    "std",
-] }
+futures-util = { version = "0.3.29", default-features = false, features = ["sink", "std"] }
 headers = "0.4.0"
 http = "1.1.0"
 http-body-util = "0.1.1"
@@ -27,17 +24,9 @@ hyper-util = { version = "0.1.5", features = ["service"] }
 jsonwebtoken = "9.2.0"
 log = "0.4.21"
 openssl = { version = "0.10.66", features = ["vendored"] }
-parquet = { version = "51.0.0", default-features = false, features = [
-    "arrow",
-    "arrow-array",
-] }
+parquet = { version = "51.0.0", default-features = false, features = ["arrow", "arrow-array"] }
 quadratic-rust-shared = { path = "../quadratic-rust-shared" }
-reqwest = { version = "0.11.22", features = [
-    "cookies",
-    "json",
-    "serde_json",
-    "stream",
-] }
+reqwest = { version = "0.11.22", features = ["cookies", "json", "serde_json", "stream"] }
 serde = { version = "1.0.193", features = ["derive"] }
 serde_json = "1.0.108"
 strum = "0.26.3"
@@ -46,14 +35,14 @@ thiserror = "1.0.50"
 tokio = { version = "1.34.0", features = ["full"] }
 tower = { version = "0.4.13", features = ["util"] }
 tower-http = { version = "0.5.0", features = [
-    "auth",
-    "compression-gzip",
-    "cors",
-    "fs",
-    "sensitive-headers",
-    "trace",
-    "util",
-    "validate-request",
+  "auth",
+  "compression-gzip",
+  "cors",
+  "fs",
+  "sensitive-headers",
+  "trace",
+  "util",
+  "validate-request",
 ] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
@@ -61,7 +50,6 @@ uuid = { version = "1.6.1", features = ["serde", "v4"] }
 
 [dev-dependencies]
 fake = { version = "2.9.1", features = ["derive"] }
-quadratic-core = { path = "../quadratic-core" }
 quadratic-rust-shared = { path = "../quadratic-rust-shared", features = ["test"] }
 tracing-test = "0.2.4"
 

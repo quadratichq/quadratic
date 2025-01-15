@@ -241,6 +241,7 @@ export class Control {
   togglePerf() {
     this.cli.options.perf = !this.cli.options.perf;
     this.restartCore();
+    this.restartRustClient();
   }
 
   async runCore(restart?: boolean) {
@@ -530,7 +531,11 @@ export class Control {
       "npm",
       [
         "run",
-        this.cli.options.rustClient ? "dev" : "build",
+        this.cli.options.rustClient
+          ? this.cli.options.perf
+            ? "dev:perf"
+            : "dev"
+          : "build",
         "--workspace=quadratic-rust-client",
       ],
       { signal: this.signals.rustClient.signal }
@@ -607,10 +612,14 @@ export class Control {
   isRedisRunning(): Promise<boolean | "not found"> {
     return new Promise((resolve) => {
       if (this.quitting) resolve(false);
+      const dockerDev = this.cli.options.dockerDev;
+      if (dockerDev) {
+        resolve(true);
+      }
       const servicesLocal = this.cli.options.servicesLocal;
       const redis = servicesLocal
         ? spawn("redis-cli", ["ping"])
-        : spawn("docker", ["exec", "quadratic-redis-1", "redis-cli", "ping"]);
+        : spawn("docker", ["exec", "redis", "redis-cli", "ping"]);
       redis.on("error", (e: any) => {
         if (e.code === "ENOENT") {
           resolve("not found");
@@ -625,6 +634,10 @@ export class Control {
   isPostgresRunning(): Promise<boolean | "not found"> {
     return new Promise((resolve) => {
       if (this.quitting) resolve(false);
+      const dockerDev = this.cli.options.dockerDev;
+      if (dockerDev) {
+        resolve(true);
+      }
       const servicesLocal = this.cli.options.servicesLocal;
       const postgres = servicesLocal
         ? spawn("pg_isready")

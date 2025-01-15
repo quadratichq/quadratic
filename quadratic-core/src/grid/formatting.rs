@@ -1,13 +1,19 @@
+// todo: maybe delete this file?
+
 use std::fmt;
 
+#[cfg(test)]
+use proptest::prelude::*;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 
-use super::block::SameValue;
-use super::{Column, ColumnData};
 use crate::RunLengthEncoding;
 
+use super::formats::Format;
+
 /// Array of a single cell formatting attribute.
+///
+/// TODO: this is NOT needed anymore. delete it.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum CellFmtArray {
     Align(RunLengthEncoding<Option<CellAlign>>),
@@ -27,144 +33,147 @@ pub enum CellFmtArray {
 }
 
 /// Cell formatting attribute.
+///
+/// TODO: this is NOT needed anymore. delete it. replace the generic functions.
 pub trait CellFmtAttr {
     type Value: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + Eq;
-    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>>;
-    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>>;
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value>;
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value>;
 }
 
 impl CellFmtAttr for CellAlign {
     type Value = Self;
-    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
-        &column.align
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
+        &fmt.align
     }
-    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
-        &mut column.align
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
+        &mut fmt.align
     }
 }
 impl CellFmtAttr for CellVerticalAlign {
     type Value = Self;
-    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
-        &column.vertical_align
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
+        &fmt.vertical_align
     }
-    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
-        &mut column.vertical_align
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
+        &mut fmt.vertical_align
     }
 }
 impl CellFmtAttr for CellWrap {
     type Value = Self;
-    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
-        &column.wrap
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
+        &fmt.wrap
     }
-    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
-        &mut column.wrap
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
+        &mut fmt.wrap
     }
 }
 impl CellFmtAttr for NumericFormat {
     type Value = Self;
-    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
-        &column.numeric_format
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
+        &fmt.numeric_format
     }
-    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
-        &mut column.numeric_format
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
+        &mut fmt.numeric_format
     }
 }
 pub struct NumericDecimals;
 impl CellFmtAttr for NumericDecimals {
     type Value = i16;
-    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
-        &column.numeric_decimals
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
+        &fmt.numeric_decimals
     }
-    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
-        &mut column.numeric_decimals
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
+        &mut fmt.numeric_decimals
     }
 }
 
 pub struct NumericCommas;
 impl CellFmtAttr for NumericCommas {
     type Value = bool;
-    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
-        &column.numeric_commas
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
+        &fmt.numeric_commas
     }
-    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
-        &mut column.numeric_commas
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
+        &mut fmt.numeric_commas
     }
 }
 
 pub struct Bold;
 impl CellFmtAttr for Bold {
     type Value = bool;
-    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
-        &column.bold
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
+        &fmt.bold
     }
-    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
-        &mut column.bold
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
+        &mut fmt.bold
     }
 }
 pub struct Italic;
 impl CellFmtAttr for Italic {
     type Value = bool;
-    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
-        &column.italic
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
+        &fmt.italic
     }
-    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
-        &mut column.italic
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
+        &mut fmt.italic
     }
 }
 pub struct TextColor;
 impl CellFmtAttr for TextColor {
     type Value = String;
-    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
-        &column.text_color
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
+        &fmt.text_color
     }
-    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
-        &mut column.text_color
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
+        &mut fmt.text_color
     }
 }
 pub struct FillColor;
 impl CellFmtAttr for FillColor {
     type Value = String;
-    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
-        &column.fill_color
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
+        &fmt.fill_color
     }
-    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
-        &mut column.fill_color
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
+        &mut fmt.fill_color
     }
 }
 
 impl CellFmtAttr for RenderSize {
     type Value = Self;
-    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
-        &column.render_size
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
+        &fmt.render_size
     }
-    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
-        &mut column.render_size
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
+        &mut fmt.render_size
     }
 }
 
 pub struct Underline;
 impl CellFmtAttr for Underline {
     type Value = bool;
-    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
-        &column.underline
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
+        &fmt.underline
     }
-    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
-        &mut column.underline
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
+        &mut fmt.underline
     }
 }
 pub struct StrikeThrough;
 impl CellFmtAttr for StrikeThrough {
     type Value = bool;
-    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
-        &column.strike_through
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
+        &fmt.strike_through
     }
-    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
-        &mut column.strike_through
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
+        &mut fmt.strike_through
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, Display, EnumString)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[serde(rename_all = "camelCase")]
 pub enum CellAlign {
     Center,
@@ -182,8 +191,10 @@ impl CellAlign {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, Display, EnumString)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(
+    Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, Display, EnumString, ts_rs::TS,
+)]
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[serde(rename_all = "camelCase")]
 pub enum CellVerticalAlign {
     Top,
@@ -202,9 +213,20 @@ impl CellVerticalAlign {
 }
 
 #[derive(
-    Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Display, EnumString,
+    Serialize,
+    Deserialize,
+    Debug,
+    Default,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    Display,
+    EnumString,
+    ts_rs::TS,
 )]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[serde(rename_all = "camelCase")]
 pub enum CellWrap {
     #[default]
@@ -223,26 +245,52 @@ impl CellWrap {
     }
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, ts_rs::TS)]
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub struct NumericFormat {
     #[serde(rename = "type")]
     pub kind: NumericFormatKind,
     pub symbol: Option<String>,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, ts_rs::TS)]
 /// Measures DOM element size in pixels.
 pub struct RenderSize {
     pub w: String,
     pub h: String,
 }
+#[cfg(test)]
+impl Arbitrary for RenderSize {
+    type Parameters = ();
+
+    fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+        (u8::arbitrary(), u8::arbitrary()).prop_map(|(w, h)| RenderSize {
+            w: w.to_string(),
+            h: h.to_string(),
+        })
+    }
+
+    type Strategy = proptest::strategy::Map<
+        (<u8 as Arbitrary>::Strategy, <u8 as Arbitrary>::Strategy),
+        fn((u8, u8)) -> Self,
+    >;
+}
 
 #[derive(
-    Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, Display, EnumString, Copy,
+    Default,
+    Serialize,
+    Deserialize,
+    Debug,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    Display,
+    EnumString,
+    ts_rs::TS,
 )]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[serde(rename_all = "UPPERCASE")]
 #[strum(ascii_case_insensitive)]
 pub enum NumericFormatKind {
@@ -253,13 +301,15 @@ pub enum NumericFormatKind {
     Exponential,
 }
 
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, ts_rs::TS)]
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub struct DateTimeFormatting;
 impl CellFmtAttr for DateTimeFormatting {
     type Value = String;
-    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
-        &column.date_time
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
+        &fmt.date_time
     }
-    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
-        &mut column.date_time
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
+        &mut fmt.date_time
     }
 }

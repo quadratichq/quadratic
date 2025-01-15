@@ -18,7 +18,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/shared/shadcn/ui/command';
-import { Popover, PopoverContent } from '@/shared/shadcn/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import mixpanel from 'mixpanel-browser';
 import * as monaco from 'monaco-editor';
@@ -45,16 +45,25 @@ export function SnippetsPopover({ editorInst }: SnippetsPopoverProps) {
     [language]
   );
   return (
-    <Popover open={showSnippetsPopover} onOpenChange={setShowSnippetsPopover}>
+    <Popover
+      open={showSnippetsPopover}
+      onOpenChange={(value) => {
+        setShowSnippetsPopover(value);
+      }}
+    >
       <TooltipPopover label={`Snippets`} side="bottom">
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="text-muted-foreground"
-          onClick={() => setShowSnippetsPopover(true)}
-        >
-          <SnippetsIcon />
-        </Button>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="text-muted-foreground"
+            onClick={() => {
+              setShowSnippetsPopover(true);
+            }}
+          >
+            <SnippetsIcon />
+          </Button>
+        </PopoverTrigger>
       </TooltipPopover>
 
       <PopoverContent className="w-[250px] p-0">

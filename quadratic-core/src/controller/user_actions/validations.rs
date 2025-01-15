@@ -12,8 +12,7 @@ use crate::{
         },
         SheetId,
     },
-    selection::Selection,
-    CellValue, Pos,
+    A1Selection, CellValue, Pos,
 };
 
 impl GridController {
@@ -24,7 +23,7 @@ impl GridController {
     }
 
     /// Gets a validation based on a Selection.
-    pub fn validation_selection(&self, selection: Selection) -> Option<&Validation> {
+    pub fn validation_selection(&self, selection: A1Selection) -> Option<&Validation> {
         self.try_sheet(selection.sheet_id)
             .and_then(|sheet| sheet.validations.validation_selection(selection))
     }
@@ -115,8 +114,7 @@ mod tests {
                 ValidationRule,
             },
         },
-        wasm_bindings::js::{expect_js_call, hash_test},
-        Rect,
+        wasm_bindings::js::expect_js_call,
     };
 
     use super::*;
@@ -138,7 +136,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let selection = Selection::all(sheet_id);
+        let selection = A1Selection::test_a1_sheet_id("*", &sheet_id);
         let validation = Validation {
             id: Uuid::new_v4(),
             selection: selection.clone(),
@@ -154,11 +152,13 @@ mod tests {
         assert_eq!(gc.validations(sheet_id).unwrap().len(), 1);
         assert_eq!(gc.validation_selection(selection), Some(&validation));
 
-        let sheet = gc.sheet(sheet_id);
-        let validations = sheet.validations.to_string().unwrap();
         expect_js_call(
             "jsSheetValidations",
-            format!("{},{}", sheet_id, validations),
+            format!(
+                "{},{}",
+                sheet_id,
+                serde_json::to_string(&vec![validation]).unwrap()
+            ),
             true,
         );
     }
@@ -169,7 +169,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let selection = Selection::all(sheet_id);
+        let selection = A1Selection::test_a1_sheet_id("*", &sheet_id);
         let validation1 = Validation {
             id: Uuid::new_v4(),
             selection: selection.clone(),
@@ -180,11 +180,11 @@ mod tests {
             message: Default::default(),
             error: Default::default(),
         };
-        gc.update_validation(validation1, None);
+        gc.update_validation(validation1.clone(), None);
 
         let validation2 = Validation {
             id: Uuid::new_v4(),
-            selection: Selection::pos(0, 0, sheet_id),
+            selection: A1Selection::test_a1("A1"),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -192,26 +192,29 @@ mod tests {
             message: Default::default(),
             error: Default::default(),
         };
-        gc.update_validation(validation2, None);
+        gc.update_validation(validation2.clone(), None);
 
         assert_eq!(gc.validations(sheet_id).unwrap().len(), 2);
-
-        gc.remove_validations(sheet_id, None);
-        assert!(gc.validations(sheet_id).is_none());
-
-        let sheet = gc.sheet(sheet_id);
-        let validations = sheet.validations.to_string().unwrap();
         expect_js_call(
             "jsSheetValidations",
-            format!("{},{}", sheet_id, validations),
-            false,
+            format!(
+                "{},{}",
+                sheet_id,
+                serde_json::to_string(&vec![validation1, validation2]).unwrap()
+            ),
+            true,
         );
 
-        let sheet = gc.sheet(sheet_id);
-        let send = serde_json::to_string(&sheet.get_render_cells(Rect::new(0, 0, 0, 0))).unwrap();
+        gc.remove_validations(sheet_id, None);
+
+        assert!(gc.validations(sheet_id).is_none());
         expect_js_call(
-            "jsRenderCellSheets",
-            format!("{},{},{},{}", sheet_id, 0, 0, hash_test(&send)),
+            "jsSheetValidations",
+            format!(
+                "{},{}",
+                sheet_id,
+                serde_json::to_string(&Vec::<Validation>::new()).unwrap()
+            ),
             true,
         );
     }
@@ -222,10 +225,9 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let selection = Selection::pos(0, 0, sheet_id);
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: selection.clone(),
+            selection: A1Selection::test_a1("A1"),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -236,13 +238,13 @@ mod tests {
         gc.update_validation(validation.clone(), None);
 
         assert_eq!(
-            gc.get_validation_from_pos(sheet_id, (0, 0).into()),
+            gc.get_validation_from_pos(sheet_id, (1, 1).into()),
             Some(&validation)
         );
 
         // missing sheet_id should return None
         assert!(gc
-            .get_validation_from_pos(SheetId::new(), (0, 0).into())
+            .get_validation_from_pos(SheetId::new(), (1, 1).into())
             .is_none());
     }
 
@@ -260,7 +262,7 @@ mod tests {
         };
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: Selection::pos(0, 0, sheet_id),
+            selection: A1Selection::test_a1("A1"),
             rule: ValidationRule::List(list),
             message: Default::default(),
             error: Default::default(),
@@ -268,7 +270,7 @@ mod tests {
         sheet.validations.set(validation.clone());
 
         assert_eq!(
-            gc.validation_list(sheet_id, 0, 0),
+            gc.validation_list(sheet_id, 1, 1),
             Some(vec!["a".to_string(), "b".to_string()])
         );
     }
@@ -280,22 +282,21 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
 
-        sheet.set_cell_value((0, 0).into(), "First");
-        sheet.set_cell_value((0, 1).into(), "Second");
-        sheet.set_cell_value((0, 2).into(), "false");
-        sheet.set_cell_value((0, 3).into(), "123");
+        sheet.set_cell_value(pos![A1], "First");
+        sheet.set_cell_value(pos![A2], "Second");
+        sheet.set_cell_value(pos![A3], "false");
+        sheet.set_cell_value(pos![A4], "123");
 
         let list = ValidationList {
-            source: ValidationListSource::Selection(Selection::rect(
-                Rect::new(0, 0, 0, 4),
-                sheet_id,
+            source: ValidationListSource::Selection(A1Selection::test_a1_sheet_id(
+                "A1:A4", &sheet_id,
             )),
             ignore_blank: true,
             drop_down: true,
         };
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: Selection::pos(1, 0, sheet_id),
+            selection: A1Selection::test_a1("B1"),
             rule: ValidationRule::List(list),
             message: Default::default(),
             error: Default::default(),
@@ -303,7 +304,7 @@ mod tests {
         sheet.validations.set(validation.clone());
 
         assert_eq!(
-            gc.validation_list(sheet_id, 1, 0),
+            gc.validation_list(sheet_id, 2, 1),
             Some(vec![
                 "First".to_string(),
                 "Second".to_string(),
@@ -327,22 +328,22 @@ mod tests {
         };
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: Selection::pos(0, 0, sheet_id),
+            selection: A1Selection::test_a1("A1"),
             rule: ValidationRule::List(list),
             message: Default::default(),
             error: Default::default(),
         };
         sheet.validations.set(validation.clone());
 
-        assert_eq!(gc.validate_input(sheet_id, (0, 0).into(), "a"), None);
+        assert_eq!(gc.validate_input(sheet_id, (1, 1).into(), "a"), None);
         assert_eq!(
-            gc.validate_input(sheet_id, (0, 0).into(), "c"),
+            gc.validate_input(sheet_id, (1, 1).into(), "c"),
             Some(validation.id)
         );
 
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: Selection::pos(0, 1, sheet_id),
+            selection: A1Selection::test_a1("A2"),
             rule: ValidationRule::None,
             message: Default::default(),
             error: ValidationError {
@@ -352,8 +353,8 @@ mod tests {
         };
         let sheet = gc.sheet_mut(sheet_id);
         sheet.validations.set(validation.clone());
-        assert_eq!(gc.validate_input(sheet_id, (0, 1).into(), "a"), None);
-        assert_eq!(gc.validate_input(sheet_id, (0, 1).into(), "c"), None);
+        assert_eq!(gc.validate_input(sheet_id, (1, 2).into(), "a"), None);
+        assert_eq!(gc.validate_input(sheet_id, (1, 2).into(), "c"), None);
     }
 
     #[test]
@@ -364,16 +365,16 @@ mod tests {
 
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: Selection::pos(0, 2, sheet_id),
+            selection: A1Selection::test_a1("A3"),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
         };
         let sheet = gc.sheet_mut(sheet_id);
         sheet.validations.set(validation.clone());
-        assert_eq!(gc.validate_input(sheet_id, (0, 2).into(), "true"), None);
+        assert_eq!(gc.validate_input(sheet_id, (1, 3).into(), "true"), None);
         assert_eq!(
-            gc.validate_input(sheet_id, (0, 2).into(), "random"),
+            gc.validate_input(sheet_id, (1, 3).into(), "random"),
             Some(validation.id)
         );
     }

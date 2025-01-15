@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{formulas, Pos, Span, Spanned};
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
 pub struct FormulaParseResult {
     pub parse_error_msg: Option<String>,
     pub parse_error_span: Option<Span>,
@@ -10,7 +10,7 @@ pub struct FormulaParseResult {
     pub cell_refs: Vec<CellRefSpan>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CellRefSpan {
     pub span: Span,
     pub cell_ref: formulas::RangeRef,
@@ -63,7 +63,7 @@ impl From<Spanned<formulas::RangeRef>> for CellRefSpan {
 /// `parse_error_msg` may be null, and `parse_error_span` may be null. Even if
 /// `parse_error_span`, `parse_error_msg` may still be present.
 pub fn parse_formula(formula_string: &str, pos: Pos) -> FormulaParseResult {
-    let parse_error = formulas::parse_formula(formula_string, pos).err();
+    let parse_error: Option<crate::RunError> = formulas::parse_formula(formula_string, pos).err();
 
     let result = FormulaParseResult {
         parse_error_msg: parse_error.as_ref().map(|e| e.msg.to_string()),
@@ -82,8 +82,14 @@ pub fn parse_formula(formula_string: &str, pos: Pos) -> FormulaParseResult {
 mod tests {
     use crate::controller::formula::{parse_formula, CellRefSpan, FormulaParseResult};
     use crate::formulas::{CellRef, CellRefCoord, RangeRef};
-    use crate::Span;
+    use crate::{Span, UNBOUNDED};
     use serial_test::parallel;
+
+    fn parse(s: &str) -> FormulaParseResult {
+        println!("Parsing {s}");
+
+        parse_formula(s, crate::Pos::ORIGIN)
+    }
 
     /// Run this test with `--nocapture` to generate the example for the
     /// `parse_formula()` docs.
@@ -125,11 +131,68 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn text_parse_formula_output() {
-        let result = parse_formula("'Sheet 2'!A0", crate::Pos::ORIGIN);
+    fn test_parse_formula_output() {
+        let result = parse("'Sheet 2'!A0");
         assert_eq!(result.parse_error_msg, None);
         assert_eq!(result.parse_error_span, None);
         assert_eq!(result.cell_refs.len(), 1);
         // `cell_refs` output is tested elsewhere
+    }
+
+    #[test]
+    #[parallel]
+    fn test_parse_formula_case_insensitive() {
+        assert_eq!(parse("A1:A2"), parse("a1:a2"));
+        assert_eq!(parse("A1:AA2"), parse("a1:aa2"));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_parse_formula_column() {
+        let cell_refs = parse("SUM(A1:A)").cell_refs;
+
+        assert_eq!(
+            cell_refs,
+            vec![CellRefSpan {
+                span: Span { start: 4, end: 8 },
+                cell_ref: RangeRef::CellRange {
+                    start: CellRef {
+                        sheet: None,
+                        x: CellRefCoord::Relative(0),
+                        y: CellRefCoord::Relative(1)
+                    },
+                    end: CellRef {
+                        sheet: None,
+                        x: CellRefCoord::Relative(0),
+                        y: CellRefCoord::Relative(UNBOUNDED)
+                    }
+                }
+            }]
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_parse_formula_row() {
+        let cell_refs = parse("SUM(2:3)").cell_refs;
+
+        assert_eq!(
+            cell_refs,
+            vec![CellRefSpan {
+                span: Span { start: 4, end: 7 },
+                cell_ref: RangeRef::CellRange {
+                    start: CellRef {
+                        sheet: None,
+                        x: CellRefCoord::Relative(UNBOUNDED),
+                        y: CellRefCoord::Relative(2)
+                    },
+                    end: CellRef {
+                        sheet: None,
+                        x: CellRefCoord::Relative(UNBOUNDED),
+                        y: CellRefCoord::Relative(3)
+                    }
+                }
+            }]
+        );
     }
 }

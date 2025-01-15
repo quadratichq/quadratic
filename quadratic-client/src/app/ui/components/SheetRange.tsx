@@ -1,19 +1,23 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { getSelectionString, parseSelectionString } from '@/app/grid/sheet/selection';
-import { Selection } from '@/app/quadratic-core-types';
+import { A1Selection } from '@/app/quadratic-core-types';
+import {
+  A1SelectionValueToSelection,
+  JsSelection,
+  stringToSelection,
+} from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import HighlightAltIcon from '@mui/icons-material/HighlightAlt';
-import { FocusEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { FocusEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface Props {
   label?: string;
-  initial?: Selection;
-  onChangeSelection: (selection: Selection | undefined) => void;
+  initial?: A1Selection;
+  onChangeSelection: (jsSelection: JsSelection | undefined) => void;
 
   // used to trigger an error if the range is empty
   triggerError?: boolean;
@@ -26,7 +30,8 @@ interface Props {
 
   onEnter?: () => void;
 
-  requireSheetId?: string;
+  onlyCurrentSheet?: string;
+  onlyCurrentSheetError?: string;
 }
 
 export const SheetRange = (props: Props) => {
@@ -37,35 +42,48 @@ export const SheetRange = (props: Props) => {
     triggerError,
     changeCursor,
     readOnly,
-    requireSheetId,
+    onlyCurrentSheet,
+    onlyCurrentSheetError,
   } = props;
   const [rangeError, setRangeError] = useState<string | undefined>();
   const ref = useRef<HTMLInputElement>(null);
 
+  const a1SheetId = useMemo((): string => {
+    if (onlyCurrentSheet) {
+      return onlyCurrentSheet;
+    }
+    const id = changeCursor === true ? sheets.current : changeCursor ?? sheets.current;
+    return id;
+  }, [changeCursor, onlyCurrentSheet]);
+
   // insert the range of the current selection
   const onInsert = useCallback(() => {
     if (ref.current) {
-      const selection = sheets.getRustSelection();
-      ref.current.value = getSelectionString(selection);
-      onChangeRange(selection);
+      const jsSelection = sheets.sheet.cursor.jsSelection;
+      ref.current.value = jsSelection.toA1String(a1SheetId, sheets.getSheetIdNameMap());
+      onChangeRange(jsSelection);
       setRangeError(undefined);
     }
-  }, [onChangeRange]);
+  }, [a1SheetId, onChangeRange]);
 
   const updateValue = useCallback(
     (value: string) => {
-      const selection = parseSelectionString(value, sheets.sheet.id);
-      if (selection.selection) {
-        onChangeRange(selection.selection);
+      try {
+        const jsSelection = stringToSelection(value, a1SheetId, onlyCurrentSheet ? '{}' : sheets.getSheetIdNameMap());
+        onChangeRange(jsSelection);
         setRangeError(undefined);
-      } else if (selection.error) {
-        onChangeRange(undefined);
-        setRangeError(selection.error.error);
-      } else {
-        throw new Error('Invalid selection from parseSelectionRange');
+      } catch (e: any) {
+        try {
+          const parsed = JSON.parse(e);
+          if (parsed.InvalidSheetName) {
+            setRangeError(onlyCurrentSheetError ?? 'Invalid sheet name');
+          }
+        } catch (_) {
+          // ignore
+        }
       }
     },
-    [onChangeRange]
+    [a1SheetId, onChangeRange, onlyCurrentSheet, onlyCurrentSheetError]
   );
 
   const onBlur = useCallback(
@@ -78,21 +96,25 @@ export const SheetRange = (props: Props) => {
 
   useEffect(() => {
     if (ref.current) {
-      ref.current.value = initial ? getSelectionString(initial) : '';
+      ref.current.value = initial
+        ? A1SelectionValueToSelection(initial).toA1String(a1SheetId, sheets.getSheetIdNameMap())
+        : '';
     }
-  }, [initial]);
+  }, [changeCursor, a1SheetId, initial]);
 
   const onFocus = () => {
     if (!ref.current || !changeCursor) return;
-    const selection = parseSelectionString(ref.current.value, changeCursor === true ? sheets.sheet.id : changeCursor);
-    if (selection.selection) {
-      // we need to hack the cursorPosition :(
-      const rects = selection.selection.rects;
-      if (rects?.length) {
-        selection.selection.x = rects[0].min.x;
-        selection.selection.y = rects[0].min.y;
+    try {
+      const selection = stringToSelection(
+        ref.current.value,
+        a1SheetId,
+        onlyCurrentSheet ? '{}' : sheets.getSheetIdNameMap()
+      );
+      if (selection) {
+        sheets.changeSelection(selection, true);
       }
-      sheets.sheet.cursor.loadFromSelection(selection.selection, true);
+    } catch (_) {
+      // there was an error parsing the range, so nothing more to do
     }
   };
 
@@ -106,7 +128,7 @@ export const SheetRange = (props: Props) => {
       events.off('changeSheet', updateSheet);
     };
   }, []);
-  const disableButton = requireSheetId ? requireSheetId !== sheetId : false;
+  const disableButton = onlyCurrentSheet ? onlyCurrentSheet !== sheetId : false;
 
   return (
     <div>

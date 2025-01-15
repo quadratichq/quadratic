@@ -96,7 +96,25 @@ fn get_functions() -> Vec<FormulaFunction> {
                 value
                     .clone()
                     .into_non_error_value()
-                    .unwrap_or(fallback.clone())
+                    .unwrap_or_else(|_| fallback.clone())
+            }
+        ),
+        formula_fn!(
+            /// Returns `fallback` if there was a "no match" error computing
+            /// `value`; otherwise returns `value`.
+            #[examples(
+                "IFNA(XLOOKUP(4.5, A1:A10, B1:B10), \"error: no match!\")",
+                "IFNA(XLOOKUP(C5, \"error: no match!\"))"
+            )]
+            #[zip_map]
+            fn IFNA([value]: CellValue, [fallback]: CellValue) {
+                // See `IFERROR` implementation for Excel compat details.
+                match value {
+                    CellValue::Error(e) if matches!(e.msg, RunErrorMsg::NoMatch) => {
+                        fallback.clone()
+                    }
+                    other => other.clone(),
+                }
             }
         ),
     ]
@@ -109,17 +127,18 @@ mod tests {
 
     #[test]
     #[parallel]
+    // TODO(ddimaria): @HactarCE fix broken test
     fn test_formula_if() {
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];
-        sheet.set_cell_value(Pos { x: 0, y: 1 }, "q");
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, "w");
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, "q");
+        sheet.set_cell_value(Pos { x: 2, y: 1 }, "w");
         let sheet_id = sheet.id;
 
         let s = "IF(A1='q', 'yep', 'nope')";
         let pos = pos![A0].to_sheet_pos(sheet_id);
         assert_eq!("yep", eval_to_string_at(&g, pos, s));
-        let pos = pos![B0].to_sheet_pos(sheet_id);
+        let pos = pos![B1].to_sheet_pos(sheet_id);
         assert_eq!("nope", eval_to_string_at(&g, pos, s));
 
         // Test short-circuiting
@@ -155,12 +174,52 @@ mod tests {
 
         g.sheets_mut()[0].set_cell_value(
             pos![A6],
-            CellValue::Error(Box::new(RunErrorMsg::Infinity.without_span())),
+            CellValue::Error(Box::new(RunErrorMsg::NaN.without_span())),
         );
         assert_eq!("42", eval_to_string(&g, "IFERROR(A6, 42)"));
         assert_eq!(
             RunErrorMsg::DivideByZero,
             eval_to_err(&g, "IFERROR(A6, 0/0)").msg,
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_formula_ifna() {
+        let mut g = Grid::new();
+
+        assert_eq!("ok", eval_to_string(&g, "IFNA(\"ok\", 42)"));
+        assert_eq!("ok", eval_to_string(&g, "IFNA(\"ok\", 0/0)"));
+        assert_eq!(
+            RunErrorMsg::DivideByZero,
+            eval_to_err(&g, "IFNA(0/0, \"oops\")").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::NaN,
+            eval_to_err(&g, "IFNA(SQRT(-1), \"oops\")").msg,
+        );
+
+        let div_by_zero_error = eval(&g, "0/0").into_cell_value().unwrap();
+        let sheet = &mut g.sheets_mut()[0];
+        sheet.set_cell_value(pos![A1], 10);
+        sheet.set_cell_value(pos![A2], 20);
+        sheet.set_cell_value(pos![A3], 30);
+        sheet.set_cell_value(pos![B1], "first");
+        sheet.set_cell_value(pos![B2], "second");
+        sheet.set_cell_value(pos![B3], div_by_zero_error);
+
+        for (lookup_value, expected) in [
+            (10, "first"),
+            (15, "no match"),
+            (20, "second"),
+            (25, "no match"),
+        ] {
+            let formula = format!("IFNA(XLOOKUP({lookup_value}, A1:A3, B1:B3), \"no match\")");
+            assert_eq!(expected, eval_to_string(&g, &formula));
+        }
+        assert_eq!(
+            RunErrorMsg::DivideByZero,
+            eval_to_err(&g, "IFNA(XLOOKUP(30, A1:A3, B1:B3), \"no match\")",).msg,
         );
     }
 }

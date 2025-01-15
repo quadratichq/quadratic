@@ -10,6 +10,7 @@ import { getJavascriptXHROverride } from '@/app/web-workers/javascriptWebWorker/
 import * as esbuild from 'esbuild-wasm';
 import { LINE_NUMBER_VAR } from './javascript';
 import { javascriptLibrary } from './runner/generateJavascriptForRunner';
+import { COMMUNITY_A1_FILE_UPDATE_URL } from '@/shared/constants/urls';
 export interface JavascriptTransformedCode {
   imports: string;
   code: string;
@@ -74,12 +75,18 @@ export function prepareJavascriptCode(
   const code = withLineNumbers ? javascriptAddLineNumberVars(transform) : transform.code;
   const javascriptXHROverride = getJavascriptXHROverride(proxyUrl, jwt);
   const javascriptFetchOverride = getJavascriptFetchOverride(proxyUrl, jwt);
+  let replacedJavascriptLibrary = javascriptLibrary;
+  replacedJavascriptLibrary = replacedJavascriptLibrary.replace('{x:0,y:0}', `{x:${x},y:${y}}`); // replace the pos() with the correct x,y coordinates
+  replacedJavascriptLibrary = replacedJavascriptLibrary.replace(
+    '{COMMUNITY_A1_FILE_UPDATE_URL}',
+    COMMUNITY_A1_FILE_UPDATE_URL
+  ); // replace the COMMUNITY_A1_FILE_UPDATE_URL with the correct url
   const compiledCode =
     javascriptXHROverride +
     javascriptFetchOverride +
     transform.imports +
     (withLineNumbers ? `let ${LINE_NUMBER_VAR} = 0;` : '') +
-    javascriptLibrary.replace('{x:0,y:0}', `{x:${x},y:${y}}`) + // replace the pos() with the correct x,y coordinates
+    replacedJavascriptLibrary +
     '(async() => {try{' +
     'let results = await (async () => {' +
     code +
@@ -90,5 +97,6 @@ export function prepareJavascriptCode(
     } });` +
     `} catch (e) { const error = e.message; const stack = e.stack; self.postMessage({ type: "error", error, stack, console: javascriptConsole.output() }); }` +
     '})();';
+
   return compiledCode;
 }

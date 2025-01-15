@@ -16,8 +16,8 @@ export function keyboardCode(event: React.KeyboardEvent<HTMLElement>): boolean {
   if (matchShortcut(Action.ExecuteCode, event)) {
     quadraticCore.rerunCodeCells(
       sheets.sheet.id,
-      sheets.sheet.cursor.cursorPosition.x,
-      sheets.sheet.cursor.cursorPosition.y,
+      sheets.sheet.cursor.position.x,
+      sheets.sheet.cursor.position.y,
       sheets.getCursorPosition()
     );
     return true;
@@ -37,8 +37,8 @@ export function keyboardCode(event: React.KeyboardEvent<HTMLElement>): boolean {
 
   // Insert cell reference
   if (codeEditorState.showCodeEditor && matchShortcut(Action.InsertCellReference, event)) {
-    const { sheetId, pos, language } = codeEditorState.codeCell;
-    insertCellRef(pos, sheetId, language);
+    const { sheetId, language } = codeEditorState.codeCell;
+    insertCellRef(sheetId, language);
     return true;
   }
 

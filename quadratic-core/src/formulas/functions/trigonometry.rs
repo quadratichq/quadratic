@@ -133,14 +133,18 @@ fn arc_cotangent(x: f64) -> f64 {
 #[cfg(test)]
 mod tests {
     use crate::formulas::tests::*;
+    use crate::util::assert_f64_approx_eq;
 
     fn test_trig_fn(name: &str, input_output_pairs: &[(f64, f64)]) {
         let g = Grid::new();
         for &(input, expected_output) in input_output_pairs {
             println!("Testing that {name}({input}) = {expected_output}");
-            crate::util::assert_f64_approx_eq(
+            assert_f64_approx_eq(
                 expected_output,
-                &eval_to_string(&g, &format!("{name}({input})")),
+                eval_to_string(&g, &format!("{name}({input})"))
+                    .parse::<f64>()
+                    .unwrap(),
+                &format!("Testing {name}({input})"),
             );
         }
     }
@@ -153,8 +157,21 @@ mod tests {
     fn test_formula_radian_degree_conversion() {
         let g = Grid::new();
 
-        crate::util::assert_f64_approx_eq(-4.0, &eval_to_string(&g, "RADIANS(-720) / PI()"));
-        crate::util::assert_f64_approx_eq(-720.0, &eval_to_string(&g, "DEGREES(-PI() * 4)"));
+        assert_f64_approx_eq(
+            -4.0,
+            eval_to_string(&g, "RADIANS(-720) / PI()")
+                .parse::<f64>()
+                .unwrap(),
+            "Testing RADIANS(-720) / PI()",
+        );
+
+        assert_f64_approx_eq(
+            -720.0,
+            eval_to_string(&g, "DEGREES(-PI() * 4)")
+                .parse::<f64>()
+                .unwrap(),
+            "Testing DEGREES(-PI() * 4)",
+        );
     }
 
     #[test]

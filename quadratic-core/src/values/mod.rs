@@ -18,7 +18,7 @@ mod time;
 
 pub use array::Array;
 pub use array_size::{ArraySize, Axis};
-pub use cellvalue::{CellValue, CellValueHash, CodeCellValue};
+pub use cellvalue::{CellValue, CellValueHash};
 pub use convert::CoerceInto;
 pub use isblank::IsBlank;
 pub use time::{Duration, Instant};

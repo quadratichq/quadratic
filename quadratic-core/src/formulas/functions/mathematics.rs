@@ -349,7 +349,7 @@ mod tests {
             },
             parse_formula("SUM()", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx)
+                .eval(&mut ctx, None)
                 .unwrap_err()
                 .msg,
         );
@@ -460,7 +460,7 @@ mod tests {
             },
             parse_formula("PRODUCT()", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx)
+                .eval(&mut ctx, None)
                 .unwrap_err()
                 .msg,
         );
@@ -500,7 +500,7 @@ mod tests {
             },
             parse_formula("ABS()", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx)
+                .eval(&mut ctx, None)
                 .unwrap_err()
                 .msg,
         );
@@ -512,7 +512,7 @@ mod tests {
             },
             parse_formula("ABS(16, 17)", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx)
+                .eval(&mut ctx, None)
                 .unwrap_err()
                 .msg,
         );
@@ -522,7 +522,11 @@ mod tests {
     #[parallel]
     fn test_sqrt() {
         let g = Grid::new();
-        crate::util::assert_f64_approx_eq(3.0_f64.sqrt(), &eval_to_string(&g, "SQRT(3)"));
+        crate::util::assert_f64_approx_eq(
+            3.0_f64.sqrt(),
+            eval_to_string(&g, "SQRT(3)").parse::<f64>().unwrap(),
+            "Testing SQRT(3)",
+        );
         assert_eq!("4", eval_to_string(&g, "SQRT(16)"));
         assert_eq!(
             RunErrorMsg::MissingRequiredArgument {
@@ -672,7 +676,8 @@ mod tests {
             let g = Grid::new();
             crate::util::assert_f64_approx_eq(
                 n,
-                &eval_to_string(&g, &format!("INT({n} / {d}) * {d} + MOD({n}, {d})")),
+                eval_to_string(&g, &format!("INT({n} / {d}) * {d} + MOD({n}, {d})")).parse::<f64>().unwrap(),
+                &format!("Testing INT/MOD invariant with n={n}, d={d}")
             );
         }
     }
@@ -756,7 +761,7 @@ mod tests {
             },
             parse_formula("PI(16)", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx)
+                .eval(&mut ctx, None)
                 .unwrap_err()
                 .msg,
         );
@@ -775,7 +780,7 @@ mod tests {
             },
             parse_formula("TAU(16)", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx)
+                .eval(&mut ctx, None)
                 .unwrap_err()
                 .msg,
         );

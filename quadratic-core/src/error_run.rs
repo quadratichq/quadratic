@@ -4,6 +4,7 @@
 
 use std::borrow::Cow;
 use std::fmt;
+use ts_rs::TS;
 
 use serde::{Deserialize, Serialize};
 
@@ -41,8 +42,7 @@ impl RunError {
 }
 
 /// Information about the type of error that occurred.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS, Hash)]
 pub enum RunErrorMsg {
     CodeRunError(Cow<'static, str>),
 
@@ -77,8 +77,6 @@ pub enum RunErrorMsg {
         ty2: Option<Cow<'static, str>>,
         use_duration_instead: bool,
     },
-    /// NaN or ±Infinity
-    NaN,
 
     // Array size errors
     ExactArraySizeMismatch {
@@ -105,8 +103,8 @@ pub enum RunErrorMsg {
     Overflow,
     DivideByZero,
     NegativeExponent,
-    NotANumber,
-    Infinity,
+    /// NaN or ±Infinity
+    NaN,
     IndexOutOfBounds,
     NoMatch,
     InvalidArgument,
@@ -249,12 +247,6 @@ impl fmt::Display for RunErrorMsg {
             }
             Self::NegativeExponent => {
                 write!(f, "Negative exponent")
-            }
-            Self::NotANumber => {
-                write!(f, "NaN")
-            }
-            Self::Infinity => {
-                write!(f, "Infinite value")
             }
             Self::IndexOutOfBounds => {
                 write!(f, "Index out of bounds")

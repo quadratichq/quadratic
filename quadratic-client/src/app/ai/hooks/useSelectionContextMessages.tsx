@@ -1,4 +1,3 @@
-import { sheets } from '@/app/grid/controller/Sheets';
 import { maxRects } from '@/app/ui/menus/AIAnalyst/const/maxRects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { ChatMessage, Context } from 'quadratic-shared/typesAndSchemasAI';
@@ -6,26 +5,16 @@ import { useCallback } from 'react';
 
 export function useSelectionContextMessages() {
   const getSelectionContext = useCallback(
-    async ({ selectionSheetRect }: { selectionSheetRect: Context['selection'] }): Promise<ChatMessage[]> => {
-      const selectionContext = selectionSheetRect
-        ? await quadraticCore.getAIContextRectsInSheetRects(
-            [
-              {
-                sheet_id: selectionSheetRect.sheet_id,
-                min: { x: BigInt(selectionSheetRect.min.x), y: BigInt(selectionSheetRect.min.y) },
-                max: { x: BigInt(selectionSheetRect.max.x), y: BigInt(selectionSheetRect.max.y) },
-              },
-            ],
-            maxRects
-          )
+    async ({ selection }: { selection: Context['selection'] }): Promise<ChatMessage[]> => {
+      const selectionContext = selection
+        ? await quadraticCore.getAIContextRectsInSelections([selection], maxRects)
         : undefined;
-      const { cursorPosition } = sheets.sheet.cursor;
       return [
         {
           role: 'user',
           content: `Note: This is an internal message for context. Do not quote it in your response.\n\n
 ${
-  selectionContext && selectionContext.length === 1
+  selectionContext && selectionContext.length === 1 && selectionContext[0].length > 0
     ? `
 Quadratic, like most spreadsheets, allows the user to select cells on the sheet.\n
 
@@ -33,20 +22,24 @@ This selection data is being shared with you, for you to refer to in following q
 
 I am sharing selection data as an array of tabular data rectangles, each tabular data rectangle in this array has following properties:\n
 - sheet_name: This is the name of the sheet.\n
-- rect_origin: This is a JSON object having x and y properties. x is the column index and y is the row index of the top left cell of the rectangle.\n
+- rect_origin: This is the position of the top left cell of the data rectangle in A1 notation. Columns are represented by letters and rows are represented by numbers.\n
 - rect_width: This is the width of the rectangle in number of columns.\n
 - rect_height: This is the height of the rectangle in number of rows.\n
-- starting_rect_values: This is a 2D array of cell values (json object format described below). This is the starting 3 rows of data in the rectangle. This includes headers, if present, and data.\n
+- starting_rect_values: This is a 2D array of cell values (json object format described below). This 2D array contains the starting 3 rows of data in the rectangle. This includes headers, if present, and data.\n
 
 Each cell value is a JSON object having the following properties:\n
 - value: The value of the cell. This is a string representation of the value in the cell.\n
 - kind: The kind of the value. This can be blank, text, number, logical, time instant, duration, error, html, code, image, date, time, date time, null or undefined.\n
-- pos: This is a JSON object having x and y properties. x is the column index and y is the row index of the cell.\n\n
+- pos: This is the position of the cell in A1 notation. Columns are represented by letters and rows are represented by numbers.\n\n
 
 This is being shared so that you can understand the table format, size and value types inside the data rectangle.\n
 
-Data from cells can be referenced by Formulas, Python, Javascript or SQL code using \`c(x,y)\` or \`cells((x1,y1), (x2,y2))\` functions.\n
-To reference data from different tabular data rectangles, use multiple \`cells\` functions.\n
+Data from cells can be referenced by Formulas, Python, Javascript or SQL code.
+In formula, cell reference are done using A1 notation directly, without quotes. Example: \`=SUM(A1:B2)\`. Always use sheet name in a1 notation to reference cells from different sheets. Sheet name is always enclosed in single quotes. Example: \`=SUM('Sheet 1'!A1:B2)\`.\n
+In Python and Javascript use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells. Always use sheet name in a1 notation to reference cells from different sheets. Sheet name is always enclosed in single quotes. In Python and Javascript, the complete a1 notation selection string is enclosed in double quotes. Example: \`q.cells("'Sheet 1'!A1:B2")\`.\n
+Sheet name is optional, if not provided, it is assumed to be the currently open sheet.\n
+Sheet name is case sensitive, and is required to be enclosed in single quotes.\n
+To reference data from different tabular data rectangles, use multiple \`q.cells\` functions.\n
 Use this selection data in the context of following messages. Refer to cells if required in code.\n\n
 
 Current selection data is:\n
@@ -54,12 +47,10 @@ Current selection data is:\n
 ${JSON.stringify(selectionContext[0])}
 \`\`\`
 
-Note: This selection JSON is only for your reference to data on the sheet. This JSON cannot be used directly in code. Use the cell reference functions, like \`c(x,y)\` or \`cells((x1,y1), (x2,y2))\` functions, to reference cells in code.\n
+Note: All this data is only for your reference to data on the sheet. This data cannot be used directly in code. Use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells in code. Always use sheet name in a1 notation to reference cells. Sheet name is always enclosed in single quotes. In Python and Javascript, the complete a1 notation selection string is enclosed in double quotes. Example: \`q.cells("'Sheet 1'!A1:B2")\`. In formula, string quotes are not to be used. Example: \`=SUM('Sheet 1'!A1:B2)\`\n\n
 `
     : ``
 }
-
-My cursor is on cell x:${cursorPosition.x} and y:${cursorPosition.y}.\n
 `,
 
           contextType: 'selection',

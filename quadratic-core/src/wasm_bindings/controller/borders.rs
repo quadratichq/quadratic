@@ -3,8 +3,6 @@ use super::*;
 #[wasm_bindgen]
 impl GridController {
     /// Sets border style for the selection within a rectangle.
-    ///
-    /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "setBorders")]
     pub fn js_set_borders(
         &mut self,
@@ -28,7 +26,7 @@ impl GridController {
             None => None,
         };
 
-        self.set_borders_selection(selection, border_selection, style, cursor);
+        self.set_borders(selection, border_selection, style, cursor);
         Ok(())
     }
 }

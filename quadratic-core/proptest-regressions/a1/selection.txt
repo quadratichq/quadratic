@@ -1,0 +1,11 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 6a34d4ec948815cfe14289398995cef2806cc26b9e4ac6e63e90004de03bbb84 # shrinks to selection = A1Selection { sheet: SheetId { id: 00000000-0000-0000-0000-000000000000 }, cursor: Pos { x: 1, y: 1 }, ranges: [CellRefRange { start: CellRefRangeEnd { col: None, row: None }, end: None }] }, test_positions = [Pos { x: 1, y: 1 }]
+cc bc903d32c99ecf5e5bfbcaed80c076d5775f546a0153d85cdfc7ca7e9593fc3d # shrinks to selection = A1Selection { sheet: SheetId { id: 00000000-0000-0000-0000-000000000000 }, cursor: Pos { x: 1, y: 1 }, ranges: [CellRefRange(BR)] }, test_positions = [Pos { x: 70, y: 1 }]
+cc a8d44955d6631a788bb61ad04603fb98344f074c25e7253581c98ac7dbef5bc3 # shrinks to selection = A1Selection { sheet: SheetId { id: 00000000-0000-0000-0000-000000000000 }, cursor: Pos { x: 1, y: 1 }, ranges: [CellRefRange(J72:), CellRefRange(:J71)] }, test_positions = [Pos { x: 1, y: 1 }]
+cc 3d633ee6d5f69510f8f1d47fcfa7b5aaea3386e1508574493afcea0a34f6619c # shrinks to selection = A1Selection { sheet: SheetId { id: 00000000-0000-0000-0000-000000000000 }, cursor: Pos { x: 1, y: 1 }, ranges: [CellRefRange(2:), CellRefRange(:A)] }, test_positions = [Pos { x: 2, y: 1 }]
+cc e0540211d7daf94a70ed3b1f005db6ed070d7bc35497abd3d5ffbc8e339230fb # shrinks to selection = A1Selection { sheet: SheetId { id: 00000000-0000-0000-0000-000000000000 }, cursor: Pos { x: 1, y: 1 }, ranges: [CellRefRange(AB), CellRefRange(AC:)] }, test_positions = [Pos { x: 1, y: 1 }]

@@ -15,7 +15,7 @@ import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Link } from '@/app/gridGL/types/links';
-import { JsValidationWarning, Rect } from '@/app/quadratic-core-types';
+import { JsValidationWarning } from '@/app/quadratic-core-types';
 import {
   RenderClientCellsTextHashClear,
   RenderClientLabelMeshEntry,
@@ -101,10 +101,9 @@ export class CellsLabels extends Container {
   };
 
   // Returns whether the rect has content by checking CellsTextHashContent.
-  hasCellInRect = (rect: Rect): boolean => {
-    const { min, max } = rect;
-    for (let column = Number(min.x); column <= Number(max.x); column++) {
-      for (let row = Number(min.y); row <= Number(max.y); row++) {
+  hasCellInRect = (rect: Rectangle): boolean => {
+    for (let column = rect.x; column <= rect.x + rect.width; column++) {
+      for (let row = rect.y; row <= rect.y + rect.height; row++) {
         if (this.hasCell(column, row)) {
           return true;
         }

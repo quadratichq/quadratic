@@ -4,9 +4,11 @@ import {
   codeEditorSpillErrorAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
+import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { colors } from '@/app/theme/colors';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from '@/app/ui/menus/CodeEditor/styles';
 import { useMemo } from 'react';
+import Linkify from 'react-linkify';
 import { useRecoilValue } from 'recoil';
 
 export function Console() {
@@ -48,15 +50,20 @@ export function Console() {
               {spillError.length > 1 ? 's' : ''}{' '}
               {spillError.map(
                 (pos, index) =>
-                  `(${pos.x}, ${pos.y})${
+                  `${xyToA1(pos.x, pos.y)}${
                     index !== spillError.length - 1 ? (index === spillError.length - 2 ? ', and ' : ', ') : '.'
                   }`
               )}
             </span>
           )}
           {consoleOutput?.stdErr && (
-            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: colors.error }}>
-              ERROR: {consoleOutput?.stdErr}
+            <span style={{ alignItems: 'center', gap: '8px', color: colors.error }}>
+              ERROR:{' '}
+              <Linkify>
+                <div contentEditable="false" suppressContentEditableWarning={true}>
+                  {consoleOutput?.stdErr}
+                </div>
+              </Linkify>
             </span>
           )}
           {consoleOutput?.stdOut}
