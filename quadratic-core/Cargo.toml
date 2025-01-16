@@ -85,6 +85,7 @@ parquet = { version = "51.0.0", default-features = false, features = [
   "arrow-array",
   "flate2",
   "snap",
+  "zstd",
 ] }
 bytes = "1.5.0"
 arrow-array = "51.0.0"
