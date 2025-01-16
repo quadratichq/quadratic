@@ -208,7 +208,7 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   test_unit:
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -233,14 +233,15 @@ jobs:
       - uses: useblacksmith/rust-cache@v3
 
       - uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: "latest"
 
-      - name: Build quadratic-core
+      - name: Build core and rust-client
         run: |
-          npm run build:wasm:javascript
-
-      - name: Build quadratic-rust-client
-        run: |
-          npm run build:rust-client
+          npm run build:rust-client & \
+          npm run build:wasm:javascript:dev & \
+          npm run build:wasm:types & \
+          wait
 
       - name: Build python
         run: |
@@ -334,11 +335,11 @@ jobs:
         with:
           version: "latest"
 
-      - name: Build wasm core
+      - name: Build core and rust-client
         run: |
           npm run build:rust-client & \
-          npm run build:wasm:javascript:dev --workspace=quadratic-client & \
-          npm run build:wasm:types --workspace=quadratic-client & \
+          npm run build:wasm:javascript:dev & \
+          npm run build:wasm:types & \
           wait
 
       - name: Lint quadratic-client
