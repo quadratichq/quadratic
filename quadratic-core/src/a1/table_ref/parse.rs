@@ -174,4 +174,15 @@ mod tests {
         assert!(table_ref.headers);
         assert_eq!(table_ref.col_range, ColRange::Col("Col1".to_string()));
     }
+
+    #[test]
+    fn test_table_parameters_one() {
+        let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
+        let table_ref = TableRef::parse("Table1[#ALL]", &context).unwrap();
+        assert_eq!(table_ref.table_name, "Table1");
+        assert!(table_ref.data);
+        assert!(table_ref.headers);
+        assert!(table_ref.totals);
+        assert_eq!(table_ref.col_range, ColRange::All);
+    }
 }

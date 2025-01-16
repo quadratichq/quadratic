@@ -580,7 +580,7 @@ mod test {
             &[],
             &[("Table1", &["Col1", "Col2"], Rect::test_a1("A1:B2"))],
         );
-        let mut selection = A1Selection::test_a1_context("Table1", &context);
+        let mut selection = A1Selection::test_a1_context("Table1[#ALL]", &context);
         selection.exclude_cells(pos![A1], None, &context);
         assert_eq!(
             selection.ranges,

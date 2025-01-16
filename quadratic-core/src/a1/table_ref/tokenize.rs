@@ -104,13 +104,13 @@ impl TableRef {
         if !entry.is_empty() {
             entries.push(entry);
         }
-
         Ok(entries)
     }
 
     pub(crate) fn tokenize(s: &str) -> Result<Vec<Token>, A1Error> {
         // if there are no brackets, then it's a column name
-        if !s.contains('[') {
+        // todo: might be an edge case where the column name includes '#
+        if !s.contains('[') && !s.starts_with('#') {
             return Ok(vec![Token::Column(s.to_string())]);
         }
 

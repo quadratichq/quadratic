@@ -11,15 +11,12 @@ impl TableRef {
         table.bounds.intersects(rect)
     }
 
-    /// Returns true if the table contains the position.
-    pub fn contains_pos(&self, pos: Pos, context: &A1Context) -> bool {
+    /// Returns whether the table contains the position.
+    pub fn contains(&self, pos: Pos, context: &A1Context) -> bool {
         let Some(table) = context.try_table(&self.table_name) else {
             return false;
         };
-        if !self.col_range.has_col(pos.x - table.bounds.min.x, table) {
-            return false;
-        }
-        true
+        table.bounds.contains(pos) && self.col_range.has_col(pos.x - table.bounds.min.x, table)
     }
 }
 
@@ -60,7 +57,7 @@ mod tests {
     }
 
     #[test]
-    fn test_contains_pos() {
+    fn test_contains() {
         let (context, _) = setup_test_context();
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
@@ -71,14 +68,14 @@ mod tests {
         };
 
         // Position within column A
-        assert!(table_ref.contains_pos(pos![A1], &context));
-        assert!(table_ref.contains_pos(pos![A1], &context));
+        assert!(table_ref.contains(pos![A1], &context));
+        assert!(table_ref.contains(pos![A1], &context));
 
         // Position outside column A
-        assert!(!table_ref.contains_pos(pos![B1], &context));
-        assert!(!table_ref.contains_pos(pos![C1], &context));
+        assert!(!table_ref.contains(pos![B1], &context));
+        assert!(!table_ref.contains(pos![C1], &context));
 
         // Position completely outside table
-        assert!(!table_ref.contains_pos(Pos::new(10, 10), &context));
+        assert!(!table_ref.contains(Pos::new(10, 10), &context));
     }
 }
