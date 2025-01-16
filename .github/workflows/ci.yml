@@ -238,9 +238,9 @@ jobs:
 
       - name: Build core and rust-client
         run: |
-          npm run build:rust-client & \
-          npm run build:wasm:javascript & \
-          npm run build:wasm:types & \
+          npm run build:dev --workspace=quadratic-core & \
+          npm run export_types --workspace=quadratic-core & \
+          npm run build:dev --workspace=quadratic-rust-client & \
           wait
 
       - name: Build python
@@ -337,9 +337,9 @@ jobs:
 
       - name: Build core and rust-client
         run: |
-          npm run build:rust-client & \
-          npm run build:wasm:javascript & \
-          npm run build:wasm:types & \
+          npm run build:dev --workspace=quadratic-core & \
+          npm run export_types --workspace=quadratic-core & \
+          npm run build:dev --workspace=quadratic-rust-client & \
           wait
 
       - name: Lint quadratic-client
