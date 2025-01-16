@@ -137,6 +137,10 @@ impl Borders {
             .into_iter()
             .map(|(x1, y1, x2, y2, border)| {
                 if let Some(table) = table {
+                    // Move the borders from table coordinates to screen
+                    // coordinates, and place bounds on any infinite borders. We
+                    // subtract 1 because borders are 1-based, and tables are
+                    // 0-based.
                     let delta_x = table.min.x as u64 - 1;
                     let delta_y = table.min.y as u64 - 1;
                     (
@@ -161,6 +165,10 @@ impl Borders {
             .into_iter()
             .chain(self.right.into_iter().map(|(x1, y1, x2, y2, border)| {
                 if let Some(table) = table {
+                    // Move the borders from table coordinates to screen
+                    // coordinates, and place bounds on any infinite borders. We
+                    // subtract 1 because borders are 1-based, and tables are
+                    // 0-based.
                     let delta_x = table.min.x as u64 - 1;
                     let delta_y = table.min.y as u64 - 1;
                     (
@@ -179,7 +187,13 @@ impl Borders {
                         border,
                     )
                 } else {
-                    (x1, y1, x2, y2, border)
+                    (
+                        x1.saturating_add(1),
+                        y1,
+                        x2.map(|x2| x2.saturating_add(1)),
+                        y2,
+                        border,
+                    )
                 }
             }))
             .collect::<Vec<_>>();
