@@ -29,11 +29,11 @@ impl TableRef {
     /// `Table1[Column 1]` and `Table1[Column 3]`.
     pub fn parse(s: &str, context: &A1Context) -> Result<TableRef, A1Error> {
         let (table_name, remaining) = Self::parse_table_name(s)?;
-        let table_name = if let Some(entry) = context.try_table(&table_name) {
-            entry.table_name.clone()
-        } else {
+        let Some(table) = context.try_table(&table_name) else {
             return Err(A1Error::TableNotFound(table_name.clone()));
         };
+
+        let table_name = table.table_name.clone();
 
         // if it's just the table name, return the entire TableRef
         if remaining.trim().is_empty() {
@@ -57,19 +57,38 @@ impl TableRef {
                     if col_range.is_some() {
                         return Err(A1Error::MultipleColumnDefinitions);
                     }
-                    col_range = Some(ColRange::Col(name));
+                    if let Some(index) = table.try_col_index(&name) {
+                        col_range = Some(ColRange::Col(table.all_columns[index as usize].clone()));
+                    } else {
+                        return Err(A1Error::InvalidColumn(name.clone()));
+                    }
                 }
                 Token::ColumnRange(start, end) => {
                     if col_range.is_some() {
                         return Err(A1Error::MultipleColumnDefinitions);
                     }
-                    col_range = Some(ColRange::ColRange(start, end));
+                    let Some(start) = table.try_col_index(&start) else {
+                        return Err(A1Error::InvalidColumn(start.clone()));
+                    };
+                    let Some(end) = table.try_col_index(&end) else {
+                        return Err(A1Error::InvalidColumn(end.clone()));
+                    };
+                    col_range = Some(ColRange::ColRange(
+                        table.all_columns[start as usize].clone(),
+                        table.all_columns[end as usize].clone(),
+                    ));
                 }
                 Token::ColumnToEnd(name) => {
                     if col_range.is_some() {
                         return Err(A1Error::MultipleColumnDefinitions);
                     }
-                    col_range = Some(ColRange::ColToEnd(name));
+                    if let Some(index) = table.try_col_index(&name) {
+                        col_range = Some(ColRange::ColToEnd(
+                            table.all_columns[index as usize].clone(),
+                        ));
+                    } else {
+                        return Err(A1Error::InvalidColumn(name.clone()));
+                    }
                 }
                 Token::All => {
                     headers = true;
@@ -176,7 +195,7 @@ mod tests {
     }
 
     #[test]
-    fn test_table_parameters_one() {
+    fn test_table_parameters_all() {
         let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
         let table_ref = TableRef::parse("Table1[#ALL]", &context).unwrap();
         assert_eq!(table_ref.table_name, "Table1");
@@ -184,5 +203,24 @@ mod tests {
         assert!(table_ref.headers);
         assert!(table_ref.totals);
         assert_eq!(table_ref.col_range, ColRange::All);
+    }
+
+    #[test]
+    fn test_table_parameters_headers() {
+        let cases = [
+            "Table1[[#HEADERS]]",
+            "Table1[#HEADERS]",
+            "Table1[#headers]",
+            "Table1[[#Headers]]",
+        ];
+        for case in cases {
+            let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
+            let table_ref = TableRef::parse(case, &context).unwrap();
+            assert_eq!(table_ref.table_name, "Table1");
+            assert!(!table_ref.data);
+            assert!(table_ref.headers);
+            assert!(!table_ref.totals);
+            assert_eq!(table_ref.col_range, ColRange::All);
+        }
     }
 }

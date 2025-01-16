@@ -185,6 +185,7 @@ impl Sheet {
         code_cells
     }
 
+    /// Converts a table ref to a rect.
     pub fn table_ref_to_rect(&self, range: &TableRef) -> Option<Rect> {
         range
             .convert_to_ref_range_bounds(false, &self.a1_context())
@@ -305,7 +306,7 @@ impl Sheet {
 mod tests {
 
     use crate::{
-        a1::{A1Selection, CellRefRange, RefRangeBounds},
+        a1::{A1Selection, CellRefRange, RefRangeBounds, TableRef},
         grid::{
             js_types::{JsCellValuePosAIContext, JsCodeCell, JsReturnInfo},
             CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
@@ -699,5 +700,31 @@ mod tests {
         // Mixed finite and infinite selections
         let mixed = A1Selection::test_a1("B2:C3,D:D,4:4");
         assert_eq!(sheet.selection_bounds(&mixed), Some(Rect::new(1, 1, 4, 4)));
+    }
+
+    #[test]
+    fn test_table_ref_to_rect() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_code_run_array_2d(1, 1, 2, 2, vec!["1", "2", "3", "4"]);
+        let dt = sheet.data_table_mut(pos![A1]).unwrap();
+        dt.show_header = true;
+
+        let table_ref = TableRef::parse("Table1", &sheet.a1_context()).unwrap();
+        assert_eq!(
+            sheet.table_ref_to_rect(&table_ref),
+            Some(Rect::test_a1("A2:B3"))
+        );
+
+        let table_ref = TableRef::parse("Table1[#HEADERS]", &sheet.a1_context()).unwrap();
+        assert_eq!(
+            sheet.table_ref_to_rect(&table_ref),
+            Some(Rect::test_a1("A1:B1"))
+        );
+
+        let table_ref = TableRef::parse("Table1[#All]", &sheet.a1_context()).unwrap();
+        assert_eq!(
+            sheet.table_ref_to_rect(&table_ref),
+            Some(Rect::test_a1("A1:B3"))
+        );
     }
 }

@@ -119,7 +119,7 @@ impl TableRef {
         let mut tokens = Vec::new();
         let mut iter = bracketed_entries.iter().peekable();
         while let Some(entry) = iter.next() {
-            match entry.as_str() {
+            match entry.to_uppercase().as_str() {
                 "#HEADERS" => tokens.push(Token::Headers),
                 "#DATA" => tokens.push(Token::Data),
                 "#TOTALS" => tokens.push(Token::Totals),
@@ -233,6 +233,13 @@ mod tests {
         for (s, expected) in special {
             assert_eq!(
                 TableRef::tokenize(s).unwrap(),
+                vec![expected.clone()],
+                "Expected {:?} for {}",
+                expected,
+                s
+            );
+            assert_eq!(
+                TableRef::tokenize(s.to_lowercase().as_str()).unwrap(),
                 vec![expected.clone()],
                 "Expected {:?} for {}",
                 expected,

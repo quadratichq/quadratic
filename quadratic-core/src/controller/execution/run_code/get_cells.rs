@@ -14,6 +14,7 @@ pub struct CellA1Response {
     pub w: i64,
     pub h: i64,
     pub two_dimensional: bool,
+    pub has_headers: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
@@ -149,7 +150,6 @@ impl GridController {
             } else {
                 false
             };
-
             let cells = sheet.get_cells_response(*rect);
             CellA1Response {
                 cells,
@@ -158,6 +158,7 @@ impl GridController {
                 w: rect.width() as i64,
                 h: rect.height() as i64,
                 two_dimensional,
+                has_headers: selection.has_table_headers(),
             }
         } else {
             CellA1Response {
@@ -167,6 +168,7 @@ impl GridController {
                 w: 0,
                 h: 0,
                 two_dimensional: false,
+                has_headers: false,
             }
         };
 
@@ -346,6 +348,7 @@ mod test {
                 w: 1,
                 h: 1,
                 two_dimensional: false,
+                has_headers: false,
             })
         );
     }
@@ -447,6 +450,7 @@ mod test {
                 w: 1,
                 h: 5,
                 two_dimensional: false,
+                has_headers: false,
             })
         );
     }
@@ -489,6 +493,7 @@ mod test {
                 w: 1,
                 h: 1,
                 two_dimensional: false,
+                has_headers: false,
             })
         );
     }
@@ -544,5 +549,133 @@ mod test {
             .calculation_get_cells_a1(transaction_id.to_string(), "D5:".to_string(), None)
             .unwrap();
         assert!(result.two_dimensional);
+    }
+
+    #[test]
+    fn test_get_cells_table_headers() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.test_set_code_run_array_2d(1, 1, 2, 2, vec!["1", "2", "3", "4"]);
+
+        // set show_header = true
+        gc.data_table_meta(
+            SheetPos::new(sheet_id, 1, 1),
+            None,
+            None,
+            None,
+            Some(true),
+            None,
+            None,
+        );
+
+        gc.set_code_cell(
+            SheetPos::new(sheet_id, 1, 10),
+            CodeCellLanguage::Python,
+            "".to_string(),
+            None,
+        );
+        let transaction_id = gc.last_transaction().unwrap().id;
+        let result = gc.calculation_get_cells_a1(
+            transaction_id.to_string(),
+            "Table1[[#HEADERS]]".to_string(),
+            None,
+        );
+        assert_eq!(
+            result,
+            Ok(CellA1Response {
+                cells: vec![
+                    JsGetCellResponse {
+                        x: 1,
+                        y: 1,
+                        value: "Column 1".into(),
+                        type_name: "text".into()
+                    },
+                    JsGetCellResponse {
+                        x: 2,
+                        y: 1,
+                        value: "Column 2".into(),
+                        type_name: "text".into()
+                    }
+                ],
+                x: 1,
+                y: 1,
+                w: 2,
+                h: 1,
+                two_dimensional: true,
+                has_headers: false,
+            })
+        );
+    }
+
+    #[test]
+    fn test_get_cells_table_data_headers() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.test_set_code_run_array_2d(1, 1, 2, 1, vec!["1", "2"]);
+
+        // set show_header = true
+        gc.data_table_meta(
+            SheetPos::new(sheet_id, 1, 1),
+            None,
+            None,
+            None,
+            Some(true),
+            None,
+            None,
+        );
+
+        gc.set_code_cell(
+            SheetPos::new(sheet_id, 1, 10),
+            CodeCellLanguage::Python,
+            "".to_string(),
+            None,
+        );
+        let transaction_id = gc.last_transaction().unwrap().id;
+        let result = gc.calculation_get_cells_a1(
+            transaction_id.to_string(),
+            "Table1[[#ALL]]".to_string(),
+            None,
+        );
+        assert_eq!(
+            result,
+            Ok(CellA1Response {
+                cells: vec![
+                    JsGetCellResponse {
+                        x: 1,
+                        y: 1,
+                        value: "Column 1".into(),
+                        type_name: "text".into()
+                    },
+                    JsGetCellResponse {
+                        x: 2,
+                        y: 1,
+                        value: "Column 2".into(),
+                        type_name: "text".into()
+                    },
+                    JsGetCellResponse {
+                        x: 1,
+                        y: 2,
+                        value: "1".into(),
+                        type_name: "number".into()
+                    },
+                    JsGetCellResponse {
+                        x: 2,
+                        y: 2,
+                        value: "2".into(),
+                        type_name: "number".into()
+                    }
+                ],
+                x: 1,
+                y: 1,
+                w: 2,
+                h: 2,
+                two_dimensional: true,
+                has_headers: true,
+            })
+        );
     }
 }

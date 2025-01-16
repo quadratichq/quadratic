@@ -34,7 +34,6 @@ impl Sheet {
 
     pub fn get_cells_response(&self, rect: Rect) -> Vec<JsGetCellResponse> {
         let mut response = vec![];
-
         for y in rect.y_range() {
             for x in rect.x_range() {
                 if let Some(cell) = self.display_value(Pos { x, y }) {

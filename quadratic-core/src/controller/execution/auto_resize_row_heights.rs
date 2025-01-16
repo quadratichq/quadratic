@@ -512,6 +512,7 @@ mod tests {
                 w: 1,
                 h: 1,
                 two_dimensional: false,
+                has_headers: false,
             })
         );
         // pending cal

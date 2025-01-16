@@ -113,7 +113,6 @@ impl DataTable {
         if pos.y == 0 && self.show_header && !self.header_is_first_row {
             if let Some(columns) = &self.column_headers {
                 let display_columns = columns.iter().filter(|c| c.display).collect::<Vec<_>>();
-
                 if let Some(column) = display_columns.get(pos.x as usize) {
                     return Ok(column.name.as_ref());
                 }
