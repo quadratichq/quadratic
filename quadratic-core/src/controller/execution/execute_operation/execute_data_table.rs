@@ -365,23 +365,19 @@ impl GridController {
             ref show_ui,
         } = op
         {
-            // get unique name first since it requires an immutable reference to the grid
-            let unique_name = name.as_ref().map(|name| {
-                self.grid
-                    .unique_data_table_name(name, false, Some(sheet_pos))
-            });
+            let old_name = self
+                .try_sheet_result(sheet_pos.sheet_id)?
+                .data_table(sheet_pos.into())
+                .map(|data_table| data_table.name.to_owned());
+
+            if let Some(name) = name {
+                self.grid.update_data_table_name(sheet_pos, name, false)?;
+            }
 
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
-
-            let old_name = unique_name.map(|name| {
-                let old_name = data_table.name.to_owned();
-                data_table.name = name;
-
-                old_name
-            });
 
             let old_alternating_colors = alternating_colors.map(|alternating_colors| {
                 let old_alternating_colors = data_table.alternating_colors.to_owned();

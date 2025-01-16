@@ -83,7 +83,16 @@ impl Grid {
             .data_table_mut(sheet_pos.into())?
             .update_table_name(&unique_name);
 
+        self.replace_table_name_in_code_cells(name, &unique_name);
+
         Ok(())
+    }
+
+    /// Replaces the table name in all code cells that reference the old name in all sheets in the grid.
+    pub fn replace_table_name_in_code_cells(&mut self, old_name: &str, new_name: &str) {
+        for sheet in self.sheets.iter_mut() {
+            sheet.replace_table_name_in_code_cells(old_name, new_name);
+        }
     }
 
     /// Returns a unique name for a data table
