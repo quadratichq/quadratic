@@ -176,7 +176,7 @@ mod tests {
     }
 
     #[test]
-    fn test_table_parameters_one() {
+    fn test_table_parameters_all() {
         let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
         let table_ref = TableRef::parse("Table1[#ALL]", &context).unwrap();
         assert_eq!(table_ref.table_name, "Table1");
@@ -184,5 +184,24 @@ mod tests {
         assert!(table_ref.headers);
         assert!(table_ref.totals);
         assert_eq!(table_ref.col_range, ColRange::All);
+    }
+
+    #[test]
+    fn test_table_parameters_headers() {
+        let cases = [
+            "Table1[[#HEADERS]]",
+            "Table1[#HEADERS]",
+            "Table1[#headers]",
+            "Table1[[#Headers]]",
+        ];
+        for case in cases {
+            let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
+            let table_ref = TableRef::parse(case, &context).unwrap();
+            assert_eq!(table_ref.table_name, "Table1");
+            assert!(!table_ref.data);
+            assert!(table_ref.headers);
+            assert!(!table_ref.totals);
+            assert_eq!(table_ref.col_range, ColRange::All);
+        }
     }
 }

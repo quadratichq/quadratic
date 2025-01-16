@@ -359,6 +359,19 @@ impl A1Selection {
             .find(|table| table.contains(self.cursor.to_sheet_pos(self.sheet_id)));
         table.is_some_and(|table| table.is_html_image)
     }
+
+    /// Returns true if the selection is a only a table that includes table
+    /// headers.
+    pub fn has_table_headers(&self) -> bool {
+        if self.ranges.len() != 1 {
+            return false;
+        }
+        if let Some(CellRefRange::Table { range }) = self.ranges.first() {
+            range.headers && range.data
+        } else {
+            false
+        }
+    }
 }
 
 #[cfg(test)]
@@ -722,5 +735,14 @@ mod tests {
         assert!(
             !A1Selection::test_a1_context("Sheet2!B2", &context).cursor_is_on_html_image(&context)
         );
+    }
+
+    #[test]
+    fn test_has_table_headers() {
+        let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
+        assert!(!A1Selection::test_a1_context("Table1", &context).has_table_headers());
+        assert!(A1Selection::test_a1_context("Table1[#ALL]", &context).has_table_headers());
+        assert!(!A1Selection::test_a1_context("Table1[#headers]", &context).has_table_headers());
+        assert!(A1Selection::test_a1_context("Table1[#all]", &context).has_table_headers());
     }
 }

@@ -154,6 +154,7 @@ mod tests {
                 w: 1,
                 h: 1,
                 two_dimensional: false,
+                has_headers: false,
             })
         );
 
@@ -230,6 +231,7 @@ mod tests {
                 w: 1,
                 h: 1,
                 two_dimensional: false,
+                has_headers: false,
             })
         );
         assert!(gc

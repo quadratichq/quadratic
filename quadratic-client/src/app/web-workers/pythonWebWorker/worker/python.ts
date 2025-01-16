@@ -39,7 +39,7 @@ class Python {
   private getCellsA1 = (
     a1: string,
     lineNumber?: number
-  ): { cells: JsGetCellResponse[]; x: number; y: number; w: number; h: number } | undefined => {
+  ): { cells: JsGetCellResponse[]; x: number; y: number; w: number; h: number; has_headers: boolean } | undefined => {
     if (!this.transactionId) {
       throw new Error('No transactionId in getCellsA1');
     }

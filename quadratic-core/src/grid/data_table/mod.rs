@@ -204,7 +204,7 @@ impl DataTable {
 
         if header_is_first_row {
             data_table.apply_first_row_as_header();
-        } else if show_header {
+        } else {
             data_table.apply_default_header();
         }
 

@@ -140,6 +140,7 @@ export const CodeRunning = () => {
             <span
               className="-translate-x-[2px] -translate-y-[4px] scale-75"
               style={{ position: 'absolute', left: code.left, top: code.top }}
+              key={index}
             >
               <SpinnerIcon
                 className={cn(code.color === 'black' && 'text-primary')}

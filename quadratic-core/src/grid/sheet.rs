@@ -339,18 +339,6 @@ impl Sheet {
         }
     }
 
-    // /// Sets a formatting property for a cell.
-    // pub fn set_formatting_value<A: CellFmtAttr>(
-    //     &mut self,
-    //     pos: Pos,
-    //     value: Option<A::Value>,
-    // ) -> Option<A::Value> {
-    //     // TODO(perf): avoid double lookup
-    //     let mut cell_format = self.formats.get(pos).cloned().unwrap_or_default();
-    //     *A::get_from_format_mut(&mut cell_format) = value;
-    //     A::get_from_format(&self.formats.set(pos, Some(cell_format))?).clone()
-    // }
-
     /// Returns a column of a sheet from the column index.
     pub(crate) fn get_column(&self, index: i64) -> Option<&Column> {
         self.columns.get(&index)

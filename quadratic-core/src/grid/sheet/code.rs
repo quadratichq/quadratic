@@ -88,7 +88,7 @@ impl Sheet {
             .iter()
             .find_map(|(code_cell_pos, data_table)| {
                 if data_table
-                    .output_rect(*code_cell_pos, false, false)
+                    .output_rect(*code_cell_pos, false, true)
                     .contains(pos)
                 {
                     data_table.cell_value_at(
