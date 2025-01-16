@@ -672,7 +672,7 @@ mod test {
                 x: 1,
                 y: 1,
                 w: 2,
-                h: 1,
+                h: 2,
                 two_dimensional: true,
                 has_headers: true,
             })
