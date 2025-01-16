@@ -239,7 +239,7 @@ jobs:
       - name: Build core and rust-client
         run: |
           npm run build:rust-client & \
-          npm run build:wasm:javascript:dev & \
+          npm run build:wasm:javascript & \
           npm run build:wasm:types & \
           wait
 
@@ -338,7 +338,7 @@ jobs:
       - name: Build core and rust-client
         run: |
           npm run build:rust-client & \
-          npm run build:wasm:javascript:dev & \
+          npm run build:wasm:javascript & \
           npm run build:wasm:types & \
           wait
 
