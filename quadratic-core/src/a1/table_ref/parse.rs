@@ -29,11 +29,11 @@ impl TableRef {
     /// `Table1[Column 1]` and `Table1[Column 3]`.
     pub fn parse(s: &str, context: &A1Context) -> Result<TableRef, A1Error> {
         let (table_name, remaining) = Self::parse_table_name(s)?;
-        let table_name = if let Some(entry) = context.try_table(&table_name) {
-            entry.table_name.clone()
-        } else {
+        let Some(table) = context.try_table(&table_name) else {
             return Err(A1Error::TableNotFound(table_name.clone()));
         };
+
+        let table_name = table.table_name.clone();
 
         // if it's just the table name, return the entire TableRef
         if remaining.trim().is_empty() {
@@ -57,19 +57,38 @@ impl TableRef {
                     if col_range.is_some() {
                         return Err(A1Error::MultipleColumnDefinitions);
                     }
-                    col_range = Some(ColRange::Col(name));
+                    if let Some(index) = table.try_col_index(&name) {
+                        col_range = Some(ColRange::Col(table.all_columns[index as usize].clone()));
+                    } else {
+                        return Err(A1Error::InvalidColumn(name.clone()));
+                    }
                 }
                 Token::ColumnRange(start, end) => {
                     if col_range.is_some() {
                         return Err(A1Error::MultipleColumnDefinitions);
                     }
-                    col_range = Some(ColRange::ColRange(start, end));
+                    let Some(start) = table.try_col_index(&start) else {
+                        return Err(A1Error::InvalidColumn(start.clone()));
+                    };
+                    let Some(end) = table.try_col_index(&end) else {
+                        return Err(A1Error::InvalidColumn(end.clone()));
+                    };
+                    col_range = Some(ColRange::ColRange(
+                        table.all_columns[start as usize].clone(),
+                        table.all_columns[end as usize].clone(),
+                    ));
                 }
                 Token::ColumnToEnd(name) => {
                     if col_range.is_some() {
                         return Err(A1Error::MultipleColumnDefinitions);
                     }
-                    col_range = Some(ColRange::ColToEnd(name));
+                    if let Some(index) = table.try_col_index(&name) {
+                        col_range = Some(ColRange::ColToEnd(
+                            table.all_columns[index as usize].clone(),
+                        ));
+                    } else {
+                        return Err(A1Error::InvalidColumn(name.clone()));
+                    }
                 }
                 Token::All => {
                     headers = true;
