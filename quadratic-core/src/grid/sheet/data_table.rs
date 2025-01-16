@@ -1,7 +1,7 @@
 use super::Sheet;
 use crate::{
     a1::A1Context,
-    grid::{data_table::DataTable, CodeCellValue, DataTableKind},
+    grid::{data_table::DataTable, CodeCellValue, SheetId},
     Pos,
 };
 
@@ -120,22 +120,32 @@ impl Sheet {
         })
     }
 
-    /// Replaces the table name in all code cells that reference the old name.
-    pub fn replace_table_name_in_code_cells(&mut self, old_name: &str, new_name: &str) {
+    fn replace_in_code_cells(&mut self, func: impl Fn(&mut CodeCellValue, &A1Context, &SheetId)) {
         let a1_context = self.a1_context();
 
         for (pos, _) in self.data_tables.iter() {
             if let Some(cell_value) = self.get_code_cell_value(*pos) {
                 if let Some(mut code_cell_value) = cell_value.code_cell_value() {
-                    code_cell_value.replace_table_name_in_cell_references(
-                        old_name,
-                        new_name,
-                        &self.id,
-                        &a1_context,
-                    );
+                    func(&mut code_cell_value, &a1_context, &self.id);
                 }
             }
         }
+    }
+
+    /// Replaces the table name in all code cells that reference the old name.
+    pub fn replace_table_name_in_code_cells(&mut self, old_name: &str, new_name: &str) {
+        self.replace_in_code_cells(|code_cell_value, a1_context, id| {
+            code_cell_value
+                .replace_table_name_in_cell_references(old_name, new_name, id, a1_context);
+        });
+    }
+
+    /// Replaces the column name in all code cells that reference the old name.
+    pub fn replace_data_table_column_name_in_code_cells(&mut self, old_name: &str, new_name: &str) {
+        self.replace_in_code_cells(|code_cell_value, a1_context, id| {
+            code_cell_value
+                .replace_column_name_in_cell_references(old_name, new_name, id, a1_context);
+        });
     }
 }
 

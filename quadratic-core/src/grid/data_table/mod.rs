@@ -88,6 +88,11 @@ impl Grid {
         Ok(())
     }
 
+    /// Returns a unique name for a data table
+    pub fn next_data_table_name(&self) -> String {
+        self.unique_data_table_name("Table", true, None)
+    }
+
     /// Replaces the table name in all code cells that reference the old name in all sheets in the grid.
     pub fn replace_table_name_in_code_cells(&mut self, old_name: &str, new_name: &str) {
         for sheet in self.sheets.iter_mut() {
@@ -95,9 +100,10 @@ impl Grid {
         }
     }
 
-    /// Returns a unique name for a data table
-    pub fn next_data_table_name(&self) -> String {
-        self.unique_data_table_name("Table", true, None)
+    pub fn replace_data_table_column_name_in_code_cells(&mut self, old_name: &str, new_name: &str) {
+        for sheet in self.sheets.iter_mut() {
+            sheet.replace_data_table_column_name_in_code_cells(old_name, new_name);
+        }
     }
 }
 
