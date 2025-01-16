@@ -310,8 +310,8 @@ jobs:
           cargo clippy -- -D warnings
 
   lint:
-    runs-on: blacksmith-2vcpu-ubuntu-2204
-    timeout-minutes: 15
+    runs-on: blacksmith-4vcpu-ubuntu-2204
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -336,10 +336,10 @@ jobs:
 
       - name: Build wasm core
         run: |
-          npm run build:rust-client
-          cd quadratic-client
-          npm run build:wasm:javascript:dev
-          npm run build:wasm:types
+          npm run build:rust-client & \
+          npm run build:wasm:javascript:dev --workspace=quadratic-client & \
+          npm run build:wasm:types --workspace=quadratic-client & \
+          wait
 
       - name: Lint quadratic-client
         run: |
