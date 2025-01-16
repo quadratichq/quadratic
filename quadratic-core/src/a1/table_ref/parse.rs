@@ -6,8 +6,8 @@ use crate::a1::{A1Context, A1Error};
 use super::{tokenize::Token, ColRange, TableRef};
 
 lazy_static! {
-    static ref TABLE_NAME_PATTERN: Regex =
-        Regex::new(r"^([a-zA-Z0-9_]{1,255})(?:\[(.*)\])?$").unwrap();
+    static ref TABLE_NAME_PATTERN: Regex = Regex::new(r"^([a-zA-Z0-9_.-]{1,255})(?:\[(.*)\])?$")
+        .expect("Invalid TABLE_NAME_PATTERN regex");
 }
 
 impl TableRef {

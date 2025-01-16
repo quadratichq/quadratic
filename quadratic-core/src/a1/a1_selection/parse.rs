@@ -197,7 +197,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_table() {
+    fn test_a1_parse_table() {
         let sheet_id = SheetId::test();
         let context = A1Context::test(
             &[("First", sheet_id)],
@@ -212,6 +212,17 @@ mod tests {
             .unwrap()
             .to_string(Some(sheet_id), &context),
             "test_table[[#DATA],[#HEADERS],[Col1]],A1".to_string(),
+        );
+
+        let context = A1Context::test(
+            &[("First", sheet_id)],
+            &[("test_table-2.csv", &["Col1"], Rect::test_a1("A1:C3"))],
+        );
+        assert_eq!(
+            A1Selection::parse("test_table-2.csv[Col1]", &sheet_id, &context)
+                .unwrap()
+                .to_string(Some(sheet_id), &context),
+            "test_table-2.csv[Col1]".to_string(),
         );
     }
 }

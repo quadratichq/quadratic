@@ -80,6 +80,18 @@ impl TableRef {
             col_range: ColRange::All,
         }
     }
+
+    pub fn replace_table_name(&mut self, old_name: &str, new_name: &str) {
+        if self.table_name == old_name {
+            self.table_name = new_name.to_string();
+        }
+    }
+
+    pub fn replace_column_name(&mut self, old_name: &str, new_name: &str) {
+        if old_name != new_name {
+            self.col_range.replace_column_name(old_name, new_name);
+        }
+    }
 }
 
 #[cfg(test)]

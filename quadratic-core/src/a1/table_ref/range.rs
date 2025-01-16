@@ -43,6 +43,31 @@ impl ColRange {
         }
         false
     }
+
+    pub fn replace_column_name(&mut self, old_name: &str, new_name: &str) {
+        match self {
+            ColRange::Col(col) => {
+                if col == old_name {
+                    *self = ColRange::Col(new_name.to_string());
+                }
+            }
+            ColRange::ColRange(col1, col2) => {
+                if col1 == old_name {
+                    *col1 = new_name.to_string();
+                }
+                if col2 == old_name {
+                    *col2 = new_name.to_string();
+                }
+            }
+            ColRange::ColToEnd(col) => {
+                if col == old_name {
+                    *col = new_name.to_string();
+                }
+            }
+            // ignore the ALL case
+            _ => {}
+        }
+    }
 }
 
 impl fmt::Display for ColRange {

@@ -38,6 +38,24 @@ impl CellRefRange {
             self.clone()
         }
     }
+
+    pub fn replace_table_name(&mut self, old_name: &str, new_name: &str) {
+        match self {
+            Self::Sheet { .. } => {}
+            Self::Table { range } => {
+                range.replace_table_name(old_name, new_name);
+            }
+        }
+    }
+
+    pub fn replace_column_name(&mut self, old_name: &str, new_name: &str) {
+        match self {
+            Self::Sheet { .. } => {}
+            Self::Table { range } => {
+                range.replace_column_name(old_name, new_name);
+            }
+        }
+    }
 }
 
 #[cfg(test)]

@@ -119,6 +119,18 @@ impl A1Selection {
         }
         (table_ranges, non_table_ranges)
     }
+
+    pub fn replace_table_name(&mut self, old_name: &str, new_name: &str) {
+        self.ranges.iter_mut().for_each(|range| {
+            range.replace_table_name(old_name, new_name);
+        });
+    }
+
+    pub fn replace_column_name(&mut self, old_name: &str, new_name: &str) {
+        self.ranges.iter_mut().for_each(|range| {
+            range.replace_column_name(old_name, new_name);
+        });
+    }
 }
 
 #[cfg(test)]

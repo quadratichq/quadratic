@@ -9,6 +9,21 @@ impl A1Selection {
     ///
     /// The cursor position has no effect on the output.
     pub fn to_string(&self, default_sheet_id: Option<SheetId>, context: &A1Context) -> String {
+        self.to_string_force_sheet_name(default_sheet_id, context, false)
+    }
+
+    /// Returns an A1-style string describing the selection. The sheet name is
+    /// included in the output only if `default_sheet_id` is `None` or differs
+    /// from the ID of the sheet containing the range or `force_sheet_name` is
+    /// true.
+    ///
+    /// The cursor position has no effect on the output.
+    pub fn to_string_force_sheet_name(
+        &self,
+        default_sheet_id: Option<SheetId>,
+        context: &A1Context,
+        force_sheet_name: bool,
+    ) -> String {
         let sheet_id = self.sheet_id;
         self.ranges
             .iter()
@@ -17,7 +32,7 @@ impl A1Selection {
                     sheet_id,
                     cells: cells.clone(),
                 }
-                .to_string(default_sheet_id, context)
+                .to_string(default_sheet_id, context, force_sheet_name)
             })
             .collect::<Vec<_>>()
             .join(",")

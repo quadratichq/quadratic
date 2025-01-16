@@ -33,8 +33,13 @@ impl SheetCellRefRange {
     /// Returns an A1-style string describing the range. The sheet name is
     /// included in the output only if `default_sheet_id` is `None` or differs
     /// from the ID of the sheet containing the range.
-    pub fn to_string(self, default_sheet_id: Option<SheetId>, context: &A1Context) -> String {
-        if default_sheet_id.is_some_and(|sheet_id| sheet_id != self.sheet_id) {
+    pub fn to_string(
+        self,
+        default_sheet_id: Option<SheetId>,
+        context: &A1Context,
+        force_sheet_name: bool,
+    ) -> String {
+        if default_sheet_id.is_some_and(|sheet_id| force_sheet_name || sheet_id != self.sheet_id) {
             if let Some(sheet_name) = context.try_sheet_id(self.sheet_id) {
                 return format!("{}!{}", super::quote_sheet_name(sheet_name), self.cells);
             }

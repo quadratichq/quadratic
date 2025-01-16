@@ -25,6 +25,44 @@ impl CodeCellValue {
         Self { language, code }
     }
 
+    pub fn new_python(code: String) -> Self {
+        Self {
+            language: CodeCellLanguage::Python,
+            code,
+        }
+    }
+
+    pub fn is_code_cell(&self) -> bool {
+        self.language == CodeCellLanguage::Python || self.language == CodeCellLanguage::Javascript
+    }
+
+    fn replace_q_cells_a1_selection(
+        &mut self,
+        default_sheet_id: &SheetId,
+        a1_context: &A1Context,
+        mut func: impl FnMut(&mut A1Selection) -> String,
+    ) {
+        self.code = Q_CELLS_A1_REGEX_COMPILED
+            .replace_all(&self.code, |caps: &fancy_regex::Captures<'_>| {
+                let full_match = &caps[0]; // Capture the entire match
+                let a1_str = &caps[2]; // Capture the first argument which is inside quotes
+
+                match A1Selection::parse(a1_str, default_sheet_id, a1_context) {
+                    Ok(mut a1_selection) => {
+                        let a1_str = func(&mut a1_selection);
+
+                        // let a1_str = a1_selection.to_string(Some(*default_sheet_id), a1_context);
+
+                        // Replace only the first argument, keep the rest unchanged
+                        format!(r#"q.cells("{a1_str}""#)
+                    }
+                    // If the cell reference is invalid, return the original string
+                    Err(_) => full_match.to_string(),
+                }
+            })
+            .to_string();
+    }
+
     /// Updates the cell references in the code by translating them by the given
     /// delta. Updates only relative cell references.
     pub fn update_cell_references(
@@ -34,35 +72,14 @@ impl CodeCellValue {
         default_sheet_id: &SheetId,
         a1_context: &A1Context,
     ) {
-        if delta_x == 0 && delta_y == 0 {
+        if delta_x == 0 && delta_y == 0 || !self.is_code_cell() {
             return;
         }
 
-        // translate q.cells("'Sheet1'!A1:B2" cell references by delta_x and delta_y for
-        // python and javascript code cells
-        if self.language != CodeCellLanguage::Python
-            && self.language != CodeCellLanguage::Javascript
-        {
-            return;
-        }
-
-        self.code = Q_CELLS_A1_REGEX_COMPILED
-            .replace_all(&self.code, |caps: &fancy_regex::Captures<'_>| {
-                let full_match = &caps[0]; // Capture the entire match
-                let a1_str = &caps[2]; // Capture the first argument which is inside quotes
-
-                match A1Selection::parse(a1_str, default_sheet_id, a1_context) {
-                    Ok(mut a1_selection) => {
-                        a1_selection.translate_in_place(delta_x, delta_y);
-                        let a1_str = a1_selection.to_string(Some(*default_sheet_id), a1_context);
-                        // Replace only the first argument, keep the rest unchanged
-                        format!(r#"q.cells("{0}""#, a1_str)
-                    }
-                    // If the cell reference is invalid, return the original string
-                    Err(_) => full_match.to_string(),
-                }
-            })
-            .to_string();
+        self.replace_q_cells_a1_selection(default_sheet_id, a1_context, |a1_selection| {
+            a1_selection.translate_in_place(delta_x, delta_y);
+            return a1_selection.to_string(Some(*default_sheet_id), a1_context);
+        });
     }
 
     /// Adjusts the code cell references by the given delta. Updates only relative
@@ -76,42 +93,79 @@ impl CodeCellValue {
         default_sheet_id: &SheetId,
         a1_context: &A1Context,
     ) {
-        if delta == 0 {
-            return;
+        if delta != 0 && self.is_code_cell() {
+            self.replace_q_cells_a1_selection(default_sheet_id, a1_context, |a1_selection| {
+                a1_selection.adjust_column_row_in_place(column, row, delta);
+                return a1_selection.to_string(Some(*default_sheet_id), a1_context);
+            });
         }
+    }
 
-        // adjust q.cells("'Sheet1'!A1:B2" cell references by delta for python and
-        // javascript code cells
-        if self.language != CodeCellLanguage::Python
-            && self.language != CodeCellLanguage::Javascript
-        {
-            return;
+    /// Replaces the sheet name in the code cell references.
+    pub fn replace_sheet_name_in_cell_references(
+        &mut self,
+        old_name: &str,
+        new_name: &str,
+        default_sheet_id: &SheetId,
+        a1_context: &mut A1Context,
+    ) {
+        if old_name != new_name && self.is_code_cell() {
+            if let Some(sheet_id) = a1_context.try_sheet_name(old_name) {
+                a1_context.sheet_map.insert_parts(new_name, sheet_id);
+            }
+
+            // create a copy of the a1_context so that we can send it to the to_string() function
+            let mut new_a1_context = a1_context.clone();
+            new_a1_context.sheet_map.remove(old_name);
+
+            self.replace_q_cells_a1_selection(default_sheet_id, a1_context, |a1_selection| {
+                return a1_selection.to_string_force_sheet_name(
+                    Some(*default_sheet_id),
+                    &new_a1_context,
+                    true,
+                );
+            });
         }
+    }
 
-        self.code = Q_CELLS_A1_REGEX_COMPILED
-            .replace_all(&self.code, |caps: &fancy_regex::Captures<'_>| {
-                let full_match = &caps[0]; // Capture the entire match
-                let a1_str = &caps[2]; // Capture the first argument which is inside quotes
+    /// Replaces the table name in the code cell references.
+    pub fn replace_table_name_in_cell_references(
+        &mut self,
+        old_name: &str,
+        new_name: &str,
+        default_sheet_id: &SheetId,
+        a1_context: &A1Context,
+    ) {
+        if old_name != new_name && self.is_code_cell() {
+            self.replace_q_cells_a1_selection(default_sheet_id, a1_context, |a1_selection| {
+                a1_selection.replace_table_name(old_name, new_name);
+                return a1_selection.to_string(Some(*default_sheet_id), a1_context);
+            });
+        }
+    }
 
-                match A1Selection::parse(a1_str, default_sheet_id, a1_context) {
-                    Ok(mut a1_selection) => {
-                        // adjust the range by delta
-                        a1_selection.adjust_column_row_in_place(column, row, delta);
-                        let a1_str = a1_selection.to_string(Some(*default_sheet_id), a1_context);
-                        // Replace only the first argument, keep the rest unchanged
-                        format!(r#"q.cells("{0}""#, a1_str)
-                    }
-                    // If the cell reference is invalid, return the original string
-                    Err(_) => full_match.to_string(),
-                }
-            })
-            .to_string();
+    /// Replaces column names in the code cell references.
+    pub fn replace_column_name_in_cell_references(
+        &mut self,
+        old_name: &str,
+        new_name: &str,
+        default_sheet_id: &SheetId,
+        a1_context: &A1Context,
+    ) {
+        if old_name != new_name && self.is_code_cell() {
+            self.replace_q_cells_a1_selection(default_sheet_id, a1_context, |a1_selection| {
+                a1_selection.replace_column_name(old_name, new_name);
+                return a1_selection.to_string(Some(*default_sheet_id), a1_context);
+            });
+        }
     }
 }
 
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
+    use crate::Rect;
+
     use super::*;
 
     #[test]
@@ -311,5 +365,68 @@ mod tests {
             code.code, r#"q.cells("'Sheet1 (1)'!B2:C3", first_row_header=True)"#,
             "first_row_header=True failed"
         );
+    }
+
+    #[test]
+    fn test_replace_sheet_name_in_cell_references() {
+        let sheet_id = SheetId::test();
+        let mut a1_context = A1Context::test(
+            &[("Sheet1", sheet_id)],
+            &[("test.csv", &["city"], Rect::test_a1("A1:C3"))],
+        );
+
+        let mut code = CodeCellValue::new_python("q.cells('Sheet1!A1:B2')".to_string());
+        code.replace_sheet_name_in_cell_references(
+            "Sheet1",
+            "Sheet1_new",
+            &sheet_id,
+            &mut a1_context,
+        );
+        assert_eq!(code.code, r#"q.cells("'Sheet1_new'!A1:B2")"#);
+    }
+
+    #[test]
+    fn test_replace_table_name_in_cell_references() {
+        let sheet_id = SheetId::test();
+        let a1_context = A1Context::test(
+            &[("Sheet1", sheet_id)],
+            &[("test.csv", &["city"], Rect::test_a1("A1:C3"))],
+        );
+
+        let mut code = CodeCellValue {
+            language: CodeCellLanguage::Python,
+            code: "q.cells('test.csv[city]')".to_string(),
+        };
+        code.replace_table_name_in_cell_references(
+            "test.csv",
+            "test_new.csv",
+            &sheet_id,
+            &a1_context,
+        );
+        assert_eq!(code.code, r#"q.cells("test_new.csv[city]")"#);
+    }
+
+    #[test]
+    fn test_replace_column_name_in_cell_references() {
+        let sheet_id = SheetId::test();
+        let a1_context = A1Context::test(
+            &[("Sheet1", sheet_id)],
+            &[("test.csv", &["city"], Rect::test_a1("A1:C3"))],
+        );
+
+        // ColRange::Col
+        let mut code = CodeCellValue::new_python("q.cells('test.csv[city]')".to_string());
+        code.replace_column_name_in_cell_references("city", "city_new", &sheet_id, &a1_context);
+        assert_eq!(code.code, r#"q.cells("test.csv[city_new]")"#);
+
+        // ColRange::ColRange
+        let mut code = CodeCellValue::new_python("q.cells('test.csv[[city]:[state]]')".to_string());
+        code.replace_column_name_in_cell_references("state", "state_new", &sheet_id, &a1_context);
+        assert_eq!(code.code, r#"q.cells("test.csv[[city]:[state_new]]")"#);
+
+        // ColRange::ColToEnd
+        let mut code = CodeCellValue::new_python("q.cells('test.csv[[city]:]')".to_string());
+        code.replace_column_name_in_cell_references("city", "city_new", &sheet_id, &a1_context);
+        assert_eq!(code.code, r#"q.cells("test.csv[[city_new]:]")"#);
     }
 }
