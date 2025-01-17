@@ -204,7 +204,7 @@ jobs:
           cd quadratic-core
           cargo clippy -- -D warnings
 
-  lint_ts:
+  lint_typescript:
     runs-on: blacksmith-4vcpu-ubuntu-2204
     timeout-minutes: 10
     steps:
