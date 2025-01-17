@@ -18,7 +18,6 @@ jobs:
   test_rust:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     timeout-minutes: 10
-    continue-on-error: true
     strategy:
       matrix:
         package:
@@ -30,17 +29,17 @@ jobs:
           - rust-shared
         include:
           - package: core
-            test_command: "npm run test -- -- --test-threads=2"
+            test_command: "npm run test"
           - package: multiplayer
-            test_command: "npm run docker:test -- -- --test-threads=2"
+            test_command: "npm run docker:test"
           - package: files
-            test_command: "npm run docker:test -- -- --test-threads=2"
+            test_command: "npm run docker:test"
           - package: connection
-            test_command: "npm run docker:test -- -- --test-threads=2"
+            test_command: "npm run docker:test"
           - package: rust-client
-            test_command: "npm run test -- -- --test-threads=2"
+            test_command: "npm run test"
           - package: rust-shared
-            test_command: "npm run docker:test -- -- --test-threads=2"
+            test_command: "npm run docker:test"
     steps:
       - uses: actions/checkout@v4
 
