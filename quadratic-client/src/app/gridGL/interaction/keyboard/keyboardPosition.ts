@@ -17,24 +17,52 @@ async function jumpCursor(direction: JumpDirection, select: boolean) {
   const cursor = sheets.sheet.cursor;
   const sheetId = sheets.sheet.id;
 
-  const keyboardX = cursor.position.x;
-  const keyboardY = cursor.position.y;
+  const cursorPos = cursor.position;
+  const selEnd = cursor.selectionEnd;
 
-  const position = await quadraticCore.jumpCursor(sheetId, { x: keyboardX, y: keyboardY }, direction);
+  let jumpStartX;
+  let jumpStartY;
 
+  switch (direction) {
+    case 'Up':
+    case 'Down': {
+      jumpStartX = cursorPos.x;
+      jumpStartY = selEnd.y;
+      break;
+    }
+
+    case 'Left':
+    case 'Right': {
+      jumpStartX = selEnd.x;
+      jumpStartY = cursorPos.y;
+      break;
+    }
+  }
+
+  const jumpPos = await quadraticCore.jumpCursor(sheetId, { x: jumpStartX, y: jumpStartY }, direction);
   // something went wrong
-  if (!position) {
+  if (!jumpPos) {
     console.error('Failed to jump cursor');
     return;
   }
 
-  const col = Math.max(1, position.x);
-  const row = Math.max(1, position.y);
+  const jumpCol = Math.max(1, jumpPos.x);
+  const jumpRow = Math.max(1, jumpPos.y);
 
   if (select) {
-    cursor.selectTo(col, row, true);
+    switch (direction) {
+      case 'Up':
+      case 'Down':
+        cursor.selectTo(selEnd.x, jumpRow, true);
+        break;
+
+      case 'Left':
+      case 'Right':
+        cursor.selectTo(jumpCol, selEnd.y, true);
+        break;
+    }
   } else {
-    cursor.moveTo(col, row);
+    cursor.moveTo(jumpCol, jumpRow);
   }
 }
 
