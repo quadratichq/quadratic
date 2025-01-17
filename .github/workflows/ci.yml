@@ -143,6 +143,70 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+  test_files:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: useblacksmith/setup-node@v5
+        with:
+          node-version: 18
+          cache: "npm"
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy, llvm-tools-preview
+          override: true
+
+      - uses: useblacksmith/rust-cache@v3
+
+      - name: Install grcov
+        run: if ! which grcov; then cargo install grcov; fi
+
+      - name: Install llvm-tools-preview
+        run: if ! which llvm-tools-preview; then rustup component add llvm-tools-preview; fi
+
+      - name: Install pkg-config
+        if: github.runner.isHosted == true
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config
+
+      - name: Test quadratic-files
+        env:
+          LLVM_PROFILE_FILE: grcov-%p-%m.profraw
+          RUSTFLAGS: -Cinstrument-coverage
+          RUSTC_BOOTSTRAP: 1
+          CARGO_BUILD_JOBS: 4
+        run: |
+          cd quadratic-files
+          cargo test -- --test-threads=2
+
+      - name: Generate coverage for quadratic-files
+        env:
+          RUSTC_BOOTSTRAP: 1
+        run: |
+          cd quadratic-files
+          grcov $(find . ../quadratic-rust-shared -name "grcov-*.profraw" -print) \
+            --branch \
+            --ignore-not-existing \
+            --binary-path ../target/debug/ \
+            -s . \
+            -t lcov \
+            --ignore "/*" \
+            --ignore "./src/wasm_bindings/*" \
+            --ignore "./src/bin/*" \
+            --ignore "./docker/*" \
+            -o lcov.info
+
+      - name: Upload coverage reports to Codecov quadratic-files
+        uses: codecov/codecov-action@v5
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
   test_connection:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     timeout-minutes: 10
@@ -203,6 +267,134 @@ jobs:
             -o lcov.info
 
       - name: Upload coverage reports to Codecov quadratic-connection
+        uses: codecov/codecov-action@v5
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  test_rust_client:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: useblacksmith/setup-node@v5
+        with:
+          node-version: 18
+          cache: "npm"
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy, llvm-tools-preview
+          override: true
+
+      - uses: useblacksmith/rust-cache@v3
+
+      - name: Install grcov
+        run: if ! which grcov; then cargo install grcov; fi
+
+      - name: Install llvm-tools-preview
+        run: if ! which llvm-tools-preview; then rustup component add llvm-tools-preview; fi
+
+      - name: Install pkg-config
+        if: github.runner.isHosted == true
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config
+
+      - name: Test quadratic-rust-client
+        env:
+          LLVM_PROFILE_FILE: grcov-%p-%m.profraw
+          RUSTFLAGS: -Cinstrument-coverage
+          RUSTC_BOOTSTRAP: 1
+          CARGO_BUILD_JOBS: 4
+        run: |
+          cd quadratic-rust-client
+          cargo test -- --test-threads=2
+
+      - name: Generate coverage for quadratic-rust-client
+        env:
+          RUSTC_BOOTSTRAP: 1
+        run: |
+          cd quadratic-rust-client
+          grcov $(find . ../quadratic-rust-shared -name "grcov-*.profraw" -print) \
+            --branch \
+            --ignore-not-existing \
+            --binary-path ../target/debug/ \
+            -s . \
+            -t lcov \
+            --ignore "/*" \
+            --ignore "./src/wasm_bindings/*" \
+            --ignore "./src/bin/*" \
+            --ignore "./docker/*" \
+            -o lcov.info
+
+      - name: Upload coverage reports to Codecov quadratic-rust-client
+        uses: codecov/codecov-action@v5
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  test_rust_shared:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: useblacksmith/setup-node@v5
+        with:
+          node-version: 18
+          cache: "npm"
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy, llvm-tools-preview
+          override: true
+
+      - uses: useblacksmith/rust-cache@v3
+
+      - name: Install grcov
+        run: if ! which grcov; then cargo install grcov; fi
+
+      - name: Install llvm-tools-preview
+        run: if ! which llvm-tools-preview; then rustup component add llvm-tools-preview; fi
+
+      - name: Install pkg-config
+        if: github.runner.isHosted == true
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config
+
+      - name: Test quadratic-rust-shared
+        env:
+          LLVM_PROFILE_FILE: grcov-%p-%m.profraw
+          RUSTFLAGS: -Cinstrument-coverage
+          RUSTC_BOOTSTRAP: 1
+          CARGO_BUILD_JOBS: 4
+        run: |
+          cd quadratic-rust-shared
+          npm run docker:test
+
+      - name: Generate coverage for quadratic-rust-shared
+        env:
+          RUSTC_BOOTSTRAP: 1
+        run: |
+          cd quadratic-rust-shared
+          grcov $(find . -name "grcov-*.profraw" -print) \
+            --branch \
+            --ignore-not-existing \
+            --binary-path ../target/debug/ \
+            -s . \
+            -t lcov \
+            --ignore "/*" \
+            --ignore "./src/wasm_bindings/*" \
+            --ignore "./src/bin/*" \
+            --ignore "./docker/*" \
+            -o lcov.info
+
+      - name: Upload coverage reports to Codecov quadratic-rust-shared
         uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
