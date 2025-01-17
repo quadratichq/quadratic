@@ -25,18 +25,14 @@ impl From<&Stats> for StatsResponse {
         let last_processed_file_elapsed = ago(stats.last_processed_file_time, "files");
         let last_processed_transaction_elapsed =
             ago(stats.last_truncated_transaction_time, "transactions");
+        let to_rfc3339 =
+            |time: Option<DateTime<Utc>>| time.map(|t| t.to_rfc3339()).unwrap_or_default();
 
         StatsResponse {
-            last_processed_file_time: stats
-                .last_processed_file_time
-                .map(|t| t.to_rfc3339())
-                .unwrap_or_default(),
+            last_processed_file_time: to_rfc3339(stats.last_processed_file_time),
             last_processed_file_elapsed: last_processed_file_elapsed,
             files_to_process_in_pubsub: stats.files_to_process_in_pubsub,
-            last_processed_transaction_time: stats
-                .last_truncated_transaction_time
-                .map(|t| t.to_rfc3339())
-                .unwrap_or_default(),
+            last_processed_transaction_time: to_rfc3339(stats.last_truncated_transaction_time),
             last_processed_transaction_elapsed: last_processed_transaction_elapsed,
             channels_to_truncate_in_pubsub: stats.channels_to_truncate_in_pubsub,
         }
