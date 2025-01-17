@@ -86,60 +86,63 @@ export class PointerCellMoving {
   }
 
   private moveOverlaps(world: Point): false | 'corner' | 'top' | 'bottom' | 'left' | 'right' {
-    const cursorRectangle = pixiApp.cursor.cursorRectangle;
-    if (!cursorRectangle) return false;
-
-    // top-left corner + threshold
-    if (
-      Math.pow(cursorRectangle.x - world.x, 2) + Math.pow(cursorRectangle.y - world.y, 2) <=
-      TOP_LEFT_CORNER_THRESHOLD_SQUARED
-    ) {
-      return 'corner';
-    }
-
     // if overlap indicator (autocomplete), then return false
     const indicator = pixiApp.cursor.indicator;
     if (intersects.rectanglePoint(indicator, world)) {
       return false;
     }
 
+    const sheet = sheets.sheet;
+
+    const selRectGrid = sheet.cursor.getSingleRectangleOrCursor();
+    if (!selRectGrid) return false;
+
+    const selectionRectangle = sheets.sheet.getScreenRectangleFromRect(selRectGrid);
+
+    // top-left corner + threshold
+    if (
+      Math.pow(selectionRectangle.x - world.x, 2) + Math.pow(selectionRectangle.y - world.y, 2) <=
+      TOP_LEFT_CORNER_THRESHOLD_SQUARED
+    ) {
+      return 'corner';
+    }
+
     // if overlaps any of the borders (with threshold), then return true
     const left = new Rectangle(
-      cursorRectangle.x - BORDER_THRESHOLD / 2,
-      cursorRectangle.y,
+      selectionRectangle.x - BORDER_THRESHOLD / 2,
+      selectionRectangle.y,
       BORDER_THRESHOLD,
-      cursorRectangle.height
+      selectionRectangle.height
     );
     if (intersects.rectanglePoint(left, world)) {
       return 'left';
     }
 
     const right = new Rectangle(
-      cursorRectangle.x + cursorRectangle.width - BORDER_THRESHOLD / 2,
-      cursorRectangle.y,
+      selectionRectangle.x + selectionRectangle.width - BORDER_THRESHOLD / 2,
+      selectionRectangle.y,
       BORDER_THRESHOLD,
-      cursorRectangle.height
+      selectionRectangle.height
     );
     if (intersects.rectanglePoint(right, world)) {
       return 'right';
     }
 
     const top = new Rectangle(
-      cursorRectangle.x,
-      cursorRectangle.y - BORDER_THRESHOLD / 2,
-      cursorRectangle.width,
+      selectionRectangle.x,
+      selectionRectangle.y - BORDER_THRESHOLD / 2,
+      selectionRectangle.width,
       BORDER_THRESHOLD
     );
     if (intersects.rectanglePoint(top, world)) {
       return 'top';
     }
     const bottom = new Rectangle(
-      cursorRectangle.x,
-      cursorRectangle.y + cursorRectangle.height - BORDER_THRESHOLD / 2,
-      cursorRectangle.width,
+      selectionRectangle.x,
+      selectionRectangle.y + selectionRectangle.height - BORDER_THRESHOLD / 2,
+      selectionRectangle.width,
       BORDER_THRESHOLD
     );
-
     if (intersects.rectanglePoint(bottom, world)) {
       return 'bottom';
     }
