@@ -20,6 +20,7 @@ export function javascriptErrorResult(transactionId: string, message: string, li
     output_display_type: null,
     cancel_compute: false,
     chart_pixel_output: null,
+    has_headers: false,
   };
   javascriptCore.sendJavascriptResults(transactionId, codeResult);
   javascriptClient.sendState('ready');
@@ -52,6 +53,8 @@ export function javascriptResults(
     output_display_type: outputType?.displayType || outputArray?.displayType || null,
     cancel_compute: false,
     chart_pixel_output: chartPixelOutput || null,
+
+    has_headers: false,
   };
   javascriptCore.sendJavascriptResults(transactionId, codeResult);
   javascriptClient.sendState('ready', { current: undefined });

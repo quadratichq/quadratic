@@ -14,6 +14,7 @@ def process_output_value(output_value):
     array_output = None
     output_type = type(output_value).__name__
     output_size = None
+    has_headers = False
 
     # TODO(ddimaria): figure out if we need to covert back to a list for array_output
     # We should have a single output
@@ -37,6 +38,8 @@ def process_output_value(output_value):
         output_size = (shape[1], shape[0])
         # If output_value columns is not the default (RangeIndex)
         if type(output_value.columns) != pd.core.indexes.range.RangeIndex:
+            has_headers = True
+
             # Return Column names and values
             array_output = [
                 output_value.columns.tolist()
@@ -101,6 +104,7 @@ def process_output_value(output_value):
         "output_value": output_value,
         "output_type": output_type,
         "output_size": output_size,
+        "has_headers": has_headers,
     }
 
 

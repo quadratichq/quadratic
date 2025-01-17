@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-// this version is deprecated. See JsRunResult below for new implementation
 #[derive(Default, Debug, Serialize, Deserialize, TS)]
 pub struct JsCodeResult {
     pub transaction_id: String,
@@ -14,6 +13,7 @@ pub struct JsCodeResult {
     pub output_display_type: Option<String>,
     pub cancel_compute: Option<bool>,
     pub chart_pixel_output: Option<(f32, f32)>,
+    pub has_headers: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, TS)]

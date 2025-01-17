@@ -268,6 +268,7 @@ class Python {
         success: false,
         std_err: String(e),
         input_python_stack_trace: String(e),
+        has_headers: false,
       };
     }
     if (pythonRun) pythonCore.sendPythonResults(message.transactionId, pythonRun);

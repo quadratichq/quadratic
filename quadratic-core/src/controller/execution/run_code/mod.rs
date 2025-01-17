@@ -431,14 +431,13 @@ impl GridController {
             cells_accessed: transaction.cells_accessed.clone(),
         };
 
-        // todo: this should be true sometimes...
         let show_header = false;
         let mut data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             table_name,
             value,
             false,
-            false,
+            js_code_result.has_headers,
             show_header,
             js_code_result.chart_pixel_output,
         );
