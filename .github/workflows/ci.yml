@@ -29,17 +29,17 @@ jobs:
           - rust-shared
         include:
           - package: core
-            test_command: "npm run test -- --test-threads=2"
+            test_command: "npm run test -- -- --test-threads=2"
           - package: multiplayer
-            test_command: "npm run docker:test -- --test-threads=2"
+            test_command: "npm run docker:test -- -- --test-threads=2"
           - package: files
-            test_command: "npm run docker:test -- --test-threads=2"
+            test_command: "npm run docker:test -- -- --test-threads=2"
           - package: connection
-            test_command: "npm run docker:test -- --test-threads=2"
+            test_command: "npm run docker:test -- -- --test-threads=2"
           - package: rust-client
-            test_command: "npm run test -- --test-threads=2"
+            test_command: "npm run test -- -- --test-threads=2"
           - package: rust-shared
-            test_command: "npm run docker:test -- --test-threads=2"
+            test_command: "npm run docker:test -- -- --test-threads=2"
     steps:
       - uses: actions/checkout@v4
 
