@@ -5,6 +5,7 @@
 
 use axum::http::{Method, StatusCode};
 use axum::response::IntoResponse;
+use axum::Json;
 use axum::{routing::get, Extension, Router};
 use quadratic_rust_shared::auth::jwt::get_jwks;
 use quadratic_rust_shared::storage::Storage;
@@ -15,6 +16,7 @@ use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+use crate::state::stats::StatsResponse;
 use crate::storage::{get_presigned_storage, get_storage};
 use crate::truncate::truncate_processed_transactions;
 use crate::{
@@ -66,7 +68,11 @@ pub(crate) fn app(state: Arc<State>) -> Router {
         //
         // UNPROTECTED ROUTES
         //
+        // healthcheck
         .route("/health", get(healthcheck))
+        //
+        // stats
+        .route("/stats", get(stats))
         //
         // presigned urls
         .route("/storage/presigned/:key", get(get_presigned_storage))
@@ -192,6 +198,13 @@ pub(crate) async fn serve() -> Result<()> {
 
 pub(crate) async fn healthcheck() -> impl IntoResponse {
     StatusCode::OK
+}
+
+pub(crate) async fn stats(state: Extension<Arc<State>>) -> impl IntoResponse {
+    let stats = state.stats.lock().await.to_owned();
+    let response = StatsResponse::from(&stats);
+
+    Json(response)
 }
 
 #[cfg(test)]

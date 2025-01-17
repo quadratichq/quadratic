@@ -1,6 +1,6 @@
+use chrono::Utc;
 use serde::de::DeserializeOwned;
 use std::sync::Arc;
-use tokio::time::Instant;
 use uuid::Uuid;
 
 use quadratic_core::{
@@ -92,7 +92,7 @@ pub(crate) async fn process_queue_for_room(
     file_id: &Uuid,
     active_channels: &str,
 ) -> Result<Option<u64>> {
-    let start = Instant::now();
+    let start = Utc::now();
     let channel = &file_id.to_string();
 
     let Settings {
@@ -214,11 +214,11 @@ pub(crate) async fn process_queue_for_room(
     )
     .await?;
 
-    state.stats.lock().await.last_processed_file_time = Some(Instant::now());
+    state.stats.lock().await.last_processed_file_time = Some(Utc::now());
     state.stats.lock().await.files_to_process_in_pubsub = 0;
 
     tracing::info!(
-        "Processed sequence numbers {first_sequence_num} - {last_sequence_num} for room {file_id} in {:?}", start.elapsed()
+        "Processed sequence numbers {first_sequence_num} - {last_sequence_num} for room {file_id} in {:?}ms", (Utc::now() - start).num_milliseconds()
     );
 
     Ok(Some(last_sequence_num))
