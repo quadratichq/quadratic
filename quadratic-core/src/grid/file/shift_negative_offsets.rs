@@ -113,8 +113,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
         sheet.recalculate_bounds();
     }
 
-    // if changed && cfg!(target_family = "wasm") || cfg!(test) {
-    if changed {
+    if changed && (cfg!(target_family = "wasm") || cfg!(test)) {
         crate::wasm_bindings::js::jsClientMessage("negative_offsets".to_string(), false);
     }
 
