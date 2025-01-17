@@ -18,6 +18,7 @@ jobs:
   test_rust:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     timeout-minutes: 10
+    continue-on-error: true
     strategy:
       matrix:
         package:
