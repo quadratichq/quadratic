@@ -61,19 +61,40 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "selectRect")]
-    pub fn select_rect(&mut self, left: u32, top: u32, right: u32, bottom: u32, append: bool) {
-        self.selection
-            .select_rect(left as i64, top as i64, right as i64, bottom as i64, append);
+    pub fn select_rect(
+        &mut self,
+        left: u32,
+        top: u32,
+        right: u32,
+        bottom: u32,
+        append: bool,
+        context: &str,
+    ) {
+        if let Ok(context) = serde_json::from_str::<A1Context>(context) {
+            self.selection.select_rect(
+                left as i64,
+                top as i64,
+                right as i64,
+                bottom as i64,
+                append,
+                &context,
+            );
+        }
     }
 
     #[wasm_bindgen(js_name = "selectTo")]
-    pub fn select_to(&mut self, x: u32, y: u32, append: bool) {
-        self.selection.select_to(x as i64, y as i64, append);
+    pub fn select_to(&mut self, x: u32, y: u32, append: bool, context: &str) {
+        if let Ok(context) = serde_json::from_str::<A1Context>(context) {
+            self.selection
+                .select_to(x as i64, y as i64, append, &context);
+        }
     }
 
     #[wasm_bindgen(js_name = "moveTo")]
-    pub fn move_to(&mut self, x: u32, y: u32, append: bool) {
-        self.selection.move_to(x as i64, y as i64, append);
+    pub fn move_to(&mut self, x: u32, y: u32, append: bool, context: &str) {
+        if let Ok(context) = serde_json::from_str::<A1Context>(context) {
+            self.selection.move_to(x as i64, y as i64, append, &context);
+        }
     }
 
     #[wasm_bindgen(js_name = "setColumnsSelected")]

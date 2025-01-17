@@ -4,12 +4,14 @@ use crate::Pos;
 use super::{A1Selection, CellRefRange};
 
 impl A1Selection {
-    pub(crate) fn _check_for_table_ref(&mut self, context: &A1Context) {
-        self.ranges.iter_mut().for_each(|range| {
-            if let Some(table_ref) = range.check_for_table_ref(self.sheet_id, context) {
-                *range = table_ref;
+    /// Checks if the last range is a table reference and converts it to a table
+    /// reference.
+    pub(crate) fn check_for_table_ref(&mut self, context: &A1Context) {
+        if let Some(last) = self.ranges.last_mut() {
+            if let Some(table_ref) = last.check_for_table_ref(self.sheet_id, context) {
+                *last = table_ref;
             }
-        });
+        }
     }
 
     /// Selects the entire sheet.
@@ -326,7 +328,15 @@ impl A1Selection {
     /// Selects a rectangular range. If append is true, then the range is appended
     /// to the ranges (or, if the last selection was a range, then the end of
     /// that range is extended).
-    pub fn select_rect(&mut self, left: i64, top: i64, right: i64, bottom: i64, append: bool) {
+    pub fn select_rect(
+        &mut self,
+        left: i64,
+        top: i64,
+        right: i64,
+        bottom: i64,
+        append: bool,
+        context: &A1Context,
+    ) {
         if !append {
             self.ranges.clear();
         }
@@ -342,10 +352,11 @@ impl A1Selection {
         }
         self.cursor.x = left;
         self.cursor.y = top;
+        self.check_for_table_ref(context);
     }
 
     /// Moves the cursor to the given position and clears the selection.
-    pub fn move_to(&mut self, x: i64, y: i64, append: bool) {
+    pub fn move_to(&mut self, x: i64, y: i64, append: bool, context: &A1Context) {
         self.cursor.x = x;
         self.cursor.y = y;
         if !append {
@@ -353,33 +364,42 @@ impl A1Selection {
         }
         self.ranges
             .push(CellRefRange::new_relative_pos(Pos::new(x, y)));
+        self.check_for_table_ref(context);
     }
 
     /// Extends the last selection to the given position. If append is true, then the range is appended
     /// to the ranges (or, if the last selection was a range, then the end of that range is extended).
-    pub(crate) fn select_to(&mut self, column: i64, row: i64, append: bool) {
+    pub(crate) fn select_to(&mut self, column: i64, row: i64, append: bool, context: &A1Context) {
         // if the selection is empty, then we use the cursor as the starting point
         if self.ranges.is_empty() {
             self.ranges
                 .push(CellRefRange::new_relative_pos(self.cursor));
         };
         if let Some(last) = self.ranges.last_mut() {
-            match last {
-                CellRefRange::Table { .. } => (),
-                CellRefRange::Sheet { range } => {
-                    range.end = CellRefRangeEnd::new_relative_xy(column, row);
-                    if range.start.row.is_unbounded() {
-                        self.cursor.y = row;
-                    }
-                    if range.start.col.is_unbounded() {
-                        self.cursor.x = column;
+            let mut range = match last {
+                CellRefRange::Table { range } => {
+                    if let Some(range) = range.convert_to_ref_range_bounds(false, context) {
+                        range
+                    } else {
+                        dbgjs!("Could not convert table range to ref range bounds in A1Selection::select_to");
+                        return;
                     }
                 }
+                CellRefRange::Sheet { range } => range.clone(),
+            };
+            if range.start.row.is_unbounded() {
+                self.cursor.y = row;
             }
+            if range.start.col.is_unbounded() {
+                self.cursor.x = column;
+            }
+            range.end = CellRefRangeEnd::new_relative_xy(column, row);
+            *last = CellRefRange::Sheet { range };
         }
         if !append {
             self.ranges = self.ranges.split_off(self.ranges.len().saturating_sub(1));
         }
+        self.check_for_table_ref(context);
     }
 
     /// Changes the selection to select all columns that have a selection (used by cmd+space). It only
@@ -436,6 +456,8 @@ impl A1Selection {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
+    use crate::{grid::SheetId, Rect};
+
     use super::*;
 
     #[test]
@@ -459,8 +481,9 @@ mod tests {
 
     #[test]
     fn test_move_to() {
+        let context = A1Context::default();
         let mut selection = A1Selection::test_a1("A1,B1,C1");
-        selection.move_to(2, 2, false);
+        selection.move_to(2, 2, false, &context);
         assert_eq!(selection.test_to_string(), "B2");
     }
 
@@ -526,14 +549,15 @@ mod tests {
 
     #[test]
     fn test_select_rect() {
+        let context = A1Context::default();
         let mut selection = A1Selection::test_a1("A1,B2,C3");
-        selection.select_rect(1, 1, 2, 2, false);
+        selection.select_rect(1, 1, 2, 2, false, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:B2")]);
         assert_eq!(selection.cursor.x, 1);
         assert_eq!(selection.cursor.y, 1);
 
-        selection = A1Selection::test_a1("A1:C3");
-        selection.select_rect(3, 3, 5, 5, true);
+        let mut selection = A1Selection::test_a1("A1:C3");
+        selection.select_rect(3, 3, 5, 5, true, &context);
         assert_eq!(
             selection.ranges,
             vec![
@@ -547,21 +571,22 @@ mod tests {
 
     #[test]
     fn test_select_to() {
+        let context = A1Context::default();
         let mut selection = A1Selection::test_a1("A1");
-        selection.select_to(2, 2, false);
+        selection.select_to(2, 2, false, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:B2")]);
 
         selection = A1Selection::test_a1("A:B");
-        selection.select_to(2, 2, false);
+        selection.select_to(2, 2, false, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A:B2")]);
 
         selection = A1Selection::test_a1("A1");
-        selection.select_to(3, 3, false);
-        selection.select_to(1, 1, false);
+        selection.select_to(3, 3, false, &context);
+        selection.select_to(1, 1, false, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1")]);
 
         let mut selection = A1Selection::test_a1("A1,B2,C3");
-        selection.select_to(2, 2, false);
+        selection.select_to(2, 2, false, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("C3:B2")]);
     }
 
@@ -660,8 +685,9 @@ mod tests {
 
     #[test]
     fn test_select_rect_single_cell() {
+        let context = A1Context::default();
         let mut selection = A1Selection::test_a1("A1");
-        selection.select_rect(2, 2, 2, 2, false);
+        selection.select_rect(2, 2, 2, 2, false, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("B2")]);
         assert_eq!(selection.cursor.x, 2);
         assert_eq!(selection.cursor.y, 2);
@@ -669,12 +695,13 @@ mod tests {
 
     #[test]
     fn test_select_to_with_append() {
+        let context = A1Context::default();
         let mut selection = A1Selection::test_a1("A1");
-        selection.select_to(2, 2, true);
+        selection.select_to(2, 2, true, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:B2")]);
 
         // Test appending to existing selection
-        selection.select_to(3, 3, true);
+        selection.select_to(3, 3, true, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:C3")]);
     }
 
@@ -840,5 +867,19 @@ mod tests {
 
         selection.select_row(6, false, false, true, 1, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("6")]);
+    }
+
+    #[test]
+    fn test_select_to_table() {
+        let context = A1Context::test(
+            &[("Sheet1", SheetId::test())],
+            &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C3"))],
+        );
+        let mut selection = A1Selection::test_a1("A1");
+        selection.select_to(col![A], 3, false, &context);
+        assert_eq!(
+            selection,
+            A1Selection::test_a1_context("Table1[[#HEADERS],#[DATA],[col1]]", &context)
+        );
     }
 }

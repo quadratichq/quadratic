@@ -180,10 +180,11 @@ export class SheetCursor {
           Number(bounds.min.y),
           Number(bounds.max.x),
           Number(bounds.max.y),
-          false
+          false,
+          this.sheet.sheets.a1Context
         );
       } else {
-        this.jsSelection.selectRect(1, 1, 1, 1, false);
+        this.jsSelection.selectRect(1, 1, 1, 1, false, this.sheet.sheets.a1Context);
       }
     } else {
       this.jsSelection.selectAll(append ?? false);
@@ -194,12 +195,12 @@ export class SheetCursor {
 
   // Moves the cursor to the given position. This replaces any selection.
   moveTo = (x: number, y: number, append = false, ensureVisible = true) => {
-    this.jsSelection.moveTo(x, y, append);
+    this.jsSelection.moveTo(x, y, append, this.sheet.sheets.a1Context);
     this.updatePosition(ensureVisible);
   };
 
   selectTo = (x: number, y: number, append: boolean, ensureVisible = true) => {
-    this.jsSelection.selectTo(x, y, append);
+    this.jsSelection.selectTo(x, y, append, this.sheet.sheets.a1Context);
     this.updatePosition(ensureVisible);
   };
 
@@ -257,7 +258,7 @@ export class SheetCursor {
   };
 
   selectRect = (left: number, top: number, right: number, bottom: number, append = false, ensureVisible = true) => {
-    this.jsSelection.selectRect(left, top, right, bottom, append);
+    this.jsSelection.selectRect(left, top, right, bottom, append, this.sheet.sheets.a1Context);
     this.updatePosition(ensureVisible);
   };
 
