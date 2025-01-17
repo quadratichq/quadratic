@@ -366,16 +366,16 @@ impl GridController {
         } = op
         {
             // do grid mutations first to keep the borrow checker happy
+            let sheet_id = sheet_pos.sheet_id;
+            let pos = Pos::from(sheet_pos);
+            let old_name = self.grid.data_table(sheet_id, pos)?.name.to_owned();
 
             if let Some(name) = name {
-                self.grid.update_data_table_name(sheet_pos, name, false)?;
+                self.grid
+                    .update_data_table_name(sheet_pos, &old_name, name, false)?;
             }
 
-            let old_data_table = self
-                .try_sheet_result(sheet_pos.sheet_id)?
-                .data_table_result(sheet_pos.into())?;
-
-            let old_name = old_data_table.name.to_owned();
+            let old_data_table = self.grid.data_table(sheet_id, pos)?;
             let old_columns = old_data_table.column_headers.to_owned();
 
             // update column names that have changed in code cells

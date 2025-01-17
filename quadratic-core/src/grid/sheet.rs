@@ -283,6 +283,12 @@ impl Sheet {
         column.values.get(&pos.y)
     }
 
+    /// Returns a mutable reference to the cell value at the Pos in column.values.
+    pub fn cell_value_mut(&mut self, pos: Pos) -> Option<&mut CellValue> {
+        let column = self.get_column_mut(pos.x)?;
+        column.values.get_mut(&pos.y)
+    }
+
     /// Returns the cell value at a position using both `column.values` and
     /// `data_tables`, for use when a formula references a cell.
     pub fn get_cell_for_formula(&self, pos: Pos) -> CellValue {

@@ -1,6 +1,8 @@
-use super::{Grid, Sheet, SheetId};
-use lexicon_fractional_index::key_between;
 use std::str::FromStr;
+
+use super::{Grid, Sheet, SheetId};
+use anyhow::{anyhow, Result};
+use lexicon_fractional_index::key_between;
 
 impl Grid {
     pub fn sheets(&self) -> &[Sheet] {
@@ -151,6 +153,11 @@ impl Grid {
 
     pub fn try_sheet(&self, sheet_id: SheetId) -> Option<&Sheet> {
         self.sheets.iter().find(|s| s.id == sheet_id)
+    }
+
+    pub fn try_sheet_result(&self, sheet_id: SheetId) -> Result<&Sheet> {
+        self.try_sheet(sheet_id)
+            .ok_or_else(|| anyhow!("Sheet not found: {:?}", sheet_id))
     }
 
     pub fn try_sheet_mut(&mut self, sheet_id: SheetId) -> Option<&mut Sheet> {

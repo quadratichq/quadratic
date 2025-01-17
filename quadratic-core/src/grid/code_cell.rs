@@ -47,6 +47,11 @@ impl CodeCellValue {
                 let full_match = &caps[0]; // Capture the entire match
                 let a1_str = &caps[2]; // Capture the first argument which is inside quotes
 
+                dbgjs!(format!(
+                    "CodeCellValue::replace_q_cells_a1_selection: full_match: {}, a1_str: {}",
+                    full_match, a1_str
+                ));
+
                 match A1Selection::parse(a1_str, default_sheet_id, a1_context) {
                     Ok(mut a1_selection) => {
                         let a1_str = func(&mut a1_selection);
@@ -136,9 +141,26 @@ impl CodeCellValue {
         default_sheet_id: &SheetId,
         a1_context: &A1Context,
     ) {
+        dbgjs!(format!(
+            "CodeCellValue::replace_table_name_in_cell_references: a1_context: {:?}",
+            a1_context
+        ));
         if old_name != new_name && self.is_code_cell() {
+            dbgjs!(format!(
+                "CodeCellValue::replace_table_name_in_cell_references: replacing table name {} for {} in code cells for sheet {}",
+                old_name, new_name, default_sheet_id
+            ));
             self.replace_q_cells_a1_selection(default_sheet_id, a1_context, |a1_selection| {
+                dbgjs!(format!(
+                    "CodeCellValue::replace_table_name_in_cell_references before: a1_selection: {:?}",
+                    a1_selection
+                ));
                 a1_selection.replace_table_name(old_name, new_name);
+                dbgjs!(format!(
+                    "CodeCellValue::replace_table_name_in_cell_references after: a1_selection: {:?}, to_string: {}",
+                    a1_selection,
+                    a1_selection.to_string(Some(*default_sheet_id), a1_context)
+                ));
                 return a1_selection.to_string(Some(*default_sheet_id), a1_context);
             });
         }
@@ -390,15 +412,15 @@ mod tests {
         let sheet_id = SheetId::test();
         let a1_context = A1Context::test(
             &[("Sheet1", sheet_id)],
-            &[("test.csv", &["city"], Rect::test_a1("A1:C3"))],
+            &[("simple", &["city"], Rect::test_a1("A1:C3"))],
         );
 
         let mut code = CodeCellValue {
             language: CodeCellLanguage::Python,
-            code: "q.cells('test.csv[city]')".to_string(),
+            code: "q.cells('simple[city]')".to_string(),
         };
         code.replace_table_name_in_cell_references(
-            "test.csv",
+            "simple",
             "test_new.csv",
             &sheet_id,
             &a1_context,

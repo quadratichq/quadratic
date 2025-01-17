@@ -122,6 +122,10 @@ impl A1Selection {
 
     pub fn replace_table_name(&mut self, old_name: &str, new_name: &str) {
         self.ranges.iter_mut().for_each(|range| {
+            dbgjs!(format!(
+                "A1Selection::replace_table_name: replacing table name {} for {} in {:?}",
+                old_name, new_name, range
+            ));
             range.replace_table_name(old_name, new_name);
         });
     }
