@@ -19,6 +19,7 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     timeout-minutes: 10
     strategy:
+      fail-fast: false
       matrix:
         package:
           - core
