@@ -120,6 +120,11 @@ impl TableMapEntry {
         self.sheet_id == pos.sheet_id && self.bounds.contains(pos.into())
     }
 
+    /// Returns the column name from the index.
+    pub fn col_name_from_index(&self, index: usize) -> Option<String> {
+        self.visible_columns.get(index).map(|c| c.clone())
+    }
+
     #[cfg(test)]
     pub fn test(
         table_name: &str,
@@ -360,5 +365,15 @@ mod tests {
         map.test_insert("test", &["A"], None, Rect::test_a1("A1:C5"));
         let table = map.try_table("test").unwrap();
         assert_eq!(table.to_sheet_rows(), (1, 5));
+    }
+
+    #[test]
+    fn test_col_name_from_index() {
+        let mut map = TableMap::default();
+        map.test_insert("test", &["A", "B", "C"], None, Rect::test_a1("A1:C5"));
+        let table = map.try_table("test").unwrap();
+        assert_eq!(table.col_name_from_index(0), Some("A".to_string()));
+        assert_eq!(table.col_name_from_index(1), Some("B".to_string()));
+        assert_eq!(table.col_name_from_index(2), Some("C".to_string()));
     }
 }

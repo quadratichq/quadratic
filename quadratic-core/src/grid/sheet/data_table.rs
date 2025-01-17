@@ -1,9 +1,5 @@
 use super::Sheet;
-use crate::{
-    a1::A1Context,
-    grid::{data_table::DataTable, CodeCellValue, DataTableKind},
-    Pos,
-};
+use crate::{grid::data_table::DataTable, Pos};
 
 use anyhow::{anyhow, bail, Result};
 use indexmap::map::{Entry, OccupiedEntry};

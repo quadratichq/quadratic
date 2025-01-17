@@ -4,6 +4,14 @@ use crate::Pos;
 use super::{A1Selection, CellRefRange};
 
 impl A1Selection {
+    pub(crate) fn _check_for_table_ref(&mut self, context: &A1Context) {
+        self.ranges.iter_mut().for_each(|range| {
+            if let Some(table_ref) = range.check_for_table_ref(self.sheet_id, context) {
+                *range = table_ref;
+            }
+        });
+    }
+
     /// Selects the entire sheet.
     pub fn select_all(&mut self, append: bool) {
         if append {

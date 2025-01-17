@@ -13,6 +13,7 @@ mod display;
 mod intersects;
 mod mutate;
 mod query;
+mod to_table_ref;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Hash, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
