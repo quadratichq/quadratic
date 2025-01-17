@@ -52,8 +52,8 @@ impl TryFrom<(u32, u32)> for ArraySize {
 
 impl ArraySize {
     pub const _1X1: Self = ArraySize {
-        w: NonZeroU32::new(1).unwrap(),
-        h: NonZeroU32::new(1).unwrap(),
+        w: NonZeroU32::new(1).expect("Unable to create _1X1 ArraySize"),
+        h: NonZeroU32::new(1).expect("Unable to create _1X1 ArraySize"),
     };
 
     /// Constructs a new `ArraySize`, or returns an `None` if the width or
