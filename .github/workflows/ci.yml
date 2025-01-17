@@ -399,7 +399,7 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  test_unit:
+  test_client:
     runs-on: blacksmith-4vcpu-ubuntu-2204
     timeout-minutes: 10
     steps:
@@ -502,7 +502,7 @@ jobs:
           cd quadratic-core
           cargo clippy -- -D warnings
 
-  lint:
+  lint_ts:
     runs-on: blacksmith-4vcpu-ubuntu-2204
     timeout-minutes: 10
     steps:
