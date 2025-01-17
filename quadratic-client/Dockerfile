@@ -5,6 +5,9 @@ FROM node:18 AS core-builder
 
 ARG CLIENT_DEV
 
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential clang
+
 # Install rustup
 RUN echo 'Installing rustup...' && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
@@ -43,6 +46,9 @@ RUN if [ "$CLIENT_DEV" = "true" ]; then \
 ###########################################################################################
 FROM node:18 AS ts-rust-types-builder
 
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential clang
+
 # Install rustup
 RUN echo 'Installing rustup...' && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
@@ -78,6 +84,9 @@ RUN echo 'Building TS/Rust types...' && npm run export_types --workspace=quadrat
 FROM node:18 AS rust-client-builder
 
 ARG CLIENT_DEV
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential clang
 
 # Install rustup
 RUN echo 'Installing rustup...' && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
