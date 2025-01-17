@@ -29,6 +29,7 @@ export class CLI {
             .option("-O, --rustClient", "Hide RustClient")
             .option("-E, --hideRustClient", "Hide RustClient")
             .option("-L, --servicesLocal", "Set Redis & Postgres as running locally")
+            .option("-D, --dockerDev", "Run dev in docker")
             .option("-d, --dark", "Use dark theme")
             .showHelpAfterError();
         program.parse();
