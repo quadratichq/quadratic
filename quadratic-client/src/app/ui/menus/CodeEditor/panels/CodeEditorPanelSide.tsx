@@ -127,7 +127,7 @@ export function CodeEditorPanelSide({ codeEditorRef, schemaBrowser, showAIAssist
           />
           <PanelBox
             id="panel-1"
-            title="Chat"
+            title="Code chat"
             open={panels[1].open}
             toggleOpen={panels[1].toggleOpen}
             height={panels[1].height}

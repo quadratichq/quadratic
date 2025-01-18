@@ -1,16 +1,23 @@
 import {
+  aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
   aiAnalystCurrentChatMessagesCountAtom,
   aiAnalystLoadingAtom,
 } from '@/app/atoms/aiAnalystAtom';
+import { editorInteractionStateSettingsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { debugShowAIInternalContext } from '@/app/debugFlags';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
 import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
+import { apiClient } from '@/shared/api/apiClient';
+import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
+import { Button } from '@/shared/shadcn/ui/button';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { getLastUserPromptMessageIndex } from 'quadratic-shared/ai/helpers/message.helper';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilCallback, useRecoilValue } from 'recoil';
 
 type AIAnalystMessagesProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
@@ -20,6 +27,7 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
+  const settings = useRecoilValue(editorInteractionStateSettingsAtom);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((div: HTMLDivElement | null) => {
@@ -119,13 +127,13 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
                   textareaRef={textareaRef}
                 />
               ) : Array.isArray(message.content) ? (
-                message.content.map(({ content }) => <MarkdownContent key={content}>{content}</MarkdownContent>)
+                message.content.map(({ content }) => <Markdown key={content}>{content}</Markdown>)
               ) : (
-                <MarkdownContent key={message.content}>{message.content}</MarkdownContent>
+                <Markdown key={message.content}>{message.content}</Markdown>
               )
             ) : (
               <>
-                {message.content && <MarkdownContent key={message.content}>{message.content}</MarkdownContent>}
+                {message.content && <Markdown key={message.content}>{message.content}</Markdown>}
 
                 {message.contextType === 'userPrompt' &&
                   message.toolCalls.map((toolCall) => (
@@ -142,6 +150,8 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
         );
       })}
 
+      {settings.analyticsAi && messages.length > 0 && !loading && <FeedbackButtons />}
+
       <div className={cn('flex flex-row gap-1 px-2 transition-opacity', !loading && 'opacity-0')}>
         <span className="h-2 w-2 animate-bounce bg-primary" />
         <span className="h-2 w-2 animate-bounce bg-primary/60 delay-100" />
@@ -151,7 +161,63 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
   );
 }
 
-function MarkdownContent({ children }: { children: string }) {
-  // Classes applied in Markdown.scss
-  return <Markdown>{children}</Markdown>;
+function FeedbackButtons() {
+  const [like, setLike] = useState<boolean | null>(null);
+
+  const handleFeedback = useRecoilCallback(
+    ({ snapshot }) =>
+      (like: boolean | null) => {
+        const messages = snapshot.getLoadable(aiAnalystCurrentChatMessagesAtom).getValue();
+        const messageIndex = getLastUserPromptMessageIndex(messages);
+        if (messageIndex < 0) return;
+
+        const chatId = snapshot.getLoadable(aiAnalystCurrentChatAtom).getValue().id;
+        apiClient.ai.feedback({
+          chatId,
+          messageIndex,
+          like,
+        });
+      },
+    [apiClient]
+  );
+
+  return (
+    <div className="relative flex flex-row items-center px-2">
+      <TooltipPopover label="Good response">
+        <Button
+          onClick={() => {
+            setLike((prev) => {
+              const newLike = prev === true ? null : true;
+              handleFeedback(newLike);
+              return newLike;
+            });
+          }}
+          variant="ghost"
+          size="icon-sm"
+          className={cn('hover:text-success', like === true ? 'text-success' : 'text-muted-foreground')}
+          disabled={like === false}
+        >
+          <ThumbUpIcon className="scale-75" />
+        </Button>
+      </TooltipPopover>
+
+      <TooltipPopover label="Bad response">
+        <Button
+          onClick={() => {
+            setLike((prev) => {
+              const newLike = prev === false ? null : false;
+              handleFeedback(newLike);
+              return newLike;
+            });
+          }}
+          variant="ghost"
+          size="icon-sm"
+          className={cn('hover:text-destructive', like === false ? 'text-destructive' : 'text-muted-foreground')}
+          disabled={like === true}
+        >
+          <ThumbDownIcon className="scale-75" />
+        </Button>
+      </TooltipPopover>
+    </div>
+  );
 }

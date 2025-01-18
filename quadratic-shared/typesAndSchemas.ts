@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { AIMessagePromptSchema, AIRequestBodySchema } from './typesAndSchemasAI';
 import { ApiSchemasConnections, ConnectionListSchema } from './typesAndSchemasConnections';
 
 export const UserFileRoleSchema = z.enum(['EDITOR', 'VIEWER']);
@@ -15,10 +16,8 @@ export const TeamPermissionSchema = z.enum([
   'TEAM_VIEW',
   // Edit attributes of a team, like name/picture, as well as its share users and files
   'TEAM_EDIT',
-  // Delete a team
-  'TEAM_DELETE',
-  // Edit the billing info on a team
-  'TEAM_BILLING_EDIT',
+  // Manage a team, like turn on/off preferences, manage billing, and delete the team
+  'TEAM_MANAGE',
 ]);
 export type TeamPermission = z.infer<typeof TeamPermissionSchema>;
 
@@ -104,6 +103,11 @@ const TeamUserMakingRequestSchema = z.object({
 
 export const TeamClientDataKvSchema = z.record(z.any());
 
+const TeamSettingsSchema = z.object({
+  analyticsAi: z.boolean(),
+});
+export type TeamSettings = z.infer<typeof TeamSettingsSchema>;
+
 export const LicenseSchema = z.object({
   limits: z.object({
     seats: z.number(),
@@ -152,7 +156,9 @@ export const ApiSchemas = {
     file: FileSchema.extend({
       ownerUserId: BaseUserSchema.shape.id.optional(),
     }),
-    team: TeamSchema.pick({ uuid: true, name: true }),
+    team: TeamSchema.pick({ uuid: true, name: true }).extend({
+      settings: TeamSettingsSchema,
+    }),
     userMakingRequest: z.object({
       id: BaseUserSchema.shape.id.optional(),
       filePermissions: z.array(FilePermissionSchema),
@@ -309,7 +315,7 @@ export const ApiSchemas = {
   }),
   '/v0/teams.POST.response': TeamSchema.pick({ uuid: true, name: true }),
   '/v0/teams/:uuid.GET.response': z.object({
-    team: TeamSchema.pick({ id: true, uuid: true, name: true }),
+    team: TeamSchema.pick({ id: true, uuid: true, name: true }).merge(z.object({ settings: TeamSettingsSchema })),
     userMakingRequest: z.object({
       id: TeamUserSchema.shape.id,
       teamPermissions: z.array(TeamPermissionSchema),
@@ -337,13 +343,26 @@ export const ApiSchemas = {
     connections: ConnectionListSchema,
     clientDataKv: TeamClientDataKvSchema,
   }),
-  '/v0/teams/:uuid.PATCH.request': z.object({
-    name: TeamSchema.shape.name.optional(),
-    clientDataKv: TeamClientDataKvSchema.optional(),
-  }),
+  '/v0/teams/:uuid.PATCH.request': z
+    .object({
+      name: TeamSchema.shape.name.optional(),
+      clientDataKv: TeamClientDataKvSchema.optional(),
+      settings: TeamSettingsSchema.partial().optional(),
+    })
+    .refine(
+      (data) => {
+        const keys = Object.keys(data) as Array<keyof typeof data>;
+        return keys.some((key) => data[key] !== undefined);
+      },
+      {
+        message: 'At least one supported field must be provided for the update.',
+        path: [],
+      }
+    ),
   '/v0/teams/:uuid.PATCH.response': z.object({
     name: TeamSchema.shape.name,
     clientDataKv: TeamClientDataKvSchema,
+    settings: TeamSettingsSchema,
   }),
   '/v0/teams/:uuid/invites.POST.request': TeamUserSchema.pick({ email: true, role: true }),
   '/v0/teams/:uuid/invites.POST.response': z
@@ -396,6 +415,21 @@ export const ApiSchemas = {
   }),
   '/v0/education.GET.response': z.object({
     eduStatus: EduStatusSchema.optional(),
+  }),
+
+  /**
+   * AI
+   */
+  '/v0/ai/chat.POST.request': AIRequestBodySchema,
+  '/v0/ai/chat.POST.response': AIMessagePromptSchema,
+
+  '/v0/ai/feedback.PATCH.request': z.object({
+    chatId: z.string().uuid(),
+    messageIndex: z.number(),
+    like: z.boolean().nullable(),
+  }),
+  '/v0/ai/feedback.PATCH.response': z.object({
+    message: z.string(),
   }),
 };
 
