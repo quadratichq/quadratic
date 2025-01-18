@@ -144,15 +144,10 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
   }
 
   if (isAllowedFirstChar(event.key)) {
-    const cursorPosition = cursor.position;
     quadraticCore.getCodeCell(sheets.sheet.id, cursorPosition.x, cursorPosition.y).then((code) => {
       // open code cell unless this is the actual code cell (but not an import,
       // which is editable). In this case we can overwrite it
-      if (
-        code &&
-        code.language !== 'Import' &&
-        (Number(code.x) !== cursorPosition.x || Number(code.y) !== cursorPosition.y)
-      ) {
+      if (code && code.language !== 'Import') {
         doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
       } else {
         pixiAppSettings.changeInput(true, event.key, CursorMode.Enter);
