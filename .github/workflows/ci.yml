@@ -112,8 +112,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends build-essential llvm clang
-          export CC=clang
-          export AR=llvm-ar
+          echo "CC=clang" >> $GITHUB_ENV
+          echo "AR=llvm-ar" >> $GITHUB_ENV
 
       - uses: useblacksmith/setup-node@v5
         with:
@@ -222,8 +222,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends build-essential llvm clang
-          export CC=clang
-          export AR=llvm-ar
+          echo "CC=clang" >> $GITHUB_ENV
+          echo "AR=llvm-ar" >> $GITHUB_ENV
 
       - uses: useblacksmith/setup-node@v5
         with:
