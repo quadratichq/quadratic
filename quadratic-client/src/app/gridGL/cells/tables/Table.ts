@@ -239,7 +239,7 @@ export class Table extends Container {
         return { table: this.codeCell, type: 'table-name' };
       }
     }
-    if (this.codeCell.show_header && this.codeCell.language === undefined) {
+    if (this.codeCell.show_header) {
       return this.columnHeaders.pointerDown(world);
     }
   }

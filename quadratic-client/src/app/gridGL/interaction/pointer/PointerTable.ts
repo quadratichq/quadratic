@@ -69,9 +69,11 @@ export class PointerTable {
       const columnName = tableDown.table.columns[tableDown.column].name;
       sheets.sheet.cursor.selectTable(tableDown.table.name, columnName, tableDown.table.y, shiftKey, ctrlKey);
 
-      this.doubleClickTimeout = window.setTimeout(() => {
-        this.doubleClickTimeout = undefined;
-      }, DOUBLE_CLICK_TIME);
+      if (tableDown.table.language === undefined) {
+        this.doubleClickTimeout = window.setTimeout(() => {
+          this.doubleClickTimeout = undefined;
+        }, DOUBLE_CLICK_TIME);
+      }
     }
   }
 
