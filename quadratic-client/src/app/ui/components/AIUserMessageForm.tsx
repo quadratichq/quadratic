@@ -1,3 +1,4 @@
+import { SelectAIModeMenu } from '@/app/ai/components/ExecutionTypeMenu';
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
@@ -146,7 +147,10 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
       {editing && (
         <>
           <div className="flex w-full select-none items-center justify-between px-2 pb-1 @container">
-            <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
+            <div className="flex items-center gap-2">
+              <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
+              <SelectAIModeMenu loading={loading} textAreaRef={textareaRef} />
+            </div>
 
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span className="hidden @sm:block">
