@@ -108,10 +108,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install clang
+      - name: Install build-essential, llvm, and clang
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang
+          sudo apt-get install -y --no-install-recommends build-essential llvm clang
+          export CC=clang
+          export AR=llvm-ar
 
       - uses: useblacksmith/setup-node@v5
         with:
@@ -216,10 +218,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install clang
+      - name: Install build-essential, llvm, and clang
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang
+          sudo apt-get install -y --no-install-recommends build-essential llvm clang
+          export CC=clang
+          export AR=llvm-ar
 
       - uses: useblacksmith/setup-node@v5
         with:
