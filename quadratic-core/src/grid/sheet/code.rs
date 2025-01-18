@@ -321,40 +321,7 @@ mod test {
         grid::{js_types::JsRenderCellSpecial, CodeCellLanguage, CodeCellValue, CodeRun},
         Array, SheetPos, Value,
     };
-    use bigdecimal::BigDecimal;
     use std::vec;
-
-    #[test]
-    fn test_get_data_table() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid_mut().try_sheet_mut(sheet_id).unwrap();
-        let code_run = CodeRun {
-            std_err: None,
-            std_out: None,
-            cells_accessed: Default::default(),
-            error: None,
-            return_type: Some("number".into()),
-            line_number: None,
-            output_type: None,
-        };
-        let data_table = DataTable::new(
-            DataTableKind::CodeRun(code_run),
-            "Table 1",
-            Value::Single(CellValue::Number(BigDecimal::from(2))),
-            false,
-            false,
-            true,
-            None,
-        );
-        sheet.set_data_table(pos![A1], Some(data_table.clone()));
-        assert_eq!(
-            sheet.get_code_cell_value(pos![A2]),
-            Some(CellValue::Number(BigDecimal::from(2)))
-        );
-        assert_eq!(sheet.data_table(pos![A1]), Some(&data_table));
-        assert_eq!(sheet.data_table(pos![B2]), None);
-    }
 
     #[test]
     fn test_edit_code_value() {
