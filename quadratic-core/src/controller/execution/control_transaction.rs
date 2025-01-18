@@ -221,8 +221,8 @@ impl GridController {
                 crate::wasm_bindings::js::jsSetCursor(selection);
             }
 
-            // send updated TableMap to client
-            if !transaction.code_cells.is_empty() || !transaction.offsets_modified.is_empty() {
+            // send updated SheetMap and TableMap to client
+            if !transaction.code_cells.is_empty() || !transaction.sheet_info.is_empty() {
                 self.send_a1_context();
             }
         }
