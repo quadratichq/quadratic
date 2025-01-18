@@ -14,7 +14,7 @@ interface SelectAIModeMenuProps {
   textAreaRef: React.RefObject<HTMLTextAreaElement>;
 }
 
-const MODE_OPTIONS = {
+export const MODE_OPTIONS = {
   chat: {
     displayName: 'Chat mode',
     prefix: '',
@@ -25,7 +25,7 @@ const MODE_OPTIONS = {
   },
 } as const;
 
-export function SelectAIModeMenu({ loading, textAreaRef }: SelectAIModeMenuProps) {
+export function ExecutionTypeMenu({ loading, textAreaRef }: SelectAIModeMenuProps) {
   const [selectedMode, setSelectedMode] = useAIMode();
 
   return (

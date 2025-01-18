@@ -1,5 +1,6 @@
-import { SelectAIModeMenu } from '@/app/ai/components/ExecutionTypeMenu';
+import { ExecutionTypeMenu, MODE_OPTIONS } from '@/app/ai/components/ExecutionTypeMenu';
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
+import { useAIMode } from '@/app/ai/hooks/useAIMode';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { AIAnalystContext } from '@/app/ui/menus/AIAnalyst/AIAnalystContext';
@@ -48,6 +49,7 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
 
   const [editing, setEditing] = useState(!initialPrompt);
   const [prompt, setPrompt] = useState(initialPrompt ?? '');
+  const [selectedMode] = useAIMode();
 
   const abortPrompt = useCallback(() => {
     abortController?.abort();
@@ -69,6 +71,12 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
       setEditing(false);
     }
   }, [loading, initialPrompt]);
+
+  const handleSubmit = (prompt: string) => {
+    const prefix = MODE_OPTIONS[selectedMode].prefix;
+    const fullPrompt = prefix ? `${prefix}\n\n${prompt}` : prompt;
+    submitPrompt(fullPrompt);
+  };
 
   return (
     <form
@@ -118,7 +126,7 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
 
               if (prompt.trim().length === 0) return;
 
-              submitPrompt(prompt);
+              handleSubmit(prompt);
 
               if (initialPrompt === undefined) {
                 setPrompt('');
@@ -149,7 +157,7 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
           <div className="flex w-full select-none items-center justify-between px-2 pb-1 @container">
             <div className="flex items-center gap-2">
               <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
-              <SelectAIModeMenu loading={loading} textAreaRef={textareaRef} />
+              <ExecutionTypeMenu loading={loading} textAreaRef={textareaRef} />
             </div>
 
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -173,7 +181,7 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
                   className="rounded-full"
                   onClick={(e) => {
                     e.stopPropagation();
-                    submitPrompt(prompt);
+                    handleSubmit(prompt);
                   }}
                   disabled={prompt.length === 0 || loading}
                 >
