@@ -15,9 +15,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test_core:
+  test_rust:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - core
+          - multiplayer
+          - files
+          - connection
+          - rust-client
+          - rust-shared
+        include:
+          - package: core
+            test_command: "npm run test"
+          - package: multiplayer
+            test_command: "npm run docker:test"
+          - package: files
+            test_command: "npm run docker:test"
+          - package: connection
+            test_command: "npm run docker:test"
+          - package: rust-client
+            test_command: "npm run test"
+          - package: rust-shared
+            test_command: "npm run docker:test"
     steps:
       - uses: actions/checkout@v4
 
@@ -47,85 +70,21 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y pkg-config
 
-      - name: Test quadratic-core
+      - name: Test quadratic-${{ matrix.package }}
         env:
           LLVM_PROFILE_FILE: grcov-%p-%m.profraw
           RUSTFLAGS: -Cinstrument-coverage
           RUSTC_BOOTSTRAP: 1
           CARGO_BUILD_JOBS: 4
         run: |
-          cd quadratic-core
-          cargo test -- --test-threads=2
+          cd quadratic-${{ matrix.package }}
+          ${{ matrix.test_command }}
 
-      - name: Generate coverage for quadratic-core
+      - name: Generate coverage for quadratic-${{ matrix.package }}
         env:
           RUSTC_BOOTSTRAP: 1
         run: |
-          cd quadratic-core
-          grcov $(find . ../quadratic-rust-client ../quadratic-rust-shared -name "grcov-*.profraw" -print) \
-            --branch \
-            --ignore-not-existing \
-            --binary-path ../target/debug/ \
-            -s . \
-            -t lcov \
-            --ignore "/*" \
-            --ignore "./src/wasm_bindings/*" \
-            --ignore "./src/bin/*" \
-            --ignore "./docker/*" \
-            -o lcov.info
-
-      - name: Upload coverage reports to Codecov quadratic-core
-        uses: codecov/codecov-action@v5
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
-  test_multiplayer:
-    runs-on: blacksmith-2vcpu-ubuntu-2204
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: useblacksmith/setup-node@v5
-        with:
-          node-version: 18
-          cache: "npm"
-
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          components: clippy, llvm-tools-preview
-          override: true
-
-      - uses: useblacksmith/rust-cache@v3
-
-      - name: Install grcov
-        run: if ! which grcov; then cargo install grcov; fi
-
-      - name: Install llvm-tools-preview
-        run: if ! which llvm-tools-preview; then rustup component add llvm-tools-preview; fi
-
-      - name: Install pkg-config
-        if: github.runner.isHosted == true
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y pkg-config
-
-      - name: Test quadratic-multiplayer
-        env:
-          LLVM_PROFILE_FILE: grcov-%p-%m.profraw
-          RUSTFLAGS: -Cinstrument-coverage
-          RUSTC_BOOTSTRAP: 1
-          CARGO_BUILD_JOBS: 4
-        run: |
-          cd quadratic-multiplayer
-          npm run docker:test
-
-      - name: Generate coverage for quadratic-multiplayer
-        env:
-          RUSTC_BOOTSTRAP: 1
-        run: |
-          cd quadratic-multiplayer
+          cd quadratic-${{ matrix.package }}
           grcov $(find . ../quadratic-rust-shared -name "grcov-*.profraw" -print) \
             --branch \
             --ignore-not-existing \
@@ -138,77 +97,13 @@ jobs:
             --ignore "./docker/*" \
             -o lcov.info
 
-      - name: Upload coverage reports to Codecov quadratic-multiplayer
+      - name: Upload coverage reports to Codecov quadratic-${{ matrix.package }}
         uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  test_connection:
-    runs-on: blacksmith-2vcpu-ubuntu-2204
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: useblacksmith/setup-node@v5
-        with:
-          node-version: 18
-          cache: "npm"
-
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          components: clippy, llvm-tools-preview
-          override: true
-
-      - uses: useblacksmith/rust-cache@v3
-
-      - name: Install grcov
-        run: if ! which grcov; then cargo install grcov; fi
-
-      - name: Install llvm-tools-preview
-        run: if ! which llvm-tools-preview; then rustup component add llvm-tools-preview; fi
-
-      - name: Install pkg-config
-        if: github.runner.isHosted == true
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y pkg-config
-
-      - name: Test quadratic-connection
-        env:
-          LLVM_PROFILE_FILE: grcov-%p-%m.profraw
-          RUSTFLAGS: -Cinstrument-coverage
-          RUSTC_BOOTSTRAP: 1
-          CARGO_BUILD_JOBS: 4
-        run: |
-          cd quadratic-connection
-          npm run docker:test
-
-      - name: Generate coverage for quadratic-connection
-        env:
-          RUSTC_BOOTSTRAP: 1
-        run: |
-          cd quadratic-connection
-          grcov $(find . ../quadratic-rust-shared -name "grcov-*.profraw" -print) \
-            --branch \
-            --ignore-not-existing \
-            --binary-path ../target/debug/ \
-            -s . \
-            -t lcov \
-            --ignore "/*" \
-            --ignore "./src/wasm_bindings/*" \
-            --ignore "./src/bin/*" \
-            --ignore "./docker/*" \
-            -o lcov.info
-
-      - name: Upload coverage reports to Codecov quadratic-connection
-        uses: codecov/codecov-action@v5
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
-  test_unit:
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+  test_client:
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -233,14 +128,15 @@ jobs:
       - uses: useblacksmith/rust-cache@v3
 
       - uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: "latest"
 
-      - name: Build quadratic-core
+      - name: Build core and rust-client
         run: |
-          npm run build:wasm:javascript
-
-      - name: Build quadratic-rust-client
-        run: |
-          npm run build:rust-client
+          npm run build:dev --workspace=quadratic-core & \
+          npm run export_types --workspace=quadratic-core & \
+          npm run build:dev --workspace=quadratic-rust-client & \
+          wait
 
       - name: Build python
         run: |
@@ -309,9 +205,9 @@ jobs:
           cd quadratic-core
           cargo clippy -- -D warnings
 
-  lint:
-    runs-on: blacksmith-2vcpu-ubuntu-2204
-    timeout-minutes: 15
+  lint_typescript:
+    runs-on: blacksmith-4vcpu-ubuntu-2204
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -334,12 +230,12 @@ jobs:
         with:
           version: "latest"
 
-      - name: Build wasm core
+      - name: Build core and rust-client
         run: |
-          npm run build:rust-client
-          cd quadratic-client
-          npm run build:wasm:javascript:dev
-          npm run build:wasm:types
+          npm run build:dev --workspace=quadratic-core & \
+          npm run export_types --workspace=quadratic-core & \
+          npm run build:dev --workspace=quadratic-rust-client & \
+          wait
 
       - name: Lint quadratic-client
         run: |

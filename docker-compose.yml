@@ -14,6 +14,7 @@ services:
     volumes:
       - ./docker/redis/data:/data:rw
     profiles:
+      - redis
       - base
       - dev
       - all
@@ -38,6 +39,7 @@ services:
       - ./docker/postgres/data:/var/lib/postgresql/data:rw
       - ./docker/postgres/scripts:/docker-entrypoint-initdb.d
     profiles:
+      - postgres
       - base
       - dev
       - all

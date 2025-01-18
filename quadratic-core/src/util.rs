@@ -287,6 +287,7 @@ pub fn set_panic_hook() {
 }
 
 #[cfg(test)]
+#[track_caller]
 pub(crate) fn assert_f64_approx_eq(expected: f64, actual: f64, message: &str) {
     const EPSILON: f64 = 0.0001;
 
