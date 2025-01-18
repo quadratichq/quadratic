@@ -25,7 +25,7 @@ export const MODEL_OPTIONS: {
     enabled: true,
     provider: 'openai',
   },
-  o1: {
+  'o1-2024-12-17': {
     displayName: 'OpenAI: o1',
     temperature: 1, // only temperature 1 is supported for o1
     max_tokens: 4096, // not used for openai
