@@ -113,27 +113,29 @@ impl A1Selection {
             (ColRange::All, table.bounds.min.x)
         };
 
-        // toggle headers if selecting the same column twice w/nothing else
-        // selected
         let mut headers = false;
         let mut data = true;
         if !shift_key && !ctrl_key && self.ranges.len() == 1 {
             if let Some(CellRefRange::Table { range }) = self.ranges.last() {
-                if range.table_name == table_name
-                    && range.col_range == col_range
-                    && matches!(col_range, ColRange::Col(_))
-                {
-                    if !range.headers && range.data {
-                        headers = true;
-                        data = false;
-                    } else if range.headers && !range.data {
-                        headers = false;
-                        data = true;
-                    } else {
-                        headers = false;
-                        data = true;
+                if range.table_name == table_name && range.col_range == col_range {
+                    // handle toggle for single column selection
+                    if matches!(col_range, ColRange::Col(_)) {
+                        if !range.headers && range.data {
+                            headers = true;
+                            data = false;
+                        } else if range.headers && !range.data {
+                            headers = false;
+                            data = true;
+                        } else {
+                            headers = false;
+                            data = true;
+                        }
+                        self.ranges.pop();
+                    } else if matches!(col_range, ColRange::All) {
+                        // handle toggle for all columns selection
+                        headers = !range.headers;
+                        self.ranges.pop();
                     }
-                    self.ranges.pop();
                 }
             }
         };
