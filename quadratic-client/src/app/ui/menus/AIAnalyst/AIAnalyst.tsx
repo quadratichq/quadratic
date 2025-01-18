@@ -1,4 +1,4 @@
-import { aiAnalystShowChatHistoryAtom, showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystCurrentChatMessagesAtom, aiAnalystShowChatHistoryAtom, showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { AIUserMessageFormDisclaimer } from '@/app/ui/components/AIUserMessageForm';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
@@ -19,6 +19,7 @@ export const AIAnalyst = () => {
   const aiPanelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystPanelWidth();
+  const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
 
   const initialLoadRef = useRef(true);
   const autoFocusRef = useRef(false);
@@ -77,7 +78,12 @@ export const AIAnalyst = () => {
               <AIAnalystMessages textareaRef={textareaRef} />
 
               <div className="px-2 py-0.5">
-                <AIAnalystUserMessageForm ref={textareaRef} autoFocusRef={autoFocusRef} textareaRef={textareaRef} />
+                <AIAnalystUserMessageForm 
+                  ref={textareaRef} 
+                  autoFocusRef={autoFocusRef} 
+                  textareaRef={textareaRef}
+                  messageIndex={messages.length}  // Add this line
+                />
                 <AIUserMessageFormDisclaimer />
               </div>
             </>

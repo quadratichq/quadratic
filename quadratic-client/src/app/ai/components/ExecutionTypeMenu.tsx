@@ -21,7 +21,7 @@ export const MODE_OPTIONS = {
   },
   planning: {
     displayName: 'Planning mode',
-    prefix: "Let me know the steps you're going to take before executing them.",
+    prefix: "Let me know the steps you're going to take before executing them. No matter what do not try to use tools during this step. Be minimally verbose with your steps. Don't explain where you're going to place the results in the sheet.",
   },
 } as const;
 

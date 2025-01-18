@@ -22,6 +22,7 @@ export type AIUserMessageFormWrapperProps = {
 };
 
 type Props = Omit<AIUserMessageFormWrapperProps, 'messageIndex'> & {
+  messageIndex?: number;
   abortController: AbortController | undefined;
   loading: boolean;
   setLoading: SetterOrUpdater<boolean>;
@@ -74,7 +75,10 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
 
   const handleSubmit = (prompt: string) => {
     const prefix = MODE_OPTIONS[selectedMode].prefix;
-    const fullPrompt = prefix ? `${prefix}\n\n${prompt}` : prompt;
+    const isFirstMessage = props.messageIndex === 0;
+
+    const fullPrompt = isFirstMessage && prefix ? `${prefix}\n\n${prompt}` : prompt;
+    console.log('fullPrompt:', fullPrompt);
     submitPrompt(fullPrompt);
   };
 

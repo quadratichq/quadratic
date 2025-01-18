@@ -21,9 +21,7 @@ export function SelectAIModelMenu({ loading, textAreaRef }: SelectAIModelMenuPro
   const { displayName: selectedModelDisplayName } = useMemo(() => MODEL_OPTIONS[selectedMode], [selectedMode]);
 
   const enabledModels = useMemo(() => {
-    console.log('Raw MODEL_OPTIONS:', MODEL_OPTIONS);
     const models = Object.keys(MODEL_OPTIONS) as (keyof typeof MODEL_OPTIONS)[];
-    console.log('All models before filtering:', models);
     return models.filter((model) => MODEL_OPTIONS[model].enabled);
   }, []);
 

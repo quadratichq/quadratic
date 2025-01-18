@@ -118,6 +118,7 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
                   messageIndex={index}
                   textareaRef={textareaRef}
                 />
+                
               ) : Array.isArray(message.content) ? (
                 message.content.map(({ content }) => <MarkdownContent key={content}>{content}</MarkdownContent>)
               ) : (
