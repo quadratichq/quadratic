@@ -123,13 +123,13 @@ impl A1Selection {
                     && range.col_range == col_range
                     && matches!(col_range, ColRange::Col(_))
                 {
-                    //
                     if !range.headers && range.data {
-                        headers = true;
-                    } else if range.headers && range.data {
                         headers = true;
                         data = false;
                     } else if range.headers && !range.data {
+                        headers = false;
+                        data = true;
+                    } else {
                         headers = false;
                         data = true;
                     }
