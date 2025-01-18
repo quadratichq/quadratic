@@ -116,13 +116,23 @@ impl A1Selection {
         // toggle headers if selecting the same column twice w/nothing else
         // selected
         let mut headers = false;
+        let mut data = true;
         if !shift_key && !ctrl_key && self.ranges.len() == 1 {
             if let Some(CellRefRange::Table { range }) = self.ranges.last() {
                 if range.table_name == table_name
                     && range.col_range == col_range
                     && matches!(col_range, ColRange::Col(_))
                 {
-                    headers = !range.headers;
+                    //
+                    if !range.headers && range.data {
+                        headers = true;
+                    } else if range.headers && range.data {
+                        headers = true;
+                        data = false;
+                    } else if range.headers && !range.data {
+                        headers = false;
+                        data = true;
+                    }
                     self.ranges.pop();
                 }
             }
@@ -134,7 +144,7 @@ impl A1Selection {
 
         let table_ref = TableRef {
             table_name: table_name.to_string(),
-            data: true,
+            data,
             headers,
             totals: false,
             col_range,

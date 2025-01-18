@@ -69,7 +69,7 @@ export class PointerTable {
       const columnName = tableDown.table.columns[tableDown.column].name;
       sheets.sheet.cursor.selectTable(tableDown.table.name, columnName, tableDown.table.y, shiftKey, ctrlKey);
 
-      if (tableDown.table.language === undefined) {
+      if (!tableDown.table.language || tableDown.table.language === 'Import') {
         this.doubleClickTimeout = window.setTimeout(() => {
           this.doubleClickTimeout = undefined;
         }, DOUBLE_CLICK_TIME);
