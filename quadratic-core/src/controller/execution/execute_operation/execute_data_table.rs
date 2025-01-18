@@ -731,6 +731,7 @@ impl GridController {
             let data_table = sheet.data_table_mut(sheet_pos.into())?;
             let forward_operations = vec![op];
             let reverse_borders = data_table.borders.set_borders_a1(&borders);
+            transaction.sheet_borders.insert(sheet_id);
 
             if transaction.is_user_undo_redo() {
                 let reverse_operations = Operation::DataTableBorders {

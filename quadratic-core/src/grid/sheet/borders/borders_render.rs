@@ -19,8 +19,8 @@ impl Borders {
                     // coordinates, and place bounds on any infinite borders. We
                     // subtract 1 because borders are 1-based, and tables are
                     // 0-based.
-                    let delta_x = table.min.x as u64 - 1;
-                    let delta_y = table.min.y as u64 - 1;
+                    let delta_x = table.min.x as u64;
+                    let delta_y = table.min.y as u64;
                     (
                         x1.saturating_add(delta_x),
                         y1.saturating_add(delta_y + 1),
@@ -46,8 +46,8 @@ impl Borders {
                     // coordinates, and place bounds on any infinite borders. We
                     // subtract 1 because borders are 1-based, and tables are
                     // 0-based.
-                    let delta_x = table.min.x as u64 - 1;
-                    let delta_y = table.min.y as u64 - 1;
+                    let delta_x = table.min.x as u64;
+                    let delta_y = table.min.y as u64;
                     (
                         x1.saturating_add(delta_x),
                         y1.saturating_add(delta_y + 1),
@@ -141,8 +141,8 @@ impl Borders {
                     // coordinates, and place bounds on any infinite borders. We
                     // subtract 1 because borders are 1-based, and tables are
                     // 0-based.
-                    let delta_x = table.min.x as u64 - 1;
-                    let delta_y = table.min.y as u64 - 1;
+                    let delta_x = table.min.x as u64;
+                    let delta_y = table.min.y as u64;
                     (
                         x1.saturating_add(delta_x),
                         y1.saturating_add(delta_y),
@@ -169,8 +169,8 @@ impl Borders {
                     // coordinates, and place bounds on any infinite borders. We
                     // subtract 1 because borders are 1-based, and tables are
                     // 0-based.
-                    let delta_x = table.min.x as u64 - 1;
-                    let delta_y = table.min.y as u64 - 1;
+                    let delta_x = table.min.x as u64;
+                    let delta_y = table.min.y as u64;
                     (
                         x1.saturating_add(delta_x),
                         y1.saturating_add(delta_y),
@@ -255,7 +255,7 @@ impl Borders {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
-    use crate::{a1::A1Selection, controller::GridController, grid::SheetId};
+    use crate::{a1::A1Selection, controller::GridController, grid::SheetId, SheetPos};
 
     use super::*;
 
@@ -484,5 +484,48 @@ mod tests {
 
         let horizontal = sheet.borders.horizontal_borders(None).unwrap();
         assert_eq!(horizontal.len(), 8);
+    }
+
+    #[test]
+    fn test_render_borders_table() {
+        todo!();
+        // let mut gc = GridController::test();
+        // let sheet_id = gc.sheet_ids()[0];
+        // let sheet = gc.sheet_mut(sheet_id);
+        // sheet.test_set_code_run_array_2d(1, 1, 2, 2, vec!["1", "2", "3", "4"]);
+
+        // gc.set_borders(
+        //     A1Selection::test_a1("Table1"),
+        //     BorderSelection::All,
+        //     Some(BorderStyle::default()),
+        //     None,
+        // );
+        // let context = gc.grid().a1_context();
+        // let table_ref = context
+        //     .table_from_pos(SheetPos {
+        //         x: 1,
+        //         y: 1,
+        //         sheet_id,
+        //     })
+        //     .unwrap();
+        // let sheet = gc.sheet(sheet_id);
+        // let table = sheet.data_tables.get(&Pos { x: 1, y: 1 }).unwrap();
+        // let horizontal = table
+        //     .borders
+        //     .horizontal_borders(Some(table_ref.bounds))
+        //     .unwrap();
+        // assert_eq!(
+        //     horizontal[0],
+        //     JsBorderHorizontal {
+        //         color: Default::default(),
+        //         line: Default::default(),
+        //         x: 1,
+        //         y: 1,
+        //         width: Some(2),
+        //         unbounded: false,
+        //     }
+        // );
+        // // let vertical = sheet.borders.vertical_borders(None).unwrap();
+        // // assert_eq!(vertical.len(), 4);
     }
 }
