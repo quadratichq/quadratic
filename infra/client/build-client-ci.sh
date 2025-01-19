@@ -4,8 +4,6 @@ set -euo pipefail
 
 echo 'Installing build-essential, llvm, and clang...'
 apt-get update && apt-get install -y --no-install-recommends build-essential llvm clang
-export CC=clang
-export AR=llvm-ar
 
 echo 'Installing rustup...'
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y

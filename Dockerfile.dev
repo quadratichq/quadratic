@@ -11,8 +11,6 @@ RUN echo 'Installing build-essential, llvm, clang, curl, python and python3-pip.
   curl \
   python-is-python3 \
   python3-pip
-ENV CC=clang
-ENV AR=llvm-ar
 
 # Install rustup
 RUN echo 'Installing rustup...' && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y

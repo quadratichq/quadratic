@@ -7,8 +7,6 @@ ARG CLIENT_DEV
 
 # Install build-essential, llvm, and clang
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential llvm clang
-ENV CC=clang
-ENV AR=llvm-ar
 
 # Install rustup
 RUN echo 'Installing rustup...' && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -50,8 +48,6 @@ FROM node:18 AS ts-rust-types-builder
 
 # Install build-essential, llvm, and clang
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential llvm clang
-ENV CC=clang
-ENV AR=llvm-ar
 
 # Install rustup
 RUN echo 'Installing rustup...' && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -91,8 +87,6 @@ ARG CLIENT_DEV
 
 # Install build-essential, llvm, and clang
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential llvm clang
-ENV CC=clang
-ENV AR=llvm-ar
 
 # Install rustup
 RUN echo 'Installing rustup...' && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
