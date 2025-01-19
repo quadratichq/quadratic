@@ -111,41 +111,73 @@ export const Component = () => {
         </Row>
 
         {teamPermissions.includes('TEAM_MANAGE') && (
-          <Row>
-            <Type variant="body2" className="font-bold">
-              Privacy
-            </Type>
+          <>
+            <Row>
+              <Type variant="body2" className="font-bold">
+                Privacy
+              </Type>
 
-            <div>
-              <SettingControl
-                label="Improve AI results"
-                description={
-                  <>
-                    Help improve AI results by allowing Quadratic to store and analyze user prompts.{' '}
-                    <a href={DOCUMENTATION_ANALYTICS_AI} target="_blank" className="underline hover:text-primary">
-                      Learn more
-                    </a>
-                    .
-                  </>
-                }
-                onCheckedChange={(checked) => {
-                  handleUpdatePreference('analyticsAi', checked);
-                }}
-                checked={optimisticSettings.analyticsAi}
-                className="rounded border border-border px-3 py-2 shadow-sm"
-              />
-              <p className="mt-2 text-sm text-muted-foreground">
-                When using AI features your data is sent to our AI providers:
-              </p>
-              <ul className="mt-2 text-sm text-muted-foreground">
-                {['OpenAI', 'Anthropic', 'AWS Bedrock'].map((item, i) => (
-                  <li className="flex items-center gap-2" key={i}>
-                    <CheckIcon /> <span className="font-semibold">{item}:</span> zero-day data retention
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </Row>
+              <div>
+                <SettingControl
+                  label="AI rules"
+                  description={
+                    <>
+                      Set rules that Quadratic AI will follow. Make as verbose as necessary. Example: "When writing code only use Formulas." {' '}
+                      <a href={DOCUMENTATION_ANALYTICS_AI} target="_blank" className="underline hover:text-primary">
+                        Learn more
+                      </a>
+                      .
+                    </>
+                  }
+                  onCheckedChange={(checked) => {
+                    handleUpdatePreference('analyticsAi', checked);
+                  }}
+                  checked={optimisticSettings.analyticsAi}
+                  className="rounded border border-border px-3 py-2 shadow-sm"
+                />
+                <Input
+                  className="mt-2"
+                  placeholder="Enter AI rules here..."
+                />
+              </div>
+            </Row>
+
+            <Row>
+              <Type variant="body2" className="font-bold">
+                Privacy
+              </Type>
+
+              <div>
+                <SettingControl
+                  label="Improve AI results"
+                  description={
+                    <>
+                      Help improve AI results by allowing Quadratic to store and analyze user prompts.{' '}
+                      <a href={DOCUMENTATION_ANALYTICS_AI} target="_blank" className="underline hover:text-primary">
+                        Learn more
+                      </a>
+                      .
+                    </>
+                  }
+                  onCheckedChange={(checked) => {
+                    handleUpdatePreference('analyticsAi', checked);
+                  }}
+                  checked={optimisticSettings.analyticsAi}
+                  className="rounded border border-border px-3 py-2 shadow-sm"
+                />
+                <p className="mt-2 text-sm text-muted-foreground">
+                  When using AI features your data is sent to our AI providers:
+                </p>
+                <ul className="mt-2 text-sm text-muted-foreground">
+                  {['OpenAI', 'Anthropic', 'AWS Bedrock'].map((item, i) => (
+                    <li className="flex items-center gap-2" key={i}>
+                      <CheckIcon /> <span className="font-semibold">{item}:</span> zero-day data retention
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Row>
+          </>
         )}
       </div>
     </>
