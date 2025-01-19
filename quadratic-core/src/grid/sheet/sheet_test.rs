@@ -3,6 +3,7 @@
 use super::Sheet;
 
 use crate::{
+    cellvalue::Import,
     grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
     Array, ArraySize, CellValue, Pos, Value,
 };
@@ -215,19 +216,50 @@ impl Sheet {
         );
         self.data_tables.get_mut(&pos).unwrap().chart_output = Some((w, h));
     }
+
+    /// Sets an empty data table on the sheet.
+    pub fn test_set_data_table(
+        &mut self,
+        pos: Pos,
+        w: u32,
+        h: u32,
+        header_is_first_row: bool,
+        show_header: bool,
+    ) {
+        self.set_cell_value(
+            pos,
+            CellValue::Import(Import {
+                file_name: "test".to_string(),
+            }),
+        );
+        let value = Value::Array(Array::new_empty(ArraySize::new(w, h).unwrap()));
+        self.set_data_table(
+            pos,
+            Some(DataTable::new(
+                DataTableKind::Import(Import {
+                    file_name: "test".to_string(),
+                }),
+                "Table1",
+                value,
+                false,
+                header_is_first_row,
+                show_header,
+                None,
+            )),
+        );
+    }
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
     use std::str::FromStr;
 
     use bigdecimal::BigDecimal;
 
     use crate::{grid::Sheet, CellValue, Pos};
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_set_value() {
         let mut sheet = Sheet::test();
         sheet.test_set_value_number(0, 0, "1");
@@ -243,7 +275,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_set_values() {
         let mut sheet = Sheet::test();
         sheet.test_set_values(0, 0, 2, 2, vec!["1", "2", "3", "4"]);
@@ -298,7 +329,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_set_code_run_array_horizontal() {
         let mut sheet = Sheet::test();
         sheet.test_set_code_run_array(-1, -1, vec!["1", "2", "3"], false);
@@ -317,7 +347,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_set_code_run_array_vertical() {
         let mut sheet = Sheet::test();
         sheet.test_set_code_run_array(-1, -1, vec!["1", "2", "3"], true);
@@ -336,7 +365,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_set_code_run_empty() {
         let mut sheet = Sheet::test();
         sheet.test_set_code_run_number(0, 0, "11");
@@ -347,7 +375,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_set_cell_number_empty() {
         let mut sheet = Sheet::test();
         sheet.test_set_value_number(0, 0, "");
@@ -355,7 +382,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_set_code_run_array_2d() {
         let mut sheet = Sheet::test();
         sheet.test_set_code_run_array_2d(-1, -1, 2, 2, vec!["1", "2", "3", "4"]);
@@ -375,5 +401,12 @@ mod tests {
             sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Number(BigDecimal::from(4)))
         );
+    }
+
+    #[test]
+    fn test_set_data_table() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_data_table(pos!(E5), 3, 3, false, true);
+        assert_eq!(sheet.data_tables.get(&pos!(E5)).unwrap().name, "Table1");
     }
 }

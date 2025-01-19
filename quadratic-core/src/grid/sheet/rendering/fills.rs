@@ -45,7 +45,7 @@ impl Sheet {
                         if dt.spill_error || dt.has_error() {
                             return None;
                         }
-                        let rect = dt.output_rect(*pos, false, false);
+                        let rect = dt.output_rect(*pos, false, true);
                         let x = rect.min.x + x0 - 1;
                         let y = rect.min.y + y0 - 1;
                         let x1 = x1.map_or(rect.max.x, |x1| rect.min.x + x1 - 1);
@@ -146,13 +146,9 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.test_set_code_run_array_2d(
-            5,
-            2,
-            3,
-            3,
-            vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
-        );
+
+        // set a data table at E2 that's 2x2 and show_header is true
+        sheet.test_set_data_table(pos!(E2), 3, 3, false, true);
         let context = gc.grid().a1_context();
         gc.set_fill_color(
             &A1Selection::test_a1_context("Table1[Column 2]", &context),
