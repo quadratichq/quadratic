@@ -68,7 +68,10 @@ services:
       - "./docker/localstack/data:/var/lib/localstack:rw"
       - "/var/run/docker.sock:/var/run/docker.sock:rw"
     profiles:
+      - postgres
       - base
+      - dev
+      - all
     networks:
       - host
 
