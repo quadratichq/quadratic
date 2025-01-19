@@ -1,3 +1,5 @@
+//! Test utilities to create values, tables, and charts directly in a sheet.
+
 use super::Sheet;
 
 use crate::{
@@ -7,6 +9,7 @@ use crate::{
 use bigdecimal::BigDecimal;
 use std::str::FromStr;
 
+#[cfg(test)]
 impl Sheet {
     /// Sets a test value in the sheet of &str converted to a BigDecimal.
     pub fn test_set_value_number(&mut self, x: i64, y: i64, s: &str) {
