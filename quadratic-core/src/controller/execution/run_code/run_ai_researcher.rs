@@ -311,13 +311,15 @@ impl GridController {
 
         if let Ok(sheet_pos_str) = serde_json::to_string(&sheet_pos) {
             if let Ok(cells_accessed_values) = serde_wasm_bindgen::to_value(&all_accessed_values) {
-                crate::wasm_bindings::js::jsRequestAIResearcherResult(
-                    transaction.id.to_string(),
-                    sheet_pos_str,
-                    query,
-                    ref_cell_values.join(", "),
-                    cells_accessed_values,
-                );
+                if cfg!(target_family = "wasm") || cfg!(test) {
+                    crate::wasm_bindings::js::jsRequestAIResearcherResult(
+                        transaction.id.to_string(),
+                        sheet_pos_str,
+                        query,
+                        ref_cell_values.join(", "),
+                        cells_accessed_values,
+                    );
+                }
                 transaction.pending_ai_researchers.remove(&sheet_pos);
                 transaction.running_ai_researchers.insert(sheet_pos);
                 transaction.waiting_for_async = Some(CodeCellLanguage::AIResearcher);
@@ -366,7 +368,7 @@ impl GridController {
                 transaction.waiting_for_async = None;
             }
 
-            let result = if cell_values.len() > 0 && cell_values[0].len() > 0 {
+            let result = if !cell_values.is_empty() && !cell_values[0].is_empty() {
                 CodeRunResult::Ok(Value::Array(Array::from(cell_values)))
             } else {
                 CodeRunResult::Err(RunError {
@@ -433,10 +435,12 @@ impl GridController {
 
         if let Ok(current_string) = serde_json::to_string(&current_code_run) {
             if let Ok(awaiting_execution_string) = serde_json::to_string(&awaiting_execution) {
-                crate::wasm_bindings::js::jsAIResearcherState(
-                    current_string,
-                    awaiting_execution_string,
-                );
+                if cfg!(target_family = "wasm") || cfg!(test) {
+                    crate::wasm_bindings::js::jsAIResearcherState(
+                        current_string,
+                        awaiting_execution_string,
+                    );
+                }
             }
         }
     }
