@@ -1,22 +1,18 @@
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useExaRequestToAPI } from '@/app/ai/hooks/useExaRequestToAPI';
-import { useQuadraticContextMessages } from '@/app/ai/hooks/useQuadraticContextMessages';
-import { AITool } from '@/app/ai/tools/aiTools';
-import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
-import { getMessagesForModel } from '@/app/ai/tools/message.helper';
 import { aiResearcherAbortControllerAtom, aiResearcherLoadingAtom } from '@/app/atoms/aiResearcherAtom';
 import { exaSettingsAtom } from '@/app/atoms/exaSettingsAtom';
 import type { JsCellValuePos, SheetPos } from '@/app/quadratic-core-types';
 import type { AIResearcherResultType } from '@/app/ui/menus/AIResearcher/helpers/parseAIResearcherResult.helper';
 import { useAIResearcherMessagePrompt } from '@/app/ui/menus/AIResearcher/hooks/useAIResearcherMessagePrompt';
-import { DEFAULT_MODEL } from 'quadratic-shared/AI_MODELS';
-import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { DEFAULT_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
+import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { useRecoilCallback } from 'recoil';
+import { v4 } from 'uuid';
 
 export function useSubmitAIResearcherPrompt() {
   const { handleExaRequestToAPI } = useExaRequestToAPI();
   const { handleAIRequestToAPI } = useAIRequestToAPI();
-  const { getQuadraticContext } = useQuadraticContextMessages();
   const { getAIResearcherMessagePrompt } = useAIResearcherMessagePrompt();
 
   const submitPrompt = useRecoilCallback(
@@ -43,42 +39,26 @@ export function useSubmitAIResearcherPrompt() {
           set(aiResearcherAbortControllerAtom, abortController);
         }
 
-        const {
-          type,
-          numResults,
-          livecrawl,
-          useAutoprompt,
-          text,
-          highlights,
-          summary,
-          categories,
-          includeText,
-          excludeText,
-          includeDomains,
-          excludeDomains,
-          startPublishedDate,
-          endPublishedDate,
-        } = await snapshot.getPromise(exaSettingsAtom);
+        const exaSettings = await snapshot.getPromise(exaSettingsAtom);
         const exaResponse = await handleExaRequestToAPI({
           signal: abortController.signal,
           query: `Search this query: '${query}', for these cell value(s): '${refCellValues}'`,
-          type,
-          numResults,
-          livecrawl,
-          useAutoprompt,
-          text,
-          highlights,
-          summary,
-          categories,
-          includeText: includeText.map((text) => text.trim()).filter((text) => text !== ''),
-          excludeText: excludeText.map((text) => text.trim()).filter((text) => text !== ''),
-          includeDomains: includeDomains.map((domain) => domain.trim()).filter((domain) => domain !== ''),
-          excludeDomains: excludeDomains.map((domain) => domain.trim()).filter((domain) => domain !== ''),
-          startPublishedDate,
-          endPublishedDate,
+          type: exaSettings.type,
+          numResults: exaSettings.numResults,
+          livecrawl: exaSettings.livecrawl,
+          useAutoprompt: exaSettings.useAutoprompt,
+          text: exaSettings.text,
+          highlights: exaSettings.highlights,
+          summary: exaSettings.summary,
+          categories: exaSettings.categories,
+          includeText: exaSettings.includeText.map((text) => text.trim()).filter((text) => text !== ''),
+          excludeText: exaSettings.excludeText.map((text) => text.trim()).filter((text) => text !== ''),
+          includeDomains: exaSettings.includeDomains.map((domain) => domain.trim()).filter((domain) => domain !== ''),
+          excludeDomains: exaSettings.excludeDomains.map((domain) => domain.trim()).filter((domain) => domain !== ''),
+          startPublishedDate: exaSettings.startPublishedDate,
+          endPublishedDate: exaSettings.endPublishedDate,
         });
 
-        const quadraticContext = getQuadraticContext('AIResearcher');
         const aiResearcherMessagePrompt = getAIResearcherMessagePrompt({
           query,
           refCellValues,
@@ -87,17 +67,17 @@ export function useSubmitAIResearcherPrompt() {
           exaResults: exaResponse.content?.results,
         });
 
-        const chatMessages: ChatMessage[] = [...quadraticContext, aiResearcherMessagePrompt];
-        const { system, messages } = getMessagesForModel(DEFAULT_MODEL, chatMessages);
-
         const response = await handleAIRequestToAPI({
+          chatId: v4(),
+          source: 'AIResearcher',
           model: DEFAULT_MODEL,
-          system,
-          messages,
-          signal: abortController.signal,
+          messages: [aiResearcherMessagePrompt],
           useStream: false,
           useTools: true,
-          toolChoice: AITool.SetAIResearcherResult,
+          toolName: AITool.SetAIResearcherResult,
+          language: 'AIResearcher',
+          useQuadraticContext: true,
+          signal: abortController.signal,
         });
 
         const setAIResearcherValueToolCall = response.toolCalls.find(
@@ -129,7 +109,7 @@ export function useSubmitAIResearcherPrompt() {
 
         return result;
       },
-    [handleExaRequestToAPI, handleAIRequestToAPI, getQuadraticContext, getAIResearcherMessagePrompt]
+    [handleExaRequestToAPI, handleAIRequestToAPI, getAIResearcherMessagePrompt]
   );
 
   return { submitPrompt };

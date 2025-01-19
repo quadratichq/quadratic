@@ -1,7 +1,6 @@
-import { AITool } from '@/app/ai/tools/aiTools';
-import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
 import { ToolCard } from '@/app/ui/menus/AIAnalyst/toolCards/ToolCard';
 import { GridActionIcon } from '@/shared/components/Icons';
+import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { useEffect, useState } from 'react';
 import { z } from 'zod';
 

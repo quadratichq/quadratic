@@ -1,6 +1,5 @@
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
-
-export type CodeCellType = 'Python' | 'Javascript' | 'Formula' | 'Connection' | 'AIResearcher';
+import type { CodeCellType } from 'quadratic-shared/typesAndSchemasAI';
 
 export const codeCellsById = {
   Formula: { id: 'Formula', label: 'Formula', type: undefined },

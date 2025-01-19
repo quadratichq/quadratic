@@ -1,4 +1,4 @@
-import { AIModel, AIProviders } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIModel, AIProviders } from 'quadratic-shared/typesAndSchemasAI';
 
 export const DEFAULT_MODEL: AIModel = 'anthropic.claude-3-5-sonnet-20241022-v2:0';
 
@@ -16,7 +16,7 @@ export const MODEL_OPTIONS: {
     provider: AIProviders;
   };
 } = {
-  'gpt-4o-2024-08-06': {
+  'gpt-4o-2024-11-20': {
     displayName: 'OpenAI: GPT-4o',
     temperature: 0,
     max_tokens: 4096, // not used for openai

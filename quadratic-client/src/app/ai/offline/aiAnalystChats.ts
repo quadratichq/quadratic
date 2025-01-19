@@ -1,4 +1,4 @@
-import { getPromptMessages } from '@/app/ai/tools/message.helper';
+import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { type Chat, ChatSchema } from 'quadratic-shared/typesAndSchemasAI';
 
 const DB_NAME = 'Quadratic-AI';

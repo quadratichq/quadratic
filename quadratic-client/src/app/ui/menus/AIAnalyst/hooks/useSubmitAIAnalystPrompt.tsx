@@ -2,13 +2,9 @@ import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
-import { useQuadraticContextMessages } from '@/app/ai/hooks/useQuadraticContextMessages';
 import { useSelectionContextMessages } from '@/app/ai/hooks/useSelectionContextMessages';
-import { useToolUseMessages } from '@/app/ai/hooks/useToolUseMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
-import { AITool } from '@/app/ai/tools/aiTools';
-import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
-import { getMessagesForModel, getPromptMessages } from '@/app/ai/tools/message.helper';
+import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
 import {
   aiAnalystAbortControllerAtom,
   aiAnalystCurrentChatAtom,
@@ -18,7 +14,9 @@ import {
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import type {
+import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import {
   AIMessage,
   AIMessagePrompt,
   ChatMessage,
@@ -26,6 +24,7 @@ import type {
   ToolResultMessage,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
+import { v4 } from 'uuid';
 
 const MAX_TOOL_CALL_ITERATIONS = 25;
 
@@ -38,8 +37,6 @@ export type SubmitAIAnalystPromptArgs = {
 
 export function useSubmitAIAnalystPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
-  const { getQuadraticContext } = useQuadraticContextMessages();
-  const { getToolUsePrompt } = useToolUseMessages();
   const { getOtherSheetsContext } = useOtherSheetsContextMessages();
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
@@ -49,8 +46,6 @@ export function useSubmitAIAnalystPrompt() {
   const updateInternalContext = useRecoilCallback(
     ({ set }) =>
       async ({ context }: { context: Context }): Promise<ChatMessage[]> => {
-        const quadraticContext = getQuadraticContext();
-        const toolUsePrompt = getToolUsePrompt();
         const otherSheetsContext = await getOtherSheetsContext({ sheetNames: context.sheets });
         const currentSheetContext = await getCurrentSheetContext({ currentSheetName: context.currentSheet });
         const visibleContext = await getVisibleContext();
@@ -61,8 +56,6 @@ export function useSubmitAIAnalystPrompt() {
           prevMessages = getPromptMessages(prevMessages);
 
           updatedMessages = [
-            ...quadraticContext,
-            ...toolUsePrompt,
             ...otherSheetsContext,
             ...currentSheetContext,
             ...visibleContext,
@@ -75,14 +68,7 @@ export function useSubmitAIAnalystPrompt() {
 
         return updatedMessages;
       },
-    [
-      getQuadraticContext,
-      getToolUsePrompt,
-      getOtherSheetsContext,
-      getCurrentSheetContext,
-      getVisibleContext,
-      getSelectionContext,
-    ]
+    [getOtherSheetsContext, getCurrentSheetContext, getVisibleContext, getSelectionContext]
   );
 
   const submitPrompt = useRecoilCallback(
@@ -100,7 +86,7 @@ export function useSubmitAIAnalystPrompt() {
 
         if (clearMessages) {
           set(aiAnalystCurrentChatAtom, {
-            id: '',
+            id: v4(),
             name: '',
             lastUpdated: Date.now(),
             messages: [],
@@ -111,7 +97,7 @@ export function useSubmitAIAnalystPrompt() {
         if (messageIndex !== undefined) {
           set(aiAnalystCurrentChatAtom, (prev) => {
             return {
-              id: '',
+              id: v4(),
               name: '',
               lastUpdated: Date.now(),
               messages: prev.messages.slice(0, messageIndex),
@@ -133,18 +119,31 @@ export function useSubmitAIAnalystPrompt() {
           },
         ]);
 
+        let chatId = '';
+        set(aiAnalystCurrentChatAtom, (prev) => {
+          chatId = prev.id ?? v4();
+          return {
+            ...prev,
+            id: chatId,
+            lastUpdated: Date.now(),
+          };
+        });
+
         try {
           // Send user prompt to API
           const updatedMessages = await updateInternalContext({ context });
-          const { system, messages } = getMessagesForModel(model, updatedMessages);
           const response = await handleAIRequestToAPI({
+            chatId,
+            source: 'AIAnalyst',
             model,
-            system,
-            messages,
-            setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
-            signal: abortController.signal,
+            messages: updatedMessages,
             useStream: true,
             useTools: true,
+            useToolsPrompt: true,
+            language: undefined,
+            useQuadraticContext: true,
+            setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
+            signal: abortController.signal,
           });
           let toolCalls: AIMessagePrompt['toolCalls'] = response.toolCalls;
 
@@ -165,7 +164,7 @@ export function useSubmitAIAnalystPrompt() {
                 const aiTool = toolCall.name as AITool;
                 const argsObject = JSON.parse(toolCall.arguments);
                 const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
-                const result = await aiToolsSpec[aiTool].action(args as any);
+                const result = await aiToolsActions[aiTool](args as any);
                 toolResultMessage.content.push({
                   id: toolCall.id,
                   content: result,
@@ -183,15 +182,18 @@ export function useSubmitAIAnalystPrompt() {
 
             // Send tool call results to API
             const updatedMessages = await updateInternalContext({ context });
-            const { system, messages } = getMessagesForModel(model, updatedMessages);
             const response = await handleAIRequestToAPI({
+              chatId,
+              source: 'AIAnalyst',
               model,
-              system,
-              messages,
-              setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
-              signal: abortController.signal,
+              messages: updatedMessages,
               useStream: true,
               useTools: true,
+              useToolsPrompt: true,
+              language: undefined,
+              useQuadraticContext: true,
+              setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
+              signal: abortController.signal,
             });
             toolCalls = response.toolCalls;
           }
@@ -202,6 +204,7 @@ export function useSubmitAIAnalystPrompt() {
               content: 'Looks like there was a problem. Please try again.',
               contextType: 'userPrompt',
               toolCalls: [],
+              model,
             };
 
             const lastMessage = prevMessages.at(-1);

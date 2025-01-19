@@ -1,9 +1,9 @@
-import { getPromptMessages } from '@/app/ai/tools/message.helper';
 import type { CodeCell } from '@/app/gridGL/types/codeCell';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import type { JsCellsAccessed, JsCoordinate } from '@/app/quadratic-core-types';
 import type { PanelTab } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
 import type { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
+import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
 
@@ -16,6 +16,7 @@ export interface CodeEditorState {
   aiAssistant: {
     abortController?: AbortController;
     loading: boolean;
+    id: string;
     messages: ChatMessage[];
   };
   showCodeEditor: boolean;
@@ -48,6 +49,7 @@ export const defaultCodeEditorState: CodeEditorState = {
   aiAssistant: {
     abortController: undefined,
     loading: false,
+    id: '',
     messages: [],
   },
   showCodeEditor: false,
@@ -55,7 +57,7 @@ export const defaultCodeEditorState: CodeEditorState = {
   loading: false,
   codeCell: {
     sheetId: '',
-    pos: { x: 0, y: 0 },
+    pos: { x: 1, y: 1 },
     language: 'Python',
   },
   codeString: undefined,
@@ -106,6 +108,7 @@ const createAIAssistantSelector = <T extends keyof CodeEditorState['aiAssistant'
   });
 export const aiAssistantAbortControllerAtom = createAIAssistantSelector('abortController');
 export const aiAssistantLoadingAtom = createAIAssistantSelector('loading');
+export const aiAssistantIdAtom = createAIAssistantSelector('id');
 export const aiAssistantMessagesAtom = createAIAssistantSelector('messages');
 export const aiAssistantCurrentChatMessagesCountAtom = selector<number>({
   key: 'aiAssistantCurrentChatMessagesCountAtom',

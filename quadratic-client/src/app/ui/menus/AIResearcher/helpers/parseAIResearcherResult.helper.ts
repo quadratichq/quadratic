@@ -1,5 +1,4 @@
-import { AITool } from '@/app/ai/tools/aiTools';
-import { AIToolsArgsSchema } from '@/app/ai/tools/aiToolsSpec';
+import { AITool, AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { ExaSearchResultSchema } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 

@@ -58,7 +58,7 @@ export function CodeEditorPanelBottom({ schemaBrowser, showAIAssistant }: CodeEd
         <TabsList>
           {schemaBrowser && !isAIResearcher && <TabsTrigger value="data-browser">Schema</TabsTrigger>}
 
-          {showAIAssistant && !isAIResearcher && <TabsTrigger value="ai-assistant">Chat</TabsTrigger>}
+          {showAIAssistant && !isAIResearcher && <TabsTrigger value="ai-assistant">Code chat</TabsTrigger>}
 
           {!isAIResearcher && (
             <TabsTrigger

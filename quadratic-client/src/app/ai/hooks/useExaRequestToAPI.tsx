@@ -1,5 +1,5 @@
 import { authClient } from '@/auth/auth';
-import { AI } from '@/shared/constants/routes';
+import { apiClient } from '@/shared/api/apiClient';
 import type { ExaSearchRequestBody, ExaSearchResponse } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
@@ -19,14 +19,14 @@ export const useExaRequestToAPI = () => {
     }> => {
       try {
         const token = await authClient.getTokenOrRedirect();
-        const endpoint = AI.EXA;
+        const endpoint = `${apiClient.getApiUrl()}/v0/ai/exa`;
         const response = await fetch(endpoint, {
           method: 'POST',
           signal,
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ query, ...exaSettings }),
         });
-        const data = await response.json();
+        const data: ExaSearchResponse = await response.json();
         return { error: undefined, content: data };
       } catch (err: any) {
         if (err.name === 'AbortError') {
