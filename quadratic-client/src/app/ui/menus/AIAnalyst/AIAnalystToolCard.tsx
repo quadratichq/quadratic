@@ -1,8 +1,8 @@
-import { AITool } from '@/app/ai/tools/aiTools';
 import { DeleteCells } from '@/app/ui/menus/AIAnalyst/toolCards/DeleteCells';
 import { MoveCells } from '@/app/ui/menus/AIAnalyst/toolCards/MoveCells';
 import { SetCellValues } from '@/app/ui/menus/AIAnalyst/toolCards/SetCellValues';
 import { SetCodeCellValue } from '@/app/ui/menus/AIAnalyst/toolCards/SetCodeCellValue';
+import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 
 type AIAnalystToolCardProps = {
   name: string;
