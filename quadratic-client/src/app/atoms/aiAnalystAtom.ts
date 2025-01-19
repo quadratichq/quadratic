@@ -1,5 +1,8 @@
 import { aiAnalystOfflineChats } from '@/app/ai/offline/aiAnalystChats';
-import { editorInteractionStateUserAtom, editorInteractionStateUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
+import {
+  editorInteractionStateFileUuidAtom,
+  editorInteractionStateUserAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
 import { showAIAnalystOnStartupAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { focusGrid } from '@/app/helpers/focusGrid';
@@ -44,10 +47,10 @@ export const aiAnalystAtom = atom<AIAnalystState>({
         });
 
         const user = await getPromise(editorInteractionStateUserAtom);
-        const uuid = await getPromise(editorInteractionStateUuidAtom);
-        if (!!user?.email && uuid) {
+        const fileUuid = await getPromise(editorInteractionStateFileUuidAtom);
+        if (!!user?.email && fileUuid) {
           try {
-            await aiAnalystOfflineChats.init(user.email, uuid);
+            await aiAnalystOfflineChats.init(user.email, fileUuid);
             const chats = await aiAnalystOfflineChats.loadChats();
             setSelf({
               ...defaultAIAnalystState,

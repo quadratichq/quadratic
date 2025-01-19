@@ -1,4 +1,4 @@
-import { editorInteractionStateUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateFileUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
@@ -31,7 +31,7 @@ export function useAIRequestToAPI() {
         };
         setMessages?.((prev) => [...prev, { ...responseMessage, content: '' }]);
         const { model, useStream, useTools } = args;
-        const fileUuid = await snapshot.getPromise(editorInteractionStateUuidAtom);
+        const fileUuid = await snapshot.getPromise(editorInteractionStateFileUuidAtom);
 
         try {
           const endpoint = `${apiClient.getApiUrl()}/v0/ai/chat`;

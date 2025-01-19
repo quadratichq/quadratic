@@ -95,7 +95,7 @@ export const Component = () => {
   const { loggedInUser } = useRootRouteLoaderData();
   const {
     file: { uuid: fileUuid },
-    team: { settings: teamSettings },
+    team: { uuid: teamUuid, settings: teamSettings },
     userMakingRequest: { filePermissions },
   } = useLoaderData() as FileData;
   const initializeState = ({ set }: MutableSnapshot) => {
@@ -104,7 +104,8 @@ export const Component = () => {
       permissions: filePermissions,
       settings: teamSettings,
       user: loggedInUser,
-      uuid: fileUuid,
+      fileUuid,
+      teamUuid,
     }));
   };
 
