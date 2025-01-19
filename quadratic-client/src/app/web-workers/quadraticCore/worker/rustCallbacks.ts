@@ -307,8 +307,9 @@ export const jsRequestAIResearcherResult = (
   sheetPos: string,
   query: string,
   refCellValues: string,
-  cellsAccessedValues: JsCellValuePos[][][]
+  cellsAccessedValuesStringified: string
 ) => {
+  const cellsAccessedValues = JSON.parse(cellsAccessedValuesStringified) as JsCellValuePos[][][];
   self.sendRequestAIResearcherResult(transactionId, sheetPos, query, refCellValues, cellsAccessedValues);
 };
 

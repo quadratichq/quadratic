@@ -309,41 +309,25 @@ impl GridController {
             }
         }
 
-        if let Ok(sheet_pos_str) = serde_json::to_string(&sheet_pos) {
-            if let Ok(cells_accessed_values) = serde_wasm_bindgen::to_value(&all_accessed_values) {
-                if cfg!(target_family = "wasm") || cfg!(test) {
-                    crate::wasm_bindings::js::jsRequestAIResearcherResult(
-                        transaction.id.to_string(),
-                        sheet_pos_str,
-                        query,
-                        ref_cell_values.join(", "),
-                        cells_accessed_values,
-                    );
-                }
-                transaction.pending_ai_researchers.remove(&sheet_pos);
-                transaction.running_ai_researchers.insert(sheet_pos);
-                transaction.waiting_for_async = Some(CodeCellLanguage::AIResearcher);
-                self.transactions.add_async_transaction(transaction);
-            } else {
-                let run_error = RunError {
-                    span: None,
-                    msg: RunErrorMsg::InternalError("Error in cells values context".into()),
-                };
-                transaction.pending_ai_researchers.remove(&sheet_pos);
-                transaction.current_sheet_pos = Some(sheet_pos.to_owned());
-                transaction.cells_accessed.clear();
-                let _ = self.code_cell_sheet_error(transaction, &run_error);
+        if cfg!(target_family = "wasm") || cfg!(test) {
+            if let (Ok(sheet_pos_str), Ok(cells_accessed_values_str)) = (
+                serde_json::to_string(&sheet_pos),
+                serde_json::to_string(&all_accessed_values),
+            ) {
+                crate::wasm_bindings::js::jsRequestAIResearcherResult(
+                    transaction.id.to_string(),
+                    sheet_pos_str,
+                    query,
+                    ref_cell_values.join(", "),
+                    cells_accessed_values_str,
+                );
             }
-        } else {
-            let run_error = RunError {
-                span: None,
-                msg: RunErrorMsg::InternalError("Error in sheet pos".into()),
-            };
-            transaction.pending_ai_researchers.remove(&sheet_pos);
-            transaction.current_sheet_pos = Some(sheet_pos.to_owned());
-            transaction.cells_accessed.clear();
-            let _ = self.code_cell_sheet_error(transaction, &run_error);
         }
+
+        transaction.pending_ai_researchers.remove(&sheet_pos);
+        transaction.running_ai_researchers.insert(sheet_pos);
+        transaction.waiting_for_async = Some(CodeCellLanguage::AIResearcher);
+        self.transactions.add_async_transaction(transaction);
     }
 
     pub fn receive_ai_researcher_result(
@@ -454,7 +438,10 @@ mod test {
 
     use crate::{
         controller::GridController,
-        grid::{js_types::JsCodeRun, CellsAccessed, CodeCellLanguage, CodeRunResult, SheetId},
+        grid::{
+            js_types::{JsCellValuePos, JsCodeRun},
+            CellsAccessed, CodeCellLanguage, CodeRunResult, SheetId,
+        },
         wasm_bindings::js::{clear_js_calls, expect_js_call},
         CellValue, RunError, RunErrorMsg, SheetRect,
     };
@@ -786,14 +773,20 @@ mod test {
             None,
         );
         let prev_transaction_id = gc.last_transaction().unwrap().id;
+        let cells_accessed_values_b2 = vec![vec![vec![JsCellValuePos {
+            value: "1".to_string(),
+            kind: "number".to_string(),
+            pos: pos![B1].a1_string(),
+        }]]];
         expect_js_call(
             "jsRequestAIResearcherResult",
             format!(
-                "{},{},{},{}",
+                "{},{},{},{},{}",
                 prev_transaction_id,
                 serde_json::to_string(&sheet_pos).unwrap(),
                 "query",
-                "1"
+                "1",
+                serde_json::to_string(&cells_accessed_values_b2).unwrap()
             ),
             false,
         );
@@ -821,14 +814,20 @@ mod test {
             None,
         );
         let prev_transaction_id = gc.last_transaction().unwrap().id;
+        let cells_accessed_values_b3 = vec![vec![vec![JsCellValuePos {
+            value: "result".to_string(),
+            kind: "text".to_string(),
+            pos: pos![B2].a1_string(),
+        }]]];
         expect_js_call(
             "jsRequestAIResearcherResult",
             format!(
-                "{},{},{},{}",
+                "{},{},{},{},{}",
                 prev_transaction_id,
                 serde_json::to_string(&sheet_pos).unwrap(),
                 "query",
-                "result"
+                "result",
+                serde_json::to_string(&cells_accessed_values_b3).unwrap()
             ),
             false,
         );
@@ -856,14 +855,20 @@ mod test {
             None,
         );
         let prev_transaction_id = gc.last_transaction().unwrap().id;
+        let cells_accessed_values_b4 = vec![vec![vec![JsCellValuePos {
+            value: "result".to_string(),
+            kind: "text".to_string(),
+            pos: pos![B3].a1_string(),
+        }]]];
         expect_js_call(
             "jsRequestAIResearcherResult",
             format!(
-                "{},{},{},{}",
+                "{},{},{},{},{}",
                 prev_transaction_id,
                 serde_json::to_string(&sheet_pos).unwrap(),
                 "query",
-                "result"
+                "result",
+                serde_json::to_string(&cells_accessed_values_b4).unwrap()
             ),
             false,
         );
@@ -891,11 +896,12 @@ mod test {
         expect_js_call(
             "jsRequestAIResearcherResult",
             format!(
-                "{},{},{},{}",
+                "{},{},{},{},{}",
                 prev_transaction_id,
                 serde_json::to_string(&pos![B2].to_sheet_pos(sheet_id)).unwrap(),
                 "query",
-                "1"
+                "1",
+                serde_json::to_string(&cells_accessed_values_b2).unwrap(),
             ),
             false,
         );
@@ -931,11 +937,12 @@ mod test {
         expect_js_call(
             "jsRequestAIResearcherResult",
             format!(
-                "{},{},{},{}",
+                "{},{},{},{},{}",
                 prev_transaction_id,
                 serde_json::to_string(&pos![B3].to_sheet_pos(sheet_id)).unwrap(),
                 "query",
-                "result"
+                "result",
+                serde_json::to_string(&cells_accessed_values_b3).unwrap()
             ),
             false,
         );
@@ -964,11 +971,12 @@ mod test {
         expect_js_call(
             "jsRequestAIResearcherResult",
             format!(
-                "{},{},{},{}",
+                "{},{},{},{},{}",
                 prev_transaction_id,
                 serde_json::to_string(&pos![B4].to_sheet_pos(sheet_id)).unwrap(),
                 "query",
-                "result"
+                "result",
+                serde_json::to_string(&cells_accessed_values_b4).unwrap()
             ),
             false,
         );
