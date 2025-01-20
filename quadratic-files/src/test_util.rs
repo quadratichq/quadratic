@@ -7,8 +7,12 @@
 // use quadratic_core::{Array, CellValue, SheetRect};
 use std::sync::Arc;
 
+use axum::body::Body;
+use axum::{http, Router};
+use http::{Request, Response};
 use jsonwebtoken::jwk::JwkSet;
 use serde_json::json;
+use tower::util::ServiceExt;
 
 use crate::config::config;
 use crate::state::State;
@@ -36,6 +40,18 @@ pub(crate) async fn new_state() -> State {
 
 pub(crate) async fn new_arc_state() -> Arc<State> {
     Arc::new(new_state().await)
+}
+
+pub(crate) async fn response(app: Router, method: http::Method, uri: &str) -> Response<Body> {
+    app.oneshot(
+        Request::builder()
+            .method(method)
+            .uri(uri)
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await
+    .unwrap()
 }
 
 // pub(crate) fn operation(grid: &mut GridController, x: i64, y: i64, value: &str) -> Operation {

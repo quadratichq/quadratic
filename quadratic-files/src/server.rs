@@ -213,7 +213,7 @@ pub(crate) async fn stats(state: Extension<Arc<State>>) -> impl IntoResponse {
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use crate::test_util::new_arc_state;
+    use crate::test_util::{new_arc_state, response};
     use axum::{
         body::Body,
         http::{self, Request},
@@ -226,18 +226,15 @@ pub(crate) mod tests {
     async fn responds_with_a_200_ok_for_a_healthcheck() {
         let state = new_arc_state().await;
         let app = app(state);
+        let response = response(app, http::Method::GET, "/health").await;
+        assert_eq!(response.status(), StatusCode::OK);
+    }
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method(http::Method::GET)
-                    .uri("/health")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
+    #[tokio::test]
+    async fn responds_with_a_200_ok_for_stats() {
+        let state = new_arc_state().await;
+        let app = app(state);
+        let response = response(app, http::Method::GET, "/stats").await;
         assert_eq!(response.status(), StatusCode::OK);
     }
 }
