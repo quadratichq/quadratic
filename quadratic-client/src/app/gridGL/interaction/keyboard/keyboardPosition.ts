@@ -39,7 +39,7 @@ async function jumpCursor(direction: Direction, jump: boolean, select: boolean) 
     }
   }
 
-  const jumpPos = await quadraticCore.jumpCursor(sheetId, { x: jumpStartX, y: jumpStartY }, direction);
+  const jumpPos = await quadraticCore.jumpCursor(sheetId, { x: jumpStartX, y: jumpStartY }, jump, direction);
   // something went wrong
   if (!jumpPos) {
     console.error('Failed to jump cursor');
