@@ -12,8 +12,8 @@ import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandl
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { JsCodeCell, JsCoordinate, JsHtmlOutput, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import type { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
-import type { Point, Rectangle } from 'pixi.js';
-import { Container } from 'pixi.js';
+import type { Point } from 'pixi.js';
+import { Container, Rectangle } from 'pixi.js';
 
 export interface TablePointerDownResult {
   table: JsRenderCodeCell;
@@ -402,6 +402,11 @@ export class Tables extends Container<Table> {
       return;
     }
     return table.getColumnHeaderBounds(index);
+  }
+
+  getTableFromTableCell(x: number, y: number): Table | undefined {
+    const cellRectangle = new Rectangle(x, y, 1, 1);
+    return this.children.find((table) => table.intersects(cellRectangle));
   }
 
   // Intersects a column/row rectangle

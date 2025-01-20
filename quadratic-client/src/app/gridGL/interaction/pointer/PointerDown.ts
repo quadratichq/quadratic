@@ -92,12 +92,12 @@ export class PointerDown {
           return;
         }
         event.preventDefault();
-        const code = await quadraticCore.getCodeCell(sheet.id, column, row);
-        if (code) {
+        const table = pixiApp.cellsSheet().tables.getTableFromTableCell(column, row);
+        if (table) {
           doubleClickCell({
-            column: Number(code.x),
-            row: Number(code.y),
-            language: code.language,
+            column: table.codeCell.x,
+            row: table.codeCell.y,
+            language: table.codeCell.language,
             cell: '',
           });
         } else {

@@ -355,14 +355,7 @@ export const editTableCode = () => {
   const table = getTable();
 
   if (table) {
-    const column = table.x;
-    const row = table.y;
-
-    quadraticCore.getCodeCell(sheets.sheet.id, column, row).then((code) => {
-      if (code) {
-        doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
-      }
-    });
+    doubleClickCell({ column: table.x, row: table.y, language: table.language, cell: '' });
   }
 };
 

@@ -81,10 +81,10 @@ export class TableOutline extends Graphics {
     // draw the spill error boundaries
     if (this.active && this.table.codeCell.spill_error) {
       const full = this.table.sheet.getScreenRectangle(
-        Number(this.table.codeCell.x),
-        Number(this.table.codeCell.y),
-        this.table.codeCell.w - 1,
-        this.table.codeCell.h - 1
+        this.table.codeCell.x,
+        this.table.codeCell.y,
+        this.table.codeCell.w,
+        this.table.codeCell.h
       );
 
       // draw outline around where the code cell would spill
