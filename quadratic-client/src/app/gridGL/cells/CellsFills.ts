@@ -204,7 +204,6 @@ export class CellsFills extends Container {
     this.alternatingColorsGraphics.clear();
     const color = getCSSVariableTint('primary', { luminosity: ALTERNATING_COLOR_LUMINOSITY });
     this.alternatingColors.forEach((table) => {
-      console.log(table);
       const bounds = this.sheet.getScreenRectangle(table.x, table.y, table.w, table.y);
       let yOffset = bounds.y;
       for (let y = 0; y < table.h; y++) {
