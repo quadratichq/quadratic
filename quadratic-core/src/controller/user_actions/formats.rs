@@ -775,13 +775,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.test_set_code_run_array_2d(
-            5,
-            5,
-            3,
-            3,
-            vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
-        );
+        sheet.test_set_data_table(pos!(E5), 3, 3, false, true);
         let format_update = FormatUpdate {
             bold: Some(Some(true)),
             ..Default::default()
@@ -791,7 +785,10 @@ mod test {
             format_update.clone(),
         );
         assert_eq!(ops.len(), 1);
-        let formats = SheetFormatUpdates::from_selection(&A1Selection::test_a1("*"), format_update);
+
+        // we select starting from the second row because show_header is true
+        let formats =
+            SheetFormatUpdates::from_selection(&A1Selection::test_a1("A2:"), format_update);
         assert_eq!(
             ops[0],
             Operation::DataTableFormats {

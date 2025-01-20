@@ -169,7 +169,7 @@ export class TableName extends Container {
   }
 
   intersects(world: Point): TablePointerDownResult | undefined {
-    if (intersects.rectanglePoint(this.getScaled(), world)) {
+    if (this.visible && intersects.rectanglePoint(this.getScaled(), world)) {
       if (world.x <= this.x + this.getScaledTextWidth()) {
         return { table: this.table.codeCell, type: 'table-name' };
       }

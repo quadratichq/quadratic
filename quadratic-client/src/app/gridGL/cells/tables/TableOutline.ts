@@ -1,13 +1,12 @@
 //! Draws a table outline, including the spill error boundaries.
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { Table } from '@/app/gridGL/cells/tables/Table';
 import { generatedTextures } from '@/app/gridGL/generateTextures';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { colors } from '@/app/theme/colors';
 import { sharedEvents } from '@/shared/sharedEvents';
 import { Graphics, Rectangle } from 'pixi.js';
-import { pixiApp } from '../../pixiApp/PixiApp';
 
 const SPILL_HIGHLIGHT_THICKNESS = 1;
 const SPILL_FILL_ALPHA = 0.05;
@@ -82,10 +81,10 @@ export class TableOutline extends Graphics {
     // draw the spill error boundaries
     if (this.active && this.table.codeCell.spill_error) {
       const full = this.table.sheet.getScreenRectangle(
-        Number(this.table.codeCell.x),
-        Number(this.table.codeCell.y),
-        this.table.codeCell.w - 1,
-        this.table.codeCell.h - 1
+        this.table.codeCell.x,
+        this.table.codeCell.y,
+        this.table.codeCell.w,
+        this.table.codeCell.h
       );
 
       // draw outline around where the code cell would spill

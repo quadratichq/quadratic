@@ -1,5 +1,10 @@
+//! Create border operations based on BorderSelection (eg, Inner, Outer). For
+//! infinite sheet borders, we do not support BorderSelections like Outer,
+//! Right, etc. But for tables, we apply the far-right and far-bottom borders to
+//! the UNBOUNDED coordinate, so we can properly render the outside border as necessary.
+
 use crate::{
-    a1::{A1Selection, CellRefRange, RefRangeBounds},
+    a1::{A1Selection, CellRefRange, RefRangeBounds, UNBOUNDED},
     controller::GridController,
     grid::sheet::borders::{BorderSelection, BorderStyle, BordersUpdates},
     ClearOption,
@@ -16,6 +21,7 @@ impl GridController {
         range: &RefRangeBounds,
         borders: &mut BordersUpdates,
         clear_neighbors: bool,
+        table: bool,
     ) {
         // original style is used to determine if we should clear the borders by
         // clearing the neighboring cell. We do not have to do this if we are
@@ -113,15 +119,38 @@ impl GridController {
                 }
             }
             BorderSelection::Outer => {
-                if let Some(x2) = x2 {
-                    borders
-                        .left
-                        .get_or_insert_default()
-                        .set_rect(x1, y1, Some(x1), y2, style);
-                    borders
-                        .right
-                        .get_or_insert_default()
-                        .set_rect(x2, y1, Some(x2), y2, style);
+                // we only support infinite outer for tables; for sheets, we
+                // need a rect that is bound in both directions
+                if let (Some(x2), Some(y2)) = (x2, y2) {
+                    borders.left.get_or_insert_default().set_rect(
+                        x1,
+                        y1,
+                        Some(x1),
+                        Some(y2),
+                        style,
+                    );
+                    borders.right.get_or_insert_default().set_rect(
+                        x2,
+                        y1,
+                        Some(x2),
+                        Some(y2),
+                        style,
+                    );
+                } else if table {
+                    borders.left.get_or_insert_default().set_rect(
+                        x1,
+                        y1,
+                        Some(x2.unwrap_or(UNBOUNDED)),
+                        y2.map_or(Some(UNBOUNDED), |y2| Some(y2 + 1)),
+                        style,
+                    );
+                    borders.right.get_or_insert_default().set_rect(
+                        UNBOUNDED,
+                        y1,
+                        Some(UNBOUNDED),
+                        y2.map_or(Some(UNBOUNDED), |y2| Some(y2 + 1)),
+                        style,
+                    );
                 }
                 borders
                     .top
@@ -380,6 +409,7 @@ impl GridController {
                         range,
                         &mut borders,
                         false,
+                        false,
                     );
                 }
                 CellRefRange::Table { range } => {
@@ -392,6 +422,7 @@ impl GridController {
                                 &range,
                                 &mut borders,
                                 false,
+                                true,
                             );
                             if !table.borders.is_toggle_borders(&borders) {
                                 return false;
@@ -401,11 +432,7 @@ impl GridController {
                 }
             }
         }
-        if sheet.borders.is_toggle_borders(&borders) {
-            true
-        } else {
-            false
-        }
+        sheet.borders.is_toggle_borders(&borders)
     }
 
     /// Creates border operations. Returns None if selection is empty.
@@ -437,6 +464,7 @@ impl GridController {
                     range,
                     &mut sheet_borders,
                     clear_neighbors,
+                    false,
                 );
             }
             CellRefRange::Table { range } => {
@@ -444,7 +472,8 @@ impl GridController {
                     context.try_table(&range.table_name),
                     range.convert_to_ref_range_bounds(true, &context),
                 ) {
-                    let range = range.translate(-entry.bounds.min.x, -entry.bounds.min.y);
+                    // borders are always 1-based
+                    let range = range.translate(-entry.bounds.min.x + 1, -entry.bounds.min.y + 1);
                     let mut borders = BordersUpdates::default();
                     self.a1_border_style_range(
                         border_selection,
@@ -452,6 +481,7 @@ impl GridController {
                         &range,
                         &mut borders,
                         clear_neighbors,
+                        true,
                     );
                     ops.push(Operation::DataTableBorders {
                         sheet_pos: entry.bounds.min.to_sheet_pos(entry.sheet_id),

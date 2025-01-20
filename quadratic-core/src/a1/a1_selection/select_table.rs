@@ -113,17 +113,26 @@ impl A1Selection {
             (ColRange::All, table.bounds.min.x)
         };
 
-        // toggle headers if selecting the same column twice w/nothing else
-        // selected
         let mut headers = false;
+        let mut data = true;
         if !shift_key && !ctrl_key && self.ranges.len() == 1 {
             if let Some(CellRefRange::Table { range }) = self.ranges.last() {
-                if range.table_name == table_name
-                    && range.col_range == col_range
-                    && matches!(col_range, ColRange::Col(_))
-                {
-                    headers = !range.headers;
-                    self.ranges.pop();
+                if range.table_name == table_name && range.col_range == col_range {
+                    // handle toggle for single column selection
+                    if matches!(col_range, ColRange::Col(_)) {
+                        if !range.headers && range.data {
+                            headers = true;
+                            data = false;
+                        } else {
+                            headers = false;
+                            data = true;
+                        }
+                        self.ranges.pop();
+                    } else if matches!(col_range, ColRange::All) {
+                        // handle toggle for all columns selection
+                        headers = !range.headers;
+                        self.ranges.pop();
+                    }
                 }
             }
         };
@@ -134,7 +143,7 @@ impl A1Selection {
 
         let table_ref = TableRef {
             table_name: table_name.to_string(),
-            data: true,
+            data,
             headers,
             totals: false,
             col_range,
@@ -296,6 +305,9 @@ mod tests {
         let mut selection = A1Selection::test_a1("A1");
         selection.select_table("Table1", None, &context, 10, false, false);
         assert_eq!(selection.cursor, pos!(A10));
+
+        // clear the table selection so we don't select twice and toggle headers
+        selection.move_to(1, 1, false, &context);
 
         selection.select_table("Table1", None, &context, 3, false, false);
         assert_eq!(selection.cursor, pos!(A6));

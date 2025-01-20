@@ -134,6 +134,17 @@ impl GridController {
             }
         };
 
+        // update fills if needed in either old or new data table
+        if new_data_table
+            .as_ref()
+            .is_some_and(|dt| dt.formats.has_fills())
+            || old_data_table
+                .as_ref()
+                .is_some_and(|dt| dt.formats.has_fills())
+        {
+            transaction.add_fill_cells(sheet_id);
+        }
+
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
             transaction.add_from_code_run(
                 sheet_id,
@@ -431,14 +442,13 @@ impl GridController {
             cells_accessed: transaction.cells_accessed.clone(),
         };
 
-        // todo: this should be true sometimes...
         let show_header = false;
         let mut data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             table_name,
             value,
             false,
-            false,
+            js_code_result.has_headers,
             show_header,
             js_code_result.chart_pixel_output,
         );

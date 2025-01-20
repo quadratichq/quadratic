@@ -1,7 +1,4 @@
-use crate::{
-    grid::{sheet::borders::JsBordersSheet, Sheet, SheetId},
-    wasm_bindings::js::jsBordersSheet,
-};
+use crate::grid::{sheet::borders::JsBordersSheet, Sheet, SheetId};
 
 impl Sheet {
     /// Gets packaged borders to send to the client.
@@ -49,15 +46,19 @@ impl Sheet {
 
     /// Sends the borders for the sheet to the client.
     pub fn send_sheet_borders(&self, sheet_id: SheetId) {
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
+            return;
+        }
+
         match self.borders_in_sheet() {
             Some(b) => {
                 if let Ok(borders) = serde_json::to_string(&b) {
-                    jsBordersSheet(sheet_id.to_string(), borders);
+                    crate::wasm_bindings::js::jsBordersSheet(sheet_id.to_string(), borders);
                 } else {
                     dbgjs!("Unable to serialize borders in send_sheet_borders");
                 }
             }
-            None => jsBordersSheet(sheet_id.to_string(), String::new()),
+            None => crate::wasm_bindings::js::jsBordersSheet(sheet_id.to_string(), String::new()),
         }
     }
 }
@@ -72,11 +73,33 @@ mod tests {
     };
 
     #[test]
-    fn test_render_borders_table() {
+    fn test_render_borders_table_1x1() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.test_set_code_run_array_2d(2, 3, 2, 2, vec!["1", "2", "3", "4"]);
+        sheet.test_set_data_table(pos![A1], 1, 1, false, false);
+
+        let context = gc.grid().a1_context();
+        gc.set_borders(
+            A1Selection::test_a1_context("Table1", &context),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let borders = sheet.borders_in_sheet().unwrap();
+
+        assert_eq!(borders.horizontal.unwrap().len(), 2);
+        assert_eq!(borders.vertical.unwrap().len(), 2);
+    }
+
+    #[test]
+    fn test_render_borders_table_3x3() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.test_set_data_table(pos![A1], 3, 3, false, false);
 
         let context = gc.grid().a1_context();
         gc.set_borders(
@@ -90,5 +113,50 @@ mod tests {
         let borders = sheet.borders_in_sheet().unwrap();
 
         assert_eq!(borders.horizontal.unwrap().len(), 4);
+        assert_eq!(borders.vertical.unwrap().len(), 4);
+    }
+
+    #[test]
+    fn test_render_borders_table_3x3_two_columns() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.test_set_data_table(pos![A1], 3, 3, false, false);
+
+        let context = gc.grid().a1_context();
+        gc.set_borders(
+            A1Selection::test_a1_context("Table1[[Column 1]:[Column 2]]", &context),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let borders = sheet.borders_in_sheet().unwrap();
+
+        assert_eq!(borders.horizontal.unwrap().len(), 4);
+        assert_eq!(borders.vertical.unwrap().len(), 3);
+    }
+
+    #[test]
+    fn test_render_borders_table_3x3_outside() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.test_set_data_table(pos![A1], 3, 3, false, false);
+
+        let context = gc.grid().a1_context();
+        gc.set_borders(
+            A1Selection::test_a1_context("Table1[#All]", &context),
+            BorderSelection::Outer,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let borders = sheet.borders_in_sheet().unwrap();
+        dbg!(&borders);
+        assert_eq!(borders.horizontal.unwrap().len(), 2);
+        assert_eq!(borders.vertical.unwrap().len(), 2);
     }
 }

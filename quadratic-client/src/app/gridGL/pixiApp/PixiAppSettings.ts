@@ -88,6 +88,7 @@ class PixiAppSettings {
 
   destroy() {
     events.off('gridSettings', this.getSettings);
+    events.off('contextMenu', this.getContextSettings);
   }
 
   private getSettings = (): void => {

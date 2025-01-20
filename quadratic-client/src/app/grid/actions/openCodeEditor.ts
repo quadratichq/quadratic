@@ -1,6 +1,6 @@
 import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 export const openCodeEditor = async () => {
   const { codeEditorState, setCodeEditorState, setEditorInteractionState } = pixiAppSettings;
@@ -13,7 +13,8 @@ export const openCodeEditor = async () => {
   }
 
   const { x, y } = sheets.sheet.cursor.position;
-  const codeCell = await quadraticCore.getCodeCell(sheets.sheet.id, x, y);
+  const table = pixiApp.cellsSheet().tables.getTableFromTableCell(x, y);
+  const codeCell = table?.codeCell;
   if (codeCell) {
     const {
       codeCell: {

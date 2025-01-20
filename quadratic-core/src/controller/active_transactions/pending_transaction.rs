@@ -340,8 +340,9 @@ impl PendingTransaction {
         sheet: &Sheet,
         selections: Vec<A1Selection>,
     ) {
+        let context = sheet.a1_context();
         selections.iter().for_each(|selection| {
-            let dirty_hashes = selection.rects_to_hashes(sheet);
+            let dirty_hashes = selection.rects_to_hashes(sheet, &context);
             self.dirty_hashes
                 .entry(sheet.id)
                 .or_default()
@@ -467,6 +468,11 @@ impl PendingTransaction {
                 .or_default()
                 .extend(offsets_modified);
         }
+    }
+
+    /// Adds a sheet id to the fill cells set.
+    pub fn add_fill_cells(&mut self, sheet_id: SheetId) {
+        self.fill_cells.insert(sheet_id);
     }
 }
 
@@ -734,5 +740,13 @@ mod tests {
             transaction.update_selection,
             Some(serde_json::to_string(&selection).unwrap())
         );
+    }
+
+    #[test]
+    fn test_add_fill_cells() {
+        let mut transaction = PendingTransaction::default();
+        let sheet_id = SheetId::new();
+        transaction.add_fill_cells(sheet_id);
+        assert!(transaction.fill_cells.contains(&sheet_id));
     }
 }

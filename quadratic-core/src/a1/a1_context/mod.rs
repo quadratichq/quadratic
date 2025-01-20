@@ -41,6 +41,7 @@ impl A1Context {
         self.table_map.tables.iter()
     }
 
+    /// Returns a list of all table names in the context.
     pub fn table_names(&self) -> Vec<String> {
         self.table_map
             .tables
@@ -49,6 +50,7 @@ impl A1Context {
             .collect()
     }
 
+    /// Returns any table that intersects with the given sheet position.
     pub fn table_from_pos(&self, sheet_pos: SheetPos) -> Option<&TableMapEntry> {
         self.table_map.table_from_pos(sheet_pos)
     }

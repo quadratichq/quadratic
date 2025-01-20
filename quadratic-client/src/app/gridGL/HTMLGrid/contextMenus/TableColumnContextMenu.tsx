@@ -36,7 +36,7 @@ export const TableColumnContextMenu = () => {
     );
   }, [table]);
 
-  const spillError = table?.spill_error;
+  const spillError = useMemo(() => table?.spill_error, [table?.spill_error]);
 
   return (
     <ContextMenuBase contextMenuType={ContextMenuType.TableColumn}>

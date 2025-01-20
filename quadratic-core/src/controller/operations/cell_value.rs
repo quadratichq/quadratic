@@ -139,7 +139,7 @@ impl GridController {
                 let cell_values = CellValues::new(rect.width(), rect.height());
                 let sheet_pos = SheetPos::from((rect.min.x, rect.min.y, selection.sheet_id));
 
-                // deleteable if this is not a data table source cell, or if the data table is readonly (code cell)
+                // deletable if this is not a data table source cell, or if the data table is readonly (code cell)
                 let can_delete = sheet
                     .data_tables
                     .get(&Pos::from(sheet_pos))

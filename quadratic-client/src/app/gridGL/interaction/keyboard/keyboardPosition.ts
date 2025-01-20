@@ -65,7 +65,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
 
   // Expand selection to the top of the content block of cursor cell
   if (matchShortcut(Action.ExpandSelectionContentTop, event)) {
-    jumpCursor('Up', true, false);
+    jumpCursor('Up', true, true);
     return true;
   }
 
@@ -89,7 +89,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
 
   // Expand selection to the bottom of the content block of cursor cell
   if (matchShortcut(Action.ExpandSelectionContentBottom, event)) {
-    jumpCursor('Down', true, false);
+    jumpCursor('Down', true, true);
     return true;
   }
 
@@ -113,7 +113,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
 
   // Expand selection to the left of the content block of cursor cell
   if (matchShortcut(Action.ExpandSelectionContentLeft, event)) {
-    jumpCursor('Left', true, false);
+    jumpCursor('Left', true, true);
     return true;
   }
 
@@ -137,7 +137,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
 
   // Expand selection to the right of the content block of cursor cell
   if (matchShortcut(Action.ExpandSelectionContentRight, event)) {
-    jumpCursor('Right', true, false);
+    jumpCursor('Right', true, true);
     return true;
   }
 

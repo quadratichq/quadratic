@@ -115,10 +115,10 @@ impl CellRefRange {
         }
     }
 
-    pub fn to_rect(&self) -> Option<Rect> {
+    pub fn to_rect(&self, context: &A1Context) -> Option<Rect> {
         match self {
             Self::Sheet { range } => range.to_rect(),
-            Self::Table { .. } => None,
+            Self::Table { range } => range.to_largest_rect(context),
         }
     }
 
@@ -238,22 +238,23 @@ mod tests {
 
     #[test]
     fn test_to_rect() {
+        let context = A1Context::default();
         assert_eq!(
-            CellRefRange::test_a1("A1").to_rect(),
+            CellRefRange::test_a1("A1").to_rect(&context),
             Some(Rect::new(1, 1, 1, 1))
         );
         assert_eq!(
-            CellRefRange::test_a1("A1:B2").to_rect(),
+            CellRefRange::test_a1("A1:B2").to_rect(&context),
             Some(Rect::new(1, 1, 2, 2))
         );
-        assert_eq!(CellRefRange::test_a1("A:B").to_rect(), None);
-        assert_eq!(CellRefRange::test_a1("1:2").to_rect(), None);
-        assert_eq!(CellRefRange::test_a1("A1:C").to_rect(), None);
+        assert_eq!(CellRefRange::test_a1("A:B").to_rect(&context), None);
+        assert_eq!(CellRefRange::test_a1("1:2").to_rect(&context), None);
+        assert_eq!(CellRefRange::test_a1("A1:C").to_rect(&context), None);
         assert_eq!(
-            CellRefRange::test_a1("A:C3").to_rect(),
+            CellRefRange::test_a1("A:C3").to_rect(&context),
             Some(Rect::new(1, 1, 3, 3))
         );
-        assert_eq!(CellRefRange::test_a1("*").to_rect(), None);
+        assert_eq!(CellRefRange::test_a1("*").to_rect(&context), None);
     }
 
     #[test]

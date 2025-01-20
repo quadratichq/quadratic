@@ -16,14 +16,13 @@ impl Borders {
             .map(|(x1, y1, x2, y2, border)| {
                 if let Some(table) = table {
                     // Move the borders from table coordinates to screen
-                    // coordinates, and place bounds on any infinite borders. We
-                    // subtract 1 because borders are 1-based, and tables are
-                    // 0-based.
+                    // coordinates, and clamp infinite bounds. We subtract 1
+                    // because borders are 1-based, and tables are 0-based.
                     let delta_x = table.min.x as u64 - 1;
                     let delta_y = table.min.y as u64 - 1;
                     (
                         x1.saturating_add(delta_x),
-                        y1.saturating_add(delta_y + 1),
+                        y1.saturating_add(delta_y),
                         if let Some(x2) = x2 {
                             Some(x2.saturating_add(delta_x))
                         } else {
@@ -59,7 +58,7 @@ impl Borders {
                         if let Some(y2) = y2 {
                             Some(y2.saturating_add(delta_y + 1))
                         } else {
-                            Some(table.max.y as u64)
+                            Some(table.max.y as u64 + 1)
                         },
                         border,
                     )
@@ -162,7 +161,6 @@ impl Borders {
                     (x1, y1, x2, y2, border)
                 }
             })
-            .into_iter()
             .chain(self.right.into_iter().map(|(x1, y1, x2, y2, border)| {
                 if let Some(table) = table {
                     // Move the borders from table coordinates to screen
@@ -172,12 +170,12 @@ impl Borders {
                     let delta_x = table.min.x as u64 - 1;
                     let delta_y = table.min.y as u64 - 1;
                     (
-                        x1.saturating_add(delta_x),
+                        x1.saturating_add(delta_x + 1),
                         y1.saturating_add(delta_y),
                         if let Some(x2) = x2 {
-                            Some(x2.saturating_add(delta_x))
+                            Some(x2.saturating_add(delta_x + 1))
                         } else {
-                            Some(table.max.x as u64)
+                            Some(table.max.x as u64 + 1)
                         },
                         if let Some(y2) = y2 {
                             Some(y2.saturating_add(delta_y))

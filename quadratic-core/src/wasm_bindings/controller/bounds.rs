@@ -164,6 +164,7 @@ impl GridController {
             .try_sheet(selection.sheet_id)
             .ok_or(JsValue::UNDEFINED)?;
         let selection = sheet.finitize_selection(&selection);
-        serde_wasm_bindgen::to_value(&selection.ranges[0].to_rect()).map_err(|_| JsValue::UNDEFINED)
+        serde_wasm_bindgen::to_value(&selection.ranges[0].to_rect(&sheet.a1_context()))
+            .map_err(|_| JsValue::UNDEFINED)
     }
 }

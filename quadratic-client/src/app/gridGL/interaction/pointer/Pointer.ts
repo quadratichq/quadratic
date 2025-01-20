@@ -1,7 +1,7 @@
 import { PointerAutoComplete } from '@/app/gridGL/interaction/pointer/PointerAutoComplete';
-import { PointerDataTable } from '@/app/gridGL/interaction/pointer/PointerDataTable';
 import { PointerCellMoving } from '@/app/gridGL/interaction/pointer/PointerCellMoving';
 import { PointerCursor } from '@/app/gridGL/interaction/pointer/pointerCursor';
+import { PointerDataTable } from '@/app/gridGL/interaction/pointer/PointerDataTable';
 import { PointerDown } from '@/app/gridGL/interaction/pointer/PointerDown';
 import { PointerHeading } from '@/app/gridGL/interaction/pointer/PointerHeading';
 import { PointerHtmlCells } from '@/app/gridGL/interaction/pointer/PointerHtmlCells';
@@ -69,6 +69,7 @@ export class Pointer {
     viewport.off('pointerupoutside', this.pointerUp);
     pixiApp.canvas.removeEventListener('pointerleave', this.pointerLeave);
     window.removeEventListener('blur', this.pointerLeave);
+    window.removeEventListener('visibilitychange', this.visibilityChange);
     this.pointerDown.destroy();
     this.pointerHtmlCells.destroy();
   }

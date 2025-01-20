@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { ValidationData } from '@/app/ui/menus/Validations/Validation/useValidationData';
 import { useValidationDateTimeData } from '@/app/ui/menus/Validations/Validation/ValidationDateTime/useValidationDateTime';
 import { ValidationsDateEquals } from '@/app/ui/menus/Validations/Validation/ValidationDateTime/ValidationDateEquals';
@@ -18,7 +17,7 @@ interface Props {
 
 export const ValidationDateTime = (props: Props) => {
   const { validationData, onEnter } = props;
-  const { ignoreBlank, changeIgnoreBlank, readOnly, validation } = validationData;
+  const { ignoreBlank, changeIgnoreBlank, readOnly } = validationData;
   const dateTimeData = useValidationDateTimeData(validationData);
 
   return (

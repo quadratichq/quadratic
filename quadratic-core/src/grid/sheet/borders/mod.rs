@@ -10,13 +10,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::{grid::Contiguous2D, ClearOption, Pos, Rect};
 
-pub mod borders_clipboard;
-pub mod borders_col_row;
+mod borders_clipboard;
+mod borders_col_row;
 pub mod borders_old;
-pub mod borders_query;
-pub mod borders_render;
-pub mod borders_set;
-mod borders_style;
+mod borders_query;
+mod borders_render;
+mod borders_set;
+pub mod borders_style;
 mod borders_test;
 pub mod sides;
 

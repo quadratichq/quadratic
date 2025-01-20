@@ -65,7 +65,14 @@ mod tests {
 
     #[test]
     fn test_to_string() {
-        let context = A1Context::test(&[], &[("Table1", &["A"], Rect::test_a1("A1"))]);
+        let context = A1Context::test(
+            &[],
+            &[(
+                "Table1",
+                &["Column 1", "Column 2", "Column 3", "Column 4"],
+                Rect::test_a1("A1"),
+            )],
+        );
         let tests = [
             "Table1[Column 1]",
             "Table1[[#ALL]]",

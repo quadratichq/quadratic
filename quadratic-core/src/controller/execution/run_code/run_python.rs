@@ -481,13 +481,7 @@ mod tests {
             transaction_id: transaction_id.to_string(),
             success: true,
             output_value: Some(vec!["2".into(), "number".into()]),
-            std_out: None,
-            std_err: None,
-            output_array: None,
-            line_number: None,
-            output_display_type: None,
-            cancel_compute: None,
-            chart_pixel_output: None,
+            ..Default::default()
         });
         assert!(result.is_ok());
 
@@ -519,13 +513,7 @@ mod tests {
             transaction_id: transaction_id.to_string(),
             success: true,
             output_value: Some(vec!["3".into(), "number".into()]),
-            std_out: None,
-            std_err: None,
-            output_array: None,
-            line_number: None,
-            output_display_type: None,
-            cancel_compute: None,
-            chart_pixel_output: None,
+            ..Default::default()
         });
         assert!(result.is_ok());
 

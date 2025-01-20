@@ -94,7 +94,7 @@ impl ArraySize {
             h: self.w,
         }
     }
-    /// Iterates over `(x, y)` array indices in canconical order.
+    /// Iterates over `(x, y)` array indices in canonical order.
     pub fn iter(self) -> impl Iterator<Item = (u32, u32)> {
         itertools::iproduct!(0..self.h.get(), 0..self.w.get()).map(|(y, x)| (x, y))
     }

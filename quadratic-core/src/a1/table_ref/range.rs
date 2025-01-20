@@ -48,7 +48,7 @@ impl ColRange {
         match self {
             ColRange::Col(col) => {
                 if col == old_name {
-                    *self = ColRange::Col(new_name.to_string());
+                    *col = new_name.to_string();
                 }
             }
             ColRange::ColRange(col1, col2) => {

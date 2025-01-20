@@ -744,28 +744,10 @@ export interface CoreClientJumpCursor {
   coordinate?: JsCoordinate;
 }
 
-export interface ClientCoreFindNextColumn {
-  type: 'clientCoreFindNextColumn';
-  id: number;
-  sheetId: string;
-  current: JsCoordinate;
-  direction: Direction;
-}
-
 export interface CoreClientJumpCursor {
   type: 'coreClientJumpCursor';
   id: number;
   coordinate?: JsCoordinate;
-}
-
-export interface ClientCoreFindNextRow {
-  type: 'clientCoreFindNextRow';
-  id: number;
-  sheetId: string;
-  rowStart: number;
-  column: number;
-  reverse: boolean;
-  withContent: boolean;
 }
 
 export interface CoreClientFindNextRow {
@@ -1251,8 +1233,6 @@ export type ClientCoreMessage =
   | ClientCoreGetColumnsBounds
   | ClientCoreGetRowsBounds
   | ClientCoreJumpCursor
-  | ClientCoreFindNextColumn
-  | ClientCoreFindNextRow
   | ClientCoreCommitTransientResize
   | ClientCoreCommitSingleResize
   | ClientCoreInit

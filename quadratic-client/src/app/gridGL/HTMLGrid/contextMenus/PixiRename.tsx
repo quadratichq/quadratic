@@ -42,12 +42,12 @@ export const PixiRename = (props: Props) => {
   }, [onClose]);
 
   // Validates the input value.
-  const validate = (value: string): boolean => {
+  const validate = useCallback((value: string): boolean => {
     if (value.trim().length === 0) {
       return false;
     }
     return true;
-  };
+  }, []);
 
   const saveAndClose = useCallback(() => {
     if (closed.current === true) return;
@@ -56,7 +56,7 @@ export const PixiRename = (props: Props) => {
       onSave(ref.current?.value ?? '');
     }
     onClose();
-  }, [defaultValue, onClose, onSave]);
+  }, [defaultValue, onClose, onSave, validate]);
 
   const ref = useRef<HTMLInputElement>(null);
 
@@ -124,7 +124,7 @@ export const PixiRename = (props: Props) => {
         }
       }
     };
-  }, [onSave, defaultValue]);
+  }, [onSave, defaultValue, validate]);
 
   if (!position) return null;
 

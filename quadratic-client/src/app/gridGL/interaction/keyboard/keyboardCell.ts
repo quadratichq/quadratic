@@ -57,26 +57,24 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
   if (matchShortcut(Action.EditCell, event)) {
     if (!inlineEditorHandler.isEditingFormula()) {
       const { x, y } = sheets.sheet.cursor.position;
-      quadraticCore.getCodeCell(sheets.sheet.id, x, y).then((code) => {
-        if (code) {
-          // const table = sheets.getById(sheets.sheet.id);
+      const table = pixiApp.cellsSheet().tables.getTableFromTableCell(x, y);
+      if (table) {
+        doubleClickCell({
+          column: table.codeCell.x,
+          row: table.codeCell.y,
+          language: table.codeCell.language,
+          cell: '',
+        });
+      } else {
+        quadraticCore.getEditCell(sheets.sheet.id, x, y).then((cell) => {
           doubleClickCell({
-            column: Number(code.x),
-            row: Number(code.y),
-            language: code.language,
-            cell: '',
+            column: x,
+            row: y,
+            cell,
+            cursorMode: cell ? CursorMode.Edit : CursorMode.Enter,
           });
-        } else {
-          quadraticCore.getEditCell(sheets.sheet.id, x, y).then((cell) => {
-            doubleClickCell({
-              column: x,
-              row: y,
-              cell,
-              cursorMode: cell ? CursorMode.Edit : CursorMode.Enter,
-            });
-          });
-        }
-      });
+        });
+      }
       return true;
     }
   }
@@ -85,21 +83,20 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
   if (matchShortcut(Action.ToggleArrowMode, event)) {
     if (!inlineEditorHandler.isEditingFormula()) {
       const { x, y } = sheets.sheet.cursor.position;
-      quadraticCore.getCodeCell(sheets.sheet.id, x, y).then((code) => {
-        if (code) {
-          doubleClickCell({
-            column: Number(code.x),
-            row: Number(code.y),
-            language: code.language,
-            cell: '',
-            cursorMode: CursorMode.Edit,
-          });
-        } else {
-          quadraticCore.getEditCell(sheets.sheet.id, x, y).then((cell) => {
-            doubleClickCell({ column: x, row: y, cell, cursorMode: CursorMode.Edit });
-          });
-        }
-      });
+      const table = pixiApp.cellsSheet().tables.getTableFromTableCell(x, y);
+      if (table) {
+        doubleClickCell({
+          column: table.codeCell.x,
+          row: table.codeCell.y,
+          language: table.codeCell.language,
+          cell: '',
+          cursorMode: CursorMode.Edit,
+        });
+      } else {
+        quadraticCore.getEditCell(sheets.sheet.id, x, y).then((cell) => {
+          doubleClickCell({ column: x, row: y, cell, cursorMode: CursorMode.Edit });
+        });
+      }
       return true;
     }
   }
@@ -144,20 +141,19 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
   }
 
   if (isAllowedFirstChar(event.key)) {
-    const cursorPosition = cursor.position;
-    quadraticCore.getCodeCell(sheets.sheet.id, cursorPosition.x, cursorPosition.y).then((code) => {
+    const table = pixiApp.cellsSheet().tables.getTableFromTableCell(cursorPosition.x, cursorPosition.y);
+    if (table) {
       // open code cell unless this is the actual code cell (but not an import,
       // which is editable). In this case we can overwrite it
-      if (
-        code &&
-        code.language !== 'Import' &&
-        (Number(code.x) !== cursorPosition.x || Number(code.y) !== cursorPosition.y)
-      ) {
-        doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
-      } else {
-        pixiAppSettings.changeInput(true, event.key, CursorMode.Enter);
-      }
-    });
+      doubleClickCell({
+        column: Number(table.codeCell.x),
+        row: Number(table.codeCell.y),
+        language: table.codeCell.language,
+        cell: '',
+      });
+    } else {
+      pixiAppSettings.changeInput(true, event.key, CursorMode.Enter);
+    }
     return true;
   }
 
