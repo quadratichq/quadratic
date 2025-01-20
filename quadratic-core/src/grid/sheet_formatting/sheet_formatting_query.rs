@@ -224,6 +224,11 @@ impl SheetFormatting {
             Some(*max)
         }
     }
+
+    /// Returns true if there is any formatting with a fill color.
+    pub fn has_fills(&self) -> bool {
+        !self.fill_color.is_all_default()
+    }
 }
 
 #[cfg(test)]
@@ -350,5 +355,17 @@ mod tests {
         assert_eq!(formatting.row_max(1), Some(4));
         // Row 3 has no formatting
         assert_eq!(formatting.row_max(3), None);
+    }
+
+    #[test]
+    fn test_has_fills() {
+        let formatting = SheetFormatting::default();
+        assert!(!formatting.has_fills());
+
+        let mut formatting = create_test_formatting();
+        assert!(formatting.has_fills());
+
+        formatting.fill_color.set(pos![A2], None);
+        assert!(!formatting.has_fills());
     }
 }

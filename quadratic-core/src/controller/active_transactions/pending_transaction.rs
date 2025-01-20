@@ -469,6 +469,11 @@ impl PendingTransaction {
                 .extend(offsets_modified);
         }
     }
+
+    /// Adds a sheet id to the fill cells set.
+    pub fn add_fill_cells(&mut self, sheet_id: SheetId) {
+        self.fill_cells.insert(sheet_id);
+    }
 }
 
 #[cfg(test)]
@@ -735,5 +740,13 @@ mod tests {
             transaction.update_selection,
             Some(serde_json::to_string(&selection).unwrap())
         );
+    }
+
+    #[test]
+    fn test_add_fill_cells() {
+        let mut transaction = PendingTransaction::default();
+        let sheet_id = SheetId::new();
+        transaction.add_fill_cells(sheet_id);
+        assert!(transaction.fill_cells.contains(&sheet_id));
     }
 }

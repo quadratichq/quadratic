@@ -36,7 +36,7 @@ impl GridController {
             }
 
             if fills_changed {
-                transaction.fill_cells.insert(sheet_id);
+                transaction.add_fill_cells(sheet_id);
             }
         }
 

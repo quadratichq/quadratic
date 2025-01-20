@@ -134,6 +134,17 @@ impl GridController {
             }
         };
 
+        // update fills if needed in either old or new data table
+        if new_data_table
+            .as_ref()
+            .is_some_and(|dt| dt.formats.has_fills())
+            || old_data_table
+                .as_ref()
+                .is_some_and(|dt| dt.formats.has_fills())
+        {
+            transaction.add_fill_cells(sheet_id);
+        }
+
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
             transaction.add_from_code_run(
                 sheet_id,

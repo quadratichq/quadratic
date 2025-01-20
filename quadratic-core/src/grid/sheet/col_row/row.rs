@@ -160,7 +160,7 @@ impl Sheet {
 
         // remove the row's formats from the sheet
         self.formats.remove_row(row);
-        transaction.fill_cells.insert(self.id);
+        transaction.add_fill_cells(self.id);
 
         // remove the row's borders from the sheet
         self.borders.remove_row(row);
@@ -275,7 +275,7 @@ impl Sheet {
 
         // update formatting
         self.formats.insert_row(row, copy_formats);
-        transaction.fill_cells.insert(self.id);
+        transaction.add_fill_cells(self.id);
 
         // signal client to update the borders for changed columns
         self.borders.insert_row(row, copy_formats);
