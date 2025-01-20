@@ -382,7 +382,7 @@ impl GridController {
             let old_alternating_colors = alternating_colors.map(|alternating_colors| {
                 let old_alternating_colors = data_table.alternating_colors.to_owned();
                 data_table.alternating_colors = alternating_colors;
-
+                transaction.add_fill_cells(sheet_id);
                 old_alternating_colors
             });
 
@@ -394,9 +394,14 @@ impl GridController {
                 old_columns
             });
 
+            let has_fills = data_table.formats.has_fills();
+
             let old_show_header = show_header.map(|show_header| {
                 let old_show_header = data_table.show_header.to_owned();
                 data_table.show_header = show_header;
+                if has_fills {
+                    transaction.add_fill_cells(sheet_id);
+                }
 
                 old_show_header
             });
@@ -404,7 +409,9 @@ impl GridController {
             let old_show_ui = show_ui.as_ref().map(|show_ui| {
                 let old_show_ui = data_table.show_ui.to_owned();
                 data_table.show_ui = show_ui.to_owned();
-
+                if has_fills {
+                    transaction.add_fill_cells(sheet_id);
+                }
                 old_show_ui
             });
 
@@ -500,6 +507,10 @@ impl GridController {
                 .output_rect(sheet_pos.into(), true, true)
                 .to_sheet_rect(sheet_id);
 
+            if data_table.formats.has_fills() {
+                transaction.add_fill_cells(sheet_id);
+            }
+
             self.send_to_wasm(transaction, &data_table_rect)?;
             transaction.add_code_cell(sheet_id, data_table_pos);
 
@@ -540,6 +551,9 @@ impl GridController {
                 .output_rect(sheet_pos.into(), true, true)
                 .to_sheet_rect(sheet_id);
 
+            if data_table.formats.has_fills() {
+                transaction.add_fill_cells(sheet_id);
+            }
             self.send_to_wasm(transaction, &data_table_rect)?;
             transaction.add_code_cell(sheet_id, data_table_pos);
 
@@ -585,6 +599,9 @@ impl GridController {
                 .output_rect(sheet_pos.into(), true, true)
                 .to_sheet_rect(sheet_id);
 
+            if data_table.formats.has_fills() {
+                transaction.add_fill_cells(sheet_id);
+            }
             self.send_to_wasm(transaction, &data_table_rect)?;
             transaction.add_code_cell(sheet_id, data_table_pos);
 
@@ -621,6 +638,9 @@ impl GridController {
                 .output_rect(sheet_pos.into(), true, true)
                 .to_sheet_rect(sheet_id);
 
+            if data_table.formats.has_fills() {
+                transaction.add_fill_cells(sheet_id);
+            }
             self.send_to_wasm(transaction, &data_table_rect)?;
             transaction.add_code_cell(sheet_id, data_table_pos);
 
@@ -664,6 +684,9 @@ impl GridController {
 
             data_table.toggle_first_row_as_header(first_row_is_header);
 
+            if data_table.formats.has_fills() {
+                transaction.add_fill_cells(sheet_id);
+            }
             self.send_to_wasm(transaction, &data_table_rect)?;
             transaction.add_code_cell(sheet_id, sheet_pos.into());
 
@@ -708,11 +731,10 @@ impl GridController {
             }
 
             let data_table_rect = data_table.output_sheet_rect(sheet_pos, false, true);
-            self.send_to_wasm(transaction, &data_table_rect)?;
-
-            if formats.has_fills() {
-                self.send_all_fills(sheet_pos.sheet_id);
+            if data_table.formats.has_fills() {
+                transaction.add_fill_cells(sheet_id);
             }
+            self.send_to_wasm(transaction, &data_table_rect)?;
 
             return Ok(());
         };

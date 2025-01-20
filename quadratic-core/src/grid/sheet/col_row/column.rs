@@ -131,7 +131,7 @@ impl Sheet {
 
         // remove the column's data from the sheet
         self.formats.remove_column(column);
-        transaction.fill_cells.insert(self.id);
+        transaction.add_fill_cells(self.id);
 
         // remove the column's borders from the sheet
         self.borders.remove_column(column);
@@ -279,7 +279,7 @@ impl Sheet {
 
         // update formatting
         self.formats.insert_column(column, copy_formats);
-        transaction.fill_cells.insert(self.id);
+        transaction.add_fill_cells(self.id);
 
         // signal client ot update the borders for changed columns
         self.borders.insert_column(column, copy_formats);
