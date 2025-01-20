@@ -215,7 +215,6 @@ pub(crate) async fn process_queue_for_room(
     .await?;
 
     state.stats.lock().await.last_processed_file_time = Some(Utc::now());
-    state.stats.lock().await.files_to_process_in_pubsub = 0;
 
     tracing::info!(
         "Processed sequence numbers {first_sequence_num} - {last_sequence_num} for room {file_id} in {:?}ms", (Utc::now() - start).num_milliseconds()
@@ -224,8 +223,10 @@ pub(crate) async fn process_queue_for_room(
     Ok(Some(last_sequence_num))
 }
 
-/// Process outstanding transactions in the queue
-pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result<()> {
+pub(crate) async fn get_files_to_process(
+    state: &Arc<State>,
+    active_channels: &str,
+) -> Result<Vec<Uuid>> {
     let files = state
         .pubsub
         .lock()
@@ -236,6 +237,13 @@ pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result
         .into_iter()
         .flat_map(|file_id| Uuid::parse_str(&file_id))
         .collect::<Vec<_>>();
+
+    Ok(files)
+}
+
+/// Process outstanding transactions in the queue
+pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result<()> {
+    let files = get_files_to_process(state, active_channels).await?;
 
     // collect info for stats
     state.stats.lock().await.files_to_process_in_pubsub = files.len() as u64;

@@ -16,6 +16,7 @@ use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+use crate::file::get_files_to_process;
 use crate::state::stats::StatsResponse;
 use crate::storage::{get_presigned_storage, get_storage};
 use crate::truncate::truncate_processed_transactions;
@@ -105,6 +106,7 @@ pub(crate) async fn serve() -> Result<()> {
     let jwks = get_jwks(&config.auth0_jwks_uri).await?;
     let state = Arc::new(State::new(&config, Some(jwks)).await?);
     let app = app(Arc::clone(&state));
+    let active_channels = config.pubsub_active_channels.to_owned();
 
     let listener = tokio::net::TcpListener::bind(format!("{}:{}", config.host, config.port))
         .await
@@ -172,6 +174,10 @@ pub(crate) async fn serve() -> Result<()> {
 
                 // reconnect to pubsub if the connection becomes unhealthy
                 state.pubsub.lock().await.reconnect_if_unhealthy().await;
+
+                if let Ok(files) = get_files_to_process(&state, &active_channels).await {
+                    state.stats.lock().await.files_to_process_in_pubsub = files.len() as u64;
+                }
 
                 let stats = state.stats.lock().await;
 
