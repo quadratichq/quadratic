@@ -204,11 +204,12 @@ export class CellsFills extends Container {
     this.alternatingColorsGraphics.clear();
     const color = getCSSVariableTint('primary', { luminosity: ALTERNATING_COLOR_LUMINOSITY });
     this.alternatingColors.forEach((table) => {
+      console.log(table);
       const bounds = this.sheet.getScreenRectangle(table.x, table.y, table.w, table.y);
       let yOffset = bounds.y;
-      for (let y = table.show_header ? 1 : 0; y < table.h; y++) {
+      for (let y = 0; y < table.h; y++) {
         let height = this.sheet.offsets.getRowHeight(y + table.y);
-        if (y % 2 !== 0) {
+        if (y % 2 !== (table.show_header ? 1 : 0)) {
           this.alternatingColorsGraphics.beginFill(color);
           this.alternatingColorsGraphics.drawRect(bounds.x, yOffset, bounds.width, height);
           this.alternatingColorsGraphics.endFill();
