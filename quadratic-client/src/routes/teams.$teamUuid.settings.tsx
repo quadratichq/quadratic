@@ -29,10 +29,20 @@ export const Component = () => {
   const [value, setValue] = useState<string>(team.name);
   const disabled = value === '' || value === team.name || fetcher.state !== 'idle';
 
-  // Add state for AI rules text and track changes
-  const [aiRulesText, setAiRulesText] = useState<string>(team.settings.aiRulesText ?? '');
-  const [originalAiRulesText, setOriginalAiRulesText] = useState<string>(team.settings.aiRulesText ?? '');
-  const aiRulesDisabled = aiRulesText === originalAiRulesText || fetcher.state !== 'idle';
+  // Replace all aiRules text logic with local storage
+  const [aiRulesText, setAiRulesText] = useState('');
+
+  // On component mount, load from localStorage
+  useEffect(() => {
+    const storedRules = localStorage.getItem('quadratic_ai_rules') || '';
+    setAiRulesText(storedRules);
+  }, []);
+
+  // Save on submit
+  const handleAiRulesSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    localStorage.setItem('quadratic_ai_rules', aiRulesText);
+  };
 
   // Optimistic UI
   let optimisticSettings = team.settings;
@@ -47,7 +57,7 @@ export const Component = () => {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (disabled) {
+    if (disabled) {  
       return;
     }
 
@@ -70,16 +80,6 @@ export const Component = () => {
       fetcherKey: `update-team`,
       navigate: false,
     });
-  };
-
-  // Add handler for AI rules form submission
-  const handleAiRulesSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (aiRulesDisabled) return;
-
-    const data = getActionUpdateTeam({ settings: { aiRulesText } });
-
-    setOriginalAiRulesText(aiRulesText);
   };
 
   // If for some reason it failed, display an error
@@ -121,10 +121,7 @@ export const Component = () => {
                 <div className="rounded border border-border px-3 py-2 shadow-sm">
                   <Type variant="body2" className="font-bold">AI rules</Type>
                   <p className="text-sm text-muted-foreground mb-2">
-                    Set rules that Quadratic AI will follow. Make as verbose as necessary. Example: "When writing code only use Formulas." {' '}
-                    <a href={DOCUMENTATION_ANALYTICS_AI} target="_blank" className="underline hover:text-primary">
-                      Learn more
-                    </a>
+                    Define custom rules for Quadratic AI. These rules are stored in your browser's local storage only.
                   </p>
                   <form onSubmit={handleAiRulesSubmit}>
                     <textarea
@@ -134,7 +131,7 @@ export const Component = () => {
                       onChange={(e) => setAiRulesText(e.target.value)}
                     />
                     <div className="mt-2 flex">
-                      <Button type="submit" disabled={aiRulesDisabled} variant="secondary">
+                      <Button type="submit" variant="secondary">
                         Save
                       </Button>
                     </div>
