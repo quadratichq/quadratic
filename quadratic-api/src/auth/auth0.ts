@@ -1,7 +1,8 @@
 import * as Sentry from '@sentry/node';
 import { ManagementClient } from 'auth0';
-import { Algorithm } from 'jsonwebtoken';
-import jwksRsa, { GetVerificationKey } from 'jwks-rsa';
+import type { Algorithm } from 'jsonwebtoken';
+import type { GetVerificationKey } from 'jwks-rsa';
+import jwksRsa from 'jwks-rsa';
 import {
   AUTH0_AUDIENCE,
   AUTH0_CLIENT_ID,
@@ -10,7 +11,7 @@ import {
   AUTH0_ISSUER,
   AUTH0_JWKS_URI,
 } from '../env-vars';
-import { ByEmailUser } from './auth';
+import type { ByEmailUser } from './auth';
 
 // Guide to Setting up on Auth0
 // 1. Create an Auth0 Machine to Machine Application

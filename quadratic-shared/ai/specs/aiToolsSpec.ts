@@ -1,11 +1,21 @@
-import { AITool } from '@/app/ai/tools/aiTools';
-import { sheets } from '@/app/grid/controller/Sheets';
-import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
-import { SheetRect } from '@/app/quadratic-core-types';
-import { stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { AIToolArgs } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIToolArgs } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
+
+export enum AITool {
+  SetChatName = 'set_chat_name',
+  SetCellValues = 'set_cell_values',
+  SetCodeCellValue = 'set_code_cell_value',
+  MoveCells = 'move_cells',
+  DeleteCells = 'delete_cells',
+}
+
+export const AIToolSchema = z.enum([
+  AITool.SetChatName,
+  AITool.SetCellValues,
+  AITool.SetCodeCellValue,
+  AITool.MoveCells,
+  AITool.DeleteCells,
+]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
   internalTool: boolean; // tools meant to get structured data from AI, but not meant to be used during chat
@@ -17,7 +27,6 @@ type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
     additionalProperties: boolean;
   };
   responseSchema: (typeof AIToolsArgsSchema)[T];
-  action: (args: z.infer<(typeof AIToolsArgsSchema)[T]>) => Promise<string>;
   prompt: string; // this is sent as internal message to AI, no character limit
 };
 
@@ -71,10 +80,6 @@ This name should be from user's perspective, not the assistant's.\n
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetChatName],
-    action: async (args) => {
-      // no action as this tool is only meant to get structured data from AI
-      return `Executed set chat name tool successfully with name: ${args.chat_name}`;
-    },
     prompt: `
 You can use the set_chat_name function to set the name of the user chat with AI assistant, this is the name of the chat in the chat history.\n
 This function requires the name of the chat, this should be concise and descriptive of the conversation, and should be easily understandable by a non-technical user.\n
@@ -115,23 +120,6 @@ To clear the values of a cell, set the value to an empty string.\n
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetCellValues],
-    action: async (args) => {
-      const { top_left_position, cell_values } = args;
-      try {
-        const selection = stringToSelection(top_left_position, sheets.current, sheets.getSheetIdNameMap());
-        if (!selection.isSingleSelection()) {
-          return 'Invalid code cell position, this should be a single cell, not a range';
-        }
-        const { x, y } = selection.getCursor();
-
-        quadraticCore.setCellValues(sheets.current, x, y, cell_values, sheets.getCursorPosition());
-        ensureRectVisible({ x, y }, { x: x + cell_values[0].length - 1, y: y + cell_values.length - 1 });
-
-        return 'Executed set cell values tool successfully';
-      } catch (e) {
-        return `Error executing set cell values tool: ${e}`;
-      }
-    },
     prompt: `
 You should use the set_cell_values function to set the values of the currently open sheet cells to a 2d array of strings.\n
 Use this function to add data to the currently open sheet. Don't use code cell for adding data. Always add data using this function.\n
@@ -180,34 +168,6 @@ Always refer to the data from cell by its position in a1 notation from respectiv
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetCodeCellValue],
-    action: async (args) => {
-      let { code_cell_language, code_string, code_cell_position, output_width, output_height } = args;
-      try {
-        const selection = stringToSelection(code_cell_position, sheets.current, sheets.getSheetIdNameMap());
-        if (!selection.isSingleSelection()) {
-          return 'Invalid code cell position, this should be a single cell, not a range';
-        }
-        const { x, y } = selection.getCursor();
-
-        if (code_cell_language === 'Formula' && code_string.startsWith('=')) {
-          code_string = code_string.slice(1);
-        }
-
-        quadraticCore.setCodeCellValue({
-          sheetId: sheets.current,
-          x,
-          y,
-          codeString: code_string,
-          language: code_cell_language,
-          cursor: sheets.getCursorPosition(),
-        });
-        ensureRectVisible({ x, y }, { x: x + output_width - 1, y: y + output_height - 1 });
-
-        return 'Executed set code cell value tool successfully';
-      } catch (e) {
-        return `Error executing set code cell value tool: ${e}`;
-      }
-    },
     prompt: `
 You should use the set_code_cell_value function to set this code cell value. Use set_code_cell_value function instead of responding with code.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not a code. Don't add data to the currently open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to a code.\n
@@ -253,41 +213,6 @@ Target location is the top left corner of the target location on the currently o
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.MoveCells],
-    action: async (args) => {
-      const { source_selection_rect, target_top_left_position } = args;
-      try {
-        const sourceSelection = stringToSelection(source_selection_rect, sheets.current, sheets.getSheetIdNameMap());
-        const sourceRect = sourceSelection.getSingleRectangle();
-        if (!sourceRect) {
-          return 'Invalid source selection, this should be a single rectangle, not a range';
-        }
-        const sheetRect: SheetRect = {
-          min: {
-            x: sourceRect.min.x,
-            y: sourceRect.min.y,
-          },
-          max: {
-            x: sourceRect.max.x,
-            y: sourceRect.max.y,
-          },
-          sheet_id: {
-            id: sheets.current,
-          },
-        };
-
-        const targetSelection = stringToSelection(target_top_left_position, sheets.current, sheets.getSheetIdNameMap());
-        if (!targetSelection.isSingleSelection()) {
-          return 'Invalid code cell position, this should be a single cell, not a range';
-        }
-        const { x, y } = targetSelection.getCursor();
-
-        quadraticCore.moveCells(sheetRect, x, y, sheets.current);
-
-        return `Executed move cells tool successfully.`;
-      } catch (e) {
-        return `Error executing move cells tool: ${e}`;
-      }
-    },
     prompt: `
 You should use the move_cells function to move a rectangular selection of cells from one location to another on the currently open sheet.\n
 move_cells function requires the source selection and target position. Source selection is the string representation (in a1 notation) of a selection rectangle to be moved.\n
@@ -314,18 +239,6 @@ delete_cells functions requires a string representation (in a1 notation) of a se
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.DeleteCells],
-    action: async (args) => {
-      const { selection } = args;
-      try {
-        const sourceSelection = stringToSelection(selection, sheets.current, sheets.getSheetIdNameMap());
-
-        quadraticCore.deleteCellValues(sourceSelection.save(), sheets.getCursorPosition());
-
-        return `Executed delete cells tool successfully.`;
-      } catch (e) {
-        return `Error executing delete cells tool: ${e}`;
-      }
-    },
     prompt: `
 You should use the delete_cells function to delete value(s) on the currently open sheet.\n
 delete_cells functions requires a string representation (in a1 notation) of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n

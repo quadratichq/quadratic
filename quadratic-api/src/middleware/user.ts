@@ -1,8 +1,8 @@
-import { NextFunction, Request, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import { getUsers } from '../auth/auth';
 import dbClient from '../dbClient';
 import { addUserToTeam } from '../internal/addUserToTeam';
-import { RequestWithAuth, RequestWithOptionalAuth, RequestWithUser } from '../types/Request';
+import type { RequestWithAuth, RequestWithOptionalAuth, RequestWithUser } from '../types/Request';
 
 const runFirstTimeUserLogic = async (user: Awaited<ReturnType<typeof dbClient.user.create>>) => {
   const { id: userId, auth0Id } = user;

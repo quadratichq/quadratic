@@ -1,12 +1,12 @@
-import { Response } from 'express';
+import type { Response } from 'express';
 import { sanityClient } from 'quadratic-shared/sanityClient';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { getUsers } from '../../auth/auth';
 import universityDomains from '../../data/universityDomains';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { RequestWithUser } from '../../types/Request';
+import type { RequestWithUser } from '../../types/Request';
 
 export default [validateAccessToken, userMiddleware, handler];
 

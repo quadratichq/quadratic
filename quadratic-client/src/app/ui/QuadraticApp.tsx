@@ -1,7 +1,8 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import {
+  editorInteractionStateFileUuidAtom,
   editorInteractionStatePermissionsAtom,
-  editorInteractionStateUuidAtom,
+  editorInteractionStateUserAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -11,7 +12,6 @@ import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javas
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
-import { useRootRouteLoaderData } from '@/routes/_root';
 import { useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
@@ -20,8 +20,8 @@ import { v4 } from 'uuid';
 export function QuadraticApp() {
   const didMount = useRef<boolean>(false);
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
-  const uuid = useRecoilValue(editorInteractionStateUuidAtom);
-  const { loggedInUser } = useRootRouteLoaderData();
+  const loggedInUser = useRecoilValue(editorInteractionStateUserAtom);
+  const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
 
   // Loading states
   const [offlineLoading, setOfflineLoading] = useState(true);
@@ -41,17 +41,17 @@ export function QuadraticApp() {
   }, [permissions]);
 
   useEffect(() => {
-    if (uuid && !pixiApp.initialized) {
+    if (fileUuid && !pixiApp.initialized) {
       pixiApp.init().then(() => {
         if (!loggedInUser) {
           const anonymous = { sub: v4(), first_name: 'Anonymous', last_name: 'User' };
-          multiplayer.init(uuid, anonymous, true);
+          multiplayer.init(fileUuid, anonymous, true);
         } else {
-          multiplayer.init(uuid, loggedInUser, false);
+          multiplayer.init(fileUuid, loggedInUser, false);
         }
       });
     }
-  }, [uuid, loggedInUser]);
+  }, [fileUuid, loggedInUser]);
 
   // wait for offline sync
   useEffect(() => {

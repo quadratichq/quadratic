@@ -1,16 +1,18 @@
 import * as Sentry from '@sentry/node';
-import {
+import type {
   FilePermission,
-  FilePermissionSchema,
   PublicLinkAccess,
   TeamPermission,
-  TeamPermissionSchema,
   UserFileRole,
-  UserFileRoleSchema,
   UserTeamRole,
+} from 'quadratic-shared/typesAndSchemas';
+import {
+  FilePermissionSchema,
+  TeamPermissionSchema,
+  UserFileRoleSchema,
   UserTeamRoleSchema,
 } from 'quadratic-shared/typesAndSchemas';
-const { TEAM_EDIT, TEAM_DELETE, TEAM_BILLING_EDIT, TEAM_VIEW } = TeamPermissionSchema.enum;
+const { TEAM_EDIT, TEAM_VIEW, TEAM_MANAGE } = TeamPermissionSchema.enum;
 const { FILE_VIEW, FILE_EDIT, FILE_MOVE, FILE_DELETE } = FilePermissionSchema.enum;
 
 /**
@@ -20,7 +22,7 @@ export const getTeamPermissions = (role: UserTeamRole): TeamPermission[] => {
   const { OWNER, EDITOR, VIEWER } = UserTeamRoleSchema.enum;
   switch (role) {
     case OWNER:
-      return [TEAM_EDIT, TEAM_VIEW, TEAM_DELETE, TEAM_BILLING_EDIT];
+      return [TEAM_EDIT, TEAM_VIEW, TEAM_MANAGE];
     case EDITOR:
       return [TEAM_EDIT, TEAM_VIEW];
     case VIEWER:

@@ -3,6 +3,7 @@
   "cSpell.words": [
     "actix",
     "autoclean",
+    "autoincrement",
     "awscli",
     "awscliv",
     "ayush",
@@ -14,6 +15,7 @@
     "codegen",
     "containerd",
     "CRPXNLSKVLJFHH",
+    "Cyphertext",
     "dashmap",
     "dbgjs",
     "dcell",
@@ -26,6 +28,7 @@
     "elif",
     "Embedder",
     "endregion",
+    "expressjwt",
     "fholzer",
     "finitize",
     "fontobject",
@@ -44,6 +47,7 @@
     "initdb",
     "isready",
     "itertools",
+    "jamba",
     "jwks",
     "keepalive",
     "keyrings",
@@ -84,6 +88,7 @@
     "selfhost",
     "selfhosted",
     "selfservice",
+    "sendgrid",
     "sendfile",
     "serde",
     "sfnt",
@@ -113,7 +118,8 @@
     "zstd"
   ],
   "editor.codeActionsOnSave": {
-    "source.organizeImports": "explicit"
+    "source.organizeImports": "explicit",
+    "source.fixAll.eslint": "always"
   },
   "rust-analyzer.check.extraArgs": ["--target-dir=target/rust-analyzer"],
   "rust-analyzer.checkOnSave": true,
@@ -126,6 +132,7 @@
   },
   "jest.rootPath": "quadratic-client",
   "typescript.preferences.importModuleSpecifier": "non-relative",
+  "typescript.preferences.preferTypeOnlyAutoImports": true,
   "editor.defaultFormatter": null,
   "[rust]": {
     "editor.defaultFormatter": "rust-lang.rust-analyzer",

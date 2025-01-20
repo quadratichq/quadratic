@@ -49,8 +49,8 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
 
   if (intent === 'update-team') {
     try {
-      const { name } = data;
-      await apiClient.teams.update(teamUuid, { name });
+      const { intent, ...rest } = data;
+      await apiClient.teams.update(teamUuid, rest);
       return { ok: true };
     } catch (e) {
       return { ok: false };

@@ -1,4 +1,4 @@
-import { Request } from 'express';
+import type { Request } from 'express';
 import { z } from 'zod';
 import { parseRequest } from './validateRequestSchema';
 

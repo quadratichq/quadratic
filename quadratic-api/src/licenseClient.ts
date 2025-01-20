@@ -4,11 +4,11 @@
 
 import axios from 'axios';
 import { LicenseSchema } from 'quadratic-shared/typesAndSchemas';
-import z from 'zod';
+import type z from 'zod';
 import dbClient from './dbClient';
 import { LICENSE_API_URI, LICENSE_KEY } from './env-vars';
-import { hash } from './utils/crypto';
 import { ApiError } from './utils/ApiError';
+import { hash } from './utils/crypto';
 
 type LicenseResponse = z.infer<typeof LicenseSchema>;
 

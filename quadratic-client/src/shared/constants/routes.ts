@@ -1,5 +1,4 @@
 import { UrlParamsDevState } from '@/app/gridGL/pixiApp/urlParams/UrlParamsDev';
-import { apiClient } from '@/shared/api/apiClient';
 import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 
 // Any routes referenced outside of the root router are stored here
@@ -70,23 +69,4 @@ export const SEARCH_PARAMS = {
   DIALOG: { KEY: 'dialog', VALUES: { EDUCATION: 'education' } },
   SNACKBAR_MSG: { KEY: 'snackbar-msg' }, // VALUE can be any message you want to display
   SNACKBAR_SEVERITY: { KEY: 'snackbar-severity', VALUE: { ERROR: 'error' } },
-};
-
-export const AI = {
-  BEDROCK: {
-    CHAT: `${apiClient.getApiUrl()}/ai/bedrock/chat`,
-    STREAM: `${apiClient.getApiUrl()}/ai/bedrock/chat/stream`,
-    ANTHROPIC: {
-      CHAT: `${apiClient.getApiUrl()}/ai/bedrock/anthropic/chat`,
-      STREAM: `${apiClient.getApiUrl()}/ai/bedrock/anthropic/chat/stream`,
-    },
-  },
-  ANTHROPIC: {
-    CHAT: `${apiClient.getApiUrl()}/ai/anthropic/chat`,
-    STREAM: `${apiClient.getApiUrl()}/ai/anthropic/chat/stream`,
-  },
-  OPENAI: {
-    CHAT: `${apiClient.getApiUrl()}/ai/openai/chat`,
-    STREAM: `${apiClient.getApiUrl()}/ai/openai/chat/stream`,
-  },
 };

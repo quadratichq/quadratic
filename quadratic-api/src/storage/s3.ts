@@ -1,7 +1,8 @@
 import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { Request } from 'express';
-import multer, { StorageEngine } from 'multer';
+import type { Request } from 'express';
+import type { StorageEngine } from 'multer';
+import multer from 'multer';
 import multerS3 from 'multer-s3';
 import {
   AWS_S3_ACCESS_KEY_ID,
@@ -10,12 +11,12 @@ import {
   AWS_S3_REGION,
   AWS_S3_SECRET_ACCESS_KEY,
 } from '../env-vars';
-import { UploadFileResponse } from './storage';
+import type { UploadFileResponse } from './storage';
 
 const endpoint = AWS_S3_ENDPOINT;
 let s3Client: S3Client;
 
-// Get S3 client slngleton
+// Get S3 client singleton
 const getS3Client = () => {
   if (!s3Client) {
     s3Client = new S3Client({

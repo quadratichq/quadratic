@@ -1,3 +1,5 @@
+import { Action } from '@/app/actions/actions';
+import { viewActionsSpec } from '@/app/actions/viewActionsSpec';
 import {
   aiAnalystChatsCountAtom,
   aiAnalystCurrentChatAtom,
@@ -28,15 +30,13 @@ export function AIAnalystHeader({ textareaRef }: AIAnalystHeaderProps) {
   return (
     <div className="flex items-center justify-between px-4 py-2">
       <span className="flex items-center text-sm font-bold">
+        {viewActionsSpec[Action.ToggleAIAnalyst].label}
         {showChatHistory ? (
-          'Chat history'
+          ' history'
         ) : (
-          <>
-            Chat
-            <Badge variant="secondary" className="ml-2">
-              Experimental
-            </Badge>
-          </>
+          <Badge variant="secondary" className="ml-2">
+            Experimental
+          </Badge>
         )}
       </span>
 

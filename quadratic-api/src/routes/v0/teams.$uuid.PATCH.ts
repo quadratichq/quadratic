@@ -1,12 +1,13 @@
-import { Response } from 'express';
-import { ApiSchemas, ApiTypes, TeamClientDataKvSchema } from 'quadratic-shared/typesAndSchemas';
+import type { Response } from 'express';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { ApiSchemas, TeamClientDataKvSchema } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import dbClient from '../../dbClient';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
-import { RequestWithUser } from '../../types/Request';
+import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
 
 export default [validateAccessToken, userMiddleware, handler];
@@ -20,7 +21,7 @@ const schema = z.object({
 
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:uuid.PATCH.response']>) {
   const {
-    body: { name, clientDataKv },
+    body: { name, clientDataKv, settings },
     params: { uuid },
   } = parseRequest(req, schema);
   const {
@@ -28,21 +29,19 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   } = req;
   const {
     userMakingRequest: { permissions },
-    team: { clientDataKv: exisitingClientDataKv },
+    team: { clientDataKv: existingClientDataKv },
   } = await getTeam({ uuid, userId });
 
-  // Can the user even edit this team?
+  // Can they make the edits they’re trying to make?
   if (!permissions.includes('TEAM_EDIT')) {
     throw new ApiError(403, 'User does not have permission to edit this team.');
   }
-
-  // Have they supplied _something_?
-  if (!name && !clientDataKv) {
-    throw new ApiError(400, '`name` or `clientDataKv` are required');
+  if (settings && !permissions.includes('TEAM_MANAGE')) {
+    throw new ApiError(403, 'User does not have permission to edit this team’s settings.');
   }
 
-  // Validate exisiting data in the db
-  const validatedExisitingClientDataKv = validateClientDataKv(exisitingClientDataKv);
+  // Validate existing data in the db
+  const validatedExistingClientDataKv = validateClientDataKv(existingClientDataKv);
 
   // Update the team with supplied data
   const newTeam = await dbClient.team.update({
@@ -51,15 +50,20 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
     },
     data: {
       ...(name ? { name } : {}),
-      ...(clientDataKv ? { clientDataKv: { ...validatedExisitingClientDataKv, ...clientDataKv } } : {}),
+      ...(clientDataKv ? { clientDataKv: { ...validatedExistingClientDataKv, ...clientDataKv } } : {}),
+      ...(settings ? { settingAnalyticsAi: settings.analyticsAi } : {}),
     },
   });
 
   // Return the new data
   const newClientDataKv = validateClientDataKv(newTeam.clientDataKv);
+
   return res.status(200).json({
     name: newTeam.name,
     clientDataKv: newClientDataKv,
+    settings: {
+      analyticsAi: newTeam.settingAnalyticsAi,
+    },
   });
 }
 

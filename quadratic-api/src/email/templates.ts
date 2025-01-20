@@ -1,4 +1,4 @@
-import { UserFileRole, UserTeamRole } from 'quadratic-shared/typesAndSchemas';
+import type { UserFileRole, UserTeamRole } from 'quadratic-shared/typesAndSchemas';
 import { Button, Layout, Link, Paragraph } from './components';
 
 // Test any of these emails by doing a get with the template name to our

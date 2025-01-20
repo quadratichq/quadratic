@@ -33,22 +33,19 @@ describe('getTeamPermissions', () => {
     const result = getTeamPermissions('OWNER');
     expect(result).toContain('TEAM_VIEW');
     expect(result).toContain('TEAM_EDIT');
-    expect(result).toContain('TEAM_DELETE');
-    expect(result).toContain('TEAM_BILLING_EDIT');
+    expect(result).toContain('TEAM_MANAGE');
   });
   it('returns corrent permissions for an EDITOR', async () => {
     const result = getTeamPermissions('EDITOR');
     expect(result).toContain('TEAM_VIEW');
     expect(result).toContain('TEAM_EDIT');
-    expect(result).not.toContain('TEAM_DELETE');
-    expect(result).not.toContain('TEAM_BILLING_EDIT');
+    expect(result).not.toContain('TEAM_MANAGE');
   });
   it('returns corrent permissions for a VIEWER', async () => {
     const result = getTeamPermissions('VIEWER');
     expect(result).toContain('TEAM_VIEW');
     expect(result).not.toContain('TEAM_EDIT');
-    expect(result).not.toContain('TEAM_DELETE');
-    expect(result).not.toContain('TEAM_BILLING_EDIT');
+    expect(result).not.toContain('TEAM_MANAGE');
   });
   it('returns no permissions for an invalid input', async () => {
     const result = getTeamPermissions('' as any);

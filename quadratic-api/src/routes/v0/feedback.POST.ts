@@ -1,11 +1,11 @@
 import axios from 'axios';
-import express from 'express';
+import type express from 'express';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
 import { NODE_ENV, SLACK_FEEDBACK_URL } from '../../env-vars';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { RequestWithUser } from '../../types/Request';
+import type { RequestWithUser } from '../../types/Request';
 
 const RequestBodySchema = z.object({
   feedback: z.string(),

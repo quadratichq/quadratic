@@ -5,6 +5,8 @@
   "main": "index.js",
   "scripts": {
     "compile": "tsc --project ./tsconfig.json",
+    "lint:eslint": "eslint ./**/*.ts",
+    "lint:eslint:write": "eslint ./**/*.ts --fix",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {

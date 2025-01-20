@@ -1,8 +1,9 @@
-import express, { Response } from 'express';
+import type { Response } from 'express';
+import express from 'express';
 import { param, validationResult } from 'express-validator';
 import dbClient from '../../dbClient';
-import { Request } from '../../types/Request';
 import { validateM2MAuth } from '../../internal/validateM2MAuth';
+import type { Request } from '../../types/Request';
 
 export const validateUUID = () => param('uuid').isUUID(4);
 

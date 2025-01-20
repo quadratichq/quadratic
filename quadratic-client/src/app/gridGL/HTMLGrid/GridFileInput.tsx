@@ -1,8 +1,9 @@
+import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { supportedFileTypesFromGrid } from '@/app/helpers/files';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { useRef } from 'react';
+import { useRecoilValue } from 'recoil';
 
 export const FILE_INPUT_ID = 'global-file-input-element';
 
@@ -14,9 +15,7 @@ export const FILE_INPUT_ID = 'global-file-input-element';
 export function GridFileInput() {
   const handleFileImport = useFileImport();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const {
-    team: { uuid: teamUuid },
-  } = useFileRouteLoaderData();
+  const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
 
   return (
     <input

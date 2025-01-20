@@ -1,4 +1,4 @@
-import { LinkPermission } from '@prisma/client';
+import type { LinkPermission } from '@prisma/client';
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';

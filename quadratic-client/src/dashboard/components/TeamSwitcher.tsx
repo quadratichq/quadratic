@@ -30,10 +30,13 @@ export function TeamSwitcher({ appIsLoading }: Props) {
   const fetcher = useFetcher({ key: 'update-team' });
   const navigate = useNavigate();
 
-  const optimisticActiveTeamName =
-    fetcher.state !== 'idle' && isJsonObject(fetcher.json)
-      ? (fetcher.json as TeamAction['request.update-team']).name
-      : activeTeamName;
+  let optimisticActiveTeamName = activeTeamName;
+  if (fetcher.state !== 'idle' && isJsonObject(fetcher.json)) {
+    const optimisticData = fetcher.json as TeamAction['request.update-team'];
+    if (optimisticData.name) {
+      optimisticActiveTeamName = optimisticData.name;
+    }
+  }
 
   return (
     <DropdownMenu>

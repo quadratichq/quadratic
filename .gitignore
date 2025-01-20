@@ -12,7 +12,7 @@ node_modules
 
 # production
 /build
-quadratic-shared/*.js
+quadratic-shared/**/*.js
 
 # misc
 .DS_Store

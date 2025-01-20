@@ -1,7 +1,9 @@
+import { QuadraticLoading } from '@/app/ui/loading/QuadraticLoading';
 import { User, authClient } from '@/auth/auth';
 import { Empty } from '@/dashboard/components/Empty';
 import { GlobalSnackbarProvider } from '@/shared/components/GlobalSnackbarProvider';
 import { MuiTheme } from '@/shared/components/MuiTheme';
+import { ShowAfter } from '@/shared/components/ShowAfter';
 import { ROUTE_LOADER_IDS } from '@/shared/constants/routes';
 import { ThemeAccentColorEffects } from '@/shared/hooks/useThemeAccentColor';
 import { ThemeAppearanceModeEffects } from '@/shared/hooks/useThemeAppearanceMode';
@@ -38,6 +40,14 @@ export const Component = () => {
         </>
       </GlobalSnackbarProvider>
     </MuiTheme>
+  );
+};
+
+export const HydrateFallback = () => {
+  return (
+    <ShowAfter delay={2000}>
+      <QuadraticLoading />
+    </ShowAfter>
   );
 };
 

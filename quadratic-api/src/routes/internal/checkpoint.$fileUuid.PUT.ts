@@ -1,10 +1,11 @@
-import express, { Response } from 'express';
+import type { Response } from 'express';
+import express from 'express';
 import { param, validationResult } from 'express-validator';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
-import { validateRequestSchema } from '../../middleware/validateRequestSchema';
-import { Request } from '../../types/Request';
 import { validateM2MAuth } from '../../internal/validateM2MAuth';
+import { validateRequestSchema } from '../../middleware/validateRequestSchema';
+import type { Request } from '../../types/Request';
 
 export const validateUUID = () => param('uuid').isUUID(4);
 
