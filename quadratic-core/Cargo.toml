@@ -27,7 +27,13 @@ path = "src/bin/generate_blank_current_file.rs"
 [features]
 default = ["console_error_panic_hook", "js"]
 # "js" feature is disabled for testing (particularly WASI benchmarks)
-js = ["js-sys", "serde-wasm-bindgen", "ts-rs", "wasm-bindgen", "wasm-bindgen-futures"]
+js = [
+  "js-sys",
+  "serde-wasm-bindgen",
+  "ts-rs",
+  "wasm-bindgen",
+  "wasm-bindgen-futures",
+]
 show-operations = []
 multiplayer = []
 files = []
@@ -69,12 +75,17 @@ wasm-bindgen = { version = "0.2.100", optional = true }
 wasm-bindgen-futures = { version = "0.4.33", optional = true }
 lexicon_fractional_index = "0.0.3"
 htmlescape = "0.3.1"
-bigdecimal = { version = "0.4.1", features = ["serde"] }
+bigdecimal = { version = "0.4.7", features = ["serde"] }
 csv = "1.2.2"
 indexmap = { version = "2.0.2", features = ["serde"] }
 thiserror = "1.0.52"
 lazy_static = "1.4.0"
-parquet = { version = "51.0.0", default-features = false, features = ["arrow", "arrow-array", "flate2", "snap"] }
+parquet = { version = "51.0.0", default-features = false, features = [
+  "arrow",
+  "arrow-array",
+  "flate2",
+  "snap",
+] }
 bytes = "1.5.0"
 arrow-array = "51.0.0"
 arrow-schema = "51.0.0"
