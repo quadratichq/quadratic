@@ -340,8 +340,9 @@ impl PendingTransaction {
         sheet: &Sheet,
         selections: Vec<A1Selection>,
     ) {
+        let context = sheet.a1_context();
         selections.iter().for_each(|selection| {
-            let dirty_hashes = selection.rects_to_hashes(sheet);
+            let dirty_hashes = selection.rects_to_hashes(sheet, &context);
             self.dirty_hashes
                 .entry(sheet.id)
                 .or_default()

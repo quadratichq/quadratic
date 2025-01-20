@@ -86,7 +86,11 @@ impl A1Selection {
         if self.ranges.len() != 1 || !self.is_multi_cursor(context) {
             None
         } else {
-            self.ranges.first().and_then(|range| range.to_rect())
+            self.ranges.first().and_then(|range| {
+                range
+                    .to_rect(context)
+                    .and_then(|rect| if rect.len() > 1 { Some(rect) } else { None })
+            })
         }
     }
 
@@ -98,17 +102,17 @@ impl A1Selection {
         } else if self.ranges.len() != 1 {
             None
         } else {
-            self.ranges.first().and_then(|range| range.to_rect())
+            self.ranges.first().and_then(|range| range.to_rect(context))
         }
     }
 
     // Converts to a set of quadrant positions.
-    pub fn rects_to_hashes(&self, sheet: &Sheet) -> HashSet<Pos> {
+    pub fn rects_to_hashes(&self, sheet: &Sheet, context: &A1Context) -> HashSet<Pos> {
         let mut hashes = HashSet::new();
         let finite_selection = sheet.finitize_selection(self);
         finite_selection.ranges.iter().for_each(|range| {
             // handle finite ranges
-            if let Some(rect) = range.to_rect() {
+            if let Some(rect) = range.to_rect(context) {
                 for x in rect.min.x..=rect.max.x {
                     for y in rect.min.y..=rect.max.y {
                         let mut pos = Pos { x, y };

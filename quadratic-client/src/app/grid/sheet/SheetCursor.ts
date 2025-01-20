@@ -128,7 +128,7 @@ export class SheetCursor {
   // Returns rectangle in case of single finite range selection having more than one cell
   // Returns undefined if there are multiple ranges or infinite range selection
   getSingleRectangle = (): Rectangle | undefined => {
-    const rect = this.jsSelection.getSingleRectangleOrCursor(this.sheet.sheets.a1Context);
+    const rect = this.jsSelection.getSingleRectangle(this.sheet.sheets.a1Context);
     return rect ? rectToRectangle(rect) : undefined;
   };
 

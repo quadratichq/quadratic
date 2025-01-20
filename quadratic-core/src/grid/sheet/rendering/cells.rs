@@ -276,7 +276,7 @@ impl Sheet {
                         .ranges
                         .iter()
                         .for_each(|validations_range| {
-                            if let Some(validation_rect) = validations_range.to_rect() {
+                            if let Some(validation_rect) = validations_range.to_rect(&context) {
                                 validation_rect
                                     .iter()
                                     .filter(|pos| rect.contains(*pos))
