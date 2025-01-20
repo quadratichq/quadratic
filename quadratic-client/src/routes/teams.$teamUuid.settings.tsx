@@ -29,6 +29,11 @@ export const Component = () => {
   const [value, setValue] = useState<string>(team.name);
   const disabled = value === '' || value === team.name || fetcher.state !== 'idle';
 
+  // Add state for AI rules text and track changes
+  const [aiRulesText, setAiRulesText] = useState<string>(team.settings.aiRulesText ?? '');
+  const [originalAiRulesText, setOriginalAiRulesText] = useState<string>(team.settings.aiRulesText ?? '');
+  const aiRulesDisabled = aiRulesText === originalAiRulesText || fetcher.state !== 'idle';
+
   // Optimistic UI
   let optimisticSettings = team.settings;
   if (fetcher.state !== 'idle' && isJsonObject(fetcher.json)) {
@@ -67,20 +72,15 @@ export const Component = () => {
     });
   };
 
-  // One day, when we have billing, we can add something akin to this
-  //
-  // {teamPermissions.includes('TEAM_MANAGE') && (
-  //   <DropdownMenuItem
-  //     onClick={() => {
-  //       // Get the billing session URL
-  //       apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
-  //         window.location.href = data.url;
-  //       });
-  //     }}
-  //   >
-  //     Update billing
-  //   </DropdownMenuItem>
-  // )}
+  // Add handler for AI rules form submission
+  const handleAiRulesSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (aiRulesDisabled) return;
+
+    const data = getActionUpdateTeam({ settings: { aiRulesText } });
+
+    setOriginalAiRulesText(aiRulesText);
+  };
 
   // If for some reason it failed, display an error
   useEffect(() => {
@@ -89,7 +89,7 @@ export const Component = () => {
     }
   }, [fetcher.data, addGlobalSnackbar]);
 
-  // If you don’t have permission, you can't see this view
+  // If you don't have permission, you can't see this view
   if (!teamPermissions.includes('TEAM_EDIT')) {
     return <Navigate to={ROUTES.TEAM(team.uuid)} />;
   }
@@ -111,41 +111,74 @@ export const Component = () => {
         </Row>
 
         {teamPermissions.includes('TEAM_MANAGE') && (
-          <Row>
-            <Type variant="body2" className="font-bold">
-              Privacy
-            </Type>
+          <>
+            <Row>
+              <Type variant="body2" className="font-bold">
+                AI
+              </Type>
 
-            <div>
-              <SettingControl
-                label="Improve AI results"
-                description={
-                  <>
-                    Help improve AI results by allowing Quadratic to store and analyze user prompts.{' '}
+              <div>
+                <div className="rounded border border-border px-3 py-2 shadow-sm">
+                  <Type variant="body2" className="font-bold">AI rules</Type>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Set rules that Quadratic AI will follow. Make as verbose as necessary. Example: "When writing code only use Formulas." {' '}
                     <a href={DOCUMENTATION_ANALYTICS_AI} target="_blank" className="underline hover:text-primary">
                       Learn more
                     </a>
-                    .
-                  </>
-                }
-                onCheckedChange={(checked) => {
-                  handleUpdatePreference('analyticsAi', checked);
-                }}
-                checked={optimisticSettings.analyticsAi}
-                className="rounded border border-border px-3 py-2 shadow-sm"
-              />
-              <p className="mt-2 text-sm text-muted-foreground">
-                When using AI features your data is sent to our AI providers:
-              </p>
-              <ul className="mt-2 text-sm text-muted-foreground">
-                {['OpenAI', 'Anthropic', 'AWS Bedrock'].map((item, i) => (
-                  <li className="flex items-center gap-2" key={i}>
-                    <CheckIcon /> <span className="font-semibold">{item}:</span> zero-day data retention
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </Row>
+                  </p>
+                  <form onSubmit={handleAiRulesSubmit}>
+                    <textarea
+                      className="mt-2 min-h-[120px] w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      placeholder="Enter AI rules here..."
+                      value={aiRulesText}
+                      onChange={(e) => setAiRulesText(e.target.value)}
+                    />
+                    <div className="mt-2 flex">
+                      <Button type="submit" disabled={aiRulesDisabled} variant="secondary">
+                        Save
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </Row>
+
+            <Row>
+              <Type variant="body2" className="font-bold">
+                Privacy
+              </Type>
+
+              <div>
+                <SettingControl
+                  label="Improve AI results"
+                  description={
+                    <>
+                      Help improve AI results by allowing Quadratic to store and analyze user prompts.{' '}
+                      <a href={DOCUMENTATION_ANALYTICS_AI} target="_blank" className="underline hover:text-primary">
+                        Learn more
+                      </a>
+                      .
+                    </>
+                  }
+                  onCheckedChange={(checked) => {
+                    handleUpdatePreference('analyticsAi', checked);
+                  }}
+                  checked={optimisticSettings.analyticsAi}
+                  className="rounded border border-border px-3 py-2 shadow-sm"
+                />
+                <p className="mt-2 text-sm text-muted-foreground">
+                  When using AI features your data is sent to our AI providers:
+                </p>
+                <ul className="mt-2 text-sm text-muted-foreground">
+                  {['OpenAI', 'Anthropic', 'AWS Bedrock'].map((item, i) => (
+                    <li className="flex items-center gap-2" key={i}>
+                      <CheckIcon /> <span className="font-semibold">{item}:</span> zero-day data retention
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Row>
+          </>
         )}
       </div>
     </>

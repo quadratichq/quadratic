@@ -6,7 +6,7 @@ import { JavascriptDocs } from '../docs/JavascriptDocs';
 import { PythonDocs } from '../docs/PythonDocs';
 import { QuadraticDocs } from '../docs/QuadraticDocs';
 
-export const getQuadraticContext = (language?: CodeCellType): ChatMessage[] => [
+export const getQuadraticContext = (language?: CodeCellType, teamAiRules?: string): ChatMessage[] => [
   {
     role: 'user',
     content: `Note: This is an internal message for context. Do not quote it in your response.\n\n
@@ -24,7 +24,7 @@ ${
 }
 Provide complete code blocks with language syntax highlighting. Don't provide small code snippets of changes.
 Respond in minimum number of words and include a concise explanation of the actions you are taking. Don't guess the answer itself, just the actions you are taking to respond to the user prompt and what the user can do next. Use Formulas for simple tasks like summing and averaging and use Python for more complex tasks.
-`,
+${teamAiRules ? `\n\nAdditional AI Rules:\n${teamAiRules}` : ''}`,
     contextType: 'quadraticDocs',
   },
   {
