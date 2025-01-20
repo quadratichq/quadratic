@@ -214,11 +214,7 @@ pub(crate) async fn stats(state: Extension<Arc<State>>) -> impl IntoResponse {
 #[cfg(test)]
 pub(crate) mod tests {
     use crate::test_util::{new_arc_state, response};
-    use axum::{
-        body::Body,
-        http::{self, Request},
-    };
-    use tower::ServiceExt;
+    use axum::http::Method;
 
     use super::*;
 
@@ -226,7 +222,7 @@ pub(crate) mod tests {
     async fn responds_with_a_200_ok_for_a_healthcheck() {
         let state = new_arc_state().await;
         let app = app(state);
-        let response = response(app, http::Method::GET, "/health").await;
+        let response = response(app, Method::GET, "/health").await;
         assert_eq!(response.status(), StatusCode::OK);
     }
 
@@ -234,7 +230,7 @@ pub(crate) mod tests {
     async fn responds_with_a_200_ok_for_stats() {
         let state = new_arc_state().await;
         let app = app(state);
-        let response = response(app, http::Method::GET, "/stats").await;
+        let response = response(app, Method::GET, "/stats").await;
         assert_eq!(response.status(), StatusCode::OK);
     }
 }
