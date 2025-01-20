@@ -1,5 +1,4 @@
 import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
-import { updateRecentFiles } from '@/app/ui/menus/TopBar/TopBarMenus/updateRecentFiles';
 import { getActionFileDelete, getActionFileDuplicate } from '@/routes/api.files.$uuid';
 import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
@@ -102,7 +101,6 @@ export const deleteFile = {
       try {
         const data = getActionFileDelete({ userEmail, redirect });
         submit(data, { method: 'POST', action: ROUTES.API.FILE(uuid), encType: 'application/json' });
-        updateRecentFiles(uuid, '', false);
       } catch (e) {
         addGlobalSnackbar('Failed to delete file. Try again.', { severity: 'error' });
       }

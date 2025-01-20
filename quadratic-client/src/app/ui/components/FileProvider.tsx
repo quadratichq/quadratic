@@ -1,8 +1,8 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { updateRecentFiles } from '@/app/ui/menus/TopBar/TopBarMenus/updateRecentFiles';
 import { apiClient } from '@/shared/api/apiClient';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import mixpanel from 'mixpanel-browser';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
@@ -43,9 +43,8 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
     (newName) => {
       mixpanel.track('[Files].renameCurrentFile', { newFilename: newName });
       setName(newName);
-      updateRecentFiles(uuid, newName, true);
     },
-    [setName, uuid]
+    [setName]
   );
 
   // Create and save the fn used by the sheetController to save the file
@@ -73,6 +72,8 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
 
   // When the file name changes, update document title and sync to server
   useEffect(() => {
+    // todo: this isn't captured via the api.files.$uuid.ts endpoint
+    updateRecentFiles(uuid, name, true);
     document.title = `${name} - Quadratic`;
     syncChanges(() => apiClient.files.update(uuid, { name }));
   }, [name, syncChanges, uuid]);

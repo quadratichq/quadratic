@@ -1,4 +1,3 @@
-import { updateRecentFiles } from '@/app/ui/menus/TopBar/TopBarMenus/updateRecentFiles';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import {
@@ -127,14 +126,12 @@ export function FilesListItemUserFile({
     // Update on the server and optimistically in the UI
     const data: FileAction['request.rename'] = { action: 'rename', name: value };
     fetcherRename.submit(data, fetcherSubmitOpts);
-    updateRecentFiles(uuid, value, true, true);
   };
 
   const handleDelete = () => {
     if (window.confirm(`Confirm you want to delete the file: “${name}”`)) {
       const data = getActionFileDelete({ userEmail: loggedInUser?.email ?? '', redirect: false });
       fetcherDelete.submit(data, fetcherSubmitOpts);
-      updateRecentFiles(uuid, '', false);
     }
   };
 
