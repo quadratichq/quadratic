@@ -106,7 +106,7 @@ export const Component = () => {
 
   return (
     <>
-      <DashboardHeader title="Team settings" />
+      <DashboardHeader title="Team" />
       <div className={`mt-6 flex flex-col gap-8`}>
         <Row>
           <Type variant="body2" className="font-bold">
@@ -122,38 +122,6 @@ export const Component = () => {
 
         {teamPermissions.includes('TEAM_MANAGE') && (
           <>
-            <Row>
-              <Type variant="body2" className="font-bold">
-                AI
-              </Type>
-
-              <div>
-                <div className="rounded border border-border px-3 py-2 shadow-sm">
-                  <Type variant="body2" className="font-bold">AI rules</Type>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Define custom rules for Quadratic AI. These rules are stored in your browser's local storage only - they are not shared with your other devices or other browsers.
-                  </p>
-                  <form onSubmit={handleAiRulesSubmit}>
-                    <textarea
-                      className="mt-2 min-h-[120px] w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                      placeholder="Enter AI rules here..."
-                      value={aiRulesText}
-                      onChange={(e) => setAiRulesText(e.target.value)}
-                    />
-                    <div className="mt-2 flex">
-                      <Button 
-                        type="submit" 
-                        variant="secondary"
-                        disabled={aiRulesSaveDisabled}
-                      >
-                        Save
-                      </Button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </Row>
-
             <Row>
               <Type variant="body2" className="font-bold">
                 Privacy
@@ -187,6 +155,38 @@ export const Component = () => {
                     </li>
                   ))}
                 </ul>
+              </div>
+            </Row>
+            <DashboardHeader title="User" />
+            <Row>
+              <Type variant="body2" className="font-bold">
+                AI
+              </Type>
+
+              <div>
+                <div className="rounded border border-border px-3 py-2 shadow-sm">
+                  <Type variant="body2" className="font-bold">AI rules</Type>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Define custom rules for Quadratic AI. These rules are stored in your browser's local storage only - they are not shared with your other devices or other browsers.
+                  </p>
+                  <form onSubmit={handleAiRulesSubmit}>
+                    <textarea
+                      className="mt-2 min-h-[120px] w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      placeholder="Enter AI rules here..."
+                      value={aiRulesText}
+                      onChange={(e) => setAiRulesText(e.target.value)}
+                    />
+                    <div className="mt-2 flex">
+                      <Button 
+                        type="submit" 
+                        variant="secondary"
+                        disabled={aiRulesSaveDisabled}
+                      >
+                        Save
+                      </Button>
+                    </div>
+                  </form>
+                </div>
               </div>
             </Row>
           </>
