@@ -46,7 +46,7 @@ impl SyntaxRule for NumericLiteral {
     }
 }
 
-/// Maches an optional sheet reference prefix to a cell reference or cell range
+/// Matches an optional sheet reference prefix to a cell reference or cell range
 /// reference.
 #[derive(Debug, Copy, Clone)]
 pub struct SheetRefPrefix;

@@ -162,7 +162,6 @@ impl Borders {
                     (x1, y1, x2, y2, border)
                 }
             })
-            .into_iter()
             .chain(self.right.into_iter().map(|(x1, y1, x2, y2, border)| {
                 if let Some(table) = table {
                     // Move the borders from table coordinates to screen

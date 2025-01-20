@@ -100,52 +100,58 @@ export const TableSort = () => {
     return availableColumns.map((column) => column.name);
   }, [columnNames, sort]);
 
-  const handleChange = (index: number, column: string | undefined, direction: SortDirection) => {
-    setSort((prev) => {
-      const columnIndex = columnNames.findIndex((c) => c.name === column);
+  const handleChange = useCallback(
+    (index: number, column: string | undefined, direction: SortDirection) => {
+      setSort((prev) => {
+        const columnIndex = columnNames.findIndex((c) => c.name === column);
 
-      // remove any additional entries
-      const newSort = [...prev.filter((item) => item.column_index !== -1)];
+        // remove any additional entries
+        const newSort = [...prev.filter((item) => item.column_index !== -1)];
 
-      if (columnIndex === -1) {
-        newSort.splice(index, 1);
-      } else {
-        if (index === -1) {
-          newSort.push({ column_index: columnIndex, direction });
+        if (columnIndex === -1) {
+          newSort.splice(index, 1);
         } else {
-          newSort[index] = { column_index: columnIndex, direction };
+          if (index === -1) {
+            newSort.push({ column_index: columnIndex, direction });
+          } else {
+            newSort[index] = { column_index: columnIndex, direction };
+          }
         }
-      }
 
-      if (newSort.length !== columnNames.length) {
-        newSort.push({ column_index: -1, direction: 'Ascending' });
-      }
-      return newSort;
-    });
-  };
+        if (newSort.length !== columnNames.length) {
+          newSort.push({ column_index: -1, direction: 'Ascending' });
+        }
+        return newSort;
+      });
+    },
+    [columnNames]
+  );
 
-  const handleDelete = (index: number) => {
-    setSort((prev) => {
-      const sort = prev.filter((_, i) => i !== index);
-      if (
-        sort.length !== contextMenu.table?.columns.length &&
-        sort.length &&
-        sort[sort.length - 1].column_index !== -1
-      ) {
-        sort.push({ column_index: -1, direction: 'Ascending' });
-      }
-      return sort;
-    });
-  };
+  const handleDelete = useCallback(
+    (index: number) => {
+      setSort((prev) => {
+        const sort = prev.filter((_, i) => i !== index);
+        if (
+          sort.length !== contextMenu.table?.columns.length &&
+          sort.length &&
+          sort[sort.length - 1].column_index !== -1
+        ) {
+          sort.push({ column_index: -1, direction: 'Ascending' });
+        }
+        return sort;
+      });
+    },
+    [contextMenu.table?.columns.length]
+  );
 
-  const handleReorder = (index: number, direction: 'up' | 'down') => {
+  const handleReorder = useCallback((index: number, direction: 'up' | 'down') => {
     setSort((prev) => {
       const sort = [...prev];
       sort.splice(index, 1);
       sort.splice(index + (direction === 'up' ? -1 : 1), 0, prev[index]);
       return sort;
     });
-  };
+  }, []);
 
   if (contextMenu.type !== ContextMenuType.TableSort) return null;
 

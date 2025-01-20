@@ -9,6 +9,7 @@ impl GridController {
     /// Imports a CSV file into the grid.
     ///
     /// Using `cursor` here also as a flag to denote import into new / existing file.
+    #[allow(clippy::too_many_arguments)]
     pub fn import_csv(
         &mut self,
         sheet_id: SheetId,

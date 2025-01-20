@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { ContextMenuState, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { contextMenuAtom } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';

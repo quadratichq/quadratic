@@ -122,7 +122,7 @@ impl TableMapEntry {
 
     /// Returns the column name from the index.
     pub fn col_name_from_index(&self, index: usize) -> Option<String> {
-        self.visible_columns.get(index).map(|c| c.clone())
+        self.visible_columns.get(index).cloned()
     }
 
     #[cfg(test)]

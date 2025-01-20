@@ -151,6 +151,10 @@ impl Sheet {
     // Sends an update to a code cell. Sends a message regardless of whether the
     // code cell is still present.
     pub fn send_code_cell(&self, pos: Pos) {
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
+            return;
+        }
+
         if let (Some(code_cell), Some(render_code_cell)) =
             (self.edit_code_value(pos), self.get_render_code_cell(pos))
         {
@@ -179,6 +183,10 @@ impl Sheet {
 
     /// Sends an image to the client.
     pub fn send_image(&self, pos: Pos) {
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
+            return;
+        }
+
         let mut sent = false;
         if let Some(table) = self.data_table(pos) {
             if let Some(CellValue::Image(image)) = table.cell_value_at(0, 0) {

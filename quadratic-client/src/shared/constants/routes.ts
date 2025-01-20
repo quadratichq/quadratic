@@ -1,6 +1,8 @@
 import type { UrlParamsDevState } from '@/app/gridGL/pixiApp/urlParams/UrlParamsDev';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 
+const apiUrl = import.meta.env.VITE_QUADRATIC_API_URL;
+
 // Any routes referenced outside of the root router are stored here
 export const ROUTES = {
   LOGOUT: '/logout',
@@ -73,19 +75,19 @@ export const SEARCH_PARAMS = {
 
 export const AI = {
   BEDROCK: {
-    CHAT: `${import.meta.env.VITE_QUADRATIC_API_URL}/ai/bedrock/chat`,
-    STREAM: `${import.meta.env.VITE_QUADRATIC_API_URL}/ai/bedrock/chat/stream`,
+    CHAT: `${apiUrl}/ai/bedrock/chat`,
+    STREAM: `${apiUrl}/ai/bedrock/chat/stream`,
     ANTHROPIC: {
-      CHAT: `${import.meta.env.VITE_QUADRATIC_API_URL}/ai/bedrock/anthropic/chat`,
-      STREAM: `${import.meta.env.VITE_QUADRATIC_API_URL}/ai/bedrock/anthropic/chat/stream`,
+      CHAT: `${apiUrl}/ai/bedrock/anthropic/chat`,
+      STREAM: `${apiUrl}/ai/bedrock/anthropic/chat/stream`,
     },
   },
   ANTHROPIC: {
-    CHAT: `${import.meta.env.VITE_QUADRATIC_API_URL}/ai/anthropic/chat`,
-    STREAM: `${import.meta.env.VITE_QUADRATIC_API_URL}/ai/anthropic/chat/stream`,
+    CHAT: `${apiUrl}/ai/anthropic/chat`,
+    STREAM: `${apiUrl}/ai/anthropic/chat/stream`,
   },
   OPENAI: {
-    CHAT: `${import.meta.env.VITE_QUADRATIC_API_URL}/ai/openai/chat`,
-    STREAM: `${import.meta.env.VITE_QUADRATIC_API_URL}/ai/openai/chat/stream`,
+    CHAT: `${apiUrl}/ai/openai/chat`,
+    STREAM: `${apiUrl}/ai/openai/chat/stream`,
   },
 };

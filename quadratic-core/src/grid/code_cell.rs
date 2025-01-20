@@ -78,7 +78,7 @@ impl CodeCellValue {
 
         self.replace_q_cells_a1_selection(default_sheet_id, a1_context, |a1_selection| {
             a1_selection.translate_in_place(delta_x, delta_y);
-            return a1_selection.to_string(Some(*default_sheet_id), a1_context);
+            a1_selection.to_string(Some(*default_sheet_id), a1_context)
         });
     }
 
@@ -96,7 +96,7 @@ impl CodeCellValue {
         if delta != 0 && self.is_code_cell() {
             self.replace_q_cells_a1_selection(default_sheet_id, a1_context, |a1_selection| {
                 a1_selection.adjust_column_row_in_place(column, row, delta);
-                return a1_selection.to_string(Some(*default_sheet_id), a1_context);
+                a1_selection.to_string(Some(*default_sheet_id), a1_context)
             });
         }
     }
@@ -119,11 +119,11 @@ impl CodeCellValue {
             new_a1_context.sheet_map.remove(old_name);
 
             self.replace_q_cells_a1_selection(default_sheet_id, a1_context, |a1_selection| {
-                return a1_selection.to_string_force_sheet_name(
+                a1_selection.to_string_force_sheet_name(
                     Some(*default_sheet_id),
                     &new_a1_context,
                     true,
-                );
+                )
             });
         }
     }
@@ -139,7 +139,7 @@ impl CodeCellValue {
         if old_name != new_name && self.is_code_cell() {
             self.replace_q_cells_a1_selection(default_sheet_id, a1_context, |a1_selection| {
                 a1_selection.replace_table_name(old_name, new_name);
-                return a1_selection.to_string(Some(*default_sheet_id), a1_context);
+                a1_selection.to_string(Some(*default_sheet_id), a1_context)
             });
         }
     }
@@ -155,7 +155,7 @@ impl CodeCellValue {
         if old_name != new_name && self.is_code_cell() {
             self.replace_q_cells_a1_selection(default_sheet_id, a1_context, |a1_selection| {
                 a1_selection.replace_column_name(old_name, new_name);
-                return a1_selection.to_string(Some(*default_sheet_id), a1_context);
+                a1_selection.to_string(Some(*default_sheet_id), a1_context)
             });
         }
     }

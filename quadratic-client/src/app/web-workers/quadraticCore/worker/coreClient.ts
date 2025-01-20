@@ -433,14 +433,6 @@ class CoreClient {
         });
         return;
 
-      case 'clientCoreFindNextColumn':
-        this.send({
-          type: 'coreClientJumpCursor',
-          id: e.data.id,
-          coordinate: await core.jumpCursor(e.data.sheetId, e.data.current, true, e.data.direction),
-        });
-        return;
-
       case 'clientCoreFindNextColumnForRect':
         this.send({
           type: 'coreClientFindNextColumnForRect',

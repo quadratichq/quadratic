@@ -5,7 +5,6 @@ impl GridController {
     /// Called after a external calculation is complete.
     #[wasm_bindgen(js_name = "calculationComplete")]
     pub fn js_calculation_complete(&mut self, result: String) {
-        dbgjs!(&result);
         if let Ok(result) = serde_json::from_str(&result) {
             let _ = self.calculation_complete(result);
         } else {

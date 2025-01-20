@@ -123,9 +123,6 @@ impl A1Selection {
                         if !range.headers && range.data {
                             headers = true;
                             data = false;
-                        } else if range.headers && !range.data {
-                            headers = false;
-                            data = true;
                         } else {
                             headers = false;
                             data = true;

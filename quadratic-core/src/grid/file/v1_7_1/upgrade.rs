@@ -18,9 +18,9 @@ fn import_render_size(render_size: current::RenderSizeSchema) -> RenderSize {
 fn upgrade_code_runs(
     code_runs: Vec<(current::PosSchema, current::CodeRunSchema)>,
     columns: &[(i64, current::ColumnSchema)],
-    formats: &current::SheetFormattingSchema,
+    render_size: current::Contiguous2DSchema<Option<current::RenderSizeSchema>>,
 ) -> Result<Vec<(v1_8::PosSchema, v1_8::DataTableSchema)>> {
-    let render_size = import_contiguous_2d(formats.render_size.clone(), opt_fn(import_render_size));
+    let render_size = import_contiguous_2d(render_size, opt_fn(import_render_size));
     code_runs
         .into_iter()
         .enumerate()
@@ -130,20 +130,22 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_8::SheetSchema {
         columns,
     } = sheet;
 
+    let current::SheetFormattingSchema { render_size, .. } = formats;
+
     let upgraded_formats = v1_8::SheetFormattingSchema {
-        align: formats.align.clone(),
-        vertical_align: formats.vertical_align.clone(),
-        wrap: formats.wrap.clone(),
-        numeric_format: formats.numeric_format.clone(),
-        numeric_decimals: formats.numeric_decimals.clone(),
-        numeric_commas: formats.numeric_commas.clone(),
-        bold: formats.bold.clone(),
-        italic: formats.italic.clone(),
-        text_color: formats.text_color.clone(),
-        fill_color: formats.fill_color.clone(),
-        date_time: formats.date_time.clone(),
-        underline: formats.underline.clone(),
-        strike_through: formats.strike_through.clone(),
+        align: formats.align,
+        vertical_align: formats.vertical_align,
+        wrap: formats.wrap,
+        numeric_format: formats.numeric_format,
+        numeric_decimals: formats.numeric_decimals,
+        numeric_commas: formats.numeric_commas,
+        bold: formats.bold,
+        italic: formats.italic,
+        text_color: formats.text_color,
+        fill_color: formats.fill_color,
+        date_time: formats.date_time,
+        underline: formats.underline,
+        strike_through: formats.strike_through,
     };
 
     v1_8::SheetSchema {
@@ -156,7 +158,7 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_8::SheetSchema {
         validations,
         borders,
         formats: upgraded_formats,
-        data_tables: upgrade_code_runs(code_runs, &columns, &formats).unwrap_or_default(),
+        data_tables: upgrade_code_runs(code_runs, &columns, render_size).unwrap_or_default(),
         columns,
     }
 }

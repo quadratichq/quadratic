@@ -385,7 +385,7 @@ impl A1Selection {
                         return;
                     }
                 }
-                CellRefRange::Sheet { range } => range.clone(),
+                CellRefRange::Sheet { range } => *range,
             };
             if range.start.row.is_unbounded() {
                 self.cursor.y = row;

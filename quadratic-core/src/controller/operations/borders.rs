@@ -401,11 +401,7 @@ impl GridController {
                 }
             }
         }
-        if sheet.borders.is_toggle_borders(&borders) {
-            true
-        } else {
-            false
-        }
+        sheet.borders.is_toggle_borders(&borders)
     }
 
     /// Creates border operations. Returns None if selection is empty.

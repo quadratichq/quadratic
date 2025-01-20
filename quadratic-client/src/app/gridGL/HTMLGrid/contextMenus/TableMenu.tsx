@@ -18,8 +18,8 @@ interface Props {
 
 export const TableMenu = (props: Props) => {
   const { defaultRename, codeCell, selectedColumn } = props;
-  const cell = getCodeCell(codeCell?.language);
-  const isCodeCell = cell && cell.id !== 'Import';
+  const cell = useMemo(() => getCodeCell(codeCell?.language), [codeCell?.language]);
+  const isCodeCell = useMemo(() => cell && cell.id !== 'Import', [cell]);
   const hiddenColumns = useMemo(() => getColumns()?.filter((c) => !c.display), []);
 
   const hasHiddenColumns = useMemo(() => {
@@ -36,7 +36,7 @@ export const TableMenu = (props: Props) => {
     );
   }, [codeCell]);
 
-  const spillError = codeCell?.spill_error;
+  const spillError = useMemo(() => codeCell?.spill_error, [codeCell?.spill_error]);
 
   if (!codeCell || selectedColumn !== undefined) {
     return null;

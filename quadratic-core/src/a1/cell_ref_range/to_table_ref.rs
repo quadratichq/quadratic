@@ -38,23 +38,13 @@ impl CellRefRange {
                 let col_range = if start.x == b.min.x && end.x == b.max.x {
                     ColRange::All
                 } else if start.x == end.x {
-                    let Some(col_name) =
-                        table.col_name_from_index(start.x as usize - b.min.x as usize)
-                    else {
-                        return None;
-                    };
+                    let col_name =
+                        table.col_name_from_index(start.x as usize - b.min.x as usize)?;
                     ColRange::Col(col_name)
                 } else {
-                    let Some(col1_name) =
-                        table.col_name_from_index(start.x as usize - b.min.x as usize)
-                    else {
-                        return None;
-                    };
-                    let Some(col2_name) =
-                        table.col_name_from_index(end.x as usize - b.min.x as usize)
-                    else {
-                        return None;
-                    };
+                    let col1_name =
+                        table.col_name_from_index(start.x as usize - b.min.x as usize)?;
+                    let col2_name = table.col_name_from_index(end.x as usize - b.min.x as usize)?;
                     ColRange::ColRange(col1_name, col2_name)
                 };
 
