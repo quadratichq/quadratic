@@ -1437,9 +1437,9 @@ dependencies = [
 
 [[package]]
 name = "bigdecimal"
-version = "0.4.6"
+version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f850665a0385e070b64c38d2354e6c104c8479c59868d1e48a0c13ee2c7a1c1"
+checksum = "7f31f3af01c5c65a07985c804d3366560e6fa7883d640a122819b14ec327482c"
 dependencies = [
  "autocfg",
  "libm",
@@ -4553,7 +4553,7 @@ dependencies = [
  "arrow-data 51.0.0",
  "arrow-schema 51.0.0",
  "async-trait",
- "bigdecimal 0.4.6",
+ "bigdecimal 0.4.7",
  "bincode",
  "bytes",
  "calamine",
@@ -4694,7 +4694,7 @@ dependencies = [
  "aws-smithy-async",
  "aws-smithy-runtime",
  "aws-smithy-runtime-api",
- "bigdecimal 0.4.6",
+ "bigdecimal 0.4.7",
  "bytes",
  "cbc",
  "chrono",
@@ -5941,7 +5941,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d4d8060b456358185f7d50c55d9b5066ad956956fddec42ee2e8567134a8936e"
 dependencies = [
  "atoi",
- "bigdecimal 0.4.6",
+ "bigdecimal 0.4.7",
  "byteorder",
  "bytes",
  "chrono",
@@ -6024,7 +6024,7 @@ checksum = "64bb4714269afa44aef2755150a0fc19d756fb580a67db8885608cf02f47d06a"
 dependencies = [
  "atoi",
  "base64 0.22.1",
- "bigdecimal 0.4.6",
+ "bigdecimal 0.4.7",
  "bitflags 2.6.0",
  "byteorder",
  "bytes",
@@ -6069,7 +6069,7 @@ checksum = "6fa91a732d854c5d7726349bb4bb879bb9478993ceb764247660aee25f67c2f8"
 dependencies = [
  "atoi",
  "base64 0.22.1",
- "bigdecimal 0.4.6",
+ "bigdecimal 0.4.7",
  "bitflags 2.6.0",
  "byteorder",
  "chrono",
