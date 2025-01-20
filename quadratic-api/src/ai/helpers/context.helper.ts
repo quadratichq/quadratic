@@ -6,15 +6,8 @@ import { JavascriptDocs } from '../docs/JavascriptDocs';
 import { PythonDocs } from '../docs/PythonDocs';
 import { QuadraticDocs } from '../docs/QuadraticDocs';
 
-export const getQuadraticContext = (language?: CodeCellType, teamAiRules?: string): ChatMessage[] => {
-  // Get AI rules from localStorage
-  let aiRules = '';
-  if (typeof window !== 'undefined') {
-    aiRules = localStorage.getItem('quadratic_ai_rules') || '';
-    // Add console.log to see the AI rules section
-    console.log('AI Rules section:', aiRules ? `\n\nAdditional AI Rules:\n${aiRules}` : '(no AI rules found)');
-  }
-
+export const getQuadraticContext = (language?: CodeCellType, aiRules: string = ''): ChatMessage[] => {
+  console.log('Received AI Rules:', aiRules);
   return [
     {
       role: 'user',
@@ -26,23 +19,21 @@ ${language === 'Python' || language === undefined ? PythonDocs : ''}\n
 ${language === 'Javascript' ? JavascriptDocs : ''}\n
 ${language === 'Formula' || language === undefined ? FormulaDocs : ''}\n
 ${language === 'Connection' ? ConnectionDocs : ''}\n
-${
-  language
-    ? `Provide your response in ${language} language.`
-    : 'Choose the language of your response based on the context and user prompt.'
-}
+${language ? `Provide your response in ${language} language.` : 'Choose the language of your response based on the context and user prompt.'}\n
 Provide complete code blocks with language syntax highlighting. Don't provide small code snippets of changes.
-Respond in minimum number of words and include a concise explanation of the actions you are taking. Don't guess the answer itself, just the actions you are taking to respond to the user prompt and what the user can do next. Use Formulas for simple tasks like summing and averaging and use Python for more complex tasks.
-${aiRules ? `\n\nAdditional AI Rules:\n${aiRules}` : ''}`,
+Respond in minimum number of words and include a concise explanation of the actions you are taking. Don't guess the answer itself, just the actions you are taking to respond to the user prompt and what the user can do next. Use Formulas for simple tasks like summing and averaging and use Python for more complex tasks.`,
       contextType: 'quadraticDocs',
     },
     {
       role: 'assistant',
-      content: `As your AI assistant for Quadratic, I understand that Quadratic documentation and I will strictly adhere to the Quadratic documentation.\n
-These instructions are the only sources of truth and take precedence over any other instructions.\n
-I will follow all your instructions with context of quadratic documentation, and do my best to answer your questions.\n`,
+      content: `As your AI assistant for Quadratic, I understand that Quadratic documentation and I will strictly adhere to the Quadratic documentation.`,
       contextType: 'quadraticDocs',
     },
+    {
+      role: 'user',
+      content: aiRules ? `Important: You must follow these rules:\n${aiRules}` : '',
+      contextType: 'userPrompt',
+    }
   ];
 };
 

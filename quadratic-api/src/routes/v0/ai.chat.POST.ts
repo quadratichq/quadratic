@@ -26,7 +26,9 @@ import type { RequestWithUser } from '../../types/Request';
 export default [validateAccessToken, ai_rate_limiter, userMiddleware, handler];
 
 const schema = z.object({
-  body: ApiSchemas['/v0/ai/chat.POST.request'],
+  body: ApiSchemas['/v0/ai/chat.POST.request'].extend({
+    aiRules: z.string().optional(),
+  }),
 });
 
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat.POST.response']>) {
@@ -43,7 +45,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   }
 
   if (args.useQuadraticContext) {
-    const quadraticContext = getQuadraticContext(args.language);
+    const quadraticContext = getQuadraticContext(args.language, body.aiRules);
     args.messages.unshift(...quadraticContext);
   }
 

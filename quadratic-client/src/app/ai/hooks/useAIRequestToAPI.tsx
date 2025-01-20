@@ -32,6 +32,7 @@ export function useAIRequestToAPI() {
         setMessages?.((prev) => [...prev, { ...responseMessage, content: '' }]);
         const { model, useStream, useTools } = args;
         const fileUuid = await snapshot.getPromise(editorInteractionStateFileUuidAtom);
+        const aiRules = localStorage.getItem('quadratic_ai_rules') || '';
 
         try {
           const endpoint = `${apiClient.getApiUrl()}/v0/ai/chat`;
@@ -40,7 +41,7 @@ export function useAIRequestToAPI() {
             method: 'POST',
             signal,
             headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...args, fileUuid }),
+            body: JSON.stringify({ ...args, fileUuid, aiRules }),
           });
 
           if (!response.ok) {

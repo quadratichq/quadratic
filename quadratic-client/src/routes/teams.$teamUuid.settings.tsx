@@ -29,20 +29,30 @@ export const Component = () => {
   const [value, setValue] = useState<string>(team.name);
   const disabled = value === '' || value === team.name || fetcher.state !== 'idle';
 
-  // Replace all aiRules text logic with local storage
+  // Track original AI rules for comparison
+  const [originalAiRules, setOriginalAiRules] = useState('');
   const [aiRulesText, setAiRulesText] = useState('');
+  const [isSavingRules, setIsSavingRules] = useState(false);
 
   // On component mount, load from localStorage
   useEffect(() => {
     const storedRules = localStorage.getItem('quadratic_ai_rules') || '';
     setAiRulesText(storedRules);
+    setOriginalAiRules(storedRules);
   }, []);
 
   // Save on submit
   const handleAiRulesSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsSavingRules(true);
     localStorage.setItem('quadratic_ai_rules', aiRulesText);
+    setOriginalAiRules(aiRulesText);
+    // Reset saving state after a brief delay to show feedback
+    setTimeout(() => setIsSavingRules(false), 500);
   };
+
+  // Calculate if save button should be disabled
+  const aiRulesSaveDisabled = aiRulesText === originalAiRules || isSavingRules;
 
   // Optimistic UI
   let optimisticSettings = team.settings;
@@ -121,7 +131,7 @@ export const Component = () => {
                 <div className="rounded border border-border px-3 py-2 shadow-sm">
                   <Type variant="body2" className="font-bold">AI rules</Type>
                   <p className="text-sm text-muted-foreground mb-2">
-                    Define custom rules for Quadratic AI. These rules are stored in your browser's local storage only.
+                    Define custom rules for Quadratic AI. These rules are stored in your browser's local storage only - they are not shared with your other devices or other browsers.
                   </p>
                   <form onSubmit={handleAiRulesSubmit}>
                     <textarea
@@ -131,7 +141,11 @@ export const Component = () => {
                       onChange={(e) => setAiRulesText(e.target.value)}
                     />
                     <div className="mt-2 flex">
-                      <Button type="submit" variant="secondary">
+                      <Button 
+                        type="submit" 
+                        variant="secondary"
+                        disabled={aiRulesSaveDisabled}
+                      >
                         Save
                       </Button>
                     </div>
