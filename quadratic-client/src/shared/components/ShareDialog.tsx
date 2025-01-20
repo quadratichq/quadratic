@@ -417,8 +417,8 @@ function CopyLinkButton({
         onClick={() => {
           mixpanel.track('[FileSharing].publicLinkAccess.clickCopyLink');
 
-          // Copy the current URL, which may include the current sheet
-          const url = window.location.href;
+          // Copy the base file URL (which DOES NOT include the current sheet ID)
+          const url = window.location.origin + window.location.pathname;
 
           navigator.clipboard
             .writeText(url)
