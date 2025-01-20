@@ -3,9 +3,10 @@ use smallvec::{smallvec, SmallVec};
 
 use super::*;
 use crate::{
+    a1::UNBOUNDED,
     grid::{CellsAccessed, Grid, GridBounds},
     Array, CellValue, CodeResult, CodeResultExt, Pos, RunErrorMsg, SheetPos, SheetRect, Span,
-    Spanned, Value, UNBOUNDED,
+    Spanned, Value,
 };
 
 /// Formula execution context.

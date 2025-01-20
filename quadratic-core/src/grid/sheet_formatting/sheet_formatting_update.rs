@@ -21,7 +21,7 @@ impl SheetFormatting {
                     &value.map_ref(|value| value.as_ref().map(|value| value.clone().into())),
                 )
             })
-            .map(|value| value.map_ref(|value| value.as_ref().map(|value| value.into())))
+            .map(|value| value.map_ref(|value| value.as_ref().map(|value| value.clone().into())))
     }
 
     /// Applies updates to the sheet formatting.
@@ -50,7 +50,6 @@ impl SheetFormatting {
             text_color: Self::apply_updates_item(&updates.text_color, &mut self.text_color),
             date_time: Self::apply_updates_item(&updates.date_time, &mut self.date_time),
             fill_color: Self::apply_updates_item(&updates.fill_color, &mut self.fill_color),
-            render_size: Self::apply_updates_item(&updates.render_size, &mut self.render_size),
             underline: Self::apply_updates_item(&updates.underline, &mut self.underline),
             strike_through: Self::apply_updates_item(
                 &updates.strike_through,
@@ -70,7 +69,6 @@ impl SheetFormatting {
         self.italic.translate_in_place(x, y);
         self.text_color.translate_in_place(x, y);
         self.fill_color.translate_in_place(x, y);
-        self.render_size.translate_in_place(x, y);
         self.date_time.translate_in_place(x, y);
         self.underline.translate_in_place(x, y);
         self.strike_through.translate_in_place(x, y);

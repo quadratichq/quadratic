@@ -14,9 +14,9 @@ import {
   showAIAssistantAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { CodeCell } from '@/app/gridGL/types/codeCell';
+import type { CodeCell } from '@/app/gridGL/types/codeCell';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
-import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 
 export function useSubmitAIAssistantPrompt() {

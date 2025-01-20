@@ -6,7 +6,8 @@ import { Drag } from '@/app/gridGL/pixiApp/viewport/Drag';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '@/app/gridGL/pixiApp/viewport/Wheel';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { Viewport as PixiViewport } from 'pixi-viewport';
-import { Point, Rectangle } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
+import { Point } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 
 const MULTIPLAYER_VIEWPORT_EASE_TIME = 100;

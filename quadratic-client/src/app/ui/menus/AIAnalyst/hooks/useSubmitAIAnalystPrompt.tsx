@@ -18,7 +18,7 @@ import {
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import {
+import type {
   AIMessage,
   AIMessagePrompt,
   ChatMessage,

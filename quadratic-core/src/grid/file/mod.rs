@@ -9,11 +9,11 @@ use migrate_code_cell_references::{
     migrate_code_cell_references, replace_formula_a1_references_to_r1c1,
 };
 use serde::{Deserialize, Serialize};
-pub use shift_negative_offsets::add_import_offset_to_contiguous_2d_rect;
-use shift_negative_offsets::shift_negative_offsets;
+pub use shift_negative_offsets::{add_import_offset_to_contiguous_2d_rect, shift_negative_offsets};
 use std::fmt::Debug;
 use std::str;
-pub use v1_7_1::GridSchema as current;
+pub use v1_7_1::{CellsAccessedSchema, CodeRunSchema};
+pub use v1_8 as current;
 
 mod migrate_code_cell_references;
 pub mod serialize;
@@ -24,11 +24,10 @@ mod v1_4;
 mod v1_5;
 mod v1_6;
 mod v1_7;
-pub mod v1_7_1;
+mod v1_7_1;
+pub mod v1_8;
 
-pub use v1_7_1::{CellsAccessedSchema, CodeRunSchema};
-
-pub static CURRENT_VERSION: &str = "1.7.1";
+pub static CURRENT_VERSION: &str = "1.8";
 pub static SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Json;
 pub static COMPRESSION_FORMAT: CompressionFormat = CompressionFormat::Zlib;
 pub static HEADER_SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Bincode;
@@ -41,6 +40,11 @@ pub struct FileVersion {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "version")]
 enum GridFile {
+    #[serde(rename = "1.8")]
+    V1_8 {
+        #[serde(flatten)]
+        grid: v1_8::GridSchema,
+    },
     #[serde(rename = "1.7.1")]
     V1_7_1 {
         #[serde(flatten)]
@@ -73,20 +77,22 @@ enum GridFile {
     },
 }
 
+// TODO(ddimaria): refactor to be recrsive
 impl GridFile {
-    fn into_latest(self) -> Result<v1_7_1::GridSchema> {
+    fn into_latest(self) -> Result<v1_8::GridSchema> {
         match self {
-            GridFile::V1_7_1 { grid } => Ok(grid),
-            GridFile::V1_7 { grid } => v1_7::upgrade(grid),
-            GridFile::V1_6 { grid } => v1_7::upgrade(v1_6::file::upgrade(grid)?),
-            GridFile::V1_5 { grid } => {
-                v1_7::upgrade(v1_6::file::upgrade(v1_5::file::upgrade(grid)?)?)
-            }
-            GridFile::V1_4 { grid } => v1_7::upgrade(v1_6::file::upgrade(v1_5::file::upgrade(
-                v1_4::file::upgrade(grid)?,
+            GridFile::V1_8 { grid } => Ok(grid),
+            GridFile::V1_7_1 { grid } => v1_7_1::upgrade(grid),
+            GridFile::V1_7 { grid } => v1_7_1::upgrade(v1_7::upgrade(grid)?),
+            GridFile::V1_6 { grid } => v1_7_1::upgrade(v1_7::upgrade(v1_6::file::upgrade(grid)?)?),
+            GridFile::V1_5 { grid } => v1_7_1::upgrade(v1_7::upgrade(v1_6::file::upgrade(
+                v1_5::file::upgrade(grid)?,
             )?)?),
-            GridFile::V1_3 { grid } => v1_7::upgrade(v1_6::file::upgrade(v1_5::file::upgrade(
-                v1_4::file::upgrade(v1_3::file::upgrade(grid)?)?,
+            GridFile::V1_4 { grid } => v1_7_1::upgrade(v1_7::upgrade(v1_6::file::upgrade(
+                v1_5::file::upgrade(v1_4::file::upgrade(grid)?)?,
+            )?)?),
+            GridFile::V1_3 { grid } => v1_7_1::upgrade(v1_7::upgrade(v1_6::file::upgrade(
+                v1_5::file::upgrade(v1_4::file::upgrade(v1_3::file::upgrade(grid)?)?)?,
             )?)?),
         }
     }
@@ -117,7 +123,7 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
                 data,
             )?;
             drop(file_contents);
-            let schema = v1_7::upgrade(v1_6::file::upgrade(schema)?)?;
+            let schema = v1_7_1::upgrade(v1_7::upgrade(v1_6::file::upgrade(schema)?)?)?;
             Ok(serialize::import(schema)?)
         }
         "1.7" => {
@@ -128,10 +134,21 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
                 data,
             )?;
             drop(file_contents);
-            Ok(serialize::import(v1_7::upgrade(schema)?)?)
+            let schema = v1_7_1::upgrade(v1_7::upgrade(schema)?)?;
+            Ok(serialize::import(schema)?)
         }
         "1.7.1" => {
-            let schema = decompress_and_deserialize::<current>(
+            let schema = decompress_and_deserialize::<v1_7_1::GridSchema>(
+                &SERIALIZATION_FORMAT,
+                &COMPRESSION_FORMAT,
+                data,
+            )?;
+            drop(file_contents);
+            let schema = v1_7_1::upgrade(schema)?;
+            Ok(serialize::import(schema)?)
+        }
+        "1.8" => {
+            let schema = decompress_and_deserialize::<current::GridSchema>(
                 &SERIALIZATION_FORMAT,
                 &COMPRESSION_FORMAT,
                 data,
@@ -193,26 +210,37 @@ pub fn export(grid: Grid) -> Result<Vec<u8>> {
     let header = serialize(&HEADER_SERIALIZATION_FORMAT, &version)?;
 
     let converted = serialize::export(grid)?;
-    let compressed =
-        serialize_and_compress::<current>(&SERIALIZATION_FORMAT, &COMPRESSION_FORMAT, converted)?;
+    let compressed = serialize_and_compress::<current::GridSchema>(
+        &SERIALIZATION_FORMAT,
+        &COMPRESSION_FORMAT,
+        converted,
+    )?;
     let data = add_header(header, compressed)?;
 
     Ok(data)
 }
 
+pub fn export_json(grid: Grid) -> Result<Vec<u8>> {
+    let converted = serialize::export(grid)?;
+    let json = serde_json::to_vec(&converted)?;
+
+    Ok(json)
+}
+
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
     use super::*;
     use crate::{
+        a1::A1Selection,
         controller::GridController,
         grid::{
             sheet::borders::{BorderSelection, BorderStyle},
             CodeCellLanguage, CodeCellValue,
         },
-        A1Selection, ArraySize, CellValue, Pos,
+        ArraySize, CellValue, Pos,
     };
     use bigdecimal::BigDecimal;
-    use serial_test::parallel;
 
     const V1_3_FILE: &[u8] =
         include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_3.grid");
@@ -250,7 +278,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn process_a_v1_3_file() {
         let imported = import(V1_3_FILE.to_vec()).unwrap();
         let exported = export(imported.clone()).unwrap();
@@ -259,7 +286,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn process_a_v1_3_python_file() {
         // TODO(ddimaria): validate that elements of the imported and exported file are valid
         let imported = import(V1_3_PYTHON_FILE.to_vec()).unwrap();
@@ -268,7 +294,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn process_a_v1_3_python_text_only_file() {
         // TODO(ddimaria): validate that elements of the imported and exported file are valid
         let imported = import(V1_3_TEXT_ONLY_CODE_CELL_FILE.to_vec()).unwrap();
@@ -276,11 +301,10 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn process_a_v1_3_single_formula_file() {
         let imported = import(V1_3_SINGLE_FORMULAS_CODE_CELL_FILE.to_vec()).unwrap();
         assert!(imported.sheets[0]
-            .code_runs
+            .data_tables
             .get(&Pos { x: 1, y: 3 })
             .is_some());
         let cell_value = imported.sheets[0].cell_value(Pos { x: 1, y: 3 }).unwrap();
@@ -295,7 +319,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn process_a_v1_3_npm_downloads_file() {
         let imported = import(V1_3_NPM_DOWNLOADS_FILE.to_vec()).unwrap();
         let _exported = export(imported).unwrap();
@@ -303,7 +326,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn process_a_v1_4_file() {
         // TODO(ddimaria): validate that elements of the imported and exported file are valid
         let imported = import(V1_4_FILE.to_vec()).unwrap();
@@ -311,16 +333,14 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn process_a_blank_v1_4_file() {
         let empty =
-            r#"{"sheets":[{"name":"Sheet 1","id":{"id":"4b42eacf-5737-47a2-ac44-e4929d3abc3a"},"order":"a0","cells":[],"code_cells":[],"formats":[],"columns":[],"rows":[],"offsets":[[],[]],"borders":{}}],"version":"1.4"}"#.as_bytes();
+            r#"{"sheets":[{"name":"Sheet1","id":{"id":"4b42eacf-5737-47a2-ac44-e4929d3abc3a"},"order":"a0","cells":[],"code_cells":[],"formats":[],"columns":[],"rows":[],"offsets":[[],[]],"borders":{}}],"version":"1.4"}"#.as_bytes();
         let imported = import(empty.to_vec()).unwrap();
         let _exported = export(imported).unwrap();
     }
 
     #[test]
-    #[parallel]
     fn process_a_v1_3_borders_file() {
         let imported = import(V1_3_BORDERS_FILE.to_vec()).unwrap();
         // println!("{:?}", imported.sheets[0].borders);
@@ -329,9 +349,8 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn process_a_simple_v1_4_borders_file() {
-        let empty = r##"{"sheets":[{"id":{"id":"d48a3488-fb1d-438d-ba0b-d4ad81b8c239"},"name":"Sheet 1","color":null,"order":"a0","offsets":[[],[]],"columns":[[0,{"id":{"id":"6287d0f0-b559-4de2-a73f-5b140237b3c4"},"values":{"0":{"y":0,"content":{"Values":[{"type":"text","value":"a"}]}}},"spills":{},"align":{},"wrap":{},"numeric_format":{},"numeric_decimals":{},"numeric_commas":{},"bold":{},"italic":{},"text_color":{},"fill_color":{}}]],"rows":[[0,{"id":"a9ed07c9-98af-453d-9b5e-311c48be42f7"}]],"borders":{"6287d0f0-b559-4de2-a73f-5b140237b3c4":[[0,[{"color":"#000000ff","line":"line1"},{"color":"#000000ff","line":"line1"},{"color":"#000000ff","line":"line1"},{"color":"#000000ff","line":"line1"}]]]},"code_cells":[]}],"version":"1.4"}"##.as_bytes();
+        let empty = r##"{"sheets":[{"id":{"id":"d48a3488-fb1d-438d-ba0b-d4ad81b8c239"},"name":"Sheet1","color":null,"order":"a0","offsets":[[],[]],"columns":[[0,{"id":{"id":"6287d0f0-b559-4de2-a73f-5b140237b3c4"},"values":{"0":{"y":0,"content":{"Values":[{"type":"text","value":"a"}]}}},"spills":{},"align":{},"wrap":{},"numeric_format":{},"numeric_decimals":{},"numeric_commas":{},"bold":{},"italic":{},"text_color":{},"fill_color":{}}]],"rows":[[0,{"id":"a9ed07c9-98af-453d-9b5e-311c48be42f7"}]],"borders":{"6287d0f0-b559-4de2-a73f-5b140237b3c4":[[0,[{"color":"#000000ff","line":"line1"},{"color":"#000000ff","line":"line1"},{"color":"#000000ff","line":"line1"},{"color":"#000000ff","line":"line1"}]]]},"code_cells":[]}],"version":"1.4"}"##.as_bytes();
         let imported = import(empty.to_vec()).unwrap();
         // println!("{:#?}", imported.sheets()[0].borders);
         let _exported = export(imported).unwrap();
@@ -339,7 +358,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn process_a_v1_4_airports_distance_file() {
         let imported = import(V1_4_AIRPORTS_DISTANCE_FILE.to_vec()).unwrap();
         let exported = export(imported.clone()).unwrap();
@@ -348,7 +366,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn imports_and_exports_v1_4_default() {
         let imported = import(V1_4_FILE.to_vec()).unwrap();
         let exported = export(imported.clone()).unwrap();
@@ -357,7 +374,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn imports_and_exports_a_v1_5_grid() {
         let imported = import(V1_5_FILE.to_vec()).unwrap();
         let exported = export(imported.clone()).unwrap();
@@ -366,7 +382,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn imports_and_exports_a_v1_6_grid() {
         let imported = import(V1_6_FILE.to_vec()).unwrap();
         let exported = export(imported.clone()).unwrap();
@@ -375,7 +390,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn imports_and_exports_v1_5_qawolf_test_file() {
         import(V1_5_QAWOLF_TEST_FILE.to_vec()).unwrap();
 
@@ -386,7 +400,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn imports_and_exports_v1_5_update_code_runs_file() {
         let imported = import(V1_5_UPGRADE_CODE_RUNS.to_vec()).unwrap();
         let exported = export(imported.clone()).unwrap();
@@ -395,7 +408,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn imports_and_exports_v1_5_javascript_getting_started_example() {
         let imported = import(V1_5_JAVASCRIPT_GETTING_STARTED_EXAMPLE.to_vec()).unwrap();
 
@@ -418,10 +430,10 @@ mod tests {
         );
         assert_eq!(
             sheet
-                .code_runs
+                .data_tables
                 .get(&Pos { x: 1, y: 4 })
                 .unwrap()
-                .output_size(),
+                .output_size(true),
             ArraySize::new(1, 500).unwrap()
         );
         assert_eq!(
@@ -431,16 +443,20 @@ mod tests {
                 code: "// fix by putting a let statement in front of x \nx = 5; ".to_string(),
             })
         );
-
-        assert_eq!(sheet.code_runs.len(), 10);
+        assert_eq!(sheet.data_tables.len(), 10);
         assert_eq!(
-            sheet.code_runs.get(&Pos { x: 3, y: 7 }).unwrap().std_err,
+            sheet
+                .data_tables
+                .get(&Pos { x: 3, y: 7 })
+                .unwrap()
+                .code_run()
+                .unwrap()
+                .std_err,
             Some("x is not defined".into())
         );
     }
 
     #[test]
-    #[parallel]
     fn test_code_cell_references_migration_to_q_cells_for_v_1_7_1() {
         let file = include_bytes!("../../../test-files/test_getCells_migration.grid");
         let imported = import(file.to_vec()).unwrap();
@@ -633,7 +649,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn process_a_v1_7_1_borders_file() {
         let mut gc = GridController::test();
 
@@ -647,5 +662,16 @@ mod tests {
         let exported = export(gc.grid().clone()).unwrap();
         let imported = import(exported).unwrap();
         assert_eq!(imported, gc.grid().clone());
+    }
+
+    #[test]
+    fn test_new_file() {
+        const NEW_FILE: &[u8] =
+            include_bytes!("../../../../quadratic-api/src/data/current_blank.grid");
+
+        let imported = import(NEW_FILE.to_vec()).unwrap();
+        let exported = export(imported.clone()).unwrap();
+        let exported_test = import_binary(exported).unwrap();
+        assert_eq!(imported, exported_test);
     }
 }

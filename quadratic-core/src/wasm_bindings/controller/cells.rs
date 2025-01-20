@@ -3,7 +3,7 @@ use std::str::FromStr;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 use super::js_types::{JsCellValuePosAIContext, JsCodeCell};
-use crate::A1Selection;
+use crate::a1::A1Selection;
 use crate::{controller::GridController, grid::SheetId, Pos};
 
 #[wasm_bindgen]
@@ -19,20 +19,14 @@ impl GridController {
         y: i32,
         value: String,
         cursor: Option<String>,
-    ) -> Result<JsValue, JsValue> {
-        let pos = Pos {
-            x: x as i64,
-            y: y as i64,
-        };
-        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
-            Ok(serde_wasm_bindgen::to_value(&self.set_cell_value(
-                pos.to_sheet_pos(sheet_id),
-                value,
-                cursor,
-            ))?)
-        } else {
-            Err(JsValue::from_str("Invalid sheet id"))
-        }
+    ) -> Result<(), JsValue> {
+        let pos = Pos::from((x, y));
+        let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
+
+        self.set_value((pos, sheet_id).into(), value.to_owned(), cursor)
+            .map_err(|e| e.to_string())?;
+
+        Ok(())
     }
 
     /// Sets a 2d array of cell values with x and y being the top left corner of the 2d array.
@@ -90,11 +84,9 @@ impl GridController {
         let sheet = self
             .try_sheet_from_string_id(sheet_id)
             .ok_or(JsValue::UNDEFINED)?;
-        if let Some(value) = sheet.cell_value(pos) {
-            Ok(value.to_edit())
-        } else {
-            Ok(String::from(""))
-        }
+        let val = sheet.get_cell_for_formula(pos);
+
+        Ok(val.to_edit())
     }
 
     /// gets the display value for a cell

@@ -1,6 +1,6 @@
-use std::fmt;
 use std::hash::Hash;
 use std::str::FromStr;
+use std::{fmt, fmt::Display};
 
 use anyhow::Result;
 use bigdecimal::{BigDecimal, Signed, ToPrimitive, Zero};
@@ -8,15 +8,33 @@ use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use serde::{Deserialize, Serialize};
 
 use super::{Duration, Instant, IsBlank};
+use crate::grid::{CodeCellLanguage, CodeCellValue};
 use crate::{
     date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
-    grid::{js_types::JsCellValuePos, CodeCellValue, NumericFormat, NumericFormatKind},
+    grid::{js_types::JsCellValuePos, NumericFormat, NumericFormatKind},
     CodeResult, Pos, RunError, RunErrorMsg, Span, Spanned,
 };
 
 // todo: fill this out
 const CURRENCY_SYMBOLS: &str = "$€£¥";
 const PERCENTAGE_SYMBOL: char = '%';
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct Import {
+    pub file_name: String,
+}
+
+impl Display for Import {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Import({})", self.file_name)
+    }
+}
+
+impl Import {
+    pub fn new(file_name: String) -> Self {
+        Self { file_name }
+    }
+}
 
 /// Non-array value in the formula language.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -57,6 +75,8 @@ pub enum CellValue {
     Code(CodeCellValue),
     #[cfg_attr(test, proptest(skip))]
     Image(String),
+    #[cfg_attr(test, proptest(skip))]
+    Import(Import),
 }
 impl fmt::Display for CellValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -75,6 +95,7 @@ impl fmt::Display for CellValue {
             CellValue::Html(s) => write!(f, "{}", s),
             CellValue::Code(code) => write!(f, "{:?}", code),
             CellValue::Image(s) => write!(f, "{}", s),
+            CellValue::Import(import) => write!(f, "{:?}", import),
         }
     }
 }
@@ -103,6 +124,7 @@ impl CellValue {
             CellValue::Date(_) => "date",
             CellValue::Time(_) => "time",
             CellValue::DateTime(_) => "date time",
+            CellValue::Import(_) => "import",
         }
     }
     /// Returns a formula-source-code representation of the value.
@@ -122,6 +144,7 @@ impl CellValue {
             CellValue::Date(d) => d.to_string(),
             CellValue::Time(d) => d.to_string(),
             CellValue::DateTime(d) => d.to_string(),
+            CellValue::Import(import) => import.to_string(),
         }
     }
 
@@ -169,6 +192,7 @@ impl CellValue {
             CellValue::Date(d) => d.format(DEFAULT_DATE_FORMAT).to_string(),
             CellValue::Time(d) => d.format(DEFAULT_TIME_FORMAT).to_string(),
             CellValue::DateTime(d) => d.format(DEFAULT_DATE_TIME_FORMAT).to_string(),
+            CellValue::Import(import) => import.to_string(),
 
             // these should not render
             CellValue::Code(_) => String::new(),
@@ -273,6 +297,7 @@ impl CellValue {
 
             CellValue::Duration(d) => d.to_string(),
             CellValue::Error(_) => "[error]".to_string(),
+            CellValue::Import(import) => import.to_string(),
 
             // this should not be editable
             CellValue::Code(_) => String::new(),
@@ -298,6 +323,7 @@ impl CellValue {
 
             // these should not return a value
             CellValue::Code(_) => String::new(),
+            CellValue::Import(_) => String::new(),
             CellValue::Image(_) => String::new(),
         }
     }
@@ -418,6 +444,7 @@ impl CellValue {
             CellValue::Html(_) => 9,
             CellValue::Code(_) => 10,
             CellValue::Image(_) => 11,
+            CellValue::Import(_) => 12,
         }
     }
 
@@ -869,6 +896,14 @@ impl CellValue {
             count += 1;
         }
         crate::formulas::util::checked_div(span, sum, count as f64)
+    }
+
+    pub fn code_cell_value(&self) -> Option<CodeCellValue> {
+        match self {
+            CellValue::Code(code) => Some(code.to_owned()),
+            CellValue::Import(_) => Some(CodeCellValue::new(CodeCellLanguage::Import, "".into())),
+            _ => None,
+        }
     }
 }
 

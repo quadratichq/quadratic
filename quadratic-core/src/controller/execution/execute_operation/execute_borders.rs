@@ -13,9 +13,13 @@ impl GridController {
             return; // sheet may have been deleted
         };
 
+        let reverse_borders = sheet.borders.set_borders_a1(&borders);
         transaction
             .reverse_operations
-            .extend(sheet.borders.set_borders_a1(sheet_id, &borders));
+            .push(Operation::SetBordersA1 {
+                sheet_id,
+                borders: reverse_borders,
+            });
 
         transaction
             .forward_operations

@@ -1,19 +1,27 @@
-import { AIAnalystState, defaultAIAnalystState } from '@/app/atoms/aiAnalystAtom';
-import { CodeEditorState, defaultCodeEditorState } from '@/app/atoms/codeEditorAtom';
-import { defaultEditorInteractionState, EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
-import { defaultGridPanMode, GridPanMode, PanMode } from '@/app/atoms/gridPanModeAtom';
-import { defaultGridSettings, GridSettings } from '@/app/atoms/gridSettingsAtom';
-import { defaultInlineEditor, InlineEditorState } from '@/app/atoms/inlineEditorAtom';
+import type { AIAnalystState } from '@/app/atoms/aiAnalystAtom';
+import { defaultAIAnalystState } from '@/app/atoms/aiAnalystAtom';
+import type { CodeEditorState } from '@/app/atoms/codeEditorAtom';
+import { defaultCodeEditorState } from '@/app/atoms/codeEditorAtom';
+import type { ContextMenuOptions, ContextMenuState } from '@/app/atoms/contextMenuAtom';
+import { ContextMenuType, defaultContextMenuState } from '@/app/atoms/contextMenuAtom';
+import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import { defaultEditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import type { GridPanMode } from '@/app/atoms/gridPanModeAtom';
+import { defaultGridPanMode, PanMode } from '@/app/atoms/gridPanModeAtom';
+import type { GridSettings } from '@/app/atoms/gridSettingsAtom';
+import { defaultGridSettings } from '@/app/atoms/gridSettingsAtom';
+import type { InlineEditorState } from '@/app/atoms/inlineEditorAtom';
+import { defaultInlineEditor } from '@/app/atoms/inlineEditorAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
+import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { SubmitAIAnalystPromptArgs } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
+import type { SubmitAIAnalystPromptArgs } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { GlobalSnackbar, SnackbarOptions } from '@/shared/components/GlobalSnackbarProvider';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { SetterOrUpdater } from 'recoil';
+import type { GlobalSnackbar, SnackbarOptions } from '@/shared/components/GlobalSnackbarProvider';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { SetterOrUpdater } from 'recoil';
 
 interface Input {
   show: boolean;
@@ -58,6 +66,8 @@ class PixiAppSettings {
   codeEditorState = defaultCodeEditorState;
   setCodeEditorState?: SetterOrUpdater<CodeEditorState>;
 
+  contextMenu = defaultContextMenuState;
+  setContextMenu?: SetterOrUpdater<ContextMenuOptions>;
   aiAnalystState = defaultAIAnalystState;
   setAIAnalystState?: SetterOrUpdater<AIAnalystState>;
   submitAIAnalystPrompt?: (prompt: SubmitAIAnalystPromptArgs) => Promise<void>;
@@ -71,12 +81,14 @@ class PixiAppSettings {
     }
     this.lastSettings = this.settings;
     events.on('gridSettings', this.getSettings);
+    events.on('contextMenu', this.getContextSettings);
     this._input = { show: false };
     this._panMode = PanMode.Disabled;
   }
 
   destroy() {
     events.off('gridSettings', this.getSettings);
+    events.off('contextMenu', this.getContextSettings);
   }
 
   private getSettings = (): void => {
@@ -89,13 +101,13 @@ class PixiAppSettings {
     pixiApp.gridLines.dirty = true;
     pixiApp.headings.dirty = true;
 
-    if (
-      (this.lastSettings && this.lastSettings.showCellTypeOutlines !== this.settings.showCellTypeOutlines) ||
-      (this.lastSettings && this.lastSettings.presentationMode !== this.settings.presentationMode)
-    ) {
-      pixiApp.cellsSheets.updateCellsArray();
-      pixiApp.viewport.dirty = true;
-    }
+    // todo: not sure what to do with this...
+    // if (
+    //   (this.lastSettings && this.lastSettings.showCellTypeOutlines !== this.settings.showCellTypeOutlines) ||
+    //   (this.lastSettings && this.lastSettings.presentationMode !== this.settings.presentationMode)
+    // ) {
+    //   pixiApp.viewport.dirty = true;
+    // }
     this.lastSettings = this.settings;
   };
 
@@ -230,6 +242,24 @@ class PixiAppSettings {
 
   get panMode() {
     return this._panMode;
+  }
+
+  updateContextMenu(contextMenu: ContextMenuState, setContextMenu: SetterOrUpdater<ContextMenuOptions>) {
+    this.contextMenu = contextMenu;
+    this.setContextMenu = setContextMenu;
+  }
+
+  // We need this to ensure contextMenu is updated immediately to the state. The
+  // above function waits a tick.
+  private getContextSettings = (contextMenu: ContextMenuState) => {
+    this.contextMenu = contextMenu;
+  };
+
+  isRenamingTable(): boolean {
+    return !!(
+      (this.contextMenu.type === ContextMenuType.Table || this.contextMenu.type === ContextMenuType.TableColumn) &&
+      this.contextMenu.rename
+    );
   }
 
   setGlobalSnackbar(addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar']) {

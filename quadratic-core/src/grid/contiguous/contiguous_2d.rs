@@ -1,6 +1,10 @@
 use std::fmt::Debug;
 
-use crate::{grid::GridBounds, A1Selection, CellRefRange, CopyFormats, Pos, Rect, UNBOUNDED};
+use crate::{
+    a1::{A1Selection, CellRefRange, UNBOUNDED},
+    grid::GridBounds,
+    CopyFormats, Pos, Rect,
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -83,6 +87,9 @@ impl<T: Default + Clone + PartialEq + Debug> Contiguous2D<T> {
                 };
                 c.set_rect(start_col, start_row, end_col, end_row, value.clone());
             }
+            // this is handled separately as we need to create different format
+            // operations for tables
+            CellRefRange::Table { .. } => (),
         });
         c
     }
@@ -294,9 +301,6 @@ impl<T: Default + Clone + PartialEq + Debug> Contiguous2D<T> {
         let column = convert_coord(column)?;
 
         let mut ret: Contiguous2D<Option<T>> = Contiguous2D::new();
-
-        // Old code, left in to compare with new code for David Fignater
-        // let column_data = self.0.get(column).cloned().unwrap_or_default().map(|v| Some(v));
 
         let column_data =
             self.0

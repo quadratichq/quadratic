@@ -1,7 +1,7 @@
-import { Action } from '@/app/actions/actions';
+import type { Action } from '@/app/actions/actions';
 import { defaultShortcuts } from '@/app/keyboard/defaults';
 import { MacModifiers, WindowsModifiers } from '@/app/keyboard/keys';
-import { Shortcut } from '@/app/keyboard/shortcut';
+import type { Shortcut } from '@/app/keyboard/shortcut';
 import { isMac } from '@/shared/utils/isMac';
 
 /**

@@ -84,7 +84,6 @@ pub(crate) fn import_code_cell_builder(
         new_code_runs.insert(
             Pos { x: pos.x, y: pos.y },
             CodeRun {
-                formatted_code_string: code_run.formatted_code_string,
                 last_modified: code_run.last_modified.unwrap_or(Utc::now()), // this is required but fall back to now if failed
                 std_out: code_run.std_out,
                 std_err: code_run.std_err,
@@ -175,7 +174,6 @@ pub(crate) fn export_rows_code_runs(code_runs: IndexMap<Pos, CodeRun>) -> curren
             (
                 current::PosSchema::from(pos),
                 current::CodeRunSchema {
-                    formatted_code_string: code_run.formatted_code_string,
                     last_modified: Some(code_run.last_modified),
                     std_out: code_run.std_out,
                     std_err: code_run.std_err,
@@ -224,7 +222,6 @@ mod tests {
         let code_runs = vec![(
             current::PosSchema { x: 0, y: 0 },
             current::CodeRunSchema {
-                formatted_code_string: Some("print('Hello')".to_string()),
                 last_modified: Some(Utc::now()),
                 std_out: Some("Hello".to_string()),
                 std_err: None,
@@ -251,7 +248,6 @@ mod tests {
             (
                 current::PosSchema { x: 0, y: 0 },
                 current::CodeRunSchema {
-                    formatted_code_string: Some("1 + 1".to_string()),
                     last_modified: Some(Utc::now()),
                     std_out: None,
                     std_err: None,
@@ -268,7 +264,6 @@ mod tests {
             (
                 current::PosSchema { x: 1, y: 0 },
                 current::CodeRunSchema {
-                    formatted_code_string: Some("'Hello' + ' World'".to_string()),
                     last_modified: Some(Utc::now()),
                     std_out: None,
                     std_err: None,
@@ -305,7 +300,6 @@ mod tests {
         code_runs.insert(
             Pos { x: 0, y: 0 },
             CodeRun {
-                formatted_code_string: Some("print('Hello')".to_string()),
                 last_modified: Utc::now(),
                 std_out: Some("Hello".to_string()),
                 std_err: None,
@@ -331,7 +325,6 @@ mod tests {
         code_runs.insert(
             Pos { x: 0, y: 0 },
             CodeRun {
-                formatted_code_string: Some("1 + 1".to_string()),
                 last_modified: Utc::now(),
                 std_out: None,
                 std_err: None,
@@ -346,7 +339,6 @@ mod tests {
         code_runs.insert(
             Pos { x: 1, y: 0 },
             CodeRun {
-                formatted_code_string: Some("'Hello' + ' World'".to_string()),
                 last_modified: Utc::now(),
                 std_out: None,
                 std_err: None,
@@ -375,7 +367,6 @@ mod tests {
         let original_code_runs = vec![(
             current::PosSchema { x: 0, y: 0 },
             current::CodeRunSchema {
-                formatted_code_string: Some("1 + 1".to_string()),
                 last_modified: Some(Utc::now()),
                 std_out: None,
                 std_err: None,

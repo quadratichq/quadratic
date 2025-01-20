@@ -4,10 +4,11 @@ import { hasPermissionToEditFile } from '@/app/actions';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { JsCoordinate, Validation } from '@/app/quadratic-core-types';
-import { validationRuleSimple, ValidationRuleSimple } from '@/app/ui/menus/Validations/Validation/validationType';
+import type { JsCoordinate, Validation } from '@/app/quadratic-core-types';
+import type { ValidationRuleSimple } from '@/app/ui/menus/Validations/Validation/validationType';
+import { validationRuleSimple } from '@/app/ui/menus/Validations/Validation/validationType';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { Rectangle } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 

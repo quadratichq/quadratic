@@ -29,6 +29,7 @@ impl GridController {
 mod tests {
     use super::*;
     use crate::{
+        a1::A1Selection,
         array,
         grid::{
             sheet::borders::{BorderSelection, BorderStyle},
@@ -38,7 +39,7 @@ mod tests {
             assert_cell_format_bold_row, assert_cell_format_cell_fill_color_row,
             assert_cell_value_row, assert_code_cell_value, assert_display_cell_value, print_table,
         },
-        A1Selection, CellValue, Pos, SheetPos, SheetRect,
+        CellValue, Pos, SheetPos, SheetRect,
     };
 
     fn test_setup_rect(selection: &Rect) -> (GridController, SheetId) {

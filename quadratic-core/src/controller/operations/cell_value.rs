@@ -7,7 +7,8 @@ use crate::cell_values::CellValues;
 use crate::controller::GridController;
 use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
 use crate::grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind};
-use crate::{A1Selection, CellValue, SheetPos};
+use crate::Pos;
+use crate::{a1::A1Selection, CellValue, SheetPos};
 
 // when a number's decimal is larger than this value, then it will treat it as text (this avoids an attempt to allocate a huge vector)
 // there is an unmerged alternative that might be interesting: https://github.com/declanvk/bigdecimal-rs/commit/b0a2ea3a403ddeeeaeef1ddfc41ff2ae4a4252d6
@@ -17,7 +18,7 @@ const MAX_BIG_DECIMAL_SIZE: usize = 10000000;
 impl GridController {
     /// Convert string to a cell_value and generate necessary operations
     pub(super) fn string_to_cell_value(
-        &mut self,
+        &self,
         sheet_pos: SheetPos,
         value: &str,
     ) -> (Vec<Operation>, CellValue) {
@@ -136,10 +137,26 @@ impl GridController {
             let rects = sheet.selection_to_rects(selection);
             for rect in rects {
                 let cell_values = CellValues::new(rect.width(), rect.height());
-                ops.push(Operation::SetCellValues {
-                    sheet_pos: (rect.min.x, rect.min.y, selection.sheet_id).into(),
-                    values: cell_values,
-                });
+                let sheet_pos = SheetPos::from((rect.min.x, rect.min.y, selection.sheet_id));
+
+                // deletable if this is not a data table source cell, or if the data table is readonly (code cell)
+                let can_delete = sheet
+                    .data_tables
+                    .get(&Pos::from(sheet_pos))
+                    .map(|dt| dt.readonly)
+                    .unwrap_or(true);
+
+                // TODO(ddimaria): remove this once we have a way to delete data tables
+                if can_delete {
+                    ops.push(Operation::SetCellValues {
+                        sheet_pos,
+                        values: cell_values.to_owned(),
+                    });
+                    ops.push(Operation::SetDataTableAt {
+                        sheet_pos,
+                        values: cell_values,
+                    });
+                }
             }
         };
         ops
@@ -167,7 +184,7 @@ mod test {
     use crate::controller::operations::operation::Operation;
     use crate::controller::GridController;
     use crate::grid::{CodeCellLanguage, CodeCellValue, SheetId};
-    use crate::{A1Selection, CellValue, SheetPos, SheetRect};
+    use crate::{a1::A1Selection, CellValue, SheetPos, SheetRect};
 
     #[test]
     #[parallel]
@@ -203,7 +220,7 @@ mod test {
     #[test]
     #[parallel]
     fn boolean_to_cell_value() {
-        let mut gc = GridController::test();
+        let gc = GridController::test();
         let sheet_pos = SheetPos {
             x: 1,
             y: 2,
@@ -237,7 +254,7 @@ mod test {
     #[test]
     #[parallel]
     fn number_to_cell_value() {
-        let mut gc = GridController::test();
+        let gc = GridController::test();
         let sheet_pos = SheetPos {
             x: 1,
             y: 2,
@@ -272,7 +289,7 @@ mod test {
     #[test]
     #[parallel]
     fn formula_to_cell_value() {
-        let mut gc = GridController::test();
+        let gc = GridController::test();
         let sheet_pos = SheetPos {
             x: 1,
             y: 2,
@@ -313,7 +330,7 @@ mod test {
     #[test]
     #[parallel]
     fn problematic_number() {
-        let mut gc = GridController::test();
+        let gc = GridController::test();
         let value = "980E92207901934";
         let (_, cell_value) = gc.string_to_cell_value(
             SheetPos {
@@ -351,17 +368,23 @@ mod test {
         );
         let selection = A1Selection::from_rect(SheetRect::from_numbers(1, 2, 2, 1, sheet_id));
         let operations = gc.delete_cells_operations(&selection);
-        assert_eq!(operations.len(), 1);
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 2,
+            sheet_id,
+        };
+        let values = CellValues::new(2, 1);
+
+        assert_eq!(operations.len(), 2);
         assert_eq!(
             operations,
-            vec![Operation::SetCellValues {
-                sheet_pos: SheetPos {
-                    x: 1,
-                    y: 2,
-                    sheet_id
+            vec![
+                Operation::SetCellValues {
+                    sheet_pos,
+                    values: values.clone()
                 },
-                values: CellValues::new(2, 1)
-            }]
+                Operation::SetDataTableAt { sheet_pos, values },
+            ]
         );
     }
 
@@ -390,26 +413,27 @@ mod test {
         );
         let selection = A1Selection::test_a1("A2:,B");
         let operations = gc.delete_cells_operations(&selection);
-        assert_eq!(operations.len(), 2);
+
+        assert_eq!(operations.len(), 4);
         assert_eq!(
             operations,
             vec![
                 Operation::SetCellValues {
-                    sheet_pos: SheetPos {
-                        x: 1,
-                        y: 2,
-                        sheet_id
-                    },
+                    sheet_pos: SheetPos::new(sheet_id, 1, 2),
+                    values: CellValues::new(2, 1)
+                },
+                Operation::SetDataTableAt {
+                    sheet_pos: SheetPos::new(sheet_id, 1, 2),
                     values: CellValues::new(2, 1)
                 },
                 Operation::SetCellValues {
-                    sheet_pos: SheetPos {
-                        x: 2,
-                        y: 1,
-                        sheet_id
-                    },
+                    sheet_pos: SheetPos::new(sheet_id, 2, 1),
                     values: CellValues::new(1, 2)
-                }
+                },
+                Operation::SetDataTableAt {
+                    sheet_pos: SheetPos::new(sheet_id, 2, 1),
+                    values: CellValues::new(1, 2)
+                },
             ]
         );
     }

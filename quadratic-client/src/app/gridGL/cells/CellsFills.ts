@@ -1,11 +1,11 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Sheet } from '@/app/grid/sheet/Sheet';
-import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
+import type { Sheet } from '@/app/grid/sheet/Sheet';
+import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { convertColorStringToTint } from '@/app/helpers/convertColor';
-import { JsRenderFill, JsSheetFill } from '@/app/quadratic-core-types';
+import { convertColorStringToTint, getCSSVariableTint } from '@/app/helpers/convertColor';
+import type { JsRenderCodeCell, JsRenderFill, JsSheetFill } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { Container, Graphics, ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
 
@@ -13,20 +13,26 @@ interface SpriteBounds extends Sprite {
   viewBounds: Rectangle;
 }
 
+const ALTERNATING_COLOR_LUMINOSITY = 1.85;
+
 export class CellsFills extends Container {
   private cellsSheet: CellsSheet;
   private cells: JsRenderFill[] = [];
   private sheetFills?: JsSheetFill[];
+  private alternatingColorsGraphics: Graphics;
 
   private cellsContainer: ParticleContainer;
   private meta: Graphics;
+  private alternatingColors: Map<string, JsRenderCodeCell> = new Map();
 
   private dirty = false;
+  private dirtyTables = false;
 
   constructor(cellsSheet: CellsSheet) {
     super();
     this.cellsSheet = cellsSheet;
     this.meta = this.addChild(new Graphics());
+    this.alternatingColorsGraphics = this.addChild(new Graphics());
     this.cellsContainer = this.addChild(
       new ParticleContainer(undefined, { vertices: true, tint: true }, undefined, true)
     );
@@ -124,6 +130,10 @@ export class CellsFills extends Container {
       this.dirty = false;
       this.drawMeta();
     }
+    if (this.dirtyTables) {
+      this.dirtyTables = false;
+      this.drawAlternatingColors();
+    }
   };
 
   private drawMeta = () => {
@@ -174,5 +184,38 @@ export class CellsFills extends Container {
       });
       pixiApp.setViewportDirty();
     }
+  };
+
+  // this is called by Table.ts
+  updateAlternatingColors = (x: number, y: number, table?: JsRenderCodeCell) => {
+    const key = `${x},${y}`;
+    if (table?.show_ui && table?.alternating_colors) {
+      this.alternatingColors.set(key, table);
+      this.dirtyTables = true;
+    } else {
+      if (this.alternatingColors.has(key)) {
+        this.alternatingColors.delete(key);
+        this.dirtyTables = true;
+      }
+    }
+  };
+
+  private drawAlternatingColors = () => {
+    this.alternatingColorsGraphics.clear();
+    const color = getCSSVariableTint('primary', { luminosity: ALTERNATING_COLOR_LUMINOSITY });
+    this.alternatingColors.forEach((table) => {
+      const bounds = this.sheet.getScreenRectangle(table.x, table.y, table.w, table.y);
+      let yOffset = bounds.y;
+      for (let y = 0; y < table.h; y++) {
+        let height = this.sheet.offsets.getRowHeight(y + table.y);
+        if (y % 2 !== (table.show_header ? 1 : 0)) {
+          this.alternatingColorsGraphics.beginFill(color);
+          this.alternatingColorsGraphics.drawRect(bounds.x, yOffset, bounds.width, height);
+          this.alternatingColorsGraphics.endFill();
+        }
+        yOffset += height;
+      }
+    });
+    pixiApp.setViewportDirty();
   };
 }

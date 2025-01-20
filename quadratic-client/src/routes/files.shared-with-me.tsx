@@ -1,7 +1,9 @@
-import { FilesList, FilesListUserFile } from '@/dashboard/components/FilesList';
+import type { FilesListUserFile } from '@/dashboard/components/FilesList';
+import { FilesList } from '@/dashboard/components/FilesList';
 import { apiClient } from '@/shared/api/apiClient';
 import { ExclamationTriangleIcon, FileIcon } from '@radix-ui/react-icons';
-import { LoaderFunctionArgs, useLoaderData, useRouteError } from 'react-router-dom';
+import type { LoaderFunctionArgs } from 'react-router-dom';
+import { useLoaderData, useRouteError } from 'react-router-dom';
 import { debugShowUILogs } from '../app/debugFlags';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
 import { Empty } from '../dashboard/components/Empty';

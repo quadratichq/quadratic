@@ -1,8 +1,9 @@
 import { auth0Client } from '@/auth/auth0';
 import { oryClient } from '@/auth/ory';
+import { ROUTES } from '@/shared/constants/routes';
 import { useEffect } from 'react';
-import { LoaderFunction, LoaderFunctionArgs, redirect } from 'react-router-dom';
-import { ROUTES } from '../shared/constants/routes';
+import type { LoaderFunction, LoaderFunctionArgs } from 'react-router-dom';
+import { redirect } from 'react-router-dom';
 
 const AUTH_TYPE = import.meta.env.VITE_AUTH_TYPE || '';
 
@@ -50,7 +51,7 @@ export function protectedRouteLoaderWrapper(loaderFn: LoaderFunction): LoaderFun
     const { request } = loaderFnArgs;
     const isAuthenticated = await authClient.isAuthenticated();
 
-    // If the user isn't authenciated, redirect them to login & preserve their
+    // If the user isn't authenticated, redirect them to login & preserve their
     // original request URL
     if (!isAuthenticated) {
       const originalRequestUrl = new URL(request.url);
@@ -65,46 +66,6 @@ export function protectedRouteLoaderWrapper(loaderFn: LoaderFunction): LoaderFun
 
     return loaderFn(loaderFnArgs);
   };
-}
-
-/**
- * In cases where we call the auth client and it redirects the user to the
- * auth website (e.g. for `.login` and `.logout`, presumably via changing
- * `window.location`) we have to manually wait for the auth client.
- *
- * Why? Because even though auth's client APIs are async, they seem to
- * complete immediately and our app's code continues before `window.location`
- * kicks in.
- *
- * So this function ensures our whole app pauses while the auth lib does its
- * thing and kicks the user over to auth.com
- *
- * We only use this when we _want_ to pause everything and wait to redirect
- */
-export function waitForAuthClientToRedirect() {
-  return new Promise((resolve) => setTimeout(resolve, 10000));
-}
-
-/**
- * Utility function parse the domain from a url
- */
-export function parseDomain(url: string): string {
-  // remove the port if present
-  const [hostname] = url.split(':');
-
-  // check if the hostname is an IP address
-  const isIpAddress = /^[\d.]+$/.test(hostname);
-
-  if (isIpAddress) return hostname;
-
-  const parts = hostname.split('.');
-
-  // remove subdomain
-  if (parts.length > 2) {
-    return parts.slice(-2).join('.');
-  }
-
-  return hostname;
 }
 
 /**

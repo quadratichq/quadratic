@@ -1,4 +1,4 @@
-import { CodeRun } from '../CodeRun';
+import type { CodeRun } from '@/app/web-workers/CodeRun';
 
 export interface JavascriptClientLoadError {
   type: 'javascriptClientLoadError';

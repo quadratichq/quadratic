@@ -11,7 +11,7 @@ import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultA
 import { CloseIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
-import { Context, UserMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
+import type { Context, UserMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -115,7 +115,7 @@ export const AIAnalystContext = ({
         key="cursor"
         primary={
           context.selection
-            ? A1SelectionStringToSelection(context.selection).toA1String(sheets.current, sheets.getSheetIdNameMap())
+            ? A1SelectionStringToSelection(context.selection).toA1String(sheets.current, sheets.a1Context)
             : sheets.sheet.cursor.toCursorA1()
         }
         secondary="Cursor"

@@ -4,7 +4,7 @@ use crate::controller::active_transactions::pending_transaction::PendingTransact
 use crate::controller::operations::operation::Operation;
 use crate::controller::GridController;
 use crate::grid::SheetId;
-use crate::{ArraySize, Rect};
+use crate::{ArraySize, Pos, Rect};
 
 impl GridController {
     /// Changes the spill error for a code_cell and adds necessary operations
@@ -14,53 +14,73 @@ impl GridController {
         sheet_id: SheetId,
         index: usize,
         spill_error: bool,
-        send_client: bool,
     ) {
         // change the spill for the first code_cell and then iterate the later code_cells.
         if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
-            if let Some((pos, run)) = sheet.code_runs.get_index_mut(index) {
+            let mut code_pos: Option<Pos> = None;
+            if let Some((pos, run)) = sheet.data_tables.get_index_mut(index) {
                 let sheet_pos = pos.to_sheet_pos(sheet.id);
                 transaction
                     .reverse_operations
-                    .push(Operation::SetCodeRunVersion {
+                    .push(Operation::SetDataTable {
                         sheet_pos,
-                        code_run: Some(run.clone()),
+                        data_table: Some(run.clone()),
                         index,
-                        version: 1,
                     });
                 run.spill_error = spill_error;
                 transaction
                     .forward_operations
-                    .push(Operation::SetCodeRunVersion {
+                    .push(Operation::SetDataTable {
                         sheet_pos,
-                        code_run: Some(run.to_owned()),
+                        data_table: Some(run.to_owned()),
                         index,
-                        version: 1,
                     });
+                code_pos = Some(*pos);
 
-                if (cfg!(target_family = "wasm") || cfg!(test))
-                    && !transaction.is_server()
-                    && send_client
-                {
-                    transaction.add_from_code_run(sheet_id, *pos, &Some(run.to_owned()));
-                    let sheet_rect = run.output_sheet_rect(sheet_pos, false);
-                    transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
+                // need to update the cells that are affected by the spill error
+                let sheet_rect = run.output_sheet_rect(sheet_pos, true, true);
+                transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
+            }
+            if let Some(code_pos) = code_pos {
+                if let Some(data_table) = sheet.data_tables.get(&code_pos) {
+                    transaction.add_from_code_run(
+                        sheet_id,
+                        code_pos,
+                        data_table.is_image(),
+                        data_table.is_html(),
+                    );
+                    // transaction
+                    //     .forward_operations
+                    //     .push(Operation::SetCodeRunVersion {
+                    //         sheet_pos,
+                    //         code_run: Some(run.to_owned()),
+                    //         index,
+                    //         version: 1,
+                    //     });
+
+                    // if (cfg!(target_family = "wasm") || cfg!(test))
+                    //     && !transaction.is_server()
+                    //     && send_client
+                    // {
+                    //     transaction.add_from_code_run(sheet_id, *pos, &Some(run.to_owned()));
+                    //     let sheet_rect = run.output_sheet_rect(sheet_pos, false);
+                    //     transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
                 }
             }
         }
     }
 
-    /// Checks if a code_cell has a spill error by comparing its output to both CellValues in that range, and earlier code_runs output.
+    /// Checks if a code_cell has a spill error by comparing its output to both CellValues in that range, and earlier data_tables output.
     fn check_spill(&self, sheet_id: SheetId, index: usize) -> Option<bool> {
         if let Some(sheet) = self.grid.try_sheet(sheet_id) {
-            if let Some((pos, code_run)) = sheet.code_runs.get_index(index) {
+            if let Some((pos, data_table)) = sheet.data_tables.get_index(index) {
                 // output sizes of 1x1 cannot spill
-                if matches!(code_run.output_size(), ArraySize::_1X1) {
+                if matches!(data_table.output_size(true), ArraySize::_1X1) {
                     return None;
                 }
 
-                let output: Rect = code_run
-                    .output_sheet_rect(pos.to_sheet_pos(sheet_id), true)
+                let output: Rect = data_table
+                    .output_sheet_rect(pos.to_sheet_pos(sheet_id), true, true)
                     .into();
 
                 // then do the more expensive checks to see if there is a spill error
@@ -68,10 +88,13 @@ impl GridController {
                     || sheet.has_code_cell_in_rect(&output, *pos)
                 {
                     // if spill error has not been set, then set it and start the more expensive checks for all later code_cells.
-                    if !code_run.spill_error {
+                    //
+                    // TODO(ddimaria): swap out the conditionals if we decide to only spill on code output
+                    // if data_table.readonly && !data_table.spill_error {
+                    if !data_table.spill_error {
                         return Some(true);
                     }
-                } else if code_run.spill_error {
+                } else if data_table.spill_error {
                     // release the code_cell's spill error, then start the more expensive checks for all later code_cells.
                     return Some(false);
                 }
@@ -80,17 +103,12 @@ impl GridController {
         None
     }
 
-    /// Checks all code_runs for changes in spill_errors.
-    pub fn check_all_spills(
-        &mut self,
-        transaction: &mut PendingTransaction,
-        sheet_id: SheetId,
-        send_client: bool,
-    ) {
+    /// Checks all data_tables for changes in spill_errors.
+    pub fn check_all_spills(&mut self, transaction: &mut PendingTransaction, sheet_id: SheetId) {
         if let Some(sheet) = self.grid.try_sheet(sheet_id) {
-            for index in 0..sheet.code_runs.len() {
+            for index in 0..sheet.data_tables.len() {
                 if let Some(spill_error) = self.check_spill(sheet_id, index) {
-                    self.change_spill(transaction, sheet_id, index, spill_error, send_client);
+                    self.change_spill(transaction, sheet_id, index, spill_error);
                 }
             }
         }
@@ -98,14 +116,15 @@ impl GridController {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
-    use chrono::Utc;
-    use serial_test::{parallel, serial};
+    use serial_test::serial;
 
     use crate::controller::active_transactions::pending_transaction::PendingTransaction;
+    use crate::controller::transaction_types::JsCodeResult;
     use crate::controller::GridController;
     use crate::grid::js_types::{JsNumber, JsRenderCell, JsRenderCellSpecial};
-    use crate::grid::{CellAlign, CodeCellLanguage, CodeRun, CodeRunResult};
+    use crate::grid::{CellAlign, CellWrap, CodeCellLanguage, CodeRun, DataTable, DataTableKind};
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call_count};
     use crate::{Array, CellValue, Pos, Rect, SheetPos, Value};
 
@@ -124,6 +143,7 @@ mod tests {
         y: i64,
         n: &str,
         language: Option<CodeCellLanguage>,
+        special: Option<JsRenderCellSpecial>,
     ) -> Vec<JsRenderCell> {
         vec![JsRenderCell {
             x,
@@ -132,12 +152,13 @@ mod tests {
             value: n.into(),
             align: Some(CellAlign::Right),
             number: Some(JsNumber::default()),
+            special,
+            wrap: Some(CellWrap::Clip),
             ..Default::default()
         }]
     }
 
     #[test]
-    #[parallel]
     fn test_check_spills() {
         let mut gc = GridController::test();
         let mut transaction = PendingTransaction::default();
@@ -163,12 +184,12 @@ mod tests {
         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(3.into()));
 
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
-        assert!(!sheet.code_runs[0].spill_error);
+        assert!(!sheet.data_tables[0].spill_error);
 
-        gc.check_all_spills(&mut transaction, sheet_id, false);
+        gc.check_all_spills(&mut transaction, sheet_id);
 
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
-        assert!(sheet.code_runs[0].spill_error);
+        assert!(sheet.data_tables[0].spill_error);
     }
 
     #[test]
@@ -178,60 +199,64 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.grid.try_sheet_mut(sheet_id).unwrap();
 
-        // sets 0,0=1 and 0,1=2
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
-        sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Number(2.into()));
+        // sets 1,1=1 and 1,2=2
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(1.into()));
+        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Number(2.into()));
 
         // sets code cell that outputs 1,0=1 and 1,1=2
         gc.set_code_cell(
             SheetPos {
-                x: 1,
-                y: 0,
+                x: 2,
+                y: 1,
                 sheet_id,
             },
             crate::grid::CodeCellLanguage::Formula,
-            "A0:A1".to_string(),
+            "A1:A2".to_string(),
             None,
         );
 
         clear_js_calls();
 
+        let sheet = gc.sheet(sheet_id);
+        assert!(!sheet.data_tables[0].spill_error);
+
         // manually set a cell value and see if the spill error changed
         gc.set_cell_value(
             SheetPos {
-                x: 1,
-                y: 1,
+                x: 2,
+                y: 2,
                 sheet_id,
             },
             "3".into(),
             None,
         );
-        let sheet = gc.sheet_mut(sheet_id);
-        assert_eq!(
-            sheet.cell_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Number(3.into()))
-        );
-        assert!(sheet.code_runs[0].spill_error);
-        expect_js_call_count("jsUpdateCodeCell", 1, true);
+
+        let mut transaction = PendingTransaction::default();
+
+        gc.check_all_spills(&mut transaction, sheet_id);
+        let sheet = gc.sheet(sheet_id);
+        assert!(sheet.data_tables[0].spill_error);
 
         // remove the cell causing the spill error
         gc.set_cell_value(
             SheetPos {
-                x: 1,
-                y: 1,
+                x: 2,
+                y: 2,
                 sheet_id,
             },
             "".into(),
             None,
         );
         let sheet = gc.sheet_mut(sheet_id);
-        assert_eq!(sheet.cell_value(Pos { x: 1, y: 1 }), None);
-        assert!(!sheet.code_runs[0].spill_error);
-        expect_js_call_count("jsUpdateCodeCell", 1, true);
+        assert_eq!(sheet.cell_value(Pos { x: 2, y: 2 }), None);
+        gc.check_all_spills(&mut transaction, sheet_id);
+
+        let sheet = gc.sheet(sheet_id);
+        assert!(!sheet.data_tables[0].spill_error);
+        expect_js_call_count("jsUpdateCodeCell", 2, true);
     }
 
     #[test]
-    #[parallel]
     fn test_check_spills_by_code_run() {
         let mut gc = GridController::default();
         let sheet_id = gc.grid.sheet_ids()[0];
@@ -263,10 +288,10 @@ mod tests {
         sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("hello".into()));
 
         let transaction = &mut PendingTransaction::default();
-        gc.check_all_spills(transaction, sheet_id, false);
+        gc.check_all_spills(transaction, sheet_id);
 
         let sheet = gc.sheet(sheet_id);
-        let code_run = sheet.code_run(Pos { x: 1, y: 1 }).unwrap();
+        let code_run = sheet.data_table(Pos { x: 1, y: 1 }).unwrap();
         assert!(code_run.spill_error);
 
         // should be a spill caused by 1,2
@@ -285,7 +310,7 @@ mod tests {
         );
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        let code_run = sheet.code_run(Pos { x: 1, y: 1 });
+        let code_run = sheet.data_table(Pos { x: 1, y: 1 });
         assert!(code_run.is_some());
         assert!(!code_run.unwrap().spill_error);
 
@@ -294,12 +319,11 @@ mod tests {
         // should be B0: "1" since spill was removed
         assert_eq!(
             render_cells,
-            output_number(1, 1, "1", Some(CodeCellLanguage::Formula)),
+            output_number(1, 1, "1", Some(CodeCellLanguage::Formula), None),
         );
     }
 
     #[test]
-    #[parallel]
     fn test_check_spills_over_code() {
         let mut gc = GridController::default();
         let sheet_id = gc.grid.sheet_ids()[0];
@@ -331,10 +355,10 @@ mod tests {
         let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }));
         assert_eq!(
             render_cells,
-            output_number(1, 1, "1", Some(CodeCellLanguage::Formula))
+            output_number(1, 1, "1", Some(CodeCellLanguage::Formula), None)
         );
         let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 2 }));
-        assert_eq!(render_cells, output_number(1, 2, "2", None),);
+        assert_eq!(render_cells, output_number(1, 2, "2", None, None));
 
         gc.set_code_cell(
             SheetPos {
@@ -354,7 +378,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_check_spills_over_code_array() {
         let mut gc = GridController::default();
         let sheet_id = gc.grid.sheet_ids()[0];
@@ -417,29 +440,82 @@ mod tests {
         let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 12, y: 10 }));
         assert_eq!(
             render_cells,
-            output_number(12, 10, "1", Some(CodeCellLanguage::Formula))
+            output_number(12, 10, "1", Some(CodeCellLanguage::Formula), None)
         );
     }
 
     #[test]
-    #[parallel]
-    fn test_check_deleted_code_runs() {
+    fn test_check_deleted_data_tables() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
         let code_run = CodeRun {
             std_err: None,
             std_out: None,
-            result: CodeRunResult::Ok(Value::Array(Array::from(vec![vec!["1"]]))),
+            error: None,
             return_type: Some("number".into()),
             line_number: None,
             output_type: None,
-            spill_error: false,
-            last_modified: Utc::now(),
             cells_accessed: Default::default(),
-            formatted_code_string: None,
         };
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "Table 1",
+            Value::Array(Array::from(vec![vec!["1"]])),
+            false,
+            false,
+            true,
+            None,
+        );
         let pos = Pos { x: 0, y: 0 };
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_code_run(pos, Some(code_run.clone()));
+        sheet.set_data_table(pos, Some(data_table.clone()));
+    }
+
+    #[test]
+    fn test_spill_from_js_chart() {
+        let mut gc = GridController::default();
+        let sheet_id = gc.grid.sheet_ids()[0];
+        gc.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 2,
+                sheet_id,
+            },
+            "hello".to_string(),
+            None,
+        );
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            CodeCellLanguage::Javascript,
+            "".into(),
+            None,
+        );
+        let transaction_id = gc.last_transaction().unwrap().id;
+        let result = JsCodeResult {
+            transaction_id: transaction_id.to_string(),
+            success: true,
+            chart_pixel_output: Some((100.0, 100.0)),
+            output_value: Some(vec!["<html>".to_string(), "text".to_string()]),
+            ..Default::default()
+        };
+        gc.calculation_complete(result).unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+
+        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }));
+        assert_eq!(
+            render_cells,
+            vec![JsRenderCell {
+                x: 1,
+                y: 1,
+                language: Some(CodeCellLanguage::Javascript),
+                special: Some(JsRenderCellSpecial::SpillError),
+                ..Default::default()
+            }]
+        );
     }
 }

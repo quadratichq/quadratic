@@ -9,9 +9,9 @@ import {
 } from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
-import { CodeCell } from '@/app/gridGL/types/codeCell';
+import type { CodeCell } from '@/app/gridGL/types/codeCell';
 import { codeCellIsAConnection, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { CodeEditorPlaceholder } from '@/app/ui/menus/CodeEditor/CodeEditorPlaceholder';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
@@ -30,7 +30,8 @@ import { pyrightWorker, uri } from '@/app/web-workers/pythonLanguageServer/worke
 import { SpinnerIcon } from '@/shared/components/Icons';
 import useEventListener from '@/shared/hooks/useEventListener';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import Editor, { DiffEditor, Monaco } from '@monaco-editor/react';
+import type { Monaco } from '@monaco-editor/react';
+import Editor, { DiffEditor } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
@@ -45,6 +46,7 @@ const registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
   Formula: false,
   Python: false,
   Javascript: false,
+  Import: false,
 };
 
 export const CodeEditorBody = (props: CodeEditorBodyProps) => {

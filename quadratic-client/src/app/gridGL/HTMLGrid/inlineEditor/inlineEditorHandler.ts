@@ -4,16 +4,17 @@
 
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
 import { CursorMode, inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { inlineEditorMonaco, PADDING_FOR_INLINE_EDITOR } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { SheetPosTS } from '@/app/gridGL/types/size';
+import type { SheetPosTS } from '@/app/gridGL/types/size';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { convertColorStringToHex } from '@/app/helpers/convertColor';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { CellFormatSummary } from '@/app/quadratic-core-types';
+import type { CellFormatSummary } from '@/app/quadratic-core-types';
 import { createFormulaStyleHighlights } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -21,7 +22,6 @@ import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLab
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
 import mixpanel from 'mixpanel-browser';
 import { Rectangle } from 'pixi.js';
-import { inlineEditorEvents } from './inlineEditorEvents';
 
 class InlineEditorHandler {
   private div?: HTMLDivElement;
@@ -84,7 +84,6 @@ class InlineEditorHandler {
     inlineEditorFormula.clearDecorations();
     window.removeEventListener('keydown', inlineEditorKeyboard.keyDown);
     multiplayer.sendEndCellEdit();
-    pixiApp.cellsSheets.updateCellsArray();
     this.hideDiv();
   }
 
@@ -237,7 +236,6 @@ class InlineEditorHandler {
         this.formatSummary.fillColor ? convertColorStringToHex(this.formatSummary.fillColor) : '#ffffff'
       );
       this.updateFont();
-      pixiApp.cellsSheets.updateCellsArray();
       this.sendMultiplayerUpdate();
       this.showDiv();
       this.changeToFormula(changeToFormula);

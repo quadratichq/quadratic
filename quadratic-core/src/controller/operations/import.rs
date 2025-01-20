@@ -1,13 +1,19 @@
-use std::io::Cursor;
+use std::{borrow::Cow, io::Cursor};
 
 use anyhow::{anyhow, bail, Result};
 use chrono::{NaiveDate, NaiveTime};
+use csv_sniffer::Sniffer;
 
 use crate::{
+    arrow::arrow_col_to_cell_value_vec,
     cell_values::CellValues,
+    cellvalue::Import,
     controller::GridController,
-    grid::{file::sheet_schema::export_sheet, CodeCellLanguage, CodeCellValue, Sheet, SheetId},
-    CellValue, Pos, SheetPos,
+    grid::{
+        file::sheet_schema::export_sheet, CodeCellLanguage, CodeCellValue, DataTable, Sheet,
+        SheetId,
+    },
+    Array, ArraySize, CellValue, Pos, SheetPos,
 };
 use bytes::Bytes;
 use calamine::{Data as ExcelData, Reader as ExcelReader, Xlsx, XlsxError};
@@ -19,6 +25,53 @@ use super::operation::Operation;
 const IMPORT_LINES_PER_OPERATION: u32 = 10000;
 
 impl GridController {
+    pub fn get_csv_preview(
+        file: Vec<u8>,
+        max_rows: u32,
+        delimiter: Option<u8>,
+    ) -> Result<Vec<Vec<String>>> {
+        let error = |message: String| anyhow!("Error parsing CSV file for preview: {}", message);
+        let file: &[u8] = match String::from_utf8_lossy(&file) {
+            std::borrow::Cow::Borrowed(_) => &file,
+            std::borrow::Cow::Owned(_) => {
+                if let Some(utf) = read_utf16(&file) {
+                    return Self::get_csv_preview(utf.as_bytes().to_vec(), max_rows, delimiter);
+                }
+                &file
+            }
+        };
+
+        let delimiter = match delimiter {
+            Some(d) => d,
+            None => {
+                // auto detect the delimiter, default to ',' if it fails
+                let cursor = Cursor::new(&file);
+                Sniffer::new()
+                    .sniff_reader(cursor)
+                    .map_or_else(|_| b',', |metadata| metadata.dialect.delimiter)
+            }
+        };
+
+        let mut reader = csv::ReaderBuilder::new()
+            .delimiter(delimiter)
+            .has_headers(false)
+            .flexible(true)
+            .from_reader(file);
+
+        let mut preview = vec![];
+        for (i, entry) in reader.records().enumerate() {
+            if i >= max_rows as usize {
+                break;
+            }
+            match entry {
+                Err(e) => return Err(error(format!("line {}: {}", i + 1, e))),
+                Ok(record) => preview.push(record.iter().map(|s| s.to_string()).collect()),
+            }
+        }
+
+        Ok(preview)
+    }
+
     /// Imports a CSV file into the grid.
     pub fn import_csv_operations(
         &mut self,
@@ -26,101 +79,132 @@ impl GridController {
         file: Vec<u8>,
         file_name: &str,
         insert_at: Pos,
+        delimiter: Option<u8>,
+        has_heading: Option<bool>,
     ) -> Result<Vec<Operation>> {
         let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
+        let import = Import::new(file_name.into());
         let file: &[u8] = match String::from_utf8_lossy(&file) {
-            std::borrow::Cow::Borrowed(_) => &file,
-            std::borrow::Cow::Owned(_) => {
+            Cow::Borrowed(_) => &file,
+            Cow::Owned(_) => {
                 if let Some(utf) = read_utf16(&file) {
                     return self.import_csv_operations(
                         sheet_id,
                         utf.as_bytes().to_vec(),
                         file_name,
                         insert_at,
+                        delimiter,
+                        has_heading,
                     );
                 }
                 &file
             }
         };
 
-        // first get the total number of lines so we can provide progress
-        let mut reader = csv::ReaderBuilder::new()
-            .has_headers(false)
-            .from_reader(file);
-        let height = reader.records().count() as u32;
+        let delimiter = match delimiter {
+            Some(d) => d,
+            None => {
+                // auto detect the delimiter, default to ',' if it fails
+                let cursor = Cursor::new(&file);
+                Sniffer::new()
+                    .sniff_reader(cursor)
+                    .map_or_else(|_| b',', |metadata| metadata.dialect.delimiter)
+            }
+        };
 
-        let mut reader = csv::ReaderBuilder::new()
-            .has_headers(false)
-            .flexible(true)
-            .from_reader(file);
+        let reader = |flexible| {
+            csv::ReaderBuilder::new()
+                .delimiter(delimiter)
+                .has_headers(false)
+                .flexible(flexible)
+                .from_reader(file)
+        };
 
-        let width = reader.headers()?.len() as u32;
+        let height = reader(false).records().count() as u32;
+
+        // since the first row or more can be headers, look at the width of the last row
+        let width = reader(true)
+            .records()
+            .last()
+            .iter()
+            .flatten()
+            .next()
+            .map(|s| s.len())
+            .unwrap_or(0) as u32;
+
         if width == 0 {
             bail!("empty files cannot be processed");
         }
 
-        // then create operations using MAXIMUM_IMPORT_LINES to break up the SetCellValues operations
         let mut ops = vec![] as Vec<Operation>;
-        let mut cell_values = CellValues::new(width, height.min(IMPORT_LINES_PER_OPERATION));
-        let mut current_y = 0;
+        let array_size = ArraySize::new_or_err(width, height).map_err(|e| error(e.to_string()))?;
+        let mut cell_values = Array::new_empty(array_size);
         let mut y: u32 = 0;
-        for entry in reader.records() {
+
+        for entry in reader(true).records() {
             match entry {
-                Err(e) => return Err(error(format!("line {}: {}", current_y + y + 1, e))),
+                Err(e) => return Err(error(format!("line {}: {}", y + 1, e))),
                 Ok(record) => {
                     for (x, value) in record.iter().enumerate() {
                         let (operations, cell_value) = self.string_to_cell_value(
                             SheetPos {
                                 x: insert_at.x + x as i64,
-                                y: insert_at.y + current_y as i64 + y as i64,
+                                y: insert_at.y + y as i64,
                                 sheet_id,
                             },
                             value,
                         );
                         ops.extend(operations);
-                        cell_values.set(x as u32, y, cell_value);
+                        cell_values
+                            .set(x as u32, y, cell_value)
+                            .map_err(|e| error(e.to_string()))?;
                     }
                 }
             }
-            y += 1;
-            if y >= IMPORT_LINES_PER_OPERATION {
-                ops.push(Operation::SetCellValues {
-                    sheet_pos: SheetPos {
-                        x: insert_at.x,
-                        y: insert_at.y + current_y as i64,
-                        sheet_id,
-                    },
-                    values: cell_values,
-                });
-                current_y += y;
-                y = 0;
-                let h = (height - current_y).min(IMPORT_LINES_PER_OPERATION);
-                cell_values = CellValues::new(width, h);
 
-                // update the progress bar every time there's a new operation
-                if cfg!(target_family = "wasm") || cfg!(test) {
-                    crate::wasm_bindings::js::jsImportProgress(
-                        file_name,
-                        current_y,
-                        height,
-                        insert_at.x,
-                        insert_at.y,
-                        width,
-                        height,
-                    );
-                }
+            y += 1;
+
+            // update the progress bar every time there's a new batch
+            let should_update = y % IMPORT_LINES_PER_OPERATION == 0;
+
+            if should_update && (cfg!(target_family = "wasm") || cfg!(test)) {
+                crate::wasm_bindings::js::jsImportProgress(
+                    file_name,
+                    y,
+                    height,
+                    insert_at.x,
+                    insert_at.y,
+                    width,
+                    height,
+                );
             }
         }
 
         // finally add the final operation
+        let mut data_table = DataTable::from((import.to_owned(), cell_values, &self.grid));
+        if Some(true) == has_heading {
+            data_table.apply_first_row_as_header();
+        }
+
+        data_table.name = file_name.to_string();
+        let sheet_pos = SheetPos::from((insert_at, sheet_id));
+
+        // this operation must be before the SetCodeRun operations
         ops.push(Operation::SetCellValues {
+            sheet_pos,
+            values: CellValues::from(CellValue::Import(import)),
+        });
+
+        ops.push(Operation::SetDataTable {
             sheet_pos: SheetPos {
                 x: insert_at.x,
-                y: insert_at.y + current_y as i64,
+                y: insert_at.y,
                 sheet_id,
             },
-            values: cell_values,
+            data_table: Some(data_table),
+            index: y as usize,
         });
+
         Ok(ops)
     }
 
@@ -299,6 +383,9 @@ impl GridController {
         insert_at: Pos,
     ) -> Result<Vec<Operation>> {
         let mut ops = vec![] as Vec<Operation>;
+        let import = Import::new(file_name.into());
+        let error =
+            |message: String| anyhow!("Error parsing Parquet file {}: {}", file_name, message);
 
         // this is not expensive
         let bytes = Bytes::from(file);
@@ -311,15 +398,22 @@ impl GridController {
         let headers: Vec<CellValue> = fields.iter().map(|f| f.name().into()).collect();
         let mut width = headers.len() as u32;
 
-        ops.push(Operation::SetCellValues {
-            sheet_pos: (insert_at.x, insert_at.y, sheet_id).into(),
-            values: CellValues::from_flat_array(headers.len() as u32, 1, headers),
-        });
+        // add 1 to the height for the headers
+        let array_size =
+            ArraySize::new_or_err(width, total_size + 1).map_err(|e| error(e.to_string()))?;
+        let mut cell_values = Array::new_empty(array_size);
+
+        // add the headers to the first row
+        for (x, header) in headers.into_iter().enumerate() {
+            cell_values
+                .set(x as u32, 0, header)
+                .map_err(|e| error(e.to_string()))?;
+        }
 
         let reader = builder.build()?;
-
         let mut height = 0;
         let mut current_size = 0;
+
         for (row_index, batch) in reader.enumerate() {
             let batch = batch?;
             let num_rows = batch.num_rows();
@@ -331,20 +425,15 @@ impl GridController {
 
             for col_index in 0..num_cols {
                 let col = batch.column(col_index);
+                let values = arrow_col_to_cell_value_vec(col)?;
+                let x = col_index as u32;
+                let y = (row_index * num_rows) as u32 + 1;
 
-                // arrow.rs has the `impl TryFrom<&ArrayRef> for CellValues` block
-                let values: CellValues = col.try_into()?;
-
-                let operations = Operation::SetCellValues {
-                    sheet_pos: (
-                        insert_at.x + col_index as i64,
-                        insert_at.y + (row_index * num_rows) as i64 + 1,
-                        sheet_id,
-                    )
-                        .into(),
-                    values,
-                };
-                ops.push(operations);
+                for (index, value) in values.into_iter().enumerate() {
+                    cell_values
+                        .set(x, y + index as u32, value)
+                        .map_err(|e| error(e.to_string()))?;
+                }
 
                 // update the progress bar every time there's a new operation
                 if cfg!(target_family = "wasm") || cfg!(test) {
@@ -360,6 +449,22 @@ impl GridController {
                 }
             }
         }
+
+        let sheet_pos = SheetPos::from((insert_at, sheet_id));
+        let mut data_table = DataTable::from((import.to_owned(), cell_values, &self.grid));
+        data_table.apply_first_row_as_header();
+
+        // this operation must be before the SetCodeRun operations
+        ops.push(Operation::SetCellValues {
+            sheet_pos,
+            values: CellValues::from(CellValue::Import(import)),
+        });
+
+        ops.push(Operation::SetDataTable {
+            sheet_pos,
+            data_table: Some(data_table),
+            index: 0,
+        });
 
         Ok(ops)
     }
@@ -393,12 +498,59 @@ fn read_utf16(bytes: &[u8]) -> Option<String> {
 #[cfg(test)]
 mod test {
     use super::{read_utf16, *};
-    use crate::CellValue;
+    use crate::{
+        test_util::{assert_data_table_cell_value, assert_display_cell_value, print_data_table},
+        CellValue, Rect,
+    };
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
     use serial_test::parallel;
 
     const INVALID_ENCODING_FILE: &[u8] =
         include_bytes!("../../../../quadratic-rust-shared/data/csv/encoding_issue.csv");
+
+    #[test]
+    #[parallel]
+    fn test_get_csv_preview_with_valid_csv() {
+        let csv_data = b"header1,header2\nvalue1,value2\nvalue3,value4";
+        let result = GridController::get_csv_preview(csv_data.to_vec(), 6, Some(b','));
+        assert!(result.is_ok());
+        let preview = result.unwrap();
+        assert_eq!(preview.len(), 3);
+        assert_eq!(preview[0], vec!["header1", "header2"]);
+        assert_eq!(preview[1], vec!["value1", "value2"]);
+        assert_eq!(preview[2], vec!["value3", "value4"]);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_get_csv_preview_with_auto_delimiter() {
+        let csv_data = b"header1\theader2\nvalue1\tvalue2\nvalue3\tvalue4";
+        let result = GridController::get_csv_preview(csv_data.to_vec(), 6, None);
+        assert!(result.is_ok());
+        let preview = result.unwrap();
+        assert_eq!(preview.len(), 3);
+        assert_eq!(preview[0], vec!["header1", "header2"]);
+        assert_eq!(preview[1], vec!["value1", "value2"]);
+        assert_eq!(preview[2], vec!["value3", "value4"]);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_get_csv_preview_with_utf16() {
+        let utf16_data: Vec<u8> = vec![
+            0xFF, 0xFE, 0x68, 0x00, 0x65, 0x00, 0x61, 0x00, 0x64, 0x00, 0x65, 0x00, 0x72, 0x00,
+            0x31, 0x00, 0x2C, 0x00, 0x68, 0x00, 0x65, 0x00, 0x61, 0x00, 0x64, 0x00, 0x65, 0x00,
+            0x72, 0x00, 0x32, 0x00, 0x0A, 0x00, 0x76, 0x00, 0x61, 0x00, 0x6C, 0x00, 0x75, 0x00,
+            0x65, 0x00, 0x31, 0x00, 0x2C, 0x00, 0x76, 0x00, 0x61, 0x00, 0x6C, 0x00, 0x75, 0x00,
+            0x65, 0x00, 0x32, 0x00,
+        ];
+        let result = GridController::get_csv_preview(utf16_data, 6, Some(b','));
+        assert!(result.is_ok());
+        let preview = result.unwrap();
+        assert_eq!(preview.len(), 2);
+        assert_eq!(preview[0], vec!["header1", "header2"]);
+        assert_eq!(preview[1], vec!["value1", "value2"]);
+    }
 
     #[test]
     #[parallel]
@@ -413,33 +565,50 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
         let pos = pos![A1];
+        let file_name = "simple.csv";
 
         const SIMPLE_CSV: &str =
             "city,region,country,population\nSouthborough,MA,United States,a lot of people";
 
-        let ops = gc.import_csv_operations(
-            sheet_id,
-            SIMPLE_CSV.as_bytes().to_vec(),
-            "smallpop.csv",
-            pos,
-        );
-        assert_eq!(ops.as_ref().unwrap().len(), 1);
-        assert_eq!(
-            ops.unwrap()[0],
-            Operation::SetCellValues {
-                sheet_pos: SheetPos {
-                    x: 1,
-                    y: 1,
-                    sheet_id
-                },
-                values: CellValues::from(vec![
-                    vec!["city", "Southborough"],
-                    vec!["region", "MA"],
-                    vec!["country", "United States"],
-                    vec!["population", "a lot of people"]
-                ]),
-            }
-        );
+        let ops = gc
+            .import_csv_operations(
+                sheet_id,
+                SIMPLE_CSV.as_bytes().to_vec(),
+                file_name,
+                pos,
+                Some(b','),
+                Some(false),
+            )
+            .unwrap();
+
+        let values = vec![
+            vec!["city", "region", "country", "population"],
+            vec!["Southborough", "MA", "United States", "a lot of people"],
+        ];
+        let import = Import::new(file_name.into());
+        let cell_value = CellValue::Import(import.clone());
+        let mut expected_data_table = DataTable::from((import, values.into(), &gc.grid));
+        assert_display_cell_value(&gc, sheet_id, 1, 1, &cell_value.to_string());
+
+        let data_table = match ops[1].clone() {
+            Operation::SetDataTable { data_table, .. } => data_table.unwrap(),
+            _ => panic!("Expected SetCodeRun operation"),
+        };
+        expected_data_table.last_modified = data_table.last_modified;
+        expected_data_table.name = file_name.to_string();
+
+        let expected = Operation::SetDataTable {
+            sheet_pos: SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            data_table: Some(expected_data_table),
+            index: 2,
+        };
+
+        assert_eq!(ops.len(), 2);
+        assert_eq!(ops[1], expected);
     }
 
     #[test]
@@ -448,40 +617,39 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
         let pos = Pos { x: 1, y: 2 };
+        let file_name = "long.csv";
 
         let mut csv = String::new();
         for i in 0..IMPORT_LINES_PER_OPERATION * 2 + 150 {
             csv.push_str(&format!("city{},MA,United States,{}\n", i, i * 1000));
         }
 
-        let ops = gc.import_csv_operations(sheet_id, csv.as_bytes().to_vec(), "long.csv", pos);
-        assert_eq!(ops.as_ref().unwrap().len(), 3);
+        let ops = gc.import_csv_operations(
+            sheet_id,
+            csv.as_bytes().to_vec(),
+            file_name,
+            pos,
+            Some(b','),
+            Some(false),
+        );
 
-        let first_pos = match ops.as_ref().unwrap()[0] {
-            Operation::SetCellValues { sheet_pos, .. } => sheet_pos,
-            _ => panic!("Expected SetCellValues operation"),
-        };
-        let second_pos = match ops.as_ref().unwrap()[1] {
-            Operation::SetCellValues { sheet_pos, .. } => sheet_pos,
-            _ => panic!("Expected SetCellValues operation"),
-        };
-        let third_pos = match ops.as_ref().unwrap()[2] {
-            Operation::SetCellValues { sheet_pos, .. } => sheet_pos,
-            _ => panic!("Expected SetCellValues operation"),
-        };
-        assert_eq!(first_pos.x, 1);
-        assert_eq!(second_pos.x, 1);
-        assert_eq!(third_pos.x, 1);
-        assert_eq!(first_pos.y, 2);
-        assert_eq!(second_pos.y, 2 + IMPORT_LINES_PER_OPERATION as i64);
-        assert_eq!(third_pos.y, 2 + IMPORT_LINES_PER_OPERATION as i64 * 2);
+        let import = Import::new(file_name.into());
+        let cell_value = CellValue::Import(import.clone());
+        assert_display_cell_value(&gc, sheet_id, 0, 0, &cell_value.to_string());
 
-        let first_values = match ops.as_ref().unwrap()[0] {
-            Operation::SetCellValues { ref values, .. } => values,
-            _ => panic!("Expected SetCellValues operation"),
+        assert_eq!(ops.as_ref().unwrap().len(), 2);
+
+        let (sheet_pos, data_table) = match &ops.unwrap()[1] {
+            Operation::SetDataTable {
+                sheet_pos,
+                data_table,
+                ..
+            } => (*sheet_pos, data_table.clone().unwrap()),
+            _ => panic!("Expected SetDataTable operation"),
         };
+        assert_eq!(sheet_pos.x, 1);
         assert_eq!(
-            first_values.get(0, 0),
+            data_table.cell_value_ref_at(0, 1),
             Some(&CellValue::Text("city0".into()))
         );
     }
@@ -494,30 +662,30 @@ mod test {
 
         let pos = pos![A1];
         let csv = "2024-12-21,13:23:00,2024-12-21 13:23:00\n".to_string();
-        gc.import_csv(sheet_id, csv.as_bytes().to_vec(), "csv", pos, None)
-            .unwrap();
+        gc.import_csv(
+            sheet_id,
+            csv.as_bytes().to_vec(),
+            "csv",
+            pos,
+            None,
+            Some(b','),
+            Some(false),
+        )
+        .unwrap();
 
-        assert_eq!(
-            gc.sheet(sheet_id).cell_value((1, 1).into()),
-            Some(CellValue::Date(
-                NaiveDate::parse_from_str("2024-12-21", "%Y-%m-%d").unwrap()
-            ))
+        let value = CellValue::Date(NaiveDate::parse_from_str("2024-12-21", "%Y-%m-%d").unwrap());
+        assert_data_table_cell_value(&gc, sheet_id, 1, 1, &value.to_string());
+
+        let value = CellValue::Time(NaiveTime::parse_from_str("13:23:00", "%H:%M:%S").unwrap());
+        assert_data_table_cell_value(&gc, sheet_id, 2, 1, &value.to_string());
+
+        let value = CellValue::DateTime(
+            NaiveDate::from_ymd_opt(2024, 12, 21)
+                .unwrap()
+                .and_hms_opt(13, 23, 0)
+                .unwrap(),
         );
-        assert_eq!(
-            gc.sheet(sheet_id).cell_value((2, 1).into()),
-            Some(CellValue::Time(
-                NaiveTime::parse_from_str("13:23:00", "%H:%M:%S").unwrap()
-            ))
-        );
-        assert_eq!(
-            gc.sheet(sheet_id).cell_value((3, 1).into()),
-            Some(CellValue::DateTime(
-                NaiveDate::from_ymd_opt(2024, 12, 21)
-                    .unwrap()
-                    .and_hms_opt(13, 23, 0)
-                    .unwrap()
-            ))
-        );
+        assert_data_table_cell_value(&gc, sheet_id, 3, 1, &value.to_string());
     }
 
     #[test]
@@ -569,22 +737,24 @@ mod test {
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
+        let data_table = sheet.data_table(pos).unwrap();
+        print_data_table(&gc, sheet_id, Rect::from_numbers(1, 1, 10, 10));
 
         // date
         assert_eq!(
-            sheet.cell_value((1, 2).into()),
+            data_table.cell_value_at(0, 1),
             Some(CellValue::Date(
                 NaiveDate::parse_from_str("2024-12-21", "%Y-%m-%d").unwrap()
             ))
         );
         assert_eq!(
-            sheet.cell_value((1, 3).into()),
+            data_table.cell_value_at(0, 2),
             Some(CellValue::Date(
                 NaiveDate::parse_from_str("2024-12-22", "%Y-%m-%d").unwrap()
             ))
         );
         assert_eq!(
-            sheet.cell_value((1, 4).into()),
+            data_table.cell_value_at(0, 3),
             Some(CellValue::Date(
                 NaiveDate::parse_from_str("2024-12-23", "%Y-%m-%d").unwrap()
             ))
@@ -592,19 +762,19 @@ mod test {
 
         // time
         assert_eq!(
-            sheet.cell_value((2, 2).into()),
+            data_table.cell_value_at(1, 1),
             Some(CellValue::Time(
                 NaiveTime::parse_from_str("13:23:00", "%H:%M:%S").unwrap()
             ))
         );
         assert_eq!(
-            sheet.cell_value((2, 3).into()),
+            data_table.cell_value_at(1, 2),
             Some(CellValue::Time(
                 NaiveTime::parse_from_str("14:45:00", "%H:%M:%S").unwrap()
             ))
         );
         assert_eq!(
-            sheet.cell_value((2, 4).into()),
+            data_table.cell_value_at(1, 3),
             Some(CellValue::Time(
                 NaiveTime::parse_from_str("16:30:00", "%H:%M:%S").unwrap()
             ))
@@ -612,7 +782,7 @@ mod test {
 
         // date time
         assert_eq!(
-            sheet.cell_value((3, 2).into()),
+            data_table.cell_value_at(2, 1),
             Some(CellValue::DateTime(
                 NaiveDate::from_ymd_opt(2024, 12, 21)
                     .unwrap()
@@ -621,7 +791,7 @@ mod test {
             ))
         );
         assert_eq!(
-            sheet.cell_value((3, 3).into()),
+            data_table.cell_value_at(2, 2),
             Some(CellValue::DateTime(
                 NaiveDate::from_ymd_opt(2024, 12, 22)
                     .unwrap()
@@ -630,7 +800,7 @@ mod test {
             ))
         );
         assert_eq!(
-            sheet.cell_value((3, 4).into()),
+            data_table.cell_value_at(2, 3),
             Some(CellValue::DateTime(
                 NaiveDate::from_ymd_opt(2024, 12, 23)
                     .unwrap()

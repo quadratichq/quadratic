@@ -1,5 +1,13 @@
 use std::fs::create_dir_all;
 
+use quadratic_core::a1::js_selection::JsCoordinate;
+use quadratic_core::a1::A1Error;
+use quadratic_core::a1::A1Selection;
+use quadratic_core::a1::CellRefCoord;
+use quadratic_core::a1::CellRefRange;
+use quadratic_core::a1::CellRefRangeEnd;
+use quadratic_core::a1::RefRangeBounds;
+use quadratic_core::a1::TableRef;
 use quadratic_core::color::Rgba;
 use quadratic_core::controller::active_transactions::transaction_name::TransactionName;
 use quadratic_core::controller::execution::run_code::get_cells::CellA1Response;
@@ -7,6 +15,7 @@ use quadratic_core::controller::execution::run_code::get_cells::JsGetCellRespons
 use quadratic_core::controller::operations::clipboard::PasteSpecial;
 use quadratic_core::controller::transaction_types::JsCodeResult;
 use quadratic_core::grid::formats::Format;
+use quadratic_core::grid::js_types::JsDataTableColumnHeader;
 use quadratic_core::grid::js_types::{
     CellFormatSummary, JsCellValue, JsCellValuePos, JsCellValuePosAIContext, JsClipboard,
     JsCodeCell, JsHtmlOutput, JsNumber, JsOffset, JsRenderCell, JsRenderCellSpecial,
@@ -22,7 +31,7 @@ use quadratic_core::grid::sheet::borders::CellBorderLine;
 use quadratic_core::grid::sheet::borders::JsBorderHorizontal;
 use quadratic_core::grid::sheet::borders::JsBorderVertical;
 use quadratic_core::grid::sheet::borders::JsBordersSheet;
-use quadratic_core::grid::sheet::jump_cursor::JumpDirection;
+use quadratic_core::grid::sheet::keyboard::Direction;
 use quadratic_core::grid::sheet::search::SearchOptions;
 use quadratic_core::grid::sheet::validations::validation::{
     Validation, ValidationError, ValidationMessage, ValidationStyle,
@@ -41,22 +50,20 @@ use quadratic_core::grid::sheet::validations::validation_rules::validation_text:
     TextCase, TextMatch, ValidationText,
 };
 use quadratic_core::grid::sheet::validations::validation_rules::ValidationRule;
+use quadratic_core::grid::sort::DataTableSort;
+use quadratic_core::grid::sort::SortDirection;
+use quadratic_core::grid::JsCellsAccessed;
 use quadratic_core::grid::{
     CellAlign, CellVerticalAlign, CellWrap, GridBounds, NumericFormat, NumericFormatKind, SheetId,
 };
 use quadratic_core::grid::{CodeCellLanguage, ConnectionKind};
-use quadratic_core::grid::{JsCellsAccessed, RenderSize};
 use quadratic_core::sheet_offsets::resize_transient::TransientResize;
 use quadratic_core::sheet_offsets::sheet_offsets_wasm::ColumnRow;
 use quadratic_core::small_timestamp::SmallTimestamp;
+use quadratic_core::wasm_bindings::controller::bounds::MinMax;
 use quadratic_core::wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo};
-use quadratic_core::A1Selection;
-use quadratic_core::CellRefCoord;
-use quadratic_core::CellRefRangeEnd;
-use quadratic_core::RefRangeBounds;
 use quadratic_core::{
-    ArraySize, Axis, CellRefRange, JsCoordinate, Pos, Rect, RunError, RunErrorMsg, SheetPos,
-    SheetRect, Span,
+    ArraySize, Axis, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Span,
 };
 use ts_rs::TS;
 
@@ -75,6 +82,7 @@ fn main() {
     s += "// Do not modify it manually.\n\n";
 
     s += &generate_type_declarations!(
+        A1Error,
         A1Selection,
         ArraySize,
         Axis,
@@ -108,6 +116,7 @@ fn main() {
         JsClipboard,
         JsCodeCell,
         JsCodeResult,
+        JsDataTableColumnHeader,
         JsCoordinate,
         JsGetCellResponse,
         JsHtmlOutput,
@@ -123,7 +132,8 @@ fn main() {
         JsSheetFill,
         JsSummarizeSelectionResult,
         JsValidationWarning,
-        JumpDirection,
+        Direction,
+        MinMax,
         NumberRange,
         NumericFormat,
         NumericFormatKind,
@@ -131,7 +141,6 @@ fn main() {
         Pos,
         RefRangeBounds,
         Rect,
-        RenderSize,
         Rgba,
         RunError,
         RunErrorMsg,
@@ -141,8 +150,11 @@ fn main() {
         SheetInfo,
         SheetPos,
         SheetRect,
+        SortDirection,
+        DataTableSort,
         SmallTimestamp,
         Span,
+        TableRef,
         TextCase,
         TextMatch,
         TransactionName,

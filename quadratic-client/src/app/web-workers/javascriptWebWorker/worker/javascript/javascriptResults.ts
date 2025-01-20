@@ -1,9 +1,12 @@
 // Converts
 
-import { JsCodeResult } from '@/app/quadratic-core-types';
-import { javascriptClient } from '../javascriptClient';
-import { javascriptCore } from '../javascriptCore';
-import { javascriptConvertOutputArray, javascriptConvertOutputType } from './javascriptOutput';
+import type { JsCodeResult } from '@/app/quadratic-core-types';
+import {
+  javascriptConvertOutputArray,
+  javascriptConvertOutputType,
+} from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascriptOutput';
+import { javascriptClient } from '@/app/web-workers/javascriptWebWorker/worker/javascriptClient';
+import { javascriptCore } from '@/app/web-workers/javascriptWebWorker/worker/javascriptCore';
 
 export function javascriptErrorResult(transactionId: string, message: string, lineNumber?: number) {
   const codeResult: JsCodeResult = {
@@ -16,6 +19,8 @@ export function javascriptErrorResult(transactionId: string, message: string, li
     line_number: lineNumber ?? null,
     output_display_type: null,
     cancel_compute: false,
+    chart_pixel_output: null,
+    has_headers: false,
   };
   javascriptCore.sendJavascriptResults(transactionId, codeResult);
   javascriptClient.sendState('ready');
@@ -27,7 +32,8 @@ export function javascriptResults(
   y: number,
   result: any,
   consoleOutput: string,
-  lineNumber?: number
+  lineNumber?: number,
+  chartPixelOutput?: [number, number]
 ) {
   const message: string[] = [];
   const outputType = javascriptConvertOutputType(message, result, x, y);
@@ -46,6 +52,9 @@ export function javascriptResults(
 
     output_display_type: outputType?.displayType || outputArray?.displayType || null,
     cancel_compute: false,
+    chart_pixel_output: chartPixelOutput || null,
+
+    has_headers: false,
   };
   javascriptCore.sendJavascriptResults(transactionId, codeResult);
   javascriptClient.sendState('ready', { current: undefined });

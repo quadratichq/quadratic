@@ -7,7 +7,7 @@ import {
 import { editorInteractionStateShowCellTypeMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { useCloseCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useCloseCodeEditor';
-import * as monaco from 'monaco-editor';
+import type * as monaco from 'monaco-editor';
 import { useRecoilCallback } from 'recoil';
 
 export const useAfterDialogCodeEditor = ({

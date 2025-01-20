@@ -1,6 +1,7 @@
-import { AITool as AIToolName } from '@/app/ai/tools/aiTools';
+import type { AITool as AIToolName } from '@/app/ai/tools/aiTools';
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
-import {
+import { isAnthropicBedrockModel, isAnthropicModel, isBedrockModel, isOpenAIModel } from '@/app/ai/tools/model.helper';
+import type {
   AIModel,
   AITool,
   AIToolChoice,
@@ -11,7 +12,6 @@ import {
   OpenAITool,
   OpenAIToolChoice,
 } from 'quadratic-shared/typesAndSchemasAI';
-import { isAnthropicBedrockModel, isAnthropicModel, isBedrockModel, isOpenAIModel } from './model.helper';
 
 export const getTools = (model: AIModel, toolChoice?: AIToolName): AITool[] => {
   const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {

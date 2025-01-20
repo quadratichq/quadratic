@@ -1,4 +1,4 @@
-import { JsCoordinate } from '@/app/quadratic-core-types';
+import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { Rectangle } from 'pixi.js';
 
 export class Bounds {

@@ -1,12 +1,13 @@
 use std::cmp::Ordering;
 
 use crate::{
+    a1::{A1Context, A1Selection},
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
     grid::SheetId,
-    A1Selection, Pos,
+    Pos,
 };
 
 use super::{validation::Validation, Validations};
@@ -20,13 +21,14 @@ impl Validations {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         column: i64,
+        context: &A1Context,
     ) -> Vec<A1Selection> {
         let mut changed_selections = Vec::new();
         let mut reverse_operations = Vec::new();
 
         self.validations.retain_mut(|validation| {
             let original_selection = validation.selection.clone();
-            if validation.selection.removed_column(column) {
+            if validation.selection.removed_column(column, context) {
                 changed_selections.extend(transaction.validation_changed(
                     sheet_id,
                     validation,
@@ -90,13 +92,14 @@ impl Validations {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         row: i64,
+        context: &A1Context,
     ) -> Vec<A1Selection> {
         let mut changed_selections = Vec::new();
         let mut reverse_operations = Vec::new();
 
         self.validations.retain_mut(|validation| {
             let original_selection = validation.selection.clone();
-            if validation.selection.removed_row(row) {
+            if validation.selection.removed_row(row, context) {
                 changed_selections.extend(transaction.validation_changed(
                     sheet_id,
                     validation,
@@ -160,12 +163,13 @@ impl Validations {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         column: i64,
+        context: &A1Context,
     ) -> Vec<A1Selection> {
         let mut changed_selections = Vec::new();
 
         self.validations.iter_mut().for_each(|validation| {
             let original_selection = validation.selection.clone();
-            if validation.selection.inserted_column(column) {
+            if validation.selection.inserted_column(column, context) {
                 changed_selections.extend(transaction.validation_changed(
                     sheet_id,
                     validation,
@@ -206,12 +210,13 @@ impl Validations {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         row: i64,
+        context: &A1Context,
     ) -> Vec<A1Selection> {
         let mut changed_selections = Vec::new();
 
         self.validations.iter_mut().for_each(|validation| {
             let original_selection = validation.selection.clone();
-            if validation.selection.inserted_row(row) {
+            if validation.selection.inserted_row(row, context) {
                 changed_selections.extend(transaction.validation_changed(
                     sheet_id,
                     validation,
@@ -256,7 +261,7 @@ mod tests {
             validation_logical::ValidationLogical, ValidationRule,
         },
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
-        A1Selection, CellValue, CopyFormats,
+        CellValue, CopyFormats,
     };
 
     use super::*;

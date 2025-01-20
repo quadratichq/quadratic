@@ -1,6 +1,6 @@
-use crate::{grid::CodeRunResult, CellValue, Pos, SheetPos, Value};
-
 use super::Sheet;
+use crate::{CellValue, Pos, SheetPos, Value};
+
 use serde::{Deserialize, Serialize};
 
 const MAX_NEIGHBOR_TEXT: usize = 1000;
@@ -111,56 +111,53 @@ impl Sheet {
             .collect::<Vec<_>>()
     }
 
-    fn search_code_runs(
+    fn search_data_tables(
         &self,
         query: &String,
         case_sensitive: bool,
         whole_cell: bool,
     ) -> Vec<SheetPos> {
         let mut results = vec![];
-        self.code_runs
+        self.data_tables
             .iter()
-            .for_each(|(pos, code_run)| match &code_run.result {
-                CodeRunResult::Ok(value) => match value {
-                    Value::Single(v) => {
-                        if self.compare_cell_value(
-                            v,
-                            query,
-                            *pos,
-                            case_sensitive,
-                            whole_cell,
-                            false, // code_runs can never have code within them (although that would be cool if they did ;)
-                        ) {
-                            results.push(pos.to_sheet_pos(self.id));
-                        }
+            .for_each(|(pos, data_table)| match &data_table.value {
+                Value::Single(v) => {
+                    if self.compare_cell_value(
+                        v,
+                        query,
+                        *pos,
+                        case_sensitive,
+                        whole_cell,
+                        false, // data_tables can never have code within them (although that would be cool if they did ;)
+                    ) {
+                        results.push(pos.to_sheet_pos(self.id));
                     }
-                    Value::Array(array) => {
-                        for y in 0..array.size().h.get() {
-                            for x in 0..array.size().w.get() {
-                                let cell_value = array.get(x, y).unwrap();
-                                if self.compare_cell_value(
-                                    cell_value,
-                                    query,
-                                    Pos {
-                                        x: pos.x + x as i64,
-                                        y: pos.y + y as i64,
-                                    },
-                                    case_sensitive,
-                                    whole_cell,
-                                    false, // code_runs can never have code within them (although that would be cool if they did ;)
-                                ) {
-                                    results.push(SheetPos {
-                                        x: pos.x + x as i64,
-                                        y: pos.y + y as i64,
-                                        sheet_id: self.id,
-                                    });
-                                }
+                }
+                Value::Array(array) => {
+                    for y in 0..array.size().h.get() {
+                        for x in 0..array.size().w.get() {
+                            let cell_value = array.get(x, y).unwrap();
+                            if self.compare_cell_value(
+                                cell_value,
+                                query,
+                                Pos {
+                                    x: pos.x + x as i64,
+                                    y: pos.y + y as i64,
+                                },
+                                case_sensitive,
+                                whole_cell,
+                                false, // data_tables can never have code within them (although that would be cool if they did ;)
+                            ) {
+                                results.push(SheetPos {
+                                    x: pos.x + x as i64,
+                                    y: pos.y + y as i64,
+                                    sheet_id: self.id,
+                                });
                             }
                         }
                     }
-                    Value::Tuple(_) => {} // Tuples are not spilled onto the grid
-                },
-                CodeRunResult::Err(_) => (),
+                }
+                Value::Tuple(_) => {} // Tuples are not spilled onto the grid);
             });
         results
     }
@@ -179,7 +176,7 @@ impl Sheet {
         let whole_cell = options.whole_cell.unwrap_or(false);
         let search_code = options.search_code.unwrap_or(false);
         let mut results = self.search_cell_values(&query, case_sensitive, whole_cell, search_code);
-        results.extend(self.search_code_runs(&query, case_sensitive, whole_cell));
+        results.extend(self.search_data_tables(&query, case_sensitive, whole_cell));
         results.sort_by(|a, b| {
             let order = a.x.cmp(&b.x);
             if order == std::cmp::Ordering::Equal {
@@ -232,15 +229,12 @@ impl Sheet {
 
 #[cfg(test)]
 mod test {
-    use chrono::Utc;
-
+    use super::*;
     use crate::{
         controller::GridController,
-        grid::{CodeCellLanguage, CodeCellValue, CodeRun},
+        grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
         Array,
     };
-
-    use super::*;
     use serial_test::parallel;
 
     #[test]
@@ -502,18 +496,24 @@ mod test {
             }),
         );
         let code_run = CodeRun {
-            formatted_code_string: None,
-            result: CodeRunResult::Ok(Value::Single("world".into())),
+            error: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
-            spill_error: false,
             return_type: None,
             line_number: None,
             output_type: None,
-            last_modified: Utc::now(),
         };
-        sheet.set_code_run(Pos { x: 1, y: 2 }, Some(code_run));
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "Table 1",
+            Value::Single("world".into()),
+            false,
+            false,
+            false,
+            None,
+        );
+        sheet.set_data_table(Pos { x: 1, y: 2 }, Some(data_table));
 
         let results = sheet.search(
             &"hello".into(),
@@ -541,21 +541,27 @@ mod test {
     fn search_within_code_runs() {
         let mut sheet = Sheet::test();
         let code_run = CodeRun {
-            formatted_code_string: None,
-            result: CodeRunResult::Ok(Value::Array(Array::from(vec![
-                vec!["abc", "def", "ghi"],
-                vec!["jkl", "mno", "pqr"],
-            ]))),
+            error: None,
             std_out: None,
             std_err: None,
             cells_accessed: Default::default(),
-            spill_error: false,
             return_type: None,
             line_number: None,
             output_type: None,
-            last_modified: Utc::now(),
         };
-        sheet.set_code_run(Pos { x: 1, y: 2 }, Some(code_run));
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "Table 1",
+            Value::Array(Array::from(vec![
+                vec!["abc", "def", "ghi"],
+                vec!["jkl", "mno", "pqr"],
+            ])),
+            false,
+            false,
+            false,
+            None,
+        );
+        sheet.set_data_table(Pos { x: 1, y: 2 }, Some(data_table));
 
         let results = sheet.search(
             &"abc".into(),

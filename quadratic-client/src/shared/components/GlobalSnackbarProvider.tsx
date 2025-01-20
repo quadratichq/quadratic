@@ -1,6 +1,7 @@
 // import CloseIcon from '@mui/icons-material/Close';
 import { CloseIcon } from '@/shared/components/Icons';
-import { Alert, AlertColor, Snackbar } from '@mui/material';
+import type { AlertColor } from '@mui/material';
+import { Alert, Snackbar } from '@mui/material';
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '../shadcn/ui/button';

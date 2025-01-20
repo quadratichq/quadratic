@@ -3,8 +3,8 @@ import { FormulaDocs } from '@/app/ai/docs/FormulaDocs';
 import { JavascriptDocs } from '@/app/ai/docs/JavascriptDocs';
 import { PythonDocs } from '@/app/ai/docs/PythonDocs';
 import { QuadraticDocs } from '@/app/ai/docs/QuadraticDocs';
-import { CodeCellType } from '@/app/helpers/codeCellLanguage';
-import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import type { CodeCellType } from '@/app/helpers/codeCellLanguage';
+import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
 export function useQuadraticContextMessages() {

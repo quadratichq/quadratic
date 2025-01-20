@@ -6,7 +6,8 @@ use std::{
 use ts_rs::TS;
 
 use super::SheetId;
-use crate::{CellRefRange, Rect, SheetPos, SheetRect};
+use crate::a1::{A1Context, CellRefRange};
+use crate::{Rect, SheetPos, SheetRect};
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 #[serde(rename_all = "camelCase")]
@@ -32,7 +33,10 @@ impl Serialize for CellsAccessed {
         for (sheet_id, ranges) in &self.cells {
             map.serialize_entry(
                 &sheet_id.to_string(),
-                &ranges.iter().map(|r| r.to_string()).collect::<Vec<_>>(),
+                &ranges
+                    .iter()
+                    .map(|r| serde_json::to_string(r).unwrap())
+                    .collect::<Vec<_>>(),
             )?;
         }
         map.end()
@@ -49,8 +53,10 @@ impl<'de> Deserialize<'de> for CellsAccessed {
 
         for (sheet_id_str, ranges) in js_cells {
             if let Ok(sheet_id) = SheetId::from_str(&sheet_id_str) {
-                let ranges: HashSet<CellRefRange> =
-                    ranges.into_iter().filter_map(|r| r.parse().ok()).collect();
+                let ranges: HashSet<CellRefRange> = ranges
+                    .into_iter()
+                    .filter_map(|r| serde_json::from_str(&r).ok())
+                    .collect();
                 if !ranges.is_empty() {
                     cells.insert(sheet_id, ranges);
                 }
@@ -103,7 +109,7 @@ impl CellsAccessed {
     }
 
     /// Whether the CellsAccessed intersects the SheetRect.
-    pub fn intersects(&self, sheet_rect: &SheetRect) -> bool {
+    pub fn intersects(&self, sheet_rect: &SheetRect, context: &A1Context) -> bool {
         let rect: Rect = (*sheet_rect).into();
         self.cells
             .iter()
@@ -114,11 +120,15 @@ impl CellsAccessed {
                     None
                 }
             })
-            .any(|ranges| ranges.iter().any(|range| range.might_intersect_rect(rect)))
+            .any(|ranges| {
+                ranges
+                    .iter()
+                    .any(|range| range.might_intersect_rect(rect, context))
+            })
     }
 
     /// Whether this CellsAccessed contains the SheetPos.
-    pub fn contains(&self, pos: SheetPos) -> bool {
+    pub fn contains(&self, pos: SheetPos, context: &A1Context) -> bool {
         self.cells
             .iter()
             .filter_map(|(sheet_id, ranges)| {
@@ -131,7 +141,7 @@ impl CellsAccessed {
             .any(|ranges| {
                 ranges
                     .iter()
-                    .any(|range| range.might_contain_pos(pos.into()))
+                    .any(|range| range.might_contain_pos(pos.into(), context))
             })
     }
 
@@ -185,8 +195,9 @@ mod tests {
             sheet_id,
             CellRefRange::new_relative_rect(Rect::new(1, 1, 3, 3)),
         );
-        assert!(cells.intersects(&SheetRect::new(1, 1, 3, 3, sheet_id)));
-        assert!(!cells.intersects(&SheetRect::new(4, 4, 5, 5, sheet_id)));
+        let context = A1Context::default();
+        assert!(cells.intersects(&SheetRect::new(1, 1, 3, 3, sheet_id), &context));
+        assert!(!cells.intersects(&SheetRect::new(4, 4, 5, 5, sheet_id), &context));
     }
 
     #[test]
@@ -194,8 +205,9 @@ mod tests {
         let mut cells = CellsAccessed::default();
         let sheet_id = SheetId::new();
         cells.add(sheet_id, CellRefRange::new_relative_xy(1, 1));
-        assert!(cells.contains(SheetPos::new(sheet_id, 1, 1)));
-        assert!(!cells.contains(SheetPos::new(sheet_id, 2, 2)));
+        let context = A1Context::default();
+        assert!(cells.contains(SheetPos::new(sheet_id, 1, 1), &context));
+        assert!(!cells.contains(SheetPos::new(sheet_id, 2, 2), &context));
     }
 
     #[test]
@@ -211,8 +223,9 @@ mod tests {
     fn test_add_sheet_pos() {
         let mut cells = CellsAccessed::default();
         let sheet_id = SheetId::new();
+        let context = A1Context::default();
         cells.add_sheet_pos(SheetPos::new(sheet_id, 1, 1));
-        assert!(cells.contains(SheetPos::new(sheet_id, 1, 1)));
+        assert!(cells.contains(SheetPos::new(sheet_id, 1, 1), &context));
     }
 
     #[test]

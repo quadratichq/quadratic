@@ -1,5 +1,5 @@
-import { SheetPosTS } from '@/app/gridGL/types/size';
-import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { SheetPosTS } from '@/app/gridGL/types/size';
+import type { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 
 export interface CellEdit {
   active: boolean;

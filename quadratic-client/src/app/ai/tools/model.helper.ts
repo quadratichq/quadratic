@@ -1,5 +1,5 @@
 import { MODEL_OPTIONS } from 'quadratic-shared/AI_MODELS';
-import {
+import type {
   AIModel,
   AnthropicModel,
   BedrockAnthropicModel,

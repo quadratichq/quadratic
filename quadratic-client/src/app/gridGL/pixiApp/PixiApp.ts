@@ -19,8 +19,8 @@ import { UIValidations } from '@/app/gridGL/UI/UIValidations';
 import { BoxCells } from '@/app/gridGL/UI/boxCells';
 import { CellHighlights } from '@/app/gridGL/UI/cellHighlights/CellHighlights';
 import { GridHeadings } from '@/app/gridGL/UI/gridHeadings/GridHeadings';
+import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { CellsSheets } from '@/app/gridGL/cells/CellsSheets';
-import { CellsImages } from '@/app/gridGL/cells/cellsImages/CellsImages';
 import { Pointer } from '@/app/gridGL/interaction/pointer/Pointer';
 import { ensureVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { MomentumScrollDetector } from '@/app/gridGL/pixiApp/MomentumScrollDetector';
@@ -30,7 +30,7 @@ import { urlParams } from '@/app/gridGL/pixiApp/urlParams/urlParams';
 import { Viewport } from '@/app/gridGL/pixiApp/viewport/Viewport';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { isEmbed } from '@/app/helpers/isEmbed';
-import { JsCoordinate } from '@/app/quadratic-core-types';
+import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
@@ -53,11 +53,17 @@ export class PixiApp {
 
   canvas!: HTMLCanvasElement;
   viewport!: Viewport;
+  gridLines: GridLines;
   background: Background;
-  gridLines!: GridLines;
   cursor!: Cursor;
   cellHighlights!: CellHighlights;
   multiplayerCursor!: UIMultiPlayerCursor;
+
+  // this is used to display content over the headings (eg, table name when off
+  // the screen)
+  overHeadingsColumnsHeaders: Container;
+  overHeadingsTableNames: Container;
+
   cellMoving!: UICellMoving;
   headings!: GridHeadings;
   boxCells!: BoxCells;
@@ -90,8 +96,11 @@ export class PixiApp {
   constructor() {
     // This is created first so it can listen to messages from QuadraticCore.
     this.cellsSheets = new CellsSheets();
+    this.gridLines = new GridLines();
     this.cellImages = new UICellImages();
     this.validations = new UIValidations();
+    this.overHeadingsColumnsHeaders = new Container();
+    this.overHeadingsTableNames = new Container();
     this.viewport = new Viewport();
     this.background = new Background();
     this.momentumDetector = new MomentumScrollDetector();
@@ -157,7 +166,13 @@ export class PixiApp {
     this.debug = this.viewportContents.addChild(new Graphics());
 
     this.cellsSheets = this.viewportContents.addChild(this.cellsSheets);
-    this.gridLines = this.viewportContents.addChild(new GridLines());
+    this.gridLines = this.viewportContents.addChild(this.gridLines);
+
+    // this is a hack to ensure that table column names appears over the column
+    // headings, but under the row headings
+    const gridHeadings = new GridHeadings();
+    this.viewportContents.addChild(gridHeadings.gridHeadingsRows);
+
     this.boxCells = this.viewportContents.addChild(new BoxCells());
     this.cellImages = this.viewportContents.addChild(this.cellImages);
     this.copy = this.viewportContents.addChild(this.copy);
@@ -168,7 +183,9 @@ export class PixiApp {
     this.cellHighlights = this.viewportContents.addChild(new CellHighlights());
     this.cellMoving = this.viewportContents.addChild(new UICellMoving());
     this.validations = this.viewportContents.addChild(this.validations);
-    this.headings = this.viewportContents.addChild(new GridHeadings());
+    this.headings = this.viewportContents.addChild(gridHeadings);
+    this.viewportContents.addChild(this.overHeadingsColumnsHeaders);
+    this.viewportContents.addChild(this.overHeadingsTableNames);
 
     this.reset();
 
@@ -350,9 +367,6 @@ export class PixiApp {
     this.cursor.dirty = true;
     this.cellHighlights.dirty = true;
     this.headings.dirty = true;
-    if (!pixiAppSettings.showCellTypeOutlines) {
-      this.cellsSheets.updateCellsArray();
-    }
     if (visible) ensureVisible(visible !== true ? visible : undefined);
     events.emit('cursorPosition');
   }
@@ -371,16 +385,12 @@ export class PixiApp {
     }
   }
 
-  // this shows the CellImages of the current sheet, removing any old ones. This
-  // is needed to ensure the proper z-index for the images (ie, so it shows over
-  // the grid lines).
-  changeCellImages(cellsImages: CellsImages) {
-    this.imagePlaceholders.removeChildren();
-    this.imagePlaceholders.addChild(cellsImages);
-  }
-
   isCursorOnCodeCell(): boolean {
     return this.cellsSheets.isCursorOnCodeCell();
+  }
+
+  isCursorOnCodeCellOutput(): boolean {
+    return this.cellsSheets.isCursorOnCodeCellOutput();
   }
 
   // called when the viewport is loaded from the URL
@@ -394,6 +404,13 @@ export class PixiApp {
         scaleY: this.viewport.scale.y,
       };
     }
+  }
+
+  cellsSheet(): CellsSheet {
+    if (!this.cellsSheets.current) {
+      throw new Error('cellSheet not found in pixiApp');
+    }
+    return this.cellsSheets.current;
   }
 }
 

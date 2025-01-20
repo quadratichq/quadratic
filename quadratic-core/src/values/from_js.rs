@@ -5,12 +5,13 @@ use bigdecimal::BigDecimal;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
 use crate::{
+    a1::A1Selection,
     controller::operations::operation::Operation,
     grid::{
         formats::{FormatUpdate, SheetFormatUpdates},
         NumericFormat, NumericFormatKind, Sheet,
     },
-    A1Selection, Pos,
+    Pos,
 };
 
 use super::CellValue;
@@ -102,6 +103,7 @@ impl CellValue {
                         .formats
                         .numeric_format
                         .set(pos, Some(numeric_format.clone()));
+
                     ops.push(Operation::SetCellFormatsA1 {
                         sheet_id: sheet.id,
                         formats: SheetFormatUpdates::from_selection(

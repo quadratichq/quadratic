@@ -17,7 +17,7 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import '@szhsin/react-menu/dist/index.css';
 import mixpanel from 'mixpanel-browser';
-import { ColorResult } from 'react-color';
+import type { ColorResult } from 'react-color';
 
 interface Props {
   handleClose: () => void;

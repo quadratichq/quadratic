@@ -1,4 +1,5 @@
-import {
+import { isAnthropicBedrockModel, isAnthropicModel, isBedrockModel, isOpenAIModel } from '@/app/ai/tools/model.helper';
+import type {
   AIModel,
   AIPromptMessage,
   AnthropicPromptMessage,
@@ -7,7 +8,6 @@ import {
   OpenAIPromptMessage,
   SystemMessage,
 } from 'quadratic-shared/typesAndSchemasAI';
-import { isAnthropicBedrockModel, isAnthropicModel, isBedrockModel, isOpenAIModel } from './model.helper';
 
 export const getSystemMessages = (messages: ChatMessage[]): string[] => {
   const systemMessages: SystemMessage[] = messages.filter<SystemMessage>(

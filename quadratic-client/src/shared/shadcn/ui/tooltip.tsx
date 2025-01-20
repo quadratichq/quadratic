@@ -2,7 +2,7 @@ import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import * as React from 'react';
 
 import { cn } from '@/shared/shadcn/utils';
-import { PopperContentProps } from '@radix-ui/react-popover';
+import type { PopperContentProps } from '@radix-ui/react-popover';
 
 const TooltipProvider = TooltipPrimitive.Provider;
 

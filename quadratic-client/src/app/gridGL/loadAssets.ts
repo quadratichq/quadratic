@@ -42,12 +42,20 @@ export function loadAssets(): Promise<void> {
     addResourceOnce('OpenSans-BoldItalic', '/fonts/opensans/OpenSans-BoldItalic.fnt');
 
     // CellsMarker
-    addResourceOnce('formula-fx-icon', '/images/formula-fx-icon.png');
-    addResourceOnce('python-icon', '/images/python-icon.png');
-    addResourceOnce('javascript-icon', '/images/javascript-icon.png');
+    addResourceOnce('icon-formula', '/images/icon-formula.png');
+    addResourceOnce('icon-python', '/images/icon-python.png');
+    addResourceOnce('icon-javascript', '/images/icon-javascript.png');
+    addResourceOnce('icon-postgres', '/images/icon-postgres.png');
+    addResourceOnce('icon-mysql', '/images/icon-mysql.png');
+    addResourceOnce('icon-snowflake', '/images/icon-snowflake.png');
+    addResourceOnce('icon-mssql', '/images/icon-mssql.png');
     addResourceOnce('checkbox-icon', '/images/checkbox.png');
     addResourceOnce('checkbox-checked-icon', '/images/checkbox-checked.png');
     addResourceOnce('dropdown-icon', '/images/dropdown.png');
+    addResourceOnce('dropdown-white-icon', '/images/dropdown-white.png');
+
+    addResourceOnce('sort-ascending', '/images/sort-ascending.svg');
+    addResourceOnce('sort-descending', '/images/sort-descending.svg');
 
     // Wait until pixi fonts are loaded before resolving
     Loader.shared.load(() => {

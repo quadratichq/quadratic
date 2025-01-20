@@ -2,7 +2,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::{grid::Sheet, A1Selection, CellValue};
+use crate::{a1::A1Selection, grid::Sheet, CellValue};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub enum ValidationListSource {

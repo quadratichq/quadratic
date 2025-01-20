@@ -15,12 +15,13 @@
 
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { JsBorderHorizontal, JsBordersSheet, JsBorderVertical } from '@/app/quadratic-core-types';
+import type { Sheet } from '@/app/grid/sheet/Sheet';
+import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
+import type { BorderCull } from '@/app/gridGL/cells/drawBorders';
+import { drawCellBorder } from '@/app/gridGL/cells/drawBorders';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import type { JsBorderHorizontal, JsBordersSheet, JsBorderVertical } from '@/app/quadratic-core-types';
 import { Container, Rectangle, Sprite, Texture, TilingSprite } from 'pixi.js';
-import { Sheet } from '../../grid/sheet/Sheet';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { CellsSheet } from './CellsSheet';
-import { BorderCull, drawCellBorder } from './drawBorders';
 
 // this sets when to fade the sheet borders when (for performance reasons)
 const SCALE_TO_SHOW_SHEET_BORDERS = 0.15;

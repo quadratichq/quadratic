@@ -1,11 +1,12 @@
 use crate::{
+    a1::{CellRefRange, UNBOUNDED},
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
     formulas::{replace_cell_references_with, CellRefCoord},
     grid::{CodeCellLanguage, CodeCellValue, GridBounds, SheetId},
-    CellValue, Pos, UNBOUNDED,
+    CellValue, Pos,
 };
 
 impl GridController {
@@ -91,14 +92,18 @@ impl GridController {
         delta: i64,
     ) {
         for sheet in self.grid.sheets().iter() {
-            for (pos, code_run) in sheet.code_runs.iter() {
+            for (pos, code_run) in sheet.iter_code_runs() {
                 if let Some(cells_ranges) = code_run.cells_accessed.cells.get(&sheet_id) {
                     let Some(sheet) = self.try_sheet(sheet_id) else {
                         continue;
                     };
 
                     for cells_range in cells_ranges.iter() {
-                        let cells_rect = sheet.cell_ref_range_to_rect(*cells_range);
+                        let ref_range_bounds = match cells_range {
+                            CellRefRange::Sheet { range } => range,
+                            CellRefRange::Table { .. } => continue,
+                        };
+                        let cells_rect = sheet.ref_range_bounds_to_rect(ref_range_bounds);
 
                         if cells_rect.max.x < column.unwrap_or(UNBOUNDED)
                             && cells_rect.max.y < row.unwrap_or(UNBOUNDED)
@@ -120,9 +125,9 @@ impl GridController {
                                 }
                                 _ => {
                                     let mut new_code = code.clone();
-                                    let sheet_map = self.grid.sheet_name_id_map();
+                                    let context = self.grid.a1_context();
                                     new_code.adjust_code_cell_column_row(
-                                        column, row, delta, &sheet_id, &sheet_map,
+                                        column, row, delta, &sheet_id, &context,
                                     );
                                     new_code.code
                                 }
@@ -170,9 +175,9 @@ impl GridController {
                     if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
                         let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                         sheet_rect.min.x = column;
-                        self.check_deleted_code_runs(transaction, &sheet_rect);
+                        self.check_deleted_data_tables(transaction, &sheet_rect);
                         self.add_compute_operations(transaction, &sheet_rect, None);
-                        self.check_all_spills(transaction, sheet_rect.sheet_id, true);
+                        self.check_all_spills(transaction, sheet_rect.sheet_id);
                     }
                 }
             }
@@ -205,9 +210,9 @@ impl GridController {
                     if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
                         let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                         sheet_rect.min.y = row;
-                        self.check_deleted_code_runs(transaction, &sheet_rect);
+                        self.check_deleted_data_tables(transaction, &sheet_rect);
                         self.add_compute_operations(transaction, &sheet_rect, None);
-                        self.check_all_spills(transaction, sheet_rect.sheet_id, true);
+                        self.check_all_spills(transaction, sheet_rect.sheet_id);
                     }
                 }
             }
@@ -245,9 +250,9 @@ impl GridController {
                     if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
                         let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                         sheet_rect.min.x = column + 1;
-                        self.check_deleted_code_runs(transaction, &sheet_rect);
+                        self.check_deleted_data_tables(transaction, &sheet_rect);
                         self.add_compute_operations(transaction, &sheet_rect, None);
-                        self.check_all_spills(transaction, sheet_rect.sheet_id, true);
+                        self.check_all_spills(transaction, sheet_rect.sheet_id);
                     }
                 }
             }
@@ -285,9 +290,9 @@ impl GridController {
                     if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
                         let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                         sheet_rect.min.y = row + 1;
-                        self.check_deleted_code_runs(transaction, &sheet_rect);
+                        self.check_deleted_data_tables(transaction, &sheet_rect);
                         self.add_compute_operations(transaction, &sheet_rect, None);
-                        self.check_all_spills(transaction, sheet_rect.sheet_id, true);
+                        self.check_all_spills(transaction, sheet_rect.sheet_id);
                     }
                 }
             }
@@ -303,17 +308,17 @@ impl GridController {
 mod tests {
     use std::collections::HashMap;
 
-    use chrono::Utc;
     use serial_test::{parallel, serial};
     use uuid::Uuid;
 
     use crate::{
+        a1::A1Selection,
         grid::{
             sheet::validations::{validation::Validation, validation_rules::ValidationRule},
-            CellsAccessed, CodeCellLanguage, CodeCellValue, CodeRun, CodeRunResult,
+            CellsAccessed, CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
         },
         wasm_bindings::js::{clear_js_calls, expect_js_call_count, expect_js_offsets},
-        A1Selection, Array, CellValue, Pos, Rect, SheetPos, SheetRect, Value, DEFAULT_COLUMN_WIDTH,
+        Array, CellValue, Pos, Rect, SheetPos, SheetRect, Value, DEFAULT_COLUMN_WIDTH,
         DEFAULT_ROW_HEIGHT,
     };
 
@@ -446,17 +451,23 @@ mod tests {
         let code_run = CodeRun {
             std_err: None,
             std_out: None,
-            result: CodeRunResult::Ok(Value::Array(Array::from(vec![vec!["3"]]))),
+            error: None,
             return_type: Some("number".into()),
             line_number: None,
             output_type: None,
-            spill_error: false,
-            last_modified: Utc::now(),
             cells_accessed,
-            formatted_code_string: None,
         };
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "test",
+            Value::Array(Array::from(vec![vec!["3"]])),
+            false,
+            false,
+            false,
+            None,
+        );
         let transaction = &mut PendingTransaction::default();
-        gc.finalize_code_run(transaction, sheet_pos, Some(code_run), None);
+        gc.finalize_code_run(transaction, sheet_pos, Some(data_table), None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -519,20 +530,27 @@ mod tests {
 
         let mut cells_accessed = CellsAccessed::default();
         cells_accessed.add_sheet_rect(SheetRect::new(1, 1, 2, 2, sheet_id));
+
         let code_run = CodeRun {
             std_err: None,
             std_out: None,
-            result: CodeRunResult::Ok(Value::Array(Array::from(vec![vec!["3"]]))),
+            error: None,
             return_type: Some("number".into()),
             line_number: None,
             output_type: None,
-            spill_error: false,
-            last_modified: Utc::now(),
             cells_accessed,
-            formatted_code_string: None,
         };
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "test",
+            Value::Array(Array::from(vec![vec!["3"]])),
+            false,
+            false,
+            false,
+            None,
+        );
         let transaction = &mut PendingTransaction::default();
-        gc.finalize_code_run(transaction, sheet_pos, Some(code_run), None);
+        gc.finalize_code_run(transaction, sheet_pos, Some(data_table), None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(

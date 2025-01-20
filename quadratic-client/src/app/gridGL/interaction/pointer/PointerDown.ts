@@ -1,18 +1,19 @@
+import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
+import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
+import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
+import { DOUBLE_CLICK_TIME } from '@/app/gridGL/interaction/pointer/pointerUtils';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { isLinux } from '@/shared/utils/isLinux';
 import { isMac } from '@/shared/utils/isMac';
 import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
-import { sheets } from '../../../grid/controller/Sheets';
-import { inlineEditorMonaco } from '../../HTMLGrid/inlineEditor/inlineEditorMonaco';
-import { pixiApp } from '../../pixiApp/PixiApp';
-import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
-import { doubleClickCell } from './doubleClickCell';
-import { DOUBLE_CLICK_TIME } from './pointerUtils';
 
 const MINIMUM_MOVE_POSITION = 5;
 
@@ -73,9 +74,9 @@ export class PointerDown {
         cursor.moveTo(column, row, false);
         // hack to ensure that the context menu opens after the cursor changes
         // position (otherwise it may close immediately)
-        setTimeout(() => events.emit('gridContextMenu', world, column, row));
+        setTimeout(() => events.emit('contextMenu', { type: ContextMenuType.Grid, world, column, row }));
       } else {
-        events.emit('gridContextMenu', world, column, row);
+        events.emit('contextMenu', { type: ContextMenuType.Grid, world, column, row });
       }
       return;
     }
@@ -91,12 +92,12 @@ export class PointerDown {
           return;
         }
         event.preventDefault();
-        const code = await quadraticCore.getCodeCell(sheet.id, column, row);
-        if (code) {
+        const table = pixiApp.cellsSheet().tables.getTableFromTableCell(column, row);
+        if (table) {
           doubleClickCell({
-            column: Number(code.x),
-            row: Number(code.y),
-            language: code.language,
+            column: table.codeCell.x,
+            row: table.codeCell.y,
+            language: table.codeCell.language,
             cell: '',
           });
         } else {

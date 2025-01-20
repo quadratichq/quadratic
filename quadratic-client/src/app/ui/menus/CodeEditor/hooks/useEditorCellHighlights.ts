@@ -5,7 +5,8 @@ import {
 } from '@/app/atoms/codeEditorAtom';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
-import { parseFormulaReturnToCellsAccessed, ParseFormulaReturnType } from '@/app/helpers/formulaNotation';
+import type { ParseFormulaReturnType } from '@/app/helpers/formulaNotation';
+import { parseFormulaReturnToCellsAccessed } from '@/app/helpers/formulaNotation';
 import { getKey, type StringId } from '@/app/helpers/getKey';
 import type { JsCoordinate, Span } from '@/app/quadratic-core-types';
 import { parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';

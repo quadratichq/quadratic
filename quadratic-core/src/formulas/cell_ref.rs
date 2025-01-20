@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::formulas::{escape_string, parse_sheet_name};
-use crate::{Pos, UNBOUNDED};
+use crate::{a1::UNBOUNDED, Pos};
 
 /// A reference to a cell or a range of cells.
 ///
@@ -344,20 +344,20 @@ mod tests {
     #[test]
     #[parallel]
     fn test_a1_sheet_parsing() {
-        let pos = CellRef::parse_a1("'Sheet 2'!A1", pos![A1]);
+        let pos = CellRef::parse_a1("'Sheet2'!A1", pos![A1]);
         assert_eq!(
             pos,
             Some(CellRef {
-                sheet: Some("Sheet 2".to_string()),
+                sheet: Some("Sheet2".to_string()),
                 x: CellRefCoord::Relative(0),
                 y: CellRefCoord::Relative(0),
             })
         );
-        let pos = CellRef::parse_a1("\"Sheet 2\"!A1", pos![A1]);
+        let pos = CellRef::parse_a1("\"Sheet2\"!A1", pos![A1]);
         assert_eq!(
             pos,
             Some(CellRef {
-                sheet: Some("Sheet 2".to_string()),
+                sheet: Some("Sheet2".to_string()),
                 x: CellRefCoord::Relative(0),
                 y: CellRefCoord::Relative(0),
             })

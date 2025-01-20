@@ -1,11 +1,12 @@
+import { isAvailableBecauseCanEditFile } from '@/app/actions';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { focusGrid } from '@/app/helpers/focusGrid';
+import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { SheetIcon } from '@/shared/components/Icons';
 import { useEffect, useMemo, useState } from 'react';
-import { isAvailableBecauseCanEditFile } from '../../../../actions';
-import { sheets } from '../../../../grid/controller/Sheets';
-import { focusGrid } from '../../../../helpers/focusGrid';
-import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
 const ListItems = () => {
   // used to trigger changes in sheets

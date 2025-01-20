@@ -317,7 +317,7 @@ mod tests {
     use serial_test::parallel;
     use uuid::Uuid;
 
-    use crate::A1Selection;
+    use crate::a1::A1Selection;
 
     use super::*;
 

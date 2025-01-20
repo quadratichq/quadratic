@@ -1,4 +1,5 @@
-import { User, authClient } from '@/auth/auth';
+import type { User } from '@/auth/auth';
+import { authClient } from '@/auth/auth';
 import { Empty } from '@/dashboard/components/Empty';
 import { GlobalSnackbarProvider } from '@/shared/components/GlobalSnackbarProvider';
 import { MuiTheme } from '@/shared/components/MuiTheme';
@@ -8,7 +9,8 @@ import { ThemeAppearanceModeEffects } from '@/shared/hooks/useThemeAppearanceMod
 import { initializeAnalytics } from '@/shared/utils/analytics';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
-import { LoaderFunctionArgs, Outlet, useRouteError, useRouteLoaderData } from 'react-router-dom';
+import type { LoaderFunctionArgs } from 'react-router-dom';
+import { Outlet, useRouteError, useRouteLoaderData } from 'react-router-dom';
 
 export type RootLoaderData = {
   isAuthenticated: boolean;

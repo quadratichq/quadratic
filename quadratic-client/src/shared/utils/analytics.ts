@@ -1,5 +1,5 @@
 import { debugShow } from '@/app/debugFlags';
-import { User as AuthUser } from '@/auth/auth';
+import type { User as AuthUser } from '@/auth/auth';
 import * as amplitude from '@amplitude/analytics-browser';
 import { setUser } from '@sentry/react';
 import mixpanel from 'mixpanel-browser';

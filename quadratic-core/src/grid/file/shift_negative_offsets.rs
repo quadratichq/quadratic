@@ -80,7 +80,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
 
     // translate code runs's cells_accessed
     for sheet in grid.sheets.iter_mut() {
-        for code_run in sheet.code_runs.values_mut() {
+        for (_, code_run) in sheet.iter_code_runs_mut() {
             let cells = &mut code_run.cells_accessed.cells;
             for (sheet_id, ranges) in cells {
                 // Get shift values for the current sheet, skip if not found
@@ -125,9 +125,10 @@ mod test {
     use serial_test::parallel;
 
     use crate::{
+        a1::UNBOUNDED,
         controller::GridController,
         grid::{file::import, sheet::borders::CellBorderLine},
-        CellValue, Pos, UNBOUNDED,
+        CellValue, Pos,
     };
 
     #[test]

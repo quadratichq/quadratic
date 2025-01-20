@@ -5,6 +5,8 @@
 //! numbers to all return statements via a caught thrown error (the only way to
 //! get line numbers in JS).
 
+// todo: can remove the line number vars as we are no longer using them.
+
 import { getJavascriptFetchOverride } from '@/app/web-workers/javascriptWebWorker/worker/javascript/getJavascriptFetchOverride';
 import { getJavascriptXHROverride } from '@/app/web-workers/javascriptWebWorker/worker/javascript/getJavascriptXHROverride';
 import * as esbuild from 'esbuild-wasm';
@@ -91,10 +93,11 @@ export function prepareJavascriptCode(
     'let results = await (async () => {' +
     code +
     '\n })();' +
-    'if (results instanceof OffscreenCanvas) results = await results.convertToBlob();' +
+    'let chartPixelOutput = undefined;' +
+    'if (results instanceof OffscreenCanvas) { chartPixelOutput = [results.width, results.height]; results = await results.convertToBlob(); }' +
     `self.postMessage({ type: "results", results, console: javascriptConsole.output()${
       withLineNumbers ? `, lineNumber: Math.max(${LINE_NUMBER_VAR} - 1, 0)` : ''
-    } });` +
+    }, chartPixelOutput });` +
     `} catch (e) { const error = e.message; const stack = e.stack; self.postMessage({ type: "error", error, stack, console: javascriptConsole.output() }); }` +
     '})();';
 

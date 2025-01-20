@@ -2,7 +2,7 @@ import { AITool } from '@/app/ai/tools/aiTools';
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { JsCoordinate } from '@/app/quadratic-core-types';
+import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { ToolCard } from '@/app/ui/menus/AIAnalyst/toolCards/ToolCard';
@@ -13,7 +13,7 @@ import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { OBJ, parse, STR } from 'partial-json';
 import { useEffect, useState } from 'react';
 import { useRecoilCallback } from 'recoil';
-import { z } from 'zod';
+import type { z } from 'zod';
 
 type SetCodeCellValueResponse = z.infer<(typeof aiToolsSpec)[AITool.SetCodeCellValue]['responseSchema']>;
 
@@ -35,11 +35,7 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
 
         if (toolArgs.success) {
           try {
-            const selection = stringToSelection(
-              toolArgs.data.code_cell_position,
-              sheets.current,
-              sheets.getSheetIdNameMap()
-            );
+            const selection = stringToSelection(toolArgs.data.code_cell_position, sheets.current, sheets.a1Context);
             const { x, y } = selection.getCursor();
             setCodeCellPos({ x, y });
           } catch (e) {

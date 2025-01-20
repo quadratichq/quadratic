@@ -5,6 +5,7 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 use super::cells_accessed::JsCellsAccessed;
+use super::data_table::{column_header::DataTableColumnHeader, sort::DataTableSort};
 use super::formats::Format;
 use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use super::sheet::validations::validation::ValidationStyle;
@@ -19,6 +20,7 @@ pub enum JsRenderCellSpecial {
     Logical,
     Checkbox,
     List,
+    TableColumnHeader,
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
@@ -109,7 +111,14 @@ pub struct JsRenderCell {
 
 #[cfg(test)]
 impl JsRenderCell {
-    pub fn new_number(x: i64, y: i64, value: isize, language: Option<CodeCellLanguage>) -> Self {
+    pub fn new_number(
+        x: i64,
+        y: i64,
+        value: isize,
+        language: Option<CodeCellLanguage>,
+        special: Option<JsRenderCellSpecial>,
+        table: bool,
+    ) -> Self {
         Self {
             x,
             y,
@@ -117,6 +126,8 @@ impl JsRenderCell {
             language,
             align: Some(CellAlign::Right),
             number: Some(JsNumber::default()),
+            special,
+            wrap: if table { Some(CellWrap::Clip) } else { None },
             ..Default::default()
         }
     }
@@ -132,7 +143,7 @@ impl From<Pos> for JsRenderCell {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct JsRenderFill {
     pub x: i64,
     pub y: i64,
@@ -207,16 +218,25 @@ pub struct JsRenderCodeCell {
     pub language: CodeCellLanguage,
     pub state: JsRenderCodeCellState,
     pub spill_error: Option<Vec<Pos>>,
+    pub name: String,
+    pub columns: Vec<JsDataTableColumnHeader>,
+    pub first_row_header: bool,
+    pub show_header: bool,
+    pub sort: Option<Vec<DataTableSort>>,
+    pub alternating_colors: bool,
+    pub readonly: bool,
+    pub is_html_image: bool,
+    pub show_ui: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct JsHtmlOutput {
     pub sheet_id: String,
     pub x: i64,
     pub y: i64,
     pub html: Option<String>,
-    pub w: Option<String>,
-    pub h: Option<String>,
+    pub w: Option<f32>,
+    pub h: Option<f32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
@@ -225,6 +245,8 @@ pub enum JsRenderCodeCellState {
     RunError,
     SpillError,
     Success,
+    HTML,
+    Image,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, TS)]
@@ -244,8 +266,35 @@ pub struct JsValidationSheet {
     errors: Vec<(Pos, String)>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 #[serde(rename_all = "camelCase")]
+pub struct JsDataTableColumnHeader {
+    pub name: String,
+    pub display: bool,
+    pub value_index: u32,
+}
+
+impl From<DataTableColumnHeader> for JsDataTableColumnHeader {
+    fn from(column: DataTableColumnHeader) -> Self {
+        JsDataTableColumnHeader {
+            name: column.name.to_string(),
+            display: column.display,
+            value_index: column.value_index,
+        }
+    }
+}
+
+impl From<JsDataTableColumnHeader> for DataTableColumnHeader {
+    fn from(column: JsDataTableColumnHeader) -> Self {
+        DataTableColumnHeader {
+            name: column.name.into(),
+            display: column.display,
+            value_index: column.value_index,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, TS)]
 pub struct JsRowHeight {
     pub row: i64,
     pub height: f64,

@@ -527,8 +527,8 @@ mod tests {
         // Test mismatched range
         assert_eq!(
             RunErrorMsg::ExactArraySizeMismatch {
-                expected: ArraySize::try_from((1, 12)).unwrap(),
-                got: ArraySize::try_from((1, 11)).unwrap(),
+                expected: ArraySize::try_from((1_i64, 12_i64)).unwrap(),
+                got: ArraySize::try_from((1_i64, 11_i64)).unwrap(),
             },
             eval_to_err(&g, "SUMIFS(0..10, 0..11, \"<=5\")").msg,
         );
@@ -764,11 +764,7 @@ mod tests {
         ];
         for (digits, expected_results) in test_cases {
             for (input, expected_output) in std::iter::zip(test_values, expected_results) {
-                assert_f64_eval(
-                    &g,
-                    expected_output as f64,
-                    &format!("ROUND({input}, {digits})"),
-                );
+                assert_f64_eval(&g, expected_output, &format!("ROUND({input}, {digits})"));
             }
         }
 
@@ -783,11 +779,7 @@ mod tests {
         ];
         for (digits, expected_results) in test_cases {
             for (input, expected_output) in std::iter::zip(test_values, expected_results) {
-                assert_f64_eval(
-                    &g,
-                    expected_output as f64,
-                    &format!("ROUNDUP({input}, {digits})"),
-                );
+                assert_f64_eval(&g, expected_output, &format!("ROUNDUP({input}, {digits})"));
             }
         }
 
@@ -804,14 +796,10 @@ mod tests {
             for (input, expected_output) in std::iter::zip(test_values, expected_results) {
                 assert_f64_eval(
                     &g,
-                    expected_output as f64,
+                    expected_output,
                     &format!("ROUNDDOWN({input}, {digits})"),
                 );
-                assert_f64_eval(
-                    &g,
-                    expected_output as f64,
-                    &format!("TRUNC({input}, {digits})"),
-                );
+                assert_f64_eval(&g, expected_output, &format!("TRUNC({input}, {digits})"));
             }
         }
     }

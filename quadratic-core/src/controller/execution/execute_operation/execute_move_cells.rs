@@ -1,12 +1,12 @@
 use std::collections::VecDeque;
 
 use crate::{
+    a1::A1Selection,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::{clipboard::PasteSpecial, operation::Operation},
         GridController,
     },
-    A1Selection,
 };
 
 impl GridController {
@@ -22,6 +22,7 @@ impl GridController {
             let selection = A1Selection::from_rect(source);
             if let Ok((cut_ops, js_clipboard)) = self.cut_to_clipboard_operations(&selection) {
                 operations.extend(cut_ops);
+
                 if let Ok(paste_ops) = self.paste_html_operations(
                     &A1Selection::from_single_cell(dest),
                     js_clipboard.html,
@@ -29,6 +30,7 @@ impl GridController {
                 ) {
                     operations.extend(paste_ops);
                 }
+
                 operations.extend(transaction.operations.drain(..));
                 transaction.operations = operations;
             }
