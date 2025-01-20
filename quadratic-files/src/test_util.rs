@@ -7,12 +7,31 @@
 // use quadratic_core::{Array, CellValue, SheetRect};
 use std::sync::Arc;
 
+use jsonwebtoken::jwk::JwkSet;
+use serde_json::json;
+
 use crate::config::config;
 use crate::state::State;
 
+pub(crate) fn new_jwks() -> JwkSet {
+    let key = "YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXowMTIzNDU=";
+    let jwks_json = json!({
+        "keys": [
+            {
+                "kty": "oct",
+                "alg": "HS256",
+                "kid": "abc123",
+                "k": key
+            }
+        ]
+    });
+
+    serde_json::from_value(jwks_json).expect("Failed HS256 check")
+}
+
 pub(crate) async fn new_state() -> State {
     let config = config().unwrap();
-    State::new(&config, None).await.unwrap()
+    State::new(&config, Some(new_jwks())).await.unwrap()
 }
 
 pub(crate) async fn new_arc_state() -> Arc<State> {

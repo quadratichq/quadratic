@@ -177,7 +177,11 @@ pub(crate) async fn serve() -> Result<()> {
 
                 // push stats to the logs if there are files to process
                 if stats.files_to_process_in_pubsub > 0 {
-                    tracing::info!("Stats: {}", stats);
+                    tracing::info!(
+                        r#"{{ "files_to_process_in_pubsub": "{:#?}", "last_processed_file_time": "{:#?}" }}"#,
+                        stats.files_to_process_in_pubsub,
+                        stats.last_processed_file_time,
+                    );
                 }
             }
         }
