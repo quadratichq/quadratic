@@ -129,7 +129,7 @@ export class HtmlCell {
       // turn off zooming within the iframe
 
       // forward the wheel event to the pixi viewport and adjust its position
-      this.iframe.contentWindow.document.body.addEventListener(
+      this.iframe.contentWindow.document.addEventListener(
         'wheel',
         (event) => {
           event.stopPropagation();
