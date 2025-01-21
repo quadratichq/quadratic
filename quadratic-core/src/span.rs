@@ -110,6 +110,18 @@ impl<T> Spanned<T> {
             inner: f(self.inner),
         }
     }
+    /// Applies a function to the inside of a `Spanned<T>` and returns the error
+    /// if it fails.
+    pub fn try_map<U>(
+        self,
+        f: impl FnOnce(T) -> Result<U, crate::RunErrorMsg>,
+    ) -> Result<Spanned<U>, crate::RunError> {
+        let Spanned { span, inner } = self;
+        match f(inner) {
+            Ok(ok) => Ok(Spanned { span, inner: ok }),
+            Err(e) => Err(e.with_span(span)),
+        }
+    }
     /// Converts a `&Spanned<T>` to a `Spanned<&T>`.
     pub fn as_ref(&self) -> Spanned<&T> {
         Spanned {

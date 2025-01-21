@@ -226,7 +226,7 @@ impl GridController {
         } = op
         {
             if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-                sheet.insert_column(transaction, column, copy_formats);
+                sheet.insert_column(transaction, column, copy_formats, true);
                 transaction.forward_operations.push(op);
 
                 sheet.recalculate_bounds();
@@ -266,7 +266,7 @@ impl GridController {
         } = op
         {
             if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-                sheet.insert_row(transaction, row, copy_formats);
+                sheet.insert_row(transaction, row, copy_formats, true);
                 transaction.forward_operations.push(op);
 
                 sheet.recalculate_bounds();
