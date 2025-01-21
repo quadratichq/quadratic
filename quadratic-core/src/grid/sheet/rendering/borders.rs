@@ -139,7 +139,7 @@ mod tests {
     }
 
     #[test]
-    fn test_render_borders_table_3x3_outside() {
+    fn test_render_borders_table_3x3_outer() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
@@ -155,7 +155,6 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
         let borders = sheet.borders_in_sheet().unwrap();
-        dbg!(&borders);
         assert_eq!(borders.horizontal.unwrap().len(), 2);
         assert_eq!(borders.vertical.unwrap().len(), 2);
     }

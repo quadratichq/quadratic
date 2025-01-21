@@ -1,6 +1,9 @@
 //! Prepare borders for rendering.
 
-use crate::grid::sheet::borders::{JsBorderHorizontal, JsBorderVertical};
+use crate::{
+    a1::UNBOUNDED,
+    grid::sheet::borders::{JsBorderHorizontal, JsBorderVertical},
+};
 
 use super::*;
 
@@ -29,7 +32,7 @@ impl Borders {
                             Some(table.max.x as u64)
                         },
                         if let Some(y2) = y2 {
-                            Some(y2.saturating_add(delta_y + 1))
+                            Some(y2.saturating_add(delta_y))
                         } else {
                             Some(table.max.y as u64)
                         },
@@ -47,21 +50,38 @@ impl Borders {
                     // 0-based.
                     let delta_x = table.min.x as u64 - 1;
                     let delta_y = table.min.y as u64 - 1;
-                    (
-                        x1.saturating_add(delta_x),
-                        y1.saturating_add(delta_y + 1),
-                        if let Some(x2) = x2 {
-                            Some(x2.saturating_add(delta_x))
-                        } else {
-                            Some(table.max.x as u64)
-                        },
-                        if let Some(y2) = y2 {
-                            Some(y2.saturating_add(delta_y + 1))
-                        } else {
-                            Some(table.max.y as u64 + 1)
-                        },
-                        border,
-                    )
+
+                    // we use UNBOUNDED as a special value to indicate the last
+                    // row of the table
+                    if y1 == UNBOUNDED as u64 && y2 == Some(UNBOUNDED as u64) {
+                        (
+                            x1.saturating_add(delta_x),
+                            table.max.y as u64 + 1,
+                            if let Some(x2) = x2 {
+                                Some(x2.saturating_add(delta_x))
+                            } else {
+                                Some(table.max.x as u64)
+                            },
+                            Some(table.max.y as u64 + 1),
+                            border,
+                        )
+                    } else {
+                        (
+                            x1.saturating_add(delta_x),
+                            y1.saturating_add(delta_y + 1),
+                            if let Some(x2) = x2 {
+                                Some(x2.saturating_add(delta_x))
+                            } else {
+                                Some(table.max.x as u64)
+                            },
+                            if let Some(y2) = y2 {
+                                Some(y2.saturating_add(delta_y + 1))
+                            } else {
+                                Some(table.max.y as u64 + 1)
+                            },
+                            border,
+                        )
+                    }
                 } else {
                     (
                         x1,
@@ -169,21 +189,38 @@ impl Borders {
                     // 0-based.
                     let delta_x = table.min.x as u64 - 1;
                     let delta_y = table.min.y as u64 - 1;
-                    (
-                        x1.saturating_add(delta_x + 1),
-                        y1.saturating_add(delta_y),
-                        if let Some(x2) = x2 {
-                            Some(x2.saturating_add(delta_x + 1))
-                        } else {
-                            Some(table.max.x as u64 + 1)
-                        },
-                        if let Some(y2) = y2 {
-                            Some(y2.saturating_add(delta_y))
-                        } else {
-                            Some(table.max.y as u64)
-                        },
-                        border,
-                    )
+
+                    // we use UNBOUNDED as a special value to indicate the last
+                    // column of the table
+                    if x1 == UNBOUNDED as u64 && x2 == Some(UNBOUNDED as u64) {
+                        (
+                            table.max.x as u64 + 1,
+                            y1.saturating_add(delta_y),
+                            Some(table.max.x as u64 + 1),
+                            if let Some(y2) = y2 {
+                                Some(y2.saturating_add(delta_y))
+                            } else {
+                                Some(table.max.y as u64 + 1)
+                            },
+                            border,
+                        )
+                    } else {
+                        (
+                            x1.saturating_add(delta_x + 1),
+                            y1.saturating_add(delta_y),
+                            if let Some(x2) = x2 {
+                                Some(x2.saturating_add(delta_x + 1))
+                            } else {
+                                Some(table.max.x as u64 + 1)
+                            },
+                            if let Some(y2) = y2 {
+                                Some(y2.saturating_add(delta_y))
+                            } else {
+                                Some(table.max.y as u64)
+                            },
+                            border,
+                        )
+                    }
                 } else {
                     (
                         x1.saturating_add(1),

@@ -119,8 +119,7 @@ impl GridController {
                 }
             }
             BorderSelection::Outer => {
-                // we only support infinite outer for tables; for sheets, we
-                // need a rect that is bound in both directions
+                // we do not support infinite outer
                 if let (Some(x2), Some(y2)) = (x2, y2) {
                     borders.left.get_or_insert_default().set_rect(
                         x1,
@@ -136,32 +135,48 @@ impl GridController {
                         Some(y2),
                         style,
                     );
+                    borders
+                        .top
+                        .get_or_insert_default()
+                        .set_rect(x1, y1, Some(x2), Some(y1), style);
+                    borders.bottom.get_or_insert_default().set_rect(
+                        x1,
+                        y2,
+                        Some(x2),
+                        Some(y2),
+                        style,
+                    );
                 } else if table {
                     borders.left.get_or_insert_default().set_rect(
                         x1,
                         y1,
-                        Some(x2.unwrap_or(UNBOUNDED)),
-                        y2.map_or(Some(UNBOUNDED), |y2| Some(y2 + 1)),
+                        Some(x1),
+                        y2.map(|y2| y2 + 1),
                         style,
                     );
                     borders.right.get_or_insert_default().set_rect(
-                        UNBOUNDED,
+                        x2.map_or(UNBOUNDED, |x2| x2 + 1),
                         y1,
-                        Some(UNBOUNDED),
-                        y2.map_or(Some(UNBOUNDED), |y2| Some(y2 + 1)),
+                        Some(x2.map_or(UNBOUNDED, |x2| x2 + 1)),
+                        y2.map(|y2| y2 + 1),
+                        style,
+                    );
+                    borders.top.get_or_insert_default().set_rect(
+                        x1,
+                        y1,
+                        x2.map(|x2| x2 + 1),
+                        Some(y1),
+                        style,
+                    );
+                    borders.bottom.get_or_insert_default().set_rect(
+                        x1,
+                        y2.map_or(UNBOUNDED, |y2| y2 + 1),
+                        x2.map(|x2| x2 + 1),
+                        Some(y2.map_or(UNBOUNDED, |y2| y2 + 1)),
                         style,
                     );
                 }
-                borders
-                    .top
-                    .get_or_insert_default()
-                    .set_rect(x1, y1, x2, Some(y1), style);
-                if let Some(y2) = y2 {
-                    borders
-                        .bottom
-                        .get_or_insert_default()
-                        .set_rect(x1, y2, x2, Some(y2), style);
-                }
+
                 if clear_neighbors {
                     if x1 > 1 {
                         borders.right.get_or_insert_default().set_rect(
@@ -271,6 +286,14 @@ impl GridController {
                         .right
                         .get_or_insert_default()
                         .set_rect(x2, y1, Some(x2), y2, style);
+                } else if table {
+                    borders.right.get_or_insert_default().set_rect(
+                        x2.map_or(UNBOUNDED, |x2| x2 + 1),
+                        y1,
+                        Some(x2.map_or(UNBOUNDED, |x2| x2 + 1)),
+                        y2,
+                        style,
+                    );
                 }
                 if clear_neighbors {
                     if let Some(x2) = x2 {
@@ -290,6 +313,14 @@ impl GridController {
                         .bottom
                         .get_or_insert_default()
                         .set_rect(x1, y2, x2, Some(y2), style);
+                } else if table {
+                    borders.bottom.get_or_insert_default().set_rect(
+                        x1,
+                        y2.map_or(UNBOUNDED, |y2| y2 + 1),
+                        x2.map(|x2| x2 + 1),
+                        Some(y2.map_or(UNBOUNDED, |y2| y2 + 1)),
+                        style,
+                    );
                 }
                 if clear_neighbors {
                     if let Some(y2) = y2 {
