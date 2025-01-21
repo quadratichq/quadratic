@@ -23,7 +23,7 @@ export type BedrockAnthropicModel = z.infer<typeof BedrockAnthropicModelSchema>;
 const AnthropicModelSchema = z.enum(['claude-3-5-sonnet-20241022']).default('claude-3-5-sonnet-20241022');
 export type AnthropicModel = z.infer<typeof AnthropicModelSchema>;
 
-const OpenAIModelSchema = z.enum(['gpt-4o-2024-08-06', 'o1-preview']).default('gpt-4o-2024-08-06');
+const OpenAIModelSchema = z.enum(['gpt-4o-2024-08-06', 'o1']).default('gpt-4o-2024-08-06');
 export type OpenAIModel = z.infer<typeof OpenAIModelSchema>;
 
 const AIModelSchema = z.union([BedrockModelSchema, AnthropicModelSchema, OpenAIModelSchema]);
