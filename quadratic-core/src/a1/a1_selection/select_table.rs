@@ -44,14 +44,16 @@ impl A1Selection {
                                 // if we have a single col selected, then we
                                 // create a range from that column to the new
                                 // col
-                                if col == existing_col {
-                                    return;
-                                }
+                                let headers = if col == existing_col {
+                                    !table_ref.headers
+                                } else {
+                                    false
+                                };
                                 self.ranges.pop();
                                 let table_ref = TableRef {
                                     table_name: table_name.to_string(),
                                     data: true,
-                                    headers: false,
+                                    headers,
                                     totals: false,
                                     col_range: ColRange::ColRange(
                                         existing_col.clone(),
