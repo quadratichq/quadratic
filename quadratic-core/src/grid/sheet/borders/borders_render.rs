@@ -200,7 +200,7 @@ impl Borders {
                             if let Some(y2) = y2 {
                                 Some(y2.saturating_add(delta_y))
                             } else {
-                                Some(table.max.y as u64 + 1)
+                                Some(table.max.y as u64)
                             },
                             border,
                         )
