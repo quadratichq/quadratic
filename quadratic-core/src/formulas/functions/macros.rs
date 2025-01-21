@@ -322,7 +322,7 @@ macro_rules! formula_fn_arg {
     };
     (@assign($ctx:ident, $args:ident); $arg_name:ident: Iter< Spanned< Array $(>>)* $(>)*) => {
         // Do not flatten arrays.
-        let mut $arg_name = $args.take_rest().map(Array::from).map(CodeResult::Ok);
+        let mut $arg_name = $args.take_rest().map(|s| s.try_map(Array::try_from));
     };
     (@assign($ctx:ident, $args:ident); $arg_name:ident: Iter< Spanned< $($arg_type:tt)*) => {
         $args.error_if_no_more_args(stringify!($arg_name))?;
