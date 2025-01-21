@@ -1,4 +1,4 @@
-use crate::a1::{A1Context, ColRange, TableRef};
+use crate::a1::{A1Context, CellRefRangeEnd, ColRange, RefRangeBounds, TableRef};
 
 use super::*;
 
@@ -20,8 +20,8 @@ impl A1Selection {
         // Check for row range selection w/shift key
         let last = self.ranges.last().cloned();
         if shift_key {
-            if let Some(col) = &col {
-                if let Some(CellRefRange::Table { range: table_ref }) = last {
+            if let Some(CellRefRange::Table { range: table_ref }) = last {
+                if let Some(col) = &col {
                     if table_ref.table_name == table_name {
                         match &table_ref.col_range {
                             ColRange::ColRange(start, end) => {
@@ -99,6 +99,29 @@ impl A1Selection {
                         }
                     }
                 }
+            } else if let Some(CellRefRange::Sheet { range }) = last {
+                // if the range is current a sheet, then select to the heading
+                if let Some(col) = &col {
+                    let Some(col_index) = table.try_col_index(col) else {
+                        return;
+                    };
+                    self.ranges.pop();
+                    self.ranges.push(CellRefRange::Sheet {
+                        range: RefRangeBounds {
+                            start: range.start,
+                            end: CellRefRangeEnd::new_relative_xy(
+                                col_index + table.bounds.min.x,
+                                table.bounds.min.y,
+                            ),
+                        },
+                    });
+                } else {
+                    // if no column is selected, then add the entire table to the selection
+                    self.ranges.push(CellRefRange::Table {
+                        range: TableRef::new(table_name),
+                    });
+                }
+                return;
             }
         }
 
@@ -263,17 +286,6 @@ mod tests {
             false,
         );
         assert_eq!(selection.ranges.len(), 1);
-        let table_ref = TableRef {
-            table_name: "Table1".to_string(),
-            data: true,
-            headers: false,
-            totals: false,
-            col_range: ColRange::Col("Col1".to_string()),
-        };
-        assert_eq!(
-            selection.ranges[0],
-            CellRefRange::Table { range: table_ref }
-        );
         assert_eq!(
             selection.to_string(Some(SheetId::test()), &context),
             "Table1[Col1]"
@@ -281,23 +293,24 @@ mod tests {
 
         assert_eq!(selection.cursor, pos!(A2));
         let mut selection = A1Selection::test_a1("A1");
-        selection.select_table("Table1", Some("Col2".to_string()), &context, 1, true, false);
+        selection.select_table("Table1", None, &context, 1, true, false);
         assert_eq!(selection.ranges.len(), 2);
         let table_ref = TableRef {
             table_name: "Table1".to_string(),
             data: true,
             headers: false,
             totals: false,
-            col_range: ColRange::Col("Col2".to_string()),
+            col_range: ColRange::All,
         };
+        assert_eq!(selection.ranges.len(), 2);
         assert_eq!(
             selection.ranges[1],
             CellRefRange::Table { range: table_ref }
         );
-        assert_eq!(selection.cursor, pos!(B2));
+        assert_eq!(selection.cursor, pos!(A1));
         assert_eq!(
             selection.to_string(Some(SheetId::test()), &context),
-            "A1,Table1[Col2]"
+            "A1,Table1"
         );
     }
 
