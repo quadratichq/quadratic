@@ -478,11 +478,7 @@ export const ScientificIcon: IconComponent = (props) => {
 };
 
 export const SearchInsightsIcon: IconComponent = (props) => {
-  return (
-    <Icon {...props} style={{ color: colors.languageAIResearcher }}>
-      search_insights
-    </Icon>
-  );
+  return <AIIcon {...props} style={{ color: colors.languageAIResearcher }} />;
 };
 
 export const SettingsIcon: IconComponent = (props) => {

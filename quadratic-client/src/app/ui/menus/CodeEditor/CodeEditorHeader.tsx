@@ -197,7 +197,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
 
       <div className="mx-2 flex flex-col truncate">
         <div className="text-sm font-medium leading-4">
-          {`Cell ${a1Pos}`}
+          {a1Pos}
           {currentCodeEditorCellIsNotInActiveSheet && (
             <span className="ml-1 min-w-0 truncate">- {currentSheetNameOfActiveCodeEditorCell}</span>
           )}
