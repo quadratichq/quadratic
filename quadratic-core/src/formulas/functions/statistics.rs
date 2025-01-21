@@ -222,7 +222,7 @@ mod tests {
         let sheet_id = sheet.id;
 
         let mut ctx = Ctx::new(&g, pos![A10].to_sheet_pos(sheet_id));
-        assert_eq!("7.5".to_string(), form.eval(&mut ctx, None).to_string());
+        assert_eq!("7.5".to_string(), form.eval(&mut ctx).to_string());
 
         assert_eq!(
             "17",
@@ -246,7 +246,7 @@ mod tests {
             },
             parse_formula("AVERAGE()", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx, None)
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );
@@ -313,7 +313,7 @@ mod tests {
             },
             parse_formula("COUNT()", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx, None)
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );
@@ -341,7 +341,7 @@ mod tests {
             },
             parse_formula("COUNTA()", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx, None)
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );

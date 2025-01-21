@@ -15,6 +15,7 @@ import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import mixpanel from 'mixpanel-browser';
 import { getLastUserPromptMessageIndex } from 'quadratic-shared/ai/helpers/message.helper';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
@@ -27,7 +28,6 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
-  const settings = useRecoilValue(editorInteractionStateSettingsAtom);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((div: HTMLDivElement | null) => {
@@ -150,7 +150,7 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
         );
       })}
 
-      {settings.analyticsAi && messages.length > 0 && !loading && <FeedbackButtons />}
+      {messages.length > 0 && !loading && <FeedbackButtons />}
 
       <div className={cn('flex flex-row gap-1 px-2 transition-opacity', !loading && 'opacity-0')}>
         <span className="h-2 w-2 animate-bounce bg-primary" />
@@ -162,11 +162,22 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
 }
 
 function FeedbackButtons() {
+  // true=positive, false=negative, null=neutral
   const [like, setLike] = useState<boolean | null>(null);
+  const settings = useRecoilValue(editorInteractionStateSettingsAtom);
 
-  const handleFeedback = useRecoilCallback(
+  const logFeedback = useRecoilCallback(
     ({ snapshot }) =>
-      (like: boolean | null) => {
+      (newLike: boolean | null) => {
+        // Log it to mixpanel
+        mixpanel.track('[AIAnalyst].feedback', { like: newLike });
+
+        // If they have AI analytics turned off, don't do anything else
+        if (!settings.analyticsAi) {
+          return;
+        }
+
+        // Otherwise, log it to our DB
         const messages = snapshot.getLoadable(aiAnalystCurrentChatMessagesAtom).getValue();
         const messageIndex = getLastUserPromptMessageIndex(messages);
         if (messageIndex < 0) return;
@@ -175,7 +186,7 @@ function FeedbackButtons() {
         apiClient.ai.feedback({
           chatId,
           messageIndex,
-          like,
+          like: newLike,
         });
       },
     [apiClient]
@@ -188,13 +199,13 @@ function FeedbackButtons() {
           onClick={() => {
             setLike((prev) => {
               const newLike = prev === true ? null : true;
-              handleFeedback(newLike);
+              logFeedback(newLike);
               return newLike;
             });
           }}
           variant="ghost"
           size="icon-sm"
-          className={cn('hover:text-success', like === true ? 'text-success' : 'text-muted-foreground')}
+          className={cn('select-none hover:text-success', like === true ? 'text-success' : 'text-muted-foreground')}
           disabled={like === false}
         >
           <ThumbUpIcon className="scale-75" />
@@ -206,13 +217,16 @@ function FeedbackButtons() {
           onClick={() => {
             setLike((prev) => {
               const newLike = prev === false ? null : false;
-              handleFeedback(newLike);
+              logFeedback(newLike);
               return newLike;
             });
           }}
           variant="ghost"
           size="icon-sm"
-          className={cn('hover:text-destructive', like === false ? 'text-destructive' : 'text-muted-foreground')}
+          className={cn(
+            'select-none hover:text-destructive',
+            like === false ? 'text-destructive' : 'text-muted-foreground'
+          )}
           disabled={like === true}
         >
           <ThumbDownIcon className="scale-75" />

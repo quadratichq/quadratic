@@ -282,6 +282,9 @@ impl Array {
     pub fn cell_values_slice(&self) -> &[CellValue] {
         &self.values
     }
+    pub fn cell_values_slice_mut(&mut self) -> &mut [CellValue] {
+        &mut self.values
+    }
     /// Returns a flat `SmallVec` of cell values in the array.
     pub fn into_cell_values_vec(self) -> SmallVec<[CellValue; 1]> {
         self.values
