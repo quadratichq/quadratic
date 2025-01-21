@@ -1,6 +1,9 @@
 -- CreateEnum
 CREATE TYPE "AIChatSource" AS ENUM ('ai_assistant', 'ai_analyst', 'ai_researcher', 'get_chat_name', 'get_file_name');
 
+-- AlterTable
+ALTER TABLE "Team" ADD COLUMN     "setting_analytics_ai" BOOLEAN NOT NULL DEFAULT true;
+
 -- CreateTable
 CREATE TABLE "AnalyticsAIChat" (
     "id" SERIAL NOT NULL,
