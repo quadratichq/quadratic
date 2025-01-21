@@ -413,7 +413,7 @@ mod tests {
         let sheet_id = SheetId::test();
         let a1_context = A1Context::test(
             &[("Sheet1", sheet_id)],
-            &[("test.csv", &["city"], Rect::test_a1("A1:C3"))],
+            &[("test.csv", &["city", "state"], Rect::test_a1("A1:C3"))],
         );
 
         // ColRange::Col

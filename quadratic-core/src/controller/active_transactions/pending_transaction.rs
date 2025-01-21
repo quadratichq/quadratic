@@ -474,6 +474,11 @@ impl PendingTransaction {
     pub fn add_fill_cells(&mut self, sheet_id: SheetId) {
         self.fill_cells.insert(sheet_id);
     }
+
+    /// Adds a sheet id to the borders set.
+    pub fn add_borders(&mut self, sheet_id: SheetId) {
+        self.sheet_borders.insert(sheet_id);
+    }
 }
 
 #[cfg(test)]
@@ -748,5 +753,13 @@ mod tests {
         let sheet_id = SheetId::new();
         transaction.add_fill_cells(sheet_id);
         assert!(transaction.fill_cells.contains(&sheet_id));
+    }
+
+    #[test]
+    fn test_add_borders() {
+        let mut transaction = PendingTransaction::default();
+        let sheet_id = SheetId::new();
+        transaction.add_borders(sheet_id);
+        assert!(transaction.sheet_borders.contains(&sheet_id));
     }
 }

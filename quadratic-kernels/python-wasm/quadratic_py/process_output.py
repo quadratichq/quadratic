@@ -110,7 +110,11 @@ def process_output_value(output_value):
 
 # Override the default show method for plotly figures
 def to_html_with_cdn(self):
-    html = self.to_html(include_plotlyjs="cdn", include_mathjax="cdn").replace(
+    html = self.to_html(
+        include_plotlyjs="cdn",
+        include_mathjax="cdn",
+        config={"displaylogo": False},
+    ).replace(
         ' src="https://', ' crossorigin="anonymous" src="https://'
     )
     return html

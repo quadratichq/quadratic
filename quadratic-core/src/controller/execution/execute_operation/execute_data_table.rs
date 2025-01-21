@@ -418,12 +418,16 @@ impl GridController {
             });
 
             let has_fills = data_table.formats.has_fills();
+            let has_borders = !data_table.borders.is_default();
 
             let old_show_header = show_header.map(|show_header| {
                 let old_show_header = data_table.show_header.to_owned();
                 data_table.show_header = show_header;
                 if has_fills {
                     transaction.add_fill_cells(sheet_id);
+                }
+                if has_borders {
+                    transaction.add_borders(sheet_id);
                 }
 
                 old_show_header
@@ -434,6 +438,9 @@ impl GridController {
                 data_table.show_ui = show_ui.to_owned();
                 if has_fills {
                     transaction.add_fill_cells(sheet_id);
+                }
+                if has_borders {
+                    transaction.add_borders(sheet_id);
                 }
                 old_show_ui
             });
@@ -533,6 +540,9 @@ impl GridController {
             if data_table.formats.has_fills() {
                 transaction.add_fill_cells(sheet_id);
             }
+            if !data_table.borders.is_default() {
+                transaction.add_borders(sheet_id);
+            }
 
             self.send_to_wasm(transaction, &data_table_rect)?;
             transaction.add_code_cell(sheet_id, data_table_pos);
@@ -576,6 +586,9 @@ impl GridController {
 
             if data_table.formats.has_fills() {
                 transaction.add_fill_cells(sheet_id);
+            }
+            if !data_table.borders.is_default() {
+                transaction.add_borders(sheet_id);
             }
             self.send_to_wasm(transaction, &data_table_rect)?;
             transaction.add_code_cell(sheet_id, data_table_pos);
@@ -625,6 +638,9 @@ impl GridController {
             if data_table.formats.has_fills() {
                 transaction.add_fill_cells(sheet_id);
             }
+            if !data_table.borders.is_default() {
+                transaction.add_borders(sheet_id);
+            }
             self.send_to_wasm(transaction, &data_table_rect)?;
             transaction.add_code_cell(sheet_id, data_table_pos);
 
@@ -663,6 +679,9 @@ impl GridController {
 
             if data_table.formats.has_fills() {
                 transaction.add_fill_cells(sheet_id);
+            }
+            if !data_table.borders.is_default() {
+                transaction.add_borders(sheet_id);
             }
             self.send_to_wasm(transaction, &data_table_rect)?;
             transaction.add_code_cell(sheet_id, data_table_pos);
@@ -709,6 +728,9 @@ impl GridController {
 
             if data_table.formats.has_fills() {
                 transaction.add_fill_cells(sheet_id);
+            }
+            if !data_table.borders.is_default() {
+                transaction.add_borders(sheet_id);
             }
             self.send_to_wasm(transaction, &data_table_rect)?;
             transaction.add_code_cell(sheet_id, sheet_pos.into());
