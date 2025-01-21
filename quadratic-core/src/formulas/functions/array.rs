@@ -2,9 +2,8 @@ use std::collections::HashMap;
 
 use smallvec::SmallVec;
 
-use crate::CellValueHash;
-
 use super::*;
+use crate::CellValueHash;
 
 pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
     include_in_docs: true,
@@ -210,6 +209,56 @@ fn get_functions() -> Vec<FormulaFunction> {
                     })
                     .map(|(slice, _)| slice);
                 Array::from_slices(span, axis, new_slices)?
+            }
+        ),
+        formula_fn!(
+            /// Multiplies arrays componentwise, then returns the sum of all the
+            /// elements. All arrays must have the same size.
+            ///
+            /// For example, `SUMPRODUCT(C2:C5, D2:D5)` is equivalent to
+            /// `SUM(C2:C5 * D2:D5)`.
+            #[examples("SUMPRODUCT(C2:C5, D2:D5)")]
+            fn SUMPRODUCT(arrays: (Iter<Spanned<Array>>)) {
+                let Some(first) = arrays.next() else {
+                    return Ok(0.into());
+                };
+                let mut results = first?;
+                for array in arrays {
+                    let new_array = array?;
+                    new_array.check_array_size_exact(results.inner.size())?;
+                    let new_span = new_array.span;
+                    for (product, new_value) in std::iter::zip(
+                        results.inner.cell_values_slice_mut(),
+                        new_array.inner.cell_values_slice(),
+                    ) {
+                        // Exit early if there's an error because the SUM would eventually fail anyway
+                        *product = CellValue::mul(
+                            results.span,
+                            Spanned {
+                                span: results.span,
+                                inner: product,
+                            },
+                            Spanned {
+                                span: new_span,
+                                inner: new_value,
+                            },
+                        )?
+                        .inner;
+                    }
+                    results.span = Span::merge(results.span, new_span);
+                }
+
+                let span = results.span;
+                match results
+                    .inner
+                    .into_cell_values_vec()
+                    .into_iter()
+                    .map(|inner| Ok(Spanned { span, inner }))
+                    .reduce(|a, b| CellValue::add(results.span, a?.as_ref(), b?.as_ref()))
+                {
+                    Some(result) => result?.inner,
+                    None => 0.into(),
+                }
             }
         ),
     ]
@@ -597,5 +646,52 @@ mod tests {
             eval_to_string(&g, "=UNIQUE(A1:M2,TRUE,TRUE)"),
             expected_exactly_once.to_string(),
         );
+    }
+
+    #[test]
+    fn test_formula_sumproduct() {
+        let a = array![
+            "A", "Q", 45;
+            "B", "R", 21;
+            "C", "S", 25;
+            "A", "S", 20;
+            "B", "R", 41;
+            "C", "Q", 19;
+        ];
+        let g = Grid::from_array(pos![A1], &a);
+        assert_eq!(
+            "62",
+            eval_to_string(&g, "SUMPRODUCT(A1:A6=\"B\", B1:B6=\"R\", C1:C6)")
+        );
+        assert_eq!(
+            "62",
+            eval_to_string(&g, "SUMPRODUCT((A1:A6=\"B\") * (B1:B6=\"R\") * C1:C6)")
+        );
+        // should be equivalent to `SUM()`
+        assert_eq!(
+            "62",
+            eval_to_string(&g, "SUM((A1:A6=\"B\") * (B1:B6=\"R\") * C1:C6)")
+        );
+
+        // test that array size mismatches are not allowed
+        assert_eq!(
+            RunErrorMsg::ExactArraySizeMismatch {
+                expected: ArraySize::new(1, 6).unwrap(),
+                got: ArraySize::new(1, 5).unwrap(),
+            },
+            eval_to_err(&g, "SUMPRODUCT((A1:A6=\"B\"), (B1:B5=\"R\"), C1:C6)").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::ExactArraySizeMismatch {
+                expected: ArraySize::new(1, 6).unwrap(),
+                got: ArraySize::new(6, 1).unwrap(),
+            },
+            eval_to_err(&g, "SUMPRODUCT(A1:A6, B1:G1)").msg,
+        );
+
+        assert_eq!("171", eval_to_string(&g, "SUMPRODUCT(C1:C6)"));
+
+        // Excel rejects this but it's perfectly reasonable
+        assert_eq!("0", eval_to_string(&g, "SUMPRODUCT()"));
     }
 }
