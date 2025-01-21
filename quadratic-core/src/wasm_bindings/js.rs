@@ -135,7 +135,7 @@ extern "C" {
 
     pub fn jsSendViewportBuffer(buffer: SharedArrayBuffer);
 
-    pub fn jsClientMessage(message: String, error: bool);
+    pub fn jsClientMessage(message: String, error: String);
 
     pub fn jsA1Context(context: String);
 }
@@ -667,7 +667,7 @@ pub fn jsSendViewportBuffer(buffer: [u8; 112]) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsClientMessage(message: String, error: bool) {
+pub fn jsClientMessage(message: String, error: String) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsClientMessage",
         format!("{},{}", message, error),

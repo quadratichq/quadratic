@@ -10,6 +10,7 @@ import type {
   JsRenderCodeCell,
   JsRenderFill,
   JsSheetFill,
+  JsSnackbarSeverity,
   JsValidationWarning,
   SheetBounds,
   SheetInfo,
@@ -87,7 +88,7 @@ declare var self: WorkerGlobalScope &
     sendMultiplayerSynced: () => void;
     sendHashesDirty: (sheetId: string, hashes: string) => void;
     sendViewportBuffer: (buffer: SharedArrayBuffer) => void;
-    sendClientMessage: (message: string, error: boolean) => void;
+    sendClientMessage: (message: string, severity: JsSnackbarSeverity) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -280,8 +281,8 @@ export const jsHashesDirty = (sheetId: string, hashes: string) => {
   self.sendHashesDirty(sheetId, hashes);
 };
 
-export const jsClientMessage = (message: string, error: boolean) => {
-  self.sendClientMessage(message, error);
+export const jsClientMessage = (message: string, severity: JsSnackbarSeverity) => {
+  self.sendClientMessage(message, severity);
 };
 
 export const jsSendViewportBuffer = (buffer: SharedArrayBuffer) => {

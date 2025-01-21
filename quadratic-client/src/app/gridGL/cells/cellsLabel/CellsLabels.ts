@@ -103,8 +103,8 @@ export class CellsLabels extends Container {
 
   // Returns whether the rect has content by checking CellsTextHashContent.
   hasCellInRect = (rect: Rectangle): boolean => {
-    for (let column = rect.x; column <= rect.x + rect.width; column++) {
-      for (let row = rect.y; row <= rect.y + rect.height; row++) {
+    for (let column = rect.x; column < rect.x + rect.width; column++) {
+      for (let row = rect.y; row < rect.y + rect.height; row++) {
         if (this.hasCell(column, row)) {
           return true;
         }

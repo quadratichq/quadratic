@@ -193,7 +193,7 @@ class QuadraticCore {
       events.emit('bordersSheet', e.data.sheetId, e.data.borders);
       return;
     } else if (e.data.type === 'coreClientClientMessage') {
-      pixiAppSettings.snackbar(e.data.message, { severity: e.data.error ? 'error' : 'success' });
+      pixiAppSettings.snackbar(e.data.message, { severity: e.data.severity });
 
       // This is a hack to get import files to properly show negative offsets dialog
       // after importing from dashboard. This can be removed in the future.

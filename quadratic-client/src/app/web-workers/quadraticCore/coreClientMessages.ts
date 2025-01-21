@@ -19,6 +19,7 @@ import type {
   JsRenderCodeCell,
   JsRenderFill,
   JsSheetFill,
+  JsSnackbarSeverity,
   JsSummarizeSelectionResult,
   JsValidationWarning,
   MinMax,
@@ -1160,7 +1161,7 @@ export interface ClientCoreDataTableFirstRowAsHeader {
 export interface CoreClientClientMessage {
   type: 'coreClientClientMessage';
   message: string;
-  error: boolean;
+  severity: JsSnackbarSeverity;
 }
 
 export interface ClientCoreFiniteRectFromSelection {

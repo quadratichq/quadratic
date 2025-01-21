@@ -15,12 +15,11 @@ use quadratic_core::controller::execution::run_code::get_cells::JsGetCellRespons
 use quadratic_core::controller::operations::clipboard::PasteSpecial;
 use quadratic_core::controller::transaction_types::JsCodeResult;
 use quadratic_core::grid::formats::Format;
-use quadratic_core::grid::js_types::JsDataTableColumnHeader;
 use quadratic_core::grid::js_types::{
     CellFormatSummary, JsCellValue, JsCellValuePos, JsCellValuePosAIContext, JsClipboard,
-    JsCodeCell, JsHtmlOutput, JsNumber, JsOffset, JsRenderCell, JsRenderCellSpecial,
-    JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsReturnInfo, JsRowHeight, JsSheetFill,
-    JsSummarizeSelectionResult, JsValidationWarning,
+    JsCodeCell, JsDataTableColumnHeader, JsHtmlOutput, JsNumber, JsOffset, JsRenderCell,
+    JsRenderCellSpecial, JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsReturnInfo,
+    JsRowHeight, JsSheetFill, JsSnackbarSeverity, JsSummarizeSelectionResult, JsValidationWarning,
 };
 use quadratic_core::grid::sheet::borders::BorderSelection;
 use quadratic_core::grid::sheet::borders::BorderSide;
@@ -130,6 +129,7 @@ fn main() {
         JsReturnInfo,
         JsRowHeight,
         JsSheetFill,
+        JsSnackbarSeverity,
         JsSummarizeSelectionResult,
         JsValidationWarning,
         Direction,

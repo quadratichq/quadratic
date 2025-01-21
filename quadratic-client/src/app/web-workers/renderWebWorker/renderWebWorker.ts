@@ -5,7 +5,6 @@ import { prepareBitmapFontInformation } from '@/app/web-workers/renderWebWorker/
 import type {
   ClientRenderInit,
   ClientRenderMessage,
-  ClientRenderViewport,
   RenderClientColumnMaxWidth,
   RenderClientMessage,
   RenderClientRowMaxHeight,
@@ -97,8 +96,7 @@ class RenderWebWorker {
   }
 
   updateViewport(sheetId: string, bounds: Rectangle, scale: number) {
-    const message: ClientRenderViewport = { type: 'clientRenderViewport', sheetId, bounds, scale };
-    this.send(message);
+    this.send({ type: 'clientRenderViewport', sheetId, bounds, scale });
   }
 
   updateSheetOffsetsTransient(sheetId: string, column: number | null, row: number | null, delta: number) {

@@ -131,6 +131,12 @@ export function AskAISelection() {
     };
   }, [currentSheet, updateSelection]);
 
+  useEffect(() => {
+    if (inlineEditorState.visible) {
+      updateSelection();
+    }
+  }, [inlineEditorState.visible, updateSelection]);
+
   if (selectionSheetId !== currentSheet || displayPos === undefined) return null;
 
   return (

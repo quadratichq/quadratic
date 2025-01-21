@@ -1,10 +1,11 @@
 // import CloseIcon from '@mui/icons-material/Close';
+import type { JsSnackbarSeverity } from '@/app/quadratic-core-types';
 import { CloseIcon } from '@/shared/components/Icons';
+import { Button } from '@/shared/shadcn/ui/button';
 import type { AlertColor } from '@mui/material';
 import { Alert, Snackbar } from '@mui/material';
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Button } from '../shadcn/ui/button';
 
 const DURATION = 6000;
 export const snackbarMsgQueryParam = 'snackbar-msg';
@@ -15,7 +16,7 @@ export const snackbarSeverityQueryParam = 'snackbar-severity';
  */
 
 export interface SnackbarOptions {
-  severity?: 'error' | 'warning' | 'success';
+  severity?: JsSnackbarSeverity;
   button?: { title: string; callback: Function };
   stayOpen?: boolean;
 }
