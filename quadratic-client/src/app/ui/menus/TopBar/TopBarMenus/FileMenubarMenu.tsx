@@ -7,6 +7,7 @@ import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItem
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { DeleteIcon, DraftIcon, FileCopyIcon, FileOpenIcon } from '@/shared/components/Icons';
+import { ROUTES } from '@/shared/constants/routes';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import {
@@ -57,7 +58,7 @@ export const FileMenubarMenu = () => {
               .map((file) => (
                 <MenubarItem
                   onClick={() => {
-                    window.location.href = `/file/${file.uuid}`;
+                    window.location.href = ROUTES.FILE(file.uuid);
                   }}
                   key={file.uuid}
                 >
