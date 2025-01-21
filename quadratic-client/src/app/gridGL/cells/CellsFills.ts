@@ -13,7 +13,9 @@ interface SpriteBounds extends Sprite {
   viewBounds: Rectangle;
 }
 
+const LUMINOSITY = false;
 const ALTERNATING_COLOR_LUMINOSITY = 1.85;
+const ALTERNATING_COLOR_ALPHA = 0.035;
 
 export class CellsFills extends Container {
   private cellsSheet: CellsSheet;
@@ -32,10 +34,10 @@ export class CellsFills extends Container {
     super();
     this.cellsSheet = cellsSheet;
     this.meta = this.addChild(new Graphics());
-    this.alternatingColorsGraphics = this.addChild(new Graphics());
     this.cellsContainer = this.addChild(
       new ParticleContainer(undefined, { vertices: true, tint: true }, undefined, true)
     );
+    this.alternatingColorsGraphics = this.addChild(new Graphics());
 
     events.on('sheetFills', this.handleSheetFills);
     events.on('sheetMetaFills', this.handleSheetMetaFills);
@@ -202,14 +204,19 @@ export class CellsFills extends Container {
 
   private drawAlternatingColors = () => {
     this.alternatingColorsGraphics.clear();
-    const color = getCSSVariableTint('primary', { luminosity: ALTERNATING_COLOR_LUMINOSITY });
+    let color: number;
+    if (LUMINOSITY) {
+      color = getCSSVariableTint('primary', { luminosity: ALTERNATING_COLOR_LUMINOSITY });
+    } else {
+      color = getCSSVariableTint('primary');
+    }
     this.alternatingColors.forEach((table) => {
       const bounds = this.sheet.getScreenRectangle(table.x, table.y, table.w, table.y);
       let yOffset = bounds.y;
       for (let y = 0; y < table.h; y++) {
         let height = this.sheet.offsets.getRowHeight(y + table.y);
         if (y % 2 !== (table.show_header ? 1 : 0)) {
-          this.alternatingColorsGraphics.beginFill(color);
+          this.alternatingColorsGraphics.beginFill(color, LUMINOSITY ? 1 : ALTERNATING_COLOR_ALPHA);
           this.alternatingColorsGraphics.drawRect(bounds.x, yOffset, bounds.width, height);
           this.alternatingColorsGraphics.endFill();
         }
