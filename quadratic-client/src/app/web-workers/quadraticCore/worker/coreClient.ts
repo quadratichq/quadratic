@@ -16,6 +16,7 @@ import type {
   JsRenderCodeCell,
   JsRenderFill,
   JsSheetFill,
+  JsSnackbarSeverity,
   JsValidationWarning,
   SheetBounds,
   SheetInfo,
@@ -89,7 +90,7 @@ declare var self: WorkerGlobalScope &
       validationWarnings: JsValidationWarning[]
     ) => void;
     sendMultiplayerSynced: () => void;
-    sendClientMessage: (message: string, error: boolean) => void;
+    sendClientMessage: (message: string, severity: JsSnackbarSeverity) => void;
   };
 
 class CoreClient {
@@ -840,8 +841,8 @@ class CoreClient {
     this.send({ type: 'coreClientMultiplayerSynced' });
   };
 
-  sendClientMessage = (message: string, error: boolean) => {
-    this.send({ type: 'coreClientClientMessage', message, error });
+  sendClientMessage = (message: string, severity: JsSnackbarSeverity) => {
+    this.send({ type: 'coreClientClientMessage', message, severity });
   };
 
   sendA1Context = (context: string) => {

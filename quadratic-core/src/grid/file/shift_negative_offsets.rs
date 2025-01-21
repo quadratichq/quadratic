@@ -10,7 +10,7 @@ use crate::{
     controller::{
         active_transactions::pending_transaction::PendingTransaction, execution::TransactionSource,
     },
-    grid::{Grid, GridBounds},
+    grid::{js_types::JsSnackbarSeverity, Grid, GridBounds},
     CopyFormats,
 };
 
@@ -114,7 +114,10 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
     }
 
     if changed && (cfg!(target_family = "wasm") || cfg!(test)) {
-        crate::wasm_bindings::js::jsClientMessage("negative_offsets".to_string(), false);
+        crate::wasm_bindings::js::jsClientMessage(
+            "negative_offsets".to_string(),
+            JsSnackbarSeverity::Success.to_string(),
+        );
     }
 
     shifted_offsets_sheet_name

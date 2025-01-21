@@ -339,6 +339,20 @@ pub struct JsSummarizeSelectionResult {
     pub average: Option<f64>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[serde(rename_all = "lowercase")]
+pub enum JsSnackbarSeverity {
+    Error,
+    Warning,
+    Success,
+}
+
+impl fmt::Display for JsSnackbarSeverity {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", format!("{:?}", self).to_lowercase())
+    }
+}
+
 #[cfg(test)]
 mod test {
     use serial_test::parallel;

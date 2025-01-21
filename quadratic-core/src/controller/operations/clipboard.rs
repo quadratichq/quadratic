@@ -12,6 +12,7 @@ use crate::formulas::replace_internal_cell_references;
 use crate::grid::formats::Format;
 use crate::grid::formats::SheetFormatUpdates;
 use crate::grid::js_types::JsClipboard;
+use crate::grid::js_types::JsSnackbarSeverity;
 use crate::grid::sheet::borders::BordersUpdates;
 use crate::grid::sheet::validations::validation::Validation;
 use crate::grid::{CodeCellLanguage, DataTableKind};
@@ -202,8 +203,8 @@ impl GridController {
                         let rect = Rect::from_numbers(
                             start_pos.x,
                             start_pos.y,
-                            clipboard.w as i64,
-                            clipboard.h as i64,
+                            values.w as i64,
+                            values.h as i64,
                         );
 
                         // Determine if the paste is happening within a data table.
@@ -222,6 +223,25 @@ impl GridController {
                                         intersection_rect.width() as i64,
                                         intersection_rect.height() as i64,
                                     );
+
+                                    // pull the values from `values`, replacing
+                                    // the values in `values` with CellValue::Blank
+                                    let cell_values = values.get_rect(adjusted_rect);
+
+                                    let paste_code_cell_in_import = cell_values.iter().any(|col| {
+                                        col.iter().any(|cell_value| {
+                                            matches!(cell_value, CellValue::Code(_))
+                                        })
+                                    });
+                                    if paste_code_cell_in_import {
+                                        if cfg!(target_family = "wasm") || cfg!(test) {
+                                            crate::wasm_bindings::js::jsClientMessage(
+                                                "Cannot paste code cell in import".to_string(),
+                                                JsSnackbarSeverity::Warning.to_string(),
+                                            );
+                                        }
+                                        return;
+                                    }
 
                                     let contains_header =
                                         intersection_rect.y_range().contains(&output_rect.min.y);
@@ -258,15 +278,11 @@ impl GridController {
                                         });
                                     }
 
-                                    // pull the values from `values`, replacing
-                                    // the values in `values` with CellValue::Blank
-                                    let cell_values = values.get_rect(adjusted_rect);
                                     let sheet_pos = SheetPos {
                                         x: intersection_rect.min.x,
                                         y: intersection_rect.min.y,
                                         sheet_id: selection.sheet_id,
                                     };
-
                                     ops.push(Operation::SetDataTableAt {
                                         sheet_pos,
                                         values: CellValues::from(cell_values),
@@ -289,6 +305,15 @@ impl GridController {
                             y: start_pos.y + *y as i64,
                             sheet_id: selection.sheet_id,
                         };
+
+                        let paste_in_import = sheet
+                            .iter_code_output_in_rect(Rect::single_pos(Pos::from(sheet_pos)))
+                            .any(|(_, data_table)| {
+                                matches!(data_table.kind, DataTableKind::Import(_))
+                            });
+                        if paste_in_import {
+                            return;
+                        }
 
                         let source_pos = Pos {
                             x: clipboard.origin.x + *x as i64,
@@ -479,9 +504,9 @@ impl GridController {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod test {
     use bigdecimal::BigDecimal;
+    use serial_test::{parallel, serial};
 
     use super::{PasteSpecial, *};
     use crate::a1::A1Selection;
@@ -490,10 +515,14 @@ mod test {
     use crate::grid::js_types::JsClipboard;
     use crate::grid::sheet::validations::validation_rules::ValidationRule;
     use crate::grid::SheetId;
-    use crate::test_util::{assert_cell_value_row, print_data_table, print_table};
+    use crate::test_util::{
+        assert_cell_value_row, assert_data_table_cell_value, print_data_table, print_table,
+    };
+    use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
     use crate::Rect;
 
     #[test]
+    #[parallel]
     fn move_cell_operations() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -505,6 +534,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn paste_clipboard_cells_columns() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -525,6 +555,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn paste_clipboard_cells_rows() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -545,6 +576,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn paste_clipboard_cells_all() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -569,6 +601,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn sheet_formats_operations_column_rows() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -602,6 +635,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn set_clipboard_validations() {
         let gc = GridController::test();
         let validations = ClipboardValidations {
@@ -630,6 +664,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn paste_clipboard_with_formula() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -678,6 +713,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn paste_clipboard_with_data_table() {
         let (mut gc, sheet_id, _, _) = simple_csv();
         let paste = |gc: &mut GridController, x, y, html| {
@@ -704,6 +740,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn update_code_cell_references_python() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -736,6 +773,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn paste_clipboard_on_top_of_data_table() {
         let (mut gc, sheet_id, _, _) = simple_csv_at(Pos { x: 2, y: 0 });
         let sheet = gc.sheet_mut(sheet_id);
@@ -798,6 +836,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn update_code_cell_references_javascript() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -827,5 +866,45 @@ mod test {
             }
             _ => panic!("expected code cell"),
         }
+    }
+
+    #[test]
+    #[serial]
+    fn paste_code_cell_inside_data_table() {
+        clear_js_calls();
+
+        let (mut gc, sheet_id, _, _) = simple_csv_at(pos![A1]);
+
+        gc.set_code_cell(
+            pos![J1].to_sheet_pos(sheet_id),
+            CodeCellLanguage::Javascript,
+            r#"return "test";"#.to_string(),
+            None,
+        );
+
+        let sheet = gc.sheet_mut(sheet_id);
+        let rect = SheetRect::single_pos(pos![J1], sheet_id);
+        let JsClipboard { html, .. } = sheet
+            .copy_to_clipboard(&A1Selection::from_rect(rect))
+            .unwrap();
+
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1_sheet_id("B2", &sheet_id),
+            None,
+            Some(html),
+            PasteSpecial::None,
+            None,
+        );
+
+        expect_js_call(
+            "jsClientMessage",
+            format!(
+                "Cannot paste code cell in import,{}",
+                JsSnackbarSeverity::Warning.to_string()
+            ),
+            true,
+        );
+
+        assert_data_table_cell_value(&gc, sheet_id, 2, 2, "MA");
     }
 }
