@@ -57,7 +57,7 @@ pub fn parse_and_check_formula(formula_string: &str, x: i64, y: i64) -> bool {
         Ok(parsed) => {
             let grid = Grid::new();
             let mut ctx = Ctx::new_for_syntax_check(&grid);
-            parsed.eval(&mut ctx, None).into_non_error_value().is_ok()
+            parsed.eval(&mut ctx).into_non_error_value().is_ok()
         }
         Err(_) => false,
     }
@@ -301,7 +301,7 @@ impl<'a> Parser<'a> {
 
     /// Returns an error describing that `expected` was expected.
     pub fn expected<T>(self, expected: impl ToString) -> CodeResult<T> {
-        // TODO: when #[feature(never_type)] stabalizes, use that here and
+        // TODO: when #[feature(never_type)] stabilizes, use that here and
         // return CodeResult<!>.
         Err(self.expected_err(expected))
     }

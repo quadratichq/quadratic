@@ -1,6 +1,6 @@
+use chrono::Utc;
 use serde::de::DeserializeOwned;
 use std::sync::Arc;
-use tokio::time::Instant;
 use uuid::Uuid;
 
 use quadratic_core::{
@@ -89,10 +89,10 @@ pub(crate) async fn process_transactions(
 /// Process outstanding transactions in the queue
 pub(crate) async fn process_queue_for_room(
     state: &Arc<State>,
-    file_id: &Uuid,
+    file_id: Uuid,
     active_channels: &str,
 ) -> Result<Option<u64>> {
-    let start = Instant::now();
+    let start = Utc::now();
     let channel = &file_id.to_string();
 
     let Settings {
@@ -103,7 +103,7 @@ pub(crate) async fn process_queue_for_room(
     } = &state.settings;
 
     let checkpoint_sequence_num =
-        match get_file_checkpoint(quadratic_api_uri, m2m_auth_token, file_id).await {
+        match get_file_checkpoint(quadratic_api_uri, m2m_auth_token, &file_id).await {
             Ok(last_checkpoint) => last_checkpoint.sequence_number,
             Err(_) => 0,
         };
@@ -164,7 +164,7 @@ pub(crate) async fn process_queue_for_room(
     // process the transactions and save the file to S3
     let last_sequence_num = process_transactions(
         storage,
-        *file_id,
+        file_id,
         checkpoint_sequence_num,
         last_sequence_num,
         operations,
@@ -187,12 +187,12 @@ pub(crate) async fn process_queue_for_room(
     drop(pubsub);
 
     // update the checkpoint in quadratic-api
-    let key = &key(*file_id, last_sequence_num);
+    let key = &key(file_id, last_sequence_num);
 
     set_file_checkpoint(
         quadratic_api_uri,
         m2m_auth_token,
-        file_id,
+        &file_id,
         last_sequence_num,
         CURRENT_VERSION.into(),
         key.to_owned(),
@@ -214,18 +214,19 @@ pub(crate) async fn process_queue_for_room(
     )
     .await?;
 
-    state.stats.lock().await.last_processed_file_time = Some(Instant::now());
-    state.stats.lock().await.files_to_process_in_pubsub = 0;
+    state.stats.lock().await.last_processed_file_time = Some(Utc::now());
 
     tracing::info!(
-        "Processed sequence numbers {first_sequence_num} - {last_sequence_num} for room {file_id} in {:?}", start.elapsed()
+        "Processed sequence numbers {first_sequence_num} - {last_sequence_num} for room {file_id} in {:?}ms", (Utc::now() - start).num_milliseconds()
     );
 
     Ok(Some(last_sequence_num))
 }
 
-/// Process outstanding transactions in the queue
-pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result<()> {
+pub(crate) async fn get_files_to_process(
+    state: &Arc<State>,
+    active_channels: &str,
+) -> Result<Vec<Uuid>> {
     let files = state
         .pubsub
         .lock()
@@ -237,14 +238,27 @@ pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result
         .flat_map(|file_id| Uuid::parse_str(&file_id))
         .collect::<Vec<_>>();
 
+    Ok(files)
+}
+
+/// Process outstanding transactions in the queue
+pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result<()> {
+    let files = get_files_to_process(state, active_channels).await?;
+
     // collect info for stats
     state.stats.lock().await.files_to_process_in_pubsub = files.len() as u64;
 
-    for file_id in files.iter() {
-        // TODO(ddimaria): instead of logging the error, move the file to a dead letter queue
-        if let Err(error) = process_queue_for_room(state, file_id, active_channels).await {
-            tracing::error!("Error processing file {file_id}: {error}");
-        };
+    for file_id in files.into_iter() {
+        let state = Arc::clone(&state);
+        let active_channels = active_channels.to_owned();
+
+        // process file in a separate thread
+        tokio::spawn(async move {
+            // TODO(ddimaria): instead of logging the error, move the file to a dead letter queue
+            if let Err(error) = process_queue_for_room(&state, file_id, &active_channels).await {
+                tracing::error!("Error processing file {file_id}: {error}");
+            };
+        });
     }
 
     Ok(())

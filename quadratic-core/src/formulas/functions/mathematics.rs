@@ -10,6 +10,7 @@ pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
 
 fn get_functions() -> Vec<FormulaFunction> {
     vec![
+        // Basic operators
         formula_fn!(
             /// Adds all values.
             /// Returns `0` if given no values.
@@ -95,6 +96,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 number.sqrt()
             }
         ),
+        // Rounding
         formula_fn!(
             /// Rounds a number up to the next multiple of `increment`. If
             /// `number` and `increment` are both negative, rounds the number
@@ -231,6 +233,90 @@ fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
+            /// Rounds a number to the specified number of digits after the
+            /// decimal point.
+            ///
+            /// - If `digits` is 0 or omitted, then the number is rounded to the
+            ///   nearest integer.
+            /// - If `digits > 0`, then the number is rounded to a digit after
+            ///   the decimal point. For example, `ROUND(x, 2)` rounds `x` to
+            ///   the nearest multiple of 0.01.
+            /// - If `digits < 0`, then the number is rounded to a digit before
+            ///   the decimal point. For example, `ROUND(x, -2)` rounds `x` to
+            ///   the nearest multiple of 100.
+            ///
+            /// Ties are broken by rounding away from zero. For example,
+            /// `ROUND(50, -2)` rounds to `100`.
+            #[examples("ROUND(6.553, 2)")]
+            #[zip_map]
+            fn ROUND([number]: f64, [digits]: (Option<i64>)) {
+                let q = (10_f64).powf(digits.unwrap_or(0) as f64);
+                (number * q).round() / q // `f64::round()` ties away from zero
+            }
+        ),
+        formula_fn!(
+            /// Rounds a number **away from zero** to the specified number of
+            /// digits after the decimal point.
+            ///
+            /// - If `digits` is 0 or omitted, then the number is rounded to an
+            ///   integer.
+            /// - If `digits > 0`, then the number is rounded to a digit after
+            ///   the decimal point. For example, `ROUNDUP(x, 2)` rounds `x` to
+            ///   a multiple of 0.01.
+            /// - If `digits < 0`, then the number is rounded to a digit before
+            ///   the decimal point. For example, `ROUNDUP(x, -2)` rounds `x` to
+            ///   a multiple of 100.
+            #[examples("ROUNDUP(6.553, 2)")]
+            #[zip_map]
+            fn ROUNDUP([number]: f64, [digits]: (Option<i64>)) {
+                // If `number` is negative, call `f64::floor()` on it.
+                // If `number` is positive, call `f64::floor()` on its negative.
+                let q = (10_f64).powf(digits.unwrap_or(0) as f64) * -number.signum();
+                (number * q).floor() / q
+            }
+        ),
+        formula_fn!(
+            /// Rounds a number **toward zero** to the specified number of
+            /// digits after the decimal point. This is exactly the same as
+            /// `TRUNC()`.
+            ///
+            /// - If `digits` is 0 or omitted, then the number is rounded to an
+            ///   integer.
+            /// - If `digits > 0`, then the number is rounded to a digit after
+            ///   the decimal point. For example, `ROUNDDOWN(x, 2)` rounds `x`
+            ///   to a multiple of 0.01.
+            /// - If `digits < 0`, then the number is rounded to a digit before
+            ///   the decimal point. For example, `ROUNDDOWN(x, -2)` rounds `x`
+            ///   to a multiple of 100.
+            #[examples("ROUNDDOWN(6.553, 2)")]
+            #[zip_map]
+            fn ROUNDDOWN([number]: f64, [digits]: (Option<i64>)) {
+                let q = (10_f64).powf(digits.unwrap_or(0) as f64);
+                (number * q).trunc() / q
+            }
+        ),
+        formula_fn!(
+            /// Rounds a number **toward zero** to the specified number of
+            /// digits after the decimal point. This is exactly the same as
+            /// `ROUNDDOWN()`.
+            ///
+            /// - If `digits` is 0 or omitted, then the number is rounded to an
+            ///   integer.
+            /// - If `digits > 0`, then the number is rounded to a digit after
+            ///   the decimal point. For example, `TRUNC(x, 2)` rounds `x` to a
+            ///   multiple of 0.01.
+            /// - If `digits < 0`, then the number is rounded to a digit before
+            ///   the decimal point. For example, `TRUNC(x, -2)` rounds `x` to a
+            ///   multiple of 100.
+            #[examples("TRUNC(6.553, 2)")]
+            #[zip_map]
+            fn TRUNC([number]: f64, [digits]: (Option<i64>)) {
+                let q = (10_f64).powf(digits.unwrap_or(0) as f64);
+                (number * q).trunc() / q
+            }
+        ),
+        // Other operators
+        formula_fn!(
             /// Returns the remainder after dividing `number` by `divisor`. The
             /// result always has the same sign as `divisor`.
             ///
@@ -349,7 +435,7 @@ mod tests {
             },
             parse_formula("SUM()", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx, None)
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );
@@ -460,7 +546,7 @@ mod tests {
             },
             parse_formula("PRODUCT()", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx, None)
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );
@@ -500,7 +586,7 @@ mod tests {
             },
             parse_formula("ABS()", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx, None)
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );
@@ -512,7 +598,7 @@ mod tests {
             },
             parse_formula("ABS(16, 17)", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx, None)
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );
@@ -661,6 +747,77 @@ mod tests {
 
     #[test]
     #[parallel]
+    fn test_rounding() {
+        let test_values = [
+            -2025.0, -10.0, -5.0, -0.8, -0.5, -0.3, 0.0, 0.3, 0.5, 0.8, 5.0, 10.0, 2025.0,
+        ];
+        let g = Grid::new();
+
+        // Test `ROUND()`
+        #[rustfmt::skip]
+        let test_cases = [
+            (-2, [-2000.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2000.0]),
+            (-1, [-2030.0, -10.0, -10.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 10.0, 10.0, 2030.0]),
+            (0, [-2025.0, -10.0, -5.0, -1.0, -1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 5.0, 10.0, 2025.0]),
+            (1, [-2025.0, -10.0, -5.0, -0.8, -0.5, -0.3, 0.0, 0.3, 0.5, 0.8, 5.0, 10.0, 2025.0]),
+            (2, [-2025.0, -10.0, -5.0, -0.8, -0.5, -0.3, 0.0, 0.3, 0.5, 0.8, 5.0, 10.0, 2025.0]),
+        ];
+        for (digits, expected_results) in test_cases {
+            for (input, expected_output) in std::iter::zip(test_values, expected_results) {
+                assert_f64_eval(
+                    &g,
+                    expected_output as f64,
+                    &format!("ROUND({input}, {digits})"),
+                );
+            }
+        }
+
+        // Test `ROUNDUP()`
+        #[rustfmt::skip]
+        let test_cases = [
+            (-2, [-2100.0, -100.0, -100.0, -100.0, -100.0, -100.0, 0.0, 100.0, 100.0, 100.0, 100.0, 100.0, 2100.0]),
+            (-1, [-2030.0, -10.0, -10.0, -10.0, -10.0, -10.0, 0.0, 10.0, 10.0, 10.0, 10.0, 10.0, 2030.0]),
+            (0, [-2025.0, -10.0, -5.0, -1.0, -1.0, -1.0, 0.0, 1.0, 1.0, 1.0, 5.0, 10.0, 2025.0]),
+            (1, [-2025.0, -10.0, -5.0, -0.8, -0.5, -0.3, 0.0, 0.3, 0.5, 0.8, 5.0, 10.0, 2025.0]),
+            (2, [-2025.0, -10.0, -5.0, -0.8, -0.5, -0.3, 0.0, 0.3, 0.5, 0.8, 5.0, 10.0, 2025.0]),
+        ];
+        for (digits, expected_results) in test_cases {
+            for (input, expected_output) in std::iter::zip(test_values, expected_results) {
+                assert_f64_eval(
+                    &g,
+                    expected_output as f64,
+                    &format!("ROUNDUP({input}, {digits})"),
+                );
+            }
+        }
+
+        // Test `ROUNDDOWN()` and `TRUNC()` (same semantics)
+        #[rustfmt::skip]
+        let test_cases = [
+            (-2, [-2000.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2000.0]),
+            (-1, [-2020.0, -10.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 10.0, 2020.0]),
+            (0, [-2025.0, -10.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0, 10.0, 2025.0]),
+            (1, [-2025.0, -10.0, -5.0, -0.8, -0.5, -0.3, 0.0, 0.3, 0.5, 0.8, 5.0, 10.0, 2025.0]),
+            (2, [-2025.0, -10.0, -5.0, -0.8, -0.5, -0.3, 0.0, 0.3, 0.5, 0.8, 5.0, 10.0, 2025.0]),
+        ];
+        for (digits, expected_results) in test_cases {
+            for (input, expected_output) in std::iter::zip(test_values, expected_results) {
+                assert_f64_eval(
+                    &g,
+                    expected_output as f64,
+                    &format!("ROUNDDOWN({input}, {digits})"),
+                );
+                assert_f64_eval(
+                    &g,
+                    expected_output as f64,
+                    &format!("TRUNC({input}, {digits})"),
+                );
+            }
+        }
+    }
+
+    #[test]
+    #[parallel]
     fn test_mod() {
         let g = Grid::new();
         assert_eq!("-0.5", eval_to_string(&g, "MOD(1.5, -1)"));
@@ -761,7 +918,7 @@ mod tests {
             },
             parse_formula("PI(16)", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx, None)
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );
@@ -780,7 +937,7 @@ mod tests {
             },
             parse_formula("TAU(16)", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx, None)
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );
