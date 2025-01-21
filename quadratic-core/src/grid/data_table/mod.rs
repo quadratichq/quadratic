@@ -33,9 +33,14 @@ use tabled::{
 };
 
 use super::sheet::borders::Borders;
-use super::{CodeRunOld, CodeRunResult, Grid, SheetFormatting};
+use super::{CodeRunOld, CodeRunResult, Grid, SheetFormatting, SheetId};
 
 impl Grid {
+    pub fn data_table(&self, sheet_id: SheetId, pos: Pos) -> Result<&DataTable> {
+        self.try_sheet_result(sheet_id)?.data_table_result(pos)
+    }
+
+    /// Returns a unique name for the data table, taking into account its
     /// Returns a unique name for the data table, taking into account its
     /// position on the sheet (so it doesn't conflict with itself).
     pub fn unique_data_table_name(
@@ -71,10 +76,14 @@ impl Grid {
     pub fn update_data_table_name(
         &mut self,
         sheet_pos: SheetPos,
-        name: &str,
+        old_name: &str,
+        new_name: &str,
         require_number: bool,
     ) -> Result<()> {
-        let unique_name = self.unique_data_table_name(name, require_number, Some(sheet_pos));
+        let unique_name = self.unique_data_table_name(new_name, require_number, Some(sheet_pos));
+
+        self.replace_table_name_in_code_cells(old_name, &unique_name);
+
         let sheet = self
             .try_sheet_mut(sheet_pos.sheet_id)
             .ok_or_else(|| anyhow!("Sheet {} not found", sheet_pos.sheet_id))?;
@@ -83,9 +92,12 @@ impl Grid {
             .data_table_mut(sheet_pos.into())?
             .update_table_name(&unique_name);
 
-        self.replace_table_name_in_code_cells(name, &unique_name);
-
         Ok(())
+    }
+
+    /// Returns a unique name for a data table
+    pub fn next_data_table_name(&self) -> String {
+        self.unique_data_table_name("Table", true, None)
     }
 
     /// Replaces the table name in all code cells that reference the old name in all sheets in the grid.
@@ -95,9 +107,10 @@ impl Grid {
         }
     }
 
-    /// Returns a unique name for a data table
-    pub fn next_data_table_name(&self) -> String {
-        self.unique_data_table_name("Table", true, None)
+    pub fn replace_data_table_column_name_in_code_cells(&mut self, old_name: &str, new_name: &str) {
+        for sheet in self.sheets.iter_mut() {
+            sheet.replace_data_table_column_name_in_code_cells(old_name, new_name);
+        }
     }
 }
 

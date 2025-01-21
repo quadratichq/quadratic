@@ -365,19 +365,42 @@ impl GridController {
             ref show_ui,
         } = op
         {
-            let old_name = self
-                .try_sheet_result(sheet_pos.sheet_id)?
-                .data_table(sheet_pos.into())
-                .map(|data_table| data_table.name.to_owned());
+            // do grid mutations first to keep the borrow checker happy
+            let sheet_id = sheet_pos.sheet_id;
+            let pos = Pos::from(sheet_pos);
+            let old_name = self.grid.data_table(sheet_id, pos)?.name.to_owned();
 
             if let Some(name) = name {
-                self.grid.update_data_table_name(sheet_pos, name, false)?;
+                self.grid
+                    .update_data_table_name(sheet_pos, &old_name, name, false)?;
+            }
+
+            let old_data_table = self.grid.data_table(sheet_id, pos)?;
+            let old_columns = old_data_table.column_headers.to_owned();
+
+            // update column names that have changed in code cells
+            if let (Some(columns), Some(old_columns)) = (columns, old_columns.to_owned()) {
+                for (index, old_column) in old_columns.iter().enumerate() {
+                    if let Some(new_column) = columns.get(index) {
+                        if old_column.name != new_column.name {
+                            self.grid.replace_data_table_column_name_in_code_cells(
+                                &old_column.name.to_string(),
+                                &new_column.name.to_string(),
+                            );
+                        }
+                    }
+                }
             }
 
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
+
+            if let Some(columns) = columns {
+                data_table.column_headers = Some(columns.to_owned());
+                data_table.normalize_column_header_names();
+            }
 
             let old_alternating_colors = alternating_colors.map(|alternating_colors| {
                 let old_alternating_colors = data_table.alternating_colors.to_owned();
@@ -425,7 +448,7 @@ impl GridController {
             let forward_operations = vec![op];
             let reverse_operations = vec![Operation::DataTableMeta {
                 sheet_pos,
-                name: old_name,
+                name: Some(old_name),
                 alternating_colors: old_alternating_colors,
                 columns: old_columns,
                 show_header: old_show_header,

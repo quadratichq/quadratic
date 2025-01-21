@@ -1,5 +1,9 @@
 use super::Sheet;
-use crate::{grid::data_table::DataTable, Pos};
+use crate::{
+    a1::A1Context,
+    grid::{data_table::DataTable, CodeCellValue, SheetId},
+    Pos,
+};
 
 use anyhow::{anyhow, bail, Result};
 use indexmap::map::{Entry, OccupiedEntry};
@@ -116,22 +120,34 @@ impl Sheet {
         })
     }
 
-    /// Replaces the table name in all code cells that reference the old name.
-    pub fn replace_table_name_in_code_cells(&mut self, old_name: &str, new_name: &str) {
+    fn replace_in_code_cells(&mut self, func: impl Fn(&mut CodeCellValue, &A1Context, &SheetId)) {
         let a1_context = self.a1_context();
+        let positions = self.data_tables.keys().cloned().collect::<Vec<_>>();
+        let sheet_id = self.id;
 
-        for (pos, _) in self.data_tables.iter() {
-            if let Some(cell_value) = self.get_code_cell_value(*pos) {
-                if let Some(mut code_cell_value) = cell_value.code_cell_value() {
-                    code_cell_value.replace_table_name_in_cell_references(
-                        old_name,
-                        new_name,
-                        &self.id,
-                        &a1_context,
-                    );
+        for pos in positions {
+            if let Some(cell_value) = self.cell_value_mut(pos) {
+                if let Some(mut code_cell_value) = cell_value.code_cell_value_mut() {
+                    func(&mut code_cell_value, &a1_context, &sheet_id);
                 }
             }
         }
+    }
+
+    /// Replaces the table name in all code cells that reference the old name.
+    pub fn replace_table_name_in_code_cells(&mut self, old_name: &str, new_name: &str) {
+        self.replace_in_code_cells(|code_cell_value, a1_context, id| {
+            code_cell_value
+                .replace_table_name_in_cell_references(old_name, new_name, id, a1_context);
+        });
+    }
+
+    /// Replaces the column name in all code cells that reference the old name.
+    pub fn replace_data_table_column_name_in_code_cells(&mut self, old_name: &str, new_name: &str) {
+        self.replace_in_code_cells(|code_cell_value, a1_context, id| {
+            code_cell_value
+                .replace_column_name_in_cell_references(old_name, new_name, id, a1_context);
+        });
     }
 }
 

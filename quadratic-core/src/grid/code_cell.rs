@@ -139,7 +139,7 @@ impl CodeCellValue {
         if old_name != new_name && self.is_code_cell() {
             self.replace_q_cells_a1_selection(default_sheet_id, a1_context, |a1_selection| {
                 a1_selection.replace_table_name(old_name, new_name);
-                a1_selection.to_string(Some(*default_sheet_id), a1_context)
+                return a1_selection.to_string(Some(*default_sheet_id), a1_context);
             });
         }
     }
@@ -390,15 +390,15 @@ mod tests {
         let sheet_id = SheetId::test();
         let a1_context = A1Context::test(
             &[("Sheet1", sheet_id)],
-            &[("test.csv", &["city"], Rect::test_a1("A1:C3"))],
+            &[("simple", &["city"], Rect::test_a1("A1:C3"))],
         );
 
         let mut code = CodeCellValue {
             language: CodeCellLanguage::Python,
-            code: "q.cells('test.csv[city]')".to_string(),
+            code: "q.cells('simple[city]')".to_string(),
         };
         code.replace_table_name_in_cell_references(
-            "test.csv",
+            "simple",
             "test_new.csv",
             &sheet_id,
             &a1_context,
