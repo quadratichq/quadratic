@@ -98,6 +98,15 @@ impl Sheet {
         Sheet::new(SheetId::TEST, String::from("Sheet1"), String::from("a0"))
     }
 
+    pub fn update_sheet_name(&mut self, old_name: &str, new_name: &str) {
+        self.replace_in_code_cells(|code_cell_value, a1_context, id| {
+            code_cell_value
+                .replace_sheet_name_in_cell_references(old_name, new_name, id, a1_context);
+        });
+
+        self.name = new_name.to_string();
+    }
+
     /// Populates the current sheet with random values
     /// Should only be used for testing (as it will not propagate in multiplayer)
     pub fn random_numbers(&mut self, rect: &Rect) {

@@ -156,7 +156,7 @@ impl GridController {
                 return;
             };
             let old_name = sheet.name.clone();
-            sheet.name.clone_from(&name);
+            sheet.update_sheet_name(&old_name, &name);
 
             transaction
                 .forward_operations
