@@ -98,7 +98,7 @@ impl SyntaxRule for TupleExpression {
             || EmptyExpression.prefix_matches(p)
     }
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
-        let mut tmp_p = p.clone();
+        let mut tmp_p = *p;
         if tmp_p.next() == Some(Token::LParen) { // (
             if tmp_p.parse(TupleExpression).is_ok() { // expression
                 if tmp_p.next() == Some(Token::ArgSep) { // ,
@@ -123,7 +123,7 @@ impl SyntaxRule for TupleExpression {
             }
         }
 
-        return parse_one_of!(p, [Expression, EmptyExpression]);
+        parse_one_of!(p, [Expression, EmptyExpression])
     }
 }
 
