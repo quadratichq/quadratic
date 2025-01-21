@@ -120,7 +120,10 @@ impl Sheet {
         })
     }
 
-    fn replace_in_code_cells(&mut self, func: impl Fn(&mut CodeCellValue, &A1Context, &SheetId)) {
+    pub fn replace_in_code_cells(
+        &mut self,
+        func: impl Fn(&mut CodeCellValue, &A1Context, &SheetId),
+    ) {
         let a1_context = self.a1_context();
         let positions = self.data_tables.keys().cloned().collect::<Vec<_>>();
         let sheet_id = self.id;

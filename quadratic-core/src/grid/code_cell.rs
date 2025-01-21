@@ -107,18 +107,20 @@ impl CodeCellValue {
         old_name: &str,
         new_name: &str,
         default_sheet_id: &SheetId,
-        a1_context: &mut A1Context,
+        a1_context: &A1Context,
     ) {
         if old_name != new_name && self.is_code_cell() {
+            let mut old_a1_context = a1_context.clone();
+
             if let Some(sheet_id) = a1_context.try_sheet_name(old_name) {
-                a1_context.sheet_map.insert_parts(new_name, sheet_id);
+                old_a1_context.sheet_map.insert_parts(new_name, sheet_id);
             }
 
             // create a copy of the a1_context so that we can send it to the to_string() function
-            let mut new_a1_context = a1_context.clone();
+            let mut new_a1_context = old_a1_context.clone();
             new_a1_context.sheet_map.remove(old_name);
 
-            self.replace_q_cells_a1_selection(default_sheet_id, a1_context, |a1_selection| {
+            self.replace_q_cells_a1_selection(default_sheet_id, &old_a1_context, |a1_selection| {
                 a1_selection.to_string_force_sheet_name(
                     Some(*default_sheet_id),
                     &new_a1_context,
