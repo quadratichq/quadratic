@@ -16,6 +16,7 @@ use crate::{
         js_types::JsValidationWarning, sheet::validations::validation::Validation, CellsAccessed,
         CodeCellLanguage, CodeRun, Sheet, SheetId,
     },
+    renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     A1Selection, Pos, SheetPos, SheetRect,
 };
 
@@ -272,7 +273,9 @@ impl PendingTransaction {
         let dirty_hashes = self.dirty_hashes.entry(sheet.id).or_default();
         for col in col_start..=col_end {
             if let Some((start, end)) = sheet.column_bounds(col, false) {
-                for y in start..=end {
+                // round down to the nearest hash y
+                let start = start.div_euclid(CELL_SHEET_HEIGHT as _) * CELL_SHEET_HEIGHT as i64;
+                for y in (start..=end).step_by(CELL_SHEET_HEIGHT as usize) {
                     let mut pos = Pos { x: col, y };
                     pos.to_quadrant();
                     dirty_hashes.insert(pos);
@@ -292,7 +295,9 @@ impl PendingTransaction {
         let dirty_hashes = self.dirty_hashes.entry(sheet.id).or_default();
         for row in row_start..=row_end {
             if let Some((start, end)) = sheet.row_bounds(row, true) {
-                for x in start..=end {
+                // round down to the nearest hash x
+                let start = start.div_euclid(CELL_SHEET_WIDTH as _) * CELL_SHEET_WIDTH as i64;
+                for x in (start..=end).step_by(CELL_SHEET_WIDTH as usize) {
                     let mut pos = Pos { x, y: row };
                     pos.to_quadrant();
                     dirty_hashes.insert(pos);

@@ -5,6 +5,7 @@
 
 use axum::http::{Method, StatusCode};
 use axum::response::IntoResponse;
+use axum::Json;
 use axum::{routing::get, Extension, Router};
 use quadratic_rust_shared::auth::jwt::get_jwks;
 use quadratic_rust_shared::storage::Storage;
@@ -15,6 +16,8 @@ use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+use crate::file::get_files_to_process;
+use crate::state::stats::StatsResponse;
 use crate::storage::{get_presigned_storage, get_storage};
 use crate::truncate::truncate_processed_transactions;
 use crate::{
@@ -66,7 +69,11 @@ pub(crate) fn app(state: Arc<State>) -> Router {
         //
         // UNPROTECTED ROUTES
         //
+        // healthcheck
         .route("/health", get(healthcheck))
+        //
+        // stats
+        .route("/stats", get(stats))
         //
         // presigned urls
         .route("/storage/presigned/:key", get(get_presigned_storage))
@@ -99,6 +106,7 @@ pub(crate) async fn serve() -> Result<()> {
     let jwks = get_jwks(&config.auth0_jwks_uri).await?;
     let state = Arc::new(State::new(&config, Some(jwks)).await?);
     let app = app(Arc::clone(&state));
+    let active_channels = config.pubsub_active_channels.to_owned();
 
     let listener = tokio::net::TcpListener::bind(format!("{}:{}", config.host, config.port))
         .await
@@ -167,11 +175,19 @@ pub(crate) async fn serve() -> Result<()> {
                 // reconnect to pubsub if the connection becomes unhealthy
                 state.pubsub.lock().await.reconnect_if_unhealthy().await;
 
+                if let Ok(files) = get_files_to_process(&state, &active_channels).await {
+                    state.stats.lock().await.files_to_process_in_pubsub = files.len() as u64;
+                }
+
                 let stats = state.stats.lock().await;
 
                 // push stats to the logs if there are files to process
                 if stats.files_to_process_in_pubsub > 0 {
-                    tracing::info!("Stats: {}", stats);
+                    tracing::info!(
+                        r#"{{ "files_to_process_in_pubsub": "{:#?}", "last_processed_file_time": "{:#?}" }}"#,
+                        stats.files_to_process_in_pubsub,
+                        stats.last_processed_file_time,
+                    );
                 }
             }
         }
@@ -194,14 +210,17 @@ pub(crate) async fn healthcheck() -> impl IntoResponse {
     StatusCode::OK
 }
 
+pub(crate) async fn stats(state: Extension<Arc<State>>) -> impl IntoResponse {
+    let stats = state.stats.lock().await.to_owned();
+    let response = StatsResponse::from(&stats);
+
+    Json(response)
+}
+
 #[cfg(test)]
 pub(crate) mod tests {
-    use crate::test_util::new_arc_state;
-    use axum::{
-        body::Body,
-        http::{self, Request},
-    };
-    use tower::ServiceExt;
+    use crate::test_util::{new_arc_state, response};
+    use axum::http::Method;
 
     use super::*;
 
@@ -209,18 +228,15 @@ pub(crate) mod tests {
     async fn responds_with_a_200_ok_for_a_healthcheck() {
         let state = new_arc_state().await;
         let app = app(state);
+        let response = response(app, Method::GET, "/health").await;
+        assert_eq!(response.status(), StatusCode::OK);
+    }
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method(http::Method::GET)
-                    .uri("/health")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
+    #[tokio::test]
+    async fn responds_with_a_200_ok_for_stats() {
+        let state = new_arc_state().await;
+        let app = app(state);
+        let response = response(app, Method::GET, "/stats").await;
         assert_eq!(response.status(), StatusCode::OK);
     }
 }

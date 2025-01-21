@@ -18,34 +18,30 @@ impl GridController {
         let mut ctx = Ctx::new(self.grid(), sheet_pos);
         transaction.current_sheet_pos = Some(sheet_pos);
 
-        if let Some(sheet) = self.grid().try_sheet(sheet_pos.sheet_id) {
-            let bounds = sheet.bounds(true);
+        match parse_formula(&code, sheet_pos.into()) {
+            Ok(parsed) => {
+                let output = parsed.eval(&mut ctx).into_non_tuple();
+                let errors = output.inner.errors();
 
-            match parse_formula(&code, sheet_pos.into()) {
-                Ok(parsed) => {
-                    let output = parsed.eval(&mut ctx, Some(bounds)).into_non_tuple();
-                    let errors = output.inner.errors();
-
-                    transaction.cells_accessed = ctx.cells_accessed;
-                    let new_code_run = CodeRun {
-                        std_out: None,
-                        std_err: (!errors.is_empty())
-                            .then(|| errors.into_iter().map(|e| e.to_string()).join("\n")),
-                        formatted_code_string: None,
-                        spill_error: false,
-                        last_modified: Utc::now(),
-                        cells_accessed: transaction.cells_accessed.clone(),
-                        result: CodeRunResult::Ok(output.inner),
-                        return_type: None,
-                        line_number: None,
-                        output_type: None,
-                    };
-                    transaction.cells_accessed.clear();
-                    self.finalize_code_run(transaction, sheet_pos, Some(new_code_run), None);
-                }
-                Err(error) => {
-                    let _ = self.code_cell_sheet_error(transaction, &error);
-                }
+                transaction.cells_accessed = ctx.cells_accessed;
+                let new_code_run = CodeRun {
+                    std_out: None,
+                    std_err: (!errors.is_empty())
+                        .then(|| errors.into_iter().map(|e| e.to_string()).join("\n")),
+                    formatted_code_string: None,
+                    spill_error: false,
+                    last_modified: Utc::now(),
+                    cells_accessed: transaction.cells_accessed.clone(),
+                    result: CodeRunResult::Ok(output.inner),
+                    return_type: None,
+                    line_number: None,
+                    output_type: None,
+                };
+                transaction.cells_accessed.clear();
+                self.finalize_code_run(transaction, sheet_pos, Some(new_code_run), None);
+            }
+            Err(error) => {
+                let _ = self.code_cell_sheet_error(transaction, &error);
             }
         }
     }
