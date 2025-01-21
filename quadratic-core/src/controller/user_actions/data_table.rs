@@ -249,6 +249,76 @@ mod tests {
 
     #[test]
     #[serial_test::parallel]
+    fn test_data_table_meta_change_column_name() {
+        let (mut gc, sheet_id, pos, _) = simple_csv();
+        let pos_code_cell = Pos { x: 10, y: 10 };
+        let sheet_pos_code_cell = SheetPos::from((pos_code_cell, sheet_id));
+        let column_headers = gc
+            .sheet(sheet_id)
+            .data_table(pos)
+            .unwrap()
+            .column_headers
+            .clone();
+        let old_name = column_headers.as_ref().unwrap()[0].name.clone();
+        let new_name = "city_new".to_string();
+        let old_code = r#"q.cells("simple.csv[city]")"#;
+        let new_code = r#"q.cells("simple.csv[city_new]")"#;
+
+        assert_eq!(old_name.to_string(), "city");
+
+        // create a code cell with a table reference
+        gc.set_code_cell(
+            sheet_pos_code_cell,
+            CodeCellLanguage::Python,
+            old_code.to_string(),
+            None,
+        );
+        let transaction_id = gc.last_transaction().unwrap().id;
+
+        let _ = gc.calculation_complete(JsCodeResult {
+            transaction_id: transaction_id.to_string(),
+            success: true,
+            output_value: Some(vec!["1".into(), "number".into()]),
+            ..Default::default()
+        });
+
+        let cell_value = gc.sheet(sheet_id).cell_value(pos_code_cell);
+        let code_cell_value = CodeCellValue::new_python(old_code.into());
+        assert_eq!(cell_value, Some(CellValue::Code(code_cell_value)));
+
+        // change the data table name
+        let sheet_pos = SheetPos::from((pos, sheet_id));
+        let cursor = None;
+        let mut new_column_headers = column_headers.as_ref().unwrap().clone();
+        new_column_headers[0].name = CellValue::Text(new_name.clone());
+        gc.data_table_meta(
+            sheet_pos,
+            None,
+            None,
+            Some(new_column_headers),
+            None,
+            None,
+            cursor,
+        );
+
+        let updated_name = gc
+            .sheet(sheet_id)
+            .data_table(pos)
+            .unwrap()
+            .column_headers
+            .as_ref()
+            .unwrap()[0]
+            .name
+            .clone();
+        assert_eq!(updated_name.to_string(), new_name);
+
+        let cell_value = gc.sheet(sheet_id).cell_value(pos_code_cell);
+        let code_cell_value = CodeCellValue::new_python(new_code.into());
+        assert_eq!(cell_value, Some(CellValue::Code(code_cell_value)));
+    }
+
+    #[test]
+    #[serial_test::parallel]
     fn test_insert_data_table_column_and_row() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
 
