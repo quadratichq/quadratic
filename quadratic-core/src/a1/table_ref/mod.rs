@@ -82,10 +82,6 @@ impl TableRef {
     }
 
     pub fn replace_table_name(&mut self, old_name: &str, new_name: &str) {
-        dbgjs!(format!(
-            "TableRef::replace_table_name: replacing table name {} for {}",
-            old_name, new_name
-        ));
         if self.table_name == old_name {
             self.table_name = new_name.to_string();
         }

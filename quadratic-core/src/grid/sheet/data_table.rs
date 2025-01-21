@@ -123,11 +123,12 @@ impl Sheet {
     fn replace_in_code_cells(&mut self, func: impl Fn(&mut CodeCellValue, &A1Context, &SheetId)) {
         let a1_context = self.a1_context();
         let positions = self.data_tables.keys().cloned().collect::<Vec<_>>();
+        let sheet_id = self.id;
 
         for pos in positions {
             if let Some(cell_value) = self.cell_value_mut(pos) {
-                if let Some(mut code_cell_value) = cell_value.code_cell_value() {
-                    func(&mut code_cell_value, &a1_context, &self.id);
+                if let Some(mut code_cell_value) = cell_value.code_cell_value_mut() {
+                    func(&mut code_cell_value, &a1_context, &sheet_id);
                 }
             }
         }
@@ -138,10 +139,6 @@ impl Sheet {
         self.replace_in_code_cells(|code_cell_value, a1_context, id| {
             code_cell_value
                 .replace_table_name_in_cell_references(old_name, new_name, id, a1_context);
-            dbgjs!(format!(
-                "replace_table_name_in_cell_references {:?}",
-                code_cell_value
-            ));
         });
     }
 

@@ -103,10 +103,6 @@ impl Grid {
     /// Replaces the table name in all code cells that reference the old name in all sheets in the grid.
     pub fn replace_table_name_in_code_cells(&mut self, old_name: &str, new_name: &str) {
         for sheet in self.sheets.iter_mut() {
-            dbgjs!(format!(
-                "replacing table name {} for {} in code cells for sheet {}",
-                old_name, new_name, sheet.id
-            ));
             sheet.replace_table_name_in_code_cells(old_name, new_name);
         }
     }

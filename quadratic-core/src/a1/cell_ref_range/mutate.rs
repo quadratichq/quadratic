@@ -40,10 +40,6 @@ impl CellRefRange {
     }
 
     pub fn replace_table_name(&mut self, old_name: &str, new_name: &str) {
-        dbgjs!(format!(
-            "CellRefRange::replace_table_name: replacing table name {} for {}",
-            old_name, new_name
-        ));
         match self {
             Self::Sheet { .. } => {}
             Self::Table { range } => {

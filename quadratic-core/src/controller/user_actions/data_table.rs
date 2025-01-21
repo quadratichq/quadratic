@@ -123,7 +123,10 @@ impl GridController {
 mod tests {
     use crate::{
         cellvalue::Import,
-        controller::{user_actions::import::tests::simple_csv, GridController},
+        controller::{
+            transaction_types::JsCodeResult, user_actions::import::tests::simple_csv,
+            GridController,
+        },
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
         test_util::{assert_cell_value, assert_data_table_cell_value_row, print_data_table},
         Array, CellValue, Pos, Rect, SheetPos, Value,
@@ -188,6 +191,60 @@ mod tests {
         // redo, the value should be a data table
         gc.redo(None);
         assert_cell_value(&gc, sheet_id, 0, 0, CellValue::Import(import));
+    }
+
+    #[test]
+    #[serial_test::parallel]
+    fn test_data_table_meta_change_table_name() {
+        let (mut gc, sheet_id, pos, _) = simple_csv();
+        let pos_code_cell = Pos { x: 10, y: 10 };
+        let sheet_pos_code_cell = SheetPos::from((pos_code_cell, sheet_id));
+        let old_name = gc.sheet(sheet_id).data_table(pos).unwrap().name.clone();
+        let new_name = "New_Table".to_string();
+        let old_code = r#"q.cells("simple.csv[city]")"#;
+        let new_code = r#"q.cells("New_Table[city]")"#;
+
+        assert_eq!(old_name, "simple.csv");
+
+        // create a code cell with a table reference
+        gc.set_code_cell(
+            sheet_pos_code_cell,
+            CodeCellLanguage::Python,
+            old_code.to_string(),
+            None,
+        );
+        let transaction_id = gc.last_transaction().unwrap().id;
+
+        let _ = gc.calculation_complete(JsCodeResult {
+            transaction_id: transaction_id.to_string(),
+            success: true,
+            output_value: Some(vec!["1".into(), "number".into()]),
+            ..Default::default()
+        });
+
+        let cell_value = gc.sheet(sheet_id).cell_value(pos_code_cell);
+        let code_cell_value = CodeCellValue::new_python(old_code.into());
+        assert_eq!(cell_value, Some(CellValue::Code(code_cell_value)));
+
+        // change the data table name
+        let sheet_pos = SheetPos::from((pos, sheet_id));
+        let cursor = None;
+        gc.data_table_meta(
+            sheet_pos,
+            Some(new_name.clone()),
+            None,
+            None,
+            None,
+            None,
+            cursor,
+        );
+
+        let updated_name = gc.sheet(sheet_id).data_table(pos).unwrap().name.clone();
+        assert_eq!(updated_name, new_name);
+
+        let cell_value = gc.sheet(sheet_id).cell_value(pos_code_cell);
+        let code_cell_value = CodeCellValue::new_python(new_code.into());
+        assert_eq!(cell_value, Some(CellValue::Code(code_cell_value)));
     }
 
     #[test]

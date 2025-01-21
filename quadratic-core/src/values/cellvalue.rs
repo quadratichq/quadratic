@@ -905,6 +905,14 @@ impl CellValue {
             _ => None,
         }
     }
+
+    pub fn code_cell_value_mut(&mut self) -> Option<&mut CodeCellValue> {
+        match self {
+            CellValue::Code(code) => Some(code),
+            CellValue::Import(_) => None,
+            _ => None,
+        }
+    }
 }
 
 /// Unique hash of [`CellValue`], for performance optimization. This is
