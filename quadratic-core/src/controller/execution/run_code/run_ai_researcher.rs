@@ -58,10 +58,9 @@ impl GridController {
         }
 
         let mut ctx = Ctx::new(self.grid(), sheet_pos);
-        let bounds = sheet.bounds(true);
         match parse_formula(&code, sheet_pos.into()) {
             Ok(parsed) => {
-                if let Value::Tuple(vec) = parsed.eval(&mut ctx, Some(bounds)).inner {
+                if let Value::Tuple(vec) = parsed.eval(&mut ctx).inner {
                     if let Some((query, values_array)) = vec.into_iter().next_tuple() {
                         if let Ok(query) = query.into_cell_value() {
                             if query == CellValue::Blank {
