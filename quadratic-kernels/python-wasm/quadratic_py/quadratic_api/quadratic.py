@@ -144,8 +144,6 @@ class q:
         """
         result = getCellsA1(a1, int(stack_line_number()), first_row_header)
 
-        print(result.has_headers)
-
         if result.w == 1 and result.h == 1:
             return result_to_value(result.cells[0])
 

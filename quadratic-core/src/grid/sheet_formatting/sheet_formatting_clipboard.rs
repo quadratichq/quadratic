@@ -14,7 +14,7 @@ impl SheetFormatting {
     ) -> Option<SheetFormatUpdates> {
         let mut updates = SheetFormatUpdates::default();
 
-        for rect in sheet.selection_to_rects(selection) {
+        for rect in sheet.selection_to_rects(selection, false) {
             for x in rect.x_range() {
                 for y in rect.y_range() {
                     updates.set_format_cell(Pos { x, y }, self.format(Pos { x, y }).into());

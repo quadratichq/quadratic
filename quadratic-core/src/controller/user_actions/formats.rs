@@ -40,7 +40,7 @@ impl GridController {
         // set table ranges
         for table_ref in tables {
             if let Some(table) = context.try_table(&table_ref.table_name) {
-                let range = table_ref.convert_to_ref_range_bounds(true, &context);
+                let range = table_ref.convert_to_ref_range_bounds(true, &context, false);
                 if let Some(range) = range {
                     // translate the range to 1-based compared to the table position
                     let range = range.translate(-table.bounds.min.x + 1, -table.bounds.min.y + 1);

@@ -134,7 +134,7 @@ impl GridController {
     pub fn delete_cells_operations(&self, selection: &A1Selection) -> Vec<Operation> {
         let mut ops = vec![];
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-            let rects = sheet.selection_to_rects(selection);
+            let rects = sheet.selection_to_rects(selection, false);
             for rect in rects {
                 let cell_values = CellValues::new(rect.width(), rect.height());
                 let sheet_pos = SheetPos::from((rect.min.x, rect.min.y, selection.sheet_id));

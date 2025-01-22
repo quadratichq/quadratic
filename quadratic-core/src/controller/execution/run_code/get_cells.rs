@@ -2,7 +2,8 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::{
-    a1::CellRefRange, controller::GridController, error_core::CoreError, RunError, RunErrorMsg,
+    a1::CellRefRange, controller::GridController, error_core::CoreError, grid::CodeCellLanguage,
+    CellValue, RunError, RunErrorMsg,
 };
 use serde::{Deserialize, Serialize};
 
@@ -115,7 +116,10 @@ impl GridController {
             }
         };
 
-        let rects = sheet.selection_to_rects(&selection);
+        let Some(CellValue::Code(code)) = sheet.cell_value(current_sheet_pos.into()) else {
+            return Err(CoreError::A1Error("Cell not found".to_string()));
+        };
+        let rects = sheet.selection_to_rects(&selection, code.language == CodeCellLanguage::Python);
         if rects.len() > 1 {
             // multiple rects not supported
             let msg = "Multiple rects not supported".to_string();
