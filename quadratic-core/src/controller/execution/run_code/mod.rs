@@ -469,7 +469,7 @@ mod test {
 
     use super::*;
     use crate::grid::CodeCellValue;
-    use crate::wasm_bindings::js::expect_js_call_count;
+    use crate::wasm_bindings::js::{clear_js_calls, expect_js_call_count};
 
     #[test]
     #[parallel]
@@ -580,6 +580,8 @@ mod test {
     #[test]
     #[serial]
     fn code_run_image() {
+        clear_js_calls();
+
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet_pos = SheetPos {

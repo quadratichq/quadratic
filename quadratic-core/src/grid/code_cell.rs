@@ -65,7 +65,7 @@ impl CodeCellValue {
 
     /// Updates the cell references in the code by translating them by the given
     /// delta. Updates only relative cell references.
-    pub fn update_cell_references(
+    pub fn translate_cell_references(
         &mut self,
         delta_x: i64,
         delta_y: i64,
@@ -180,7 +180,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: "q.cells('A1:B2')".to_string(),
         };
-        code.update_cell_references(1, 1, &sheet_id, &a1_context);
+        code.translate_cell_references(1, 1, &sheet_id, &a1_context);
         assert_eq!(code.code, r#"q.cells("B2:C3")"#, "Basic reference failed");
 
         // Multiple references in one line
@@ -188,7 +188,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: "x = q.cells('A1:B2') + q.cells('C3:D4')".to_string(),
         };
-        code.update_cell_references(1, 1, &sheet_id, &a1_context);
+        code.translate_cell_references(1, 1, &sheet_id, &a1_context);
         assert_eq!(
             code.code, r#"x = q.cells("B2:C3") + q.cells("D4:E5")"#,
             "Multiple references failed"
@@ -199,7 +199,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: r#"q.cells("A1:B2"); q.cells("C3:D4"); q.cells("E5:F6");"#.to_string(),
         };
-        code.update_cell_references(1, 1, &sheet_id, &a1_context);
+        code.translate_cell_references(1, 1, &sheet_id, &a1_context);
         assert_eq!(
             code.code, r#"q.cells("B2:C3"); q.cells("D4:E5"); q.cells("F6:G7");"#,
             "Quote types failed"
@@ -210,7 +210,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: r#"q.cells("A1:B2'); q.cells('C3:D4")"#.to_string(),
         };
-        code.update_cell_references(1, 1, &sheet_id, &a1_context);
+        code.translate_cell_references(1, 1, &sheet_id, &a1_context);
         assert_eq!(
             code.code, r#"q.cells("A1:B2'); q.cells('C3:D4")"#,
             "Mismatched quotes failed"
@@ -221,7 +221,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: "q.cells('A1:B2')".to_string(),
         };
-        code.update_cell_references(0, 0, &sheet_id, &a1_context);
+        code.translate_cell_references(0, 0, &sheet_id, &a1_context);
         assert_eq!(code.code, r#"q.cells('A1:B2')"#, "Zero delta failed");
 
         // Negative delta
@@ -229,7 +229,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: "q.cells('C3:D4')".to_string(),
         };
-        code.update_cell_references(-1, -1, &sheet_id, &a1_context);
+        code.translate_cell_references(-1, -1, &sheet_id, &a1_context);
         assert_eq!(code.code, r#"q.cells("B2:C3")"#, "Negative delta failed");
 
         // Whitespace variations
@@ -237,7 +237,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: "q.cells  (  'A1:B2'  )".to_string(),
         };
-        code.update_cell_references(1, 1, &sheet_id, &a1_context);
+        code.translate_cell_references(1, 1, &sheet_id, &a1_context);
         assert_eq!(
             code.code, r#"q.cells("B2:C3"  )"#,
             "Whitespace variations failed"
@@ -248,7 +248,7 @@ mod tests {
             language: CodeCellLanguage::Formula,
             code: "A1".to_string(),
         };
-        code.update_cell_references(1, 1, &sheet_id, &a1_context);
+        code.translate_cell_references(1, 1, &sheet_id, &a1_context);
         assert_eq!(code.code, "A1", "Non Python/JS failed");
 
         // Python first_row_header=True
@@ -256,7 +256,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: r#"q.cells("A1:B2", first_row_header=True)"#.to_string(),
         };
-        code.update_cell_references(1, 1, &sheet_id, &a1_context);
+        code.translate_cell_references(1, 1, &sheet_id, &a1_context);
         assert_eq!(
             code.code, r#"q.cells("B2:C3", first_row_header=True)"#,
             "first_row_header=True failed"
@@ -277,7 +277,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: r#"q.cells("'Sheet1 (1)'!A1:B2")"#.to_string(),
         };
-        code.update_cell_references(1, 1, &sheet_id, &a1_context);
+        code.translate_cell_references(1, 1, &sheet_id, &a1_context);
         assert_eq!(
             code.code, r#"q.cells("'Sheet1 (1)'!B2:C3")"#,
             "Basic reference failed"
@@ -288,7 +288,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: r#"x = q.cells("'Sheet1'!A1:B2") + q.cells("'Sheet1 (1)'!C3:D4")"#.to_string(),
         };
-        code.update_cell_references(1, 1, &sheet_id, &a1_context);
+        code.translate_cell_references(1, 1, &sheet_id, &a1_context);
         assert_eq!(
             code.code, r#"x = q.cells("B2:C3") + q.cells("'Sheet1 (1)'!D4:E5")"#,
             "Multiple references failed"
@@ -299,7 +299,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: r#"q.cells("'Sheet1'!A1:B2"); q.cells("'Sheet1 (1)'!C3:D4"); q.cells("'Sheet1'!E5:F6");"#.to_string(),
         };
-        code.update_cell_references(1, 1, &sheet_id, &a1_context);
+        code.translate_cell_references(1, 1, &sheet_id, &a1_context);
         assert_eq!(
             code.code, r#"q.cells("B2:C3"); q.cells("'Sheet1 (1)'!D4:E5"); q.cells("F6:G7");"#,
             "Quote types failed"
@@ -310,7 +310,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: r#"q.cells("'Sheet1'!A1:B2'); q.cells(''Sheet1 (1)'!C3:D4")"#.to_string(),
         };
-        code.update_cell_references(1, 1, &sheet_id, &a1_context);
+        code.translate_cell_references(1, 1, &sheet_id, &a1_context);
         assert_eq!(
             code.code, r#"q.cells("'Sheet1'!A1:B2'); q.cells(''Sheet1 (1)'!C3:D4")"#,
             "Mismatched quotes failed"
@@ -321,7 +321,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: r#"q.cells("'Sheet1 (1)'!A1:B2")"#.to_string(),
         };
-        code.update_cell_references(0, 0, &sheet_id, &a1_context);
+        code.translate_cell_references(0, 0, &sheet_id, &a1_context);
         assert_eq!(
             code.code, r#"q.cells("'Sheet1 (1)'!A1:B2")"#,
             "Zero delta failed"
@@ -332,7 +332,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: r#"q.cells("'Sheet1 (1)'!C3:D4")"#.to_string(),
         };
-        code.update_cell_references(-1, -1, &sheet_id, &a1_context);
+        code.translate_cell_references(-1, -1, &sheet_id, &a1_context);
         assert_eq!(
             code.code, r#"q.cells("'Sheet1 (1)'!B2:C3")"#,
             "Negative delta failed"
@@ -343,7 +343,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: r#"q.cells  (  "'Sheet1 (1)'!A1:B2"  )"#.to_string(),
         };
-        code.update_cell_references(1, 1, &sheet_id, &a1_context);
+        code.translate_cell_references(1, 1, &sheet_id, &a1_context);
         assert_eq!(
             code.code, r#"q.cells("'Sheet1 (1)'!B2:C3"  )"#,
             "Whitespace variations failed"
@@ -354,7 +354,7 @@ mod tests {
             language: CodeCellLanguage::Formula,
             code: r#"A1"#.to_string(),
         };
-        code.update_cell_references(1, 1, &sheet_id, &a1_context);
+        code.translate_cell_references(1, 1, &sheet_id, &a1_context);
         assert_eq!(code.code, r#"A1"#, "Non Python/JS failed");
 
         // Python first_row_header=True
@@ -362,7 +362,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: r#"q.cells("'Sheet1 (1)'!A1:B2", first_row_header=True)"#.to_string(),
         };
-        code.update_cell_references(1, 1, &sheet_id, &a1_context);
+        code.translate_cell_references(1, 1, &sheet_id, &a1_context);
         assert_eq!(
             code.code, r#"q.cells("'Sheet1 (1)'!B2:C3", first_row_header=True)"#,
             "first_row_header=True failed"
