@@ -31,10 +31,12 @@ export class CellHighlights extends Container {
     this.highlights = this.addChild(new Graphics());
     this.marchingHighlight = this.addChild(new Graphics());
     events.on('changeSheet', this.setDirty);
+    events.on('sheetOffsets', this.setDirty);
   }
 
   destroy() {
     events.off('changeSheet', this.setDirty);
+    events.off('sheetOffsets', this.setDirty);
     super.destroy();
   }
 
