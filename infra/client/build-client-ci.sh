@@ -3,7 +3,7 @@ set -euo pipefail
 # These commands are used in production on AWS Amplify
 
 echo 'Installing llvm, and clang...'
-yum update -y && yum install -y llvm clang
+sudo yum update -y && sudo yum install -y llvm clang
 
 echo 'Installing rustup...'
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
