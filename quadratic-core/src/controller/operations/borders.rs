@@ -369,49 +369,6 @@ impl GridController {
         }
     }
 
-    /// Creates border operations to clear the selection of any borders.
-    pub fn clear_borders_a1_operations(&self, selection: &A1Selection) -> Vec<Operation> {
-        let mut borders: BordersUpdates = BordersUpdates::default();
-        selection.ranges.iter().for_each(|range| match range {
-            CellRefRange::Table { .. } => todo!(),
-            CellRefRange::Sheet { range } => {
-                let (x1, y1, x2, y2) = range.to_contiguous2d_coords();
-                borders.top.get_or_insert_default().set_rect(
-                    x1,
-                    y1,
-                    x2,
-                    y2.map(|y2| y2 + 1),
-                    Some(ClearOption::Clear),
-                );
-                borders.bottom.get_or_insert_default().set_rect(
-                    x1,
-                    (y1 - 1).max(1),
-                    x2,
-                    y2,
-                    Some(ClearOption::Clear),
-                );
-                borders.left.get_or_insert_default().set_rect(
-                    x1,
-                    y1,
-                    x2.map(|x2| x2 + 1),
-                    y2,
-                    Some(ClearOption::Clear),
-                );
-                borders.right.get_or_insert_default().set_rect(
-                    (x1 - 1).max(1),
-                    y1,
-                    x2,
-                    y2,
-                    Some(ClearOption::Clear),
-                );
-            }
-        });
-        vec![Operation::SetBordersA1 {
-            sheet_id: selection.sheet_id,
-            borders,
-        }]
-    }
-
     /// Whether the borders should be toggled.
     fn should_toggle_borders(
         &self,
