@@ -2,6 +2,9 @@ set -euo pipefail
 
 # These commands are used in production on AWS Amplify
 
+echo 'Installing build-essential, llvm, and clang...'
+apt-get update && apt-get install -y --no-install-recommends build-essential llvm clang
+
 echo 'Installing rustup...'
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 source "$HOME/.cargo/env"
