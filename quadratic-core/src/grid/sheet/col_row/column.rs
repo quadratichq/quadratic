@@ -227,9 +227,12 @@ impl Sheet {
         transaction: &mut PendingTransaction,
         column: i64,
         copy_formats: CopyFormats,
+        send_client: bool,
     ) {
         // mark hashes of existing columns dirty
-        transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
+        if send_client {
+            transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
+        }
 
         // update the indices of all columns impacted by the insertion
         let mut columns_to_update = Vec::new();
@@ -261,40 +264,52 @@ impl Sheet {
             };
             if let Some(code_run) = self.data_tables.shift_remove(&old_pos) {
                 // signal html and image cells to update
-                if code_run.is_html() {
-                    transaction.add_html_cell(self.id, old_pos);
-                    transaction.add_html_cell(self.id, new_pos);
-                } else if code_run.is_image() {
-                    transaction.add_image_cell(self.id, old_pos);
-                    transaction.add_image_cell(self.id, new_pos);
+                if send_client {
+                    if code_run.is_html() {
+                        transaction.add_html_cell(self.id, old_pos);
+                        transaction.add_html_cell(self.id, new_pos);
+                    } else if code_run.is_image() {
+                        transaction.add_image_cell(self.id, old_pos);
+                        transaction.add_image_cell(self.id, new_pos);
+                    }
                 }
 
                 self.data_tables.insert_sorted(new_pos, code_run);
 
                 // signal the client to updates to the code cells (to draw the code arrays)
-                transaction.add_code_cell(self.id, old_pos);
-                transaction.add_code_cell(self.id, new_pos);
+                if send_client {
+                    transaction.add_code_cell(self.id, old_pos);
+                    transaction.add_code_cell(self.id, new_pos);
+                }
             }
         }
 
         // update formatting
         self.formats.insert_column(column, copy_formats);
-        transaction.add_fill_cells(self.id);
+        if send_client {
+            transaction.add_fill_cells(self.id);
+        }
 
         // signal client ot update the borders for changed columns
         self.borders.insert_column(column, copy_formats);
-        transaction.sheet_borders.insert(self.id);
+        if send_client {
+            transaction.sheet_borders.insert(self.id);
+        }
 
         // mark hashes of new columns dirty
-        transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
+        if send_client {
+            transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
+        }
 
         let changed_selections =
             self.validations
                 .insert_column(transaction, self.id, column, &self.a1_context());
-        transaction.add_dirty_hashes_from_selections(self, changed_selections);
+        if send_client {
+            transaction.add_dirty_hashes_from_selections(self, changed_selections);
+        }
 
         let changes = self.offsets.insert_column(column);
-        if !changes.is_empty() {
+        if send_client && !changes.is_empty() {
             changes.iter().for_each(|(index, size)| {
                 transaction.offsets_modified(self.id, Some(*index), None, Some(*size));
             });
@@ -413,7 +428,7 @@ mod tests {
 
         let mut transaction = PendingTransaction::default();
 
-        sheet.insert_column(&mut transaction, 1, CopyFormats::None);
+        sheet.insert_column(&mut transaction, 1, CopyFormats::None, true);
 
         assert_eq!(sheet.display_value(pos![A1]), None);
         assert_eq!(
@@ -452,7 +467,7 @@ mod tests {
 
         let mut transaction = PendingTransaction::default();
 
-        sheet.insert_column(&mut transaction, 2, CopyFormats::None);
+        sheet.insert_column(&mut transaction, 2, CopyFormats::None, true);
 
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
@@ -476,7 +491,7 @@ mod tests {
 
         let mut transaction = PendingTransaction::default();
 
-        sheet.insert_column(&mut transaction, 3, CopyFormats::None);
+        sheet.insert_column(&mut transaction, 3, CopyFormats::None, true);
 
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
@@ -506,7 +521,7 @@ mod tests {
         sheet.offsets.set_column_width(4, 400.0);
 
         let mut transaction = PendingTransaction::default();
-        sheet.insert_column(&mut transaction, 2, CopyFormats::None);
+        sheet.insert_column(&mut transaction, 2, CopyFormats::None, true);
         assert_eq!(sheet.offsets.column_width(1), 100.0);
         assert_eq!(sheet.offsets.column_width(2), DEFAULT_COLUMN_WIDTH);
         assert_eq!(sheet.offsets.column_width(3), 200.0);

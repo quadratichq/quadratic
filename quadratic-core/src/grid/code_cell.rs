@@ -141,7 +141,7 @@ impl CodeCellValue {
         if old_name != new_name && self.is_code_cell() {
             self.replace_q_cells_a1_selection(default_sheet_id, a1_context, |a1_selection| {
                 a1_selection.replace_table_name(old_name, new_name);
-                return a1_selection.to_string(Some(*default_sheet_id), a1_context);
+                a1_selection.to_string(Some(*default_sheet_id), a1_context)
             });
         }
     }
@@ -372,18 +372,13 @@ mod tests {
     #[test]
     fn test_replace_sheet_name_in_cell_references() {
         let sheet_id = SheetId::test();
-        let mut a1_context = A1Context::test(
+        let a1_context = A1Context::test(
             &[("Sheet1", sheet_id)],
             &[("test.csv", &["city"], Rect::test_a1("A1:C3"))],
         );
 
         let mut code = CodeCellValue::new_python("q.cells('Sheet1!A1:B2')".to_string());
-        code.replace_sheet_name_in_cell_references(
-            "Sheet1",
-            "Sheet1_new",
-            &sheet_id,
-            &mut a1_context,
-        );
+        code.replace_sheet_name_in_cell_references("Sheet1", "Sheet1_new", &sheet_id, &a1_context);
         assert_eq!(code.code, r#"q.cells("'Sheet1_new'!A1:B2")"#);
     }
 

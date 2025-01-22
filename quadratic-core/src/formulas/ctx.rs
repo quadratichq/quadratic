@@ -4,7 +4,7 @@ use smallvec::{smallvec, SmallVec};
 use super::*;
 use crate::{
     a1::UNBOUNDED,
-    grid::{CellsAccessed, Grid, GridBounds},
+    grid::{CellsAccessed, Grid},
     Array, CellValue, CodeResult, CodeResultExt, Pos, RunErrorMsg, SheetPos, SheetRect, Span,
     Spanned, Value,
 };
@@ -127,33 +127,49 @@ impl<'ctx> Ctx<'ctx> {
 
     /// Fetches the contents of the cell array at `rect`, or returns an error in
     /// the case of a circular reference.
-    pub fn get_cell_array(
-        &mut self,
-        rect: SheetRect,
-        span: Span,
-        bounds: Option<GridBounds>,
-    ) -> CodeResult<Spanned<Array>> {
+    pub fn get_cell_array(&mut self, rect: SheetRect, span: Span) -> CodeResult<Spanned<Array>> {
         if self.skip_computation {
             return Ok(CellValue::Blank.into()).with_span(span);
         }
+
+        let Some(sheet) = self.grid.try_sheet(rect.sheet_id) else {
+            return Err(RunErrorMsg::BadCellReference.with_span(span));
+        };
+        let bounds = sheet.bounds(true);
+
         self.cells_accessed.add_sheet_rect(rect);
 
         let mut bounded_rect = rect;
 
         // convert unbounded values to the data bounds of the sheet
-        if let Some(bounds) = bounds {
-            if bounded_rect.min.x == UNBOUNDED {
-                bounded_rect.min.x = bounds.first_column().unwrap_or(0);
-            }
-            if bounded_rect.max.x == UNBOUNDED {
-                bounded_rect.max.x = bounds.last_column().unwrap_or(0);
-            }
-            if bounded_rect.min.y == UNBOUNDED {
-                bounded_rect.min.y = bounds.first_row().unwrap_or(0);
-            }
-            if bounded_rect.max.y == UNBOUNDED {
-                bounded_rect.max.y = bounds.last_row().unwrap_or(0);
-            }
+        if bounded_rect.min.x == UNBOUNDED && bounded_rect.min.y == UNBOUNDED {
+            bounded_rect.min.x = bounds.first_column().unwrap_or(1);
+            bounded_rect.min.y = bounds.first_row().unwrap_or(1);
+        } else if bounded_rect.min.x == UNBOUNDED {
+            bounded_rect.min.x = sheet
+                .row_bounds(bounded_rect.min.y, true)
+                .unwrap_or((1, 1))
+                .0;
+        } else if bounded_rect.min.y == UNBOUNDED {
+            bounded_rect.min.y = sheet
+                .column_bounds(bounded_rect.min.x, true)
+                .unwrap_or((1, 1))
+                .0;
+        }
+
+        if bounded_rect.max.x == UNBOUNDED && bounded_rect.max.y == UNBOUNDED {
+            bounded_rect.max.x = bounds.last_column().unwrap_or(1);
+            bounded_rect.max.y = bounds.last_row().unwrap_or(1);
+        } else if bounded_rect.max.x == UNBOUNDED {
+            bounded_rect.max.x = sheet
+                .row_bounds(bounded_rect.max.y, true)
+                .unwrap_or((1, 1))
+                .1;
+        } else if bounded_rect.max.y == UNBOUNDED {
+            bounded_rect.max.y = sheet
+                .column_bounds(bounded_rect.max.x, true)
+                .unwrap_or((1, 1))
+                .1;
         }
 
         let sheet_id = bounded_rect.sheet_id;

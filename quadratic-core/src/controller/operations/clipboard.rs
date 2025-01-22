@@ -900,7 +900,7 @@ mod test {
             "jsClientMessage",
             format!(
                 "Cannot paste code cell in import,{}",
-                JsSnackbarSeverity::Warning.to_string()
+                JsSnackbarSeverity::Warning
             ),
             true,
         );
