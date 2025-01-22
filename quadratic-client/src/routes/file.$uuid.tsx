@@ -99,15 +99,18 @@ export const Component = () => {
   // Initialize recoil with the file's permission we get from the server
   const { loggedInUser } = useRootRouteLoaderData();
   const {
+    file: { uuid: fileUuid },
+    team: { uuid: teamUuid, settings: teamSettings },
     userMakingRequest: { filePermissions },
-    file: { uuid },
   } = useLoaderData() as FileData;
   const initializeState = ({ set }: MutableSnapshot) => {
     set(editorInteractionStateAtom, (prevState) => ({
       ...prevState,
-      user: loggedInUser,
-      uuid,
       permissions: filePermissions,
+      settings: teamSettings,
+      user: loggedInUser,
+      fileUuid,
+      teamUuid,
     }));
   };
 

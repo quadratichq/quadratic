@@ -2,9 +2,7 @@
 import '@/index.css';
 import '@/shared/shadcn/styles.css';
 
-import { QuadraticLoading } from '@/app/ui/loading/QuadraticLoading';
 import { router } from '@/router';
-import { ShowAfter } from '@/shared/components/ShowAfter';
 import * as Sentry from '@sentry/react';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
@@ -31,13 +29,6 @@ const container = document.getElementById('root');
 const root = createRoot(container as HTMLElement);
 root.render(
   <React.StrictMode>
-    <RouterProvider
-      router={router}
-      fallbackElement={
-        <ShowAfter delay={2000}>
-          <QuadraticLoading />
-        </ShowAfter>
-      }
-    />
+    <RouterProvider router={router} future={{ v7_startTransition: true }} />
   </React.StrictMode>
 );

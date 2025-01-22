@@ -1,12 +1,12 @@
-import { Request, Response } from 'express';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { Request, Response } from 'express';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { createCheckoutSession, getMonthlyPriceId } from '../../stripe/stripe';
-import { RequestWithUser } from '../../types/Request';
+import type { RequestWithUser } from '../../types/Request';
 
 export default [
   validateRequestSchema(
@@ -29,7 +29,7 @@ async function handler(req: Request, res: Response) {
   const { userMakingRequest } = await getTeam({ uuid, userId });
 
   // Can the user even edit this team?
-  if (!userMakingRequest.permissions.includes('TEAM_BILLING_EDIT')) {
+  if (!userMakingRequest.permissions.includes('TEAM_MANAGE')) {
     return res
       .status(403)
       .json({ error: { message: 'User does not have permission to access billing for this team.' } });

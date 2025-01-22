@@ -1,4 +1,4 @@
-import multer from 'multer';
+import type multer from 'multer';
 import { STORAGE_TYPE } from '../env-vars';
 import { getPresignedStorageUrl, getStorageUrl, multerFileSystemStorage, upload } from './fileSystem';
 import { generatePresignedUrl, multerS3Storage, uploadStringAsFileS3 } from './s3';
