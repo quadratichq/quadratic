@@ -4171,6 +4171,7 @@ dependencies = [
  "snap",
  "thrift",
  "twox-hash",
+ "zstd",
 ]
 
 [[package]]
@@ -4200,8 +4201,6 @@ dependencies = [
  "snap",
  "thrift",
  "twox-hash",
- "zstd",
- "zstd-sys",
 ]
 
 [[package]]

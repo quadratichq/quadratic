@@ -108,6 +108,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install build-essential, llvm, and clang
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential llvm clang
+
       - uses: useblacksmith/setup-node@v5
         with:
           node-version: 18
@@ -210,6 +215,11 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install build-essential, llvm, and clang
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential llvm clang
 
       - uses: useblacksmith/setup-node@v5
         with:
