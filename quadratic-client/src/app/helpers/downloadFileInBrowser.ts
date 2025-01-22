@@ -10,10 +10,12 @@ export function downloadFile(filename: string, data: Uint8Array | string, mime_t
     window.navigator.msSaveBlob(blob, filename);
   } else {
     const elem = window.document.createElement('a');
-    elem.href = window.URL.createObjectURL(blob);
+    const objUrl = window.URL.createObjectURL(blob);
+    elem.href = objUrl;
     elem.download = `${filename}.${extension}`;
     document.body.appendChild(elem);
     elem.click();
     document.body.removeChild(elem);
+    URL.revokeObjectURL(objUrl);
   }
 }
