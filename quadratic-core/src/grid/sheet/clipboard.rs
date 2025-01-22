@@ -20,7 +20,11 @@ impl Sheet {
         let mut sheet_bounds: Option<Rect> = None;
         let context = self.a1_context();
 
+        dbgjs!(format!("selection: {:?}", selection));
+
+        // TODO(ddimaria): this doesn't work properly for TableRefs
         if let Some(bounds) = self.selection_bounds(selection) {
+            dbgjs!(format!("bounds: {:?}", bounds));
             clipboard_origin.x = bounds.min.x;
             clipboard_origin.y = bounds.min.y;
             sheet_bounds = Some(bounds);
@@ -50,6 +54,7 @@ impl Sheet {
 
                     // the CellValue at the cell (ignoring code_runs)
                     let real_value = self.cell_value(pos);
+                    dbgjs!(format!("real_value: {:?}", real_value));
 
                     // create quadratic clipboard values
                     if let Some(mut real_value) = real_value {
@@ -238,6 +243,7 @@ impl Sheet {
 
                     // add the CellValue to cells if the code is not included in the clipboard
                     let include_in_cells = !bounds.contains(data_table_pos);
+                    dbgjs!(format!("include_in_cells: {:?}", include_in_cells));
 
                     // add the code_run output to clipboard.values
                     for y in y_start..=y_end {

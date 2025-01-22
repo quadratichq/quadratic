@@ -16,6 +16,7 @@ impl Sheet {
         }
         let size = run.chart_pixel_output;
         let output = run.cell_value_at(0, 0)?;
+        dbgjs!(format!("get_single_html_output size: {:?}", size));
         Some(JsHtmlOutput {
             sheet_id: self.id.to_string(),
             x: pos.x,
@@ -133,9 +134,10 @@ impl Sheet {
             return;
         }
 
-        self.data_tables.iter().for_each(|(pos, run)| {
-            if let Some(CellValue::Image(image)) = run.cell_value_at(0, 0) {
-                let size = run.chart_pixel_output;
+        self.data_tables.iter().for_each(|(pos, data_table)| {
+            if let Some(CellValue::Image(image)) = data_table.cell_value_at(0, 0) {
+                let size = data_table.chart_pixel_output;
+                dbgjs!(format!("send_all_images size: {:?}", size));
                 crate::wasm_bindings::js::jsSendImage(
                     self.id.to_string(),
                     pos.x as i32,
