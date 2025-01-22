@@ -3,7 +3,7 @@
 
 import { Action } from '@/app/actions/actions';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { moveViewport, pageUpDown } from '@/app/gridGL/interaction/viewportHelper';
+import { ensureVisible, moveViewport, pageUpDown } from '@/app/gridGL/interaction/viewportHelper';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import type { Direction } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -54,11 +54,13 @@ async function jumpCursor(direction: Direction, jump: boolean, select: boolean) 
       case 'Up':
       case 'Down':
         cursor.selectTo(selEnd.x, jumpRow, true);
+        ensureVisible({ x: selEnd.x, y: jumpRow });
         break;
 
       case 'Left':
       case 'Right':
         cursor.selectTo(jumpCol, selEnd.y, true);
+        ensureVisible({ x: jumpCol, y: selEnd.y });
         break;
     }
   } else {
