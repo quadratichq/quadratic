@@ -153,7 +153,7 @@ impl Criterion {
     {
         Ok(self
             .iter_matching(eval_range, output_values_range)?
-            // Propogate errors
+            // Propagate errors
             .map(|v| v.into_non_error_value())
             // Ignore blank values
             .filter_map_ok(|v| v.coerce_nonblank::<T>()))
@@ -211,7 +211,7 @@ impl Criterion {
     {
         Ok(
             Self::iter_matching_multi(eval_ranges_and_criteria, Some(output_values_range))?
-                // Propogate errors
+                // Propagate errors
                 .map(|v| v.into_non_error_value())
                 // Ignore blank values
                 .filter_map_ok(|v| v.coerce_nonblank::<T>()),

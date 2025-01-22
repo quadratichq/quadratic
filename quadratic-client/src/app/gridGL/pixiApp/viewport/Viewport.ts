@@ -168,7 +168,8 @@ export class Viewport extends PixiViewport {
         time: SNAPPING_TIME,
         ease: 'easeOutSine',
         removeOnComplete: true,
-        interrupt: true,
+        removeOnInterrupt: true,
+        interrupt: false,
       });
       this.snapState = 'snapping';
     } else {

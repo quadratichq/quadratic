@@ -1,8 +1,8 @@
 use crate::a1::A1Selection;
 use crate::cell_values::CellValues;
 use crate::color::Rgba;
-use crate::controller::operations::clipboard::{Clipboard, ClipboardOrigin};
-use crate::formulas::replace_a1_notation;
+use crate::controller::operations::clipboard::{Clipboard, ClipboardOperation, ClipboardOrigin};
+use crate::formulas::{replace_a1_notation, replace_internal_cell_references};
 use crate::grid::js_types::JsClipboard;
 use crate::grid::{CodeCellLanguage, Sheet};
 use crate::{CellValue, Pos, Rect};
@@ -11,7 +11,11 @@ impl Sheet {
     /// Copies the selection to the clipboard.
     ///
     /// Returns the copied SheetRect, plain text, and html.
-    pub fn copy_to_clipboard(&self, selection: &A1Selection) -> Result<JsClipboard, String> {
+    pub fn copy_to_clipboard(
+        &self,
+        selection: &A1Selection,
+        clipboard_operation: ClipboardOperation,
+    ) -> Result<JsClipboard, String> {
         let mut clipboard_origin = ClipboardOrigin::default();
         let mut plain_text = String::new();
         let mut html_body = String::from("<tbody>");
@@ -62,7 +66,12 @@ impl Sheet {
                         match &mut real_value {
                             CellValue::Code(code_cell) => {
                                 if matches!(code_cell.language, CodeCellLanguage::Formula) {
-                                    code_cell.code = replace_a1_notation(&code_cell.code, pos);
+                                    if clipboard_operation == ClipboardOperation::Copy {
+                                        code_cell.code = replace_a1_notation(&code_cell.code, pos);
+                                    } else {
+                                        code_cell.code =
+                                            replace_internal_cell_references(&code_cell.code, pos);
+                                    }
                                 }
                             }
                             _ => { /* noop */ }
@@ -287,6 +296,7 @@ impl Sheet {
             origin: clipboard_origin,
             selection: selection.clone(),
             validations,
+            operation: clipboard_operation,
         };
 
         html_body.push_str("</td></tr></tbody></table>");
@@ -319,7 +329,9 @@ mod tests {
         sheet.test_set_values(0, 0, 4, 1, vec!["1", "2", "3", "4"]);
 
         let selection = A1Selection::test_a1("A1,C1:C2");
-        let JsClipboard { html, .. } = sheet.copy_to_clipboard(&selection).unwrap();
+        let JsClipboard { html, .. } = sheet
+            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+            .unwrap();
 
         gc.paste_from_clipboard(
             &A1Selection::from_xy(0, 5, sheet_id),
@@ -347,7 +359,7 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
         let JsClipboard { html, .. } = sheet
-            .copy_to_clipboard(&A1Selection::test_a1("A1"))
+            .copy_to_clipboard(&A1Selection::test_a1("A1"), ClipboardOperation::Copy)
             .unwrap();
 
         gc.paste_from_clipboard(

@@ -130,8 +130,8 @@ impl Sheet {
 
         for pos in positions {
             if let Some(cell_value) = self.cell_value_mut(pos) {
-                if let Some(mut code_cell_value) = cell_value.code_cell_value_mut() {
-                    func(&mut code_cell_value, &a1_context, &sheet_id);
+                if let Some(code_cell_value) = cell_value.code_cell_value_mut() {
+                    func(code_cell_value, &a1_context, &sheet_id);
                 }
             }
         }

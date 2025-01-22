@@ -182,7 +182,7 @@ impl Connection for MySqlConnection {
     fn to_arrow(row: &Self::Row, column: &Self::Column, index: usize) -> ArrowType {
         // println!("Column: {} ({})", column.name(), column.type_info().name());
         match column.type_info().name() {
-            "TEXT" | "VARCHAR" | "VARBINARY" | "CHAR" | "ENUM" => {
+            "TEXT" | "VARCHAR" | "CHAR" | "ENUM" => {
                 ArrowType::Utf8(convert_mysql_type!(String, row, index))
             }
             "TINYINT" => ArrowType::Int8(convert_mysql_type!(i8, row, index)),

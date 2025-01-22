@@ -1,6 +1,5 @@
 use chrono::{Days, Utc};
 use std::{str::from_utf8, sync::Arc};
-use tokio::time::Instant;
 
 use quadratic_rust_shared::pubsub::PubSub as PubSubTrait;
 
@@ -62,7 +61,7 @@ pub(crate) async fn truncate_processed_transaction(
     file_id: &str,
     sequence_num: &str,
 ) -> Result<()> {
-    let start = Instant::now();
+    let start = Utc::now();
 
     // this is an expensive lock
     let mut pubsub = state.pubsub.lock().await;
@@ -84,11 +83,11 @@ pub(crate) async fn truncate_processed_transaction(
         .trim(processed_transactions_channel, key)
         .await?;
 
-    state.stats.lock().await.last_truncated_transaction_time = Some(Instant::now());
+    state.stats.lock().await.last_truncated_transaction_time = Some(Utc::now());
 
     tracing::trace!(
-        "Truncated at sequence number {sequence_num} for file {file_id} in {:?}",
-        start.elapsed()
+        "Truncated at sequence number {sequence_num} for file {file_id} in {:?}ms",
+        (Utc::now() - start).num_milliseconds()
     );
 
     Ok(())
