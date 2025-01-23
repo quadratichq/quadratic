@@ -2,6 +2,7 @@ import type { Table } from '@/app/gridGL/cells/tables/Table';
 import { TableColumnHeaders } from '@/app/gridGL/cells/tables/TableColumnHeaders';
 import { TableColumnHeadersGridLines } from '@/app/gridGL/cells/tables/TableColumnHeadersGridLines';
 import { TableName } from '@/app/gridGL/cells/tables/TableName';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Container, type Rectangle } from 'pixi.js';
 
 export class TableHeader extends Container {
@@ -9,6 +10,8 @@ export class TableHeader extends Container {
   private tableName: TableName;
   private columnHeaders: TableColumnHeaders;
   private columnHeadersGridLines: TableColumnHeadersGridLines;
+
+  private headerOnGrid = false;
 
   constructor(table: Table) {
     super();
@@ -67,6 +70,28 @@ export class TableHeader extends Container {
       this.tableName.update();
       this.columnHeaders.update();
     }
+
+    // todo...
     // this.columnHeadersGridLines.update();
+  }
+
+  toGrid() {
+    this.position.set(0, 0);
+    this.columnHeadersGridLines.visible = false;
+    this.headerOnGrid = true;
+
+    // need to keep columnHeaders in the same position in the z-order
+    this.table.addChildAt(this, 0);
+  }
+
+  toHover(bounds: Rectangle, gridHeading: number) {
+    this.position.set(
+      this.table.tableBounds.x,
+      this.table.tableBounds.y + bounds.top + gridHeading - this.table.tableBounds.top
+    );
+    this.columnHeaders.drawBackground();
+    pixiApp.hoverTableHeaders.addChild(this);
+    this.columnHeadersGridLines.visible = true;
+    this.headerOnGrid = false;
   }
 }

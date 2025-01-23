@@ -71,33 +71,20 @@ export class Table extends Container {
   };
 
   // places column headers back into the table (instead of the overHeadings container)
-  private columnHeadersHere() {
-    // if (this.inOverHeadings) {
-    //   this.columnHeaders.x = 0;
-    //   this.columnHeaders.y = 0;
-    //   // need to keep columnHeaders in the same position in the z-order
-    //   this.addChildAt(this.columnHeaders, 0);
-    //   this.gridLines.visible = false;
-    //   this.inOverHeadings = false;
-    //   this.columnHeaders.drawBackground();
-    // }
+  private headerToGrid() {
+    this.header.toGrid();
   }
 
-  private columnHeadersInOverHeadings(bounds: Rectangle, gridHeading: number) {
-    // this.columnHeaders.x = this.tableBounds.x;
-    // this.columnHeaders.y = this.tableBounds.y + bounds.top + gridHeading - this.tableBounds.top;
-    // this.columnHeaders.drawBackground();
-    // pixiApp.overHeadingsColumnsHeaders.addChild(this.columnHeaders);
-    // this.gridLines.visible = true;
-    // this.inOverHeadings = true;
+  private headerToHover(bounds: Rectangle, gridHeading: number) {
+    this.header.toHover(bounds, gridHeading);
   }
 
   private headingPosition = (bounds: Rectangle, gridHeading: number) => {
     if (this.visible) {
       if (this.tableBounds.top < bounds.top + gridHeading) {
-        this.columnHeadersInOverHeadings(bounds, gridHeading);
+        this.headerToHover(bounds, gridHeading);
       } else {
-        this.columnHeadersHere();
+        this.headerToGrid();
       }
     }
   };
