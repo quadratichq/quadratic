@@ -3,7 +3,7 @@
 use crate::{
     grid::{
         js_types::{JsHtmlOutput, JsRenderCodeCell, JsRenderCodeCellState},
-        CodeCellLanguage, DataTable, DataTableShowUI, Sheet,
+        CodeCellLanguage, DataTable, Sheet,
     },
     CellValue, Pos, Value,
 };
@@ -91,19 +91,15 @@ impl Sheet {
             y: pos.y as i32,
             w,
             h,
-            show_ui: match data_table.show_ui {
-                // show UI for non-formula code cells by default
-                DataTableShowUI::Default => true,
-                DataTableShowUI::Show => true,
-                DataTableShowUI::Hide => false,
-            },
             language,
             state,
             spill_error,
-            name: data_table.name.clone(),
+            name: data_table.name.to_display(),
             columns: data_table.send_columns(),
             first_row_header: data_table.header_is_first_row,
-            show_header: data_table.show_header,
+            show_ui: data_table.show_ui,
+            show_name: data_table.show_name,
+            show_columns: !data_table.is_html_or_image() && data_table.show_columns,
             sort: data_table.sort.clone(),
             alternating_colors,
             readonly: data_table.readonly,
@@ -439,12 +435,13 @@ mod tests {
                 name: "Table 1".to_string(),
                 columns: vec![], // single values don't have column headers
                 first_row_header: false,
-                show_header: true,
+                show_ui: true,
+                show_name: true,
+                show_columns: true,
                 sort: None,
                 alternating_colors: true,
                 readonly: true,
                 is_html_image: false,
-                show_ui: true,
             })
         );
     }

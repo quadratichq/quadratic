@@ -20,6 +20,7 @@ pub enum JsRenderCellSpecial {
     Logical,
     Checkbox,
     List,
+    TableName,
     TableColumnHeader,
 }
 
@@ -221,12 +222,13 @@ pub struct JsRenderCodeCell {
     pub name: String,
     pub columns: Vec<JsDataTableColumnHeader>,
     pub first_row_header: bool,
-    pub show_header: bool,
     pub sort: Option<Vec<DataTableSort>>,
     pub alternating_colors: bool,
     pub readonly: bool,
     pub is_html_image: bool,
     pub show_ui: bool,
+    pub show_name: bool,
+    pub show_columns: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]

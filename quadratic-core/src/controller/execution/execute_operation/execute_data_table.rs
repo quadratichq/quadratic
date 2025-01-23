@@ -144,9 +144,7 @@ impl GridController {
                 pos.y = row_index as i64 + data_table_pos.y;
             }
 
-            if data_table.show_header && !data_table.header_is_first_row {
-                pos.y -= 1;
-            }
+            pos.y -= data_table.y_adjustment();
 
             let rect = Rect::from_numbers(pos.x, pos.y, values.w as i64, values.h as i64);
             let old_values = sheet.get_code_cell_values(rect);
@@ -368,7 +366,7 @@ impl GridController {
             // do grid mutations first to keep the borrow checker happy
             let sheet_id = sheet_pos.sheet_id;
             let pos = Pos::from(sheet_pos);
-            let old_name = self.grid.data_table(sheet_id, pos)?.name.to_owned();
+            let old_name = self.grid.data_table(sheet_id, pos)?.name.to_display();
 
             if let Some(name) = name {
                 self.grid
@@ -420,9 +418,9 @@ impl GridController {
             let has_fills = data_table.formats.has_fills();
             let has_borders = !data_table.borders.is_default();
 
-            let old_show_header = show_header.map(|show_header| {
-                let old_show_header = data_table.show_header.to_owned();
-                data_table.show_header = show_header;
+            let old_show_header = show_header.map(|show_ui| {
+                let old_show_header = data_table.show_ui.to_owned();
+                data_table.show_ui = show_ui;
                 if has_fills {
                     transaction.add_fill_cells(sheet_id);
                 }
@@ -1146,7 +1144,7 @@ mod tests {
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
         let updated_name = "My_Table";
 
-        assert_eq!(&data_table.name, "simple.csv");
+        assert_eq!(&data_table.name.to_display(), "simple.csv");
         println!("Initial data table name: {}", &data_table.name);
 
         let sheet_pos = SheetPos::from((pos, sheet_id));
@@ -1163,20 +1161,20 @@ mod tests {
             .unwrap();
 
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        assert_eq!(&data_table.name, updated_name);
+        assert_eq!(&data_table.name.to_display(), updated_name);
         println!("Updated data table name: {}", &data_table.name);
 
         // undo, the value should be the initial name
         execute_reverse_operations(&mut gc, &transaction);
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        assert_eq!(&data_table.name, "simple.csv");
+        assert_eq!(&data_table.name.to_display(), "simple.csv");
         println!("Initial data table name: {}", &data_table.name);
 
         // redo, the value should be the updated name
         {
             execute_forward_operations(&mut gc, &mut transaction);
             let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-            assert_eq!(&data_table.name, updated_name);
+            assert_eq!(&data_table.name.to_display(), updated_name);
             println!("Updated data table name: {}", &data_table.name);
         }
 
@@ -1185,7 +1183,7 @@ mod tests {
         gc.execute_data_table_meta(&mut transaction, op).unwrap();
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
         // todo: this was wrong. the same data table should not conflict with itself (it used to be "My Table1")
-        assert_eq!(&data_table.name, "My_Table");
+        assert_eq!(&data_table.name.to_display(), "My_Table");
 
         // ensure numbers aren't added for unique names
         let op = Operation::DataTableMeta {
@@ -1199,7 +1197,7 @@ mod tests {
         let mut transaction = PendingTransaction::default();
         gc.execute_data_table_meta(&mut transaction, op).unwrap();
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        assert_eq!(&data_table.name, "ABC");
+        assert_eq!(&data_table.name.to_display(), "ABC");
     }
 
     #[test]

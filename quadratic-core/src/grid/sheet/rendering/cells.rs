@@ -184,10 +184,11 @@ impl Sheet {
                 };
                 for x in x_start..=x_end {
                     for y in y_start..=y_end {
-                        // We skip rendering the heading row because we render it separately.
-                        if y == code_rect.min.y
-                            && data_table.show_header
-                            && data_table.header_is_first_row
+                        // We skip rendering the header rows because we render it separately.
+                        if data_table.show_ui && (y == code_rect.min.y && data_table.show_name)
+                            || (y == code_rect.min.y + 1
+                                && data_table.show_name
+                                && data_table.show_columns)
                         {
                             continue;
                         }
@@ -202,7 +203,17 @@ impl Sheet {
                             } else {
                                 None
                             };
-                            let special = if y == code_rect.min.y && data_table.show_header {
+                            let special = if y == code_rect.min.y && data_table.show_ui {
+                                if data_table.show_name {
+                                    Some(JsRenderCellSpecial::TableName)
+                                } else {
+                                    Some(JsRenderCellSpecial::TableColumnHeader)
+                                }
+                            } else if y == code_rect.min.y + 1
+                                && data_table.show_ui
+                                && data_table.show_name
+                                && data_table.show_columns
+                            {
                                 Some(JsRenderCellSpecial::TableColumnHeader)
                             } else {
                                 None

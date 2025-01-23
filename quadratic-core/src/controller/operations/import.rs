@@ -186,7 +186,7 @@ impl GridController {
             data_table.apply_first_row_as_header();
         }
 
-        data_table.name = file_name.to_string();
+        data_table.name = CellValue::Text(file_name.to_string());
         let sheet_pos = SheetPos::from((insert_at, sheet_id));
 
         // this operation must be before the SetCodeRun operations
@@ -595,7 +595,7 @@ mod test {
             _ => panic!("Expected SetCodeRun operation"),
         };
         expected_data_table.last_modified = data_table.last_modified;
-        expected_data_table.name = file_name.to_string();
+        expected_data_table.name = CellValue::Text(file_name.to_string());
 
         let expected = Operation::SetDataTable {
             sheet_pos: SheetPos {

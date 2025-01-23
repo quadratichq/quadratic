@@ -215,7 +215,7 @@ export class CellsFills extends Container {
       let yOffset = bounds.y;
       for (let y = 0; y < table.h; y++) {
         let height = this.sheet.offsets.getRowHeight(y + table.y);
-        if (y % 2 !== (table.show_header ? 1 : 0)) {
+        if (y % 2 !== (table.show_ui && table.show_name !== table.show_columns ? 1 : 0)) {
           this.alternatingColorsGraphics.beginFill(color, LUMINOSITY ? 1 : ALTERNATING_COLOR_ALPHA);
           this.alternatingColorsGraphics.drawRect(bounds.x, yOffset, bounds.width, height);
           this.alternatingColorsGraphics.endFill();

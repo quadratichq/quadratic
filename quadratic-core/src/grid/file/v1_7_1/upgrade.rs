@@ -4,7 +4,6 @@ use crate::grid::file::serialize::contiguous_2d::import_contiguous_2d;
 use crate::grid::file::serialize::contiguous_2d::opt_fn;
 use crate::grid::file::v1_7_1 as current;
 use crate::grid::file::v1_8;
-use crate::grid::file::v1_8::DataTableShowUISchema;
 use crate::grid::formatting::RenderSize;
 use crate::Pos;
 
@@ -95,7 +94,9 @@ fn upgrade_code_runs(
                 kind: v1_8::DataTableKindSchema::CodeRun(new_code_run),
                 name: data_table_name,
                 header_is_first_row: false,
-                show_header: false,
+                show_ui: false,
+                show_name: true,
+                show_columns: true,
                 columns: None,
                 sort: None,
                 display_buffer: None,
@@ -108,7 +109,6 @@ fn upgrade_code_runs(
                 borders: Default::default(),
                 chart_pixel_output,
                 chart_output: None,
-                show_ui: DataTableShowUISchema::Default,
             };
             Ok((v1_8::PosSchema::from(pos), new_data_table))
         })

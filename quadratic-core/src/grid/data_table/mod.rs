@@ -56,12 +56,12 @@ impl Grid {
                 sheet.data_tables.iter().filter_map(|(pos, dt)| {
                     if let Some(sheet_pos) = sheet_pos {
                         if sheet.id != sheet_pos.sheet_id || pos != &sheet_pos.into() {
-                            Some(dt.name.to_owned())
+                            Some(dt.name.to_display())
                         } else {
                             None
                         }
                     } else {
-                        Some(dt.name.to_owned())
+                        Some(dt.name.to_display())
                     }
                 })
             })
@@ -121,21 +121,11 @@ pub enum DataTableKind {
     Import(Import),
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Display)]
-pub enum DataTableShowUI {
-    #[default]
-    Show,
-    Hide,
-    Default,
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct DataTable {
     pub kind: DataTableKind,
-    pub name: String,
+    pub name: CellValue,
     pub header_is_first_row: bool,
-    pub show_header: bool,
-    pub show_ui: DataTableShowUI,
     pub column_headers: Option<Vec<DataTableColumnHeader>>,
     pub sort: Option<Vec<DataTableSort>>,
     pub display_buffer: Option<Vec<u64>>,
@@ -146,6 +136,10 @@ pub struct DataTable {
     pub alternating_colors: bool,
     pub formats: SheetFormatting,
     pub borders: Borders,
+
+    pub show_ui: bool,
+    pub show_name: bool,
+    pub show_columns: bool,
 
     // width and height of the chart (html or image) output
     pub chart_pixel_output: Option<(f32, f32)>,
@@ -196,7 +190,7 @@ impl DataTable {
         value: Value,
         spill_error: bool,
         header_is_first_row: bool,
-        show_header: bool,
+        show_ui: bool,
         chart_pixel_output: Option<(f32, f32)>,
     ) -> Self {
         let readonly = match kind {
@@ -208,20 +202,23 @@ impl DataTable {
             kind,
             name: name.into(),
             header_is_first_row,
-            show_header,
             chart_pixel_output,
             value,
             readonly,
             spill_error,
             last_modified: Utc::now(),
+            alternating_colors: true,
+
+            show_ui,
+            show_name: true,
+            show_columns: true,
+
             column_headers: None,
             sort: None,
-            display_buffer: None,
-            alternating_colors: true,
             formats: Default::default(),
             borders: Default::default(),
+            display_buffer: None,
             chart_output: None,
-            show_ui: DataTableShowUI::Default,
         };
 
         if header_is_first_row {
@@ -382,18 +379,19 @@ impl DataTable {
                 Value::Array(a) => {
                     let mut size = a.size();
 
-                    let height = match (include_header, self.show_header, self.header_is_first_row)
-                    {
-                        (false, true, true) => size.h.get() - 1,
-                        (false, false, true) => size.h.get() - 1,
-                        (true, false, true) => size.h.get() - 1,
-                        (true, true, false) => size.h.get() + 1,
-
-                        (false, true, false) => size.h.get(),
-                        (true, false, false) => size.h.get(),
-                        (false, false, false) => size.h.get(),
-                        (true, true, true) => size.h.get(),
-                    };
+                    let mut height = size.h.get();
+                    if self.header_is_first_row {
+                        height -= 1;
+                    }
+                    if self.show_ui {
+                        if include_header || self.show_name {
+                            height += 1;
+                        }
+                        // images do not have columns
+                        if !self.is_html_or_image() && (include_header || self.show_columns) {
+                            height += 1;
+                        }
+                    }
                     size.h = NonZeroU32::new(height).unwrap_or(ArraySize::_1X1.h);
 
                     let width = self.columns_to_show().len();
@@ -451,14 +449,6 @@ impl DataTable {
         if !ignore_spill && self.spill_error {
             Rect::from_pos_and_size(pos, ArraySize::_1X1)
         } else {
-            let pos = if !include_header && self.show_header && !self.is_html_or_image() {
-                Pos {
-                    x: pos.x,
-                    y: pos.y + 1,
-                }
-            } else {
-                pos
-            };
             Rect::from_pos_and_size(pos, self.output_size(include_header))
         }
     }
@@ -533,6 +523,24 @@ impl DataTable {
         }
 
         format!("\nData Table: {title}\n{table}")
+    }
+
+    /// Returns the y adjustment for the data table to account for the UI
+    /// elements
+    pub fn y_adjustment(&self) -> i64 {
+        let mut y_adjustment = 0;
+        if self.header_is_first_row {
+            y_adjustment -= 1;
+        }
+        if self.show_ui {
+            if self.show_name {
+                y_adjustment += 1;
+            }
+            if self.show_columns {
+                y_adjustment += 1;
+            }
+        }
+        y_adjustment
     }
 }
 
@@ -727,5 +735,11 @@ pub mod test {
             data_table.output_sheet_rect(sheet_pos, true, true),
             SheetRect::new(1, 2, 10, 13, sheet_id)
         );
+    }
+
+    #[test]
+    fn test_y_adjustment() {
+        let (_, data_table) = new_data_table();
+        assert_eq!(data_table.y_adjustment(), 2);
     }
 }

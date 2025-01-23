@@ -12,7 +12,9 @@ pub struct TableMapEntry {
     pub visible_columns: Vec<String>,
     pub all_columns: Vec<String>,
     pub bounds: Rect,
-    pub show_headers: bool,
+    pub show_ui: bool,
+    pub show_name: bool,
+    pub show_columns: bool,
     pub is_html_image: bool,
     pub header_is_first_row: bool,
 }
@@ -126,6 +128,15 @@ impl TableMapEntry {
         self.visible_columns.get(index).cloned()
     }
 
+    /// Returns the y adjustment for the table to account for the UI elements.
+    pub fn y_adjustment(&self) -> i64 {
+        if self.show_ui {
+            (if self.show_name { 1 } else { 0 }) + (if self.show_columns { 1 } else { 0 })
+        } else {
+            0
+        }
+    }
+
     #[cfg(test)]
     pub fn test(
         table_name: &str,
@@ -143,7 +154,9 @@ impl TableMapEntry {
             visible_columns,
             all_columns,
             bounds,
-            show_headers: true,
+            show_ui: true,
+            show_name: true,
+            show_columns: true,
             is_html_image: false,
             header_is_first_row: false,
         }
@@ -159,11 +172,13 @@ impl TableMap {
     pub fn insert(&mut self, sheet_id: SheetId, pos: Pos, table: &DataTable) {
         self.tables.push(TableMapEntry {
             sheet_id,
-            table_name: table.name.clone(),
+            table_name: table.name.to_display(),
             visible_columns: table.columns_map(false),
             all_columns: table.columns_map(true),
             bounds: table.output_rect(pos, true, true),
-            show_headers: table.show_header,
+            show_ui: table.show_ui,
+            show_name: table.show_name,
+            show_columns: table.show_columns,
             is_html_image: table.is_html() || table.is_image(),
             header_is_first_row: table.header_is_first_row,
         });

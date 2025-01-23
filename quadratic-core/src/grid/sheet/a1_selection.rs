@@ -707,7 +707,7 @@ mod tests {
         let mut sheet = Sheet::test();
         sheet.test_set_code_run_array_2d(1, 1, 2, 2, vec!["1", "2", "3", "4"]);
         let dt = sheet.data_table_mut(pos![A1]).unwrap();
-        dt.show_header = true;
+        dt.show_ui = true;
 
         let table_ref = TableRef::parse("Table1", &sheet.a1_context()).unwrap();
         assert_eq!(

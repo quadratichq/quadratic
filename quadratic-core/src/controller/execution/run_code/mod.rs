@@ -29,9 +29,11 @@ impl GridController {
 
         // enforce unique data table names
         if let Some(new_data_table) = &mut new_data_table {
-            let unique_name =
-                self.grid()
-                    .unique_data_table_name(&new_data_table.name, false, Some(sheet_pos));
+            let unique_name = self.grid().unique_data_table_name(
+                &new_data_table.name.to_display(),
+                false,
+                Some(sheet_pos),
+            );
             new_data_table.update_table_name(&unique_name);
         }
 
@@ -70,7 +72,9 @@ impl GridController {
         if let (Some(old_data_table), Some(new_data_table)) =
             (sheet.data_table(pos), &mut new_data_table)
         {
-            new_data_table.show_header = old_data_table.show_header;
+            new_data_table.show_ui = old_data_table.show_ui;
+            new_data_table.show_name = old_data_table.show_name;
+            new_data_table.show_columns = old_data_table.show_columns;
             new_data_table.alternating_colors = old_data_table.alternating_colors;
             new_data_table.header_is_first_row = old_data_table.header_is_first_row;
 

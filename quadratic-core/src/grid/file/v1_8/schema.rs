@@ -163,33 +163,14 @@ pub enum DataTableShowUISchema {
     Default,
 }
 
-impl From<crate::grid::data_table::DataTableShowUI> for DataTableShowUISchema {
-    fn from(val: crate::grid::data_table::DataTableShowUI) -> Self {
-        match val {
-            crate::grid::data_table::DataTableShowUI::Show => DataTableShowUISchema::Show,
-            crate::grid::data_table::DataTableShowUI::Hide => DataTableShowUISchema::Hide,
-            crate::grid::data_table::DataTableShowUI::Default => DataTableShowUISchema::Default,
-        }
-    }
-}
-
-impl From<DataTableShowUISchema> for crate::grid::data_table::DataTableShowUI {
-    fn from(val: DataTableShowUISchema) -> Self {
-        match val {
-            DataTableShowUISchema::Show => crate::grid::data_table::DataTableShowUI::Show,
-            DataTableShowUISchema::Hide => crate::grid::data_table::DataTableShowUI::Hide,
-            DataTableShowUISchema::Default => crate::grid::data_table::DataTableShowUI::Default,
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DataTableSchema {
     pub kind: DataTableKindSchema,
     pub name: String,
     pub header_is_first_row: bool,
-    pub show_header: bool,
-    pub show_ui: DataTableShowUISchema,
+    pub show_ui: bool,
+    pub show_name: bool,
+    pub show_columns: bool,
     pub columns: Option<Vec<DataTableColumnSchema>>,
     pub sort: Option<Vec<DataTableSortOrderSchema>>,
     pub display_buffer: Option<Vec<u64>>,

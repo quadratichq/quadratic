@@ -93,9 +93,7 @@ pub fn assert_data_table_cell_value(
     let data_table_pos = sheet.first_data_table_within(pos).unwrap();
     let data_table = sheet.data_table_result(data_table_pos).unwrap();
 
-    if data_table.show_header && !data_table.header_is_first_row {
-        pos.y += 1;
-    }
+    pos.y += data_table.y_adjustment();
 
     let cell_value = sheet
         .get_code_cell_value(pos)

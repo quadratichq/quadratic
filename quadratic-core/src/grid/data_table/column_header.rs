@@ -153,7 +153,7 @@ pub mod test {
     use super::*;
     use crate::{
         cellvalue::Import,
-        grid::{test::new_data_table, DataTableKind, DataTableShowUI, Sheet},
+        grid::{test::new_data_table, DataTableKind, Sheet},
         Array, Pos,
     };
     use chrono::Utc;
@@ -246,14 +246,15 @@ pub mod test {
             readonly: false,
             spill_error: false,
             last_modified: Utc::now(),
-            show_header: true,
+            show_ui: true,
+            show_name: true,
+            show_columns: true,
             header_is_first_row: true,
             alternating_colors: true,
             formats: Default::default(),
             borders: Default::default(),
             chart_output: None,
             chart_pixel_output: None,
-            show_ui: DataTableShowUI::Default,
         };
         sheet.set_cell_value(
             pos,

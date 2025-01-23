@@ -17,11 +17,11 @@ impl TableRef {
 
         let (y_start, y_end) = table.to_sheet_rows();
         let y_start = y_start
-            + if !table.show_headers || self.headers || table.header_is_first_row || force_headers {
-                0
+            + (if !self.headers && !force_headers {
+                table.y_adjustment()
             } else {
-                1
-            };
+                0
+            });
         let y_end = if !self.data { y_start } else { y_end };
 
         match &self.col_range {
@@ -123,7 +123,7 @@ mod tests {
     #[test]
     fn test_convert_all_columns_without_header() {
         let mut context = create_test_context(Rect::test_a1("A1:C3"));
-        context.table_map.tables.first_mut().unwrap().show_headers = false;
+        context.table_map.tables.first_mut().unwrap().show_ui = false;
 
         let table_ref = TableRef {
             table_name: "test_table".to_string(),

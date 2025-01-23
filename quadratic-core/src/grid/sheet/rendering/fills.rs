@@ -163,10 +163,7 @@ mod tests {
         )
         .unwrap();
         let sheet = gc.sheet_mut(sheet_id);
-        sheet
-            .data_table_mut(Pos { x: 5, y: 2 })
-            .unwrap()
-            .show_header = true;
+        sheet.data_table_mut(Pos { x: 5, y: 2 }).unwrap().show_ui = true;
         let fills = sheet.get_all_render_fills();
         assert_eq!(fills.len(), 2);
         assert_eq!(

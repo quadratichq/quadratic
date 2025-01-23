@@ -86,7 +86,7 @@ export class TableColumnHeaders extends Container {
   }
 
   private createColumnHeaders() {
-    if (!this.table.codeCell.show_header) {
+    if (!this.table.codeCell.show_ui || !this.table.codeCell.show_columns) {
       this.columns.visible = false;
       return;
     }
@@ -130,7 +130,7 @@ export class TableColumnHeaders extends Container {
 
   // update appearance when there is an updated code cell
   update() {
-    if (this.table.codeCell.show_header && !this.table.codeCell.spill_error) {
+    if (this.table.codeCell.show_ui && this.table.codeCell.show_columns && !this.table.codeCell.spill_error) {
       this.visible = true;
       this.headerHeight = this.table.sheet.offsets.getRowHeight(this.table.codeCell.y);
       this.drawBackground();

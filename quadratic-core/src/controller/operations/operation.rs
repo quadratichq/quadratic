@@ -18,7 +18,7 @@ use crate::{
             },
             validations::validation::Validation,
         },
-        CodeRunOld, DataTable, DataTableKind, DataTableShowUI, Sheet, SheetId,
+        CodeRunOld, DataTable, DataTableKind, Sheet, SheetId,
     },
     selection::OldSelection,
     CellValue, CopyFormats, SheetPos, SheetRect,
@@ -74,7 +74,7 @@ pub enum Operation {
         alternating_colors: Option<bool>,
         columns: Option<Vec<DataTableColumnHeader>>,
         show_header: Option<bool>,
-        show_ui: Option<DataTableShowUI>,
+        show_ui: Option<bool>,
     },
     DataTableFormats {
         sheet_pos: SheetPos,

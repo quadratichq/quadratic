@@ -72,7 +72,7 @@ impl TableRef {
 
         if let Some(table) = context.try_table(&self.table_name) {
             let bounds = table.bounds;
-            let min_y = bounds.min.y + if table.show_headers { 1 } else { 0 };
+            let min_y = bounds.min.y + table.y_adjustment();
             if min_y > to || bounds.max.y < from {
                 return rows;
             }
@@ -121,7 +121,13 @@ impl TableRef {
             }
         };
 
-        table_entry.bounds.height() != if table_entry.show_headers { 2 } else { 1 }
+        table_entry.bounds.height()
+            != if table_entry.show_ui {
+                1 + if table_entry.show_name { 1 } else { 0 }
+                    + if table_entry.show_columns { 1 } else { 0 }
+            } else {
+                1
+            }
     }
 
     pub fn to_largest_rect(&self, context: &A1Context) -> Option<Rect> {
@@ -163,7 +169,12 @@ impl TableRef {
             }
         }
 
-        let min_y = bounds.min.y + if table.show_headers { 1 } else { 0 };
+        let min_y = bounds.min.y
+            + if table.show_ui {
+                (if table.show_name { 1 } else { 0 }) + (if table.show_columns { 1 } else { 0 })
+            } else {
+                0
+            };
         let max_y = bounds.max.y;
         Some(Rect::new(min_x, min_y, max_x, max_y))
     }
@@ -173,7 +184,7 @@ impl TableRef {
         if let Some(table) = context.try_table(&self.table_name) {
             let x = table.bounds.min.x;
             let y = table.bounds.min.y
-                + if self.headers || !table.show_headers || table.bounds.height() == 1 {
+                + if self.headers || !table.show_ui || table.bounds.height() == 1 {
                     0
                 } else {
                     1
@@ -420,10 +431,10 @@ mod tests {
         };
         assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A2]);
 
-        context.table_map.tables.first_mut().unwrap().show_headers = false;
+        context.table_map.tables.first_mut().unwrap().show_ui = false;
         assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A1]);
 
-        context.table_map.tables.first_mut().unwrap().show_headers = true;
+        context.table_map.tables.first_mut().unwrap().show_ui = true;
         table_ref.headers = true;
         assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A1]);
     }

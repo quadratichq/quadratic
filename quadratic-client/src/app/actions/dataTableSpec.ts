@@ -95,7 +95,7 @@ export const getDisplayColumns = (): JsDataTableColumnHeader[] | undefined => {
 
 const isHeadingShowing = (): boolean => {
   const table = getTable();
-  return !!table?.show_header;
+  return !!table && table.show_ui && (table.show_name || table.show_columns);
 };
 
 const isFirstRowHeader = (): boolean => {

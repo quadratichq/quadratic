@@ -113,13 +113,6 @@ impl GridController {
                     .map(|c| c.into_iter().map(|c| c.into()).collect())
             })
             .transpose()?;
-        let show_ui = show_ui.map(|show_ui| {
-            if show_ui {
-                DataTableShowUI::Show
-            } else {
-                DataTableShowUI::Hide
-            }
-        });
 
         self.data_table_meta(
             pos.to_sheet_pos(sheet_id),
