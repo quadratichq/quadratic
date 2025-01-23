@@ -122,6 +122,7 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| JsValue::from_str("Unable to parse A1Selection"))?;
+
         self.delete_cells(&selection, cursor);
         Ok(())
     }
