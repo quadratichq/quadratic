@@ -97,6 +97,7 @@ impl GridController {
 
         let js_clipboard = sheet.copy_to_clipboard(selection, ClipboardOperation::Cut)?;
         let operations = self.delete_values_and_formatting_operations(selection);
+
         Ok((operations, js_clipboard))
     }
 
