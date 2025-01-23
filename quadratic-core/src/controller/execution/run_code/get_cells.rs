@@ -682,4 +682,24 @@ mod test {
             })
         );
     }
+
+    #[test]
+    fn test_get_cells_table_python() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.test_set_code_run_array_2d(1, 1, 2, 2, vec!["1", "2", "3", "4"]);
+
+        gc.set_code_cell(
+            SheetPos::new(sheet_id, 1, 10),
+            CodeCellLanguage::Python,
+            "".to_string(),
+            None,
+        );
+        let transaction_id = gc.last_transaction().unwrap().id;
+        let result =
+            gc.calculation_get_cells_a1(transaction_id.to_string(), "Table1".to_string(), None);
+        assert!(result.is_ok());
+    }
 }
