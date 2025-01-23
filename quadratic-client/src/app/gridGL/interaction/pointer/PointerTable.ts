@@ -7,6 +7,7 @@ import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
 import { DOUBLE_CLICK_TIME } from '@/app/gridGL/interaction/pointer/pointerUtils';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { isMac } from '@/shared/utils/isMac';
 import type { Point } from 'pixi.js';
 
@@ -22,14 +23,22 @@ export class PointerTable {
     sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, tableDown.table.y, shiftKey, ctrlKey);
     pixiApp.cellsSheet().tables.ensureActive(tableDown.table);
     if (this.doubleClickTimeout) {
-      events.emit('contextMenu', {
-        type: ContextMenuType.Table,
-        world,
-        column: tableDown.table.x,
-        row: tableDown.table.y,
-        table: tableDown.table,
-        rename: true,
-      });
+      const table = tableDown.table;
+      if (table.language !== 'Import') {
+        pixiAppSettings.setCodeEditorState?.((prev) => ({
+          ...prev,
+          diffEditorContent: undefined,
+          waitingForEditorClose: {
+            codeCell: {
+              sheetId: sheets.current,
+              pos: { x: table.x, y: table.y },
+              language: table.language,
+            },
+            showCellTypeMenu: false,
+            initialCode: '',
+          },
+        }));
+      }
       window.clearTimeout(this.doubleClickTimeout);
       this.doubleClickTimeout = undefined;
     } else {
