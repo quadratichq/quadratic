@@ -51,7 +51,7 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             /repos/${{ github.repository }}/deployments \
             -f ref="${{ github.event.pull_request.head.ref }}" \
-            -f environment=preview \
+            -f environment=preview-pr-${{ github.event.pull_request.number }} \
             --jq '.[] | .id' | while read -r id; do
               gh api \
                 --method POST \
@@ -75,7 +75,7 @@ jobs:
             -f description="Building and deploying PR #${{ github.event.pull_request.number }} (${GITHUB_SHA::7})" \
             -F auto_merge=false \
             -f required_contexts\[\] \
-            -f environment=preview \
+            -f environment=preview-pr-${{ github.event.pull_request.number }} \
             -F transient_environment=true \
             -F production_environment=false \
             --jq '.id')
@@ -91,7 +91,7 @@ jobs:
             /repos/${{ github.repository }}/deployments/${{ steps.deployment.outputs.id }}/statuses \
             -f state="in_progress" \
             -f description="Building Docker images..." \
-            -f environment=preview \
+            -f environment=preview-pr-${{ github.event.pull_request.number }} \
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -219,7 +219,7 @@ jobs:
             /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
             -f state="failure" \
             -f description="Failed to build ${{ matrix.service }} image" \
-            -f environment=preview \
+            -f environment=preview-pr-${{ github.event.pull_request.number }} \
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -268,7 +268,7 @@ jobs:
             /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
             -f state="in_progress" \
             -f description="Deploying images..." \
-            -f environment=preview \
+            -f environment=preview-pr-${{ github.event.pull_request.number }} \
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -473,7 +473,7 @@ jobs:
             -f state="success" \
             -f environment_url="${{ steps.deploy-metadata.outputs.WebsiteURL }}" \
             -f description="Deployment successful!" \
-            -f environment=preview \
+            -f environment=preview-pr-${{ github.event.pull_request.number }} \
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -487,7 +487,7 @@ jobs:
             /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
             -f state="failure" \
             -f description="Deployment failed" \
-            -f environment=preview \
+            -f environment=preview-pr-${{ github.event.pull_request.number }} \
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
