@@ -53,7 +53,7 @@ export function CodeEditorPanelBottom({ schemaBrowser, showAIAssistant }: CodeEd
         </Button>
         <TabsList>
           {schemaBrowser && <TabsTrigger value="data-browser">Schema</TabsTrigger>}
-          {showAIAssistant && <TabsTrigger value="ai-assistant">Chat</TabsTrigger>}
+          {showAIAssistant && <TabsTrigger value="ai-assistant">Code chat</TabsTrigger>}
           <TabsTrigger
             value="console"
             className={cn(

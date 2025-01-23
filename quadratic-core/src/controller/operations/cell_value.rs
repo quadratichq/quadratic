@@ -139,11 +139,17 @@ impl GridController {
                 let cell_values = CellValues::new(rect.width(), rect.height());
                 let sheet_pos = SheetPos::from((rect.min.x, rect.min.y, selection.sheet_id));
 
-                // deletable if this is not a data table source cell, or if the data table is readonly (code cell)
+                // deletable if this is not a data table source cell, or if the data table is readonly (code cell),
+                // or if the data table is a full table selection
                 let can_delete = sheet
                     .data_tables
                     .get(&Pos::from(sheet_pos))
-                    .map(|dt| dt.readonly)
+                    .map(|dt| {
+                        let full_table_selected = rect.width() == dt.width() as u32
+                            && rect.height() == dt.height(false) as u32;
+
+                        full_table_selected || dt.readonly
+                    })
                     .unwrap_or(true);
 
                 // TODO(ddimaria): remove this once we have a way to delete data tables

@@ -383,7 +383,6 @@ function CopyLinkButton({
         : publicLinkAccess,
     [publicLinkAccess, publicLinkAccessFetcher]
   );
-  const url = useMemo(() => window.location.origin + ROUTES.FILE(uuid), [uuid]);
   const disabled = useMemo(
     () => (publicLinkAccess ? (isTeamFile ? false : optimisticPublicLinkAccess === 'NOT_SHARED') : true),
     [isTeamFile, optimisticPublicLinkAccess, publicLinkAccess]
@@ -417,6 +416,10 @@ function CopyLinkButton({
         className="flex-shrink-0"
         onClick={() => {
           mixpanel.track('[FileSharing].publicLinkAccess.clickCopyLink');
+
+          // Copy the base file URL (which DOES NOT include the current sheet ID)
+          const url = window.location.origin + window.location.pathname;
+
           navigator.clipboard
             .writeText(url)
             .then(() => {

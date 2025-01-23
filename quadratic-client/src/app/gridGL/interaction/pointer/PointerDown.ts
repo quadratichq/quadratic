@@ -71,13 +71,9 @@ export class PointerDown {
     // If the user has clicked inside the selection.
     if (isRightClick) {
       if (!cursor.contains(column, row)) {
-        cursor.moveTo(column, row, false);
-        // hack to ensure that the context menu opens after the cursor changes
-        // position (otherwise it may close immediately)
-        setTimeout(() => events.emit('contextMenu', { type: ContextMenuType.Grid, world, column, row }));
-      } else {
-        events.emit('contextMenu', { type: ContextMenuType.Grid, world, column, row });
+        cursor.moveTo(column, row, false, true, false);
       }
+      events.emit('contextMenu', { type: ContextMenuType.Grid, world, column, row });
       return;
     }
 

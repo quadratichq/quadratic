@@ -117,11 +117,12 @@ export class Table extends Container {
   }
 
   // Checks whether the mouse cursor is hovering over the table or the table name
-  checkHover(world: Point): boolean {
+  checkHover = (world: Point): boolean => {
     return (
-      intersects.rectanglePoint(this.tableBounds, world) || intersects.rectanglePoint(this.tableName.getScaled(), world)
+      intersects.rectanglePoint(this.tableBounds, world) ||
+      (this.tableName.visible && intersects.rectanglePoint(this.tableName.getScaled(), world))
     );
-  }
+  };
 
   update(bounds: Rectangle, gridHeading: number) {
     this.visible = intersects.rectangleRectangle(this.tableBounds, bounds);

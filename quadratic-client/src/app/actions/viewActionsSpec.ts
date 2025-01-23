@@ -178,7 +178,7 @@ export const viewActionsSpec: ViewActionSpec = {
     },
   },
   [Action.ToggleAIAnalyst]: {
-    label: 'Chat',
+    label: 'Sheet chat',
     run: () => {
       if (!pixiAppSettings.setAIAnalystState) return;
       pixiAppSettings.setAIAnalystState((prev) => ({ ...prev, showAIAnalyst: !prev.showAIAnalyst }));

@@ -1,4 +1,5 @@
-import { SubscriptionStatus, Team } from '@prisma/client';
+import type { Team } from '@prisma/client';
+import { SubscriptionStatus } from '@prisma/client';
 import Stripe from 'stripe';
 import dbClient from '../dbClient';
 import { NODE_ENV, STRIPE_SECRET_KEY } from '../env-vars';

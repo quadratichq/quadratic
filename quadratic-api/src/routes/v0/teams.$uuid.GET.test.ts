@@ -1,4 +1,4 @@
-import { User } from 'auth0';
+import type { User } from 'auth0';
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
@@ -97,6 +97,7 @@ describe('GET /v0/teams/:uuid', () => {
           expect(res.body).toHaveProperty('team');
           expect(res.body.team.uuid).toBe('00000000-0000-4000-8000-000000000001');
 
+          expect(res.body.team.settings.analyticsAi).toBe(true);
           expect(res.body.clientDataKv).toStrictEqual({});
           expect(res.body.connections).toHaveLength(1);
           expect(res.body.files).toHaveLength(1);

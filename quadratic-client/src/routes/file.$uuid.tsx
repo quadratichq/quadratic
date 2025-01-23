@@ -14,6 +14,7 @@ import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
+import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
@@ -37,6 +38,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     if (error.status === 403 && !isLoggedIn) {
       return redirect(ROUTES.SIGNUP_WITH_REDIRECT());
     }
+    updateRecentFiles(uuid, '', false);
     throw new Response('Failed to load file from server.', { status: error.status });
   }
   if (debugShowMultiplayer || debugShowFileIO)
@@ -64,6 +66,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
         error: result.error,
       },
     });
+    updateRecentFiles(uuid, data.file.name, false);
     throw new Response('Failed to deserialize file from server.', { statusText: result.error });
   } else if (result.version) {
     // this should eventually be moved to Rust (too lazy now to find a Rust library that does the version string compare)
@@ -72,6 +75,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
         message: `User opened a file at version ${result.version} but the app is at version ${data.file.lastCheckpointVersion}. The app will automatically reload.`,
         level: 'log',
       });
+      updateRecentFiles(uuid, data.file.name, false);
       // @ts-expect-error hard reload via `true` only works in some browsers
       window.location.reload(true);
     }
@@ -81,6 +85,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   } else {
     throw new Error('Expected quadraticCore.load to return either a version or an error');
   }
+  updateRecentFiles(uuid, data.file.name, true);
   return data;
 };
 
@@ -88,15 +93,18 @@ export const Component = () => {
   // Initialize recoil with the file's permission we get from the server
   const { loggedInUser } = useRootRouteLoaderData();
   const {
+    file: { uuid: fileUuid },
+    team: { uuid: teamUuid, settings: teamSettings },
     userMakingRequest: { filePermissions },
-    file: { uuid },
   } = useLoaderData() as FileData;
   const initializeState = ({ set }: MutableSnapshot) => {
     set(editorInteractionStateAtom, (prevState) => ({
       ...prevState,
-      user: loggedInUser,
-      uuid,
       permissions: filePermissions,
+      settings: teamSettings,
+      user: loggedInUser,
+      fileUuid,
+      teamUuid,
     }));
   };
 

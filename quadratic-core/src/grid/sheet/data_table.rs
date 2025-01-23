@@ -159,8 +159,13 @@ impl Sheet {
 mod test {
     use super::*;
     use crate::{
-        controller::GridController,
-        grid::{CodeRun, DataTableKind},
+        a1::{A1Selection, RefRangeBounds},
+        controller::{
+            operations::clipboard::{ClipboardOperation, PasteSpecial},
+            user_actions::import::tests::simple_csv,
+            GridController,
+        },
+        grid::{js_types::JsClipboard, CodeRun, DataTableKind},
         CellValue, Value,
     };
     use bigdecimal::BigDecimal;
@@ -226,5 +231,37 @@ mod test {
         );
         assert_eq!(sheet.data_table(pos![A1]), Some(&data_table));
         assert_eq!(sheet.data_table(pos![B2]), None);
+    }
+
+    #[test]
+    fn test_copy_data_table_to_clipboard() {
+        let (mut gc, sheet_id, pos, _) = simple_csv();
+        // let sheet_pos = SheetPos::from((pos, sheet_id));
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        data_table.chart_pixel_output = Some((100.0, 100.0));
+        let selection =
+            A1Selection::from_ref_range_bounds(sheet_id, RefRangeBounds::new_relative_pos(pos));
+
+        let JsClipboard { html, .. } = gc
+            .sheet_mut(sheet_id)
+            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+            .unwrap();
+
+        gc.paste_from_clipboard(
+            &A1Selection::from_xy(10, 10, sheet_id),
+            None,
+            Some(html),
+            PasteSpecial::None,
+            None,
+        );
+
+        println!(
+            "data_table : {:?}",
+            gc.sheet_mut(sheet_id)
+                .data_table(Pos::new(10, 10))
+                .unwrap()
+                .chart_pixel_output
+        );
+        // assert_eq!(clipboard.html, data_table.html());
     }
 }

@@ -14,6 +14,7 @@ pub struct TableMapEntry {
     pub bounds: Rect,
     pub show_headers: bool,
     pub is_html_image: bool,
+    pub header_is_first_row: bool,
 }
 
 impl TableMapEntry {
@@ -144,6 +145,7 @@ impl TableMapEntry {
             bounds,
             show_headers: true,
             is_html_image: false,
+            header_is_first_row: false,
         }
     }
 }
@@ -163,6 +165,7 @@ impl TableMap {
             bounds: table.output_rect(pos, true, true),
             show_headers: table.show_header,
             is_html_image: table.is_html() || table.is_image(),
+            header_is_first_row: table.header_is_first_row,
         });
     }
 

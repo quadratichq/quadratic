@@ -4,7 +4,7 @@ import { events } from '@/app/events/events';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/shared/shadcn/ui/dropdown-menu';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useRecoilState } from 'recoil';
 
 /**
@@ -17,16 +17,7 @@ export const ContextMenuBase = ({
   children: ({ contextMenu }: { contextMenu: ContextMenuState }) => React.ReactNode;
   contextMenuType: ContextMenuType;
 }) => {
-  const ref = useRef<HTMLButtonElement>(null);
-  const refContent = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useRecoilState(contextMenuAtom);
-  const open = contextMenu.type === contextMenuType && !contextMenu.rename;
-
-  // Local state for the dropdown menu
-  const [isOpen, setIsOpen] = useState(false);
-  useEffect(() => {
-    setIsOpen(open);
-  }, [open]);
 
   const onClose = useCallback(() => {
     // we don't want to stop renaming when moving the viewport
@@ -38,35 +29,43 @@ export const ContextMenuBase = ({
   }, [contextMenu.rename, setContextMenu]);
 
   useEffect(() => {
-    pixiApp.viewport.on('moved', onClose);
+    const handleMoved = ({ type }: { type: string }) => {
+      if (type !== 'decelerate') {
+        onClose();
+      }
+    };
+
+    pixiApp.viewport.on('moved', handleMoved);
     pixiApp.viewport.on('zoomed', onClose);
 
     return () => {
-      pixiApp.viewport.off('moved', onClose);
+      pixiApp.viewport.off('moved', handleMoved);
       pixiApp.viewport.off('zoomed', onClose);
     };
   }, [onClose]);
 
-  const bounds = pixiApp.viewport.getVisibleBounds();
+  const open = contextMenu.type === contextMenuType && !contextMenu.rename;
+  if (!open) {
+    return null;
+  }
+
   const left = contextMenu.world?.x ?? 0;
   const top = contextMenu.world?.y ?? 0;
+  const bounds = pixiApp.viewport.getVisibleBounds();
 
   return (
     <DropdownMenu
       modal={false}
-      open={isOpen}
+      open={open}
       onOpenChange={(dropdownOpen) => {
-        setIsOpen(dropdownOpen);
-        if (!dropdownOpen) onClose();
+        // if (!dropdownOpen) onClose();
       }}
     >
       <DropdownMenuTrigger
-        ref={ref}
-        style={{ left, top, transform: `scale(${1 / pixiApp.viewport.scale.x})`, display: open ? 'block' : 'none' }}
+        style={{ left, top, transform: `scale(${1 / pixiApp.viewport.scale.x})` }}
         className="pointer-events-auto absolute h-0 w-0 opacity-0"
       ></DropdownMenuTrigger>
       <DropdownMenuContent
-        ref={refContent}
         animate={false}
         side={left < bounds.x + bounds.width / 2 ? 'right' : 'left'}
         sideOffset={4}
@@ -77,6 +76,7 @@ export const ContextMenuBase = ({
         collisionPadding={8}
         hideWhenDetached={false}
         avoidCollisions={true}
+        updatePositionStrategy="always"
       >
         {children({ contextMenu })}
       </DropdownMenuContent>

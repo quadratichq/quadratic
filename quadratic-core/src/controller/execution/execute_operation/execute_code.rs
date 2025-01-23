@@ -6,7 +6,7 @@ use crate::{
     grid::CodeCellLanguage,
     CellValue, Pos, SheetPos, SheetRect,
 };
-
+use anyhow::Result;
 impl GridController {
     /// Adds operations to compute cells that are dependents within a SheetRect
     pub fn add_compute_operations(
@@ -88,34 +88,24 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         op: Operation,
-    ) {
+    ) -> Result<()> {
         if let Operation::SetChartSize {
             sheet_pos,
             pixel_width,
             pixel_height,
         } = op
         {
-            if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
-                if let Some((index, (_, dt))) =
-                    sheet.data_tables.iter().enumerate().find(|(_, (pos, _))| {
-                        **pos
-                            == Pos {
-                                x: sheet_pos.x,
-                                y: sheet_pos.y,
-                            }
-                    })
-                {
-                    let mut new_data_table = dt.clone();
-                    new_data_table.chart_pixel_output = Some((pixel_width, pixel_height));
-                    self.finalize_code_run(
-                        transaction,
-                        sheet_pos,
-                        Some(new_data_table),
-                        Some(index),
-                    );
-                }
-            }
+            let sheet_id = sheet_pos.sheet_id;
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
+            let data_table = sheet.data_table_mut(data_table_pos)?;
+            data_table.chart_pixel_output = Some((pixel_width, pixel_height));
+            let new_data_table = data_table.clone();
+
+            self.finalize_code_run(transaction, sheet_pos, Some(new_data_table), None);
         }
+
+        Ok(())
     }
 
     pub(super) fn execute_compute_code(

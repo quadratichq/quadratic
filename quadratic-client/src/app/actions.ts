@@ -76,9 +76,9 @@ export const createNewFileAction = {
 export const duplicateFileAction = {
   label: 'Duplicate',
   isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
-  async run({ uuid, submit }: { uuid: string; submit: SubmitFunction }) {
+  async run({ fileUuid, submit }: { fileUuid: string; submit: SubmitFunction }) {
     const data = getActionFileDuplicate({ redirect: true, isPrivate: true });
-    submit(data, { method: 'POST', action: ROUTES.API.FILE(uuid), encType: 'application/json' });
+    submit(data, { method: 'POST', action: ROUTES.API.FILE(fileUuid), encType: 'application/json' });
   },
 };
 
@@ -87,13 +87,13 @@ export const deleteFile = {
   isAvailable: ({ filePermissions }: IsAvailableArgs) => filePermissions.includes(FILE_DELETE),
   // TODO: (enhancement) handle this async operation in the UI similar to /files/create
   async run({
-    uuid,
+    fileUuid,
     userEmail,
     redirect,
     submit,
     addGlobalSnackbar,
   }: {
-    uuid: string;
+    fileUuid: string;
     userEmail: string;
     redirect: boolean;
     submit: SubmitFunction;
@@ -102,7 +102,7 @@ export const deleteFile = {
     if (window.confirm('Please confirm you want to delete this file.')) {
       try {
         const data = getActionFileDelete({ userEmail, redirect });
-        submit(data, { method: 'POST', action: ROUTES.API.FILE(uuid), encType: 'application/json' });
+        submit(data, { method: 'POST', action: ROUTES.API.FILE(fileUuid), encType: 'application/json' });
       } catch (e) {
         addGlobalSnackbar('Failed to delete file. Try again.', { severity: 'error' });
       }
