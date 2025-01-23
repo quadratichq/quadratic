@@ -38,14 +38,10 @@ export class TableName extends Container {
     this.text = this.addChild(new BitmapText('', { fontSize: TABLE_NAME_FONT_SIZE, fontName: 'OpenSans-Bold' }));
     this.symbol = this.addChild(new Sprite());
     this.dropdown = this.addChild(new Sprite(Texture.from('/images/dropdown-white.png')));
-    this.dropdown.anchor.set(0.5);
+    this.dropdown.anchor.set(0.5, 0);
     this.dropdown.width = DROPDOWN_SIZE[0];
     this.dropdown.height = DROPDOWN_SIZE[1];
 
-    // // we only add to overHeadings if the sheet is active
-    // if (sheets.sheet.id === this.table.sheet.id) {
-    //   pixiApp.overHeadingsTableNames.addChild(this);
-    // }
     sharedEvents.on('changeThemeAccentColor', this.drawBackground);
   }
 
@@ -55,12 +51,6 @@ export class TableName extends Container {
   }
 
   private drawBackground = () => {
-    // this.text.width +
-    // OPEN_SANS_FIX.x +
-    // this.dropdown.width +
-    // DROPDOWN_PADDING +
-    // TABLE_NAME_PADDING[0] +
-    // (this.symbol ? SYMBOL_PADDING + this.symbol.width : 0);
     this.background.clear();
     this.background.beginFill(getCSSVariableTint('primary'));
     this.background.drawShape(new Rectangle(0, 0, this.table.tableBounds.width, this.h));
@@ -106,7 +96,7 @@ export class TableName extends Container {
         DROPDOWN_PADDING +
         TABLE_NAME_PADDING[0] +
         (this.symbol ? SYMBOL_PADDING + this.symbol.width : 0),
-      this.text.y // + this.text.height / 2
+      this.text.y - this.dropdown.height / 4 // the 4 is b/c the icon is saved with the top in the middle of the texture
     );
   }
 
