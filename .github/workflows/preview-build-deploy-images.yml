@@ -109,6 +109,7 @@ jobs:
       contents: read
       pull-requests: write
       issues: write
+      deployments: write
     runs-on: ${{ matrix.runner }}
     if: github.head_ref != 'qa' || github.base_ref != 'main'
     timeout-minutes: 30
