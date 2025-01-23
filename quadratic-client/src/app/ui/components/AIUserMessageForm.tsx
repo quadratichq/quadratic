@@ -209,7 +209,7 @@ export const AIUserMessageFormDisclaimer = () => {
   return (
     <p className="py-0.5 text-center text-xs text-muted-foreground">
       {teamSettings.analyticsAi
-        ? 'Your data is to used improve Quadratic. '
+        ? 'Your data can be used to improve Quadratic. '
         : 'Some sheet data is sent to the AI model. '}
       <a
         href={teamSettings.analyticsAi ? ROUTES.TEAM_SETTINGS(teamUuid) : AI_SECURITY}
