@@ -1,3 +1,4 @@
+import { AIToolSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { z } from 'zod';
 
 const AIProvidersSchema = z.enum(['bedrock', 'bedrock-anthropic', 'anthropic', 'openai']).default('openai');
@@ -5,7 +6,6 @@ export type AIProviders = z.infer<typeof AIProvidersSchema>;
 
 const BedrockModelSchema = z
   .enum([
-    'anthropic.claude-3-5-sonnet-20240620-v1:0',
     'anthropic.claude-3-5-sonnet-20241022-v2:0',
     'ai21.jamba-1-5-large-v1:0',
     'cohere.command-r-plus-v1:0',
@@ -16,14 +16,14 @@ const BedrockModelSchema = z
 export type BedrockModel = z.infer<typeof BedrockModelSchema>;
 
 const BedrockAnthropicModelSchema = z
-  .enum(['anthropic.claude-3-5-sonnet-20241022-v2:0', 'anthropic.claude-3-5-sonnet-20240620-v1:0'])
+  .enum(['anthropic.claude-3-5-sonnet-20241022-v2:0'])
   .default('anthropic.claude-3-5-sonnet-20241022-v2:0');
 export type BedrockAnthropicModel = z.infer<typeof BedrockAnthropicModelSchema>;
 
 const AnthropicModelSchema = z.enum(['claude-3-5-sonnet-20241022']).default('claude-3-5-sonnet-20241022');
 export type AnthropicModel = z.infer<typeof AnthropicModelSchema>;
 
-const OpenAIModelSchema = z.enum(['gpt-4o-2024-08-06', 'o1-preview']).default('gpt-4o-2024-08-06');
+const OpenAIModelSchema = z.enum(['gpt-4o-2024-11-20', 'o1-preview']).default('gpt-4o-2024-11-20');
 export type OpenAIModel = z.infer<typeof OpenAIModelSchema>;
 
 const AIModelSchema = z.union([BedrockModelSchema, AnthropicModelSchema, OpenAIModelSchema]);
@@ -93,7 +93,7 @@ const AIMessageInternalSchema = z.object({
 });
 export type AIMessageInternal = z.infer<typeof AIMessageInternalSchema>;
 
-const AIMessagePromptSchema = z.object({
+export const AIMessagePromptSchema = z.object({
   role: z.literal('assistant'),
   content: z.string(),
   contextType: UserPromptContextTypeSchema,
@@ -105,6 +105,7 @@ const AIMessagePromptSchema = z.object({
       loading: z.boolean(),
     })
   ),
+  model: AIModelSchema,
 });
 export type AIMessagePrompt = z.infer<typeof AIMessagePromptSchema>;
 
@@ -257,13 +258,14 @@ const BedrockToolChoiceSchema = z
   .or(z.object({ tool: z.object({ name: z.string() }) }));
 export type BedrockToolChoice = z.infer<typeof BedrockToolChoiceSchema>;
 
-export const BedrockAutoCompleteRequestBodySchema = z.object({
+const BedrockRequestBodySchema = z.object({
   model: BedrockModelSchema,
   system: z.array(z.object({ text: z.string() })),
   messages: z.array(BedrockPromptMessageSchema),
   tools: z.array(BedrockToolSchema).optional(),
   tool_choice: BedrockToolChoiceSchema.optional(),
 });
+export type BedrockRequestBody = z.infer<typeof BedrockRequestBodySchema>;
 
 const AnthropicToolSchema = z.object({
   name: z.string(),
@@ -285,21 +287,23 @@ const AnthropicToolChoiceSchema = z.discriminatedUnion('type', [
 ]);
 export type AnthropicToolChoice = z.infer<typeof AnthropicToolChoiceSchema>;
 
-export const AnthropicAutoCompleteRequestBodySchema = z.object({
+const AnthropicRequestBodySchema = z.object({
   model: AnthropicModelSchema,
   system: z.string().or(z.array(z.object({ type: z.literal('text'), text: z.string() }))),
   messages: z.array(AnthropicPromptMessageSchema),
   tools: z.array(AnthropicToolSchema).optional(),
   tool_choice: AnthropicToolChoiceSchema.optional(),
 });
+export type AnthropicRequestBody = z.infer<typeof AnthropicRequestBodySchema>;
 
-export const BedrockAnthropicAutoCompleteRequestBodySchema = z.object({
+const BedrockAnthropicRequestBodySchema = z.object({
   model: BedrockAnthropicModelSchema,
   system: z.string().or(z.array(z.object({ type: z.literal('text'), text: z.string() }))),
   messages: z.array(AnthropicPromptMessageSchema),
   tools: z.array(AnthropicToolSchema).optional(),
   tool_choice: AnthropicToolChoiceSchema.optional(),
 });
+export type BedrockAnthropicRequestBody = z.infer<typeof BedrockAnthropicRequestBodySchema>;
 
 const OpenAIToolSchema = z.object({
   type: z.literal('function'),
@@ -327,18 +331,38 @@ const OpenAIToolChoiceSchema = z.union([
 ]);
 export type OpenAIToolChoice = z.infer<typeof OpenAIToolChoiceSchema>;
 
-export const OpenAIAutoCompleteRequestBodySchema = z.object({
+const OpenAIRequestBodySchema = z.object({
   model: OpenAIModelSchema,
   messages: z.array(OpenAIPromptMessageSchema),
   tools: z.array(OpenAIToolSchema).optional(),
   tool_choice: OpenAIToolChoiceSchema.optional(),
 });
+export type OpenAIRequestBody = z.infer<typeof OpenAIRequestBodySchema>;
 
-const AIToolSchema = BedrockToolSchema.or(AnthropicToolSchema).or(OpenAIToolSchema);
-export type AITool = z.infer<typeof AIToolSchema>;
+const CodeCellTypeSchema = z.enum(['Python', 'Javascript', 'Formula', 'Connection', 'Import']);
+export type CodeCellType = z.infer<typeof CodeCellTypeSchema>;
 
-const AIToolChoiceSchema = BedrockToolChoiceSchema.or(AnthropicToolChoiceSchema).or(OpenAIToolChoiceSchema);
-export type AIToolChoice = z.infer<typeof AIToolChoiceSchema>;
+export const AIRequestBodySchema = z.object({
+  chatId: z.string().uuid(),
+  fileUuid: z.string().uuid(),
+  source: z.enum(['AIAssistant', 'AIAnalyst', 'AIResearcher', 'GetChatName', 'GetFileName']),
+  model: z.union([BedrockModelSchema, AnthropicModelSchema, OpenAIModelSchema]),
+  messages: z.array(ChatMessageSchema),
+  useStream: z.boolean().optional(),
+  useTools: z.boolean().optional(),
+  toolName: AIToolSchema.optional(),
+  useToolsPrompt: z.boolean().optional(),
+  language: CodeCellTypeSchema.optional(),
+  useQuadraticContext: z.boolean().optional(),
+});
+export type AIRequestBody = z.infer<typeof AIRequestBodySchema>;
+export type AIRequestHelperArgs = Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'source' | 'model'>;
+
+const AIModelToolSchema = BedrockToolSchema.or(AnthropicToolSchema).or(OpenAIToolSchema);
+export type AIModelTool = z.infer<typeof AIModelToolSchema>;
+
+const AIModelToolChoiceSchema = BedrockToolChoiceSchema.or(AnthropicToolChoiceSchema).or(OpenAIToolChoiceSchema);
+export type AIModelToolChoice = z.infer<typeof AIModelToolChoiceSchema>;
 
 const AIPromptMessageSchema = BedrockPromptMessageSchema.or(AnthropicPromptMessageSchema).or(OpenAIPromptMessageSchema);
 export type AIPromptMessage = z.infer<typeof AIPromptMessageSchema>;

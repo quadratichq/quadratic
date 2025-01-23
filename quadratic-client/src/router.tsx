@@ -19,6 +19,7 @@ export const router = createBrowserRouter(
         loader={RootRoute.loader}
         Component={RootRoute.Component}
         ErrorBoundary={RootRoute.ErrorBoundary}
+        HydrateFallback={RootRoute.HydrateFallback}
       >
         <Route path="file">
           {/* Check that the browser is supported _before_ we try to load anything from the API */}
@@ -106,6 +107,10 @@ export const router = createBrowserRouter(
   {
     future: {
       v7_fetcherPersist: true,
+      v7_relativeSplatPath: true,
+      v7_normalizeFormMethod: true,
+      v7_partialHydration: true,
+      v7_skipActionErrorRevalidation: true,
     },
   }
 );

@@ -1,11 +1,12 @@
 import axios from 'axios';
-import { Request } from 'express';
+import type { Request } from 'express';
 import multer from 'multer';
-import stream, { Readable } from 'node:stream';
+import type { Readable } from 'node:stream';
+import stream from 'node:stream';
 import { QUADRATIC_FILE_URI, QUADRATIC_FILE_URI_PUBLIC } from '../env-vars';
-import { UploadFile } from '../types/Request';
+import type { UploadFile } from '../types/Request';
 import { encryptFromEnv } from '../utils/crypto';
-import { UploadFileResponse } from './storage';
+import type { UploadFileResponse } from './storage';
 
 const generateUrl = (key: string, isPublic: boolean): string => {
   const baseUrl = isPublic ? QUADRATIC_FILE_URI_PUBLIC : QUADRATIC_FILE_URI;

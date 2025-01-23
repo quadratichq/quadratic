@@ -2,6 +2,7 @@ import { focusGrid } from '@/app/helpers/focusGrid.js';
 import type { SearchOptions } from '@/app/quadratic-core-types';
 import type { User } from '@/auth/auth';
 import type { FilePermission } from 'quadratic-shared/typesAndSchemas';
+import { type TeamSettings } from 'quadratic-shared/typesAndSchemas';
 import { atom, DefaultValue, selector } from 'recoil';
 
 export interface EditorInteractionState {
@@ -18,8 +19,10 @@ export interface EditorInteractionState {
   showValidation: boolean | string;
   annotationState?: 'dropdown' | 'date-format' | 'calendar' | 'calendar-time';
   permissions: FilePermission[];
+  settings: TeamSettings;
   user?: User;
-  uuid: string;
+  fileUuid: string;
+  teamUuid: string;
   follow?: string;
   undo: boolean;
   redo: boolean;
@@ -39,8 +42,12 @@ export const defaultEditorInteractionState: EditorInteractionState = {
   showValidation: false,
   annotationState: undefined,
   permissions: ['FILE_VIEW'], // FYI: when we call <RecoilRoot> we initialize this with the value from the server
-  user: undefined,
-  uuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
+  settings: {
+    analyticsAi: false,
+  },
+  user: undefined, // when we call <RecoilRoot> we initialize this with the value from the server
+  fileUuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
+  teamUuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
   follow: undefined,
   undo: false,
   redo: false,
@@ -107,8 +114,10 @@ export const editorInteractionStateShowValidationAtom = createSelector('showVali
 
 export const editorInteractionStateAnnotationStateAtom = createSelector('annotationState');
 export const editorInteractionStatePermissionsAtom = createSelector('permissions');
+export const editorInteractionStateSettingsAtom = createSelector('settings');
 export const editorInteractionStateUserAtom = createSelector('user');
-export const editorInteractionStateUuidAtom = createSelector('uuid');
+export const editorInteractionStateFileUuidAtom = createSelector('fileUuid');
+export const editorInteractionStateTeamUuidAtom = createSelector('teamUuid');
 export const editorInteractionStateFollowAtom = createSelector('follow');
 export const editorInteractionStateUndoAtom = createSelector('undo');
 export const editorInteractionStateRedoAtom = createSelector('redo');

@@ -1,8 +1,13 @@
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
+import {
+  editorInteractionStateSettingsAtom,
+  editorInteractionStateTeamUuidAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { AIAnalystContext } from '@/app/ui/menus/AIAnalyst/AIAnalystContext';
 import { ArrowUpwardIcon, BackspaceIcon, EditIcon } from '@/shared/components/Icons';
+import { ROUTES } from '@/shared/constants/routes';
 import { AI_SECURITY } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
@@ -11,6 +16,7 @@ import { cn } from '@/shared/shadcn/utils';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import type { SetterOrUpdater } from 'recoil';
+import { useRecoilValue } from 'recoil';
 
 export type AIUserMessageFormWrapperProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
@@ -199,10 +205,19 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
 });
 
 export const AIUserMessageFormDisclaimer = () => {
+  const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
+  const teamSettings = useRecoilValue(editorInteractionStateSettingsAtom);
   return (
     <p className="py-0.5 text-center text-xs text-muted-foreground">
-      Some sheet data is sent to the AI model.{' '}
-      <a href={AI_SECURITY} target="_blank" rel="noreferrer" className="underline hover:text-foreground">
+      {teamSettings.analyticsAi
+        ? 'Your data is to used improve Quadratic. '
+        : 'Some sheet data is sent to the AI model. '}
+      <a
+        href={teamSettings.analyticsAi ? ROUTES.TEAM_SETTINGS(teamUuid) : AI_SECURITY}
+        target="_blank"
+        rel="noreferrer"
+        className="underline hover:text-foreground"
+      >
         Learn more.
       </a>
     </p>

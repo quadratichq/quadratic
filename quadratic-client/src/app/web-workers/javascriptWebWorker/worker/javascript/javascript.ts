@@ -107,17 +107,25 @@ export class Javascript {
       const proxyUrl = `${javascriptClient.env.VITE_QUADRATIC_CONNECTION_URL}/proxy`;
       const jwt = await javascriptClient.getJwt();
       const code = prepareJavascriptCode(transformedCode, message.x, message.y, this.withLineNumbers, proxyUrl, jwt);
-      const runner = new Worker(URL.createObjectURL(new Blob([code], { type: 'application/javascript' })), {
+      const objUrl = URL.createObjectURL(new Blob([code], { type: 'application/javascript' }));
+      const runner = new Worker(objUrl, {
         type: 'module',
         name: 'javascriptWorker',
       });
 
+      const cleanup = () => {
+        runner.terminate();
+        URL.revokeObjectURL(objUrl);
+      };
+
       runner.onerror = (e) => {
+        cleanup();
+
         if (this.withLineNumbers) {
-          runner.terminate();
           this.run(message, false);
           return;
         }
+
         // todo: handle worker errors (although there should not be any as the Worker
         // should catch all user code errors)
         javascriptErrorResult(message.transactionId, e.message);
@@ -136,9 +144,9 @@ export class Javascript {
             e.data.lineNumber,
             e.data.chartPixelOutput
           );
+          cleanup();
           this.state = 'ready';
           setTimeout(this.next, 0);
-          runner.terminate();
         } else if (e.data.type === 'getCellsA1Length') {
           const { sharedBuffer, a1 } = e.data;
           this.api.getCellsA1(a1).then((results) => {
@@ -202,11 +210,12 @@ export class Javascript {
           if (e.data.console) {
             errorMessage += '\n' + e.data.console;
           }
-          runner.terminate();
+          cleanup();
           javascriptErrorResult(message.transactionId, errorMessage, errorLine);
           this.state = 'ready';
           setTimeout(this.next, 0);
         } else {
+          cleanup();
           throw new Error('Unknown message type from javascript runner');
         }
       };

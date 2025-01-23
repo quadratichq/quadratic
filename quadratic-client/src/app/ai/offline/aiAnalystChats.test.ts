@@ -50,6 +50,7 @@ describe('aiAnalystOfflineChats', () => {
             content: 'response2',
             contextType: 'userPrompt',
             toolCalls: [],
+            model: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
           },
         ],
       },

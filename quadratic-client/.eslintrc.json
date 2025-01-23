@@ -9,7 +9,8 @@
         "prefer": "type-imports",
         "disallowTypeAnnotations": false
       }
-    ]
+    ],
+    "react/jsx-no-target-blank": "off"
   },
   "ignorePatterns": ["node_modules/*", "src/quadratic-core/*", "src/quadratic-rust-client/*"]
 }

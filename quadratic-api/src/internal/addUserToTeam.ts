@@ -1,4 +1,4 @@
-import { TeamRole } from '@prisma/client';
+import type { TeamRole } from '@prisma/client';
 import dbClient from '../dbClient';
 import { licenseClient } from '../licenseClient';
 

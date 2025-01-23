@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/node';
-import { Response } from 'express';
-import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { Response } from 'express';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import { getUsers, getUsersByEmail } from '../../auth/auth';
 import dbClient from '../../dbClient';
@@ -11,7 +12,7 @@ import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
-import { RequestWithUser } from '../../types/Request';
+import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
 import { firstRoleIsHigherThanSecond } from '../../utils/permissions';
 

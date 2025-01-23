@@ -608,6 +608,10 @@ export const ShowIcon: IconComponent = (props) => {
   return <Icon {...props}>visibility</Icon>;
 };
 
+export const FileOpenIcon: IconComponent = (props) => {
+  return <Icon {...props}>file_open</Icon>;
+};
+
 export const ArrowRight: IconComponent = (props) => {
   return <Icon {...props}>keyboard_arrow_right</Icon>;
 };

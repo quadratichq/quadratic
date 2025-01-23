@@ -1,8 +1,6 @@
 import type { UrlParamsDevState } from '@/app/gridGL/pixiApp/urlParams/UrlParamsDev';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 
-const apiUrl = import.meta.env.VITE_QUADRATIC_API_URL;
-
 // Any routes referenced outside of the root router are stored here
 export const ROUTES = {
   LOGOUT: '/logout',
@@ -71,23 +69,4 @@ export const SEARCH_PARAMS = {
   DIALOG: { KEY: 'dialog', VALUES: { EDUCATION: 'education' } },
   SNACKBAR_MSG: { KEY: 'snackbar-msg' }, // VALUE can be any message you want to display
   SNACKBAR_SEVERITY: { KEY: 'snackbar-severity', VALUE: { ERROR: 'error' } },
-};
-
-export const AI = {
-  BEDROCK: {
-    CHAT: `${apiUrl}/ai/bedrock/chat`,
-    STREAM: `${apiUrl}/ai/bedrock/chat/stream`,
-    ANTHROPIC: {
-      CHAT: `${apiUrl}/ai/bedrock/anthropic/chat`,
-      STREAM: `${apiUrl}/ai/bedrock/anthropic/chat/stream`,
-    },
-  },
-  ANTHROPIC: {
-    CHAT: `${apiUrl}/ai/anthropic/chat`,
-    STREAM: `${apiUrl}/ai/anthropic/chat/stream`,
-  },
-  OPENAI: {
-    CHAT: `${apiUrl}/ai/openai/chat`,
-    STREAM: `${apiUrl}/ai/openai/chat/stream`,
-  },
 };
