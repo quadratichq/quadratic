@@ -287,6 +287,18 @@ export class Table extends Container {
   }
 
   shouldHideTableName(): boolean {
-    return !this.codeCell.show_ui;
+    return !this.codeCell.show_ui || this.isSingleValue();
   }
+
+  isCodeCell = (): boolean => {
+    return this.codeCell.language !== 'Import';
+  };
+
+  isSingleValue = (): boolean => {
+    return this.codeCell.w === 1 && this.codeCell.h === 1;
+  };
+
+  isSingleCellOutputCodeCell = (): boolean => {
+    return this.isCodeCell() && this.isSingleValue();
+  };
 }

@@ -233,7 +233,7 @@ export class Tables extends Container<Table> {
         this.hoverTable.hideActive();
       }
       this.hoverTable = hover;
-      if (this.hoverTable) {
+      if (this.hoverTable && !this.hoverTable.isSingleCellOutputCodeCell()) {
         this.hoverTable.showActive(false);
       }
     }

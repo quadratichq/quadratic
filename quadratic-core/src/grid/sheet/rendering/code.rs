@@ -93,7 +93,7 @@ impl Sheet {
             h,
             show_ui: match data_table.show_ui {
                 // show UI for non-formula code cells by default
-                DataTableShowUI::Default => language != CodeCellLanguage::Formula,
+                DataTableShowUI::Default => true,
                 DataTableShowUI::Show => true,
                 DataTableShowUI::Hide => false,
             },
