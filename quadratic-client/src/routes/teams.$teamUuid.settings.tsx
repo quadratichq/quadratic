@@ -29,31 +29,6 @@ export const Component = () => {
   const [value, setValue] = useState<string>(team.name);
   const disabled = value === '' || value === team.name || fetcher.state !== 'idle';
 
-  // Track original AI rules for comparison
-  const [originalAiRules, setOriginalAiRules] = useState('');
-  const [aiRulesText, setAiRulesText] = useState('');
-  const [isSavingRules, setIsSavingRules] = useState(false);
-
-  // On component mount, load from localStorage
-  useEffect(() => {
-    const storedRules = localStorage.getItem('quadratic_ai_rules') || '';
-    setAiRulesText(storedRules);
-    setOriginalAiRules(storedRules);
-  }, []);
-
-  // Save on submit
-  const handleAiRulesSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSavingRules(true);
-    localStorage.setItem('quadratic_ai_rules', aiRulesText);
-    setOriginalAiRules(aiRulesText);
-    // Reset saving state after a brief delay to show feedback
-    setTimeout(() => setIsSavingRules(false), 500);
-  };
-
-  // Calculate if save button should be disabled
-  const aiRulesSaveDisabled = aiRulesText === originalAiRules || isSavingRules;
-
   // Optimistic UI
   let optimisticSettings = team.settings;
   if (fetcher.state !== 'idle' && isJsonObject(fetcher.json)) {
@@ -155,38 +130,6 @@ export const Component = () => {
                     </li>
                   ))}
                 </ul>
-              </div>
-            </Row>
-            <DashboardHeader title="User" />
-            <Row>
-              <Type variant="body2" className="font-bold">
-                AI
-              </Type>
-
-              <div>
-                <div className="rounded border border-border px-3 py-2 shadow-sm">
-                  <Type variant="body2" className="font-bold">AI rules</Type>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Define custom rules for Quadratic AI. These rules are stored in your browser's local storage only - they are not shared with your other devices or other browsers.
-                  </p>
-                  <form onSubmit={handleAiRulesSubmit}>
-                    <textarea
-                      className="mt-2 min-h-[120px] w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                      placeholder="Enter AI rules here..."
-                      value={aiRulesText}
-                      onChange={(e) => setAiRulesText(e.target.value)}
-                    />
-                    <div className="mt-2 flex">
-                      <Button 
-                        type="submit" 
-                        variant="secondary"
-                        disabled={aiRulesSaveDisabled}
-                      >
-                        Save
-                      </Button>
-                    </div>
-                  </form>
-                </div>
               </div>
             </Row>
           </>
