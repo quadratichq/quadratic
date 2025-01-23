@@ -17,11 +17,7 @@ impl TableRef {
 
         let (y_start, y_end) = table.to_sheet_rows();
         let y_start = y_start
-<<<<<<< HEAD
-            + if !table.show_headers || self.headers || table.header_is_first_row {
-=======
-            + if !table.show_headers || self.headers || force_headers {
->>>>>>> 90042687f01a630387073dedbf264d66068dbb1c
+            + if !table.show_headers || self.headers || table.header_is_first_row || force_headers {
                 0
             } else {
                 1
