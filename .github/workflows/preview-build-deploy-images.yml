@@ -58,7 +58,7 @@ jobs:
                 -H "Accept: application/vnd.github+json" \
                 /repos/${{ github.repository }}/deployments/$id/statuses \
                 -f state="inactive" \
-                -f environment="preview" \
+                -f environment="preview-pr-${{ github.event.pull_request.number }}" \
                 -f description="Superseded by newer deployment"
             done
         env:
