@@ -16,12 +16,13 @@ impl TableRef {
 
         let (y_start, y_end) = table.to_sheet_rows();
         let y_start = y_start
-            + if !table.show_headers || self.headers {
+            + if !table.show_headers || self.headers || table.header_is_first_row {
                 0
             } else {
                 1
             };
         let y_end = if !self.data { y_start } else { y_end };
+
         match &self.col_range {
             ColRange::All => {
                 let range = RefRangeBounds::new_relative(

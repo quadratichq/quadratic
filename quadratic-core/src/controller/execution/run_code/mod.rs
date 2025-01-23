@@ -55,10 +55,6 @@ impl GridController {
             .is_some_and(|dt| dt.is_html_or_image())
         {
             if let Some(new_data_table) = new_data_table.as_mut() {
-                dbgjs!(format!(
-                    "new_data_table.chart_pixel_output: {:?}",
-                    new_data_table.chart_pixel_output
-                ));
                 let (pixel_width, pixel_height) = new_data_table
                     .chart_pixel_output
                     .unwrap_or((DEFAULT_HTML_WIDTH, DEFAULT_HTML_HEIGHT));
