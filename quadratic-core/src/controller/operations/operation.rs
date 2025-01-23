@@ -49,6 +49,13 @@ pub enum Operation {
         data_table: Option<DataTable>,
         index: usize,
     },
+    AddDataTable {
+        sheet_pos: SheetPos,
+        data_table: DataTable,
+    },
+    DeleteDataTable {
+        sheet_pos: SheetPos,
+    },
     SetChartSize {
         sheet_pos: SheetPos,
         pixel_width: f32,
@@ -302,6 +309,17 @@ impl fmt::Display for Operation {
                 "SetDataTable {{ sheet_pos: {} data_table: {:?}, index: {} }}",
                 sheet_pos, run, index
             ),
+            Operation::AddDataTable {
+                sheet_pos,
+                data_table,
+            } => write!(
+                fmt,
+                "AddDataTable {{ sheet_pos: {} data_table: {:?} }}",
+                sheet_pos, data_table
+            ),
+            Operation::DeleteDataTable { sheet_pos } => {
+                write!(fmt, "DeleteDataTable {{ sheet_pos: {} }}", sheet_pos)
+            }
             Operation::SetCodeRun {
                 sheet_pos,
                 code_run: run,
