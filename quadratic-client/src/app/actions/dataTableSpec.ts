@@ -380,7 +380,7 @@ export const toggleTableUI = () => {
 
 export const dataTableSpec: DataTableSpec = {
   [Action.FlattenTable]: {
-    label: 'Flatten to sheet data',
+    label: 'Flatten',
     Icon: FlattenTableIcon,
     run: flattenDataTable,
   },
@@ -411,7 +411,7 @@ export const dataTableSpec: DataTableSpec = {
     run: deleteDataTable,
   },
   [Action.CodeToDataTable]: {
-    label: 'Flatten to table data',
+    label: 'Convert to Table (editable)',
     Icon: TableIcon,
     run: codeToDataTable,
   },

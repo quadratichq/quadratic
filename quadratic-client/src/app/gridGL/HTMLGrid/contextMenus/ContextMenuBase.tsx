@@ -30,6 +30,8 @@ export const ContextMenuBase = ({
 
   useEffect(() => {
     const handleMoved = ({ type }: { type: string }) => {
+      // right click can trigger move (decelerate) event and close the context menu
+      // ignore move (decelerate) event
       if (type !== 'decelerate') {
         onClose();
       }

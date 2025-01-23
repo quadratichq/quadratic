@@ -187,7 +187,7 @@ export class Table extends Container {
   isCursorOnDataTable(): boolean {
     const cursor = sheets.sheet.cursor.position;
     return intersects.rectanglePoint(
-      new Rectangle(this.codeCell.x, this.codeCell.y, this.codeCell.w, this.codeCell.h),
+      new Rectangle(this.codeCell.x, this.codeCell.y, this.codeCell.w - 1, this.codeCell.h - 1),
       cursor
     );
   }

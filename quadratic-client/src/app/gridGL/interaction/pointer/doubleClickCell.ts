@@ -2,6 +2,7 @@ import { hasPermissionToEditFile } from '@/app/actions';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
@@ -26,7 +27,7 @@ export async function doubleClickCell(options: {
     const formula = language === 'Formula';
     const file_import = language === 'Import';
 
-    if (pixiAppSettings.codeEditorState.showCodeEditor) {
+    if (pixiAppSettings.codeEditorState.showCodeEditor && !file_import) {
       pixiAppSettings.setCodeEditorState({
         ...pixiAppSettings.codeEditorState,
         escapePressed: false,
@@ -52,7 +53,13 @@ export async function doubleClickCell(options: {
         }
         pixiAppSettings.changeInput(true, cell);
       } else if (hasPermission && file_import) {
-        pixiAppSettings.changeInput(true, cell, cursorMode);
+        if (cell === '=') {
+          pixiAppSettings.snackbar('Cannot create formula inside data table', { severity: 'warning' });
+        } else {
+          const table = pixiApp.cellsSheet().tables.getTableFromTableCell(column, row);
+          console.log(table);
+          pixiAppSettings.changeInput(true, cell, cursorMode);
+        }
       } else {
         pixiAppSettings.setCodeEditorState({
           ...pixiAppSettings.codeEditorState,

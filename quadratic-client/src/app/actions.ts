@@ -156,7 +156,7 @@ export const gridToDataTableAction = {
 };
 
 export const flattenDataTableAction = {
-  label: 'Flatten to sheet data',
+  label: 'Flatten',
   isAvailable: isAvailableBecauseCanEditFile,
 };
 
@@ -176,7 +176,7 @@ export const deleteDataTableAction = {
 };
 
 export const codeToDataTableAction = {
-  label: 'Flatten to table data',
+  label: 'Convert to Table (editable)',
   isAvailable: isAvailableBecauseCanEditFile,
 };
 
