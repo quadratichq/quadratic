@@ -198,7 +198,7 @@ impl TableRef {
 
     /// Tries to convert the TableRef to a Pos.
     pub fn try_to_pos(&self, context: &A1Context) -> Option<Pos> {
-        let range = self.convert_to_ref_range_bounds(false, context)?;
+        let range = self.convert_to_ref_range_bounds(false, context, false)?;
         range.try_to_pos()
     }
 }
@@ -346,7 +346,7 @@ mod tests {
             totals: false,
         };
 
-        let ranges = table_ref.convert_to_ref_range_bounds(false, &context);
+        let ranges = table_ref.convert_to_ref_range_bounds(false, &context, false);
         assert_eq!(ranges, Some(RefRangeBounds::test_a1("B2:B3")));
 
         // Column to end
@@ -358,7 +358,7 @@ mod tests {
             totals: false,
         };
 
-        let ranges = table_ref.convert_to_ref_range_bounds(false, &context);
+        let ranges = table_ref.convert_to_ref_range_bounds(false, &context, false);
         assert_eq!(ranges, Some(RefRangeBounds::test_a1("B2:C3")));
     }
 

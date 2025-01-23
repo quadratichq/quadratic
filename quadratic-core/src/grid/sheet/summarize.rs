@@ -157,4 +157,29 @@ mod tests {
         assert_eq!(result.sum, Some(206.0));
         assert_eq!(result.average, Some(2.0));
     }
+
+    #[test]
+    fn test_summarize_table() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_code_run_array_2d(1, 1, 2, 2, vec!["1", "2", "3", "4"]);
+
+        let selection = A1Selection::test_a1_context("Table1", &sheet.a1_context());
+        let result = sheet.summarize_selection(selection, 9).unwrap();
+        assert_eq!(result.count, 4);
+        assert_eq!(result.sum, Some(10.0));
+        assert_eq!(result.average, Some(2.5));
+
+        let selection = A1Selection::test_a1_context("Table1[Column 2]", &sheet.a1_context());
+        let result = sheet.summarize_selection(selection, 9).unwrap();
+        assert_eq!(result.count, 2);
+        assert_eq!(result.sum, Some(6.0));
+        assert_eq!(result.average, Some(3.0));
+
+        let selection =
+            A1Selection::test_a1_context("Table1[[Column 1]:[Column 2]]", &sheet.a1_context());
+        let result = sheet.summarize_selection(selection, 9).unwrap();
+        assert_eq!(result.count, 4);
+        assert_eq!(result.sum, Some(10.0));
+        assert_eq!(result.average, Some(2.5));
+    }
 }

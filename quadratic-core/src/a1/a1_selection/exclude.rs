@@ -105,7 +105,8 @@ impl A1Selection {
                 ranges.extend(A1Selection::find_excluded_rects(range, exclude_rect));
             }
             CellRefRange::Table { range } => {
-                if let Some(table_range) = range.convert_to_ref_range_bounds(false, context) {
+                if let Some(table_range) = range.convert_to_ref_range_bounds(false, context, false)
+                {
                     ranges.extend(A1Selection::find_excluded_rects(table_range, exclude_rect));
                 }
             }

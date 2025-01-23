@@ -369,49 +369,6 @@ impl GridController {
         }
     }
 
-    /// Creates border operations to clear the selection of any borders.
-    pub fn clear_borders_a1_operations(&self, selection: &A1Selection) -> Vec<Operation> {
-        let mut borders: BordersUpdates = BordersUpdates::default();
-        selection.ranges.iter().for_each(|range| match range {
-            CellRefRange::Table { .. } => todo!(),
-            CellRefRange::Sheet { range } => {
-                let (x1, y1, x2, y2) = range.to_contiguous2d_coords();
-                borders.top.get_or_insert_default().set_rect(
-                    x1,
-                    y1,
-                    x2,
-                    y2.map(|y2| y2 + 1),
-                    Some(ClearOption::Clear),
-                );
-                borders.bottom.get_or_insert_default().set_rect(
-                    x1,
-                    (y1 - 1).max(1),
-                    x2,
-                    y2,
-                    Some(ClearOption::Clear),
-                );
-                borders.left.get_or_insert_default().set_rect(
-                    x1,
-                    y1,
-                    x2.map(|x2| x2 + 1),
-                    y2,
-                    Some(ClearOption::Clear),
-                );
-                borders.right.get_or_insert_default().set_rect(
-                    (x1 - 1).max(1),
-                    y1,
-                    x2,
-                    y2,
-                    Some(ClearOption::Clear),
-                );
-            }
-        });
-        vec![Operation::SetBordersA1 {
-            sheet_id: selection.sheet_id,
-            borders,
-        }]
-    }
-
     /// Whether the borders should be toggled.
     fn should_toggle_borders(
         &self,
@@ -445,7 +402,9 @@ impl GridController {
                 }
                 CellRefRange::Table { range } => {
                     if let Some((pos, table)) = sheet.data_table_by_name(range.table_name.clone()) {
-                        if let Some(range) = range.convert_to_ref_range_bounds(true, &context) {
+                        if let Some(range) =
+                            range.convert_to_ref_range_bounds(true, &context, false)
+                        {
                             let range = range.translate(-pos.x, -pos.y);
                             self.a1_border_style_range(
                                 border_selection,
@@ -501,7 +460,7 @@ impl GridController {
             CellRefRange::Table { range } => {
                 if let (Some(entry), Some(range)) = (
                     context.try_table(&range.table_name),
-                    range.convert_to_ref_range_bounds(true, &context),
+                    range.convert_to_ref_range_bounds(true, &context, false),
                 ) {
                     // borders are always 1-based
                     let range = range.translate(-entry.bounds.min.x + 1, -entry.bounds.min.y + 1);

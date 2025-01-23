@@ -51,7 +51,7 @@ impl Sheet {
         for range in selection.ranges.iter() {
             let rect = match range {
                 CellRefRange::Sheet { range } => Some(self.ref_range_bounds_to_rect(range)),
-                CellRefRange::Table { range } => self.table_ref_to_rect(range),
+                CellRefRange::Table { range } => self.table_ref_to_rect(range, false),
             };
             if let Some(rect) = rect {
                 for x in rect.x_range() {
@@ -139,7 +139,7 @@ impl Sheet {
         max_rects: Option<usize>,
     ) -> Vec<JsCellValuePosAIContext> {
         let mut ai_context_rects = Vec::new();
-        let selection_rects = self.selection_to_rects(&selection);
+        let selection_rects = self.selection_to_rects(&selection, false);
         let tabular_data_rects =
             self.find_tabular_data_rects_in_selection_rects(selection_rects, max_rects);
         for tabular_data_rect in tabular_data_rects {
@@ -159,7 +159,7 @@ impl Sheet {
     /// Returns JsCodeCell for all code cells in selection rects that have errors
     pub fn get_errored_code_cells_in_selection(&self, selection: A1Selection) -> Vec<JsCodeCell> {
         let mut code_cells = Vec::new();
-        let selection_rects = self.selection_to_rects(&selection);
+        let selection_rects = self.selection_to_rects(&selection, false);
         for selection_rect in selection_rects {
             for x in selection_rect.x_range() {
                 if let Some(column) = self.get_column(x) {
@@ -186,9 +186,9 @@ impl Sheet {
     }
 
     /// Converts a table ref to a rect.
-    pub fn table_ref_to_rect(&self, range: &TableRef) -> Option<Rect> {
+    pub fn table_ref_to_rect(&self, range: &TableRef, force_headers: bool) -> Option<Rect> {
         range
-            .convert_to_ref_range_bounds(false, &self.a1_context())
+            .convert_to_ref_range_bounds(false, &self.a1_context(), force_headers)
             .and_then(|range| range.to_rect())
     }
 
@@ -253,13 +253,13 @@ impl Sheet {
     /// Resolves a selection to a union of rectangles. This is important for
     /// ensuring that all clients agree on the exact rectangles a transaction
     /// applies to.
-    pub fn selection_to_rects(&self, selection: &A1Selection) -> Vec<Rect> {
+    pub fn selection_to_rects(&self, selection: &A1Selection, force_headers: bool) -> Vec<Rect> {
         let mut rects = Vec::new();
         for range in selection.ranges.iter() {
             match range {
                 CellRefRange::Sheet { range } => rects.push(self.ref_range_bounds_to_rect(range)),
                 CellRefRange::Table { range } => {
-                    if let Some(rect) = self.table_ref_to_rect(range) {
+                    if let Some(rect) = self.table_ref_to_rect(range, force_headers) {
                         rects.push(rect);
                     }
                 }
@@ -271,7 +271,7 @@ impl Sheet {
     /// Returns the smallest rect that contains all the ranges in the selection.
     /// Infinite selections are clamped at sheet data bounds.
     pub fn selection_bounds(&self, selection: &A1Selection) -> Option<Rect> {
-        let rects = self.selection_to_rects(selection);
+        let rects = self.selection_to_rects(selection, false);
         if rects.is_empty() {
             None
         } else {
@@ -293,7 +293,7 @@ impl Sheet {
                         self.ref_range_bounds_to_rect(range),
                     )),
                     CellRefRange::Table { range } => self
-                        .table_ref_to_rect(range)
+                        .table_ref_to_rect(range, false)
                         .map(CellRefRange::new_relative_rect),
                 })
                 .collect(),
@@ -577,7 +577,7 @@ mod tests {
         let sheet = Sheet::test();
         let selection = A1Selection::test_a1("A1:C3,E5:G7");
 
-        let rects = sheet.selection_to_rects(&selection);
+        let rects = sheet.selection_to_rects(&selection, false);
         assert_eq!(rects, vec![Rect::new(1, 1, 3, 3), Rect::new(5, 5, 7, 7)]);
     }
 
@@ -711,19 +711,24 @@ mod tests {
 
         let table_ref = TableRef::parse("Table1", &sheet.a1_context()).unwrap();
         assert_eq!(
-            sheet.table_ref_to_rect(&table_ref),
+            sheet.table_ref_to_rect(&table_ref, false),
             Some(Rect::test_a1("A2:B3"))
         );
 
         let table_ref = TableRef::parse("Table1[#HEADERS]", &sheet.a1_context()).unwrap();
         assert_eq!(
-            sheet.table_ref_to_rect(&table_ref),
+            sheet.table_ref_to_rect(&table_ref, false),
             Some(Rect::test_a1("A1:B1"))
         );
 
         let table_ref = TableRef::parse("Table1[#All]", &sheet.a1_context()).unwrap();
         assert_eq!(
-            sheet.table_ref_to_rect(&table_ref),
+            sheet.table_ref_to_rect(&table_ref, false),
+            Some(Rect::test_a1("A1:B3"))
+        );
+        let table_ref = TableRef::parse("Table1", &sheet.a1_context()).unwrap();
+        assert_eq!(
+            sheet.table_ref_to_rect(&table_ref, true),
             Some(Rect::test_a1("A1:B3"))
         );
     }
