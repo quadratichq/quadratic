@@ -94,4 +94,12 @@ export class TableHeader extends Container {
     this.columnHeadersGridLines.visible = true;
     this.headerOnGrid = false;
   }
+
+  hideColumnHeaders(index: number) {
+    this.columnHeaders.hide(index);
+  }
+
+  showColumnHeaders() {
+    this.columnHeaders.show();
+  }
 }

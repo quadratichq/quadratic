@@ -126,11 +126,11 @@ export class Table extends Container {
   }
 
   hideColumnHeaders(index: number) {
-    // this.columnHeaders.hide(index);
+    this.header.hideColumnHeaders(index);
   }
 
   showColumnHeaders() {
-    // this.columnHeaders.show();
+    this.header.showColumnHeaders();
   }
 
   private isShowingTableName(): boolean {
