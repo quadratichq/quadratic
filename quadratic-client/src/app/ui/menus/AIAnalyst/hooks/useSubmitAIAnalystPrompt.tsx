@@ -121,7 +121,7 @@ export function useSubmitAIAnalystPrompt() {
 
         let chatId = '';
         set(aiAnalystCurrentChatAtom, (prev) => {
-          chatId = prev.id ?? v4();
+          chatId = prev.id ? prev.id : v4();
           return {
             ...prev,
             id: chatId,
