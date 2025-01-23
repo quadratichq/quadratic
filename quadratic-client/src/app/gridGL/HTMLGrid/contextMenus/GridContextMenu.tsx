@@ -31,10 +31,10 @@ export const GridContextMenu = () => {
     };
 
     updateCursor();
-    events.on('cursorPosition', updateCursor);
+    events.on('contextMenu', updateCursor);
 
     return () => {
-      events.off('cursorPosition', updateCursor);
+      events.off('contextMenu', updateCursor);
     };
   }, []);
 
@@ -50,7 +50,7 @@ export const GridContextMenu = () => {
           <ContextMenuItemAction action={Action.CopyAsPng} />
           <ContextMenuItemAction action={Action.DownloadAsCsv} />
 
-          {contextMenu.column === null ? null : (
+          {contextMenu.column === null || !!table ? null : (
             <>
               <DropdownMenuSeparator />
               {columnRowAvailable && <ContextMenuItemAction action={Action.InsertColumnLeft} />}
@@ -59,7 +59,7 @@ export const GridContextMenu = () => {
             </>
           )}
 
-          {contextMenu.row === null ? null : (
+          {contextMenu.row === null || !!table ? null : (
             <>
               {columnRowAvailable && <DropdownMenuSeparator />}
               {columnRowAvailable && <ContextMenuItemAction action={Action.InsertRowAbove} />}

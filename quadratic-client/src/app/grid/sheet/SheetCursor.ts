@@ -86,8 +86,8 @@ export class SheetCursor {
     pixiApp.cursor.dirty = true;
   }
 
-  updatePosition(ensureVisible = true) {
-    pixiApp.updateCursorPosition(ensureVisible);
+  updatePosition(ensureVisible = true, emitEvent = true) {
+    pixiApp.updateCursorPosition(ensureVisible, emitEvent);
     if (!inlineEditorHandler.cursorIsMoving) {
       multiplayer.sendSelection(this.save());
     }
@@ -194,9 +194,9 @@ export class SheetCursor {
   };
 
   // Moves the cursor to the given position. This replaces any selection.
-  moveTo = (x: number, y: number, append = false, ensureVisible = true) => {
+  moveTo = (x: number, y: number, append = false, ensureVisible = true, emitEvent = true) => {
     this.jsSelection.moveTo(x, y, append, this.sheet.sheets.a1Context);
-    this.updatePosition(ensureVisible);
+    this.updatePosition(ensureVisible, emitEvent);
   };
 
   selectTo = (x: number, y: number, append: boolean, ensureVisible = true) => {

@@ -363,12 +363,18 @@ export class PixiApp {
     });
   }
 
-  updateCursorPosition(visible: boolean | JsCoordinate = true) {
+  updateCursorPosition(visible: boolean | JsCoordinate = true, emitEvent = true) {
     this.cursor.dirty = true;
     this.cellHighlights.dirty = true;
     this.headings.dirty = true;
-    if (visible) ensureVisible(visible !== true ? visible : undefined);
-    events.emit('cursorPosition');
+
+    if (visible) {
+      ensureVisible(visible !== true ? visible : undefined);
+    }
+
+    if (emitEvent) {
+      events.emit('cursorPosition');
+    }
   }
 
   adjustHeadings(options: { sheetId: string; delta: number; row: number | null; column: number | null }): void {
