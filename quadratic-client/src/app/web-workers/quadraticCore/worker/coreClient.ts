@@ -18,6 +18,7 @@ import type {
   JsRenderCodeCell,
   JsRenderFill,
   JsSheetFill,
+  JsSnackbarSeverity,
   JsValidationWarning,
   SheetBounds,
   SheetInfo,
@@ -52,10 +53,10 @@ declare var self: WorkerGlobalScope &
     sendDeleteSheetClient: (sheetId: string, user: boolean) => void;
     sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
     sendSheetInfoClient: (sheetInfo: SheetInfo[]) => void;
+    sendA1Context: (tableMap: string) => void;
     sendSheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
     sendSheetMetaFills: (sheetId: string, fills: JsSheetFill[]) => void;
     sendSetCursor: (cursor: string) => void;
-    sendSetCursorSelection: (selection: string) => void;
     sendSheetOffsetsClient: (sheetId: string, offsets: JsOffset[]) => void;
     sendSheetHtml: (html: JsHtmlOutput[]) => void;
     sendUpdateHtml: (html: JsHtmlOutput) => void;
@@ -91,7 +92,7 @@ declare var self: WorkerGlobalScope &
       validationWarnings: JsValidationWarning[]
     ) => void;
     sendMultiplayerSynced: () => void;
-    sendClientMessage: (message: string, error: boolean) => void;
+    sendClientMessage: (message: string, severity: JsSnackbarSeverity) => void;
     sendRequestAIResearcherResult: (
       transactionId: string,
       sheetPos: string,
@@ -116,8 +117,8 @@ class CoreClient {
     self.sendSheetFills = coreClient.sendSheetFills;
     self.sendSheetMetaFills = coreClient.sendSheetMetaFills;
     self.sheetInfoUpdate = coreClient.sendSheetInfoUpdate;
+    self.sendA1Context = coreClient.sendA1Context;
     self.sendSetCursor = coreClient.sendSetCursor;
-    self.sendSetCursorSelection = coreClient.sendSetCursorSelection;
     self.sendSheetOffsetsClient = coreClient.sendSheetOffsets;
     self.sendSheetHtml = coreClient.sendSheetHtml;
     self.sendUpdateHtml = coreClient.sendUpdateHtml;
@@ -278,6 +279,11 @@ class CoreClient {
         this.send({ type: 'coreClientImportFile', id: e.data.id, ...fileResult }, fileResult.contents);
         return;
 
+      case 'clientCoreGetCsvPreview':
+        const preview = await core.getCsvPreview(e.data);
+        this.send({ type: 'coreClientGetCsvPreview', id: e.data.id, preview });
+        return;
+
       case 'clientCoreDeleteCellValues':
         await core.deleteCellValues(e.data.selection, e.data.cursor);
         return;
@@ -393,7 +399,7 @@ class CoreClient {
         return;
 
       case 'clientCoreSetCellRenderResize':
-        await core.setCellRenderSize(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        await core.setChartSize(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
         return;
 
       case 'clientCoreAutocomplete':
@@ -436,23 +442,7 @@ class CoreClient {
         this.send({
           type: 'coreClientJumpCursor',
           id: e.data.id,
-          coordinate: await core.jumpCursor(e.data.sheetId, e.data.current, e.data.direction),
-        });
-        return;
-
-      case 'clientCoreFindNextColumn':
-        this.send({
-          type: 'coreClientFindNextColumn',
-          id: e.data.id,
-          column: await core.findNextColumn(e.data),
-        });
-        return;
-
-      case 'clientCoreFindNextRow':
-        this.send({
-          type: 'coreClientFindNextRow',
-          id: e.data.id,
-          row: await core.findNextRow(e.data),
+          coordinate: await core.jumpCursor(e.data.sheetId, e.data.current, e.data.jump, e.data.direction),
         });
         return;
 
@@ -645,6 +635,53 @@ class CoreClient {
         core.insertRow(e.data.sheetId, e.data.row, e.data.below, e.data.cursor);
         return;
 
+      case 'clientCoreFlattenDataTable':
+        core.flattenDataTable(e.data.sheetId, e.data.x, e.data.y, e.data.cursor);
+        return;
+
+      case 'clientCoreCodeDataTableToDataTable':
+        core.codeDataTableToDataTable(e.data.sheetId, e.data.x, e.data.y, e.data.cursor);
+        return;
+
+      case 'clientCoreGridToDataTable':
+        core.gridToDataTable(e.data.sheetRect, e.data.cursor);
+        return;
+
+      case 'clientCoreDataTableMeta':
+        core.dataTableMeta(
+          e.data.sheetId,
+          e.data.x,
+          e.data.y,
+          e.data.name,
+          e.data.alternatingColors,
+          e.data.columns,
+          e.data.showHeader,
+          e.data.showUI,
+          e.data.cursor
+        );
+        return;
+
+      case 'clientCoreDataTableMutations':
+        core.dataTableMutations(
+          e.data.sheetId,
+          e.data.x,
+          e.data.y,
+          e.data.columns_to_add,
+          e.data.columns_to_remove,
+          e.data.rows_to_add,
+          e.data.rows_to_remove,
+          e.data.cursor
+        );
+        return;
+
+      case 'clientCoreSortDataTable':
+        core.sortDataTable(e.data.sheetId, e.data.x, e.data.y, e.data.sort, e.data.cursor);
+        return;
+
+      case 'clientCoreDataTableFirstRowAsHeader':
+        core.dataTableFirstRowAsHeader(e.data.sheetId, e.data.x, e.data.y, e.data.firstRowAsHeader, e.data.cursor);
+        return;
+
       case 'clientCoreFiniteRectFromSelection':
         this.send({
           type: 'coreClientFiniteRectFromSelection',
@@ -716,10 +753,6 @@ class CoreClient {
 
   sendSetCursor = (cursor: string) => {
     this.send({ type: 'coreClientSetCursor', cursor });
-  };
-
-  sendSetCursorSelection = (selection: string) => {
-    this.send({ type: 'coreClientSetCursorSelection', selection });
   };
 
   sendSheetOffsets = (sheetId: string, offsets: JsOffset[]) => {
@@ -830,8 +863,12 @@ class CoreClient {
     this.send({ type: 'coreClientMultiplayerSynced' });
   };
 
-  sendClientMessage = (message: string, error: boolean) => {
-    this.send({ type: 'coreClientClientMessage', message, error });
+  sendClientMessage = (message: string, severity: JsSnackbarSeverity) => {
+    this.send({ type: 'coreClientClientMessage', message, severity });
+  };
+
+  sendA1Context = (context: string) => {
+    this.send({ type: 'coreClientA1Context', context });
   };
 
   sendRequestAIResearcherResult = (

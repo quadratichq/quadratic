@@ -1,9 +1,10 @@
 use crate::grid::{
     contiguous::Block,
     formats::Format,
+    formatting::RenderSize,
     resize::{Resize, ResizeMap},
     CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, NumericFormat, NumericFormatKind,
-    RenderSize, SheetFormatting,
+    SheetFormatting,
 };
 
 use super::{
@@ -49,13 +50,6 @@ fn import_numeric_format(numeric_format: current::NumericFormatSchema) -> Numeri
     }
 }
 
-fn import_render_size(render_size: current::RenderSizeSchema) -> RenderSize {
-    RenderSize {
-        w: render_size.w,
-        h: render_size.h,
-    }
-}
-
 pub(crate) fn import_formats(formats: current::SheetFormattingSchema) -> SheetFormatting {
     SheetFormatting {
         align: import_contiguous_2d(formats.align, opt_fn(import_cell_align)),
@@ -71,7 +65,6 @@ pub(crate) fn import_formats(formats: current::SheetFormattingSchema) -> SheetFo
         italic: import_contiguous_2d(formats.italic, |x| x),
         text_color: import_contiguous_2d(formats.text_color, |x| x),
         fill_color: import_contiguous_2d(formats.fill_color, |x| x),
-        render_size: import_contiguous_2d(formats.render_size, opt_fn(import_render_size)),
         date_time: import_contiguous_2d(formats.date_time, |x| x),
         underline: import_contiguous_2d(formats.underline, |x| x),
         strike_through: import_contiguous_2d(formats.strike_through, |x| x),
@@ -123,6 +116,7 @@ fn export_render_size(render_size: RenderSize) -> current::RenderSizeSchema {
     }
 }
 
+// TODO(ddimaria):  v1_8::schema: should be current, update
 pub(crate) fn export_formats(formats: SheetFormatting) -> current::SheetFormattingSchema {
     current::SheetFormattingSchema {
         align: export_contiguous_2d(formats.align, opt_fn(export_cell_align)),
@@ -138,7 +132,6 @@ pub(crate) fn export_formats(formats: SheetFormatting) -> current::SheetFormatti
         italic: export_contiguous_2d(formats.italic, |x| x),
         text_color: export_contiguous_2d(formats.text_color, |x| x),
         fill_color: export_contiguous_2d(formats.fill_color, |x| x),
-        render_size: export_contiguous_2d(formats.render_size, opt_fn(export_render_size)),
         date_time: export_contiguous_2d(formats.date_time, |x| x),
         underline: export_contiguous_2d(formats.underline, |x| x),
         strike_through: export_contiguous_2d(formats.strike_through, |x| x),

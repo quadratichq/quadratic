@@ -7,7 +7,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { drawFiniteSelection, drawInfiniteSelection } from '@/app/gridGL/UI/drawCursor';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
-import { CellRefRange, JsCoordinate } from '@/app/quadratic-core-types';
+import type { JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { Container, Graphics, Rectangle, Sprite } from 'pixi.js';
 
@@ -76,7 +76,9 @@ export class Cursor extends Container {
     const { codeEditorState } = pixiAppSettings;
     const cell = cursor.position;
     const showInput = pixiAppSettings.input.show;
-
+    if (cursor.isSingleSelection() && pixiApp.cellsSheet().tables.isHtmlOrImage(cell)) {
+      return;
+    }
     let { x, y, width, height } = sheet.getCellOffsets(cell.x, cell.y);
     const color = pixiApp.accentColor;
     const codeCell = codeEditorState.codeCell;
@@ -142,7 +144,7 @@ export class Cursor extends Container {
     }
   }
 
-  private drawFiniteCursor(ranges: CellRefRange[]) {
+  private drawFiniteCursor(ranges: RefRangeBounds[]) {
     const sheet = sheets.sheet;
     const { cursor } = sheet;
 
@@ -303,16 +305,21 @@ export class Cursor extends Container {
       this.drawInlineCursorModeIndicator();
 
       if (!pixiAppSettings.input.show) {
-        const finiteRanges: CellRefRange[] = cursor.getFiniteRanges();
+        const finiteRanges = cursor.getFiniteRefRangeBounds();
         this.drawFiniteCursor(finiteRanges);
-        const infiniteRanges: CellRefRange[] = cursor.getInfiniteRanges();
+        const infiniteRanges = cursor.getInfiniteRefRangeBounds();
         drawInfiniteSelection({
           g: this.graphics,
           color: pixiApp.accentColor,
           alpha: FILL_ALPHA,
           ranges: infiniteRanges,
         });
-        if (!columnRow && cursor.rangeCount() === 1 && !cursor.getInfiniteRanges().length) {
+        if (
+          !columnRow &&
+          cursor.rangeCount() === 1 &&
+          cursor.getInfiniteRefRangeBounds().length === 0 &&
+          !cursor.isOnHtmlImage()
+        ) {
           this.drawCursorIndicator();
         }
       }

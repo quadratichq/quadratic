@@ -14,19 +14,14 @@ import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
+import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import {
-  Link,
-  LoaderFunctionArgs,
-  Outlet,
-  isRouteErrorResponse,
-  redirect,
-  useLoaderData,
-  useRouteError,
-} from 'react-router-dom';
-import { MutableSnapshot, RecoilRoot } from 'recoil';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { LoaderFunctionArgs } from 'react-router-dom';
+import { Link, Outlet, isRouteErrorResponse, redirect, useLoaderData, useRouteError } from 'react-router-dom';
+import type { MutableSnapshot } from 'recoil';
+import { RecoilRoot } from 'recoil';
 import { Empty } from '../dashboard/components/Empty';
 
 type FileData = ApiTypes['/v0/files/:uuid.GET.response'];
@@ -43,6 +38,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     if (error.status === 403 && !isLoggedIn) {
       return redirect(ROUTES.SIGNUP_WITH_REDIRECT());
     }
+    updateRecentFiles(uuid, '', false);
     throw new Response('Failed to load file from server.', { status: error.status });
   }
   if (debugShowMultiplayer || debugShowFileIO)
@@ -70,6 +66,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
         error: result.error,
       },
     });
+    updateRecentFiles(uuid, data.file.name, false);
     throw new Response('Failed to deserialize file from server.', { statusText: result.error });
   } else if (result.version) {
     // this should eventually be moved to Rust (too lazy now to find a Rust library that does the version string compare)
@@ -78,15 +75,17 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
         message: `User opened a file at version ${result.version} but the app is at version ${data.file.lastCheckpointVersion}. The app will automatically reload.`,
         level: 'log',
       });
+      updateRecentFiles(uuid, data.file.name, false);
       // @ts-expect-error hard reload via `true` only works in some browsers
       window.location.reload(true);
     }
     if (!data.file.thumbnail && data.userMakingRequest.filePermissions.includes('FILE_EDIT')) {
-      thumbnail.generateThumbnail();
+      thumbnail.setThumbnailDirty();
     }
   } else {
     throw new Error('Expected quadraticCore.load to return either a version or an error');
   }
+  updateRecentFiles(uuid, data.file.name, true);
   return data;
 };
 

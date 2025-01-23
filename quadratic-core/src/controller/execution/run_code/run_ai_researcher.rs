@@ -1,6 +1,5 @@
 use std::collections::HashSet;
 
-use chrono::Utc;
 use itertools::Itertools;
 use uuid::Uuid;
 
@@ -10,7 +9,7 @@ use crate::{
     formulas::{parse_formula, Ctx},
     grid::{
         js_types::{JsCellValuePos, JsCodeRun},
-        CellsAccessed, CodeCellLanguage, CodeRun, CodeRunResult,
+        CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind,
     },
     Array, CellValue, RunError, RunErrorMsg, SheetPos, Value,
 };
@@ -153,6 +152,8 @@ impl GridController {
         // check and build new ai researcher requests that are dependent on other ai researcher request currently pending
         let mut new_pending_ai_researchers: HashSet<SheetPos> = HashSet::new();
 
+        let context = self.grid.a1_context();
+
         for pending_ai_researcher in pending_ai_researchers.iter() {
             match self.parse_ai_researcher_code(pending_ai_researcher.to_owned()) {
                 Ok(ParsedAIResearcherCode {
@@ -161,9 +162,9 @@ impl GridController {
                     cells_accessed,
                 }) => {
                     // dependent on another ai researcher request
-                    let is_dependent = all_ai_researchers
-                        .iter()
-                        .any(|ai_researcher| cells_accessed.contains(ai_researcher.to_owned()));
+                    let is_dependent = all_ai_researchers.iter().any(|ai_researcher| {
+                        cells_accessed.contains(ai_researcher.to_owned(), &context)
+                    });
                     if is_dependent {
                         new_pending_ai_researchers.insert(pending_ai_researcher.to_owned());
                         continue;
@@ -178,36 +179,38 @@ impl GridController {
                             break;
                         }
 
-                        if cells_accessed.contains(pending_ai_researcher.to_owned()) {
+                        if cells_accessed.contains(pending_ai_researcher.to_owned(), &context) {
                             has_circular_reference = true;
                             break;
                         }
 
-                        for selection in cells_accessed.to_selections() {
+                        for selection in cells_accessed.to_selections(&context) {
                             let sheet_id = selection.sheet_id;
                             if let Some(sheet) = self.try_sheet(sheet_id) {
-                                for rect in sheet.selection_to_rects(&selection) {
-                                    for (output_rect, code_run) in
+                                for rect in sheet.selection_to_rects(&selection, false) {
+                                    for (output_rect, data_table) in
                                         sheet.iter_code_output_in_rect(rect)
                                     {
-                                        let code_cell_pos = output_rect.min;
-                                        if !seen_code_cells
-                                            .insert(code_cell_pos.to_sheet_pos(sheet_id))
-                                        {
-                                            continue;
-                                        }
+                                        if let DataTableKind::CodeRun(code_run) = &data_table.kind {
+                                            let code_cell_pos = output_rect.min;
+                                            if !seen_code_cells
+                                                .insert(code_cell_pos.to_sheet_pos(sheet_id))
+                                            {
+                                                continue;
+                                            }
 
-                                        if !all_ai_researchers
-                                            .contains(&code_cell_pos.to_sheet_pos(sheet_id))
-                                            && (code_run.spill_error
-                                                || code_run.result.as_std_ref().is_err())
-                                        {
-                                            referenced_cell_has_error = true;
-                                            break 'outer;
-                                        }
+                                            if !all_ai_researchers
+                                                .contains(&code_cell_pos.to_sheet_pos(sheet_id))
+                                                && (data_table.spill_error
+                                                    || data_table.has_error())
+                                            {
+                                                referenced_cell_has_error = true;
+                                                break 'outer;
+                                            }
 
-                                        cells_accessed_to_check
-                                            .push(code_run.cells_accessed.to_owned());
+                                            cells_accessed_to_check
+                                                .push(code_run.cells_accessed.to_owned());
+                                        }
                                     }
                                 }
                             }
@@ -299,9 +302,10 @@ impl GridController {
         }
 
         let mut all_accessed_values: Vec<Vec<Vec<JsCellValuePos>>> = Vec::new();
-        for selection in cells_accessed.to_selections() {
+        let context = self.grid.a1_context();
+        for selection in cells_accessed.to_selections(&context) {
             if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-                for rect in sheet.selection_to_rects(&selection) {
+                for rect in sheet.selection_to_rects(&selection, false) {
                     let rect_values = sheet.get_js_cell_value_pos_in_rect(rect, None);
                     all_accessed_values.push(rect_values);
                 }
@@ -334,7 +338,7 @@ impl GridController {
         transaction_id: Uuid,
         sheet_pos: SheetPos,
         cell_values: Vec<Vec<String>>,
-        error: Option<String>,
+        std_err: Option<String>,
         researcher_response_stringified: Option<String>,
     ) -> error_core::Result<()> {
         if let Ok(mut transaction) = self.transactions.remove_awaiting_async(transaction_id) {
@@ -351,29 +355,39 @@ impl GridController {
                 transaction.waiting_for_async = None;
             }
 
-            let result = if !cell_values.is_empty() && !cell_values[0].is_empty() {
-                CodeRunResult::Ok(Value::Array(Array::from(cell_values)))
+            let (value, error) = if !cell_values.is_empty() && !cell_values[0].is_empty() {
+                (Value::Array(Array::from(cell_values)), None)
             } else {
-                CodeRunResult::Err(RunError {
-                    span: None,
-                    msg: RunErrorMsg::InternalError("API request failed".into()),
-                })
+                (
+                    Value::Single(CellValue::Blank),
+                    Some(RunError {
+                        span: None,
+                        msg: RunErrorMsg::InternalError("API request failed".into()),
+                    }),
+                )
             };
 
             let new_code_run = CodeRun {
                 std_out: researcher_response_stringified,
-                std_err: error,
-                formatted_code_string: None,
-                spill_error: false,
-                last_modified: Utc::now(),
+                std_err,
                 cells_accessed: transaction.cells_accessed.clone(),
-                result,
+                error,
                 return_type: None,
                 line_number: None,
                 output_type: None,
             };
 
-            self.finalize_code_run(&mut transaction, sheet_pos, Some(new_code_run), None);
+            let new_data_table = DataTable::new(
+                DataTableKind::CodeRun(new_code_run),
+                "AIResearch 1",
+                value,
+                false,
+                false,
+                false,
+                None,
+            );
+
+            self.finalize_code_run(&mut transaction, sheet_pos, Some(new_data_table), None);
             self.send_ai_researcher_state(&transaction);
 
             self.start_transaction(&mut transaction);
@@ -439,7 +453,7 @@ mod test {
         controller::GridController,
         grid::{
             js_types::{JsCellValuePos, JsCodeRun},
-            CellsAccessed, CodeCellLanguage, CodeRunResult, SheetId,
+            CellsAccessed, CodeCellLanguage, SheetId,
         },
         wasm_bindings::js::{clear_js_calls, expect_js_call},
         CellValue, RunError, RunErrorMsg, SheetRect,
@@ -630,11 +644,11 @@ mod test {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let code_run = sheet.code_run((1, 1).into());
-        assert!(code_run.is_some());
+        let data_table = sheet.data_table((1, 1).into()).unwrap();
+        let code_run = data_table.code_run().unwrap();
         assert_eq!(
-            code_run.unwrap().result,
-            CodeRunResult::Err(RunError {
+            code_run.error,
+            Some(RunError {
                 span: None,
                 msg: RunErrorMsg::CodeRunError("Error in referenced cell(s)".into()),
             })
@@ -669,11 +683,11 @@ mod test {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let code_run = sheet.code_run((1, 1).into());
-        assert!(code_run.is_some());
+        let data_table = sheet.data_table((1, 1).into()).unwrap();
+        let code_run = data_table.code_run().unwrap();
         assert_eq!(
-            code_run.unwrap().result,
-            CodeRunResult::Err(RunError {
+            code_run.error,
+            Some(RunError {
                 span: None,
                 msg: RunErrorMsg::CircularReference,
             })
@@ -708,11 +722,11 @@ mod test {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let code_run = sheet.code_run((1, 1).into());
-        assert!(code_run.is_some());
+        let data_table = sheet.data_table((1, 1).into()).unwrap();
+        let code_run = data_table.code_run().unwrap();
         assert_eq!(
-            code_run.unwrap().result,
-            CodeRunResult::Err(RunError {
+            code_run.error,
+            Some(RunError {
                 span: None,
                 msg: RunErrorMsg::CircularReference,
             })
@@ -741,13 +755,13 @@ mod test {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let code_run = sheet.code_run((2, 1).into());
-        assert!(code_run.is_some());
+        let data_table = sheet.data_table((2, 1).into()).unwrap();
+        let code_run = data_table.code_run().unwrap();
         assert_eq!(
-            code_run.unwrap().result,
-            CodeRunResult::Err(RunError {
+            code_run.error,
+            Some(RunError {
                 span: None,
-                msg: RunErrorMsg::CodeRunError("Error in referenced cell(s)".into()),
+                msg: RunErrorMsg::CodeRunError("Error in referenced / dependent cell(s)".into()),
             })
         );
 

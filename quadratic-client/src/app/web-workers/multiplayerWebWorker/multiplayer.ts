@@ -17,7 +17,8 @@ import type {
 } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import type { MultiplayerUser, ReceiveRoom } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { type User, authClient, parseDomain } from '@/auth/auth';
+import { type User, authClient } from '@/auth/auth';
+import { parseDomain } from '@/auth/auth.helper';
 import { displayName } from '@/shared/utils/userUtil';
 import * as Sentry from '@sentry/react';
 import { v4 as uuid } from 'uuid';
@@ -323,7 +324,10 @@ export class Multiplayer {
 
     if (update.selection) {
       player.selection = update.selection;
-      player.parsedSelection = player.selection ? JsSelection.load(player.selection) : undefined;
+      player.parsedSelection = new JsSelection(player.sheet_id);
+      if (player.selection) {
+        player.parsedSelection.load(player.selection);
+      }
       if (player.sheet_id === sheets.sheet.id) {
         pixiApp.multiplayerCursor.dirty = true;
       }
@@ -377,13 +381,17 @@ export class Multiplayer {
         this.colorString = MULTIPLAYER_COLORS[user.index % MULTIPLAYER_COLORS.length];
       } else {
         let player = this.users.get(user.session_id);
+        const parsedSelection = new JsSelection(user.sheet_id);
+        if (user.selection) {
+          parsedSelection.load(user.selection);
+        }
         if (player) {
           player.first_name = user.first_name;
           player.last_name = user.last_name;
           player.image = user.image;
           player.sheet_id = user.sheet_id;
           player.selection = user.selection;
-          player.parsedSelection = user.selection ? JsSelection.load(user.selection) : undefined;
+          player.parsedSelection = parsedSelection;
           remaining.delete(user.session_id);
           if (debugShowMultiplayer) console.log(`[Multiplayer] Updated player ${user.first_name}.`);
         } else {
@@ -397,7 +405,7 @@ export class Multiplayer {
             image: user.image,
             sheet_id: user.sheet_id,
             selection: user.selection,
-            parsedSelection: user.selection ? JsSelection.load(user.selection) : undefined,
+            parsedSelection,
             cell_edit: user.cell_edit,
             x: 0,
             y: 0,

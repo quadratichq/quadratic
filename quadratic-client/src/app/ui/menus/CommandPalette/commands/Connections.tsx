@@ -3,11 +3,11 @@ import {
   editorInteractionStateShowCellTypeMenuAtom,
   editorInteractionStateShowConnectionsMenuAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
-import {
+import type {
   CommandGroup,
-  CommandPaletteListItem,
   CommandPaletteListItemDynamicProps,
 } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { DatabaseIcon } from '@/shared/components/Icons';
 import { useSetRecoilState } from 'recoil';
 

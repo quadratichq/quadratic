@@ -1,6 +1,7 @@
 use crate::{
+    a1::A1Selection,
     grid::{formats::SheetFormatUpdates, Sheet},
-    A1Selection, Pos,
+    Pos,
 };
 
 use super::SheetFormatting;
@@ -13,7 +14,7 @@ impl SheetFormatting {
     ) -> Option<SheetFormatUpdates> {
         let mut updates = SheetFormatUpdates::default();
 
-        for rect in sheet.selection_to_rects(selection) {
+        for rect in sheet.selection_to_rects(selection, false) {
             for x in rect.x_range() {
                 for y in rect.y_range() {
                     updates.set_format_cell(Pos { x, y }, self.format(Pos { x, y }).into());
@@ -32,9 +33,9 @@ impl SheetFormatting {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
+    use super::*;
     use crate::controller::GridController;
     use crate::ClearOption;
-    use crate::{A1Selection, Pos};
 
     #[test]
     fn test_to_clipboard() {

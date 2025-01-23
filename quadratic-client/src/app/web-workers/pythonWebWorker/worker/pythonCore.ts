@@ -1,8 +1,9 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import { CellA1Response, JsGetCellResponse } from '@/app/quadratic-core-types';
-import type { CorePythonMessage, PythonCoreMessage } from '../pythonCoreMessages';
-import type { PythonRun } from '../pythonTypes';
-import { python } from './python';
+import type { CellA1Response, JsGetCellResponse } from '@/app/quadratic-core-types';
+import type { CorePythonMessage, PythonCoreMessage } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
+import type { PythonRun } from '@/app/web-workers/pythonWebWorker/pythonTypes';
+import { python } from '@/app/web-workers/pythonWebWorker/worker/python';
+
 export class PythonCore {
   private coreMessagePort?: MessagePort;
 
@@ -40,7 +41,7 @@ export class PythonCore {
     transactionId: string,
     a1: string,
     lineNumber?: number
-  ): { cells: JsGetCellResponse[]; x: number; y: number; w: number; h: number } | undefined {
+  ): { cells: JsGetCellResponse[]; x: number; y: number; w: number; h: number; has_headers: boolean } | undefined {
     try {
       // This is a shared buffer that will be used to communicate with core
       // The first 4 bytes are used to signal the python core that the data is ready
@@ -80,7 +81,14 @@ export class PythonCore {
       const decoder = new TextDecoder();
       const cellsStringified = decoder.decode(nonSharedView);
       const cells = JSON.parse(cellsStringified) as CellA1Response;
-      return { cells: cells.cells, x: Number(cells.x), y: Number(cells.y), w: Number(cells.w), h: Number(cells.h) };
+      return {
+        cells: cells.cells,
+        x: Number(cells.x),
+        y: Number(cells.y),
+        w: Number(cells.w),
+        h: Number(cells.h),
+        has_headers: cells.has_headers,
+      };
     } catch (e) {
       console.warn('[pythonCore] getCellsA1 error', e);
     }

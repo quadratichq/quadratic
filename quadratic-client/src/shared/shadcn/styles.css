@@ -40,6 +40,10 @@
     --ring: 221.2 83.2% 53.3%;
     /* Border radius for card, input and buttons */
     --radius: 0.3rem;
+
+    /* Sheet Table Colors */
+    --table-column-header-foreground: 0 0% 0%;
+    --table-alternating-background: 220 75% 98%;
   }
 
   .dark,
@@ -81,6 +85,14 @@
 
 ::selection {
   background-color: hsl(var(--primary) / 0.2);
+}
+
+.reverse-selection::selection {
+  background-color: hsl(var(--primary-foreground) / 0.4);
+}
+
+.darker-selection::selection {
+  background-color: hsl(var(--primary) / 0.4);
 }
 
 /**

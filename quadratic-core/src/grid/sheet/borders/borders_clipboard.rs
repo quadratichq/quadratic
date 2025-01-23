@@ -1,4 +1,4 @@
-use crate::{grid::Sheet, A1Selection, Pos};
+use crate::{a1::A1Selection, grid::Sheet, Pos};
 
 use super::{Borders, BordersUpdates};
 
@@ -8,7 +8,7 @@ impl Borders {
     /// Returns `None` if there are no borders to copy.
     pub fn to_clipboard(&self, sheet: &Sheet, selection: &A1Selection) -> Option<BordersUpdates> {
         let mut updates = BordersUpdates::default();
-        for rect in sheet.selection_to_rects(selection) {
+        for rect in sheet.selection_to_rects(selection, false) {
             for x in rect.x_range() {
                 for y in rect.y_range() {
                     updates.set_style_cell(Pos::new(x, y), self.get_style_cell(Pos::new(x, y)));

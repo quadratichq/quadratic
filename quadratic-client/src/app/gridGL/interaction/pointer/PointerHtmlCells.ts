@@ -1,11 +1,11 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
 import { sheets } from '@/app/grid/controller/Sheets.js';
-import { HtmlCell } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCell';
+import type { HtmlCell } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCell';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { DOUBLE_CLICK_TIME } from '@/app/gridGL/interaction/pointer/pointerUtils.js';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { InteractionEvent } from 'pixi.js';
+import type { InteractionEvent } from 'pixi.js';
 
 export class PointerHtmlCells {
   private resizing: HtmlCell | undefined; // cell that is being resized
@@ -25,7 +25,6 @@ export class PointerHtmlCells {
     }
 
     this.clicked = undefined;
-    if (this.active) return true;
 
     const cells = htmlCellsHandler.getCells();
     for (const cell of cells) {
@@ -38,7 +37,7 @@ export class PointerHtmlCells {
           this.hovering.clearHighlightEdges();
         }
         this.hovering = cell;
-        this.cursor = target === 'corner' ? 'nwse-resize' : target === 'right' ? 'col-resize' : 'row-resize';
+        this.cursor = target === 'corner' ? 'all-scroll' : target === 'right' ? 'col-resize' : 'row-resize';
         return true;
       }
 

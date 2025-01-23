@@ -1,12 +1,14 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { JsHtmlOutput } from '@/app/quadratic-core-types';
-import { HtmlCell } from './HtmlCell';
+import { intersects } from '@/app/gridGL/helpers/intersects';
+import { HtmlCell } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCell';
+import type { JsCoordinate, JsHtmlOutput, JsRenderCodeCell } from '@/app/quadratic-core-types';
+import type { Point } from 'pixi.js';
+import { Rectangle } from 'pixi.js';
 
 class HTMLCellsHandler {
   // used to attach the html-cells to react
   private div: HTMLDivElement;
-
   private cells: Set<HtmlCell> = new Set();
 
   constructor() {
@@ -40,7 +42,7 @@ class HTMLCellsHandler {
         if (data.html) {
           cell.update(data);
         } else {
-          this.getParent().removeChild(cell.div);
+          cell.destroy();
           this.cells.delete(cell);
         }
         return;
@@ -84,6 +86,7 @@ class HTMLCellsHandler {
 
     // remove old cells
     old.forEach((cell) => {
+      cell.destroy();
       parent.removeChild(cell.div);
       this.cells.delete(cell);
     });
@@ -118,6 +121,58 @@ class HTMLCellsHandler {
     // remove and add cell to the set to update the order
     this.cells.delete(cell);
     this.cells.add(cell);
+  }
+
+  checkHover(world: Point): JsCoordinate | undefined {
+    const cells = this.getCells();
+    for (const cell of cells) {
+      if (cell.sheet.id !== sheets.sheet.id) continue;
+      const bounds = new Rectangle(
+        cell.div.offsetLeft,
+        cell.div.offsetTop,
+        cell.div.offsetWidth,
+        cell.div.offsetHeight
+      );
+      if (intersects.rectanglePoint(bounds, world)) {
+        return { x: cell.x, y: cell.y };
+      }
+    }
+  }
+
+  // returns true if the cell is an html cell
+  isHtmlCell(x: number, y: number): boolean {
+    return this.getCells().some((cell) => cell.x === x && cell.y === y && cell.sheet.id === sheets.sheet.id);
+  }
+
+  // returns true if the Pos overlaps with the output of an html cell
+  contains(x: number, y: number): boolean {
+    return this.getCells().some((cell) => cell.contains(x, y));
+  }
+
+  findCodeCell(x: number, y: number): HtmlCell | undefined {
+    return this.getCells().find((cell) => cell.sheet.id === sheets.sheet.id && cell.contains(x, y));
+  }
+
+  showActive(codeCell: JsRenderCodeCell, isSelected: boolean) {
+    const cell = this.getCells().find(
+      (cell) => cell.x === codeCell.x && cell.y === codeCell.y && cell.sheet.id === sheets.sheet.id
+    );
+    if (cell) {
+      cell.border.style.border = '2px solid hsl(var(--primary))';
+      cell.pointerEvents = isSelected ? 'auto' : 'none';
+      cell.iframe.style.pointerEvents = cell.pointerEvents;
+    }
+  }
+
+  hideActive(codeCell: JsRenderCodeCell) {
+    const cell = this.getCells().find(
+      (cell) => cell.x === codeCell.x && cell.y === codeCell.y && cell.sheet.id === sheets.sheet.id
+    );
+    if (cell) {
+      cell.border.style.border = '1px solid hsl(var(--primary))';
+      cell.pointerEvents = 'none';
+      cell.iframe.style.pointerEvents = cell.pointerEvents;
+    }
   }
 }
 

@@ -1,4 +1,3 @@
-use chrono::Utc;
 use uuid::Uuid;
 
 use super::{GridController, TransactionSource};
@@ -7,12 +6,12 @@ use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::operation::Operation;
 use crate::controller::transaction::Transaction;
 use crate::controller::transaction_types::JsCodeResult;
-use crate::error_core::Result;
+use crate::error_core::{CoreError, Result};
 use crate::grid::js_types::JsHtmlOutput;
-use crate::grid::{CodeRun, CodeRunResult};
+use crate::grid::{CodeCellLanguage, CodeRun, ConnectionKind, DataTable, DataTableKind};
 use crate::parquet::parquet_to_vec;
 use crate::renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
-use crate::{Pos, RunError, RunErrorMsg, Value};
+use crate::{CellValue, Pos, RunError, RunErrorMsg, Value};
 
 impl GridController {
     // loop compute cycle until complete or an async call is made
@@ -35,11 +34,9 @@ impl GridController {
                 break;
             }
 
-            if let Some(op) = transaction.operations.pop_front() {
-                self.execute_operation(transaction, op);
-                self.send_transaction_progress(transaction);
-                self.process_visible_dirty_hashes(transaction);
-            }
+            self.execute_operation(transaction);
+            self.send_transaction_progress(transaction);
+            self.process_visible_dirty_hashes(transaction);
 
             // try running pending ai researchers in parallel, only if there are no other operations
             if transaction.operations.is_empty()
@@ -159,6 +156,18 @@ impl GridController {
                     self.send_offsets_modified(*sheet_id, offsets);
                 });
 
+            // todo: this can be sent in less calls
+            transaction
+                .code_cells
+                .iter()
+                .for_each(|(sheet_id, positions)| {
+                    if let Some(sheet) = self.try_sheet(*sheet_id) {
+                        positions.iter().for_each(|pos| {
+                            sheet.send_code_cell(*pos);
+                        });
+                    }
+                });
+
             self.process_visible_dirty_hashes(&mut transaction);
             self.process_remaining_dirty_hashes(&mut transaction);
 
@@ -180,21 +189,9 @@ impl GridController {
 
             transaction.sheet_borders.iter().for_each(|sheet_id| {
                 if let Some(sheet) = self.try_sheet(*sheet_id) {
-                    sheet.borders.send_sheet_borders(*sheet_id);
+                    sheet.send_sheet_borders(*sheet_id);
                 }
             });
-
-            // todo: this can be sent in less calls
-            transaction
-                .code_cells
-                .iter()
-                .for_each(|(sheet_id, positions)| {
-                    if let Some(sheet) = self.try_sheet(*sheet_id) {
-                        positions.iter().for_each(|pos| {
-                            sheet.send_code_cell(*pos);
-                        });
-                    }
-                });
 
             // todo: this can be sent in less calls
             transaction
@@ -238,6 +235,15 @@ impl GridController {
                     sheet.resend_fills();
                 }
             });
+
+            if let Some(selection) = transaction.update_selection {
+                crate::wasm_bindings::js::jsSetCursor(selection);
+            }
+
+            // send updated SheetMap and TableMap to client
+            if !transaction.code_cells.is_empty() || !transaction.sheet_info.is_empty() {
+                self.send_a1_context();
+            }
         }
     }
 
@@ -309,29 +315,58 @@ impl GridController {
                 return_type = format!("{return_type}\n{extra}");
             }
 
-            let result = if let Some(error_msg) = &std_err {
-                let msg = RunErrorMsg::CodeRunError(error_msg.clone().into());
-                CodeRunResult::Err(RunError { span: None, msg })
-            } else {
-                CodeRunResult::Ok(Value::Array(array.into()))
-            };
+            let error = std_err.to_owned().map(|msg| RunError {
+                span: None,
+                msg: RunErrorMsg::CodeRunError(msg.into()),
+            });
 
             let code_run = CodeRun {
-                formatted_code_string: None,
-                result,
-                return_type: Some(return_type.clone()),
+                error,
+                return_type: Some(return_type.to_owned()),
                 line_number: Some(1),
                 output_type: Some(return_type),
                 std_out,
-                std_err,
-                spill_error: false,
-                last_modified: Utc::now(),
-                cells_accessed: transaction.cells_accessed.clone(),
+                std_err: std_err.to_owned(),
+                cells_accessed: transaction.cells_accessed.to_owned(),
+            };
+            let value = if std_err.is_some() {
+                Value::default() // TODO(ddimaria): this will be an empty vec
+            } else {
+                Value::Array(array.into())
             };
 
+            let Some(sheet) = self.try_sheet(current_sheet_pos.sheet_id) else {
+                return Err(CoreError::CodeCellSheetError("Sheet not found".to_string()));
+            };
+            let Some(CellValue::Code(code)) = sheet.cell_value_ref(current_sheet_pos.into()) else {
+                return Err(CoreError::CodeCellSheetError(
+                    "Code cell not found".to_string(),
+                ));
+            };
+
+            let name = match code.language {
+                CodeCellLanguage::Connection { kind, .. } => match kind {
+                    ConnectionKind::Postgres => "Postgres1",
+                    ConnectionKind::Mysql => "MySQL1",
+                    ConnectionKind::Mssql => "MSSQL1",
+                    ConnectionKind::Snowflake => "Snowflake1",
+                },
+                // this should not happen
+                _ => "Connection 1",
+            };
+            let data_table = DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                name,
+                value,
+                false,
+                true,
+                true,
+                None,
+            );
+
+            self.finalize_code_run(&mut transaction, current_sheet_pos, Some(data_table), None);
             transaction.cells_accessed.clear();
             transaction.waiting_for_async = None;
-            self.finalize_code_run(&mut transaction, current_sheet_pos, Some(code_run), None);
             self.start_transaction(&mut transaction);
             self.finalize_transaction(transaction);
         }
@@ -508,17 +543,12 @@ mod tests {
 
         let transaction_id = gc.last_transaction().unwrap().id;
 
-        let result = gc.calculation_complete(JsCodeResult::new(
-            transaction_id.to_string(),
-            true,
-            None,
-            None,
-            Some(vec!["1".into(), "number".into()]),
-            None,
-            None,
-            None,
-            None,
-        ));
+        let result = gc.calculation_complete(JsCodeResult {
+            transaction_id: transaction_id.to_string(),
+            success: true,
+            output_value: Some(vec!["1".into(), "number".into()]),
+            ..Default::default()
+        });
         assert!(result.is_ok());
     }
 

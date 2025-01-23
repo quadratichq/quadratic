@@ -2,11 +2,12 @@ import { hasPermissionToEditFile } from '@/app/actions';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Sheet } from '@/app/grid/sheet/Sheet';
+import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { SheetBarButton } from '@/app/ui/menus/SheetBar/SheetBarButton';
 import { SheetBarTab } from '@/app/ui/menus/SheetBar/SheetBarTab';
 import { AddIcon, ChevronLeftIcon, ChevronRightIcon } from '@/shared/components/Icons';
+import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
@@ -30,10 +31,15 @@ export const SheetBar = (): JSX.Element => {
 
   const dragTimeOut = useRef<number | undefined>();
 
+  // Store the active sheet in the URL
+  const [activeSheetId, setActiveSheetId] = useState<string | null>(null);
+  useUpdateQueryStringValueWithoutNavigation('sheet', activeSheetId);
+
   useEffect(() => {
     const updateSheet = () => {
       setActiveSheet(sheets.current);
       setTrigger((trigger) => trigger + 1);
+      setActiveSheetId(sheets.sheet.order === 'a0' ? null : sheets.sheet.id);
     };
 
     events.on('changeSheet', updateSheet);

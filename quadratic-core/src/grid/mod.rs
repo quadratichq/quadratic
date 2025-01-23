@@ -4,11 +4,11 @@ pub use code_cell::*;
 pub use code_run::*;
 pub use column::{Column, ColumnData};
 pub use contiguous::{Block, Contiguous2D, ContiguousBlocks};
+pub use data_table::*;
 pub use formats::Format;
 pub use formatting::{
-    Bold, CellAlign, CellFmtAttr, CellVerticalAlign, CellWrap, FillColor, Italic, NumericCommas,
-    NumericDecimals, NumericFormat, NumericFormatKind, RenderSize, StrikeThrough, TextColor,
-    Underline,
+    Bold, CellAlign, CellVerticalAlign, CellWrap, FillColor, Italic, NumericCommas,
+    NumericDecimals, NumericFormat, NumericFormatKind, StrikeThrough, TextColor, Underline,
 };
 pub use ids::*;
 use serde::{Deserialize, Serialize};
@@ -22,13 +22,15 @@ use crate::CellValue;
 #[cfg(test)]
 use crate::{Array, Pos};
 
+mod a1_context;
 mod block;
 mod bounds;
 mod cells_accessed;
 mod code_cell;
 mod code_run;
-mod column;
+pub mod column;
 pub mod contiguous;
+pub mod data_table;
 pub mod file;
 pub mod formats;
 pub mod formatting;

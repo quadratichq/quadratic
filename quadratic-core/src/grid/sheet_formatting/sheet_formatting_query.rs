@@ -19,7 +19,6 @@ impl SheetFormatting {
             || self.italic.col_max(column) > 0
             || self.text_color.col_max(column) > 0
             || self.fill_color.col_max(column) > 0
-            || self.render_size.col_max(column) > 0
             || self.date_time.col_max(column) > 0
             || self.underline.col_max(column) > 0
             || self.strike_through.col_max(column) > 0
@@ -36,7 +35,6 @@ impl SheetFormatting {
             || self.italic.row_max(row) > 0
             || self.text_color.row_max(row) > 0
             || self.fill_color.row_max(row) > 0
-            || self.render_size.row_max(row) > 0
             || self.date_time.row_max(row) > 0
             || self.underline.row_max(row) > 0
             || self.strike_through.row_max(row) > 0
@@ -65,7 +63,6 @@ impl SheetFormatting {
             italic: self.italic.get(pos),
             text_color: self.text_color.get(pos),
             fill_color: self.fill_color.get(pos),
-            render_size: self.render_size.get(pos),
             date_time: self.date_time.get(pos),
             underline: self.underline.get(pos),
             strike_through: self.strike_through.get(pos),
@@ -117,9 +114,6 @@ impl SheetFormatting {
         if let Some(rect) = self.fill_color.finite_bounds() {
             bounds.add_rect(rect);
         }
-        if let Some(rect) = self.render_size.finite_bounds() {
-            bounds.add_rect(rect);
-        }
         if let Some(rect) = self.date_time.finite_bounds() {
             bounds.add_rect(rect);
         }
@@ -145,7 +139,6 @@ impl SheetFormatting {
             self.italic.col_min(column),
             self.text_color.col_min(column),
             self.fill_color.col_min(column),
-            self.render_size.col_min(column),
             self.date_time.col_min(column),
             self.underline.col_min(column),
             self.strike_through.col_min(column),
@@ -171,7 +164,6 @@ impl SheetFormatting {
             self.italic.col_max(column),
             self.text_color.col_max(column),
             self.fill_color.col_max(column),
-            self.render_size.col_max(column),
             self.date_time.col_max(column),
             self.underline.col_max(column),
             self.strike_through.col_max(column),
@@ -196,7 +188,6 @@ impl SheetFormatting {
             self.italic.row_min(row),
             self.text_color.row_min(row),
             self.fill_color.row_min(row),
-            self.render_size.row_min(row),
             self.date_time.row_min(row),
             self.underline.row_min(row),
             self.strike_through.row_min(row),
@@ -222,7 +213,6 @@ impl SheetFormatting {
             self.italic.row_max(row),
             self.text_color.row_max(row),
             self.fill_color.row_max(row),
-            self.render_size.row_max(row),
             self.date_time.row_max(row),
             self.underline.row_max(row),
             self.strike_through.row_max(row),
@@ -233,6 +223,11 @@ impl SheetFormatting {
         } else {
             Some(*max)
         }
+    }
+
+    /// Returns true if there is any formatting with a fill color.
+    pub fn has_fills(&self) -> bool {
+        !self.fill_color.is_all_default()
     }
 }
 
@@ -360,5 +355,17 @@ mod tests {
         assert_eq!(formatting.row_max(1), Some(4));
         // Row 3 has no formatting
         assert_eq!(formatting.row_max(3), None);
+    }
+
+    #[test]
+    fn test_has_fills() {
+        let formatting = SheetFormatting::default();
+        assert!(!formatting.has_fills());
+
+        let mut formatting = create_test_formatting();
+        assert!(formatting.has_fills());
+
+        formatting.fill_color.set(pos![A2], None);
+        assert!(!formatting.has_fills());
     }
 }

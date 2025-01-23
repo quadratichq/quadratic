@@ -1,12 +1,115 @@
+use anyhow::Result;
+
 use crate::controller::active_transactions::transaction_name::TransactionName;
+use crate::controller::operations::operation::Operation;
 use crate::controller::GridController;
-use crate::{A1Selection, SheetPos};
+use crate::grid::column_header::DataTableColumnHeader;
+use crate::Pos;
+use crate::{a1::A1Selection, CellValue, SheetPos};
 
 impl GridController {
+    // Using sheet_pos, either set a cell value or a data table value
+    pub fn set_value(
+        &mut self,
+        sheet_pos: SheetPos,
+        value: String,
+        cursor: Option<String>,
+    ) -> Result<()> {
+        let sheet = self.try_sheet_mut_result(sheet_pos.sheet_id)?;
+
+        let cell_value = sheet
+            .get_column(sheet_pos.x)
+            .and_then(|column| column.values.get(&sheet_pos.y));
+
+        let is_data_table = if let Some(cell_value) = cell_value {
+            matches!(cell_value, CellValue::Code(_) | CellValue::Import(_))
+        } else {
+            sheet.has_table_content(sheet_pos.into())
+        };
+
+        match is_data_table {
+            true => self.set_data_table_value(sheet_pos, value, cursor),
+            false => self.set_cell_value(sheet_pos, value, cursor),
+        };
+
+        Ok(())
+    }
+
     /// Starts a transaction to set the value of a cell by converting a user's String input
     pub fn set_cell_value(&mut self, sheet_pos: SheetPos, value: String, cursor: Option<String>) {
+        let mut data_table_ops = vec![];
+        let pos = Pos::from(sheet_pos);
+
+        if let Ok(sheet) = self.try_sheet_mut_result(sheet_pos.sheet_id) {
+            if pos.x > 1 && pos.y > 1 {
+                let data_table_left = sheet.first_data_table_within(Pos::new(pos.x - 1, pos.y));
+                if let Ok(data_table_left) = data_table_left {
+                    if let Some(data_table) = sheet
+                        .data_table(data_table_left)
+                        .filter(|data_table| !data_table.readonly)
+                    {
+                        let y = pos.y - data_table_left.y;
+
+                        // header row
+                        if y == 0 {
+                            let value_index = data_table.column_headers_len();
+                            let column_header =
+                                DataTableColumnHeader::new(value.to_owned(), true, value_index);
+                            let columns =
+                                data_table.column_headers.to_owned().map(|mut headers| {
+                                    headers.push(column_header);
+                                    headers
+                                });
+
+                            data_table_ops.push(Operation::DataTableMeta {
+                                sheet_pos: (data_table_left, sheet_pos.sheet_id).into(),
+                                name: None,
+                                alternating_colors: None,
+                                columns,
+                                show_header: None,
+                                show_ui: None,
+                            });
+                        } else {
+                            let mut values = vec![CellValue::Blank; data_table.height(true)];
+                            values[y as usize] = value.to_owned().into();
+
+                            data_table_ops.push(Operation::InsertDataTableColumn {
+                                sheet_pos: (data_table_left, sheet_pos.sheet_id).into(),
+                                index: (data_table.width()) as u32,
+                                column_header: None,
+                                values: Some(values),
+                            });
+                        }
+                    }
+                }
+
+                let data_table_above = sheet.first_data_table_within(Pos::new(pos.x, pos.y - 1));
+
+                if let Ok(data_table_above) = data_table_above {
+                    if let Some(data_table) = sheet
+                        .data_table(data_table_above)
+                        .filter(|data_table| !data_table.readonly)
+                    {
+                        let x = pos.x - data_table_above.x;
+                        let mut values = vec![CellValue::Blank; data_table.width()];
+                        values[x as usize] = value.to_owned().into();
+
+                        data_table_ops.push(Operation::InsertDataTableRow {
+                            sheet_pos: (data_table_above, sheet_pos.sheet_id).into(),
+                            index: data_table.height(true) as u32,
+                            values: Some(values),
+                        });
+                    }
+                }
+            }
+        }
+
         let ops = self.set_cell_value_operations(sheet_pos, value);
-        self.start_user_transaction(ops, cursor, TransactionName::SetCells);
+        self.start_user_transaction(ops, cursor.to_owned(), TransactionName::SetCells);
+
+        if !data_table_ops.is_empty() {
+            self.start_user_transaction(data_table_ops, cursor, TransactionName::SetCells);
+        }
     }
 
     /// Starts a transaction to set cell values using a 2d array of user's &str input where [[1, 2, 3], [4, 5, 6]] creates a grid of width 3 and height 2.
@@ -19,16 +122,11 @@ impl GridController {
         let mut ops = vec![];
         let mut x = sheet_pos.x;
         let mut y = sheet_pos.y;
+
         for row in values {
             for value in row {
-                ops.extend(self.set_cell_value_operations(
-                    SheetPos {
-                        x,
-                        y,
-                        sheet_id: sheet_pos.sheet_id,
-                    },
-                    value.to_string(),
-                ));
+                let op_sheet_pos = SheetPos::new(sheet_pos.sheet_id, x, y);
+                ops.extend(self.set_cell_value_operations(op_sheet_pos, value.to_string()));
                 x += 1;
             }
             x = sheet_pos.x;
@@ -63,9 +161,10 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
+        a1::A1Selection,
         controller::GridController,
         grid::{NumericFormat, SheetId},
-        A1Selection, CellValue, Pos, Rect, SheetPos,
+        CellValue, Pos, Rect, SheetPos,
     };
     use std::str::FromStr;
 

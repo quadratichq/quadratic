@@ -1,4 +1,5 @@
-import { Avatar, AvatarProps } from '@mui/material';
+import type { AvatarProps } from '@mui/material';
+import { Avatar } from '@mui/material';
 
 function stringToColor(string: string) {
   let hash = 0;

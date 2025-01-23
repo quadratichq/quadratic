@@ -1,4 +1,5 @@
-import useLocalStorage, { SetValue } from '@/shared/hooks/useLocalStorage';
+import type { SetValue } from '@/shared/hooks/useLocalStorage';
+import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { DEFAULT_MODEL, DEFAULT_MODEL_VERSION, MODEL_OPTIONS } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AIModel } from 'quadratic-shared/typesAndSchemasAI';
 

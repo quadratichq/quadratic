@@ -23,7 +23,7 @@ httpmock = { git = "https://github.com/quadratichq/httpmock", version = "0.8.0-a
   "record",
 ], optional = true }
 jsonwebtoken = "9.2.0"
-parquet = { version = "53.0.0", default-features = false, features = ["arrow", "arrow-array", "flate2", "snap", "zstd"] }
+parquet = { version = "53.0.0", default-features = false, features = ["arrow", "arrow-array", "flate2", "snap"] }
 redis = { version = "0.25.3", features = ["tokio-comp"] }
 reqwest = { version = "0.11.22", features = ["json", "serde_json"] }
 rust_decimal = "1.30.0"

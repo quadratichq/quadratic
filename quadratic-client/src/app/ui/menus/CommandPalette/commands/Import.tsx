@@ -1,7 +1,11 @@
 import { isAvailableBecauseCanEditFile } from '@/app/actions';
+import type {
+  CommandGroup,
+  CommandPaletteListItemDynamicProps,
+} from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CSV_IMPORT_MESSAGE, PARQUET_IMPORT_MESSAGE } from '@/shared/constants/appConstants';
-import { CommandGroup, CommandPaletteListItem, CommandPaletteListItemDynamicProps } from '../CommandPaletteListItem';
 
 const commands: CommandGroup = {
   heading: 'Import',

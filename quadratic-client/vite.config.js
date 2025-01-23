@@ -40,6 +40,9 @@ export default defineConfig(() => {
   }
 
   return {
+    define: {
+      global: 'globalThis',
+    },
     build: {
       outDir: '../build',
       sourcemap: process.env.VERCEL_ENV !== 'preview' || process.env.VITEST !== 'true', // Source map generation must be turned on

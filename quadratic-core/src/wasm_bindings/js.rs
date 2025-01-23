@@ -69,7 +69,6 @@ extern "C" {
     );
     pub fn jsOffsetsModified(sheet_id: String, offsets: String /* Vec<JsOffset> */);
     pub fn jsSetCursor(cursor: String);
-    pub fn jsSetCursorSelection(selection: String);
     pub fn jsUpdateHtml(html: String /*JsHtmlOutput*/);
     pub fn jsClearHtml(sheet_id: String, x: i64, y: i64);
     pub fn jsHtmlOutput(html: String /*Vec<JsHtmlOutput>*/);
@@ -110,8 +109,8 @@ extern "C" {
         x: i32,
         y: i32,
         image: Option<String>,
-        w: Option<String>,
-        h: Option<String>,
+        w: Option<f32>,
+        h: Option<f32>,
     );
 
     // rows: Vec<i64>
@@ -136,7 +135,9 @@ extern "C" {
 
     pub fn jsSendViewportBuffer(buffer: SharedArrayBuffer);
 
-    pub fn jsClientMessage(message: String, error: bool);
+    pub fn jsClientMessage(message: String, error: String);
+
+    pub fn jsA1Context(context: String);
 
     pub fn jsRequestAIResearcherResult(
         transaction_id: String,
@@ -150,7 +151,6 @@ extern "C" {
         current: String,            /* Vec<CodeRun> */
         awaiting_execution: String, /* Vec<CodeRun> */
     );
-
 }
 
 #[cfg(test)]
@@ -433,15 +433,6 @@ pub fn jsSetCursor(cursor: String) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSetCursorSelection(selection: String) {
-    TEST_ARRAY
-        .lock()
-        .unwrap()
-        .push(TestFunction::new("jsSetCursorSelection", selection));
-}
-
-#[cfg(test)]
-#[allow(non_snake_case)]
 pub fn jsUpdateHtml(html: String /*JsHtmlOutput*/) {
     TEST_ARRAY
         .lock()
@@ -590,8 +581,8 @@ pub fn jsSendImage(
     x: i32,
     y: i32,
     image: Option<String>,
-    w: Option<String>,
-    h: Option<String>,
+    w: Option<f32>,
+    h: Option<f32>,
 ) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsSendImage",
@@ -602,7 +593,7 @@ pub fn jsSendImage(
             y,
             image.is_some(),
             w,
-            h
+            h,
         ),
     ));
 }
@@ -690,11 +681,20 @@ pub fn jsSendViewportBuffer(buffer: [u8; 112]) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsClientMessage(message: String, error: bool) {
+pub fn jsClientMessage(message: String, error: String) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsClientMessage",
         format!("{},{}", message, error),
     ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsA1Context(context: String) {
+    TEST_ARRAY
+        .lock()
+        .unwrap()
+        .push(TestFunction::new("jsA1Context", context));
 }
 
 #[cfg(test)]

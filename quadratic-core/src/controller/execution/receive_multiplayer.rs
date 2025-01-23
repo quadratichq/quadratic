@@ -379,7 +379,7 @@ mod tests {
         );
 
         let mut gc2 = GridController::test();
-        // set gc2's sheet 1's id to gc1 sheet 1's id
+        // set gc2's Sheet1's id to gc1 Sheet1's id
         gc2.grid.try_sheet_mut(gc2.sheet_ids()[0]).unwrap().id = sheet_id;
         gc2.set_cell_value(
             SheetPos {
@@ -794,17 +794,12 @@ mod tests {
         assert!(matches!(code_cell, Some(CellValue::Code(_))));
 
         // mock the python calculation returning the result
-        let result = client.calculation_complete(JsCodeResult::new(
-            transaction_id.to_string(),
-            true,
-            None,
-            None,
-            Some(vec!["async output".into(), "text".into()]),
-            None,
-            None,
-            None,
-            None,
-        ));
+        let result = client.calculation_complete(JsCodeResult {
+            transaction_id: transaction_id.to_string(),
+            success: true,
+            output_value: Some(vec!["async output".into(), "text".into()]),
+            ..Default::default()
+        });
         assert!(result.is_ok());
 
         assert_eq!(
@@ -875,17 +870,12 @@ mod tests {
         assert!(matches!(code_cell, Some(CellValue::Code(_))));
 
         // mock the python calculation returning the result
-        let result = client.calculation_complete(JsCodeResult::new(
-            transaction_id.to_string(),
-            true,
-            None,
-            None,
-            Some(vec!["async output".into(), "text".into()]),
-            None,
-            None,
-            None,
-            None,
-        ));
+        let result = client.calculation_complete(JsCodeResult {
+            transaction_id: transaction_id.to_string(),
+            success: true,
+            output_value: Some(vec!["async output".into(), "text".into()]),
+            ..Default::default()
+        });
         assert!(result.is_ok());
 
         assert_eq!(
@@ -920,17 +910,12 @@ mod tests {
             .ok()
             .unwrap();
 
-        let result = gc.calculation_complete(JsCodeResult::new(
-            transaction_id.to_string(),
-            true,
-            None,
-            None,
-            Some(vec!["2".into(), "number".into()]),
-            None,
-            None,
-            None,
-            None,
-        ));
+        let result = gc.calculation_complete(JsCodeResult {
+            transaction_id: transaction_id.to_string(),
+            success: true,
+            output_value: Some(vec!["2".into(), "number".into()]),
+            ..Default::default()
+        });
         assert!(result.is_ok());
 
         let transaction = gc.last_transaction().unwrap();
@@ -952,17 +937,12 @@ mod tests {
             .ok()
             .unwrap();
 
-        let result = gc.calculation_complete(JsCodeResult::new(
-            transaction_id.to_string(),
-            true,
-            None,
-            None,
-            Some(vec!["3".into(), "number".into()]),
-            None,
-            None,
-            None,
-            None,
-        ));
+        let result = gc.calculation_complete(JsCodeResult {
+            transaction_id: transaction_id.to_string(),
+            success: true,
+            output_value: Some(vec!["3".into(), "number".into()]),
+            ..Default::default()
+        });
         assert!(result.is_ok());
 
         let transaction = gc.last_transaction().unwrap();
@@ -1105,7 +1085,7 @@ mod tests {
         );
         let find_index = |sheet: &Sheet, x: i64, y: i64| {
             sheet
-                .code_runs
+                .data_tables
                 .iter()
                 .position(|(code_pos, _)| *code_pos == Pos { x, y })
                 .unwrap()

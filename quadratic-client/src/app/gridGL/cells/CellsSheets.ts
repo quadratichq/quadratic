@@ -3,14 +3,15 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { SheetInfo } from '@/app/quadratic-core-types';
-import {
+import type { SheetInfo } from '@/app/quadratic-core-types';
+import type {
   RenderClientCellsTextHashClear,
   RenderClientFinalizeCellsTextHash,
   RenderClientLabelMeshEntry,
 } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { Container, Rectangle } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
+import { Container } from 'pixi.js';
 
 export class CellsSheets extends Container<CellsSheet> {
   current?: CellsSheet;
@@ -28,6 +29,7 @@ export class CellsSheets extends Container<CellsSheet> {
   }
 
   async create() {
+    this.children.forEach((child) => child.destroy());
     this.removeChildren();
     for (const sheet of sheets.sheets) {
       const child = this.addChild(new CellsSheet(sheet.id));
@@ -138,7 +140,6 @@ export class CellsSheets extends Container<CellsSheet> {
       pixiApp.gridLines.dirty = true;
       pixiApp.cursor.dirty = true;
       pixiApp.headings.dirty = true;
-      this.updateCellsArray();
     }
   }
 
@@ -150,11 +151,6 @@ export class CellsSheets extends Container<CellsSheet> {
   getCellsContentMaxHeight(row: number): Promise<number> {
     if (!this.current) throw new Error('Expected current to be defined in CellsSheets.getCellsContentMaxHeight');
     return this.current.cellsLabels.getCellsContentMaxHeight(row);
-  }
-
-  updateCellsArray(): void {
-    if (!this.current) throw new Error('Expected current to be defined in CellsSheets.updateCellsArray');
-    this.current.updateCellsArray();
   }
 
   adjustOffsetsBorders(sheetId: string): void {
@@ -191,10 +187,17 @@ export class CellsSheets extends Container<CellsSheet> {
     const cellsSheet = this.current;
     if (!cellsSheet) return false;
     const cursor = sheets.sheet.cursor.position;
-    return cellsSheet.cellsArray.isCodeCell(cursor.x, cursor.y);
+    return cellsSheet.tables.isTable(cursor.x, cursor.y);
   }
 
-  update() {
-    this.current?.update();
+  isCursorOnCodeCellOutput(): boolean {
+    const cellsSheet = this.current;
+    if (!cellsSheet) return false;
+    const cursor = sheets.sheet.cursor.position;
+    return cellsSheet.tables.isTable(cursor.x, cursor.y);
+  }
+
+  update(dirtyViewport: boolean) {
+    this.current?.update(dirtyViewport);
   }
 }

@@ -1,19 +1,20 @@
+import { hasPermissionToEditFile } from '@/app/actions';
+import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { zoomToFit } from '@/app/gridGL/helpers/zoom';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { TransientResize } from '@/app/quadratic-core-types/index.js';
+import { DOUBLE_CLICK_TIME } from '@/app/gridGL/interaction/pointer/pointerUtils';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import type { TransientResize } from '@/app/quadratic-core-types/index.js';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { isMac } from '@/shared/utils/isMac';
-import { InteractivePointerEvent, Point } from 'pixi.js';
-import { hasPermissionToEditFile } from '../../../actions';
-import { sheets } from '../../../grid/controller/Sheets';
-import { zoomToFit } from '../../helpers/zoom';
-import { pixiApp } from '../../pixiApp/PixiApp';
-import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
-import { DOUBLE_CLICK_TIME } from './pointerUtils';
+import type { InteractivePointerEvent, Point } from 'pixi.js';
 
 const MINIMUM_COLUMN_SIZE = 20;
 
@@ -124,7 +125,14 @@ export class PointerHeading {
         cursor.selectRow(intersects.row, event.ctrlKey || event.metaKey, event.shiftKey, isRightClick, left);
       }
       if (isRightClick) {
-        setTimeout(() => events.emit('gridContextMenu', world, intersects.column, intersects.row));
+        setTimeout(() =>
+          events.emit('contextMenu', {
+            world,
+            column: intersects.column ?? undefined,
+            row: intersects.row ?? undefined,
+            type: ContextMenuType.Grid,
+          })
+        );
       }
     }
 

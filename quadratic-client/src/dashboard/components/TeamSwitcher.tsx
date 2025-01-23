@@ -1,6 +1,6 @@
 import { sidebarItemClasses } from '@/dashboard/components/DashboardSidebar';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
-import { TeamAction } from '@/routes/teams.$teamUuid';
+import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { AddIcon, ArrowDropDownIcon, CheckIcon, RefreshIcon } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
@@ -13,7 +13,7 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { cn } from '@/shared/shadcn/utils';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Link, useFetcher, useNavigate } from 'react-router-dom';
 
 type Props = {

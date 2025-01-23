@@ -10,19 +10,20 @@ import { debugShowCellsHashBoxes, debugShowCellsSheetCulling } from '@/app/debug
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { CellsTextHash } from '@/app/gridGL/cells/cellsLabel/CellsTextHash';
-import { CellsSheet, ErrorMarker, ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
+import type { CellsSheet, ErrorMarker, ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Link } from '@/app/gridGL/types/links';
-import { JsValidationWarning } from '@/app/quadratic-core-types';
-import {
+import type { Link } from '@/app/gridGL/types/links';
+import type { JsValidationWarning } from '@/app/quadratic-core-types';
+import type {
   RenderClientCellsTextHashClear,
   RenderClientLabelMeshEntry,
 } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
-import { Container, Graphics, Point, Rectangle } from 'pixi.js';
+import type { Point } from 'pixi.js';
+import { Container, Graphics, Rectangle } from 'pixi.js';
 
 export class CellsLabels extends Container {
   private cellsSheet: CellsSheet;
@@ -102,8 +103,8 @@ export class CellsLabels extends Container {
 
   // Returns whether the rect has content by checking CellsTextHashContent.
   hasCellInRect = (rect: Rectangle): boolean => {
-    for (let column = rect.x; column <= rect.x + rect.width; column++) {
-      for (let row = rect.y; row <= rect.y + rect.height; row++) {
+    for (let column = rect.x; column < rect.x + rect.width; column++) {
+      for (let row = rect.y; row < rect.y + rect.height; row++) {
         if (this.hasCell(column, row)) {
           return true;
         }

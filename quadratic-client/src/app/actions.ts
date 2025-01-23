@@ -1,10 +1,12 @@
-import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { getActionFileDelete, getActionFileDuplicate } from '@/routes/api.files.$uuid';
-import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import type { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
-import { ApiTypes, FilePermission, FilePermissionSchema, TeamPermission } from 'quadratic-shared/typesAndSchemas';
-import { SubmitFunction } from 'react-router-dom';
-import { SetterOrUpdater } from 'recoil';
+import type { ApiTypes, FilePermission, TeamPermission } from 'quadratic-shared/typesAndSchemas';
+import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
+import type { SubmitFunction } from 'react-router-dom';
+import type { SetterOrUpdater } from 'recoil';
+
 const { FILE_EDIT, FILE_DELETE } = FilePermissionSchema.enum;
 
 type IsAvailableArgs = {
@@ -143,5 +145,102 @@ export const resizeColumnAction = {
 
 export const validationAction = {
   label: 'Data Validations',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+// Data Table Actions
+
+export const gridToDataTableAction = {
+  label: 'Convert to data table',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const flattenDataTableAction = {
+  label: 'Flatten to sheet data',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const toggleFirstRowAsHeaderAction = {
+  label: 'Toggle 1st row as column headers',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const toggleHeaderTableAction = {
+  label: 'Toggle show column headings',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const deleteDataTableAction = {
+  label: 'Delete',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const codeToDataTableAction = {
+  label: 'Flatten to table data',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const sortDataTableAction = {
+  label: 'Sort Data Table',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const toggleTableAlternatingColorsAction = {
+  label: 'Toggle show alternating colors',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const sortTableColumnAscendingAction = {
+  label: 'Sort column ascending',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const sortTableColumnDescendingAction = {
+  label: 'Sort column descending',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const insertTableColumnLeftAction = {
+  label: 'Insert column left',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const insertTableColumnRightAction = {
+  label: 'Insert column right',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const removeTableColumnAction = {
+  label: 'Remove column',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const hideTableColumnAction = {
+  label: 'Hide column',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const showAllTableColumnsAction = {
+  label: 'Show all columns',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const insertTableRowAboveAction = {
+  label: 'Insert row above',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const insertTableRowBelowAction = {
+  label: 'Insert row below',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const removeTableRowAction = {
+  label: 'Remove row',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const toggleTableUIAction = {
+  label: 'Toggle show table UI',
   isAvailable: isAvailableBecauseCanEditFile,
 };

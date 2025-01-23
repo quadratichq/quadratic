@@ -9,15 +9,16 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use uuid::Uuid;
 
 use crate::{
+    a1::A1Selection,
     controller::{
         execution::TransactionSource, operations::operation::Operation, transaction::Transaction,
     },
     grid::{
         js_types::JsValidationWarning, sheet::validations::validation::Validation, CellsAccessed,
-        CodeCellLanguage, CodeRun, Sheet, SheetId,
+        CodeCellLanguage, Sheet, SheetId,
     },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-    A1Selection, Pos, SheetPos, SheetRect,
+    Pos, SheetPos, SheetRect,
 };
 
 use super::transaction_name::TransactionName;
@@ -105,6 +106,9 @@ pub struct PendingTransaction {
     // offsets modified (sheet_id -> SheetOffsets)
     pub offsets_modified: HashMap<SheetId, SheetOffsets>,
 
+    // update selection after transaction completes
+    pub update_selection: Option<String>,
+
     // ai researcher requests
     pub pending_ai_researchers: HashSet<SheetPos>,
 
@@ -117,8 +121,8 @@ impl Default for PendingTransaction {
         PendingTransaction {
             id: Uuid::new_v4(),
             transaction_name: TransactionName::Unknown,
-            cursor: None,
             source: TransactionSource::User,
+            cursor: None,
             operations: VecDeque::new(),
             reverse_operations: Vec::new(),
             forward_operations: Vec::new(),
@@ -140,6 +144,7 @@ impl Default for PendingTransaction {
             fill_cells: HashSet::new(),
             sheet_info: HashSet::new(),
             offsets_modified: HashMap::new(),
+            update_selection: None,
             pending_ai_researchers: HashSet::new(),
             running_ai_researchers: HashSet::new(),
         }
@@ -306,16 +311,24 @@ impl PendingTransaction {
         }
     }
 
-    /// Adds a code cell, html cell and image cell to the transaction from a CodeRun
-    pub fn add_from_code_run(&mut self, sheet_id: SheetId, pos: Pos, code_run: &Option<CodeRun>) {
-        if let Some(code_run) = &code_run {
-            self.add_code_cell(sheet_id, pos);
-            if code_run.is_html() {
-                self.add_html_cell(sheet_id, pos);
-            }
-            if code_run.is_image() {
-                self.add_image_cell(sheet_id, pos);
-            }
+    /// Adds a code cell, html cell and image cell to the transaction from a
+    /// CodeRun. If the code_cell no longer exists, then it sends the empty code
+    /// cell so the client can remove it.
+    pub fn add_from_code_run(
+        &mut self,
+        sheet_id: SheetId,
+        pos: Pos,
+        is_image: bool,
+        is_html: bool,
+    ) {
+        self.add_code_cell(sheet_id, pos);
+
+        if is_html {
+            self.add_html_cell(sheet_id, pos);
+        }
+
+        if is_image {
+            self.add_image_cell(sheet_id, pos);
         }
     }
 
@@ -340,8 +353,9 @@ impl PendingTransaction {
         sheet: &Sheet,
         selections: Vec<A1Selection>,
     ) {
+        let context = sheet.a1_context();
         selections.iter().for_each(|selection| {
-            let dirty_hashes = selection.rects_to_hashes(sheet);
+            let dirty_hashes = selection.rects_to_hashes(sheet, &context);
             self.dirty_hashes
                 .entry(sheet.id)
                 .or_default()
@@ -415,6 +429,13 @@ impl PendingTransaction {
         }
     }
 
+    /// Adds an updated selection to the transaction
+    pub fn add_update_selection(&mut self, selection: A1Selection) {
+        if let Ok(json) = serde_json::to_string(&selection) {
+            self.update_selection = Some(json);
+        }
+    }
+
     pub fn add_updates_from_transaction(&mut self, transaction: PendingTransaction) {
         self.generate_thumbnail |= transaction.generate_thumbnail;
 
@@ -461,6 +482,16 @@ impl PendingTransaction {
                 .extend(offsets_modified);
         }
     }
+
+    /// Adds a sheet id to the fill cells set.
+    pub fn add_fill_cells(&mut self, sheet_id: SheetId) {
+        self.fill_cells.insert(sheet_id);
+    }
+
+    /// Adds a sheet id to the borders set.
+    pub fn add_borders(&mut self, sheet_id: SheetId) {
+        self.sheet_borders.insert(sheet_id);
+    }
 }
 
 #[cfg(test)]
@@ -468,17 +499,16 @@ impl PendingTransaction {
 mod tests {
     use crate::{
         controller::operations::operation::Operation,
-        grid::{CodeRunResult, SheetId},
+        grid::{CodeRun, DataTable, DataTableKind, Sheet, SheetId},
         CellValue, Value,
     };
 
     use super::*;
-    use chrono::Utc;
 
     #[test]
     fn test_to_transaction() {
         let sheet_id = SheetId::new();
-        let name = "Sheet 1".to_string();
+        let name = "Sheet1".to_string();
 
         let mut transaction = PendingTransaction::default();
         let forward_operations = vec![
@@ -586,24 +616,31 @@ mod tests {
         let sheet_id = SheetId::new();
         let pos = Pos { x: 0, y: 0 };
 
-        transaction.add_from_code_run(sheet_id, pos, &None);
-        assert_eq!(transaction.code_cells.len(), 0);
+        transaction.add_from_code_run(sheet_id, pos, false, false);
+        assert_eq!(transaction.code_cells.len(), 1);
         assert_eq!(transaction.html_cells.len(), 0);
         assert_eq!(transaction.image_cells.len(), 0);
 
         let code_run = CodeRun {
             std_out: None,
             std_err: None,
-            formatted_code_string: None,
             cells_accessed: Default::default(),
-            result: CodeRunResult::Ok(Value::Single(CellValue::Html("html".to_string()))),
+            error: None,
             return_type: None,
             line_number: None,
             output_type: None,
-            spill_error: false,
-            last_modified: Utc::now(),
         };
-        transaction.add_from_code_run(sheet_id, pos, &Some(code_run));
+
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "Table 1",
+            Value::Single(CellValue::Html("html".to_string())),
+            false,
+            false,
+            true,
+            None,
+        );
+        transaction.add_from_code_run(sheet_id, pos, data_table.is_image(), data_table.is_html());
         assert_eq!(transaction.code_cells.len(), 1);
         assert_eq!(transaction.html_cells.len(), 1);
         assert_eq!(transaction.image_cells.len(), 0);
@@ -611,16 +648,23 @@ mod tests {
         let code_run = CodeRun {
             std_out: None,
             std_err: None,
-            formatted_code_string: None,
             cells_accessed: Default::default(),
-            result: CodeRunResult::Ok(Value::Single(CellValue::Image("image".to_string()))),
+            error: None,
             return_type: None,
             line_number: None,
             output_type: None,
-            spill_error: false,
-            last_modified: Utc::now(),
         };
-        transaction.add_from_code_run(sheet_id, pos, &Some(code_run));
+
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "Table 1",
+            Value::Single(CellValue::Image("image".to_string())),
+            false,
+            false,
+            true,
+            None,
+        );
+        transaction.add_from_code_run(sheet_id, pos, data_table.is_image(), data_table.is_html());
         assert_eq!(transaction.code_cells.len(), 1);
         assert_eq!(transaction.html_cells.len(), 1);
         assert_eq!(transaction.image_cells.len(), 1);
@@ -703,5 +747,32 @@ mod tests {
         let dirty_hashes = transaction.dirty_hashes.get(&sheet.id).unwrap();
         assert!(dirty_hashes.contains(&Pos { x: 0, y: 0 }));
         assert_eq!(dirty_hashes.len(), 1);
+    }
+
+    #[test]
+    fn test_add_update_selection() {
+        let mut transaction = PendingTransaction::default();
+        let selection = A1Selection::test_a1("A1:B2");
+        transaction.add_update_selection(selection.clone());
+        assert_eq!(
+            transaction.update_selection,
+            Some(serde_json::to_string(&selection).unwrap())
+        );
+    }
+
+    #[test]
+    fn test_add_fill_cells() {
+        let mut transaction = PendingTransaction::default();
+        let sheet_id = SheetId::new();
+        transaction.add_fill_cells(sheet_id);
+        assert!(transaction.fill_cells.contains(&sheet_id));
+    }
+
+    #[test]
+    fn test_add_borders() {
+        let mut transaction = PendingTransaction::default();
+        let sheet_id = SheetId::new();
+        transaction.add_borders(sheet_id);
+        assert!(transaction.sheet_borders.contains(&sheet_id));
     }
 }

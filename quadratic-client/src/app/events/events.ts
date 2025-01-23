@@ -1,6 +1,8 @@
+import type { ContextMenuOptions } from '@/app/atoms/contextMenuAtom';
 import type { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import type { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
+import type { CodeCell } from '@/app/gridGL/types/codeCell';
 import type {
   JsBordersSheet,
   JsCodeCell,
@@ -37,6 +39,7 @@ interface EventTypes {
   search: (found?: JsSheetPos[], current?: number) => void;
   hoverCell: (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => void;
   hoverTooltip: (rect?: Rectangle, text?: string, subtext?: string) => void;
+  hoverTable: (table?: JsRenderCodeCell) => void;
 
   zoom: (scale: number) => void;
 
@@ -129,8 +132,9 @@ interface EventTypes {
   // when validation changes state
   validation: (validation: string | boolean) => void;
 
-  // context menu opens on a grid heading
-  gridContextMenu: (world: Point, row: number | null, column: number | null) => void;
+  // trigger a context menu
+  contextMenu: (options: ContextMenuOptions) => void;
+  contextMenuClose: () => void;
 
   suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;
 
@@ -141,8 +145,12 @@ interface EventTypes {
   viewportChangedReady: () => void;
   hashContentChanged: (sheetId: string, hashX: number, hashY: number) => void;
 
-  aiAnalystInitialized: () => void;
+  recentFiles: (url: string, name: string, loaded: boolean) => void;
+  codeEditorCodeCell: (codeCell?: CodeCell) => void;
 
+  a1Context: (context: string) => void;
+
+  aiAnalystInitialized: () => void;
   pixiAppSettingsInitialized: () => void;
 
   requestAIResearcherResult: (args: AIResearcherRequestArgs) => void;

@@ -81,8 +81,7 @@
     "ua-parser-js": "^1.0.37",
     "uuid": "^9.0.0",
     "vscode": "npm:@codingame/monaco-vscode-api@>=2.0.0 <2.1.0",
-    "vscode-jsonrpc": "^8.2.0",
-    "vscode-languageclient": "^9.0.1",
+    "vscode-jsonrpc": "^8.2.1",
     "vscode-languageserver-protocol": "^3.17.5"
   },
   "main": "public/electron.js",
@@ -94,10 +93,10 @@
     "build:prod": "tsc --project ../quadratic-shared/tsconfig.json && export VITE_VERSION=$GIT_COMMIT && export NODE_OPTIONS=--max-old-space-size=16384 && vite build",
     "build:docker": "export VITE_VERSION=$(git rev-parse HEAD) && export NODE_OPTIONS=--max-old-space-size=16384 && vite build --mode docker",
     "build:wasm": "npm run build:wasm:javascript && npm run build:wasm:nodejs && npm run build:wasm:types",
-    "build:wasm:types": "cd .. && cd quadratic-core && cargo run --bin export_types",
-    "build:wasm:javascript": "cd .. && cd quadratic-core && wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs",
-    "build:wasm:nodejs": "cd .. && cd quadratic-core && wasm-pack build --target nodejs --out-dir ../quadratic-client/src/app/quadratic-core/__mocks__ --weak-refs",
-    "build:wasm:javascript:dev": "cd .. && cd quadratic-core && wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs --dev",
+    "build:wasm:types": "cd .. && cd quadratic-core && CC=clang AR=llvm-ar cargo run --bin export_types",
+    "build:wasm:javascript": "cd .. && cd quadratic-core && CC=clang AR=llvm-ar wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs",
+    "build:wasm:nodejs": "cd .. && cd quadratic-core && CC=clang AR=llvm-ar wasm-pack build --target nodejs --out-dir ../quadratic-client/src/app/quadratic-core/__mocks__ --weak-refs",
+    "build:wasm:javascript:dev": "cd .. && cd quadratic-core && CC=clang AR=llvm-ar wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs --dev",
     "start:production": "serve build",
     "test:all": "concurrently \"npm run test:unit:ci\" \"npm run test:e2e\"",
     "test:unit": "vitest",
@@ -111,12 +110,14 @@
     "electron": "electron .",
     "lint:ts": "tsc --noemit",
     "lint:eslint": "eslint --ext .ts,.tsx src",
+    "lint:eslint:write": "eslint --ext .ts,.tsx src --fix",
     "lint:prettier": "prettier --check src",
     "lint:prettier:write": "prettier --write src",
     "coverage:wasm:gen": "cd .. && cd quadratic-core && CARGO_INCREMENTAL=0 RUSTFLAGS='-Cinstrument-coverage' LLVM_PROFILE_FILE='coverage/cargo-test-%p-%m.profraw' cargo test",
     "coverage:wasm:html": "cd .. && cd quadratic-core && grcov . --binary-path ./target/debug/deps/ -s . -t html --branch --ignore-not-existing --ignore 'src/wasm_bindings/*' --ignore 'src/bin/*' --ignore '../*' --ignore '/*' -o coverage/html",
     "coverage:wasm:view": "open quadratic-core/coverage/html/index.html",
-    "build:javascript:worker": "cd ./src/app/web-workers/javascriptWebWorker/worker/javascript/runner/ && node compileJavascriptRunner.mjs"
+    "build:javascript:worker": "cd ./src/app/web-workers/javascriptWebWorker/worker/javascript/runner/ && node compileJavascriptRunner.mjs",
+    "circular": "madge --ts-config=tsconfig.json --circular --extensions ts,tsx src/"
   },
   "browserslist": {
     "production": [
@@ -152,6 +153,7 @@
     "fs-extra": "^11.1.0",
     "happy-dom": "^15.10.2",
     "jest-environment-jsdom": "^29.7.0",
+    "madge": "^8.0.0",
     "msdf-bmfont-xml": "^2.7.0",
     "msw": "^2.4.11",
     "node-fetch": "^3.3.2",
@@ -162,7 +164,7 @@
     "serve": "^14.2.0",
     "tailwindcss": "^3.3.5",
     "typescript": "^5.4.5",
-    "vite": "^5.4.10",
+    "vite": "^5.4.12",
     "vite-plugin-checker": "^0.8.0",
     "vite-plugin-svgr": "^4.3.0",
     "vite-tsconfig-paths": "^4.2.1",
@@ -171,5 +173,17 @@
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "^4.12.0"
+  },
+  "madge": {
+    "detectiveOptions": {
+      "ts": {
+        "skipTypeImports": true,
+        "skipAsyncImports": true
+      },
+      "tsx": {
+        "skipTypeImports": true,
+        "skipAsyncImports": true
+      }
+    }
   }
 }

@@ -23,7 +23,7 @@ export const AIResearcherRefCell = () => {
   useEffect(() => {
     if (refCell) {
       try {
-        const selection = stringToSelection(refCell, sheets.current, sheets.getSheetIdNameMap());
+        const selection = stringToSelection(refCell, sheets.current, sheets.a1Context);
         const cellsAccessed = selection.toJsCellsAccessed();
         pixiApp.cellHighlights.fromCellsAccessed([cellsAccessed]);
       } catch (_e) {

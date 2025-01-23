@@ -1,7 +1,13 @@
+//! Create border operations based on BorderSelection (eg, Inner, Outer). For
+//! infinite sheet borders, we do not support BorderSelections like Outer,
+//! Right, etc. But for tables, we apply the far-right and far-bottom borders to
+//! the UNBOUNDED coordinate, so we can properly render the outside border as necessary.
+
 use crate::{
+    a1::{A1Selection, CellRefRange, RefRangeBounds, UNBOUNDED},
     controller::GridController,
     grid::sheet::borders::{BorderSelection, BorderStyle, BordersUpdates},
-    A1Selection, CellRefRange, ClearOption, RefRangeBounds,
+    ClearOption,
 };
 
 use super::operation::Operation;
@@ -15,6 +21,7 @@ impl GridController {
         range: &RefRangeBounds,
         borders: &mut BordersUpdates,
         clear_neighbors: bool,
+        table: bool,
     ) {
         // original style is used to determine if we should clear the borders by
         // clearing the neighboring cell. We do not have to do this if we are
@@ -112,26 +119,64 @@ impl GridController {
                 }
             }
             BorderSelection::Outer => {
-                if let Some(x2) = x2 {
+                // we do not support infinite outer
+                if let (Some(x2), Some(y2)) = (x2, y2) {
+                    borders.left.get_or_insert_default().set_rect(
+                        x1,
+                        y1,
+                        Some(x1),
+                        Some(y2),
+                        style,
+                    );
+                    borders.right.get_or_insert_default().set_rect(
+                        x2,
+                        y1,
+                        Some(x2),
+                        Some(y2),
+                        style,
+                    );
                     borders
-                        .left
+                        .top
                         .get_or_insert_default()
-                        .set_rect(x1, y1, Some(x1), y2, style);
-                    borders
-                        .right
-                        .get_or_insert_default()
-                        .set_rect(x2, y1, Some(x2), y2, style);
+                        .set_rect(x1, y1, Some(x2), Some(y1), style);
+                    borders.bottom.get_or_insert_default().set_rect(
+                        x1,
+                        y2,
+                        Some(x2),
+                        Some(y2),
+                        style,
+                    );
+                } else if table {
+                    borders.left.get_or_insert_default().set_rect(
+                        x1,
+                        y1,
+                        Some(x1),
+                        y2.map(|y2| y2 + 1),
+                        style,
+                    );
+                    borders.right.get_or_insert_default().set_rect(
+                        x2.map_or(UNBOUNDED, |x2| x2 + 1),
+                        y1,
+                        Some(x2.map_or(UNBOUNDED, |x2| x2 + 1)),
+                        y2.map(|y2| y2 + 1),
+                        style,
+                    );
+                    borders.top.get_or_insert_default().set_rect(
+                        x1,
+                        y1,
+                        x2.map(|x2| x2 + 1),
+                        Some(y1),
+                        style,
+                    );
+                    borders.bottom.get_or_insert_default().set_rect(
+                        x1,
+                        y2.map_or(UNBOUNDED, |y2| y2 + 1),
+                        x2.map(|x2| x2 + 1),
+                        Some(y2.map_or(UNBOUNDED, |y2| y2 + 1)),
+                        style,
+                    );
                 }
-                borders
-                    .top
-                    .get_or_insert_default()
-                    .set_rect(x1, y1, x2, Some(y1), style);
-                if let Some(y2) = y2 {
-                    borders
-                        .bottom
-                        .get_or_insert_default()
-                        .set_rect(x1, y2, x2, Some(y2), style);
-                }
+
                 if clear_neighbors {
                     if x1 > 1 {
                         borders.right.get_or_insert_default().set_rect(
@@ -241,6 +286,14 @@ impl GridController {
                         .right
                         .get_or_insert_default()
                         .set_rect(x2, y1, Some(x2), y2, style);
+                } else if table {
+                    borders.right.get_or_insert_default().set_rect(
+                        x2.map_or(UNBOUNDED, |x2| x2 + 1),
+                        y1,
+                        Some(x2.map_or(UNBOUNDED, |x2| x2 + 1)),
+                        y2,
+                        style,
+                    );
                 }
                 if clear_neighbors {
                     if let Some(x2) = x2 {
@@ -260,6 +313,14 @@ impl GridController {
                         .bottom
                         .get_or_insert_default()
                         .set_rect(x1, y2, x2, Some(y2), style);
+                } else if table {
+                    borders.bottom.get_or_insert_default().set_rect(
+                        x1,
+                        y2.map_or(UNBOUNDED, |y2| y2 + 1),
+                        x2.map(|x2| x2 + 1),
+                        Some(y2.map_or(UNBOUNDED, |y2| y2 + 1)),
+                        style,
+                    );
                 }
                 if clear_neighbors {
                     if let Some(y2) = y2 {
@@ -308,46 +369,60 @@ impl GridController {
         }
     }
 
-    /// Creates border operations to clear the selection of any borders.
-    pub fn clear_borders_a1_operations(&self, selection: &A1Selection) -> Vec<Operation> {
+    /// Whether the borders should be toggled.
+    fn should_toggle_borders(
+        &self,
+        selection: &A1Selection,
+        border_selection: BorderSelection,
+        style: BorderStyle,
+    ) -> bool {
+        let Some(sheet) = self.try_sheet(selection.sheet_id) else {
+            return false;
+        };
+
+        // If we have a style update, then we check if we should toggle
+        // instead of setting the style.
         let mut borders: BordersUpdates = BordersUpdates::default();
-        selection.ranges.iter().for_each(|range| match range {
-            CellRefRange::Sheet { range } => {
-                let (x1, y1, x2, y2) = range.to_contiguous2d_coords();
-                borders.top.get_or_insert_default().set_rect(
-                    x1,
-                    y1,
-                    x2,
-                    y2.map(|y2| y2 + 1),
-                    Some(ClearOption::Clear),
-                );
-                borders.bottom.get_or_insert_default().set_rect(
-                    x1,
-                    (y1 - 1).max(1),
-                    x2,
-                    y2,
-                    Some(ClearOption::Clear),
-                );
-                borders.left.get_or_insert_default().set_rect(
-                    x1,
-                    y1,
-                    x2.map(|x2| x2 + 1),
-                    y2,
-                    Some(ClearOption::Clear),
-                );
-                borders.right.get_or_insert_default().set_rect(
-                    (x1 - 1).max(1),
-                    y1,
-                    x2,
-                    y2,
-                    Some(ClearOption::Clear),
-                );
+
+        let context = self.grid().a1_context();
+
+        // We compare w/o clear_neighbors since we don't care about the
+        // neighbors when toggling.
+        for range in selection.ranges.iter() {
+            match range {
+                CellRefRange::Sheet { range } => {
+                    self.a1_border_style_range(
+                        border_selection,
+                        Some(style),
+                        range,
+                        &mut borders,
+                        false,
+                        false,
+                    );
+                }
+                CellRefRange::Table { range } => {
+                    if let Some((pos, table)) = sheet.data_table_by_name(range.table_name.clone()) {
+                        if let Some(range) =
+                            range.convert_to_ref_range_bounds(true, &context, false)
+                        {
+                            let range = range.translate(-pos.x, -pos.y);
+                            self.a1_border_style_range(
+                                border_selection,
+                                Some(style),
+                                &range,
+                                &mut borders,
+                                false,
+                                true,
+                            );
+                            if !table.borders.is_toggle_borders(&borders) {
+                                return false;
+                            }
+                        }
+                    }
+                }
             }
-        });
-        vec![Operation::SetBordersA1 {
-            sheet_id: selection.sheet_id,
-            borders,
-        }]
+        }
+        sheet.borders.is_toggle_borders(&borders)
     }
 
     /// Creates border operations. Returns None if selection is empty.
@@ -358,48 +433,65 @@ impl GridController {
         style: Option<BorderStyle>,
         clear_neighbors: bool,
     ) -> Option<Vec<Operation>> {
-        let sheet = self.try_sheet(selection.sheet_id)?;
-
         // Mutable so we can clear it if the style is toggled.
         let mut style = style;
 
-        if style.is_some() {
-            // If we have a style update, then we check if we should toggle
-            // instead of setting the style.
-            let mut borders: BordersUpdates = BordersUpdates::default();
-
-            // We compare w/o clear_neighbors since we don't care about the
-            // neighbors when toggling.
-            selection.ranges.iter().for_each(|range| match range {
-                CellRefRange::Sheet { range } => {
-                    self.a1_border_style_range(border_selection, style, range, &mut borders, false);
-                }
-            });
-            if sheet.borders.is_toggle_borders(&borders) {
-                style = None;
-            }
+        if style
+            .is_some_and(|style| self.should_toggle_borders(&selection, border_selection, style))
+        {
+            style = None;
         }
 
-        let mut borders = BordersUpdates::default();
+        let context = self.grid().a1_context();
+        let mut ops = vec![];
+
+        let mut sheet_borders = BordersUpdates::default();
         selection.ranges.iter().for_each(|range| match range {
             CellRefRange::Sheet { range } => {
                 self.a1_border_style_range(
                     border_selection,
                     style,
                     range,
-                    &mut borders,
+                    &mut sheet_borders,
                     clear_neighbors,
+                    false,
                 );
+            }
+            CellRefRange::Table { range } => {
+                if let (Some(entry), Some(range)) = (
+                    context.try_table(&range.table_name),
+                    range.convert_to_ref_range_bounds(true, &context, false),
+                ) {
+                    // borders are always 1-based
+                    let range = range.translate(-entry.bounds.min.x + 1, -entry.bounds.min.y + 1);
+                    let mut borders = BordersUpdates::default();
+                    self.a1_border_style_range(
+                        border_selection,
+                        style,
+                        &range,
+                        &mut borders,
+                        clear_neighbors,
+                        true,
+                    );
+                    ops.push(Operation::DataTableBorders {
+                        sheet_pos: entry.bounds.min.to_sheet_pos(entry.sheet_id),
+                        borders,
+                    });
+                }
             }
         });
 
-        if !borders.is_empty() {
-            Some(vec![Operation::SetBordersA1 {
+        if !sheet_borders.is_empty() {
+            ops.push(Operation::SetBordersA1 {
                 sheet_id: selection.sheet_id,
-                borders,
-            }])
-        } else {
+                borders: sheet_borders,
+            });
+        }
+
+        if ops.is_empty() {
             None
+        } else {
+            Some(ops)
         }
     }
 }

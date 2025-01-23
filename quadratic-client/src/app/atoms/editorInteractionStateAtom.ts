@@ -1,7 +1,8 @@
 import { focusGrid } from '@/app/helpers/focusGrid.js';
-import { SearchOptions } from '@/app/quadratic-core-types';
-import { User } from '@/auth/auth';
-import { FilePermission, type TeamSettings } from 'quadratic-shared/typesAndSchemas';
+import type { SearchOptions } from '@/app/quadratic-core-types';
+import type { User } from '@/auth/auth';
+import type { FilePermission } from 'quadratic-shared/typesAndSchemas';
+import { type TeamSettings } from 'quadratic-shared/typesAndSchemas';
 import { atom, DefaultValue, selector } from 'recoil';
 
 export interface EditorInteractionState {
@@ -53,7 +54,7 @@ export const defaultEditorInteractionState: EditorInteractionState = {
 };
 
 export const editorInteractionStateAtom = atom<EditorInteractionState>({
-  key: 'editorInteractionState', // unique ID (with respect to other atoms/selectors)
+  key: 'editorInteractionState',
   default: defaultEditorInteractionState,
   effects: [
     // this effect is used to focus the grid when the modal is closed

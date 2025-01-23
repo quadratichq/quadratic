@@ -231,8 +231,8 @@ jobs:
             org.opencontainers.image.revision=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
 
       - name: Find Build & Deploy Images Comment
-        uses: peter-evans/find-comment@v3
         if: failure()
+        uses: peter-evans/find-comment@v3
         id: preview-build-deploy-images-comment
         with:
           issue-number: ${{ github.event.pull_request.number }}
@@ -468,8 +468,8 @@ jobs:
           echo "DEPLOY_TIME=$(date -u +'%b %d, %Y at %I:%M %p UTC')" >> $GITHUB_OUTPUT
 
       - name: Find Build & Deploy Images Comment
+        if: always()
         uses: peter-evans/find-comment@v3
-        if: success() || failure()
         id: preview-build-deploy-images-comment-update
         with:
           issue-number: ${{ github.event.pull_request.number }}

@@ -1,7 +1,6 @@
 from typing import Tuple
 
 import getCellsA1
-
 from pandas import DataFrame, Series
 
 from ..utils import result_to_value, stack_line_number, to_python_type_df
@@ -143,7 +142,7 @@ class q:
         Typical usage example:
             c = q.cells("A1:B5")
         """
-        result = getCellsA1(a1, int(stack_line_number()))
+        result = getCellsA1(a1, int(stack_line_number()), first_row_header)
 
         if result.w == 1 and result.h == 1:
             return result_to_value(result.cells[0])
@@ -163,7 +162,7 @@ class q:
             df.at[cell.y - y_offset, cell.x - x_offset] = value
 
         # Move the first row to the header
-        if first_row_header:
+        if first_row_header or result.has_headers:
             df.rename(columns=df.iloc[0], inplace=True)
             df.drop(df.index[0], inplace=True)
             df.reset_index(drop=True, inplace=True)

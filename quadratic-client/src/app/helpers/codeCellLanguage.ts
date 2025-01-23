@@ -1,14 +1,15 @@
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import type { CodeCellType } from 'quadratic-shared/typesAndSchemasAI';
 
 export const codeCellsById = {
   Formula: { id: 'Formula', label: 'Formula', type: undefined },
   Javascript: { id: 'Javascript', label: 'JavaScript', type: undefined },
   Python: { id: 'Python', label: 'Python', type: undefined },
+  Import: { id: 'Import', label: 'Import', type: undefined },
   POSTGRES: { id: 'POSTGRES', label: 'Postgres', type: 'connection' },
   MYSQL: { id: 'MYSQL', label: 'MySQL', type: 'connection' },
   MSSQL: { id: 'MSSQL', label: 'MS SQL Server', type: 'connection' },
-  SNOWFLAKE: { id: 'SNOWFLAKE', label: 'SNOWFLAKE', type: 'connection' },
+  SNOWFLAKE: { id: 'SNOWFLAKE', label: 'Snowflake', type: 'connection' },
   AIResearcher: { id: 'AIResearcher', label: 'AI Researcher', type: undefined },
 } as const;
 export type CodeCellIds = keyof typeof codeCellsById;

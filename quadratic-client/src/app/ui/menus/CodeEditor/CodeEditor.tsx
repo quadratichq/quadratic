@@ -15,7 +15,7 @@ import { ReturnTypeInspector } from '@/app/ui/menus/CodeEditor/ReturnTypeInspect
 import { SaveChangesAlert } from '@/app/ui/menus/CodeEditor/SaveChangesAlert';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { cn } from '@/shared/shadcn/utils';
-import * as monaco from 'monaco-editor';
+import type * as monaco from 'monaco-editor';
 import { useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import './CodeEditor.css';

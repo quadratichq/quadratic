@@ -4,7 +4,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { Chat } from 'quadratic-shared/typesAndSchemasAI';
+import type { Chat } from 'quadratic-shared/typesAndSchemasAI';
 import { useMemo, useState } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 

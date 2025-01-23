@@ -1,5 +1,5 @@
 import { events } from '@/app/events/events';
-import { LanguageState } from '@/app/web-workers/languageTypes';
+import type { LanguageState } from '@/app/web-workers/languageTypes';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import { useEffect, useState } from 'react';
 

@@ -9,9 +9,9 @@ use crate::{
 
 use super::{
     borders::{export_borders, import_borders},
-    code_cell::{export_rows_code_runs, import_code_cell_builder},
     column::{export_column_builder, import_column_builder},
     current,
+    data_table::{export_data_tables, import_data_table_builder},
     formats::{export_formats, import_formats},
     row_resizes::{export_rows_size, import_rows_resize},
     validations::{export_validations, import_validations},
@@ -24,14 +24,14 @@ pub fn import_sheet(sheet: current::SheetSchema) -> Result<Sheet> {
         color: sheet.color,
         order: sheet.order,
         offsets: SheetOffsets::import(sheet.offsets),
+        columns: import_column_builder(sheet.columns)?,
+        data_tables: import_data_table_builder(sheet.data_tables)?,
+        data_bounds: GridBounds::Empty,
+        format_bounds: GridBounds::Empty,
         rows_resize: import_rows_resize(sheet.rows_resize),
         validations: import_validations(sheet.validations),
         borders: import_borders(sheet.borders),
         formats: import_formats(sheet.formats),
-        code_runs: import_code_cell_builder(sheet.code_runs)?,
-        columns: import_column_builder(sheet.columns)?,
-        format_bounds: GridBounds::Empty,
-        data_bounds: GridBounds::Empty,
     };
     new_sheet.recalculate_bounds();
     Ok(new_sheet)
@@ -49,8 +49,8 @@ pub(crate) fn export_sheet(sheet: Sheet) -> current::SheetSchema {
         rows_resize: export_rows_size(sheet.rows_resize),
         validations: export_validations(sheet.validations),
         borders: export_borders(sheet.borders),
+        data_tables: export_data_tables(sheet.data_tables),
         formats: export_formats(sheet.formats),
-        code_runs: export_rows_code_runs(sheet.code_runs),
         columns: export_column_builder(sheet.columns),
     }
 }

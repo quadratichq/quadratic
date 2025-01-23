@@ -1,9 +1,9 @@
-import { CodeCellIds } from '@/app/helpers/codeCellLanguage';
+import type { CodeCellIds } from '@/app/helpers/codeCellLanguage';
 import { colors } from '@/app/theme/colors';
 import { Formula, JavaScript, MssqlIcon, MysqlIcon, PostgresIcon, Python, SnowflakeIcon } from '@/app/ui/icons';
 import { SearchInsightsIcon } from '@/shared/components/Icons';
 import { Subject } from '@mui/icons-material';
-import { SvgIconProps } from '@mui/material/SvgIcon';
+import type { SvgIconProps } from '@mui/material/SvgIcon';
 
 interface LanguageIconProps extends SvgIconProps {
   language?: CodeCellIds | string;

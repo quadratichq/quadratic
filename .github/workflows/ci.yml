@@ -81,6 +81,7 @@ jobs:
           ${{ matrix.test_command }}
 
       - name: Generate coverage for quadratic-${{ matrix.package }}
+        if: always()
         env:
           RUSTC_BOOTSTRAP: 1
         run: |
@@ -98,6 +99,7 @@ jobs:
             -o lcov.info
 
       - name: Upload coverage reports to Codecov quadratic-${{ matrix.package }}
+        if: always()
         uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -107,6 +109,11 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install build-essential, llvm, and clang
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential llvm clang
 
       - uses: useblacksmith/setup-node@v5
         with:
@@ -210,6 +217,11 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install build-essential, llvm, and clang
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential llvm clang
 
       - uses: useblacksmith/setup-node@v5
         with:

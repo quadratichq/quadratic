@@ -1,6 +1,7 @@
 import { Label } from '@/shared/shadcn/ui/label';
 import { Switch } from '@/shared/shadcn/ui/switch';
-import { ReactNode, useId } from 'react';
+import type { ReactNode } from 'react';
+import { useId } from 'react';
 
 /**
  * Component that renders a setting panel (a label, description, and a switch)

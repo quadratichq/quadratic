@@ -1,7 +1,9 @@
 import { aiAnalystOfflineChats } from '@/app/ai/offline/aiAnalystChats';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
-import { ActionFunctionArgs, redirectDocument } from 'react-router-dom';
+import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
+import type { ActionFunctionArgs } from 'react-router-dom';
+import { redirectDocument } from 'react-router-dom';
 
 export const loader = async () => null;
 
@@ -34,6 +36,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
     try {
       const { userEmail, redirect } = json;
       await Promise.all([aiAnalystOfflineChats.deleteFile(userEmail, uuid), apiClient.files.delete(uuid)]);
+      updateRecentFiles(uuid, '', false);
       return redirect ? redirectDocument('/') : { ok: true };
     } catch (error) {
       return { ok: false };
@@ -63,6 +66,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
     try {
       const { name } = json as Action['request.rename'];
       await apiClient.files.update(uuid, { name });
+      updateRecentFiles(uuid, name, true, true);
       return { ok: true };
     } catch (error) {
       return { ok: false };

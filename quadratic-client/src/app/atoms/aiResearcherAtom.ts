@@ -1,4 +1,4 @@
-import { AIResearcherResultType } from '@/app/ui/menus/AIResearcher/helpers/parseAIResearcherResult.helper';
+import type { AIResearcherResultType } from '@/app/ui/menus/AIResearcher/helpers/parseAIResearcherResult.helper';
 import { atom, DefaultValue, selector } from 'recoil';
 
 export interface AIResearcherState {

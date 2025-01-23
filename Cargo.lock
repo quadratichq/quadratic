@@ -2135,6 +2135,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "csv-sniffer"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a1e32aa93b952410d55c1ae03048cc22a6cc62a323711b8e9245ef4b5578051c"
+dependencies = [
+ "bitflags 1.3.2",
+ "csv",
+ "csv-core",
+ "memchr",
+ "regex",
+]
+
+[[package]]
 name = "darling"
 version = "0.20.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3742,6 +3755,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "78ca9ab1a0babb1e7d5695e3530886289c18cf2f87ec19a575a0abdce112e3a3"
 
 [[package]]
+name = "memory-stats"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c73f5c649995a115e1a0220b35e4df0a1294500477f97a91d0660fb5abeb574a"
+dependencies = [
+ "libc",
+ "windows-sys 0.52.0",
+]
+
+[[package]]
 name = "mime"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4171,6 +4194,7 @@ dependencies = [
  "snap",
  "thrift",
  "twox-hash",
+ "zstd",
 ]
 
 [[package]]
@@ -4200,8 +4224,6 @@ dependencies = [
  "snap",
  "thrift",
  "twox-hash",
- "zstd",
- "zstd-sys",
 ]
 
 [[package]]
@@ -4563,6 +4585,7 @@ dependencies = [
  "console_error_panic_hook",
  "criterion",
  "csv",
+ "csv-sniffer",
  "dateparser",
  "fancy-regex",
  "flate2",
@@ -4575,6 +4598,7 @@ dependencies = [
  "js-sys",
  "lazy_static",
  "lexicon_fractional_index",
+ "memory-stats",
  "parquet 51.0.0",
  "pollster",
  "proptest",

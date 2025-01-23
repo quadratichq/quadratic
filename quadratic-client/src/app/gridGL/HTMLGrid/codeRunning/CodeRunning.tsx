@@ -1,9 +1,9 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { JsCodeRun } from '@/app/quadratic-core-types';
+import type { JsCodeRun } from '@/app/quadratic-core-types';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
-import { LanguageState } from '@/app/web-workers/languageTypes';
-import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import type { LanguageState } from '@/app/web-workers/languageTypes';
+import type { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import { SpinnerIcon } from '@/shared/components/Icons';
 import { cn } from '@/shared/shadcn/utils';
 import { useEffect, useState } from 'react';
@@ -150,7 +150,7 @@ export const CodeRunning = () => {
         .map((code, index) => {
           return (
             <span
-              key={`${code.sheetId}-${code.left}-${code.top}-${code.alpha}`}
+              key={`${code.sheetId}-${code.left}-${code.top}-${code.alpha}-${index}`}
               className="-translate-x-[2px] -translate-y-[4px] scale-75"
               style={{ position: 'absolute', left: code.left, top: code.top }}
             >

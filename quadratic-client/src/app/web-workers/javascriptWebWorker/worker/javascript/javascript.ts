@@ -2,15 +2,22 @@
 // managing the Javascript runners, which is where the code is executed.
 
 import type { CodeRun } from '@/app/web-workers/CodeRun';
+import type { CoreJavascriptRun } from '@/app/web-workers/javascriptWebWorker/javascriptCoreMessages';
+import { JavascriptAPI } from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascriptAPI';
+import {
+  javascriptFindSyntaxError,
+  prepareJavascriptCode,
+  transformCode,
+} from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascriptCompile';
+import {
+  javascriptErrorResult,
+  javascriptResults,
+} from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascriptResults';
+import type { RunnerJavascriptMessage } from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascriptRunnerMessages';
+import { javascriptLibraryLines } from '@/app/web-workers/javascriptWebWorker/worker/javascript/runner/generateJavascriptForRunner';
+import { javascriptClient } from '@/app/web-workers/javascriptWebWorker/worker/javascriptClient';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import * as esbuild from 'esbuild-wasm';
-import { CoreJavascriptRun } from '../../javascriptCoreMessages';
-import { javascriptClient } from '../javascriptClient';
-import { JavascriptAPI } from './javascriptAPI';
-import { javascriptFindSyntaxError, prepareJavascriptCode, transformCode } from './javascriptCompile';
-import { javascriptErrorResult, javascriptResults } from './javascriptResults';
-import { RunnerJavascriptMessage } from './javascriptRunnerMessages';
-import { javascriptLibraryLines } from './runner/generateJavascriptForRunner';
 
 export const LINE_NUMBER_VAR = '___line_number___';
 
@@ -100,17 +107,25 @@ export class Javascript {
       const proxyUrl = `${javascriptClient.env.VITE_QUADRATIC_CONNECTION_URL}/proxy`;
       const jwt = await javascriptClient.getJwt();
       const code = prepareJavascriptCode(transformedCode, message.x, message.y, this.withLineNumbers, proxyUrl, jwt);
-      const runner = new Worker(URL.createObjectURL(new Blob([code], { type: 'application/javascript' })), {
+      const objUrl = URL.createObjectURL(new Blob([code], { type: 'application/javascript' }));
+      const runner = new Worker(objUrl, {
         type: 'module',
         name: 'javascriptWorker',
       });
 
+      const cleanup = () => {
+        runner.terminate();
+        URL.revokeObjectURL(objUrl);
+      };
+
       runner.onerror = (e) => {
+        cleanup();
+
         if (this.withLineNumbers) {
-          runner.terminate();
           this.run(message, false);
           return;
         }
+
         // todo: handle worker errors (although there should not be any as the Worker
         // should catch all user code errors)
         javascriptErrorResult(message.transactionId, e.message);
@@ -126,11 +141,12 @@ export class Javascript {
             message.y,
             e.data.results,
             e.data.console,
-            e.data.lineNumber
+            e.data.lineNumber,
+            e.data.chartPixelOutput
           );
+          cleanup();
           this.state = 'ready';
           setTimeout(this.next, 0);
-          runner.terminate();
         } else if (e.data.type === 'getCellsA1Length') {
           const { sharedBuffer, a1 } = e.data;
           this.api.getCellsA1(a1).then((results) => {
@@ -194,11 +210,12 @@ export class Javascript {
           if (e.data.console) {
             errorMessage += '\n' + e.data.console;
           }
-          runner.terminate();
+          cleanup();
           javascriptErrorResult(message.transactionId, errorMessage, errorLine);
           this.state = 'ready';
           setTimeout(this.next, 0);
         } else {
+          cleanup();
           throw new Error('Unknown message type from javascript runner');
         }
       };

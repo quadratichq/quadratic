@@ -1,7 +1,9 @@
-import { Auth0Client, createAuth0Client } from '@auth0/auth0-spa-js';
+import type { AuthClient } from '@/auth/auth';
+import { parseDomain, waitForAuthClientToRedirect } from '@/auth/auth.helper';
+import { ROUTES } from '@/shared/constants/routes';
+import type { Auth0Client } from '@auth0/auth0-spa-js';
+import { createAuth0Client } from '@auth0/auth0-spa-js';
 import * as Sentry from '@sentry/react';
-import { ROUTES } from '../shared/constants/routes';
-import { AuthClient, parseDomain, waitForAuthClientToRedirect } from './auth';
 
 const AUTH0_DOMAIN = import.meta.env.VITE_AUTH0_DOMAIN || '';
 const AUTH0_CLIENT_ID = import.meta.env.VITE_AUTH0_CLIENT_ID || '';

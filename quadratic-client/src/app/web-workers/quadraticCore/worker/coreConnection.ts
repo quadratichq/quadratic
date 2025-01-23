@@ -1,9 +1,9 @@
 import { debugWebWorkers } from '@/app/debugFlags';
-import { ConnectionKind } from '@/app/quadratic-core-types';
-import { LanguageState } from '@/app/web-workers/languageTypes';
+import type { ConnectionKind } from '@/app/quadratic-core-types';
+import type { CodeRun } from '@/app/web-workers/CodeRun';
+import type { LanguageState } from '@/app/web-workers/languageTypes';
 import { core } from '@/app/web-workers/quadraticCore/worker/core';
 import { coreClient } from '@/app/web-workers/quadraticCore/worker/coreClient';
-import { CodeRun } from '../../CodeRun';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {

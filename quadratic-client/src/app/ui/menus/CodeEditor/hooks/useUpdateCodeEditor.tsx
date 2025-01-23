@@ -1,6 +1,6 @@
 import { aiResearcherAtom, defaultAIResearcherState } from '@/app/atoms/aiResearcherAtom';
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
-import { JsCodeCell, JsCoordinate, Pos } from '@/app/quadratic-core-types';
+import type { JsCodeCell, JsCoordinate, Pos } from '@/app/quadratic-core-types';
 import { parseAIResearcherResult } from '@/app/ui/menus/AIResearcher/helpers/parseAIResearcherResult.helper';
 import { parseCodeString } from '@/app/ui/menus/AIResearcher/parseAIResearcherCodeString';
 import { useRecoilCallback } from 'recoil';

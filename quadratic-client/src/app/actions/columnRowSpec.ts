@@ -1,9 +1,9 @@
 import { Action } from '@/app/actions/actions';
+import type { ActionAvailabilityArgs, ActionSpec } from '@/app/actions/actionsSpec';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { AddIcon, DeleteIcon } from '@/shared/components/Icons';
-import { sheets } from '../grid/controller/Sheets';
-import { ActionAvailabilityArgs, ActionSpec } from './actionsSpec';
 
 const isColumnRowAvailable = ({ isAuthenticated }: ActionAvailabilityArgs) => {
   if (!sheets.sheet.cursor.hasOneColumnRowSelection(true)) return false;

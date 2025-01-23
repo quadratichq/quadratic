@@ -1,6 +1,8 @@
-import { Configuration, FrontendApi, Session } from '@ory/kratos-client';
+import type { AuthClient, User } from '@/auth/auth';
+import { waitForAuthClientToRedirect } from '@/auth/auth.helper';
+import type { Session } from '@ory/kratos-client';
+import { Configuration, FrontendApi } from '@ory/kratos-client';
 import * as Sentry from '@sentry/react';
-import { AuthClient, User, waitForAuthClientToRedirect } from './auth';
 
 const ORY_HOST = import.meta.env.VITE_ORY_HOST;
 
@@ -48,7 +50,7 @@ type OryAuthClient = AuthClient;
 
 export const oryClient: OryAuthClient = {
   /**
-   * Retuen whether the user is authenticated and the session is valid.
+   * Return whether the user is authenticated and the session is valid.
    */
   async isAuthenticated(): Promise<boolean> {
     return (await getSession()) !== false;

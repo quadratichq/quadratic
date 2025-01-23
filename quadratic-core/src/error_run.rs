@@ -108,6 +108,9 @@ pub enum RunErrorMsg {
     IndexOutOfBounds,
     NoMatch,
     InvalidArgument,
+
+    NotANumber,
+    Infinity,
 }
 
 impl fmt::Display for RunErrorMsg {
@@ -257,6 +260,12 @@ impl fmt::Display for RunErrorMsg {
             Self::InvalidArgument => {
                 write!(f, "Invalid argument")
             }
+            Self::NotANumber => {
+                write!(f, "Not a number")
+            }
+            Self::Infinity => {
+                write!(f, "Unexpected Infinity")
+            }
         }
     }
 }
@@ -280,6 +289,12 @@ impl RunErrorMsg {
 impl<T: Into<RunErrorMsg>> From<T> for RunError {
     fn from(msg: T) -> Self {
         msg.into().without_span()
+    }
+}
+
+impl From<RunErrorMsg> for anyhow::Error {
+    fn from(msg: RunErrorMsg) -> Self {
+        RunError { span: None, msg }.into()
     }
 }
 

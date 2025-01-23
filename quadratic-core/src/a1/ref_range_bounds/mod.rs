@@ -6,11 +6,11 @@ use ts_rs::TS;
 use super::{range_might_intersect, A1Error, CellRefRangeEnd};
 use crate::{Pos, Rect};
 
-pub mod ref_range_bounds_contains;
-pub mod ref_range_bounds_create;
-pub mod ref_range_bounds_intersection;
-pub mod ref_range_bounds_query;
-pub mod ref_range_bounds_translate;
+mod contains;
+mod create;
+mod intersects;
+mod query;
+mod translate;
 
 #[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -32,7 +32,7 @@ impl fmt::Display for RefRangeBounds {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if *self == Self::ALL {
             write!(f, "*")?;
-        } else if self.is_column_range() {
+        } else if self.is_col_range() {
             if self.start.col() == self.end.col() {
                 self.start.col.fmt_as_column(f)?;
             } else {

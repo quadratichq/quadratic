@@ -1,11 +1,12 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ensureRectVisible, ensureVisible } from '@/app/gridGL/interaction/viewportHelper';
-import { SheetRect } from '@/app/quadratic-core-types';
+import type { SheetRect } from '@/app/quadratic-core-types';
 import { stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { getAIResearcherCodeString } from '@/app/ui/menus/AIResearcher/helpers/getAIResearcherCodeString.helper';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { AITool, AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { z } from 'zod';
+import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { z } from 'zod';
 
 export type AIToolActionsRecord = {
   [K in AITool]: (args: z.infer<(typeof AIToolsArgsSchema)[K]>) => Promise<string>;
@@ -23,7 +24,7 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.SetCellValues]: async (args) => {
     const { top_left_position, cell_values } = args;
     try {
-      const selection = stringToSelection(top_left_position, sheets.current, sheets.getSheetIdNameMap());
+      const selection = stringToSelection(top_left_position, sheets.current, sheets.a1Context);
       if (!selection.isSingleSelection()) {
         return 'Invalid code cell position, this should be a single cell, not a range';
       }
@@ -40,7 +41,7 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.SetCodeCellValue]: async (args) => {
     let { code_cell_language, code_string, code_cell_position, output_width, output_height } = args;
     try {
-      const selection = stringToSelection(code_cell_position, sheets.current, sheets.getSheetIdNameMap());
+      const selection = stringToSelection(code_cell_position, sheets.current, sheets.a1Context);
       if (!selection.isSingleSelection()) {
         return 'Invalid code cell position, this should be a single cell, not a range';
       }
@@ -68,7 +69,7 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.SetAIResearcherValue]: async (args) => {
     const { query, ai_researcher_position, reference_cells_selection } = args;
     try {
-      const selection = stringToSelection(ai_researcher_position, sheets.current, sheets.getSheetIdNameMap());
+      const selection = stringToSelection(ai_researcher_position, sheets.current, sheets.a1Context);
       if (!selection.isSingleSelection()) {
         return 'Invalid ai researcher position, this should be a single cell, not a range';
       }
@@ -92,8 +93,8 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.MoveCells]: async (args) => {
     const { source_selection_rect, target_top_left_position } = args;
     try {
-      const sourceSelection = stringToSelection(source_selection_rect, sheets.current, sheets.getSheetIdNameMap());
-      const sourceRect = sourceSelection.getSingleRectangle();
+      const sourceSelection = stringToSelection(source_selection_rect, sheets.current, sheets.a1Context);
+      const sourceRect = sourceSelection.getSingleRectangleOrCursor(sheets.a1Context);
       if (!sourceRect) {
         return 'Invalid source selection, this should be a single rectangle, not a range';
       }
@@ -111,7 +112,7 @@ export const aiToolsActions: AIToolActionsRecord = {
         },
       };
 
-      const targetSelection = stringToSelection(target_top_left_position, sheets.current, sheets.getSheetIdNameMap());
+      const targetSelection = stringToSelection(target_top_left_position, sheets.current, sheets.a1Context);
       if (!targetSelection.isSingleSelection()) {
         return 'Invalid code cell position, this should be a single cell, not a range';
       }
@@ -127,7 +128,7 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.DeleteCells]: async (args) => {
     const { selection } = args;
     try {
-      const sourceSelection = stringToSelection(selection, sheets.current, sheets.getSheetIdNameMap());
+      const sourceSelection = stringToSelection(selection, sheets.current, sheets.a1Context);
 
       quadraticCore.deleteCellValues(sourceSelection.save(), sheets.getCursorPosition());
 

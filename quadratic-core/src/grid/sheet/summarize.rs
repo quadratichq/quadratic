@@ -1,7 +1,7 @@
 use bigdecimal::{BigDecimal, ToPrimitive, Zero};
 
 use super::Sheet;
-use crate::{grid::js_types::JsSummarizeSelectionResult, util::round, A1Selection, CellValue};
+use crate::{a1::A1Selection, grid::js_types::JsSummarizeSelectionResult, util::round, CellValue};
 
 const MAX_SUMMARIZE_SELECTION_SIZE: i64 = 50000;
 
@@ -50,7 +50,7 @@ impl Sheet {
 mod tests {
     use crate::grid::sheet::summarize::MAX_SUMMARIZE_SELECTION_SIZE;
     use crate::grid::Sheet;
-    use crate::{A1Selection, SheetRect};
+    use crate::{a1::A1Selection, SheetRect};
 
     #[test]
     fn summarize_rects() {
@@ -120,7 +120,7 @@ mod tests {
             sheet.test_set_value_number(2, y, "2");
         }
         sheet.test_set_code_run_array(1, 20, vec!["1", "2", "", "3"], true);
-        let selection = A1Selection::from_column_ranges(&[1..=2], sheet.id);
+        let selection = A1Selection::test_a1("A:B");
         let result = sheet.summarize_selection(selection, 9).unwrap();
         assert_eq!(result.count, 23);
         assert_eq!(result.sum, Some(46.0));
@@ -135,7 +135,7 @@ mod tests {
             sheet.test_set_value_number(y, 2, "2");
         }
         sheet.test_set_code_run_array(20, 1, vec!["1", "2", "", "3"], false);
-        let selection = A1Selection::from_row_ranges(&[1..=2], sheet.id);
+        let selection = A1Selection::test_a1("1:2");
         let result = sheet.summarize_selection(selection, 9).unwrap();
         assert_eq!(result.count, 23);
         assert_eq!(result.sum, Some(46.0));
@@ -156,5 +156,30 @@ mod tests {
         assert_eq!(result.count, 103);
         assert_eq!(result.sum, Some(206.0));
         assert_eq!(result.average, Some(2.0));
+    }
+
+    #[test]
+    fn test_summarize_table() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_code_run_array_2d(1, 1, 2, 2, vec!["1", "2", "3", "4"]);
+
+        let selection = A1Selection::test_a1_context("Table1", &sheet.a1_context());
+        let result = sheet.summarize_selection(selection, 9).unwrap();
+        assert_eq!(result.count, 4);
+        assert_eq!(result.sum, Some(10.0));
+        assert_eq!(result.average, Some(2.5));
+
+        let selection = A1Selection::test_a1_context("Table1[Column 2]", &sheet.a1_context());
+        let result = sheet.summarize_selection(selection, 9).unwrap();
+        assert_eq!(result.count, 2);
+        assert_eq!(result.sum, Some(6.0));
+        assert_eq!(result.average, Some(3.0));
+
+        let selection =
+            A1Selection::test_a1_context("Table1[[Column 1]:[Column 2]]", &sheet.a1_context());
+        let result = sheet.summarize_selection(selection, 9).unwrap();
+        assert_eq!(result.count, 4);
+        assert_eq!(result.sum, Some(10.0));
+        assert_eq!(result.average, Some(2.5));
     }
 }

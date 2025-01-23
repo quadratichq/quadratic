@@ -13,7 +13,7 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { convertColorStringToHex } from '@/app/helpers/convertColor';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { CellFormatSummary, JsSheetPos } from '@/app/quadratic-core-types';
+import type { CellFormatSummary, JsSheetPos } from '@/app/quadratic-core-types';
 import { createFormulaStyleHighlights } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -83,7 +83,6 @@ class InlineEditorHandler {
     inlineEditorFormula.clearDecorations();
     window.removeEventListener('keydown', inlineEditorKeyboard.keyDown);
     multiplayer.sendEndCellEdit();
-    pixiApp.cellsSheets.updateCellsArray();
     this.hideDiv();
   }
 
@@ -236,7 +235,6 @@ class InlineEditorHandler {
         this.formatSummary.fillColor ? convertColorStringToHex(this.formatSummary.fillColor) : '#ffffff'
       );
       this.updateFont();
-      pixiApp.cellsSheets.updateCellsArray();
       this.sendMultiplayerUpdate();
       this.showDiv();
       this.changeToFormula(changeToFormula);

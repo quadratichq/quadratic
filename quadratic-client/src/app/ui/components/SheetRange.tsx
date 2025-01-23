@@ -1,18 +1,16 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { A1Selection } from '@/app/quadratic-core-types';
-import {
-  A1SelectionValueToSelection,
-  JsSelection,
-  stringToSelection,
-} from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { A1Selection } from '@/app/quadratic-core-types';
+import type { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { A1SelectionToJsSelection, stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import HighlightAltIcon from '@mui/icons-material/HighlightAlt';
-import { FocusEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { FocusEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface Props {
   label?: string;
@@ -60,7 +58,7 @@ export const SheetRange = (props: Props) => {
   const onInsert = useCallback(() => {
     if (ref.current) {
       const jsSelection = sheets.sheet.cursor.jsSelection;
-      ref.current.value = jsSelection.toA1String(a1SheetId, sheets.getSheetIdNameMap());
+      ref.current.value = jsSelection.toA1String(a1SheetId, sheets.a1Context);
       onChangeRange(jsSelection);
       setRangeError(undefined);
     }
@@ -69,7 +67,7 @@ export const SheetRange = (props: Props) => {
   const updateValue = useCallback(
     (value: string) => {
       try {
-        const jsSelection = stringToSelection(value, a1SheetId, onlyCurrentSheet ? '{}' : sheets.getSheetIdNameMap());
+        const jsSelection = stringToSelection(value, a1SheetId, sheets.a1Context);
         onChangeRange(jsSelection);
         setRangeError(undefined);
       } catch (e: any) {
@@ -83,7 +81,7 @@ export const SheetRange = (props: Props) => {
         }
       }
     },
-    [a1SheetId, onChangeRange, onlyCurrentSheet, onlyCurrentSheetError]
+    [a1SheetId, onChangeRange, onlyCurrentSheetError]
   );
 
   const onBlur = useCallback(
@@ -96,20 +94,14 @@ export const SheetRange = (props: Props) => {
 
   useEffect(() => {
     if (ref.current) {
-      ref.current.value = initial
-        ? A1SelectionValueToSelection(initial).toA1String(a1SheetId, sheets.getSheetIdNameMap())
-        : '';
+      ref.current.value = initial ? A1SelectionToJsSelection(initial).toA1String(a1SheetId, sheets.a1Context) : '';
     }
   }, [changeCursor, a1SheetId, initial]);
 
   const onFocus = () => {
     if (!ref.current || !changeCursor) return;
     try {
-      const selection = stringToSelection(
-        ref.current.value,
-        a1SheetId,
-        onlyCurrentSheet ? '{}' : sheets.getSheetIdNameMap()
-      );
+      const selection = stringToSelection(ref.current.value, a1SheetId, sheets.a1Context);
       if (selection) {
         sheets.changeSelection(selection, true);
       }
