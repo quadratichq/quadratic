@@ -149,7 +149,7 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
         column: Number(table.codeCell.x),
         row: Number(table.codeCell.y),
         language: table.codeCell.language,
-        cell: '',
+        cell: event.key,
       });
     } else {
       pixiAppSettings.changeInput(true, event.key, CursorMode.Enter);
