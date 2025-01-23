@@ -99,7 +99,7 @@ export function useSubmitAIAssistantPrompt() {
 
         let chatId = '';
         set(aiAssistantIdAtom, (prev) => {
-          chatId = prev ?? v4();
+          chatId = prev ? prev : v4();
           return chatId;
         });
 
