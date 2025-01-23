@@ -4,6 +4,7 @@
 
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import type { Table } from '@/app/gridGL/cells/tables/Table';
 import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
 import { CursorMode, inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
@@ -46,6 +47,8 @@ class InlineEditorHandler {
   temporaryUnderline: boolean | undefined;
   temporaryStrikeThrough: boolean | undefined;
 
+  private table?: Table;
+
   constructor() {
     events.on('changeInput', this.changeInput);
     events.on('changeSheet', this.changeSheet);
@@ -79,6 +82,7 @@ class InlineEditorHandler {
     this.temporaryItalic = undefined;
     this.temporaryUnderline = undefined;
     this.temporaryStrikeThrough = undefined;
+    this.table = undefined;
     this.changeToFormula(false);
     inlineEditorKeyboard.resetKeyboardPosition();
     inlineEditorFormula.clearDecorations();
@@ -193,6 +197,7 @@ class InlineEditorHandler {
         x: cursor.x,
         y: cursor.y,
       };
+      this.table = pixiApp.cellsSheet().tables.getTableFromTableCell(this.location.x, this.location.y);
       let value: string;
       let changeToFormula = false;
       if (initialValue) {
@@ -207,6 +212,12 @@ class InlineEditorHandler {
           value = (await quadraticCore.getEditCell(this.location.sheetId, this.location.x, this.location.y)) || '';
           changeToFormula = false;
         }
+      }
+
+      if (this.table?.codeCell.language === 'Import' && changeToFormula) {
+        pixiAppSettings.snackbar('Cannot create formula inside data table', { severity: 'warning' });
+        this.closeIfOpen();
+        return;
       }
 
       if (cursorMode === undefined) {
@@ -382,6 +393,11 @@ class InlineEditorHandler {
     if (this.formula === formula) return;
     if (!pixiAppSettings.setInlineEditorState) {
       throw new Error('Expected pixiAppSettings.setInlineEditorState to be defined in InlineEditorHandler');
+    }
+    if (this.table?.codeCell.language === 'Import' && formula) {
+      pixiAppSettings.snackbar('Cannot create formula inside data table', { severity: 'warning' });
+      this.closeIfOpen();
+      return;
     }
     this.formula = formula;
     if (formula) {

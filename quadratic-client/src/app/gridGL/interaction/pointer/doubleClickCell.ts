@@ -52,7 +52,11 @@ export async function doubleClickCell(options: {
         }
         pixiAppSettings.changeInput(true, cell);
       } else if (hasPermission && file_import) {
-        pixiAppSettings.changeInput(true, cell, cursorMode);
+        if (cell === '=') {
+          pixiAppSettings.snackbar('Cannot create formula inside data table', { severity: 'warning' });
+        } else {
+          pixiAppSettings.changeInput(true, cell, cursorMode);
+        }
       } else {
         pixiAppSettings.setCodeEditorState({
           ...pixiAppSettings.codeEditorState,
