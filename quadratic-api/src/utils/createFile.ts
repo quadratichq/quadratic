@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import dbClient from '../dbClient';
+import { S3Bucket } from '../storage/s3';
 import { uploadFile } from '../storage/storage';
 
 export async function createFile({
@@ -46,7 +47,7 @@ export async function createFile({
 
     // Upload file contents to S3 and create a checkpoint
     const { uuid, id: fileId } = dbFile;
-    const response = await uploadFile(`${uuid}-0.grid`, contents, jwt);
+    const response = await uploadFile(`${uuid}-0.grid`, contents, jwt, S3Bucket.FILES);
 
     await transaction.fileCheckpoint.create({
       data: {
