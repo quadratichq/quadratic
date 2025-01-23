@@ -1,7 +1,7 @@
 import type multer from 'multer';
 import { STORAGE_TYPE } from '../env-vars';
 import { getPresignedStorageUrl, getStorageUrl, multerFileSystemStorage, upload } from './fileSystem';
-import { generatePresignedUrl, multerS3Storage, uploadStringAsFileS3 } from './s3';
+import { generatePresignedUrl, multerS3Storage, S3Bucket, uploadStringAsFileS3 } from './s3';
 
 export type UploadFileResponse = {
   bucket: string;
@@ -12,7 +12,7 @@ export type UploadFileResponse = {
 export const getFileUrl = async (key: string) => {
   switch (STORAGE_TYPE) {
     case 's3':
-      return await generatePresignedUrl(key);
+      return await generatePresignedUrl(key, S3Bucket.FILES);
     case 'file-system':
       return getStorageUrl(key);
     default:
@@ -24,7 +24,7 @@ export const getFileUrl = async (key: string) => {
 export const getPresignedFileUrl = async (key: string) => {
   switch (STORAGE_TYPE) {
     case 's3':
-      return await generatePresignedUrl(key);
+      return await generatePresignedUrl(key, S3Bucket.FILES);
     case 'file-system':
       return getPresignedStorageUrl(key);
     default:
@@ -33,10 +33,15 @@ export const getPresignedFileUrl = async (key: string) => {
 };
 
 // Upload a file (key).
-export const uploadFile = async (key: string, contents: string, jwt: string): Promise<UploadFileResponse> => {
+export const uploadFile = async (
+  key: string,
+  contents: string,
+  jwt: string,
+  bucket: S3Bucket
+): Promise<UploadFileResponse> => {
   switch (STORAGE_TYPE) {
     case 's3':
-      return await uploadStringAsFileS3(key, contents);
+      return await uploadStringAsFileS3(key, contents, bucket);
     case 'file-system':
       return await upload(key, contents, jwt);
     default:
@@ -45,10 +50,10 @@ export const uploadFile = async (key: string, contents: string, jwt: string): Pr
 };
 
 // Multer middleware for file uploads.
-export const uploadMiddleware = (): multer.Multer => {
+export const uploadMiddleware = (bucket: S3Bucket): multer.Multer => {
   switch (STORAGE_TYPE) {
     case 's3':
-      return multerS3Storage();
+      return multerS3Storage(bucket);
     case 'file-system':
       return multerFileSystemStorage as unknown as multer.Multer;
     default:
