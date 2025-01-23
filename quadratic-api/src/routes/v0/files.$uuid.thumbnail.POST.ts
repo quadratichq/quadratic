@@ -7,6 +7,7 @@ import { getFile } from '../../middleware/getFile';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
+import { S3Bucket } from '../../storage/s3';
 import { uploadMiddleware } from '../../storage/storage';
 import type { RequestWithFile, RequestWithUser } from '../../types/Request';
 const { FILE_EDIT } = FilePermissionSchema.enum;
@@ -49,6 +50,6 @@ export default [
   ),
   validateAccessToken,
   userMiddleware,
-  uploadMiddleware().single('thumbnail'),
+  uploadMiddleware(S3Bucket.FILES).single('thumbnail'),
   handler,
 ];
