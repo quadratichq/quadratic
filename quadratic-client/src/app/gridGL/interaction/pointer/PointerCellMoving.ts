@@ -235,6 +235,8 @@ export class PointerCellMoving {
         const rectangle = sheets.sheet.cursor.getLargestRectangle();
 
         if (table) {
+          rectangle.x = table.x;
+          rectangle.y = table.y;
           rectangle.width = table.w;
           rectangle.height = table.h;
         }
