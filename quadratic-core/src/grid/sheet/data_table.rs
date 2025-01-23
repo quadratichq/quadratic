@@ -161,7 +161,8 @@ mod test {
     use crate::{
         a1::{A1Selection, RefRangeBounds},
         controller::{
-            operations::clipboard::PasteSpecial, user_actions::import::tests::simple_csv,
+            operations::clipboard::{ClipboardOperation, PasteSpecial},
+            user_actions::import::tests::simple_csv,
             GridController,
         },
         grid::{js_types::JsClipboard, CodeRun, DataTableKind},
@@ -238,14 +239,12 @@ mod test {
         // let sheet_pos = SheetPos::from((pos, sheet_id));
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
         data_table.chart_pixel_output = Some((100.0, 100.0));
-        let selection = A1Selection::from_ref_range_bounds(
-            sheet_id,
-            RefRangeBounds::new_relative_pos(pos.into()),
-        );
+        let selection =
+            A1Selection::from_ref_range_bounds(sheet_id, RefRangeBounds::new_relative_pos(pos));
 
         let JsClipboard { html, .. } = gc
             .sheet_mut(sheet_id)
-            .copy_to_clipboard(&selection)
+            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
             .unwrap();
 
         gc.paste_from_clipboard(
