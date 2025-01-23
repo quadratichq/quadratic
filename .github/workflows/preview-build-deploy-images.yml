@@ -2,25 +2,19 @@ name: Preview
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled, unlabeled]
+    types: [opened, synchronize, reopened]
     branches-ignore:
       - "main"
 
 concurrency:
   group: pr-${{ github.event.pull_request.number }}-build-images
-  cancel-in-progress: ${{ (github.event.action != 'labeled' && github.event.action !=  'unlabeled') || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && startsWith(github.event.label.name, 'build:')) }}
+  cancel-in-progress: true
 
 jobs:
   create_deployment:
     name: Create Deployment
     runs-on: blacksmith-2vcpu-ubuntu-2204
-    if: |
-      (github.head_ref != 'qa' || github.base_ref != 'main') && (
-      github.event.action == 'opened' || 
-      github.event.action == 'synchronize' || 
-      github.event.action == 'reopened' || 
-      (github.event.action == 'labeled' && startsWith(github.event.label.name, 'build:')) ||
-      (github.event.action == 'unlabeled' && startsWith(github.event.label.name, 'build:')))
+    if: github.head_ref != 'qa' || github.base_ref != 'main'
     permissions:
       contents: read
       pull-requests: write
@@ -109,6 +103,7 @@ jobs:
       contents: read
       pull-requests: write
       issues: write
+      deployments: write
     runs-on: ${{ matrix.runner }}
     if: github.head_ref != 'qa' || github.base_ref != 'main'
     timeout-minutes: 30
@@ -129,24 +124,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Check for build:wasm-opt:disabled label
-        id: build-wasm-opt-disabled
-        run: |
-          if [[ ${{ contains(github.event.pull_request.labels.*.name, 'build:wasm-opt:disabled') }} == true ]]; then
-            echo "CLIENT_DEV=true" >> $GITHUB_OUTPUT
-          else
-            echo "CLIENT_DEV=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Check for build:cache:disabled label
-        id: build-cache
-        run: |
-          if [[ ${{ contains(github.event.pull_request.labels.*.name, 'build:cache:disabled') }} == true ]]; then
-            echo "CACHE_DISABLED=true" >> $GITHUB_OUTPUT
-          else
-            echo "CACHE_DISABLED=false" >> $GITHUB_OUTPUT
-          fi
 
       - name: Generate Build Metadata
         id: build-metadata
@@ -194,8 +171,7 @@ jobs:
             image=moby/buildkit:latest
             network=host
 
-      - name: Build and push (with cache)
-        if: steps.build-cache.outputs.CACHE_DISABLED == 'false'
+      - name: Build and push
         uses: useblacksmith/build-push-action@v1
         with:
           context: .
@@ -207,32 +183,13 @@ jobs:
             GIT_SHA_SHORT=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
             BRANCH_NAME=${{ steps.build-metadata.outputs.BRANCH_NAME }}
             PR_NUMBER=${{ github.event.pull_request.number }}
-            CLIENT_DEV=${{ steps.build-wasm-opt-disabled.outputs.CLIENT_DEV }}
-          labels: |
-            org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
-            org.opencontainers.image.revision=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
-
-      - name: Build and push (without cache)
-        if: steps.build-cache.outputs.CACHE_DISABLED == 'true'
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: quadratic-${{ matrix.service }}/Dockerfile
-          push: true
-          tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}
-          build-args: |
-            BUILD_TIME=${{ steps.build-metadata.outputs.BUILD_TIME }}
-            GIT_SHA_SHORT=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
-            BRANCH_NAME=${{ steps.build-metadata.outputs.BRANCH_NAME }}
-            PR_NUMBER=${{ github.event.pull_request.number }}
-            CLIENT_DEV=${{ steps.build-wasm-opt-disabled.outputs.CLIENT_DEV }}
           labels: |
             org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
             org.opencontainers.image.revision=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
 
       - name: Find Build & Deploy Images Comment
-        uses: peter-evans/find-comment@v3
         if: failure()
+        uses: peter-evans/find-comment@v3
         id: preview-build-deploy-images-comment
         with:
           issue-number: ${{ github.event.pull_request.number }}
@@ -468,8 +425,8 @@ jobs:
           echo "DEPLOY_TIME=$(date -u +'%b %d, %Y at %I:%M %p UTC')" >> $GITHUB_OUTPUT
 
       - name: Find Build & Deploy Images Comment
+        if: always()
         uses: peter-evans/find-comment@v3
-        if: success() || failure()
         id: preview-build-deploy-images-comment-update
         with:
           issue-number: ${{ github.event.pull_request.number }}
