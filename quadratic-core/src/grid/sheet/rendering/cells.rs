@@ -182,21 +182,17 @@ impl Sheet {
                 } else {
                     code_rect.max.y
                 };
-                let code_rect_start_y = code_rect.min.y; // + data_table.y_adjustment();
+                let code_rect_start_y = code_rect.min.y + data_table.y_adjustment();
                 for x in x_start..=x_end {
                     for y in y_start..=y_end {
                         dbgjs!(format!("{},{}", x, y));
                         // We skip rendering the header rows because we render it separately.
-                        if data_table.show_ui && (y == code_rect.min.y && data_table.show_name)
-                            || (y == code_rect.min.y + 1
-                                && data_table.show_name
-                                && data_table.show_columns)
-                        {
+                        if y < code_rect_start_y {
                             continue;
                         }
                         let value = data_table.cell_value_at(
                             (x - code_rect.min.x) as u32,
-                            (y - code_rect_start_y) as u32,
+                            (y - code_rect.min.y) as u32,
                         );
                         dbgjs!(format!(
                             "{},{}",
@@ -210,27 +206,27 @@ impl Sheet {
                             } else {
                                 None
                             };
-                            let special = if y == code_rect.min.y && data_table.show_ui {
-                                if data_table.show_name {
-                                    Some(JsRenderCellSpecial::TableName)
-                                } else {
-                                    Some(JsRenderCellSpecial::TableColumnHeader)
-                                }
-                            } else if y == code_rect.min.y + 1
-                                && data_table.show_ui
-                                && data_table.show_name
-                                && data_table.show_columns
-                            {
-                                Some(JsRenderCellSpecial::TableColumnHeader)
-                            } else {
-                                None
-                            };
+                            // let special = if y == code_rect.min.y && data_table.show_ui {
+                            //     if data_table.show_name {
+                            //         Some(JsRenderCellSpecial::TableName)
+                            //     } else {
+                            //         Some(JsRenderCellSpecial::TableColumnHeader)
+                            //     }
+                            // } else if y == code_rect.min.y + 1
+                            //     && data_table.show_ui
+                            //     && data_table.show_name
+                            //     && data_table.show_columns
+                            // {
+                            //     Some(JsRenderCellSpecial::TableColumnHeader)
+                            // } else {
+                            //     None
+                            // };
                             cells.push(self.get_render_cell(
                                 x,
                                 y,
                                 &value,
                                 language,
-                                special,
+                                None,
                                 Some((code_rect.min, data_table)),
                             ));
                         }
