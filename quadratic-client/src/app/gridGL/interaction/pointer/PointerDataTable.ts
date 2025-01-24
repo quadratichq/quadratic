@@ -279,7 +279,7 @@ export class PointerDataTable {
               .fill(0)
               .map((_, i) => fn(i, base));
 
-          let show_header = this.codeCell?.show_header || false;
+          let show_header = this.codeCell?.show_ui || false;
           let adjustHeight = show_header ? 1 : 0;
 
           // update the table
