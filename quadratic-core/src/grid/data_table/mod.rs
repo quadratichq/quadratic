@@ -433,12 +433,7 @@ impl DataTable {
 
     /// returns a SheetRect for the output size of a code cell (defaults to 1x1)
     /// Note: this returns a 1x1 if there is a spill_error.
-    pub fn output_sheet_rect(
-        &self,
-        sheet_pos: SheetPos,
-        ignore_spill: bool,
-        force_header: bool,
-    ) -> SheetRect {
+    pub fn output_sheet_rect(&self, sheet_pos: SheetPos, ignore_spill: bool) -> SheetRect {
         if !ignore_spill && self.spill_error {
             SheetRect::from_sheet_pos_and_size(sheet_pos, ArraySize::_1X1)
         } else {
@@ -661,7 +656,6 @@ pub mod test {
                     sheet_id
                 },
                 false,
-                false
             ),
             SheetRect::from_numbers(-1, -2, 1, 1, sheet_id)
         );
@@ -696,7 +690,6 @@ pub mod test {
                     sheet_id
                 },
                 false,
-                true
             ),
             SheetRect::new(1, 2, 10, 13, sheet_id)
         );
@@ -728,11 +721,11 @@ pub mod test {
         assert_eq!(data_table.output_size().w.get(), 10);
         assert_eq!(data_table.output_size().h.get(), 12);
         assert_eq!(
-            data_table.output_sheet_rect(sheet_pos, false, true),
+            data_table.output_sheet_rect(sheet_pos, false),
             SheetRect::new(1, 2, 1, 2, sheet_id)
         );
         assert_eq!(
-            data_table.output_sheet_rect(sheet_pos, true, true),
+            data_table.output_sheet_rect(sheet_pos, true),
             SheetRect::new(1, 2, 10, 13, sheet_id)
         );
     }

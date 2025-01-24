@@ -118,15 +118,13 @@ impl GridController {
 
         let sheet_rect = match (&old_data_table, &new_data_table) {
             (None, None) => sheet_pos.into(),
-            (None, Some(code_cell_value)) => {
-                code_cell_value.output_sheet_rect(sheet_pos, false, true)
-            }
+            (None, Some(code_cell_value)) => code_cell_value.output_sheet_rect(sheet_pos, false),
             (Some(old_code_cell_value), None) => {
-                old_code_cell_value.output_sheet_rect(sheet_pos, false, true)
+                old_code_cell_value.output_sheet_rect(sheet_pos, false)
             }
             (Some(old_code_cell_value), Some(code_cell_value)) => {
-                let old = old_code_cell_value.output_sheet_rect(sheet_pos, false, true);
-                let new = code_cell_value.output_sheet_rect(sheet_pos, false, true);
+                let old = old_code_cell_value.output_sheet_rect(sheet_pos, false);
+                let new = code_cell_value.output_sheet_rect(sheet_pos, false);
                 SheetRect {
                     min: sheet_pos.into(),
                     max: Pos {

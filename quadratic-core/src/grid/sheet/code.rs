@@ -336,7 +336,7 @@ mod test {
             Value::Array(Array::from(vec![vec!["1", "2", "3"]])),
             false,
             false,
-            true,
+            false,
             None,
         );
         sheet.set_data_table(Pos { x: 1, y: 1 }, Some(data_table.clone()));

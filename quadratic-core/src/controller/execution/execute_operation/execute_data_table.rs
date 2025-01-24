@@ -129,7 +129,7 @@ impl GridController {
             let sheet_id = sheet_pos.sheet_id;
             let pos = Pos::from(sheet_pos);
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let data_table_rect = data_table.output_sheet_rect(sheet_pos, false, true);
+            let data_table_rect = data_table.output_sheet_rect(sheet_pos, false);
 
             let old_values = sheet.get_code_cell_values(data_table_rect.into());
             sheet.delete_cell_values(data_table_rect.into());
@@ -187,7 +187,7 @@ impl GridController {
 
             // Pull out the data table via a swap, removing it from the sheet
             let data_table = sheet.delete_data_table(pos)?;
-            let data_table_rect = data_table.output_sheet_rect(sheet_pos, false, true);
+            let data_table_rect = data_table.output_sheet_rect(sheet_pos, false);
 
             // let the client know that the code cell has been created to apply the styles
             if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
@@ -357,7 +357,7 @@ impl GridController {
             let data_table_pos = sheet.first_data_table_within(pos)?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
             let old_data_table_kind = data_table.kind.to_owned();
-            let sheet_rect = data_table.output_sheet_rect(sheet_pos, false, true);
+            let sheet_rect = data_table.output_sheet_rect(sheet_pos, false);
 
             data_table.kind = match old_data_table_kind {
                 DataTableKind::CodeRun(_) => match kind {
@@ -893,7 +893,7 @@ impl GridController {
                 transaction.reverse_operations.push(reverse_operations);
             }
 
-            let data_table_rect = data_table.output_sheet_rect(sheet_pos, false, true);
+            let data_table_rect = data_table.output_sheet_rect(sheet_pos, false);
             if data_table.formats.has_fills() {
                 transaction.add_fill_cells(sheet_id);
             }
