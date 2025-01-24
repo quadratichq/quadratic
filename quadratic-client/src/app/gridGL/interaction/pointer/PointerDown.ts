@@ -71,7 +71,7 @@ export class PointerDown {
     // If the user has clicked inside the selection.
     if (isRightClick) {
       if (!cursor.contains(column, row)) {
-        cursor.moveTo(column, row, false, true, false);
+        cursor.moveTo(column, row);
       }
       events.emit('contextMenu', { type: ContextMenuType.Grid, world, column, row });
       return;
@@ -90,12 +90,7 @@ export class PointerDown {
         event.preventDefault();
         const table = pixiApp.cellsSheet().tables.getTableFromTableCell(column, row);
         if (table) {
-          doubleClickCell({
-            column: table.codeCell.x,
-            row: table.codeCell.y,
-            language: table.codeCell.language,
-            cell: '',
-          });
+          doubleClickCell({ column, row });
         } else {
           const cell = await quadraticCore.getEditCell(sheets.sheet.id, column, row);
           doubleClickCell({ column, row, cell, cursorMode: cell ? CursorMode.Edit : CursorMode.Enter });

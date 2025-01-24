@@ -20,22 +20,14 @@ async function jumpCursor(direction: Direction, jump: boolean, select: boolean) 
   const cursorPos = cursor.position;
   const selEnd = cursor.selectionEnd;
 
-  let jumpStartX;
-  let jumpStartY;
+  let jumpStartX = cursorPos.x;
+  let jumpStartY = cursorPos.y;
 
-  switch (direction) {
-    case 'Up':
-    case 'Down': {
-      jumpStartX = cursorPos.x;
+  if (select) {
+    if (direction === 'Up' || direction === 'Down') {
       jumpStartY = selEnd.y;
-      break;
-    }
-
-    case 'Left':
-    case 'Right': {
+    } else {
       jumpStartX = selEnd.x;
-      jumpStartY = cursorPos.y;
-      break;
     }
   }
 

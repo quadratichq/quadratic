@@ -61,6 +61,12 @@ impl GridController {
                         self.execute_set_chart_size(transaction, op),
                     );
                 }
+                Operation::AddDataTable { .. } => Self::handle_execution_operation_result(
+                    self.execute_add_data_table(transaction, op),
+                ),
+                Operation::DeleteDataTable { .. } => Self::handle_execution_operation_result(
+                    self.execute_delete_data_table(transaction, op),
+                ),
                 Operation::SetDataTableAt { .. } => Self::handle_execution_operation_result(
                     self.execute_set_data_table_at(transaction, op),
                 ),

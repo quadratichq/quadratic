@@ -145,8 +145,13 @@ impl GridController {
                     .data_tables
                     .get(&Pos::from(sheet_pos))
                     .map(|dt| {
-                        let full_table_selected = rect.width() == dt.width() as u32
-                            && rect.height() == dt.height(false) as u32;
+                        let mut dt_height = dt.height(true);
+                        if dt.show_header {
+                            dt_height += 1;
+                        }
+
+                        let full_table_selected =
+                            rect.width() == dt.width() as u32 && rect.height() == dt_height as u32;
 
                         full_table_selected || dt.readonly
                     })

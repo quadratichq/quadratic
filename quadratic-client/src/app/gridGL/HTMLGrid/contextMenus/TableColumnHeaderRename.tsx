@@ -42,12 +42,17 @@ export const TableColumnHeaderRename = () => {
     };
   }, [contextMenu]);
 
-  const originalHeaderName = useMemo(() => {
+  const defaultValue = useMemo(() => {
     if (!contextMenu.table || contextMenu.selectedColumn === undefined) {
       return;
     }
+
     return contextMenu.table.columns[contextMenu.selectedColumn].name;
   }, [contextMenu.selectedColumn, contextMenu.table]);
+
+  const selectOnFocus = useMemo(() => {
+    return contextMenu.initialValue === undefined;
+  }, [contextMenu.initialValue]);
 
   if (
     contextMenu.type !== ContextMenuType.TableColumn ||
@@ -61,7 +66,8 @@ export const TableColumnHeaderRename = () => {
   return (
     <PixiRename
       hasBorder={2}
-      defaultValue={originalHeaderName}
+      defaultValue={defaultValue}
+      initialValue={contextMenu.initialValue}
       position={position}
       className="darker-selection origin-bottom-left border-none p-0 text-sm font-bold text-primary-foreground outline-none"
       styles={{
@@ -87,6 +93,7 @@ export const TableColumnHeaderRename = () => {
         }
       }}
       onClose={() => events.emit('contextMenu', {})}
+      selectOnFocus={selectOnFocus}
     />
   );
 };

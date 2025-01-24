@@ -8,7 +8,7 @@ import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCel
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsDataTableColumnHeader, JsRenderCodeCell, SheetRect } from '@/app/quadratic-core-types';
-import { newSingleSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { newRectSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
   AddIcon,
@@ -177,7 +177,13 @@ export const renameTable = () => {
 export const deleteDataTable = () => {
   const table = getTable();
   if (table) {
-    const selection = newSingleSelection(sheets.sheet.id, table.x, table.y).save();
+    const selection = newRectSelection(
+      sheets.sheet.id,
+      BigInt(table.x),
+      BigInt(table.y),
+      BigInt(table.x + table.w - 1),
+      BigInt(table.y + table.h - 1)
+    );
     quadraticCore.deleteCellValues(selection, sheets.getCursorPosition());
   }
 };
@@ -348,9 +354,9 @@ export const removeTableRow = () => {
 
 export const editTableCode = () => {
   const table = getTable();
-
   if (table) {
-    doubleClickCell({ column: table.x, row: table.y, language: table.language, cell: '' });
+    const { x, y } = sheets.sheet.cursor.position;
+    doubleClickCell({ column: x, row: y });
   }
 };
 

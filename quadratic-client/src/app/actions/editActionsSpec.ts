@@ -169,9 +169,8 @@ export const editActionsSpec: EditActionSpec = {
         const table = pixiApp.cellsSheet().tables.getTableFromTableCell(x, y);
         if (table) {
           doubleClickCell({
-            column: table.codeCell.x,
-            row: table.codeCell.y,
-            language: table.codeCell.language,
+            column: x,
+            row: y,
             cell: '',
           });
         } else {
@@ -197,9 +196,8 @@ export const editActionsSpec: EditActionSpec = {
         const table = pixiApp.cellsSheet().tables.getTableFromTableCell(x, y);
         if (table) {
           doubleClickCell({
-            column: table.codeCell.x,
-            row: table.codeCell.y,
-            language: table.codeCell.language,
+            column: x,
+            row: y,
             cell: '',
             cursorMode: CursorMode.Edit,
           });

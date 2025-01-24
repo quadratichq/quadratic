@@ -116,6 +116,112 @@ impl GridController {
         }
     }
 
+    pub(super) fn execute_add_data_table(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
+        if let Operation::AddDataTable {
+            sheet_pos,
+            ref data_table,
+        } = op
+        {
+            let sheet_id = sheet_pos.sheet_id;
+            let pos = Pos::from(sheet_pos);
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let data_table_rect = data_table.output_sheet_rect(sheet_pos, false, true);
+
+            let old_values = sheet.get_code_cell_values(data_table_rect.into());
+            sheet.delete_cell_values(data_table_rect.into());
+
+            let import = Import::new(data_table.name.to_owned());
+            let cell_value = CellValue::Import(import.to_owned());
+            sheet.set_cell_value(pos, cell_value);
+            sheet.data_tables.insert_full(pos, data_table.to_owned());
+
+            // let the client know that the code cell has been created to apply the styles
+            if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+                transaction.add_code_cell(sheet_id, pos);
+            }
+
+            self.send_to_wasm(transaction, &data_table_rect)?;
+
+            let forward_operations = vec![op];
+            let reverse_operations = vec![
+                Operation::DeleteDataTable { sheet_pos },
+                Operation::SetCellValues {
+                    sheet_pos,
+                    values: old_values,
+                },
+            ];
+
+            self.data_table_operations(
+                transaction,
+                &data_table_rect,
+                forward_operations,
+                reverse_operations,
+            );
+
+            // Sets the cursor to the entire table, including the new header
+            if transaction.is_user() {
+                let mut sheet_rect = data_table_rect.to_owned();
+                sheet_rect.max.y += 1;
+                transaction.add_update_selection(A1Selection::from_rect(sheet_rect));
+            }
+
+            return Ok(());
+        };
+
+        bail!("Expected Operation::AddDataTable in execute_add_data_table");
+    }
+
+    pub(super) fn execute_delete_data_table(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
+        if let Operation::DeleteDataTable { sheet_pos } = op {
+            let sheet_id = sheet_pos.sheet_id;
+            let pos = Pos::from(sheet_pos);
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+
+            // Pull out the data table via a swap, removing it from the sheet
+            let data_table = sheet.delete_data_table(pos)?;
+            let data_table_rect = data_table.output_sheet_rect(sheet_pos, false, true);
+
+            // let the client know that the code cell has been created to apply the styles
+            if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+                transaction.add_code_cell(sheet_id, pos);
+            }
+
+            self.send_to_wasm(transaction, &data_table_rect)?;
+
+            let forward_operations = vec![op];
+            let reverse_operations = vec![Operation::AddDataTable {
+                sheet_pos,
+                data_table: data_table.to_owned(),
+            }];
+
+            self.data_table_operations(
+                transaction,
+                &data_table_rect,
+                forward_operations,
+                reverse_operations,
+            );
+
+            // Sets the cursor to the entire table, including the new header
+            if transaction.is_user() {
+                let mut sheet_rect = data_table_rect.to_owned();
+                sheet_rect.max.y += 1;
+                transaction.add_update_selection(A1Selection::from_rect(sheet_rect));
+            }
+
+            return Ok(());
+        };
+
+        bail!("Expected Operation::DeleteDataTable in execute_delete_data_table");
+    }
+
     pub(super) fn execute_set_data_table_at(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -203,8 +309,9 @@ impl GridController {
                 y: data_table_pos.y - 1 + h.get() as i64,
             };
             let sheet_rect = SheetRect::new_pos_span(data_table_pos, max, sheet_id);
+            let rect = Rect::from(sheet_rect);
 
-            let _ = sheet.set_cell_values(sheet_rect.into(), &values);
+            let _ = sheet.set_cell_values(rect, &values);
 
             // let the client know that the code cell changed to remove the styles
             if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
@@ -215,13 +322,10 @@ impl GridController {
             transaction.add_code_cell(sheet_id, data_table_pos);
 
             let forward_operations = vec![op];
-            let reverse_operations = vec![
-                Operation::GridToDataTable { sheet_rect },
-                Operation::SwitchDataTableKind {
-                    sheet_pos,
-                    kind: data_table.kind,
-                },
-            ];
+            let reverse_operations = vec![Operation::AddDataTable {
+                sheet_pos,
+                data_table: data_table.to_owned(),
+            }];
 
             self.data_table_operations(
                 transaction,

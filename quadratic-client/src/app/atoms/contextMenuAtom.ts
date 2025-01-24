@@ -20,15 +20,18 @@ export interface ContextMenuState {
   // special states we need to track rename for tables
   rename?: boolean;
   selectedColumn?: number;
+  initialValue?: string;
 }
 
 export const defaultContextMenuState: ContextMenuState = {
+  type: undefined,
   world: undefined,
   column: undefined,
   row: undefined,
   table: undefined,
   rename: undefined,
   selectedColumn: undefined,
+  initialValue: undefined,
 };
 
 export interface ContextMenuOptions {
@@ -39,6 +42,7 @@ export interface ContextMenuOptions {
   table?: JsRenderCodeCell;
   rename?: boolean;
   selectedColumn?: number;
+  initialValue?: string;
 }
 
 export const contextMenuAtom = atom({
