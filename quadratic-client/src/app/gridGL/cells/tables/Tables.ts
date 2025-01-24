@@ -254,15 +254,8 @@ export class Tables extends Container<Table> {
     for (const table of this.children) {
       const result = table.pointerMove(world);
       if (result) {
-        // the table name can only be active if the table is active
-        if (result === 'table-name' && !this.isTableActive(table)) {
-          return true;
-        }
         this.tableCursor = table.tableCursor;
-        // we don't make the title active unless we're already hovering over
-        // it--this ensures that the user can select the row above the table
-        // when the table is not active
-        if (result !== 'table-name' && !this.isTableActive(table)) {
+        if (result !== 'table-name') {
           if (this.hoverTable !== table) {
             this.hoverTable?.hideActive();
           }
