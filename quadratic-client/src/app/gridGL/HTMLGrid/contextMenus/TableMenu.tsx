@@ -41,7 +41,7 @@ export const TableMenu = (props: Props) => {
   if (!codeCell || selectedColumn !== undefined) {
     return null;
   }
-  console.log(defaultEdit);
+
   return (
     <>
       {isCodeCell && (
