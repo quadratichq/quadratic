@@ -182,6 +182,7 @@ impl Sheet {
                 } else {
                     code_rect.max.y
                 };
+                let code_rect_start_y = code_rect.min.x + data_table.y_adjustment();
                 for x in x_start..=x_end {
                     for y in y_start..=y_end {
                         // We skip rendering the header rows because we render it separately.
@@ -194,7 +195,7 @@ impl Sheet {
                         }
                         let value = data_table.cell_value_at(
                             (x - code_rect.min.x) as u32,
-                            (y - code_rect.min.y) as u32,
+                            (y - code_rect.min.y - code_rect_start_y) as u32,
                         );
 
                         if let Some(value) = value {
