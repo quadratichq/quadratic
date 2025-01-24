@@ -60,10 +60,8 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
       const table = pixiApp.cellsSheet().tables.getTableFromTableCell(x, y);
       if (table) {
         doubleClickCell({
-          column: table.codeCell.x,
-          row: table.codeCell.y,
-          language: table.codeCell.language,
-          cell: '',
+          column: x,
+          row: y,
         });
       } else {
         quadraticCore.getEditCell(sheets.sheet.id, x, y).then((cell) => {
@@ -86,10 +84,8 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
       const table = pixiApp.cellsSheet().tables.getTableFromTableCell(x, y);
       if (table) {
         doubleClickCell({
-          column: table.codeCell.x,
-          row: table.codeCell.y,
-          language: table.codeCell.language,
-          cell: '',
+          column: x,
+          row: y,
           cursorMode: CursorMode.Edit,
         });
       } else {
@@ -141,19 +137,11 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
   }
 
   if (isAllowedFirstChar(event.key)) {
-    const table = pixiApp.cellsSheet().tables.getTableFromTableCell(cursorPosition.x, cursorPosition.y);
-    if (table) {
-      // open code cell unless this is the actual code cell (but not an import,
-      // which is editable). In this case we can overwrite it
-      doubleClickCell({
-        column: Number(table.codeCell.x),
-        row: Number(table.codeCell.y),
-        language: table.codeCell.language,
-        cell: event.key,
-      });
-    } else {
-      pixiAppSettings.changeInput(true, event.key, CursorMode.Enter);
-    }
+    doubleClickCell({
+      column: cursorPosition.x,
+      row: cursorPosition.y,
+      cell: event.key,
+    });
     return true;
   }
 

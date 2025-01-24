@@ -359,9 +359,9 @@ export const removeTableRow = () => {
 
 export const editTableCode = () => {
   const table = getTable();
-
   if (table) {
-    doubleClickCell({ column: table.x, row: table.y, language: table.language, cell: '' });
+    const { x, y } = sheets.sheet.cursor.position;
+    doubleClickCell({ column: x, row: y });
   }
 };
 

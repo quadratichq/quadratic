@@ -68,7 +68,6 @@ impl A1Selection {
 
     /// Constructs a selection containing a single cell.
     pub fn from_single_cell(sheet_pos: SheetPos) -> Self {
-        dbgjs!(format!("sheet_pos: {:?}", sheet_pos));
         Self::from_ref_range_bounds(
             sheet_pos.sheet_id,
             RefRangeBounds::new_relative_pos(sheet_pos.into()),
