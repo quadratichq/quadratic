@@ -148,6 +148,7 @@ impl DataTable {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 pub mod test {
 
     use super::*;
@@ -157,10 +158,8 @@ pub mod test {
         Array, Pos,
     };
     use chrono::Utc;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_data_table_and_headers() {
         // test data table without column headings
         let (_, mut data_table) = new_data_table();
@@ -199,7 +198,6 @@ pub mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_normalize_column_names() {
         let mut data_table = new_data_table().1;
 
@@ -231,7 +229,6 @@ pub mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_headers_y() {
         let mut sheet = Sheet::test();
         let array = Array::from_str_vec(vec![vec!["first"], vec!["second"]], true).unwrap();
@@ -262,22 +259,22 @@ pub mod test {
         );
         sheet.set_data_table(pos, Some(t.clone()));
         assert_eq!(
-            sheet.display_value(pos),
+            sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Text("first".into()))
         );
 
         let data_table = sheet.data_table_mut((1, 1).into()).unwrap();
         data_table.toggle_first_row_as_header(false);
         assert_eq!(
-            sheet.display_value(pos),
+            sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Text("Column 1".into()))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 2 }),
+            sheet.display_value(Pos { x: 1, y: 3 }),
             Some(CellValue::Text("first".into()))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 3 }),
+            sheet.display_value(Pos { x: 1, y: 4 }),
             Some(CellValue::Text("second".into()))
         );
     }

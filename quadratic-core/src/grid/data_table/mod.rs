@@ -613,7 +613,7 @@ pub mod test {
             None,
         )
         .with_last_modified(data_table.last_modified);
-        let expected_array_size = ArraySize::new(4, 5).unwrap();
+        let expected_array_size = ArraySize::new(4, 6).unwrap();
         assert_eq!(data_table, expected_data_table);
         assert_eq!(data_table.output_size(), expected_array_size);
 
