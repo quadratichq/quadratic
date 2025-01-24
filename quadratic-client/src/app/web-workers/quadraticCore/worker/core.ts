@@ -1179,8 +1179,9 @@ class Core {
     name?: string,
     alternatingColors?: boolean,
     columns?: { name: string; display: boolean; valueIndex: number }[],
-    showHeader?: boolean,
     showUI?: boolean,
+    showName?: boolean,
+    showColumns?: boolean,
     cursor?: string
   ) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -1190,8 +1191,9 @@ class Core {
       name,
       alternatingColors,
       JSON.stringify(columns),
-      showHeader,
       showUI,
+      showName,
+      showColumns,
       cursor
     );
   }

@@ -52,16 +52,18 @@ impl GridController {
         name: Option<String>,
         alternating_colors: Option<bool>,
         columns: Option<Vec<DataTableColumnHeader>>,
-        show_header: Option<bool>,
         show_ui: Option<bool>,
+        show_name: Option<bool>,
+        show_columns: Option<bool>,
     ) -> Vec<Operation> {
         vec![Operation::DataTableMeta {
             sheet_pos,
             name,
             alternating_colors,
             columns,
-            show_header,
             show_ui,
+            show_name,
+            show_columns,
         }]
     }
 

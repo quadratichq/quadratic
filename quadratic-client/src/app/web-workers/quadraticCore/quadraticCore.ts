@@ -1349,7 +1349,8 @@ class QuadraticCore {
       name?: string;
       alternatingColors?: boolean;
       columns?: { name: string; display: boolean; valueIndex: number }[];
-      showHeader?: boolean;
+      showColumns?: boolean;
+      showName?: boolean;
       showUI?: boolean;
     },
     cursor?: string
@@ -1363,7 +1364,8 @@ class QuadraticCore {
       alternatingColors: options.alternatingColors,
       columns: options.columns,
       showUI: options.showUI,
-      showHeader: options.showHeader,
+      showName: options.showName,
+      showColumns: options.showColumns,
       cursor: cursor || '',
     });
   }

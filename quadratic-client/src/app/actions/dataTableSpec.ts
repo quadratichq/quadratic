@@ -31,7 +31,8 @@ type DataTableSpec = Pick<
   | Action.GridToDataTable
   | Action.ToggleFirstRowAsHeaderTable
   | Action.RenameTable
-  | Action.ToggleHeaderTable
+  | Action.ToggleTableColumns
+  | Action.ToggleTableName
   | Action.DeleteDataTable
   | Action.CodeToDataTable
   | Action.SortTable
@@ -52,7 +53,9 @@ type DataTableSpec = Pick<
 >;
 
 export const getTable = (): JsRenderCodeCell | undefined => {
-  return pixiAppSettings.contextMenu?.table ?? pixiApp.cellsSheet().cursorOnDataTable();
+  const table = pixiAppSettings.contextMenu?.table ?? pixiApp.cellsSheet().cursorOnDataTable();
+  console.log(table);
+  return table;
 };
 
 export const getRow = (): number | undefined => {
@@ -93,11 +96,6 @@ export const getDisplayColumns = (): JsDataTableColumnHeader[] | undefined => {
   return table?.columns.filter((c) => c.display).map((c) => ({ ...c }));
 };
 
-const isHeadingShowing = (): boolean => {
-  const table = getTable();
-  return !!table && table.show_ui && (table.show_name || table.show_columns);
-};
-
 const isFirstRowHeader = (): boolean => {
   const table = getTable();
   return !!table?.first_row_header;
@@ -121,6 +119,16 @@ const isWithinTable = (): boolean => {
 const isTableUIShowing = (): boolean => {
   const table = getTable();
   return !!table?.show_ui;
+};
+
+const isTableNameShowing = (): boolean => {
+  const table = getTable();
+  return !!table?.show_name;
+};
+
+const isTableColumnsShowing = (): boolean => {
+  const table = getTable();
+  return !!table?.show_columns;
 };
 
 export const gridToDataTable = () => {
@@ -171,19 +179,6 @@ export const deleteDataTable = () => {
   if (table) {
     const selection = newSingleSelection(sheets.sheet.id, table.x, table.y).save();
     quadraticCore.deleteCellValues(selection, sheets.getCursorPosition());
-  }
-};
-
-export const toggleHeaderTable = () => {
-  const table = getTable();
-  if (table) {
-    quadraticCore.dataTableMeta(
-      sheets.sheet.id,
-      table.x,
-      table.y,
-      { showHeader: !isHeadingShowing() },
-      sheets.getCursorPosition()
-    );
   }
 };
 
@@ -372,6 +367,32 @@ export const toggleTableUI = () => {
   }
 };
 
+export const toggleTableColumns = () => {
+  const table = getTable();
+  if (table) {
+    quadraticCore.dataTableMeta(
+      sheets.sheet.id,
+      table.x,
+      table.y,
+      { showColumns: !table.show_columns },
+      sheets.getCursorPosition()
+    );
+  }
+};
+
+export const toggleTableName = () => {
+  const table = getTable();
+  if (table) {
+    quadraticCore.dataTableMeta(
+      sheets.sheet.id,
+      table.x,
+      table.y,
+      { showName: !table.show_name },
+      sheets.getCursorPosition()
+    );
+  }
+};
+
 export const dataTableSpec: DataTableSpec = {
   [Action.FlattenTable]: {
     label: 'Flatten',
@@ -393,11 +414,6 @@ export const dataTableSpec: DataTableSpec = {
     defaultOption: true,
     Icon: FileRenameIcon,
     run: renameTable,
-  },
-  [Action.ToggleHeaderTable]: {
-    label: 'Show column headings',
-    checkbox: isHeadingShowing,
-    run: toggleHeaderTable,
   },
   [Action.DeleteDataTable]: {
     label: 'Delete',
@@ -490,5 +506,15 @@ export const dataTableSpec: DataTableSpec = {
     label: 'Show table UI',
     checkbox: isTableUIShowing,
     run: toggleTableUI,
+  },
+  [Action.ToggleTableColumns]: {
+    label: 'Show column headings',
+    checkbox: isTableColumnsShowing,
+    run: toggleTableColumns,
+  },
+  [Action.ToggleTableName]: {
+    label: 'Show table name',
+    checkbox: isTableNameShowing,
+    run: toggleTableName,
   },
 };

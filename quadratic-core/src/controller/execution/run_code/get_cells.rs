@@ -572,6 +572,7 @@ mod test {
             Some(true),
             None,
             None,
+            None,
         );
 
         gc.set_code_cell(
@@ -628,6 +629,7 @@ mod test {
             None,
             None,
             Some(true),
+            None,
             None,
             None,
         );

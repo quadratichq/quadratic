@@ -359,8 +359,9 @@ impl GridController {
             ref name,
             ref alternating_colors,
             ref columns,
-            ref show_header,
             ref show_ui,
+            ref show_name,
+            ref show_columns,
         } = op
         {
             // do grid mutations first to keep the borrow checker happy
@@ -418,19 +419,6 @@ impl GridController {
             let has_fills = data_table.formats.has_fills();
             let has_borders = !data_table.borders.is_default();
 
-            let old_show_header = show_header.map(|show_ui| {
-                let old_show_header = data_table.show_ui.to_owned();
-                data_table.show_ui = show_ui;
-                if has_fills {
-                    transaction.add_fill_cells(sheet_id);
-                }
-                if has_borders {
-                    transaction.add_borders(sheet_id);
-                }
-
-                old_show_header
-            });
-
             let old_show_ui = show_ui.as_ref().map(|show_ui| {
                 let old_show_ui = data_table.show_ui.to_owned();
                 data_table.show_ui = show_ui.to_owned();
@@ -440,7 +428,34 @@ impl GridController {
                 if has_borders {
                     transaction.add_borders(sheet_id);
                 }
+
                 old_show_ui
+            });
+
+            let old_show_name = show_name.as_ref().map(|show_name| {
+                let old_show_name = data_table.show_name.to_owned();
+                data_table.show_name = show_name.to_owned();
+                if has_fills {
+                    transaction.add_fill_cells(sheet_id);
+                }
+                if has_borders {
+                    transaction.add_borders(sheet_id);
+                }
+
+                old_show_name
+            });
+
+            let old_show_columns = show_columns.as_ref().map(|show_columns| {
+                let old_show_columns = data_table.show_columns.to_owned();
+                data_table.show_columns = show_columns.to_owned();
+                if has_fills {
+                    transaction.add_fill_cells(sheet_id);
+                }
+                if has_borders {
+                    transaction.add_borders(sheet_id);
+                }
+
+                old_show_columns
             });
 
             let data_table_rect = data_table
@@ -456,8 +471,9 @@ impl GridController {
                 name: Some(old_name),
                 alternating_colors: old_alternating_colors,
                 columns: old_columns,
-                show_header: old_show_header,
                 show_ui: old_show_ui,
+                show_name: old_show_name,
+                show_columns: old_show_columns,
             }];
 
             self.data_table_operations(
@@ -1153,8 +1169,9 @@ mod tests {
             name: Some(updated_name.into()),
             alternating_colors: None,
             columns: None,
-            show_header: None,
             show_ui: None,
+            show_name: None,
+            show_columns: None,
         };
         let mut transaction = PendingTransaction::default();
         gc.execute_data_table_meta(&mut transaction, op.clone())
@@ -1191,8 +1208,9 @@ mod tests {
             name: Some("ABC".into()),
             alternating_colors: None,
             columns: None,
-            show_header: None,
             show_ui: None,
+            show_name: None,
+            show_columns: None,
         };
         let mut transaction = PendingTransaction::default();
         gc.execute_data_table_meta(&mut transaction, op).unwrap();

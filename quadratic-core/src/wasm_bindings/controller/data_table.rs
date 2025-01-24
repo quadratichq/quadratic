@@ -99,8 +99,9 @@ impl GridController {
         name: Option<String>,
         alternating_colors: Option<bool>,
         columns_js: Option<String>,
-        show_header: Option<bool>,
         show_ui: Option<bool>,
+        show_name: Option<bool>,
+        show_columns: Option<bool>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
@@ -119,8 +120,9 @@ impl GridController {
             name,
             alternating_colors,
             columns,
-            show_header,
             show_ui,
+            show_name,
+            show_columns,
             cursor,
         );
 

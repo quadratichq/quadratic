@@ -73,8 +73,9 @@ pub enum Operation {
         name: Option<String>,
         alternating_colors: Option<bool>,
         columns: Option<Vec<DataTableColumnHeader>>,
-        show_header: Option<bool>,
         show_ui: Option<bool>,
+        show_name: Option<bool>,
+        show_columns: Option<bool>,
     },
     DataTableFormats {
         sheet_pos: SheetPos,
@@ -334,13 +335,14 @@ impl fmt::Display for Operation {
                 name,
                 alternating_colors,
                 columns,
-                show_header,
                 show_ui,
+                show_name,
+                show_columns,
             } => {
                 write!(
                     fmt,
-                    "DataTableMeta {{ sheet_pos: {} name: {:?} alternating_colors: {:?} columns: {:?} show_header: {:?} show_ui: {:?} }}",
-                    sheet_pos, name, alternating_colors, columns, show_header, show_ui
+                    "DataTableMeta {{ sheet_pos: {} name: {:?} alternating_colors: {:?} columns: {:?} show_ui: {:?} show_name: {:?} show_columns: {:?} }}",
+                    sheet_pos, name, alternating_colors, columns, show_ui, show_name, show_columns
                 )
             }
             Operation::DataTableFormats { sheet_pos, formats } => {
