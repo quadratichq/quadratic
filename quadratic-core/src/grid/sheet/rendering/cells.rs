@@ -185,7 +185,6 @@ impl Sheet {
                 let code_rect_start_y = code_rect.min.y + data_table.y_adjustment();
                 for x in x_start..=x_end {
                     for y in y_start..=y_end {
-                        dbgjs!(format!("{},{}", x, y));
                         // We skip rendering the header rows because we render it separately.
                         if y < code_rect_start_y {
                             continue;
@@ -194,11 +193,6 @@ impl Sheet {
                             (x - code_rect.min.x) as u32,
                             (y - code_rect.min.y) as u32,
                         );
-                        dbgjs!(format!(
-                            "{},{}",
-                            (x - code_rect.min.x) as u32,
-                            (y - code_rect_start_y) as u32
-                        ));
 
                         if let Some(value) = value {
                             let language = if x == code_rect.min.x && y == code_rect.min.y {
@@ -206,21 +200,6 @@ impl Sheet {
                             } else {
                                 None
                             };
-                            // let special = if y == code_rect.min.y && data_table.show_ui {
-                            //     if data_table.show_name {
-                            //         Some(JsRenderCellSpecial::TableName)
-                            //     } else {
-                            //         Some(JsRenderCellSpecial::TableColumnHeader)
-                            //     }
-                            // } else if y == code_rect.min.y + 1
-                            //     && data_table.show_ui
-                            //     && data_table.show_name
-                            //     && data_table.show_columns
-                            // {
-                            //     Some(JsRenderCellSpecial::TableColumnHeader)
-                            // } else {
-                            //     None
-                            // };
                             cells.push(self.get_render_cell(
                                 x,
                                 y,

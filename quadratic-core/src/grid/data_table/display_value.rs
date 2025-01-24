@@ -126,7 +126,7 @@ impl DataTable {
             }
         }
 
-        pos.y += self.y_adjustment();
+        pos.y -= self.y_adjustment();
 
         match self.display_buffer {
             Some(ref display_buffer) => self.display_value_from_buffer_at(display_buffer, pos),

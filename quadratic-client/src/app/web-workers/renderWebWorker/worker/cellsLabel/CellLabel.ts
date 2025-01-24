@@ -29,7 +29,6 @@ import type { CellsLabels } from '@/app/web-workers/renderWebWorker/worker/cells
 import { convertNumber, reduceDecimals } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/convertNumber';
 import type { LabelMeshEntry } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/LabelMeshEntry';
 import type { LabelMeshes } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/LabelMeshes';
-import { renderClient } from '@/app/web-workers/renderWebWorker/worker/renderClient';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { removeItems } from '@pixi/utils';
 import { Point, Rectangle } from 'pixi.js';
@@ -174,8 +173,6 @@ export class CellLabel {
       this.tint = convertColorStringToTint(cell.textColor);
     } else if (this.link) {
       this.tint = convertColorStringToTint(colors.link);
-    } else if (cell.special === 'TableColumnHeader') {
-      this.tint = renderClient.tableColumnHeaderForeground;
     } else {
       this.tint = 0;
     }
