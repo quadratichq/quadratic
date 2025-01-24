@@ -70,7 +70,7 @@ impl DataTable {
 
     /// Get the display value from the source value at a given position.
     pub fn display_value_from_value_at(&self, pos: Pos) -> Result<&CellValue> {
-        let output_size = self.output_size(true);
+        let output_size = self.output_size();
         let x = pos.x as u32;
         let y = pos.y as u32;
         let mut new_x = x;
@@ -242,7 +242,7 @@ pub mod test {
     fn test_hide_column() {
         let (_, mut data_table) = new_data_table();
         data_table.apply_first_row_as_header();
-        let width = data_table.output_size(true).w.get();
+        let width = data_table.output_size().w.get();
         let mut columns = data_table.column_headers.clone().unwrap();
 
         pretty_print_data_table(&data_table, None, None);
@@ -268,7 +268,7 @@ pub mod test {
 
             let expected_output_width = data_table.columns_to_show().len();
             assert_eq!(
-                data_table.output_size(true).w.get(),
+                data_table.output_size().w.get(),
                 expected_output_width as u32
             );
 

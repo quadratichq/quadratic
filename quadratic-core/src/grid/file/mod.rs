@@ -433,7 +433,7 @@ mod tests {
                 .data_tables
                 .get(&Pos { x: 1, y: 4 })
                 .unwrap()
-                .output_size(true),
+                .output_size(),
             ArraySize::new(1, 500).unwrap()
         );
         assert_eq!(

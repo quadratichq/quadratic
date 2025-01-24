@@ -563,7 +563,7 @@ impl GridController {
             });
 
             let data_table_rect = data_table
-                .output_rect(sheet_pos.into(), true, true)
+                .output_rect(sheet_pos.into(), true)
                 .to_sheet_rect(sheet_id);
 
             self.send_to_wasm(transaction, &data_table_rect)?;
@@ -604,7 +604,7 @@ impl GridController {
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
             let data_table_sheet_rect = data_table
-                .output_rect(sheet_pos.into(), true, true)
+                .output_rect(sheet_pos.into(), true)
                 .to_sheet_rect(sheet_id);
 
             let old_value = data_table.sort.to_owned();
@@ -652,7 +652,7 @@ impl GridController {
             data_table.insert_column(index as usize, column_header, values)?;
 
             let data_table_rect = data_table
-                .output_rect(sheet_pos.into(), true, true)
+                .output_rect(sheet_pos.into(), true)
                 .to_sheet_rect(sheet_id);
 
             if data_table.formats.has_fills() {
@@ -699,7 +699,7 @@ impl GridController {
             data_table.delete_column(index as usize)?;
 
             let data_table_rect = data_table
-                .output_rect(sheet_pos.into(), true, true)
+                .output_rect(sheet_pos.into(), true)
                 .to_sheet_rect(sheet_id);
 
             if data_table.formats.has_fills() {
@@ -750,7 +750,7 @@ impl GridController {
             data_table.insert_row(index as usize, values)?;
 
             let data_table_rect = data_table
-                .output_rect(sheet_pos.into(), true, true)
+                .output_rect(sheet_pos.into(), true)
                 .to_sheet_rect(sheet_id);
 
             if data_table.formats.has_fills() {
@@ -792,7 +792,7 @@ impl GridController {
             data_table.delete_row(index as usize)?;
 
             let data_table_rect = data_table
-                .output_rect(sheet_pos.into(), true, true)
+                .output_rect(sheet_pos.into(), true)
                 .to_sheet_rect(sheet_id);
 
             if data_table.formats.has_fills() {
@@ -839,7 +839,7 @@ impl GridController {
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
             let data_table_rect = data_table
-                .output_rect(sheet_pos.into(), true, true)
+                .output_rect(sheet_pos.into(), true)
                 .to_sheet_rect(sheet_id);
 
             data_table.toggle_first_row_as_header(first_row_is_header);

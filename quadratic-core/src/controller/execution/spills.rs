@@ -75,12 +75,12 @@ impl GridController {
         if let Some(sheet) = self.grid.try_sheet(sheet_id) {
             if let Some((pos, data_table)) = sheet.data_tables.get_index(index) {
                 // output sizes of 1x1 cannot spill
-                if matches!(data_table.output_size(true), ArraySize::_1X1) {
+                if matches!(data_table.output_size(), ArraySize::_1X1) {
                     return None;
                 }
 
                 let output: Rect = data_table
-                    .output_sheet_rect(pos.to_sheet_pos(sheet_id), true, true)
+                    .output_sheet_rect(pos.to_sheet_pos(sheet_id), true, false)
                     .into();
 
                 // then do the more expensive checks to see if there is a spill error

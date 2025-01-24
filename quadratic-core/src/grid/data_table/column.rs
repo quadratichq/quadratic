@@ -67,15 +67,14 @@ impl DataTable {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 pub mod test {
     use crate::{
         grid::test::{new_data_table, pretty_print_data_table},
         ArraySize, CellValue,
     };
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_data_table_insert_column() {
         let (_, mut data_table) = new_data_table();
         data_table.apply_first_row_as_header();
@@ -91,14 +90,13 @@ pub mod test {
 
         // this should be a 5x4 array
         let expected_size = ArraySize::new(5, 4).unwrap();
-        assert_eq!(data_table.output_size(true), expected_size);
+        assert_eq!(data_table.output_size(), expected_size);
 
         // there is no data at position (0, 4)
         assert!(data_table.cell_value_at(0, 4).is_none());
     }
 
     #[test]
-    #[parallel]
     fn test_data_table_remove_column() {
         let (_, mut source_data_table) = new_data_table();
         source_data_table.apply_first_row_as_header();
@@ -115,7 +113,7 @@ pub mod test {
 
         // this should be a 5x4 array
         let expected_size = ArraySize::new(3, 4).unwrap();
-        assert_eq!(data_table.output_size(true), expected_size);
+        assert_eq!(data_table.output_size(), expected_size);
 
         let mut data_table = source_data_table.clone();
         data_table.delete_column(0).unwrap();
@@ -127,7 +125,7 @@ pub mod test {
 
         // this should be a 5x4 array
         let expected_size = ArraySize::new(3, 4).unwrap();
-        assert_eq!(data_table.output_size(true), expected_size);
+        assert_eq!(data_table.output_size(), expected_size);
 
         // there is no data at position (0, 0)
         assert_eq!(
@@ -145,7 +143,7 @@ pub mod test {
 
         // this should be a 5x4 array
         let expected_size = ArraySize::new(3, 4).unwrap();
-        assert_eq!(data_table.output_size(true), expected_size);
+        assert_eq!(data_table.output_size(), expected_size);
 
         // there is no data at position (0, 0)
         assert_eq!(

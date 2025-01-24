@@ -365,9 +365,12 @@ impl DataTable {
         false
     }
 
-    /// Returns the size of the output array, or defaults to `_1X1` (since output always includes the code_cell).
+    /// Returns the size of the output array, or defaults to `_1X1` (since
+    /// output always includes the code_cell). This is the full size of the
+    /// output, including any the table name and column names, if visible.
+    ///
     /// Note: this does not take spill_error into account.
-    pub fn output_size(&self, include_header: bool) -> ArraySize {
+    pub fn output_size(&self) -> ArraySize {
         if let Some((w, h)) = self.chart_output {
             if w == 0 || h == 0 {
                 ArraySize::_1X1
@@ -383,12 +386,12 @@ impl DataTable {
                     if self.header_is_first_row {
                         height -= 1;
                     }
-                    if self.show_ui || include_header {
-                        if include_header || self.show_name {
+                    if self.show_ui {
+                        if self.show_name {
                             height += 1;
                         }
                         // images do not have columns
-                        if !self.is_html_or_image() && (include_header || self.show_columns) {
+                        if !self.is_html_or_image() && self.show_columns {
                             height += 1;
                         }
                     }
@@ -434,22 +437,22 @@ impl DataTable {
         &self,
         sheet_pos: SheetPos,
         ignore_spill: bool,
-        include_header: bool,
+        force_header: bool,
     ) -> SheetRect {
         if !ignore_spill && self.spill_error {
             SheetRect::from_sheet_pos_and_size(sheet_pos, ArraySize::_1X1)
         } else {
-            SheetRect::from_sheet_pos_and_size(sheet_pos, self.output_size(include_header))
+            SheetRect::from_sheet_pos_and_size(sheet_pos, self.output_size())
         }
     }
 
     /// returns a SheetRect for the output size of a code cell (defaults to 1x1)
     /// Note: this returns a 1x1 if there is a spill_error.
-    pub fn output_rect(&self, pos: Pos, ignore_spill: bool, include_header: bool) -> Rect {
+    pub fn output_rect(&self, pos: Pos, ignore_spill: bool) -> Rect {
         if !ignore_spill && self.spill_error {
             Rect::from_pos_and_size(pos, ArraySize::_1X1)
         } else {
-            Rect::from_pos_and_size(pos, self.output_size(include_header))
+            Rect::from_pos_and_size(pos, self.output_size())
         }
     }
 
@@ -617,7 +620,7 @@ pub mod test {
         .with_last_modified(data_table.last_modified);
         let expected_array_size = ArraySize::new(4, 5).unwrap();
         assert_eq!(data_table, expected_data_table);
-        assert_eq!(data_table.output_size(true), expected_array_size);
+        assert_eq!(data_table.output_size(), expected_array_size);
 
         pretty_print_data_table(&data_table, None, None);
 
@@ -649,7 +652,7 @@ pub mod test {
             None,
         );
 
-        assert_eq!(data_table.output_size(true), ArraySize::_1X1);
+        assert_eq!(data_table.output_size(), ArraySize::_1X1);
         assert_eq!(
             data_table.output_sheet_rect(
                 SheetPos {
@@ -683,8 +686,8 @@ pub mod test {
             None,
         );
 
-        assert_eq!(data_table.output_size(true).w.get(), 10);
-        assert_eq!(data_table.output_size(true).h.get(), 12);
+        assert_eq!(data_table.output_size().w.get(), 10);
+        assert_eq!(data_table.output_size().h.get(), 12);
         assert_eq!(
             data_table.output_sheet_rect(
                 SheetPos {
@@ -722,8 +725,8 @@ pub mod test {
         );
         let sheet_pos = SheetPos::from((1, 2, sheet_id));
 
-        assert_eq!(data_table.output_size(true).w.get(), 10);
-        assert_eq!(data_table.output_size(true).h.get(), 12);
+        assert_eq!(data_table.output_size().w.get(), 10);
+        assert_eq!(data_table.output_size().h.get(), 12);
         assert_eq!(
             data_table.output_sheet_rect(sheet_pos, false, true),
             SheetRect::new(1, 2, 1, 2, sheet_id)

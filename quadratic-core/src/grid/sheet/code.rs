@@ -18,7 +18,7 @@ impl Sheet {
         let mut min: Option<i64> = None;
         let mut max: Option<i64> = None;
         for (pos, data_table) in &self.data_tables {
-            let output_rect = data_table.output_rect(*pos, false, true);
+            let output_rect = data_table.output_rect(*pos, false);
             if output_rect.min.x <= column_end && output_rect.max.x >= column_start {
                 min = min
                     .map(|min| Some(min.min(output_rect.min.y)))
@@ -40,7 +40,7 @@ impl Sheet {
         let mut min: Option<i64> = None;
         let mut max: Option<i64> = None;
         for (pos, data_table) in &self.data_tables {
-            let output_rect = data_table.output_rect(*pos, false, true);
+            let output_rect = data_table.output_rect(*pos, false);
             if output_rect.min.y <= row_end && output_rect.max.y >= row_start {
                 min = min
                     .map(|min| Some(min.min(output_rect.min.x)))
@@ -62,9 +62,7 @@ impl Sheet {
     pub fn chart_at(&self, pos: Pos) -> Option<(&Pos, &DataTable)> {
         self.data_tables.iter().find(|(code_cell_pos, data_table)| {
             data_table.is_html_or_image()
-                && data_table
-                    .output_rect(**code_cell_pos, false, true)
-                    .contains(pos)
+                && data_table.output_rect(**code_cell_pos, false).contains(pos)
         })
     }
 
@@ -73,9 +71,7 @@ impl Sheet {
     /// included.
     pub fn has_table_content(&self, pos: Pos) -> bool {
         self.data_tables.iter().any(|(code_cell_pos, data_table)| {
-            data_table
-                .output_rect(*code_cell_pos, false, true)
-                .contains(pos)
+            data_table.output_rect(*code_cell_pos, false).contains(pos)
         })
     }
 
@@ -87,10 +83,7 @@ impl Sheet {
         self.data_tables
             .iter()
             .find_map(|(code_cell_pos, data_table)| {
-                if data_table
-                    .output_rect(*code_cell_pos, false, false)
-                    .contains(pos)
-                {
+                if data_table.output_rect(*code_cell_pos, false).contains(pos) {
                     data_table.cell_value_at(
                         (pos.x - code_cell_pos.x) as u32,
                         (pos.y - code_cell_pos.y) as u32,
@@ -131,9 +124,7 @@ impl Sheet {
         self.data_tables
             .iter_mut()
             .find(|(code_cell_pos, data_table)| {
-                data_table
-                    .output_rect(**code_cell_pos, false, true)
-                    .contains(pos)
+                data_table.output_rect(**code_cell_pos, false).contains(pos)
             })
             .map(|(code_cell_pos, data_table)| {
                 let x = (pos.x - code_cell_pos.x) as u32;
@@ -149,9 +140,7 @@ impl Sheet {
             self.data_tables
                 .iter_mut()
                 .find(|(code_cell_pos, data_table)| {
-                    data_table
-                        .output_rect(**code_cell_pos, false, true)
-                        .contains(pos)
+                    data_table.output_rect(**code_cell_pos, false).contains(pos)
                 })
         {
             let rect = Rect::from(&values);
@@ -172,7 +161,7 @@ impl Sheet {
         self.data_tables
             .iter()
             .filter_map(move |(pos, data_table)| {
-                let output_rect = data_table.output_rect(*pos, false, true);
+                let output_rect = data_table.output_rect(*pos, false);
                 output_rect
                     .intersects(rect)
                     .then_some((output_rect, data_table))
@@ -186,7 +175,7 @@ impl Sheet {
         self.data_tables
             .iter()
             .filter_map(move |(pos, data_table)| {
-                let output_rect = data_table.output_rect(*pos, false, true);
+                let output_rect = data_table.output_rect(*pos, false);
                 output_rect
                     .intersection(&rect)
                     .map(|intersection_rect| (output_rect, intersection_rect, data_table))
@@ -201,7 +190,7 @@ impl Sheet {
                 // once we reach the code_cell, we can stop checking
                 return false;
             }
-            if data_table.output_rect(*pos, false, true).intersects(*rect) {
+            if data_table.output_rect(*pos, false).intersects(*rect) {
                 return true;
             }
         }
@@ -218,10 +207,7 @@ impl Sheet {
             self.data_tables
                 .iter()
                 .find_map(|(data_table_pos, data_table)| {
-                    if data_table
-                        .output_rect(*data_table_pos, false, true)
-                        .contains(pos)
-                    {
+                    if data_table.output_rect(*data_table_pos, false).contains(pos) {
                         if let Some(code_value) = self.cell_value(*data_table_pos) {
                             code_pos = *data_table_pos;
                             Some(code_value)
@@ -248,7 +234,7 @@ impl Sheet {
                         serde_json::to_string(&data_table.value).unwrap_or("".into());
                     let spill_error = if data_table.spill_error {
                         Some(self.find_spill_error_reasons(
-                            &data_table.output_rect(code_pos, true, true),
+                            &data_table.output_rect(code_pos, true),
                             code_pos,
                         ))
                     } else {

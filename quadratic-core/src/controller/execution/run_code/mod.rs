@@ -80,7 +80,7 @@ impl GridController {
 
             // if the width of the old and new data tables are the same,
             // then we can preserve other user-selected properties
-            if old_data_table.output_size(true).w == new_data_table.output_size(true).w {
+            if old_data_table.output_size().w == new_data_table.output_size().w {
                 new_data_table.column_headers = old_data_table.column_headers.to_owned();
                 new_data_table.formats = old_data_table.formats.to_owned();
 

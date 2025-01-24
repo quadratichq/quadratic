@@ -69,7 +69,7 @@ impl Sheet {
             .iter()
             .filter_map(|(data_table_pos, data_table)| {
                 data_table
-                    .output_rect(*data_table_pos, false, true)
+                    .output_rect(*data_table_pos, false)
                     .contains(pos)
                     .then_some(*data_table_pos)
             })
@@ -101,7 +101,7 @@ impl Sheet {
             if !data_table.is_html_or_image() {
                 return false;
             }
-            let output_rect = data_table.output_rect(*data_table_pos, false, true);
+            let output_rect = data_table.output_rect(*data_table_pos, false);
             if output_rect.contains(Pos { x, y }) {
                 if let Some(exclude_x) = exclude_x {
                     if exclude_x >= output_rect.min.x && exclude_x <= output_rect.max.x {
