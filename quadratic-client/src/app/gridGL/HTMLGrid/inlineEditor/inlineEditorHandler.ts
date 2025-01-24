@@ -55,6 +55,7 @@ class InlineEditorHandler {
     events.on('sheetOffsets', this.sheetOffsets);
     events.on('resizeHeadingColumn', this.sheetOffsets);
     events.on('resizeHeadingRow', this.sheetOffsets);
+    events.on('contextMenu', this.closeIfOpen);
     inlineEditorEvents.on('replaceText', this.replaceText);
     createFormulaStyleHighlights();
   }
@@ -258,7 +259,7 @@ class InlineEditorHandler {
   };
 
   // Sends CellEdit updates to the multiplayer server.
-  sendMultiplayerUpdate() {
+  sendMultiplayerUpdate = () => {
     multiplayer.sendCellEdit({
       text: inlineEditorMonaco.get(),
       cursor: inlineEditorMonaco.getCursorColumn() - 1,
@@ -269,9 +270,9 @@ class InlineEditorHandler {
       underline: this.temporaryUnderline,
       strikeThrough: this.temporaryStrikeThrough,
     });
-  }
+  };
 
-  toggleItalics() {
+  toggleItalics = () => {
     if (this.temporaryItalic === undefined) {
       this.temporaryItalic = !this.formatSummary?.italic;
     } else {
@@ -279,9 +280,9 @@ class InlineEditorHandler {
     }
     this.updateFont();
     this.sendMultiplayerUpdate();
-  }
+  };
 
-  toggleBold() {
+  toggleBold = () => {
     if (this.temporaryBold === undefined) {
       this.temporaryBold = !this.formatSummary?.bold;
     } else {
@@ -289,9 +290,9 @@ class InlineEditorHandler {
     }
     this.updateFont();
     this.sendMultiplayerUpdate();
-  }
+  };
 
-  toggleUnderline() {
+  toggleUnderline = () => {
     if (this.temporaryUnderline === undefined) {
       this.temporaryUnderline = !this.formatSummary?.underline;
     } else {
@@ -299,9 +300,9 @@ class InlineEditorHandler {
     }
     inlineEditorMonaco.setUnderline(this.temporaryUnderline);
     this.sendMultiplayerUpdate();
-  }
+  };
 
-  toggleStrikeThrough() {
+  toggleStrikeThrough = () => {
     if (this.temporaryStrikeThrough === undefined) {
       this.temporaryStrikeThrough = !this.formatSummary?.strikeThrough;
     } else {
@@ -309,9 +310,9 @@ class InlineEditorHandler {
     }
     inlineEditorMonaco.setStrikeThrough(this.temporaryStrikeThrough);
     this.sendMultiplayerUpdate();
-  }
+  };
 
-  private updateFont() {
+  private updateFont = () => {
     let fontFamily = 'OpenSans';
     if (!this.formula) {
       const italic = this.temporaryItalic === undefined ? this.formatSummary?.italic : this.temporaryItalic;
@@ -325,7 +326,7 @@ class InlineEditorHandler {
       }
     }
     inlineEditorMonaco.setFontFamily(fontFamily);
-  }
+  };
 
   // Handles updates to the Monaco editor cursor position
   updateMonacoCursorPosition = () => {
@@ -422,11 +423,11 @@ class InlineEditorHandler {
     this.updateFont();
   };
 
-  closeIfOpen() {
+  closeIfOpen = () => {
     if (this.open) {
       this.close(0, 0, false);
     }
-  }
+  };
 
   validateInput = async (): Promise<string | undefined> => {
     if (!this.open || !this.location || this.formula) return;

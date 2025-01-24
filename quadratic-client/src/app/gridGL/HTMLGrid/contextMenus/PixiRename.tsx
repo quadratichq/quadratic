@@ -5,7 +5,7 @@ import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
 import type { Rectangle } from 'pixi.js';
 import type { KeyboardEvent } from 'react';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 // todo: ideally, position would be set via ref instead of render so it doesn't
 // flicker when renaming heading or table name where the heading is off the
@@ -14,6 +14,7 @@ import { useCallback, useEffect, useRef } from 'react';
 interface Props {
   position?: Rectangle;
   defaultValue?: string;
+  initialValue?: string;
 
   // the class name of the input
   className?: string;
@@ -26,17 +27,28 @@ interface Props {
   noScale?: boolean;
 
   hasBorder?: number;
+
+  selectOnFocus?: boolean;
 }
 
 export const PixiRename = (props: Props) => {
-  const { position, defaultValue, className, styles, onClose, onSave, noScale, hasBorder } = props;
+  const {
+    position,
+    defaultValue,
+    initialValue,
+    className,
+    styles,
+    onClose,
+    onSave,
+    noScale,
+    hasBorder,
+    selectOnFocus = true,
+  } = props;
 
-  // ensure we can wait a tick for the rename to close to avoid a conflict
-  // between Escape and Blur
-  const closed = useRef(false);
+  const [inputEl, setInputEl] = useState<HTMLInputElement | null>(null);
+  const ref = useCallback((node: HTMLInputElement | null) => setInputEl(node), [setInputEl]);
 
   const close = useCallback(() => {
-    closed.current = true;
     onClose();
     focusGrid();
   }, [onClose]);
@@ -50,39 +62,33 @@ export const PixiRename = (props: Props) => {
   }, []);
 
   const saveAndClose = useCallback(() => {
-    if (closed.current === true) return;
-    closed.current = true;
-    if (ref.current?.value !== defaultValue && validate(ref.current?.value ?? '')) {
-      onSave(ref.current?.value ?? '');
+    if (inputEl?.value !== defaultValue && validate(inputEl?.value ?? '')) {
+      onSave(inputEl?.value ?? '');
     }
-    onClose();
-  }, [defaultValue, onClose, onSave, validate]);
-
-  const ref = useRef<HTMLInputElement>(null);
+    close();
+  }, [close, defaultValue, inputEl?.value, onSave, validate]);
 
   // focus the input after the position is set
   useEffect(() => {
-    if (position) {
-      setTimeout(() => {
-        if (ref.current) {
-          ref.current.select();
-          ref.current.focus();
-        }
-      }, 0);
+    if (inputEl) {
+      if (selectOnFocus) {
+        inputEl.select();
+      }
+      inputEl.focus();
     }
-  }, [position]);
+  }, [inputEl, selectOnFocus]);
 
   useEffect(() => {
     const viewportChanged = () => {
-      if (ref.current) {
-        ref.current.style.transform = `scale(${1 / pixiApp.viewport.scaled})`;
+      if (inputEl) {
+        inputEl.style.transform = `scale(${1 / pixiApp.viewport.scaled})`;
       }
     };
     if (noScale) {
       viewportChanged();
       events.on('viewportChanged', viewportChanged);
     }
-  }, [noScale]);
+  }, [inputEl, noScale]);
 
   const onKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
@@ -100,31 +106,30 @@ export const PixiRename = (props: Props) => {
   );
 
   const onChange = useCallback(() => {
-    if (ref.current) {
+    if (inputEl) {
       // need to calculate the width of the input using a span with the same css as the input
       const span = document.createElement('span');
       span.className = className ?? '';
       span.style.visibility = 'hidden';
       span.style.whiteSpace = 'pre';
-      span.innerText = ref.current.value;
+      span.innerText = inputEl.value;
       document.body.appendChild(span);
-      ref.current.style.width = `${span.offsetWidth}px`;
+      inputEl.style.width = `${span.offsetWidth}px`;
       document.body.removeChild(span);
     }
-  }, [className]);
+  }, [className, inputEl]);
 
   // Need to catch the Blur event via useEffect since the Input goes away when
   // the context menu closes (eg, via a click outside the Input)
   useEffect(() => {
-    const input = ref.current;
     return () => {
-      if (!closed.current && input) {
-        if (input.value !== defaultValue && validate(input.value)) {
-          onSave(input.value);
+      if (inputEl) {
+        if (inputEl.value !== defaultValue && validate(inputEl.value)) {
+          onSave(inputEl.value);
         }
       }
     };
-  }, [onSave, defaultValue, validate]);
+  }, [defaultValue, inputEl, onSave, validate]);
 
   if (!position) return null;
 
@@ -142,7 +147,7 @@ export const PixiRename = (props: Props) => {
       }}
       onKeyDown={onKeyDown}
       onChange={onChange}
-      defaultValue={defaultValue}
+      defaultValue={initialValue ?? defaultValue}
     />
   );
 };

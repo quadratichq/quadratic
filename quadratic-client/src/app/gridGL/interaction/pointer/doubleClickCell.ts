@@ -1,26 +1,38 @@
 import { hasPermissionToEditFile } from '@/app/actions';
+import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 export async function doubleClickCell(options: {
   column: number;
   row: number;
-  language?: CodeCellLanguage;
   cell?: string;
   cursorMode?: CursorMode;
 }) {
-  const { language, cell, column, row, cursorMode } = options;
+  const { column, row, cell, cursorMode } = options;
 
-  if (inlineEditorHandler.isEditingFormula()) return;
-  if (multiplayer.cellIsBeingEdited(column, row, sheets.sheet.id)) return;
-  if (!pixiAppSettings.setEditorInteractionState || !pixiAppSettings.setCodeEditorState) return;
+  if (inlineEditorHandler.isEditingFormula()) {
+    return;
+  }
+
+  if (multiplayer.cellIsBeingEdited(column, row, sheets.sheet.id)) {
+    return;
+  }
+
+  if (!pixiAppSettings.setEditorInteractionState || !pixiAppSettings.setCodeEditorState) {
+    return;
+  }
+
   const hasPermission = hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions);
+  const table = pixiApp.cellsSheet().tables.getTableFromTableCell(column, row);
+  const codeCell = table?.codeCell;
+  const language = codeCell?.language;
 
   // Open the correct code editor
   if (language) {
@@ -35,7 +47,7 @@ export async function doubleClickCell(options: {
         waitingForEditorClose: {
           codeCell: {
             sheetId: sheets.current,
-            pos: { x: column, y: row },
+            pos: { x: codeCell.x, y: codeCell.y },
             language,
           },
           showCellTypeMenu: false,
@@ -51,14 +63,30 @@ export async function doubleClickCell(options: {
         if (cursor.x !== column || cursor.y !== row) {
           sheets.sheet.cursor.moveTo(column, row);
         }
-        pixiAppSettings.changeInput(true, cell);
-      } else if (hasPermission && file_import) {
-        if (cell === '=') {
+        pixiAppSettings.changeInput(true, cell, cursorMode);
+      }
+      // editing inside data table
+      else if (hasPermission && file_import) {
+        // can't create formula inside data table
+        if (cell?.startsWith('=')) {
           pixiAppSettings.snackbar('Cannot create formula inside data table', { severity: 'warning' });
-        } else {
-          const table = pixiApp.cellsSheet().tables.getTableFromTableCell(column, row);
-          console.log(table);
-          pixiAppSettings.changeInput(true, cell, cursorMode);
+        }
+
+        // check column header or table value
+        else {
+          const isColumnHeader = codeCell.show_header && row === codeCell.y;
+          if (isColumnHeader) {
+            const contextMenu = {
+              type: ContextMenuType.TableColumn,
+              rename: true,
+              table: codeCell,
+              selectedColumn: Math.max(0, column - codeCell.x),
+              initialValue: cell,
+            };
+            events.emit('contextMenu', contextMenu);
+          } else {
+            pixiAppSettings.changeInput(true, cell, cursorMode);
+          }
         }
       } else {
         pixiAppSettings.setCodeEditorState({
@@ -69,7 +97,7 @@ export async function doubleClickCell(options: {
           waitingForEditorClose: {
             codeCell: {
               sheetId: sheets.current,
-              pos: { x: column, y: row },
+              pos: { x: codeCell.x, y: codeCell.y },
               language,
             },
             initialCode: '',

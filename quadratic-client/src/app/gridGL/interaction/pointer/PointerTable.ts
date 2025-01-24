@@ -94,7 +94,7 @@ export class PointerTable {
         if (this.doubleClickTimeout) {
           clearTimeout(this.doubleClickTimeout);
           this.doubleClickTimeout = undefined;
-          doubleClickCell({ column: image.x, row: image.y, language: 'Javascript' });
+          doubleClickCell({ column: image.x, row: image.y });
         } else {
           pixiApp.cellsSheet().tables.ensureActiveCoordinate(image);
           sheets.sheet.cursor.moveTo(image.x, image.y);
