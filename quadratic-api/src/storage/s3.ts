@@ -1,21 +1,39 @@
 import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { Request } from 'express';
-import multer, { StorageEngine } from 'multer';
+import type { Request } from 'express';
+import type { StorageEngine } from 'multer';
+import multer from 'multer';
 import multerS3 from 'multer-s3';
 import {
   AWS_S3_ACCESS_KEY_ID,
+  AWS_S3_ANALYTICS_BUCKET_NAME,
   AWS_S3_BUCKET_NAME,
   AWS_S3_ENDPOINT,
   AWS_S3_REGION,
   AWS_S3_SECRET_ACCESS_KEY,
 } from '../env-vars';
-import { UploadFileResponse } from './storage';
+import type { UploadFileResponse } from './storage';
 
 const endpoint = AWS_S3_ENDPOINT;
 let s3Client: S3Client;
 
-// Get S3 client slngleton
+export enum S3Bucket {
+  FILES = 'files',
+  ANALYTICS = 'analytics',
+}
+
+export const getBucketName = (bucket: S3Bucket) => {
+  switch (bucket) {
+    case S3Bucket.FILES:
+      return AWS_S3_BUCKET_NAME;
+    case S3Bucket.ANALYTICS:
+      return AWS_S3_ANALYTICS_BUCKET_NAME;
+    default:
+      throw new Error(`Unsupported bucket in getBucketName(): ${bucket}`);
+  }
+};
+
+// Get S3 client singleton
 const getS3Client = () => {
   if (!s3Client) {
     s3Client = new S3Client({
@@ -41,9 +59,13 @@ const getS3Client = () => {
 };
 
 // Upload a string as a file to S3
-export const uploadStringAsFileS3 = async (fileKey: string, contents: string): Promise<UploadFileResponse> => {
+export const uploadStringAsFileS3 = async (
+  fileKey: string,
+  contents: string,
+  bucket: S3Bucket
+): Promise<UploadFileResponse> => {
   const command = new PutObjectCommand({
-    Bucket: AWS_S3_BUCKET_NAME,
+    Bucket: getBucketName(bucket),
     Key: fileKey,
     Body: new Uint8Array(Buffer.from(contents, 'base64')),
     // Optionally, you can add other configuration like ContentType
@@ -54,7 +76,7 @@ export const uploadStringAsFileS3 = async (fileKey: string, contents: string): P
   // Check if the upload was successful
   if (response && response.$metadata.httpStatusCode === 200) {
     return {
-      bucket: AWS_S3_BUCKET_NAME,
+      bucket: getBucketName(bucket),
       key: fileKey,
     };
   } else {
@@ -63,11 +85,11 @@ export const uploadStringAsFileS3 = async (fileKey: string, contents: string): P
 };
 
 // Multer storage engine for S3
-export const multerS3Storage = (): multer.Multer =>
+export const multerS3Storage = (bucket: S3Bucket): multer.Multer =>
   multer({
     storage: multerS3({
       s3: getS3Client(),
-      bucket: AWS_S3_BUCKET_NAME,
+      bucket: getBucketName(bucket),
       metadata: (req: Request, file: Express.Multer.File, cb: (error: Error | null, metadata: any) => void) => {
         cb(null, { fieldName: file.fieldname });
       },
@@ -79,9 +101,9 @@ export const multerS3Storage = (): multer.Multer =>
   });
 
 // Get the presigned file URL from S3
-export const generatePresignedUrl = async (key: string): Promise<string> => {
+export const generatePresignedUrl = async (key: string, bucket: S3Bucket): Promise<string> => {
   const command = new GetObjectCommand({
-    Bucket: AWS_S3_BUCKET_NAME,
+    Bucket: getBucketName(bucket),
     Key: key,
   });
 

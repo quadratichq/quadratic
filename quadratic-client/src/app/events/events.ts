@@ -136,6 +136,7 @@ interface EventTypes {
   viewportChangedReady: () => void;
   hashContentChanged: (sheetId: string, hashX: number, hashY: number) => void;
 
+  recentFiles: (url: string, name: string, loaded: boolean) => void;
   codeEditorCodeCell: (codeCell?: CodeCell) => void;
 
   aiAnalystInitialized: () => void;

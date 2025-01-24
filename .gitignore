@@ -5,13 +5,14 @@ node_modules
 **/node_modules
 /.pnp
 .pnp.js
-
+.cache
+.cargo
 # testing
 /coverage
 
 # production
 /build
-quadratic-shared/*.js
+quadratic-shared/**/*.js
 
 # misc
 .DS_Store

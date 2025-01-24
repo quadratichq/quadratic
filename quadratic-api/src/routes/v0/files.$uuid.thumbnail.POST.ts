@@ -1,13 +1,15 @@
-import { Response } from 'express';
-import { ApiTypes, FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
+import type { Response } from 'express';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import dbClient from '../../dbClient';
 import { getFile } from '../../middleware/getFile';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
+import { S3Bucket } from '../../storage/s3';
 import { uploadMiddleware } from '../../storage/storage';
-import { RequestWithFile, RequestWithUser } from '../../types/Request';
+import type { RequestWithFile, RequestWithUser } from '../../types/Request';
 const { FILE_EDIT } = FilePermissionSchema.enum;
 
 async function handler(req: RequestWithUser & RequestWithFile, res: Response) {
@@ -48,6 +50,6 @@ export default [
   ),
   validateAccessToken,
   userMiddleware,
-  uploadMiddleware().single('thumbnail'),
+  uploadMiddleware(S3Bucket.FILES).single('thumbnail'),
   handler,
 ];

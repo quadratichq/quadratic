@@ -491,6 +491,14 @@ export const SpillErrorMoveIcon: IconComponent = (props) => {
   return <Icon {...props}>vertical_align_bottom</Icon>;
 };
 
+export const SpinnerIcon: IconComponent = (props) => {
+  return (
+    <Icon {...props} className={cn(props.className, 'animate-spin')}>
+      progress_activity
+    </Icon>
+  );
+};
+
 export const StopIcon: IconComponent = (props) => {
   return <Icon {...props}>stop</Icon>;
 };
@@ -545,6 +553,10 @@ export const ZoomInIcon: IconComponent = (props) => {
 
 export const ZoomOutIcon: IconComponent = (props) => {
   return <Icon {...props}>zoom_out</Icon>;
+};
+
+export const FileOpenIcon: IconComponent = (props) => {
+  return <Icon {...props}>file_open</Icon>;
 };
 
 export const ArrowRight: IconComponent = (props) => {

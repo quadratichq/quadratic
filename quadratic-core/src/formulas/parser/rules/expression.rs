@@ -98,28 +98,32 @@ impl SyntaxRule for TupleExpression {
             || EmptyExpression.prefix_matches(p)
     }
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
-        parse_one_of!(
-            p,
-            [
-                List {
-                    // In Excel, tuples can only contain cell ranges and tuples.
-                    // We allow blanks and other kinds of expressions as well
-                    // because that's just easier.
-                    inner: TupleExpression,
-                    sep: Token::ArgSep,
-                    start: Token::LParen,
-                    end: Token::RParen,
-                    sep_name: "comma",
-                    // If we allowed trailing comma then the tuple `(expr,)`
-                    // would get parsed the same as `(expr)`
-                    allow_trailing_sep: false,
-                    allow_empty: false,
+        let mut tmp_p = *p;
+        if tmp_p.next() == Some(Token::LParen) { // (
+            if tmp_p.parse(TupleExpression).is_ok() { // expression
+                if tmp_p.next() == Some(Token::ArgSep) { // ,
+                    return p.parse(
+                        List {
+                            // In Excel, tuples can only contain cell ranges and tuples.
+                            // We allow blanks and other kinds of expressions as well
+                            // because that's just easier.
+                            inner: TupleExpression,
+                            sep: Token::ArgSep,
+                            start: Token::LParen,
+                            end: Token::RParen,
+                            sep_name: "comma",
+                            // If we allowed trailing comma then the tuple `(expr,)`
+                            // would get parsed the same as `(expr)`
+                            allow_trailing_sep: false,
+                            allow_empty: false,
+                        }
+                        .map(|spanned| spanned.map(ast::AstNodeContents::Paren)),
+                    );
                 }
-                .map(|spanned| spanned.map(ast::AstNodeContents::Paren)),
-                Expression,
-                EmptyExpression
-            ]
-        )
+            }
+        }
+
+        parse_one_of!(p, [Expression, EmptyExpression])
     }
 }
 

@@ -56,12 +56,15 @@ pub(crate) struct Config {
 /// Load the global configuration from the environment into Config.
 pub(crate) fn config() -> Result<Config> {
     let filename = if cfg!(test) { ".env.test" } else { ".env" };
-    // let filename = if cfg!(test) { ".env" } else { ".env" };
 
     dotenv::from_filename(filename).ok();
     dotenv().ok();
 
-    let config = envy::from_env::<Config>().map_err(|e| FilesError::Config(e.to_string()))?;
+    // Try prefixed first, fall back to non-prefixed if that fails
+    let config = envy::prefixed("FILES__")
+        .from_env::<Config>()
+        .or_else(|_| envy::from_env::<Config>())
+        .map_err(|e| FilesError::Config(e.to_string()))?;
     Ok(config)
 }
 

@@ -1,5 +1,5 @@
-import { File, User } from '@prisma/client';
-import { Request as JWTRequest } from 'express-jwt';
+import type { File, User } from '@prisma/client';
+import type { Request as JWTRequest } from 'express-jwt';
 
 export interface UploadFile extends Express.Multer.File {
   key?: string; // Available using `S3`.
