@@ -643,7 +643,7 @@ pub mod test {
             Value::Single(CellValue::Number(1.into())),
             false,
             false,
-            true,
+            false,
             None,
         );
 
@@ -681,7 +681,7 @@ pub mod test {
         );
 
         assert_eq!(data_table.output_size().w.get(), 10);
-        assert_eq!(data_table.output_size().h.get(), 12);
+        assert_eq!(data_table.output_size().h.get(), 13);
         assert_eq!(
             data_table.output_sheet_rect(
                 SheetPos {
@@ -691,7 +691,7 @@ pub mod test {
                 },
                 false,
             ),
-            SheetRect::new(1, 2, 10, 13, sheet_id)
+            SheetRect::new(1, 2, 10, 14, sheet_id)
         );
     }
 

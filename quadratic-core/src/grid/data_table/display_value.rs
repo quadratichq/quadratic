@@ -126,7 +126,7 @@ impl DataTable {
             }
         }
 
-        pos.y -= self.y_adjustment();
+        pos.y -= self.y_adjustment() - if self.header_is_first_row { 1 } else { 0 };
 
         match self.display_buffer {
             Some(ref display_buffer) => self.display_value_from_buffer_at(display_buffer, pos),
