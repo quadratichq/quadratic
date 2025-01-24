@@ -129,7 +129,10 @@ export class TableName extends Container {
       if (world.x <= this.tableNameBounds.x + this.text.x + this.text.width) {
         return { table: this.table.codeCell, type: 'table-name' };
       }
-      if (world.x <= this.tableNameBounds.x + this.text.width + this.dropdown.width + DROPDOWN_PADDING * 2) {
+      if (
+        world.x <=
+        this.tableNameBounds.x + this.text.x + this.text.width + this.dropdown.width + DROPDOWN_PADDING * 2
+      ) {
         return { table: this.table.codeCell, type: 'dropdown' };
       }
       return { table: this.table.codeCell, type: 'table-name' };
