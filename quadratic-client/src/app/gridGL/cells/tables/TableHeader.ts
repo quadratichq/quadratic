@@ -12,6 +12,9 @@ export class TableHeader extends Container {
   private columnHeaders: TableColumnHeaders;
   private columnHeadersGridLines: TableColumnHeadersGridLines;
 
+  // Calculated lowest y position for a floating table header
+  private bottom = 0;
+
   tableCursor?: string;
 
   constructor(table: Table) {
@@ -70,6 +73,10 @@ export class TableHeader extends Container {
       this.updatePosition();
       this.tableName.update();
       this.columnHeaders.update();
+      this.bottom =
+        this.table.tableBounds.bottom -
+        this.table.sheet.offsets.getRowHeight(this.table.codeCell.y + this.table.codeCell.h - 1) -
+        this.height;
     }
 
     // todo...
@@ -89,7 +96,7 @@ export class TableHeader extends Container {
   toHover(bounds: Rectangle, gridHeading: number) {
     this.position.set(
       this.table.tableBounds.x,
-      this.table.tableBounds.y + bounds.top + gridHeading - this.table.tableBounds.top
+      Math.min(this.bottom, this.table.tableBounds.y + bounds.top + gridHeading - this.table.tableBounds.top)
     );
     this.columnHeaders.toHover();
     this.tableName.toHover(this.y);

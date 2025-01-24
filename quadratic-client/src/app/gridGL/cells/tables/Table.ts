@@ -75,14 +75,10 @@ export class Table extends Container {
     this.header.toGrid();
   }
 
-  private headerToHover(bounds: Rectangle, gridHeading: number) {
-    this.header.toHover(bounds, gridHeading);
-  }
-
   private headingPosition = (bounds: Rectangle, gridHeading: number) => {
     if (this.visible) {
       if (this.tableBounds.top < bounds.top + gridHeading) {
-        this.headerToHover(bounds, gridHeading);
+        this.header.toHover(bounds, gridHeading);
       } else {
         this.headerToGrid();
       }
