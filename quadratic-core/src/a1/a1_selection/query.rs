@@ -702,7 +702,7 @@ mod tests {
     fn test_get_ref_range_bounds() {
         let context = A1Context::test(
             &[("Sheet1", SheetId::test())],
-            &[("Table1", &["A", "B", "C"], Rect::test_a1("A1:C3"))],
+            &[("Table1", &["A", "B", "C"], Rect::test_a1("A1:C4"))],
         );
         // note we do not return the D5: range as it is infinite
         let selection = A1Selection::test_a1_context("A1,B2,D5:,C3,Table1", &context);
@@ -713,7 +713,7 @@ mod tests {
                 RefRangeBounds::test_a1("A1"),
                 RefRangeBounds::test_a1("B2"),
                 RefRangeBounds::test_a1("C3"),
-                RefRangeBounds::test_a1("A2:C3")
+                RefRangeBounds::test_a1("A3:C4")
             ]
         );
     }

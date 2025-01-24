@@ -66,8 +66,9 @@ impl GridController {
                                 name: None,
                                 alternating_colors: None,
                                 columns,
-                                show_header: None,
                                 show_ui: None,
+                                show_name: None,
+                                show_columns: None,
                             });
                         } else {
                             let mut values = vec![CellValue::Blank; data_table.height(true)];

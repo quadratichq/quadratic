@@ -53,7 +53,6 @@ export class Tables extends Container<Table> {
 
     events.on('cursorPosition', this.cursorPosition);
     events.on('sheetOffsets', this.sheetOffsets);
-    events.on('changeSheet', this.changeSheet);
 
     events.on('contextMenu', this.contextMenu);
     events.on('contextMenuClose', this.contextMenu);
@@ -69,7 +68,6 @@ export class Tables extends Container<Table> {
 
     events.off('cursorPosition', this.cursorPosition);
     events.off('sheetOffsets', this.sheetOffsets);
-    events.off('changeSheet', this.changeSheet);
 
     events.off('contextMenu', this.contextMenu);
     events.off('contextMenuClose', this.contextMenu);
@@ -131,7 +129,6 @@ export class Tables extends Container<Table> {
       const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
       if (table) {
         if (!renderCodeCell) {
-          table.hideTableName();
           pixiApp.cellsSheet().cellsFills.updateAlternatingColors(x, y);
           this.removeChild(table);
           table.destroy();
@@ -200,18 +197,6 @@ export class Tables extends Container<Table> {
       this.children.map((table) => table.updateCodeCell());
     }
     pixiApp.setViewportDirty();
-  };
-
-  private changeSheet = (sheetId: string) => {
-    if (sheetId === this.sheet.id) {
-      this.children.forEach((table) => {
-        table.showTableName();
-      });
-    } else {
-      this.children.forEach((table) => {
-        table.hideTableName();
-      });
-    }
   };
 
   // Checks if the mouse cursor is hovering over a table or table heading.
@@ -326,7 +311,6 @@ export class Tables extends Container<Table> {
     // we keep the former context menu table active after the rename finishes
     // until the cursor moves again.
     if (this.actionDataTable) {
-      this.actionDataTable.showTableName();
       this.actionDataTable.showColumnHeaders();
       if (this.activeTable !== this.actionDataTable) {
         this.hoverTable = this.actionDataTable;
@@ -358,7 +342,6 @@ export class Tables extends Container<Table> {
         this.actionDataTable = this.children.find((table) => table.codeCell === options.table);
         if (this.actionDataTable) {
           this.actionDataTable.showActive(true);
-          this.actionDataTable.hideTableName();
           this.hoverTable = undefined;
         }
       } else {

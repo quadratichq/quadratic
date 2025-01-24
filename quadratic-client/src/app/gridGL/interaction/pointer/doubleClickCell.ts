@@ -74,7 +74,8 @@ export async function doubleClickCell(options: {
 
         // check column header or table value
         else {
-          const isColumnHeader = codeCell.show_header && row === codeCell.y;
+          const isColumnHeader =
+            codeCell.show_ui && codeCell.show_columns && row === codeCell.y + (codeCell.show_name ? 1 : 0);
           if (isColumnHeader) {
             const contextMenu = {
               type: ContextMenuType.TableColumn,

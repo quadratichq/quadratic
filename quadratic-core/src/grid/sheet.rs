@@ -222,18 +222,16 @@ impl Sheet {
 
         // if CellValue::Code or CellValue::Import, then we need to get the value from data_tables
         if let Some(cell_value) = cell_value {
-            match cell_value {
-                CellValue::Code(_) | CellValue::Import(_) => self
-                    .data_tables
-                    .get(&pos)
-                    .and_then(|data_table| data_table.cell_value_at(0, 0)),
-                CellValue::Blank => self.get_code_cell_value(pos),
-                _ => Some(cell_value.clone()),
+            if !matches!(
+                cell_value,
+                CellValue::Code(_) | CellValue::Import(_) | CellValue::Blank
+            ) {
+                return Some(cell_value.clone());
             }
-        } else {
-            // if there is no CellValue at Pos, then we still need to check data_tables
-            self.get_code_cell_value(pos)
         }
+
+        // if there is no CellValue at Pos, then we still need to check data_tables
+        self.get_code_cell_value(pos)
     }
 
     /// Returns the JsCellValue at a position

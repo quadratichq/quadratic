@@ -70,7 +70,7 @@ impl DataTable {
 
     /// Get the display value from the source value at a given position.
     pub fn display_value_from_value_at(&self, pos: Pos) -> Result<&CellValue> {
-        let output_size = self.output_size(true);
+        let output_size = self.output_size();
         let x = pos.x as u32;
         let y = pos.y as u32;
         let mut new_x = x;
@@ -110,7 +110,14 @@ impl DataTable {
             return Ok(&CellValue::Blank);
         }
 
-        if pos.y == 0 && self.show_header && !self.header_is_first_row {
+        if pos.y == 0 && self.show_ui && self.show_name {
+            return Ok(self.name.as_ref());
+        }
+        if pos.y == (if self.show_name { 1 } else { 0 })
+            && self.show_ui
+            && self.show_columns
+            && !self.header_is_first_row
+        {
             if let Some(columns) = &self.column_headers {
                 let display_columns = columns.iter().filter(|c| c.display).collect::<Vec<_>>();
                 if let Some(column) = display_columns.get(pos.x as usize) {
@@ -119,11 +126,7 @@ impl DataTable {
             }
         }
 
-        pos.y = match (self.header_is_first_row, self.show_header) {
-            (true, false) => pos.y + 1,
-            (false, true) => pos.y - 1,
-            _ => pos.y,
-        };
+        pos.y -= self.y_adjustment() - if self.header_is_first_row { 1 } else { 0 };
 
         match self.display_buffer {
             Some(ref display_buffer) => self.display_value_from_buffer_at(display_buffer, pos),
@@ -239,7 +242,7 @@ pub mod test {
     fn test_hide_column() {
         let (_, mut data_table) = new_data_table();
         data_table.apply_first_row_as_header();
-        let width = data_table.output_size(true).w.get();
+        let width = data_table.output_size().w.get();
         let mut columns = data_table.column_headers.clone().unwrap();
 
         pretty_print_data_table(&data_table, None, None);
@@ -265,7 +268,7 @@ pub mod test {
 
             let expected_output_width = data_table.columns_to_show().len();
             assert_eq!(
-                data_table.output_size(true).w.get(),
+                data_table.output_size().w.get(),
                 expected_output_width as u32
             );
 

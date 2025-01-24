@@ -79,7 +79,7 @@ impl Sheet {
 
             if !skip_code_runs {
                 for (pos, code_run) in self.data_tables.iter() {
-                    let code_rect = code_run.output_rect(*pos, false, true);
+                    let code_rect = code_run.output_rect(*pos, false);
                     for x in code_rect.x_range() {
                         for y in code_rect.y_range() {
                             if rect.is_some_and(|rect| rect.contains(Pos { x, y })) {
@@ -707,7 +707,7 @@ mod tests {
         let mut sheet = Sheet::test();
         sheet.test_set_code_run_array_2d(1, 1, 2, 2, vec!["1", "2", "3", "4"]);
         let dt = sheet.data_table_mut(pos![A1]).unwrap();
-        dt.show_header = true;
+        dt.show_ui = true;
 
         let table_ref = TableRef::parse("Table1", &sheet.a1_context()).unwrap();
         assert_eq!(

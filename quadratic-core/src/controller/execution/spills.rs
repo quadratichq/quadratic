@@ -38,7 +38,7 @@ impl GridController {
                 code_pos = Some(*pos);
 
                 // need to update the cells that are affected by the spill error
-                let sheet_rect = run.output_sheet_rect(sheet_pos, true, true);
+                let sheet_rect = run.output_sheet_rect(sheet_pos, true);
                 transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
             }
             if let Some(code_pos) = code_pos {
@@ -75,12 +75,12 @@ impl GridController {
         if let Some(sheet) = self.grid.try_sheet(sheet_id) {
             if let Some((pos, data_table)) = sheet.data_tables.get_index(index) {
                 // output sizes of 1x1 cannot spill
-                if matches!(data_table.output_size(true), ArraySize::_1X1) {
+                if matches!(data_table.output_size(), ArraySize::_1X1) {
                     return None;
                 }
 
                 let output: Rect = data_table
-                    .output_sheet_rect(pos.to_sheet_pos(sheet_id), true, true)
+                    .output_sheet_rect(pos.to_sheet_pos(sheet_id), true)
                     .into();
 
                 // then do the more expensive checks to see if there is a spill error

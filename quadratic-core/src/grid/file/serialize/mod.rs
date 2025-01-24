@@ -19,8 +19,6 @@ pub(crate) mod selection;
 pub mod sheets;
 pub(crate) mod validations;
 
-pub use crate::grid::data_table::DataTableShowUI;
-
 pub fn import(file: current::GridSchema) -> Result<Grid> {
     Ok(Grid {
         sheets: file

@@ -29,9 +29,11 @@ impl GridController {
 
         // enforce unique data table names
         if let Some(new_data_table) = &mut new_data_table {
-            let unique_name =
-                self.grid()
-                    .unique_data_table_name(&new_data_table.name, false, Some(sheet_pos));
+            let unique_name = self.grid().unique_data_table_name(
+                &new_data_table.name.to_display(),
+                false,
+                Some(sheet_pos),
+            );
             new_data_table.update_table_name(&unique_name);
         }
 
@@ -70,13 +72,15 @@ impl GridController {
         if let (Some(old_data_table), Some(new_data_table)) =
             (sheet.data_table(pos), &mut new_data_table)
         {
-            new_data_table.show_header = old_data_table.show_header;
+            new_data_table.show_ui = old_data_table.show_ui;
+            new_data_table.show_name = old_data_table.show_name;
+            new_data_table.show_columns = old_data_table.show_columns;
             new_data_table.alternating_colors = old_data_table.alternating_colors;
             new_data_table.header_is_first_row = old_data_table.header_is_first_row;
 
             // if the width of the old and new data tables are the same,
             // then we can preserve other user-selected properties
-            if old_data_table.output_size(true).w == new_data_table.output_size(true).w {
+            if old_data_table.output_size().w == new_data_table.output_size().w {
                 new_data_table.column_headers = old_data_table.column_headers.to_owned();
                 new_data_table.formats = old_data_table.formats.to_owned();
 
@@ -114,15 +118,13 @@ impl GridController {
 
         let sheet_rect = match (&old_data_table, &new_data_table) {
             (None, None) => sheet_pos.into(),
-            (None, Some(code_cell_value)) => {
-                code_cell_value.output_sheet_rect(sheet_pos, false, true)
-            }
+            (None, Some(code_cell_value)) => code_cell_value.output_sheet_rect(sheet_pos, false),
             (Some(old_code_cell_value), None) => {
-                old_code_cell_value.output_sheet_rect(sheet_pos, false, true)
+                old_code_cell_value.output_sheet_rect(sheet_pos, false)
             }
             (Some(old_code_cell_value), Some(code_cell_value)) => {
-                let old = old_code_cell_value.output_sheet_rect(sheet_pos, false, true);
-                let new = code_cell_value.output_sheet_rect(sheet_pos, false, true);
+                let old = old_code_cell_value.output_sheet_rect(sheet_pos, false);
+                let new = code_cell_value.output_sheet_rect(sheet_pos, false);
                 SheetRect {
                     min: sheet_pos.into(),
                     max: Pos {

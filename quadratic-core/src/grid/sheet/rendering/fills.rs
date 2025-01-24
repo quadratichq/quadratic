@@ -45,7 +45,7 @@ impl Sheet {
                         if dt.spill_error || dt.has_error() {
                             return None;
                         }
-                        let rect = dt.output_rect(*pos, false, true);
+                        let rect = dt.output_rect(*pos, false);
                         let x = rect.min.x + x0 - 1;
                         let y = rect.min.y + y0 - 1;
                         let x1 = x1.map_or(rect.max.x, |x1| rect.min.x + x1 - 1);
@@ -163,10 +163,7 @@ mod tests {
         )
         .unwrap();
         let sheet = gc.sheet_mut(sheet_id);
-        sheet
-            .data_table_mut(Pos { x: 5, y: 2 })
-            .unwrap()
-            .show_header = true;
+        sheet.data_table_mut(Pos { x: 5, y: 2 }).unwrap().show_ui = true;
         let fills = sheet.get_all_render_fills();
         assert_eq!(fills.len(), 2);
         assert_eq!(

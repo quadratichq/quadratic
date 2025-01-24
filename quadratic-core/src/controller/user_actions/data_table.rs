@@ -1,8 +1,6 @@
 use crate::{
     controller::{active_transactions::transaction_name::TransactionName, GridController},
-    grid::{
-        data_table::column_header::DataTableColumnHeader, sort::DataTableSort, DataTableShowUI,
-    },
+    grid::{data_table::column_header::DataTableColumnHeader, sort::DataTableSort},
     Pos, SheetPos, SheetRect,
 };
 
@@ -57,8 +55,9 @@ impl GridController {
         name: Option<String>,
         alternating_colors: Option<bool>,
         columns: Option<Vec<DataTableColumnHeader>>,
-        show_header: Option<bool>,
-        show_ui: Option<DataTableShowUI>,
+        show_ui: Option<bool>,
+        show_name: Option<bool>,
+        show_columns: Option<bool>,
         cursor: Option<String>,
     ) {
         let ops = self.data_table_meta_operations(
@@ -66,8 +65,9 @@ impl GridController {
             name,
             alternating_colors,
             columns,
-            show_header,
             show_ui,
+            show_name,
+            show_columns,
         );
         self.start_user_transaction(ops, cursor, TransactionName::DataTableMeta);
     }
@@ -204,7 +204,7 @@ mod tests {
         let old_code = r#"q.cells("simple.csv[city]")"#;
         let new_code = r#"q.cells("New_Table[city]")"#;
 
-        assert_eq!(old_name, "simple.csv");
+        assert_eq!(old_name.to_display(), "simple.csv");
 
         // create a code cell with a table reference
         gc.set_code_cell(
@@ -236,11 +236,12 @@ mod tests {
             None,
             None,
             None,
+            None,
             cursor,
         );
 
         let updated_name = gc.sheet(sheet_id).data_table(pos).unwrap().name.clone();
-        assert_eq!(updated_name, new_name);
+        assert_eq!(updated_name.to_display(), new_name);
 
         let cell_value = gc.sheet(sheet_id).cell_value(pos_code_cell);
         let code_cell_value = CodeCellValue::new_python(new_code.into());
@@ -296,6 +297,7 @@ mod tests {
             None,
             None,
             Some(new_column_headers),
+            None,
             None,
             None,
             cursor,

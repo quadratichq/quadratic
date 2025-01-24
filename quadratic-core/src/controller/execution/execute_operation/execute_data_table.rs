@@ -129,12 +129,12 @@ impl GridController {
             let sheet_id = sheet_pos.sheet_id;
             let pos = Pos::from(sheet_pos);
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let data_table_rect = data_table.output_sheet_rect(sheet_pos, false, true);
+            let data_table_rect = data_table.output_sheet_rect(sheet_pos, false);
 
             let old_values = sheet.get_code_cell_values(data_table_rect.into());
             sheet.delete_cell_values(data_table_rect.into());
 
-            let import = Import::new(data_table.name.to_owned());
+            let import = Import::new(data_table.name.to_display());
             let cell_value = CellValue::Import(import.to_owned());
             sheet.set_cell_value(pos, cell_value);
             sheet.data_tables.insert_full(pos, data_table.to_owned());
@@ -187,7 +187,7 @@ impl GridController {
 
             // Pull out the data table via a swap, removing it from the sheet
             let data_table = sheet.delete_data_table(pos)?;
-            let data_table_rect = data_table.output_sheet_rect(sheet_pos, false, true);
+            let data_table_rect = data_table.output_sheet_rect(sheet_pos, false);
 
             // let the client know that the code cell has been created to apply the styles
             if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
@@ -250,9 +250,7 @@ impl GridController {
                 pos.y = row_index as i64 + data_table_pos.y;
             }
 
-            if data_table.show_header && !data_table.header_is_first_row {
-                pos.y -= 1;
-            }
+            pos.y -= data_table.y_adjustment();
 
             let rect = Rect::from_numbers(pos.x, pos.y, values.w as i64, values.h as i64);
             let old_values = sheet.get_code_cell_values(rect);
@@ -359,7 +357,7 @@ impl GridController {
             let data_table_pos = sheet.first_data_table_within(pos)?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
             let old_data_table_kind = data_table.kind.to_owned();
-            let sheet_rect = data_table.output_sheet_rect(sheet_pos, false, true);
+            let sheet_rect = data_table.output_sheet_rect(sheet_pos, false);
 
             data_table.kind = match old_data_table_kind {
                 DataTableKind::CodeRun(_) => match kind {
@@ -465,14 +463,15 @@ impl GridController {
             ref name,
             ref alternating_colors,
             ref columns,
-            ref show_header,
             ref show_ui,
+            ref show_name,
+            ref show_columns,
         } = op
         {
             // do grid mutations first to keep the borrow checker happy
             let sheet_id = sheet_pos.sheet_id;
             let pos = Pos::from(sheet_pos);
-            let old_name = self.grid.data_table(sheet_id, pos)?.name.to_owned();
+            let old_name = self.grid.data_table(sheet_id, pos)?.name.to_display();
 
             if let Some(name) = name {
                 self.grid
@@ -524,19 +523,6 @@ impl GridController {
             let has_fills = data_table.formats.has_fills();
             let has_borders = !data_table.borders.is_default();
 
-            let old_show_header = show_header.map(|show_header| {
-                let old_show_header = data_table.show_header.to_owned();
-                data_table.show_header = show_header;
-                if has_fills {
-                    transaction.add_fill_cells(sheet_id);
-                }
-                if has_borders {
-                    transaction.add_borders(sheet_id);
-                }
-
-                old_show_header
-            });
-
             let old_show_ui = show_ui.as_ref().map(|show_ui| {
                 let old_show_ui = data_table.show_ui.to_owned();
                 data_table.show_ui = show_ui.to_owned();
@@ -546,11 +532,38 @@ impl GridController {
                 if has_borders {
                     transaction.add_borders(sheet_id);
                 }
+
                 old_show_ui
             });
 
+            let old_show_name = show_name.as_ref().map(|show_name| {
+                let old_show_name = data_table.show_name.to_owned();
+                data_table.show_name = show_name.to_owned();
+                if has_fills {
+                    transaction.add_fill_cells(sheet_id);
+                }
+                if has_borders {
+                    transaction.add_borders(sheet_id);
+                }
+
+                old_show_name
+            });
+
+            let old_show_columns = show_columns.as_ref().map(|show_columns| {
+                let old_show_columns = data_table.show_columns.to_owned();
+                data_table.show_columns = show_columns.to_owned();
+                if has_fills {
+                    transaction.add_fill_cells(sheet_id);
+                }
+                if has_borders {
+                    transaction.add_borders(sheet_id);
+                }
+
+                old_show_columns
+            });
+
             let data_table_rect = data_table
-                .output_rect(sheet_pos.into(), true, true)
+                .output_rect(sheet_pos.into(), true)
                 .to_sheet_rect(sheet_id);
 
             self.send_to_wasm(transaction, &data_table_rect)?;
@@ -562,8 +575,9 @@ impl GridController {
                 name: Some(old_name),
                 alternating_colors: old_alternating_colors,
                 columns: old_columns,
-                show_header: old_show_header,
                 show_ui: old_show_ui,
+                show_name: old_show_name,
+                show_columns: old_show_columns,
             }];
 
             self.data_table_operations(
@@ -590,7 +604,7 @@ impl GridController {
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
             let data_table_sheet_rect = data_table
-                .output_rect(sheet_pos.into(), true, true)
+                .output_rect(sheet_pos.into(), true)
                 .to_sheet_rect(sheet_id);
 
             let old_value = data_table.sort.to_owned();
@@ -638,7 +652,7 @@ impl GridController {
             data_table.insert_column(index as usize, column_header, values)?;
 
             let data_table_rect = data_table
-                .output_rect(sheet_pos.into(), true, true)
+                .output_rect(sheet_pos.into(), true)
                 .to_sheet_rect(sheet_id);
 
             if data_table.formats.has_fills() {
@@ -685,7 +699,7 @@ impl GridController {
             data_table.delete_column(index as usize)?;
 
             let data_table_rect = data_table
-                .output_rect(sheet_pos.into(), true, true)
+                .output_rect(sheet_pos.into(), true)
                 .to_sheet_rect(sheet_id);
 
             if data_table.formats.has_fills() {
@@ -736,7 +750,7 @@ impl GridController {
             data_table.insert_row(index as usize, values)?;
 
             let data_table_rect = data_table
-                .output_rect(sheet_pos.into(), true, true)
+                .output_rect(sheet_pos.into(), true)
                 .to_sheet_rect(sheet_id);
 
             if data_table.formats.has_fills() {
@@ -778,7 +792,7 @@ impl GridController {
             data_table.delete_row(index as usize)?;
 
             let data_table_rect = data_table
-                .output_rect(sheet_pos.into(), true, true)
+                .output_rect(sheet_pos.into(), true)
                 .to_sheet_rect(sheet_id);
 
             if data_table.formats.has_fills() {
@@ -825,7 +839,7 @@ impl GridController {
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
             let data_table_rect = data_table
-                .output_rect(sheet_pos.into(), true, true)
+                .output_rect(sheet_pos.into(), true)
                 .to_sheet_rect(sheet_id);
 
             data_table.toggle_first_row_as_header(first_row_is_header);
@@ -879,7 +893,7 @@ impl GridController {
                 transaction.reverse_operations.push(reverse_operations);
             }
 
-            let data_table_rect = data_table.output_sheet_rect(sheet_pos, false, true);
+            let data_table_rect = data_table.output_sheet_rect(sheet_pos, false);
             if data_table.formats.has_fills() {
                 transaction.add_fill_cells(sheet_id);
             }
@@ -1250,7 +1264,7 @@ mod tests {
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
         let updated_name = "My_Table";
 
-        assert_eq!(&data_table.name, "simple.csv");
+        assert_eq!(&data_table.name.to_display(), "simple.csv");
         println!("Initial data table name: {}", &data_table.name);
 
         let sheet_pos = SheetPos::from((pos, sheet_id));
@@ -1259,28 +1273,29 @@ mod tests {
             name: Some(updated_name.into()),
             alternating_colors: None,
             columns: None,
-            show_header: None,
             show_ui: None,
+            show_name: None,
+            show_columns: None,
         };
         let mut transaction = PendingTransaction::default();
         gc.execute_data_table_meta(&mut transaction, op.clone())
             .unwrap();
 
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        assert_eq!(&data_table.name, updated_name);
+        assert_eq!(&data_table.name.to_display(), updated_name);
         println!("Updated data table name: {}", &data_table.name);
 
         // undo, the value should be the initial name
         execute_reverse_operations(&mut gc, &transaction);
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        assert_eq!(&data_table.name, "simple.csv");
+        assert_eq!(&data_table.name.to_display(), "simple.csv");
         println!("Initial data table name: {}", &data_table.name);
 
         // redo, the value should be the updated name
         {
             execute_forward_operations(&mut gc, &mut transaction);
             let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-            assert_eq!(&data_table.name, updated_name);
+            assert_eq!(&data_table.name.to_display(), updated_name);
             println!("Updated data table name: {}", &data_table.name);
         }
 
@@ -1289,7 +1304,7 @@ mod tests {
         gc.execute_data_table_meta(&mut transaction, op).unwrap();
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
         // todo: this was wrong. the same data table should not conflict with itself (it used to be "My Table1")
-        assert_eq!(&data_table.name, "My_Table");
+        assert_eq!(&data_table.name.to_display(), "My_Table");
 
         // ensure numbers aren't added for unique names
         let op = Operation::DataTableMeta {
@@ -1297,13 +1312,14 @@ mod tests {
             name: Some("ABC".into()),
             alternating_colors: None,
             columns: None,
-            show_header: None,
             show_ui: None,
+            show_name: None,
+            show_columns: None,
         };
         let mut transaction = PendingTransaction::default();
         gc.execute_data_table_meta(&mut transaction, op).unwrap();
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        assert_eq!(&data_table.name, "ABC");
+        assert_eq!(&data_table.name.to_display(), "ABC");
     }
 
     #[test]

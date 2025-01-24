@@ -16,14 +16,14 @@ use crate::{
         },
         CellsAccessed, CodeRun, ColumnData, DataTable, DataTableKind, SheetId,
     },
-    ArraySize, Axis, Pos, RunError, RunErrorMsg, Value,
+    ArraySize, Axis, CellValue, Pos, RunError, RunErrorMsg, Value,
 };
 
 use super::{
     borders::{export_borders, import_borders},
     cell_value::{export_cell_value, import_cell_value},
     current,
-    formats::{export_formats, import_formats}, // format::{export_format, import_format},
+    formats::{export_formats, import_formats},
 };
 
 fn import_cell_ref_coord(coord: current::CellRefCoordSchema) -> CellRefCoord {
@@ -290,10 +290,11 @@ pub(crate) fn import_data_table_builder(
                     })
                 }
             },
-            name: data_table.name,
+            name: CellValue::Text(data_table.name),
             header_is_first_row: data_table.header_is_first_row,
-            show_header: data_table.show_header,
-            show_ui: data_table.show_ui.into(),
+            show_ui: data_table.show_ui,
+            show_name: data_table.show_name,
+            show_columns: data_table.show_columns,
             readonly: data_table.readonly,
             last_modified: data_table.last_modified.unwrap_or(Utc::now()), // this is required but fall back to now if failed
             spill_error: data_table.spill_error,
@@ -516,10 +517,11 @@ pub(crate) fn export_data_tables(
 
             let data_table = current::DataTableSchema {
                 kind,
-                name: data_table.name,
+                name: data_table.name.to_display(),
                 header_is_first_row: data_table.header_is_first_row,
-                show_header: data_table.show_header,
-                show_ui: data_table.show_ui.into(),
+                show_ui: data_table.show_ui,
+                show_name: data_table.show_name,
+                show_columns: data_table.show_columns,
                 columns,
                 sort,
                 display_buffer: data_table.display_buffer,

@@ -165,7 +165,7 @@ export const toggleFirstRowAsHeaderAction = {
   isAvailable: isAvailableBecauseCanEditFile,
 };
 
-export const toggleHeaderTableAction = {
+export const toggleTableColumnsAction = {
   label: 'Toggle show column headings',
   isAvailable: isAvailableBecauseCanEditFile,
 };
@@ -242,5 +242,10 @@ export const removeTableRowAction = {
 
 export const toggleTableUIAction = {
   label: 'Toggle show table UI',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const toggleTableNameAction = {
+  label: 'Toggle show table name',
   isAvailable: isAvailableBecauseCanEditFile,
 };

@@ -1123,7 +1123,8 @@ export interface ClientCoreDataTableMeta {
     display: boolean;
     valueIndex: number;
   }[];
-  showHeader?: boolean;
+  showName?: boolean;
+  showColumns?: boolean;
   showUI?: boolean;
   cursor: string;
 }

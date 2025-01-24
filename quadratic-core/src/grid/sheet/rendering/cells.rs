@@ -182,13 +182,11 @@ impl Sheet {
                 } else {
                     code_rect.max.y
                 };
+                let code_rect_start_y = code_rect.min.y + data_table.y_adjustment();
                 for x in x_start..=x_end {
                     for y in y_start..=y_end {
-                        // We skip rendering the heading row because we render it separately.
-                        if y == code_rect.min.y
-                            && data_table.show_header
-                            && data_table.header_is_first_row
-                        {
+                        // We skip rendering the header rows because we render it separately.
+                        if y < code_rect_start_y {
                             continue;
                         }
                         let value = data_table.cell_value_at(
@@ -202,17 +200,12 @@ impl Sheet {
                             } else {
                                 None
                             };
-                            let special = if y == code_rect.min.y && data_table.show_header {
-                                Some(JsRenderCellSpecial::TableColumnHeader)
-                            } else {
-                                None
-                            };
                             cells.push(self.get_render_cell(
                                 x,
                                 y,
                                 &value,
                                 language,
-                                special,
+                                None,
                                 Some((code_rect.min, data_table)),
                             ));
                         }

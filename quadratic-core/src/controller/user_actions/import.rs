@@ -83,6 +83,7 @@ impl GridController {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 pub(crate) mod tests {
     use super::*;
     use std::str::FromStr;
@@ -98,7 +99,7 @@ pub(crate) mod tests {
 
     use bigdecimal::BigDecimal;
     use chrono::{NaiveDate, NaiveDateTime};
-    use serial_test::{parallel, serial};
+    use serial_test::serial;
 
     use crate::wasm_bindings::js::expect_js_call_count;
 
@@ -161,16 +162,15 @@ pub(crate) mod tests {
         );
 
         let first_row = vec!["city", "region", "country", "population"];
-        assert_data_table_cell_value_row(gc, sheet_id, 0, 3, 0, first_row);
+        assert_data_table_cell_value_row(gc, sheet_id, 0, 4, 1, first_row);
 
         let last_row = vec!["Concord", "NH", "United States", "42605"];
-        assert_data_table_cell_value_row(gc, sheet_id, 0, 3, 10, last_row);
+        assert_data_table_cell_value_row(gc, sheet_id, 0, 4, 11, last_row);
 
         (gc, sheet_id, pos, file_name)
     }
 
     #[test]
-    #[parallel]
     fn imports_a_simple_csv() {
         let (gc, sheet_id, pos, file_name) = simple_csv();
 
@@ -178,7 +178,6 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[parallel]
     fn errors_on_an_empty_csv() {
         let mut grid_controller = GridController::test();
         let sheet_id = grid_controller.grid.sheets()[0].id;
@@ -225,7 +224,6 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[parallel]
     fn import_problematic_line() {
         let mut gc = GridController::test();
         let csv = "980E92207901934";
@@ -244,7 +242,6 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[parallel]
     fn imports_a_simple_excel_file() {
         let mut gc = GridController::new_blank();
         let file: Vec<u8> = std::fs::read(EXCEL_FILE).expect("Failed to read file");
@@ -340,7 +337,6 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[parallel]
     fn import_all_excel_functions() {
         let mut grid_controller = GridController::new_blank();
         let pos = pos![A1];
@@ -381,7 +377,6 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[parallel]
     fn imports_a_simple_parquet() {
         let mut grid_controller = GridController::test();
         let sheet_id = grid_controller.grid.sheets()[0].id;
@@ -395,7 +390,7 @@ pub(crate) mod tests {
             sheet_id,
             1,
             23,
-            1,
+            2,
             vec![
                 "id",
                 "text",
@@ -428,7 +423,7 @@ pub(crate) mod tests {
             sheet_id,
             1,
             23,
-            2,
+            3,
             vec![
                 "1",                                    // id
                 "a",                                    // text
@@ -459,8 +454,7 @@ pub(crate) mod tests {
 
     // The following tests run too slowly to be included in the test suite:
 
-    // #[test]#[parallel]
-    // fn imports_a_medium_parquet() {
+    // #[test]    // fn imports_a_medium_parquet() {
     //     let mut grid_controller = GridController::test();
     //     let sheet_id = grid_controller.grid.sheets()[0].id;
     //     let pos = Pos { x: 0, y: 0 };
@@ -481,13 +475,12 @@ pub(crate) mod tests {
     // }
 
     #[test]
-    #[parallel]
     fn should_import_with_title_header_only() {
         let file_name = "title_row.csv";
         let csv_file = read_test_csv_file(file_name);
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
-        let pos = Pos { x: 0, y: 0 };
+        let pos = pos![A1];
 
         gc.import_csv(
             sheet_id,
@@ -500,22 +493,16 @@ pub(crate) mod tests {
         )
         .unwrap();
 
-        print_data_table(&gc, sheet_id, Rect::new_span(pos, Pos { x: 3, y: 4 }));
-
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 0, vec!["Sample report ", "", ""]);
-        assert_data_table_cell_value_row(
-            &gc,
-            sheet_id,
-            0,
-            2,
-            2,
-            vec!["c1", " c2", " Sample column3"],
-        );
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 5, vec!["7", "8", "9"]);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.rendered_value(pos![A1]).unwrap(), "title_row.csv");
+        assert_eq!(sheet.rendered_value(pos![A2]).unwrap(), "Column 1");
+        assert_eq!(sheet.rendered_value(pos![A3]).unwrap(), "Sample report");
+        assert_eq!(sheet.rendered_value(pos![A5]).unwrap(), "c1");
+        assert_eq!(sheet.rendered_value(pos![B5]).unwrap(), " c2");
+        assert_eq!(sheet.rendered_value(pos![C5]).unwrap(), " Sample column3");
     }
 
     #[test]
-    #[parallel]
     fn should_import_with_title_header_and_empty_first_row() {
         let file_name = "title_row_empty_first.csv";
         let csv_file = read_test_csv_file(file_name);
@@ -536,20 +523,19 @@ pub(crate) mod tests {
 
         print_data_table(&gc, sheet_id, Rect::new_span(pos, Pos { x: 3, y: 4 }));
 
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 0, vec!["Sample report ", "", ""]);
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 2, vec!["Sample report ", "", ""]);
         assert_data_table_cell_value_row(
             &gc,
             sheet_id,
             0,
             2,
-            2,
+            4,
             vec!["c1", " c2", " Sample column3"],
         );
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 5, vec!["7", "8", "9"]);
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 7, vec!["7", "8", "9"]);
     }
 
     #[test]
-    #[parallel]
     fn should_import_utf16_with_invalid_characters() {
         let file_name = "encoding_issue.csv";
         let csv_file = read_test_csv_file(file_name);
@@ -571,13 +557,12 @@ pub(crate) mod tests {
 
         print_table(&gc, sheet_id, Rect::new_span(pos, Pos { x: 2, y: 3 }));
 
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 0, vec!["issue", " test", " value"]);
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 1, vec!["0", " 1", " Invalid"]);
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 2, vec!["0", " 2", " Valid"]);
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 2, vec!["issue", " test", " value"]);
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 3, vec!["0", " 1", " Invalid"]);
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 4, vec!["0", " 2", " Valid"]);
     }
 
-    // #[test]#[parallel]
-    // fn imports_a_large_parquet() {
+    // #[test]    // fn imports_a_large_parquet() {
     //     let mut grid_controller = GridController::test();
     //     let sheet_id = grid_controller.grid.sheets()[0].id;
     //     let pos = Pos { x: 0, y: 0 };
