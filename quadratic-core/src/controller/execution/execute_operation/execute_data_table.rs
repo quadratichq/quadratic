@@ -134,7 +134,7 @@ impl GridController {
             let old_values = sheet.get_code_cell_values(data_table_rect.into());
             sheet.delete_cell_values(data_table_rect.into());
 
-            let import = Import::new(data_table.name.to_owned());
+            let import = Import::new(data_table.name.to_display());
             let cell_value = CellValue::Import(import.to_owned());
             sheet.set_cell_value(pos, cell_value);
             sheet.data_tables.insert_full(pos, data_table.to_owned());

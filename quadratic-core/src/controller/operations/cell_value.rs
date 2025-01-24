@@ -146,8 +146,13 @@ impl GridController {
                     .get(&Pos::from(sheet_pos))
                     .map(|dt| {
                         let mut dt_height = dt.height(true);
-                        if dt.show_header {
-                            dt_height += 1;
+                        if dt.show_ui {
+                            if dt.show_name {
+                                dt_height += 1;
+                            }
+                            if dt.show_columns {
+                                dt_height += 1;
+                            }
                         }
 
                         let full_table_selected =

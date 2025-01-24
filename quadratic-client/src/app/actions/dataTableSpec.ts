@@ -53,9 +53,7 @@ type DataTableSpec = Pick<
 >;
 
 export const getTable = (): JsRenderCodeCell | undefined => {
-  const table = pixiAppSettings.contextMenu?.table ?? pixiApp.cellsSheet().cursorOnDataTable();
-  console.log(table);
-  return table;
+  return pixiAppSettings.contextMenu?.table ?? pixiApp.cellsSheet().cursorOnDataTable();
 };
 
 export const getRow = (): number | undefined => {
@@ -213,6 +211,7 @@ export const toggleTableAlternatingColors = () => {
       { alternatingColors: !isAlternatingColorsShowing() },
       sheets.getCursorPosition()
     );
+    pixiAppSettings.setContextMenu?.({});
   }
 };
 
@@ -370,6 +369,7 @@ export const toggleTableUI = () => {
       { showUI: !table.show_ui },
       sheets.getCursorPosition()
     );
+    pixiAppSettings.setContextMenu?.({});
   }
 };
 
@@ -383,6 +383,7 @@ export const toggleTableColumns = () => {
       { showColumns: !table.show_columns },
       sheets.getCursorPosition()
     );
+    pixiAppSettings.setContextMenu?.({});
   }
 };
 
@@ -396,6 +397,7 @@ export const toggleTableName = () => {
       { showName: !table.show_name },
       sheets.getCursorPosition()
     );
+    pixiAppSettings.setContextMenu?.({});
   }
 };
 

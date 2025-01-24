@@ -383,7 +383,7 @@ impl DataTable {
                     if self.header_is_first_row {
                         height -= 1;
                     }
-                    if self.show_ui {
+                    if self.show_ui || include_header {
                         if include_header || self.show_name {
                             height += 1;
                         }
