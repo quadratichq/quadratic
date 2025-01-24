@@ -79,7 +79,7 @@ export const GridContextMenu = () => {
                   <ContextMenuItem icon={<TableIcon />} text={'Table'} />
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent>
-                  <TableMenu defaultRename={false} codeCell={table} />
+                  <TableMenu defaultEdit={false} codeCell={table} />
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
             </>

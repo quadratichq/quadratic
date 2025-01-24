@@ -419,7 +419,6 @@ export const dataTableSpec: DataTableSpec = {
   },
   [Action.RenameTable]: {
     label: 'Rename',
-    defaultOption: true,
     Icon: FileRenameIcon,
     run: renameTable,
   },
@@ -506,6 +505,7 @@ export const dataTableSpec: DataTableSpec = {
     run: removeTableRow,
   },
   [Action.EditTableCode]: {
+    defaultOption: true,
     label: 'Edit code',
     Icon: EditIcon,
     run: editTableCode,

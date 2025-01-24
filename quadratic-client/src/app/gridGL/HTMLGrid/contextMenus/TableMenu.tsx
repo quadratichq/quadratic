@@ -11,13 +11,13 @@ import { DropdownMenuItem, DropdownMenuSeparator } from '@/shared/shadcn/ui/drop
 import { useMemo } from 'react';
 
 interface Props {
-  defaultRename?: boolean;
+  defaultEdit?: boolean;
   codeCell?: JsRenderCodeCell;
   selectedColumn?: number;
 }
 
 export const TableMenu = (props: Props) => {
-  const { defaultRename, codeCell, selectedColumn } = props;
+  const { defaultEdit, codeCell, selectedColumn } = props;
   const cell = useMemo(() => getCodeCell(codeCell?.language), [codeCell?.language]);
   const isCodeCell = useMemo(() => cell && cell.id !== 'Import', [cell]);
   const hiddenColumns = useMemo(() => getColumns()?.filter((c) => !c.display), []);
@@ -41,17 +41,20 @@ export const TableMenu = (props: Props) => {
   if (!codeCell || selectedColumn !== undefined) {
     return null;
   }
-
+  console.log(defaultEdit);
   return (
     <>
       {isCodeCell && (
         <>
           <DropdownMenuItem onClick={() => defaultActionSpec[Action.EditTableCode].run()}>
-            <ContextMenuItem icon={<EditIcon />} text={`Edit code`} />
+            <ContextMenuItem
+              icon={<EditIcon />}
+              text={<div className={defaultEdit !== false ? 'font-bold' : ''}>Edit code</div>}
+            />
           </DropdownMenuItem>
         </>
       )}
-      <ContextMenuItemAction action={Action.RenameTable} overrideDefaultOption={defaultRename} />
+      <ContextMenuItemAction action={Action.RenameTable} />
       {!isImageOrHtmlCell && !spillError && <ContextMenuItemAction action={Action.SortTable} />}
 
       {!isImageOrHtmlCell && hasHiddenColumns && !spillError && (
