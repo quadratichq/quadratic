@@ -4,7 +4,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { ColumnRow, JsCoordinate } from '@/app/quadratic-core-types';
+import type { ColumnRow, JsCoordinate, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { Point } from 'pixi.js';
@@ -24,6 +24,7 @@ export class PointerDataTable {
   selectionRight?: Rectangle;
   selectionBottom?: Rectangle;
   tableBounds?: ColumnRow;
+  codeCell?: JsRenderCodeCell;
   cursor?: string;
   active = false;
 
@@ -278,6 +279,9 @@ export class PointerDataTable {
               .fill(0)
               .map((_, i) => fn(i, base));
 
+          let show_header = this.codeCell?.show_header || false;
+          let adjustHeight = show_header ? 1 : 0;
+
           // update the table
           quadraticCore.dataTableMutations(
             sheet.id,
@@ -286,7 +290,7 @@ export class PointerDataTable {
             toArray(columnsToAdd, width, (i, base) => base + i),
             toArray(columnsToRemove, width, (i, base) => base - i - 1),
             toArray(rowsToAdd, height, (i, base) => base + i),
-            toArray(rowsToRemove, height, (i, base) => base - i - 2),
+            toArray(rowsToRemove, height, (i, base) => base - i - adjustHeight),
             sheets.getCursorPosition()
           );
         }

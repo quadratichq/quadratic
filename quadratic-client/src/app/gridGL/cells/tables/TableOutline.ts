@@ -76,6 +76,7 @@ export class TableOutline extends Graphics {
         this.table.tableBounds.x,
         this.table.tableBounds.y
       );
+      pixiApp.pointer.pointerDataTable.codeCell = this.table.codeCell;
     }
 
     // draw the spill error boundaries
