@@ -529,9 +529,9 @@ impl DataTable {
     /// elements
     pub fn y_adjustment(&self) -> i64 {
         let mut y_adjustment = 0;
-        if self.header_is_first_row {
-            y_adjustment -= 1;
-        }
+        // if self.header_is_first_row {
+        //     y_adjustment -= 1;
+        // }
         if self.show_ui {
             if self.show_name {
                 y_adjustment += 1;

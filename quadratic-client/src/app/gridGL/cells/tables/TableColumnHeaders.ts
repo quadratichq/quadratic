@@ -225,4 +225,12 @@ export class TableColumnHeaders extends Container {
     });
     return { y0: 0, y1: this.headerHeight, lines };
   }
+
+  toHover() {
+    this.drawBackground();
+  }
+
+  toGrid() {
+    this.drawBackground();
+  }
 }

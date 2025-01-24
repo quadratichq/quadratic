@@ -2,7 +2,7 @@ import { DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { getLanguageSymbol } from '@/app/gridGL/cells/CellsMarkers';
 import type { Table } from '@/app/gridGL/cells/tables/Table';
 import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { intersects } from '@/app/gridGL/helpers/intersects';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import { CELL_HEIGHT } from '@/shared/constants/gridConstants';
@@ -10,7 +10,7 @@ import { sharedEvents } from '@/shared/sharedEvents';
 import type { Point } from 'pixi.js';
 import { BitmapText, Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
 
-export const TABLE_NAME_FONT_SIZE = 12;
+export const TABLE_NAME_FONT_SIZE = 14;
 export const TABLE_NAME_PADDING = [4, 2];
 
 const DROPDOWN_PADDING = 10;
@@ -28,8 +28,7 @@ export class TableName extends Container {
   private dropdown: Sprite;
   private backgroundWidth = 0;
 
-  // hidden by Tables
-  hidden: boolean = true;
+  tableNameBounds = new Rectangle();
 
   constructor(table: Table) {
     super();
@@ -87,6 +86,17 @@ export class TableName extends Container {
       TABLE_NAME_PADDING[0] + (this.symbol ? SYMBOL_PADDING + this.symbol.width : 0),
       OPEN_SANS_FIX.y + this.h / 2
     );
+
+    // truncate the name if it's too long
+    let name = this.table.codeCell.name;
+    while (
+      name &&
+      this.text.x + this.text.width + TABLE_NAME_PADDING[0] + (this.symbol ? SYMBOL_PADDING + this.symbol.width : 0) >
+        this.table.tableBounds.width
+    ) {
+      name = name.slice(0, -1);
+      this.text.text = name + '…';
+    }
   }
 
   private drawDropdown() {
@@ -100,78 +110,50 @@ export class TableName extends Container {
     );
   }
 
-  updatePosition = (bounds: Rectangle, gridHeading: number) => {
-    if (this.table.visible) {
-      if (this.table.tableBounds.y < bounds.top + gridHeading) {
-        this.y = bounds.top + gridHeading;
-      } else {
-        this.y = this.table.tableBounds.top;
-      }
-      const headingWidth = pixiApp.headings.headingSize.width / pixiApp.viewport.scaled;
-      if (!this.hidden) {
-        if (this.table.tableBounds.x < bounds.left + headingWidth) {
-          this.x = bounds.left + headingWidth;
-          this.visible = this.x + this.width <= this.table.tableBounds.right;
-        } else {
-          this.x = this.table.tableBounds.x;
-          this.visible = true;
-        }
-      }
-    }
-  };
-
   update() {
     this.h = this.table.sheet.offsets.getRowHeight(this.table.codeCell.y);
     this.drawSymbol();
     this.drawText();
     this.drawDropdown();
     this.drawBackground();
+    this.tableNameBounds = new Rectangle(
+      this.table.tableBounds.x,
+      this.table.tableBounds.y,
+      this.backgroundWidth,
+      this.h
+    );
   }
-
-  get tableNameBounds(): Rectangle {
-    const rect = new Rectangle(0, 0, this.backgroundWidth, CELL_HEIGHT);
-    if (this.table.inOverHeadings) {
-      // rect.x = this.table.columnHeaders.x;
-      // rect.y = this.table.columnHeaders.y - CELL_HEIGHT;
-    } else {
-      rect.x = this.table.tableBounds.x;
-      rect.y = this.table.tableBounds.y - CELL_HEIGHT;
-    }
-    return rect;
-  }
-
-  // // Returns the table name bounds scaled to the viewport.
-  // getScaled() {
-  //   const scaled = this.tableNameBounds;
-  //   const originalHeight = scaled.height;
-  //   scaled.width /= pixiApp.viewport.scaled;
-  //   scaled.height /= pixiApp.viewport.scaled;
-  //   scaled.y -= scaled.height - originalHeight;
-  //   return scaled;
-  // }
-
-  // // Returns the width of the table name text scaled to the viewport.
-  // getScaledTextWidth() {
-  //   return (this.tableNameBounds.width - this.dropdown.width - DROPDOWN_PADDING) / pixiApp.viewport.scaled;
-  // }
 
   intersects(world: Point): TablePointerDownResult | undefined {
-    // if (this.visible && intersects.rectanglePoint(this.bounds(), world)) {
-    //   if (world.x <= this.x + this.getScaledTextWidth()) {
-    //     return { table: this.table.codeCell, type: 'table-name' };
-    //   }
-    //   return { table: this.table.codeCell, type: 'dropdown' };
-    // }
+    if (this.visible && intersects.rectanglePoint(this.tableNameBounds, world)) {
+      if (world.x <= this.tableNameBounds.x + this.text.x + this.text.width) {
+        return { table: this.table.codeCell, type: 'table-name' };
+      }
+      if (world.x <= this.tableNameBounds.x + this.text.width + this.dropdown.width + DROPDOWN_PADDING * 2) {
+        return { table: this.table.codeCell, type: 'dropdown' };
+      }
+      return { table: this.table.codeCell, type: 'table-name' };
+    }
     return undefined;
   }
 
   hide() {
     this.visible = false;
-    this.hidden = true;
   }
 
   show() {
     this.visible = true;
-    this.hidden = false;
+  }
+
+  get hidden(): boolean {
+    return !this.visible;
+  }
+
+  toHover(y: number) {
+    this.tableNameBounds.y = y;
+  }
+
+  toGrid() {
+    this.tableNameBounds.y = this.table.tableBounds.y;
   }
 }

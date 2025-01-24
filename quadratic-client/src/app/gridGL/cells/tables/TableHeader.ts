@@ -2,8 +2,9 @@ import type { Table } from '@/app/gridGL/cells/tables/Table';
 import { TableColumnHeaders } from '@/app/gridGL/cells/tables/TableColumnHeaders';
 import { TableColumnHeadersGridLines } from '@/app/gridGL/cells/tables/TableColumnHeadersGridLines';
 import { TableName } from '@/app/gridGL/cells/tables/TableName';
+import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Container, type Rectangle } from 'pixi.js';
+import { Container, type Point, type Rectangle } from 'pixi.js';
 
 export class TableHeader extends Container {
   private table: Table;
@@ -11,7 +12,7 @@ export class TableHeader extends Container {
   private columnHeaders: TableColumnHeaders;
   private columnHeadersGridLines: TableColumnHeadersGridLines;
 
-  private headerOnGrid = false;
+  tableCursor?: string;
 
   constructor(table: Table) {
     super();
@@ -24,7 +25,7 @@ export class TableHeader extends Container {
 
   /// Returns the bounds of the table name
   getTableNameBounds(): Rectangle {
-    return this.tableName.getBounds();
+    return this.tableName.tableNameBounds;
   }
 
   getColumnHeaderBounds(index: number): Rectangle {
@@ -78,7 +79,8 @@ export class TableHeader extends Container {
   toGrid() {
     this.position.set(0, 0);
     this.columnHeadersGridLines.visible = false;
-    this.headerOnGrid = true;
+    this.tableName.toGrid();
+    this.columnHeaders.toGrid();
 
     // need to keep columnHeaders in the same position in the z-order
     this.table.addChildAt(this, 0);
@@ -89,10 +91,10 @@ export class TableHeader extends Container {
       this.table.tableBounds.x,
       this.table.tableBounds.y + bounds.top + gridHeading - this.table.tableBounds.top
     );
-    this.columnHeaders.drawBackground();
+    this.columnHeaders.toHover();
+    this.tableName.toHover(this.y);
     pixiApp.hoverTableHeaders.addChild(this);
     this.columnHeadersGridLines.visible = true;
-    this.headerOnGrid = false;
   }
 
   hideColumnHeaders(index: number) {
@@ -101,5 +103,17 @@ export class TableHeader extends Container {
 
   showColumnHeaders() {
     this.columnHeaders.show();
+  }
+
+  intersectsTableName(world: Point): TablePointerDownResult | undefined {
+    return this.tableName.intersects(world);
+  }
+
+  clearSortButtons() {
+    this.columnHeaders.clearSortButtons();
+  }
+
+  pointerMove(world: Point): boolean {
+    return this.columnHeaders.pointerMove(world);
   }
 }

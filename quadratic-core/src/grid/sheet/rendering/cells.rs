@@ -182,9 +182,10 @@ impl Sheet {
                 } else {
                     code_rect.max.y
                 };
-                let code_rect_start_y = code_rect.min.x + data_table.y_adjustment();
+                let code_rect_start_y = code_rect.min.y; // + data_table.y_adjustment();
                 for x in x_start..=x_end {
                     for y in y_start..=y_end {
+                        dbgjs!(format!("{},{}", x, y));
                         // We skip rendering the header rows because we render it separately.
                         if data_table.show_ui && (y == code_rect.min.y && data_table.show_name)
                             || (y == code_rect.min.y + 1
@@ -195,8 +196,13 @@ impl Sheet {
                         }
                         let value = data_table.cell_value_at(
                             (x - code_rect.min.x) as u32,
-                            (y - code_rect.min.y - code_rect_start_y) as u32,
+                            (y - code_rect_start_y) as u32,
                         );
+                        dbgjs!(format!(
+                            "{},{}",
+                            (x - code_rect.min.x) as u32,
+                            (y - code_rect_start_y) as u32
+                        ));
 
                         if let Some(value) = value {
                             let language = if x == code_rect.min.x && y == code_rect.min.y {

@@ -174,26 +174,23 @@ export class Table extends Container {
   }
 
   pointerMove(world: Point): 'table-name' | boolean {
-    // if (!this.shouldHideTableName()) {
-    //   const name = this.tableName.intersects(world);
-    //   if (name?.type === 'dropdown') {
-    //     this.columnHeaders.clearSortButtons();
-    //     this.tableCursor = 'pointer';
-    //     return 'table-name';
-    //   } else if (name?.type === 'table-name') {
-    //     this.tableCursor = undefined;
-    //     this.columnHeaders.clearSortButtons();
-    //     return 'table-name';
-    //   }
-    // }
-    // const result = this.columnHeaders.pointerMove(world);
-    // if (result) {
-    //   this.tableCursor = this.columnHeaders.tableCursor;
-    // } else {
-    //   this.tableCursor = undefined;
-    // }
-    // return result;
-    return false;
+    const name = this.intersectsTableName(world);
+    if (name?.type === 'dropdown') {
+      this.header.clearSortButtons();
+      this.tableCursor = 'pointer';
+      return 'table-name';
+    } else if (name?.type === 'table-name') {
+      this.tableCursor = undefined;
+      this.header.clearSortButtons();
+      return 'table-name';
+    }
+    const result = this.header.pointerMove(world);
+    if (result) {
+      this.tableCursor = this.header.tableCursor;
+    } else {
+      this.tableCursor = undefined;
+    }
+    return result;
   }
 
   pointerDown(world: Point): TablePointerDownResult | undefined {
@@ -210,10 +207,9 @@ export class Table extends Container {
   }
 
   intersectsTableName(world: Point): TablePointerDownResult | undefined {
-    // if (this.shouldHideTableName()) {
-    //   return undefined;
-    // }
-    // return this.tableName.intersects(world);
+    if (this.codeCell.show_ui && this.codeCell.show_name) {
+      return this.header.intersectsTableName(world);
+    }
     return undefined;
   }
 
