@@ -91,7 +91,7 @@ mod tests {
 
     #[test]
     fn test_convert_all_columns() {
-        let context = create_test_context(Rect::test_a1("A1:C3"));
+        let context = create_test_context(Rect::test_a1("A1:C4"));
 
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
@@ -103,7 +103,7 @@ mod tests {
 
         assert_eq!(
             table_ref.convert_to_ref_range_bounds(false, &context, false),
-            Some(RefRangeBounds::test_a1("A2:C3"))
+            Some(RefRangeBounds::test_a1("A3:C4"))
         );
 
         let table_ref = TableRef {
@@ -116,7 +116,7 @@ mod tests {
 
         assert_eq!(
             table_ref.convert_to_ref_range_bounds(false, &context, false),
-            Some(RefRangeBounds::test_a1("A1:C3"))
+            Some(RefRangeBounds::test_a1("A1:C4"))
         );
     }
 
@@ -166,7 +166,7 @@ mod tests {
 
         assert_eq!(
             table_ref.convert_to_ref_range_bounds(false, &context, false),
-            Some(RefRangeBounds::test_a1("A2:A4"))
+            Some(RefRangeBounds::test_a1("A3:A4"))
         );
 
         let table_ref = TableRef {
@@ -197,11 +197,11 @@ mod tests {
 
         assert_eq!(
             table_ref.convert_to_ref_range_bounds(false, &context, false),
-            Some(RefRangeBounds::test_a1("A2:B4"))
+            Some(RefRangeBounds::test_a1("A3:B4"))
         );
         assert_eq!(
             table_ref.convert_to_ref_range_bounds(true, &context, false),
-            Some(RefRangeBounds::test_a1("A2:B"))
+            Some(RefRangeBounds::test_a1("A3:B"))
         );
 
         let table_ref = TableRef {
@@ -232,7 +232,7 @@ mod tests {
 
         assert_eq!(
             table_ref.convert_to_ref_range_bounds(false, &context, false),
-            Some(RefRangeBounds::test_a1("B2:C4"))
+            Some(RefRangeBounds::test_a1("B3:C4"))
         );
 
         let table_ref = TableRef {

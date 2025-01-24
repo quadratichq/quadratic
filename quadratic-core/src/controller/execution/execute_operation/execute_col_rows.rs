@@ -305,10 +305,11 @@ impl GridController {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
     use std::collections::HashMap;
 
-    use serial_test::{parallel, serial};
+    use serial_test::serial;
     use uuid::Uuid;
 
     use crate::{
@@ -325,7 +326,6 @@ mod tests {
     use super::*;
 
     #[test]
-    #[parallel]
     fn adjust_code_cells_nothing() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -349,7 +349,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn adjust_code_cells_formula() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -410,7 +409,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn adjust_code_cells_python() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -492,7 +490,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn adjust_code_cells_javascript() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -575,7 +572,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn execute_insert_column() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -605,7 +601,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn execute_insert_row() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -635,7 +630,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn delete_column_formula() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -689,7 +683,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn delete_row_formula() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -743,7 +736,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn insert_column_validation() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -769,7 +761,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn insert_row_validation() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -795,7 +786,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn delete_column_validation() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -821,7 +811,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn delete_row_validation() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -847,7 +836,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn delete_columns() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -879,7 +867,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_delete_row() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

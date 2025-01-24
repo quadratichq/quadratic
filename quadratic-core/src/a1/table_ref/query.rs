@@ -279,7 +279,7 @@ mod tests {
         // the context is A1:B2 because show_headers is true
         context
             .table_map
-            .test_insert("test_table", &["A", "B"], None, Rect::test_a1("A1:B2"));
+            .test_insert("test_table", &["A", "B"], None, Rect::test_a1("A1:B3"));
 
         // One column, one row--note, table has headers, but they're not selected
         let table_ref = TableRef {
@@ -293,7 +293,7 @@ mod tests {
 
         context
             .table_map
-            .test_insert("test_table", &["A", "B"], None, Rect::test_a1("A1:B2"));
+            .test_insert("test_table", &["A", "B"], None, Rect::test_a1("A1:B3"));
 
         // Two columns, one row--note, table has headers, but they're not selected
         let table_ref = TableRef {
@@ -338,7 +338,7 @@ mod tests {
         };
 
         let rect = table_ref.to_largest_rect(&context);
-        assert_eq!(rect.unwrap(), Rect::test_a1("A2:B3"));
+        assert_eq!(rect.unwrap(), Rect::test_a1("A3:B3"));
     }
 
     #[test]
@@ -346,7 +346,7 @@ mod tests {
         let mut context = A1Context::default();
         context
             .table_map
-            .test_insert("test_table", &["A", "B", "C"], None, Rect::test_a1("A1:C3"));
+            .test_insert("test_table", &["A", "B", "C"], None, Rect::test_a1("A1:C4"));
 
         // Single column with all rows
         let table_ref = TableRef {
@@ -358,7 +358,7 @@ mod tests {
         };
 
         let ranges = table_ref.convert_to_ref_range_bounds(false, &context, false);
-        assert_eq!(ranges, Some(RefRangeBounds::test_a1("B2:B3")));
+        assert_eq!(ranges, Some(RefRangeBounds::test_a1("B3:B4")));
 
         // Column to end
         let table_ref = TableRef {
@@ -370,7 +370,7 @@ mod tests {
         };
 
         let ranges = table_ref.convert_to_ref_range_bounds(false, &context, false);
-        assert_eq!(ranges, Some(RefRangeBounds::test_a1("B2:C3")));
+        assert_eq!(ranges, Some(RefRangeBounds::test_a1("B3:C4")));
     }
 
     #[test]
@@ -416,7 +416,7 @@ mod tests {
             headers: false,
             totals: false,
         };
-        assert_eq!(table_ref.try_to_pos(&context), None);
+        assert_eq!(table_ref.try_to_pos(&context), Some(pos![B3]));
     }
 
     #[test]

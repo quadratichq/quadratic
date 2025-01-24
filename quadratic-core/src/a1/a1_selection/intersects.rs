@@ -396,21 +396,21 @@ mod tests {
     fn test_intersection_table_ref() {
         let context = A1Context::test(
             &[],
-            &[("Table1", &["Col1", "Col2"], Rect::test_a1("A1:B2"))],
+            &[("Table1", &["Col1", "Col2"], Rect::test_a1("A1:B4"))],
         );
 
         let sel1 = A1Selection::test_a1_context("Table1", &context);
         let sel2 = A1Selection::test_a1("A1:D4");
         assert_eq!(
             sel1.intersection(&sel2, &context).unwrap().test_to_string(),
-            "A2:B2",
+            "A3:B4",
         );
 
         let sel1 = A1Selection::test_a1("A1:D4");
         let sel2 = A1Selection::test_a1_context("Table1", &context);
         assert_eq!(
             sel1.intersection(&sel2, &context).unwrap().test_to_string(),
-            "A2:B2",
+            "A3:B4",
         );
 
         let sel1 = A1Selection::test_a1("D1:E1");
