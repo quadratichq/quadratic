@@ -5,7 +5,7 @@ import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
 import type { Rectangle } from 'pixi.js';
 import type { KeyboardEvent } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 // todo: ideally, position would be set via ref instead of render so it doesn't
 // flicker when renaming heading or table name where the heading is off the
@@ -90,9 +90,11 @@ export const PixiRename = (props: Props) => {
     }
   }, [inputEl, noScale]);
 
+  const escapeRef = useRef<boolean>(false);
   const onKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'Escape') {
+        escapeRef.current = true;
         close();
         e.stopPropagation();
         e.preventDefault();
@@ -123,10 +125,12 @@ export const PixiRename = (props: Props) => {
   // the context menu closes (eg, via a click outside the Input)
   useEffect(() => {
     return () => {
-      if (inputEl) {
-        if (inputEl.value !== defaultValue && validate(inputEl.value)) {
+      if (!escapeRef.current) {
+        if (inputEl && inputEl.value !== defaultValue && validate(inputEl.value)) {
           onSave(inputEl.value);
         }
+      } else {
+        escapeRef.current = false;
       }
     };
   }, [defaultValue, inputEl, onSave, validate]);
