@@ -89,11 +89,7 @@ pub fn assert_data_table_cell_value(
     value: &str,
 ) {
     let sheet = grid_controller.sheet(sheet_id);
-    let mut pos = Pos { x, y };
-    let data_table_pos = sheet.first_data_table_within(pos).unwrap();
-    let data_table = sheet.data_table_result(data_table_pos).unwrap();
-
-    pos.y += data_table.y_adjustment();
+    let pos = Pos { x, y };
 
     let cell_value = sheet
         .get_code_cell_value(pos)
@@ -408,12 +404,11 @@ pub fn print_table_sheet_formats(sheet: &Sheet, rect: Rect) {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod test {
     use super::*;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn print_table_sheet_format() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
