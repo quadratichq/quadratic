@@ -253,13 +253,13 @@ impl Sheet {
     /// Resolves a selection to a union of rectangles. This is important for
     /// ensuring that all clients agree on the exact rectangles a transaction
     /// applies to.
-    pub fn selection_to_rects(&self, selection: &A1Selection, force_headers: bool) -> Vec<Rect> {
+    pub fn selection_to_rects(&self, selection: &A1Selection, force_columns: bool) -> Vec<Rect> {
         let mut rects = Vec::new();
         for range in selection.ranges.iter() {
             match range {
                 CellRefRange::Sheet { range } => rects.push(self.ref_range_bounds_to_rect(range)),
                 CellRefRange::Table { range } => {
-                    if let Some(rect) = self.table_ref_to_rect(range, force_headers) {
+                    if let Some(rect) = self.table_ref_to_rect(range, force_columns) {
                         rects.push(rect);
                     }
                 }

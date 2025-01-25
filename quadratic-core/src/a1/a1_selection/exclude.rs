@@ -585,7 +585,10 @@ mod test {
         selection.exclude_cells(pos![A1], None, &context);
         assert_eq!(
             selection.ranges,
-            vec![CellRefRange::test_a1("A2:B2"), CellRefRange::test_a1("B1")]
+            vec![
+                CellRefRange::test_a1("A2:B2"),
+                CellRefRange::test_a1("B2:B1")
+            ]
         );
     }
 

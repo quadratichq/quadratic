@@ -563,7 +563,7 @@ mod test {
         let sheet = gc.sheet_mut(sheet_id);
         sheet.test_set_code_run_array_2d(1, 1, 2, 2, vec!["1", "2", "3", "4"]);
 
-        // set show_header = true
+        // set show_ui = true
         gc.data_table_meta(
             SheetPos::new(sheet_id, 1, 1),
             None,
@@ -593,19 +593,19 @@ mod test {
                 cells: vec![
                     JsGetCellResponse {
                         x: 1,
-                        y: 1,
+                        y: 2,
                         value: "Column 1".into(),
                         type_name: "text".into()
                     },
                     JsGetCellResponse {
                         x: 2,
-                        y: 1,
+                        y: 2,
                         value: "Column 2".into(),
                         type_name: "text".into()
                     }
                 ],
                 x: 1,
-                y: 1,
+                y: 2,
                 w: 2,
                 h: 1,
                 two_dimensional: true,
@@ -622,7 +622,7 @@ mod test {
         let sheet = gc.sheet_mut(sheet_id);
         sheet.test_set_code_run_array_2d(1, 1, 2, 1, vec!["1", "2"]);
 
-        // set show_header = true
+        // set show_ui = true
         gc.data_table_meta(
             SheetPos::new(sheet_id, 1, 1),
             None,
@@ -652,31 +652,31 @@ mod test {
                 cells: vec![
                     JsGetCellResponse {
                         x: 1,
-                        y: 1,
+                        y: 2,
                         value: "Column 1".into(),
                         type_name: "text".into()
                     },
                     JsGetCellResponse {
                         x: 2,
-                        y: 1,
+                        y: 2,
                         value: "Column 2".into(),
                         type_name: "text".into()
                     },
                     JsGetCellResponse {
                         x: 1,
-                        y: 2,
+                        y: 3,
                         value: "1".into(),
                         type_name: "number".into()
                     },
                     JsGetCellResponse {
                         x: 2,
-                        y: 2,
+                        y: 3,
                         value: "2".into(),
                         type_name: "number".into()
                     }
                 ],
                 x: 1,
-                y: 1,
+                y: 2,
                 w: 2,
                 h: 2,
                 two_dimensional: true,

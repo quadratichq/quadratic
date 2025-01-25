@@ -1168,7 +1168,7 @@ mod tests {
         let expected = vec!["1", "2", "3"];
 
         // initial value
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 0, expected.clone());
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 2, expected.clone());
         let data_table = &gc.sheet(sheet_id).data_table(data_table_pos).unwrap();
         assert_eq!(data_table.kind, DataTableKind::CodeRun(code_run.clone()));
 
@@ -1182,19 +1182,19 @@ mod tests {
         gc.execute_code_data_table_to_data_table(&mut transaction, op)
             .unwrap();
 
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 0, expected.clone());
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 2, expected.clone());
         let data_table = &gc.sheet(sheet_id).data_table(data_table_pos).unwrap();
         assert_eq!(data_table.kind, kind);
 
         // undo, the value should be a code run data table again
         execute_reverse_operations(&mut gc, &transaction);
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 0, expected.clone());
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 2, expected.clone());
         let data_table = &gc.sheet(sheet_id).data_table(data_table_pos).unwrap();
         assert_eq!(data_table.kind, DataTableKind::CodeRun(code_run));
 
         // redo, the value should be a data table
         execute_forward_operations(&mut gc, &mut transaction);
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 0, expected.clone());
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 2, expected.clone());
         let data_table = &gc.sheet(sheet_id).data_table(data_table_pos).unwrap();
         assert_eq!(data_table.kind, kind);
     }

@@ -120,7 +120,7 @@ mod tests {
 
         assert_eq!(
             table_ref.convert_to_ref_range_bounds(false, &context, false),
-            Some(RefRangeBounds::test_a1("A1:C4"))
+            Some(RefRangeBounds::test_a1("A2:C4"))
         );
     }
 
@@ -183,7 +183,7 @@ mod tests {
 
         assert_eq!(
             table_ref.convert_to_ref_range_bounds(false, &context, false),
-            Some(RefRangeBounds::test_a1("A1:A4"))
+            Some(RefRangeBounds::test_a1("A2:A4"))
         );
     }
 
@@ -218,7 +218,7 @@ mod tests {
 
         assert_eq!(
             table_ref.convert_to_ref_range_bounds(false, &context, false),
-            Some(RefRangeBounds::test_a1("A1:B4"))
+            Some(RefRangeBounds::test_a1("A2:B4"))
         );
     }
 
@@ -249,7 +249,7 @@ mod tests {
 
         assert_eq!(
             table_ref.convert_to_ref_range_bounds(false, &context, false),
-            Some(RefRangeBounds::test_a1("B1:C4"))
+            Some(RefRangeBounds::test_a1("B2:C4"))
         );
     }
 
