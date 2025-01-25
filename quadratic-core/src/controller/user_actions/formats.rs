@@ -788,7 +788,7 @@ mod test {
 
         // we select starting from the second row because show_header is true
         let formats =
-            SheetFormatUpdates::from_selection(&A1Selection::test_a1("A2:"), format_update);
+            SheetFormatUpdates::from_selection(&A1Selection::test_a1("A3:"), format_update);
         assert_eq!(
             ops[0],
             Operation::DataTableFormats {
