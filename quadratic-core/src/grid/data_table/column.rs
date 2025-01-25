@@ -112,7 +112,7 @@ pub mod test {
         assert!(header.is_none());
 
         // this should be a 5x4 array
-        let expected_size = ArraySize::new(3, 4).unwrap();
+        let expected_size = ArraySize::new(3, 5).unwrap();
         assert_eq!(data_table.output_size(), expected_size);
 
         let mut data_table = source_data_table.clone();
@@ -124,12 +124,12 @@ pub mod test {
         assert!(header.is_none());
 
         // this should be a 5x4 array
-        let expected_size = ArraySize::new(3, 4).unwrap();
+        let expected_size = ArraySize::new(3, 5).unwrap();
         assert_eq!(data_table.output_size(), expected_size);
 
-        // there is no data at position (0, 0)
+        // there is no data at position (0, 1)
         assert_eq!(
-            data_table.cell_value_at(0, 0).unwrap(),
+            data_table.cell_value_at(0, 1).unwrap(),
             CellValue::Text("region".into())
         );
 
@@ -142,12 +142,12 @@ pub mod test {
         assert!(header.is_none());
 
         // this should be a 5x4 array
-        let expected_size = ArraySize::new(3, 4).unwrap();
+        let expected_size = ArraySize::new(3, 5).unwrap();
         assert_eq!(data_table.output_size(), expected_size);
 
-        // there is no data at position (0, 0)
+        // there is no data at position (0, 1)
         assert_eq!(
-            data_table.cell_value_at(0, 0).unwrap(),
+            data_table.cell_value_at(0, 1).unwrap(),
             CellValue::Text("city".into())
         );
     }
