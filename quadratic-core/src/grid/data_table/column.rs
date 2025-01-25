@@ -89,11 +89,11 @@ pub mod test {
         assert!(header.is_some());
 
         // this should be a 5x4 array
-        let expected_size = ArraySize::new(5, 4).unwrap();
+        let expected_size = ArraySize::new(5, 5).unwrap();
         assert_eq!(data_table.output_size(), expected_size);
 
-        // there is no data at position (0, 4)
-        assert!(data_table.cell_value_at(0, 4).is_none());
+        // there is no data at position (0, 5)
+        assert!(data_table.cell_value_at(0, 5).is_none());
     }
 
     #[test]
