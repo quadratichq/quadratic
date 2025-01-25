@@ -170,7 +170,7 @@ mod tests {
             fills[0],
             JsRenderFill {
                 x: 6,
-                y: 3,
+                y: 4,
                 w: 1,
                 h: 3,
                 color: "red".to_string(),
@@ -180,7 +180,7 @@ mod tests {
             fills[1],
             JsRenderFill {
                 x: 7,
-                y: 3,
+                y: 4,
                 w: 1,
                 h: 3,
                 color: "blue".to_string(),

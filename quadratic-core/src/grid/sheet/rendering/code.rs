@@ -186,7 +186,12 @@ impl Sheet {
 
         let mut sent = false;
         if let Some(table) = self.data_table(pos) {
-            if let Some(CellValue::Image(image)) = table.cell_value_at(0, 0) {
+            let y = if table.show_ui && table.show_name {
+                1
+            } else {
+                0
+            };
+            if let Some(CellValue::Image(image)) = table.cell_value_at(0, y) {
                 let chart_size = table.chart_pixel_output;
                 crate::wasm_bindings::js::jsSendImage(
                     self.id.to_string(),
@@ -498,7 +503,7 @@ mod tests {
     fn test_send_image() {
         let mut sheet = Sheet::test();
         let sheet_id = sheet.id;
-        let pos = (0, 0).into();
+        let pos = pos![A1];
         let code_run = CodeRun {
             std_out: None,
             std_err: None,
