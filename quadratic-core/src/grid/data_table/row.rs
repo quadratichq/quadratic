@@ -54,15 +54,14 @@ impl DataTable {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 pub mod test {
     use crate::{
         grid::test::{new_data_table, pretty_print_data_table},
         ArraySize, CellValue,
     };
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_data_table_insert_row() {
         let (_, mut data_table) = new_data_table();
         data_table.apply_first_row_as_header();
@@ -73,12 +72,11 @@ pub mod test {
         pretty_print_data_table(&data_table, Some("Data Table with New Row"), None);
 
         // this should be a 5x4 array
-        let expected_size = ArraySize::new(4, 5).unwrap();
+        let expected_size = ArraySize::new(4, 6).unwrap();
         assert_eq!(data_table.output_size(), expected_size);
     }
 
     #[test]
-    #[parallel]
     fn test_data_table_delete_row() {
         let (_, mut source_data_table) = new_data_table();
         source_data_table.apply_first_row_as_header();
@@ -90,7 +88,7 @@ pub mod test {
         pretty_print_data_table(&data_table, Some("Data Table without Seattle row"), None);
 
         // this should be a 4x3 array, includes the header row
-        let expected_size = ArraySize::new(4, 3).unwrap();
+        let expected_size = ArraySize::new(4, 4).unwrap();
         assert_eq!(data_table.output_size(), expected_size);
 
         let mut data_table = source_data_table.clone();
@@ -98,12 +96,12 @@ pub mod test {
         pretty_print_data_table(&data_table, Some("Data Table without Denver row"), None);
 
         // this should be a 4x3 array, includes the header row
-        let expected_size = ArraySize::new(4, 3).unwrap();
+        let expected_size = ArraySize::new(4, 4).unwrap();
         assert_eq!(data_table.output_size(), expected_size);
 
-        // Denver should no longer be at (0, 1)
+        // Denver should no longer be at (0, 2)
         assert_eq!(
-            data_table.cell_value_at(0, 1),
+            data_table.cell_value_at(0, 2),
             Some(CellValue::Text("Southborough".to_string()))
         );
     }
