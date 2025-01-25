@@ -185,9 +185,8 @@ impl DataTable {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 pub mod test {
-    use serial_test::parallel;
-
     use crate::{
         controller::{transaction_types::JsCodeResult, GridController},
         grid::{
@@ -200,7 +199,6 @@ pub mod test {
     };
 
     #[test]
-    #[parallel]
     fn test_display_value_at_html_or_image() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -239,7 +237,6 @@ pub mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_hide_column() {
         let (_, mut data_table) = new_data_table();
         data_table.apply_first_row_as_header();
@@ -284,32 +281,32 @@ pub mod test {
         };
 
         // validate display_value_at()
-        let remove_city = remove_column(0, 0, &mut data_table);
+        let remove_city = remove_column(0, 1, &mut data_table);
         assert_eq!(remove_city, vec!["region", "country", "population", ""]);
 
-        let remove_region = remove_column(1, 0, &mut data_table);
+        let remove_region = remove_column(1, 1, &mut data_table);
         assert_eq!(remove_region, vec!["city", "country", "population", ""]);
 
-        let remove_county = remove_column(2, 0, &mut data_table);
+        let remove_county = remove_column(2, 1, &mut data_table);
         assert_eq!(remove_county, vec!["city", "region", "population", ""]);
 
-        let remove_population = remove_column(3, 0, &mut data_table);
+        let remove_population = remove_column(3, 1, &mut data_table);
         assert_eq!(remove_population, vec!["city", "region", "country", ""]);
 
         // "Southborough", "MA", "United States", "1000"
-        let remove_city = remove_column(0, 1, &mut data_table);
+        let remove_city = remove_column(0, 2, &mut data_table);
         assert_eq!(remove_city, vec!["MA", "United States", "1000", ""]);
 
-        let remove_city = remove_column(1, 1, &mut data_table);
+        let remove_city = remove_column(1, 2, &mut data_table);
         assert_eq!(
             remove_city,
             vec!["Southborough", "United States", "1000", ""]
         );
 
-        let remove_city = remove_column(2, 1, &mut data_table);
+        let remove_city = remove_column(2, 2, &mut data_table);
         assert_eq!(remove_city, vec!["Southborough", "MA", "1000", ""]);
 
-        let remove_city = remove_column(3, 1, &mut data_table);
+        let remove_city = remove_column(3, 2, &mut data_table);
         assert_eq!(remove_city, vec!["Southborough", "MA", "United States", ""]);
     }
 }
