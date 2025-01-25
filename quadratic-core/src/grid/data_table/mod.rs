@@ -719,14 +719,14 @@ pub mod test {
         let sheet_pos = SheetPos::from((1, 2, sheet_id));
 
         assert_eq!(data_table.output_size().w.get(), 10);
-        assert_eq!(data_table.output_size().h.get(), 12);
+        assert_eq!(data_table.output_size().h.get(), 13);
         assert_eq!(
             data_table.output_sheet_rect(sheet_pos, false),
             SheetRect::new(1, 2, 1, 2, sheet_id)
         );
         assert_eq!(
             data_table.output_sheet_rect(sheet_pos, true),
-            SheetRect::new(1, 2, 10, 13, sheet_id)
+            SheetRect::new(1, 2, 10, 14, sheet_id)
         );
     }
 
