@@ -667,10 +667,10 @@ mod test {
         .unwrap();
 
         let value = CellValue::Date(NaiveDate::parse_from_str("2024-12-21", "%Y-%m-%d").unwrap());
-        assert_data_table_cell_value(&gc, sheet_id, 1, 1, &value.to_string());
+        assert_data_table_cell_value(&gc, sheet_id, 1, 3, &value.to_string());
 
         let value = CellValue::Time(NaiveTime::parse_from_str("13:23:00", "%H:%M:%S").unwrap());
-        assert_data_table_cell_value(&gc, sheet_id, 2, 1, &value.to_string());
+        assert_data_table_cell_value(&gc, sheet_id, 2, 3, &value.to_string());
 
         let value = CellValue::DateTime(
             NaiveDate::from_ymd_opt(2024, 12, 21)
@@ -678,7 +678,7 @@ mod test {
                 .and_hms_opt(13, 23, 0)
                 .unwrap(),
         );
-        assert_data_table_cell_value(&gc, sheet_id, 3, 1, &value.to_string());
+        assert_data_table_cell_value(&gc, sheet_id, 3, 3, &value.to_string());
     }
 
     #[test]
