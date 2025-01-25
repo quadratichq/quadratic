@@ -1010,16 +1010,16 @@ mod tests {
         file_name: &'a str,
     ) -> (&'a GridController, SheetId, Pos, &'a str) {
         let first_row = vec!["Concord", "NH", "United States", "42605"];
-        assert_data_table_cell_value_row(gc, sheet_id, 0, 3, 1, first_row);
+        assert_data_table_cell_value_row(gc, sheet_id, 1, 3, 3, first_row);
 
         let second_row = vec!["Marlborough", "MA", "United States", "38334"];
-        assert_data_table_cell_value_row(gc, sheet_id, 0, 3, 2, second_row);
+        assert_data_table_cell_value_row(gc, sheet_id, 1, 3, 4, second_row);
 
         let third_row = vec!["Northbridge", "MA", "United States", "14061"];
-        assert_data_table_cell_value_row(gc, sheet_id, 0, 3, 3, third_row);
+        assert_data_table_cell_value_row(gc, sheet_id, 1, 3, 5, third_row);
 
         let last_row = vec!["Westborough", "MA", "United States", "29313"];
-        assert_data_table_cell_value_row(gc, sheet_id, 0, 3, 10, last_row);
+        assert_data_table_cell_value_row(gc, sheet_id, 1, 3, 12, last_row);
         (gc, sheet_id, pos, file_name)
     }
 
@@ -1064,8 +1064,11 @@ mod tests {
     #[test]
     fn test_execute_set_data_table_at() {
         let (mut gc, sheet_id, _, _) = simple_csv();
-        let x = 1;
-        let y = 1;
+
+        // where the data starts
+        let x = 2;
+        let y = 3;
+
         let change_val_pos = Pos::new(x, y);
         let sheet_pos = SheetPos::from((change_val_pos, sheet_id));
 
@@ -1073,18 +1076,18 @@ mod tests {
         let op = Operation::SetDataTableAt { sheet_pos, values };
         let mut transaction = PendingTransaction::default();
 
+        print_data_table(&gc, sheet_id, Rect::new(1, 1, 3, 10));
+
         // the initial value from the csv
         assert_data_table_cell_value(&gc, sheet_id, x, y, "MA");
-
-        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
 
         gc.execute_set_data_table_at(&mut transaction, op.clone())
             .unwrap();
 
-        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+        print_data_table(&gc, sheet_id, Rect::new(0, 1, 3, 10));
 
         // expect the value to be "1"
-        assert_data_table_cell_value(&gc, sheet_id, x, y, "1");
+        assert_data_table_cell_value(&gc, sheet_id, x - 2, y, "1");
 
         // undo, the value should be "MA" again
         execute_reverse_operations(&mut gc, &transaction);
@@ -1092,7 +1095,7 @@ mod tests {
 
         // redo, the value should be "1" again
         execute_forward_operations(&mut gc, &mut transaction);
-        assert_data_table_cell_value(&gc, sheet_id, x, y, "1");
+        assert_data_table_cell_value(&gc, sheet_id, x - 2, y, "1");
 
         // sort the data table and see if the value is still correct
         let sort = vec![DataTableSort {
@@ -1106,10 +1109,9 @@ mod tests {
         gc.execute_sort_data_table(&mut transaction, sort_op)
             .unwrap();
 
-        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
         gc.execute_set_data_table_at(&mut transaction, op).unwrap();
         print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
-        assert_data_table_cell_value(&gc, sheet_id, x, y, "1");
+        assert_data_table_cell_value(&gc, sheet_id, x - 2, y, "1");
     }
 
     #[test]

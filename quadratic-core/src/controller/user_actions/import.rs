@@ -120,7 +120,7 @@ pub(crate) mod tests {
     // "../quadratic-rust-shared/data/parquet/flights_1m.parquet";
 
     pub(crate) fn simple_csv() -> (GridController, SheetId, Pos, &'static str) {
-        simple_csv_at(Pos { x: 0, y: 0 })
+        simple_csv_at(Pos { x: 1, y: 1 })
     }
 
     pub(crate) fn simple_csv_at(pos: Pos) -> (GridController, SheetId, Pos, &'static str) {
@@ -162,10 +162,10 @@ pub(crate) mod tests {
         );
 
         let first_row = vec!["city", "region", "country", "population"];
-        assert_data_table_cell_value_row(gc, sheet_id, 0, 4, 1, first_row);
+        assert_data_table_cell_value_row(gc, sheet_id, 1, 4, 2, first_row);
 
         let last_row = vec!["Concord", "NH", "United States", "42605"];
-        assert_data_table_cell_value_row(gc, sheet_id, 0, 4, 11, last_row);
+        assert_data_table_cell_value_row(gc, sheet_id, 1, 4, 12, last_row);
 
         (gc, sheet_id, pos, file_name)
     }
