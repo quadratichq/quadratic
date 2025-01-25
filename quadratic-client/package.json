@@ -44,7 +44,6 @@
     "@radix-ui/react-toggle-group": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.0.7",
     "@sentry/react": "^8.34.0",
-    "@sentry/vite-plugin": "^2.22.6",
     "@szhsin/react-menu": "^4.0.2",
     "@tailwindcss/container-queries": "^0.1.1",
     "bignumber.js": "^9.1.2",
@@ -130,6 +129,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.22.2",
+    "@sentry/vite-plugin": "^2.22.7",
     "@testing-library/jest-dom": "^5.11.4",
     "@types/color": "^3.0.3",
     "@types/fontfaceobserver": "^2.1.0",
