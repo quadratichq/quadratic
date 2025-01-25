@@ -168,8 +168,8 @@ mod tests {
         let import = Import::new("".into());
 
         // initial value
-        print_data_table(&gc, sheet_id, Rect::new(0, 0, 2, 0));
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 0, expected.clone());
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 2, 1));
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 2, expected.clone());
         assert_cell_value(
             &gc,
             sheet_id,
@@ -180,8 +180,8 @@ mod tests {
 
         gc.code_data_table_to_data_table(sheet_pos, None).unwrap();
 
-        print_data_table(&gc, sheet_id, Rect::new(0, 0, 2, 0));
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 0, expected.clone());
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 2, 2));
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 2, expected.clone());
         assert_cell_value(&gc, sheet_id, 0, 0, CellValue::Import(import.clone()));
 
         // undo, the value should be a code run data table again
