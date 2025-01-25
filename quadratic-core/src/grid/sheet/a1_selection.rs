@@ -186,9 +186,9 @@ impl Sheet {
     }
 
     /// Converts a table ref to a rect.
-    pub fn table_ref_to_rect(&self, range: &TableRef, force_headers: bool) -> Option<Rect> {
+    pub fn table_ref_to_rect(&self, range: &TableRef, force_columns: bool) -> Option<Rect> {
         range
-            .convert_to_ref_range_bounds(false, &self.a1_context(), force_headers)
+            .convert_to_ref_range_bounds(false, &self.a1_context(), force_columns)
             .and_then(|range| range.to_rect())
     }
 
@@ -712,24 +712,24 @@ mod tests {
         let table_ref = TableRef::parse("Table1", &sheet.a1_context()).unwrap();
         assert_eq!(
             sheet.table_ref_to_rect(&table_ref, false),
-            Some(Rect::test_a1("A2:B3"))
+            Some(Rect::test_a1("A3:B4"))
         );
 
         let table_ref = TableRef::parse("Table1[#HEADERS]", &sheet.a1_context()).unwrap();
         assert_eq!(
             sheet.table_ref_to_rect(&table_ref, false),
-            Some(Rect::test_a1("A1:B1"))
+            Some(Rect::test_a1("A2:B2"))
         );
 
         let table_ref = TableRef::parse("Table1[#All]", &sheet.a1_context()).unwrap();
         assert_eq!(
             sheet.table_ref_to_rect(&table_ref, false),
-            Some(Rect::test_a1("A1:B3"))
+            Some(Rect::test_a1("A2:B4"))
         );
         let table_ref = TableRef::parse("Table1", &sheet.a1_context()).unwrap();
         assert_eq!(
             sheet.table_ref_to_rect(&table_ref, true),
-            Some(Rect::test_a1("A1:B3"))
+            Some(Rect::test_a1("A2:B4"))
         );
     }
 }
