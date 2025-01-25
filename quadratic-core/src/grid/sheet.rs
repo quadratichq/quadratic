@@ -27,6 +27,7 @@ pub mod code;
 pub mod col_row;
 pub mod formats;
 pub mod jump_cursor;
+mod merge;
 pub mod rendering;
 pub mod rendering_date_time;
 pub mod row_resize;
@@ -35,6 +36,8 @@ pub mod send_render;
 pub mod sheet_test;
 pub mod summarize;
 pub mod validations;
+
+pub use merge::*;
 
 /// Sheet in a file.
 ///
@@ -468,7 +471,7 @@ impl Sheet {
     ) -> Vec<i64> {
         let mut rows_set = HashSet::<i64>::new();
         selection.ranges.iter().for_each(|range| {
-            let rect = self.cell_ref_range_to_rect(*range);
+            let rect = self.cell_ref_range_to_rect(*range, false);
             let rows = self.get_rows_with_wrap_in_rect(&rect, include_blanks);
             rows_set.extend(rows);
         });
