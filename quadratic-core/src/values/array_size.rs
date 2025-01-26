@@ -59,13 +59,10 @@ impl TryFrom<(i64, i64)> for ArraySize {
     }
 }
 
-// TODO(ddimaria):`[][0]` is now being detected by clippy, fix this
-#[allow(clippy::out_of_bounds_indexing)]
 impl ArraySize {
-    #[allow(unconditional_panic)]
-    pub const _1X1: Self = match NonZeroU32::new(1) {
-        Some(one) => ArraySize { w: one, h: one },
-        None => [][0], // workaround for `.unwrap()` being unstable in const context
+    pub const _1X1: Self = ArraySize {
+        w: NonZeroU32::new(1).expect("Unable to create _1X1 ArraySize"),
+        h: NonZeroU32::new(1).expect("Unable to create _1X1 ArraySize"),
     };
 
     /// Constructs a new `ArraySize`, or returns an `None` if the width or

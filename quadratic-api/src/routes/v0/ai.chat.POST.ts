@@ -16,10 +16,12 @@ import { handleOpenAIRequest } from '../../ai/handler/openai';
 import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import dbClient from '../../dbClient';
+import { STORAGE_TYPE } from '../../env-vars';
 import { getFile } from '../../middleware/getFile';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
+import { getBucketName, S3Bucket } from '../../storage/s3';
 import { uploadFile } from '../../storage/storage';
 import type { RequestWithUser } from '../../types/Request';
 
@@ -66,7 +68,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     file: { id: fileId, ownerTeam },
   } = await getFile({ uuid: fileUuid, userId });
 
-  if (!ownerTeam.settingAnalyticsAi) {
+  if (!ownerTeam.settingAnalyticsAi || STORAGE_TYPE !== 's3' || !getBucketName(S3Bucket.ANALYTICS)) {
     return;
   }
 
@@ -81,7 +83,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     const key = `${fileUuid}-${source}_${chatId.replace(/-/g, '_')}_${messageIndex}.json`;
 
     const contents = Buffer.from(JSON.stringify(args)).toString('base64');
-    const response = await uploadFile(key, contents, jwt);
+    const response = await uploadFile(key, contents, jwt, S3Bucket.ANALYTICS);
 
     await dbClient.analyticsAIChat.upsert({
       where: {
