@@ -46,6 +46,7 @@ impl GridController {
         vec![Operation::GridToDataTable { sheet_rect }]
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn data_table_meta_operations(
         &self,
         sheet_pos: SheetPos,

@@ -586,7 +586,7 @@ class QuadraticCore {
     });
   }
 
-  setBold(selection: string, bold: boolean, cursor?: string) {
+  setBold(selection: string, bold?: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellBold',
       selection,
@@ -604,7 +604,7 @@ class QuadraticCore {
     });
   }
 
-  setItalic(selection: string, italic: boolean, cursor?: string) {
+  setItalic(selection: string, italic?: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellItalic',
       selection,
@@ -622,7 +622,7 @@ class QuadraticCore {
     });
   }
 
-  setUnderline(selection: string, underline: boolean, cursor?: string) {
+  setUnderline(selection: string, underline?: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellUnderline',
       selection,
@@ -631,7 +631,7 @@ class QuadraticCore {
     });
   }
 
-  setStrikeThrough(selection: string, strikeThrough: boolean, cursor?: string) {
+  setStrikeThrough(selection: string, strikeThrough?: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellStrikeThrough',
       selection,
@@ -717,7 +717,7 @@ class QuadraticCore {
     });
   }
 
-  setCommas(selection: string, commas: boolean, cursor?: string) {
+  setCommas(selection: string, commas?: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCommas',
       selection,

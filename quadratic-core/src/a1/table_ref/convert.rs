@@ -19,12 +19,10 @@ impl TableRef {
         let y_start = y_start
             + (if !self.headers && !force_columns {
                 table.y_adjustment()
+            } else if table.show_ui && table.show_name {
+                1
             } else {
-                if table.show_ui && table.show_name {
-                    1
-                } else {
-                    0
-                }
+                0
             });
         let y_end = if !self.data { y_start } else { y_end };
 

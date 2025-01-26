@@ -8,6 +8,7 @@ pub mod column;
 pub mod column_header;
 pub mod display_value;
 pub mod row;
+pub mod send_render;
 pub mod sort;
 
 use std::num::NonZeroU32;

@@ -130,7 +130,7 @@ impl GridController {
     pub fn js_set_commas(
         &mut self,
         selection: String,
-        commas: bool,
+        commas: Option<bool>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
@@ -144,7 +144,7 @@ impl GridController {
     pub fn js_set_bold(
         &mut self,
         selection: String,
-        bold: bool,
+        bold: Option<bool>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
@@ -157,7 +157,7 @@ impl GridController {
     pub fn js_set_italic(
         &mut self,
         selection: String,
-        italic: bool,
+        italic: Option<bool>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
@@ -241,7 +241,7 @@ impl GridController {
     pub fn js_set_underline(
         &mut self,
         selection: String,
-        underline: bool,
+        underline: Option<bool>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
@@ -255,7 +255,7 @@ impl GridController {
     pub fn js_set_strike_through(
         &mut self,
         selection: String,
-        strike_through: bool,
+        strike_through: Option<bool>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
@@ -281,10 +281,7 @@ impl GridController {
     pub fn js_get_format_cell(&self, sheet_id: String, x: i32, y: i32) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| JsValue::UNDEFINED)?;
         let sheet = self.try_sheet(sheet_id).ok_or(JsValue::UNDEFINED)?;
-        serde_wasm_bindgen::to_value(&sheet.formats.try_format(Pos {
-            x: x as i64,
-            y: y as i64,
-        }))
-        .map_err(|_| JsValue::UNDEFINED)
+        serde_wasm_bindgen::to_value(&sheet.try_format((x, y).into()))
+            .map_err(|_| JsValue::UNDEFINED)
     }
 }

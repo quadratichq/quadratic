@@ -523,7 +523,7 @@ impl<T: Clone + PartialEq + Debug> Contiguous2D<Option<T>> {
     /// bounds.
     ///
     /// `None` values are skipped.
-    pub fn to_rects_with_bounds<'a>(
+    pub fn to_rects_with_grid_bounds<'a>(
         &'a self,
         sheet_bounds: impl 'a + Fn(bool) -> Option<Rect>,
         columns_bounds: impl 'a + Fn(i64, i64, bool) -> Option<(i64, i64)>,
@@ -541,6 +541,25 @@ impl<T: Clone + PartialEq + Debug> Contiguous2D<Option<T>> {
                 _ => {
                     sheet_bounds.map(|rect| (x1, y1, rect.max.x.max(x1), rect.max.y.max(y1), value))
                 }
+            })
+    }
+
+    /// Returns the set of rectangles that have values. Each rectangle is `(x1,
+    /// y1, x2, y2, value)` with inclusive coordinates. Unlike `to_rects()`,
+    /// this returns concrete coordinates rather than potentially infinite
+    /// bounds.
+    ///
+    /// `None` values are skipped.
+    pub fn to_rects_with_rect_bounds(
+        &self,
+        rect: Rect,
+    ) -> impl '_ + Iterator<Item = (i64, i64, i64, i64, T)> {
+        self.to_rects()
+            .map(move |(x1, y1, x2, y2, value)| match (x2, y2) {
+                (Some(x2), Some(y2)) => (x1, y1, x2, y2, value),
+                (None, Some(y2)) => (x1, y1, rect.max.x.max(x1), y2, value),
+                (Some(x2), None) => (x1, y1, x2, rect.max.y.max(y1), value),
+                _ => (x1, y1, rect.max.x.max(x1), rect.max.y.max(y1), value),
             })
     }
 
@@ -831,7 +850,7 @@ mod tests {
     }
 
     #[test]
-    fn test_to_rects_with_bounds() {
+    fn test_to_rects_with_grid_bounds() {
         fn sheet_bounds(_ignore_formatting: bool) -> Option<Rect> {
             Some(Rect::test_a1("A1:J10"))
         }
@@ -846,12 +865,14 @@ mod tests {
 
         let mut c = Contiguous2D::<Option<bool>>::new();
         c.set_rect(2, 2, Some(10), Some(10), Some(true));
-        let mut rects = c.to_rects_with_bounds(sheet_bounds, columns_bounds, rows_bounds, true);
+        let mut rects =
+            c.to_rects_with_grid_bounds(sheet_bounds, columns_bounds, rows_bounds, true);
         assert_eq!(rects.next().unwrap(), (2, 2, 10, 10, true));
 
         let mut c = Contiguous2D::<Option<bool>>::new();
         c.set_rect(2, 2, None, None, Some(true));
-        let mut rects = c.to_rects_with_bounds(sheet_bounds, columns_bounds, rows_bounds, true);
+        let mut rects =
+            c.to_rects_with_grid_bounds(sheet_bounds, columns_bounds, rows_bounds, true);
         assert_eq!(rects.next().unwrap(), (2, 2, 10, 10, true));
     }
 

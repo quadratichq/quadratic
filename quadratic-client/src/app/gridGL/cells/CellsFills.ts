@@ -44,9 +44,9 @@ export class CellsFills extends Container {
     events.on('sheetOffsets', this.drawSheetCells);
     events.on('cursorPosition', this.setDirty);
     events.on('resizeHeadingColumn', this.drawCells);
+    events.on('resizeHeadingColumn', this.drawSheetCells);
     events.on('resizeHeadingRow', this.drawCells);
     events.on('resizeHeadingRow', this.drawSheetCells);
-    events.on('resizeHeadingColumn', this.drawSheetCells);
     events.on('viewportChanged', this.setDirty);
   }
 

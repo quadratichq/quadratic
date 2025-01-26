@@ -207,16 +207,16 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         set_cell_value(&mut gc, sheet_id, "1, 1", 1, 1);
-        gc.set_bold(&A1Selection::test_a1("A1"), true, None)
+        gc.set_bold(&A1Selection::test_a1("A1"), Some(true), None)
             .unwrap();
         set_cell_value(&mut gc, sheet_id, "12", 3, 2);
-        gc.set_italic(&A1Selection::test_a1("C2"), true, None)
+        gc.set_italic(&A1Selection::test_a1("C2"), Some(true), None)
             .unwrap();
         set_cell_value(&mut gc, sheet_id, "underline", 5, 3);
-        gc.set_underline(&A1Selection::test_a1("E3"), true, None)
+        gc.set_underline(&A1Selection::test_a1("E3"), Some(true), None)
             .unwrap();
         set_cell_value(&mut gc, sheet_id, "strike through", 7, 4);
-        gc.set_strike_through(&A1Selection::test_a1("G4"), true, None)
+        gc.set_strike_through(&A1Selection::test_a1("G4"), Some(true), None)
             .unwrap();
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 7, 4, sheet_id));
@@ -631,10 +631,10 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         set_cell_value(&mut gc, sheet_id, "1, 1", 1, 1);
-        gc.set_bold(&A1Selection::test_a1("A1"), true, None)
+        gc.set_bold(&A1Selection::test_a1("A1"), Some(true), None)
             .unwrap();
         set_cell_value(&mut gc, sheet_id, "12", 3, 2);
-        gc.set_italic(&A1Selection::test_a1("C2"), true, None)
+        gc.set_italic(&A1Selection::test_a1("C2"), Some(true), None)
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
@@ -778,11 +778,11 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         set_cell_value(&mut gc, sheet_id, "1", 1, 1);
-        gc.set_bold(&A1Selection::test_a1("A1"), true, None)
+        gc.set_bold(&A1Selection::test_a1("A1"), Some(true), None)
             .unwrap();
 
         set_cell_value(&mut gc, sheet_id, "12", 2, 2);
-        gc.set_italic(&A1Selection::test_a1("B2"), true, None)
+        gc.set_italic(&A1Selection::test_a1("B2"), Some(true), None)
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);

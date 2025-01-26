@@ -87,7 +87,7 @@ mod tests {
                 if let Some(is_bold) = bolds.get(count) {
                     if *is_bold {
                         grid_controller
-                            .set_bold(&A1Selection::from_single_cell(sheet_pos), true, None)
+                            .set_bold(&A1Selection::from_single_cell(sheet_pos), Some(true), None)
                             .unwrap();
                     }
                 }

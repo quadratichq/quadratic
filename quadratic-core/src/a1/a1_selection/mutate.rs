@@ -108,16 +108,16 @@ impl A1Selection {
     }
 
     /// Returns (vector of TableRef, vector of CellRefRange) contained within the selection.
-    pub fn separate_table_ranges(&self) -> (Vec<TableRef>, Vec<RefRangeBounds>) {
+    pub fn separate_table_ranges(&self) -> (Vec<RefRangeBounds>, Vec<TableRef>) {
+        let mut sheet_ranges = Vec::new();
         let mut table_ranges = Vec::new();
-        let mut non_table_ranges = Vec::new();
         for range in self.ranges.iter() {
             match range {
+                CellRefRange::Sheet { range } => sheet_ranges.push(*range),
                 CellRefRange::Table { range } => table_ranges.push(range.clone()),
-                CellRefRange::Sheet { range } => non_table_ranges.push(*range),
             }
         }
-        (table_ranges, non_table_ranges)
+        (sheet_ranges, table_ranges)
     }
 
     pub fn replace_table_name(&mut self, old_name: &str, new_name: &str) {
@@ -516,8 +516,8 @@ mod tests {
             &[("Table1", &["col1", "col2"], Rect::test_a1("A1:B2"))],
         );
         let selection = A1Selection::test_a1_context("D5,E5,Table1", &context);
-        let (table_ranges, non_table_ranges) = selection.separate_table_ranges();
+        let (sheet_ranges, table_ranges) = selection.separate_table_ranges();
+        assert_eq!(sheet_ranges.len(), 2);
         assert_eq!(table_ranges.len(), 1);
-        assert_eq!(non_table_ranges.len(), 2);
     }
 }

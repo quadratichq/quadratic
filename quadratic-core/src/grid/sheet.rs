@@ -14,7 +14,7 @@ use super::data_table::DataTable;
 use super::ids::SheetId;
 use super::js_types::{CellFormatSummary, CellType, JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;
-use super::{CellWrap, CodeRun, NumericFormatKind, SheetFormatting};
+use super::{CellWrap, CodeRun, Format, NumericFormatKind, SheetFormatting};
 use crate::a1::{A1Selection, CellRefRange};
 use crate::sheet_offsets::SheetOffsets;
 use crate::{Array, CellValue, Pos, Rect};
@@ -326,9 +326,34 @@ impl Sheet {
         }
     }
 
+    /// Returns the format of a cell taking into account the sheet and data_tables formatting.
+    pub fn try_format(&self, pos: Pos) -> Option<Format> {
+        let mut sheet_format = self.formats.try_format(pos);
+
+        if let Ok(data_table_pos) = self.first_data_table_within(pos) {
+            if let Ok(data_table) = self.data_table_result(data_table_pos) {
+                if let Some(mut table_format) = data_table.formats.try_format(pos) {
+                    table_format.wrap = table_format.wrap.or(Some(CellWrap::Clip));
+                    let combined_format = match (sheet_format, table_format) {
+                        (Some(sheet_format), table_format) => {
+                            Some(table_format.combine(&sheet_format))
+                        }
+                        (None, table_format) => Some(table_format),
+                    };
+
+                    return combined_format;
+                } else if let Some(sheet_format) = sheet_format.as_mut() {
+                    sheet_format.wrap = sheet_format.wrap.or(Some(CellWrap::Clip));
+                }
+            }
+        }
+
+        sheet_format
+    }
+
     /// Returns a summary of formatting in a region.
     pub fn cell_format_summary(&self, pos: Pos) -> CellFormatSummary {
-        let format = self.formats.try_format(pos).unwrap_or_default();
+        let format = self.try_format(pos).unwrap_or_default();
         let cell_type = self
             .display_value(pos)
             .and_then(|cell_value| match cell_value {
@@ -431,7 +456,7 @@ impl Sheet {
 
     /// Returns true if the cell at Pos has wrap formatting.
     pub fn check_if_wrap_in_cell(&self, pos: Pos) -> bool {
-        if self.cell_value(pos).is_none() {
+        if !self.has_content(pos) {
             return false;
         }
         self.formats.wrap.get(pos) == Some(CellWrap::Wrap)
@@ -440,7 +465,7 @@ impl Sheet {
     pub fn check_if_wrap_in_row(&self, y: i64) -> bool {
         self.formats.wrap.any_in_row(y, |wrap| {
             let pos = Pos { x: 1, y };
-            self.cell_value(pos).is_some() && *wrap == Some(CellWrap::Wrap)
+            self.has_content(pos) && *wrap == Some(CellWrap::Wrap)
         })
     }
 
@@ -448,7 +473,7 @@ impl Sheet {
         let mut rows = vec![];
         if let Some((start, end)) = self.column_bounds(x, true) {
             for y in start..=end {
-                if self.cell_value(Pos { x, y }).is_some()
+                if self.has_content(Pos { x, y })
                     && self
                         .formats
                         .wrap
@@ -466,7 +491,7 @@ impl Sheet {
         let mut rows = vec![];
         for y in rect.y_range() {
             for x in rect.x_range() {
-                if (include_blanks || self.cell_value((x, y).into()).is_some())
+                if (include_blanks || self.has_content(Pos { x, y }))
                     && self
                         .formats
                         .wrap

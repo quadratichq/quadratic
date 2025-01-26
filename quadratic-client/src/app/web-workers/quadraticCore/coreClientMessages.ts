@@ -23,6 +23,7 @@ import type {
   JsSummarizeSelectionResult,
   JsValidationWarning,
   MinMax,
+  Pos,
   SearchOptions,
   SheetBounds,
   SheetInfo,
@@ -31,7 +32,6 @@ import type {
   TransactionName,
   Validation,
 } from '@/app/quadratic-core-types';
-import type { Pos } from '@/app/quadratic-core/quadratic_core';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import type { Rectangle } from 'pixi.js';
@@ -290,14 +290,14 @@ export interface ClientCoreSetCellValues {
 export interface ClientCoreSetCellBold {
   type: 'clientCoreSetCellBold';
   selection: string;
-  bold: boolean;
+  bold?: boolean;
   cursor?: string;
 }
 
 export interface ClientCoreSetCellItalic {
   type: 'clientCoreSetCellItalic';
   selection: string;
-  italic: boolean;
+  italic?: boolean;
   cursor?: string;
 }
 
@@ -318,14 +318,14 @@ export interface ClientCoreSetCellTextColor {
 export interface ClientCoreSetCellUnderline {
   type: 'clientCoreSetCellUnderline';
   selection: string;
-  underline: boolean;
+  underline?: boolean;
   cursor?: string;
 }
 
 export interface ClientCoreSetCellStrikeThrough {
   type: 'clientCoreSetCellStrikeThrough';
   selection: string;
-  strikeThrough: boolean;
+  strikeThrough?: boolean;
   cursor?: string;
 }
 
@@ -391,7 +391,7 @@ export interface ClientCoreClearFormatting {
 export interface ClientCoreSetCommas {
   type: 'clientCoreSetCommas';
   selection: string;
-  commas: boolean;
+  commas?: boolean;
   cursor?: string;
 }
 

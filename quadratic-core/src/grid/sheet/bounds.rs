@@ -973,7 +973,7 @@ mod test {
             None,
         );
         gc.set_cell_value((3, 1, sheet_id).into(), "d".into(), None);
-        gc.set_bold(&A1Selection::test_a1("D1"), true, None)
+        gc.set_bold(&A1Selection::test_a1("D1"), Some(true), None)
             .unwrap();
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.row_bounds(1, true), Some((1, 3)));

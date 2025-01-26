@@ -23,11 +23,11 @@ impl GridController {
         selection: &A1Selection,
         format_update: FormatUpdate,
     ) -> Vec<Operation> {
-        let (tables, non_tables) = selection.separate_table_ranges();
+        let (sheet_ranges, table_ranges) = selection.separate_table_ranges();
         let mut ops = vec![];
 
         // create ops for the sheet if needed (ignoring TableRefs)
-        if !non_tables.is_empty() {
+        if !sheet_ranges.is_empty() {
             ops.push(Operation::SetCellFormatsA1 {
                 sheet_id: selection.sheet_id,
                 // from_selection ignores TableRefs
@@ -38,7 +38,7 @@ impl GridController {
         let context = self.grid.a1_context();
 
         // set table ranges
-        for table_ref in tables {
+        for table_ref in table_ranges {
             if let Some(table) = context.try_table(&table_ref.table_name) {
                 let range = table_ref.convert_to_ref_range_bounds(true, &context, false);
                 if let Some(range) = range {
@@ -77,7 +77,7 @@ impl GridController {
 
         // clear table formats for sheet ranges that overlap tables
         let clear_format_update = format_update.clear_update();
-        for range in non_tables {
+        for range in sheet_ranges {
             let rect = range.to_rect_unbounded();
             for table in context.tables() {
                 if let Some(intersection) = table.bounds.intersection(&rect) {
@@ -136,9 +136,20 @@ impl GridController {
     pub(crate) fn set_bold(
         &mut self,
         selection: &A1Selection,
-        bold: bool,
+        bold: Option<bool>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
+        let bold = match bold {
+            Some(bold) => bold,
+            None => {
+                let sheet = self
+                    .try_sheet(selection.sheet_id)
+                    .ok_or(JsValue::UNDEFINED)?;
+                let format = sheet.try_format(selection.cursor).unwrap_or_default();
+                !format.bold.unwrap_or(false)
+            }
+        };
+
         let format_update = FormatUpdate {
             bold: Some(Some(bold)),
             ..Default::default()
@@ -151,9 +162,20 @@ impl GridController {
     pub(crate) fn set_italic(
         &mut self,
         selection: &A1Selection,
-        italic: bool,
+        italic: Option<bool>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
+        let italic = match italic {
+            Some(italic) => italic,
+            None => {
+                let sheet = self
+                    .try_sheet(selection.sheet_id)
+                    .ok_or(JsValue::UNDEFINED)?;
+                let format = sheet.try_format(selection.cursor).unwrap_or_default();
+                !format.italic.unwrap_or(false)
+            }
+        };
+
         let format_update = FormatUpdate {
             italic: Some(Some(italic)),
             ..Default::default()
@@ -218,9 +240,20 @@ impl GridController {
     pub(crate) fn set_commas(
         &mut self,
         selection: &A1Selection,
-        commas: bool,
+        commas: Option<bool>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
+        let commas = match commas {
+            Some(commas) => commas,
+            None => {
+                let sheet = self
+                    .try_sheet(selection.sheet_id)
+                    .ok_or(JsValue::UNDEFINED)?;
+                let format = sheet.try_format(selection.cursor).unwrap_or_default();
+                !format.numeric_commas.unwrap_or(false)
+            }
+        };
+
         let format_update = FormatUpdate {
             numeric_commas: Some(Some(commas)),
             ..Default::default()
@@ -315,9 +348,20 @@ impl GridController {
     pub(crate) fn set_underline(
         &mut self,
         selection: &A1Selection,
-        underline: bool,
+        underline: Option<bool>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
+        let underline = match underline {
+            Some(underline) => underline,
+            None => {
+                let sheet = self
+                    .try_sheet(selection.sheet_id)
+                    .ok_or(JsValue::UNDEFINED)?;
+                let format = sheet.try_format(selection.cursor).unwrap_or_default();
+                !format.underline.unwrap_or(false)
+            }
+        };
+
         let format_update = FormatUpdate {
             underline: Some(Some(underline)),
             ..Default::default()
@@ -330,9 +374,20 @@ impl GridController {
     pub(crate) fn set_strike_through(
         &mut self,
         selection: &A1Selection,
-        strike_through: bool,
+        strike_through: Option<bool>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
+        let strike_through = match strike_through {
+            Some(strike_through) => strike_through,
+            None => {
+                let sheet = self
+                    .try_sheet(selection.sheet_id)
+                    .ok_or(JsValue::UNDEFINED)?;
+                let format = sheet.try_format(selection.cursor).unwrap_or_default();
+                !format.strike_through.unwrap_or(false)
+            }
+        };
+
         let format_update = FormatUpdate {
             strike_through: Some(Some(strike_through)),
             ..Default::default()
@@ -397,7 +452,7 @@ mod test {
     fn test_set_bold() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_bold(&A1Selection::test_a1("A1:B2"), true, None)
+        gc.set_bold(&A1Selection::test_a1("A1:B2"), Some(true), None)
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
@@ -495,7 +550,7 @@ mod test {
     fn test_toggle_commas_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_commas(&A1Selection::test_a1("A1:B2"), true, None)
+        gc.set_commas(&A1Selection::test_a1("A1:B2"), Some(true), None)
             .unwrap();
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -507,7 +562,7 @@ mod test {
             Some(true)
         );
 
-        gc.set_commas(&A1Selection::test_a1("A1:B2"), false, None)
+        gc.set_commas(&A1Selection::test_a1("A1:B2"), Some(false), None)
             .unwrap();
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -524,7 +579,7 @@ mod test {
     fn test_set_italic_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_italic(&A1Selection::test_a1("A1:B2"), true, None)
+        gc.set_italic(&A1Selection::test_a1("A1:B2"), Some(true), None)
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
@@ -606,7 +661,7 @@ mod test {
     fn test_set_underline_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_underline(&A1Selection::test_a1("A1:B2"), true, None)
+        gc.set_underline(&A1Selection::test_a1("A1:B2"), Some(true), None)
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
@@ -617,7 +672,7 @@ mod test {
     fn test_set_strike_through_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_strike_through(&A1Selection::test_a1("A1:B2"), true, None)
+        gc.set_strike_through(&A1Selection::test_a1("A1:B2"), Some(true), None)
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);

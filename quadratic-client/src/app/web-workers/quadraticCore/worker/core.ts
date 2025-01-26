@@ -25,11 +25,13 @@ import type {
   JsCoordinate,
   JsRenderCell,
   JsSummarizeSelectionResult,
+  MinMax,
+  Pos,
+  Rect,
   SearchOptions,
   SheetPos,
   Validation,
 } from '@/app/quadratic-core-types';
-import type { MinMax, Pos, Rect } from '@/app/quadratic-core/quadratic_core';
 import initCore, { GridController } from '@/app/quadratic-core/quadratic_core';
 import type {
   MultiplayerCoreReceiveTransaction,
@@ -336,7 +338,7 @@ class Core {
     });
   }
 
-  setBold(selection: string, bold: boolean, cursor?: string) {
+  setBold(selection: string, bold?: boolean, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -346,7 +348,7 @@ class Core {
     });
   }
 
-  setItalic(selection: string, italic: boolean, cursor?: string) {
+  setItalic(selection: string, italic?: boolean, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -366,7 +368,7 @@ class Core {
     });
   }
 
-  setUnderline(selection: string, underline: boolean, cursor?: string) {
+  setUnderline(selection: string, underline?: boolean, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -376,7 +378,7 @@ class Core {
     });
   }
 
-  setStrikeThrough(selection: string, strikeThrough: boolean, cursor?: string) {
+  setStrikeThrough(selection: string, strikeThrough?: boolean, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -396,7 +398,7 @@ class Core {
     });
   }
 
-  setCommas(selection: string, commas: boolean, cursor?: string) {
+  setCommas(selection: string, commas?: boolean, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');

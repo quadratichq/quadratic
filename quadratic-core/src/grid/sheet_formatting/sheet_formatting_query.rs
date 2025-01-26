@@ -229,6 +229,24 @@ impl SheetFormatting {
     pub fn has_fills(&self) -> bool {
         !self.fill_color.is_all_default()
     }
+
+    /// Returns the rows with wrap in the given rect.
+    pub fn get_rows_with_wrap_in_rect(&self, rect: &Rect) -> Vec<i64> {
+        let mut rows = vec![];
+        for y in rect.y_range() {
+            for x in rect.x_range() {
+                if self
+                    .wrap
+                    .get((x, y).into())
+                    .is_some_and(|wrap| wrap == CellWrap::Wrap)
+                {
+                    rows.push(y);
+                    break;
+                }
+            }
+        }
+        rows
+    }
 }
 
 #[cfg(test)]
