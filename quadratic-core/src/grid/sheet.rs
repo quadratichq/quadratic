@@ -332,6 +332,10 @@ impl Sheet {
 
         if let Ok(data_table_pos) = self.first_data_table_within(pos) {
             if let Ok(data_table) = self.data_table_result(data_table_pos) {
+                let pos = Pos {
+                    x: pos.x - data_table_pos.x + 1,
+                    y: pos.y - data_table_pos.y + 1,
+                };
                 if let Some(mut table_format) = data_table.formats.try_format(pos) {
                     table_format.wrap = table_format.wrap.or(Some(CellWrap::Clip));
                     let combined_format = match (sheet_format, table_format) {
