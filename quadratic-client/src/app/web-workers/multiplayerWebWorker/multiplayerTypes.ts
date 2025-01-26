@@ -1,4 +1,4 @@
-import type { SheetPosTS } from '@/app/gridGL/types/size';
+import type { JsSheetPos } from '@/app/quadratic-core-types';
 import type { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 
 export interface CellEdit {
@@ -37,7 +37,7 @@ export interface MultiplayerUser extends MultiplayerUserServer {
   color: number;
   index: number;
   colorString: string;
-  parsedCodeRunning: SheetPosTS[];
+  parsedCodeRunning: JsSheetPos[];
   parsedSelection?: JsSelection;
 }
 

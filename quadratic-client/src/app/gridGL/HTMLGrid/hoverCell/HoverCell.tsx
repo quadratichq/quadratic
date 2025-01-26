@@ -12,6 +12,8 @@ import { pluralize } from '@/app/helpers/pluralize';
 import type { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { FixSpillError } from '@/app/ui/components/FixSpillError';
+import { UrlPill } from '@/app/ui/components/UrlPill';
+import { parseAIResearcherResult } from '@/app/ui/menus/AIResearcher/helpers/parseAIResearcherResult.helper';
 import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/CodeEditor/hooks/useSubmitAIAssistantPrompt';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -117,6 +119,11 @@ export function HoverCell() {
             if (codeCell) {
               setText(<HoverCellRunError codeCell={codeCell} onClick={hideHoverCell} />);
             }
+          } else if (language === 'AIResearcher') {
+            setOnlyCode(true);
+            if (codeCell) {
+              setText(<HoverCellAIResearcherResult codeCell={codeCell} onClick={hideHoverCell} />);
+            }
           } else {
             setOnlyCode(true);
             setText(
@@ -182,7 +189,7 @@ export function HoverCell() {
   }, []);
   const { top, left } = usePositionCellMessage({ div, offsets });
 
-  if (loading) {
+  if (loading || !text || !(!onlyCode || showCodePeek)) {
     return null;
   }
 
@@ -197,7 +204,6 @@ export function HoverCell() {
       style={{
         top,
         left,
-        visibility: !onlyCode || showCodePeek ? 'visible' : 'hidden',
         transition: delay ? `opacity 150ms linear ${HOVER_CELL_FADE_IN_OUT_DELAY}ms` : 'opacity 150ms linear',
         transformOrigin: `0 0`,
         transform: `scale(${1 / pixiApp.viewport.scale.x})`,
@@ -301,6 +307,33 @@ function HoverCellSpillError({ codeCell: codeCellCore, onClick }: { codeCell: Js
   );
 }
 
+function HoverCellAIResearcherResult({ codeCell: codeCellCore }: { codeCell: JsCodeCell; onClick: () => void }) {
+  const language = useMemo(() => getLanguage(codeCellCore.language), [codeCellCore.language]);
+  const aiResearcherResult = useMemo(() => parseAIResearcherResult(codeCellCore.std_out), [codeCellCore.std_out]);
+  if (!aiResearcherResult) {
+    return null;
+  }
+  return (
+    <HoverCellDisplay title={language}>
+      <div className="mt-1 flex flex-col gap-2">
+        <div className="flex flex-row justify-between gap-2">
+          <span>Confidence:</span>
+          <span className="font-bold">{Math.round(aiResearcherResult.toolCallArgs.confidence_score * 100)}%</span>
+        </div>
+
+        <div className="flex flex-row justify-between gap-2">
+          <span>Source:</span>
+          <div className="flex flex-col items-end gap-1">
+            {aiResearcherResult.toolCallArgs.source_urls.map((url) => (
+              <UrlPill key={url} url={url} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </HoverCellDisplay>
+  );
+}
+
 function HoverCellDisplay({
   title,
   children,
@@ -314,7 +347,7 @@ function HoverCellDisplay({
 }) {
   return (
     <div className="flex flex-col gap-1 p-3">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between whitespace-pre-wrap break-all">
         <span className={cn(isError ? 'text-destructive' : '')}>{title}</span>
         {actions && <div className="flex items-center gap-0.5">{actions}</div>}
       </div>

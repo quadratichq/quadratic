@@ -15,6 +15,8 @@ use quadratic_core::controller::execution::run_code::get_cells::JsGetCellRespons
 use quadratic_core::controller::operations::clipboard::PasteSpecial;
 use quadratic_core::controller::transaction_types::JsCodeResult;
 use quadratic_core::grid::formats::Format;
+use quadratic_core::grid::js_types::JsCodeRun;
+use quadratic_core::grid::js_types::JsSheetPos;
 use quadratic_core::grid::js_types::{
     CellFormatSummary, JsCellValue, JsCellValuePos, JsCellValuePosAIContext, JsClipboard,
     JsCodeCell, JsDataTableColumnHeader, JsHtmlOutput, JsNumber, JsOffset, JsRenderCell,
@@ -115,6 +117,7 @@ fn main() {
         JsClipboard,
         JsCodeCell,
         JsCodeResult,
+        JsCodeRun,
         JsDataTableColumnHeader,
         JsCoordinate,
         JsGetCellResponse,
@@ -129,6 +132,7 @@ fn main() {
         JsReturnInfo,
         JsRowHeight,
         JsSheetFill,
+        JsSheetPos,
         JsSnackbarSeverity,
         JsSummarizeSelectionResult,
         JsValidationWarning,

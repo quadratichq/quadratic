@@ -10,8 +10,10 @@ import type {
   Format,
   JsBordersSheet,
   JsCellValue,
+  JsCellValuePos,
   JsCellValuePosAIContext,
   JsCodeCell,
+  JsCodeRun,
   JsCoordinate,
   JsHtmlOutput,
   JsOffset,
@@ -23,6 +25,7 @@ import type {
   JsSummarizeSelectionResult,
   JsValidationWarning,
   MinMax,
+  Pos,
   SearchOptions,
   SheetBounds,
   SheetInfo,
@@ -31,7 +34,6 @@ import type {
   TransactionName,
   Validation,
 } from '@/app/quadratic-core-types';
-import type { Pos } from '@/app/quadratic-core/quadratic_core';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import type { Rectangle } from 'pixi.js';
@@ -1182,6 +1184,30 @@ export interface CoreClientA1Context {
   context: string;
 }
 
+export interface CoreClientRequestAIResearcherResult {
+  type: 'coreClientRequestAIResearcherResult';
+  transactionId: string;
+  sheetPos: string;
+  query: string;
+  refCellValues: string;
+  cellsAccessedValues: JsCellValuePos[][][];
+}
+
+export interface ClientCoreReceiveAIResearcherResult {
+  type: 'clientCoreReceiveAIResearcherResult';
+  transactionId: string;
+  sheetPos: string;
+  cellValues?: string[][];
+  error?: string;
+  researcherResponseStringified?: string;
+}
+
+export interface CoreClientAIResearcherState {
+  type: 'coreClientAIResearcherState';
+  current: JsCodeRun[];
+  awaitingExecution: JsCodeRun[];
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1274,7 +1300,8 @@ export type ClientCoreMessage =
   | ClientCoreMoveCodeCellVertically
   | ClientCoreMoveCodeCellHorizontally
   | ClientCoreFiniteRectFromSelection
-  | ClientCoreGetCsvPreview;
+  | ClientCoreGetCsvPreview
+  | ClientCoreReceiveAIResearcherResult;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1342,4 +1369,6 @@ export type CoreClientMessage =
   | CoreClientMoveCodeCellHorizontally
   | CoreClientFiniteRectFromSelection
   | CoreClientA1Context
-  | CoreClientGetCsvPreview;
+  | CoreClientGetCsvPreview
+  | CoreClientRequestAIResearcherResult
+  | CoreClientAIResearcherState;

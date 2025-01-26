@@ -52,6 +52,7 @@ fn upgrade_code_runs(
                             current::CodeCellLanguageSchema::Formula => "Formula",
                             current::CodeCellLanguageSchema::Javascript => "JavaScript",
                             current::CodeCellLanguageSchema::Python => "Python",
+                            current::CodeCellLanguageSchema::AIResearcher => "AIResearch",
                             _ => "Table1",
                         };
                         return Some(language);

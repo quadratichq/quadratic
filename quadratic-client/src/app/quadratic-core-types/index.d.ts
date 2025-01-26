@@ -19,7 +19,7 @@ export type CellRefRange = { range: RefRangeBounds, } | { range: TableRef, };
 export interface CellRefRangeEnd { col: CellRefCoord, row: CellRefCoord, }
 export type CellVerticalAlign = "top" | "middle" | "bottom";
 export type CellWrap = "overflow" | "wrap" | "clip";
-export type CodeCellLanguage = "Python" | "Formula" | { "Connection": { kind: ConnectionKind, id: string, } } | "Javascript" | "Import";
+export type CodeCellLanguage = "Python" | "Formula" | { "Connection": { kind: ConnectionKind, id: string, } } | "Javascript" | "Import" | "AIResearcher";
 export interface ColumnRow { column: number, row: number, }
 export type ConnectionKind = "POSTGRES" | "MYSQL" | "MSSQL" | "SNOWFLAKE";
 export type DateTimeRange = { "DateRange": [bigint | null, bigint | null] } | { "DateEqual": Array<bigint> } | { "DateNotEqual": Array<bigint> } | { "TimeRange": [number | null, number | null] } | { "TimeEqual": Array<number> } | { "TimeNotEqual": Array<number> };
@@ -35,6 +35,7 @@ export interface JsCellValuePosAIContext { sheet_name: string, rect_origin: stri
 export interface JsClipboard { plainText: string, html: string, }
 export interface JsCodeCell { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: Array<JsCellsAccessed> | null, }
 export interface JsCodeResult { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: Array<string> | null, output_array: Array<Array<Array<string>>> | null, output_display_type: string | null, cancel_compute: boolean | null, chart_pixel_output: [number, number] | null, has_headers: boolean, }
+export interface JsCodeRun { transactionId: string, sheetPos: JsSheetPos, code: string, }
 export interface JsDataTableColumnHeader { name: string, display: boolean, valueIndex: number, }
 export interface JsCoordinate { x: number, y: number, }
 export interface JsGetCellResponse { x: bigint, y: bigint, value: string, type_name: string, }
@@ -49,6 +50,7 @@ export interface JsRenderFill { x: bigint, y: bigint, w: number, h: number, colo
 export interface JsReturnInfo { line_number: number | null, output_type: string | null, }
 export interface JsRowHeight { row: bigint, height: number, }
 export interface JsSheetFill { x: number, y: number, w: number | null, h: number | null, color: string, }
+export interface JsSheetPos { x: number, y: number, sheetId: string, }
 export type JsSnackbarSeverity = "error" | "warning" | "success";
 export interface JsSummarizeSelectionResult { count: bigint, sum: number | null, average: number | null, }
 export interface JsValidationWarning { x: bigint, y: bigint, validation: string | null, style: ValidationStyle | null, }

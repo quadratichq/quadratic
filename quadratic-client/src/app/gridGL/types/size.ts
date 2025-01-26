@@ -1,12 +1,6 @@
 import type { JsCoordinate } from '@/app/quadratic-core-types';
 import type { Rectangle } from 'pixi.js';
 
-export interface SheetPosTS {
-  x: number;
-  y: number;
-  sheetId: string;
-}
-
 export interface Size {
   width: number;
   height: number;

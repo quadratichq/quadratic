@@ -42,7 +42,7 @@ interface CodeEditorBodyProps {
 }
 
 // need to track globally since monaco is a singleton
-const registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
+const registered: Record<Exclude<Extract<CodeCellLanguage, string>, 'AIResearcher'>, boolean> = {
   Formula: false,
   Python: false,
   Javascript: false,

@@ -117,6 +117,7 @@ pub enum CodeCellLanguage {
     Connection { kind: ConnectionKind, id: String },
     Javascript,
     Import,
+    AIResearcher,
 }
 
 #[derive(Serialize, Deserialize, Display, Copy, Debug, Clone, PartialEq, Eq, Hash)]

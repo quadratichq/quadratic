@@ -16,14 +16,26 @@ impl GridController {
         code: String,
     ) -> Vec<Operation> {
         let code = match language {
-            CodeCellLanguage::Formula => replace_a1_notation(&code, sheet_pos.into()),
+            CodeCellLanguage::Formula | CodeCellLanguage::AIResearcher => {
+                replace_a1_notation(&code, sheet_pos.into())
+            }
             _ => code,
         };
+
+        let convert_formula_to_ai_researcher =
+            language == CodeCellLanguage::Formula && code.starts_with("AI(");
 
         vec![
             Operation::SetCellValues {
                 sheet_pos,
-                values: CellValues::from(CellValue::Code(CodeCellValue { language, code })),
+                values: CellValues::from(CellValue::Code(CodeCellValue {
+                    language: if convert_formula_to_ai_researcher {
+                        CodeCellLanguage::AIResearcher
+                    } else {
+                        language
+                    },
+                    code,
+                })),
             },
             Operation::ComputeCode { sheet_pos },
         ]
@@ -236,6 +248,36 @@ mod test {
                 values: CellValues::from(CellValue::Code(CodeCellValue {
                     language: CodeCellLanguage::Python,
                     code: "print('hello world')".to_string(),
+                })),
+            }
+        );
+        assert_eq!(
+            operations[1],
+            Operation::ComputeCode {
+                sheet_pos: pos.to_sheet_pos(sheet_id),
+            }
+        );
+    }
+
+    #[test]
+    fn test_set_ai_researcher_code_cell_operations() {
+        let gc = GridController::default();
+        let sheet_id = gc.sheet_ids()[0];
+        let pos = pos![A1];
+
+        let operations = gc.set_code_cell_operations(
+            pos.to_sheet_pos(sheet_id),
+            CodeCellLanguage::Formula,
+            "AI('query', B1)".to_string(),
+        );
+        assert_eq!(operations.len(), 2);
+        assert_eq!(
+            operations[0],
+            Operation::SetCellValues {
+                sheet_pos: pos.to_sheet_pos(sheet_id),
+                values: CellValues::from(CellValue::Code(CodeCellValue {
+                    language: CodeCellLanguage::AIResearcher,
+                    code: "AI('query', R[0]C[1])".to_string(),
                 })),
             }
         );

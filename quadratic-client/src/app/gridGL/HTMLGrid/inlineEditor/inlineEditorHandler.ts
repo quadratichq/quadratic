@@ -11,11 +11,10 @@ import { CursorMode, inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEd
 import { inlineEditorMonaco, PADDING_FOR_INLINE_EDITOR } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { SheetPosTS } from '@/app/gridGL/types/size';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { convertColorStringToHex } from '@/app/helpers/convertColor';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import type { CellFormatSummary } from '@/app/quadratic-core-types';
+import type { CellFormatSummary, JsSheetPos } from '@/app/quadratic-core-types';
 import { createFormulaStyleHighlights } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -36,7 +35,7 @@ class InlineEditorHandler {
   y = 0;
   width = 0;
   height = 0;
-  location?: SheetPosTS;
+  location?: JsSheetPos;
   formula: boolean | undefined = undefined;
 
   cursorIsMoving = false;
@@ -571,7 +570,7 @@ class InlineEditorHandler {
   }
 
   // This checks whether the inline editor is showing (or showing at a given location)
-  getShowing(x?: number, y?: number): SheetPosTS | undefined {
+  getShowing(x?: number, y?: number): JsSheetPos | undefined {
     if (this.open && (x === undefined || y === undefined || (this.location?.x === x && this.location.y === y))) {
       return this.location;
     }

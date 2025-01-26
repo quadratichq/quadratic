@@ -223,7 +223,10 @@ impl Sheet {
         match cell_value?.code_cell_value() {
             Some(mut code_cell_value) => {
                 // replace internal cell references with a1 notation
-                if matches!(code_cell_value.language, CodeCellLanguage::Formula) {
+                if matches!(
+                    code_cell_value.language,
+                    CodeCellLanguage::Formula | CodeCellLanguage::AIResearcher
+                ) {
                     let replaced =
                         replace_internal_cell_references(&code_cell_value.code, code_pos);
                     code_cell_value.code = replaced;

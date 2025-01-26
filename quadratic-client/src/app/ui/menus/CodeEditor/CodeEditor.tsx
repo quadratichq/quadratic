@@ -1,4 +1,6 @@
-import { codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
+import { codeEditorCodeCellAtom, codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
+import { AIResearcher } from '@/app/ui/menus/AIResearcher/AIResearcher';
+import { AIResearcherRequestHandler } from '@/app/ui/menus/AIResearcher/AIResearcherRequestHandler';
 import { CodeEditorBody } from '@/app/ui/menus/CodeEditor/CodeEditorBody';
 import { CodeEditorDiffButtons } from '@/app/ui/menus/CodeEditor/CodeEditorDiffButtons';
 import { CodeEditorEffects } from '@/app/ui/menus/CodeEditor/CodeEditorEffects';
@@ -24,9 +26,11 @@ export const dispatchEditorAction = (name: string) => {
 
 export const CodeEditor = () => {
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
+  const codeCell = useRecoilValue(codeEditorCodeCellAtom);
   const [editorInst, setEditorInst] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
   const { onKeyDownCodeEditor } = useOnKeyDownCodeEditor();
   const codeEditorRef = useRef<HTMLDivElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const codeEditorPanelData = useCodeEditorPanelData();
 
   return (
@@ -34,6 +38,8 @@ export const CodeEditor = () => {
       <CodeEditorEffects />
 
       <CodeEditorEscapeEffect editorInst={editorInst} />
+
+      <AIResearcherRequestHandler />
 
       {showCodeEditor && (
         <div
@@ -75,11 +81,17 @@ export const CodeEditor = () => {
                 multiplayer.sendMouseMove();
               }}
             >
-              <SaveChangesAlert editorInst={editorInst} />
-              <CodeEditorDiffButtons />
-              <CodeEditorBody editorInst={editorInst} setEditorInst={setEditorInst} />
-              <CodeEditorEmptyState editorInst={editorInst} />
-              <ReturnTypeInspector />
+              {codeCell.language === 'AIResearcher' ? (
+                <AIResearcher textareaRef={textareaRef} />
+              ) : (
+                <>
+                  <SaveChangesAlert editorInst={editorInst} />
+                  <CodeEditorDiffButtons />
+                  <CodeEditorBody editorInst={editorInst} setEditorInst={setEditorInst} />
+                  <CodeEditorEmptyState editorInst={editorInst} />
+                  <ReturnTypeInspector />
+                </>
+              )}
             </div>
 
             <div

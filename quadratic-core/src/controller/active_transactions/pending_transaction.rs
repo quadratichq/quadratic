@@ -108,6 +108,12 @@ pub struct PendingTransaction {
 
     // update selection after transaction completes
     pub update_selection: Option<String>,
+
+    // ai researcher requests
+    pub pending_ai_researchers: HashSet<SheetPos>,
+
+    // ai researcher requests that are currently running
+    pub running_ai_researchers: HashSet<SheetPos>,
 }
 
 impl Default for PendingTransaction {
@@ -139,6 +145,8 @@ impl Default for PendingTransaction {
             sheet_info: HashSet::new(),
             offsets_modified: HashMap::new(),
             update_selection: None,
+            pending_ai_researchers: HashSet::new(),
+            running_ai_researchers: HashSet::new(),
         }
     }
 }

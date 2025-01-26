@@ -1,5 +1,10 @@
 import * as z from 'zod';
-import { AIMessagePromptSchema, AIRequestBodySchema } from './typesAndSchemasAI';
+import {
+  AIMessagePromptSchema,
+  AIRequestBodySchema,
+  ExaSearchRequestBodySchema,
+  ExaSearchResponseSchema,
+} from './typesAndSchemasAI';
 import { ApiSchemasConnections, ConnectionListSchema } from './typesAndSchemasConnections';
 
 export const UserFileRoleSchema = z.enum(['EDITOR', 'VIEWER']);
@@ -431,6 +436,9 @@ export const ApiSchemas = {
   '/v0/ai/feedback.PATCH.response': z.object({
     message: z.string(),
   }),
+
+  '/v0/ai/exa.POST.request': ExaSearchRequestBodySchema,
+  '/v0/ai/exa.POST.response': ExaSearchResponseSchema,
 };
 
 /**

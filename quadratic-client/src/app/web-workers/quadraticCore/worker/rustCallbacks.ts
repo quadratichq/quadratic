@@ -3,7 +3,9 @@
 import type {
   ConnectionKind,
   JsBordersSheet,
+  JsCellValuePos,
   JsCodeCell,
+  JsCodeRun,
   JsHtmlOutput,
   JsOffset,
   JsRenderCell,
@@ -89,6 +91,14 @@ declare var self: WorkerGlobalScope &
     sendHashesDirty: (sheetId: string, hashes: string) => void;
     sendViewportBuffer: (buffer: SharedArrayBuffer) => void;
     sendClientMessage: (message: string, severity: JsSnackbarSeverity) => void;
+    sendRequestAIResearcherResult: (
+      transactionId: string,
+      sheetPos: string,
+      query: string,
+      refCellValues: string,
+      cellsAccessedValues: JsCellValuePos[][][]
+    ) => void;
+    sendAIResearcherState: (current: JsCodeRun[], awaitingExecution: JsCodeRun[]) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -291,4 +301,21 @@ export const jsSendViewportBuffer = (buffer: SharedArrayBuffer) => {
 
 export const jsA1Context = (context: string) => {
   self.sendA1Context(context);
+};
+
+export const jsRequestAIResearcherResult = (
+  transactionId: string,
+  sheetPos: string,
+  query: string,
+  refCellValues: string,
+  cellsAccessedValuesStringified: string
+) => {
+  const cellsAccessedValues = JSON.parse(cellsAccessedValuesStringified) as JsCellValuePos[][][];
+  self.sendRequestAIResearcherResult(transactionId, sheetPos, query, refCellValues, cellsAccessedValues);
+};
+
+export const jsAIResearcherState = (current: string, awaitingExecution: string) => {
+  const currentCodeRun = JSON.parse(current) as JsCodeRun[];
+  const awaitingExecutionCodeRun = JSON.parse(awaitingExecution) as JsCodeRun[];
+  self.sendAIResearcherState(currentCodeRun, awaitingExecutionCodeRun);
 };

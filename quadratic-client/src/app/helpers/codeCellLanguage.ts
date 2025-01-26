@@ -10,6 +10,7 @@ export const codeCellsById = {
   MYSQL: { id: 'MYSQL', label: 'MySQL', type: 'connection' },
   MSSQL: { id: 'MSSQL', label: 'MS SQL Server', type: 'connection' },
   SNOWFLAKE: { id: 'SNOWFLAKE', label: 'Snowflake', type: 'connection' },
+  AIResearcher: { id: 'AIResearcher', label: 'AI Researcher', type: undefined },
 } as const;
 export type CodeCellIds = keyof typeof codeCellsById;
 // type CodeCell = (typeof codeCellsById)[CodeCellIds];

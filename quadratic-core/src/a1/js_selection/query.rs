@@ -1,6 +1,7 @@
 use wasm_bindgen::prelude::*;
 
 use crate::a1::{A1Context, CellRefRange};
+use crate::grid::JsCellsAccessed;
 
 use super::*;
 
@@ -254,5 +255,14 @@ impl JsSelection {
             return false;
         };
         self.selection.cursor_is_on_html_image(&context)
+    }
+
+    #[wasm_bindgen(js_name = "toJsCellsAccessed")]
+    pub fn to_js_cells_accessed(&self) -> Result<JsValue, String> {
+        serde_wasm_bindgen::to_value(&JsCellsAccessed {
+            sheet_id: self.selection.sheet_id.to_string(),
+            ranges: self.selection.ranges.clone(),
+        })
+        .map_err(|e| e.to_string())
     }
 }

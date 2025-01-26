@@ -1,6 +1,7 @@
 import type { CodeCellIds } from '@/app/helpers/codeCellLanguage';
 import { colors } from '@/app/theme/colors';
 import { Formula, JavaScript, MssqlIcon, MysqlIcon, PostgresIcon, Python, SnowflakeIcon } from '@/app/ui/icons';
+import { SearchInsightsIcon } from '@/shared/components/Icons';
 import { Subject } from '@mui/icons-material';
 import type { SvgIconProps } from '@mui/material/SvgIcon';
 
@@ -14,7 +15,9 @@ export function LanguageIcon({ language, ...props }: LanguageIconProps) {
   // matches size of default material symbols icons
   const internalSx = { width: 20, height: 20, ...(props.sx ? props.sx : {}) };
 
-  return language && 'python'.startsWith(language) ? (
+  return language && 'airesearcher'.startsWith(language) ? (
+    <SearchInsightsIcon />
+  ) : language && 'python'.startsWith(language) ? (
     <Python {...props} sx={{ color: colors.languagePython, ...internalSx }} />
   ) : language && 'formula'.startsWith(language) ? (
     <Formula {...props} sx={{ color: colors.languageFormula, ...internalSx }} />

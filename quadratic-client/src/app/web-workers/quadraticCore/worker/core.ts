@@ -25,12 +25,14 @@ import type {
   JsCoordinate,
   JsRenderCell,
   JsSummarizeSelectionResult,
+  MinMax,
+  Pos,
   SearchOptions,
   SheetPos,
   Validation,
 } from '@/app/quadratic-core-types';
-import type { MinMax, Pos, Rect } from '@/app/quadratic-core/quadratic_core';
 import initCore, { GridController } from '@/app/quadratic-core/quadratic_core';
+import type { Rect } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import type {
   MultiplayerCoreReceiveTransaction,
   MultiplayerCoreReceiveTransactions,
@@ -1252,6 +1254,23 @@ class Core {
           Number(rect.max.y - rect.min.y) + 1
         )
       : undefined;
+  }
+
+  receiveAIResearcherResult(
+    transactionId: string,
+    sheetPos: string,
+    cellValues?: string[][],
+    error?: string,
+    researcherResponseStringified?: string
+  ) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.receiveAIResearcherResult(
+      transactionId,
+      sheetPos,
+      cellValues ?? [[]],
+      error,
+      researcherResponseStringified
+    );
   }
 }
 

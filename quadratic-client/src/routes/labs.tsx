@@ -1,11 +1,10 @@
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
+import { SettingPanel } from '@/shared/components/SettingPanel';
 
 import { ThemeAccentColors } from '@/shared/components/ThemeAccentColors';
 import { ThemeAppearanceModes } from '@/shared/components/ThemeAppearanceModes';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { useFeatureFlag, type FeatureFlagKey } from '@/shared/hooks/useFeatureFlag';
-import { Label } from '@/shared/shadcn/ui/label';
-import { Switch } from '@/shared/shadcn/ui/switch';
 
 type LabProps = {
   featureFlagKey: FeatureFlagKey;
@@ -63,28 +62,12 @@ function LabToggle({ featureFlagKey, label, description, Component }: LabProps) 
   const [featureFlag, setFeatureFlag] = useFeatureFlag(featureFlagKey);
 
   return (
-    <div className="space-y-3 rounded-lg border p-3 shadow-sm">
-      <div className="flex w-full flex-row items-center justify-between gap-3">
-        <div className="mr-auto space-y-0.5 text-sm">
-          <Label htmlFor={featureFlagKey} className="font-medium">
-            {label}
-          </Label>
-          <p className="text-muted-foreground">{description}</p>
-        </div>
-
-        <Switch
-          id={featureFlagKey}
-          checked={featureFlag}
-          onCheckedChange={(checked) => {
-            setFeatureFlag(checked);
-          }}
-        />
-      </div>
+    <SettingPanel label={label} description={description} checked={featureFlag} onCheckedChange={setFeatureFlag}>
       {featureFlag && (
         <div className="flex gap-2 border-t border-border pt-3">
           <Component />
         </div>
       )}
-    </div>
+    </SettingPanel>
   );
 }

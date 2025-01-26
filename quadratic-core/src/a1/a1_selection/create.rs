@@ -58,6 +58,21 @@ impl A1Selection {
         }
     }
 
+    pub fn from_ranges(
+        ranges: impl Iterator<Item = CellRefRange>,
+        sheet: SheetId,
+        context: &A1Context,
+    ) -> Self {
+        let ranges = ranges.collect::<Vec<_>>();
+        let last_range = ranges.last().expect("empty selection is invalid");
+        let cursor = Self::cursor_pos_from_last_range(last_range, context);
+        Self {
+            sheet_id: sheet,
+            cursor,
+            ranges,
+        }
+    }
+
     pub fn from_ref_range_bounds(sheet_id: SheetId, range: RefRangeBounds) -> Self {
         Self {
             sheet_id,

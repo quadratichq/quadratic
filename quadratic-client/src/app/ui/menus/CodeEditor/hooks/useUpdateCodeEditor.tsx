@@ -1,5 +1,8 @@
+import { aiResearcherAtom, defaultAIResearcherState } from '@/app/atoms/aiResearcherAtom';
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import type { JsCodeCell, JsCoordinate, Pos } from '@/app/quadratic-core-types';
+import { parseAIResearcherResult } from '@/app/ui/menus/AIResearcher/helpers/parseAIResearcherResult.helper';
+import { parseCodeString } from '@/app/ui/menus/AIResearcher/parseAIResearcherCodeString';
 import { useRecoilCallback } from 'recoil';
 
 export const useUpdateCodeEditor = () => {
@@ -41,6 +44,26 @@ export const useUpdateCodeEditor = () => {
             spillError: codeCell.spill_error?.map((c: Pos) => ({ x: Number(c.x), y: Number(c.y) } as JsCoordinate)),
             initialCode: undefined,
           }));
+
+          if (codeCell.language === 'AIResearcher') {
+            const parsedCodeString = parseCodeString(codeCell.code_string);
+            if (parsedCodeString) {
+              const { query, refCell } = parsedCodeString;
+              const aiResearcherResult = parseAIResearcherResult(codeCell.std_out);
+              set(aiResearcherAtom, {
+                loading: false,
+                abortController: undefined,
+                query,
+                refCell,
+                output: newEvaluationResult.value ?? '',
+                aiResearcherResult,
+              });
+            } else {
+              set(aiResearcherAtom, defaultAIResearcherState);
+            }
+          } else {
+            set(aiResearcherAtom, defaultAIResearcherState);
+          }
         } else {
           set(codeEditorAtom, (prev) => ({
             ...prev,
@@ -59,6 +82,8 @@ export const useUpdateCodeEditor = () => {
             spillError: undefined,
             initialCode: undefined,
           }));
+
+          set(aiResearcherAtom, defaultAIResearcherState);
         }
       },
     []

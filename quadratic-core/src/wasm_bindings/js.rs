@@ -138,6 +138,19 @@ extern "C" {
     pub fn jsClientMessage(message: String, error: String);
 
     pub fn jsA1Context(context: String);
+
+    pub fn jsRequestAIResearcherResult(
+        transaction_id: String,
+        sheet_pos: String,
+        query: String,
+        ref_cell_values: String,
+        cells_accessed_values: String, /* Vec<Vec<Vec<JsCellValuePos>>> */
+    );
+
+    pub fn jsAIResearcherState(
+        current: String,            /* Vec<CodeRun> */
+        awaiting_execution: String, /* Vec<CodeRun> */
+    );
 }
 
 #[cfg(test)]
@@ -224,6 +237,7 @@ pub fn expect_js_offsets(
 }
 
 #[cfg(test)]
+#[track_caller]
 pub fn clear_js_calls() {
     TEST_ARRAY.lock().unwrap().clear();
 }
@@ -681,4 +695,34 @@ pub fn jsA1Context(context: String) {
         .lock()
         .unwrap()
         .push(TestFunction::new("jsA1Context", context));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsRequestAIResearcherResult(
+    transaction_id: String,
+    sheet_pos: String,
+    query: String,
+    ref_cell_values: String,
+    cells_accessed_values: String, /* Vec<Vec<Vec<JsCellValuePos>>> */
+) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsRequestAIResearcherResult",
+        format!(
+            "{},{},{},{},{}",
+            transaction_id, sheet_pos, query, ref_cell_values, cells_accessed_values
+        ),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsAIResearcherState(
+    current: String,            /* Vec<CodeRun> */
+    awaiting_execution: String, /* Vec<CodeRun> */
+) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsAIResearcherState",
+        format!("{},{}", current, awaiting_execution),
+    ));
 }

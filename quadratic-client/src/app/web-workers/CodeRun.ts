@@ -1,7 +1,7 @@
-import type { SheetPosTS } from '@/app/gridGL/types/size';
+import type { JsSheetPos } from '@/app/quadratic-core-types';
 
 export interface CodeRun {
   transactionId: string;
-  sheetPos: SheetPosTS;
+  sheetPos: JsSheetPos;
   code: string;
 }

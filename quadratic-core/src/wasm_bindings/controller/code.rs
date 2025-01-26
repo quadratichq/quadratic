@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 use super::*;
 
 #[wasm_bindgen]
@@ -101,6 +103,36 @@ impl GridController {
     ) -> Result<(), JsValue> {
         self.connection_complete(transaction_id, data, std_out, std_err, extra)
             .map_err(|e| e.to_string())?;
+
+        Ok(())
+    }
+
+    #[wasm_bindgen(js_name = "receiveAIResearcherResult")]
+    pub fn js_receive_ai_researcher_result(
+        &mut self,
+        transaction_id: String,
+        sheet_pos: String,
+        cell_values: JsValue,
+        error: Option<String>,
+        researcher_response_stringified: Option<String>,
+    ) -> Result<(), JsValue> {
+        let transaction_id = Uuid::parse_str(&transaction_id)
+            .map_err(|_| JsValue::from_str("Invalid transaction id"))?;
+
+        let cell_values = serde_wasm_bindgen::from_value(cell_values)
+            .map_err(|_| JsValue::from_str("Invalid values"))?;
+
+        let sheet_pos: SheetPos =
+            serde_json::from_str(&sheet_pos).map_err(|_| JsValue::UNDEFINED)?;
+
+        self.receive_ai_researcher_result(
+            transaction_id,
+            sheet_pos,
+            cell_values,
+            error,
+            researcher_response_stringified,
+        )
+        .map_err(|e| e.to_string())?;
 
         Ok(())
     }

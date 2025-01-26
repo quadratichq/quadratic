@@ -42,7 +42,7 @@ export interface CellTypeOption {
   experimental?: boolean;
 }
 
-let CELL_TYPE_OPTIONS: CellTypeOption[] = [
+const CELL_TYPE_OPTIONS: CellTypeOption[] = [
   {
     name: 'Python',
     mode: 'Python',
@@ -75,6 +75,19 @@ let CELL_TYPE_OPTIONS: CellTypeOption[] = [
       <>
         Script with modern ES modules{' '}
         <LinkNewTabWrapper href={DOCUMENTATION_JAVASCRIPT_URL}>and more</LinkNewTabWrapper>.
+      </>
+    ),
+    experimental: true,
+  },
+  {
+    name: 'AI Research',
+    mode: 'AIResearcher',
+    icon: <LanguageIcon language="AIResearcher" />,
+    description: (
+      <>
+        {/* TODO(ayush): update description and link before merging */}
+        AI researcher - giving every researcher the world’s structured data at their fingertips,{' '}
+        <LinkNewTabWrapper href={DOCUMENTATION_PYTHON_URL}>and more</LinkNewTabWrapper>.
       </>
     ),
     experimental: true,

@@ -19,3 +19,13 @@
   word-break: break-word;
   overflow-wrap: break-word;
 }
+
+.markdown table thead {
+  @apply bg-gray-100;
+  text-align: left;
+}
+
+.markdown a {
+  @apply text-link;
+  text-decoration: underline;
+}

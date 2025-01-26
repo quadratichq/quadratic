@@ -3,21 +3,23 @@ import type { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import type { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import type { CodeCell } from '@/app/gridGL/types/codeCell';
-import type { SheetPosTS } from '@/app/gridGL/types/size';
 import type {
   JsBordersSheet,
   JsCodeCell,
+  JsCodeRun,
   JsHtmlOutput,
   JsOffset,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
   JsSheetFill,
+  JsSheetPos,
   JsValidationWarning,
   SheetBounds,
   SheetInfo,
   Validation,
 } from '@/app/quadratic-core-types';
+import type { AIResearcherRequestArgs } from '@/app/ui/menus/AIResearcher/AIResearcherRequestHandler';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
@@ -34,7 +36,7 @@ import type { Point, Rectangle } from 'pixi.js';
 interface EventTypes {
   needRefresh: (state: 'required' | 'recommended' | 'force') => void;
 
-  search: (found?: SheetPosTS[], current?: number) => void;
+  search: (found?: JsSheetPos[], current?: number) => void;
   hoverCell: (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => void;
   hoverTooltip: (rect?: Rectangle, text?: string, subtext?: string) => void;
   hoverTable: (table?: JsRenderCodeCell) => void;
@@ -68,9 +70,13 @@ interface EventTypes {
 
   pythonInit: (version: string) => void;
   pythonState: (state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
+
   javascriptInit: (version: string) => void;
   javascriptState: (state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
+
   connectionState: (state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
+
+  aiResearcherState: (current: JsCodeRun[], awaitingExecution: JsCodeRun[]) => void;
 
   updateCodeCell: (options: {
     sheetId: string;
@@ -146,6 +152,8 @@ interface EventTypes {
 
   aiAnalystInitialized: () => void;
   pixiAppSettingsInitialized: () => void;
+
+  requestAIResearcherResult: (args: AIResearcherRequestArgs) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

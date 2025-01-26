@@ -4,6 +4,7 @@
  * FWIW: the font is loaded via the root `index.html`
  * We import 20 dp icons, as those are the only ones we use at the moment.
  */
+import { colors } from '@/app/theme/colors';
 import { cn } from '@/shared/shadcn/utils';
 import './icons.css';
 
@@ -52,6 +53,7 @@ export const AddIcon: IconComponent = (props) => {
 export const AIIcon: IconComponent = (props) => {
   return <Icon {...props}>auto_awesome</Icon>;
 };
+
 export const AppearanceLightModeIcon: IconComponent = (props) => {
   return <Icon {...props}>light_mode</Icon>;
 };
@@ -477,6 +479,10 @@ export const SaveAndRunStopIcon: IconComponent = (props) => {
 
 export const ScientificIcon: IconComponent = (props) => {
   return <Icon {...props}>functions</Icon>;
+};
+
+export const SearchInsightsIcon: IconComponent = (props) => {
+  return <AIIcon {...props} style={{ color: colors.languageAIResearcher }} />;
 };
 
 export const SettingsIcon: IconComponent = (props) => {

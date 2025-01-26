@@ -147,6 +147,10 @@ impl GridController {
                     self.run_javascript(transaction, sheet_pos, code);
                 }
                 CodeCellLanguage::Import => {} // no-op
+                CodeCellLanguage::AIResearcher => {
+                    // collect the sheet_pos for the AI researcher, run them in parallel at the end of the transaction
+                    transaction.pending_ai_researchers.insert(sheet_pos);
+                }
             }
         }
     }

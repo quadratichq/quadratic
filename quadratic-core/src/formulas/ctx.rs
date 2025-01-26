@@ -187,7 +187,6 @@ impl<'ctx> Ctx<'ctx> {
         // clone `sheet_name.`
         for y in bounded_rect.y_range() {
             for x in bounded_rect.x_range() {
-                // TODO: record array dependency instead of many individual cell dependencies
                 flat_array.push(
                     self.get_cell(SheetPos { x, y, sheet_id }, span, false)
                         .inner,

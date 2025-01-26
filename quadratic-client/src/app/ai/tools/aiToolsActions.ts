@@ -1,7 +1,8 @@
 import { sheets } from '@/app/grid/controller/Sheets';
-import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
+import { ensureRectVisible, ensureVisible } from '@/app/gridGL/interaction/viewportHelper';
 import type { SheetRect } from '@/app/quadratic-core-types';
 import { stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { getAIResearcherCodeString } from '@/app/ui/menus/AIResearcher/helpers/getAIResearcherCodeString.helper';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -12,6 +13,10 @@ export type AIToolActionsRecord = {
 };
 
 export const aiToolsActions: AIToolActionsRecord = {
+  [AITool.SetAIResearcherResult]: async (_args) => {
+    // no action as this tool is only meant to get structured data from AI
+    return `Executed set_ai_researcher_result tool successfully.`;
+  },
   [AITool.SetChatName]: async (args) => {
     // no action as this tool is only meant to get structured data from AI
     return `Executed set chat name tool successfully with name: ${args.chat_name}`;
@@ -59,6 +64,30 @@ export const aiToolsActions: AIToolActionsRecord = {
       return 'Executed set code cell value tool successfully';
     } catch (e) {
       return `Error executing set code cell value tool: ${e}`;
+    }
+  },
+  [AITool.SetAIResearcherValue]: async (args) => {
+    const { query, ai_researcher_position, reference_cells_selection } = args;
+    try {
+      const selection = stringToSelection(ai_researcher_position, sheets.current, sheets.a1Context);
+      if (!selection.isSingleSelection()) {
+        return 'Invalid ai researcher position, this should be a single cell, not a range';
+      }
+      const { x, y } = selection.getCursor();
+
+      quadraticCore.setCodeCellValue({
+        sheetId: sheets.current,
+        x,
+        y,
+        codeString: getAIResearcherCodeString(query, reference_cells_selection),
+        language: 'AIResearcher',
+        cursor: sheets.getCursorPosition(),
+      });
+      ensureVisible({ x, y });
+
+      return 'Executed set ai researcher value tool successfully';
+    } catch (e) {
+      return `Error executing set ai researcher value tool: ${e}`;
     }
   },
   [AITool.MoveCells]: async (args) => {

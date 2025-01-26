@@ -6,7 +6,7 @@ use std::{
 use ts_rs::TS;
 
 use super::SheetId;
-use crate::a1::{A1Context, CellRefRange};
+use crate::a1::{A1Context, A1Selection, CellRefRange};
 use crate::{Rect, SheetPos, SheetRect};
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
@@ -158,6 +158,15 @@ impl CellsAccessed {
     pub fn sheet_iter(&self, sheet_id: SheetId) -> impl Iterator<Item = &CellRefRange> {
         self.cells.get(&sheet_id).into_iter().flatten()
     }
+
+    pub fn to_selections(&self, context: &A1Context) -> Vec<A1Selection> {
+        self.cells
+            .iter()
+            .map(|(sheet_id, ranges)| {
+                A1Selection::from_ranges(ranges.iter().cloned(), sheet_id.to_owned(), context)
+            })
+            .collect()
+    }
 }
 
 #[cfg(test)]
@@ -274,5 +283,31 @@ mod tests {
         assert_eq!(cells, deserialized);
         assert_eq!(deserialized.cells.len(), 1);
         assert_eq!(deserialized.cells[&sheet_id].len(), 2);
+    }
+
+    #[test]
+    fn test_to_selections() {
+        let mut cells = CellsAccessed::default();
+        let sheet_id = SheetId::new();
+        let context = A1Context::default();
+        cells.add(sheet_id, CellRefRange::ALL);
+        let selections = cells.to_selections(&context);
+        assert_eq!(selections.len(), 1);
+        assert_eq!(selections[0].sheet_id, sheet_id);
+        assert_eq!(selections[0].ranges, vec![CellRefRange::ALL]);
+
+        let mut cells = CellsAccessed::default();
+        let sheet_id = SheetId::new();
+        cells.add(
+            sheet_id,
+            CellRefRange::new_relative_rect(Rect::new(1, 1, 3, 3)),
+        );
+        let selections = cells.to_selections(&context);
+        assert_eq!(selections.len(), 1);
+        assert_eq!(selections[0].sheet_id, sheet_id);
+        assert_eq!(
+            selections[0].ranges,
+            vec![CellRefRange::new_relative_rect(Rect::new(1, 1, 3, 3))]
+        );
     }
 }

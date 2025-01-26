@@ -1,4 +1,3 @@
-import { events } from '@/app/events/events';
 import type { CodeCell } from '@/app/gridGL/types/codeCell';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import type { JsCellsAccessed, JsCoordinate } from '@/app/quadratic-core-types';
@@ -85,19 +84,7 @@ export const codeEditorAtom = atom<CodeEditorState>({
           return;
         }
 
-        if (newValue.showCodeEditor) {
-          if (
-            newValue.codeCell.sheetId !== oldValue.codeCell.sheetId ||
-            newValue.codeCell.pos.x !== oldValue.codeCell.pos.x ||
-            newValue.codeCell.pos.y !== oldValue.codeCell.pos.y ||
-            newValue.codeCell.language !== oldValue.codeCell.language
-          ) {
-            events.emit('codeEditorCodeCell', newValue.codeCell);
-          }
-        }
-
         if (oldValue.showCodeEditor && !newValue.showCodeEditor) {
-          events.emit('codeEditorCodeCell', undefined);
           resetSelf();
           focusGrid();
         }

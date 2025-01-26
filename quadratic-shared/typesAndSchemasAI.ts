@@ -339,7 +339,7 @@ const OpenAIRequestBodySchema = z.object({
 });
 export type OpenAIRequestBody = z.infer<typeof OpenAIRequestBodySchema>;
 
-const CodeCellTypeSchema = z.enum(['Python', 'Javascript', 'Formula', 'Connection', 'Import']);
+const CodeCellTypeSchema = z.enum(['Python', 'Javascript', 'Formula', 'Connection', 'Import', 'AIResearcher']);
 export type CodeCellType = z.infer<typeof CodeCellTypeSchema>;
 
 export const AIRequestBodySchema = z.object({
@@ -366,3 +366,46 @@ export type AIModelToolChoice = z.infer<typeof AIModelToolChoiceSchema>;
 
 const AIPromptMessageSchema = BedrockPromptMessageSchema.or(AnthropicPromptMessageSchema).or(OpenAIPromptMessageSchema);
 export type AIPromptMessage = z.infer<typeof AIPromptMessageSchema>;
+
+export const ExaSearchRequestBodySchema = z.object({
+  query: z.string(),
+  type: z.enum(['auto', 'neural', 'keyword']),
+  numResults: z.number().min(1).max(25).optional(),
+  livecrawl: z.enum(['never', 'fallback', 'always']),
+  useAutoprompt: z.boolean(),
+  text: z.boolean(),
+  highlights: z.boolean(),
+  summary: z.boolean(),
+  categories: z
+    .enum(['company', 'research paper', 'news', 'github', 'tweet', 'movie', 'song', 'personal site', 'pdf'])
+    .optional(),
+  includeText: z.array(z.string()),
+  excludeText: z.array(z.string()),
+  includeDomains: z.array(z.string()),
+  excludeDomains: z.array(z.string()),
+  startPublishedDate: z.string(),
+  endPublishedDate: z.string(),
+});
+export type ExaSearchRequestBody = z.infer<typeof ExaSearchRequestBodySchema>;
+
+export const ExaSearchResultSchema = z.object({
+  id: z.string(),
+  title: z.string().nullable().optional(),
+  url: z.string(),
+  publishedDate: z.string().nullable().optional(),
+  author: z.string().nullable().optional(),
+  score: z.number().nullable().optional(),
+  text: z.string().nullable().optional(),
+  highlights: z.array(z.string()).nullable().optional(),
+  highlightScores: z.array(z.number()).nullable().optional(),
+  summary: z.string().nullable().optional(),
+  favicon: z.string().nullable().optional(),
+  image: z.string().nullable().optional(),
+});
+export type ExaSearchResult = z.infer<typeof ExaSearchResultSchema>;
+
+export const ExaSearchResponseSchema = z.object({
+  results: z.array(ExaSearchResultSchema),
+  autopromptString: z.string().nullable().optional(),
+});
+export type ExaSearchResponse = z.infer<typeof ExaSearchResponseSchema>;

@@ -203,6 +203,18 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientA1Context') {
       events.emit('a1Context', e.data.context);
       return;
+    } else if (e.data.type === 'coreClientRequestAIResearcherResult') {
+      events.emit('requestAIResearcherResult', {
+        transactionId: e.data.transactionId,
+        sheetPos: e.data.sheetPos,
+        query: e.data.query,
+        refCellValues: e.data.refCellValues,
+        cellsAccessedValues: e.data.cellsAccessedValues,
+      });
+      return;
+    } else if (e.data.type === 'coreClientAIResearcherState') {
+      events.emit('aiResearcherState', e.data.current, e.data.awaitingExecution);
+      return;
     }
 
     if (e.data.id !== undefined) {
@@ -1307,6 +1319,29 @@ class QuadraticCore {
       row,
       below,
       cursor,
+    });
+  }
+
+  receiveAIResearcherResult({
+    transactionId,
+    sheetPos,
+    cellValues,
+    error,
+    researcherResponseStringified,
+  }: {
+    transactionId: string;
+    sheetPos: string;
+    cellValues?: string[][];
+    error?: string;
+    researcherResponseStringified?: string;
+  }) {
+    this.send({
+      type: 'clientCoreReceiveAIResearcherResult',
+      transactionId,
+      sheetPos,
+      cellValues,
+      error,
+      researcherResponseStringified,
     });
   }
 

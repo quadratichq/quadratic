@@ -9,7 +9,9 @@ import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import type {
   JsBordersSheet,
+  JsCellValuePos,
   JsCodeCell,
+  JsCodeRun,
   JsHtmlOutput,
   JsOffset,
   JsRenderCell,
@@ -91,6 +93,14 @@ declare var self: WorkerGlobalScope &
     ) => void;
     sendMultiplayerSynced: () => void;
     sendClientMessage: (message: string, severity: JsSnackbarSeverity) => void;
+    sendRequestAIResearcherResult: (
+      transactionId: string,
+      sheetPos: string,
+      query: string,
+      refCellValues: string,
+      cellsAccessedValues: JsCellValuePos[][][]
+    ) => void;
+    sendAIResearcherState: (current: JsCodeRun[], awaitingExecution: JsCodeRun[]) => void;
   };
 
 class CoreClient {
@@ -126,6 +136,8 @@ class CoreClient {
     self.sendRenderValidationWarnings = coreClient.sendRenderValidationWarnings;
     self.sendMultiplayerSynced = coreClient.sendMultiplayerSynced;
     self.sendClientMessage = coreClient.sendClientMessage;
+    self.sendRequestAIResearcherResult = coreClient.sendRequestAIResearcherResult;
+    self.sendAIResearcherState = coreClient.sendAIResearcherState;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -679,6 +691,16 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreReceiveAIResearcherResult':
+        core.receiveAIResearcherResult(
+          e.data.transactionId,
+          e.data.sheetPos,
+          e.data.cellValues,
+          e.data.error,
+          e.data.researcherResponseStringified
+        );
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core
@@ -848,6 +870,31 @@ class CoreClient {
 
   sendA1Context = (context: string) => {
     this.send({ type: 'coreClientA1Context', context });
+  };
+
+  sendRequestAIResearcherResult = (
+    transactionId: string,
+    sheetPos: string,
+    query: string,
+    refCellValues: string,
+    cellsAccessedValues: JsCellValuePos[][][]
+  ) => {
+    this.send({
+      type: 'coreClientRequestAIResearcherResult',
+      transactionId,
+      sheetPos,
+      query,
+      refCellValues,
+      cellsAccessedValues,
+    });
+  };
+
+  sendAIResearcherState = (current: JsCodeRun[], awaitingExecution: JsCodeRun[]) => {
+    this.send({
+      type: 'coreClientAIResearcherState',
+      current,
+      awaitingExecution,
+    });
   };
 }
 

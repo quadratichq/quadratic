@@ -6,6 +6,7 @@ use lazy_static::lazy_static;
 
 #[macro_use]
 mod macros;
+mod ai;
 mod array;
 mod datetime;
 pub mod excel;
@@ -36,6 +37,7 @@ pub fn lookup_function(name: &str) -> Option<&'static FormulaFunction> {
 }
 
 pub const CATEGORIES: &[FormulaFunctionCategory] = &[
+    ai::CATEGORY,
     operators::CATEGORY,
     mathematics::CATEGORY,
     trigonometry::CATEGORY,

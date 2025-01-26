@@ -482,7 +482,10 @@ impl GridController {
                         for (&y, cell) in col.iter_mut() {
                             match cell {
                                 CellValue::Code(code_cell) => {
-                                    if matches!(code_cell.language, CodeCellLanguage::Formula) {
+                                    if matches!(
+                                        code_cell.language,
+                                        CodeCellLanguage::Formula | CodeCellLanguage::AIResearcher
+                                    ) {
                                         code_cell.code = replace_internal_cell_references(
                                             &code_cell.code,
                                             Pos {
@@ -737,36 +740,6 @@ mod test {
 
     #[test]
     #[parallel]
-    fn paste_clipboard_with_data_table() {
-        let (mut gc, sheet_id, _, _) = simple_csv();
-        let paste = |gc: &mut GridController, x, y, html| {
-            gc.paste_from_clipboard(
-                &A1Selection::from_xy(x, y, sheet_id),
-                None,
-                Some(html),
-                PasteSpecial::None,
-                None,
-            );
-        };
-
-        let JsClipboard { html, .. } = gc
-            .sheet(sheet_id)
-            .copy_to_clipboard(
-                &A1Selection::from_xy(0, 0, sheet_id),
-                ClipboardOperation::Copy,
-            )
-            .unwrap();
-
-        let expected_row1 = vec!["city", "region", "country", "population"];
-
-        // paste side by side
-        paste(&mut gc, 4, 0, html.clone());
-        print_table(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 10));
-        assert_cell_value_row(&gc, sheet_id, 4, 0, 0, expected_row1);
-    }
-
-    #[test]
-    #[parallel]
     fn update_code_cell_references_python() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -799,6 +772,72 @@ mod test {
             }
             _ => panic!("expected code cell"),
         }
+    }
+
+    #[test]
+    #[parallel]
+    fn update_code_cell_references_javascript() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_code_cell(
+            pos![C3].to_sheet_pos(sheet_id),
+            CodeCellLanguage::Javascript,
+            r#"return q.cells("A1:B2");"#.to_string(),
+            None,
+        );
+
+        let selection = A1Selection::test_a1("A1:E5");
+        let JsClipboard { html, .. } = gc
+            .sheet(sheet_id)
+            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+            .unwrap();
+
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1("E6"),
+            None,
+            Some(html),
+            PasteSpecial::None,
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        match sheet.cell_value(pos![G8]) {
+            Some(CellValue::Code(code_cell)) => {
+                assert_eq!(code_cell.code, r#"return q.cells("E6:F7");"#);
+            }
+            _ => panic!("expected code cell"),
+        }
+    }
+
+    #[test]
+    #[parallel]
+    fn paste_clipboard_with_data_table() {
+        let (mut gc, sheet_id, _, _) = simple_csv();
+        let paste = |gc: &mut GridController, x, y, html| {
+            gc.paste_from_clipboard(
+                &A1Selection::from_xy(x, y, sheet_id),
+                None,
+                Some(html),
+                PasteSpecial::None,
+                None,
+            );
+        };
+
+        let JsClipboard { html, .. } = gc
+            .sheet(sheet_id)
+            .copy_to_clipboard(
+                &A1Selection::from_xy(0, 0, sheet_id),
+                ClipboardOperation::Copy,
+            )
+            .unwrap();
+
+        let expected_row1 = vec!["city", "region", "country", "population"];
+
+        // paste side by side
+        paste(&mut gc, 4, 0, html.clone());
+        print_table(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 10));
+        assert_cell_value_row(&gc, sheet_id, 4, 0, 0, expected_row1);
     }
 
     #[test]
@@ -865,42 +904,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
-    fn update_code_cell_references_javascript() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-
-        gc.set_code_cell(
-            pos![C3].to_sheet_pos(sheet_id),
-            CodeCellLanguage::Javascript,
-            r#"return q.cells("A1:B2");"#.to_string(),
-            None,
-        );
-
-        let selection = A1Selection::test_a1("A1:E5");
-        let JsClipboard { html, .. } = gc
-            .sheet(sheet_id)
-            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
-            .unwrap();
-
-        gc.paste_from_clipboard(
-            &A1Selection::test_a1("E6"),
-            None,
-            Some(html),
-            PasteSpecial::None,
-            None,
-        );
-
-        let sheet = gc.sheet(sheet_id);
-        match sheet.cell_value(pos![G8]) {
-            Some(CellValue::Code(code_cell)) => {
-                assert_eq!(code_cell.code, r#"return q.cells("E6:F7");"#);
-            }
-            _ => panic!("expected code cell"),
-        }
-    }
-
-    #[test]
     #[serial]
     fn paste_code_cell_inside_data_table() {
         clear_js_calls();
@@ -938,5 +941,49 @@ mod test {
         );
 
         assert_data_table_cell_value(&gc, sheet_id, 2, 2, "MA");
+    }
+
+    #[test]
+    #[parallel]
+    fn paste_clipboard_with_ai_researcher() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_cell_values(
+            pos![A1].to_sheet_pos(sheet_id),
+            vec![vec!["1"], vec!["2"], vec!["3"]],
+            None,
+        );
+
+        gc.set_code_cell(
+            pos![B1].to_sheet_pos(sheet_id),
+            CodeCellLanguage::Formula,
+            "AI('query', A1:A3)".to_string(),
+            None,
+        );
+
+        assert_eq!(
+            gc.sheet(sheet_id).get_code_cell_value(pos![B1]),
+            Some(CellValue::Text("result".to_string()))
+        );
+
+        let selection = A1Selection::test_a1("A1:B5");
+        let JsClipboard { html, .. } = gc
+            .sheet(sheet_id)
+            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+            .unwrap();
+
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1("E5"),
+            None,
+            Some(html),
+            PasteSpecial::None,
+            None,
+        );
+
+        assert_eq!(
+            gc.sheet(sheet_id).get_code_cell_value(pos![F5]),
+            Some(CellValue::Text("result".to_string()))
+        );
     }
 }

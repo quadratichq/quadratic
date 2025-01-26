@@ -9,5 +9,18 @@ interface Props {
 }
 
 export function Markdown({ children, className }: Props) {
-  return <ReactMarkdown remarkPlugins={[remarkGfm]} className={cn('markdown', className)} children={children} />;
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      className={cn('markdown', className)}
+      components={{
+        a: ({ node, children, ...props }) => (
+          <a {...props} target="_blank" rel="noreferrer">
+            {children}
+          </a>
+        ),
+      }}
+      children={children}
+    />
+  );
 }
