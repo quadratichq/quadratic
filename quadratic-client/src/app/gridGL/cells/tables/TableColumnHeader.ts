@@ -82,7 +82,7 @@ export class TableColumnHeader extends Container {
     let clippedName = name;
     while (clippedName.length > 0 && this.columnName.width + SORT_BUTTON_RADIUS * 2 + SORT_BUTTON_PADDING > width) {
       clippedName = clippedName.slice(0, -1);
-      this.columnName.text = clippedName;
+      this.columnName.text = clippedName + '…';
     }
   }
 
