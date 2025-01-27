@@ -6,7 +6,11 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
-import { DOUBLE_CLICK_TIME } from '@/app/gridGL/interaction/pointer/pointerUtils';
+import {
+  DOUBLE_CLICK_TIME,
+  MOUSE_EDGES_DISTANCE,
+  MOUSE_EDGES_SPEED,
+} from '@/app/gridGL/interaction/pointer/pointerUtils';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -28,9 +32,6 @@ export class PointerDown {
 
   // used to track the unselect rectangle
   unselectDown?: Rectangle;
-
-  // flag that ensures that if pointerUp triggers during setTimeout, pointerUp is still called (see below)
-  private afterShowInput?: boolean;
 
   // Determines whether the input is valid (ie, whether it is open and has a value that does not fail validation)
   private async isInputValid(): Promise<boolean> {
@@ -124,6 +125,11 @@ export class PointerDown {
     this.pointerMoved = false;
     this.position = new Point(column, row);
     this.active = true;
+    pixiApp.viewport.mouseEdges({
+      distance: MOUSE_EDGES_DISTANCE,
+      allowButtons: true,
+      speed: MOUSE_EDGES_SPEED / pixiApp.viewport.scale.x,
+    });
   }
 
   pointerMove(world: Point, event: PointerEvent): void {
@@ -197,16 +203,12 @@ export class PointerDown {
       return;
     }
 
-    if (this.afterShowInput) {
-      window.setTimeout(() => this.pointerUp(), 0);
-      this.afterShowInput = false;
-      return;
-    }
     if (this.active) {
       if (!this.pointerMoved) {
         this.doubleClickTimeout = window.setTimeout(() => (this.doubleClickTimeout = undefined), DOUBLE_CLICK_TIME);
       }
       this.active = false;
+      pixiApp.viewport.plugins.remove('mouse-edges');
     }
   }
 

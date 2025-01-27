@@ -22,16 +22,16 @@ export class TableOutline extends Graphics {
     sharedEvents.on('changeThemeAccentColor', this.update);
   }
 
-  destroy() {
+  destroy = () => {
     sharedEvents.off('changeThemeAccentColor', this.update);
     super.destroy();
-  }
+  };
 
-  activate(active: boolean) {
+  activate = (active: boolean) => {
     if (active === this.active) return;
     this.active = active;
     this.update();
-  }
+  };
 
   update = () => {
     this.clear();
@@ -107,7 +107,7 @@ export class TableOutline extends Graphics {
   };
 
   // draw a dashed and filled rectangle to identify the cause of the spill error
-  private drawDashedRectangle(rectangle: Rectangle, color: number) {
+  private drawDashedRectangle = (rectangle: Rectangle, color: number) => {
     const minX = rectangle.left - this.table.tableBounds.x;
     const minY = rectangle.top - this.table.tableBounds.y;
     const maxX = rectangle.right - this.table.tableBounds.x;
@@ -133,5 +133,5 @@ export class TableOutline extends Graphics {
     this.beginFill(colors.cellColorError, SPILL_FILL_ALPHA);
     this.drawRect(minX, minY, maxX - minX, maxY - minY);
     this.endFill();
-  }
+  };
 }

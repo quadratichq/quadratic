@@ -19,7 +19,12 @@ export class PointerTable {
   private doubleClickTimeout: number | undefined;
   private tableNameDown: { column: number; row: number; point: Point } | undefined;
 
-  private pointerDownTableName(world: Point, tableDown: TablePointerDownResult, shiftKey: boolean, ctrlKey: boolean) {
+  private pointerDownTableName = (
+    world: Point,
+    tableDown: TablePointerDownResult,
+    shiftKey: boolean,
+    ctrlKey: boolean
+  ) => {
     sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, tableDown.table.y, shiftKey, ctrlKey);
     pixiApp.cellsSheet().tables.ensureActive(tableDown.table);
     if (this.doubleClickTimeout) {
@@ -47,9 +52,9 @@ export class PointerTable {
       }, DOUBLE_CLICK_TIME);
       this.tableNameDown = { column: tableDown.table.x, row: tableDown.table.y, point: world };
     }
-  }
+  };
 
-  private pointerDownDropdown(world: Point, tableDown: TablePointerDownResult) {
+  private pointerDownDropdown = (world: Point, tableDown: TablePointerDownResult) => {
     events.emit('contextMenu', {
       type: ContextMenuType.Table,
       world,
@@ -57,9 +62,14 @@ export class PointerTable {
       row: tableDown.table.y,
       table: tableDown.table,
     });
-  }
+  };
 
-  private pointerDownColumnName(world: Point, tableDown: TablePointerDownResult, shiftKey: boolean, ctrlKey: boolean) {
+  private pointerDownColumnName = (
+    world: Point,
+    tableDown: TablePointerDownResult,
+    shiftKey: boolean,
+    ctrlKey: boolean
+  ) => {
     if (tableDown.column === undefined) {
       throw new Error('Expected column to be defined in pointerTable');
     }
@@ -84,9 +94,9 @@ export class PointerTable {
         }, DOUBLE_CLICK_TIME);
       }
     }
-  }
+  };
 
-  pointerDown(world: Point, event: PointerEvent): boolean {
+  pointerDown = (world: Point, event: PointerEvent): boolean => {
     let tableDown = pixiApp.cellsSheet().tables.pointerDown(world);
     if (!tableDown?.table) {
       const image = pixiApp.cellsSheet().cellsImages.contains(world);
@@ -128,9 +138,9 @@ export class PointerTable {
       this.pointerDownColumnName(world, tableDown, event.shiftKey, event.ctrlKey || event.metaKey);
     }
     return true;
-  }
+  };
 
-  pointerMove(world: Point): boolean {
+  pointerMove = (world: Point): boolean => {
     if (this.doubleClickTimeout) {
       clearTimeout(this.doubleClickTimeout);
       this.doubleClickTimeout = undefined;
@@ -152,13 +162,13 @@ export class PointerTable {
     const result = pixiApp.cellsSheet().tables.pointerMove(world);
     this.cursor = pixiApp.cellsSheet().tables.tableCursor;
     return result;
-  }
+  };
 
-  pointerUp(): boolean {
+  pointerUp = (): boolean => {
     if (this.tableNameDown) {
       this.tableNameDown = undefined;
       return true;
     }
     return false;
-  }
+  };
 }
