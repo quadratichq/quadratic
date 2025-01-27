@@ -35,6 +35,13 @@ type InsertActionSpec = Pick<
   | Action.InsertFile
 >;
 
+export const insertCellReference = () => {
+  if (pixiAppSettings.codeEditorState.showCodeEditor) {
+    const { sheetId, language } = pixiAppSettings.codeEditorState.codeCell;
+    insertCellRef(sheetId, language);
+  }
+};
+
 export const insertActionsSpec: InsertActionSpec = {
   [Action.InsertCodePython]: {
     label: 'Python',
@@ -247,12 +254,7 @@ export const insertActionsSpec: InsertActionSpec = {
   [Action.InsertCellReference]: {
     label: 'Cell reference',
     labelVerbose: 'Insert cell reference',
-    run: () => {
-      if (pixiAppSettings.codeEditorState.showCodeEditor) {
-        const { sheetId, language } = pixiAppSettings.codeEditorState.codeCell;
-        insertCellRef(sheetId, language);
-      }
-    },
+    run: insertCellReference,
   },
   [Action.RemoveInsertedCells]: {
     label: 'Remove inserted cells',
