@@ -119,7 +119,8 @@ impl GridController {
         let Some(CellValue::Code(code)) = sheet.cell_value(current_sheet_pos.into()) else {
             return Err(CoreError::A1Error("Cell not found".to_string()));
         };
-        let rects = sheet.selection_to_rects(&selection, code.language == CodeCellLanguage::Python);
+        let rects =
+            sheet.selection_to_rects(&selection, code.language == CodeCellLanguage::Python, false);
         if rects.len() > 1 {
             // multiple rects not supported
             let msg = "Multiple rects not supported".to_string();

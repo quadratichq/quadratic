@@ -68,7 +68,7 @@ impl CellRefRange {
                 }
             }
             Self::Table { range } => range
-                .convert_to_ref_range_bounds(false, context, false)
+                .convert_to_ref_range_bounds(false, context, false, false)
                 .is_some_and(|range| {
                     if let Some(p2) = p2 {
                         range.start.is_pos(p1) && range.end.is_pos(p2)

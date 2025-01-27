@@ -134,7 +134,7 @@ pub fn cell_ref_range_to_ref_range_bounds(
     let ref_range_bounds = match cell_ref_range {
         CellRefRange::Sheet { range } => range,
         CellRefRange::Table { range } => {
-            match range.convert_to_ref_range_bounds(false, &context, false) {
+            match range.convert_to_ref_range_bounds(false, &context, false, false) {
                 Some(ref_range_bounds) => ref_range_bounds,
                 None => return Err("Unable to convert table range to ref range bounds".to_string()),
             }

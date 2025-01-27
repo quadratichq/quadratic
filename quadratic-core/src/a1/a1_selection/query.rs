@@ -167,7 +167,9 @@ impl A1Selection {
                     }
                 }
                 CellRefRange::Table { range } => {
-                    if let Some(range) = range.convert_to_ref_range_bounds(false, context, false) {
+                    if let Some(range) =
+                        range.convert_to_ref_range_bounds(false, context, false, false)
+                    {
                         Pos {
                             x: range.end.col(),
                             y: range.end.row(),
@@ -352,7 +354,7 @@ impl A1Selection {
                     }
                 }
                 CellRefRange::Table { range } => {
-                    range.convert_to_ref_range_bounds(false, context, false)
+                    range.convert_to_ref_range_bounds(false, context, false, false)
                 }
             })
             .collect()

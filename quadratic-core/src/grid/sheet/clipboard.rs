@@ -25,7 +25,8 @@ impl Sheet {
         let context = self.a1_context();
 
         // TODO(ddimaria): this doesn't work properly for TableRefs
-        if let Some(bounds) = self.selection_bounds(selection) {
+        dbgjs!(format!("selection: {:?}", selection));
+        if let Some(bounds) = self.selection_bounds(selection, true) {
             clipboard_origin.x = bounds.min.x;
             clipboard_origin.y = bounds.min.y;
             sheet_bounds = Some(bounds);
@@ -220,6 +221,9 @@ impl Sheet {
             self.iter_code_output_in_rect(bounds)
                 .filter(|(_, data_table)| !data_table.spill_error)
                 .for_each(|(output_rect, data_table)| {
+                    dbgjs!(format!("output_rect: {:?}", output_rect));
+                    dbgjs!(format!("data_table: {:?}", data_table));
+                    dbgjs!(format!("bounds: {:?}", bounds));
                     // only change the cells if the CellValue::Code is not in the selection box
                     let data_table_pos = Pos {
                         x: output_rect.min.x,
@@ -248,6 +252,7 @@ impl Sheet {
 
                     // add the CellValue to cells if the code is not included in the clipboard
                     let include_in_cells = !bounds.contains(data_table_pos);
+                    dbgjs!(format!("include_in_cells: {}", include_in_cells));
 
                     // add the code_run output to clipboard.values
                     for y in y_start..=y_end {
@@ -256,6 +261,7 @@ impl Sheet {
                                 (x - data_table_pos.x) as u32,
                                 (y - data_table_pos.y) as u32,
                             ) {
+                                dbgjs!(format!("value: {}", value));
                                 let pos = Pos {
                                     x: x - bounds.min.x,
                                     y: y - bounds.min.y,
@@ -296,7 +302,8 @@ impl Sheet {
 
         html_body.push_str("</td></tr></tbody></table>");
         let mut html = String::from("<table data-quadratic=\"");
-        let data = serde_json::to_string(&clipboard).unwrap();
+        let data = serde_json::to_string(&clipboard).unwrap_or_default();
+        dbgjs!(format!("data: {}", data));
         let encoded = htmlescape::encode_attribute(&data);
         html.push_str(&encoded);
         html.push_str(&String::from("\">"));

@@ -51,7 +51,7 @@ impl Sheet {
         for range in selection.ranges.iter() {
             let rect = match range {
                 CellRefRange::Sheet { range } => Some(self.ref_range_bounds_to_rect(range)),
-                CellRefRange::Table { range } => self.table_ref_to_rect(range, false),
+                CellRefRange::Table { range } => self.table_ref_to_rect(range, false, false),
             };
             if let Some(rect) = rect {
                 for x in rect.x_range() {
@@ -139,7 +139,7 @@ impl Sheet {
         max_rects: Option<usize>,
     ) -> Vec<JsCellValuePosAIContext> {
         let mut ai_context_rects = Vec::new();
-        let selection_rects = self.selection_to_rects(&selection, false);
+        let selection_rects = self.selection_to_rects(&selection, false, false);
         let tabular_data_rects =
             self.find_tabular_data_rects_in_selection_rects(selection_rects, max_rects);
         for tabular_data_rect in tabular_data_rects {
@@ -159,7 +159,7 @@ impl Sheet {
     /// Returns JsCodeCell for all code cells in selection rects that have errors
     pub fn get_errored_code_cells_in_selection(&self, selection: A1Selection) -> Vec<JsCodeCell> {
         let mut code_cells = Vec::new();
-        let selection_rects = self.selection_to_rects(&selection, false);
+        let selection_rects = self.selection_to_rects(&selection, false, false);
         for selection_rect in selection_rects {
             for x in selection_rect.x_range() {
                 if let Some(column) = self.get_column(x) {
@@ -186,9 +186,19 @@ impl Sheet {
     }
 
     /// Converts a table ref to a rect.
-    pub fn table_ref_to_rect(&self, range: &TableRef, force_columns: bool) -> Option<Rect> {
+    pub fn table_ref_to_rect(
+        &self,
+        range: &TableRef,
+        force_columns: bool,
+        force_table_bounds: bool,
+    ) -> Option<Rect> {
         range
-            .convert_to_ref_range_bounds(false, &self.a1_context(), force_columns)
+            .convert_to_ref_range_bounds(
+                false,
+                &self.a1_context(),
+                force_columns,
+                force_table_bounds,
+            )
             .and_then(|range| range.to_rect())
     }
 
@@ -253,13 +263,20 @@ impl Sheet {
     /// Resolves a selection to a union of rectangles. This is important for
     /// ensuring that all clients agree on the exact rectangles a transaction
     /// applies to.
-    pub fn selection_to_rects(&self, selection: &A1Selection, force_columns: bool) -> Vec<Rect> {
+    pub fn selection_to_rects(
+        &self,
+        selection: &A1Selection,
+        force_columns: bool,
+        force_table_bounds: bool,
+    ) -> Vec<Rect> {
         let mut rects = Vec::new();
         for range in selection.ranges.iter() {
             match range {
                 CellRefRange::Sheet { range } => rects.push(self.ref_range_bounds_to_rect(range)),
                 CellRefRange::Table { range } => {
-                    if let Some(rect) = self.table_ref_to_rect(range, force_columns) {
+                    if let Some(rect) =
+                        self.table_ref_to_rect(range, force_columns, force_table_bounds)
+                    {
                         rects.push(rect);
                     }
                 }
@@ -270,8 +287,12 @@ impl Sheet {
 
     /// Returns the smallest rect that contains all the ranges in the selection.
     /// Infinite selections are clamped at sheet data bounds.
-    pub fn selection_bounds(&self, selection: &A1Selection) -> Option<Rect> {
-        let rects = self.selection_to_rects(selection, false);
+    pub fn selection_bounds(
+        &self,
+        selection: &A1Selection,
+        force_table_bounds: bool,
+    ) -> Option<Rect> {
+        let rects = self.selection_to_rects(selection, false, force_table_bounds);
         if rects.is_empty() {
             None
         } else {
@@ -293,7 +314,7 @@ impl Sheet {
                         self.ref_range_bounds_to_rect(range),
                     )),
                     CellRefRange::Table { range } => self
-                        .table_ref_to_rect(range, false)
+                        .table_ref_to_rect(range, false, false)
                         .map(CellRefRange::new_relative_rect),
                 })
                 .collect(),
@@ -577,7 +598,7 @@ mod tests {
         let sheet = Sheet::test();
         let selection = A1Selection::test_a1("A1:C3,E5:G7");
 
-        let rects = sheet.selection_to_rects(&selection, false);
+        let rects = sheet.selection_to_rects(&selection, false, false);
         assert_eq!(rects, vec![Rect::new(1, 1, 3, 3), Rect::new(5, 5, 7, 7)]);
     }
 
@@ -644,62 +665,65 @@ mod tests {
         // Single cell selection
         let single_cell = A1Selection::test_a1("B2");
         assert_eq!(
-            sheet.selection_bounds(&single_cell),
+            sheet.selection_bounds(&single_cell, false),
             Some(Rect::new(2, 2, 2, 2))
         );
 
         // Regular rectangular selection
         let rect_selection = A1Selection::test_a1("B2:D4");
         assert_eq!(
-            sheet.selection_bounds(&rect_selection),
+            sheet.selection_bounds(&rect_selection, false),
             Some(Rect::new(2, 2, 4, 4))
         );
 
         // Multiple disjoint rectangles
         let multi_rect = A1Selection::test_a1("A1:B2,D4:E5");
         assert_eq!(
-            sheet.selection_bounds(&multi_rect),
+            sheet.selection_bounds(&multi_rect, false),
             Some(Rect::new(1, 1, 5, 5))
         );
 
         // Overlapping rectangles
         let overlapping = A1Selection::test_a1("B2:D4,C3:E5");
         assert_eq!(
-            sheet.selection_bounds(&overlapping),
+            sheet.selection_bounds(&overlapping, false),
             Some(Rect::new(2, 2, 5, 5))
         );
 
         // Infinite column selection (should be clamped to sheet bounds)
         let infinite_col = A1Selection::test_a1("C:C");
         assert_eq!(
-            sheet.selection_bounds(&infinite_col),
+            sheet.selection_bounds(&infinite_col, false),
             Some(Rect::new(3, 1, 3, 1))
         );
 
         // Infinite row selection (should be clamped to sheet bounds)
         let infinite_row = A1Selection::test_a1("3:3");
         assert_eq!(
-            sheet.selection_bounds(&infinite_row),
+            sheet.selection_bounds(&infinite_row, false),
             Some(Rect::new(1, 3, 1, 3))
         );
 
         // Select all (should be clamped to sheet bounds)
         let select_all = A1Selection::test_a1("*");
         assert_eq!(
-            sheet.selection_bounds(&select_all),
+            sheet.selection_bounds(&select_all, false),
             Some(Rect::new(1, 1, 5, 5))
         );
 
         // Multiple infinite selections (should be clamped to sheet bounds)
         let multi_infinite = A1Selection::test_a1("A:B,2:3");
         assert_eq!(
-            sheet.selection_bounds(&multi_infinite),
+            sheet.selection_bounds(&multi_infinite, false),
             Some(Rect::new(1, 1, 2, 3))
         );
 
         // Mixed finite and infinite selections
         let mixed = A1Selection::test_a1("B2:C3,D:D,4:4");
-        assert_eq!(sheet.selection_bounds(&mixed), Some(Rect::new(1, 1, 4, 4)));
+        assert_eq!(
+            sheet.selection_bounds(&mixed, false),
+            Some(Rect::new(1, 1, 4, 4))
+        );
     }
 
     #[test]
@@ -711,24 +735,24 @@ mod tests {
 
         let table_ref = TableRef::parse("Table1", &sheet.a1_context()).unwrap();
         assert_eq!(
-            sheet.table_ref_to_rect(&table_ref, false),
+            sheet.table_ref_to_rect(&table_ref, false, false),
             Some(Rect::test_a1("A3:B4"))
         );
 
         let table_ref = TableRef::parse("Table1[#HEADERS]", &sheet.a1_context()).unwrap();
         assert_eq!(
-            sheet.table_ref_to_rect(&table_ref, false),
+            sheet.table_ref_to_rect(&table_ref, false, false),
             Some(Rect::test_a1("A2:B2"))
         );
 
         let table_ref = TableRef::parse("Table1[#All]", &sheet.a1_context()).unwrap();
         assert_eq!(
-            sheet.table_ref_to_rect(&table_ref, false),
+            sheet.table_ref_to_rect(&table_ref, false, false),
             Some(Rect::test_a1("A2:B4"))
         );
         let table_ref = TableRef::parse("Table1", &sheet.a1_context()).unwrap();
         assert_eq!(
-            sheet.table_ref_to_rect(&table_ref, true),
+            sheet.table_ref_to_rect(&table_ref, true, false),
             Some(Rect::test_a1("A2:B4"))
         );
     }

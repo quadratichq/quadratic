@@ -87,7 +87,7 @@ impl JsSelection {
             .filter_map(|range| match range {
                 CellRefRange::Sheet { range } => Some(*range),
                 CellRefRange::Table { range } => {
-                    range.convert_to_ref_range_bounds(false, &context, false)
+                    range.convert_to_ref_range_bounds(false, &context, false, false)
                 }
             })
             .collect::<Vec<_>>();

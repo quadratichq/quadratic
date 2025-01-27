@@ -378,7 +378,9 @@ impl A1Selection {
         if let Some(last) = self.ranges.last_mut() {
             let mut range = match last {
                 CellRefRange::Table { range } => {
-                    if let Some(range) = range.convert_to_ref_range_bounds(false, context, false) {
+                    if let Some(range) =
+                        range.convert_to_ref_range_bounds(false, context, false, false)
+                    {
                         range
                     } else {
                         dbgjs!("Could not convert table range to ref range bounds in A1Selection::select_to");
@@ -411,7 +413,8 @@ impl A1Selection {
         let last = match last {
             CellRefRange::Sheet { range } => *range,
             CellRefRange::Table { range } => {
-                if let Some(range) = range.convert_to_ref_range_bounds(false, context, false) {
+                if let Some(range) = range.convert_to_ref_range_bounds(false, context, false, false)
+                {
                     range
                 } else {
                     return;
@@ -436,7 +439,8 @@ impl A1Selection {
         let last = match last {
             CellRefRange::Sheet { range } => *range,
             CellRefRange::Table { range } => {
-                if let Some(range) = range.convert_to_ref_range_bounds(false, context, false) {
+                if let Some(range) = range.convert_to_ref_range_bounds(false, context, false, false)
+                {
                     range
                 } else {
                     return;

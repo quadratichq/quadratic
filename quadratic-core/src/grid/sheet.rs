@@ -519,7 +519,7 @@ impl Sheet {
         selection.ranges.iter().for_each(|range| {
             if let Some(rect) = match range {
                 CellRefRange::Sheet { range } => Some(self.ref_range_bounds_to_rect(range)),
-                CellRefRange::Table { range } => self.table_ref_to_rect(range, false),
+                CellRefRange::Table { range } => self.table_ref_to_rect(range, false, false),
             } {
                 let rows = self.get_rows_with_wrap_in_rect(&rect, include_blanks);
                 rows_set.extend(rows);

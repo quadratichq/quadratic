@@ -37,7 +37,8 @@ impl A1Selection {
                     });
             }
             CellRefRange::Table { range } => {
-                if let Some(range) = range.convert_to_ref_range_bounds(false, context, false) {
+                if let Some(range) = range.convert_to_ref_range_bounds(false, context, false, false)
+                {
                     other
                         .ranges
                         .iter()
