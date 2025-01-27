@@ -37,12 +37,20 @@ export const ContextMenuBase = ({
       }
     };
 
+    const handleKeydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
     pixiApp.viewport.on('moved', handleMoved);
     pixiApp.viewport.on('zoomed', onClose);
+    window.addEventListener('keydown', handleKeydown);
 
     return () => {
       pixiApp.viewport.off('moved', handleMoved);
       pixiApp.viewport.off('zoomed', onClose);
+      window.removeEventListener('keydown', handleKeydown);
     };
   }, [onClose]);
 
