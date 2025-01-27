@@ -11,6 +11,9 @@ import { Graphics, Rectangle } from 'pixi.js';
 const SPILL_HIGHLIGHT_THICKNESS = 1;
 const SPILL_FILL_ALPHA = 0.05;
 
+// whether to always show the outline even if the table is not active (this is a temporary fix)
+const ALWAYS_SHOW = true;
+
 export class TableOutline extends Graphics {
   private table: Table;
   private active = false;
@@ -36,12 +39,10 @@ export class TableOutline extends Graphics {
   update = () => {
     this.clear();
 
-    // pixiApp.pointer.pointerDataTable.active = this.active;
-
     // draw the table selected outline
     const width = this.active ? 2 : 1;
     const chart = this.table.codeCell.state === 'HTML';
-    if (this.table.codeCell.show_ui || this.active) {
+    if (ALWAYS_SHOW || this.table.codeCell.show_ui || this.active) {
       if (!chart) {
         this.lineStyle({ color: getCSSVariableTint('primary'), width, alignment: 0 });
         this.drawShape(new Rectangle(0, 0, this.table.tableBounds.width, this.table.tableBounds.height));

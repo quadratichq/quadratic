@@ -138,13 +138,15 @@ export const gridToDataTable = () => {
       max: { x: BigInt(rectangle.x + rectangle.width - 1), y: BigInt(rectangle.y + rectangle.height - 1) },
     };
     quadraticCore.gridToDataTable(JSON.stringify(sheetRect, bigIntReplacer), sheets.getCursorPosition());
+    pixiAppSettings.setContextMenu?.({});
   }
 };
 
 export const flattenDataTable = () => {
   const table = getTable();
   if (table) {
-    quadraticCore.flattenDataTable(sheets.current, table.x, table.y, sheets.getCursorPosition());
+    quadraticCore.flattenDataTable(sheets.sheet.id, table.x, table.y, sheets.getCursorPosition());
+    pixiAppSettings.setContextMenu?.({});
   }
 };
 
@@ -158,6 +160,7 @@ export const toggleFirstRowAsHeader = () => {
       !isFirstRowHeader(),
       sheets.getCursorPosition()
     );
+    pixiAppSettings.setContextMenu?.({});
   }
 };
 
@@ -183,6 +186,7 @@ export const deleteDataTable = () => {
       BigInt(table.y + table.h - 1)
     );
     quadraticCore.deleteCellValues(selection, sheets.getCursorPosition());
+    pixiAppSettings.setContextMenu?.({});
   }
 };
 
@@ -190,6 +194,7 @@ export const codeToDataTable = () => {
   const table = getTable();
   if (table) {
     quadraticCore.codeDataTableToDataTable(sheets.current, table.x, table.y, sheets.getCursorPosition());
+    pixiAppSettings.setContextMenu?.({});
   }
 };
 

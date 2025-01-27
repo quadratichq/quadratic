@@ -153,6 +153,13 @@ class HTMLCellsHandler {
     return this.getCells().find((cell) => cell.sheet.id === sheets.current && cell.contains(x, y));
   }
 
+  codeCellPixelWidth(x: number, y: number): number | undefined {
+    const cell = this.findCodeCell(x, y);
+    if (cell) {
+      return cell.width;
+    }
+  }
+
   showActive(codeCell: JsRenderCodeCell, isSelected: boolean) {
     const cell = this.getCells().find(
       (cell) => cell.x === codeCell.x && cell.y === codeCell.y && cell.sheet.id === sheets.current

@@ -72,7 +72,7 @@ impl GridController {
         } = op
         {
             if version == 1 {
-                self.finalize_code_run(
+                self.finalize_data_table(
                     transaction,
                     sheet_pos,
                     code_run.map(|code_run| code_run.into()),
@@ -102,7 +102,7 @@ impl GridController {
             data_table.chart_pixel_output = Some((pixel_width, pixel_height));
             let new_data_table = data_table.clone();
 
-            self.finalize_code_run(transaction, sheet_pos, Some(new_data_table), None);
+            self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None);
         }
 
         Ok(())

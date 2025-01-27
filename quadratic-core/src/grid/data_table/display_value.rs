@@ -105,10 +105,13 @@ impl DataTable {
 
     /// Get the display value at a given position.
     pub fn display_value_at(&self, mut pos: Pos) -> Result<&CellValue> {
-        // only display the first cell if the source cell is HTML or image
-        let y = if self.show_ui && self.show_name { 1 } else { 0 };
-        if self.is_html_or_image() && (pos.x != 0 || pos.y != y) {
-            return Ok(&CellValue::Blank);
+        // the source cell is HTML or image, then display the first cell or blank
+        if self.is_html_or_image() {
+            return Ok(if pos.x == 0 || pos.y == 0 {
+                self.value.get(0, 0)?
+            } else {
+                &CellValue::Blank
+            });
         }
 
         if pos.y == 0 && self.show_ui && self.show_name {

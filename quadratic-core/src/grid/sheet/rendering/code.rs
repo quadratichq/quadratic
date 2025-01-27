@@ -10,12 +10,12 @@ use crate::{
 
 impl Sheet {
     pub fn get_single_html_output(&self, pos: Pos) -> Option<JsHtmlOutput> {
-        let run = self.data_tables.get(&pos)?;
-        if !run.is_html() {
+        let dt = self.data_tables.get(&pos)?;
+        if !dt.is_html() {
             return None;
         }
-        let size = run.chart_pixel_output;
-        let output = run.cell_value_at(0, 0)?;
+        let size = dt.chart_pixel_output;
+        let output = dt.cell_value_at(0, 0)?;
 
         Some(JsHtmlOutput {
             sheet_id: self.id.to_string(),
@@ -24,18 +24,19 @@ impl Sheet {
             html: Some(output.to_display()),
             w: size.map(|(w, _)| w),
             h: size.map(|(_, h)| h),
+            show_name: dt.show_name,
         })
     }
 
     pub fn get_html_output(&self) -> Vec<JsHtmlOutput> {
         self.data_tables
             .iter()
-            .filter_map(|(pos, run)| {
-                let output = run.cell_value_at(0, 0)?;
+            .filter_map(|(pos, dt)| {
+                let output = dt.cell_value_at(0, 0)?;
                 if !matches!(output, CellValue::Html(_)) {
                     return None;
                 }
-                let size = run.chart_pixel_output;
+                let size = dt.chart_pixel_output;
                 Some(JsHtmlOutput {
                     sheet_id: self.id.to_string(),
                     x: pos.x,
@@ -43,6 +44,7 @@ impl Sheet {
                     html: Some(output.to_display()),
                     w: size.map(|(w, _)| w),
                     h: size.map(|(_, h)| h),
+                    show_name: dt.show_name,
                 })
             })
             .collect()
@@ -103,6 +105,7 @@ impl Sheet {
             alternating_colors,
             readonly: data_table.readonly,
             is_html_image: data_table.is_html() || data_table.is_image(),
+            html_image_width: data_table.chart_pixel_output.map(|(w, _)| w),
         })
     }
 
@@ -265,6 +268,7 @@ mod tests {
                 html: Some("<html></html>".to_string()),
                 w: None,
                 h: None,
+                show_name: true,
             }
         );
         gc.set_chart_size(
@@ -289,6 +293,7 @@ mod tests {
                 html: Some("<html></html>".to_string()),
                 w: Some(1.0),
                 h: Some(2.0),
+                show_name: true,
             }
         );
     }
@@ -446,6 +451,7 @@ mod tests {
                 alternating_colors: true,
                 readonly: true,
                 is_html_image: false,
+                html_image_width: None,
             })
         );
     }
