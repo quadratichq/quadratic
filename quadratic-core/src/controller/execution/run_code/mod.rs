@@ -97,7 +97,7 @@ impl GridController {
 
         let old_data_table = if let Some(new_data_table) = &new_data_table {
             let (old_index, old_data_table) =
-                sheet.data_tables.insert_full(pos, new_data_table.clone());
+                sheet.data_tables.insert_sorted(pos, new_data_table.clone());
 
             // keep the orderings of the code runs consistent, particularly when undoing/redoing
             let index = if index > sheet.data_tables.len() - 1 {

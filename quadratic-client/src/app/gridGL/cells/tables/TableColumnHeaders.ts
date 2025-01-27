@@ -60,7 +60,7 @@ export class TableColumnHeaders extends Container {
     }
   };
 
-  private onSortPressed(column: JsDataTableColumnHeader) {
+  private onSortPressed = (column: JsDataTableColumnHeader) => {
     const sortOrder: SortDirection | undefined = this.table.codeCell.sort?.find(
       (s) => s.column_index === column.valueIndex
     )?.direction;
@@ -83,9 +83,9 @@ export class TableColumnHeaders extends Container {
     const table = this.table.codeCell;
     const sort = newOrder === 'None' ? [] : [{ column_index: column.valueIndex, direction: newOrder }];
     quadraticCore.sortDataTable(sheets.sheet.id, table.x, table.y, sort, sheets.getCursorPosition());
-  }
+  };
 
-  private createColumnHeaders() {
+  private createColumnHeaders = () => {
     if (!this.table.codeCell.show_ui || !this.table.codeCell.show_columns) {
       this.columns.visible = false;
       return;
@@ -126,7 +126,7 @@ export class TableColumnHeaders extends Container {
         }
         x += width;
       });
-  }
+  };
 
   // update appearance when there is an updated code cell
   update() {
@@ -226,11 +226,11 @@ export class TableColumnHeaders extends Container {
     return { y0: 0, y1: this.headerHeight, lines };
   }
 
-  toHover() {
+  toHover = () => {
     this.drawBackground();
-  }
+  };
 
-  toGrid() {
+  toGrid = () => {
     this.drawBackground();
-  }
+  };
 }

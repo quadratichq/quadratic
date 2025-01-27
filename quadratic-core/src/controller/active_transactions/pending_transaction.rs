@@ -240,6 +240,10 @@ impl PendingTransaction {
         sheet_id: SheetId,
         positions: HashSet<Pos>,
     ) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
         let mut hashes = HashSet::new();
         positions.iter().for_each(|pos| {
             let quadrant = pos.quadrant();
@@ -254,6 +258,10 @@ impl PendingTransaction {
     }
 
     pub fn add_dirty_hashes_from_sheet_rect(&mut self, sheet_rect: SheetRect) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
         let hashes = sheet_rect.to_hashes();
         let dirty_hashes = self.dirty_hashes.entry(sheet_rect.sheet_id).or_default();
         dirty_hashes.extend(hashes);
@@ -266,6 +274,10 @@ impl PendingTransaction {
         col_start: i64,
         col_end: Option<i64>,
     ) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
         let col_end = col_end.unwrap_or(sheet.bounds(true).last_column().unwrap_or(col_start));
         let dirty_hashes = self.dirty_hashes.entry(sheet.id).or_default();
         for col in col_start..=col_end {
@@ -288,6 +300,10 @@ impl PendingTransaction {
         row_start: i64,
         row_end: Option<i64>,
     ) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
         let row_end = row_end.unwrap_or(sheet.bounds(true).last_row().unwrap_or(row_start));
         let dirty_hashes = self.dirty_hashes.entry(sheet.id).or_default();
         for row in row_start..=row_end {
@@ -313,6 +329,10 @@ impl PendingTransaction {
         is_image: bool,
         is_html: bool,
     ) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
         self.add_code_cell(sheet_id, pos);
 
         if is_html {
@@ -326,16 +346,28 @@ impl PendingTransaction {
 
     /// Adds a code cell to the transaction
     pub fn add_code_cell(&mut self, sheet_id: SheetId, pos: Pos) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
         self.code_cells.entry(sheet_id).or_default().insert(pos);
     }
 
     /// Adds an html cell to the transaction
     pub fn add_html_cell(&mut self, sheet_id: SheetId, pos: Pos) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
         self.html_cells.entry(sheet_id).or_default().insert(pos);
     }
 
     /// Adds an image cell to the transaction
     pub fn add_image_cell(&mut self, sheet_id: SheetId, pos: Pos) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
         self.image_cells.entry(sheet_id).or_default().insert(pos);
     }
 
@@ -345,6 +377,10 @@ impl PendingTransaction {
         sheet: &Sheet,
         selections: Vec<A1Selection>,
     ) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
         let context = sheet.a1_context();
         selections.iter().for_each(|selection| {
             let dirty_hashes = selection.rects_to_hashes(sheet, &context);
@@ -365,6 +401,10 @@ impl PendingTransaction {
         validation: &Validation,
         changed_selection: Option<&A1Selection>,
     ) -> Vec<A1Selection> {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return vec![];
+        }
+
         let mut changed_selections = Vec::new();
         self.validations.insert(sheet_id);
         if validation.render_special().is_some() {
@@ -377,6 +417,10 @@ impl PendingTransaction {
     }
 
     pub fn validation_warning_added(&mut self, sheet_id: SheetId, warning: JsValidationWarning) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
         self.validations_warnings
             .entry(sheet_id)
             .or_default()
@@ -390,6 +434,10 @@ impl PendingTransaction {
     }
 
     pub fn validation_warning_deleted(&mut self, sheet_id: SheetId, pos: Pos) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
         self.validations_warnings
             .entry(sheet_id)
             .or_default()
@@ -412,6 +460,10 @@ impl PendingTransaction {
         row: Option<i64>,
         size: Option<f64>,
     ) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
         let offsets_modified = self.offsets_modified.entry(sheet_id).or_default();
         if let Some(column) = column {
             offsets_modified.insert((Some(column), None), size.unwrap_or(0.0));
@@ -423,12 +475,20 @@ impl PendingTransaction {
 
     /// Adds an updated selection to the transaction
     pub fn add_update_selection(&mut self, selection: A1Selection) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
         if let Ok(json) = serde_json::to_string(&selection) {
             self.update_selection = Some(json);
         }
     }
 
     pub fn add_updates_from_transaction(&mut self, transaction: PendingTransaction) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
         self.generate_thumbnail |= transaction.generate_thumbnail;
 
         self.validations.extend(transaction.validations);
@@ -477,11 +537,19 @@ impl PendingTransaction {
 
     /// Adds a sheet id to the fill cells set.
     pub fn add_fill_cells(&mut self, sheet_id: SheetId) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
         self.fill_cells.insert(sheet_id);
     }
 
     /// Adds a sheet id to the borders set.
     pub fn add_borders(&mut self, sheet_id: SheetId) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
         self.sheet_borders.insert(sheet_id);
     }
 }

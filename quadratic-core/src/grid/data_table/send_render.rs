@@ -6,7 +6,7 @@ use crate::{
         formats::{SheetFormatUpdates, SheetFormatUpdatesType},
         CellWrap, Sheet, SheetId,
     },
-    ClearOption, Pos, Rect, SheetPos, SheetRect,
+    ClearOption, Pos, Rect, SheetPos,
 };
 
 use super::DataTable;
@@ -14,31 +14,34 @@ use super::DataTable;
 use anyhow::Result;
 
 impl DataTable {
-    pub(crate) fn add_dirty_sheet_rect(
+    pub(crate) fn add_dirty_table(
         &self,
         transaction: &mut PendingTransaction,
         sheet: &Sheet,
-        sheet_rect: &SheetRect,
         data_table_pos: Pos,
     ) -> Result<()> {
         if !(cfg!(target_family = "wasm") || cfg!(test)) || transaction.is_server() {
             return Ok(());
         }
 
-        transaction.add_code_cell(sheet_rect.sheet_id, data_table_pos);
-        transaction.add_dirty_hashes_from_sheet_rect(*sheet_rect);
+        let data_table_sheet_pos = data_table_pos.to_sheet_pos(sheet.id);
+
+        let data_table_rect = self.output_sheet_rect(data_table_sheet_pos, false);
+
+        transaction.add_dirty_hashes_from_sheet_rect(data_table_rect);
+        transaction.add_code_cell(data_table_sheet_pos.sheet_id, data_table_pos);
 
         if transaction.is_user() {
-            let sheet_rows = sheet.get_rows_with_wrap_in_rect(&(*sheet_rect).into(), true);
+            let sheet_rows = sheet.get_rows_with_wrap_in_rect(&data_table_rect.into(), true);
 
             let table_rows = self
                 .formats
-                .get_rows_with_wrap_in_rect(&(*sheet_rect).into());
+                .get_rows_with_wrap_in_rect(&data_table_rect.into());
 
             if !sheet_rows.is_empty() || !table_rows.is_empty() {
                 let resize_rows = transaction
                     .resize_rows
-                    .entry(sheet_rect.sheet_id)
+                    .entry(data_table_rect.sheet_id)
                     .or_default();
                 resize_rows.extend(sheet_rows);
                 resize_rows.extend(table_rows);
@@ -260,17 +263,5 @@ impl DataTable {
                 transaction.add_fill_cells(sheet_id);
             }
         }
-    }
-
-    pub(crate) fn mark_borders_dirty(
-        &self,
-        transaction: &mut PendingTransaction,
-        sheet_id: SheetId,
-    ) {
-        if !(cfg!(target_family = "wasm") || cfg!(test)) || transaction.is_server() {
-            return;
-        }
-
-        transaction.sheet_borders.insert(sheet_id);
     }
 }

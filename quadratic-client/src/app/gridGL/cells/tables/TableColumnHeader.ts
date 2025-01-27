@@ -122,7 +122,7 @@ export class TableColumnHeader extends Container {
     this.sortIcon.scale.y = this.sortIcon.scale.x;
   }
 
-  pointerMove(world: Point): boolean {
+  pointerMove = (world: Point): boolean => {
     if (!this.sortButton) return false;
     if (intersects.rectanglePoint(this.columnHeaderBounds, world)) {
       if (!this.sortButton.visible) {
@@ -139,9 +139,9 @@ export class TableColumnHeader extends Container {
     }
     this.tableCursor = undefined;
     return false;
-  }
+  };
 
-  pointerDown(world: Point): TablePointerDownResult | undefined {
+  pointerDown = (world: Point): TablePointerDownResult | undefined => {
     if (!this.sortButton) return;
     if (intersects.rectanglePoint(this.columnHeaderBounds, world)) {
       if (world.x > this.sortButtonStart) {
@@ -151,5 +151,5 @@ export class TableColumnHeader extends Container {
         return { table: this.table.codeCell, type: 'column-name', column: this.index };
       }
     }
-  }
+  };
 }

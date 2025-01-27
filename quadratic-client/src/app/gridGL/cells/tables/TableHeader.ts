@@ -93,7 +93,7 @@ export class TableHeader extends Container {
     this.table.addChildAt(this, 0);
   }
 
-  toHover(bounds: Rectangle, gridHeading: number) {
+  toHover = (bounds: Rectangle, gridHeading: number) => {
     this.position.set(
       this.table.tableBounds.x,
       Math.min(this.bottom, this.table.tableBounds.y + bounds.top + gridHeading - this.table.tableBounds.top)
@@ -102,7 +102,7 @@ export class TableHeader extends Container {
     this.tableName.toHover(this.y);
     pixiApp.hoverTableHeaders.addChild(this);
     this.columnHeadersGridLines.visible = true;
-  }
+  };
 
   hideColumnHeaders(index: number) {
     this.columnHeaders.hide(index);

@@ -157,7 +157,7 @@ mod tests {
         let sheet_id = gc.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.data_tables.insert_full(pos, data_table);
+        sheet.data_tables.insert_sorted(pos, data_table);
         let code_cell_value = CodeCellValue {
             language: CodeCellLanguage::Javascript,
             code: "return [1,2,3]".into(),

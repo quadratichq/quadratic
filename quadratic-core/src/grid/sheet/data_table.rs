@@ -59,7 +59,7 @@ impl Sheet {
 
     pub fn delete_data_table(&mut self, pos: Pos) -> Result<DataTable> {
         self.data_tables
-            .swap_remove(&pos)
+            .shift_remove(&pos)
             .ok_or_else(|| anyhow!("Data table not found at {:?}", pos))
     }
 
