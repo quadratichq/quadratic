@@ -76,7 +76,11 @@ impl GridController {
             new_data_table.show_name = old_data_table.show_name;
             new_data_table.show_columns = old_data_table.show_columns;
             new_data_table.alternating_colors = old_data_table.alternating_colors;
-            new_data_table.header_is_first_row = old_data_table.header_is_first_row;
+
+            // if the old data table has headers, then the new data table should
+            // have headers; if the data table already has headers (eg, via data
+            // frames), then leave them in.
+            new_data_table.header_is_first_row |= old_data_table.header_is_first_row;
 
             // if the width of the old and new data tables are the same,
             // then we can preserve other user-selected properties
@@ -456,7 +460,6 @@ impl GridController {
             std_err: js_code_result.std_err,
             cells_accessed: transaction.cells_accessed.clone(),
         };
-
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             table_name,

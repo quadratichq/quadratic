@@ -163,9 +163,10 @@ class q:
 
         # Move the first row to the header
         if first_row_header or result.has_headers:
-            df.rename(columns=df.iloc[0], inplace=True)
-            df.drop(df.index[0], inplace=True)
-            df.reset_index(drop=True, inplace=True)
+            # Convert first row to strings to ensure they work as column names
+            headers = [str(val) for val in df.iloc[0]]
+            df.columns = headers
+            df = df.iloc[1:].reset_index(drop=True)
 
         return df
 

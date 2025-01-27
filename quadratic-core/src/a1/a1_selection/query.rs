@@ -366,14 +366,14 @@ impl A1Selection {
         table.is_some_and(|table| table.is_html_image)
     }
 
-    /// Returns true if the selection is a only a table that includes table
-    /// headers.
+    /// Used to trigger Python get_cells call to return a DataFrame with the
+    /// appropriate column headers.
     pub fn has_table_headers(&self) -> bool {
         if self.ranges.len() != 1 {
             return false;
         }
         if let Some(CellRefRange::Table { range }) = self.ranges.first() {
-            range.headers && range.data
+            !range.headers && range.data
         } else {
             false
         }
