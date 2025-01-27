@@ -37,14 +37,14 @@ impl Sheet {
     pub fn data_table_result(&self, pos: Pos) -> Result<&DataTable> {
         self.data_tables
             .get(&pos)
-            .ok_or_else(|| anyhow!("Data table not found at {:?}", pos))
+            .ok_or_else(|| anyhow!("Data table not found at {:?} in data_table_result()", pos))
     }
 
     /// Returns a mutable DataTable at a Pos
     pub fn data_table_mut(&mut self, pos: Pos) -> Result<&mut DataTable> {
         self.data_tables
             .get_mut(&pos)
-            .ok_or_else(|| anyhow!("Data table not found at {:?}", pos))
+            .ok_or_else(|| anyhow!("Data table not found at {:?} in data_table_mut()", pos))
     }
 
     /// Returns a DataTable entry at a Pos for in-place manipulation
@@ -53,14 +53,14 @@ impl Sheet {
 
         match entry {
             Entry::Occupied(entry) => Ok(entry),
-            Entry::Vacant(_) => bail!("Data table not found at {:?}", pos),
+            Entry::Vacant(_) => bail!("Data table not found at {:?} in data_table_entry()", pos),
         }
     }
 
     pub fn delete_data_table(&mut self, pos: Pos) -> Result<DataTable> {
         self.data_tables
             .shift_remove(&pos)
-            .ok_or_else(|| anyhow!("Data table not found at {:?}", pos))
+            .ok_or_else(|| anyhow!("Data table not found at {:?} in delete_data_table()", pos))
     }
 
     pub fn data_tables_within(&self, pos: Pos) -> Result<Vec<Pos>> {
@@ -83,7 +83,10 @@ impl Sheet {
 
         match data_tables.first() {
             Some(pos) => Ok(*pos),
-            None => bail!("No data tables found within {:?}", pos),
+            None => bail!(
+                "No data tables found within {:?} in first_data_table_within()",
+                pos
+            ),
         }
     }
 

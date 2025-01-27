@@ -131,12 +131,15 @@ impl GridController {
 
     /// Generates and returns the set of operations to delete the values and code in a Selection
     /// Does not commit the operations or create a transaction.
-    pub fn delete_cells_operations(&self, selection: &A1Selection) -> Vec<Operation> {
+    pub fn delete_cells_operations(
+        &self,
+        selection: &A1Selection,
+        force_table_bounds: bool,
+    ) -> Vec<Operation> {
         let mut ops = vec![];
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-            let rects = sheet.selection_to_rects(selection, false, false);
+            let rects = sheet.selection_to_rects(selection, false, force_table_bounds);
             for rect in rects {
-                let cell_values = CellValues::new(rect.width(), rect.height());
                 let sheet_pos = SheetPos::from((rect.min.x, rect.min.y, selection.sheet_id));
 
                 // deletable if this is not a data table source cell, or if the data table is readonly (code cell),
@@ -162,16 +165,8 @@ impl GridController {
                     })
                     .unwrap_or(true);
 
-                // TODO(ddimaria): remove this once we have a way to delete data tables
                 if can_delete {
-                    ops.push(Operation::SetCellValues {
-                        sheet_pos,
-                        values: cell_values.to_owned(),
-                    });
-                    ops.push(Operation::SetDataTableAt {
-                        sheet_pos,
-                        values: cell_values,
-                    });
+                    ops.push(Operation::DeleteDataTable { sheet_pos });
                 }
             }
         };
@@ -182,9 +177,10 @@ impl GridController {
     pub fn delete_values_and_formatting_operations(
         &mut self,
         selection: &A1Selection,
+        force_table_bounds: bool,
     ) -> Vec<Operation> {
-        let mut ops = self.delete_cells_operations(selection);
-        ops.extend(self.clear_format_borders_operations(selection));
+        let mut ops = self.clear_format_borders_operations(selection);
+        ops.extend(self.delete_cells_operations(selection, force_table_bounds));
         ops
     }
 }
@@ -383,7 +379,7 @@ mod test {
             None,
         );
         let selection = A1Selection::from_rect(SheetRect::from_numbers(1, 2, 2, 1, sheet_id));
-        let operations = gc.delete_cells_operations(&selection);
+        let operations = gc.delete_cells_operations(&selection, false);
         let sheet_pos = SheetPos {
             x: 1,
             y: 2,
@@ -428,7 +424,7 @@ mod test {
             None,
         );
         let selection = A1Selection::test_a1("A2:,B");
-        let operations = gc.delete_cells_operations(&selection);
+        let operations = gc.delete_cells_operations(&selection, false);
 
         assert_eq!(operations.len(), 4);
         assert_eq!(

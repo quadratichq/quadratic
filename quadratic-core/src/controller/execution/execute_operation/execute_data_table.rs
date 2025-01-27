@@ -186,9 +186,9 @@ impl GridController {
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
 
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let data_table = sheet.delete_data_table(data_table_pos)?;
 
             // Pull out the data table via a swap, removing it from the sheet
+            let data_table = sheet.delete_data_table(data_table_pos)?;
             let mut data_table_rect = data_table.output_sheet_rect(sheet_pos, false);
 
             // send updated bounds to the client after deleting the data table
