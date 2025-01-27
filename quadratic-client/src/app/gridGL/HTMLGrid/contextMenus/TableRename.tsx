@@ -60,7 +60,7 @@ export const TableRename = () => {
       styles={{ fontSize: TABLE_NAME_FONT_SIZE, paddingLeft: TABLE_NAME_PADDING[0] }}
       onSave={handleSave}
       onClose={() => events.emit('contextMenu', {})}
-      noScale
+      noShrink
     />
   );
 };

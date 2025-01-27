@@ -1,5 +1,3 @@
-import { events } from '@/app/events/events';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
@@ -22,13 +20,12 @@ interface Props {
   onClose: () => void;
   onSave: (value: string) => void;
 
-  // if true, the input will be the same scale as the app; otherwise it will
-  // scale with the viewport
-  noScale?: boolean;
-
   hasBorder?: number;
 
   selectOnFocus?: boolean;
+
+  // input box should not shrink to fit the text
+  noShrink?: boolean;
 }
 
 export const PixiRename = (props: Props) => {
@@ -40,8 +37,8 @@ export const PixiRename = (props: Props) => {
     styles,
     onClose,
     onSave,
-    noScale,
     hasBorder,
+    noShrink,
     selectOnFocus = true,
   } = props;
 
@@ -78,18 +75,6 @@ export const PixiRename = (props: Props) => {
     }
   }, [inputEl, selectOnFocus]);
 
-  useEffect(() => {
-    const viewportChanged = () => {
-      if (inputEl) {
-        inputEl.style.transform = `scale(${1 / pixiApp.viewport.scaled})`;
-      }
-    };
-    if (noScale) {
-      viewportChanged();
-      events.on('viewportChanged', viewportChanged);
-    }
-  }, [inputEl, noScale]);
-
   const escapeRef = useRef<boolean>(false);
   const onKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
@@ -116,10 +101,12 @@ export const PixiRename = (props: Props) => {
       span.style.whiteSpace = 'pre';
       span.innerText = inputEl.value;
       document.body.appendChild(span);
-      inputEl.style.width = `${span.offsetWidth}px`;
+      inputEl.style.width = noShrink
+        ? `${Math.max(span.offsetWidth, position?.width ?? 0 - (hasBorder ? hasBorder / 2 : 0))}px`
+        : `${span.offsetWidth}px`;
       document.body.removeChild(span);
     }
-  }, [className, inputEl]);
+  }, [inputEl, className, noShrink, position?.width, hasBorder]);
 
   // Need to catch the Blur event via useEffect since the Input goes away when
   // the context menu closes (eg, via a click outside the Input)
@@ -146,7 +133,6 @@ export const PixiRename = (props: Props) => {
         top: position.y + (hasBorder ? hasBorder / 2 : 0),
         width: position.width - (hasBorder ? hasBorder : 0),
         height: position.height - (hasBorder ? hasBorder : 0),
-        transform: noScale ? `scale(${1 / pixiApp.viewport.scaled})` : undefined,
         ...styles,
       }}
       onKeyDown={onKeyDown}
