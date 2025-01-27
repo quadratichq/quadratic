@@ -19,9 +19,9 @@ Read the documentation [docs.QuadraticHQ.com](https://docs.quadratichq.com)
 
 ## Want to contribute?
 
-Feature request or bug report? Submit a [Github Issue](https://github.com/quadratichq/quadratic/issues/new/choose/).
+Feature request or bug report? Submit a [Github Issue](https://github.com/quadratichq/quadratic/issues/new/choose/)
 
-Want to contribute? Read our [Contributing Guide](./CONTRIBUTING.md).
+Want to contribute? Read our [Contributing Guide](./CONTRIBUTING.md)
 
 ## Quadratic is hiring
 
