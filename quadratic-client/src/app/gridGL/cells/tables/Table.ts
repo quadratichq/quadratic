@@ -129,10 +129,6 @@ export class Table extends Container {
     this.header.showColumnHeaders();
   }
 
-  private isShowingTableName(): boolean {
-    return this.header.parent !== undefined;
-  }
-
   // Intersects a column/row rectangle
   intersects(rectangle: Rectangle): boolean {
     return intersects.rectangleRectangle(

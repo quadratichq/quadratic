@@ -181,6 +181,7 @@ impl GridController {
                 .for_each(|(sheet_id, positions)| {
                     if let Some(sheet) = self.try_sheet(*sheet_id) {
                         positions.iter().for_each(|pos| {
+                            // prepare the html for the client, or fallback to an empty html cell
                             let html = sheet.get_single_html_output(*pos).unwrap_or(JsHtmlOutput {
                                 sheet_id: sheet_id.to_string(),
                                 x: pos.x,
@@ -188,6 +189,7 @@ impl GridController {
                                 html: None,
                                 w: None,
                                 h: None,
+                                show_name: true,
                             });
                             if let Ok(html) = serde_json::to_string(&html) {
                                 crate::wasm_bindings::js::jsUpdateHtml(html);
@@ -345,7 +347,7 @@ impl GridController {
                 None,
             );
 
-            self.finalize_code_run(&mut transaction, current_sheet_pos, Some(data_table), None);
+            self.finalize_data_table(&mut transaction, current_sheet_pos, Some(data_table), None);
             transaction.cells_accessed.clear();
             transaction.waiting_for_async = None;
             self.start_transaction(&mut transaction);

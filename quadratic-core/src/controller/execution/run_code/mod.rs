@@ -17,8 +17,8 @@ const DEFAULT_HTML_WIDTH: f32 = 600.0;
 const DEFAULT_HTML_HEIGHT: f32 = 460.0;
 
 impl GridController {
-    /// finalize changes to a code_run
-    pub(crate) fn finalize_code_run(
+    /// finalize changes to a data table
+    pub(crate) fn finalize_data_table(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
@@ -251,10 +251,13 @@ impl GridController {
                             new_data_table.chart_pixel_output =
                                 existing_data_table.chart_pixel_output;
                             new_data_table.name = existing_data_table.name.clone();
+                            new_data_table.show_ui = existing_data_table.show_ui;
+                        } else {
+                            new_data_table.show_ui = !new_data_table.is_single_value();
                         }
                     }
 
-                    self.finalize_code_run(
+                    self.finalize_data_table(
                         transaction,
                         current_sheet_pos,
                         Some(new_data_table),
@@ -351,7 +354,7 @@ impl GridController {
         );
         transaction.cells_accessed.clear();
         transaction.waiting_for_async = None;
-        self.finalize_code_run(transaction, sheet_pos, Some(new_data_table), None);
+        self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None);
 
         Ok(())
     }
@@ -387,14 +390,13 @@ impl GridController {
                 std_err: None,
                 cells_accessed: transaction.cells_accessed.clone(),
             };
-            let show_header = false;
             return DataTable::new(
                 DataTableKind::CodeRun(code_run),
                 table_name,
                 Value::Single(CellValue::Blank), // TODO(ddimaria): this will eventually be an empty vec
                 false,
                 false,
-                show_header,
+                false,
                 None,
             );
         };
@@ -455,21 +457,15 @@ impl GridController {
             cells_accessed: transaction.cells_accessed.clone(),
         };
 
-        let show_header = false;
-        let mut data_table = DataTable::new(
+        let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             table_name,
             value,
             false,
             js_code_result.has_headers,
-            show_header,
+            true,
             js_code_result.chart_pixel_output,
         );
-
-        // set alternating colors to false if chart_pixel_output is set.
-        if js_code_result.chart_pixel_output.is_some() {
-            data_table.alternating_colors = false;
-        }
 
         transaction.cells_accessed.clear();
         data_table
@@ -528,7 +524,7 @@ mod test {
             true,
             None,
         );
-        gc.finalize_code_run(transaction, sheet_pos, Some(new_data_table.clone()), None);
+        gc.finalize_data_table(transaction, sheet_pos, Some(new_data_table.clone()), None);
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
@@ -563,7 +559,7 @@ mod test {
             true,
             None,
         );
-        gc.finalize_code_run(transaction, sheet_pos, Some(new_data_table.clone()), None);
+        gc.finalize_data_table(transaction, sheet_pos, Some(new_data_table.clone()), None);
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
@@ -577,7 +573,7 @@ mod test {
 
         // remove the code_run
         let transaction = &mut PendingTransaction::default();
-        gc.finalize_code_run(transaction, sheet_pos, None, None);
+        gc.finalize_data_table(transaction, sheet_pos, None, None);
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();

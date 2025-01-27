@@ -467,7 +467,7 @@ mod tests {
             None,
         );
         let transaction = &mut PendingTransaction::default();
-        gc.finalize_code_run(transaction, sheet_pos, Some(data_table), None);
+        gc.finalize_data_table(transaction, sheet_pos, Some(data_table), None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -550,7 +550,7 @@ mod tests {
             None,
         );
         let transaction = &mut PendingTransaction::default();
-        gc.finalize_code_run(transaction, sheet_pos, Some(data_table), None);
+        gc.finalize_data_table(transaction, sheet_pos, Some(data_table), None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(

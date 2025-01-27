@@ -13,7 +13,7 @@ import { Point, Rectangle } from 'pixi.js';
 const tolerance = 5;
 
 // this should be kept in sync with run_code/mod.rs
-const DEFAULT_HTML_WIDTH = 600;
+export const DEFAULT_HTML_WIDTH = 600;
 const DEFAULT_HTML_HEIGHT = 460;
 
 export class HtmlCell {
@@ -53,9 +53,9 @@ export class HtmlCell {
     this.div = document.createElement('div');
     this.div.className = 'html-cell';
 
-    const offset = this.sheet.getCellOffsets(Number(htmlCell.x), Number(htmlCell.y));
+    const offset = this.sheet.getCellOffsets(Number(htmlCell.x), Number(this.y));
     this.offset = new Point(offset.x, offset.y);
-    this.gridBounds = new Rectangle(Number(htmlCell.x), Number(htmlCell.y), 0, 0);
+    this.gridBounds = new Rectangle(Number(htmlCell.x), Number(this.y), 0, 0);
 
     this.div.style.left = `${offset.x}px`;
     this.div.style.top = `${offset.y}px`;
@@ -76,7 +76,6 @@ export class HtmlCell {
     this.iframe.setAttribute('scrolling', 'no');
     this.iframe.style.minWidth = `${CELL_WIDTH}px`;
     this.iframe.style.minHeight = `${CELL_HEIGHT}px`;
-
     this.border = document.createElement('div');
     this.border.className = 'w-full h-full absolute top-0 left-0';
     this.border.style.border = '1px solid hsl(var(--primary))';
@@ -108,10 +107,10 @@ export class HtmlCell {
     return Number(this.htmlCell.x);
   }
   get y(): number {
-    return Number(this.htmlCell.y);
+    return Number(this.htmlCell.y) + (this.htmlCell.show_name ? 1 : 0);
   }
 
-  private get width(): number {
+  get width(): number {
     return this.htmlCell.w ?? DEFAULT_HTML_WIDTH;
   }
   private get height(): number {

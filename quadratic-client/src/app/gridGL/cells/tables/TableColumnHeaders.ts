@@ -85,8 +85,8 @@ export class TableColumnHeaders extends Container {
     quadraticCore.sortDataTable(sheets.current, table.x, table.y, sort, sheets.getCursorPosition());
   };
 
-  private createColumnHeaders = () => {
-    if (!this.table.codeCell.show_ui || !this.table.codeCell.show_columns) {
+  private createColumnHeaders() {
+    if (!this.table.codeCell.show_ui || !this.table.codeCell.show_columns || this.table.codeCell.is_html_image) {
       this.columns.visible = false;
       return;
     }
@@ -126,7 +126,7 @@ export class TableColumnHeaders extends Container {
         }
         x += width;
       });
-  };
+  }
 
   // update appearance when there is an updated code cell
   update() {

@@ -538,6 +538,18 @@ impl DataTable {
         }
         y_adjustment
     }
+
+    /// Returns true if the data table is a single value (ie, not an array)
+    pub fn is_single_value(&self) -> bool {
+        if self.is_html_or_image() {
+            return false;
+        }
+        match &self.value {
+            Value::Single(_) => true,
+            Value::Array(_) => false,
+            Value::Tuple(_) => false,
+        }
+    }
 }
 
 #[cfg(test)]

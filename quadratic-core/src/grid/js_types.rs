@@ -224,6 +224,7 @@ pub struct JsRenderCodeCell {
     pub alternating_colors: bool,
     pub readonly: bool,
     pub is_html_image: bool,
+    pub html_image_width: Option<f32>,
     pub show_ui: bool,
     pub show_name: bool,
     pub show_columns: bool,
@@ -237,6 +238,7 @@ pub struct JsHtmlOutput {
     pub html: Option<String>,
     pub w: Option<f32>,
     pub h: Option<f32>,
+    pub show_name: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]

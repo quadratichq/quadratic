@@ -28,6 +28,7 @@ impl GridController {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
     use super::*;
     use crate::{
@@ -39,10 +40,8 @@ mod tests {
         ArraySize, CellValue, Rect,
     };
     use bigdecimal::BigDecimal;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_run_python() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -74,7 +73,7 @@ mod tests {
         let code_run = sheet.data_tables.get(&pos).unwrap();
         assert_eq!(code_run.output_size(), ArraySize::_1X1);
         assert_eq!(
-            code_run.cell_value_at(0, 0),
+            code_run.cell_value_at(0, 1),
             Some(CellValue::Text("test".to_string()))
         );
         assert!(!code_run.spill_error);
@@ -85,7 +84,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_python_hello_world() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -118,7 +116,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_python_addition_with_cell_reference() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -181,7 +178,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_python_cell_reference_change() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -263,7 +259,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_python_array_output_variable_length() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -312,7 +307,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_python_cancellation() {
         // creates a dummy python program
         let mut gc = GridController::test();
@@ -346,7 +340,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_python_does_not_replace_output_until_complete() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -449,7 +442,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_python_multiple_calculations() {
         // Tests in column A, and y: 1 = "1", y: 2 = "q.cells('A1') + 1", y: 3 = "q.cells('A2') + 1"
         let mut gc = GridController::test();

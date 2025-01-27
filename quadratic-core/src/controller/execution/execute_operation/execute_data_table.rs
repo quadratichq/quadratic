@@ -94,7 +94,7 @@ impl GridController {
             .collect();
 
         data_tables_to_delete.iter().for_each(|pos| {
-            self.finalize_code_run(transaction, pos.to_sheet_pos(sheet_id), None, None);
+            self.finalize_data_table(transaction, pos.to_sheet_pos(sheet_id), None, None);
         });
     }
 
@@ -109,7 +109,7 @@ impl GridController {
             index,
         } = op
         {
-            self.finalize_code_run(transaction, sheet_pos, data_table, Some(index));
+            self.finalize_data_table(transaction, sheet_pos, data_table, Some(index));
         }
     }
 

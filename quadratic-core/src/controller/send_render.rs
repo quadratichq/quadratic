@@ -461,6 +461,7 @@ mod test {
                 html: Some("<html></html>".to_string()),
                 w: None,
                 h: None,
+                show_name: true,
             })
             .unwrap(),
             true,
@@ -508,6 +509,7 @@ mod test {
                 html: Some("<html></html>".to_string()),
                 w: Some(1.0),
                 h: Some(2.0),
+                show_name: true,
             })
             .unwrap(),
             true,

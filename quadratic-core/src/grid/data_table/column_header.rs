@@ -97,7 +97,6 @@ impl DataTable {
                 &self.default_header(Some(width))
             }
         };
-
         columns
             .iter()
             .map(|column| JsDataTableColumnHeader::from(column.to_owned()))
