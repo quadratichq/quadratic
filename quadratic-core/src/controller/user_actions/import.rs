@@ -83,7 +83,6 @@ impl GridController {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 pub(crate) mod tests {
     use super::*;
     use std::str::FromStr;
@@ -99,7 +98,7 @@ pub(crate) mod tests {
 
     use bigdecimal::BigDecimal;
     use chrono::{NaiveDate, NaiveDateTime};
-    use serial_test::serial;
+    use serial_test::{parallel, serial};
 
     use crate::wasm_bindings::js::expect_js_call_count;
 
@@ -171,6 +170,7 @@ pub(crate) mod tests {
     }
 
     #[test]
+    #[parallel]
     fn imports_a_simple_csv() {
         let (gc, sheet_id, pos, file_name) = simple_csv();
 
@@ -178,6 +178,7 @@ pub(crate) mod tests {
     }
 
     #[test]
+    #[parallel]
     fn errors_on_an_empty_csv() {
         let mut grid_controller = GridController::test();
         let sheet_id = grid_controller.grid.sheets()[0].id;
@@ -199,6 +200,7 @@ pub(crate) mod tests {
     #[serial]
     fn import_large_csv() {
         clear_js_calls();
+
         let mut gc = GridController::test();
         let mut csv = String::new();
 
@@ -224,6 +226,7 @@ pub(crate) mod tests {
     }
 
     #[test]
+    #[parallel]
     fn import_problematic_line() {
         let mut gc = GridController::test();
         let csv = "980E92207901934";
@@ -242,6 +245,7 @@ pub(crate) mod tests {
     }
 
     #[test]
+    #[parallel]
     fn imports_a_simple_excel_file() {
         let mut gc = GridController::new_blank();
         let file: Vec<u8> = std::fs::read(EXCEL_FILE).expect("Failed to read file");
@@ -337,6 +341,7 @@ pub(crate) mod tests {
     }
 
     #[test]
+    #[parallel]
     fn import_all_excel_functions() {
         let mut grid_controller = GridController::new_blank();
         let pos = pos![A1];
@@ -377,6 +382,7 @@ pub(crate) mod tests {
     }
 
     #[test]
+    #[parallel]
     fn imports_a_simple_parquet() {
         let mut grid_controller = GridController::test();
         let sheet_id = grid_controller.grid.sheets()[0].id;
@@ -475,6 +481,7 @@ pub(crate) mod tests {
     // }
 
     #[test]
+    #[parallel]
     fn should_import_with_title_header_only() {
         let file_name = "title_row.csv";
         let csv_file = read_test_csv_file(file_name);
@@ -503,6 +510,7 @@ pub(crate) mod tests {
     }
 
     #[test]
+    #[parallel]
     fn should_import_with_title_header_and_empty_first_row() {
         let file_name = "title_row_empty_first.csv";
         let csv_file = read_test_csv_file(file_name);
@@ -536,6 +544,7 @@ pub(crate) mod tests {
     }
 
     #[test]
+    #[parallel]
     fn should_import_utf16_with_invalid_characters() {
         let file_name = "encoding_issue.csv";
         let csv_file = read_test_csv_file(file_name);
