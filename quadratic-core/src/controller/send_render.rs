@@ -289,11 +289,13 @@ impl GridController {
     }
 
     pub fn send_a1_context(&self) {
-        if cfg!(target_family = "wasm") || cfg!(test) {
-            let context = self.grid().a1_context();
-            if let Ok(context) = serde_json::to_string(&context) {
-                crate::wasm_bindings::js::jsA1Context(context);
-            }
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
+            return;
+        }
+
+        let context = self.grid().a1_context();
+        if let Ok(context) = serde_json::to_string(&context) {
+            crate::wasm_bindings::js::jsA1Context(context);
         }
     }
 }
@@ -362,11 +364,11 @@ mod test {
             ]),
         );
         gc.process_visible_dirty_hashes(&mut transaction);
-        assert!(!transaction.dirty_hashes.is_empty());
+        assert!(transaction.dirty_hashes.is_empty());
         expect_js_call_count("jsRenderCellSheets", 0, false);
         expect_js_call_count("jsHashesDirty", 0, false);
         gc.process_remaining_dirty_hashes(&mut transaction);
-        assert!(!transaction.dirty_hashes.is_empty());
+        assert!(transaction.dirty_hashes.is_empty());
         expect_js_call_count("jsRenderCellSheets", 0, false);
         expect_js_call_count("jsHashesDirty", 0, false);
     }

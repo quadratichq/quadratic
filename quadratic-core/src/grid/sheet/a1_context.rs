@@ -7,9 +7,7 @@ impl Sheet {
     pub fn add_sheet_to_context(&self, context: &mut A1Context) {
         context.sheet_map.insert(self);
         self.data_tables.iter().for_each(|(pos, table)| {
-            if !table.has_error() && !table.spill_error {
-                context.table_map.insert(self.id, *pos, table);
-            }
+            context.table_map.insert(self.id, *pos, table);
         });
     }
 

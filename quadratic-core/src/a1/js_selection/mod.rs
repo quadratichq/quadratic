@@ -12,6 +12,7 @@ use super::A1Selection;
 pub mod create;
 pub mod query;
 pub mod select;
+pub mod validate_name;
 
 #[derive(Debug, Clone, TS)]
 #[wasm_bindgen]

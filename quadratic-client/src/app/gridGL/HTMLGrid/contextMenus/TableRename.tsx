@@ -1,12 +1,11 @@
 import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
-import { sheets } from '@/app/grid/controller/Sheets';
 import { TABLE_NAME_FONT_SIZE, TABLE_NAME_PADDING } from '@/app/gridGL/cells/tables/TableName';
 import { PixiRename } from '@/app/gridGL/HTMLGrid/contextMenus/PixiRename';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { useRenameTableName } from '@/app/ui/hooks/useRenameTableName';
 import type { Rectangle } from 'pixi.js';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export const TableRename = () => {
@@ -33,6 +32,22 @@ export const TableRename = () => {
     };
   }, [contextMenu]);
 
+  const { renameTable } = useRenameTableName();
+
+  const handleSave = useCallback(
+    (value: string) => {
+      if (pixiApp.cellsSheets.current?.sheetId && contextMenu.table && contextMenu.table.name !== value) {
+        renameTable({
+          sheetId: pixiApp.cellsSheets.current.sheetId,
+          x: contextMenu.table.x,
+          y: contextMenu.table.y,
+          name: value,
+        });
+      }
+    },
+    [contextMenu.table, renameTable]
+  );
+
   if (contextMenu.type !== ContextMenuType.Table || !contextMenu.rename || !contextMenu.table) {
     return null;
   }
@@ -43,17 +58,7 @@ export const TableRename = () => {
       position={position}
       className="reverse-selection origin-bottom-left bg-primary px-3 text-sm font-bold text-primary-foreground"
       styles={{ fontSize: TABLE_NAME_FONT_SIZE, paddingLeft: TABLE_NAME_PADDING[0] }}
-      onSave={(value: string) => {
-        if (contextMenu.table && pixiApp.cellsSheets.current) {
-          quadraticCore.dataTableMeta(
-            pixiApp.cellsSheets.current?.sheetId,
-            contextMenu.table.x,
-            contextMenu.table.y,
-            { name: value },
-            sheets.getCursorPosition()
-          );
-        }
-      }}
+      onSave={handleSave}
       onClose={() => events.emit('contextMenu', {})}
       noScale
     />

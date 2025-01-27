@@ -243,7 +243,6 @@ function TabName({
           contentEditableRef.current?.focus();
           return;
         }
-        console.log(isRenamingTimeRef.current - HACK_TO_NOT_BLUR_ON_RENAME);
         const div = event.currentTarget as HTMLInputElement;
         const value = div.innerText;
         if (!div) return false;

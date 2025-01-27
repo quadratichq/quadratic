@@ -2,36 +2,59 @@ import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getConnectionUuid } from '@/app/helpers/codeCellLanguage';
-import { getTableNameFromPos, stringToSelection, xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import {
+  getTableNameFromPos,
+  newSingleSelection,
+  stringToSelection,
+  validateTableName,
+} from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { useRenameTableName } from '@/app/ui/hooks/useRenameTableName';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export function CodeEditorHeaderLabel() {
-  const [isRenaming, setIsRenaming] = useState(true);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [tableName, setTableName] = useState<string | undefined>(undefined);
+  const [cellRef, setCellRef] = useState<string | undefined>(undefined);
+
   const codeCellState = useRecoilValue(codeEditorCodeCellAtom);
-  const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
   const connectionsFetcher = useConnectionsFetcher();
 
-  // TODO: (ayush) wire this up however we do it (see hook function below)
-  const renameTable = useRenameTableName({
-    sheetId: codeCellState.sheetId,
-    x: codeCellState.pos.x,
-    y: codeCellState.pos.y,
-  });
+  useEffect(() => {
+    const updateCellRef = () => {
+      if (!codeCellState.sheetId) return;
+      const selection = newSingleSelection(codeCellState.sheetId, codeCellState.pos.x, codeCellState.pos.y);
+      const cellRef = selection.toA1String(sheets.current, sheets.a1Context);
+      setCellRef(cellRef);
+    };
 
-  const a1Pos = xyToA1(codeCellState.pos.x, codeCellState.pos.y);
-  // TODO: (ayush) table name is not updating when we rename a table
-  const tableName = getTableNameFromPos(
-    sheets.a1Context,
-    codeCellState.sheetId,
-    codeCellState.pos.x,
-    codeCellState.pos.y
-  );
+    const updateTableName = (a1Context: string) => {
+      if (!codeCellState.sheetId) return;
+      const tableName = getTableNameFromPos(a1Context, codeCellState.sheetId, codeCellState.pos.x, codeCellState.pos.y);
+      setTableName(tableName);
+    };
+
+    updateCellRef();
+    updateTableName(sheets.a1Context);
+
+    events.on('changeSheet', updateCellRef);
+    events.on('sheetInfoUpdate', updateCellRef);
+    events.on('a1Context', updateTableName);
+    return () => {
+      events.off('changeSheet', updateCellRef);
+      events.off('sheetInfoUpdate', updateCellRef);
+      events.off('a1Context', updateTableName);
+    };
+  }, [codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId]);
+
+  const focusCellRef = useCallback(() => {
+    if (!cellRef) return;
+    const selection = stringToSelection(cellRef, sheets.sheet.id, sheets.a1Context);
+    sheets.changeSelection(selection);
+  }, [cellRef]);
 
   // Get the connection name (it's possible the user won't have access to it
   // because they're in a file they have access to but not the team — or
@@ -47,33 +70,58 @@ export function CodeEditorHeaderLabel() {
     return '';
   }, [codeCellState.language, connectionsFetcher.data]);
 
-  // Keep track of the current sheet ID so we know whether to show the sheet name or not
-  const currentCodeEditorCellIsNotInActiveSheet = useMemo(
-    () => currentSheetId !== codeCellState.sheetId,
-    [currentSheetId, codeCellState.sheetId]
-  );
-  // TODO: (ayush) sheetId isn't updating here when we rename a sheet?
-  const currentSheetNameOfActiveCodeEditorCell = useMemo(
-    () => sheets.getById(codeCellState.sheetId)?.name,
-    [codeCellState.sheetId]
+  const { renameTable } = useRenameTableName();
+
+  const handleInput = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target instanceof HTMLInputElement) {
+        const input = e.target;
+        const value = input.value.trim();
+        if (value === tableName) {
+          return;
+        }
+
+        let isValid = false;
+        try {
+          isValid = validateTableName(value, sheets.a1Context);
+        } catch (error) {
+          isValid = false;
+        }
+        input.setAttribute('aria-invalid', (!isValid).toString());
+      }
+    },
+    [tableName]
   );
 
-  useEffect(() => {
-    const updateSheetName = () => setCurrentSheetId(sheets.sheet.id);
-    events.on('changeSheet', updateSheetName);
-    return () => {
-      events.off('changeSheet', updateSheetName);
-    };
-  }, []);
+  const handleBlur = useCallback(
+    (e: React.FocusEvent<HTMLInputElement>) => {
+      if (e.target instanceof HTMLInputElement) {
+        const name = e.target.value.trim();
+        setIsRenaming(false);
+        if (name !== tableName) {
+          renameTable({ sheetId: codeCellState.sheetId, x: codeCellState.pos.x, y: codeCellState.pos.y, name });
+        }
+      }
+    },
+    [codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId, renameTable, tableName]
+  );
 
-  // Create the cell reference, which can vary based on what the user is viewing
-  // Either `A1` or `Sheet1!A1` or `'Sheet 1'!A1`
-  let cellRef = a1Pos;
-  if (currentCodeEditorCellIsNotInActiveSheet && currentSheetNameOfActiveCodeEditorCell) {
-    cellRef = currentSheetNameOfActiveCodeEditorCell?.includes(' ')
-      ? `'${currentSheetNameOfActiveCodeEditorCell}'!${cellRef}`
-      : `${currentSheetNameOfActiveCodeEditorCell}!${cellRef}`;
-  }
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.target instanceof HTMLInputElement) {
+        if (e.key === 'Enter') {
+          setIsRenaming(false);
+          const name = e.target.value.trim();
+          if (name !== tableName) {
+            renameTable({ sheetId: codeCellState.sheetId, x: codeCellState.pos.x, y: codeCellState.pos.y, name });
+          }
+        } else if (e.key === 'Escape') {
+          setIsRenaming(false);
+        }
+      }
+    },
+    [codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId, renameTable, tableName]
+  );
 
   const tableNameDisplayClasses = 'text-sm font-medium leading-4';
 
@@ -82,20 +130,18 @@ export function CodeEditorHeaderLabel() {
       <div className={cn('flex min-w-0 flex-initial')}>
         {isRenaming ? (
           <Input
-            className={cn('h-5 px-1', tableNameDisplayClasses)}
+            className={cn(
+              'h-5 px-1',
+              tableNameDisplayClasses,
+              'focus-visible:ring-1',
+              'aria-[invalid=true]:border-destructive',
+              'aria-[invalid=true]:focus-visible:ring-destructive'
+            )}
             autoFocus
             defaultValue={tableName}
-            onBlur={(e) => {
-              const value = e.target.value;
-              setIsRenaming(false);
-              renameTable(value);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                setIsRenaming(false);
-                renameTable((e.target as HTMLInputElement).value);
-              }
-            }}
+            onInput={handleInput}
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
           />
         ) : (
           <button
@@ -116,13 +162,11 @@ export function CodeEditorHeaderLabel() {
         <div className="flex min-w-0 flex-initial text-xs leading-4 text-muted-foreground">
           <button
             className="max-w-full truncate rounded px-1 text-left hover:cursor-pointer hover:bg-accent"
-            onClick={() => {
-              const selection = stringToSelection(cellRef, sheets.sheet.id, sheets.a1Context);
-              sheets.changeSelection(selection);
-            }}
+            onClick={focusCellRef}
           >
             {cellRef}
           </button>
+
           {currentConnectionName && (
             <>
               {' · '}
@@ -133,35 +177,4 @@ export function CodeEditorHeaderLabel() {
       )}
     </div>
   );
-}
-
-// TODO: (ayush) wire this up to core however we want to do it, whether we validate
-// here, or core does it and we catch errors and display them
-function useRenameTableName({ sheetId, x, y }: { sheetId: string; x: number; y: number }) {
-  const { addGlobalSnackbar } = useGlobalSnackbar();
-
-  const renameTable = (name: string) => {
-    let trimmedName = name.trim();
-
-    if (trimmedName.length === 0) {
-      addGlobalSnackbar('Name cannot be empty', { severity: 'error' });
-      return '';
-    }
-    if (trimmedName.length > 255) {
-      addGlobalSnackbar('Name cannot be longer than 255 characters', { severity: 'error' });
-      return '';
-    }
-
-    // Core will: convert spaces to underscores, strip special characters, and check for uniqueness
-    quadraticCore.dataTableMeta(
-      sheetId,
-      x,
-      y,
-      { name: trimmedName }
-      // TODO: do we need to pass this?
-      // sheets.getCursorPosition()
-    );
-  };
-
-  return renameTable;
 }
