@@ -221,6 +221,13 @@ impl TableMap {
             bounds,
         ));
     }
+
+    #[cfg(test)]
+    pub fn get_mut(&mut self, table_name: &str) -> Option<&mut TableMapEntry> {
+        self.tables
+            .iter_mut()
+            .find(|table| table.table_name.to_lowercase() == table_name.to_lowercase())
+    }
 }
 
 #[cfg(test)]

@@ -55,11 +55,15 @@ impl CellRefRange {
                             table_name: table.table_name.clone(),
                             col_range,
                             data: true,
-                            headers: true,
+                            headers: table.show_ui && table.show_columns,
                             totals: false,
                         },
                     });
-                } else if b.min.y + 1 == start.y && b.max.y == end.y {
+                } else if table.show_ui
+                    && table.show_columns
+                    && b.min.y + (if table.show_name { 1 } else { 0 }) == start.y
+                    && b.max.y == end.y
+                {
                     // table without headers
                     return Some(CellRefRange::Table {
                         range: TableRef {
@@ -70,7 +74,11 @@ impl CellRefRange {
                             totals: false,
                         },
                     });
-                } else if start.y == b.min.y && end.y == b.min.y {
+                } else if table.show_ui
+                    && table.show_columns
+                    && start.y == b.min.y + (if table.show_name { 1 } else { 0 })
+                    && end.y == b.min.y + (if table.show_name { 1 } else { 0 })
+                {
                     // table headers only
                     return Some(CellRefRange::Table {
                         range: TableRef {
@@ -234,5 +242,54 @@ mod tests {
                 },
             })
         );
+    }
+
+    #[test]
+    fn test_check_for_table_ref_hidden_ui() {
+        let mut context = A1Context::test(
+            &[("Sheet1", SheetId::test())],
+            &[("Table1", &["col1", "col2"], Rect::test_a1("A1:B3"))],
+        );
+
+        // Modify the table to hide UI elements
+        if let Some(table) = context.table_mut("Table1") {
+            table.show_ui = false;
+            table.show_columns = false;
+        }
+
+        // Try to get data without headers - should return None since UI is hidden
+        let cell_ref_range = CellRefRange::Sheet {
+            range: RefRangeBounds::test_a1("A2:B3"),
+        };
+        let table_ref = cell_ref_range.check_for_table_ref(SheetId::test(), &context);
+        assert_eq!(table_ref, None);
+
+        // Try to get headers only - should return None since columns are hidden
+        let cell_ref_range = CellRefRange::Sheet {
+            range: RefRangeBounds::test_a1("A1:B1"),
+        };
+        let table_ref = cell_ref_range.check_for_table_ref(SheetId::test(), &context);
+        assert_eq!(table_ref, None);
+    }
+
+    #[test]
+    fn test_check_for_table_ref_hidden_columns() {
+        let mut context = A1Context::test(
+            &[("Sheet1", SheetId::test())],
+            &[("Table1", &["col1", "col2"], Rect::test_a1("A1:B3"))],
+        );
+
+        // Modify the table to hide only columns but keep UI
+        if let Some(table) = context.table_mut("Table1") {
+            table.show_ui = true;
+            table.show_columns = false;
+        }
+
+        // Try to get headers only - should return None since columns are hidden
+        let cell_ref_range = CellRefRange::Sheet {
+            range: RefRangeBounds::test_a1("A1:B1"),
+        };
+        let table_ref = cell_ref_range.check_for_table_ref(SheetId::test(), &context);
+        assert_eq!(table_ref, None);
     }
 }

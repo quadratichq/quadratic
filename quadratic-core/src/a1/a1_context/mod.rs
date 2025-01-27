@@ -81,6 +81,11 @@ impl A1Context {
     pub fn to_string(&self) -> String {
         serde_json::to_string(self).unwrap()
     }
+
+    #[cfg(test)]
+    pub fn table_mut(&mut self, table_name: &str) -> Option<&mut TableMapEntry> {
+        self.table_map.get_mut(table_name)
+    }
 }
 
 #[cfg(test)]
