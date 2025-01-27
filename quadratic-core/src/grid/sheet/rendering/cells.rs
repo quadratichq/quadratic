@@ -1,7 +1,7 @@
 use crate::{
     grid::{
         js_types::{JsNumber, JsRenderCell, JsRenderCellSpecial},
-        CellAlign, CellWrap, CodeCellLanguage, DataTable, Sheet,
+        CellAlign, CodeCellLanguage, DataTable, Sheet,
     },
     CellValue, Pos, Rect, RunError, RunErrorMsg,
 };
@@ -18,7 +18,6 @@ impl Sheet {
     }
 
     /// creates a render for a single cell
-    #[allow(clippy::too_many_arguments)]
     fn get_render_cell(
         &self,
         x: i64,
@@ -26,7 +25,6 @@ impl Sheet {
         value: &CellValue,
         language: Option<CodeCellLanguage>,
         special: Option<JsRenderCellSpecial>,
-        from_table: Option<(Pos, &DataTable)>,
     ) -> JsRenderCell {
         if let CellValue::Html(_) = value {
             return JsRenderCell {
@@ -81,20 +79,7 @@ impl Sheet {
                 })
         });
 
-        let mut format = self.formats.try_format(Pos { x, y }).unwrap_or_default();
-
-        if let Some((table_pos, table)) = from_table {
-            let pos = Pos {
-                x: x - table_pos.x + 1,
-                y: y - table_pos.y + 1,
-            };
-            if let Some(mut table_format) = table.formats.try_format(pos) {
-                table_format.wrap = table_format.wrap.or(Some(CellWrap::Clip));
-                format = table_format.combine(&format);
-            } else {
-                format.wrap = format.wrap.or(Some(CellWrap::Clip));
-            }
-        }
+        let mut format = self.cell_format(Pos { x, y });
 
         let mut number: Option<JsNumber> = None;
         let value = match &value {
@@ -149,7 +134,6 @@ impl Sheet {
                     })),
                     Some(code_cell_value.language),
                     None,
-                    None,
                 ));
             } else if let Some(error) = data_table.get_error() {
                 cells.push(self.get_render_cell(
@@ -157,7 +141,6 @@ impl Sheet {
                     code_rect.min.y,
                     &CellValue::Error(Box::new(error)),
                     Some(code_cell_value.language),
-                    None,
                     None,
                 ));
             } else {
@@ -200,14 +183,7 @@ impl Sheet {
                             } else {
                                 None
                             };
-                            cells.push(self.get_render_cell(
-                                x,
-                                y,
-                                &value,
-                                language,
-                                None,
-                                Some((code_rect.min, data_table)),
-                            ));
+                            cells.push(self.get_render_cell(x, y, &value, language, None));
                         }
                     }
                 }
@@ -231,7 +207,7 @@ impl Sheet {
                     if !matches!(value, CellValue::Code(_))
                         && !matches!(value, CellValue::Import(_))
                     {
-                        render_cells.push(self.get_render_cell(x, *y, value, None, None, None));
+                        render_cells.push(self.get_render_cell(x, *y, value, None, None));
                     }
                 });
             });
@@ -300,7 +276,7 @@ mod tests {
     use crate::{
         a1::A1Selection,
         controller::GridController,
-        grid::{CellVerticalAlign, CodeCellValue, CodeRun, DataTableKind},
+        grid::{CellVerticalAlign, CellWrap, CodeCellValue, CodeRun, DataTableKind},
         wasm_bindings::js::{clear_js_calls, expect_js_call, hash_test},
         SheetPos, Value,
     };

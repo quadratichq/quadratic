@@ -327,27 +327,23 @@ impl Sheet {
     }
 
     /// Returns the format of a cell taking into account the sheet and data_tables formatting.
-    pub fn try_format(&self, pos: Pos) -> Option<Format> {
-        let mut sheet_format = self.formats.try_format(pos);
+    pub fn cell_format(&self, pos: Pos) -> Format {
+        let mut sheet_format = self.formats.try_format(pos).unwrap_or_default();
 
         if let Ok(data_table_pos) = self.first_data_table_within(pos) {
             if let Ok(data_table) = self.data_table_result(data_table_pos) {
-                let pos = Pos {
-                    x: pos.x + 1 - data_table_pos.x,
-                    y: pos.y + 1 - data_table_pos.y + data_table.y_adjustment(),
-                };
-                if let Some(mut table_format) = data_table.formats.try_format(pos) {
-                    table_format.wrap = table_format.wrap.or(Some(CellWrap::Clip));
-                    let combined_format = match (sheet_format, table_format) {
-                        (Some(sheet_format), table_format) => {
-                            Some(table_format.combine(&sheet_format))
-                        }
-                        (None, table_format) => Some(table_format),
+                if !data_table.spill_error && !data_table.has_error() {
+                    let pos = Pos {
+                        x: pos.x + 1 - data_table_pos.x,
+                        y: pos.y + 1 - data_table_pos.y - data_table.y_adjustment(),
                     };
-
-                    return combined_format;
-                } else if let Some(sheet_format) = sheet_format.as_mut() {
-                    sheet_format.wrap = sheet_format.wrap.or(Some(CellWrap::Clip));
+                    if let Some(mut table_format) = data_table.formats.try_format(pos) {
+                        table_format.wrap = table_format.wrap.or(Some(CellWrap::Clip));
+                        let combined_format = table_format.combine(&sheet_format);
+                        return combined_format;
+                    } else {
+                        sheet_format.wrap = sheet_format.wrap.or(Some(CellWrap::Clip));
+                    }
                 }
             }
         }
@@ -357,7 +353,7 @@ impl Sheet {
 
     /// Returns a summary of formatting in a region.
     pub fn cell_format_summary(&self, pos: Pos) -> CellFormatSummary {
-        let format = self.try_format(pos).unwrap_or_default();
+        let format = self.cell_format(pos);
         let cell_type = self
             .display_value(pos)
             .and_then(|cell_value| match cell_value {

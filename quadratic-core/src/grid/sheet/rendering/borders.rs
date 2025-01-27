@@ -16,16 +16,15 @@ impl Sheet {
 
         // get table borders and translate them to sheet coordinates
         self.data_tables.iter().for_each(|(pos, table)| {
-            if let Some(h) = table
-                .borders
-                .horizontal_borders(Some(table.output_rect(*pos, true)))
-            {
+            let mut table_rect = table.output_rect(*pos, true);
+
+            // use table data bounds for borders, exclude table name and column headers
+            table_rect.min.y += table.y_adjustment();
+
+            if let Some(h) = table.borders.horizontal_borders(Some(table_rect)) {
                 horizontal.extend(h);
             }
-            if let Some(v) = table
-                .borders
-                .vertical_borders(Some(table.output_rect(*pos, true)))
-            {
+            if let Some(v) = table.borders.vertical_borders(Some(table_rect)) {
                 vertical.extend(v);
             }
         });

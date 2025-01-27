@@ -168,11 +168,8 @@ export class TableColumnHeaders extends Container {
   }
 
   pointerDown(world: Point): TablePointerDownResult | undefined {
-    const adjustedWorld = world.clone();
-    // need to adjust the y position in the case of sticky headers
-    adjustedWorld.y -= this.y ? this.y - this.table.y : 0;
     for (const column of this.columns.children) {
-      const result = column.pointerDown(adjustedWorld);
+      const result = column.pointerDown(world);
       if (result) {
         return result;
       }
@@ -187,9 +184,8 @@ export class TableColumnHeaders extends Container {
     if (!bounds) {
       throw new Error('Column header bounds not found in getColumnHeaderBounds');
     }
-    // need to adjust the bounds in the case of sticky headers
     const adjustedBounds = bounds.clone();
-    adjustedBounds.y -= this.y;
+    adjustedBounds.y += this.y;
     return adjustedBounds;
   }
 

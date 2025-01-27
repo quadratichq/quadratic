@@ -40,7 +40,7 @@ impl GridController {
         // set table ranges
         for table_ref in table_ranges {
             if let Some(table) = context.try_table(&table_ref.table_name) {
-                let range = table_ref.convert_to_ref_range_bounds(true, &context, false, false);
+                let range = table_ref.convert_to_ref_range_bounds(true, &context, false, true);
                 if let Some(range) = range {
                     // translate the range to 1-based compared to the table position
                     let range = range.translate(-table.bounds.min.x + 1, -table.bounds.min.y + 1);
@@ -145,7 +145,7 @@ impl GridController {
                 let sheet = self
                     .try_sheet(selection.sheet_id)
                     .ok_or(JsValue::UNDEFINED)?;
-                let format = sheet.try_format(selection.cursor).unwrap_or_default();
+                let format = sheet.cell_format(selection.cursor);
                 !format.bold.unwrap_or(false)
             }
         };
@@ -171,7 +171,7 @@ impl GridController {
                 let sheet = self
                     .try_sheet(selection.sheet_id)
                     .ok_or(JsValue::UNDEFINED)?;
-                let format = sheet.try_format(selection.cursor).unwrap_or_default();
+                let format = sheet.cell_format(selection.cursor);
                 !format.italic.unwrap_or(false)
             }
         };
@@ -249,7 +249,7 @@ impl GridController {
                 let sheet = self
                     .try_sheet(selection.sheet_id)
                     .ok_or(JsValue::UNDEFINED)?;
-                let format = sheet.try_format(selection.cursor).unwrap_or_default();
+                let format = sheet.cell_format(selection.cursor);
                 !format.numeric_commas.unwrap_or(false)
             }
         };
@@ -357,7 +357,7 @@ impl GridController {
                 let sheet = self
                     .try_sheet(selection.sheet_id)
                     .ok_or(JsValue::UNDEFINED)?;
-                let format = sheet.try_format(selection.cursor).unwrap_or_default();
+                let format = sheet.cell_format(selection.cursor);
                 !format.underline.unwrap_or(false)
             }
         };
@@ -383,7 +383,7 @@ impl GridController {
                 let sheet = self
                     .try_sheet(selection.sheet_id)
                     .ok_or(JsValue::UNDEFINED)?;
-                let format = sheet.try_format(selection.cursor).unwrap_or_default();
+                let format = sheet.cell_format(selection.cursor);
                 !format.strike_through.unwrap_or(false)
             }
         };
@@ -841,9 +841,9 @@ mod test {
         );
         assert_eq!(ops.len(), 1);
 
-        // we select starting from the second row because show_header is true
         let formats =
-            SheetFormatUpdates::from_selection(&A1Selection::test_a1("A3:"), format_update);
+            SheetFormatUpdates::from_selection(&A1Selection::test_a1("A1:"), format_update);
+
         assert_eq!(
             ops[0],
             Operation::DataTableFormats {

@@ -20,6 +20,13 @@ pub struct A1Context {
     pub table_map: TableMap,
 }
 
+#[cfg(test)]
+impl std::fmt::Display for A1Context {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", serde_json::to_string(self).unwrap())
+    }
+}
+
 impl A1Context {
     /// Finds a table by the table name.
     pub fn try_table(&self, table_name: &str) -> Option<&TableMapEntry> {
@@ -75,11 +82,6 @@ impl A1Context {
             sheet_map,
             table_map,
         }
-    }
-
-    #[cfg(test)]
-    pub fn to_string(&self) -> String {
-        serde_json::to_string(self).unwrap()
     }
 
     #[cfg(test)]

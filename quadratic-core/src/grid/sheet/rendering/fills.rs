@@ -45,7 +45,11 @@ impl Sheet {
                         if dt.spill_error || dt.has_error() {
                             return None;
                         }
-                        let rect = dt.output_rect(*pos, false);
+                        let mut rect = dt.output_rect(*pos, false);
+
+                        // use table data bounds for borders, exclude table name and column headers
+                        rect.min.y += dt.y_adjustment();
+
                         let x = rect.min.x + x0 - 1;
                         let y = rect.min.y + y0 - 1;
                         let x1 = x1.map_or(rect.max.x, |x1| rect.min.x + x1 - 1);
@@ -147,7 +151,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
 
-        // set a data table at E2 that's 2x2 and show_header is true
+        // set a data table at E2 that's 3x3 and show_header is true
         sheet.test_set_data_table(pos!(E2), 3, 3, false, true);
         let context = gc.grid().a1_context();
         gc.set_fill_color(
