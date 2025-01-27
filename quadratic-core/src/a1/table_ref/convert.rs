@@ -21,14 +21,13 @@ impl TableRef {
         dbgjs!(format!("y_end 1: {}", y_end));
 
         if !force_table_bounds {
-            y_start = y_start
-                + (if !self.headers && !force_columns {
-                    table.y_adjustment()
-                } else if table.show_ui && table.show_name {
-                    1
-                } else {
-                    0
-                });
+            y_start += if !self.headers && !force_columns {
+                table.y_adjustment()
+            } else if table.show_ui && table.show_name {
+                1
+            } else {
+                0
+            };
         }
         let y_end = if !self.data { y_start } else { y_end };
         dbgjs!(format!("y_start 2: {}", y_start));

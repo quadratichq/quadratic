@@ -403,7 +403,7 @@ impl GridController {
                 CellRefRange::Table { range } => {
                     if let Some((pos, table)) = sheet.data_table_by_name(range.table_name.clone()) {
                         if let Some(range) =
-                            range.convert_to_ref_range_bounds(true, &context, false, false)
+                            range.convert_to_ref_range_bounds(true, &context, false, true)
                         {
                             let range = range.translate(-pos.x, -pos.y);
                             self.a1_border_style_range(
@@ -460,7 +460,7 @@ impl GridController {
             CellRefRange::Table { range } => {
                 if let (Some(entry), Some(range)) = (
                     context.try_table(&range.table_name),
-                    range.convert_to_ref_range_bounds(true, &context, false, false),
+                    range.convert_to_ref_range_bounds(true, &context, false, true),
                 ) {
                     // borders are always 1-based
                     let range = range.translate(-entry.bounds.min.x + 1, -entry.bounds.min.y + 1);
