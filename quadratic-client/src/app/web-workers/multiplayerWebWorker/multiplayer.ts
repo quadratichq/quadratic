@@ -178,7 +178,7 @@ export class Multiplayer {
         user,
         anonymous,
         sessionId: this.sessionId,
-        sheetId: sheets.sheet.id,
+        sheetId: sheets.current,
         selection: sheets.getMultiplayerSelection(),
         cellEdit: {
           text: '',
@@ -227,7 +227,7 @@ export class Multiplayer {
   }
 
   private sendChangeSheet = () => {
-    this.send({ type: 'clientMultiplayerSheet', sheetId: sheets.sheet.id });
+    this.send({ type: 'clientMultiplayerSheet', sheetId: sheets.current });
   };
 
   private sendOnline = () => {
@@ -303,7 +303,7 @@ export class Multiplayer {
     if (update.x !== null && update.y !== null) {
       player.x = update.x;
       player.y = update.y;
-      if (player.sheet_id === sheets.sheet.id) {
+      if (player.sheet_id === sheets.current) {
         events.emit('multiplayerCursor');
       }
     }
@@ -316,7 +316,7 @@ export class Multiplayer {
       if (player.sheet_id !== update.sheet_id) {
         player.sheet_id = update.sheet_id;
         events.emit('multiplayerChangeSheet');
-        if (player.sheet_id === sheets.sheet.id) {
+        if (player.sheet_id === sheets.current) {
           pixiApp.multiplayerCursor.dirty = true;
           events.emit('multiplayerCursor');
         }
@@ -329,7 +329,7 @@ export class Multiplayer {
       if (player.selection) {
         player.parsedSelection.load(player.selection);
       }
-      if (player.sheet_id === sheets.sheet.id) {
+      if (player.sheet_id === sheets.current) {
         pixiApp.multiplayerCursor.dirty = true;
       }
     }

@@ -51,7 +51,7 @@ export class CellsTextHashSpecial extends Container<SpecialSprite> {
       if (special.column === column && special.row === row) {
         if (special.type === 'checkbox' && (world === true || intersects.rectanglePoint(special.rectangle, world))) {
           quadraticCore.setCellValue(
-            sheets.sheet.id,
+            sheets.current,
             column,
             row,
             special.checkbox ? 'false' : 'true',

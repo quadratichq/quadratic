@@ -13,7 +13,7 @@ export class PointerCursor {
   private checkHoverCell(world: Point, event: PointerEvent) {
     if (!pixiApp.cellsSheets.current) throw new Error('Expected cellsSheets.current to be defined in PointerCursor');
     const cell = sheets.sheet.getColumnRow(world.x, world.y);
-    const editingCell = multiplayer.cellIsBeingEdited(cell.x, cell.y, sheets.sheet.id);
+    const editingCell = multiplayer.cellIsBeingEdited(cell.x, cell.y, sheets.current);
     if (editingCell) {
       const detail = { x: cell.x, y: cell.y, user: editingCell.user, codeEditor: editingCell.codeEditor };
       events.emit('hoverCell', detail);

@@ -37,7 +37,7 @@ const ListItems = () => {
             return (
               <CommandPaletteListItem
                 {...props}
-                action={() => quadraticCore.duplicateSheet(sheets.sheet.id, sheets.getCursorPosition())}
+                action={() => quadraticCore.duplicateSheet(sheets.current, sheets.getCursorPosition())}
                 icon={<SheetIcon />}
               />
             );
@@ -52,7 +52,7 @@ const ListItems = () => {
                 {...props}
                 action={() => {
                   if (window.confirm(`Are you sure you want to delete ${sheets.sheet.name}?`)) {
-                    quadraticCore.deleteSheet(sheets.sheet.id, sheets.getCursorPosition());
+                    quadraticCore.deleteSheet(sheets.current, sheets.getCursorPosition());
                   }
                   setTimeout(focusGrid);
                 }}

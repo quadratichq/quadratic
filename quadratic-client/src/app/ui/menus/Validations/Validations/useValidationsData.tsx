@@ -18,13 +18,13 @@ export const useValidationsData = (): ValidationsData => {
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const readOnly = !hasPermissionToEditFile(permissions);
 
-  const [sheetId, setSheetId] = useState(sheets.sheet.id);
+  const [sheetId, setSheetId] = useState(sheets.current);
   useEffect(() => {
     const updateSheet = () => {
       setSheetId((current: string) => {
-        if (current !== sheets.sheet.id) {
+        if (current !== sheets.current) {
           setValidations([...sheets.sheet.validations]);
-          return sheets.sheet.id;
+          return sheets.current;
         }
         return current;
       });

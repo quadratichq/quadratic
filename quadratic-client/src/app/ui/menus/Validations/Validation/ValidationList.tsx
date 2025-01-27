@@ -82,7 +82,7 @@ export const ValidationList = (props: Props) => {
   const changeSelection = (jsSelection: JsSelection | undefined) => {
     const rule: ValidationRule = {
       List: {
-        source: { Selection: (jsSelection ?? newSingleSelection(sheets.sheet.id, 1, 1)).selection() },
+        source: { Selection: (jsSelection ?? newSingleSelection(sheets.current, 1, 1)).selection() },
         ignore_blank: ignoreBlank,
         drop_down: showDropdown,
       },

@@ -102,7 +102,7 @@ export function HoverCell() {
           );
         }
       } else if (renderCodeCell) {
-        const sheetId = sheets.sheet.id;
+        const sheetId = sheets.current;
         const { x, y } = renderCodeCell;
         const codeCell = await quadraticCore.getCodeCell(sheetId, x, y);
         if (renderCodeCell.state === 'SpillError') {

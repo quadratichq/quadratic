@@ -44,7 +44,7 @@ export const CalendarPicker = () => {
   useEffect(() => {
     const fetchValue = async () => {
       const position = sheets.sheet.cursor.position;
-      const value = await quadraticCore.getDisplayCell(sheets.sheet.id, position.x, position.y);
+      const value = await quadraticCore.getDisplayCell(sheets.current, position.x, position.y);
       if (value) {
         const d = new Date(value as string);
 
@@ -56,7 +56,7 @@ export const CalendarPicker = () => {
         }
         setValue(value);
       }
-      const summary = await quadraticCore.getCellFormatSummary(sheets.sheet.id, position.x, position.y);
+      const summary = await quadraticCore.getCellFormatSummary(sheets.current, position.x, position.y);
       if (summary.dateTime) {
         setDateFormat(summary.dateTime);
       } else {

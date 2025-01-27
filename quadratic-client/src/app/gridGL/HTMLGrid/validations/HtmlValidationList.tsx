@@ -70,10 +70,10 @@ export const HtmlValidationList = (props: Props) => {
         return;
       }
       listCoordinate.current = { x: column, y: row };
-      const list = await quadraticCore.getValidationList(sheets.sheet.id, column, row);
+      const list = await quadraticCore.getValidationList(sheets.current, column, row);
       if (!list) return;
       setAnnotationState('dropdown');
-      const value = await quadraticCore.getDisplayCell(sheets.sheet.id, column, row);
+      const value = await quadraticCore.getDisplayCell(sheets.current, column, row);
       setList(list);
       setIndex(list?.indexOf(value || '') ?? -1);
     };
@@ -95,7 +95,7 @@ export const HtmlValidationList = (props: Props) => {
   const changeValue = useCallback(
     (value: string) => {
       quadraticCore.setCellValue(
-        sheets.sheet.id,
+        sheets.current,
         sheets.sheet.cursor.position.x,
         sheets.sheet.cursor.position.y,
         value,

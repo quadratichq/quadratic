@@ -52,7 +52,7 @@ export function CodeEditorHeaderLabel() {
 
   const focusCellRef = useCallback(() => {
     if (!cellRef) return;
-    const selection = stringToSelection(cellRef, sheets.sheet.id, sheets.a1Context);
+    const selection = stringToSelection(cellRef, sheets.current, sheets.a1Context);
     sheets.changeSelection(selection);
   }, [cellRef]);
 

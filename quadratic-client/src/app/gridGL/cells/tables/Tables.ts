@@ -164,7 +164,7 @@ export class Tables extends Container<Table> {
 
   // Updates the active table when the cursor moves.
   private cursorPosition = () => {
-    if (this.sheet.id !== sheets.sheet.id) {
+    if (this.sheet.id !== sheets.current) {
       return;
     }
     if (this.activeTable) {

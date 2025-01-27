@@ -36,7 +36,7 @@ export class UICopy extends Graphics {
   }
 
   isShowing(): boolean {
-    return !!this.ranges && this.sheetId === sheets.sheet.id;
+    return !!this.ranges && this.sheetId === sheets.current;
   }
 
   private updateNextTick = () => (this.dirty = true);
@@ -53,7 +53,7 @@ export class UICopy extends Graphics {
     this.ranges = range;
     this.time = 0;
     this.march = 0;
-    this.sheetId = sheets.sheet.id;
+    this.sheetId = sheets.current;
   }
 
   private draw() {
@@ -105,7 +105,7 @@ export class UICopy extends Graphics {
 
   update() {
     if (!this.ranges) return;
-    if (this.sheetId !== sheets.sheet.id) {
+    if (this.sheetId !== sheets.current) {
       this.clear();
       return;
     }

@@ -21,7 +21,7 @@ interface Props {
   triggerError?: boolean;
 
   // used to update the sheet's cursor to the range. If string, then it uses the
-  // string as the sheetId; otherwise it uses sheets.sheet.id as the sheetId
+  // string as the sheetId; otherwise it uses sheets.current as the sheetId
   changeCursor?: string | true;
 
   readOnly?: boolean;
@@ -112,9 +112,9 @@ export const SheetRange = (props: Props) => {
 
   const isError = triggerError && (!ref.current || ref.current.value === '');
 
-  const [sheetId, setSheetId] = useState(sheets.sheet.id);
+  const [sheetId, setSheetId] = useState(sheets.current);
   useEffect(() => {
-    const updateSheet = () => setSheetId(sheets.sheet.id);
+    const updateSheet = () => setSheetId(sheets.current);
     events.on('changeSheet', updateSheet);
     return () => {
       events.off('changeSheet', updateSheet);

@@ -131,7 +131,7 @@ export class CellsLabels extends Container {
       cellsTextHash.finalizeLabelMeshEntries(special);
 
       // refresh viewport if necessary
-      if (sheets.sheet.id === this.cellsSheet.sheetId) {
+      if (sheets.current === this.cellsSheet.sheetId) {
         const bounds = pixiApp.viewport.getVisibleBounds();
         const hashBounds = cellsTextHash.bounds.toRectangle();
         if (hashBounds && intersects.rectangleRectangle(hashBounds, bounds)) {
@@ -220,7 +220,7 @@ export class CellsLabels extends Container {
   }
 
   private clickedToCell = (column: number, row: number, world: Point | true) => {
-    if (sheets.sheet.id !== this.sheetId) return;
+    if (sheets.current !== this.sheetId) return;
     const hash = this.getHash(column, row);
     if (hash) {
       hash.special.clickedToCell(column, row, world);

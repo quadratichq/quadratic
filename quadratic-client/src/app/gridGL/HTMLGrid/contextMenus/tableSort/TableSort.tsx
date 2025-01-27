@@ -48,7 +48,7 @@ export const TableSort = () => {
     if (contextMenu.table) {
       const sortToSend = sort.filter((item) => item.direction !== 'None' && item.column_index !== -1);
       quadraticCore.sortDataTable(
-        sheets.sheet.id,
+        sheets.current,
         contextMenu.table.x,
         contextMenu.table.y,
         sortToSend,

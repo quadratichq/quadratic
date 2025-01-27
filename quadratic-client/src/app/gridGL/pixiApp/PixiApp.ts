@@ -127,7 +127,7 @@ export class PixiApp {
   firstRenderComplete = () => {
     if (this.waitingForFirstRender) {
       // perform a render to warm up the GPU
-      this.cellsSheets.showAll(sheets.sheet.id);
+      this.cellsSheets.showAll(sheets.current);
       this.renderer.render(this.stage);
       this.waitingForFirstRender();
       this.waitingForFirstRender = undefined;
@@ -356,7 +356,7 @@ export class PixiApp {
       x: viewport.center.x,
       y: viewport.center.y,
       bounds: viewport.getVisibleBounds(),
-      sheetId: sheets.sheet.id,
+      sheetId: sheets.current,
     });
   }
 
@@ -376,8 +376,8 @@ export class PixiApp {
     this.cellsSheets.adjustHeadings(options);
     this.cellsSheets.adjustOffsetsBorders(options.sheetId);
     this.cellsSheets.adjustCellsImages(options.sheetId);
-    htmlCellsHandler.updateOffsets([sheets.sheet.id]);
-    if (sheets.sheet.id === options.sheetId) {
+    htmlCellsHandler.updateOffsets([sheets.current]);
+    if (sheets.current === options.sheetId) {
       this.gridLines.dirty = true;
       this.cursor.dirty = true;
       this.cellHighlights.dirty = true;

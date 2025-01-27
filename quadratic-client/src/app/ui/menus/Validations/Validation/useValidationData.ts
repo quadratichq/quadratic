@@ -49,7 +49,7 @@ export const useValidationData = (): ValidationData => {
   const [originalValidation, setOriginalValidation] = useState<ValidationUndefined>();
   const [moreOptions, setMoreOptions] = useState(false);
   const [triggerError, setTriggerError] = useState(false);
-  const [sheetId] = useState(sheets.sheet.id);
+  const [sheetId] = useState(sheets.current);
 
   const toggleMoreOptions = useCallback(() => {
     setMoreOptions((old) => !old);
@@ -278,7 +278,7 @@ export const useValidationData = (): ValidationData => {
           return {
             ...old,
             selection: {
-              sheet_id: { id: sheets.sheet.id },
+              sheet_id: { id: sheets.current },
               cursor: {
                 x: BigInt(0),
                 y: BigInt(0),

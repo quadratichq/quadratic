@@ -89,7 +89,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
           setIsRenaming={setIsRenaming}
           sheet={sheet}
         />
-        {sheet.id !== sheets.sheet.id && <TabMultiplayer sheetId={sheet.id} />}
+        {sheet.id !== sheets.current && <TabMultiplayer sheetId={sheet.id} />}
         <div className={cn('flex', !active && 'invisible opacity-0 group-hover:visible group-hover:opacity-100')}>
           {hasPermission && (
             <SheetBarTabDropdownMenu

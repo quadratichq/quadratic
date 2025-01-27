@@ -42,7 +42,7 @@ export class UIValidations extends Container<SpecialSprite> {
   }
 
   setDirty = (sheetId: string) => {
-    if (sheetId === sheets.sheet.id) {
+    if (sheetId === sheets.current) {
       this.dirty = true;
     }
   };
@@ -53,7 +53,7 @@ export class UIValidations extends Container<SpecialSprite> {
     for (let i = validations.length - 1; i >= 0; i--) {
       const v = validations[i];
       const type = validationUIType(v);
-      if (v.selection.sheet_id.id !== sheets.sheet.id || !type) continue;
+      if (v.selection.sheet_id.id !== sheets.current || !type) continue;
 
       try {
         const jsSelection = A1SelectionToJsSelection(v.selection);
@@ -134,7 +134,7 @@ export class UIValidations extends Container<SpecialSprite> {
       if (special.column === column && special.row === row) {
         if (special.type === 'checkbox' && (world === true || intersects.rectanglePoint(special.rectangle, world))) {
           quadraticCore.setCellValue(
-            sheets.sheet.id,
+            sheets.current,
             column,
             row,
             special.checkbox ? 'false' : 'true',

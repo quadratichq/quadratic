@@ -58,7 +58,7 @@ class HTMLCellsHandler {
   };
 
   private changeSheet = () => {
-    this.cells.forEach((cell) => cell.changeSheet(sheets.sheet.id));
+    this.cells.forEach((cell) => cell.changeSheet(sheets.current));
   };
 
   private getParent(): HTMLDivElement {
@@ -126,7 +126,7 @@ class HTMLCellsHandler {
   checkHover(world: Point): JsCoordinate | undefined {
     const cells = this.getCells();
     for (const cell of cells) {
-      if (cell.sheet.id !== sheets.sheet.id) continue;
+      if (cell.sheet.id !== sheets.current) continue;
       const bounds = new Rectangle(
         cell.div.offsetLeft,
         cell.div.offsetTop,
@@ -141,7 +141,7 @@ class HTMLCellsHandler {
 
   // returns true if the cell is an html cell
   isHtmlCell(x: number, y: number): boolean {
-    return this.getCells().some((cell) => cell.x === x && cell.y === y && cell.sheet.id === sheets.sheet.id);
+    return this.getCells().some((cell) => cell.x === x && cell.y === y && cell.sheet.id === sheets.current);
   }
 
   // returns true if the Pos overlaps with the output of an html cell
@@ -150,12 +150,12 @@ class HTMLCellsHandler {
   }
 
   findCodeCell(x: number, y: number): HtmlCell | undefined {
-    return this.getCells().find((cell) => cell.sheet.id === sheets.sheet.id && cell.contains(x, y));
+    return this.getCells().find((cell) => cell.sheet.id === sheets.current && cell.contains(x, y));
   }
 
   showActive(codeCell: JsRenderCodeCell, isSelected: boolean) {
     const cell = this.getCells().find(
-      (cell) => cell.x === codeCell.x && cell.y === codeCell.y && cell.sheet.id === sheets.sheet.id
+      (cell) => cell.x === codeCell.x && cell.y === codeCell.y && cell.sheet.id === sheets.current
     );
     if (cell) {
       cell.border.style.border = '2px solid hsl(var(--primary))';
@@ -166,7 +166,7 @@ class HTMLCellsHandler {
 
   hideActive(codeCell: JsRenderCodeCell) {
     const cell = this.getCells().find(
-      (cell) => cell.x === codeCell.x && cell.y === codeCell.y && cell.sheet.id === sheets.sheet.id
+      (cell) => cell.x === codeCell.x && cell.y === codeCell.y && cell.sheet.id === sheets.current
     );
     if (cell) {
       cell.border.style.border = '1px solid hsl(var(--primary))';

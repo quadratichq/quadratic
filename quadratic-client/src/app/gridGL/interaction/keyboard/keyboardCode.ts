@@ -15,7 +15,7 @@ export function keyboardCode(event: React.KeyboardEvent<HTMLElement>): boolean {
   // Execute code cell
   if (matchShortcut(Action.ExecuteCode, event)) {
     quadraticCore.rerunCodeCells(
-      sheets.sheet.id,
+      sheets.current,
       sheets.sheet.cursor.position.x,
       sheets.sheet.cursor.position.y,
       sheets.getCursorPosition()
@@ -25,7 +25,7 @@ export function keyboardCode(event: React.KeyboardEvent<HTMLElement>): boolean {
 
   // Rerun sheet code
   if (matchShortcut(Action.RerunSheetCode, event)) {
-    quadraticCore.rerunCodeCells(sheets.sheet.id, undefined, undefined, sheets.getCursorPosition());
+    quadraticCore.rerunCodeCells(sheets.current, undefined, undefined, sheets.getCursorPosition());
     return true;
   }
 

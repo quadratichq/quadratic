@@ -71,7 +71,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
     const playerState = (_state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
       if (
         current &&
-        current.sheetPos.sheetId === sheets.sheet.id &&
+        current.sheetPos.sheetId === sheets.current &&
         current.sheetPos.x === codeCellState.pos.x &&
         current.sheetPos.y === codeCellState.pos.y
       ) {
@@ -80,7 +80,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
         awaitingExecution?.length &&
         awaitingExecution.find(
           (cell) =>
-            cell.sheetPos.sheetId === sheets.sheet.id &&
+            cell.sheetPos.sheetId === sheets.current &&
             cell.sheetPos.x === codeCellState.pos.x &&
             cell.sheetPos.y === codeCellState.pos.y
         )

@@ -61,7 +61,7 @@ export const MultiplayerCellEdits = () => {
   return (
     <div style={{ pointerEvents: 'none' }}>
       {multiplayerCellInput
-        .filter((cell) => cell.sheetId === sheets.sheet.id)
+        .filter((cell) => cell.sheetId === sheets.current)
         .map((cell) => (
           <MultiplayerCellEdit key={cell.sessionId} multiplayerCellInput={cell} />
         ))}

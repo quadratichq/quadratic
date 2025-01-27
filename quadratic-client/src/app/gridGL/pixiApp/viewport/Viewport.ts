@@ -142,7 +142,7 @@ export class Viewport extends PixiViewport {
   sendRenderViewport() {
     const bounds = this.getVisibleBounds();
     const scale = this.scale.x;
-    renderWebWorker.updateViewport(sheets.sheet.id, bounds, scale);
+    renderWebWorker.updateViewport(sheets.current, bounds, scale);
   }
 
   private startSnap = () => {
@@ -196,8 +196,8 @@ export class Viewport extends PixiViewport {
       this.lastScreenHeight = this.screenHeight;
       dirty = true;
     }
-    if (this.lastSheetId !== sheets.sheet.id) {
-      this.lastSheetId = sheets.sheet.id;
+    if (this.lastSheetId !== sheets.current) {
+      this.lastSheetId = sheets.current;
       dirty = true;
     }
     if (dirty) {

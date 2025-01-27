@@ -74,7 +74,7 @@ export class UIMultiPlayerCursor extends Graphics {
     if (dirtySheet || this.dirty) {
       this.dirty = false;
       this.clear();
-      const sheetId = sheets.sheet.id;
+      const sheetId = sheets.current;
       multiplayer.users.forEach((player) => {
         const color = player.color;
         if (player.parsedSelection && player.sheet_id === sheetId) {

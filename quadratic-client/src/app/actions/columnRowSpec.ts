@@ -21,7 +21,7 @@ const insertColumnLeft: ActionSpec<void> = {
   isAvailable: isColumnRowAvailableAndColumnFinite,
   Icon: AddIcon,
   run: () =>
-    quadraticCore.insertColumn(sheets.sheet.id, sheets.sheet.cursor.position.x, true, sheets.getCursorPosition()),
+    quadraticCore.insertColumn(sheets.current, sheets.sheet.cursor.position.x, true, sheets.getCursorPosition()),
 };
 
 const insertColumnRight: ActionSpec<void> = {
@@ -29,7 +29,7 @@ const insertColumnRight: ActionSpec<void> = {
   isAvailable: isColumnRowAvailableAndColumnFinite,
   Icon: AddIcon,
   run: () =>
-    quadraticCore.insertColumn(sheets.sheet.id, sheets.sheet.cursor.position.x + 1, false, sheets.getCursorPosition()),
+    quadraticCore.insertColumn(sheets.current, sheets.sheet.cursor.position.x + 1, false, sheets.getCursorPosition()),
 };
 
 const deleteColumns: ActionSpec<void> = {
@@ -38,7 +38,7 @@ const deleteColumns: ActionSpec<void> = {
   Icon: DeleteIcon,
   run: () => {
     const columns = sheets.sheet.cursor.getSelectedColumns();
-    quadraticCore.deleteColumns(sheets.sheet.id, columns, sheets.getCursorPosition());
+    quadraticCore.deleteColumns(sheets.current, columns, sheets.getCursorPosition());
   },
 };
 
@@ -46,7 +46,7 @@ const insertRowAbove: ActionSpec<void> = {
   label: 'Insert row above',
   isAvailable: isColumnRowAvailableAndRowFinite,
   Icon: AddIcon,
-  run: () => quadraticCore.insertRow(sheets.sheet.id, sheets.sheet.cursor.position.y, true, sheets.getCursorPosition()),
+  run: () => quadraticCore.insertRow(sheets.current, sheets.sheet.cursor.position.y, true, sheets.getCursorPosition()),
 };
 
 const insertRowBelow: ActionSpec<void> = {
@@ -54,7 +54,7 @@ const insertRowBelow: ActionSpec<void> = {
   isAvailable: isColumnRowAvailableAndRowFinite,
   Icon: AddIcon,
   run: () =>
-    quadraticCore.insertRow(sheets.sheet.id, sheets.sheet.cursor.position.y + 1, false, sheets.getCursorPosition()),
+    quadraticCore.insertRow(sheets.current, sheets.sheet.cursor.position.y + 1, false, sheets.getCursorPosition()),
 };
 
 const deleteRows: ActionSpec<void> = {
@@ -63,7 +63,7 @@ const deleteRows: ActionSpec<void> = {
   Icon: DeleteIcon,
   run: () => {
     const rows = sheets.sheet.cursor.getSelectedRows();
-    quadraticCore.deleteRows(sheets.sheet.id, rows, sheets.getCursorPosition());
+    quadraticCore.deleteRows(sheets.current, rows, sheets.getCursorPosition());
   },
 };
 

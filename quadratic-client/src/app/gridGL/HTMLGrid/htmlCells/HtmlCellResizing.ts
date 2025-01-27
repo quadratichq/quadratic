@@ -97,7 +97,7 @@ export class HtmlCellResizing {
   }
 
   completeResizing() {
-    quadraticCore.setCellRenderResize(sheets.sheet.id, this.htmlCell.x, this.htmlCell.y, this.width, this.height);
+    quadraticCore.setCellRenderResize(sheets.current, this.htmlCell.x, this.htmlCell.y, this.width, this.height);
   }
 
   cancelResizing() {

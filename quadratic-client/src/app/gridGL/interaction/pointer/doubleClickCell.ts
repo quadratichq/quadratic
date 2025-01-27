@@ -21,7 +21,7 @@ export async function doubleClickCell(options: {
     return;
   }
 
-  if (multiplayer.cellIsBeingEdited(column, row, sheets.sheet.id)) {
+  if (multiplayer.cellIsBeingEdited(column, row, sheets.current)) {
     return;
   }
 
@@ -111,7 +111,7 @@ export async function doubleClickCell(options: {
 
   // Open the text editor
   else if (hasPermission) {
-    const value = await quadraticCore.getCellValue(sheets.sheet.id, column, row);
+    const value = await quadraticCore.getCellValue(sheets.current, column, row);
 
     // open the calendar pick if the cell is a date
     if (value && ['date', 'date time'].includes(value.kind)) {

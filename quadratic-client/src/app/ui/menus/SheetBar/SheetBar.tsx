@@ -39,7 +39,7 @@ export const SheetBar = (): JSX.Element => {
     const updateSheet = () => {
       setActiveSheet(sheets.current);
       setTrigger((trigger) => trigger + 1);
-      setActiveSheetId(sheets.sheet.order === 'a0' ? null : sheets.sheet.id);
+      setActiveSheetId(sheets.sheet.order === 'a0' ? null : sheets.current);
     };
 
     events.on('changeSheet', updateSheet);

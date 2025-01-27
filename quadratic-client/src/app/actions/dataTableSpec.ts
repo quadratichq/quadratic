@@ -133,7 +133,7 @@ export const gridToDataTable = () => {
   const rectangle = sheets.sheet.cursor.getSingleRectangle();
   if (rectangle) {
     const sheetRect: SheetRect = {
-      sheet_id: { id: sheets.sheet.id },
+      sheet_id: { id: sheets.current },
       min: { x: BigInt(rectangle.x), y: BigInt(rectangle.y) },
       max: { x: BigInt(rectangle.x + rectangle.width - 1), y: BigInt(rectangle.y + rectangle.height - 1) },
     };
@@ -144,7 +144,7 @@ export const gridToDataTable = () => {
 export const flattenDataTable = () => {
   const table = getTable();
   if (table) {
-    quadraticCore.flattenDataTable(sheets.sheet.id, table.x, table.y, sheets.getCursorPosition());
+    quadraticCore.flattenDataTable(sheets.current, table.x, table.y, sheets.getCursorPosition());
   }
 };
 
@@ -152,7 +152,7 @@ export const toggleFirstRowAsHeader = () => {
   const table = getTable();
   if (table) {
     quadraticCore.dataTableFirstRowAsHeader(
-      sheets.sheet.id,
+      sheets.current,
       table.x,
       table.y,
       !isFirstRowHeader(),
@@ -176,7 +176,7 @@ export const deleteDataTable = () => {
   const table = getTable();
   if (table) {
     const selection = newRectSelection(
-      sheets.sheet.id,
+      sheets.current,
       BigInt(table.x),
       BigInt(table.y),
       BigInt(table.x + table.w - 1),
@@ -189,7 +189,7 @@ export const deleteDataTable = () => {
 export const codeToDataTable = () => {
   const table = getTable();
   if (table) {
-    quadraticCore.codeDataTableToDataTable(sheets.sheet.id, table.x, table.y, sheets.getCursorPosition());
+    quadraticCore.codeDataTableToDataTable(sheets.current, table.x, table.y, sheets.getCursorPosition());
   }
 };
 
@@ -205,7 +205,7 @@ export const toggleTableAlternatingColors = () => {
   const table = getTable();
   if (table) {
     quadraticCore.dataTableMeta(
-      sheets.sheet.id,
+      sheets.current,
       table.x,
       table.y,
       { alternatingColors: !isAlternatingColorsShowing() },
@@ -235,7 +235,7 @@ export const sortTableColumn = (direction: 'Ascending' | 'Descending') => {
 
   if (table && column !== undefined) {
     quadraticCore.sortDataTable(
-      sheets.sheet.id,
+      sheets.current,
       table.x,
       table.y,
       [{ column_index: column, direction }],
@@ -258,7 +258,7 @@ export const insertTableColumn = (increment: number = 0) => {
 
   if (table && column !== undefined) {
     quadraticCore.dataTableMutations(
-      sheets.sheet.id,
+      sheets.current,
       table.x,
       table.y,
       [column + increment],
@@ -276,7 +276,7 @@ export const removeTableColumn = () => {
 
   if (table && column !== undefined) {
     quadraticCore.dataTableMutations(
-      sheets.sheet.id,
+      sheets.current,
       table.x,
       table.y,
       undefined,
@@ -296,7 +296,7 @@ export const hideTableColumn = () => {
   if (table && columns && column !== undefined && columns[column]) {
     columns[column].display = false;
 
-    quadraticCore.dataTableMeta(sheets.sheet.id, table.x, table.y, { columns }, sheets.getCursorPosition());
+    quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { columns }, sheets.getCursorPosition());
   }
 };
 
@@ -311,7 +311,7 @@ export const showAllTableColumns = () => {
   if (table && columns) {
     columns.forEach((column) => (column.display = true));
 
-    quadraticCore.dataTableMeta(sheets.sheet.id, table.x, table.y, { columns }, sheets.getCursorPosition());
+    quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { columns }, sheets.getCursorPosition());
   }
 };
 
@@ -321,7 +321,7 @@ export const insertTableRow = (increment: number = 0) => {
 
   if (table && row !== undefined) {
     quadraticCore.dataTableMutations(
-      sheets.sheet.id,
+      sheets.current,
       table.x,
       table.y,
       undefined,
@@ -339,7 +339,7 @@ export const removeTableRow = () => {
 
   if (table && row !== undefined) {
     quadraticCore.dataTableMutations(
-      sheets.sheet.id,
+      sheets.current,
       table.x,
       table.y,
       undefined,
@@ -363,7 +363,7 @@ export const toggleTableUI = () => {
   const table = getTable();
   if (table) {
     quadraticCore.dataTableMeta(
-      sheets.sheet.id,
+      sheets.current,
       table.x,
       table.y,
       { showUI: !table.show_ui },
@@ -377,7 +377,7 @@ export const toggleTableColumns = () => {
   const table = getTable();
   if (table) {
     quadraticCore.dataTableMeta(
-      sheets.sheet.id,
+      sheets.current,
       table.x,
       table.y,
       { showColumns: !table.show_columns },
@@ -391,7 +391,7 @@ export const toggleTableName = () => {
   const table = getTable();
   if (table) {
     quadraticCore.dataTableMeta(
-      sheets.sheet.id,
+      sheets.current,
       table.x,
       table.y,
       { showName: !table.show_name },

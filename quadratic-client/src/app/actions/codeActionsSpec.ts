@@ -23,7 +23,7 @@ export const codeActionsSpec: CodeActionSpec = {
     label: 'Execute code',
     run: () => {
       quadraticCore.rerunCodeCells(
-        sheets.sheet.id,
+        sheets.current,
         pixiAppSettings.codeEditorState.codeCell.pos.x,
         pixiAppSettings.codeEditorState.codeCell.pos.y,
         sheets.getCursorPosition()
@@ -33,7 +33,7 @@ export const codeActionsSpec: CodeActionSpec = {
   [Action.RerunSheetCode]: {
     label: 'Rerun sheet code',
     run: () => {
-      quadraticCore.rerunCodeCells(sheets.sheet.id, undefined, undefined, sheets.getCursorPosition());
+      quadraticCore.rerunCodeCells(sheets.current, undefined, undefined, sheets.getCursorPosition());
     },
   },
   [Action.RerunAllCode]: {

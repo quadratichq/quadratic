@@ -64,7 +64,7 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
           row: y,
         });
       } else {
-        quadraticCore.getEditCell(sheets.sheet.id, x, y).then((cell) => {
+        quadraticCore.getEditCell(sheets.current, x, y).then((cell) => {
           doubleClickCell({
             column: x,
             row: y,
@@ -89,7 +89,7 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
           cursorMode: CursorMode.Edit,
         });
       } else {
-        quadraticCore.getEditCell(sheets.sheet.id, x, y).then((cell) => {
+        quadraticCore.getEditCell(sheets.current, x, y).then((cell) => {
           doubleClickCell({ column: x, row: y, cell, cursorMode: CursorMode.Edit });
         });
       }

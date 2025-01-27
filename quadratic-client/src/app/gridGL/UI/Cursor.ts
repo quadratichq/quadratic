@@ -190,7 +190,7 @@ export class Cursor extends Container {
   private drawCodeCursor(): void {
     let color: number | undefined, offsets: { x: number; y: number; width: number; height: number } | undefined;
     const inlineShowing = inlineEditorHandler.getShowing();
-    if (inlineEditorHandler.formula && inlineShowing && sheets.sheet.id === inlineShowing.sheetId) {
+    if (inlineEditorHandler.formula && inlineShowing && sheets.current === inlineShowing.sheetId) {
       color = colors.cellColorUserFormula;
       const { width, height } = sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y);
       offsets = {
@@ -216,7 +216,7 @@ export class Cursor extends Container {
     } else {
       const { codeEditorState } = pixiAppSettings;
       const codeCell = codeEditorState.codeCell;
-      if (!codeEditorState.showCodeEditor || sheets.sheet.id !== codeCell.sheetId) {
+      if (!codeEditorState.showCodeEditor || sheets.current !== codeCell.sheetId) {
         return;
       }
       offsets = sheets.sheet.getCellOffsets(codeCell.pos.x, codeCell.pos.y);

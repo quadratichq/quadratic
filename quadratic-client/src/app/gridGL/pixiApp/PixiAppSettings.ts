@@ -221,11 +221,11 @@ class PixiAppSettings {
     if (input === true) {
       const x = sheets.sheet.cursor.position.x;
       const y = sheets.sheet.cursor.position.y;
-      if (multiplayer.cellIsBeingEdited(x, y, sheets.sheet.id)) {
+      if (multiplayer.cellIsBeingEdited(x, y, sheets.current)) {
         this._input = { show: false };
       } else {
-        this._input = { show: input, initialValue, x, y, sheetId: sheets.sheet.id };
-        pixiApp.cellsSheets.showLabel(x, y, sheets.sheet.id, false);
+        this._input = { show: input, initialValue, x, y, sheetId: sheets.current };
+        pixiApp.cellsSheets.showLabel(x, y, sheets.current, false);
       }
     } else {
       this._input = { show: false };

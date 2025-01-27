@@ -90,7 +90,7 @@ export const GoTo = () => {
       pixiApp.viewport.reset();
     } else {
       try {
-        const selection = stringToSelection(value, sheets.sheet.id, sheets.a1Context);
+        const selection = stringToSelection(value, sheets.current, sheets.a1Context);
         sheets.changeSelection(selection);
       } catch (_) {
         // nothing to do if we can't parse the input
@@ -102,7 +102,7 @@ export const GoTo = () => {
   const selectTable = useCallback(
     (tableName: string) => {
       setPages([]);
-      const selection = stringToSelection(tableName, sheets.sheet.id, sheets.a1Context);
+      const selection = stringToSelection(tableName, sheets.current, sheets.a1Context);
       sheets.changeSelection(selection);
       closeMenu();
     },

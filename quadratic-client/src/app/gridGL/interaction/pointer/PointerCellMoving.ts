@@ -242,10 +242,10 @@ export class PointerCellMoving {
         }
 
         quadraticCore.moveCells(
-          rectToSheetRect(rectangle, sheets.sheet.id),
+          rectToSheetRect(rectangle, sheets.current),
           this.movingCells.toColumn,
           this.movingCells.toRow,
-          sheets.sheet.id
+          sheets.current
         );
 
         const { showCodeEditor, codeCell } = pixiAppSettings.codeEditorState;

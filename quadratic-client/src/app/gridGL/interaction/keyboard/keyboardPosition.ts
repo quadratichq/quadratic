@@ -15,7 +15,7 @@ function setCursorPosition(x: number, y: number) {
 // handle cases for meta/ctrl keys
 async function jumpCursor(direction: Direction, jump: boolean, select: boolean) {
   const cursor = sheets.sheet.cursor;
-  const sheetId = sheets.sheet.id;
+  const sheetId = sheets.current;
 
   const cursorPos = cursor.position;
   const selEnd = cursor.selectionEnd;

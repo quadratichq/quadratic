@@ -94,7 +94,7 @@ export class HtmlCell {
 
     this.sheet.gridOverflowLines.updateImageHtml(this.x, this.y, this.width, this.height);
 
-    if (this.sheet.id !== sheets.sheet.id) {
+    if (this.sheet.id !== sheets.current) {
       this.div.style.visibility = 'hidden';
     }
   }

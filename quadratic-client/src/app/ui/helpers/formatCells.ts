@@ -6,7 +6,7 @@ import type { ColorResult } from 'react-color';
 
 export const getFormatCell = (): Promise<Format | undefined> => {
   const cursor = sheets.sheet.cursor.position;
-  return quadraticCore.getFormatCell(sheets.sheet.id, cursor.x, cursor.y);
+  return quadraticCore.getFormatCell(sheets.current, cursor.x, cursor.y);
 };
 
 export const setFillColor = (color?: ColorResult) => {

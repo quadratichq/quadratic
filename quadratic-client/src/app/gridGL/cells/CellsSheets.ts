@@ -33,11 +33,11 @@ export class CellsSheets extends Container<CellsSheet> {
     this.removeChildren();
     for (const sheet of sheets.sheets) {
       const child = this.addChild(new CellsSheet(sheet.id));
-      if (sheet.id === sheets.sheet.id) {
+      if (sheet.id === sheets.current) {
         this.current = child;
       }
     }
-    renderWebWorker.pixiIsReady(sheets.sheet.id, pixiApp.viewport.getVisibleBounds(), pixiApp.viewport.scale.x);
+    renderWebWorker.pixiIsReady(sheets.current, pixiApp.viewport.getVisibleBounds(), pixiApp.viewport.scale.x);
   }
 
   isReady(): boolean {
@@ -97,7 +97,7 @@ export class CellsSheets extends Container<CellsSheet> {
       throw new Error('Expected to find cellsSheet in cellsTextHashClear');
     }
     cellsSheet.cellsLabels.clearCellsTextHash(message);
-    if (debugShowCellsHashBoxes && sheets.sheet.id === message.sheetId) {
+    if (debugShowCellsHashBoxes && sheets.current === message.sheetId) {
       pixiApp.setViewportDirty();
     }
 
@@ -132,7 +132,7 @@ export class CellsSheets extends Container<CellsSheet> {
     const cellsSheet = this.getById(sheetId);
     if (!cellsSheet) throw new Error('Expected to find cellsSheet in adjustHeadings');
     cellsSheet.cellsLabels.adjustHeadings(column, row, delta);
-    if (sheets.sheet.id === sheetId) {
+    if (sheets.current === sheetId) {
       if (debugShowCellsHashBoxes) {
         const sheet = this.getById(sheetId);
         sheet?.show(pixiApp.viewport.getVisibleBounds());

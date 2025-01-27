@@ -92,7 +92,7 @@ export class PointerDown {
         if (table) {
           doubleClickCell({ column, row });
         } else {
-          const cell = await quadraticCore.getEditCell(sheets.sheet.id, column, row);
+          const cell = await quadraticCore.getEditCell(sheets.current, column, row);
           doubleClickCell({ column, row, cell, cursorMode: cell ? CursorMode.Edit : CursorMode.Enter });
         }
         this.active = false;

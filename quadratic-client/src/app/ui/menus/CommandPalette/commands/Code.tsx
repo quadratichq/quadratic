@@ -17,7 +17,7 @@ const commands: CommandGroup = {
             {...props}
             action={() =>
               quadraticCore.rerunCodeCells(
-                sheets.sheet.id,
+                sheets.current,
                 sheets.sheet.cursor.position.x,
                 sheets.sheet.cursor.position.y,
                 sheets.getCursorPosition()
@@ -37,7 +37,7 @@ const commands: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             action={() =>
-              quadraticCore.rerunCodeCells(sheets.sheet.id, undefined, undefined, sheets.getCursorPosition())
+              quadraticCore.rerunCodeCells(sheets.current, undefined, undefined, sheets.getCursorPosition())
             }
             shortcut={KeyboardSymbols.Enter}
             shortcutModifiers={[KeyboardSymbols.Shift, KeyboardSymbols.Command]}

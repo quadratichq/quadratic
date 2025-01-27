@@ -94,7 +94,7 @@ class InlineEditorHandler {
 
   // Keeps the cursor visible in the viewport.
   keepCursorVisible = () => {
-    if (sheets.sheet.id !== this.location?.sheetId || !this.showing) return;
+    if (sheets.current !== this.location?.sheetId || !this.showing) return;
 
     const sheetRectangle = pixiApp.getViewportRectangle();
     const scale = pixiApp.viewport.scale.x;
@@ -159,7 +159,7 @@ class InlineEditorHandler {
   private changeSheet = () => {
     if (!this.div || !this.location || !this.open) return;
     if (this.formula) {
-      if (sheets.sheet.id !== this.location.sheetId) {
+      if (sheets.current !== this.location.sheetId) {
         this.hideDiv();
         // not sure why this is here
         window.removeEventListener('keydown', inlineEditorKeyboard.keyDown);

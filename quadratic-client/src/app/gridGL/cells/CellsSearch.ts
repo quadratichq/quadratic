@@ -34,7 +34,7 @@ export class CellsSearch extends Graphics {
         }
       });
     }
-    if (sheets.sheet.id === this.sheetId) {
+    if (sheets.current === this.sheetId) {
       pixiApp.setViewportDirty();
     }
   };

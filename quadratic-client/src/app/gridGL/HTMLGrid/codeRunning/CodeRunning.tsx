@@ -133,7 +133,7 @@ export const CodeRunning = () => {
     <div className="code-running-container">
       {[...playerCode, ...multiplayerCode]
         .filter((code) => {
-          return code.sheetId === sheets.sheet.id;
+          return code.sheetId === sheets.current;
         })
         .map((code, index) => {
           return (
