@@ -1370,26 +1370,28 @@ class QuadraticCore {
     });
   }
 
-  dataTableMutations(
-    sheetId: string,
-    x: number,
-    y: number,
-    columns_to_add?: number[],
-    columns_to_remove?: number[],
-    rows_to_add?: number[],
-    rows_to_remove?: number[],
-    cursor?: string
-  ) {
+  dataTableMutations(args: {
+    sheetId: string;
+    x: number;
+    y: number;
+    columns_to_add?: number[];
+    columns_to_remove?: number[];
+    rows_to_add?: number[];
+    rows_to_remove?: number[];
+    flatten_on_delete?: boolean;
+    cursor?: string;
+  }) {
     this.send({
       type: 'clientCoreDataTableMutations',
-      sheetId,
-      x,
-      y,
-      columns_to_add,
-      columns_to_remove,
-      rows_to_add,
-      rows_to_remove,
-      cursor: cursor || '',
+      sheetId: args.sheetId,
+      x: args.x,
+      y: args.y,
+      columns_to_add: args.columns_to_add,
+      columns_to_remove: args.columns_to_remove,
+      rows_to_add: args.rows_to_add,
+      rows_to_remove: args.rows_to_remove,
+      flatten_on_delete: args.flatten_on_delete,
+      cursor: args.cursor,
     });
   }
 

@@ -1138,6 +1138,7 @@ export interface ClientCoreDataTableMutations {
   columns_to_remove?: number[];
   rows_to_add?: number[];
   rows_to_remove?: number[];
+  flatten_on_delete?: boolean;
   cursor?: string;
 }
 

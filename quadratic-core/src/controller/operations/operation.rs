@@ -109,6 +109,9 @@ pub enum Operation {
     DeleteDataTableColumn {
         sheet_pos: SheetPos,
         index: u32,
+
+        /// Inserts the removed column into sheet at the same position.
+        flatten: bool,
     },
     InsertDataTableRow {
         sheet_pos: SheetPos,
@@ -118,6 +121,9 @@ pub enum Operation {
     DeleteDataTableRow {
         sheet_pos: SheetPos,
         index: u32,
+
+        /// Inserts the removed row into sheet at the same position.
+        flatten: bool,
     },
     SetCodeRun {
         sheet_pos: SheetPos,
@@ -406,11 +412,15 @@ impl fmt::Display for Operation {
                     sheet_pos, index, name, values
                 )
             }
-            Operation::DeleteDataTableColumn { sheet_pos, index } => {
+            Operation::DeleteDataTableColumn {
+                sheet_pos,
+                index,
+                flatten,
+            } => {
                 write!(
                     fmt,
-                    "DeleteDataTableColumn {{ sheet_pos: {}, index: {} }}",
-                    sheet_pos, index
+                    "DeleteDataTableColumn {{ sheet_pos: {}, index: {}, flatten: {} }}",
+                    sheet_pos, index, flatten
                 )
             }
             Operation::InsertDataTableRow {
@@ -424,11 +434,15 @@ impl fmt::Display for Operation {
                     sheet_pos, index, values
                 )
             }
-            Operation::DeleteDataTableRow { sheet_pos, index } => {
+            Operation::DeleteDataTableRow {
+                sheet_pos,
+                index,
+                flatten,
+            } => {
                 write!(
                     fmt,
-                    "DeleteDataTableRow {{ sheet_pos: {}, index: {} }}",
-                    sheet_pos, index
+                    "DeleteDataTableRow {{ sheet_pos: {}, index: {}, flatten: {} }}",
+                    sheet_pos, index, flatten
                 )
             }
             Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats - deprecated",),

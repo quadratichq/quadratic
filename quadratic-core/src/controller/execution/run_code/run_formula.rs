@@ -34,7 +34,7 @@ impl GridController {
                 };
                 let new_data_table = DataTable::new(
                     DataTableKind::CodeRun(new_code_run),
-                    "Formula 1",
+                    "Formula1",
                     output.inner,
                     false,
                     false,

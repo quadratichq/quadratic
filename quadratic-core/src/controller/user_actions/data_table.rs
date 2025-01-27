@@ -72,6 +72,7 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::DataTableMeta);
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn data_table_mutations(
         &mut self,
         sheet_pos: SheetPos,
@@ -79,6 +80,7 @@ impl GridController {
         columns_to_remove: Option<Vec<u32>>,
         rows_to_add: Option<Vec<u32>>,
         rows_to_remove: Option<Vec<u32>>,
+        flatten_on_delete: Option<bool>,
         cursor: Option<String>,
     ) {
         let ops = self.data_table_mutations_operations(
@@ -87,6 +89,7 @@ impl GridController {
             columns_to_remove,
             rows_to_add,
             rows_to_remove,
+            flatten_on_delete,
             cursor.to_owned(),
         );
 
@@ -333,6 +336,7 @@ mod tests {
         let columns_to_remove = None;
         let rows_to_add = Some(vec![11]);
         let rows_to_remove = None;
+        let flatten_on_delete = Some(true);
         let cursor = None;
         gc.data_table_mutations(
             sheet_pos,
@@ -340,6 +344,7 @@ mod tests {
             columns_to_remove,
             rows_to_add,
             rows_to_remove,
+            flatten_on_delete,
             cursor,
         );
 

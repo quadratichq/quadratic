@@ -6,9 +6,7 @@ use crate::CellValue;
 impl DataTable {
     /// Get the values of a row (does not include the header)
     pub fn get_row(&self, mut row_index: usize) -> Result<Vec<CellValue>> {
-        if self.header_is_first_row {
-            row_index += 1;
-        }
+        row_index -= self.y_adjustment() as usize;
 
         let row = self
             .value_ref()?
@@ -27,9 +25,7 @@ impl DataTable {
         mut row_index: usize,
         values: Option<Vec<CellValue>>,
     ) -> Result<()> {
-        if self.header_is_first_row {
-            row_index += 1;
-        }
+        row_index -= self.y_adjustment() as usize;
 
         let array = self.mut_value_as_array()?;
         array.insert_row(row_index, values)?;
@@ -41,9 +37,7 @@ impl DataTable {
 
     /// Remove a row at the given index.
     pub fn delete_row(&mut self, mut row_index: usize) -> Result<()> {
-        if self.header_is_first_row {
-            row_index += 1;
-        }
+        row_index -= self.y_adjustment() as usize;
 
         let array = self.mut_value_as_array()?;
         array.delete_row(row_index)?;
@@ -84,7 +78,7 @@ pub mod test {
         pretty_print_data_table(&source_data_table, Some("Original Data Table"), None);
 
         let mut data_table = source_data_table.clone();
-        data_table.delete_row(3).unwrap();
+        data_table.delete_row(5).unwrap();
         pretty_print_data_table(&data_table, Some("Data Table without Seattle row"), None);
 
         // this should be a 4x3 array, includes the header row
@@ -92,7 +86,7 @@ pub mod test {
         assert_eq!(data_table.output_size(), expected_size);
 
         let mut data_table = source_data_table.clone();
-        data_table.delete_row(2).unwrap();
+        data_table.delete_row(4).unwrap();
         pretty_print_data_table(&data_table, Some("Data Table without Denver row"), None);
 
         // this should be a 4x3 array, includes the header row

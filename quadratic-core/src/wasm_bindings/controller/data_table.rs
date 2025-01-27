@@ -139,6 +139,7 @@ impl GridController {
         columns_to_remove: Option<Vec<u32>>,
         rows_to_add: Option<Vec<u32>>,
         rows_to_remove: Option<Vec<u32>>,
+        flatten_on_delete: Option<bool>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
@@ -150,6 +151,7 @@ impl GridController {
             columns_to_remove,
             rows_to_add,
             rows_to_remove,
+            flatten_on_delete,
             cursor,
         );
 

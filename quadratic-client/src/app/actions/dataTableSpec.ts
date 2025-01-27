@@ -257,16 +257,17 @@ export const insertTableColumn = (increment: number = 0) => {
   const column = getColumn();
 
   if (table && column !== undefined) {
-    quadraticCore.dataTableMutations(
-      sheets.current,
-      table.x,
-      table.y,
-      [column + increment],
-      undefined,
-      undefined,
-      undefined,
-      sheets.getCursorPosition()
-    );
+    quadraticCore.dataTableMutations({
+      sheetId: sheets.current,
+      x: table.x,
+      y: table.y,
+      columns_to_add: [column + increment],
+      columns_to_remove: undefined,
+      rows_to_add: undefined,
+      rows_to_remove: undefined,
+      flatten_on_delete: undefined,
+      cursor: sheets.getCursorPosition(),
+    });
   }
 };
 
@@ -275,16 +276,17 @@ export const removeTableColumn = () => {
   const column = getColumn();
 
   if (table && column !== undefined) {
-    quadraticCore.dataTableMutations(
-      sheets.current,
-      table.x,
-      table.y,
-      undefined,
-      [column],
-      undefined,
-      undefined,
-      sheets.getCursorPosition()
-    );
+    quadraticCore.dataTableMutations({
+      sheetId: sheets.current,
+      x: table.x,
+      y: table.y,
+      columns_to_add: undefined,
+      columns_to_remove: [column],
+      rows_to_add: undefined,
+      rows_to_remove: undefined,
+      flatten_on_delete: undefined,
+      cursor: sheets.getCursorPosition(),
+    });
   }
 };
 
@@ -320,16 +322,17 @@ export const insertTableRow = (increment: number = 0) => {
   const row = getRow();
 
   if (table && row !== undefined) {
-    quadraticCore.dataTableMutations(
-      sheets.current,
-      table.x,
-      table.y,
-      undefined,
-      undefined,
-      [row + increment],
-      undefined,
-      sheets.getCursorPosition()
-    );
+    quadraticCore.dataTableMutations({
+      sheetId: sheets.current,
+      x: table.x,
+      y: table.y,
+      columns_to_add: undefined,
+      columns_to_remove: undefined,
+      rows_to_add: [row + increment],
+      rows_to_remove: undefined,
+      flatten_on_delete: undefined,
+      cursor: sheets.getCursorPosition(),
+    });
   }
 };
 
@@ -338,16 +341,17 @@ export const removeTableRow = () => {
   const row = getRow();
 
   if (table && row !== undefined) {
-    quadraticCore.dataTableMutations(
-      sheets.current,
-      table.x,
-      table.y,
-      undefined,
-      undefined,
-      undefined,
-      [row - 1],
-      sheets.getCursorPosition()
-    );
+    quadraticCore.dataTableMutations({
+      sheetId: sheets.current,
+      x: table.x,
+      y: table.y,
+      columns_to_add: undefined,
+      columns_to_remove: undefined,
+      rows_to_add: undefined,
+      rows_to_remove: [row - 1],
+      flatten_on_delete: undefined,
+      cursor: sheets.getCursorPosition(),
+    });
   }
 };
 

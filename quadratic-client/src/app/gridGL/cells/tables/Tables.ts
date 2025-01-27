@@ -200,7 +200,7 @@ export class Tables extends Container<Table> {
   };
 
   // Checks if the mouse cursor is hovering over a table or table heading.
-  checkHover(world: Point, event: PointerEvent) {
+  checkHover = (world: Point, event: PointerEvent) => {
     // don't allow hover when the mouse is over the headings
     if (world.y < pixiApp.viewport.y - pixiApp.headings.headingSize.height) return;
 
@@ -222,7 +222,7 @@ export class Tables extends Container<Table> {
         this.hoverTable.showActive(false);
       }
     }
-  }
+  };
 
   isTable(x: number, y: number): boolean {
     return this.children.some((table) => table.codeCell.x === x && table.codeCell.y === y);

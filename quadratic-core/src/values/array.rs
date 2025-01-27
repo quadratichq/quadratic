@@ -405,7 +405,7 @@ impl Array {
 
         match height {
             Some(h) => {
-                let start = remove_at_index * width - width;
+                let start = remove_at_index * width;
                 let end = std::cmp::min(start + width, values_len);
 
                 if start <= end {

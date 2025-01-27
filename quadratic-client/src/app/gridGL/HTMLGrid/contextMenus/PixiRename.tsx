@@ -47,6 +47,7 @@ export const PixiRename = (props: Props) => {
 
   const [inputEl, setInputEl] = useState<HTMLInputElement | null>(null);
   const ref = useCallback((node: HTMLInputElement | null) => setInputEl(node), [setInputEl]);
+  const skipSaveRef = useRef<boolean>(false);
 
   const close = useCallback(() => {
     onClose();
@@ -64,6 +65,7 @@ export const PixiRename = (props: Props) => {
   const saveAndClose = useCallback(() => {
     if (inputEl?.value !== defaultValue && validate(inputEl?.value ?? '')) {
       onSave(inputEl?.value ?? '');
+      skipSaveRef.current = true;
     }
     close();
   }, [close, defaultValue, inputEl?.value, onSave, validate]);
@@ -90,11 +92,10 @@ export const PixiRename = (props: Props) => {
     }
   }, [inputEl, noScale]);
 
-  const escapeRef = useRef<boolean>(false);
   const onKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'Escape') {
-        escapeRef.current = true;
+        skipSaveRef.current = true;
         close();
         e.stopPropagation();
         e.preventDefault();
@@ -125,12 +126,12 @@ export const PixiRename = (props: Props) => {
   // the context menu closes (eg, via a click outside the Input)
   useEffect(() => {
     return () => {
-      if (!escapeRef.current) {
+      if (!skipSaveRef.current) {
         if (inputEl && inputEl.value !== defaultValue && validate(inputEl.value)) {
           onSave(inputEl.value);
         }
       } else {
-        escapeRef.current = false;
+        skipSaveRef.current = false;
       }
     };
   }, [defaultValue, inputEl, onSave, validate]);

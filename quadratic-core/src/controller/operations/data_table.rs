@@ -68,6 +68,7 @@ impl GridController {
         }]
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn data_table_mutations_operations(
         &self,
         sheet_pos: SheetPos,
@@ -75,6 +76,7 @@ impl GridController {
         columns_to_remove: Option<Vec<u32>>,
         rows_to_add: Option<Vec<u32>>,
         rows_to_remove: Option<Vec<u32>>,
+        flatten_on_delete: Option<bool>,
         _cursor: Option<String>,
     ) -> Vec<Operation> {
         let mut ops = vec![];
@@ -92,7 +94,11 @@ impl GridController {
 
         if let Some(columns_to_remove) = columns_to_remove {
             for index in columns_to_remove {
-                ops.push(Operation::DeleteDataTableColumn { sheet_pos, index });
+                ops.push(Operation::DeleteDataTableColumn {
+                    sheet_pos,
+                    index,
+                    flatten: flatten_on_delete.unwrap_or(false),
+                });
             }
         }
 
@@ -108,7 +114,11 @@ impl GridController {
 
         if let Some(rows_to_remove) = rows_to_remove {
             for index in rows_to_remove {
-                ops.push(Operation::DeleteDataTableRow { sheet_pos, index });
+                ops.push(Operation::DeleteDataTableRow {
+                    sheet_pos,
+                    index,
+                    flatten: flatten_on_delete.unwrap_or(false),
+                });
             }
         }
 

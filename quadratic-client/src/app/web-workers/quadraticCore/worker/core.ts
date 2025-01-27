@@ -1200,17 +1200,20 @@ class Core {
     );
   }
 
-  dataTableMutations(
-    sheetId: string,
-    x: number,
-    y: number,
-    columns_to_add?: number[],
-    columns_to_remove?: number[],
-    rows_to_add?: number[],
-    rows_to_remove?: number[],
-    cursor?: string
-  ) {
+  dataTableMutations(args: {
+    sheetId: string;
+    x: number;
+    y: number;
+    columns_to_add?: number[];
+    columns_to_remove?: number[];
+    rows_to_add?: number[];
+    rows_to_remove?: number[];
+    flatten_on_delete?: boolean;
+    cursor?: string;
+  }) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const { sheetId, x, y, columns_to_add, columns_to_remove, rows_to_add, rows_to_remove, flatten_on_delete, cursor } =
+      args;
     this.gridController.dataTableMutations(
       sheetId,
       posToPos(x, y),
@@ -1218,6 +1221,7 @@ class Core {
       columns_to_remove ? new Uint32Array(columns_to_remove) : undefined,
       rows_to_add ? new Uint32Array(rows_to_add) : undefined,
       rows_to_remove ? new Uint32Array(rows_to_remove) : undefined,
+      flatten_on_delete,
       cursor
     );
   }

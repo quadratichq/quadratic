@@ -162,7 +162,7 @@ export class PointerDataTable {
       let deleteRectangles: Rectangle[] = [];
 
       const boxCellsRectangle = selection.clone();
-      boxCellsRectangle.height += 2;
+      boxCellsRectangle.height += 1;
       boxCellsRectangle.width += 1;
 
       // Handle changes in rows
@@ -283,16 +283,17 @@ export class PointerDataTable {
           let adjustHeight = show_header ? 1 : 0;
 
           // update the table
-          quadraticCore.dataTableMutations(
-            sheet.id,
-            this.tableBounds.column,
-            this.tableBounds.row,
-            toArray(columnsToAdd, width, (i, base) => base + i),
-            toArray(columnsToRemove, width, (i, base) => base - i - 1),
-            toArray(rowsToAdd, height, (i, base) => base + i),
-            toArray(rowsToRemove, height, (i, base) => base - i - adjustHeight),
-            sheets.getCursorPosition()
-          );
+          quadraticCore.dataTableMutations({
+            sheetId: sheet.id,
+            x: this.tableBounds.column,
+            y: this.tableBounds.row,
+            columns_to_add: toArray(columnsToAdd, width, (i, base) => base + i),
+            columns_to_remove: toArray(columnsToRemove, width, (i, base) => base - i - 1),
+            rows_to_add: toArray(rowsToAdd, height, (i, base) => base + i),
+            rows_to_remove: toArray(rowsToRemove, height, (i, base) => base - i - adjustHeight),
+            flatten_on_delete: true,
+            cursor: sheets.getCursorPosition(),
+          });
         }
 
         // update the selection

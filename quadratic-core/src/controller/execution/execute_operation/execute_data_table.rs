@@ -1,12 +1,13 @@
 use crate::{
     a1::A1Selection,
+    cell_values::CellValues,
     cellvalue::Import,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
     grid::{DataTable, DataTableKind, SheetId},
-    ArraySize, CellValue, Pos, Rect, SheetRect,
+    Array, ArraySize, CellValue, Pos, Rect, SheetRect,
 };
 
 use anyhow::{bail, Result};
@@ -622,7 +623,11 @@ impl GridController {
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?; // optimize this
 
             let forward_operations = vec![op];
-            let reverse_operations = vec![Operation::DeleteDataTableColumn { sheet_pos, index }];
+            let reverse_operations = vec![Operation::DeleteDataTableColumn {
+                sheet_pos,
+                index,
+                flatten: false,
+            }];
             self.data_table_operations(
                 transaction,
                 forward_operations,
@@ -641,7 +646,12 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) -> Result<()> {
-        if let Operation::DeleteDataTableColumn { sheet_pos, index } = op.to_owned() {
+        if let Operation::DeleteDataTableColumn {
+            sheet_pos,
+            index,
+            flatten,
+        } = op.to_owned()
+        {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
@@ -659,16 +669,41 @@ impl GridController {
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
 
+            let mut reverse_operations = vec![Operation::InsertDataTableColumn {
+                sheet_pos,
+                index,
+                column_header: old_column_header,
+                values: Some(old_values.to_owned()),
+            }];
+
+            if flatten && !old_values.is_empty() {
+                let values = Array::from(
+                    old_values
+                        .into_iter()
+                        .map(|v| vec![v])
+                        .collect::<Vec<Vec<_>>>(),
+                );
+                let start_pos = Pos::new(
+                    data_table_pos.x + index as i64,
+                    data_table_pos.y + data_table.y_adjustment(),
+                );
+                let rect = Rect::from_pos_and_size(start_pos, values.size());
+                let _ = sheet.set_cell_values(rect, &values);
+                drop(values);
+
+                transaction.add_dirty_hashes_from_sheet_rect(rect.to_sheet_rect(sheet_id));
+
+                reverse_operations.push(Operation::SetCellValues {
+                    sheet_pos: start_pos.to_sheet_pos(sheet_id),
+                    values: CellValues::new(rect.width(), rect.height()),
+                });
+            }
+
             self.send_updated_bounds(sheet_id);
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?; // optimize this
 
             let forward_operations = vec![op];
-            let reverse_operations = vec![Operation::InsertDataTableColumn {
-                sheet_pos,
-                index,
-                column_header: old_column_header,
-                values: Some(old_values),
-            }];
+
             self.data_table_operations(
                 transaction,
                 forward_operations,
@@ -709,7 +744,11 @@ impl GridController {
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?; // optimize this
 
             let forward_operations = vec![op];
-            let reverse_operations = vec![Operation::DeleteDataTableRow { sheet_pos, index }];
+            let reverse_operations = vec![Operation::DeleteDataTableRow {
+                sheet_pos,
+                index,
+                flatten: false,
+            }];
             self.data_table_operations(
                 transaction,
                 forward_operations,
@@ -728,7 +767,12 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) -> Result<()> {
-        if let Operation::DeleteDataTableRow { sheet_pos, index } = op.to_owned() {
+        if let Operation::DeleteDataTableRow {
+            sheet_pos,
+            index,
+            flatten,
+        } = op.to_owned()
+        {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
@@ -742,15 +786,32 @@ impl GridController {
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
 
+            let mut reverse_operations = vec![Operation::InsertDataTableRow {
+                sheet_pos,
+                index,
+                values: Some(old_values.to_owned()),
+            }];
+
+            if flatten && !old_values.is_empty() {
+                let values = Array::from(vec![old_values]);
+                let start_pos = Pos::new(data_table_pos.x, data_table_pos.y + index as i64);
+                let rect = Rect::from_pos_and_size(start_pos, values.size());
+                let _ = sheet.set_cell_values(rect, &values);
+                drop(values);
+
+                transaction.add_dirty_hashes_from_sheet_rect(rect.to_sheet_rect(sheet_id));
+
+                reverse_operations.push(Operation::SetCellValues {
+                    sheet_pos: start_pos.to_sheet_pos(sheet_id),
+                    values: CellValues::new(rect.width(), rect.height()),
+                });
+            }
+
             self.send_updated_bounds(sheet_id);
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?; // optimize this
 
             let forward_operations = vec![op];
-            let reverse_operations = vec![Operation::InsertDataTableRow {
-                sheet_pos,
-                index,
-                values: Some(old_values),
-            }];
+
             self.data_table_operations(
                 transaction,
                 forward_operations,
@@ -1308,7 +1369,11 @@ mod tests {
 
         let sheet_pos = SheetPos::from((pos, sheet_id));
         let index = 0;
-        let op = Operation::DeleteDataTableColumn { sheet_pos, index };
+        let op = Operation::DeleteDataTableColumn {
+            sheet_pos,
+            index,
+            flatten: true,
+        };
         let mut transaction = PendingTransaction::default();
         gc.execute_delete_data_table_column(&mut transaction, op)
             .unwrap();
@@ -1371,7 +1436,11 @@ mod tests {
         let index = 2;
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
         let values = data_table.get_row(index as usize + 1).unwrap();
-        let op = Operation::DeleteDataTableRow { sheet_pos, index };
+        let op = Operation::DeleteDataTableRow {
+            sheet_pos,
+            index,
+            flatten: true,
+        };
         let mut transaction = PendingTransaction::default();
         gc.execute_delete_data_table_row(&mut transaction, op)
             .unwrap();

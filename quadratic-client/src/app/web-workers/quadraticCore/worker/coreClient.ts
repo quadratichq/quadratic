@@ -651,16 +651,17 @@ class CoreClient {
         return;
 
       case 'clientCoreDataTableMutations':
-        core.dataTableMutations(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.columns_to_add,
-          e.data.columns_to_remove,
-          e.data.rows_to_add,
-          e.data.rows_to_remove,
-          e.data.cursor
-        );
+        core.dataTableMutations({
+          sheetId: e.data.sheetId,
+          x: e.data.x,
+          y: e.data.y,
+          columns_to_add: e.data.columns_to_add,
+          columns_to_remove: e.data.columns_to_remove,
+          rows_to_add: e.data.rows_to_add,
+          rows_to_remove: e.data.rows_to_remove,
+          flatten_on_delete: e.data.flatten_on_delete,
+          cursor: e.data.cursor,
+        });
         return;
 
       case 'clientCoreSortDataTable':
