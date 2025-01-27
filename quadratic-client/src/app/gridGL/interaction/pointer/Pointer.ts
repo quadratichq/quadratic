@@ -1,13 +1,13 @@
 import { PointerAutoComplete } from '@/app/gridGL/interaction/pointer/PointerAutoComplete';
 import { PointerCellMoving } from '@/app/gridGL/interaction/pointer/PointerCellMoving';
 import { PointerCursor } from '@/app/gridGL/interaction/pointer/pointerCursor';
-import { PointerDataTable } from '@/app/gridGL/interaction/pointer/PointerDataTable';
 import { PointerDown } from '@/app/gridGL/interaction/pointer/PointerDown';
 import { PointerHeading } from '@/app/gridGL/interaction/pointer/PointerHeading';
 import { PointerHtmlCells } from '@/app/gridGL/interaction/pointer/PointerHtmlCells';
 import { PointerImages } from '@/app/gridGL/interaction/pointer/PointerImages';
 import { PointerLink } from '@/app/gridGL/interaction/pointer/PointerLink';
 import { PointerTable } from '@/app/gridGL/interaction/pointer/PointerTable';
+import { PointerTableResize } from '@/app/gridGL/interaction/pointer/PointerTableResize';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
@@ -18,7 +18,7 @@ export class Pointer {
   pointerHeading: PointerHeading;
   private pointerImages: PointerImages;
   pointerAutoComplete: PointerAutoComplete;
-  pointerDataTable: PointerDataTable;
+  pointerTableResize: PointerTableResize;
   private pointerHtmlCells: PointerHtmlCells;
   private pointerCursor: PointerCursor;
   pointerDown: PointerDown;
@@ -29,7 +29,7 @@ export class Pointer {
   constructor(viewport: Viewport) {
     this.pointerHeading = new PointerHeading();
     this.pointerAutoComplete = new PointerAutoComplete();
-    this.pointerDataTable = new PointerDataTable();
+    this.pointerTableResize = new PointerTableResize();
     this.pointerImages = new PointerImages();
     this.pointerDown = new PointerDown();
     this.pointerCursor = new PointerCursor();
@@ -108,7 +108,7 @@ export class Pointer {
       this.pointerHeading.pointerDown(world, event) ||
       this.pointerLink.pointerDown(world, event) ||
       this.pointerAutoComplete.pointerDown(world) ||
-      this.pointerDataTable.pointerDown(world) ||
+      this.pointerTableResize.pointerDown(world) ||
       this.pointerDown.pointerDown(world, event);
 
     this.updateCursor();
@@ -133,7 +133,7 @@ export class Pointer {
       this.pointerTable.pointerMove(world) ||
       this.pointerHeading.pointerMove(world) ||
       this.pointerAutoComplete.pointerMove(world) ||
-      this.pointerDataTable.pointerMove(world) ||
+      this.pointerTableResize.pointerMove(world) ||
       this.pointerDown.pointerMove(world, event) ||
       this.pointerCursor.pointerMove(world, event) ||
       this.pointerLink.pointerMove(world, event);
@@ -149,7 +149,7 @@ export class Pointer {
       this.pointerImages.cursor ??
       this.pointerHeading.cursor ??
       this.pointerAutoComplete.cursor ??
-      this.pointerDataTable.cursor ??
+      this.pointerTableResize.cursor ??
       this.pointerLink.cursor ??
       this.pointerTable.cursor;
 
@@ -166,7 +166,7 @@ export class Pointer {
       this.pointerTable.pointerUp() ||
       this.pointerHeading.pointerUp() ||
       this.pointerAutoComplete.pointerUp() ||
-      this.pointerDataTable.pointerUp() ||
+      this.pointerTableResize.pointerUp() ||
       this.pointerDown.pointerUp(event);
 
     this.updateCursor();
@@ -187,11 +187,11 @@ export class Pointer {
       this.pointerImages.handleEscape() ||
       this.pointerHeading.handleEscape() ||
       this.pointerAutoComplete.handleEscape() ||
-      this.pointerDataTable.handleEscape()
+      this.pointerTableResize.handleEscape()
     );
   }
 
   getCursor(): string {
-    return this.pointerHeading.cursor || this.pointerAutoComplete.cursor || this.pointerDataTable.cursor || 'default';
+    return this.pointerHeading.cursor || this.pointerAutoComplete.cursor || this.pointerTableResize.cursor || 'default';
   }
 }

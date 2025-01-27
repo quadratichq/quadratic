@@ -228,6 +228,14 @@ export class Tables extends Container<Table> {
     return this.children.some((table) => table.codeCell.x === x && table.codeCell.y === y);
   }
 
+  isWithinCodeCell(x: number, y: number): boolean {
+    const table = this.getTableFromTableCell(x, y);
+    if (!table) {
+      return false;
+    }
+    return table.isCodeCell();
+  }
+
   private isTableActive(table: Table): boolean {
     return this.activeTable === table || this.hoverTable === table || this.contextMenuTable === table;
   }

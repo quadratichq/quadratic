@@ -70,14 +70,14 @@ export class TableOutline extends Graphics {
         8
       );
 
-      pixiApp.pointer.pointerDataTable.selection = cornerHandle;
-      pixiApp.pointer.pointerDataTable.selectionRight = rightHandle;
-      pixiApp.pointer.pointerDataTable.selectionBottom = bottomHandle;
-      pixiApp.pointer.pointerDataTable.tableBounds = this.table.sheet.getColumnRowFromScreen(
+      pixiApp.pointer.pointerTableResize.selection = cornerHandle;
+      pixiApp.pointer.pointerTableResize.selectionRight = rightHandle;
+      pixiApp.pointer.pointerTableResize.selectionBottom = bottomHandle;
+      pixiApp.pointer.pointerTableResize.tableBounds = this.table.sheet.getColumnRowFromScreen(
         this.table.tableBounds.x,
         this.table.tableBounds.y
       );
-      pixiApp.pointer.pointerDataTable.codeCell = this.table.codeCell;
+      pixiApp.pointer.pointerTableResize.codeCell = this.table.codeCell;
     }
 
     // draw the spill error boundaries
