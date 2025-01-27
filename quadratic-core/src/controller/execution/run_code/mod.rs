@@ -147,6 +147,17 @@ impl GridController {
             transaction.add_fill_cells(sheet_id);
         }
 
+        // update borders if needed old or new data table
+        if new_data_table
+            .as_ref()
+            .is_some_and(|dt| !dt.borders.is_default())
+            || old_data_table
+                .as_ref()
+                .is_some_and(|dt| !dt.borders.is_default())
+        {
+            transaction.add_borders(sheet_id);
+        }
+
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
             transaction.add_from_code_run(
                 sheet_id,

@@ -64,13 +64,7 @@ export const ContextMenuBase = ({
   const bounds = pixiApp.viewport.getVisibleBounds();
 
   return (
-    <DropdownMenu
-      modal={false}
-      open={open}
-      onOpenChange={(dropdownOpen) => {
-        // if (!dropdownOpen) onClose();
-      }}
-    >
+    <DropdownMenu modal={false} open={open}>
       <DropdownMenuTrigger
         style={{ left, top, transform: `scale(${1 / pixiApp.viewport.scale.x})` }}
         className="pointer-events-auto absolute h-0 w-0 opacity-0"
@@ -87,6 +81,7 @@ export const ContextMenuBase = ({
         hideWhenDetached={false}
         avoidCollisions={true}
         updatePositionStrategy="always"
+        onClick={onClose}
       >
         {children({ contextMenu })}
       </DropdownMenuContent>

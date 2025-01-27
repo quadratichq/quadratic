@@ -283,7 +283,7 @@ impl Sheet {
         column.values.get(&pos.y).cloned()
     }
 
-    /// Returns the ref of thecell_value at the Pos in column.values. This does
+    /// Returns the ref of the cell_value at the Pos in column.values. This does
     /// not check or return results within data_tables.
     pub fn cell_value_ref(&self, pos: Pos) -> Option<&CellValue> {
         let column = self.get_column(pos.x)?;
@@ -333,8 +333,8 @@ impl Sheet {
         if let Ok(data_table_pos) = self.first_data_table_within(pos) {
             if let Ok(data_table) = self.data_table_result(data_table_pos) {
                 let pos = Pos {
-                    x: pos.x - data_table_pos.x + 1,
-                    y: pos.y - data_table_pos.y + 1,
+                    x: pos.x + 1 - data_table_pos.x,
+                    y: pos.y + 1 - data_table_pos.y + data_table.y_adjustment(),
                 };
                 if let Some(mut table_format) = data_table.formats.try_format(pos) {
                     table_format.wrap = table_format.wrap.or(Some(CellWrap::Clip));

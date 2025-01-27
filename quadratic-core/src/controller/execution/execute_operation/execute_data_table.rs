@@ -128,6 +128,9 @@ impl GridController {
             let data_table_pos = Pos::from(sheet_pos);
             let mut data_table_rect = data_table.output_sheet_rect(sheet_pos, false);
 
+            // mark table fills and borders as dirty
+            data_table.add_dirty_fills_and_borders(transaction, sheet_id);
+
             let old_values = sheet.get_code_cell_values(data_table_rect.into());
             sheet.delete_cell_values(data_table_rect.into());
 
@@ -189,6 +192,8 @@ impl GridController {
 
             // send updated bounds to the client after deleting the data table
             self.send_updated_bounds(sheet_id);
+            // mark table fills and borders as dirty
+            // data_table.add_dirty_fills_and_borders(transaction, sheet_id);
 
             let forward_operations = vec![op];
             let reverse_operations = vec![Operation::AddDataTable {
@@ -293,6 +298,7 @@ impl GridController {
             // Pull out the data table via a swap, removing it from the sheet
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table = sheet.delete_data_table(data_table_pos)?;
+
             let data_table_rect = data_table.output_sheet_rect(sheet_pos, false);
 
             let values = data_table.display_value()?.into_array()?;
@@ -311,6 +317,8 @@ impl GridController {
             self.send_updated_bounds(sheet_id);
             // mark new grid rect as dirty
             transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
+            // mark table fills and borders as dirty
+            data_table.add_dirty_fills_and_borders(transaction, sheet_id);
 
             let forward_operations = vec![op];
             let reverse_operations = vec![Operation::AddDataTable {
