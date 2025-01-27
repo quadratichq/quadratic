@@ -15,7 +15,7 @@ export type StateVertical = 'expandDown' | 'expandUp' | 'shrink' | undefined;
 export type StateHorizontal = 'expandRight' | 'expandLeft' | 'shrink' | undefined;
 export type DragDirection = 'right' | 'bottom' | 'corner' | undefined;
 
-export class PointerDataTable {
+export class PointerTableResize {
   private endCell?: JsCoordinate;
   private stateHorizontal: StateHorizontal;
   private stateVertical: StateVertical;
@@ -295,15 +295,6 @@ export class PointerDataTable {
             cursor: sheets.getCursorPosition(),
           });
         }
-
-        // update the selection
-        // sheets.sheet.cursor.selectRect(
-        //   newRectangle.left,
-        //   newRectangle.top,
-        //   newRectangle.right - 1,
-        //   newRectangle.bottom - 1,
-        //   false
-        // );
       }
       this.reset();
       return true;
