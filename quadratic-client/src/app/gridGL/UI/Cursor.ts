@@ -79,13 +79,16 @@ export class Cursor extends Container {
     if (cursor.isSingleSelection() && pixiApp.cellsSheet().tables.isHtmlOrImage(cell)) {
       return;
     }
-    let { x, y, width, height } = sheet.getCellOffsets(cell.x, cell.y);
+    const tableName = pixiApp.cellsSheet().tables.getTableNameBoundsFromCell(cell);
+    let { x, y, width, height } = tableName ?? sheet.getCellOffsets(cell.x, cell.y);
     const color = pixiApp.accentColor;
     const codeCell = codeEditorState.codeCell;
 
     // draw cursor but leave room for cursor indicator if needed
     const indicatorSize =
       hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions) &&
+      !tableName &&
+      !pixiApp.cellsSheet().tables.isColumnHeaderCell(cell) &&
       (!pixiAppSettings.codeEditorState.showCodeEditor ||
         cursor.position.x !== codeCell.pos.x ||
         cursor.position.y !== codeCell.pos.y)
@@ -117,17 +120,32 @@ export class Cursor extends Container {
     }
 
     // draw cursor
-    this.graphics.lineStyle({
-      width: CURSOR_THICKNESS,
-      color,
-      alignment: 0,
-    });
-    this.graphics.moveTo(x, y);
-    this.graphics.lineTo(x + width, y);
-    this.graphics.lineTo(x + width, y + height - indicatorOffset);
-    this.graphics.moveTo(x + width - indicatorOffset, y + height);
-    this.graphics.lineTo(x, y + height);
-    this.graphics.lineTo(x, y);
+    if (tableName) {
+      this.graphics.lineStyle({
+        width: 1,
+        color: 0xffffff,
+        alignment: 0,
+      });
+      const offset = 1;
+      this.graphics.moveTo(x + offset, y + offset);
+      this.graphics.lineTo(x + width - offset, y + offset);
+      this.graphics.lineTo(x + width - offset, y + height - offset);
+      this.graphics.moveTo(x + width - offset - 1, y + height - offset);
+      this.graphics.lineTo(x + offset, y + height - offset);
+      this.graphics.lineTo(x + offset, y + offset);
+    } else {
+      this.graphics.lineStyle({
+        width: CURSOR_THICKNESS,
+        color,
+        alignment: 0,
+      });
+      this.graphics.moveTo(x, y);
+      this.graphics.lineTo(x + width, y);
+      this.graphics.lineTo(x + width, y + height - indicatorOffset);
+      this.graphics.moveTo(x + width - indicatorOffset, y + height);
+      this.graphics.lineTo(x, y + height);
+      this.graphics.lineTo(x, y);
+    }
 
     if (showInput && inlineShowing) {
       this.graphics.lineStyle({
