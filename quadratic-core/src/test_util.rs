@@ -122,7 +122,7 @@ pub fn assert_cell_value_row(
         if let Some(cell_value) = value.get(index) {
             assert_display_cell_value(grid_controller, sheet_id, x, y, cell_value);
         } else {
-            println!("No value at position ({},{})", index, y);
+            panic!("No value at position ({},{})", index, y);
         }
     }
 }

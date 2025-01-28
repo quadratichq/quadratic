@@ -16,6 +16,7 @@ impl GridController {
     ) -> Result<JsClipboard, String> {
         let (ops, js_clipboard) = self.cut_to_clipboard_operations(selection)?;
         self.start_user_transaction(ops, cursor, TransactionName::CutClipboard);
+
         Ok(js_clipboard)
     }
 

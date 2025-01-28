@@ -1,3 +1,5 @@
+use indexmap::IndexMap;
+
 use crate::a1::A1Selection;
 use crate::cell_values::CellValues;
 use crate::color::Rgba;
@@ -21,6 +23,7 @@ impl Sheet {
         let mut html_body = String::from("<tbody>");
         let mut cells = CellValues::default();
         let mut values = CellValues::default();
+        let mut data_tables = IndexMap::new();
         let mut sheet_bounds: Option<Rect> = None;
         let context = self.a1_context();
 
@@ -248,6 +251,11 @@ impl Sheet {
                     // add the CellValue to cells if the code is not included in the clipboard
                     let include_in_cells = !bounds.contains(data_table_pos);
 
+                    // if the source cell is included in the clipboard, add the data_table to the clipboard
+                    if !include_in_cells {
+                        data_tables.insert(data_table_pos, data_table.clone());
+                    }
+
                     // add the code_run output to clipboard.values
                     for y in y_start..=y_end {
                         for x in x_start..=x_end {
@@ -272,13 +280,8 @@ impl Sheet {
                 });
         }
 
-        dbgjs!(format!("values: {:?}", values));
-        dbgjs!(format!("cells: {:?}", cells));
-
         let formats = self.formats.to_clipboard(self, selection);
-
         let borders = self.borders.to_clipboard(self, selection);
-
         let validations = self
             .validations
             .to_clipboard(selection, &clipboard_origin, &context);
@@ -293,6 +296,7 @@ impl Sheet {
             origin: clipboard_origin,
             selection: selection.clone(),
             validations,
+            data_tables,
             operation: clipboard_operation,
         };
 
