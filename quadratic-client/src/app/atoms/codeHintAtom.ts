@@ -1,19 +1,18 @@
-import { cellTypeMenuOpenedCountAtom } from '@/app/atoms/cellTypeMenuOpenedCountAtom';
 import { codeEditorShowSnippetsPopoverAtom } from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
 import type { SheetBounds } from '@/app/quadratic-core-types';
+import { isMobile } from 'react-device-detect';
 import { atom, DefaultValue, selector } from 'recoil';
 
 interface CodeHintState {
   sheetEmpty: boolean;
-  multipleSelection: boolean;
 }
 
 const defaultCodeHintState: CodeHintState = {
-  sheetEmpty: sheets.initialized ? sheets.sheet.bounds.type === 'empty' : false,
-  multipleSelection: false,
+  sheetEmpty: sheets.initialized ? fileHasData() : false,
 };
 
 export const codeHintAtom = atom({
@@ -21,33 +20,23 @@ export const codeHintAtom = atom({
   default: defaultCodeHintState,
   effects: [
     ({ setSelf }) => {
-      const updateMultipleSelection = () => {
-        const multipleSelection = sheets.sheet.cursor.isMultiCursor();
-        setSelf((prev) => {
-          if (prev instanceof DefaultValue) return prev;
-          return { ...prev, multipleSelection, sheetEmpty: sheets.sheet.bounds.type === 'empty' };
-        });
-      };
-
       const handleChangeSheet = () => {
         setSelf((prev) => {
           if (prev instanceof DefaultValue) return prev;
-          return { ...prev, sheetEmpty: sheets.sheet.bounds.type === 'empty' };
+          return { ...prev, sheetEmpty: fileHasData() };
         });
       };
 
       const updateSheetEmpty = (sheetBounds: SheetBounds) => {
         setSelf((prev) => {
           if (prev instanceof DefaultValue) return prev;
-          return { ...prev, sheetEmpty: sheetBounds.bounds.type === 'empty' };
+          return { ...prev, sheetEmpty: fileHasData() };
         });
       };
 
-      events.on('cursorPosition', updateMultipleSelection);
       events.on('changeSheet', handleChangeSheet);
       events.on('sheetBounds', updateSheetEmpty);
       return () => {
-        events.off('cursorPosition', updateMultipleSelection);
         events.off('changeSheet', handleChangeSheet);
         events.off('sheetBounds', updateSheetEmpty);
       };
@@ -58,16 +47,13 @@ export const codeHintAtom = atom({
 export const showCodeHintState = selector({
   key: 'showCodeHint',
   get: ({ get }) => {
-    const cellTypeMenuOpenedCount = get(cellTypeMenuOpenedCountAtom);
-    const { sheetEmpty, multipleSelection } = get(codeHintAtom);
+    // const cellTypeMenuOpenedCount = get(cellTypeMenuOpenedCountAtom);
+    const { sheetEmpty } = get(codeHintAtom);
     const showCodeEditor = get(codeEditorShowSnippetsPopoverAtom);
     const permissions = get(editorInteractionStatePermissionsAtom);
     return (
-      cellTypeMenuOpenedCount < 4 &&
-      sheetEmpty &&
-      !multipleSelection &&
-      !showCodeEditor &&
-      permissions.includes('FILE_EDIT')
+      // cellTypeMenuOpenedCount < 4 &&
+      sheetEmpty && !showCodeEditor && permissions.includes('FILE_EDIT') && !isMobile
     );
   },
 });

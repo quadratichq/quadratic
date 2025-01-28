@@ -1,14 +1,12 @@
 import { showCodeHintState } from '@/app/atoms/codeHintAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
-import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
 
 export const CodeHint = () => {
-  const sheetNotEmpty = sheets.sheet.bounds.type === 'nonEmpty';
   const showCodeHint = useRecoilValue(showCodeHintState);
 
-  if (isMobile || sheetNotEmpty || !showCodeHint) return null;
+  if (!showCodeHint) return null;
 
   const offset = sheets.sheet.getCellOffsets(1, 1);
   return (
