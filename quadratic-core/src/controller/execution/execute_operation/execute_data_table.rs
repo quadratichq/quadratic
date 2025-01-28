@@ -661,11 +661,11 @@ impl GridController {
             let old_column_header = data_table
                 .get_column_header(index as usize)
                 .map(|header| header.name.to_owned().to_string());
-            let old_values = data_table.get_column(index as usize)?;
-
-            data_table.delete_column(index as usize)?;
 
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
+
+            let old_values = data_table.get_column(index as usize)?;
+            data_table.delete_column(index as usize)?;
 
             let data_table_rect = data_table
                 .output_rect(data_table_pos, true)
@@ -779,10 +779,11 @@ impl GridController {
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
-            let old_values = data_table.get_row(index as usize)?;
-            data_table.delete_row(index as usize)?;
 
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
+
+            let old_values = data_table.get_row(index as usize)?;
+            data_table.delete_row(index as usize)?;
 
             let data_table_rect = data_table
                 .output_rect(data_table_pos, true)
