@@ -1,6 +1,6 @@
 import { getFileType, stripExtension, supportedFileTypes, uploadFile } from '@/app/helpers/files';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
-import { useGetCSVImportSettings } from '@/app/ui/hooks/useGetCSVImportSettings';
+import { DEFAULT_CSV_DELIMITER, DEFAULT_HAS_HEADING } from '@/app/ui/components/CSVImportSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { FileImportProgress } from '@/dashboard/atoms/filesImportProgressAtom';
 import { filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAtom';
@@ -21,7 +21,6 @@ export function useFileImport() {
   const setFilesImportProgressListState = useSetRecoilState(filesImportProgressListAtom);
 
   const { addGlobalSnackbar } = useGlobalSnackbar();
-  const { getCSVImportSettings } = useGetCSVImportSettings();
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -105,21 +104,21 @@ export function useFileImport() {
       }
       const totalFiles = files.length;
 
-      let csvDelimiter: number | undefined = ','.charCodeAt(0);
-      let hasHeading: boolean | undefined = true;
-      const firstCSVFile = files.find((file) => getFileType(file) === 'csv');
-      if (firstCSVFile) {
-        try {
-          const importSettings = await getCSVImportSettings(firstCSVFile);
-          csvDelimiter = importSettings.csvDelimiter;
-          hasHeading = importSettings.hasHeading;
-        } catch (e) {
-          if (!(e instanceof Error && e.message === 'Cancelled')) {
-            console.error(e);
-          }
-          return;
-        }
-      }
+      let csvDelimiter: number | undefined = DEFAULT_CSV_DELIMITER.charCodeAt(0);
+      let hasHeading: boolean | undefined = DEFAULT_HAS_HEADING;
+      // const firstCSVFile = files.find((file) => getFileType(file) === 'csv');
+      // if (firstCSVFile) {
+      //   try {
+      //     const importSettings = await getCSVImportSettings(firstCSVFile);
+      //     csvDelimiter = importSettings.csvDelimiter;
+      //     hasHeading = importSettings.hasHeading;
+      //   } catch (e) {
+      //     if (!(e instanceof Error && e.message === 'Cancelled')) {
+      //       console.error(e);
+      //     }
+      //     return;
+      //   }
+      // }
 
       setFilesImportProgressState(() => ({
         importing: true,
@@ -272,14 +271,7 @@ export function useFileImport() {
 
       setFilesImportProgressState((prev) => ({ ...prev, importing: false }));
     },
-    [
-      addGlobalSnackbar,
-      getCSVImportSettings,
-      location.pathname,
-      navigate,
-      setFilesImportProgressListState,
-      setFilesImportProgressState,
-    ]
+    [addGlobalSnackbar, location.pathname, navigate, setFilesImportProgressListState, setFilesImportProgressState]
   );
 
   return handleImport;
