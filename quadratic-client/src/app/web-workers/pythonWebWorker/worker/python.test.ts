@@ -78,6 +78,7 @@ describe('Python/Pyodide', () => {
         success: true,
         input_python_stack_trace: undefined,
         code: '\n      5 + 3\n',
+        has_headers: false,
         col_offset: 0,
         end_col_offset: 5,
         end_lineno: 2,
