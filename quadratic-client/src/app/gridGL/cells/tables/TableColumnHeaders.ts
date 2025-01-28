@@ -111,18 +111,20 @@ export class TableColumnHeaders extends Container {
               name: column.name,
               sort: codeCell.sort?.find((s) => s.column_index === column.valueIndex),
               onSortPressed: () => this.onSortPressed(column),
+              columnY: this.table.codeCell.show_ui && this.table.codeCell.show_name ? this.headerHeight : 0,
             })
           );
         } else {
           // otherwise, update the existing column header (this is needed to keep
           // the sort button hover working properly)
-          this.columns.children[index].updateHeader(
+          this.columns.children[index].updateHeader({
             x,
             width,
-            this.height,
-            column.name,
-            codeCell.sort?.find((s) => s.column_index === column.valueIndex)
-          );
+            height: this.headerHeight,
+            name: column.name,
+            sort: codeCell.sort?.find((s) => s.column_index === column.valueIndex),
+            columnY: this.table.codeCell.show_ui && this.table.codeCell.show_name ? this.headerHeight : 0,
+          });
         }
         x += width;
       });
@@ -154,7 +156,8 @@ export class TableColumnHeaders extends Container {
   pointerMove(world: Point): boolean {
     const adjustedWorld = world.clone();
     // need to adjust the y position in the case of sticky headers
-    adjustedWorld.y -= this.y ? this.y - this.table.y : 0;
+    // adjustedWorld.y -= this.y ? this.y - this.table.y : 0;
+    // TDOO!~!!!
     const found = this.columns.children.find((column) => column.pointerMove(adjustedWorld));
     if (!found) {
       this.tableCursor = undefined;

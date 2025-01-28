@@ -103,6 +103,7 @@ export class PixiApp {
     this.background = new Background();
     this.momentumDetector = new MomentumScrollDetector();
     this.copy = new UICopy();
+    this.debug = new Graphics();
   }
 
   init() {
@@ -161,7 +162,7 @@ export class PixiApp {
     this.background = this.viewportContents.addChild(this.background);
 
     // useful for debugging at viewport locations
-    this.debug = this.viewportContents.addChild(new Graphics());
+    this.viewportContents.addChild(this.debug);
 
     this.cellsSheets = this.viewportContents.addChild(this.cellsSheets);
     this.gridLines = this.viewportContents.addChild(this.gridLines);

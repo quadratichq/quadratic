@@ -186,10 +186,7 @@ export class Table extends Container {
   }
 
   intersectsTableName(world: Point): TablePointerDownResult | undefined {
-    if (this.codeCell.show_ui && this.codeCell.show_name) {
-      return this.header.intersectsTableName(world);
-    }
-    return undefined;
+    return this.header.intersectsTableName(world);
   }
 
   getSortDialogPosition(): JsCoordinate | undefined {

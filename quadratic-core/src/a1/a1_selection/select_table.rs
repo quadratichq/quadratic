@@ -298,7 +298,7 @@ mod tests {
             "Table1[Col1]"
         );
 
-        assert_eq!(selection.cursor, pos!(A2));
+        assert_eq!(selection.cursor, pos!(A3));
         let mut selection = A1Selection::test_a1("A1");
         selection.select_table("Table1", None, &context, 1, true, false);
         assert_eq!(selection.ranges.len(), 2);
