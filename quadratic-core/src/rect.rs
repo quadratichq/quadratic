@@ -125,6 +125,13 @@ impl Rect {
         self.x_range().contains(&pos.x) && self.y_range().contains(&pos.y)
     }
 
+    pub fn contains_rect(&self, other: &Rect) -> bool {
+        self.x_range().contains(&other.min.x)
+            && self.x_range().contains(&other.max.x)
+            && self.y_range().contains(&other.min.y)
+            && self.y_range().contains(&other.max.y)
+    }
+
     /// Returns whether a rectangle intersects with the rectangle.
     pub fn intersects(self, other: Rect) -> bool {
         !(other.max.x < self.min.x

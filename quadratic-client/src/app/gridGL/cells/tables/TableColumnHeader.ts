@@ -42,13 +42,14 @@ export class TableColumnHeader extends Container {
     name: string;
     sort?: DataTableSort;
     onSortPressed: Function;
+    columnY: number;
   }) {
     super();
-    const { table, index, x, width, height, name, sort, onSortPressed } = options;
+    const { table, index, x, width, height, name, sort, onSortPressed, columnY } = options;
     this.table = table;
     this.index = index;
     this.onSortPressed = onSortPressed;
-    this.columnHeaderBounds = new Rectangle(table.tableBounds.x + x, table.tableBounds.y, width, height);
+    this.columnHeaderBounds = new Rectangle(table.tableBounds.x + x, table.tableBounds.y + columnY, width, height);
     this.w = width;
     this.h = height;
     this.position.set(x, 0);
@@ -67,8 +68,21 @@ export class TableColumnHeader extends Container {
   }
 
   // Called when the CodeCell is updated
-  updateHeader(x: number, width: number, height: number, name: string, sort?: DataTableSort) {
-    this.columnHeaderBounds = new Rectangle(this.table.tableBounds.x + x, this.table.tableBounds.y, width, height);
+  updateHeader(options: {
+    x: number;
+    width: number;
+    height: number;
+    name: string;
+    sort?: DataTableSort;
+    columnY: number;
+  }) {
+    const { x, width, height, name, sort, columnY } = options;
+    this.columnHeaderBounds = new Rectangle(
+      this.table.tableBounds.x + x,
+      this.table.tableBounds.y + columnY,
+      width,
+      height
+    );
     this.w = width;
     this.h = height;
     this.position.set(x, 0);
@@ -82,7 +96,7 @@ export class TableColumnHeader extends Container {
     let clippedName = name;
     while (clippedName.length > 0 && this.columnName.width + SORT_BUTTON_RADIUS * 2 + SORT_BUTTON_PADDING > width) {
       clippedName = clippedName.slice(0, -1);
-      this.columnName.text = clippedName;
+      this.columnName.text = clippedName + '…';
     }
   }
 
@@ -124,6 +138,7 @@ export class TableColumnHeader extends Container {
 
   pointerMove = (world: Point): boolean => {
     if (!this.sortButton) return false;
+
     if (intersects.rectanglePoint(this.columnHeaderBounds, world)) {
       if (!this.sortButton.visible) {
         this.sortButton.visible = true;
@@ -152,4 +167,8 @@ export class TableColumnHeader extends Container {
       }
     }
   };
+
+  toHoverGrid(y: number) {
+    this.columnHeaderBounds.y = y;
+  }
 }

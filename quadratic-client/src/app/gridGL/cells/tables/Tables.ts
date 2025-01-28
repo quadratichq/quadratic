@@ -263,13 +263,11 @@ export class Tables extends Container<Table> {
       const result = table.pointerMove(world);
       if (result) {
         this.tableCursor = table.tableCursor;
-        if (result !== 'table-name') {
-          if (this.hoverTable !== table) {
-            this.hoverTable?.hideActive();
-          }
-          this.hoverTable = table;
-          table.showActive(false);
+        if (this.hoverTable !== table) {
+          this.hoverTable?.hideActive();
         }
+        this.hoverTable = table;
+        table.showActive(false);
         return true;
       }
     }
@@ -382,10 +380,9 @@ export class Tables extends Container<Table> {
 
   getTableColumnHeaderPosition(x: number, y: number, index: number): Rectangle | undefined {
     const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
-    if (!table) {
-      return;
+    if (table) {
+      return table.getColumnHeaderBounds(index);
     }
-    return table.getColumnHeaderBounds(index);
   }
 
   getTableFromTableCell(x: number, y: number): Table | undefined {
@@ -491,6 +488,29 @@ export class Tables extends Container<Table> {
     }
     return (
       !!htmlCellsHandler.findCodeCell(cell.x, cell.y) || pixiApp.cellsSheet().cellsImages.isImageCell(cell.x, cell.y)
+    );
+  }
+
+  /// Returns the bounds of the table name from a cell
+  getTableNameBoundsFromCell(cell: JsCoordinate): Rectangle | undefined {
+    const table = this.children.find(
+      (table) =>
+        table.codeCell.show_ui && table.codeCell.show_name && table.codeCell.x === cell.x && table.codeCell.y === cell.y
+    );
+    if (table) {
+      return table.getTableNameBounds(true);
+    }
+  }
+
+  /// Returns true if the cell is a column header cell in a table
+  isColumnHeaderCell(cell: JsCoordinate): boolean {
+    return !!this.children.find(
+      (table) =>
+        table.codeCell.show_ui &&
+        table.codeCell.show_columns &&
+        cell.x >= table.codeCell.x &&
+        cell.x <= table.codeCell.x + table.codeCell.w - 1 &&
+        table.codeCell.y + (table.codeCell.show_name ? 1 : 0) === cell.y
     );
   }
 }

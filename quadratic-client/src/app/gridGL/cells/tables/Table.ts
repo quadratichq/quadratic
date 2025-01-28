@@ -156,10 +156,9 @@ export class Table extends Container {
     );
   }
 
-  // Gets the table name bounds
-  getTableNameBounds(): Rectangle {
+  getTableNameBounds(ignoreOverHeadings = false): Rectangle {
     const bounds = this.header.getTableNameBounds().clone();
-    if (this.inOverHeadings) {
+    if (!ignoreOverHeadings && this.inOverHeadings) {
       const bounds = pixiApp.viewport.getVisibleBounds();
       bounds.y = bounds.top;
     }
@@ -168,11 +167,7 @@ export class Table extends Container {
 
   // Gets the column header bounds
   getColumnHeaderBounds(index: number): Rectangle {
-    const bounds = this.header.getColumnHeaderBounds(index);
-    if (this.inOverHeadings) {
-      bounds.y = this.header.getColumnHeaderY();
-    }
-    return bounds;
+    return this.header.getColumnHeaderBounds(index);
   }
 
   pointerMove(world: Point): 'table-name' | boolean {
@@ -197,36 +192,15 @@ export class Table extends Container {
   }
 
   pointerDown(world: Point): TablePointerDownResult | undefined {
-    // if (this.shouldHideTableName()) {
-    //   const result = this.tableName.intersects(world);
-    //   if (result?.type === 'table-name') {
-    //     return { table: this.codeCell, type: 'table-name' };
-    //   }
-    // }
-    // if (this.codeCell.show_ui) {
-    //   return this.columnHeaders.pointerDown(world);
-    // }
-    return undefined;
+    return this.header.pointerDown(world);
   }
 
   intersectsTableName(world: Point): TablePointerDownResult | undefined {
-    if (this.codeCell.show_ui && this.codeCell.show_name) {
-      return this.header.intersectsTableName(world);
-    }
-    return undefined;
+    return this.header.intersectsTableName(world);
   }
 
   getSortDialogPosition(): JsCoordinate | undefined {
-    // we need to force the column headers to be updated first to avoid a
-    // flicker since the update normally happens on the tick instead of on the
-    // viewport event (caused by inconsistency between React and pixi's update
-    // loop)
-    // if (!this.codeCell.show_ui) {
-    //   return { x: this.tableName.x, y: this.tableName.y };
-    // }
-    // this.update(pixiApp.viewport.getVisibleBounds(), pixiApp.headings.headingSize.height / pixiApp.viewport.scaled);
-    // return this.columnHeaders.getSortDialogPosition();
-    return undefined;
+    return this.header.getSortDialogPosition();
   }
 
   getColumnHeaderLines(): { y0: number; y1: number; lines: number[] } {

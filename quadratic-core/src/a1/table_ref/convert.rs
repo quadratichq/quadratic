@@ -17,8 +17,6 @@ impl TableRef {
         };
 
         let (mut y_start, y_end) = table.to_sheet_rows();
-        dbgjs!(format!("y_start 1: {}", y_start));
-        dbgjs!(format!("y_end 1: {}", y_end));
 
         if !force_table_bounds {
             y_start += if !self.headers && !force_columns {
@@ -30,8 +28,6 @@ impl TableRef {
             };
         }
         let y_end = if !self.data { y_start } else { y_end };
-        dbgjs!(format!("y_start 2: {}", y_start));
-        dbgjs!(format!("y_end 2: {}", y_end));
 
         match &self.col_range {
             ColRange::All => {

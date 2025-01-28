@@ -174,17 +174,21 @@ impl A1Selection {
             col_range,
         };
         self.ranges.push(CellRefRange::Table { range: table_ref });
+        let mut y = table.bounds.min.y;
+        if table.show_ui {
+            if table.show_name {
+                y += 1;
+            }
+            if table.show_columns && !headers {
+                y += 1;
+            }
+        }
         self.cursor = Pos {
             x,
-            y: if table.bounds.min.y < screen_row_top {
+            y: if y < screen_row_top {
                 screen_row_top
             } else {
-                table.bounds.min.y
-                    + if headers || table.bounds.height() == 1 {
-                        0
-                    } else {
-                        1
-                    }
+                y
             },
         };
         self.sheet_id = table.sheet_id;
@@ -200,7 +204,8 @@ mod tests {
 
     #[test]
     fn test_select_table() {
-        let context = A1Context::test(&[], &[("Table1", &[("Col1")], Rect::test_a1("A1"))]);
+        let mut context = A1Context::test(&[], &[("Table1", &[("Col1")], Rect::test_a1("A1"))]);
+        context.table_mut("Table1").unwrap().show_ui = false;
         let mut selection = A1Selection::test_a1("A1");
         selection.select_table("Table1", None, &context, 1, false, false);
         assert_eq!(selection.ranges.len(), 1);
@@ -215,7 +220,8 @@ mod tests {
 
     #[test]
     fn test_select_table_col() {
-        let context = A1Context::test(&[], &[("Table1", &[("Col1")], Rect::test_a1("A1"))]);
+        let mut context = A1Context::test(&[], &[("Table1", &[("Col1")], Rect::test_a1("A1"))]);
+        context.table_mut("Table1").unwrap().show_ui = false;
         let mut selection = A1Selection::test_a1("A1");
         selection.select_table(
             "Table1",
@@ -246,7 +252,8 @@ mod tests {
 
     #[test]
     fn test_select_table_append() {
-        let context = A1Context::test(&[], &[("Table1", &[("Col1")], Rect::test_a1("A1"))]);
+        let mut context = A1Context::test(&[], &[("Table1", &[("Col1")], Rect::test_a1("A1"))]);
+        context.table_mut("Table1").unwrap().show_ui = false;
         let mut selection = A1Selection::test_a1("A1");
         selection.select_table("Table1", None, &context, 1, true, false);
         assert_eq!(selection.ranges.len(), 2);
@@ -291,7 +298,7 @@ mod tests {
             "Table1[Col1]"
         );
 
-        assert_eq!(selection.cursor, pos!(A2));
+        assert_eq!(selection.cursor, pos!(A3));
         let mut selection = A1Selection::test_a1("A1");
         selection.select_table("Table1", None, &context, 1, true, false);
         assert_eq!(selection.ranges.len(), 2);
@@ -325,7 +332,7 @@ mod tests {
         selection.move_to(1, 1, false, &context);
 
         selection.select_table("Table1", None, &context, 3, false, false);
-        assert_eq!(selection.cursor, pos!(A6));
+        assert_eq!(selection.cursor, pos!(A7));
         assert_eq!(
             selection.to_string(Some(SheetId::test()), &context),
             "Table1"

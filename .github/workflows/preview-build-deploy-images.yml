@@ -2,25 +2,19 @@ name: Preview
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled, unlabeled]
+    types: [opened, synchronize, reopened]
     branches-ignore:
       - "main"
 
 concurrency:
   group: pr-${{ github.event.pull_request.number }}-build-images
-  cancel-in-progress: ${{ (github.event.action != 'labeled' && github.event.action !=  'unlabeled') || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && startsWith(github.event.label.name, 'build:')) }}
+  cancel-in-progress: true
 
 jobs:
   create_deployment:
     name: Create Deployment
     runs-on: blacksmith-2vcpu-ubuntu-2204
-    if: |
-      (github.head_ref != 'qa' || github.base_ref != 'main') && (
-      github.event.action == 'opened' || 
-      github.event.action == 'synchronize' || 
-      github.event.action == 'reopened' || 
-      (github.event.action == 'labeled' && startsWith(github.event.label.name, 'build:')) ||
-      (github.event.action == 'unlabeled' && startsWith(github.event.label.name, 'build:')))
+    if: github.head_ref != 'qa' || github.base_ref != 'main'
     permissions:
       contents: read
       pull-requests: write
@@ -57,14 +51,14 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             /repos/${{ github.repository }}/deployments \
             -f ref="${{ github.event.pull_request.head.ref }}" \
-            -f environment=preview \
+            -f environment=preview-pr-${{ github.event.pull_request.number }} \
             --jq '.[] | .id' | while read -r id; do
               gh api \
                 --method POST \
                 -H "Accept: application/vnd.github+json" \
                 /repos/${{ github.repository }}/deployments/$id/statuses \
                 -f state="inactive" \
-                -f environment="preview" \
+                -f environment="preview-pr-${{ github.event.pull_request.number }}" \
                 -f description="Superseded by newer deployment"
             done
         env:
@@ -81,7 +75,7 @@ jobs:
             -f description="Building and deploying PR #${{ github.event.pull_request.number }} (${GITHUB_SHA::7})" \
             -F auto_merge=false \
             -f required_contexts\[\] \
-            -f environment=preview \
+            -f environment=preview-pr-${{ github.event.pull_request.number }} \
             -F transient_environment=true \
             -F production_environment=false \
             --jq '.id')
@@ -97,7 +91,7 @@ jobs:
             /repos/${{ github.repository }}/deployments/${{ steps.deployment.outputs.id }}/statuses \
             -f state="in_progress" \
             -f description="Building Docker images..." \
-            -f environment=preview \
+            -f environment=preview-pr-${{ github.event.pull_request.number }} \
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -130,24 +124,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Check for build:wasm-opt:disabled label
-        id: build-wasm-opt-disabled
-        run: |
-          if [[ ${{ contains(github.event.pull_request.labels.*.name, 'build:wasm-opt:disabled') }} == true ]]; then
-            echo "CLIENT_DEV=true" >> $GITHUB_OUTPUT
-          else
-            echo "CLIENT_DEV=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Check for build:cache:disabled label
-        id: build-cache
-        run: |
-          if [[ ${{ contains(github.event.pull_request.labels.*.name, 'build:cache:disabled') }} == true ]]; then
-            echo "CACHE_DISABLED=true" >> $GITHUB_OUTPUT
-          else
-            echo "CACHE_DISABLED=false" >> $GITHUB_OUTPUT
-          fi
 
       - name: Generate Build Metadata
         id: build-metadata
@@ -195,8 +171,7 @@ jobs:
             image=moby/buildkit:latest
             network=host
 
-      - name: Build and push (with cache)
-        if: steps.build-cache.outputs.CACHE_DISABLED == 'false'
+      - name: Build and push
         uses: useblacksmith/build-push-action@v1
         with:
           context: .
@@ -208,25 +183,6 @@ jobs:
             GIT_SHA_SHORT=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
             BRANCH_NAME=${{ steps.build-metadata.outputs.BRANCH_NAME }}
             PR_NUMBER=${{ github.event.pull_request.number }}
-            CLIENT_DEV=${{ steps.build-wasm-opt-disabled.outputs.CLIENT_DEV }}
-          labels: |
-            org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
-            org.opencontainers.image.revision=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
-
-      - name: Build and push (without cache)
-        if: steps.build-cache.outputs.CACHE_DISABLED == 'true'
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: quadratic-${{ matrix.service }}/Dockerfile
-          push: true
-          tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}
-          build-args: |
-            BUILD_TIME=${{ steps.build-metadata.outputs.BUILD_TIME }}
-            GIT_SHA_SHORT=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
-            BRANCH_NAME=${{ steps.build-metadata.outputs.BRANCH_NAME }}
-            PR_NUMBER=${{ github.event.pull_request.number }}
-            CLIENT_DEV=${{ steps.build-wasm-opt-disabled.outputs.CLIENT_DEV }}
           labels: |
             org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
             org.opencontainers.image.revision=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
@@ -263,7 +219,7 @@ jobs:
             /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
             -f state="failure" \
             -f description="Failed to build ${{ matrix.service }} image" \
-            -f environment=preview \
+            -f environment=preview-pr-${{ github.event.pull_request.number }} \
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -312,7 +268,7 @@ jobs:
             /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
             -f state="in_progress" \
             -f description="Deploying images..." \
-            -f environment=preview \
+            -f environment=preview-pr-${{ github.event.pull_request.number }} \
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -517,7 +473,7 @@ jobs:
             -f state="success" \
             -f environment_url="${{ steps.deploy-metadata.outputs.WebsiteURL }}" \
             -f description="Deployment successful!" \
-            -f environment=preview \
+            -f environment=preview-pr-${{ github.event.pull_request.number }} \
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -531,7 +487,7 @@ jobs:
             /repos/${{ github.repository }}/deployments/${{ needs.create_deployment.outputs.deployment_id }}/statuses \
             -f state="failure" \
             -f description="Deployment failed" \
-            -f environment=preview \
+            -f environment=preview-pr-${{ github.event.pull_request.number }} \
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

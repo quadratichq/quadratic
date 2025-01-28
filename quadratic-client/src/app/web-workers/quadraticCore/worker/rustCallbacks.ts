@@ -21,7 +21,7 @@ import type {
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
     addUnsentTransaction: (transactionId: string, transaction: string, operations: number) => void;
-    sendTransaction: (transactionId: string, operations: ArrayBuffer) => void;
+    sendTransaction: (transactionId: string, operations: ArrayBufferLike) => void;
     sendImportProgress: (
       filename: string,
       current: number,
@@ -142,6 +142,11 @@ export const jsSheetFills = (sheetId: string, fills: string) => {
   self.sendSheetFills(sheetId, sheetFills);
 };
 
+export const jsSheetMetaFills = (sheetId: string, sheetMetaFillsStringified: string) => {
+  const sheetMetaFills = JSON.parse(sheetMetaFillsStringified) as JsSheetFill;
+  self.sendSheetMetaFills(sheetId, sheetMetaFills);
+};
+
 export const jsSheetInfoUpdate = (sheetInfoStringified: string) => {
   const sheetInfo = JSON.parse(sheetInfoStringified);
   self.sheetInfoUpdate(sheetInfo);
@@ -247,11 +252,6 @@ export const jsConnection = (
 
 export const jsSendImage = (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => {
   self.sendImage(sheetId, x, y, image, w, h);
-};
-
-export const jsSheetMetaFills = (sheetId: string, sheetMetaFillsStringified: string) => {
-  const sheetMetaFills = JSON.parse(sheetMetaFillsStringified) as JsSheetFill;
-  self.sendSheetMetaFills(sheetId, sheetMetaFills);
 };
 
 export const jsSheetValidations = (sheetId: string, validations: string) => {

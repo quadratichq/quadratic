@@ -96,7 +96,7 @@ impl GridController {
             .ok_or("Unable to find Sheet")?;
 
         let js_clipboard = sheet.copy_to_clipboard(selection, ClipboardOperation::Cut)?;
-        let operations = self.delete_values_and_formatting_operations(selection);
+        let operations = self.delete_values_and_formatting_operations(selection, true);
 
         Ok((operations, js_clipboard))
     }

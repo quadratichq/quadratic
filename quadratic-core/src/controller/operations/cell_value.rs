@@ -7,7 +7,6 @@ use crate::cell_values::CellValues;
 use crate::controller::GridController;
 use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
 use crate::grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind};
-use crate::Pos;
 use crate::{a1::A1Selection, CellValue, SheetPos};
 
 // when a number's decimal is larger than this value, then it will treat it as text (this avoids an attempt to allocate a huge vector)
@@ -131,50 +130,55 @@ impl GridController {
 
     /// Generates and returns the set of operations to delete the values and code in a Selection
     /// Does not commit the operations or create a transaction.
-    pub fn delete_cells_operations(&self, selection: &A1Selection) -> Vec<Operation> {
+    pub fn delete_cells_operations(
+        &self,
+        selection: &A1Selection,
+        force_table_bounds: bool,
+    ) -> Vec<Operation> {
         let mut ops = vec![];
+
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-            let rects = sheet.selection_to_rects(selection, false, false);
+            let rects = sheet.selection_to_rects(selection, false, force_table_bounds);
             for rect in rects {
-                let cell_values = CellValues::new(rect.width(), rect.height());
                 let sheet_pos = SheetPos::from((rect.min.x, rect.min.y, selection.sheet_id));
 
-                // deletable if this is not a data table source cell, or if the data table is readonly (code cell),
-                // or if the data table is a full table selection
-                let can_delete = sheet
-                    .data_tables
-                    .get(&Pos::from(sheet_pos))
-                    .map(|dt| {
-                        let mut dt_height = dt.height(true);
-                        if dt.show_ui {
-                            if dt.show_name {
-                                dt_height += 1;
-                            }
-                            if dt.show_columns {
-                                dt_height += 1;
-                            }
+                if let Ok(data_table_pos) = sheet.first_data_table_within(sheet_pos.into()) {
+                    if let Some(data_table) = sheet.data_table(data_table_pos.to_owned()) {
+                        let mut data_table_rect =
+                            data_table.output_rect(data_table_pos.to_owned(), false);
+                        data_table_rect.min.y += data_table.y_adjustment();
+
+                        let is_full_table_selected = rect.contains_rect(&data_table_rect);
+
+                        let can_delete = is_full_table_selected || data_table.readonly;
+
+                        if can_delete {
+                            ops.push(Operation::DeleteDataTable {
+                                sheet_pos: data_table_pos.to_sheet_pos(sheet_pos.sheet_id),
+                            });
+                        } else {
+                            ops.push(Operation::SetDataTableAt {
+                                sheet_pos,
+                                values: CellValues::new(
+                                    rect.width().min(
+                                        (data_table_rect.max.x - sheet_pos.x + 1).max(1) as u32,
+                                    ),
+                                    rect.height().min(
+                                        (data_table_rect.max.y - sheet_pos.y + 1).max(1) as u32,
+                                    ),
+                                ),
+                            });
                         }
-
-                        let full_table_selected =
-                            rect.width() == dt.width() as u32 && rect.height() == dt_height as u32;
-
-                        full_table_selected || dt.readonly
-                    })
-                    .unwrap_or(true);
-
-                // TODO(ddimaria): remove this once we have a way to delete data tables
-                if can_delete {
-                    ops.push(Operation::SetCellValues {
-                        sheet_pos,
-                        values: cell_values.to_owned(),
-                    });
-                    ops.push(Operation::SetDataTableAt {
-                        sheet_pos,
-                        values: cell_values,
-                    });
+                    }
                 }
+
+                ops.push(Operation::SetCellValues {
+                    sheet_pos,
+                    values: CellValues::new(rect.width(), rect.height()),
+                });
             }
-        };
+        }
+
         ops
     }
 
@@ -182,9 +186,10 @@ impl GridController {
     pub fn delete_values_and_formatting_operations(
         &mut self,
         selection: &A1Selection,
+        force_table_bounds: bool,
     ) -> Vec<Operation> {
-        let mut ops = self.delete_cells_operations(selection);
-        ops.extend(self.clear_format_borders_operations(selection));
+        let mut ops = self.clear_format_borders_operations(selection);
+        ops.extend(self.delete_cells_operations(selection, force_table_bounds));
         ops
     }
 }
@@ -383,7 +388,7 @@ mod test {
             None,
         );
         let selection = A1Selection::from_rect(SheetRect::from_numbers(1, 2, 2, 1, sheet_id));
-        let operations = gc.delete_cells_operations(&selection);
+        let operations = gc.delete_cells_operations(&selection, false);
         let sheet_pos = SheetPos {
             x: 1,
             y: 2,
@@ -395,11 +400,11 @@ mod test {
         assert_eq!(
             operations,
             vec![
-                Operation::SetCellValues {
+                Operation::SetDataTableAt {
                     sheet_pos,
                     values: values.clone()
                 },
-                Operation::SetDataTableAt { sheet_pos, values },
+                Operation::SetCellValues { sheet_pos, values },
             ]
         );
     }
@@ -428,25 +433,25 @@ mod test {
             None,
         );
         let selection = A1Selection::test_a1("A2:,B");
-        let operations = gc.delete_cells_operations(&selection);
+        let operations = gc.delete_cells_operations(&selection, false);
 
         assert_eq!(operations.len(), 4);
         assert_eq!(
             operations,
             vec![
-                Operation::SetCellValues {
-                    sheet_pos: SheetPos::new(sheet_id, 1, 2),
-                    values: CellValues::new(2, 1)
-                },
                 Operation::SetDataTableAt {
                     sheet_pos: SheetPos::new(sheet_id, 1, 2),
                     values: CellValues::new(2, 1)
                 },
                 Operation::SetCellValues {
+                    sheet_pos: SheetPos::new(sheet_id, 1, 2),
+                    values: CellValues::new(2, 1)
+                },
+                Operation::SetDataTableAt {
                     sheet_pos: SheetPos::new(sheet_id, 2, 1),
                     values: CellValues::new(1, 2)
                 },
-                Operation::SetDataTableAt {
+                Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 2, 1),
                     values: CellValues::new(1, 2)
                 },

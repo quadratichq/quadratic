@@ -4,6 +4,7 @@ import { TableColumnHeadersGridLines } from '@/app/gridGL/cells/tables/TableColu
 import { TableName } from '@/app/gridGL/cells/tables/TableName';
 import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { Container, type Point, type Rectangle } from 'pixi.js';
 
 export class TableHeader extends Container {
@@ -13,7 +14,9 @@ export class TableHeader extends Container {
   private columnHeadersGridLines: TableColumnHeadersGridLines;
 
   // Calculated lowest y position for a floating table header
-  private bottom = 0;
+  private bottomOfTable = 0;
+
+  private columnHeadersY = 0;
 
   tableCursor?: string;
 
@@ -33,10 +36,6 @@ export class TableHeader extends Container {
 
   getColumnHeaderBounds(index: number): Rectangle {
     return this.columnHeaders.getColumnHeaderBounds(index);
-  }
-
-  getColumnHeaderY(): number {
-    return this.columnHeaders.y;
   }
 
   getColumnHeaderLines(): { y0: number; y1: number; lines: number[] } {
@@ -73,7 +72,7 @@ export class TableHeader extends Container {
       this.updatePosition();
       this.tableName.update();
       this.columnHeaders.update();
-      this.bottom =
+      this.bottomOfTable =
         this.table.tableBounds.bottom -
         this.table.sheet.offsets.getRowHeight(this.table.codeCell.y + this.table.codeCell.h - 1) -
         this.height;
@@ -87,7 +86,10 @@ export class TableHeader extends Container {
     this.position.set(0, 0);
     this.columnHeadersGridLines.visible = false;
     this.tableName.toGrid();
-    this.columnHeaders.toGrid();
+    this.columnHeaders.toHoverGrid(
+      this.table.tableBounds.y +
+        (this.table.codeCell.show_ui && this.table.codeCell.show_name ? this.columnHeaders.y : 0)
+    );
 
     // need to keep columnHeaders in the same position in the z-order
     this.table.addChildAt(this, 0);
@@ -96,9 +98,11 @@ export class TableHeader extends Container {
   toHover = (bounds: Rectangle, gridHeading: number) => {
     this.position.set(
       this.table.tableBounds.x,
-      Math.min(this.bottom, this.table.tableBounds.y + bounds.top + gridHeading - this.table.tableBounds.top)
+      Math.min(this.bottomOfTable, this.table.tableBounds.y + bounds.top + gridHeading - this.table.tableBounds.top)
     );
-    this.columnHeaders.toHover();
+    this.columnHeaders.toHoverGrid(
+      this.y + (this.table.codeCell.show_ui && this.table.codeCell.show_name ? this.columnHeaders.y : 0)
+    );
     this.tableName.toHover(this.y);
     pixiApp.hoverTableHeaders.addChild(this);
     this.columnHeadersGridLines.visible = true;
@@ -113,14 +117,47 @@ export class TableHeader extends Container {
   }
 
   intersectsTableName(world: Point): TablePointerDownResult | undefined {
-    return this.tableName.intersects(world);
+    if (this.table.codeCell.show_ui && this.table.codeCell.show_name) {
+      return this.tableName.intersects(world);
+    }
   }
 
   clearSortButtons() {
     this.columnHeaders.clearSortButtons();
   }
 
+  pointerDown(world: Point): TablePointerDownResult | undefined {
+    if (this.table.codeCell.show_ui && this.table.codeCell.show_name) {
+      const result = this.tableName.intersects(world);
+      if (result?.type === 'table-name') {
+        return { table: this.table.codeCell, type: 'table-name' };
+      }
+    }
+    if (this.table.codeCell.show_ui && this.table.codeCell.show_columns) {
+      return this.columnHeaders.pointerDown(world);
+    }
+  }
+
   pointerMove(world: Point): boolean {
-    return this.columnHeaders.pointerMove(world);
+    if (this.table.codeCell.show_ui && this.table.codeCell.show_columns) {
+      const result = this.columnHeaders.pointerMove(world);
+      if (result) {
+        this.tableCursor = this.columnHeaders.tableCursor;
+      }
+      return result;
+    }
+    return false;
+  }
+
+  getSortDialogPosition(): JsCoordinate | undefined {
+    // we need to force the column headers to be updated first to avoid a
+    // flicker since the update normally happens on the tick instead of on the
+    // viewport event (caused by inconsistency between React and pixi's update
+    // loop)
+    if (!this.table.codeCell.show_ui || !this.table.codeCell.show_columns) {
+      return { x: this.tableName.x, y: this.tableName.y };
+    }
+    this.update(false);
+    return this.columnHeaders.getSortDialogPosition();
   }
 }

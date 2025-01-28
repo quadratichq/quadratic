@@ -84,7 +84,10 @@ impl GridController {
                     let range = RefRangeBounds::new_relative_rect(intersection);
 
                     // normalize the range to the table position
-                    let range = range.translate(-table.bounds.min.x + 1, -table.bounds.min.y + 1);
+                    let range = range.translate(
+                        -table.bounds.min.x + 1,
+                        -table.bounds.min.y + 1 - table.y_adjustment(),
+                    );
 
                     ops.push(Operation::DataTableFormats {
                         sheet_pos: table.bounds.min.to_sheet_pos(table.sheet_id),

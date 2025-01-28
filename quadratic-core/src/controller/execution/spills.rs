@@ -40,6 +40,7 @@ impl GridController {
                 // need to update the cells that are affected by the spill error
                 let sheet_rect = run.output_sheet_rect(sheet_pos, true);
                 transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
+                run.add_dirty_fills_and_borders(transaction, sheet_id);
             }
             if let Some(code_pos) = code_pos {
                 if let Some(data_table) = sheet.data_tables.get(&code_pos) {
@@ -49,22 +50,6 @@ impl GridController {
                         data_table.is_image(),
                         data_table.is_html(),
                     );
-                    // transaction
-                    //     .forward_operations
-                    //     .push(Operation::SetCodeRunVersion {
-                    //         sheet_pos,
-                    //         code_run: Some(run.to_owned()),
-                    //         index,
-                    //         version: 1,
-                    //     });
-
-                    // if (cfg!(target_family = "wasm") || cfg!(test))
-                    //     && !transaction.is_server()
-                    //     && send_client
-                    // {
-                    //     transaction.add_from_code_run(sheet_id, *pos, &Some(run.to_owned()));
-                    //     let sheet_rect = run.output_sheet_rect(sheet_pos, false);
-                    //     transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
                 }
             }
         }

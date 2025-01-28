@@ -186,15 +186,15 @@ impl GridController {
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
 
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let data_table = sheet.delete_data_table(data_table_pos)?;
 
             // Pull out the data table via a swap, removing it from the sheet
+            let data_table = sheet.delete_data_table(data_table_pos)?;
             let mut data_table_rect = data_table.output_sheet_rect(sheet_pos, false);
 
             // send updated bounds to the client after deleting the data table
             self.send_updated_bounds(sheet_id);
             // mark table fills and borders as dirty
-            // data_table.add_dirty_fills_and_borders(transaction, sheet_id);
+            data_table.add_dirty_fills_and_borders(transaction, sheet_id);
 
             let forward_operations = vec![op];
             let reverse_operations = vec![Operation::AddDataTable {
@@ -492,10 +492,11 @@ impl GridController {
 
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
+            let data_table_rect = data_table.output_sheet_rect(sheet_pos, true);
 
             let old_alternating_colors = alternating_colors.map(|alternating_colors| {
-                // mark fills dirty to update alternating color
-                transaction.add_fill_cells(sheet_id);
+                // mark code cell dirty to update alternating color
+                transaction.add_code_cell(sheet_id, pos);
                 std::mem::replace(&mut data_table.alternating_colors, alternating_colors)
             });
 
@@ -509,6 +510,7 @@ impl GridController {
 
             if show_ui.is_some() || show_name.is_some() || show_columns.is_some() {
                 data_table.add_dirty_fills_and_borders(transaction, sheet_id);
+                transaction.add_dirty_hashes_from_sheet_rect(data_table_rect);
             }
 
             let old_show_ui = show_ui
@@ -659,11 +661,11 @@ impl GridController {
             let old_column_header = data_table
                 .get_column_header(index as usize)
                 .map(|header| header.name.to_owned().to_string());
-            let old_values = data_table.get_column(index as usize)?;
-
-            data_table.delete_column(index as usize)?;
 
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
+
+            let old_values = data_table.get_column(index as usize)?;
+            data_table.delete_column(index as usize)?;
 
             let data_table_rect = data_table
                 .output_rect(data_table_pos, true)
@@ -777,10 +779,11 @@ impl GridController {
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
-            let old_values = data_table.get_row(index as usize)?;
-            data_table.delete_row(index as usize)?;
 
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
+
+            let old_values = data_table.get_row(index as usize)?;
+            data_table.delete_row(index as usize)?;
 
             let data_table_rect = data_table
                 .output_rect(data_table_pos, true)
