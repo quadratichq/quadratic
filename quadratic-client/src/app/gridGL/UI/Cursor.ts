@@ -316,7 +316,7 @@ export class Cursor extends Container {
       if (!inlineEditorHandler.isEditingFormula()) {
         this.drawCursor();
       }
-      this.drawCodeCursor();
+      // this.drawCodeCursor();
 
       this.drawInlineCursorModeIndicator();
 

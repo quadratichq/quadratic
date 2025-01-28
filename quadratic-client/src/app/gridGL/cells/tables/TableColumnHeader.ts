@@ -167,4 +167,8 @@ export class TableColumnHeader extends Container {
       }
     }
   };
+
+  toHoverGrid(y: number) {
+    this.columnHeaderBounds.y = y;
+  }
 }

@@ -28,6 +28,7 @@ impl GridController {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
     use super::*;
     use crate::{
@@ -39,10 +40,8 @@ mod tests {
         ArraySize, CellValue, Rect,
     };
     use bigdecimal::BigDecimal;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_run_javascript() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -80,7 +79,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_javascript_hello_world() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -109,7 +107,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_javascript_addition_with_cell_reference() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -168,7 +165,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_javascript_cell_reference_change() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -246,7 +242,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_javascript_array_output_variable_length() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -273,24 +268,23 @@ mod tests {
             .is_ok());
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        let cells = sheet.get_render_cells(Rect::from_numbers(1, 1, 1, 3));
+        let cells = sheet.get_render_cells(Rect::from_numbers(1, 3, 1, 3));
         assert_eq!(cells.len(), 3);
         assert_eq!(
             cells[0],
-            JsRenderCell::new_number(1, 1, 1, Some(CodeCellLanguage::Javascript), None, true)
+            JsRenderCell::new_number(1, 3, 1, None, None, true)
         );
         assert_eq!(
             cells[1],
-            JsRenderCell::new_number(1, 2, 2, None, None, true)
+            JsRenderCell::new_number(1, 4, 2, None, None, true)
         );
         assert_eq!(
             cells[2],
-            JsRenderCell::new_number(1, 3, 3, None, None, true)
+            JsRenderCell::new_number(1, 5, 3, None, None, true)
         );
     }
 
     #[test]
-    #[parallel]
     fn test_javascript_cancellation() {
         // creates a dummy javascript program
         let mut gc = GridController::test();
@@ -320,7 +314,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_javascript_does_not_replace_output_until_complete() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -419,7 +412,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_javascript_multiple_calculations() {
         // Tests in column A, and y: 1 = "1", y: 2 = "q.cells(\"A1\") + 1", y: 3 = "q.cells(\"A2\") + 1"
         let mut gc = GridController::test();

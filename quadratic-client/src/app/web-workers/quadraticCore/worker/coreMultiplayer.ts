@@ -7,7 +7,7 @@ import { core } from '@/app/web-workers/quadraticCore/worker/core';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
-    sendTransaction: (transactionId: string, operations: Uint8Array) => void;
+    sendTransaction: (transactionId: string, operations: ArrayBufferLike) => void;
     requestTransactions: (sequenceNum: number) => void;
   };
 
@@ -51,7 +51,7 @@ class CoreMultiplayer {
     }
   };
 
-  sendTransaction = (transactionId: string, operations: ArrayBuffer) => {
+  sendTransaction = (transactionId: string, operations: ArrayBufferLike) => {
     this.send(
       {
         type: 'coreMultiplayerTransaction',

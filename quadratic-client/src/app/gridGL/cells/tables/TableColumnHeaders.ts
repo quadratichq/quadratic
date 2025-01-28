@@ -183,13 +183,7 @@ export class TableColumnHeaders extends Container {
     if (index < 0 || index >= this.columns.children.length) {
       throw new Error('Invalid column header index in getColumnHeaderBounds');
     }
-    const bounds = this.columns.children[index]?.columnHeaderBounds;
-    if (!bounds) {
-      throw new Error('Column header bounds not found in getColumnHeaderBounds');
-    }
-    const adjustedBounds = bounds.clone();
-    adjustedBounds.y += this.y;
-    return adjustedBounds;
+    return this.columns.children[index]?.columnHeaderBounds;
   }
 
   // Hides a column header
@@ -225,11 +219,8 @@ export class TableColumnHeaders extends Container {
     return { y0: 0, y1: this.headerHeight, lines };
   }
 
-  toHover = () => {
+  toHoverGrid(y: number) {
+    this.columns.children.forEach((column) => column.toHoverGrid(y));
     this.drawBackground();
-  };
-
-  toGrid = () => {
-    this.drawBackground();
-  };
+  }
 }

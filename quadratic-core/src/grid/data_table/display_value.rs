@@ -107,14 +107,14 @@ impl DataTable {
     pub fn display_value_at(&self, mut pos: Pos) -> Result<&CellValue> {
         // the source cell is HTML or image, then display the first cell or blank
         if self.is_html_or_image() {
-            return Ok(if pos.x == 0 || pos.y == 0 {
+            return Ok(if pos.x == 0 && pos.y == 0 {
                 self.value.get(0, 0)?
             } else {
                 &CellValue::Blank
             });
         }
 
-        if pos.y == 0 && self.show_ui && self.show_name {
+        if pos.x == 0 && pos.y == 0 && self.show_ui && self.show_name {
             return Ok(self.name.as_ref());
         }
         if pos.y == (if self.show_name { 1 } else { 0 })
