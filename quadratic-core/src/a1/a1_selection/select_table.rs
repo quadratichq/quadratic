@@ -332,7 +332,7 @@ mod tests {
         selection.move_to(1, 1, false, &context);
 
         selection.select_table("Table1", None, &context, 3, false, false);
-        assert_eq!(selection.cursor, pos!(A6));
+        assert_eq!(selection.cursor, pos!(A7));
         assert_eq!(
             selection.to_string(Some(SheetId::test()), &context),
             "Table1"

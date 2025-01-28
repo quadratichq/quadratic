@@ -263,13 +263,11 @@ export class Tables extends Container<Table> {
       const result = table.pointerMove(world);
       if (result) {
         this.tableCursor = table.tableCursor;
-        if (result !== 'table-name') {
-          if (this.hoverTable !== table) {
-            this.hoverTable?.hideActive();
-          }
-          this.hoverTable = table;
-          table.showActive(false);
+        if (this.hoverTable !== table) {
+          this.hoverTable?.hideActive();
         }
+        this.hoverTable = table;
+        table.showActive(false);
         return true;
       }
     }
