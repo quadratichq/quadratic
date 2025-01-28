@@ -14,6 +14,7 @@ import { Container, Rectangle } from 'pixi.js';
 
 export class Table extends Container {
   private outline: TableOutline;
+  public active = false;
 
   // Header is either a child of Table or, when it is sticky, a child of
   // pixiApp.overHeadings.
@@ -43,6 +44,15 @@ export class Table extends Container {
     this.outline = this.addChild(new TableOutline(this));
     this.updateCodeCell(codeCell);
   }
+
+  activate = (active: boolean) => {
+    if (active === this.active) return;
+    this.active = active;
+    this.outline.update();
+    this.header.update(false);
+    // TODO: (jimniels) I think here we need to update the alternating colors
+    // TODO: (jimniels) what about when there's a selection in two different tables?
+  };
 
   updateCodeCell = (codeCell?: JsRenderCodeCell) => {
     if (codeCell) {
@@ -110,13 +120,13 @@ export class Table extends Container {
   }
 
   hideActive() {
-    this.outline.activate(false);
+    this.activate(false);
     htmlCellsHandler.hideActive(this.codeCell);
     pixiApp.setViewportDirty();
   }
 
   showActive(isSelected: boolean) {
-    this.outline.activate(true);
+    this.activate(true);
     htmlCellsHandler.showActive(this.codeCell, isSelected);
     pixiApp.setViewportDirty();
   }
@@ -162,6 +172,7 @@ export class Table extends Container {
 
   pointerMove(world: Point): 'table-name' | boolean {
     const name = this.intersectsTableName(world);
+    this.outline.update();
     if (name?.type === 'dropdown') {
       this.header.clearSortButtons();
       this.tableCursor = 'pointer';

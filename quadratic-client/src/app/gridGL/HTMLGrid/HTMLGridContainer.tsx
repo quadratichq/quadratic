@@ -36,15 +36,6 @@ export interface HtmlGridContainerProps {
 export const HTMLGridContainer = (props: Props): ReactNode | null => {
   const { parent } = props;
 
-  const [showInput, setShowInput] = useState(false);
-  useEffect(() => {
-    const changeInput = (input: boolean) => setShowInput(input);
-    events.on('changeInput', changeInput);
-    return () => {
-      events.off('changeInput', changeInput);
-    };
-  }, []);
-
   // this one is not zoomed and positioned over the grid headings
   const [normalContainer, setNormalContainer] = useState<HTMLDivElement>();
   const normalRef = useCallback((node: HTMLDivElement) => {
@@ -112,7 +103,7 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
             }}
           >
             <div style={{ position: 'relative' }}>
-              {!showInput && <CodeHint />}
+              <CodeHint />
               <MultiplayerCellEdits />
               <InlineEditor />
               <HtmlCells />
