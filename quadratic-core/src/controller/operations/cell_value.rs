@@ -140,6 +140,7 @@ impl GridController {
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
             let rects = sheet.selection_to_rects(selection, false, force_table_bounds);
             for rect in rects {
+                let cell_values = CellValues::new(rect.width(), rect.height());
                 let sheet_pos = SheetPos::from((rect.min.x, rect.min.y, selection.sheet_id));
 
                 // deletable if this is not a data table source cell, or if the data table is readonly (code cell),
@@ -167,6 +168,10 @@ impl GridController {
 
                 if can_delete {
                     ops.push(Operation::DeleteDataTable { sheet_pos });
+                    ops.push(Operation::SetCellValues {
+                        sheet_pos,
+                        values: cell_values,
+                    });
                 }
             }
         };

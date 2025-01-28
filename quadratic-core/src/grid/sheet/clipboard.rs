@@ -24,7 +24,6 @@ impl Sheet {
         let mut sheet_bounds: Option<Rect> = None;
         let context = self.a1_context();
 
-        // TODO(ddimaria): this doesn't work properly for TableRefs
         if let Some(bounds) = self.selection_bounds(selection, true) {
             clipboard_origin.x = bounds.min.x;
             clipboard_origin.y = bounds.min.y;
@@ -272,6 +271,9 @@ impl Sheet {
                     }
                 });
         }
+
+        dbgjs!(format!("values: {:?}", values));
+        dbgjs!(format!("cells: {:?}", cells));
 
         let formats = self.formats.to_clipboard(self, selection);
 
