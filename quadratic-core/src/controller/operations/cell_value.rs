@@ -136,41 +136,42 @@ impl GridController {
         force_table_bounds: bool,
     ) -> Vec<Operation> {
         let mut ops = vec![];
-        let (sheet_ranges, table_ranges) = selection.separate_table_ranges();
 
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-            for table_range in table_ranges {
-                let rect = sheet.table_ref_to_rect(&table_range, false, force_table_bounds);
-                if let Some(rect) = rect {
-                    let sheet_pos = SheetPos::from((rect.min.x, rect.min.y, selection.sheet_id));
+            let rects = sheet.selection_to_rects(selection, false, force_table_bounds);
+            for rect in rects {
+                let sheet_pos = SheetPos::from((rect.min.x, rect.min.y, selection.sheet_id));
 
-                    let can_delete = sheet
-                        .first_data_table_within(sheet_pos.into())
-                        .ok()
-                        .and_then(|data_table_pos| sheet.data_table(data_table_pos))
-                        .map(|data_table| {
-                            let dt_height = data_table.height(force_table_bounds);
-                            let is_full_table_selected = rect.width() == data_table.width() as u32
-                                && rect.height() == dt_height as u32;
+                if let Ok(data_table_pos) = sheet.first_data_table_within(sheet_pos.into()) {
+                    if let Some(data_table) = sheet.data_table(data_table_pos.to_owned()) {
+                        let mut data_table_rect =
+                            data_table.output_rect(data_table_pos.to_owned(), false);
+                        data_table_rect.min.y += data_table.y_adjustment();
 
-                            is_full_table_selected || data_table.readonly
-                        })
-                        .unwrap_or(false);
+                        let is_full_table_selected = rect.contains_rect(&data_table_rect);
 
-                    if can_delete {
-                        ops.push(Operation::DeleteDataTable { sheet_pos });
-                    } else {
-                        ops.push(Operation::SetDataTableAt {
-                            sheet_pos,
-                            values: CellValues::new(rect.width(), rect.height()),
-                        });
+                        let can_delete = is_full_table_selected || data_table.readonly;
+
+                        if can_delete {
+                            ops.push(Operation::DeleteDataTable {
+                                sheet_pos: data_table_pos.to_sheet_pos(sheet_pos.sheet_id),
+                            });
+                        } else {
+                            ops.push(Operation::SetDataTableAt {
+                                sheet_pos,
+                                values: CellValues::new(
+                                    rect.width().min(
+                                        (data_table_rect.max.x - sheet_pos.x + 1).max(1) as u32,
+                                    ),
+                                    rect.height().min(
+                                        (data_table_rect.max.y - sheet_pos.y + 1).max(1) as u32,
+                                    ),
+                                ),
+                            });
+                        }
                     }
                 }
-            }
 
-            for sheet_range in sheet_ranges {
-                let rect = sheet.ref_range_bounds_to_rect(&sheet_range);
-                let sheet_pos = SheetPos::from((rect.min.x, rect.min.y, selection.sheet_id));
                 ops.push(Operation::SetCellValues {
                     sheet_pos,
                     values: CellValues::new(rect.width(), rect.height()),
