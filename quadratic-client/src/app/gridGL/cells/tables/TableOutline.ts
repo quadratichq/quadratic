@@ -3,6 +3,7 @@
 import type { Table } from '@/app/gridGL/cells/tables/Table';
 import { generatedTextures } from '@/app/gridGL/generateTextures';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { colors } from '@/app/theme/colors';
 import { sharedEvents } from '@/shared/sharedEvents';
@@ -33,7 +34,8 @@ export class TableOutline extends Graphics {
     this.clear();
 
     // draw the table selected outline
-    const width = this.table.active ? 2 : 1;
+    // TODO: (jimniels) settings don't respond to toggling code cell outlines on/off
+    const width = pixiAppSettings.showCellTypeOutlines ? 1 : this.table.active ? 1 : 0; // (this.table.active ? 1 : 0) : this.table.active ? 2 : 1;
     const chart = this.table.codeCell.state === 'HTML';
     if (ALWAYS_SHOW || this.table.codeCell.show_ui || this.table.active) {
       if (!chart) {

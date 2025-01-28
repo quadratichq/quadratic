@@ -48,7 +48,7 @@ export class TableColumnHeaders extends Container {
     // draw borders on the top and bottom of the column headers (either active or inactive)
     const active = pixiApp.cellsSheet().tables.isActive(this.table);
     if ((this.table.inOverHeadings && active) || this.table.codeCell.show_ui) {
-      const width = active ? 2 : 1;
+      const width = active ? 1 : 0;
       this.background.lineStyle({
         color: getCSSVariableTint(this.table.active ? 'primary' : 'muted-foreground'),
         width,
