@@ -286,19 +286,19 @@ mod tests {
             .is_ok());
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        let cells = sheet.get_render_cells(Rect::from_numbers(1, 1, 1, 3));
+        let cells = sheet.get_render_cells(Rect::from_numbers(1, 3, 1, 3));
         assert_eq!(cells.len(), 3);
         assert_eq!(
             cells[0],
-            JsRenderCell::new_number(1, 1, 1, Some(CodeCellLanguage::Python), None, true)
+            JsRenderCell::new_number(1, 3, 1, None, None, true)
         );
         assert_eq!(
             cells[1],
-            JsRenderCell::new_number(1, 2, 2, None, None, true)
+            JsRenderCell::new_number(1, 4, 2, None, None, true)
         );
         assert_eq!(
             cells[2],
-            JsRenderCell::new_number(1, 3, 3, None, None, true)
+            JsRenderCell::new_number(1, 5, 3, None, None, true)
         );
 
         // transaction should be completed
