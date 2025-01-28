@@ -97,6 +97,7 @@ impl GridController {
 
         let js_clipboard = sheet.copy_to_clipboard(selection, ClipboardOperation::Cut)?;
         let operations = self.delete_values_and_formatting_operations(selection, true);
+        dbgjs!(format!("operations: {:?}", operations));
 
         Ok((operations, js_clipboard))
     }
@@ -521,7 +522,7 @@ mod test {
     use serial_test::{parallel, serial};
 
     use super::{PasteSpecial, *};
-    use crate::a1::A1Selection;
+    use crate::a1::{A1Context, A1Selection, CellRefRange, TableRef};
     use crate::controller::active_transactions::transaction_name::TransactionName;
     use crate::controller::user_actions::import::tests::{simple_csv, simple_csv_at};
     use crate::grid::js_types::JsClipboard;
@@ -749,20 +750,29 @@ mod test {
             );
         };
 
+        let table_ref = TableRef::new("simple.csv");
+        let cell_ref_range = CellRefRange::Table { range: table_ref };
+        let context = A1Context::test(
+            &[("Sheet1", sheet_id)],
+            &[(
+                "simple.csv",
+                &["city", "region", "country", "population"],
+                Rect::test_a1("A1:D11"),
+            )],
+        );
+        let selection = A1Selection::from_range(cell_ref_range, sheet_id, &context);
+
         let JsClipboard { html, .. } = gc
             .sheet(sheet_id)
-            .copy_to_clipboard(
-                &A1Selection::from_xy(0, 0, sheet_id),
-                ClipboardOperation::Copy,
-            )
+            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
             .unwrap();
 
         let expected_row1 = vec!["city", "region", "country", "population"];
 
         // paste side by side
-        paste(&mut gc, 4, 0, html.clone());
-        print_table(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 10));
-        assert_cell_value_row(&gc, sheet_id, 4, 0, 0, expected_row1);
+        paste(&mut gc, 10, 1, html.clone());
+        print_table(&gc, sheet_id, Rect::from_numbers(10, 1, 14, 11));
+        assert_cell_value_row(&gc, sheet_id, 10, 14, 0, expected_row1);
     }
 
     #[test]

@@ -909,7 +909,6 @@ impl CellValue {
     pub fn code_cell_value_mut(&mut self) -> Option<&mut CodeCellValue> {
         match self {
             CellValue::Code(code) => Some(code),
-            CellValue::Import(_) => None,
             _ => None,
         }
     }
