@@ -189,12 +189,7 @@ impl Sheet {
 
         let mut sent = false;
         if let Some(table) = self.data_table(pos) {
-            let y = if table.show_ui && table.show_name {
-                1
-            } else {
-                0
-            };
-            if let Some(CellValue::Image(image)) = table.cell_value_at(0, y) {
+            if let Some(CellValue::Image(image)) = table.cell_value_at(0, 0) {
                 let chart_size = table.chart_pixel_output;
                 crate::wasm_bindings::js::jsSendImage(
                     self.id.to_string(),
