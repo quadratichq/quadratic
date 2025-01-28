@@ -52,6 +52,10 @@ impl DataTable {
         array.delete_column(column_index)?;
         self.display_buffer = None;
 
+        // formats and borders are 1 indexed
+        self.formats.remove_column(column_index as i64 + 1);
+        self.borders.remove_column(column_index as i64 + 1);
+
         if let Some(headers) = &mut self.column_headers {
             headers.remove(column_index);
 

@@ -43,6 +43,10 @@ impl DataTable {
         array.delete_row(row_index)?;
         self.display_buffer = None;
 
+        // formats and borders are 1 indexed
+        self.formats.remove_row(row_index as i64 + 1);
+        self.borders.remove_row(row_index as i64 + 1);
+
         Ok(())
     }
 }
