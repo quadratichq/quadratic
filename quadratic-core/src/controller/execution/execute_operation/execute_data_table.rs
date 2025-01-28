@@ -194,7 +194,7 @@ impl GridController {
             // send updated bounds to the client after deleting the data table
             self.send_updated_bounds(sheet_id);
             // mark table fills and borders as dirty
-            // data_table.add_dirty_fills_and_borders(transaction, sheet_id);
+            data_table.add_dirty_fills_and_borders(transaction, sheet_id);
 
             let forward_operations = vec![op];
             let reverse_operations = vec![Operation::AddDataTable {
