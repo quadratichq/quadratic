@@ -500,7 +500,7 @@ export class Tables extends Container<Table> {
     );
     if (table) {
       return table.getTableNameBounds(true);
-    } else console.log('missed');
+    }
   }
 
   /// Returns true if the cell is a column header cell in a table
