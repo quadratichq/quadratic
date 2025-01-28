@@ -1,10 +1,13 @@
+import type { ValidationData } from '@/app/ui/menus/Validations/Validation/useValidationData';
+import { ValidationInput } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationInput';
+import {
+  ValidationMoreOptions,
+  ValidationUICheckbox,
+} from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationUI';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/shared/shadcn/ui/accordion';
 import { Tooltip } from '@mui/material';
 import { InfoCircledIcon } from '@radix-ui/react-icons';
 import { useCallback, useMemo } from 'react';
-import { ValidationData } from './useValidationData';
-import { ValidationInput } from './ValidationUI/ValidationInput';
-import { ValidationMoreOptions, ValidationUICheckbox } from './ValidationUI/ValidationUI';
 
 interface Props {
   validationData: ValidationData;

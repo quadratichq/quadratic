@@ -77,7 +77,7 @@ impl ValidationRule {
 mod tests {
     use validation_list::ValidationListSource;
 
-    use crate::A1Selection;
+    use crate::a1::A1Selection;
 
     use super::*;
 

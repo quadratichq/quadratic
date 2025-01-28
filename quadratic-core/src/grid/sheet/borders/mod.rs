@@ -10,13 +10,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::{grid::Contiguous2D, ClearOption, Pos, Rect};
 
-pub mod borders_clipboard;
-pub mod borders_col_row;
+mod borders_clipboard;
+mod borders_col_row;
 pub mod borders_old;
-pub mod borders_query;
-pub mod borders_render;
-pub mod borders_set;
-mod borders_style;
+mod borders_query;
+mod borders_render;
+mod borders_set;
+pub mod borders_style;
 mod borders_test;
 pub mod sides;
 
@@ -83,6 +83,43 @@ impl Borders {
         self.right.translate_in_place(x, y);
         self.top.translate_in_place(x, y);
         self.bottom.translate_in_place(x, y);
+    }
+
+    #[cfg(test)]
+    /// Used to compare borders for testing, ignoring the timestamp.
+    pub fn compare_borders(borders: &Borders, other: &Borders) -> bool {
+        let left_1: Contiguous2D<Option<BorderStyle>> =
+            borders.left.map_ref(|left| left.map(|left| left.into()));
+        let left_2: Contiguous2D<Option<BorderStyle>> =
+            other.left.map_ref(|left| left.map(|left| left.into()));
+        if left_1 != left_2 {
+            return false;
+        }
+        let right_1: Contiguous2D<Option<BorderStyle>> = borders
+            .right
+            .map_ref(|right| right.map(|right| right.into()));
+        let right_2: Contiguous2D<Option<BorderStyle>> =
+            other.right.map_ref(|right| right.map(|right| right.into()));
+        if right_1 != right_2 {
+            return false;
+        }
+        let top_1: Contiguous2D<Option<BorderStyle>> =
+            borders.top.map_ref(|top| top.map(|top| top.into()));
+        let top_2: Contiguous2D<Option<BorderStyle>> =
+            other.top.map_ref(|top| top.map(|top| top.into()));
+        if top_1 != top_2 {
+            return false;
+        }
+        let bottom_1: Contiguous2D<Option<BorderStyle>> = borders
+            .bottom
+            .map_ref(|bottom| bottom.map(|bottom| bottom.into()));
+        let bottom_2: Contiguous2D<Option<BorderStyle>> = other
+            .bottom
+            .map_ref(|bottom| bottom.map(|bottom| bottom.into()));
+        if bottom_1 != bottom_2 {
+            return false;
+        }
+        true
     }
 }
 
@@ -162,7 +199,7 @@ impl BordersUpdates {
 mod tests {
     use super::*;
 
-    use crate::A1Selection;
+    use crate::a1::A1Selection;
 
     #[test]
     fn test_is_empty() {

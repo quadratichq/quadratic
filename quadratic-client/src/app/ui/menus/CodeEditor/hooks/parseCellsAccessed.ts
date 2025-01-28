@@ -1,6 +1,6 @@
 import { sheets } from '@/app/grid/controller/Sheets';
-import { ParseFormulaReturnType } from '@/app/helpers/formulaNotation';
-import { SheetRect } from '@/app/quadratic-core-types';
+import type { ParseFormulaReturnType } from '@/app/helpers/formulaNotation';
+import type { SheetRect } from '@/app/quadratic-core-types';
 
 export function parseCellsAccessed(cellsAccessed?: SheetRect[] | null): ParseFormulaReturnType {
   let parsedEditorContent: ParseFormulaReturnType = {

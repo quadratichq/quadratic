@@ -99,9 +99,12 @@ impl SyntaxRule for TupleExpression {
     }
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         let mut tmp_p = *p;
-        if tmp_p.next() == Some(Token::LParen) { // (
-            if tmp_p.parse(TupleExpression).is_ok() { // expression
-                if tmp_p.next() == Some(Token::ArgSep) { // ,
+        if tmp_p.next() == Some(Token::LParen) {
+            // (
+            if tmp_p.parse(TupleExpression).is_ok() {
+                // expression
+                if tmp_p.next() == Some(Token::ArgSep) {
+                    // ,
                     return p.parse(
                         List {
                             // In Excel, tuples can only contain cell ranges and tuples.

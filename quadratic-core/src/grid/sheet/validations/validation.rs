@@ -3,8 +3,9 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::{
+    a1::{A1Selection, CellRefRange},
     grid::{js_types::JsRenderCellSpecial, Sheet},
-    A1Selection, CellRefRange, CellValue,
+    CellValue,
 };
 
 use super::validation_rules::ValidationRule;
@@ -107,8 +108,7 @@ impl ValidationDisplaySheet {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
+    use crate::a1::A1Context;
     use crate::grid::sheet::validations::validation_rules::{
         validation_list::{ValidationList, ValidationListSource},
         validation_logical::ValidationLogical,
@@ -123,7 +123,7 @@ mod tests {
 
         let v = ValidationDisplaySheet {
             displays: vec![ValidationDisplay {
-                range: CellRefRange::from_str("A1").unwrap(),
+                range: CellRefRange::parse("A1", &A1Context::default()).unwrap(),
                 checkbox: true,
                 list: false,
             }],
@@ -134,7 +134,7 @@ mod tests {
     #[test]
     fn validation_display_is_empty() {
         let v = ValidationDisplay {
-            range: CellRefRange::from_str("A1").unwrap(),
+            range: CellRefRange::parse("A1", &A1Context::default()).unwrap(),
             checkbox: false,
             list: false,
         };

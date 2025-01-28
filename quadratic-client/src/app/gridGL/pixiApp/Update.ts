@@ -98,7 +98,7 @@ export class Update {
     debugTimeCheck('[Update] uiImageResize');
     pixiApp.cellMoving.update();
     debugTimeCheck('[Update] cellMoving');
-    pixiApp.cellsSheets.update();
+    pixiApp.cellsSheets.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] cellsSheets');
     pixiApp.validations.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] backgrounds');

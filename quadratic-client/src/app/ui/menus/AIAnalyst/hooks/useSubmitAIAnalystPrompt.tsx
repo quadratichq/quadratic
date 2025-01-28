@@ -16,7 +16,7 @@ import {
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import {
+import type {
   AIMessage,
   AIMessagePrompt,
   ChatMessage,

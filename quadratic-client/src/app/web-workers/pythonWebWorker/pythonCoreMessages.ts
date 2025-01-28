@@ -1,4 +1,4 @@
-import { PythonRun } from './pythonTypes';
+import type { PythonRun } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 
 export interface CorePythonRun {
   type: 'corePythonRun';

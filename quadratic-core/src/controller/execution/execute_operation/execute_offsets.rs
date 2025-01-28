@@ -62,6 +62,9 @@ impl GridController {
                     let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
                     resize_rows.extend(rows);
                 }
+                transaction
+                    .operations
+                    .extend(self.check_chart_size_column_change(sheet_id, column));
             }
 
             if !transaction.is_server() {
@@ -119,6 +122,14 @@ impl GridController {
                     .insert((None, Some(row)), new_size);
             }
 
+            if transaction.is_user() {
+                let changes = self.check_chart_size_row_change(sheet_id, row);
+                if !changes.is_empty() {
+                    transaction.operations.extend(changes);
+                    self.check_all_spills(transaction, sheet_id);
+                }
+            }
+
             if !transaction.is_server() {
                 transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
                     x: 0,
@@ -172,6 +183,17 @@ impl GridController {
                 row_heights.iter().for_each(|&JsRowHeight { row, height }| {
                     transaction.offsets_modified(sheet_id, None, Some(row), Some(height));
                 });
+            }
+
+            if transaction.is_user() {
+                let mut changes = vec![];
+                row_heights.iter().for_each(|&JsRowHeight { row, .. }| {
+                    changes.extend(self.check_chart_size_row_change(sheet_id, row));
+                });
+                if !changes.is_empty() {
+                    transaction.operations.extend(changes);
+                    self.check_all_spills(transaction, sheet_id);
+                }
             }
 
             if !transaction.is_server() {

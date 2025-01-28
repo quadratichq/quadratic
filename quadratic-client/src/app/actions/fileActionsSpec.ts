@@ -1,6 +1,6 @@
 import { isAvailableBecauseCanEditFile, isAvailableBecauseLoggedIn } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
-import { ActionAvailabilityArgs, ActionSpecRecord } from '@/app/actions/actionsSpec';
+import type { ActionAvailabilityArgs, ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
 import { isEmbed } from '@/app/helpers/isEmbed';

@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::format::Format;
-use crate::grid::{CellAlign, CellVerticalAlign, CellWrap, NumericFormat, RenderSize};
+use crate::grid::{formatting::RenderSize, CellAlign, CellVerticalAlign, CellWrap, NumericFormat};
 
 /// Used to store changes from a Format to another Format.
 #[derive(Deserialize, Serialize, Default, Debug, Clone, Eq, PartialEq)]
@@ -116,6 +116,32 @@ impl FormatUpdate {
         }
     }
 
+    /// If the format update has any cleared fields (ie, Some(None)), then it
+    /// returns a FormatUpdate only with those cleared fields.
+    pub fn only_cleared(&self) -> Option<FormatUpdate> {
+        let update = Self {
+            align: self.align.filter(|a| a.is_none()),
+            vertical_align: self.vertical_align.filter(|a| a.is_none()),
+            wrap: self.wrap.filter(|a| a.is_none()),
+            numeric_format: self.numeric_format.clone().filter(|a| a.is_none()),
+            numeric_decimals: self.numeric_decimals.filter(|a| a.is_none()),
+            numeric_commas: self.numeric_commas.filter(|a| a.is_none()),
+            bold: self.bold.filter(|a| a.is_none()),
+            italic: self.italic.filter(|a| a.is_none()),
+            text_color: self.text_color.clone().filter(|a| a.is_none()),
+            fill_color: self.fill_color.clone().filter(|a| a.is_none()),
+            render_size: self.render_size.clone().filter(|a| a.is_none()),
+            date_time: self.date_time.clone().filter(|a| a.is_none()),
+            underline: self.underline.filter(|a| a.is_none()),
+            strike_through: self.strike_through.filter(|a| a.is_none()),
+        };
+        if update.is_default() {
+            None
+        } else {
+            Some(update)
+        }
+    }
+
     pub fn is_default(&self) -> bool {
         self.align.is_none()
             && self.vertical_align.is_none()
@@ -179,7 +205,7 @@ impl FormatUpdate {
             italic: self.italic.or(other.italic),
             text_color: self.text_color.clone().or(other.text_color.clone()),
             fill_color: self.fill_color.clone().or(other.fill_color.clone()),
-            render_size: self.render_size.clone().or(other.render_size.clone()),
+            render_size: None,
             date_time: self.date_time.clone().or(other.date_time.clone()),
             underline: self.underline.or(other.underline),
             strike_through: self.strike_through.or(other.strike_through),
@@ -249,7 +275,6 @@ impl From<&FormatUpdate> for Format {
             italic: update.italic.unwrap_or(None),
             text_color: update.text_color.clone().unwrap_or(None),
             fill_color: update.fill_color.clone().unwrap_or(None),
-            render_size: update.render_size.clone().unwrap_or(None),
             date_time: update.date_time.clone().unwrap_or(None),
             underline: update.underline.unwrap_or(None),
             strike_through: update.strike_through.unwrap_or(None),
@@ -296,27 +321,6 @@ mod tests {
                 strike_through: Some(None),
             }
         );
-    }
-
-    #[test]
-    fn html_changed() {
-        let format = FormatUpdate {
-            render_size: Some(Some(RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string(),
-            })),
-            ..Default::default()
-        };
-        assert!(format.html_changed());
-
-        let format = FormatUpdate {
-            render_size: Some(None),
-            ..Default::default()
-        };
-        assert!(format.html_changed());
-
-        let format = FormatUpdate::default();
-        assert!(!format.html_changed());
     }
 
     #[test]
@@ -443,10 +447,7 @@ mod tests {
             italic: Some(Some(true)),
             text_color: Some(Some("red".to_string())),
             fill_color: Some(Some("blue".to_string())),
-            render_size: Some(Some(RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string(),
-            })),
+            render_size: None,
             date_time: Some(Some("%H".to_string())),
             underline: Some(Some(true)),
             strike_through: Some(Some(true)),
@@ -466,10 +467,7 @@ mod tests {
             italic: Some(Some(false)),
             text_color: Some(Some("blue".to_string())),
             fill_color: Some(Some("red".to_string())),
-            render_size: Some(Some(RenderSize {
-                w: "3".to_string(),
-                h: "4".to_string(),
-            })),
+            render_size: None,
             date_time: Some(Some("%M".to_string())),
             underline: Some(Some(false)),
             strike_through: Some(Some(false)),
@@ -496,13 +494,7 @@ mod tests {
         assert_eq!(combined.italic, Some(Some(true)));
         assert_eq!(combined.text_color, Some(Some("red".to_string())));
         assert_eq!(combined.fill_color, Some(Some("blue".to_string())));
-        assert_eq!(
-            combined.render_size,
-            Some(Some(RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string()
-            }))
-        );
+        assert_eq!(combined.render_size, None);
         assert_eq!(combined.date_time, Some(Some("%H".to_string())));
         assert_eq!(combined.underline, Some(Some(true)));
         assert_eq!(combined.strike_through, Some(Some(true)));
@@ -524,10 +516,7 @@ mod tests {
             italic: Some(Some(true)),
             text_color: Some(Some("red".to_string())),
             fill_color: Some(Some("blue".to_string())),
-            render_size: Some(Some(RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string(),
-            })),
+            render_size: None,
             date_time: Some(Some("%H".to_string())),
             underline: Some(Some(true)),
             strike_through: Some(Some(true)),
@@ -545,7 +534,7 @@ mod tests {
         assert_eq!(cleared.italic, Some(None));
         assert_eq!(cleared.text_color, Some(None));
         assert_eq!(cleared.fill_color, Some(None));
-        assert_eq!(cleared.render_size, Some(None));
+        assert_eq!(cleared.render_size, None);
         assert_eq!(cleared.date_time, Some(None));
         assert_eq!(cleared.underline, Some(None));
         assert_eq!(cleared.strike_through, Some(None));
@@ -567,10 +556,7 @@ mod tests {
             italic: Some(Some(true)),
             text_color: Some(Some("red".to_string())),
             fill_color: Some(Some("blue".to_string())),
-            render_size: Some(Some(RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string(),
-            })),
+            render_size: None,
             date_time: Some(Some("%H".to_string())),
             underline: Some(Some(true)),
             strike_through: Some(Some(true)),
@@ -594,13 +580,6 @@ mod tests {
         assert_eq!(format.italic, Some(true));
         assert_eq!(format.text_color, Some("red".to_string()));
         assert_eq!(format.fill_color, Some("blue".to_string()));
-        assert_eq!(
-            format.render_size,
-            Some(RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string()
-            })
-        );
         assert_eq!(format.date_time, Some("%H".to_string()));
         assert_eq!(format.underline, Some(true));
         assert_eq!(format.strike_through, Some(true));
@@ -618,5 +597,24 @@ mod tests {
         let update_deserialized = serde_json::from_str::<FormatUpdate>(&serialized).unwrap();
         assert_eq!(update_deserialized.align, Some(None));
         assert_eq!(update_deserialized.wrap, None);
+    }
+
+    #[test]
+    fn test_only_clear() {
+        let update = FormatUpdate::default();
+        assert_eq!(update.only_cleared(), None);
+
+        let update = FormatUpdate {
+            align: Some(None),
+            bold: Some(Some(true)),
+            ..Default::default()
+        };
+        assert_eq!(
+            update.only_cleared(),
+            Some(FormatUpdate {
+                align: Some(None),
+                ..Default::default()
+            })
+        );
     }
 }

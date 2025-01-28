@@ -4,7 +4,7 @@ import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEdi
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { useHeadingSize } from '@/app/gridGL/HTMLGrid/useHeadingSize';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Rectangle } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
 import { useLayoutEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 

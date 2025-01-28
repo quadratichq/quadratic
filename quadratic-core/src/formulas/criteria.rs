@@ -112,6 +112,7 @@ impl Criterion {
             CellValue::Html(_) => false,
             CellValue::Code(_) => false,
             CellValue::Image(_) => false,
+            CellValue::Import(_) => false,
         }
     }
 

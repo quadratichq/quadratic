@@ -4,9 +4,9 @@ use crate::{
         operations::operation::Operation, GridController,
     },
     grid::CodeCellLanguage,
-    CellValue, Pos, Rect, SheetPos, SheetRect,
+    CellValue, Pos, SheetPos, SheetRect,
 };
-
+use anyhow::Result;
 impl GridController {
     /// Adds operations to compute cells that are dependents within a SheetRect
     pub fn add_compute_operations(
@@ -38,44 +38,6 @@ impl GridController {
             });
     }
 
-    // delete any code runs within the sheet_rect.
-    pub(super) fn check_deleted_code_runs(
-        &mut self,
-        transaction: &mut PendingTransaction,
-        sheet_rect: &SheetRect,
-    ) {
-        let sheet_id = sheet_rect.sheet_id;
-        let Some(sheet) = self.grid.try_sheet(sheet_id) else {
-            // sheet may have been deleted
-            return;
-        };
-        let rect: Rect = (*sheet_rect).into();
-        let code_runs_to_delete: Vec<Pos> = sheet
-            .code_runs
-            .iter()
-            .filter_map(|(pos, _)| {
-                // only delete code runs that are within the sheet_rect
-                if rect.contains(*pos) {
-                    // only delete when there's not another code cell in the same position (this maintains the original output until a run completes)
-                    if let Some(value) = sheet.cell_value(*pos) {
-                        if matches!(value, CellValue::Code(_)) {
-                            None
-                        } else {
-                            Some(*pos)
-                        }
-                    } else {
-                        Some(*pos)
-                    }
-                } else {
-                    None
-                }
-            })
-            .collect();
-        code_runs_to_delete.iter().for_each(|pos| {
-            self.finalize_code_run(transaction, pos.to_sheet_pos(sheet_id), None, None);
-        });
-    }
-
     pub(super) fn execute_set_code_run(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -89,7 +51,7 @@ impl GridController {
         {
             let op = Operation::SetCodeRunVersion {
                 sheet_pos,
-                code_run: code_run.map(|code_run| code_run.into()),
+                code_run,
                 index,
                 version: 1,
             };
@@ -110,11 +72,40 @@ impl GridController {
         } = op
         {
             if version == 1 {
-                self.finalize_code_run(transaction, sheet_pos, code_run, Some(index));
+                self.finalize_data_table(
+                    transaction,
+                    sheet_pos,
+                    code_run.map(|code_run| code_run.into()),
+                    Some(index),
+                );
             } else {
                 dbgjs!("Expected SetCodeRunVersion version to be 1");
             }
         }
+    }
+
+    pub(super) fn execute_set_chart_size(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
+        if let Operation::SetChartSize {
+            sheet_pos,
+            pixel_width,
+            pixel_height,
+        } = op
+        {
+            let sheet_id = sheet_pos.sheet_id;
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
+            let data_table = sheet.data_table_mut(data_table_pos)?;
+            data_table.chart_pixel_output = Some((pixel_width, pixel_height));
+            let new_data_table = data_table.clone();
+
+            self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None);
+        }
+
+        Ok(())
     }
 
     pub(super) fn execute_compute_code(
@@ -155,6 +146,7 @@ impl GridController {
                 CodeCellLanguage::Javascript => {
                     self.run_javascript(transaction, sheet_pos, code);
                 }
+                CodeCellLanguage::Import => {} // no-op
             }
         }
     }
@@ -228,7 +220,7 @@ mod tests {
             Some(CellValue::Blank)
         );
 
-        let code_cell = sheet.code_run(Pos { x: 2, y: 1 });
+        let code_cell = sheet.data_table(Pos { x: 2, y: 1 });
         assert!(code_cell.unwrap().spill_error);
     }
 

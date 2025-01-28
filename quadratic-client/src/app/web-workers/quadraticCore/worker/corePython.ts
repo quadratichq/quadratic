@@ -1,7 +1,7 @@
 import { debugWebWorkers } from '@/app/debugFlags';
-import { JsCodeResult } from '@/app/quadratic-core-types';
-import { CorePythonMessage, PythonCoreMessage } from '../../pythonWebWorker/pythonCoreMessages';
-import { core } from './core';
+import type { JsCodeResult } from '@/app/quadratic-core-types';
+import type { CorePythonMessage, PythonCoreMessage } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
+import { core } from '@/app/web-workers/quadraticCore/worker/core';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
@@ -54,6 +54,8 @@ class CorePython {
           line_number: results.lineno ?? null,
           output_display_type: results.output_type ?? null,
           cancel_compute: false,
+          chart_pixel_output: null,
+          has_headers: !!results.has_headers,
         };
 
         core.calculationComplete(codeResult);

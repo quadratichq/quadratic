@@ -31,8 +31,8 @@ impl Borders {
             // extend the borders to include the last column and row
             rect.max.x += 1;
             rect.max.y += 1;
-            let horizontal = self.horizontal_borders().unwrap_or_default();
-            let vertical = self.vertical_borders().unwrap_or_default();
+            let horizontal = self.horizontal_borders(None).unwrap_or_default();
+            let vertical = self.vertical_borders(None).unwrap_or_default();
 
             // Print x-axis coordinates
             print!("   ");
@@ -86,7 +86,7 @@ impl Borders {
 #[serial_test::parallel]
 mod tests {
     use super::*;
-    use crate::{controller::GridController, grid::SheetId, A1Selection};
+    use crate::{a1::A1Selection, controller::GridController, grid::SheetId};
 
     #[test]
     fn print_borders() {

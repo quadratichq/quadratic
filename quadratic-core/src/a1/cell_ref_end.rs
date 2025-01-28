@@ -5,8 +5,11 @@ use std::fmt;
 use ts_rs::TS;
 use wasm_bindgen::prelude::*;
 
-use super::{A1Error, CellRefCoord};
-use crate::{Pos, UNBOUNDED};
+use super::{A1Error, CellRefCoord, UNBOUNDED};
+use crate::{a1::column_name, Pos};
+
+/// The maximum value for a column or row number.
+const OUT_OF_BOUNDS: i64 = 1_000_000_000;
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -119,6 +122,15 @@ impl CellRefRangeEnd {
 
         if col_is_absolute && col.is_none() || row_is_absolute && row.is_none() {
             return Err(A1Error::SpuriousDollarSign(s.to_owned()));
+        }
+
+        if col.is_some_and(|c| c != UNBOUNDED && c > OUT_OF_BOUNDS) {
+            if let Some(c) = col {
+                return Err(A1Error::InvalidColumn(column_name(c)));
+            }
+        }
+        if row.is_some_and(|r| r != UNBOUNDED && r > OUT_OF_BOUNDS) {
+            return Err(A1Error::InvalidRow(row.unwrap_or(1).to_string()));
         }
 
         Ok((col, col_is_absolute, row, row_is_absolute))

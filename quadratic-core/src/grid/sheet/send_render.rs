@@ -230,10 +230,11 @@ impl Sheet {
 mod test {
     use super::*;
     use crate::{
+        a1::A1Selection,
         clear_option::ClearOption,
         grid::{formats::SheetFormatUpdates, Contiguous2D},
         wasm_bindings::js::{clear_js_calls, expect_js_call, hash_test},
-        A1Selection, CellValue,
+        CellValue,
     };
     use serial_test::serial;
 

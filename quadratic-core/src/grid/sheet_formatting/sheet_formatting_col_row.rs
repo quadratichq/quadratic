@@ -21,7 +21,6 @@ impl SheetFormatting {
         self.italic.insert_column(column, copy_formats);
         self.text_color.insert_column(column, copy_formats);
         self.fill_color.insert_column(column, copy_formats);
-        self.render_size.insert_column(column, copy_formats);
         self.date_time.insert_column(column, copy_formats);
         self.underline.insert_column(column, copy_formats);
         self.strike_through.insert_column(column, copy_formats);
@@ -38,7 +37,6 @@ impl SheetFormatting {
         self.italic.insert_row(row, copy_formats);
         self.text_color.insert_row(row, copy_formats);
         self.fill_color.insert_row(row, copy_formats);
-        self.render_size.insert_row(row, copy_formats);
         self.date_time.insert_row(row, copy_formats);
         self.underline.insert_row(row, copy_formats);
         self.strike_through.insert_row(row, copy_formats);
@@ -67,7 +65,6 @@ impl SheetFormatting {
             italic: Self::remove_column_item(&mut self.italic, column),
             text_color: Self::remove_column_item(&mut self.text_color, column),
             fill_color: Self::remove_column_item(&mut self.fill_color, column),
-            render_size: Self::remove_column_item(&mut self.render_size, column),
             date_time: Self::remove_column_item(&mut self.date_time, column),
             underline: Self::remove_column_item(&mut self.underline, column),
             strike_through: Self::remove_column_item(&mut self.strike_through, column),
@@ -94,7 +91,6 @@ impl SheetFormatting {
             italic: Self::copy_column_item(&self.italic, column),
             text_color: Self::copy_column_item(&self.text_color, column),
             fill_color: Self::copy_column_item(&self.fill_color, column),
-            render_size: Self::copy_column_item(&self.render_size, column),
             date_time: Self::copy_column_item(&self.date_time, column),
             underline: Self::copy_column_item(&self.underline, column),
             strike_through: Self::copy_column_item(&self.strike_through, column),
@@ -127,7 +123,6 @@ impl SheetFormatting {
             italic: Self::remove_row_item(&mut self.italic, row),
             text_color: Self::remove_row_item(&mut self.text_color, row),
             fill_color: Self::remove_row_item(&mut self.fill_color, row),
-            render_size: Self::remove_row_item(&mut self.render_size, row),
             date_time: Self::remove_row_item(&mut self.date_time, row),
             underline: Self::remove_row_item(&mut self.underline, row),
             strike_through: Self::remove_row_item(&mut self.strike_through, row),
@@ -154,7 +149,6 @@ impl SheetFormatting {
             italic: Self::copy_row_item(&self.italic, row),
             text_color: Self::copy_row_item(&self.text_color, row),
             fill_color: Self::copy_row_item(&self.fill_color, row),
-            render_size: Self::copy_row_item(&self.render_size, row),
             date_time: Self::copy_row_item(&self.date_time, row),
             underline: Self::copy_row_item(&self.underline, row),
             strike_through: Self::copy_row_item(&self.strike_through, row),

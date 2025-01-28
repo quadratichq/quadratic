@@ -48,9 +48,10 @@ impl GridController {
     ) {
         if let Some(sheet) = self.try_sheet_mut(sheet_id) {
             let mut warnings = vec![];
+            let context = sheet.a1_context();
             if let Some(values) = sheet.selection_values(&validation.selection, None, false, true) {
                 values.iter().for_each(|(pos, _)| {
-                    if let Some(validation) = sheet.validations.validate(sheet, *pos) {
+                    if let Some(validation) = sheet.validations.validate(sheet, *pos, &context) {
                         warnings.push((*pos, validation.id));
                     }
                 });
@@ -210,7 +211,7 @@ mod tests {
 
     use crate::grid::sheet::validations::validation_rules::ValidationRule;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
-    use crate::{A1Selection, CellValue};
+    use crate::{a1::A1Selection, CellValue};
 
     #[test]
     #[serial]

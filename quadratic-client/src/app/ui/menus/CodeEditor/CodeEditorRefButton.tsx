@@ -21,7 +21,7 @@ export const CodeEditorRefButton = () => {
     const checkDisabled = () => {
       if (
         sheets.sheet.cursor.isMultiRange() ||
-        (codeCell.sheetId === sheets.sheet.id &&
+        (codeCell.sheetId === sheets.current &&
           codeCell.pos.x === sheets.sheet.cursor.position.x &&
           codeCell.pos.y === sheets.sheet.cursor.position.y)
       ) {

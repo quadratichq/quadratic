@@ -19,7 +19,7 @@ export const Validations = () => {
   const [highlighted, setHighlighted] = useState<string[]>([]);
   useEffect(() => {
     const checkValidations = () => {
-      if (sheets.sheet.id !== sheetId) {
+      if (sheets.current !== sheetId) {
         setHighlighted([]);
         return;
       }

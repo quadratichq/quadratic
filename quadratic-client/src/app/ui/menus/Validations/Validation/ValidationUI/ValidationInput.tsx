@@ -1,6 +1,7 @@
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
-import { FocusEvent, forwardRef, KeyboardEvent, Ref, useCallback, useEffect, useRef } from 'react';
+import type { FocusEvent, KeyboardEvent, Ref } from 'react';
+import { forwardRef, useCallback, useEffect, useRef } from 'react';
 
 interface ValidationInputProps {
   className?: string;

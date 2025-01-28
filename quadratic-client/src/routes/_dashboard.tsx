@@ -1,3 +1,4 @@
+import { CSVImportSettings } from '@/app/ui/components/CSVImportSettings';
 import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/auth';
 import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
@@ -13,14 +14,13 @@ import { Sheet, SheetContent, SheetTrigger } from '@/shared/shadcn/ui/sheet';
 import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
+import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router-dom';
 import {
   Link,
-  LoaderFunctionArgs,
   Outlet,
-  ShouldRevalidateFunctionArgs,
   isRouteErrorResponse,
   redirect,
   useLocation,
@@ -187,6 +187,7 @@ export const Component = () => {
           </div>
           {searchParams.get(SEARCH_PARAMS.DIALOG.KEY) === SEARCH_PARAMS.DIALOG.VALUES.EDUCATION && <EducationDialog />}
         </div>
+        <CSVImportSettings />
         <ImportProgressList />
       </TooltipProvider>
     </RecoilRoot>

@@ -1,4 +1,4 @@
-import {
+import type {
   BorderSelection,
   BorderStyle,
   CellAlign,
@@ -6,6 +6,7 @@ import {
   CellVerticalAlign,
   CellWrap,
   CodeCellLanguage,
+  Direction,
   Format,
   JsBordersSheet,
   JsCellValue,
@@ -18,9 +19,11 @@ import {
   JsRenderCodeCell,
   JsRenderFill,
   JsSheetFill,
+  JsSnackbarSeverity,
   JsSummarizeSelectionResult,
   JsValidationWarning,
-  JumpDirection,
+  MinMax,
+  Pos,
   SearchOptions,
   SheetBounds,
   SheetInfo,
@@ -29,10 +32,9 @@ import {
   TransactionName,
   Validation,
 } from '@/app/quadratic-core-types';
-import { MinMax, Pos } from '@/app/quadratic-core/quadratic_core';
-import { CodeRun } from '@/app/web-workers/CodeRun';
-import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
-import { Rectangle } from 'pixi.js';
+import type { CodeRun } from '@/app/web-workers/CodeRun';
+import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
+import type { Rectangle } from 'pixi.js';
 
 //#region Initialize
 
@@ -288,14 +290,14 @@ export interface ClientCoreSetCellValues {
 export interface ClientCoreSetCellBold {
   type: 'clientCoreSetCellBold';
   selection: string;
-  bold: boolean;
+  bold?: boolean;
   cursor?: string;
 }
 
 export interface ClientCoreSetCellItalic {
   type: 'clientCoreSetCellItalic';
   selection: string;
-  italic: boolean;
+  italic?: boolean;
   cursor?: string;
 }
 
@@ -316,14 +318,14 @@ export interface ClientCoreSetCellTextColor {
 export interface ClientCoreSetCellUnderline {
   type: 'clientCoreSetCellUnderline';
   selection: string;
-  underline: boolean;
+  underline?: boolean;
   cursor?: string;
 }
 
 export interface ClientCoreSetCellStrikeThrough {
   type: 'clientCoreSetCellStrikeThrough';
   selection: string;
-  strikeThrough: boolean;
+  strikeThrough?: boolean;
   cursor?: string;
 }
 
@@ -389,7 +391,7 @@ export interface ClientCoreClearFormatting {
 export interface ClientCoreSetCommas {
   type: 'clientCoreSetCommas';
   selection: string;
-  commas: boolean;
+  commas?: boolean;
   cursor?: string;
 }
 
@@ -417,6 +419,8 @@ export interface ClientCoreImportFile {
   location?: JsCoordinate;
   cursor?: string;
   id: number;
+  csvDelimiter?: number;
+  hasHeading?: boolean;
 }
 
 export interface CoreClientImportFile {
@@ -425,6 +429,20 @@ export interface CoreClientImportFile {
   contents?: ArrayBuffer;
   version?: string;
   error?: string;
+}
+
+export interface ClientCoreGetCsvPreview {
+  type: 'clientCoreGetCsvPreview';
+  file: ArrayBuffer;
+  maxRows: number;
+  delimiter: number | undefined;
+  id: number;
+}
+
+export interface CoreClientGetCsvPreview {
+  type: 'coreClientGetCsvPreview';
+  preview: string[][] | undefined;
+  id: number;
 }
 
 export interface ClientCoreDeleteCellValues {
@@ -596,11 +614,6 @@ export interface CoreClientSetCursor {
   cursor: string;
 }
 
-export interface CoreClientSetCursorSelection {
-  type: 'coreClientSetCursorSelection';
-  selection: string;
-}
-
 export interface CoreClientSheetOffsets {
   type: 'coreClientSheetOffsets';
   sheetId: string;
@@ -722,7 +735,8 @@ export interface ClientCoreJumpCursor {
   id: number;
   sheetId: string;
   current: JsCoordinate;
-  direction: JumpDirection;
+  direction: Direction;
+  jump: boolean;
 }
 
 export interface CoreClientJumpCursor {
@@ -731,30 +745,10 @@ export interface CoreClientJumpCursor {
   coordinate?: JsCoordinate;
 }
 
-export interface ClientCoreFindNextColumn {
-  type: 'clientCoreFindNextColumn';
+export interface CoreClientJumpCursor {
+  type: 'coreClientJumpCursor';
   id: number;
-  sheetId: string;
-  columnStart: number;
-  row: number;
-  reverse: boolean;
-  withContent: boolean;
-}
-
-export interface CoreClientFindNextColumn {
-  type: 'coreClientFindNextColumn';
-  id: number;
-  column?: number;
-}
-
-export interface ClientCoreFindNextRow {
-  type: 'clientCoreFindNextRow';
-  id: number;
-  sheetId: string;
-  rowStart: number;
-  column: number;
-  reverse: boolean;
-  withContent: boolean;
+  coordinate?: JsCoordinate;
 }
 
 export interface CoreClientFindNextRow {
@@ -1095,10 +1089,81 @@ export interface ClientCoreInsertRow {
   cursor: string;
 }
 
+export interface ClientCoreFlattenDataTable {
+  type: 'clientCoreFlattenDataTable';
+  sheetId: string;
+  x: number;
+  y: number;
+  cursor: string;
+}
+
+export interface ClientCoreCodeDataTableToDataTable {
+  type: 'clientCoreCodeDataTableToDataTable';
+  sheetId: string;
+  x: number;
+  y: number;
+  cursor: string;
+}
+
+export interface ClientCoreGridToDataTable {
+  type: 'clientCoreGridToDataTable';
+  sheetRect: string;
+  cursor: string;
+}
+
+export interface ClientCoreDataTableMeta {
+  type: 'clientCoreDataTableMeta';
+  sheetId: string;
+  x: number;
+  y: number;
+  name?: string;
+  alternatingColors?: boolean;
+  columns?: {
+    name: string;
+    display: boolean;
+    valueIndex: number;
+  }[];
+  showName?: boolean;
+  showColumns?: boolean;
+  showUI?: boolean;
+  cursor: string;
+}
+
+export interface ClientCoreDataTableMutations {
+  type: 'clientCoreDataTableMutations';
+  sheetId: string;
+  x: number;
+  y: number;
+  columns_to_add?: number[];
+  columns_to_remove?: number[];
+  rows_to_add?: number[];
+  rows_to_remove?: number[];
+  flatten_on_delete?: boolean;
+  cursor?: string;
+}
+
+export interface ClientCoreSortDataTable {
+  type: 'clientCoreSortDataTable';
+  sheetId: string;
+  x: number;
+  y: number;
+  sort: { column_index: number; direction: string }[];
+  cursor: string;
+}
+
+export interface ClientCoreDataTableFirstRowAsHeader {
+  type: 'clientCoreDataTableFirstRowAsHeader';
+  sheetId: string;
+  x: number;
+  y: number;
+  firstRowAsHeader: boolean;
+  cursor: string;
+}
+
 export interface CoreClientClientMessage {
   type: 'coreClientClientMessage';
   message: string;
-  error: boolean;
+  severity: JsSnackbarSeverity;
 }
 
 export interface ClientCoreFiniteRectFromSelection {
@@ -1111,6 +1176,11 @@ export interface CoreClientFiniteRectFromSelection {
   type: 'coreClientFiniteRectFromSelection';
   id: number;
   rect?: Rectangle;
+}
+
+export interface CoreClientA1Context {
+  type: 'coreClientA1Context';
+  context: string;
 }
 
 export type ClientCoreMessage =
@@ -1166,8 +1236,6 @@ export type ClientCoreMessage =
   | ClientCoreGetColumnsBounds
   | ClientCoreGetRowsBounds
   | ClientCoreJumpCursor
-  | ClientCoreFindNextColumn
-  | ClientCoreFindNextRow
   | ClientCoreCommitTransientResize
   | ClientCoreCommitSingleResize
   | ClientCoreInit
@@ -1192,6 +1260,13 @@ export type ClientCoreMessage =
   | ClientCoreDeleteRows
   | ClientCoreInsertColumn
   | ClientCoreInsertRow
+  | ClientCoreFlattenDataTable
+  | ClientCoreCodeDataTableToDataTable
+  | ClientCoreGridToDataTable
+  | ClientCoreDataTableMeta
+  | ClientCoreDataTableMutations
+  | ClientCoreSortDataTable
+  | ClientCoreDataTableFirstRowAsHeader
   | ClientCoreGetCellValue
   | ClientCoreGetAIContextRectsInSelections
   | ClientCoreGetErroredCodeCellsInSelections
@@ -1199,7 +1274,8 @@ export type ClientCoreMessage =
   | ClientCoreFindNextRowForRect
   | ClientCoreMoveCodeCellVertically
   | ClientCoreMoveCodeCellHorizontally
-  | ClientCoreFiniteRectFromSelection;
+  | ClientCoreFiniteRectFromSelection
+  | ClientCoreGetCsvPreview;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1215,7 +1291,6 @@ export type CoreClientMessage =
   | CoreClientDeleteSheet
   | CoreClientSheetInfoUpdate
   | CoreClientSetCursor
-  | CoreClientSetCursorSelection
   | CoreClientSheetOffsets
   | CoreClientUpgradeFile
   | CoreClientExport
@@ -1229,8 +1304,6 @@ export type CoreClientMessage =
   | CoreClientGetColumnsBounds
   | CoreClientGetRowsBounds
   | CoreClientJumpCursor
-  | CoreClientFindNextColumn
-  | CoreClientFindNextRow
   | CoreClientGenerateThumbnail
   | CoreClientLoad
   | CoreClientSheetRenderCells
@@ -1268,4 +1341,6 @@ export type CoreClientMessage =
   | CoreClientFindNextRowForRect
   | CoreClientMoveCodeCellVertically
   | CoreClientMoveCodeCellHorizontally
-  | CoreClientFiniteRectFromSelection;
+  | CoreClientFiniteRectFromSelection
+  | CoreClientA1Context
+  | CoreClientGetCsvPreview;

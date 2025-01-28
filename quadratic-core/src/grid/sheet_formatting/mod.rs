@@ -15,7 +15,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::{CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, NumericFormat, RenderSize};
+use super::{CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, NumericFormat};
 
 pub mod sheet_formatting_clipboard;
 pub mod sheet_formatting_col_row;
@@ -36,7 +36,6 @@ pub struct SheetFormatting {
     pub italic: Contiguous2D<Option<bool>>,
     pub text_color: SheetFormattingType<String>,
     pub fill_color: SheetFormattingType<String>,
-    pub render_size: SheetFormattingType<RenderSize>,
     pub date_time: SheetFormattingType<String>,
     pub underline: SheetFormattingType<bool>,
     pub strike_through: SheetFormattingType<bool>,

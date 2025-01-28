@@ -4,8 +4,8 @@ import { TYPE } from '@/shared/constants/appConstants';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
-import { StopwatchIcon } from '@radix-ui/react-icons';
-import { ReactNode } from 'react';
+import type { StopwatchIcon } from '@radix-ui/react-icons';
+import type { ReactNode } from 'react';
 import { useSubmit } from 'react-router-dom';
 
 export function Empty({

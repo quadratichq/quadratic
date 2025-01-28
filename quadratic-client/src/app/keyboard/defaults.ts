@@ -1,6 +1,6 @@
 import { Action } from '@/app/actions/actions';
 import { Keys, MacModifiers, WindowsModifiers } from '@/app/keyboard/keys';
-import { ActionShortcut } from '@/app/keyboard/shortcut';
+import type { ActionShortcut } from '@/app/keyboard/shortcut';
 
 export const defaultShortcuts: ActionShortcut = {
   [Action.CmdClick]: {

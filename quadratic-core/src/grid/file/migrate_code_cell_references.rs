@@ -4,9 +4,10 @@ use lazy_static::lazy_static;
 use regex::Regex;
 
 use crate::{
+    a1::CellRefRange,
     formulas::replace_a1_notation,
     grid::{CodeCellLanguage, CodeCellValue, Grid, GridBounds},
-    CellRefRange, CellValue, Pos, Rect,
+    CellValue, Pos, Rect,
 };
 
 const PYTHON_C_CELL_GETCELL_REGEX: &str = r#"\b(?:c|cell|getCell)\s*\(\s*(-?\d+)\s*,\s*(-?\d+)\s*(?:,\s*(?:sheet\s*=\s*)?['"`]([^'"`]+)['"`]\s*)?\)"#;

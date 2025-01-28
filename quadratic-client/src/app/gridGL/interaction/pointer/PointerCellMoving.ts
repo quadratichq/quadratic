@@ -1,7 +1,9 @@
+import { getTable } from '@/app/actions/dataTableSpec';
 import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
+import { MOUSE_EDGES_DISTANCE, MOUSE_EDGES_SPEED } from '@/app/gridGL/interaction/pointer/pointerUtils';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -13,10 +15,6 @@ import { isMobile } from 'react-device-detect';
 const TOP_LEFT_CORNER_THRESHOLD_SQUARED = 50;
 const BORDER_THRESHOLD = 8;
 
-// Speed when turning on the mouseEdges plugin for pixi-viewport
-const MOUSE_EDGES_SPEED = 8;
-const MOUSE_EDGES_DISTANCE = 20;
-
 interface MoveCells {
   column: number;
   row: number;
@@ -25,6 +23,7 @@ interface MoveCells {
   toColumn: number;
   toRow: number;
   offset: { x: number; y: number };
+  table?: { offsetX: number; offsetY: number };
 }
 
 export class PointerCellMoving {
@@ -43,10 +42,31 @@ export class PointerCellMoving {
     }
   }
 
-  findCorner(world: Point): Point {
-    return world;
-  }
-  pointerDown(event: PointerEvent): boolean {
+  // Starts a table move.
+  tableMove = (column: number, row: number, point: Point) => {
+    if (this.state) return false;
+    this.state = 'move';
+    this.startCell = new Point(column, row);
+    const offset = sheets.sheet.getCellOffsets(column, row);
+    this.movingCells = {
+      column,
+      row,
+      width: 1,
+      height: 1,
+      toColumn: column,
+      toRow: row,
+      offset: { x: 0, y: 0 },
+      table: { offsetX: point.x - offset.x, offsetY: point.y - offset.y },
+    };
+    events.emit('cellMoving', true);
+    pixiApp.viewport.mouseEdges({
+      distance: MOUSE_EDGES_DISTANCE,
+      allowButtons: true,
+      speed: MOUSE_EDGES_SPEED / pixiApp.viewport.scale.x,
+    });
+  };
+
+  pointerDown = (event: PointerEvent): boolean => {
     if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled || event.button === 1) return false;
 
     if (this.state === 'hover' && this.movingCells && event.button === 0) {
@@ -61,9 +81,9 @@ export class PointerCellMoving {
       return true;
     }
     return false;
-  }
+  };
 
-  private reset() {
+  private reset = () => {
     this.movingCells = undefined;
     if (this.state === 'move') {
       pixiApp.cellMoving.dirty = true;
@@ -72,9 +92,9 @@ export class PointerCellMoving {
     }
     this.state = undefined;
     this.startCell = undefined;
-  }
+  };
 
-  private pointerMoveMoving(world: Point) {
+  private pointerMoveMoving = (world: Point) => {
     if (this.state !== 'move' || !this.movingCells) {
       throw new Error('Expected moving to be defined in pointerMoveMoving');
     }
@@ -83,9 +103,9 @@ export class PointerCellMoving {
     this.movingCells.toColumn = position.column + this.movingCells.offset.x;
     this.movingCells.toRow = position.row + this.movingCells.offset.y;
     pixiApp.cellMoving.dirty = true;
-  }
+  };
 
-  private moveOverlaps(world: Point): false | 'corner' | 'top' | 'bottom' | 'left' | 'right' {
+  private moveOverlaps = (world: Point): false | 'corner' | 'top' | 'bottom' | 'left' | 'right' => {
     const cursorRectangle = pixiApp.cursor.cursorRectangle;
     if (!cursorRectangle) return false;
 
@@ -145,9 +165,9 @@ export class PointerCellMoving {
     }
 
     return false;
-  }
+  };
 
-  private pointerMoveHover(world: Point): boolean {
+  private pointerMoveHover = (world: Point): boolean => {
     // we do not move if there are multiple rectangles (for now)
     const rectangle = sheets.sheet.cursor.getSingleRectangleOrCursor();
     if (!rectangle) return false;
@@ -182,9 +202,9 @@ export class PointerCellMoving {
     }
     this.reset();
     return false;
-  }
+  };
 
-  pointerMove(event: PointerEvent, world: Point): boolean {
+  pointerMove = (event: PointerEvent, world: Point): boolean => {
     if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled || event.button === 1) return false;
 
     if (this.state === 'move') {
@@ -194,9 +214,9 @@ export class PointerCellMoving {
       return this.pointerMoveHover(world);
     }
     return false;
-  }
+  };
 
-  pointerUp(): boolean {
+  pointerUp = (): boolean => {
     if (this.state === 'move') {
       if (this.startCell === undefined) {
         throw new Error('[PointerCellMoving] Expected startCell to be defined in pointerUp');
@@ -205,12 +225,21 @@ export class PointerCellMoving {
         this.movingCells &&
         (this.startCell.x !== this.movingCells.toColumn || this.startCell.y !== this.movingCells.toRow)
       ) {
+        const table = getTable();
         const rectangle = sheets.sheet.cursor.getLargestRectangle();
+
+        if (table) {
+          rectangle.x = table.x;
+          rectangle.y = table.y;
+          rectangle.width = table.w;
+          rectangle.height = table.h;
+        }
+
         quadraticCore.moveCells(
-          rectToSheetRect(rectangle, sheets.sheet.id),
+          rectToSheetRect(rectangle, sheets.current),
           this.movingCells.toColumn,
           this.movingCells.toRow,
-          sheets.sheet.id
+          sheets.current
         );
 
         const { showCodeEditor, codeCell } = pixiAppSettings.codeEditorState;
@@ -235,13 +264,13 @@ export class PointerCellMoving {
       return true;
     }
     return false;
-  }
+  };
 
-  handleEscape(): boolean {
+  handleEscape = (): boolean => {
     if (this.state === 'move') {
       this.reset();
       return true;
     }
     return false;
-  }
+  };
 }

@@ -2,6 +2,7 @@ use serde::Serialize;
 use ts_rs::TS;
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq, TS)]
+#[serde(tag = "type", content = "error")]
 pub enum A1Error {
     InvalidCellReference(String),
     InvalidSheetId(String),
@@ -18,6 +19,13 @@ pub enum A1Error {
     InvalidExclusion(String),
     TranslateInvalid(String),
     SheetNotFound,
+
+    InvalidTableRef(String),
+    TableNotFound(String),
+    MultipleColumnDefinitions,
+    MultipleRowDefinitions,
+    UnexpectedRowNumber,
+    InvalidRowRange(String),
 }
 
 impl From<A1Error> for String {
@@ -46,6 +54,20 @@ impl std::fmt::Display for A1Error {
             A1Error::InvalidExclusion(msg) => write!(f, "Invalid Exclusion: {msg}"),
             A1Error::TranslateInvalid(msg) => write!(f, "Translate Invalid: {msg}"),
             A1Error::SheetNotFound => write!(f, "Sheet Not Found"),
+
+            A1Error::InvalidTableRef(msg) => write!(f, "Invalid Table Ref: {msg}"),
+            A1Error::TableNotFound(msg) => write!(f, "Table Not Found: {msg}"),
+            A1Error::MultipleColumnDefinitions => {
+                write!(f, "Table reference may only have one column definition")
+            }
+            A1Error::MultipleRowDefinitions => {
+                write!(f, "Table reference may only have one row definition")
+            }
+            A1Error::UnexpectedRowNumber => write!(
+                f,
+                "Row numbers in tables must be defined with # (e.g., [#12,15-12])"
+            ),
+            A1Error::InvalidRowRange(msg) => write!(f, "Invalid row range: {msg}"),
         }
     }
 }

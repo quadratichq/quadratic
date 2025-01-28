@@ -405,7 +405,7 @@ class InlineEditorKeyboard {
       if (!['Meta', 'Control'].includes(e.key) && inlineEditorHandler.cursorIsMoving) {
         inlineEditorFormula.endInsertingCells();
         this.resetKeyboardPosition();
-        if (sheets.sheet.id !== inlineEditorHandler.location?.sheetId) {
+        if (sheets.current !== inlineEditorHandler.location?.sheetId) {
           inlineEditorMonaco.sendKeyboardEvent(e);
           inlineEditorHandler.sendMultiplayerUpdate();
         }
@@ -425,7 +425,7 @@ class InlineEditorKeyboard {
       throw new Error('Expected editingSheet to be defined in resetKeyboardPosition');
     }
     editingSheet.cursor.moveTo(location.x, location.y);
-    if (sheets.sheet.id !== location.sheetId) {
+    if (sheets.current !== location.sheetId) {
       sheets.current = location.sheetId;
 
       if (!skipFocus) {

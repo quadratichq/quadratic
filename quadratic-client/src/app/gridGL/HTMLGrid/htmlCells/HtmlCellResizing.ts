@@ -1,8 +1,8 @@
 import { sheets } from '@/app/grid/controller/Sheets';
+import type { HtmlCell } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCell';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { InteractionEvent } from 'pixi.js';
-import { pixiApp } from '../../pixiApp/PixiApp';
-import { HtmlCell } from './HtmlCell';
+import type { InteractionEvent } from 'pixi.js';
 
 // tolerance of snapping to the grid
 // const snapping = 10;
@@ -97,7 +97,7 @@ export class HtmlCellResizing {
   }
 
   completeResizing() {
-    quadraticCore.setCellRenderResize(sheets.sheet.id, this.htmlCell.x, this.htmlCell.y, this.width, this.height);
+    quadraticCore.setCellRenderResize(sheets.current, this.htmlCell.x, this.htmlCell.y, this.width, this.height);
   }
 
   cancelResizing() {

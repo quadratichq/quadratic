@@ -1,6 +1,6 @@
 import { editorInteractionStateShowValidationAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { ValidationData } from '@/app/ui/menus/Validations/Validation/useValidationData';
+import type { ValidationData } from '@/app/ui/menus/Validations/Validation/useValidationData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';

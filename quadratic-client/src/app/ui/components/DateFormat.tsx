@@ -63,13 +63,13 @@ export const DateFormat = (props: DateFormatProps) => {
   const [current, setCurrent] = useState<string | undefined>();
   const findCurrent = useCallback(async () => {
     const cursorPosition = sheets.sheet.cursor.position;
-    const date = await quadraticCore.getEditCell(sheets.sheet.id, cursorPosition.x, cursorPosition.y);
+    const date = await quadraticCore.getEditCell(sheets.current, cursorPosition.x, cursorPosition.y);
     if (date) {
       setOriginal(date);
     } else {
       setOriginal(defaultDate);
     }
-    const summary = await quadraticCore.getCellFormatSummary(sheets.sheet.id, cursorPosition.x, cursorPosition.y);
+    const summary = await quadraticCore.getCellFormatSummary(sheets.current, cursorPosition.x, cursorPosition.y);
     let updatedDate = DATE_FORMATS[0].value;
     let updatedTime = TIME_FORMATS[0].value;
 

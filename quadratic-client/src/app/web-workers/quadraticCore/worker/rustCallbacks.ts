@@ -1,6 +1,6 @@
 // this file cannot include any non-type imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
 
-import {
+import type {
   ConnectionKind,
   JsBordersSheet,
   JsCodeCell,
@@ -10,6 +10,7 @@ import {
   JsRenderCodeCell,
   JsRenderFill,
   JsSheetFill,
+  JsSnackbarSeverity,
   JsValidationWarning,
   SheetBounds,
   SheetInfo,
@@ -34,6 +35,7 @@ declare var self: WorkerGlobalScope &
     sendAddSheetClient: (sheetInfo: SheetInfo, user: boolean) => void;
     sendDeleteSheetClient: (sheetId: string, user: boolean) => void;
     sendSheetInfoClient: (sheets: SheetInfo[]) => void;
+    sendA1Context: (tableMap: string) => void;
     sendSheetInfoRender: (sheets: SheetInfo[]) => void;
     sendSheetFills: (sheetId: string, fill: JsRenderFill[]) => void;
     sendSheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
@@ -43,7 +45,6 @@ declare var self: WorkerGlobalScope &
     sendAddSheetRender: (sheetInfo: SheetInfo) => void;
     sendDeleteSheetRender: (sheetId: string) => void;
     sendSetCursor: (cursor: string) => void;
-    sendSetCursorSelection: (selection: string) => void;
     requestTransactions: (sequenceNum: number) => void;
     sendSheetOffsetsClient: (sheetId: string, offsets: JsOffset[]) => void;
     sendSheetOffsetsRender: (sheetId: string, offsets: JsOffset[]) => void;
@@ -87,7 +88,7 @@ declare var self: WorkerGlobalScope &
     sendMultiplayerSynced: () => void;
     sendHashesDirty: (sheetId: string, hashes: string) => void;
     sendViewportBuffer: (buffer: SharedArrayBuffer) => void;
-    sendClientMessage: (message: string, error: boolean) => void;
+    sendClientMessage: (message: string, severity: JsSnackbarSeverity) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -164,10 +165,6 @@ export const jsRequestTransactions = (sequenceNum: bigint) => {
 
 export const jsSetCursor = (cursor: string) => {
   self.sendSetCursor(cursor);
-};
-
-export const jsSetCursorSelection = (selection: string) => {
-  self.sendSetCursorSelection(selection);
 };
 
 export const jsHtmlOutput = (htmlStringified: string) => {
@@ -284,10 +281,14 @@ export const jsHashesDirty = (sheetId: string, hashes: string) => {
   self.sendHashesDirty(sheetId, hashes);
 };
 
-export const jsClientMessage = (message: string, error: boolean) => {
-  self.sendClientMessage(message, error);
+export const jsClientMessage = (message: string, severity: JsSnackbarSeverity) => {
+  self.sendClientMessage(message, severity);
 };
 
 export const jsSendViewportBuffer = (buffer: SharedArrayBuffer) => {
   self.sendViewportBuffer(buffer);
+};
+
+export const jsA1Context = (context: string) => {
+  self.sendA1Context(context);
 };

@@ -339,7 +339,7 @@ const OpenAIRequestBodySchema = z.object({
 });
 export type OpenAIRequestBody = z.infer<typeof OpenAIRequestBodySchema>;
 
-const CodeCellTypeSchema = z.enum(['Python', 'Javascript', 'Formula', 'Connection']);
+const CodeCellTypeSchema = z.enum(['Python', 'Javascript', 'Formula', 'Connection', 'Import']);
 export type CodeCellType = z.infer<typeof CodeCellTypeSchema>;
 
 export const AIRequestBodySchema = z.object({

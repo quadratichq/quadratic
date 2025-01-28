@@ -527,8 +527,8 @@ mod tests {
         // Test mismatched range
         assert_eq!(
             RunErrorMsg::ExactArraySizeMismatch {
-                expected: ArraySize::try_from((1, 12)).unwrap(),
-                got: ArraySize::try_from((1, 11)).unwrap(),
+                expected: ArraySize::try_from((1_i64, 12_i64)).unwrap(),
+                got: ArraySize::try_from((1_i64, 11_i64)).unwrap(),
             },
             eval_to_err(&g, "SUMIFS(0..10, 0..11, \"<=5\")").msg,
         );

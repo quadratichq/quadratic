@@ -1,14 +1,27 @@
 import { events } from '@/app/events/events';
-import { sheets } from '@/app/grid/controller/Sheets';
+import type { Sheets } from '@/app/grid/controller/Sheets';
 import { GridOverflowLines } from '@/app/grid/sheet/GridOverflowLines';
 import { SheetCursor } from '@/app/grid/sheet/SheetCursor';
-import { ColumnRow, GridBounds, JsCoordinate, SheetBounds, SheetInfo, Validation } from '@/app/quadratic-core-types';
-import { SheetOffsets, SheetOffsetsWasm, stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type {
+  ColumnRow,
+  GridBounds,
+  JsCoordinate,
+  SheetBounds,
+  SheetInfo,
+  Validation,
+} from '@/app/quadratic-core-types';
+import {
+  type SheetOffsets,
+  SheetOffsetsWasm,
+  stringToSelection,
+} from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 
 export class Sheet {
+  sheets: Sheets;
   id: string;
+
   cursor: SheetCursor;
 
   name: string;
@@ -27,7 +40,8 @@ export class Sheet {
   // clamp is the area that the cursor can move around in
   clamp: Rectangle;
 
-  constructor(info: SheetInfo, testSkipOffsetsLoad = false) {
+  constructor(sheets: Sheets, info: SheetInfo, testSkipOffsetsLoad = false) {
+    this.sheets = sheets;
     this.id = info.sheet_id;
     this.name = info.name;
     this.order = info.order;
@@ -36,7 +50,7 @@ export class Sheet {
     this.cursor = new SheetCursor(this);
     this.bounds = info.bounds;
     this.boundsWithoutFormatting = info.bounds_without_formatting;
-    this.gridOverflowLines = new GridOverflowLines();
+    this.gridOverflowLines = new GridOverflowLines(this);
 
     // this will be imported via SheetInfo in the future
     this.clamp = new Rectangle(1, 1, Infinity, Infinity);
@@ -52,27 +66,12 @@ export class Sheet {
   };
 
   // Returns all validations that intersect with the given point.
-  getValidation(x: number, y: number): Validation[] | undefined {
+  getValidation = (x: number, y: number): Validation[] | undefined => {
     return this.validations.filter((v) => {
-      const selection = stringToSelection(v.selection.toString(), this.id, sheets.getSheetIdNameMap());
-      return selection.contains(x, y);
+      const selection = stringToSelection(v.selection.toString(), this.id, this.sheets.a1Context);
+      return selection.contains(x, y, this.sheets.a1Context);
     });
-  }
-
-  static testSheet(): Sheet {
-    return new Sheet(
-      {
-        sheet_id: 'test-sheet',
-        name: 'Test Sheet',
-        order: '1',
-        color: 'red',
-        offsets: '',
-        bounds: { type: 'empty' },
-        bounds_without_formatting: { type: 'empty' },
-      },
-      true
-    );
-  }
+  };
 
   private updateBounds = (sheetsBounds: SheetBounds) => {
     if (this.id === sheetsBounds.sheet_id) {
@@ -84,12 +83,12 @@ export class Sheet {
   //#region set sheet actions
   // -----------------------------------
 
-  setName(name: string): void {
+  setName = (name: string): void => {
     if (name !== this.name) {
-      quadraticCore.setSheetName(this.id, name, sheets.getCursorPosition());
+      quadraticCore.setSheetName(this.id, name, this.sheets.getCursorPosition());
       this.name = name;
     }
-  }
+  };
 
   updateSheetInfo(info: SheetInfo) {
     this.name = info.name;

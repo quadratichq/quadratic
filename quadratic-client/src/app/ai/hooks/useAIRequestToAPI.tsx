@@ -2,8 +2,14 @@ import { editorInteractionStateFileUuidAtom } from '@/app/atoms/editorInteractio
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
-import { AIMessagePrompt, AIMessagePromptSchema, AIRequestBody, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
-import { SetterOrUpdater, useRecoilCallback } from 'recoil';
+import {
+  AIMessagePromptSchema,
+  type AIMessagePrompt,
+  type AIRequestBody,
+  type ChatMessage,
+} from 'quadratic-shared/typesAndSchemasAI';
+import type { SetterOrUpdater } from 'recoil';
+import { useRecoilCallback } from 'recoil';
 
 type HandleAIPromptProps = Omit<AIRequestBody, 'fileUuid'> & {
   setMessages?: SetterOrUpdater<ChatMessage[]> | ((value: React.SetStateAction<ChatMessage[]>) => void);

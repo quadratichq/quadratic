@@ -3,7 +3,7 @@ import { codeEditorShowSnippetsPopoverAtom } from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { SheetBounds } from '@/app/quadratic-core-types';
+import type { SheetBounds } from '@/app/quadratic-core-types';
 import { atom, DefaultValue, selector } from 'recoil';
 
 interface CodeHintState {

@@ -1,7 +1,7 @@
 // Messages sent between the javascript web worker and the javascript runner
 // (which is where the user code is executed).
 
-import { CellType } from './javascriptAPI';
+import type { CellType } from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascriptAPI';
 
 export type JavascriptRunnerGetCells = CellType[][] | undefined;
 
@@ -22,6 +22,7 @@ export interface RunnerJavascriptResults {
   results: any;
   console: string;
   lineNumber?: number;
+  chartPixelOutput?: [number, number];
 }
 
 export interface RunnerJavascriptError {

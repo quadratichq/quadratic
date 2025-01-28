@@ -1,5 +1,5 @@
 import { InputBase, useTheme } from '@mui/material';
-import { SxProps } from '@mui/system';
+import type { SxProps } from '@mui/system';
 import { useEffect, useRef, useState } from 'react';
 
 /**

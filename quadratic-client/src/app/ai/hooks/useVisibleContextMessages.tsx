@@ -2,7 +2,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { rectToA1, xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { maxRects } from '@/app/ui/menus/AIAnalyst/const/maxRects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
 export function useVisibleContextMessages() {

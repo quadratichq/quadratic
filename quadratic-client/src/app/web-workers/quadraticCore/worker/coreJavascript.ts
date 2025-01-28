@@ -1,10 +1,10 @@
 import { debugWebWorkers } from '@/app/debugFlags';
-import { CellA1Response } from '@/app/quadratic-core-types';
-import {
+import type { CellA1Response } from '@/app/quadratic-core-types';
+import type {
   CoreJavascriptMessage,
   JavascriptCoreMessage,
 } from '@/app/web-workers/javascriptWebWorker/javascriptCoreMessages';
-import { core } from './core';
+import { core } from '@/app/web-workers/quadraticCore/worker/core';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {

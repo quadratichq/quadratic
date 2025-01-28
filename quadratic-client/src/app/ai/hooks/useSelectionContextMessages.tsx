@@ -1,6 +1,6 @@
 import { maxRects } from '@/app/ui/menus/AIAnalyst/const/maxRects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { ChatMessage, Context } from 'quadratic-shared/typesAndSchemasAI';
+import type { ChatMessage, Context } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
 export function useSelectionContextMessages() {

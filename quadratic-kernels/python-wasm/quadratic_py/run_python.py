@@ -7,7 +7,8 @@ import pandas as pd
 import pyodide
 from quadratic_py import code_trace, plotly_patch, process_output
 
-from .quadratic_api.quadratic import getCell, getCells, q, rel_cell, rel_cells, rc
+from .quadratic_api.quadratic import (getCell, getCells, q, rc, rel_cell,
+                                      rel_cells)
 from .utils import attempt_fix_await
 
 
@@ -100,6 +101,7 @@ async def run_python(code: str, pos: Tuple[int, int]):
             "input_python_stack_trace": None,
             "code": code,
             "formatted_code": code,
+            "has_headers": output["has_headers"],
         }
 
 print("[Python WebWorker] initialized")

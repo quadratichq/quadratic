@@ -8,7 +8,7 @@ import { debugShowFileIO, debugWebWorkersMessages } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import {
+import type {
   BorderSelection,
   BorderStyle,
   CellAlign,
@@ -16,6 +16,7 @@ import {
   CellVerticalAlign,
   CellWrap,
   CodeCellLanguage,
+  Direction,
   Format,
   JsCellValue,
   JsCellValuePosAIContext,
@@ -24,15 +25,15 @@ import {
   JsCoordinate,
   JsRenderCell,
   JsSummarizeSelectionResult,
-  JumpDirection,
+  MinMax,
   PasteSpecial,
+  Pos,
   SearchOptions,
   SheetPos,
   SheetRect,
   Validation,
 } from '@/app/quadratic-core-types';
-import { MinMax, Pos } from '@/app/quadratic-core/quadratic_core';
-import {
+import type {
   ClientCoreCellHasContent,
   ClientCoreGetCellFormatSummary,
   ClientCoreGetCodeCell,
@@ -51,6 +52,7 @@ import {
   CoreClientGetCellFormatSummary,
   CoreClientGetCodeCell,
   CoreClientGetColumnsBounds,
+  CoreClientGetCsvPreview,
   CoreClientGetDisplayCell,
   CoreClientGetEditCell,
   CoreClientGetJwt,
@@ -70,7 +72,7 @@ import {
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { authClient } from '@/auth/auth';
-import { Rectangle } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
 
 class QuadraticCore {
   private worker?: Worker;
@@ -112,9 +114,6 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientSetCursor') {
       events.emit('setCursor', e.data.cursor);
-      return;
-    } else if (e.data.type === 'coreClientSetCursorSelection') {
-      events.emit('setCursor', e.data.selection);
       return;
     } else if (e.data.type === 'coreClientSheetOffsets') {
       events.emit('sheetOffsets', e.data.sheetId, e.data.offsets);
@@ -194,12 +193,15 @@ class QuadraticCore {
       events.emit('bordersSheet', e.data.sheetId, e.data.borders);
       return;
     } else if (e.data.type === 'coreClientClientMessage') {
-      pixiAppSettings.snackbar(e.data.message, { severity: e.data.error ? 'error' : 'success' });
+      pixiAppSettings.snackbar(e.data.message, { severity: e.data.severity });
 
       // This is a hack to get import files to properly show negative offsets dialog
       // after importing from dashboard. This can be removed in the future.
       this.receivedClientMessage = true;
 
+      return;
+    } else if (e.data.type === 'coreClientA1Context') {
+      events.emit('a1Context', e.data.context);
       return;
     }
 
@@ -546,6 +548,24 @@ class QuadraticCore {
     });
   };
 
+  getCsvPreview({
+    file,
+    maxRows,
+    delimiter,
+  }: {
+    file: ArrayBuffer;
+    maxRows: number;
+    delimiter: number | undefined;
+  }): Promise<CoreClientGetCsvPreview['preview']> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: CoreClientGetCsvPreview) => {
+        resolve(message.preview);
+      };
+      this.send({ type: 'clientCoreGetCsvPreview', file, maxRows, delimiter, id }, file);
+    });
+  }
+
   initMultiplayer(port: MessagePort) {
     this.send({ type: 'clientCoreInitMultiplayer' }, port);
   }
@@ -566,7 +586,7 @@ class QuadraticCore {
     });
   }
 
-  setBold(selection: string, bold: boolean, cursor?: string) {
+  setBold(selection: string, bold?: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellBold',
       selection,
@@ -584,7 +604,7 @@ class QuadraticCore {
     });
   }
 
-  setItalic(selection: string, italic: boolean, cursor?: string) {
+  setItalic(selection: string, italic?: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellItalic',
       selection,
@@ -602,7 +622,7 @@ class QuadraticCore {
     });
   }
 
-  setUnderline(selection: string, underline: boolean, cursor?: string) {
+  setUnderline(selection: string, underline?: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellUnderline',
       selection,
@@ -611,7 +631,7 @@ class QuadraticCore {
     });
   }
 
-  setStrikeThrough(selection: string, strikeThrough: boolean, cursor?: string) {
+  setStrikeThrough(selection: string, strikeThrough?: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellStrikeThrough',
       selection,
@@ -697,7 +717,7 @@ class QuadraticCore {
     });
   }
 
-  setCommas(selection: string, commas: boolean, cursor?: string) {
+  setCommas(selection: string, commas?: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCommas',
       selection,
@@ -1029,7 +1049,12 @@ class QuadraticCore {
     });
   }
 
-  jumpCursor(sheetId: string, current: JsCoordinate, direction: JumpDirection): Promise<JsCoordinate | undefined> {
+  jumpCursor(
+    sheetId: string,
+    current: JsCoordinate,
+    jump: boolean,
+    direction: Direction
+  ): Promise<JsCoordinate | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: CoreClientJumpCursor) => {
@@ -1041,56 +1066,7 @@ class QuadraticCore {
         current,
         direction,
         id,
-      });
-    });
-  }
-
-  findNextColumn(options: {
-    sheetId: string;
-    columnStart: number;
-    row: number;
-    reverse: boolean;
-    withContent: boolean;
-  }): Promise<number | undefined> {
-    const { sheetId, columnStart, row, reverse, withContent } = options;
-    return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: { column: number | number }) => {
-        resolve(message.column);
-      };
-      this.send({
-        type: 'clientCoreFindNextColumn',
-        id,
-        sheetId,
-        columnStart,
-        row,
-        reverse,
-        withContent,
-      });
-    });
-  }
-
-  findNextRow(options: {
-    sheetId: string;
-    column: number;
-    rowStart: number;
-    reverse: boolean;
-    withContent: boolean;
-  }): Promise<number | undefined> {
-    const { sheetId, column, rowStart, reverse, withContent } = options;
-    return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: { row: number | undefined }) => {
-        resolve(message.row);
-      };
-      this.send({
-        type: 'clientCoreFindNextRow',
-        id,
-        sheetId,
-        column,
-        rowStart,
-        reverse,
-        withContent,
+        jump,
       });
     });
   }
@@ -1334,6 +1310,118 @@ class QuadraticCore {
     });
   }
 
+  //#endregion
+  //#region data tables
+
+  flattenDataTable(sheetId: string, x: number, y: number, cursor: string) {
+    this.send({
+      type: 'clientCoreFlattenDataTable',
+      sheetId,
+      x,
+      y,
+      cursor,
+    });
+  }
+
+  codeDataTableToDataTable(sheetId: string, x: number, y: number, cursor: string) {
+    this.send({
+      type: 'clientCoreCodeDataTableToDataTable',
+      sheetId,
+      x,
+      y,
+      cursor,
+    });
+  }
+
+  gridToDataTable(sheetRect: string, cursor: string) {
+    this.send({
+      type: 'clientCoreGridToDataTable',
+      sheetRect,
+      cursor,
+    });
+  }
+
+  dataTableMeta(
+    sheetId: string,
+    x: number,
+    y: number,
+    options: {
+      name?: string;
+      alternatingColors?: boolean;
+      columns?: { name: string; display: boolean; valueIndex: number }[];
+      showColumns?: boolean;
+      showName?: boolean;
+      showUI?: boolean;
+    },
+    cursor?: string
+  ) {
+    this.send({
+      type: 'clientCoreDataTableMeta',
+      sheetId,
+      x,
+      y,
+      name: options.name,
+      alternatingColors: options.alternatingColors,
+      columns: options.columns,
+      showUI: options.showUI,
+      showName: options.showName,
+      showColumns: options.showColumns,
+      cursor: cursor || '',
+    });
+  }
+
+  dataTableMutations(args: {
+    sheetId: string;
+    x: number;
+    y: number;
+    columns_to_add?: number[];
+    columns_to_remove?: number[];
+    rows_to_add?: number[];
+    rows_to_remove?: number[];
+    flatten_on_delete?: boolean;
+    cursor?: string;
+  }) {
+    this.send({
+      type: 'clientCoreDataTableMutations',
+      sheetId: args.sheetId,
+      x: args.x,
+      y: args.y,
+      columns_to_add: args.columns_to_add,
+      columns_to_remove: args.columns_to_remove,
+      rows_to_add: args.rows_to_add,
+      rows_to_remove: args.rows_to_remove,
+      flatten_on_delete: args.flatten_on_delete,
+      cursor: args.cursor,
+    });
+  }
+
+  sortDataTable(
+    sheetId: string,
+    x: number,
+    y: number,
+    sort: { column_index: number; direction: string }[],
+    cursor: string
+  ) {
+    this.send({
+      type: 'clientCoreSortDataTable',
+      sheetId,
+      x,
+      y,
+      sort,
+      cursor,
+    });
+  }
+
+  dataTableFirstRowAsHeader(sheetId: string, x: number, y: number, firstRowAsHeader: boolean, cursor: string) {
+    this.send({
+      type: 'clientCoreDataTableFirstRowAsHeader',
+      sheetId,
+      x,
+      y,
+      firstRowAsHeader,
+      cursor,
+    });
+  }
   //#endregion
 }
 

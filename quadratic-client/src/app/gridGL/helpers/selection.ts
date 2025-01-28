@@ -1,9 +1,9 @@
 import { sheets } from '@/app/grid/controller/Sheets';
-import { CellRefRange } from '@/app/quadratic-core-types';
+import type { RefRangeBounds } from '@/app/quadratic-core-types';
 import { Rectangle } from 'pixi.js';
 
 // returns rectangle representing the range in col/row coordinates
-export function getRangeRectangleFromCellRefRange({ range }: CellRefRange): Rectangle {
+export function getRangeRectangleFromCellRefRange(range: RefRangeBounds): Rectangle {
   const { col, row } = range.start;
   let startCol = Number(col.coord);
   if (startCol === -1) startCol = 1;
@@ -26,7 +26,7 @@ export function getRangeRectangleFromCellRefRange({ range }: CellRefRange): Rect
 }
 
 // returns rectangle representing the range in screen coordinates
-export function getRangeScreenRectangleFromCellRefRange(range: CellRefRange): Rectangle {
+export function getRangeScreenRectangleFromCellRefRange(range: RefRangeBounds): Rectangle {
   const colRowRect = getRangeRectangleFromCellRefRange(range);
 
   const sheet = sheets.sheet;

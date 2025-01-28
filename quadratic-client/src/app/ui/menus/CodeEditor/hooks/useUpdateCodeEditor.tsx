@@ -1,5 +1,5 @@
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
-import { JsCodeCell, JsCoordinate, Pos } from '@/app/quadratic-core-types';
+import type { JsCodeCell, JsCoordinate, Pos } from '@/app/quadratic-core-types';
 import { useRecoilCallback } from 'recoil';
 
 export const useUpdateCodeEditor = () => {

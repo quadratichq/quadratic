@@ -1,6 +1,6 @@
+import type { LanguageState } from '@/app/web-workers/languageTypes';
+import { python } from '@/app/web-workers/pythonWebWorker/worker/python';
 import { beforeAll, describe, expect, test, vi } from 'vitest';
-import { LanguageState } from '../../languageTypes';
-import { python } from './python';
 
 let pythonState: LanguageState;
 vi.mock('./pythonClient.ts', () => {
@@ -78,6 +78,7 @@ describe('Python/Pyodide', () => {
         success: true,
         input_python_stack_trace: undefined,
         code: '\n      5 + 3\n',
+        has_headers: false,
         col_offset: 0,
         end_col_offset: 5,
         end_lineno: 2,

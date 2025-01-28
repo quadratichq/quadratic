@@ -1,5 +1,3 @@
-use crate::{controller::operations::operation::Operation, grid::SheetId};
-
 use super::*;
 
 impl Borders {
@@ -13,22 +11,13 @@ impl Borders {
     }
 
     /// Sets the borders for a selection.
-    pub fn set_borders_a1(
-        &mut self,
-        sheet_id: SheetId,
-        borders: &BordersUpdates,
-    ) -> Vec<Operation> {
-        let reverse_borders = BordersUpdates {
+    pub fn set_borders_a1(&mut self, borders: &BordersUpdates) -> BordersUpdates {
+        BordersUpdates {
             left: Self::set_borders_item(&borders.left, &mut self.left),
             right: Self::set_borders_item(&borders.right, &mut self.right),
             top: Self::set_borders_item(&borders.top, &mut self.top),
             bottom: Self::set_borders_item(&borders.bottom, &mut self.bottom),
-        };
-
-        vec![Operation::SetBordersA1 {
-            sheet_id,
-            borders: reverse_borders,
-        }]
+        }
     }
 
     /// Applies the updates to the borders and returns an update to undo the changes.

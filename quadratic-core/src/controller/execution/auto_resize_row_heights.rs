@@ -82,16 +82,17 @@ mod tests {
     use crate::controller::GridController;
     use crate::grid::formats::FormatUpdate;
     use crate::grid::formats::SheetFormatUpdates;
+    use crate::grid::formatting::RenderSize;
     use crate::grid::js_types::JsRowHeight;
     use crate::grid::{
         CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, NumericFormat, NumericFormatKind,
-        RenderSize, SheetId,
+        SheetId,
     };
     use crate::sheet_offsets::resize_transient::TransientResize;
     use crate::wasm_bindings::js::{
         clear_js_calls, expect_js_call, expect_js_call_count, expect_js_offsets,
     };
-    use crate::{A1Selection, CellValue, Pos, SheetPos};
+    use crate::{a1::A1Selection, CellValue, Pos, SheetPos};
 
     fn mock_auto_resize_row_heights(
         gc: &mut GridController,
@@ -511,6 +512,7 @@ mod tests {
                 w: 1,
                 h: 1,
                 two_dimensional: false,
+                has_headers: false,
             })
         );
         // pending cal
@@ -518,17 +520,12 @@ mod tests {
         assert_eq!(transaction.has_async, 1);
 
         assert!(gc
-            .calculation_complete(JsCodeResult::new(
-                transaction_id.to_string(),
-                true,
-                None,
-                None,
-                Some(vec!["10".into(), "number".into()]),
-                None,
-                None,
-                None,
-                None,
-            ))
+            .calculation_complete(JsCodeResult {
+                transaction_id: transaction_id.to_string(),
+                success: true,
+                output_value: Some(vec!["10".into(), "number".into()]),
+                ..Default::default()
+            })
             .is_ok());
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(

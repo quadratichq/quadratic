@@ -1,8 +1,9 @@
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
+import { fileDragDropModalAtom } from '@/dashboard/atoms/fileDragDropModalAtom';
 import { cn } from '@/shared/shadcn/utils';
-import { DragEvent, useCallback } from 'react';
+import type { DragEvent } from 'react';
+import { useCallback } from 'react';
 import { useRecoilState } from 'recoil';
-import { fileDragDropModalAtom } from '../atoms/fileDragDropModalAtom';
 
 interface FileDragDropProps {
   className?: string;
@@ -31,7 +32,7 @@ export function FileDragDrop({ className }: FileDragDropProps) {
 
       setFileDragDropModal({ show: false, teamUuid: undefined, isPrivate: undefined });
 
-      const files = e.dataTransfer.files;
+      const files = Array.from(e.dataTransfer.files);
       const { isPrivate, teamUuid } = fileDragDropModal;
       handleFileImport({ files, isPrivate, teamUuid });
     },

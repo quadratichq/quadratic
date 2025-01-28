@@ -4,9 +4,10 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
 use crate::{
+    a1::A1Selection,
     clear_option::ClearOption,
-    grid::{CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, NumericFormat, RenderSize},
-    A1Selection, Pos, Rect,
+    grid::{CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, NumericFormat},
+    Pos, Rect,
 };
 
 use super::FormatUpdate;
@@ -25,7 +26,6 @@ pub struct SheetFormatUpdates {
     pub italic: SheetFormatUpdatesType<bool>,
     pub text_color: SheetFormatUpdatesType<String>,
     pub fill_color: SheetFormatUpdatesType<String>,
-    pub render_size: SheetFormatUpdatesType<RenderSize>,
     pub date_time: SheetFormatUpdatesType<String>,
     pub underline: SheetFormatUpdatesType<bool>,
     pub strike_through: SheetFormatUpdatesType<bool>,
@@ -60,7 +60,6 @@ impl SheetFormatUpdates {
             italic: Self::apply_selection(selection, update.italic),
             text_color: Self::apply_selection(selection, update.text_color),
             fill_color: Self::apply_selection(selection, update.fill_color),
-            render_size: Self::apply_selection(selection, update.render_size),
             date_time: Self::apply_selection(selection, update.date_time),
             underline: Self::apply_selection(selection, update.underline),
             strike_through: Self::apply_selection(selection, update.strike_through),
@@ -86,7 +85,6 @@ impl SheetFormatUpdates {
             || Self::item_intersects(&self.italic, rect)
             || Self::item_intersects(&self.text_color, rect)
             || Self::item_intersects(&self.fill_color, rect)
-            || Self::item_intersects(&self.render_size, rect)
             || Self::item_intersects(&self.date_time, rect)
             || Self::item_intersects(&self.underline, rect)
             || Self::item_intersects(&self.strike_through, rect)
@@ -104,7 +102,6 @@ impl SheetFormatUpdates {
             && self.italic.is_none()
             && self.text_color.is_none()
             && self.fill_color.is_none()
-            && self.render_size.is_none()
             && self.date_time.is_none()
             && self.underline.is_none()
             && self.strike_through.is_none()
@@ -134,7 +131,6 @@ impl SheetFormatUpdates {
         Self::set_format_cell_item(pos, &mut self.italic, update.italic);
         Self::set_format_cell_item(pos, &mut self.text_color, update.text_color);
         Self::set_format_cell_item(pos, &mut self.fill_color, update.fill_color);
-        Self::set_format_cell_item(pos, &mut self.render_size, update.render_size);
         Self::set_format_cell_item(pos, &mut self.date_time, update.date_time);
         Self::set_format_cell_item(pos, &mut self.underline, update.underline);
         Self::set_format_cell_item(pos, &mut self.strike_through, update.strike_through);
@@ -161,10 +157,10 @@ impl SheetFormatUpdates {
             italic: Self::format_update_item(&self.italic, pos),
             text_color: Self::format_update_item(&self.text_color, pos),
             fill_color: Self::format_update_item(&self.fill_color, pos),
-            render_size: Self::format_update_item(&self.render_size, pos),
             date_time: Self::format_update_item(&self.date_time, pos),
             underline: Self::format_update_item(&self.underline, pos),
             strike_through: Self::format_update_item(&self.strike_through, pos),
+            render_size: None,
         }
     }
 
@@ -197,7 +193,6 @@ impl SheetFormatUpdates {
         Self::set_format_rect_item(&mut self.italic, rect, update.italic);
         Self::set_format_rect_item(&mut self.text_color, rect, update.text_color);
         Self::set_format_rect_item(&mut self.fill_color, rect, update.fill_color);
-        Self::set_format_rect_item(&mut self.render_size, rect, update.render_size);
         Self::set_format_rect_item(&mut self.date_time, rect, update.date_time);
         Self::set_format_rect_item(&mut self.underline, rect, update.underline);
         Self::set_format_rect_item(&mut self.strike_through, rect, update.strike_through);
@@ -222,10 +217,16 @@ impl SheetFormatUpdates {
         Self::translate_rect_item(&mut self.italic, x, y);
         Self::translate_rect_item(&mut self.text_color, x, y);
         Self::translate_rect_item(&mut self.fill_color, x, y);
-        Self::translate_rect_item(&mut self.render_size, x, y);
         Self::translate_rect_item(&mut self.date_time, x, y);
         Self::translate_rect_item(&mut self.underline, x, y);
         Self::translate_rect_item(&mut self.strike_through, x, y);
+    }
+
+    /// Whether the update includes any fill color changes
+    pub fn has_fills(&self) -> bool {
+        self.fill_color
+            .as_ref()
+            .is_some_and(|fills| !fills.is_all_default())
     }
 }
 
@@ -270,5 +271,20 @@ mod tests {
         assert!(updates.vertical_align.is_none());
         assert!(updates.wrap.is_none());
         assert!(updates.numeric_format.is_none());
+    }
+
+    #[test]
+    fn test_has_fills() {
+        let updates = SheetFormatUpdates::default();
+        assert!(!updates.has_fills());
+
+        let updates = SheetFormatUpdates::from_selection(
+            &A1Selection::test_a1("A1:B2"),
+            FormatUpdate {
+                fill_color: Some(Some("red".to_string())),
+                ..Default::default()
+            },
+        );
+        assert!(updates.has_fills());
     }
 }

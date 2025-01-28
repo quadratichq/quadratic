@@ -5,7 +5,7 @@ use std::{fmt, str::FromStr};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::UNBOUNDED;
+use crate::a1::UNBOUNDED;
 use crate::{grid::SheetId, ArraySize, Pos, SheetPos};
 
 /// Used for referencing a range during computation.

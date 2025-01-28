@@ -1,12 +1,14 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+import type { ValidationData } from '@/app/ui/menus/Validations/Validation/useValidationData';
 import { useValidationDateTimeData } from '@/app/ui/menus/Validations/Validation/ValidationDateTime/useValidationDateTime';
 import { ValidationsDateEquals } from '@/app/ui/menus/Validations/Validation/ValidationDateTime/ValidationDateEquals';
 import { ValidationDateRanges } from '@/app/ui/menus/Validations/Validation/ValidationDateTime/ValidationDateRanges';
 import { ValidationDateTimeRequire } from '@/app/ui/menus/Validations/Validation/ValidationDateTime/ValidationDateTimeRequire';
 import { ValidationsTimeEquals } from '@/app/ui/menus/Validations/Validation/ValidationDateTime/ValidationTimeEquals';
 import { ValidationTimeRanges } from '@/app/ui/menus/Validations/Validation/ValidationDateTime/ValidationTimeRanges';
-import { ValidationData } from '../useValidationData';
-import { ValidationMoreOptions, ValidationUICheckbox } from '../ValidationUI/ValidationUI';
+import {
+  ValidationMoreOptions,
+  ValidationUICheckbox,
+} from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationUI';
 
 interface Props {
   validationData: ValidationData;
@@ -15,7 +17,7 @@ interface Props {
 
 export const ValidationDateTime = (props: Props) => {
   const { validationData, onEnter } = props;
-  const { ignoreBlank, changeIgnoreBlank, readOnly, validation } = validationData;
+  const { ignoreBlank, changeIgnoreBlank, readOnly } = validationData;
   const dateTimeData = useValidationDateTimeData(validationData);
 
   return (

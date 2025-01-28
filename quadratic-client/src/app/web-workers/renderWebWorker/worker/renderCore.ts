@@ -6,14 +6,14 @@
  */
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import { JsRenderCell } from '@/app/quadratic-core-types';
-import {
+import type { JsRenderCell } from '@/app/quadratic-core-types';
+import type {
   CoreRenderCells,
   CoreRenderMessage,
   RenderCoreRequestRenderCells,
   RenderCoreResponseRowHeights,
 } from '@/app/web-workers/quadraticCore/coreRenderMessages';
-import { renderText } from './renderText';
+import { renderText } from '@/app/web-workers/renderWebWorker/worker/renderText';
 
 class RenderCore {
   private renderCorePort?: MessagePort;

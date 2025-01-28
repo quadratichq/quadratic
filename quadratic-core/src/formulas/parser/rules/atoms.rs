@@ -46,11 +46,11 @@ impl SyntaxRule for NumericLiteral {
     }
 }
 
-/// Maches an optional sheet reference prefix to a cell reference or cell range
+/// Matches an optional sheet reference prefix to a cell reference or cell range
 /// reference.
 #[derive(Debug, Copy, Clone)]
 pub struct SheetRefPrefix;
-impl_display!(for SheetRefPrefix, "sheet reference such as 'MySheet!' or '\"Sheet 2\"!'");
+impl_display!(for SheetRefPrefix, "sheet reference such as 'MySheet!' or '\"Sheet2\"!'");
 impl SyntaxRule for SheetRefPrefix {
     type Output = String;
 

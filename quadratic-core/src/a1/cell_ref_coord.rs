@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use wasm_bindgen::prelude::*;
 
-// need to round a bit since i64::MAX is too big for JS's BigInt
 pub const UNBOUNDED: i64 = i64::MAX;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]

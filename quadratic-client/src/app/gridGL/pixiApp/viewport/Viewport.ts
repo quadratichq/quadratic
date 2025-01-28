@@ -6,7 +6,8 @@ import { Drag } from '@/app/gridGL/pixiApp/viewport/Drag';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '@/app/gridGL/pixiApp/viewport/Wheel';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { Viewport as PixiViewport } from 'pixi-viewport';
-import { Point, Rectangle } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
+import { Point } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 
 const MULTIPLAYER_VIEWPORT_EASE_TIME = 100;
@@ -141,7 +142,7 @@ export class Viewport extends PixiViewport {
   sendRenderViewport() {
     const bounds = this.getVisibleBounds();
     const scale = this.scale.x;
-    renderWebWorker.updateViewport(sheets.sheet.id, bounds, scale);
+    renderWebWorker.updateViewport(sheets.current, bounds, scale);
   }
 
   private startSnap = () => {
@@ -167,7 +168,8 @@ export class Viewport extends PixiViewport {
         time: SNAPPING_TIME,
         ease: 'easeOutSine',
         removeOnComplete: true,
-        interrupt: true,
+        removeOnInterrupt: true,
+        interrupt: false,
       });
       this.snapState = 'snapping';
     } else {
@@ -194,8 +196,8 @@ export class Viewport extends PixiViewport {
       this.lastScreenHeight = this.screenHeight;
       dirty = true;
     }
-    if (this.lastSheetId !== sheets.sheet.id) {
-      this.lastSheetId = sheets.sheet.id;
+    if (this.lastSheetId !== sheets.current) {
+      this.lastSheetId = sheets.current;
       dirty = true;
     }
     if (dirty) {

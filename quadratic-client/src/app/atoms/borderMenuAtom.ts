@@ -1,6 +1,6 @@
 import { events } from '@/app/events/events';
 import { convertTintToString } from '@/app/helpers/convertColor';
-import { BorderSelection, CellBorderLine } from '@/app/quadratic-core-types';
+import type { BorderSelection, CellBorderLine } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { atom, DefaultValue } from 'recoil';
 

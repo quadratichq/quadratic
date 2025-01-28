@@ -82,7 +82,7 @@ pub fn parse_formula(formula_string: &str, pos: Pos) -> FormulaParseResult {
 mod tests {
     use crate::controller::formula::{parse_formula, CellRefSpan, FormulaParseResult};
     use crate::formulas::{CellRef, CellRefCoord, RangeRef};
-    use crate::{Span, UNBOUNDED};
+    use crate::{a1::UNBOUNDED, Span};
     use serial_test::parallel;
 
     fn parse(s: &str) -> FormulaParseResult {
@@ -132,7 +132,7 @@ mod tests {
     #[test]
     #[parallel]
     fn test_parse_formula_output() {
-        let result = parse("'Sheet 2'!A0");
+        let result = parse("'Sheet2'!A0");
         assert_eq!(result.parse_error_msg, None);
         assert_eq!(result.parse_error_span, None);
         assert_eq!(result.cell_refs.len(), 1);

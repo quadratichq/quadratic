@@ -186,6 +186,9 @@ impl RunErrorSchema {
                 crate::RunErrorMsg::IndexOutOfBounds => RunErrorMsgSchema::IndexOutOfBounds,
                 crate::RunErrorMsg::NoMatch => RunErrorMsgSchema::NoMatch,
                 crate::RunErrorMsg::InvalidArgument => RunErrorMsgSchema::InvalidArgument,
+
+                crate::RunErrorMsg::NotANumber => RunErrorMsgSchema::NotANumber,
+                crate::RunErrorMsg::Infinity => RunErrorMsgSchema::Infinity,
             },
         }
     }

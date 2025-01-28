@@ -9,7 +9,8 @@ import {
   setVerticalAlign,
   setWrap,
 } from '@/app/ui/helpers/formatCells';
-import { CommandGroup, CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import {
   FormatAlignCenterIcon,
   FormatAlignLeftIcon,
