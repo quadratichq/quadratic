@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use anyhow::{Error, Result};
+use indexmap::IndexMap;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -15,6 +16,7 @@ use crate::grid::js_types::JsClipboard;
 use crate::grid::js_types::JsSnackbarSeverity;
 use crate::grid::sheet::borders::BordersUpdates;
 use crate::grid::sheet::validations::validation::Validation;
+use crate::grid::DataTable;
 use crate::grid::{CodeCellLanguage, DataTableKind};
 use crate::{a1::A1Selection, CellValue, Pos, Rect, SheetPos, SheetRect};
 
@@ -82,6 +84,9 @@ pub struct Clipboard {
 
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub validations: Option<ClipboardValidations>,
+
+    #[serde(with = "crate::util::indexmap_serde")]
+    pub data_tables: IndexMap<Pos, DataTable>,
 
     pub operation: ClipboardOperation,
 }
@@ -223,7 +228,6 @@ impl GridController {
                             |(output_rect, intersection_rect, data_table)| {
                                 let contains_source_cell =
                                     intersection_rect.contains(output_rect.min);
-
                                 // there is no pasting on top of code cell output
                                 if !data_table.readonly && !contains_source_cell {
                                     let adjusted_rect = Rect::from_numbers(
@@ -330,15 +334,23 @@ impl GridController {
                             y: clipboard.origin.y + *y as i64,
                         };
 
-                        if let Some(data_table) = sheet.data_table(source_pos) {
-                            if matches!(data_table.kind, DataTableKind::Import(_)) {
-                                ops.push(Operation::SetDataTable {
-                                    sheet_pos,
-                                    data_table: Some(data_table.to_owned()),
-                                    index: 0,
-                                });
-                            }
+                        if let Some(data_table) = clipboard.data_tables.get(&source_pos) {
+                            ops.push(Operation::SetDataTable {
+                                sheet_pos,
+                                data_table: Some(data_table.to_owned()),
+                                index: 0,
+                            });
                         }
+
+                        // if let Some(data_table) = sheet.data_table(source_pos) {
+                        //     if matches!(data_table.kind, DataTableKind::Import(_)) {
+                        //         ops.push(Operation::SetDataTable {
+                        //             sheet_pos,
+                        //             data_table: Some(data_table.to_owned()),
+                        //             index: 0,
+                        //         });
+                        //     }
+                        // }
 
                         ops.push(Operation::ComputeCode { sheet_pos });
                     });
@@ -447,7 +459,6 @@ impl GridController {
         special: PasteSpecial,
     ) -> Result<Vec<Operation>> {
         let error = |e, msg| Error::msg(format!("Clipboard Paste {:?}: {:?}", msg, e));
-
         let insert_at = selection.cursor;
 
         // use regex to find data-quadratic
@@ -521,7 +532,7 @@ mod test {
     use serial_test::{parallel, serial};
 
     use super::{PasteSpecial, *};
-    use crate::a1::A1Selection;
+    use crate::a1::{A1Context, A1Selection, CellRefRange, TableRef};
     use crate::controller::active_transactions::transaction_name::TransactionName;
     use crate::controller::user_actions::import::tests::{simple_csv, simple_csv_at};
     use crate::grid::js_types::JsClipboard;
@@ -737,7 +748,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn paste_clipboard_with_data_table() {
+    fn copy_paste_clipboard_with_data_table() {
         let (mut gc, sheet_id, _, _) = simple_csv();
         let paste = |gc: &mut GridController, x, y, html| {
             gc.paste_from_clipboard(
@@ -749,20 +760,73 @@ mod test {
             );
         };
 
+        let table_ref = TableRef::new("simple.csv");
+        let cell_ref_range = CellRefRange::Table { range: table_ref };
+        let context = A1Context::test(
+            &[("Sheet1", sheet_id)],
+            &[(
+                "simple.csv",
+                &["city", "region", "country", "population"],
+                Rect::test_a1("A1:D11"),
+            )],
+        );
+        let selection = A1Selection::from_range(cell_ref_range, sheet_id, &context);
+
         let JsClipboard { html, .. } = gc
             .sheet(sheet_id)
-            .copy_to_clipboard(
-                &A1Selection::from_xy(0, 0, sheet_id),
-                ClipboardOperation::Copy,
-            )
+            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
             .unwrap();
 
         let expected_row1 = vec!["city", "region", "country", "population"];
 
         // paste side by side
-        paste(&mut gc, 4, 0, html.clone());
-        print_table(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 10));
-        assert_cell_value_row(&gc, sheet_id, 4, 0, 0, expected_row1);
+        paste(&mut gc, 10, 1, html.clone());
+        print_table(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
+        assert_cell_value_row(&gc, sheet_id, 10, 13, 0, expected_row1);
+    }
+
+    #[test]
+    #[parallel]
+    fn cut_paste_clipboard_with_data_table() {
+        let (mut gc, sheet_id, _, _) = simple_csv();
+        let paste = |gc: &mut GridController, x, y, html| {
+            gc.paste_from_clipboard(
+                &A1Selection::from_xy(x, y, sheet_id),
+                None,
+                Some(html),
+                PasteSpecial::None,
+                None,
+            );
+        };
+
+        let table_ref = TableRef::new("simple.csv");
+        let cell_ref_range = CellRefRange::Table { range: table_ref };
+        let context = A1Context::test(
+            &[("Sheet1", sheet_id)],
+            &[(
+                "simple.csv",
+                &["city", "region", "country", "population"],
+                Rect::test_a1("A1:BV11"),
+            )],
+        );
+        let selection = A1Selection::from_range(cell_ref_range, sheet_id, &context);
+
+        // let selection = A1Selection::test_a1("A1:B4");
+
+        let (ops, js_clipboard) = gc.cut_to_clipboard_operations(&selection).unwrap();
+        gc.start_user_transaction(ops, None, TransactionName::CutClipboard);
+
+        // let js_clipboard = gc
+        //     .sheet(sheet_id)
+        //     .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+        //     .unwrap();
+
+        let expected_row1 = vec!["city", "region", "country", "population"];
+
+        // paste side by side
+        paste(&mut gc, 10, 1, js_clipboard.html.clone());
+        print_table(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
+        assert_cell_value_row(&gc, sheet_id, 10, 13, 0, expected_row1);
     }
 
     #[test]
