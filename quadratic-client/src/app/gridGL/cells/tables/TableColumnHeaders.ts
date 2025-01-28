@@ -12,9 +12,6 @@ import { sharedEvents } from '@/shared/sharedEvents';
 import type { Point } from 'pixi.js';
 import { Container, Graphics, Rectangle } from 'pixi.js';
 
-// used to make the column header background a bit darker than the primary color
-export const COLUMN_HEADER_BACKGROUND_LUMINOSITY = 1.75;
-
 export class TableColumnHeaders extends Container {
   private table: Table;
   private background: Graphics;
@@ -39,7 +36,8 @@ export class TableColumnHeaders extends Container {
 
   drawBackground = () => {
     this.background.clear();
-    const color = getCSSVariableTint('primary', { luminosity: COLUMN_HEADER_BACKGROUND_LUMINOSITY });
+    // TODO: (jimniels) this inverts weird in dark mode
+    const color = getCSSVariableTint('accent');
 
     this.background.lineStyle();
     this.background.beginFill(color);
@@ -51,10 +49,18 @@ export class TableColumnHeaders extends Container {
     const active = pixiApp.cellsSheet().tables.isActive(this.table);
     if ((this.table.inOverHeadings && active) || this.table.codeCell.show_ui) {
       const width = active ? 2 : 1;
-      this.background.lineStyle({ color: getCSSVariableTint('primary'), width, alignment: 1 });
+      this.background.lineStyle({
+        color: getCSSVariableTint(this.table.active ? 'primary' : 'muted-foreground'),
+        width,
+        alignment: 1,
+      });
       this.background.moveTo(0, 0);
       this.background.lineTo(0, this.headerHeight);
-      this.background.lineStyle({ color: getCSSVariableTint('primary'), width, alignment: 0 });
+      this.background.lineStyle({
+        color: getCSSVariableTint(this.table.active ? 'primary' : 'muted-foreground'),
+        width,
+        alignment: 0,
+      });
       this.background.moveTo(this.table.tableBounds.width, 0);
       this.background.lineTo(this.table.tableBounds.width, this.headerHeight);
     }

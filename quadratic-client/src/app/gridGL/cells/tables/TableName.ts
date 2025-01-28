@@ -1,7 +1,7 @@
 import { DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { getLanguageSymbol } from '@/app/gridGL/cells/CellsMarkers';
 import type { Table } from '@/app/gridGL/cells/tables/Table';
-import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
+import { type TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { DEFAULT_HTML_WIDTH } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCell';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
@@ -58,7 +58,8 @@ export class TableName extends Container {
     }
 
     this.background.clear();
-    this.background.beginFill(getCSSVariableTint('primary'));
+    // TODO: (jimniels) if the table is selected 'primary' otherwise 'muted-foreground
+    this.background.beginFill(getCSSVariableTint('muted-foreground'));
     this.background.drawShape(new Rectangle(0, 0, this.backgroundWidth, this.h));
     this.background.endFill();
   };
