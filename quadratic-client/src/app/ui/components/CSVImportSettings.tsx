@@ -16,9 +16,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 
-const DEFAULT_CSV_DELIMITER = ',';
+export const DEFAULT_CSV_DELIMITER = ',';
 const DEFAULT_CUSTOM_CSV_DELIMITER = '';
-const DEFAULT_HAS_HEADING = true;
+export const DEFAULT_HAS_HEADING = false;
 const DEFAULT_CSV_PREVIEW = undefined;
 const DEFAULT_MAX_ROWS = 6; // 1 header + 5 rows
 

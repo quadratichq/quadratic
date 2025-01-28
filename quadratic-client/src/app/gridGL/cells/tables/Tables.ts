@@ -215,11 +215,11 @@ export class Tables extends Container<Table> {
     }
     if (hover !== this.hoverTable) {
       if (this.hoverTable) {
-        this.hoverTable.hideActive();
+        // this.hoverTable.hideActive();
       }
       this.hoverTable = hover;
       if (this.hoverTable && !this.hoverTable.isSingleCellOutputCodeCell()) {
-        this.hoverTable.showActive(false);
+        // this.hoverTable.showActive(false);
       }
     }
   };
@@ -264,7 +264,7 @@ export class Tables extends Container<Table> {
       if (result) {
         this.tableCursor = table.tableCursor;
         if (this.hoverTable !== table) {
-          this.hoverTable?.hideActive();
+          // this.hoverTable?.hideActive();
         }
         this.hoverTable = table;
         table.showActive(false);
@@ -278,7 +278,7 @@ export class Tables extends Container<Table> {
     if (table) {
       if (!this.isTableActive(table)) {
         if (this.hoverTable !== table) {
-          this.hoverTable?.hideActive();
+          // this.hoverTable?.hideActive();
         }
         this.hoverTable = table;
         table.showActive(false);
@@ -292,7 +292,7 @@ export class Tables extends Container<Table> {
     if (tableImage) {
       if (!this.isTableActive(tableImage)) {
         if (this.hoverTable !== tableImage) {
-          this.hoverTable?.hideActive();
+          // this.hoverTable?.hideActive();
         }
         this.hoverTable = tableImage;
         tableImage.showActive(false);
@@ -380,10 +380,9 @@ export class Tables extends Container<Table> {
 
   getTableColumnHeaderPosition(x: number, y: number, index: number): Rectangle | undefined {
     const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
-    if (!table) {
-      return;
+    if (table) {
+      return table.getColumnHeaderBounds(index);
     }
-    return table.getColumnHeaderBounds(index);
   }
 
   getTableFromTableCell(x: number, y: number): Table | undefined {
@@ -468,7 +467,7 @@ export class Tables extends Container<Table> {
         action: this.actionDataTable,
       };
       this.activeTable?.hideActive();
-      this.hoverTable?.hideActive();
+      // this.hoverTable?.hideActive();
       this.contextMenuTable?.hideActive();
       this.actionDataTable?.hideActive();
     }

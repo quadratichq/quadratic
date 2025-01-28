@@ -11,8 +11,8 @@ Single referenced cells are put in a variable with the appropriate data type. Mu
 
 The following is a list of essential information for learning how Python works in Quadratic. 
 
-1. Reference cells - get data from the sheet into Python with cell references
-2. Return data to the sheet - return Python outputs from code to the sheet
+1. Reference cells - get data from the sheet into Python with table references and cell references
+2. Return data to the sheet - return Python outputs from code to the sheet as values or tables
 3. Import packages - import packages for use in your Python code
 4. Make API requests - use the Requests library to query APIs
 5. Visualize data - turn your data into beautiful charts and graphs with Plotly
@@ -23,7 +23,30 @@ The most common starting point is learning how to reference spreadsheet cells fr
 
 Reference cells from Python.
 
-In Quadratic, reference individual cells from Python for single values or reference a range of cells for multiple values. 
+In Quadratic, reference tables and named outputs for simplest references, reference individual cells from Python for single values, or reference a range of cells for multiple values. 
+
+Referencing tables (and named outputs) 
+
+Much of Quadratic's data is formatted in Data Tables for ease of use. Data Tables also make references more straightforward. To reference a table you can use \`q.cells\` which will bring the table into a DataFrame. 
+
+\`\`\`python
+# Note: uses same table reference style as Formulas
+# References entire table, including headers 
+df = q.cells("Table1[#ALL]")
+
+# Reads the values in Table1 and places them into variable df
+# Note: this only retrieves the values, not the column names/headers
+df_values = q.cells("Table1")
+
+# Get a single column out of table into DataFrame
+# Note: this only retrieves the column's data, not the header
+df_column = q.cells("Table1[column_name]")
+
+# Creates an empty DataFrame with just the headers as column names of the table referenced
+df_headers = q.cells("Table1[#HEADERS]")
+\`\`\`python
+
+All code outputs are also named and in tables by default; they can be referenced in the same fashion, using their names. Tables are the best choice when trying to select an entire selection of data. For precise selections A1 references are preferred. 
 
 Referencing individual cells
 
@@ -73,29 +96,19 @@ Use first_row_header when you have column names that you want as the header of t
 q.cells('A1:B9', first_row_header=True) # returns a 2x9 DataFrame with first rows as DataFrame headers
 \`\`\`
 
-As an example, this code references a table of expenses, filters it based on a user-specified column, and returns the resulting DataFrame to the spreadsheet.
-
-\`\`\`python
-# Pull the full expenses table in as a DataFrame
-expenses_table = q.cells('B2:F54', first_row_header=True)
-
-# Take user input at a cell (Category = "Gas")
-category = q.cells('A2')
-
-# Filter the full expenses table to the "Gas" category, return the resulting DataFrame
-expenses_table[expenses_table["Category"] == category]
-\`\`\`
-
 Referencing another sheet
 
-To reference another sheet's cells or range of cells use the following: 
+To reference another sheet's table, individual cells , or range of cells use the following: 
 
 \`\`\`python
 # Use the sheet name as an argument for referencing range of cells 
 q.cells("'Sheet_name_here'!A1:C9")
-
+​
 # For individual cell reference 
 q.cells("'Sheet_name_here'!A1")
+​
+# Since tables are global to a file, they can be referenced across sheets without defining sheet name
+q.cells("Table1[#ALL]"
 \`\`\`
 
 Column references
@@ -118,7 +131,6 @@ q.cells('A:C', first_row_header=True) # same rules with first_row_header apply
 
 q.cells("'Sheet2'!A:C", first_row_header=True) # same rules to reference in other sheets apply
 \`\`\`
-
 
 Relative vs absolute references
 
@@ -144,13 +156,15 @@ Return the data from your Python code to the spreadsheet.
 
 Quadratic is built to seamlessly integrate Python to the spreadsheet. This means being able to manipulate data in code and very simply output that data into the sheet. 
 
-By default, the last line of code is output to the spreadsheet. This should be one of the four basic types: 
+By default, the last line of code is output to the spreadsheet. This should be one of the five basic types: 
 
 1. Single value: for displaying the single number result of a computation
 2. List of values: for displaying a list of values from a computation
-3. DataFrame:for displaying the workhorse data type of Quadratic
+3. DataFrame: for displaying the workhorse data type of Quadratic
 4. Chart: for displaying Plotly charts in Quadratic
 5. Function outputs: return the results of functions to the sheet
+
+All code outputs by default are given names that can be referenced, regardless of their return type. 
 
 You can expect to primarily use DataFrames as Quadratic is heavily built around Pandas DataFrames due to widespread Pandas adoption in almost all data science communities!
 
@@ -168,8 +182,7 @@ x
 
 2. List of values 
 
-Lists can be returned directly to the sheet. They'll be returned value by value into corresponding cells as you can see below. 
-
+Lists can be returned directly to the sheet. They'll be returned as tables with default column headings. You can edit or remove those headers in the table menu.  
 \`\`\`python
 # create a list that has the numbers 1 through 5 
 my_list = [1, 2, 3, 4, 5]
@@ -180,7 +193,7 @@ my_list
 
 3. DataFrame
 
-You can return your DataFrames directly to the sheet by putting the DataFrame's variable name as the last line of code. 
+You can return your DataFrames directly to the sheet by putting the DataFrame's variable name as the last line of code. DataFrames are returned to the sheet as Data Tables. The DataFrame's column names will be returned to the sheet as table headers. 
 
 \`\`\`python
 # import pandas 
@@ -571,93 +584,95 @@ fig.update_layout(
 
 3. Chart controls
 
-Resize by dragging the edges of the chart. 
+Resize by dragging the edges of the chart. Click chart to enable interactive options like resizing, exporting as png, and more. 
 
-# Manipulate data
+Time-series analysis
 
-Perform novel analysis on your data.
-
-Manipulating data in Quadratic is easier than ever as you can view your changes in the sheet in real-time. Here is a non-exhaustive list of ways to manipulate your data in Quadratic: 
-
-1. Find correlations
-2. Basic stats - max, min, average, selections, etc.
-3. DataFrame math
-4. Data selections
-
-1. Find correlations
+For time-series analysis a good starting point is using statsmodels library for a simple ARIMA analysis. You can reference sheet data using table and sheet references to build these kinds of analysis.
 
 \`\`\`python
-# Get the correlation and show the value in the sheet
-data['col1'].corr(data['col2'], method='pearson')
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.stattools import adfuller
 
-# possible methods: pearson, kendall, spearman 
+# Generate sample time series data
+dates = pd.date_range(start='2023-01-01', end='2023-12-31', freq='D')
+np.random.seed(42)
+values = np.random.normal(loc=100, scale=10, size=len(dates))
+values = np.cumsum(values)
+
+# Create DataFrame
+df = pd.DataFrame({
+    'Date': dates,
+    'Value': values
+})
+
+# Fit ARIMA model
+model = ARIMA(df['Value'], order=(1,1,1))
+results = model.fit()
+
+# Make predictions
+forecast = results.get_forecast(steps=30)
+forecast_mean = forecast.predicted_mean
+forecast_dates = pd.date_range(start=dates[-1], periods=31)[1:]
+
+# Create plot with original data and forecast
+fig = go.Figure()
+
+# Add original data
+fig.add_trace(go.Scatter(x=dates, y=values, name='Original Data'))
+
+# Add forecast
+fig.add_trace(go.Scatter(x=forecast_dates, y=forecast_mean, 
+                        name='ARIMA Forecast',
+                        line=dict(dash='dash')))
+
+# Update layout
+fig.update_layout(
+    title='Time Series with ARIMA(1,1,1) Forecast',
+    xaxis_title='Date',
+    yaxis_title='Value',
+    plot_bgcolor='white'
+)
+
+fig.show()
 \`\`\`
 
-2. Basic stats - max, min, mean, selections, etc.
+For machine learning, Scikit-learn is recommended. Here's a simple sk-learn example. 
 
 \`\`\`python
-# Get the max value of a column
-df["col1"].max()
-\`\`\`
+import pandas as pd
+import numpy as np
+import plotly.express as px
 
-\`\`\`python
-# Get the min value of a column
-df["col1"].min()
-\`\`\`
+# Generate sample data
+np.random.seed(42)
+n_samples = 100
 
-\`\`\`python
-# Get the mean value of a column
-df["col1"].mean()
-\`\`\`
+# Create features
+X = np.random.normal(0, 1, n_samples)
+y = 2 * X + np.random.normal(0, 0.5, n_samples)
 
-\`\`\`python
-# Get the median value of a column
-df["col1"].median()
-\`\`\`
+# Create DataFrame
+df = pd.DataFrame({
+    'Feature': X,
+    'Target': y
+})
 
-\`\`\`python
-# Get the skew for all columns
-df.skew()
-\`\`\`
+# Create scatter plot
+fig = px.scatter(df, x='Feature', y='Target', 
+                 title='Simple Linear Relationship with Noise')
 
-\`\`\`python
-# Count the values in a column
-df["col1"].value_counts()
-\`\`\`
+# Update layout
+fig.update_layout(
+    plot_bgcolor='white',
+    xaxis_title='Feature Value',
+    yaxis_title='Target Value'
+)
 
-\`\`\`python
-# Get the summary of a column
-df["col1"].describe()
-\`\`\`
-
-3. DataFrame math
-
-Do math on data in the DataFrame. Alternatively, use formulas in the sheet on the values. 
-
-\`\`\`python
-# Add, subtract, multiply, divide, etc., will all work on all values in a column
-df['col1'] + 1
-df['col1'] - 1
-df['col1'] * 2
-df['col1'] / 2 
-\`\`\`
-
-\`\`\`python
-# Do any arbitrary math column-wise with the above or do DataFrame-wise via
-df + 1 
-\`\`\`
-
-4. Data selections
-
-Alternatively, cut/copy/paste specific values in the sheet. 
-
-\`\`\`python
-# get a column 
-df['col1'] 
-\`\`\`
-
-\`\`\`python
-# get multiple columns 
-df[['col1', 'col2']] 
+fig.show()
 \`\`\`
 `;

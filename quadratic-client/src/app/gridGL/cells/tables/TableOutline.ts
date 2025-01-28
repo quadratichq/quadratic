@@ -3,6 +3,7 @@
 import type { Table } from '@/app/gridGL/cells/tables/Table';
 import { generatedTextures } from '@/app/gridGL/generateTextures';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { colors } from '@/app/theme/colors';
 import { sharedEvents } from '@/shared/sharedEvents';
@@ -16,7 +17,6 @@ const ALWAYS_SHOW = true;
 
 export class TableOutline extends Graphics {
   private table: Table;
-  private active = false;
 
   constructor(table: Table) {
     super();
@@ -30,27 +30,27 @@ export class TableOutline extends Graphics {
     super.destroy();
   };
 
-  activate = (active: boolean) => {
-    if (active === this.active) return;
-    this.active = active;
-    this.update();
-  };
-
   update = () => {
     this.clear();
 
     // draw the table selected outline
-    const width = this.active ? 2 : 1;
+    // TODO: (jimniels) settings don't respond to toggling code cell outlines on/off
+    const width = pixiAppSettings.showCellTypeOutlines ? 1 : this.table.active ? 1 : 0; // (this.table.active ? 1 : 0) : this.table.active ? 2 : 1;
     const chart = this.table.codeCell.state === 'HTML';
-    if (ALWAYS_SHOW || this.table.codeCell.show_ui || this.active) {
+    if (ALWAYS_SHOW || this.table.codeCell.show_ui || this.table.active) {
       if (!chart) {
-        this.lineStyle({ color: getCSSVariableTint('primary'), width, alignment: 0 });
+        this.lineStyle({
+          // TODO: (jimniels) if the table is selected 'primary' otherwise 'muted-foreground
+          color: getCSSVariableTint('muted-foreground'),
+          width,
+          alignment: 0,
+        });
         this.drawShape(new Rectangle(0, 0, this.table.tableBounds.width, this.table.tableBounds.height));
       }
     }
 
     // create the drag handles
-    if (this.active && this.table && !this.table.codeCell.readonly) {
+    if (this.table.active && this.table && !this.table.codeCell.readonly) {
       const cornerHandle = new Rectangle(
         this.table.tableBounds.x + this.table.tableBounds.width - 4,
         this.table.tableBounds.y + this.table.tableBounds.height - 4,
@@ -81,7 +81,7 @@ export class TableOutline extends Graphics {
     }
 
     // draw the spill error boundaries
-    if (this.active && this.table.codeCell.spill_error) {
+    if (this.table.active && this.table.codeCell.spill_error) {
       const full = this.table.sheet.getScreenRectangle(
         this.table.codeCell.x,
         this.table.codeCell.y,
