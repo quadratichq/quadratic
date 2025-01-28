@@ -1,14 +1,41 @@
-import { showCodeHintState } from '@/app/atoms/codeHintAtom';
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { useEffect, useState } from 'react';
 import { isMobile } from 'react-device-detect';
-import { useRecoilValue } from 'recoil';
 
 export const CodeHint = () => {
-  const sheetNotEmpty = sheets.sheet.bounds.type === 'nonEmpty';
-  const showCodeHint = useRecoilValue(showCodeHintState);
+  const {
+    userMakingRequest: { filePermissions },
+  } = useFileRouteLoaderData();
+  const canEdit = filePermissions.includes('FILE_EDIT');
+  const [open, setOpen] = useState(!fileHasData());
 
-  if (isMobile || sheetNotEmpty || !showCodeHint) return null;
+  // Show/hide depending on whether the file has any data in it
+  useEffect(() => {
+    const checkBounds = () => {
+      setOpen(fileHasData() ? false : true);
+    };
+
+    events.on('hashContentChanged', checkBounds);
+    return () => {
+      events.off('hashContentChanged', checkBounds);
+    };
+  }, [open]);
+
+  if (!canEdit) {
+    return null;
+  }
+
+  if (!open) {
+    return null;
+  }
+
+  if (isMobile) {
+    return null;
+  }
 
   const offset = sheets.sheet.getCellOffsets(1, 1);
   return (
