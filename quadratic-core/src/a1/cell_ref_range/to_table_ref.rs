@@ -158,7 +158,7 @@ mod tests {
             &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C3"))],
         );
         let cell_ref_range = CellRefRange::Sheet {
-            range: RefRangeBounds::test_a1("A1:C1"),
+            range: RefRangeBounds::test_a1("A2:C2"),
         };
         let table_ref = cell_ref_range.check_for_table_ref(SheetId::test(), &context);
 
@@ -176,7 +176,7 @@ mod tests {
         );
 
         let cell_ref_range = CellRefRange::Sheet {
-            range: RefRangeBounds::test_a1("B1"),
+            range: RefRangeBounds::test_a1("B2"),
         };
         let table_ref = cell_ref_range.check_for_table_ref(SheetId::test(), &context);
 
