@@ -36,11 +36,9 @@ export class TableColumnHeaders extends Container {
 
   drawBackground = () => {
     this.background.clear();
-    // TODO: (jimniels) this inverts weird in dark mode
-    const color = getCSSVariableTint('accent');
 
     this.background.lineStyle();
-    this.background.beginFill(color);
+    this.background.beginFill(0xffffff);
     // need to adjust so the outside border is still visible
     this.background.drawShape(new Rectangle(0.5, 0, this.table.tableBounds.width - 1, this.headerHeight));
     this.background.endFill();
