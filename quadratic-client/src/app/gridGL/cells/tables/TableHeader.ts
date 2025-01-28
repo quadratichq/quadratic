@@ -35,11 +35,7 @@ export class TableHeader extends Container {
   }
 
   getColumnHeaderBounds(index: number): Rectangle {
-    const bounds = this.columnHeaders.getColumnHeaderBounds(index);
-    if (this.table.inOverHeadings) {
-      bounds.y = this.columnHeaders.y;
-    }
-    return bounds;
+    return this.columnHeaders.getColumnHeaderBounds(index);
   }
 
   getColumnHeaderLines(): { y0: number; y1: number; lines: number[] } {
