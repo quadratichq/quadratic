@@ -494,7 +494,7 @@ impl GridController {
             let data_table = sheet.data_table_mut(data_table_pos)?;
 
             let old_alternating_colors = alternating_colors.map(|alternating_colors| {
-                // mark fills dirty to update alternating color
+                // mark code cell dirty to update alternating color
                 transaction.add_code_cell(sheet_id, pos);
                 std::mem::replace(&mut data_table.alternating_colors, alternating_colors)
             });
