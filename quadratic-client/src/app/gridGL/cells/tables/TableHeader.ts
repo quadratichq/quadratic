@@ -140,7 +140,11 @@ export class TableHeader extends Container {
 
   pointerMove(world: Point): boolean {
     if (this.table.codeCell.show_ui && this.table.codeCell.show_columns) {
-      return this.columnHeaders.pointerMove(world);
+      const result = this.columnHeaders.pointerMove(world);
+      if (result) {
+        this.tableCursor = this.columnHeaders.tableCursor;
+      }
+      return result;
     }
     return false;
   }
