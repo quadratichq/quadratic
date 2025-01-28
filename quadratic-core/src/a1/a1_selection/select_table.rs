@@ -314,7 +314,7 @@ mod tests {
             selection.ranges[1],
             CellRefRange::Table { range: table_ref }
         );
-        assert_eq!(selection.cursor, pos!(A3));
+        assert_eq!(selection.cursor, pos!(A1));
         assert_eq!(
             selection.to_string(Some(SheetId::test()), &context),
             "A1,Table1"
