@@ -7,7 +7,6 @@ use crate::cell_values::CellValues;
 use crate::controller::GridController;
 use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
 use crate::grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind};
-use crate::Pos;
 use crate::{a1::A1Selection, CellValue, SheetPos};
 
 // when a number's decimal is larger than this value, then it will treat it as text (this avoids an attempt to allocate a huge vector)
@@ -137,39 +136,48 @@ impl GridController {
         force_table_bounds: bool,
     ) -> Vec<Operation> {
         let mut ops = vec![];
+        let (sheet_ranges, table_ranges) = selection.separate_table_ranges();
+
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-            let rects = sheet.selection_to_rects(selection, false, force_table_bounds);
-            for rect in rects {
-                let sheet_pos = SheetPos::from((rect.min.x, rect.min.y, selection.sheet_id));
+            for table_range in table_ranges {
+                let rect = sheet.table_ref_to_rect(&table_range, false, force_table_bounds);
+                if let Some(rect) = rect {
+                    let sheet_pos = SheetPos::from((rect.min.x, rect.min.y, selection.sheet_id));
 
-                // deletable if this is not a data table source cell, or if the data table is readonly (code cell),
-                // or if the data table is a full table selection
-                let can_delete = sheet
-                    .data_tables
-                    .get(&Pos::from(sheet_pos))
-                    .map(|dt| {
-                        let mut dt_height = dt.height(true);
-                        if dt.show_ui {
-                            if dt.show_name {
-                                dt_height += 1;
-                            }
-                            if dt.show_columns {
-                                dt_height += 1;
-                            }
-                        }
+                    let can_delete = sheet
+                        .first_data_table_within(sheet_pos.into())
+                        .ok()
+                        .and_then(|data_table_pos| sheet.data_table(data_table_pos))
+                        .map(|data_table| {
+                            let dt_height = data_table.height(force_table_bounds);
+                            let is_full_table_selected = rect.width() == data_table.width() as u32
+                                && rect.height() == dt_height as u32;
 
-                        let full_table_selected =
-                            rect.width() == dt.width() as u32 && rect.height() == dt_height as u32;
+                            is_full_table_selected || data_table.readonly
+                        })
+                        .unwrap_or(false);
 
-                        full_table_selected || dt.readonly
-                    })
-                    .unwrap_or(true);
-
-                if can_delete {
-                    ops.push(Operation::DeleteDataTable { sheet_pos });
+                    if can_delete {
+                        ops.push(Operation::DeleteDataTable { sheet_pos });
+                    } else {
+                        ops.push(Operation::SetDataTableAt {
+                            sheet_pos,
+                            values: CellValues::new(rect.width(), rect.height()),
+                        });
+                    }
                 }
             }
-        };
+
+            for sheet_range in sheet_ranges {
+                let rect = sheet.ref_range_bounds_to_rect(&sheet_range);
+                let sheet_pos = SheetPos::from((rect.min.x, rect.min.y, selection.sheet_id));
+                ops.push(Operation::SetCellValues {
+                    sheet_pos,
+                    values: CellValues::new(rect.width(), rect.height()),
+                });
+            }
+        }
+
         ops
     }
 
@@ -391,11 +399,11 @@ mod test {
         assert_eq!(
             operations,
             vec![
-                Operation::SetCellValues {
+                Operation::SetDataTableAt {
                     sheet_pos,
                     values: values.clone()
                 },
-                Operation::SetDataTableAt { sheet_pos, values },
+                Operation::SetCellValues { sheet_pos, values },
             ]
         );
     }
@@ -430,19 +438,19 @@ mod test {
         assert_eq!(
             operations,
             vec![
-                Operation::SetCellValues {
-                    sheet_pos: SheetPos::new(sheet_id, 1, 2),
-                    values: CellValues::new(2, 1)
-                },
                 Operation::SetDataTableAt {
                     sheet_pos: SheetPos::new(sheet_id, 1, 2),
                     values: CellValues::new(2, 1)
                 },
                 Operation::SetCellValues {
+                    sheet_pos: SheetPos::new(sheet_id, 1, 2),
+                    values: CellValues::new(2, 1)
+                },
+                Operation::SetDataTableAt {
                     sheet_pos: SheetPos::new(sheet_id, 2, 1),
                     values: CellValues::new(1, 2)
                 },
-                Operation::SetDataTableAt {
+                Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 2, 1),
                     values: CellValues::new(1, 2)
                 },

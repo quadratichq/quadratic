@@ -257,14 +257,14 @@ impl DataTable {
         }
     }
 
-    pub fn height(&self, exclude_header: bool) -> usize {
+    pub fn height(&self, force_table_bounds: bool) -> usize {
         match &self.value {
             Value::Single(_) => 1,
             Value::Array(array) => {
-                if exclude_header && self.header_is_first_row {
-                    array.height() as usize - 1
-                } else {
+                if force_table_bounds {
                     array.height() as usize
+                } else {
+                    array.height() as usize + self.y_adjustment() as usize
                 }
             }
             Value::Tuple(_) => 0,
@@ -387,15 +387,8 @@ impl DataTable {
                     if self.header_is_first_row {
                         height -= 1;
                     }
-                    if self.show_ui {
-                        if self.show_name {
-                            height += 1;
-                        }
-                        // images do not have columns
-                        if !self.is_html_or_image() && self.show_columns {
-                            height += 1;
-                        }
-                    }
+                    height += self.y_adjustment() as u32;
+
                     size.h = NonZeroU32::new(height).unwrap_or(ArraySize::_1X1.h);
 
                     let width = self.columns_to_show().len();
@@ -532,7 +525,7 @@ impl DataTable {
             if self.show_name {
                 y_adjustment += 1;
             }
-            if self.show_columns {
+            if !self.is_html_or_image() && self.show_columns {
                 y_adjustment += 1;
             }
         }

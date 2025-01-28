@@ -131,7 +131,12 @@ impl TableMapEntry {
     /// Returns the y adjustment for the table to account for the UI elements.
     pub fn y_adjustment(&self) -> i64 {
         if self.show_ui {
-            (if self.show_name { 1 } else { 0 }) + (if self.show_columns { 1 } else { 0 })
+            (if self.show_name { 1 } else { 0 })
+                + (if self.show_columns && !self.is_html_image && !self.header_is_first_row {
+                    1
+                } else {
+                    0
+                })
         } else {
             0
         }

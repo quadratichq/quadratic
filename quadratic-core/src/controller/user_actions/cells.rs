@@ -1,5 +1,6 @@
 use anyhow::Result;
 
+use crate::cell_values::CellValues;
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::operation::Operation;
 use crate::controller::GridController;
@@ -49,9 +50,18 @@ impl GridController {
                         .filter(|data_table| !data_table.readonly)
                     {
                         let y = pos.y - data_table_left.y;
+                        let header_y = if data_table.show_ui && data_table.show_columns {
+                            if data_table.show_name {
+                                Some(1)
+                            } else {
+                                Some(0)
+                            }
+                        } else {
+                            None
+                        };
 
-                        // header row
-                        if y == 0 {
+                        // header row, add column header
+                        if header_y == Some(y) {
                             let value_index = data_table.column_headers_len();
                             let column_header =
                                 DataTableColumnHeader::new(value.to_owned(), true, value_index);
@@ -70,22 +80,27 @@ impl GridController {
                                 show_name: None,
                                 show_columns: None,
                             });
-                        } else {
+                        }
+                        // data row, add column
+                        else {
                             let mut values = vec![CellValue::Blank; data_table.height(true)];
-                            values[y as usize] = value.to_owned().into();
+                            let value_index = y - data_table.y_adjustment();
+                            if value_index >= 0 {
+                                values[value_index as usize] = value.to_owned().into();
 
-                            data_table_ops.push(Operation::InsertDataTableColumn {
-                                sheet_pos: (data_table_left, sheet_pos.sheet_id).into(),
-                                index: (data_table.width()) as u32,
-                                column_header: None,
-                                values: Some(values),
-                            });
+                                // insert column with value
+                                data_table_ops.push(Operation::InsertDataTableColumn {
+                                    sheet_pos: (data_table_left, sheet_pos.sheet_id).into(),
+                                    index: (data_table.width()) as u32,
+                                    column_header: None,
+                                    values: Some(values),
+                                });
+                            }
                         }
                     }
                 }
 
                 let data_table_above = sheet.first_data_table_within(Pos::new(pos.x, pos.y - 1));
-
                 if let Ok(data_table_above) = data_table_above {
                     if let Some(data_table) = sheet
                         .data_table(data_table_above)
@@ -95,9 +110,10 @@ impl GridController {
                         let mut values = vec![CellValue::Blank; data_table.width()];
                         values[x as usize] = value.to_owned().into();
 
+                        // insert row with value
                         data_table_ops.push(Operation::InsertDataTableRow {
                             sheet_pos: (data_table_above, sheet_pos.sheet_id).into(),
-                            index: data_table.height(true) as u32,
+                            index: data_table.height(false) as u32,
                             values: Some(values),
                         });
                     }
@@ -105,10 +121,17 @@ impl GridController {
             }
         }
 
+        // add value to sheet
         let ops = self.set_cell_value_operations(sheet_pos, value);
         self.start_user_transaction(ops, cursor.to_owned(), TransactionName::SetCells);
 
+        // add value to data table
         if !data_table_ops.is_empty() {
+            // delete value from sheet
+            data_table_ops.push(Operation::SetCellValues {
+                sheet_pos,
+                values: CellValues::new(1, 1),
+            });
             self.start_user_transaction(data_table_ops, cursor, TransactionName::SetCells);
         }
     }

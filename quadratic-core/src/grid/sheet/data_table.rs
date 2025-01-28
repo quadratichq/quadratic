@@ -68,10 +68,14 @@ impl Sheet {
             .data_tables
             .iter()
             .filter_map(|(data_table_pos, data_table)| {
-                data_table
-                    .output_rect(*data_table_pos, false)
-                    .contains(pos)
-                    .then_some(*data_table_pos)
+                if data_table.spill_error || data_table.has_error() {
+                    (*data_table_pos == pos).then_some(*data_table_pos)
+                } else {
+                    data_table
+                        .output_rect(*data_table_pos, false)
+                        .contains(pos)
+                        .then_some(*data_table_pos)
+                }
             })
             .collect();
 
