@@ -492,6 +492,7 @@ impl GridController {
 
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
+            let data_table_rect = data_table.output_sheet_rect(sheet_pos, true);
 
             let old_alternating_colors = alternating_colors.map(|alternating_colors| {
                 // mark code cell dirty to update alternating color
@@ -509,6 +510,7 @@ impl GridController {
 
             if show_ui.is_some() || show_name.is_some() || show_columns.is_some() {
                 data_table.add_dirty_fills_and_borders(transaction, sheet_id);
+                transaction.add_dirty_hashes_from_sheet_rect(data_table_rect);
             }
 
             let old_show_ui = show_ui
