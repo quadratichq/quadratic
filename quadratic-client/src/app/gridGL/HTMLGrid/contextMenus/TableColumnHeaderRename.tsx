@@ -2,10 +2,8 @@ import { getDisplayColumns } from '@/app/actions/dataTableSpec';
 import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { COLUMN_HEADER_BACKGROUND_LUMINOSITY } from '@/app/gridGL/cells/tables/TableColumnHeaders';
 import { PixiRename } from '@/app/gridGL/HTMLGrid/contextMenus/PixiRename';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { cssVariableWithLuminosity } from '@/app/helpers/convertColor';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { FONT_SIZE } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import type { Rectangle } from 'pixi.js';
@@ -73,7 +71,7 @@ export const TableColumnHeaderRename = () => {
       styles={{
         fontSize: FONT_SIZE,
         color: 'var(--primary-foreground)',
-        backgroundColor: cssVariableWithLuminosity('primary', COLUMN_HEADER_BACKGROUND_LUMINOSITY),
+        backgroundColor: 'var(--accent)',
       }}
       onSave={(value: string) => {
         if (contextMenu.table && contextMenu.selectedColumn !== undefined && pixiApp.cellsSheets.current) {
