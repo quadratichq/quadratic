@@ -34,6 +34,10 @@ pub fn column_from_name(s: &str) -> Option<i64> {
     for char in s.chars() {
         ret = ret.checked_mul(26)?.checked_add(digit(char)? as i64 + 1)?;
     }
+    dbgjs!(ret);
+    if ret > crate::a1::MAX_COLUMNS {
+        return None;
+    }
 
     Some(ret)
 }
