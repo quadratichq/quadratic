@@ -90,7 +90,10 @@ export class TableHeader extends Container {
     this.position.set(0, 0);
     this.columnHeadersGridLines.visible = false;
     this.tableName.toGrid();
-    this.columnHeaders.toGrid();
+    this.columnHeaders.toHoverGrid(
+      this.table.tableBounds.y +
+        (this.table.codeCell.show_ui && this.table.codeCell.show_name ? this.columnHeaders.y : 0)
+    );
 
     // need to keep columnHeaders in the same position in the z-order
     this.table.addChildAt(this, 0);
@@ -101,7 +104,9 @@ export class TableHeader extends Container {
       this.table.tableBounds.x,
       Math.min(this.bottomOfTable, this.table.tableBounds.y + bounds.top + gridHeading - this.table.tableBounds.top)
     );
-    this.columnHeaders.toHover();
+    this.columnHeaders.toHoverGrid(
+      this.y + (this.table.codeCell.show_ui && this.table.codeCell.show_name ? this.columnHeaders.y : 0)
+    );
     this.tableName.toHover(this.y);
     pixiApp.hoverTableHeaders.addChild(this);
     this.columnHeadersGridLines.visible = true;
@@ -133,7 +138,6 @@ export class TableHeader extends Container {
       }
     }
     if (this.table.codeCell.show_ui && this.table.codeCell.show_columns) {
-      // todo: need to adjust the y position in the case of sticky headers
       return this.columnHeaders.pointerDown(world);
     }
   }
