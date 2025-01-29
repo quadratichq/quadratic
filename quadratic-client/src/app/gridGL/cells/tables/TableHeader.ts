@@ -1,6 +1,6 @@
 import type { Table } from '@/app/gridGL/cells/tables/Table';
 import { TableColumnHeaders } from '@/app/gridGL/cells/tables/TableColumnHeaders';
-import { TableColumnHeadersGridLines } from '@/app/gridGL/cells/tables/TableColumnHeadersGridLines';
+import { TableColumnHeadersGridLines } from '@/app/grid/sheet/TableColumnHeadersGridLines';
 import { TableName } from '@/app/gridGL/cells/tables/TableName';
 import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
