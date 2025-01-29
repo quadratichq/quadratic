@@ -307,7 +307,10 @@ impl Sheet {
             match cell_value {
                 CellValue::Blank | CellValue::Code(_) | CellValue::Import(_) => {
                     match self.data_tables.get(&pos) {
-                        Some(data_table) => data_table.get_cell_for_formula(0, 0),
+                        Some(data_table) => data_table.get_cell_for_formula(
+                            0,
+                            if data_table.header_is_first_row { 1 } else { 0 },
+                        ),
                         None => CellValue::Blank,
                     }
                 }
@@ -333,11 +336,9 @@ impl Sheet {
         if let Ok(data_table_pos) = self.first_data_table_within(pos) {
             if let Ok(data_table) = self.data_table_result(data_table_pos) {
                 if !data_table.spill_error && !data_table.has_error() {
-                    let pos = Pos {
-                        x: pos.x + 1 - data_table_pos.x,
-                        y: pos.y + 1 - data_table_pos.y - data_table.y_adjustment(),
-                    };
-                    if let Some(mut table_format) = data_table.formats.try_format(pos) {
+                    // pos relative to data table pos (top left pos)
+                    let pos = pos.translate(-data_table_pos.x, -data_table_pos.y, 0, 0);
+                    if let Some(mut table_format) = data_table.try_format(pos) {
                         table_format.wrap = table_format.wrap.or(Some(CellWrap::Clip));
                         let combined_format = table_format.combine(&sheet_format);
                         return combined_format;

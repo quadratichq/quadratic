@@ -20,6 +20,9 @@ impl Sheet {
 
             // use table data bounds for borders, exclude table name and column headers
             table_rect.min.y += table.y_adjustment();
+            if table.header_is_first_row {
+                table_rect.min.y += 1;
+            }
 
             if let Some(h) = table.borders.horizontal_borders(Some(table_rect)) {
                 horizontal.extend(h);

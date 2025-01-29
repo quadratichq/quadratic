@@ -4,7 +4,7 @@
 
 use wasm_bindgen::JsValue;
 
-use crate::a1::{A1Selection, CellRefRange, RefRangeBounds};
+use crate::a1::{A1Selection, CellRefRange, RefRangeBounds, TableMapEntry};
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::operation::Operation;
 use crate::controller::GridController;
@@ -23,86 +23,93 @@ impl GridController {
         selection: &A1Selection,
         format_update: FormatUpdate,
     ) -> Vec<Operation> {
-        let (sheet_ranges, table_ranges) = selection.separate_table_ranges();
         let mut ops = vec![];
-
-        // create ops for the sheet if needed (ignoring TableRefs)
-        if !sheet_ranges.is_empty() {
-            ops.push(Operation::SetCellFormatsA1 {
-                sheet_id: selection.sheet_id,
-                // from_selection ignores TableRefs
-                formats: SheetFormatUpdates::from_selection(selection, format_update.clone()),
-            });
-        }
 
         let context = self.grid.a1_context();
 
-        // set table ranges
-        for table_ref in table_ranges {
-            if let Some(table) = context.try_table(&table_ref.table_name) {
-                let range = table_ref.convert_to_ref_range_bounds(true, &context, false, true);
-                if let Some(range) = range {
-                    // translate the range to 1-based compared to the table position
-                    let range = range.translate(-table.bounds.min.x + 1, -table.bounds.min.y + 1);
-                    let formats = SheetFormatUpdates::from_selection(
+        // range is actual range on the sheet, not adjusted to table coordinates
+        let add_table_ops = |range: RefRangeBounds,
+                             table: &TableMapEntry,
+                             ops: &mut Vec<Operation>| {
+            // pos relative to table pos (top left pos)
+            let range = range.translate(-table.bounds.min.x + 1, -table.bounds.min.y + 1);
+
+            let formats = SheetFormatUpdates::from_selection(
+                &A1Selection::from_range(CellRefRange::Sheet { range }, table.sheet_id, &context),
+                format_update.clone(),
+            );
+
+            // add table operation
+            ops.push(Operation::DataTableFormats {
+                sheet_pos: table.bounds.min.to_sheet_pos(table.sheet_id),
+                formats,
+            });
+
+            // clear sheet formatting if needed
+            if let Some(cleared) = format_update.only_cleared() {
+                ops.push(Operation::SetCellFormatsA1 {
+                    sheet_id: table.sheet_id,
+                    formats: SheetFormatUpdates::from_selection(
                         &A1Selection::from_range(
                             CellRefRange::Sheet { range },
                             table.sheet_id,
                             &context,
                         ),
-                        format_update.clone(),
-                    );
-                    ops.push(Operation::DataTableFormats {
-                        sheet_pos: table.bounds.min.to_sheet_pos(table.sheet_id),
-                        formats,
-                    });
+                        cleared,
+                    ),
+                });
+            }
+        };
 
-                    // check if we need to clear the underlying sheet formatting
-                    if let Some(cleared) = format_update.only_cleared() {
-                        ops.push(Operation::SetCellFormatsA1 {
-                            sheet_id: table.sheet_id,
-                            formats: SheetFormatUpdates::from_selection(
-                                &A1Selection::from_range(
-                                    CellRefRange::Sheet { range },
-                                    table.sheet_id,
-                                    &context,
-                                ),
-                                cleared,
-                            ),
-                        });
+        let (sheet_ranges, table_ranges) = selection.separate_table_ranges();
+
+        // set sheet formats, ignoring TableRefs and removing table intersections
+        if let Some(mut sheet_selection) =
+            A1Selection::from_sheet_ranges(sheet_ranges.clone(), selection.sheet_id, &context)
+        {
+            for sheet_range in sheet_ranges {
+                let rect = sheet_range.to_rect_unbounded();
+                for table in context.tables() {
+                    if let Some(intersection) = table.bounds.intersection(&rect) {
+                        // remove table intersection from the sheet selection
+                        sheet_selection.exclude_cells(
+                            intersection.min,
+                            Some(intersection.max),
+                            &context,
+                        );
+                        if let Some(pos) = sheet_selection.try_to_pos(&context) {
+                            if table.bounds.contains(pos) {
+                                sheet_selection.ranges.clear();
+                            }
+                        }
+                        let range = RefRangeBounds::new_relative_rect(intersection);
+                        add_table_ops(range, table, &mut ops);
                     }
                 }
             }
+
+            if !sheet_selection.ranges.is_empty() {
+                ops.push(Operation::SetCellFormatsA1 {
+                    sheet_id: selection.sheet_id,
+                    // from_selection ignores TableRefs
+                    formats: SheetFormatUpdates::from_selection(
+                        &sheet_selection,
+                        format_update.clone(),
+                    ),
+                });
+            }
         }
 
-        // clear table formats for sheet ranges that overlap tables
-        let clear_format_update = format_update.clear_update();
-        for range in sheet_ranges {
-            let rect = range.to_rect_unbounded();
-            for table in context.tables() {
-                if let Some(intersection) = table.bounds.intersection(&rect) {
-                    let range = RefRangeBounds::new_relative_rect(intersection);
-
-                    // normalize the range to the table position
-                    let range = range.translate(
-                        -table.bounds.min.x + 1,
-                        -table.bounds.min.y + 1 - table.y_adjustment(),
-                    );
-
-                    ops.push(Operation::DataTableFormats {
-                        sheet_pos: table.bounds.min.to_sheet_pos(table.sheet_id),
-                        formats: SheetFormatUpdates::from_selection(
-                            &A1Selection::from_range(
-                                CellRefRange::Sheet { range },
-                                table.sheet_id,
-                                &context,
-                            ),
-                            clear_format_update.clone(),
-                        ),
-                    });
+        // set table formats
+        for table_ref in table_ranges {
+            if let Some(table) = context.try_table(&table_ref.table_name) {
+                let range = table_ref.convert_to_ref_range_bounds(true, &context, false, true);
+                if let Some(range) = range {
+                    add_table_ops(range, table, &mut ops);
                 }
             }
         }
+
         ops
     }
 

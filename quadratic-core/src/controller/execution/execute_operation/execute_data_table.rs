@@ -237,6 +237,8 @@ impl GridController {
                 return Ok(());
             }
 
+            pos.y -= data_table.y_adjustment();
+
             // if there is a display buffer, use it to find the source row index
             if data_table.display_buffer.is_some() {
                 let index_to_find = pos.y - data_table_pos.y;
@@ -244,18 +246,10 @@ impl GridController {
                 pos.y = row_index as i64 + data_table_pos.y;
             }
 
-            pos.y -= data_table.y_adjustment();
-
             let rect = Rect::from_numbers(pos.x, pos.y, values.w as i64, values.h as i64);
             let old_values = sheet.get_code_cell_values(rect);
 
-            let data_table_rect = SheetRect::from_numbers(
-                sheet_pos.x,
-                sheet_pos.y,
-                values.w as i64,
-                values.h as i64,
-                sheet_id,
-            );
+            let data_table_rect = data_table.output_sheet_rect(sheet_pos, false);
 
             // send the new value
             sheet.set_code_cell_values(pos, values);
@@ -906,7 +900,11 @@ impl GridController {
             let data_table_pos = sheet_pos.into();
             let data_table = sheet.data_table_mut(data_table_pos)?;
 
-            let reverse_formats = data_table.formats.apply_updates(&formats);
+            let mut translated_formats = formats.to_owned();
+            // convert to 1-based pos, factor in show_ui and column header y adjustment
+            translated_formats.translate_in_place(0, 0 - data_table.y_adjustment());
+            let reverse_formats = data_table.formats.apply_updates(&translated_formats);
+            drop(translated_formats);
 
             data_table.mark_formats_dirty(
                 transaction,

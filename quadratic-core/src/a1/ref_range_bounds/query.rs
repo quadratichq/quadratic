@@ -1,4 +1,4 @@
-use crate::a1::UNBOUNDED;
+use crate::{a1::UNBOUNDED, util::sort_bounds};
 
 use super::*;
 
@@ -147,7 +147,7 @@ impl RefRangeBounds {
 
     /// Converts the CellRefRange to coordinates to be used in Contiguous2D.
     pub fn to_contiguous2d_coords(&self) -> (i64, i64, Option<i64>, Option<i64>) {
-        (
+        let (x1, y1, x2, y2) = (
             if self.start.col.is_unbounded() {
                 1
             } else {
@@ -168,7 +168,10 @@ impl RefRangeBounds {
             } else {
                 Some(self.end.row())
             },
-        )
+        );
+        let (x1, x2) = sort_bounds(x1, x2);
+        let (y1, y2) = sort_bounds(y1, y2);
+        (x1, y1, x2, y2)
     }
 
     /// Returns the cursor position from the last range.

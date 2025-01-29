@@ -286,6 +286,14 @@ pub fn set_panic_hook() {
     console_error_panic_hook::set_once();
 }
 
+// normalizes the bounds so that the first is always less than the second
+pub fn sort_bounds(a: i64, b: Option<i64>) -> (i64, Option<i64>) {
+    match b {
+        Some(b) if b < a => (b, Some(a)),
+        _ => (a, b),
+    }
+}
+
 #[cfg(test)]
 #[track_caller]
 pub(crate) fn assert_f64_approx_eq(expected: f64, actual: f64, message: &str) {

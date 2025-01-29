@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use crate::{
     a1::{A1Selection, CellRefRange, UNBOUNDED},
     grid::GridBounds,
+    util::sort_bounds,
     CopyFormats, Pos, Rect,
 };
 
@@ -599,14 +600,6 @@ fn convert_pos(pos: Pos) -> Option<(u64, u64)> {
 /// coordinate is out of range (i.e., it is **less than 1**).
 fn convert_coord(x: i64) -> Option<u64> {
     x.try_into().ok().filter(|&x| x >= 1)
-}
-
-// normalizes the bounds so that the first is always less than the second
-fn sort_bounds(a: i64, b: Option<i64>) -> (i64, Option<i64>) {
-    match b {
-        Some(b) if b < a => (b, Some(a)),
-        _ => (a, b),
-    }
 }
 
 /// Casts an `i64` rectangle that INCLUDES both bounds to a `u64` rectangle that

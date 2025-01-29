@@ -46,9 +46,11 @@ impl Sheet {
                             return None;
                         }
                         let mut rect = dt.output_rect(*pos, false);
-
                         // use table data bounds for borders, exclude table name and column headers
                         rect.min.y += dt.y_adjustment();
+                        if dt.header_is_first_row {
+                            rect.min.y += 1;
+                        }
 
                         let x = rect.min.x + x0 - 1;
                         let y = rect.min.y + y0 - 1;
