@@ -52,6 +52,15 @@ export const MODEL_OPTIONS: {
     enabled: true,
     provider: 'bedrock-anthropic',
   },
+  'claude-3-5-sonnet-20241022-v2:1': {
+    displayName: 'Super sonnet',
+    temperature: 0,
+    max_tokens: 4096,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: true,
+    provider: 'super-sonnet',
+  },
   'ai21.jamba-1-5-large-v1:0': {
     displayName: 'AI21: Jamba 1.5 Large',
     temperature: 0,

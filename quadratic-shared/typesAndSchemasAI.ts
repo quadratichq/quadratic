@@ -1,12 +1,15 @@
 import { AIToolSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { z } from 'zod';
 
-const AIProvidersSchema = z.enum(['bedrock', 'bedrock-anthropic', 'anthropic', 'openai']).default('openai');
+const AIProvidersSchema = z
+  .enum(['bedrock', 'bedrock-anthropic', 'anthropic', 'openai', 'super-sonnet'])
+  .default('openai');
 export type AIProviders = z.infer<typeof AIProvidersSchema>;
 
 const BedrockModelSchema = z
   .enum([
     'anthropic.claude-3-5-sonnet-20241022-v2:0',
+    'claude-3-5-sonnet-20241022-v2:1',
     'ai21.jamba-1-5-large-v1:0',
     'cohere.command-r-plus-v1:0',
     'us.meta.llama3-2-90b-instruct-v1:0',
@@ -26,7 +29,10 @@ export type AnthropicModel = z.infer<typeof AnthropicModelSchema>;
 const OpenAIModelSchema = z.enum(['gpt-4o-2024-11-20', 'o1-preview']).default('gpt-4o-2024-11-20');
 export type OpenAIModel = z.infer<typeof OpenAIModelSchema>;
 
-const AIModelSchema = z.union([BedrockModelSchema, AnthropicModelSchema, OpenAIModelSchema]);
+const SuperSonnetModelSchema = z.enum(['claude-3-5-sonnet-20241022-v2:1']).default('claude-3-5-sonnet-20241022-v2:1');
+export type SuperSonnetModel = z.infer<typeof SuperSonnetModelSchema>;
+
+const AIModelSchema = z.union([BedrockModelSchema, AnthropicModelSchema, OpenAIModelSchema, SuperSonnetModelSchema]);
 export type AIModel = z.infer<typeof AIModelSchema>;
 
 const InternalContextTypeSchema = z.enum([

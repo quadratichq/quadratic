@@ -6,6 +6,7 @@ import type {
   BedrockAnthropicModel,
   BedrockModel,
   OpenAIModel,
+  SuperSonnetModel,
 } from 'quadratic-shared/typesAndSchemasAI';
 
 export function isBedrockModel(model: AIModel): model is BedrockModel {
@@ -22,6 +23,10 @@ export function isAnthropicModel(model: AIModel): model is AnthropicModel {
 
 export function isOpenAIModel(model: AIModel): model is OpenAIModel {
   return MODEL_OPTIONS[model].provider === 'openai';
+}
+
+export function isSuperSonnetModel(model: AIModel): model is SuperSonnetModel {
+  return MODEL_OPTIONS[model].provider === 'super-sonnet';
 }
 
 export const getModelOptions = (

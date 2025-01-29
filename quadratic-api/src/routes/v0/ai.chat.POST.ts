@@ -5,6 +5,7 @@ import {
   isBedrockAnthropicModel,
   isBedrockModel,
   isOpenAIModel,
+  isSuperSonnetModel,
 } from 'quadratic-shared/ai/helpers/model.helper';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
@@ -13,6 +14,7 @@ import { z } from 'zod';
 import { handleAnthropicRequest } from '../../ai/handler/anthropic';
 import { handleBedrockRequest } from '../../ai/handler/bedrock';
 import { handleOpenAIRequest } from '../../ai/handler/openai';
+import { handleSuperSonnetRequest } from '../../ai/handler/super-sonnet';
 import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import dbClient from '../../dbClient';
@@ -56,6 +58,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     responseMessage = await handleAnthropicRequest(model, args, res);
   } else if (isOpenAIModel(model)) {
     responseMessage = await handleOpenAIRequest(model, args, res);
+  } else if (isSuperSonnetModel(model)) {
+    responseMessage = await handleSuperSonnetRequest(model, args, res);
   } else {
     throw new Error(`Model not supported: ${model}`);
   }
