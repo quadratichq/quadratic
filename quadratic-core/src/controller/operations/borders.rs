@@ -678,4 +678,41 @@ mod tests {
         assert_borders(&borders, pos![D5], "right,bottom");
         assert_borders(&borders, pos![C5], "bottom");
     }
+
+    #[test]
+    fn test_borders_operations_reverse_range() {
+        let gc = GridController::test();
+
+        let ops = gc
+            .set_borders_a1_selection_operations(
+                A1Selection::test_a1("D4:A1"),
+                BorderSelection::Top,
+                Some(BorderStyle::default()),
+                true,
+            )
+            .unwrap();
+        assert_eq!(ops.len(), 1);
+        let Operation::SetBordersA1 { sheet_id, borders } = ops[0].clone() else {
+            panic!("Expected SetBordersA1")
+        };
+        assert_eq!(sheet_id, SheetId::TEST);
+        assert_borders(&borders, pos![A1], "top");
+        assert_borders(&borders, pos![D4], "");
+
+        let ops = gc
+            .set_borders_a1_selection_operations(
+                A1Selection::test_a1("D4:A1"),
+                BorderSelection::Bottom,
+                Some(BorderStyle::default()),
+                true,
+            )
+            .unwrap();
+        assert_eq!(ops.len(), 1);
+        let Operation::SetBordersA1 { sheet_id, borders } = ops[0].clone() else {
+            panic!("Expected SetBordersA1")
+        };
+        assert_eq!(sheet_id, SheetId::TEST);
+        assert_borders(&borders, pos![D4], "bottom");
+        assert_borders(&borders, pos![A1], "");
+    }
 }
