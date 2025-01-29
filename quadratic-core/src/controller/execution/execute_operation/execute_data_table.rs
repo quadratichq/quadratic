@@ -301,9 +301,26 @@ impl GridController {
             let data_table = sheet.delete_data_table(data_table_pos)?;
 
             let data_table_rect = data_table.output_sheet_rect(sheet_pos, false);
-
-            let values = data_table.display_value()?.into_array()?;
+            let mut values = data_table.display_value()?.into_array()?;
             let ArraySize { w, h } = values.size();
+
+            // delete the heading row if toggled off
+            if !data_table.show_ui || !data_table.show_columns {
+                values.delete_row(0)?;
+            }
+
+            // insert the heading row if toggled on
+            if data_table.show_ui && data_table.show_name {
+                let mut table_row = vec![CellValue::Blank; w.get() as usize];
+                table_row[0] = data_table.name.to_owned();
+                values.insert_row(0, Some(table_row)).map_err(|e| {
+                    dbgjs!(format!(
+                        "error inserting table title row in execute_flatten_data_table: {:?}",
+                        e
+                    ));
+                    e
+                })?;
+            }
 
             let max = Pos {
                 x: data_table_pos.x - 1 + w.get() as i64,
@@ -316,8 +333,10 @@ impl GridController {
 
             // send updated bounds to the client after flattening the data table
             self.send_updated_bounds(sheet_id);
+
             // mark new grid rect as dirty
             transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
+
             // mark table fills and borders as dirty
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
 
