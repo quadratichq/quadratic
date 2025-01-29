@@ -422,7 +422,7 @@ export const dataTableSpec: DataTableSpec = {
     run: gridToDataTable,
   },
   [Action.ToggleFirstRowAsHeaderTable]: {
-    label: 'Use 1st row as column headers',
+    label: 'First row is column names',
     checkbox: isFirstRowHeader,
     run: toggleFirstRowAsHeader,
   },
@@ -525,7 +525,7 @@ export const dataTableSpec: DataTableSpec = {
     run: toggleTableUI,
   },
   [Action.ToggleTableColumns]: {
-    label: 'Show column headings',
+    label: 'Show column names',
     checkbox: isTableColumnsShowing,
     run: toggleTableColumns,
   },

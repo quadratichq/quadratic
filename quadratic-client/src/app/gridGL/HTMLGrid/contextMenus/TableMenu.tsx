@@ -62,14 +62,14 @@ export const TableMenu = (props: Props) => {
       )}
       {!isImageOrHtmlCell && !spillError && <ContextMenuItemAction action={Action.ToggleFirstRowAsHeaderTable} />}
       {!isImageOrHtmlCell && !spillError && <DropdownMenuSeparator />}
-      {!spillError && <ContextMenuItemAction action={Action.ToggleTableUI} />}
+      {!spillError && !isCodeCell && <ContextMenuItemAction action={Action.ToggleTableUI} />}
       {!isImageOrHtmlCell && !spillError && <ContextMenuItemAction action={Action.ToggleTableName} />}
       {!isImageOrHtmlCell && !spillError && <ContextMenuItemAction action={Action.ToggleTableColumns} />}
       {!isImageOrHtmlCell && !spillError && <ContextMenuItemAction action={Action.ToggleTableAlternatingColors} />}
       {!isImageOrHtmlCell && !spillError && <DropdownMenuSeparator />}
-      {!isImageOrHtmlCell && !spillError && isCodeCell && <ContextMenuItemAction action={Action.CodeToDataTable} />}
+      {/* {!isImageOrHtmlCell && !spillError && isCodeCell && <ContextMenuItemAction action={Action.CodeToDataTable} />} */}
       {!isImageOrHtmlCell && !spillError && <ContextMenuItemAction action={Action.FlattenTable} />}
-      {<ContextMenuItemAction action={Action.DeleteDataTable} />}
+      {/* {<ContextMenuItemAction action={Action.DeleteDataTable} />} */}
       {!isImageOrHtmlCell && !spillError && <ContextMenuItemAction action={Action.InsertTableColumnLeft} />}
       {!isImageOrHtmlCell && !spillError && <ContextMenuItemAction action={Action.InsertTableColumnRight} />}
       {!isImageOrHtmlCell && !spillError && <ContextMenuItemAction action={Action.RemoveTableColumn} />}

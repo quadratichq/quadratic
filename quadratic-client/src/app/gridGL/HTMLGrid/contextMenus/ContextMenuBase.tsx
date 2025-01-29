@@ -70,6 +70,7 @@ export const ContextMenuBase = ({
         className="pointer-events-auto absolute h-0 w-0 opacity-0"
       ></DropdownMenuTrigger>
       <DropdownMenuContent
+        className="w-64"
         animate={false}
         side={left < bounds.x + bounds.width / 2 ? 'right' : 'left'}
         sideOffset={4}

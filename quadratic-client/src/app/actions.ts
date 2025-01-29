@@ -166,7 +166,7 @@ export const toggleFirstRowAsHeaderAction = {
 };
 
 export const toggleTableColumnsAction = {
-  label: 'Toggle show column headings',
+  label: 'Toggle show column names',
   isAvailable: isAvailableBecauseCanEditFile,
 };
 
