@@ -45,6 +45,11 @@ export class Table extends Container {
     this.updateCodeCell(codeCell);
   }
 
+  destroy() {
+    this.hoverTableHeaders?.removeChild(this.header);
+    super.destroy();
+  }
+
   get hoverTableHeaders() {
     return pixiApp.cellsSheets.getById(this.sheet.id)?.tables.hoverTableHeaders;
   }

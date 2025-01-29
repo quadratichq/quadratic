@@ -1,6 +1,6 @@
+import { TableColumnHeadersGridLines } from '@/app/grid/sheet/TableColumnHeadersGridLines';
 import type { Table } from '@/app/gridGL/cells/tables/Table';
 import { TableColumnHeaders } from '@/app/gridGL/cells/tables/TableColumnHeaders';
-import { TableColumnHeadersGridLines } from '@/app/grid/sheet/TableColumnHeadersGridLines';
 import { TableName } from '@/app/gridGL/cells/tables/TableName';
 import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
@@ -14,8 +14,6 @@ export class TableHeader extends Container {
 
   // Calculated lowest y position for a floating table header
   private bottomOfTable = 0;
-
-  private columnHeadersY = 0;
 
   tableCursor?: string;
 
