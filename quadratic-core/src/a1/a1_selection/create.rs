@@ -58,11 +58,43 @@ impl A1Selection {
         }
     }
 
+    pub fn from_ranges(
+        ranges: Vec<CellRefRange>,
+        sheet: SheetId,
+        context: &A1Context,
+    ) -> Option<Self> {
+        if ranges.is_empty() {
+            None
+        } else {
+            Some(Self {
+                sheet_id: sheet,
+                cursor: Self::cursor_pos_from_last_range(&ranges.last().unwrap(), context),
+                ranges,
+            })
+        }
+    }
+
     pub fn from_ref_range_bounds(sheet_id: SheetId, range: RefRangeBounds) -> Self {
         Self {
             sheet_id,
             cursor: range.cursor_pos_from_last_range(),
             ranges: vec![CellRefRange::Sheet { range }],
+        }
+    }
+
+    pub fn from_sheet_ranges(
+        ranges: Vec<RefRangeBounds>,
+        sheet: SheetId,
+        context: &A1Context,
+    ) -> Option<Self> {
+        if ranges.is_empty() {
+            None
+        } else {
+            let ranges = ranges
+                .into_iter()
+                .map(|range| CellRefRange::Sheet { range })
+                .collect();
+            Self::from_ranges(ranges, sheet, context)
         }
     }
 

@@ -7,6 +7,7 @@
 pub mod column;
 pub mod column_header;
 pub mod display_value;
+pub mod formats;
 pub mod row;
 pub mod send_render;
 pub mod sort;
@@ -308,7 +309,7 @@ impl DataTable {
     /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
     /// A spill or error returns [`CellValue::Blank`]. Note: this assumes a [`CellValue::Code`] exists at the location.
     pub fn cell_value_at(&self, x: u32, y: u32) -> Option<CellValue> {
-        if self.spill_error {
+        if self.spill_error || self.has_error() {
             Some(CellValue::Blank)
         } else {
             self.display_value_at((x, y).into()).ok().cloned()
@@ -318,7 +319,7 @@ impl DataTable {
     /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
     /// A spill or error returns `None`. Note: this assumes a [`CellValue::Code`] exists at the location.
     pub fn cell_value_ref_at(&self, x: u32, y: u32) -> Option<&CellValue> {
-        if self.spill_error {
+        if self.spill_error || self.has_error() {
             None
         } else {
             self.display_value_at((x, y).into()).ok()
@@ -346,7 +347,7 @@ impl DataTable {
     /// Sets the cell value at a relative location (0-indexed) into the code.
     /// Returns `false` if the value cannot be set.
     pub fn set_cell_value_at(&mut self, x: u32, y: u32, value: CellValue) -> bool {
-        if !self.spill_error {
+        if !self.spill_error && !self.has_error() {
             match self.value {
                 Value::Single(_) => {
                     self.value = Value::Single(value);
@@ -384,10 +385,7 @@ impl DataTable {
                     let mut size = a.size();
 
                     let mut height = size.h.get();
-                    if self.header_is_first_row {
-                        height -= 1;
-                    }
-                    height += self.y_adjustment() as u32;
+                    height = height.saturating_add_signed(self.y_adjustment() as i32);
 
                     size.h = NonZeroU32::new(height).unwrap_or(ArraySize::_1X1.h);
 
@@ -521,6 +519,7 @@ impl DataTable {
     /// elements
     pub fn y_adjustment(&self) -> i64 {
         let mut y_adjustment = 0;
+
         if self.show_ui {
             if self.show_name {
                 y_adjustment += 1;
@@ -529,6 +528,11 @@ impl DataTable {
                 y_adjustment += 1;
             }
         }
+
+        if self.header_is_first_row {
+            y_adjustment -= 1;
+        }
+
         y_adjustment
     }
 
