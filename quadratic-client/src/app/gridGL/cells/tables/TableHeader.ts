@@ -3,7 +3,6 @@ import { TableColumnHeaders } from '@/app/gridGL/cells/tables/TableColumnHeaders
 import { TableColumnHeadersGridLines } from '@/app/gridGL/cells/tables/TableColumnHeadersGridLines';
 import { TableName } from '@/app/gridGL/cells/tables/TableName';
 import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { Container, type Point, type Rectangle } from 'pixi.js';
 
@@ -104,7 +103,7 @@ export class TableHeader extends Container {
       this.y + (this.table.codeCell.show_ui && this.table.codeCell.show_name ? this.columnHeaders.y : 0)
     );
     this.tableName.toHover(this.y);
-    pixiApp.hoverTableHeaders.addChild(this);
+    this.table.hoverTableHeaders?.addChild(this);
     this.columnHeadersGridLines.visible = true;
   };
 

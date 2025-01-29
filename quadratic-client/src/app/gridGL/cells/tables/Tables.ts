@@ -41,12 +41,16 @@ export class Tables extends Container<Table> {
     action?: Table;
   };
 
+  // Holds the table headers that hover over the grid.
+  hoverTableHeaders: Container;
+
   tableCursor: string | undefined;
 
   constructor(cellsSheet: CellsSheet) {
     super();
     this.cellsSheet = cellsSheet;
     this.htmlOrImage = new Set();
+    this.hoverTableHeaders = new Container();
 
     events.on('renderCodeCells', this.renderCodeCells);
     events.on('updateCodeCell', this.updateCodeCell);

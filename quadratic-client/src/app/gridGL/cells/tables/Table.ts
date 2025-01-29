@@ -45,6 +45,10 @@ export class Table extends Container {
     this.updateCodeCell(codeCell);
   }
 
+  get hoverTableHeaders() {
+    return pixiApp.cellsSheets.getById(this.sheet.id)?.tables.hoverTableHeaders;
+  }
+
   activate = (active: boolean) => {
     if (active === this.active) return;
     this.active = active;
@@ -80,17 +84,12 @@ export class Table extends Container {
     this.outline.update();
   };
 
-  // places column headers back into the table (instead of the overHeadings container)
-  private headerToGrid() {
-    this.header.toGrid();
-  }
-
   private headingPosition = (bounds: Rectangle, gridHeading: number) => {
     if (this.visible) {
       if (this.tableBounds.top < bounds.top + gridHeading) {
         this.header.toHover(bounds, gridHeading);
       } else {
-        this.headerToGrid();
+        this.header.toGrid();
       }
     }
   };

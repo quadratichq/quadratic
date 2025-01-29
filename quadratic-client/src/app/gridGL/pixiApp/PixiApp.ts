@@ -61,7 +61,7 @@ export class PixiApp {
 
   // this is used to display content over the headings (eg, table name when off
   // the screen)
-  hoverTableHeaders: Container;
+  private hoverTableHeaders: Container;
 
   cellMoving!: UICellMoving;
   headings!: GridHeadings;
@@ -413,6 +413,11 @@ export class PixiApp {
       throw new Error('cellSheet not found in pixiApp');
     }
     return this.cellsSheets.current;
+  }
+
+  changeHoverTableHeaders(hoverTableHeaders: Container) {
+    this.hoverTableHeaders.removeChildren();
+    this.hoverTableHeaders.addChild(hoverTableHeaders);
   }
 }
 
