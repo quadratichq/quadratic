@@ -68,7 +68,7 @@ impl A1Selection {
         } else {
             Some(Self {
                 sheet_id: sheet,
-                cursor: Self::cursor_pos_from_last_range(&ranges.last().unwrap(), context),
+                cursor: Self::cursor_pos_from_last_range(ranges.last().unwrap(), context),
                 ranges,
             })
         }
