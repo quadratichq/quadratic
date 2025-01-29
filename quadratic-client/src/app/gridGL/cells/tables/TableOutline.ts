@@ -1,5 +1,6 @@
 //! Draws a table outline, including the spill error boundaries.
 
+import { events } from '@/app/events/events';
 import type { Table } from '@/app/gridGL/cells/tables/Table';
 import { generatedTextures } from '@/app/gridGL/generateTextures';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -23,25 +24,29 @@ export class TableOutline extends Graphics {
     this.table = table;
 
     sharedEvents.on('changeThemeAccentColor', this.update);
+    events.on('gridSettings', this.update);
   }
 
   destroy = () => {
     sharedEvents.off('changeThemeAccentColor', this.update);
+    events.off('gridSettings', this.update);
     super.destroy();
   };
 
   update = () => {
     this.clear();
 
+    if (!this.table.codeCell.show_ui && !pixiAppSettings.showCellTypeOutlines) {
+      return;
+    }
+
     // draw the table selected outline
-    // TODO: (jimniels) settings don't respond to toggling code cell outlines on/off
-    const width = pixiAppSettings.showCellTypeOutlines ? 1 : this.table.active ? 1 : 0; // (this.table.active ? 1 : 0) : this.table.active ? 2 : 1;
+    const width = 1;
     const chart = this.table.codeCell.state === 'HTML';
     if (ALWAYS_SHOW || this.table.codeCell.show_ui || this.table.active) {
       if (!chart) {
         this.lineStyle({
-          // TODO: (jimniels) if the table is selected 'primary' otherwise 'muted-foreground
-          color: getCSSVariableTint('muted-foreground'),
+          color: getCSSVariableTint(this.table.active ? 'primary' : 'muted-foreground'),
           width,
           alignment: 0,
         });
@@ -78,6 +83,7 @@ export class TableOutline extends Graphics {
         this.table.tableBounds.y
       );
       pixiApp.pointer.pointerTableResize.codeCell = this.table.codeCell;
+      pixiApp.setViewportDirty();
     }
 
     // draw the spill error boundaries

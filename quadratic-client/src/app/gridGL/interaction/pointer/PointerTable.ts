@@ -26,7 +26,6 @@ export class PointerTable {
     ctrlKey: boolean
   ) => {
     sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, tableDown.table.y, shiftKey, ctrlKey);
-    pixiApp.cellsSheet().tables.ensureActive(tableDown.table);
     if (this.doubleClickTimeout) {
       const table = tableDown.table;
       if (table.language !== 'Import') {
@@ -106,7 +105,6 @@ export class PointerTable {
           this.doubleClickTimeout = undefined;
           doubleClickCell({ column: image.x, row: image.y });
         } else {
-          pixiApp.cellsSheet().tables.ensureActiveCoordinate(image);
           sheets.sheet.cursor.moveTo(image.x, image.y);
           this.doubleClickTimeout = window.setTimeout(() => {
             this.doubleClickTimeout = undefined;

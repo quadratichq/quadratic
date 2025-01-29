@@ -255,4 +255,12 @@ impl JsSelection {
         };
         self.selection.cursor_is_on_html_image(&context)
     }
+
+    #[wasm_bindgen(js_name = "getSelectedTableNames")]
+    pub fn get_selected_table_names(&self) -> Result<String, String> {
+        Ok(
+            serde_json::to_string(&self.selection.selected_table_names())
+                .map_err(|e| e.to_string())?,
+        )
+    }
 }

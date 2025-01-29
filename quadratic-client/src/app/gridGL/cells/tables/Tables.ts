@@ -24,7 +24,7 @@ export interface TablePointerDownResult {
 export class Tables extends Container<Table> {
   private cellsSheet: CellsSheet;
 
-  private activeTable: Table | undefined;
+  private activeTables: Table[] = [];
   private hoverTable: Table | undefined;
   private contextMenuTable: Table | undefined;
 
@@ -138,7 +138,7 @@ export class Tables extends Container<Table> {
           table.destroy();
         } else {
           table.updateCodeCell(renderCodeCell);
-          if (table === this.activeTable || table === this.hoverTable || table === this.contextMenuTable) {
+          if (this.isActive(table)) {
             table.showActive(true);
           }
         }
@@ -171,28 +171,19 @@ export class Tables extends Container<Table> {
     if (this.sheet.id !== sheets.current) {
       return;
     }
-    if (this.activeTable) {
-      this.activeTable.hideActive();
-    }
-    const cursor = sheets.sheet.cursor.position;
-    this.activeTable = this.children.find((table) => table.intersectsCursor(cursor.x, cursor.y));
-    if (!this.activeTable) {
-      const image = pixiApp.cellsSheet().cellsImages.findCodeCell(cursor.x, cursor.y);
-      const codeCell =
-        htmlCellsHandler.findCodeCell(cursor.x, cursor.y)?.htmlCell ||
-        (image ? { x: image.gridBounds.x, y: image.gridBounds.y } : undefined);
-      if (codeCell) {
-        this.activeTable = this.children.find(
-          (table) => table.codeCell.x === codeCell.x && table.codeCell.y === codeCell.y
-        );
-      }
-    }
-    if (this.activeTable) {
-      this.activeTable.showActive(true);
-    }
-    if (this.hoverTable === this.activeTable) {
+
+    const tables = sheets.sheet.cursor.getSelectedTableNames();
+    this.activeTables = tables.flatMap((table) => this.children.filter((t) => t.codeCell.name === table));
+    if (this.hoverTable && this.activeTables.includes(this.hoverTable)) {
       this.hoverTable = undefined;
     }
+    this.children.forEach((table) => {
+      if (this.activeTables.includes(table)) {
+        table.showActive(true);
+      } else {
+        table.hideActive();
+      }
+    });
   };
 
   // Redraw the headings if the offsets change.
@@ -201,31 +192,6 @@ export class Tables extends Container<Table> {
       this.children.map((table) => table.updateCodeCell());
     }
     pixiApp.setViewportDirty();
-  };
-
-  // Checks if the mouse cursor is hovering over a table or table heading.
-  checkHover = (world: Point, event: PointerEvent) => {
-    // don't allow hover when the mouse is over the headings
-    if (world.y < pixiApp.viewport.y - pixiApp.headings.headingSize.height) return;
-
-    // only allow hover when the mouse is over the canvas (and not menus)
-    if (event.target !== pixiApp.canvas) {
-      return;
-    }
-    const hover = this.children.find((table) => table.checkHover(world));
-    // if we already have the active table open, then don't show hover
-    if (hover && (hover === this.contextMenuTable || hover === this.activeTable || hover === this.actionDataTable)) {
-      return;
-    }
-    if (hover !== this.hoverTable) {
-      if (this.hoverTable) {
-        // this.hoverTable.hideActive();
-      }
-      this.hoverTable = hover;
-      if (this.hoverTable && !this.hoverTable.isSingleCellOutputCodeCell()) {
-        // this.hoverTable.showActive(false);
-      }
-    }
   };
 
   isTable(x: number, y: number): boolean {
@@ -240,8 +206,8 @@ export class Tables extends Container<Table> {
     return table.isCodeCell();
   }
 
-  private isTableActive(table: Table): boolean {
-    return this.activeTable === table || this.hoverTable === table || this.contextMenuTable === table;
+  isActive(table: Table): boolean {
+    return this.activeTables.includes(table) || table === this.hoverTable || table === this.contextMenuTable;
   }
 
   // Returns true if the pointer down as handled (eg, a column header was
@@ -249,15 +215,11 @@ export class Tables extends Container<Table> {
   // table is not active to allow the user to select the row above the table.
   pointerDown(world: Point): TablePointerDownResult | undefined {
     for (const table of this.children) {
-      if (this.isActive(table)) {
-        const result = table.intersectsTableName(world);
-        if (result && (result.type !== 'table-name' || this.isTableActive(table))) {
-          return result;
-        }
-        const columnName = table.pointerDown(world);
-        if (columnName && columnName.type !== 'table-name') {
-          return columnName;
-        }
+      const result = table.intersectsTableName(world);
+      if (result) return result;
+      const columnName = table.pointerDown(world);
+      if (columnName && columnName.type !== 'table-name') {
+        return columnName;
       }
     }
   }
@@ -268,10 +230,12 @@ export class Tables extends Container<Table> {
       if (result) {
         this.tableCursor = table.tableCursor;
         if (this.hoverTable !== table) {
-          // this.hoverTable?.hideActive();
+          this.hoverTable?.hideActive();
         }
-        this.hoverTable = table;
-        table.showActive(false);
+        if (!this.activeTables.includes(table)) {
+          this.hoverTable = table;
+          table.showActive(false);
+        }
         return true;
       }
     }
@@ -280,9 +244,9 @@ export class Tables extends Container<Table> {
       ? this.children.find((table) => table.codeCell.x === hover?.x && table.codeCell.y === hover?.y)
       : undefined;
     if (table) {
-      if (!this.isTableActive(table)) {
+      if (!this.isActive(table)) {
         if (this.hoverTable !== table) {
-          // this.hoverTable?.hideActive();
+          this.hoverTable?.hideActive();
         }
         this.hoverTable = table;
         table.showActive(false);
@@ -294,14 +258,18 @@ export class Tables extends Container<Table> {
       (table) => table.codeCell.x === hoverImage?.x && table.codeCell.y === hoverImage?.y
     );
     if (tableImage) {
-      if (!this.isTableActive(tableImage)) {
+      if (!this.isActive(tableImage)) {
         if (this.hoverTable !== tableImage) {
-          // this.hoverTable?.hideActive();
+          this.hoverTable?.hideActive();
         }
         this.hoverTable = tableImage;
         tableImage.showActive(false);
       }
       return true;
+    }
+    if (this.hoverTable) {
+      this.hoverTable.hideActive();
+      this.hoverTable = undefined;
     }
     this.tableCursor = undefined;
     return false;
@@ -315,7 +283,7 @@ export class Tables extends Container<Table> {
     // until the cursor moves again.
     if (this.actionDataTable) {
       this.actionDataTable.showColumnHeaders();
-      if (this.activeTable !== this.actionDataTable) {
+      if (!this.activeTables.includes(this.actionDataTable)) {
         this.hoverTable = this.actionDataTable;
       }
       this.actionDataTable = undefined;
@@ -323,7 +291,7 @@ export class Tables extends Container<Table> {
     if (this.contextMenuTable) {
       // we keep the former context menu table active after the context
       // menu closes until the cursor moves again.
-      if (this.contextMenuTable !== this.activeTable) {
+      if (!this.activeTables.includes(this.contextMenuTable)) {
         this.hoverTable = this.contextMenuTable;
       }
       this.contextMenuTable = undefined;
@@ -412,69 +380,31 @@ export class Tables extends Container<Table> {
     return table.getSortDialogPosition();
   }
 
-  isActive(table: Table): boolean {
-    return this.activeTable === table || this.hoverTable === table || this.contextMenuTable === table;
-  }
-
-  // Ensures that the code cell at the given coordinate is active.
-  ensureActiveCoordinate(coordinate: JsCoordinate) {
-    const table = this.children.find((table) => table.codeCell.x === coordinate.x && table.codeCell.y === coordinate.y);
-    if (!table) {
-      return;
-    }
-    sheets.sheet.cursor.moveTo(coordinate.x, coordinate.y);
-    this.ensureActive(table.codeCell);
-  }
-
-  // Ensures that the JsRenderCodeCell is active.
-  ensureActive(codeCell: JsRenderCodeCell) {
-    const table = this.children.find((table) => table.codeCell === codeCell);
-    if (!table) {
-      return;
-    }
-    if (this.activeTable !== table) {
-      if (this.activeTable) {
-        this.activeTable.hideActive();
-      }
-      if (this.hoverTable === table) {
-        this.hoverTable = undefined;
-      }
-      if (this.contextMenuTable === table) {
-        this.contextMenuTable = undefined;
-      }
-      if (this.actionDataTable === table) {
-        this.actionDataTable = undefined;
-      }
-      this.activeTable = table;
-      table.showActive(true);
-    }
-  }
-
   // Toggles the outlines of the table (used during thumbnail generation)
   toggleOutlines() {
-    if (this.saveToggleOutlines) {
-      this.activeTable = this.saveToggleOutlines.active;
-      this.activeTable?.showActive(true);
-      this.hoverTable = this.saveToggleOutlines.hover;
-      this.hoverTable?.showActive(false);
-      this.contextMenuTable = this.saveToggleOutlines.context;
-      this.contextMenuTable?.showActive(false);
-      this.actionDataTable = this.saveToggleOutlines.action;
-      this.actionDataTable?.showActive(false);
-      pixiApp.setViewportDirty();
-      this.saveToggleOutlines = undefined;
-    } else {
-      this.saveToggleOutlines = {
-        active: this.activeTable,
-        hover: this.hoverTable,
-        context: this.contextMenuTable,
-        action: this.actionDataTable,
-      };
-      this.activeTable?.hideActive();
-      // this.hoverTable?.hideActive();
-      this.contextMenuTable?.hideActive();
-      this.actionDataTable?.hideActive();
-    }
+    // if (this.saveToggleOutlines) {
+    //   this.activeTable = this.saveToggleOutlines.active;
+    //   this.activeTable?.showActive(true);
+    //   this.hoverTable = this.saveToggleOutlines.hover;
+    //   this.hoverTable?.showActive(false);
+    //   this.contextMenuTable = this.saveToggleOutlines.context;
+    //   this.contextMenuTable?.showActive(false);
+    //   this.actionDataTable = this.saveToggleOutlines.action;
+    //   this.actionDataTable?.showActive(false);
+    //   pixiApp.setViewportDirty();
+    //   this.saveToggleOutlines = undefined;
+    // } else {
+    //   this.saveToggleOutlines = {
+    //     active: this.activeTable,
+    //     hover: this.hoverTable,
+    //     context: this.contextMenuTable,
+    //     action: this.actionDataTable,
+    //   };
+    //   this.activeTable?.hideActive();
+    //   this.hoverTable?.hideActive();
+    //   this.contextMenuTable?.hideActive();
+    //   this.actionDataTable?.hideActive();
+    // }
   }
 
   resizeTable(x: number, y: number, width: number, height: number) {

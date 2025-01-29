@@ -101,13 +101,12 @@ class PixiAppSettings {
     pixiApp.gridLines.dirty = true;
     pixiApp.headings.dirty = true;
 
-    // todo: not sure what to do with this...
-    // if (
-    //   (this.lastSettings && this.lastSettings.showCellTypeOutlines !== this.settings.showCellTypeOutlines) ||
-    //   (this.lastSettings && this.lastSettings.presentationMode !== this.settings.presentationMode)
-    // ) {
-    //   pixiApp.viewport.dirty = true;
-    // }
+    if (
+      (this.lastSettings && this.lastSettings.showCellTypeOutlines !== this.settings.showCellTypeOutlines) ||
+      (this.lastSettings && this.lastSettings.presentationMode !== this.settings.presentationMode)
+    ) {
+      pixiApp.setViewportDirty();
+    }
     this.lastSettings = this.settings;
   };
 

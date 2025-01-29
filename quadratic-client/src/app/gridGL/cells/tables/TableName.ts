@@ -58,8 +58,8 @@ export class TableName extends Container {
     }
 
     this.background.clear();
-    // TODO: (jimniels) if the table is selected 'primary' otherwise 'muted-foreground
-    this.background.beginFill(getCSSVariableTint('muted-foreground'));
+    const color = this.table.active ? 'primary' : 'muted-foreground';
+    this.background.beginFill(getCSSVariableTint(color));
     this.background.drawShape(new Rectangle(0, 0, this.backgroundWidth, this.h));
     this.background.endFill();
   };

@@ -381,6 +381,17 @@ impl A1Selection {
             false
         }
     }
+
+    /// Returns the names of the tables that are selected.
+    pub fn selected_table_names(&self) -> Vec<String> {
+        self.ranges
+            .iter()
+            .filter_map(|range| match range {
+                CellRefRange::Table { range } => Some(range.table_name.clone()),
+                _ => None,
+            })
+            .collect()
+    }
 }
 
 #[cfg(test)]
@@ -753,5 +764,32 @@ mod tests {
         assert!(A1Selection::test_a1_context("Table1[#ALL]", &context).has_table_headers());
         assert!(!A1Selection::test_a1_context("Table1[#headers]", &context).has_table_headers());
         assert!(A1Selection::test_a1_context("Table1[#all]", &context).has_table_headers());
+    }
+
+    #[test]
+    fn test_selected_table_names() {
+        let context = A1Context::test(
+            &[],
+            &[
+                ("Table1", &["A", "B"], Rect::test_a1("A1:B2")),
+                ("Table2", &["C", "D"], Rect::test_a1("C3:D4")),
+            ],
+        );
+
+        // Test single table selection
+        let selection = A1Selection::test_a1_context("Table1", &context);
+        assert_eq!(selection.selected_table_names(), vec!["Table1"]);
+
+        // Test multiple table selections
+        let selection = A1Selection::test_a1_context("Table1,Table2", &context);
+        assert_eq!(selection.selected_table_names(), vec!["Table1", "Table2"]);
+
+        // Test mixed selection with tables and regular ranges
+        let selection = A1Selection::test_a1_context("A1:B2,Table1,C3", &context);
+        assert_eq!(selection.selected_table_names(), vec!["Table1"]);
+
+        // Test selection without tables
+        let selection = A1Selection::test_a1_context("A1:B2,C3", &context);
+        assert_eq!(selection.selected_table_names(), Vec::<String>::new());
     }
 }

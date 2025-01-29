@@ -324,4 +324,15 @@ export class SheetCursor {
   isOnHtmlImage = (): boolean => {
     return this.jsSelection.cursorIsOnHtmlImage(sheets.a1Context);
   };
+
+  /// Returns the names of the tables that are selected.
+  getSelectedTableNames = (): string[] => {
+    try {
+      const names = this.jsSelection.getSelectedTableNames();
+      return JSON.parse(names);
+    } catch (e) {
+      console.warn('Error getting selected table names', e);
+      return [];
+    }
+  };
 }

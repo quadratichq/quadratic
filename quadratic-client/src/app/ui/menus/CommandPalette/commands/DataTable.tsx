@@ -186,13 +186,6 @@ const dataTableCommandGroup: CommandGroup = {
         return <CommandPaletteListItem {...props} action={removeTableRow} />;
       },
     },
-    {
-      label: toggleTableUIAction.label,
-      isAvailable: toggleTableUIAction.isAvailable,
-      Component: (props) => {
-        return <CommandPaletteListItem {...props} action={toggleTableUI} />;
-      },
-    },
   ],
 };
 

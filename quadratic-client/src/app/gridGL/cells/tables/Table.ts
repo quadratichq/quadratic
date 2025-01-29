@@ -54,8 +54,6 @@ export class Table extends Container {
     this.active = active;
     this.outline.update();
     this.header.update(false);
-    // TODO: (jimniels) I think here we need to update the alternating colors
-    // TODO: (jimniels) what about when there's a selection in two different tables?
   };
 
   updateCodeCell = (codeCell?: JsRenderCodeCell) => {
@@ -108,10 +106,6 @@ export class Table extends Container {
   };
 
   update(bounds: Rectangle, gridHeading: number) {
-    this.visible = intersects.rectangleRectangle(this.tableBounds, bounds);
-    // if (!this.visible && this.columnHeaders.parent !== this) {
-    //   this.columnHeadersHere();
-    // }
     this.headingPosition(bounds, gridHeading);
     if (this.visible && this.inOverHeadings) {
       this.header.update(true);

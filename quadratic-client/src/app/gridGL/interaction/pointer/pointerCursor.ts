@@ -31,8 +31,6 @@ export class PointerCursor {
       foundCodeCell = true;
     }
 
-    pixiApp.cellsSheets.current.tables.checkHover(world, event);
-
     let foundValidation = false;
     const validation = pixiApp.cellsSheets.current.cellsLabels.intersectsErrorMarkerValidation(world);
     if (validation) {
