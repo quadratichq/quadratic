@@ -13,6 +13,13 @@ interface SpriteBounds extends Sprite {
   viewBounds: Rectangle;
 }
 
+// TODO: (jimniels) this doesn't match the table header and also doesn't match
+// the theme. The problem here is that a table cell might have a background
+// of orange, which is why this is a solid color with lightened opacity.
+// We should figure out how to make this better match the theme and light/dark mode
+const ALTERNATING_BG_OPACITY = 0.035;
+const ALTERNATING_BG_COLOR = getCSSVariableTint('text');
+
 export class CellsFills extends Container {
   private cellsSheet: CellsSheet;
   private cells: JsRenderFill[] = [];
@@ -205,9 +212,12 @@ export class CellsFills extends Container {
       let yOffset = bounds.y;
       for (let y = 0; y < table.h; y++) {
         let height = this.sheet.offsets.getRowHeight(y + table.y);
-        if (y % 2 !== (table.show_ui && table.show_name !== table.show_columns ? 1 : 0)) {
-          // TODO: (jimniels) this doesn't seem to redraw when you change the theme
-          this.alternatingColorsGraphics.beginFill(getCSSVariableTint('accent'));
+        // TODO: (jimniels) fix this so 1st row _of data_ is always white
+        if (!(table.show_ui || table.show_name !== table.show_columns ? 1 : 0)) {
+          break;
+        }
+        if (y % 2 === 0) {
+          this.alternatingColorsGraphics.beginFill(ALTERNATING_BG_COLOR, ALTERNATING_BG_OPACITY);
           this.alternatingColorsGraphics.drawRect(bounds.x, yOffset, bounds.width, height);
           this.alternatingColorsGraphics.endFill();
         }
