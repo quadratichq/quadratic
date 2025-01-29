@@ -105,10 +105,10 @@ mod tests {
     fn test_check_for_table_ref_full_table() {
         let context = A1Context::test(
             &[("Sheet1", SheetId::test())],
-            &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C3"))],
+            &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C4"))],
         );
         let cell_ref_range = CellRefRange::Sheet {
-            range: RefRangeBounds::test_a1("A1:C3"),
+            range: RefRangeBounds::test_a1("A3:C4"),
         };
         let table_ref = cell_ref_range.check_for_table_ref(SheetId::test(), &context);
 

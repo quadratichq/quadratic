@@ -61,7 +61,17 @@ export class TableColumnHeaders extends Container {
       });
       this.background.moveTo(this.table.tableBounds.width, 0);
       this.background.lineTo(this.table.tableBounds.width, this.headerHeight);
+
+      if (this.table.inOverHeadings && active) {
+      }
     }
+    this.background.lineStyle({
+      color: getCSSVariableTint(this.table.active ? 'primary' : 'muted-foreground'),
+      width: 1,
+      alignment: 1,
+    });
+    this.background.moveTo(0, this.headerHeight);
+    this.background.lineTo(this.table.tableBounds.width, this.headerHeight);
   };
 
   private onSortPressed = (column: JsDataTableColumnHeader) => {
