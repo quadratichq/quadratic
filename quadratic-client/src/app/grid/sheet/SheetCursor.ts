@@ -335,4 +335,18 @@ export class SheetCursor {
       return [];
     }
   };
+
+  getTableColumnSelection = (tableName: string): number[] | undefined => {
+    const cols = this.jsSelection.getTableColumnSelection(tableName, this.sheet.sheets.a1Context);
+    if (!cols) {
+      return undefined;
+    }
+    try {
+      const colsArray = JSON.parse(cols);
+      return colsArray.map((col: number) => Number(col));
+    } catch (e) {
+      console.warn('Error getting table column selection', e);
+      return undefined;
+    }
+  };
 }

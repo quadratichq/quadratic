@@ -5,7 +5,7 @@ import { DASHED } from '@/app/gridGL/generateTextures';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { drawDashedRectangle, drawDashedRectangleMarching } from '@/app/gridGL/UI/cellHighlights/cellHighlightsDraw';
-import { FILL_ALPHA } from '@/app/gridGL/UI/Cursor';
+import { FILL_SELECTION_ALPHA } from '@/app/gridGL/UI/Cursor';
 import { convertColorStringToTint } from '@/app/helpers/convertColor';
 import type { CellRefRange, JsCellsAccessed, RefRangeBounds } from '@/app/quadratic-core-types';
 import { cellRefRangeToRefRangeBounds } from '@/app/quadratic-rust-client/quadratic_rust_client';
@@ -121,7 +121,7 @@ export class CellHighlights extends Container {
       color: colorNumber,
       march: this.march,
       range: refRangeBounds,
-      alpha: FILL_ALPHA,
+      alpha: FILL_SELECTION_ALPHA,
     });
     this.march = (this.march + 1) % Math.floor(DASHED);
     if (render) {

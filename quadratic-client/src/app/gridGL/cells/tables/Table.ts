@@ -86,8 +86,10 @@ export class Table extends Container {
     if (this.visible) {
       if (this.tableBounds.top < bounds.top + gridHeading) {
         this.header.toHover(bounds, gridHeading);
+        this.inOverHeadings = true;
       } else {
         this.header.toGrid();
+        this.inOverHeadings = false;
       }
     }
   };

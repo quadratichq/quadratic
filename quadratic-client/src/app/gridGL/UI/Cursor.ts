@@ -12,7 +12,7 @@ import { colors } from '@/app/theme/colors';
 import { Container, Graphics, Rectangle, Sprite } from 'pixi.js';
 
 export const CURSOR_THICKNESS = 2;
-export const FILL_ALPHA = 0.1;
+export const FILL_SELECTION_ALPHA = 0.1;
 
 const INDICATOR_SIZE = 8;
 const INDICATOR_PADDING = 1;
@@ -169,7 +169,7 @@ export class Cursor extends Container {
     this.startCell = sheet.getCellOffsets(cursor.position.x, cursor.position.y);
 
     if (!sheets.sheet.cursor.isSingleSelection()) {
-      drawFiniteSelection(this.graphics, pixiApp.accentColor, FILL_ALPHA, ranges);
+      drawFiniteSelection(this.graphics, pixiApp.accentColor, FILL_SELECTION_ALPHA, ranges);
     }
   }
 
@@ -327,7 +327,7 @@ export class Cursor extends Container {
         drawInfiniteSelection({
           g: this.graphics,
           color: pixiApp.accentColor,
-          alpha: FILL_ALPHA,
+          alpha: FILL_SELECTION_ALPHA,
           ranges: infiniteRanges,
         });
         if (
