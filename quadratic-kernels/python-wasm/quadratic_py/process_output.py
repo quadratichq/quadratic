@@ -68,7 +68,9 @@ def process_output_value(output_value):
 
     if array_output is not None:
         typed_array_output = []
-        is_2d_array = isinstance(array_output[0], list) and len(array_output[0]) > 0
+        # Check array_output is an array before accessing index 0
+        is_2d_array = (isinstance(array_output, list) and len(array_output) > 0 and
+                      isinstance(array_output[0], list) and len(array_output[0]) > 0)
 
         # insure that all rows are the same length
         if not is_2d_array:
