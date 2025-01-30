@@ -547,6 +547,18 @@ impl DataTable {
             Value::Tuple(_) => false,
         }
     }
+
+    /// Returns true if the data table is a single column (ie, not an array), or
+    /// if it's an html or image.
+    pub fn is_single_column(&self) -> bool {
+        if self.is_html_or_image() {
+            return true;
+        }
+        match &self.value {
+            Value::Array(a) => a.width() == 1,
+            _ => false,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -745,5 +757,69 @@ pub mod test {
     fn test_y_adjustment() {
         let (_, data_table) = new_data_table();
         assert_eq!(data_table.y_adjustment(), 2);
+    }
+
+    #[test]
+    fn test_is_single_column() {
+        let code_run = CodeRun {
+            std_out: None,
+            std_err: None,
+            cells_accessed: Default::default(),
+            error: None,
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
+        };
+
+        // Test single value (not a single column)
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run.clone()),
+            "Table 1",
+            Value::Single(CellValue::Number(1.into())),
+            false,
+            false,
+            true,
+            None,
+        );
+        assert!(!data_table.is_single_column());
+
+        // Test single column array
+        let single_column = Array::new_empty(ArraySize::new(1, 3).unwrap());
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run.clone()),
+            "Table 1",
+            Value::Array(single_column),
+            false,
+            false,
+            true,
+            None,
+        );
+        assert!(data_table.is_single_column());
+
+        // Test multi-column array
+        let multi_column = Array::new_empty(ArraySize::new(2, 3).unwrap());
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "Table 1",
+            Value::Array(multi_column),
+            false,
+            false,
+            true,
+            None,
+        );
+        assert!(!data_table.is_single_column());
+
+        // Test HTML content (should be single column so data_table.show_columns
+        // is false)
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(CodeRun::default()),
+            "Table 1",
+            Value::Single(CellValue::Html("test".into())),
+            false,
+            false,
+            true,
+            None,
+        );
+        assert!(data_table.is_single_column());
     }
 }
