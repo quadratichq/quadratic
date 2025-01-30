@@ -218,7 +218,59 @@ pub fn parse_time(value: &str) -> Option<NaiveTime> {
 /// Parses a date string using a list of possible formats.
 pub fn parse_date(value: &str) -> Option<NaiveDate> {
     let value = value.trim();
-    
+
+    fn parse_month(s: &str) -> Option<u32> {
+        match s.to_lowercase().as_str() {
+            "jan" | "january" => Some(1),
+            "feb" | "february" => Some(2),
+            "mar" | "march" => Some(3),
+            "apr" | "april" => Some(4),
+            "may" => Some(5),
+            "jun" | "june" => Some(6),
+            "jul" | "july" => Some(7),
+            "aug" | "august" => Some(8),
+            "sep" | "september" => Some(9),
+            "oct" | "october" => Some(10),
+            "nov" | "november" => Some(11),
+            "dec" | "december" => Some(12),
+            _ => None,
+        }
+    }
+
+    // Handle special "Month Year/Day" format first
+    let parts: Vec<&str> = value.split_whitespace().collect();
+    if parts.len() == 2 {
+        if let Some(month) = parse_month(parts[0]) {
+            // Try to parse second part as number
+            if let Ok(num) = parts[1].parse::<i32>() {
+                let current_year = chrono::Local::now().year();
+                
+                if num >= 1000 {
+                    // Four digit number - definitely a year
+                    return NaiveDate::from_ymd_opt(num, month, 1);
+                } else if num >= 100 {
+                    // Three digit number - treat as day/year based on value
+                    if num <= 366 {
+                        return NaiveDate::from_ymd_opt(current_year, month, num as u32);
+                    } else {
+                        return NaiveDate::from_ymd_opt(num, month, 1);
+                    }
+                } else if num >= 0 && num <= 31 {
+                    // Number between 0-31 - treat as day
+                    return NaiveDate::from_ymd_opt(current_year, month, num as u32);
+                } else if num >= 32 && num <= 99 {
+                    // Number between 32-99 - treat as two digit year
+                    let year = if num <= 50 {
+                        2000 + num
+                    } else {
+                        1900 + num
+                    };
+                    return NaiveDate::from_ymd_opt(year, month, 1);
+                }
+            }
+        }
+    }
+
     // First try the standard formats with full dates
     let formats = vec![
         "%Y-%m-%d",
