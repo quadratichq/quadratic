@@ -253,8 +253,7 @@ impl GridController {
             if data_table.display_buffer.is_some() {
                 let rect = Rect::from_numbers(pos.x, pos.y, values.w as i64, values.h as i64);
 
-                // create a new CellValues object to store the new values
-                // this has values relative to data_table_pos at actual (unsorted) positions
+                // rebuild CellValues with actual coordinates
                 let mut actual_values = CellValues::new(0, 0);
 
                 for y in rect.y_range() {

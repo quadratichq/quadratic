@@ -45,9 +45,20 @@ impl GridController {
             if pos.x > 1 && pos.y > 1 {
                 let data_table_left = sheet.first_data_table_within(Pos::new(pos.x - 1, pos.y));
                 if let Ok(data_table_left) = data_table_left {
-                    if let Some(data_table) = sheet
-                        .data_table(data_table_left)
-                        .filter(|data_table| !data_table.readonly)
+                    if let Some(data_table) =
+                        sheet.data_table(data_table_left).filter(|data_table| {
+                            if data_table.readonly {
+                                return false;
+                            }
+                            // check if next column is blank
+                            for y in 0..data_table.height(false) {
+                                let pos = Pos::new(pos.x, data_table_left.y + y as i64);
+                                if sheet.has_content(pos) {
+                                    return false;
+                                }
+                            }
+                            true
+                        })
                     {
                         let y = pos.y - data_table_left.y;
                         let header_y = if data_table.show_ui && data_table.show_columns {
@@ -102,9 +113,20 @@ impl GridController {
 
                 let data_table_above = sheet.first_data_table_within(Pos::new(pos.x, pos.y - 1));
                 if let Ok(data_table_above) = data_table_above {
-                    if let Some(data_table) = sheet
-                        .data_table(data_table_above)
-                        .filter(|data_table| !data_table.readonly)
+                    if let Some(data_table) =
+                        sheet.data_table(data_table_above).filter(|data_table| {
+                            if data_table.readonly {
+                                return false;
+                            }
+                            // check if next row is blank
+                            for x in 0..data_table.width() {
+                                let pos = Pos::new(data_table_above.x + x as i64, pos.y);
+                                if sheet.has_content(pos) {
+                                    return false;
+                                }
+                            }
+                            true
+                        })
                     {
                         let x = pos.x - data_table_above.x;
                         let mut values = vec![CellValue::Blank; data_table.width()];
@@ -403,5 +425,11 @@ mod test {
         // ensure not found sheet_id fails silently
         let selection = A1Selection::from_xy(1, 1, SheetId::new());
         gc.delete_values_and_formatting(&selection, None);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_expand_data_table_column_row_on_setting_value() {
+        todo!("todo(ayush): add tests");
     }
 }
