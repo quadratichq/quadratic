@@ -48,23 +48,34 @@ impl CellRefRange {
                     ColRange::ColRange(col1_name, col2_name)
                 };
 
-                if b.min.y == start.y && b.max.y == end.y {
-                    // full table
+                // only column headers
+                if table.show_ui
+                    && table.show_columns
+                    && start.y == b.min.y + (if table.show_name { 1 } else { 0 })
+                    && end.y == b.min.y + (if table.show_name { 1 } else { 0 })
+                {
                     return Some(CellRefRange::Table {
                         range: TableRef {
                             table_name: table.table_name.clone(),
                             col_range,
-                            data: true,
-                            headers: table.show_ui && table.show_columns,
+                            data: false,
+                            headers: true,
                             totals: false,
                         },
                     });
-                } else if table.show_ui
-                    && table.show_columns
-                    && b.min.y + (if table.show_name { 1 } else { 0 }) == start.y
-                    && b.max.y == end.y
+                }
+
+                // only data
+                if start.y
+                    == b.min.y
+                        + (if table.show_ui && table.show_name {
+                            1
+                        } else {
+                            0
+                        })
+                        + (if table.show_columns { 1 } else { 0 })
+                    && end.y == b.max.y
                 {
-                    // table without headers
                     return Some(CellRefRange::Table {
                         range: TableRef {
                             table_name: table.table_name.clone(),
@@ -74,17 +85,23 @@ impl CellRefRange {
                             totals: false,
                         },
                     });
-                } else if table.show_ui
-                    && table.show_columns
-                    && start.y == b.min.y + (if table.show_name { 1 } else { 0 })
-                    && end.y == b.min.y + (if table.show_name { 1 } else { 0 })
+                }
+
+                // data and column headers
+                if start.y
+                    == b.min.y
+                        + (if table.show_ui && table.show_name {
+                            1
+                        } else {
+                            0
+                        })
+                    && end.y == b.max.y
                 {
-                    // table headers only
                     return Some(CellRefRange::Table {
                         range: TableRef {
                             table_name: table.table_name.clone(),
                             col_range,
-                            data: false,
+                            data: true,
                             headers: true,
                             totals: false,
                         },
@@ -108,7 +125,7 @@ mod tests {
             &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C4"))],
         );
         let cell_ref_range = CellRefRange::Sheet {
-            range: RefRangeBounds::test_a1("A3:C4"),
+            range: RefRangeBounds::test_a1("A2:C4"),
         };
         let table_ref = cell_ref_range.check_for_table_ref(SheetId::test(), &context);
 
@@ -133,7 +150,7 @@ mod tests {
             &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C3"))],
         );
         let cell_ref_range = CellRefRange::Sheet {
-            range: RefRangeBounds::test_a1("A2:C3"),
+            range: RefRangeBounds::test_a1("A3:C3"),
         };
         let table_ref = cell_ref_range.check_for_table_ref(SheetId::test(), &context);
 
@@ -201,7 +218,7 @@ mod tests {
             &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C3"))],
         );
         let cell_ref_range = CellRefRange::Sheet {
-            range: RefRangeBounds::test_a1("A2:B3"),
+            range: RefRangeBounds::test_a1("A3:B3"),
         };
         let table_ref = cell_ref_range.check_for_table_ref(SheetId::test(), &context);
 
@@ -226,7 +243,7 @@ mod tests {
             &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("D5:F10"))],
         );
         let cell_ref_range = CellRefRange::Sheet {
-            range: RefRangeBounds::test_a1("E10:E6"),
+            range: RefRangeBounds::test_a1("E10:E7"),
         };
         let table_ref = cell_ref_range.check_for_table_ref(SheetId::test(), &context);
 
