@@ -1,18 +1,17 @@
 //! Draws the grid lines for column headers when they are sticky.
 
-import type { Table } from '@/app/gridGL/cells/tables/Table';
+import type { TableHeader } from '@/app/gridGL/cells/tables/TableHeader';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { sharedEvents } from '@/shared/sharedEvents';
 import { Graphics } from 'pixi.js';
 
 export class TableColumnHeadersGridLines extends Graphics {
-  private table: Table;
+  private header: TableHeader;
 
-  constructor(table: Table) {
+  constructor(header: TableHeader) {
     super();
-    this.table = table;
+    this.header = header;
 
     sharedEvents.on('changeThemeAccentColor', this.update);
   }
@@ -24,13 +23,15 @@ export class TableColumnHeadersGridLines extends Graphics {
 
   update = () => {
     this.clear();
-    if (pixiAppSettings.showGridLines && pixiApp.gridLines?.visible) {
-      const { y0, y1, lines } = this.table.getColumnHeaderLines();
+    if (pixiApp.gridLines?.visible) {
+      const tableLines = this.header.getColumnHeaderLines();
+      if (!tableLines) return;
+      const { y0, y1, lines } = tableLines;
       const currentLineStyle = pixiApp.gridLines.currentLineStyle;
       if (!currentLineStyle) return;
 
       lines.forEach((line, index) => {
-        if (pixiApp.cellsSheet().tables.isActive(this.table) && (index === 0 || index === lines.length - 1)) {
+        if (index === 0 || index === lines.length - 1) {
           this.lineStyle({
             color: getCSSVariableTint('primary'),
             width: 2,
@@ -42,7 +43,6 @@ export class TableColumnHeadersGridLines extends Graphics {
 
         this.moveTo(line, y0).lineTo(line, y1);
       });
-
       this.lineStyle(currentLineStyle);
       this.moveTo(lines[0], y0).lineTo(lines[lines.length - 1], y0);
       this.moveTo(lines[0], y1).lineTo(lines[lines.length - 1], y1);
