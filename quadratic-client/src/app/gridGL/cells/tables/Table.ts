@@ -203,10 +203,6 @@ export class Table extends Container {
     return this.header.getSortDialogPosition();
   }
 
-  getColumnHeaderLines(): { y0: number; y1: number; lines: number[] } {
-    return this.header.getColumnHeaderLines();
-  }
-
   // resizes an image or html table to its overlapping size
   resize(width: number, height: number) {
     this.tableBounds.width = width;
