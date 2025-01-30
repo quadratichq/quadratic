@@ -3,7 +3,13 @@ import type { ActionAvailabilityArgs, ActionSpec } from '@/app/actions/actionsSp
 import { sheets } from '@/app/grid/controller/Sheets';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { AddIcon, DeleteIcon } from '@/shared/components/Icons';
+import {
+  AddColumnLeftIcon,
+  AddColumnRightIcon,
+  AddRowAboveIcon,
+  AddRowBelowIcon,
+  DeleteIcon,
+} from '@/shared/components/Icons';
 
 const isColumnRowAvailable = ({ isAuthenticated }: ActionAvailabilityArgs) => {
   if (!sheets.sheet.cursor.hasOneColumnRowSelection(true)) return false;
@@ -19,7 +25,7 @@ const isColumnRowAvailableAndRowFinite = (args: ActionAvailabilityArgs) => isCol
 const insertColumnLeft: ActionSpec<void> = {
   label: 'Insert column to the left',
   isAvailable: isColumnRowAvailableAndColumnFinite,
-  Icon: AddIcon,
+  Icon: AddColumnLeftIcon,
   run: () =>
     quadraticCore.insertColumn(sheets.current, sheets.sheet.cursor.position.x, true, sheets.getCursorPosition()),
 };
@@ -27,7 +33,7 @@ const insertColumnLeft: ActionSpec<void> = {
 const insertColumnRight: ActionSpec<void> = {
   label: 'Insert column to the right',
   isAvailable: isColumnRowAvailableAndColumnFinite,
-  Icon: AddIcon,
+  Icon: AddColumnRightIcon,
   run: () =>
     quadraticCore.insertColumn(sheets.current, sheets.sheet.cursor.position.x + 1, false, sheets.getCursorPosition()),
 };
@@ -45,14 +51,14 @@ const deleteColumns: ActionSpec<void> = {
 const insertRowAbove: ActionSpec<void> = {
   label: 'Insert row above',
   isAvailable: isColumnRowAvailableAndRowFinite,
-  Icon: AddIcon,
+  Icon: AddRowAboveIcon,
   run: () => quadraticCore.insertRow(sheets.current, sheets.sheet.cursor.position.y, true, sheets.getCursorPosition()),
 };
 
 const insertRowBelow: ActionSpec<void> = {
   label: 'Insert row below',
   isAvailable: isColumnRowAvailableAndRowFinite,
-  Icon: AddIcon,
+  Icon: AddRowBelowIcon,
   run: () =>
     quadraticCore.insertRow(sheets.current, sheets.sheet.cursor.position.y + 1, false, sheets.getCursorPosition()),
 };
