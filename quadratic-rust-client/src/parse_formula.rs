@@ -1,4 +1,5 @@
 use quadratic_core::{
+    a1::A1Context,
     formulas::{self, RangeRef},
     Pos, Span, Spanned,
 };
@@ -66,17 +67,19 @@ impl From<Spanned<formulas::RangeRef>> for JsCellRefSpan {
 /// `parse_error_msg` may be null, and `parse_error_span` may be null. Even if
 /// `parse_error_span`, `parse_error_msg` may still be present.
 #[wasm_bindgen(js_name = "parseFormula")]
-pub fn parse_formula(formula_string: &str, x: f64, y: f64) -> String {
+pub fn parse_formula(formula_string: &str, ctx: &str, x: f64, y: f64) -> String {
+    let ctx = serde_json::from_str::<A1Context>(ctx).expect("invalid A1Context");
+
     let x = x as i64;
     let y = y as i64;
     let code_cell_pos = Pos { x, y };
 
-    let parse_error = formulas::parse_formula(formula_string, code_cell_pos).err();
+    let parse_error = formulas::parse_formula(formula_string, &ctx, code_cell_pos).err();
 
     let result = JsFormulaParseResult {
         parse_error_msg: parse_error.as_ref().map(|e| e.msg.to_string()),
         parse_error_span: parse_error.and_then(|e| e.span),
-        cell_refs: formulas::find_cell_references(formula_string, code_cell_pos)
+        cell_refs: formulas::find_cell_references(formula_string, &ctx, code_cell_pos)
             .into_iter()
             .map(|mut spanned| {
                 if let RangeRef::CellRange { mut start, mut end } = spanned.inner {
@@ -96,8 +99,9 @@ pub fn parse_formula(formula_string: &str, x: f64, y: f64) -> String {
 }
 
 #[wasm_bindgen(js_name = "checkFormula")]
-pub fn check_formula(formula_string: &str, x: i32, y: i32) -> bool {
-    formulas::parse_and_check_formula(formula_string, x as i64, y as i64)
+pub fn check_formula(formula_string: &str, ctx: &str, x: i32, y: i32) -> bool {
+    let ctx = serde_json::from_str::<A1Context>(ctx).expect("invalid A1Context");
+    formulas::parse_and_check_formula(formula_string, &ctx, x as i64, y as i64)
 }
 
 #[cfg(test)]
