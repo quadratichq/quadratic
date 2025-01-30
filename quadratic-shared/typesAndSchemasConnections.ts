@@ -53,6 +53,7 @@ export const ConnectionTypeDetailsPostgresSchema = z.object({
 export const ConnectionTypeDetailsMysqlSchema = ConnectionTypeDetailsPostgresSchema;
 export const ConnectionTypeDetailsMssqlSchema = ConnectionTypeDetailsPostgresSchema.extend({
   database: z.string().optional(),
+  password: z.string().min(1, { message: 'Required' }),
 });
 export const ConnectionTypeDetailsSnowflakeSchema = z.object({
   account_identifier: z.string().min(1, { message: 'Required' }),
