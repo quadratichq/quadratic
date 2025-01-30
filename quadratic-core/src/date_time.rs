@@ -255,10 +255,10 @@ pub fn parse_date(value: &str) -> Option<NaiveDate> {
                     } else {
                         return NaiveDate::from_ymd_opt(num, month, 1);
                     }
-                } else if num >= 0 && num <= 31 {
+                } else if (0..=31).contains(&num) {
                     // Number between 0-31 - treat as day
                     return NaiveDate::from_ymd_opt(current_year, month, num as u32);
-                } else if num >= 32 && num <= 99 {
+                } else if (32..=99).contains(&num) {
                     // Number between 32-99 - treat as two digit year
                     let year = if num <= 50 { 2000 + num } else { 1900 + num };
                     return NaiveDate::from_ymd_opt(year, month, 1);
