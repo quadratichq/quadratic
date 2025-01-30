@@ -225,31 +225,59 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) -> Result<()> {
-        if let Operation::SetDataTableAt { sheet_pos, values } = op.to_owned() {
+        if let Operation::SetDataTableAt {
+            sheet_pos,
+            mut values,
+        } = op.to_owned()
+        {
             let sheet_id = sheet_pos.sheet_id;
             let mut pos = Pos::from(sheet_pos);
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(pos)?;
             let data_table = sheet.data_table_result(data_table_pos)?;
+            let data_table_rect = data_table
+                .output_rect(data_table_pos, false)
+                .to_sheet_rect(sheet_id);
 
             if data_table.readonly {
                 dbgjs!(format!("Data table {} is readonly", data_table.name));
                 return Ok(());
             }
 
-            pos.y -= data_table.y_adjustment();
-
-            // if there is a display buffer, use it to find the source row index
-            if data_table.display_buffer.is_some() {
-                let index_to_find = pos.y - data_table_pos.y;
-                let row_index = data_table.transmute_index(index_to_find as u64);
-                pos.y = row_index as i64 + data_table_pos.y;
-            }
-
             let rect = Rect::from_numbers(pos.x, pos.y, values.w as i64, values.h as i64);
             let old_values = sheet.get_code_cell_values(rect);
 
-            let data_table_rect = data_table.output_sheet_rect(sheet_pos, false);
+            pos.y -= data_table.y_adjustment();
+
+            // if there is a display buffer, use it to find the row index for all the values
+            if data_table.display_buffer.is_some() {
+                let rect = Rect::from_numbers(pos.x, pos.y, values.w as i64, values.h as i64);
+
+                // create a new CellValues object to store the new values
+                // this has values relative to data_table_pos at actual (unsorted) positions
+                let mut actual_values = CellValues::new(0, 0);
+
+                for y in rect.y_range() {
+                    let display_row = y - data_table_pos.y;
+                    let actual_row = data_table.transmute_index(u64::try_from(display_row)?) as i64;
+
+                    for x in rect.x_range() {
+                        let display_column = x - data_table_pos.x;
+
+                        let value_x = u32::try_from(x - pos.x)?;
+                        let value_y = u32::try_from(y - pos.y)?;
+
+                        if let Some(value) = values.remove(value_x, value_y) {
+                            let x = u32::try_from(display_column)?;
+                            let y = u32::try_from(actual_row)?;
+                            actual_values.set(x, y, value);
+                        }
+                    }
+                }
+
+                pos = data_table_pos;
+                values = actual_values;
+            }
 
             // send the new value
             sheet.set_code_cell_values(pos, values);
@@ -293,8 +321,10 @@ impl GridController {
             // Pull out the data table via a swap, removing it from the sheet
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table = sheet.delete_data_table(data_table_pos)?;
+            let data_table_rect = data_table
+                .output_rect(data_table_pos, false)
+                .to_sheet_rect(sheet_id);
 
-            let data_table_rect = data_table.output_sheet_rect(sheet_pos, false);
             let mut values = data_table.display_value()?.into_array()?;
             let ArraySize { w, h } = values.size();
 
@@ -335,10 +365,7 @@ impl GridController {
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
 
             let forward_operations = vec![op];
-            let reverse_operations = vec![Operation::AddDataTable {
-                sheet_pos,
-                data_table,
-            }];
+            let reverse_operations = vec![Operation::GridToDataTable { sheet_rect }];
             self.data_table_operations(
                 transaction,
                 forward_operations,
@@ -513,18 +540,22 @@ impl GridController {
                 std::mem::replace(&mut data_table.alternating_colors, alternating_colors)
             });
 
-            let old_columns = columns.and_then(|columns| {
+            if show_ui.is_some()
+                || show_name.is_some()
+                || show_columns.is_some()
+                || columns.is_some()
+            {
+                data_table.add_dirty_fills_and_borders(transaction, sheet_id);
+                transaction.add_dirty_hashes_from_sheet_rect(data_table_rect);
+            }
+
+            let old_columns = columns.to_owned().and_then(|columns| {
                 let old_columns = std::mem::replace(&mut data_table.column_headers, Some(columns));
                 data_table.normalize_column_header_names();
                 // mark code cells as dirty to updata meta data
                 transaction.add_code_cell(sheet_id, pos);
                 old_columns
             });
-
-            if show_ui.is_some() || show_name.is_some() || show_columns.is_some() {
-                data_table.add_dirty_fills_and_borders(transaction, sheet_id);
-                transaction.add_dirty_hashes_from_sheet_rect(data_table_rect);
-            }
 
             let old_show_ui = show_ui
                 .as_ref()
@@ -543,7 +574,11 @@ impl GridController {
                 .to_sheet_rect(sheet_id);
 
             // changing these options shifts the entire data table, need to mark the entire data table as dirty
-            if show_ui.is_some() || show_name.is_some() || show_columns.is_some() {
+            if show_ui.is_some()
+                || show_name.is_some()
+                || show_columns.is_some()
+                || columns.is_some()
+            {
                 self.send_updated_bounds(sheet_id);
                 self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
             }
@@ -900,11 +935,7 @@ impl GridController {
             let data_table_pos = sheet_pos.into();
             let data_table = sheet.data_table_mut(data_table_pos)?;
 
-            let mut translated_formats = formats.to_owned();
-            // convert to 1-based pos, factor in show_ui and column header y adjustment
-            translated_formats.translate_in_place(0, 0 - data_table.y_adjustment());
-            let reverse_formats = data_table.formats.apply_updates(&translated_formats);
-            drop(translated_formats);
+            let reverse_formats = data_table.formats.apply_updates(&formats);
 
             data_table.mark_formats_dirty(
                 transaction,

@@ -146,6 +146,8 @@ interface EventTypes {
 
   aiAnalystInitialized: () => void;
   pixiAppSettingsInitialized: () => void;
+
+  gridLinesDirty: () => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

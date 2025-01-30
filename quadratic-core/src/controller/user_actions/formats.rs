@@ -27,12 +27,14 @@ impl GridController {
 
         let context = self.grid.a1_context();
 
-        // range is actual range on the sheet, not adjusted to table coordinates
         let add_table_ops = |range: RefRangeBounds,
                              table: &TableMapEntry,
                              ops: &mut Vec<Operation>| {
-            // pos relative to table pos (top left pos)
-            let range = range.translate(-table.bounds.min.x + 1, -table.bounds.min.y + 1);
+            // pos relative to table pos (top left pos), 1-based for formatting
+            let range = range.translate(
+                -table.bounds.min.x + 1,
+                -table.bounds.min.y + 1 - table.y_adjustment(),
+            );
 
             let formats = SheetFormatUpdates::from_selection(
                 &A1Selection::from_range(CellRefRange::Sheet { range }, table.sheet_id, &context),
