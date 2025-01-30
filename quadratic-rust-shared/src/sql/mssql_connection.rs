@@ -101,7 +101,9 @@ impl Connection for MsSqlConnection {
         if let Some(username) = &self.username {
             config.authentication(AuthMethod::sql_server(
                 username,
-                self.password.as_deref().unwrap_or_default(),
+                self.password.as_deref().ok_or_else(|| {
+                    SharedError::Sql(SqlError::Connect("Password is required".into()))
+                })?,
             ));
         }
 
