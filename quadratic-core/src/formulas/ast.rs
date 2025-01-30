@@ -141,8 +141,6 @@ impl AstNode {
                 Array::from(ctx.get_cell(pos, self.span, true).inner).into()
             }
 
-            AstNodeContents::TableRef(table_ref) => {}
-
             AstNodeContents::String(s) => Value::from(s.to_string()),
             AstNodeContents::Number(n) => Value::from(*n),
             AstNodeContents::Bool(b) => Value::from(*b),
