@@ -72,13 +72,24 @@ impl TableRef {
 
         if let Some(table) = context.try_table(&self.table_name) {
             let bounds = table.bounds;
-            let min_y = bounds.min.y + table.y_adjustment();
-            if min_y > to || bounds.max.y < from {
-                return rows;
+            if self.headers && !self.data {
+                rows.push(
+                    bounds.min.y
+                        + (if table.show_ui && table.show_name {
+                            1
+                        } else {
+                            0
+                        }),
+                )
+            } else {
+                let min_y = bounds.min.y + table.y_adjustment();
+                if min_y > to || bounds.max.y < from {
+                    return rows;
+                }
+                let start = min_y.max(from);
+                let end = bounds.max.y.min(to);
+                rows.extend(start..=end);
             }
-            let start = min_y.max(from);
-            let end = bounds.max.y.min(to);
-            rows.extend(start..=end);
         }
 
         rows
@@ -555,5 +566,108 @@ mod tests {
         };
         let cols = table_ref.table_column_selection("different_table", &context);
         assert_eq!(cols, None);
+    }
+
+    #[test]
+    fn test_selected_cols_finite() {
+        let context = setup_test_context();
+
+        // Test All columns
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::All,
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        let cols = table_ref.selected_cols_finite(&context);
+        assert_eq!(cols, vec![1, 2, 3]);
+
+        // Test single column
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::Col("B".to_string()),
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        let cols = table_ref.selected_cols_finite(&context);
+        assert_eq!(cols, vec![2]);
+
+        // Test column range
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::ColRange("A".to_string(), "B".to_string()),
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        let cols = table_ref.selected_cols_finite(&context);
+        assert_eq!(cols, vec![1, 2]);
+    }
+
+    #[test]
+    fn test_selected_rows() {
+        let context = setup_test_context();
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::All,
+            data: true,
+            headers: false,
+            totals: false,
+        };
+
+        // Test normal range
+        let rows = table_ref.selected_rows(1, 5, &context);
+        assert_eq!(rows, vec![3]);
+
+        // Test headers only
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::All,
+            data: false,
+            headers: true,
+            totals: false,
+        };
+        let rows = table_ref.selected_rows(1, 5, &context);
+        assert_eq!(rows, vec![2]);
+
+        // Test out of bounds range
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::All,
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        let rows = table_ref.selected_rows(10, 15, &context);
+        assert_eq!(rows, Vec::<i64>::new());
+    }
+
+    #[test]
+    fn test_selected_rows_finite() {
+        let context = setup_test_context();
+
+        // Test data rows
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::All,
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        let rows = table_ref.selected_rows_finite(&context);
+        assert_eq!(rows, vec![3]);
+
+        // Test headers
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::All,
+            data: false,
+            headers: true,
+            totals: false,
+        };
+        let rows = table_ref.selected_rows_finite(&context);
+        assert_eq!(rows, vec![2]);
     }
 }
