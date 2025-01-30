@@ -16,7 +16,7 @@ export const CodeHint = () => {
   // Show/hide depending on whether the file has any data in it
   useEffect(() => {
     const checkBounds = () => {
-      setOpen(fileHasData() ? false : true);
+      setOpen(!fileHasData());
     };
 
     events.on('hashContentChanged', checkBounds);

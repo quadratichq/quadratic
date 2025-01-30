@@ -76,12 +76,17 @@ impl DataTable {
         dirty_hashes: &mut HashSet<Pos>,
         resize_rows: &mut HashSet<i64>,
     ) {
-        let data_table_rect = self.output_rect(data_table_pos, true);
+        // 1-based for formatting, just max bounds are needed to finitize formatting bounds
+        let data_table_rect = self.output_rect((1, 1).into(), true);
         if let Some(format) = format {
             format
                 .to_rects_with_rect_bounds(data_table_rect)
                 .for_each(|(x1, y1, x2, y2, _)| {
-                    let rect = Rect::new(x1, y1, x2, y2);
+                    let mut rect = Rect::new(x1, y1, x2, y2);
+                    // translate to actual data table pos
+                    rect.translate(data_table_pos.x - 1, data_table_pos.y - 1);
+                    // add y adjustment to factor in table name and headers
+                    rect.max.y += self.y_adjustment();
                     dirty_hashes.extend(rect.to_hashes());
                     if needs_resize {
                         let rows = self.formats.get_rows_with_wrap_in_rect(&rect);

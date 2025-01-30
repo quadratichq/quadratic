@@ -258,10 +258,7 @@ impl JsSelection {
 
     #[wasm_bindgen(js_name = "getSelectedTableNames")]
     pub fn get_selected_table_names(&self) -> Result<String, String> {
-        Ok(
-            serde_json::to_string(&self.selection.selected_table_names())
-                .map_err(|e| e.to_string())?,
-        )
+        serde_json::to_string(&self.selection.selected_table_names()).map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "getTableColumnSelection")]

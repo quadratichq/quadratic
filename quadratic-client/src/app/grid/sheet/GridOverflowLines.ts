@@ -1,9 +1,9 @@
 //! Keeps track of which grid lines should not be drawn within the sheet because
 //! of overflow of text, images, and html tables..
 
+import { events } from '@/app/events/events';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
-import { sharedEvents } from '@/shared/sharedEvents';
 import { Rectangle } from 'pixi.js';
 
 export class GridOverflowLines {
@@ -44,7 +44,7 @@ export class GridOverflowLines {
       const end = this.sheet.getColumnRow(start.x + width, start.y + height);
       this.overflowImageHtml.set(`${column},${row}`, new Rectangle(column, row, end.x - column, end.y - row));
     }
-    sharedEvents.emit('gridLinesDirty');
+    events.emit('gridLinesDirty');
   }
 
   // returns a list of ranges of y-values that need to be drawn (excluding the
