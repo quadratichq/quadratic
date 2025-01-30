@@ -28,7 +28,7 @@ export const SheetBar = (): JSX.Element => {
   const dragTimeOut = useRef<number | undefined>();
 
   // Use useRef to store the initial active sheet ID
-  const initialActiveSheetIdRef = useRef<string | null>();
+  const initialActiveSheetIdRef = useRef<string | null>(new URLSearchParams(window.location.search).get('sheet'));
   const [activeSheet, setActiveSheet] = useState(sheets.current);
   useUpdateQueryStringValueWithoutNavigation('sheet', sheets.sheet.order === 'a0' ? null : activeSheet);
 
