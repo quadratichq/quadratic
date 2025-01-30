@@ -123,7 +123,7 @@ mod tests {
 
         let v = ValidationDisplaySheet {
             displays: vec![ValidationDisplay {
-                range: CellRefRange::parse("A1", &A1Context::default()).unwrap(),
+                range: CellRefRange::parse("A1", &A1Context::default()).unwrap().0,
                 checkbox: true,
                 list: false,
             }],
@@ -134,7 +134,7 @@ mod tests {
     #[test]
     fn validation_display_is_empty() {
         let v = ValidationDisplay {
-            range: CellRefRange::parse("A1", &A1Context::default()).unwrap(),
+            range: CellRefRange::parse("A1", &A1Context::default()).unwrap().0,
             checkbox: false,
             list: false,
         };

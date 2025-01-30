@@ -23,9 +23,9 @@ impl SheetCellRefRange {
         context: &A1Context,
     ) -> Result<Self, A1Error> {
         let (sheet, cells_str) = parse_optional_sheet_name_to_id(a1, default_sheet_id, context)?;
-        let cells = CellRefRange::parse(cells_str, context)?;
+        let (cells, table_sheet_id) = CellRefRange::parse(cells_str, context)?;
         Ok(Self {
-            sheet_id: sheet,
+            sheet_id: table_sheet_id.unwrap_or(sheet),
             cells,
         })
     }
@@ -45,5 +45,31 @@ impl SheetCellRefRange {
             }
         }
         format!("{}", self.cells)
+    }
+}
+
+#[cfg(test)]
+#[serial_test::parallel]
+mod tests {
+    use crate::Rect;
+
+    use super::*;
+
+    #[test]
+    fn test_table_different_sheet() {
+        let sheet1_id = SheetId::test();
+        let sheet2_id = SheetId::new();
+        let context = A1Context::test(
+            &[("Sheet1", sheet1_id), ("Sheet2", sheet2_id)],
+            &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C3"))],
+        );
+
+        // Create a table reference in Sheet2
+        let range = SheetCellRefRange::parse("Table1", &sheet2_id, &context).unwrap();
+
+        // Verify the sheet ID matches Sheet2
+        assert_eq!(range.sheet_id, sheet1_id);
+
+        assert_eq!(range.to_string(None, &context, false), "Table1");
     }
 }

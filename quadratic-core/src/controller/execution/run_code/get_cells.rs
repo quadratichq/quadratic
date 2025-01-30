@@ -50,7 +50,7 @@ impl GridController {
             ));
         }
 
-        let current_sheet_pos =
+        let code_sheet_pos =
             transaction
                 .current_sheet_pos
                 .ok_or(CoreError::TransactionNotFound(
@@ -67,8 +67,7 @@ impl GridController {
                 msg: RunErrorMsg::CodeRunError(msg.into()),
             }
         };
-
-        let selection = match self.a1_selection_from_string(&a1, &current_sheet_pos.sheet_id) {
+        let selection = match self.a1_selection_from_string(&a1, &code_sheet_pos.sheet_id) {
             Ok(selection) => selection,
             Err(e) => {
                 // unable to parse A1 string
@@ -85,10 +84,11 @@ impl GridController {
         };
 
         let context = self.grid().a1_context();
-        if selection.sheet_id == current_sheet_pos.sheet_id
-            && selection.might_contain_pos(current_sheet_pos.into(), &context)
+
+        // ensure that the selection is not a direct self reference
+        if selection.sheet_id == code_sheet_pos.sheet_id
+            && selection.might_contain_pos(code_sheet_pos.into(), &context)
         {
-            // self reference not allowed
             let msg = "Self reference not allowed".to_string();
             let run_error = get_run_error(&msg);
             let error = match self.code_cell_sheet_error(&mut transaction, &run_error) {
@@ -100,7 +100,22 @@ impl GridController {
             return Err(error);
         }
 
-        let sheet = match self.try_sheet(selection.sheet_id) {
+        let selection_sheet = match self.try_sheet(selection.sheet_id) {
+            Some(sheet) => sheet,
+            None => {
+                // sheet not found
+                let msg = "Sheet not found".to_string();
+                let run_error = get_run_error(&msg);
+                let error = match self.code_cell_sheet_error(&mut transaction, &run_error) {
+                    Ok(_) => CoreError::CodeCellSheetError(msg),
+                    Err(err) => err,
+                };
+                self.start_transaction(&mut transaction);
+                self.finalize_transaction(transaction);
+                return Err(error);
+            }
+        };
+        let code_sheet = match self.try_sheet(code_sheet_pos.sheet_id) {
             Some(sheet) => sheet,
             None => {
                 // sheet not found
@@ -116,11 +131,24 @@ impl GridController {
             }
         };
 
-        let Some(CellValue::Code(code)) = sheet.cell_value(current_sheet_pos.into()) else {
-            return Err(CoreError::A1Error("Cell not found".to_string()));
+        // get the original code cell
+        let Some(CellValue::Code(code)) = code_sheet.cell_value(code_sheet_pos.into()) else {
+            let msg = "Code cell not found".to_string();
+            let run_error = get_run_error(&msg);
+            let error = match self.code_cell_sheet_error(&mut transaction, &run_error) {
+                Ok(_) => CoreError::CodeCellSheetError(msg),
+                Err(err) => err,
+            };
+            self.start_transaction(&mut transaction);
+            self.finalize_transaction(transaction);
+            return Err(error);
         };
-        let rects =
-            sheet.selection_to_rects(&selection, code.language == CodeCellLanguage::Python, false);
+
+        let rects = selection_sheet.selection_to_rects(
+            &selection,
+            code.language == CodeCellLanguage::Python,
+            false,
+        );
         if rects.len() > 1 {
             // multiple rects not supported
             let msg = "Multiple rects not supported".to_string();
@@ -135,7 +163,9 @@ impl GridController {
         }
 
         selection.ranges.iter().for_each(|range| {
-            transaction.cells_accessed.add(sheet.id, range.clone());
+            transaction
+                .cells_accessed
+                .add(selection_sheet.id, range.clone());
         });
 
         let response = if let Some(rect) = rects.first() {
@@ -155,7 +185,7 @@ impl GridController {
             } else {
                 false
             };
-            let cells = sheet.get_cells_response(*rect);
+            let cells = selection_sheet.get_cells_response(*rect);
             CellA1Response {
                 cells,
                 x: rect.min.x,
@@ -696,6 +726,33 @@ mod test {
 
         gc.set_code_cell(
             SheetPos::new(sheet_id, 1, 10),
+            CodeCellLanguage::Python,
+            "".to_string(),
+            None,
+        );
+        let transaction_id = gc.last_transaction().unwrap().id;
+        let result =
+            gc.calculation_get_cells_a1(transaction_id.to_string(), "Table1".to_string(), None);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_get_cells_table_different_sheet() {
+        let mut gc = GridController::test();
+        let sheet1_id = gc.sheet_ids()[0];
+        gc.add_sheet_with_name("Sheet2".to_string(), None);
+        let sheet2_id = gc.sheet_ids()[1];
+
+        // set table in sheet 2
+        let sheet = gc.sheet_mut(sheet1_id);
+        sheet.test_set_code_run_array_2d(1, 1, 2, 2, vec!["1", "2", "3", "4"]);
+
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id: sheet2_id,
+            },
             CodeCellLanguage::Python,
             "".to_string(),
             None,
