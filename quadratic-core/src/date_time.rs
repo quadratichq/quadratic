@@ -219,6 +219,36 @@ pub fn parse_time(value: &str) -> Option<NaiveTime> {
 pub fn parse_date(value: &str) -> Option<NaiveDate> {
     let value = value.trim();
     
+    // First try the standard formats with full dates
+    let formats = vec![
+        "%Y-%m-%d",
+        "%m-%d-%Y",
+        "%d-%m-%Y",
+        "%Y/%m/%d",
+        "%m/%d/%Y",
+        "%d/%m/%Y",
+        "%Y.%m.%d",
+        "%m.%d.%Y",
+        "%d.%m.%Y",
+        "%Y %m %d",
+        "%m %d %Y",
+        "%d %m %G",
+        "%Y %b %d",
+        "%b %d %Y",
+        "%d %b %Y",
+        "%Y %B %d",
+        "%B %d %Y",
+        "%d %B %Y",
+        "%b %d, %Y",
+        "%B %d, %Y",
+    ];
+
+    for format in formats {
+        if let Ok(date) = NaiveDate::parse_from_str(value, format) {
+            return Some(date);
+        }
+    }
+
     // Try to parse "day month" format first (e.g. "1 jan", "24 january")
     if let Ok(day) = value.split_whitespace().next()?.parse::<u32>() {
         if day <= 31 {  // Basic sanity check for day
