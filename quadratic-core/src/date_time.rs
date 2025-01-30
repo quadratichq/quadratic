@@ -217,6 +217,40 @@ pub fn parse_time(value: &str) -> Option<NaiveTime> {
 
 /// Parses a date string using a list of possible formats.
 pub fn parse_date(value: &str) -> Option<NaiveDate> {
+    // First try to parse month + year format
+    let value = value.trim();
+    if let Some(space_pos) = value.find(' ') {
+        let (month_str, year_str) = value.split_at(space_pos);
+        let year_str = year_str.trim();
+        
+        // Try to parse the year
+        if let Ok(year) = year_str.parse::<i32>() {
+            // Convert month name to number (1-12)
+            let month = match month_str.to_lowercase().as_str() {
+                "jan" | "january" => Some(1),
+                "feb" | "february" => Some(2),
+                "mar" | "march" => Some(3),
+                "apr" | "april" => Some(4),
+                "may" => Some(5),
+                "jun" | "june" => Some(6),
+                "jul" | "july" => Some(7),
+                "aug" | "august" => Some(8),
+                "sep" | "september" => Some(9),
+                "oct" | "october" => Some(10),
+                "nov" | "november" => Some(11),
+                "dec" | "december" => Some(12),
+                _ => None,
+            };
+            
+            if let Some(month) = month {
+                if let Some(date) = NaiveDate::from_ymd_opt(year, month, 1) {
+                    return Some(date);
+                }
+            }
+        }
+    }
+
+    // If month + year parsing fails, try the standard formats
     let formats = vec![
         "%Y-%m-%d",
         "%m-%d-%Y",
@@ -244,11 +278,12 @@ pub fn parse_date(value: &str) -> Option<NaiveDate> {
         "%B %d",     // Full month name and day (assumes current year)
     ];
 
-    for &format in formats.iter() {
-        if let Ok(parsed_date) = NaiveDate::parse_from_str(value, format) {
-            return Some(parsed_date);
+    for format in formats {
+        if let Ok(date) = NaiveDate::parse_from_str(value, format) {
+            return Some(date);
         }
     }
+
     None
 }
 
@@ -348,6 +383,22 @@ mod tests {
         assert_eq!(
             parse_date("jan 1,2024"),
             NaiveDate::from_ymd_opt(2024, 1, 1)
+        );
+        assert_eq!(
+            parse_date("Jan 2024"),
+            Some(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap())
+        );
+        assert_eq!(
+            parse_date("jan 2024"),  // Test case insensitive
+            Some(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap())
+        );
+        assert_eq!(
+            parse_date("January 2024"),
+            Some(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap())
+        );
+        assert_eq!(
+            parse_date("JANUARY 2024"),  // Test case insensitive
+            Some(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap())
         );
     }
 
