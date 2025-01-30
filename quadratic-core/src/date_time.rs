@@ -217,8 +217,39 @@ pub fn parse_time(value: &str) -> Option<NaiveTime> {
 
 /// Parses a date string using a list of possible formats.
 pub fn parse_date(value: &str) -> Option<NaiveDate> {
-    // First try to parse month + year format
     let value = value.trim();
+    
+    // Try to parse "day month" format first (e.g. "1 jan", "24 january")
+    if let Ok(day) = value.split_whitespace().next()?.parse::<u32>() {
+        if day <= 31 {  // Basic sanity check for day
+            let month_str = value.split_whitespace().nth(1)?;
+            // Convert month name to number (1-12)
+            let month = match month_str.to_lowercase().as_str() {
+                "jan" | "january" => Some(1),
+                "feb" | "february" => Some(2),
+                "mar" | "march" => Some(3),
+                "apr" | "april" => Some(4),
+                "may" => Some(5),
+                "jun" | "june" => Some(6),
+                "jul" | "july" => Some(7),
+                "aug" | "august" => Some(8),
+                "sep" | "september" => Some(9),
+                "oct" | "october" => Some(10),
+                "nov" | "november" => Some(11),
+                "dec" | "december" => Some(12),
+                _ => None,
+            };
+            
+            if let Some(month) = month {
+                let year = chrono::Local::now().year();
+                if let Some(date) = NaiveDate::from_ymd_opt(year, month, day) {
+                    return Some(date);
+                }
+            }
+        }
+    }
+
+    // First try to parse month + year format
     if let Some(space_pos) = value.find(' ') {
         let (month_str, second_part) = value.split_at(space_pos);
         let second_part = second_part.trim();
@@ -429,6 +460,21 @@ mod tests {
         assert_eq!(
             parse_date("January 10"),
             Some(NaiveDate::from_ymd_opt(current_year, 1, 10).unwrap())
+        );
+        
+        // Test day-first formats
+        let current_year = chrono::Local::now().year();
+        assert_eq!(
+            parse_date("1 jan"),
+            Some(NaiveDate::from_ymd_opt(current_year, 1, 1).unwrap())
+        );
+        assert_eq!(
+            parse_date("24 jan"),
+            Some(NaiveDate::from_ymd_opt(current_year, 1, 24).unwrap())
+        );
+        assert_eq!(
+            parse_date("25 January"),
+            Some(NaiveDate::from_ymd_opt(current_year, 1, 25).unwrap())
         );
     }
 
