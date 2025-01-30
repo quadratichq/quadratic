@@ -18,7 +18,7 @@ use crate::{a1::UNBOUNDED, Pos};
 
 /// A reference to a cell or a range of cells.
 ///
-/// TODO: replace with `CellRangeRef`
+/// TODO: replace with `CellRefRange`
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, TS)]
 #[serde(tag = "type")]
 pub enum RangeRef {
@@ -315,8 +315,9 @@ impl CellRefCoord {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use serial_test::parallel;
+
+    use super::*;
 
     #[test]
     #[parallel]

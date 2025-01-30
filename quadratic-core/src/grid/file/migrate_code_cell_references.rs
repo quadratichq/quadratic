@@ -50,6 +50,7 @@ lazy_static! {
 }
 
 pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
+    let parse_ctx = grid.a1_context();
     for sheet in grid.sheets.iter_mut() {
         if let GridBounds::NonEmpty(bounds) = sheet.bounds(false) {
             for x in bounds.x_range() {
@@ -57,8 +58,11 @@ pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
                     for y in bounds.y_range() {
                         if let Some(CellValue::Code(code_cell)) = column.values.get_mut(&y) {
                             if code_cell.language == CodeCellLanguage::Formula {
-                                code_cell.code =
-                                    replace_a1_notation(&code_cell.code, (x + 1, y).into());
+                                code_cell.code = replace_a1_notation(
+                                    &code_cell.code,
+                                    &parse_ctx,
+                                    (x + 1, y).into(),
+                                );
                             }
                         }
                     }

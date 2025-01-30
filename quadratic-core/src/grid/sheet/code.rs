@@ -226,8 +226,13 @@ impl Sheet {
             Some(mut code_cell_value) => {
                 // replace internal cell references with a1 notation
                 if matches!(code_cell_value.language, CodeCellLanguage::Formula) {
-                    let replaced =
-                        replace_internal_cell_references(&code_cell_value.code, code_pos);
+                    // `self.a1_context()` is unaware of other sheets, which might cause issues?
+                    let parse_ctx = self.a1_context();
+                    let replaced = replace_internal_cell_references(
+                        &code_cell_value.code,
+                        &parse_ctx,
+                        code_pos,
+                    );
                     code_cell_value.code = replaced;
                 }
 

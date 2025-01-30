@@ -65,10 +65,14 @@ impl Sheet {
                             CellValue::Code(code_cell) => {
                                 if matches!(code_cell.language, CodeCellLanguage::Formula) {
                                     if clipboard_operation == ClipboardOperation::Copy {
-                                        code_cell.code = replace_a1_notation(&code_cell.code, pos);
-                                    } else {
                                         code_cell.code =
-                                            replace_internal_cell_references(&code_cell.code, pos);
+                                            replace_a1_notation(&code_cell.code, &context, pos);
+                                    } else {
+                                        code_cell.code = replace_internal_cell_references(
+                                            &code_cell.code,
+                                            &context,
+                                            pos,
+                                        );
                                     }
                                 }
                             }

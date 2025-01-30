@@ -1,5 +1,5 @@
 use crate::{
-    a1::{CellRefRange, UNBOUNDED},
+    a1::{A1Context, CellRefRange, UNBOUNDED},
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
@@ -13,6 +13,7 @@ impl GridController {
     pub fn adjust_formula_column_row(
         code_cell: &CodeCellValue,
         sheet_name: &String,
+        parse_ctx: &A1Context,
         code_cell_pos: &Pos,
         column: Option<i64>,
         row: Option<i64>,
@@ -21,6 +22,7 @@ impl GridController {
         if let Some(column) = column {
             let new_code = replace_cell_references_with(
                 &code_cell.code,
+                parse_ctx,
                 *code_cell_pos,
                 |coord_sheet_name, cell_ref| {
                     let coord_sheet_name = coord_sheet_name.as_ref().unwrap_or(sheet_name);
@@ -51,6 +53,7 @@ impl GridController {
         } else if let Some(row) = row {
             let new_code = replace_cell_references_with(
                 &code_cell.code,
+                parse_ctx,
                 *code_cell_pos,
                 |_, cell_ref| cell_ref,
                 |coord_sheet_name, cell_ref| {
@@ -117,6 +120,7 @@ impl GridController {
                                     GridController::adjust_formula_column_row(
                                         code,
                                         &sheet.name,
+                                        &self.grid.a1_context(),
                                         pos,
                                         column,
                                         row,
