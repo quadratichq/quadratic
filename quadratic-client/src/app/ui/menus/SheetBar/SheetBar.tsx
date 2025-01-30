@@ -25,21 +25,27 @@ export const SheetBar = (): JSX.Element => {
 
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const hasPermission = useMemo(() => hasPermissionToEditFile(permissions) && !isMobile, [permissions]);
-
-  // activate sheet
-  const [activeSheet, setActiveSheet] = useState(sheets.current);
-
   const dragTimeOut = useRef<number | undefined>();
 
-  // Store the active sheet in the URL
-  const [activeSheetId, setActiveSheetId] = useState<string | null>(null);
-  useUpdateQueryStringValueWithoutNavigation('sheet', activeSheetId);
+  // Use useRef to store the initial active sheet ID
+  const initialActiveSheetIdRef = useRef<string | null>(new URLSearchParams(window.location.search).get('sheet'));
+  const [activeSheet, setActiveSheet] = useState(sheets.current);
+  useUpdateQueryStringValueWithoutNavigation('sheet', sheets.sheet.order === 'a0' ? null : activeSheet);
+
+  // On the initial mount, see if we have an inital active sheet in the URL
+  useEffect(() => {
+    const initialActiveSheet = initialActiveSheetIdRef.current;
+    if (initialActiveSheet) {
+      setActiveSheet(initialActiveSheet);
+      sheets.current = initialActiveSheet;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const updateSheet = () => {
       setActiveSheet(sheets.current);
       setTrigger((trigger) => trigger + 1);
-      setActiveSheetId(sheets.sheet.order === 'a0' ? null : sheets.sheet.id);
     };
 
     events.on('changeSheet', updateSheet);
