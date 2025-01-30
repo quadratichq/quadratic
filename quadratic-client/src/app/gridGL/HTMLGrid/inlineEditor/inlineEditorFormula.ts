@@ -12,8 +12,8 @@ import { parseFormulaReturnToCellsAccessed, type ParseFormulaReturnType } from '
 import { checkFormula, parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { colors } from '@/app/theme/colors';
 import { extractCellsFromParseFormula } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
-import * as monaco from 'monaco-editor';
 import type { editor } from 'monaco-editor';
+import * as monaco from 'monaco-editor';
 
 class InlineEditorFormula {
   private insertingCells?: { value: string; position: number };
@@ -24,7 +24,9 @@ class InlineEditorFormula {
   }
 
   cellHighlights(location: SheetPosTS, formula: string) {
-    const parsed = JSON.parse(parseFormula(formula, location.x, location.y)) as ParseFormulaReturnType;
+    const parsed = JSON.parse(
+      parseFormula(formula, sheets.a1Context, location.x, location.y)
+    ) as ParseFormulaReturnType;
     if (parsed) {
       const cellsAccessed = parseFormulaReturnToCellsAccessed(
         parsed,
@@ -156,13 +158,13 @@ class InlineEditorFormula {
     const location = inlineEditorHandler.location;
     if (!location) return false;
     const formula = (testFormula ?? inlineEditorMonaco.get()).slice(1);
-    if (!checkFormula(formula, location.x, location.y)) {
+    if (!checkFormula(formula, sheets.a1Context, location.x, location.y)) {
       if (skipCloseParenthesisCheck) {
         return false;
       }
       const value = this.closeParentheses();
       if (value && value !== testFormula) {
-        return checkFormula(value, location.x, location.y);
+        return checkFormula(value, sheets.a1Context, location.x, location.y);
       } else {
         return false;
       }
