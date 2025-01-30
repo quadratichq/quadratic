@@ -28,12 +28,13 @@ export const SheetBar = (): JSX.Element => {
   const dragTimeOut = useRef<number | undefined>();
 
   // Use useRef to store the initial active sheet ID
+  const initialActiveSheetIdRef = useRef<string | null>();
   const [activeSheet, setActiveSheet] = useState(sheets.current);
   useUpdateQueryStringValueWithoutNavigation('sheet', sheets.sheet.order === 'a0' ? null : activeSheet);
 
   // On the initial mount, see if we have an inital active sheet in the URL
   useEffect(() => {
-    const initialActiveSheet = new URLSearchParams(window.location.search).get('sheet');
+    const initialActiveSheet = initialActiveSheetIdRef.current;
     if (initialActiveSheet) {
       setActiveSheet(initialActiveSheet);
       sheets.current = initialActiveSheet;
