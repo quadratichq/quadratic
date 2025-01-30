@@ -9,7 +9,7 @@ use std::cmp::Ordering;
 
 use chrono::{
     format::{Fixed, Item, Numeric, StrftimeItems},
-    DateTime, NaiveDate, NaiveDateTime, NaiveTime, Timelike,
+    DateTime, NaiveDate, NaiveDateTime, NaiveTime, Timelike, Datelike
 };
 
 pub const DEFAULT_DATE_FORMAT: &str = "%m/%d/%Y";
@@ -220,29 +220,47 @@ pub fn parse_date(value: &str) -> Option<NaiveDate> {
     // First try to parse month + year format
     let value = value.trim();
     if let Some(space_pos) = value.find(' ') {
-        let (month_str, year_str) = value.split_at(space_pos);
-        let year_str = year_str.trim();
+        let (month_str, second_part) = value.split_at(space_pos);
+        let second_part = second_part.trim();
         
-        // Try to parse the year
-        if let Ok(year) = year_str.parse::<i32>() {
-            // Convert month name to number (1-12)
-            let month = match month_str.to_lowercase().as_str() {
-                "jan" | "january" => Some(1),
-                "feb" | "february" => Some(2),
-                "mar" | "march" => Some(3),
-                "apr" | "april" => Some(4),
-                "may" => Some(5),
-                "jun" | "june" => Some(6),
-                "jul" | "july" => Some(7),
-                "aug" | "august" => Some(8),
-                "sep" | "september" => Some(9),
-                "oct" | "october" => Some(10),
-                "nov" | "november" => Some(11),
-                "dec" | "december" => Some(12),
-                _ => None,
-            };
+        // Convert month name to number (1-12)
+        let month = match month_str.to_lowercase().as_str() {
+            "jan" | "january" => Some(1),
+            "feb" | "february" => Some(2),
+            "mar" | "march" => Some(3),
+            "apr" | "april" => Some(4),
+            "may" => Some(5),
+            "jun" | "june" => Some(6),
+            "jul" | "july" => Some(7),
+            "aug" | "august" => Some(8),
+            "sep" | "september" => Some(9),
+            "oct" | "october" => Some(10),
+            "nov" | "november" => Some(11),
+            "dec" | "december" => Some(12),
+            _ => None,
+        };
+        
+        if let Some(month) = month {
+            // Try parsing second part as day first
+            if let Ok(day) = second_part.parse::<u32>() {
+                if day <= 31 {  // Basic sanity check for day
+                    let year = chrono::Local::now().year();
+                    if let Some(date) = NaiveDate::from_ymd_opt(year, month, day) {
+                        return Some(date);
+                    }
+                }
+            }
             
-            if let Some(month) = month {
+            // If not a valid day, try parsing as year
+            if let Ok(year) = second_part.parse::<i32>() {
+                let year = if year < 100 {
+                    // For 2-digit years, assume current century
+                    let current_year = chrono::Local::now().year();
+                    let century = (current_year / 100) * 100;
+                    century + year
+                } else {
+                    year
+                };
                 if let Some(date) = NaiveDate::from_ymd_opt(year, month, 1) {
                     return Some(date);
                 }
@@ -250,7 +268,7 @@ pub fn parse_date(value: &str) -> Option<NaiveDate> {
         }
     }
 
-    // If month + year parsing fails, try the standard formats
+    // If month + year/day parsing fails, try the standard formats
     let formats = vec![
         "%Y-%m-%d",
         "%m-%d-%Y",
@@ -385,20 +403,32 @@ mod tests {
             NaiveDate::from_ymd_opt(2024, 1, 1)
         );
         assert_eq!(
+            parse_date("Jan 10"),
+            Some(NaiveDate::from_ymd_opt(current_year, 1, 10).unwrap())
+        );
+        
+        // Test month + full year
+        assert_eq!(
             parse_date("Jan 2024"),
             Some(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap())
         );
+        
+        // Test month + day that could be year but is valid day
         assert_eq!(
-            parse_date("jan 2024"),  // Test case insensitive
-            Some(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap())
+            parse_date("Jan 24"),
+            Some(NaiveDate::from_ymd_opt(current_year, 1, 24).unwrap())
         );
+        
+        // Test case insensitive
         assert_eq!(
-            parse_date("January 2024"),
-            Some(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap())
+            parse_date("JAN 10"),
+            Some(NaiveDate::from_ymd_opt(current_year, 1, 10).unwrap())
         );
+        
+        // Test full month name
         assert_eq!(
-            parse_date("JANUARY 2024"),  // Test case insensitive
-            Some(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap())
+            parse_date("January 10"),
+            Some(NaiveDate::from_ymd_opt(current_year, 1, 10).unwrap())
         );
     }
 
