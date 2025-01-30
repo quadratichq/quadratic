@@ -7,6 +7,7 @@ import { A1Selection, JsOffset, Rect, SheetInfo } from '@/app/quadratic-core-typ
 import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
+import { SEARCH_PARAMS } from '@/shared/constants/routes';
 import { Rectangle } from 'pixi.js';
 
 class Sheets {
@@ -38,7 +39,8 @@ class Sheets {
       this.sheets.push(sheet);
     });
     this.sort();
-    this._current = this.sheets[0].id;
+    const initialActiveSheetId = new URLSearchParams(window.location.search).get(SEARCH_PARAMS.SHEET.KEY);
+    this._current = initialActiveSheetId ?? this.sheets[0].id;
     pixiApp.cellsSheets.create();
     this.initialized = true;
   };
