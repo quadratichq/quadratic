@@ -9,7 +9,7 @@ use std::cmp::Ordering;
 
 use chrono::{
     format::{Fixed, Item, Numeric, StrftimeItems},
-    DateTime, NaiveDate, NaiveDateTime, NaiveTime, Timelike, Datelike
+    DateTime, Datelike, NaiveDate, NaiveDateTime, NaiveTime, Timelike,
 };
 
 pub const DEFAULT_DATE_FORMAT: &str = "%m/%d/%Y";
@@ -244,7 +244,7 @@ pub fn parse_date(value: &str) -> Option<NaiveDate> {
             // Try to parse second part as number
             if let Ok(num) = parts[1].parse::<i32>() {
                 let current_year = chrono::Local::now().year();
-                
+
                 if num >= 1000 {
                     // Four digit number - definitely a year
                     return NaiveDate::from_ymd_opt(num, month, 1);
@@ -260,11 +260,7 @@ pub fn parse_date(value: &str) -> Option<NaiveDate> {
                     return NaiveDate::from_ymd_opt(current_year, month, num as u32);
                 } else if num >= 32 && num <= 99 {
                     // Number between 32-99 - treat as two digit year
-                    let year = if num <= 50 {
-                        2000 + num
-                    } else {
-                        1900 + num
-                    };
+                    let year = if num <= 50 { 2000 + num } else { 1900 + num };
                     return NaiveDate::from_ymd_opt(year, month, 1);
                 }
             }
@@ -303,7 +299,8 @@ pub fn parse_date(value: &str) -> Option<NaiveDate> {
 
     // Try to parse "day month" format first (e.g. "1 jan", "24 january")
     if let Ok(day) = value.split_whitespace().next()?.parse::<u32>() {
-        if day <= 31 {  // Basic sanity check for day
+        if day <= 31 {
+            // Basic sanity check for day
             let month_str = value.split_whitespace().nth(1)?;
             // Convert month name to number (1-12)
             let month = match month_str.to_lowercase().as_str() {
@@ -321,7 +318,7 @@ pub fn parse_date(value: &str) -> Option<NaiveDate> {
                 "dec" | "december" => Some(12),
                 _ => None,
             };
-            
+
             if let Some(month) = month {
                 let year = chrono::Local::now().year();
                 if let Some(date) = NaiveDate::from_ymd_opt(year, month, day) {
@@ -335,7 +332,7 @@ pub fn parse_date(value: &str) -> Option<NaiveDate> {
     if let Some(space_pos) = value.find(' ') {
         let (month_str, second_part) = value.split_at(space_pos);
         let second_part = second_part.trim();
-        
+
         // Convert month name to number (1-12)
         let month = match month_str.to_lowercase().as_str() {
             "jan" | "january" => Some(1),
@@ -352,18 +349,19 @@ pub fn parse_date(value: &str) -> Option<NaiveDate> {
             "dec" | "december" => Some(12),
             _ => None,
         };
-        
+
         if let Some(month) = month {
             // Try parsing second part as day first
             if let Ok(day) = second_part.parse::<u32>() {
-                if day <= 31 {  // Basic sanity check for day
+                if day <= 31 {
+                    // Basic sanity check for day
                     let year = chrono::Local::now().year();
                     if let Some(date) = NaiveDate::from_ymd_opt(year, month, day) {
                         return Some(date);
                     }
                 }
             }
-            
+
             // If not a valid day, try parsing as year
             if let Ok(year) = second_part.parse::<i32>() {
                 let year = if year < 100 {

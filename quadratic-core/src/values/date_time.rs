@@ -16,7 +16,7 @@ impl CellValue {
         if value.contains(':') {
             return Self::unpack_date_time(value);
         }
-        
+
         // Otherwise try as just Date
         let date = parse_date(value)?;
         Some(CellValue::Date(date))
