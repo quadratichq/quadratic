@@ -407,6 +407,7 @@ mod tests {
     #[test]
     #[parallel]
     fn test_parse_date() {
+        let current_year = chrono::Local::now().year();
         let parsed_date = parse_date("12/23/2024").unwrap();
         assert_eq!(parsed_date, NaiveDate::from_ymd_opt(2024, 12, 23).unwrap());
         assert_eq!(
@@ -437,33 +438,22 @@ mod tests {
             parse_date("Jan 10"),
             Some(NaiveDate::from_ymd_opt(current_year, 1, 10).unwrap())
         );
-        
-        // Test month + full year
         assert_eq!(
             parse_date("Jan 2024"),
             Some(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap())
         );
-        
-        // Test month + day that could be year but is valid day
         assert_eq!(
             parse_date("Jan 24"),
             Some(NaiveDate::from_ymd_opt(current_year, 1, 24).unwrap())
         );
-        
-        // Test case insensitive
         assert_eq!(
             parse_date("JAN 10"),
             Some(NaiveDate::from_ymd_opt(current_year, 1, 10).unwrap())
         );
-        
-        // Test full month name
         assert_eq!(
             parse_date("January 10"),
             Some(NaiveDate::from_ymd_opt(current_year, 1, 10).unwrap())
         );
-        
-        // Test day-first formats
-        let current_year = chrono::Local::now().year();
         assert_eq!(
             parse_date("1 jan"),
             Some(NaiveDate::from_ymd_opt(current_year, 1, 1).unwrap())
