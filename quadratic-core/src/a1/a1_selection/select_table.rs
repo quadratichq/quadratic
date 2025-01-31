@@ -146,7 +146,7 @@ impl A1Selection {
                     // handle toggle for single column selection
                     if matches!(col_range, ColRange::Col(_)) {
                         if !range.headers && range.data {
-                            headers = true;
+                            headers = table.show_ui && table.show_columns;
                             data = false;
                         } else {
                             headers = false;
@@ -154,8 +154,8 @@ impl A1Selection {
                         }
                         self.ranges.pop();
                     } else if matches!(col_range, ColRange::All) {
-                        // handle toggle for all columns selection
-                        headers = !range.headers;
+                        // handle toggle for column selection
+                        headers = table.show_ui && table.show_columns && !range.headers;
                         self.ranges.pop();
                     }
                 }
