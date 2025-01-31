@@ -66,6 +66,22 @@ impl Sheet {
         })
     }
 
+    /// Returns the DataTable if the pos intersects with the table header.
+    pub fn table_header_at(&self, pos: Pos) -> Option<(Pos, Rect)> {
+        for (code_cell_pos, data_table) in &self.data_tables {
+            let output_rect = data_table.output_rect(*code_cell_pos, false);
+            if data_table.show_ui
+                && data_table.show_name
+                && pos.y == output_rect.min.y
+                && pos.x >= output_rect.min.x
+                && pos.x <= output_rect.max.x
+            {
+                return Some((*code_cell_pos, output_rect));
+            }
+        }
+        None
+    }
+
     /// Returns true if the tables contain any cell at Pos (ie, not blank). Uses
     /// the DataTable's output_rect for the check to ensure that charts are
     /// included.
