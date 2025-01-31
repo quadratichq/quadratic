@@ -186,15 +186,7 @@ impl A1Selection {
             return;
         }
         self.ranges.push(table_ref);
-        let mut y = table.bounds.min.y;
-        if table.show_ui {
-            if table.show_name {
-                y += 1;
-            }
-            if table.show_columns && !headers {
-                y += 1;
-            }
-        }
+        let y = table.bounds.min.y;
         self.cursor = Pos {
             x,
             y: if y < screen_row_top {

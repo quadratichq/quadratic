@@ -73,7 +73,11 @@ impl CellRefRange {
                         } else {
                             0
                         })
-                        + (if table.show_columns { 1 } else { 0 })
+                        + (if table.show_ui && table.show_columns {
+                            1
+                        } else {
+                            0
+                        })
                     && end.y == b.max.y
                 {
                     return Some(CellRefRange::Table {
