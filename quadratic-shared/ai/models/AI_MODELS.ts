@@ -31,7 +31,7 @@ export const MODEL_OPTIONS: {
     max_tokens: 4096, // not used for openai
     canStream: false, // stream is not supported for o1
     canStreamWithToolCalls: false,
-    enabled: true,
+    enabled: false,
     provider: 'openai',
   },
   'o3-mini-2025-01-31': {
