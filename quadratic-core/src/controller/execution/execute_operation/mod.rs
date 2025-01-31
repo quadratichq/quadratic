@@ -176,7 +176,10 @@ pub fn execute_reverse_operations(gc: &mut GridController, transaction: &Pending
         operations: transaction.reverse_operations.clone().into(),
         ..Default::default()
     };
-    gc.execute_operation(&mut undo_transaction);
+
+    while !undo_transaction.operations.is_empty() {
+        gc.execute_operation(&mut undo_transaction);
+    }
 }
 
 #[cfg(test)]

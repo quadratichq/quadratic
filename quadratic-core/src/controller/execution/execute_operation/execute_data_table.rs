@@ -1048,7 +1048,7 @@ mod tests {
 
         assert_flattened_simple_csv(gc, sheet_id, pos, file_name);
 
-        print_table(gc, sheet_id, Rect::new(1, 1, 3, 11));
+        print_table(gc, sheet_id, Rect::new(1, 1, 4, 12));
 
         transaction
     }
@@ -1274,7 +1274,7 @@ mod tests {
     #[test]
     fn test_execute_grid_to_data_table() {
         let (mut gc, sheet_id, pos, file_name) = simple_csv();
-        print_table(&gc, sheet_id, Rect::new(1, 1, 3, 11));
+        print_table(&gc, sheet_id, Rect::new(1, 1, 4, 11));
 
         flatten_data_table(&mut gc, sheet_id, pos, file_name);
         assert_flattened_simple_csv(&gc, sheet_id, pos, file_name);
@@ -1287,18 +1287,18 @@ mod tests {
         let mut transaction = PendingTransaction::default();
         gc.execute_grid_to_data_table(&mut transaction, op).unwrap();
         gc.data_table_first_row_as_header(sheet_pos, true, None);
-        print_table(&gc, sheet_id, Rect::new(1, 1, 3, 13));
+        print_table(&gc, sheet_id, Rect::new(1, 1, 4, 13));
         assert_simple_csv(&gc, sheet_id, new_pos, file_name);
 
         // undo, the value should be a data table again
         execute_reverse_operations(&mut gc, &transaction);
-        print_table(&gc, sheet_id, Rect::new(1, 1, 3, 13));
-        assert_flattened_simple_csv(&gc, sheet_id, new_pos, file_name);
+        print_table(&gc, sheet_id, Rect::new(1, 1, 4, 13));
+        assert_flattened_simple_csv(&gc, sheet_id, pos, file_name);
 
         // redo, the value should be on the grid
         execute_forward_operations(&mut gc, &mut transaction);
         gc.data_table_first_row_as_header(sheet_pos, true, None);
-        print_table(&gc, sheet_id, Rect::new(1, 1, 3, 13));
+        print_table(&gc, sheet_id, Rect::new(1, 1, 4, 13));
         assert_simple_csv(&gc, sheet_id, new_pos, file_name);
     }
 
