@@ -69,7 +69,7 @@ export async function doubleClickCell(options: {
       else if (hasPermission && file_import) {
         // can't create formula inside data table
         if (cell?.startsWith('=')) {
-          pixiAppSettings.snackbar('Cannot create formula inside data table', { severity: 'warning' });
+          pixiAppSettings.snackbar('Cannot create formula inside table', { severity: 'error' });
         }
 
         // check column header or table value

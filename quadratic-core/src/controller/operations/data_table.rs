@@ -77,6 +77,7 @@ impl GridController {
         rows_to_add: Option<Vec<u32>>,
         rows_to_remove: Option<Vec<u32>>,
         flatten_on_delete: Option<bool>,
+        swallow_on_insert: Option<bool>,
         _cursor: Option<String>,
     ) -> Vec<Operation> {
         let mut ops = vec![];
@@ -88,6 +89,7 @@ impl GridController {
                     index,
                     column_header: None,
                     values: None,
+                    swallow: swallow_on_insert.unwrap_or(false),
                 });
             }
         }
@@ -108,6 +110,7 @@ impl GridController {
                     sheet_pos,
                     index,
                     values: None,
+                    swallow: swallow_on_insert.unwrap_or(false),
                 });
             }
         }

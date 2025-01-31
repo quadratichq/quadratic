@@ -36,36 +36,53 @@ impl GridController {
                 -table.bounds.min.y + 1 - table.y_adjustment(true),
             );
 
-            let formats = SheetFormatUpdates::from_selection(
-                &A1Selection::from_range(CellRefRange::Sheet { range }, table.sheet_id, &context),
-                format_update.clone(),
-            );
+            let mut ranges = vec![CellRefRange::Sheet { range }];
 
-            // add table operation
-            ops.push(Operation::DataTableFormats {
-                sheet_pos: table.bounds.min.to_sheet_pos(table.sheet_id),
-                formats,
-            });
+            if let Some(rect) = range.to_rect() {
+                let Some(sheet) = self.try_sheet(table.sheet_id) else {
+                    return;
+                };
 
-            // clear sheet formatting if needed
-            if let Some(cleared) = format_update.only_cleared() {
-                ops.push(Operation::SetCellFormatsA1 {
-                    sheet_id: table.sheet_id,
-                    formats: SheetFormatUpdates::from_selection(
-                        &A1Selection::from_range(
-                            CellRefRange::Sheet { range },
-                            table.sheet_id,
-                            &context,
-                        ),
-                        cleared,
-                    ),
+                let data_table_pos = table.bounds.min;
+                let Some(data_table) = sheet.data_table(data_table_pos) else {
+                    return;
+                };
+
+                if data_table.display_buffer.is_some() {
+                    ranges.clear();
+                    // y is 1-based
+                    for y in rect.y_range() {
+                        // get actual row index and convert to 1-based
+                        let actual_row = data_table.transmute_index(y as u64 - 1) + 1;
+                        for x in rect.x_range() {
+                            ranges.push(CellRefRange::new_relative_xy(x, actual_row as i64));
+                        }
+                    }
+                }
+            }
+
+            if let Some(selection) = A1Selection::from_ranges(ranges, table.sheet_id, &context) {
+                let formats = SheetFormatUpdates::from_selection(&selection, format_update.clone());
+
+                // add table operation
+                ops.push(Operation::DataTableFormats {
+                    sheet_pos: table.bounds.min.to_sheet_pos(table.sheet_id),
+                    formats,
                 });
+
+                // clear sheet formatting if needed
+                if let Some(cleared) = format_update.only_cleared() {
+                    ops.push(Operation::SetCellFormatsA1 {
+                        sheet_id: table.sheet_id,
+                        formats: SheetFormatUpdates::from_selection(&selection, cleared),
+                    });
+                }
             }
         };
 
         let (sheet_ranges, table_ranges) = selection.separate_table_ranges();
 
-        // set sheet formats, ignoring TableRefs and removing table intersections
+        // find intersection of sheet selection with tables, apply updates to both sheet and respective table
         if let Some(mut sheet_selection) =
             A1Selection::from_sheet_ranges(sheet_ranges.clone(), selection.sheet_id, &context)
         {
@@ -79,6 +96,7 @@ impl GridController {
                             Some(intersection.max),
                             &context,
                         );
+                        // residual single cursor selection, clear if it belongs to the table
                         if let Some(pos) = sheet_selection.try_to_pos(&context) {
                             if table.bounds.contains(pos) {
                                 sheet_selection.ranges.clear();
@@ -105,10 +123,9 @@ impl GridController {
         // set table formats
         for table_ref in table_ranges {
             if let Some(table) = context.try_table(&table_ref.table_name) {
-                let range = table_ref.convert_to_ref_range_bounds(true, &context, false, true);
-                if let Some(range) = range {
-                    add_table_ops(range, table, &mut ops);
-                }
+                table_ref
+                    .convert_to_ref_range_bounds(true, &context, false, true)
+                    .map(|range| add_table_ops(range, table, &mut ops));
             }
         }
 

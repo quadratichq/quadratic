@@ -6,7 +6,7 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    grid::{DataTable, DataTableKind, SheetId},
+    grid::{js_types::JsSnackbarSeverity, DataTable, DataTableKind, SheetId},
     Array, ArraySize, CellValue, Pos, Rect, SheetRect,
 };
 
@@ -642,6 +642,7 @@ impl GridController {
             data_table.sort = sort;
             data_table.sort_all()?;
 
+            data_table.add_dirty_fills_and_borders(transaction, sheet_id);
             self.send_updated_bounds(sheet_id);
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
 
@@ -672,30 +673,69 @@ impl GridController {
             sheet_pos,
             index,
             column_header,
-            values,
+            mut values,
+            swallow,
         } = op.to_owned()
         {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
+            let data_table = sheet.data_table_result(data_table_pos)?;
+            let data_table_rect = data_table
+                .output_rect(data_table_pos, true)
+                .to_sheet_rect(sheet_id);
+
+            let mut reverse_operations = vec![];
+
+            if swallow && values.is_none() {
+                let rect = Rect::from_numbers(
+                    data_table_rect.max.x + 1,
+                    data_table_rect.min.y + data_table.y_adjustment(true),
+                    1,
+                    data_table_rect.height() as i64 - data_table.y_adjustment(true),
+                );
+                let sheet_values_array = sheet.cell_values_in_rect(&rect, true)?;
+                let cell_values = sheet_values_array.into_cell_values_vec().into_vec();
+
+                // check for code cells in neighboring cells
+                let has_code_cell = cell_values
+                    .iter()
+                    .any(|value| matches!(value, CellValue::Code(_)));
+                if has_code_cell {
+                    if cfg!(target_family = "wasm") || cfg!(test) {
+                        crate::wasm_bindings::js::jsClientMessage(
+                            "Cannot add code cell to table".to_string(),
+                            JsSnackbarSeverity::Error.to_string(),
+                        );
+                    }
+                    transaction.operations.clear();
+                    transaction.forward_operations.clear();
+                    bail!("Cannot add code cell to table");
+                }
+
+                values = Some(cell_values);
+
+                let old_values = sheet.delete_cell_values(rect);
+                reverse_operations.push(Operation::SetCellValues {
+                    sheet_pos: rect.min.to_sheet_pos(sheet_id),
+                    values: CellValues::from(old_values),
+                });
+            }
+
             let data_table = sheet.data_table_mut(data_table_pos)?;
             data_table.insert_column(index as usize, column_header, values)?;
 
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
 
-            let data_table_rect = data_table
-                .output_rect(data_table_pos, true)
-                .to_sheet_rect(sheet_id);
-
             self.send_updated_bounds(sheet_id);
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?; // optimize this
 
             let forward_operations = vec![op];
-            let reverse_operations = vec![Operation::DeleteDataTableColumn {
+            reverse_operations.push(Operation::DeleteDataTableColumn {
                 sheet_pos,
                 index,
                 flatten: false,
-            }];
+            });
             self.data_table_operations(
                 transaction,
                 forward_operations,
@@ -742,6 +782,7 @@ impl GridController {
                 index,
                 column_header: old_column_header,
                 values: Some(old_values.to_owned()),
+                swallow: false,
             }];
 
             if flatten && !old_values.is_empty() {
@@ -793,30 +834,69 @@ impl GridController {
         if let Operation::InsertDataTableRow {
             sheet_pos,
             index,
-            values,
+            mut values,
+            swallow,
         } = op.to_owned()
         {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
+            let data_table = sheet.data_table_result(data_table_pos)?;
+            let data_table_rect = data_table
+                .output_rect(data_table_pos, true)
+                .to_sheet_rect(sheet_id);
+
+            let mut reverse_operations = vec![];
+
+            if swallow && values.is_none() {
+                let rect = Rect::from_numbers(
+                    data_table_rect.min.x,
+                    data_table_rect.max.y + 1,
+                    data_table_rect.width() as i64,
+                    1,
+                );
+                let sheet_values_array = sheet.cell_values_in_rect(&rect, true)?;
+                let cell_values = sheet_values_array.into_cell_values_vec().into_vec();
+
+                // check for code cells in neighboring cells
+                let has_code_cell = cell_values
+                    .iter()
+                    .any(|value| matches!(value, CellValue::Code(_)));
+                if has_code_cell {
+                    if cfg!(target_family = "wasm") || cfg!(test) {
+                        crate::wasm_bindings::js::jsClientMessage(
+                            "Cannot add code cell to table".to_string(),
+                            JsSnackbarSeverity::Error.to_string(),
+                        );
+                    }
+                    transaction.operations.clear();
+                    transaction.forward_operations.clear();
+                    bail!("Cannot add code cell to table");
+                }
+
+                values = Some(cell_values);
+
+                let old_values = sheet.delete_cell_values(rect);
+                reverse_operations.push(Operation::SetCellValues {
+                    sheet_pos: rect.min.to_sheet_pos(sheet_id),
+                    values: CellValues::from(old_values),
+                });
+            }
+
             let data_table = sheet.data_table_mut(data_table_pos)?;
             data_table.insert_row(index as usize, values)?;
 
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
 
-            let data_table_rect = data_table
-                .output_rect(data_table_pos, true)
-                .to_sheet_rect(sheet_id);
-
             self.send_updated_bounds(sheet_id);
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?; // optimize this
 
             let forward_operations = vec![op];
-            let reverse_operations = vec![Operation::DeleteDataTableRow {
+            reverse_operations.push(Operation::DeleteDataTableRow {
                 sheet_pos,
                 index,
                 flatten: false,
-            }];
+            });
             self.data_table_operations(
                 transaction,
                 forward_operations,
@@ -859,6 +939,7 @@ impl GridController {
                 sheet_pos,
                 index,
                 values: Some(old_values.to_owned()),
+                swallow: false,
             }];
 
             if flatten && !old_values.is_empty() {
@@ -1417,6 +1498,7 @@ mod tests {
             index,
             column_header: None,
             values: None,
+            swallow: false,
         };
         let mut transaction = PendingTransaction::default();
         gc.execute_insert_data_table_column(&mut transaction, op)
@@ -1479,6 +1561,7 @@ mod tests {
             sheet_pos,
             index,
             values: None,
+            swallow: false,
         };
         let mut transaction = PendingTransaction::default();
         gc.execute_insert_data_table_row(&mut transaction, op)

@@ -249,8 +249,8 @@ impl GridController {
                                     if paste_code_cell_in_import {
                                         if cfg!(target_family = "wasm") || cfg!(test) {
                                             crate::wasm_bindings::js::jsClientMessage(
-                                                "Cannot paste code cell in import".to_string(),
-                                                JsSnackbarSeverity::Warning.to_string(),
+                                                "Cannot paste code cell in table".to_string(),
+                                                JsSnackbarSeverity::Error.to_string(),
                                             );
                                         }
                                         return;
@@ -997,8 +997,8 @@ mod test {
         expect_js_call(
             "jsClientMessage",
             format!(
-                "Cannot paste code cell in import,{}",
-                JsSnackbarSeverity::Warning
+                "Cannot paste code cell in table,{}",
+                JsSnackbarSeverity::Error
             ),
             true,
         );

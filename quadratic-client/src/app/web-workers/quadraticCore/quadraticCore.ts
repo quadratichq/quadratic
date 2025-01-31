@@ -1379,6 +1379,7 @@ class QuadraticCore {
     rows_to_add?: number[];
     rows_to_remove?: number[];
     flatten_on_delete?: boolean;
+    swallow_on_insert?: boolean;
     cursor?: string;
   }) {
     this.send({
@@ -1391,6 +1392,7 @@ class QuadraticCore {
       rows_to_add: args.rows_to_add,
       rows_to_remove: args.rows_to_remove,
       flatten_on_delete: args.flatten_on_delete,
+      swallow_on_insert: args.swallow_on_insert,
       cursor: args.cursor,
     });
   }

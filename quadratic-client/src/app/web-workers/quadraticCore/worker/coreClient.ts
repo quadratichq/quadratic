@@ -660,6 +660,7 @@ class CoreClient {
           rows_to_add: e.data.rows_to_add,
           rows_to_remove: e.data.rows_to_remove,
           flatten_on_delete: e.data.flatten_on_delete,
+          swallow_on_insert: e.data.swallow_on_insert,
           cursor: e.data.cursor,
         });
         return;

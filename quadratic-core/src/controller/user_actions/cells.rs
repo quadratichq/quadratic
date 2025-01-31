@@ -1,6 +1,5 @@
 use anyhow::Result;
 
-use crate::cell_values::CellValues;
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::operation::Operation;
 use crate::controller::GridController;
@@ -94,19 +93,14 @@ impl GridController {
                         }
                         // data row, add column
                         else {
-                            let mut values = vec![CellValue::Blank; data_table.height(true)];
-                            let value_index = y - data_table.y_adjustment(true);
-                            if value_index >= 0 {
-                                values[value_index as usize] = value.to_owned().into();
-
-                                // insert column with value
-                                data_table_ops.push(Operation::InsertDataTableColumn {
-                                    sheet_pos: (data_table_left, sheet_pos.sheet_id).into(),
-                                    index: (data_table.width()) as u32,
-                                    column_header: None,
-                                    values: Some(values),
-                                });
-                            }
+                            // insert column with swallow
+                            data_table_ops.push(Operation::InsertDataTableColumn {
+                                sheet_pos: (data_table_left, sheet_pos.sheet_id).into(),
+                                index: (data_table.width()) as u32,
+                                column_header: None,
+                                values: None,
+                                swallow: true,
+                            });
                         }
                     }
                 }
@@ -128,15 +122,12 @@ impl GridController {
                             true
                         })
                     {
-                        let x = pos.x - data_table_above.x;
-                        let mut values = vec![CellValue::Blank; data_table.width()];
-                        values[x as usize] = value.to_owned().into();
-
-                        // insert row with value
+                        // insert row with swallow
                         data_table_ops.push(Operation::InsertDataTableRow {
                             sheet_pos: (data_table_above, sheet_pos.sheet_id).into(),
                             index: data_table.height(false) as u32,
-                            values: Some(values),
+                            values: None,
+                            swallow: true,
                         });
                     }
                 }
@@ -149,11 +140,6 @@ impl GridController {
 
         // add value to data table
         if !data_table_ops.is_empty() {
-            // delete value from sheet
-            data_table_ops.push(Operation::SetCellValues {
-                sheet_pos,
-                values: CellValues::new(1, 1),
-            });
             self.start_user_transaction(data_table_ops, cursor, TransactionName::SetCells);
         }
     }

@@ -292,6 +292,7 @@ export class PointerTableResize {
             rows_to_add: toArray(rowsToAdd, height, (i, base) => base + i),
             rows_to_remove: toArray(rowsToRemove, height, (i, base) => base - i - adjustHeight),
             flatten_on_delete: true,
+            swallow_on_insert: true,
             cursor: sheets.getCursorPosition(),
           });
         }

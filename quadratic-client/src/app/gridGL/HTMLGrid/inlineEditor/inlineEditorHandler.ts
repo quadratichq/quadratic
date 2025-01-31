@@ -216,7 +216,7 @@ class InlineEditorHandler {
       }
 
       if (this.table?.codeCell.language === 'Import' && changeToFormula) {
-        pixiAppSettings.snackbar('Cannot create formula inside data table', { severity: 'warning' });
+        pixiAppSettings.snackbar('Cannot create formula inside table', { severity: 'error' });
         this.closeIfOpen();
         return;
       }
@@ -396,7 +396,7 @@ class InlineEditorHandler {
       throw new Error('Expected pixiAppSettings.setInlineEditorState to be defined in InlineEditorHandler');
     }
     if (this.table?.codeCell.language === 'Import' && formula) {
-      pixiAppSettings.snackbar('Cannot create formula inside data table', { severity: 'warning' });
+      pixiAppSettings.snackbar('Cannot create formula inside table', { severity: 'error' });
       this.closeIfOpen();
       return;
     }
