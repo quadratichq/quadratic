@@ -12,28 +12,42 @@ use lexer::Token;
 use rules::SyntaxRule;
 
 use super::*;
-use crate::{grid::Grid, CodeResult, CoerceInto, Pos, RunError, RunErrorMsg, Span, Spanned};
+use crate::{
+    a1::A1Context, grid::Grid, CodeResult, CoerceInto, Pos, RunError, RunErrorMsg, Span, Spanned,
+};
 
-pub fn parse_formula(source: &str, pos: Pos) -> CodeResult<ast::Formula> {
+/// Parses a formula.
+pub fn parse_formula(source: &str, ctx: &A1Context, pos: Pos) -> CodeResult<ast::Formula> {
     Ok(Formula {
-        ast: parse_exactly_one(source, pos, rules::Expression)?,
+        ast: parse_exactly_one(source, ctx, pos, rules::Expression)?,
     })
 }
 
-fn parse_exactly_one<R: SyntaxRule>(source: &str, pos: Pos, rule: R) -> CodeResult<R::Output> {
+/// Calls `parse_formula()` with an empty context at position A1.
+#[cfg(test)]
+pub fn simple_parse_formula(source: &str) -> CodeResult<ast::Formula> {
+    parse_formula(source, &A1Context::test(&[], &[]), Pos::ORIGIN)
+}
+
+fn parse_exactly_one<R: SyntaxRule>(
+    source: &str,
+    ctx: &A1Context,
+    pos: Pos,
+    rule: R,
+) -> CodeResult<R::Output> {
     let tokens = lexer::tokenize(source).collect_vec();
-    let mut p = Parser::new(source, &tokens, pos);
+    let mut p = Parser::new(source, &tokens, ctx, pos);
     p.parse(rule).and_then(|output| p.ok_if_not_eof(output))
 }
 
-pub fn find_cell_references(source: &str, pos: Pos) -> Vec<Spanned<RangeRef>> {
+pub fn find_cell_references(source: &str, ctx: &A1Context, pos: Pos) -> Vec<Spanned<RangeRef>> {
     let mut ret = vec![];
 
     let tokens = lexer::tokenize(source)
         .filter(|t| !t.inner.is_skip())
         .collect_vec();
 
-    let mut p = Parser::new(source, &tokens, pos);
+    let mut p = Parser::new(source, &tokens, ctx, pos);
 
     while !p.is_done() {
         if let Some(Ok(cell_ref)) = p.try_parse(rules::CellRangeReference) {
@@ -48,12 +62,12 @@ pub fn find_cell_references(source: &str, pos: Pos) -> Vec<Spanned<RangeRef>> {
 
 /// Parses and checks whether the formula has the correct arguments, and returns
 /// whether it does.
-pub fn parse_and_check_formula(formula_string: &str, x: i64, y: i64) -> bool {
+pub fn parse_and_check_formula(formula_string: &str, ctx: &A1Context, x: i64, y: i64) -> bool {
     // We are not running any calculations, so an empty Grid is fine for
     // purposes of evaluating the formula for correctness. (Especially since we
     // do not have the actual Grid when running this formula in RustClient.)
     let pos = (x, y).into();
-    match parse_formula(formula_string, pos) {
+    match parse_formula(formula_string, ctx, pos) {
         Ok(parsed) => {
             let grid = Grid::new();
             let mut ctx = Ctx::new_for_syntax_check(&grid);
@@ -61,6 +75,12 @@ pub fn parse_and_check_formula(formula_string: &str, x: i64, y: i64) -> bool {
         }
         Err(_) => false,
     }
+}
+
+/// Calls `parse_and_check_formula()` with an empty context at position A1.
+#[cfg(test)]
+fn simple_parse_and_check_formula(formula_string: &str) -> bool {
+    parse_and_check_formula(formula_string, &A1Context::test(&[], &[]), 1, 1)
 }
 
 /// Replace internal cell references in a formula with A1 notation.
@@ -73,9 +93,9 @@ pub fn parse_and_check_formula(formula_string: &str, x: i64, y: i64) -> bool {
 /// let replaced = replace_internal_cell_references("SUM(R[1]C[0])", pos);
 /// assert_eq!(replaced, "SUM(A1)");
 /// ```
-pub fn replace_internal_cell_references(source: &str, pos: Pos) -> String {
+pub fn replace_internal_cell_references(source: &str, ctx: &A1Context, pos: Pos) -> String {
     let replace_fn = |range_ref: RangeRef| range_ref.a1_string(pos);
-    replace_cell_range_references(source, pos, replace_fn)
+    replace_cell_range_references(source, ctx, pos, replace_fn)
 }
 
 /// Replace A1 notation in a formula with internal cell references (RC
@@ -89,9 +109,9 @@ pub fn replace_internal_cell_references(source: &str, pos: Pos) -> String {
 /// let replaced = replace_a1_notation("SUM(A1)", pos);
 /// assert_eq!(replaced, "SUM(R[1]C[0])");
 /// ```
-pub fn replace_a1_notation(source: &str, pos: Pos) -> String {
+pub fn replace_a1_notation(source: &str, ctx: &A1Context, pos: Pos) -> String {
     let replace_fn = |range_ref: RangeRef| range_ref.to_string();
-    replace_cell_range_references(source, pos, replace_fn)
+    replace_cell_range_references(source, ctx, pos, replace_fn)
 }
 
 /// Replace all cell references with internal cell references (RC notation) by
@@ -99,6 +119,7 @@ pub fn replace_a1_notation(source: &str, pos: Pos) -> String {
 /// Y coordinates.
 pub fn replace_cell_references_with(
     source: &str,
+    ctx: &A1Context,
     pos: Pos,
     replace_x_fn: impl Fn(&Option<String>, CellRefCoord) -> CellRefCoord,
     replace_y_fn: impl Fn(&Option<String>, CellRefCoord) -> CellRefCoord,
@@ -109,7 +130,7 @@ pub fn replace_cell_references_with(
         sheet: cell_ref.sheet,
     };
 
-    replace_cell_range_references(source, pos, |range_ref| {
+    replace_cell_range_references(source, ctx, pos, |range_ref| {
         match range_ref {
             RangeRef::RowRange { start, end, sheet } => RangeRef::RowRange {
                 start: replace_y_fn(&sheet, start),
@@ -135,10 +156,11 @@ pub fn replace_cell_references_with(
 
 fn replace_cell_range_references(
     source: &str,
+    ctx: &A1Context,
     pos: Pos,
     replace_fn: impl Fn(RangeRef) -> String,
 ) -> String {
-    let spans = find_cell_references(source, pos);
+    let spans = find_cell_references(source, ctx, pos);
     let mut replaced = source.to_string();
 
     // replace in reverse order to preserve previous span references
@@ -166,16 +188,24 @@ pub struct Parser<'a> {
 
     /// Coordinates of the cell where this formula was entered.
     pub pos: Pos,
+    /// Context about the contents of the sheet.
+    pub ctx: &'a A1Context,
 }
 impl<'a> Parser<'a> {
     /// Constructs a parser for a file.
-    pub fn new(source_str: &'a str, tokens: &'a [Spanned<Token>], pos: Pos) -> Self {
+    pub fn new(
+        source_str: &'a str,
+        tokens: &'a [Spanned<Token>],
+        ctx: &'a A1Context,
+        pos: Pos,
+    ) -> Self {
         let mut ret = Self {
             source_str,
             tokens,
             cursor: None,
 
             pos,
+            ctx,
         };
 
         // Skip leading `=`
@@ -326,42 +356,47 @@ impl<'a> Parser<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use serial_test::parallel;
+
+    use super::*;
 
     #[test]
     #[parallel]
     fn test_replace_internal_cell_references() {
+        let ctx = A1Context::test(&[], &[]);
         let src = "SUM(R[1]C[1])
         + SUM(R[2]C[2])";
         let expected = "SUM(A1)
         + SUM(B2)";
 
-        let replaced = replace_internal_cell_references(src, (0, 0).into());
+        let replaced = replace_internal_cell_references(src, &ctx, (0, 0).into());
         assert_eq!(replaced, expected);
     }
 
     #[test]
     #[parallel]
     fn test_replace_a1_notation() {
+        let ctx = A1Context::test(&[], &[]);
         let src = "SUM(A1)
         + SUM(B2)";
         let expected = "SUM(R[1]C[1])
         + SUM(R[2]C[2])";
 
-        let replaced = replace_a1_notation(src, (0, 0).into());
+        let replaced = replace_a1_notation(src, &ctx, (0, 0).into());
         assert_eq!(replaced, expected);
     }
 
     #[test]
     #[parallel]
     fn test_replace_xy_shift() {
+        let ctx = A1Context::test(&[], &[]);
         let pos = pos![C6];
         let src = "SUM(A4,B$6, C7)";
         let expected = "SUM(A2,B$5, C8)";
 
         let replaced = replace_cell_references_with(
             src,
+            &ctx,
             pos,
             |_sheet, x| x,
             |_sheet, y| match y {
@@ -370,36 +405,36 @@ mod tests {
             },
         );
 
-        let replaced_a1 = replace_internal_cell_references(&replaced, pos);
+        let replaced_a1 = replace_internal_cell_references(&replaced, &ctx, pos);
         assert_eq!(replaced_a1, expected);
     }
 
     #[test]
     #[parallel]
     fn check_formula() {
-        assert!(parse_and_check_formula("SUM(10)", 0, 0));
-        assert!(!parse_and_check_formula("SUM()", 0, 0));
-        assert!(!parse_and_check_formula("SUM(", 0, 0));
-        assert!(!parse_and_check_formula("NOT_A_FUNCTION()", 0, 0));
-        assert!(parse_and_check_formula("SUM(10, 20, 30)", 0, 0));
-        assert!(parse_and_check_formula("SUM(A1, A2, A3, A4)", 0, 0));
+        assert!(simple_parse_and_check_formula("SUM(10)"));
+        assert!(!simple_parse_and_check_formula("SUM()"));
+        assert!(!simple_parse_and_check_formula("SUM("));
+        assert!(!simple_parse_and_check_formula("NOT_A_FUNCTION()"));
+        assert!(simple_parse_and_check_formula("SUM(10, 20, 30)"));
+        assert!(simple_parse_and_check_formula("SUM(A1, A2, A3, A4)"));
     }
 
     #[test]
     fn test_formula_empty_expressions() {
-        assert!(parse_and_check_formula("PI()", 0, 0)); // SUM doesn't like taking zero arguments
+        assert!(simple_parse_and_check_formula("PI()")); // SUM doesn't like taking zero arguments
 
         // Empty expressions should work in formula arguments
-        assert!(parse_and_check_formula("SUM(,)", 0, 0));
-        assert!(parse_and_check_formula("SUM(,,)", 0, 0));
-        assert!(parse_and_check_formula("SUM(1,,)", 0, 0));
-        assert!(parse_and_check_formula("SUM(,1,)", 0, 0));
-        assert!(parse_and_check_formula("SUM(,,1)", 0, 0));
+        assert!(simple_parse_and_check_formula("SUM(,)"));
+        assert!(simple_parse_and_check_formula("SUM(,,)"));
+        assert!(simple_parse_and_check_formula("SUM(1,,)"));
+        assert!(simple_parse_and_check_formula("SUM(,1,)"));
+        assert!(simple_parse_and_check_formula("SUM(,,1)"));
 
         // ... But not in operator arguments
-        assert!(!parse_and_check_formula("1*", 0, 0));
-        assert!(!parse_and_check_formula("*1", 0, 0));
-        assert!(!parse_and_check_formula("(1*)*1", 0, 0));
-        assert!(!parse_and_check_formula("(*1)*1", 0, 0));
+        assert!(!simple_parse_and_check_formula("1*"));
+        assert!(!simple_parse_and_check_formula("*1"));
+        assert!(!simple_parse_and_check_formula("(1*)*1"));
+        assert!(!simple_parse_and_check_formula("(*1)*1"));
     }
 }

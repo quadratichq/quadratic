@@ -1,3 +1,5 @@
+use crate::grid::SheetId;
+
 use super::*;
 
 impl CellRefRange {
@@ -61,15 +63,20 @@ impl CellRefRange {
         }
     }
 
-    pub fn parse(s: &str, context: &A1Context) -> Result<Self, A1Error> {
+    pub fn parse(s: &str, context: &A1Context) -> Result<(Self, Option<SheetId>), A1Error> {
         // first try table parsing
         if let Ok(table_ref) = TableRef::parse(s, context) {
-            return Ok(Self::Table { range: table_ref });
+            if let Some(entry) = context.try_table(&table_ref.table_name) {
+                return Ok((Self::Table { range: table_ref }, Some(entry.sheet_id)));
+            }
         }
         // then try sheet parsing
-        Ok(Self::Sheet {
-            range: RefRangeBounds::from_str(s)?,
-        })
+        Ok((
+            Self::Sheet {
+                range: RefRangeBounds::from_str(s)?,
+            },
+            None,
+        ))
     }
 }
 
@@ -89,9 +96,22 @@ mod tests {
             let context = A1Context::default();
             let parsed = CellRefRange::parse(&cell_ref_range.to_string(), &context).unwrap();
             assert_eq!(
-                cell_ref_range,
+                (cell_ref_range, None),
                 parsed
             );
         }
+    }
+
+    #[test]
+    fn test_table_different_sheet() {
+        let sheet1_id = SheetId::test();
+        let sheet2_id = SheetId::test();
+        let mut context = A1Context::test(
+            &[("Sheet1", sheet1_id), ("Sheet2", sheet2_id)],
+            &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C3"))],
+        );
+        context.table_mut("Table1").unwrap().sheet_id = sheet2_id;
+        let (_, sheet_id) = CellRefRange::parse("Table1", &context).unwrap();
+        assert_eq!(sheet_id, Some(sheet2_id));
     }
 }

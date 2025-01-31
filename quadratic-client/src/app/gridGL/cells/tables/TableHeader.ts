@@ -7,15 +7,14 @@ import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { Container, type Point, type Rectangle } from 'pixi.js';
 
 export class TableHeader extends Container {
-  private table: Table;
+  table: Table;
+
   private tableName: TableName;
   private columnHeaders: TableColumnHeaders;
   private columnHeadersGridLines: TableColumnHeadersGridLines;
 
   // Calculated lowest y position for a floating table header
   private bottomOfTable = 0;
-
-  private columnHeadersY = 0;
 
   tableCursor?: string;
 
@@ -24,7 +23,7 @@ export class TableHeader extends Container {
     this.table = table;
     this.tableName = this.addChild(new TableName(table));
     this.columnHeaders = this.addChild(new TableColumnHeaders(table));
-    this.columnHeadersGridLines = this.addChild(new TableColumnHeadersGridLines(table));
+    this.columnHeadersGridLines = this.addChild(new TableColumnHeadersGridLines(this));
     this.update(false);
   }
 
@@ -51,7 +50,9 @@ export class TableHeader extends Container {
         if (this.table.codeCell.show_columns) {
           this.columnHeaders.visible = true;
           this.columnHeaders.y = this.table.sheet.offsets.getRowHeight(this.table.codeCell.y);
+          this.columnHeadersGridLines.y = this.columnHeaders.y;
         } else {
+          this.columnHeadersGridLines.visible = false;
           this.columnHeaders.visible = false;
         }
       } else {
@@ -59,8 +60,10 @@ export class TableHeader extends Container {
         if (this.table.codeCell.show_columns) {
           this.columnHeaders.visible = true;
           this.columnHeaders.y = 0;
+          this.columnHeadersGridLines.y = 0;
         } else {
           this.columnHeaders.visible = false;
+          this.columnHeadersGridLines.visible = false;
         }
       }
     }
@@ -77,8 +80,7 @@ export class TableHeader extends Container {
         this.height;
     }
 
-    // todo...
-    // this.columnHeadersGridLines.update();
+    this.columnHeadersGridLines.update();
   }
 
   toGrid() {

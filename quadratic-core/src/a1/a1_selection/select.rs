@@ -874,16 +874,13 @@ mod tests {
     }
 
     #[test]
-    fn test_select_to_table() {
+    fn test_select_to_start_of_table() {
         let context = A1Context::test(
             &[("Sheet1", SheetId::test())],
             &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C3"))],
         );
         let mut selection = A1Selection::test_a1("A1");
         selection.select_to(col![A], 3, false, &context);
-        assert_eq!(
-            selection,
-            A1Selection::test_a1_context("Table1[[#HEADERS],#[DATA],[col1]]", &context)
-        );
+        assert_eq!(selection, A1Selection::test_a1_context("A1:A3", &context));
     }
 }

@@ -45,6 +45,11 @@ export class Table extends Container {
     this.updateCodeCell(codeCell);
   }
 
+  destroy() {
+    this.hoverTableHeaders?.removeChild(this.header);
+    super.destroy();
+  }
+
   get hoverTableHeaders() {
     return pixiApp.cellsSheets.getById(this.sheet.id)?.tables.hoverTableHeaders;
   }
@@ -86,8 +91,10 @@ export class Table extends Container {
     if (this.visible) {
       if (this.tableBounds.top < bounds.top + gridHeading) {
         this.header.toHover(bounds, gridHeading);
+        this.inOverHeadings = true;
       } else {
         this.header.toGrid();
+        this.inOverHeadings = false;
       }
     }
   };
@@ -194,10 +201,6 @@ export class Table extends Container {
 
   getSortDialogPosition(): JsCoordinate | undefined {
     return this.header.getSortDialogPosition();
-  }
-
-  getColumnHeaderLines(): { y0: number; y1: number; lines: number[] } {
-    return this.header.getColumnHeaderLines();
   }
 
   // resizes an image or html table to its overlapping size

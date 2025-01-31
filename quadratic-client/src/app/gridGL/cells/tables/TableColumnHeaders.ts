@@ -5,6 +5,7 @@ import type { Table } from '@/app/gridGL/cells/tables/Table';
 import { TableColumnHeader } from '@/app/gridGL/cells/tables/TableColumnHeader';
 import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { FILL_SELECTION_ALPHA } from '@/app/gridGL/UI/Cursor';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import type { JsCoordinate, JsDataTableColumnHeader, SortDirection } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -61,10 +62,24 @@ export class TableColumnHeaders extends Container {
       });
       this.background.moveTo(this.table.tableBounds.width, 0);
       this.background.lineTo(this.table.tableBounds.width, this.headerHeight);
-
-      if (this.table.inOverHeadings && active) {
+    }
+    if (this.table.inOverHeadings) {
+      const columnsSelected = this.table.sheet.cursor.getTableColumnSelection(this.table.codeCell.name);
+      if (columnsSelected) {
+        const startX = this.table.sheet.offsets.getColumnPlacement(
+          this.table.codeCell.x + columnsSelected[0]
+        )?.position;
+        const end = this.table.sheet.offsets.getColumnPlacement(
+          this.table.codeCell.x + columnsSelected[columnsSelected.length - 1]
+        );
+        const endX = end.position + end.size;
+        this.background.lineStyle();
+        this.background.beginFill(pixiApp.accentColor, FILL_SELECTION_ALPHA);
+        this.background.drawRect(startX, 0, endX - startX, this.headerHeight);
+        this.background.endFill();
       }
     }
+
     this.background.lineStyle({
       color: getCSSVariableTint(this.table.active ? 'primary' : 'muted-foreground'),
       width: 1,
@@ -169,9 +184,6 @@ export class TableColumnHeaders extends Container {
 
   pointerMove(world: Point): boolean {
     const adjustedWorld = world.clone();
-    // need to adjust the y position in the case of sticky headers
-    // adjustedWorld.y -= this.y ? this.y - this.table.y : 0;
-    // TDOO!~!!!
     const found = this.columns.children.find((column) => column.pointerMove(adjustedWorld));
     if (!found) {
       this.tableCursor = undefined;

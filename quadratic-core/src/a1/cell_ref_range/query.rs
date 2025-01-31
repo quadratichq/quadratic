@@ -163,6 +163,18 @@ impl CellRefRange {
             Self::Table { .. } => false,
         }
     }
+
+    /// Returns a list of selected columns in the table.
+    pub fn table_column_selection(
+        &self,
+        table_name: &str,
+        context: &A1Context,
+    ) -> Option<Vec<i64>> {
+        match self {
+            Self::Table { range } => range.table_column_selection(table_name, context),
+            _ => None,
+        }
+    }
 }
 
 #[cfg(test)]

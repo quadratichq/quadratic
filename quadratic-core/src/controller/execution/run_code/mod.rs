@@ -258,6 +258,7 @@ impl GridController {
                             new_data_table.show_ui = existing_data_table.show_ui;
                         } else {
                             new_data_table.show_ui = !new_data_table.is_single_value();
+                            new_data_table.show_columns = !new_data_table.is_single_column();
                         }
                     }
 

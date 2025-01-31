@@ -13,7 +13,9 @@ use super::{A1Selection, CellRefRange};
 
 impl A1Selection {
     /// Finds the remaining rectangles after excluding the given rectangle from a range.
-    fn find_excluded_rects(range: RefRangeBounds, exclude: Rect) -> Vec<CellRefRange> {
+    fn find_excluded_rects(mut range: RefRangeBounds, exclude: Rect) -> Vec<CellRefRange> {
+        range.normalize_in_place();
+
         let mut ranges = Vec::new();
 
         // Top rectangle - only add if it doesn't overlap with exclude rect horizontally

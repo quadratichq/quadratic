@@ -5,6 +5,7 @@ use itertools::Itertools;
 use serial_test::parallel;
 
 pub(crate) use super::*;
+use crate::a1::A1Context;
 pub(crate) use crate::grid::Grid;
 pub(crate) use crate::values::*;
 pub(crate) use crate::{array, CodeResult, RunError, RunErrorMsg, Spanned};
@@ -14,7 +15,7 @@ use crate::{CoerceInto, Pos, SheetPos};
 pub(crate) fn try_check_syntax(grid: &Grid, s: &str) -> CodeResult<()> {
     println!("Checking syntax of formula {s:?}");
     let mut ctx = Ctx::new_for_syntax_check(grid);
-    parse_formula(s, Pos::ORIGIN)?
+    simple_parse_formula(s)?
         .eval(&mut ctx)
         .into_non_error_value()
         .map(|_| ())
@@ -24,7 +25,7 @@ pub(crate) fn try_check_syntax(grid: &Grid, s: &str) -> CodeResult<()> {
 pub(crate) fn eval_at(grid: &Grid, pos: SheetPos, s: &str) -> Value {
     println!("Evaluating formula {s:?}");
     let mut ctx = Ctx::new(grid, pos);
-    match parse_formula(s, Pos::ORIGIN) {
+    match parse_formula(s, &grid.a1_context(), Pos::ORIGIN) {
         Ok(formula) => formula.eval(&mut ctx).inner,
         Err(e) => e.into(),
     }
@@ -98,7 +99,7 @@ pub(crate) fn datetime(s: &str) -> CellValue {
 #[parallel]
 // TODO(ddimaria): @HactarCE fix broken test
 fn test_formula_cell_ref() {
-    let form = parse_formula("SUM(A1:A5)", Pos::ORIGIN).unwrap();
+    let form = simple_parse_formula("SUM(A1:A5)").unwrap();
 
     let mut g = Grid::new();
     let sheet = &mut g.sheets_mut()[0];
@@ -117,7 +118,8 @@ fn test_formula_cell_ref() {
 #[test]
 #[parallel]
 fn test_formula_circular_array_ref() {
-    let form = parse_formula("$B$0:$C$4", pos![A0]).unwrap();
+    let ctx = A1Context::test(&[], &[]);
+    let form = parse_formula("$B$0:$C$4", &ctx, pos![A0]).unwrap();
 
     let g = Grid::new();
     let mut ctx = Ctx::new(&g, pos![B2].to_sheet_pos(g.sheets()[0].id));
@@ -144,7 +146,7 @@ fn test_formula_range_operator() {
 
     assert_eq!(
         RunErrorMsg::Unexpected("ellipsis".into()),
-        parse_formula("1...5", Pos::ORIGIN).unwrap_err().msg,
+        simple_parse_formula("1...5").unwrap_err().msg,
     );
 }
 
@@ -375,7 +377,8 @@ fn test_find_cell_references() {
         ),
     ];
     let formula_string = test_cases.iter().map(|(string, _)| string).join(" + ");
-    let cell_references_found = find_cell_references(&formula_string, Pos::ORIGIN)
+    let ctx = A1Context::test(&[], &[]);
+    let cell_references_found = find_cell_references(&formula_string, &ctx, Pos::ORIGIN)
         .into_iter()
         .map(|Spanned { span, inner }| (span.of_str(&formula_string), inner))
         .collect_vec();

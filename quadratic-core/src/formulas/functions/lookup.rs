@@ -639,7 +639,7 @@ mod tests {
     use lazy_static::lazy_static;
     use smallvec::smallvec;
 
-    use crate::{formulas::tests::*, Pos};
+    use crate::{a1::A1Context, formulas::tests::*, Pos};
     use serial_test::parallel;
 
     lazy_static! {
@@ -673,7 +673,8 @@ mod tests {
     #[test]
     #[parallel]
     fn test_formula_indirect() {
-        let form = parse_formula("INDIRECT(\"D5\")", pos![B2]).unwrap();
+        let ctx = A1Context::test(&[], &[]);
+        let form = parse_formula("INDIRECT(\"D5\")", &ctx, pos![B2]).unwrap();
 
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];

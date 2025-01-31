@@ -11,7 +11,10 @@ import type { JsDataTableColumnHeader, JsRenderCodeCell, SheetRect } from '@/app
 import { newRectSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
-  AddIcon,
+  AddColumnLeftIcon,
+  AddColumnRightIcon,
+  AddRowAboveIcon,
+  AddRowBelowIcon,
   DeleteIcon,
   EditIcon,
   FileRenameIcon,
@@ -469,13 +472,13 @@ export const dataTableSpec: DataTableSpec = {
   },
   [Action.InsertTableColumnLeft]: {
     label: 'Insert column to the left',
-    Icon: AddIcon,
+    Icon: AddColumnLeftIcon,
     isAvailable: () => !isReadOnly() && isWithinTable(),
     run: () => insertTableColumn(-1),
   },
   [Action.InsertTableColumnRight]: {
     label: 'Insert column to the right',
-    Icon: AddIcon,
+    Icon: AddColumnRightIcon,
     isAvailable: () => !isReadOnly() && isWithinTable(),
     run: () => insertTableColumn(1),
   },
@@ -497,13 +500,13 @@ export const dataTableSpec: DataTableSpec = {
   },
   [Action.InsertTableRowAbove]: {
     label: 'Insert row above',
-    Icon: AddIcon,
+    Icon: AddRowAboveIcon,
     isAvailable: () => !isReadOnly() && isWithinTable(),
     run: () => insertTableRow(-1),
   },
   [Action.InsertTableRowBelow]: {
     label: 'Insert row below',
-    Icon: AddIcon,
+    Icon: AddRowBelowIcon,
     isAvailable: () => !isReadOnly() && isWithinTable(),
     run: () => insertTableRow(0),
   },

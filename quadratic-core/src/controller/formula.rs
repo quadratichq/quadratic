@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{formulas, Pos, Span, Spanned};
+use crate::{a1::A1Context, formulas, Pos, Span, Spanned};
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
 pub struct FormulaParseResult {
@@ -62,15 +62,16 @@ impl From<Spanned<formulas::RangeRef>> for CellRefSpan {
 ///
 /// `parse_error_msg` may be null, and `parse_error_span` may be null. Even if
 /// `parse_error_span`, `parse_error_msg` may still be present.
-pub fn parse_formula(formula_string: &str, pos: Pos) -> FormulaParseResult {
-    let parse_error: Option<crate::RunError> = formulas::parse_formula(formula_string, pos).err();
+pub fn parse_formula(formula_string: &str, ctx: &A1Context, pos: Pos) -> FormulaParseResult {
+    let parse_error: Option<crate::RunError> =
+        formulas::parse_formula(formula_string, ctx, pos).err();
 
     let result = FormulaParseResult {
         parse_error_msg: parse_error.as_ref().map(|e| e.msg.to_string()),
         parse_error_span: parse_error.and_then(|e| e.span),
 
         // todo: cell_refs are returning Relative positions that are actually Absolute
-        cell_refs: formulas::find_cell_references(formula_string, pos)
+        cell_refs: formulas::find_cell_references(formula_string, ctx, pos)
             .into_iter()
             .map(|r| r.into())
             .collect(),
@@ -80,15 +81,17 @@ pub fn parse_formula(formula_string: &str, pos: Pos) -> FormulaParseResult {
 
 #[cfg(test)]
 mod tests {
-    use crate::controller::formula::{parse_formula, CellRefSpan, FormulaParseResult};
+    use super::{parse_formula, CellRefSpan, FormulaParseResult};
+    use crate::a1::A1Context;
     use crate::formulas::{CellRef, CellRefCoord, RangeRef};
+    use crate::Pos;
     use crate::{a1::UNBOUNDED, Span};
     use serial_test::parallel;
 
     fn parse(s: &str) -> FormulaParseResult {
+        let ctx = A1Context::test(&[], &[]);
         println!("Parsing {s}");
-
-        parse_formula(s, crate::Pos::ORIGIN)
+        parse_formula(s, &ctx, Pos::ORIGIN)
     }
 
     /// Run this test with `--nocapture` to generate the example for the

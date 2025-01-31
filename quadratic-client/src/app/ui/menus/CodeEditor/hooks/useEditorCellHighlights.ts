@@ -3,6 +3,7 @@ import {
   codeEditorCodeCellAtom,
   codeEditorUnsavedChangesAtom,
 } from '@/app/atoms/codeEditorAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
 import type { ParseFormulaReturnType } from '@/app/helpers/formulaNotation';
@@ -97,7 +98,9 @@ export const useEditorCellHighlights = (
       ) {
         pixiApp.cellHighlights.fromCellsAccessed(unsavedChanges ? null : cellsAccessed);
       } else if (codeCell.language === 'Formula') {
-        const parsed = JSON.parse(parseFormula(modelValue, codeCell.pos.x, codeCell.pos.y)) as ParseFormulaReturnType;
+        const parsed = JSON.parse(
+          parseFormula(modelValue, sheets.a1Context, codeCell.pos.x, codeCell.pos.y)
+        ) as ParseFormulaReturnType;
         if (parsed) {
           const cellsAccessed = parseFormulaReturnToCellsAccessed(parsed, codeCell.pos, codeCell.sheetId);
           pixiApp.cellHighlights.fromCellsAccessed(cellsAccessed);

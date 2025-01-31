@@ -58,11 +58,13 @@ impl A1Selection {
             segments.push(current_segment);
         }
 
+        let mut sheet_id = None;
         for segment in segments {
             let range = SheetCellRefRange::parse(segment.trim(), default_sheet_id, context)?;
             if *sheet.get_or_insert(range.sheet_id) != range.sheet_id {
                 return Err(A1Error::TooManySheets(a1.to_string()));
             }
+            sheet_id = Some(range.sheet_id);
 
             ranges.push(range.cells);
         }
@@ -72,7 +74,7 @@ impl A1Selection {
             .ok_or_else(|| A1Error::InvalidRange(a1.to_string()))?;
 
         Ok(Self {
-            sheet_id: sheet.unwrap_or(default_sheet_id.to_owned()),
+            sheet_id: sheet_id.unwrap_or(default_sheet_id.to_owned()),
             cursor: Self::cursor_pos_from_last_range(last_range, context),
             ranges,
         })

@@ -97,16 +97,19 @@ impl Sheet {
     /// TODO(ddimaria): move to DataTable code
     pub fn get_code_cell_values(&self, rect: Rect) -> CellValues {
         self.iter_code_output_in_rect(rect)
-            .flat_map(|(new_rect, data_table)| match &data_table.value {
+            .flat_map(|(data_table_rect, data_table)| match &data_table.value {
                 Value::Single(v) => vec![vec![v.to_owned()]],
-                Value::Array(a) => rect
+                Value::Array(_) => rect
                     .y_range()
                     .map(|y| {
                         rect.x_range()
                             .map(|x| {
-                                let new_x = u32::try_from(x - new_rect.min.x).unwrap_or(0);
-                                let new_y = u32::try_from(y - new_rect.min.y).unwrap_or(0);
-                                a.get(new_x, new_y).unwrap_or(&CellValue::Blank).to_owned()
+                                data_table
+                                    .cell_value_at(
+                                        (x - data_table_rect.min.x) as u32,
+                                        (y - data_table_rect.min.y) as u32,
+                                    )
+                                    .unwrap_or(CellValue::Blank)
                             })
                             .collect::<Vec<CellValue>>()
                     })
@@ -135,7 +138,7 @@ impl Sheet {
     }
 
     /// TODO(ddimaria): move to DataTable code
-    pub fn set_code_cell_values(&mut self, pos: Pos, values: CellValues) {
+    pub fn set_code_cell_values(&mut self, pos: Pos, mut values: CellValues) {
         if let Some((code_cell_pos, data_table)) =
             self.data_tables
                 .iter_mut()
@@ -144,14 +147,13 @@ impl Sheet {
                 })
         {
             let rect = Rect::from(&values);
-
             for y in rect.y_range() {
                 for x in rect.x_range() {
                     let new_x = u32::try_from(pos.x - code_cell_pos.x + x).unwrap_or(0);
                     let new_y = u32::try_from(pos.y - code_cell_pos.y + y).unwrap_or(0);
-                    let value = values.get(x as u32, y as u32).unwrap_or(&CellValue::Blank);
-
-                    data_table.set_cell_value_at(new_x, new_y, value.to_owned());
+                    if let Some(value) = values.remove(x as u32, y as u32) {
+                        data_table.set_cell_value_at(new_x, new_y, value);
+                    }
                 }
             }
         }
@@ -224,8 +226,13 @@ impl Sheet {
             Some(mut code_cell_value) => {
                 // replace internal cell references with a1 notation
                 if matches!(code_cell_value.language, CodeCellLanguage::Formula) {
-                    let replaced =
-                        replace_internal_cell_references(&code_cell_value.code, code_pos);
+                    // `self.a1_context()` is unaware of other sheets, which might cause issues?
+                    let parse_ctx = self.a1_context();
+                    let replaced = replace_internal_cell_references(
+                        &code_cell_value.code,
+                        &parse_ctx,
+                        code_pos,
+                    );
                     code_cell_value.code = replaced;
                 }
 

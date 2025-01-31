@@ -198,13 +198,14 @@ fn get_functions() -> Vec<FormulaFunction> {
 mod tests {
     use itertools::Itertools;
 
-    use crate::{formulas::tests::*, Pos};
+    use crate::{a1::A1Context, formulas::tests::*, Pos};
     use serial_test::parallel;
 
     #[test]
     #[parallel]
     fn test_formula_average() {
-        let form = parse_formula("AVERAGE(3, A1:C3)", pos![A10]).unwrap();
+        let parse_ctx = A1Context::test(&[], &[]);
+        let form = parse_formula("AVERAGE(3, A1:C3)", &parse_ctx, pos![A10]).unwrap();
 
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];
@@ -244,7 +245,7 @@ mod tests {
                 func_name: "AVERAGE".into(),
                 arg_name: "numbers".into()
             },
-            parse_formula("AVERAGE()", Pos::ORIGIN)
+            simple_parse_formula("AVERAGE()")
                 .unwrap()
                 .eval(&mut ctx)
                 .unwrap_err()
@@ -311,7 +312,7 @@ mod tests {
                 func_name: "COUNT".into(),
                 arg_name: "numbers".into()
             },
-            parse_formula("COUNT()", Pos::ORIGIN)
+            simple_parse_formula("COUNT()")
                 .unwrap()
                 .eval(&mut ctx)
                 .unwrap_err()
@@ -339,7 +340,7 @@ mod tests {
                 func_name: "COUNTA".into(),
                 arg_name: "range".into()
             },
-            parse_formula("COUNTA()", Pos::ORIGIN)
+            simple_parse_formula("COUNTA()")
                 .unwrap()
                 .eval(&mut ctx)
                 .unwrap_err()

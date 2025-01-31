@@ -258,9 +258,20 @@ impl JsSelection {
 
     #[wasm_bindgen(js_name = "getSelectedTableNames")]
     pub fn get_selected_table_names(&self) -> Result<String, String> {
-        Ok(
-            serde_json::to_string(&self.selection.selected_table_names())
-                .map_err(|e| e.to_string())?,
-        )
+        serde_json::to_string(&self.selection.selected_table_names()).map_err(|e| e.to_string())
+    }
+
+    #[wasm_bindgen(js_name = "getTableColumnSelection")]
+    pub fn get_table_column_selection(&self, table_name: &str, context: &str) -> Option<String> {
+        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
+            dbgjs!("Unable to parse context in get_table_column_selection");
+            return None;
+        };
+        if let Some(cols) = self.selection.table_column_selection(table_name, &context) {
+            if let Ok(cols_str) = serde_json::to_string(&cols) {
+                return Some(cols_str);
+            }
+        }
+        None
     }
 }

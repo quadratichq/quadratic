@@ -14,14 +14,15 @@ impl GridController {
         sheet_pos: SheetPos,
         code: String,
     ) {
-        let mut ctx = Ctx::new(self.grid(), sheet_pos);
+        let mut eval_ctx = Ctx::new(self.grid(), sheet_pos);
+        let parse_ctx = self.grid.a1_context();
         transaction.current_sheet_pos = Some(sheet_pos);
 
-        match parse_formula(&code, sheet_pos.into()) {
+        match parse_formula(&code, &parse_ctx, sheet_pos.into()) {
             Ok(parsed) => {
-                let output = parsed.eval(&mut ctx).into_non_tuple();
+                let output = parsed.eval(&mut eval_ctx).into_non_tuple();
                 let errors = output.inner.errors();
-                transaction.cells_accessed = ctx.cells_accessed;
+                transaction.cells_accessed = eval_ctx.cells_accessed;
                 let new_code_run = CodeRun {
                     std_out: None,
                     std_err: (!errors.is_empty())

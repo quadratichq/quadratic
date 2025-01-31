@@ -288,6 +288,8 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, disply_cell_values: bool) {
     let mut fill_colors = vec![];
     let mut count_x = 0;
     let mut count_y = 0;
+    // `self.a1_context()` is unaware of other sheets, which might cause issues?
+    let parse_ctx = sheet.a1_context();
 
     // convert the selected range in the sheet to tabled
     rect.y_range().for_each(|y| {
@@ -313,9 +315,11 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, disply_cell_values: bool) {
 
             let cell_value = match cell_value {
                 Some(CellValue::Code(code_cell)) => match code_cell.language {
-                    CodeCellLanguage::Formula => {
-                        replace_internal_cell_references(&code_cell.code.to_string(), pos)
-                    }
+                    CodeCellLanguage::Formula => replace_internal_cell_references(
+                        &code_cell.code.to_string(),
+                        &parse_ctx,
+                        pos,
+                    ),
                     CodeCellLanguage::Python => code_cell.code.to_string(),
                     CodeCellLanguage::Connection { .. } => code_cell.code.to_string(),
                     CodeCellLanguage::Javascript => code_cell.code.to_string(),

@@ -173,7 +173,19 @@ impl A1Selection {
             totals: false,
             col_range,
         };
-        self.ranges.push(CellRefRange::Table { range: table_ref });
+        let table_ref = CellRefRange::Table { range: table_ref };
+
+        // toggle selection with ctrl/meta key
+        if ctrl_key && self.ranges.last().is_some_and(|last| last == &table_ref) {
+            self.ranges.pop();
+            if self.ranges.is_empty() {
+                self.ranges
+                    .push(CellRefRange::new_relative_pos(self.cursor));
+            }
+            self.update_cursor(context);
+            return;
+        }
+        self.ranges.push(table_ref);
         let mut y = table.bounds.min.y;
         if table.show_ui {
             if table.show_name {

@@ -25,7 +25,6 @@ export class Tables extends Container<Table> {
   private cellsSheet: CellsSheet;
 
   private activeTables: Table[] = [];
-  private hoverTable: Table | undefined;
   private contextMenuTable: Table | undefined;
 
   // either rename or sort
@@ -35,8 +34,7 @@ export class Tables extends Container<Table> {
   private htmlOrImage: Set<string>;
 
   private saveToggleOutlines?: {
-    active?: Table;
-    hover?: Table;
+    activeTables?: Table;
     context?: Table;
     action?: Table;
   };
@@ -174,9 +172,6 @@ export class Tables extends Container<Table> {
 
     const tables = sheets.sheet.cursor.getSelectedTableNames();
     this.activeTables = tables.flatMap((table) => this.children.filter((t) => t.codeCell.name === table));
-    if (this.hoverTable && this.activeTables.includes(this.hoverTable)) {
-      this.hoverTable = undefined;
-    }
     this.children.forEach((table) => {
       if (this.activeTables.includes(table)) {
         table.showActive(true);
@@ -207,7 +202,7 @@ export class Tables extends Container<Table> {
   }
 
   isActive(table: Table): boolean {
-    return this.activeTables.includes(table) || table === this.hoverTable || table === this.contextMenuTable;
+    return this.activeTables.includes(table) || table === this.contextMenuTable;
   }
 
   // Returns true if the pointer down as handled (eg, a column header was
@@ -229,47 +224,8 @@ export class Tables extends Container<Table> {
       const result = table.pointerMove(world);
       if (result) {
         this.tableCursor = table.tableCursor;
-        if (this.hoverTable !== table) {
-          this.hoverTable?.hideActive();
-        }
-        if (!this.activeTables.includes(table)) {
-          this.hoverTable = table;
-          table.showActive(false);
-        }
         return true;
       }
-    }
-    const hover = htmlCellsHandler.checkHover(world);
-    const table = hover
-      ? this.children.find((table) => table.codeCell.x === hover?.x && table.codeCell.y === hover?.y)
-      : undefined;
-    if (table) {
-      if (!this.isActive(table)) {
-        if (this.hoverTable !== table) {
-          this.hoverTable?.hideActive();
-        }
-        this.hoverTable = table;
-        table.showActive(false);
-      }
-      return true;
-    }
-    const hoverImage = pixiApp.cellsSheet().cellsImages.contains(world);
-    const tableImage = this.children.find(
-      (table) => table.codeCell.x === hoverImage?.x && table.codeCell.y === hoverImage?.y
-    );
-    if (tableImage) {
-      if (!this.isActive(tableImage)) {
-        if (this.hoverTable !== tableImage) {
-          this.hoverTable?.hideActive();
-        }
-        this.hoverTable = tableImage;
-        tableImage.showActive(false);
-      }
-      return true;
-    }
-    if (this.hoverTable) {
-      this.hoverTable.hideActive();
-      this.hoverTable = undefined;
     }
     this.tableCursor = undefined;
     return false;
@@ -283,17 +239,9 @@ export class Tables extends Container<Table> {
     // until the cursor moves again.
     if (this.actionDataTable) {
       this.actionDataTable.showColumnHeaders();
-      if (!this.activeTables.includes(this.actionDataTable)) {
-        this.hoverTable = this.actionDataTable;
-      }
       this.actionDataTable = undefined;
     }
     if (this.contextMenuTable) {
-      // we keep the former context menu table active after the context
-      // menu closes until the cursor moves again.
-      if (!this.activeTables.includes(this.contextMenuTable)) {
-        this.hoverTable = this.contextMenuTable;
-      }
       this.contextMenuTable = undefined;
     }
     if (!options?.type) {
@@ -304,24 +252,17 @@ export class Tables extends Container<Table> {
       this.actionDataTable = this.children.find((table) => table.codeCell === options.table);
       if (this.actionDataTable) {
         this.actionDataTable.showActive(true);
-        if (this.hoverTable === this.actionDataTable) {
-          this.hoverTable = undefined;
-        }
       }
     } else if (options.type === ContextMenuType.Table && options.table) {
       if (options.rename) {
         this.actionDataTable = this.children.find((table) => table.codeCell === options.table);
         if (this.actionDataTable) {
           this.actionDataTable.showActive(true);
-          this.hoverTable = undefined;
         }
       } else {
         this.contextMenuTable = this.children.find((table) => table.codeCell === options.table);
         if (this.contextMenuTable) {
           this.contextMenuTable.showActive(true);
-          if (this.hoverTable === this.contextMenuTable) {
-            this.hoverTable = undefined;
-          }
         }
       }
     } else if (
@@ -333,9 +274,6 @@ export class Tables extends Container<Table> {
       this.actionDataTable = this.children.find((table) => table.codeCell === options.table);
       if (this.actionDataTable) {
         this.actionDataTable.showActive(true);
-        if (this.hoverTable === this.actionDataTable) {
-          this.hoverTable = undefined;
-        }
         this.actionDataTable.hideColumnHeaders(options.selectedColumn);
       }
     }

@@ -3,12 +3,12 @@
 //! overflow (and in the future, merged cells). Grid lines also respect the
 //! sheet.clamp value.
 
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { calculateAlphaForGridLines } from '@/app/gridGL/UI/gridUtils';
 import { colors } from '@/app/theme/colors';
-import { sharedEvents } from '@/shared/sharedEvents';
 import type { ILineStyleOptions, Rectangle } from 'pixi.js';
 import { Graphics } from 'pixi.js';
 
@@ -31,11 +31,11 @@ export class GridLines extends Graphics {
 
   constructor() {
     super();
-    sharedEvents.on('gridLinesDirty', this.setDirty);
+    events.on('gridLinesDirty', this.setDirty);
   }
 
   destroy() {
-    sharedEvents.off('gridLinesDirty', this.setDirty);
+    events.off('gridLinesDirty', this.setDirty);
     super.destroy();
   }
 

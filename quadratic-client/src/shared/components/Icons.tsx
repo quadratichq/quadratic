@@ -45,6 +45,22 @@ export const AccountIcon: IconComponent = (props) => {
   return <Icon {...props}>account_circle</Icon>;
 };
 
+export const AddColumnLeftIcon: IconComponent = (props) => {
+  return <Icon {...props}>add_column_left</Icon>;
+};
+
+export const AddColumnRightIcon: IconComponent = (props) => {
+  return <Icon {...props}>add_column_right</Icon>;
+};
+
+export const AddRowAboveIcon: IconComponent = (props) => {
+  return <Icon {...props}>add_row_above</Icon>;
+};
+
+export const AddRowBelowIcon: IconComponent = (props) => {
+  return <Icon {...props}>add_row_below</Icon>;
+};
+
 export const AddIcon: IconComponent = (props) => {
   return <Icon {...props}>add</Icon>;
 };
