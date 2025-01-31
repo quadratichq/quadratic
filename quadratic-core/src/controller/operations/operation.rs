@@ -52,6 +52,7 @@ pub enum Operation {
     AddDataTable {
         sheet_pos: SheetPos,
         data_table: DataTable,
+        cell_value: CellValue,
     },
     DeleteDataTable {
         sheet_pos: SheetPos,
@@ -319,10 +320,11 @@ impl fmt::Display for Operation {
             Operation::AddDataTable {
                 sheet_pos,
                 data_table,
+                cell_value,
             } => write!(
                 fmt,
-                "AddDataTable {{ sheet_pos: {} data_table: {:?} }}",
-                sheet_pos, data_table
+                "AddDataTable {{ sheet_pos: {} data_table: {:?} cell_value: {:?} }}",
+                sheet_pos, data_table, cell_value
             ),
             Operation::DeleteDataTable { sheet_pos } => {
                 write!(fmt, "DeleteDataTable {{ sheet_pos: {} }}", sheet_pos)

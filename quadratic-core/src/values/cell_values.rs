@@ -130,6 +130,10 @@ impl CellValues {
         self.w * self.h
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.size() == 0
+    }
+
     /// Creates CellValues from a flat array of CellValue given a width and height
     pub fn from_flat_array(w: u32, h: u32, values: Vec<CellValue>) -> Self {
         assert!(

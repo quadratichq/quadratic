@@ -1,6 +1,7 @@
 use std::collections::{btree_map, BTreeMap, HashSet};
 use std::str::FromStr;
 
+use anyhow::{anyhow, Result};
 use bigdecimal::{BigDecimal, RoundingMode};
 use borders::Borders;
 use indexmap::IndexMap;
@@ -288,6 +289,12 @@ impl Sheet {
     pub fn cell_value_ref(&self, pos: Pos) -> Option<&CellValue> {
         let column = self.get_column(pos.x)?;
         column.values.get(&pos.y)
+    }
+
+    /// Returns the cell value at a position, or an error if the cell value is not found.
+    pub fn cell_value_result(&self, pos: Pos) -> Result<CellValue> {
+        self.cell_value(pos)
+            .ok_or_else(|| anyhow!("Cell value not found at {:?}", pos))
     }
 
     /// Returns a mutable reference to the cell value at the Pos in column.values.

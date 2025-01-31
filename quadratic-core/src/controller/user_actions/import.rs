@@ -161,10 +161,10 @@ pub(crate) mod tests {
         );
 
         let first_row = vec!["city", "region", "country", "population"];
-        assert_data_table_cell_value_row(gc, sheet_id, 1, 4, 2, first_row);
+        assert_data_table_cell_value_row(gc, sheet_id, pos.x, pos.x + 3, pos.y + 1, first_row);
 
         let last_row = vec!["Concord", "NH", "United States", "42605"];
-        assert_data_table_cell_value_row(gc, sheet_id, 1, 4, 12, last_row);
+        assert_data_table_cell_value_row(gc, sheet_id, pos.x, pos.x + 3, pos.y + 12, last_row);
 
         (gc, sheet_id, pos, file_name)
     }
