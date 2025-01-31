@@ -32,7 +32,10 @@ export const SheetBar = (): JSX.Element => {
   const [activeSheet, setActiveSheet] = useState(sheets.current);
 
   // Update the URL with the active sheet (if it's not the first sheet)
-  useUpdateQueryStringValueWithoutNavigation(SEARCH_PARAMS.SHEET.KEY, sheets.sheet.order === 'a0' ? null : activeSheet);
+  useUpdateQueryStringValueWithoutNavigation(
+    SEARCH_PARAMS.SHEET.KEY,
+    sheets.getFirst().id === activeSheet ? null : activeSheet
+  );
 
   // Update internal state of the active sheet when user changes sheet
   useEffect(() => {

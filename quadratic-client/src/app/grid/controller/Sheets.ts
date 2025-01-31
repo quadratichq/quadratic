@@ -39,8 +39,15 @@ class Sheets {
       this.sheets.push(sheet);
     });
     this.sort();
+
+    // Look for an initial active sheet in the URL. If it's nott there, use the 1st sheet
     const initialActiveSheetId = new URLSearchParams(window.location.search).get(SEARCH_PARAMS.SHEET.KEY);
-    this._current = initialActiveSheetId ?? this.sheets[0].id;
+    if (initialActiveSheetId && this.getById(initialActiveSheetId)) {
+      this._current = initialActiveSheetId;
+    } else {
+      this._current = this.sheets[0].id;
+    }
+
     pixiApp.cellsSheets.create();
     this.initialized = true;
   };
