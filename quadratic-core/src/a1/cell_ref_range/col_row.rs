@@ -27,7 +27,8 @@ impl CellRefRange {
                     }
                 }
             }
-            Self::Table { .. } => todo!(),
+            // todo: handle table ranges--for now it ignores them
+            Self::Table { .. } => (),
         }
         changed
     }
@@ -57,7 +58,8 @@ impl CellRefRange {
                     }
                 }
             }
-            Self::Table { .. } => todo!(),
+            // todo: handle table ranges--for now it ignores them
+            Self::Table { .. } => (),
         }
         changed
     }
@@ -79,7 +81,8 @@ impl CellRefRange {
                     changed = true;
                 }
             }
-            Self::Table { .. } => todo!(),
+            // todo: handle table ranges--for now it ignores them
+            Self::Table { .. } => (),
         }
         changed
     }
@@ -101,7 +104,8 @@ impl CellRefRange {
                     changed = true;
                 }
             }
-            Self::Table { .. } => todo!(),
+            // todo: handle table ranges--for now it ignores them
+            Self::Table { .. } => (),
         }
         changed
     }
