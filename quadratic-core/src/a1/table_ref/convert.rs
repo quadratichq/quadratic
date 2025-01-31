@@ -17,10 +17,9 @@ impl TableRef {
         };
 
         let (mut y_start, y_end) = table.to_sheet_rows();
-
         if !force_table_bounds {
             y_start += if !self.headers && !force_columns {
-                table.y_adjustment()
+                table.y_adjustment(false)
             } else if table.show_ui && table.show_name {
                 1
             } else {

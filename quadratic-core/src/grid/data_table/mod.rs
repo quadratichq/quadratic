@@ -265,7 +265,7 @@ impl DataTable {
                 if force_table_bounds {
                     array.height() as usize
                 } else {
-                    array.height() as usize + self.y_adjustment() as usize
+                    array.height() as usize + self.y_adjustment(true) as usize
                 }
             }
             Value::Tuple(_) => 0,
@@ -385,7 +385,7 @@ impl DataTable {
                     let mut size = a.size();
 
                     let mut height = size.h.get();
-                    height = height.saturating_add_signed(self.y_adjustment() as i32);
+                    height = height.saturating_add_signed(self.y_adjustment(true) as i32);
 
                     size.h = NonZeroU32::new(height).unwrap_or(ArraySize::_1X1.h);
 
@@ -517,7 +517,7 @@ impl DataTable {
 
     /// Returns the y adjustment for the data table to account for the UI
     /// elements
-    pub fn y_adjustment(&self) -> i64 {
+    pub fn y_adjustment(&self, adjust_for_header_is_first_row: bool) -> i64 {
         let mut y_adjustment = 0;
 
         if self.show_ui {
@@ -529,7 +529,7 @@ impl DataTable {
             }
         }
 
-        if self.header_is_first_row {
+        if self.header_is_first_row && adjust_for_header_is_first_row {
             y_adjustment -= 1;
         }
 
@@ -756,7 +756,7 @@ pub mod test {
     #[test]
     fn test_y_adjustment() {
         let (_, data_table) = new_data_table();
-        assert_eq!(data_table.y_adjustment(), 2);
+        assert_eq!(data_table.y_adjustment(true), 2);
     }
 
     #[test]

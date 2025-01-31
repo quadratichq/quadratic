@@ -6,7 +6,7 @@ use crate::CellValue;
 impl DataTable {
     /// Get the values of a row (does not include the header)
     pub fn get_row(&self, mut row_index: usize) -> Result<Vec<CellValue>> {
-        row_index -= self.y_adjustment() as usize;
+        row_index -= self.y_adjustment(true) as usize;
 
         let row = self
             .value_ref()?
@@ -25,7 +25,7 @@ impl DataTable {
         mut row_index: usize,
         values: Option<Vec<CellValue>>,
     ) -> Result<()> {
-        row_index -= self.y_adjustment() as usize;
+        row_index -= self.y_adjustment(true) as usize;
 
         let array = self.mut_value_as_array()?;
         array.insert_row(row_index, values)?;
@@ -37,7 +37,7 @@ impl DataTable {
 
     /// Remove a row at the given index.
     pub fn delete_row(&mut self, mut row_index: usize) -> Result<()> {
-        row_index -= self.y_adjustment() as usize;
+        row_index -= self.y_adjustment(true) as usize;
 
         let array = self.mut_value_as_array()?;
         array.delete_row(row_index)?;

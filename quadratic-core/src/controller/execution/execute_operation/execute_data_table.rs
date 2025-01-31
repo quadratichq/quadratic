@@ -249,7 +249,7 @@ impl GridController {
             let rect = Rect::from_numbers(pos.x, pos.y, values.w as i64, values.h as i64);
             let old_values = sheet.get_code_cell_values(rect);
 
-            pos.y -= data_table.y_adjustment();
+            pos.y -= data_table.y_adjustment(true);
 
             // if there is a display buffer, use it to find the row index for all the values
             if data_table.display_buffer.is_some() {
@@ -753,7 +753,7 @@ impl GridController {
                 );
                 let start_pos = Pos::new(
                     data_table_pos.x + index as i64,
-                    data_table_pos.y + data_table.y_adjustment(),
+                    data_table_pos.y + data_table.y_adjustment(true),
                 );
                 let rect = Rect::from_pos_and_size(start_pos, values.size());
                 let _ = sheet.set_cell_values(rect, &values);

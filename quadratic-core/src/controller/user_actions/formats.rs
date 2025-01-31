@@ -33,7 +33,7 @@ impl GridController {
             // pos relative to table pos (top left pos), 1-based for formatting
             let range = range.translate(
                 -table.bounds.min.x + 1,
-                -table.bounds.min.y + 1 - table.y_adjustment(),
+                -table.bounds.min.y + 1 - table.y_adjustment(true),
             );
 
             let formats = SheetFormatUpdates::from_selection(

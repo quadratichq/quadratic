@@ -19,10 +19,7 @@ impl Sheet {
             let mut table_rect = table.output_rect(*pos, true);
 
             // use table data bounds for borders, exclude table name and column headers
-            table_rect.min.y += table.y_adjustment();
-            if table.header_is_first_row {
-                table_rect.min.y += 1;
-            }
+            table_rect.min.y += table.y_adjustment(false);
 
             if let Some(h) = table.borders.horizontal_borders(Some(table_rect)) {
                 horizontal.extend(h);

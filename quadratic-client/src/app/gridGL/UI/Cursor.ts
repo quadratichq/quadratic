@@ -205,57 +205,57 @@ export class Cursor extends Container {
     }
   }
 
-  private drawCodeCursor(): void {
-    let color: number | undefined, offsets: { x: number; y: number; width: number; height: number } | undefined;
-    const inlineShowing = inlineEditorHandler.getShowing();
-    if (inlineEditorHandler.formula && inlineShowing && sheets.current === inlineShowing.sheetId) {
-      color = colors.cellColorUserFormula;
-      const { width, height } = sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y);
-      offsets = {
-        x: inlineEditorHandler.x - CURSOR_THICKNESS * 0.5,
-        y: inlineEditorHandler.y - CURSOR_THICKNESS * 0.5,
-        width: Math.max(inlineEditorHandler.width + CURSOR_THICKNESS, width),
-        height: Math.max(inlineEditorHandler.height + CURSOR_THICKNESS, height),
-      };
+  // private drawCodeCursor(): void {
+  //   let color: number | undefined, offsets: { x: number; y: number; width: number; height: number } | undefined;
+  //   const inlineShowing = inlineEditorHandler.getShowing();
+  //   if (inlineEditorHandler.formula && inlineShowing && sheets.current === inlineShowing.sheetId) {
+  //     color = colors.cellColorUserFormula;
+  //     const { width, height } = sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y);
+  //     offsets = {
+  //       x: inlineEditorHandler.x - CURSOR_THICKNESS * 0.5,
+  //       y: inlineEditorHandler.y - CURSOR_THICKNESS * 0.5,
+  //       width: Math.max(inlineEditorHandler.width + CURSOR_THICKNESS, width),
+  //       height: Math.max(inlineEditorHandler.height + CURSOR_THICKNESS, height),
+  //     };
 
-      this.graphics.lineStyle({
-        width: CURSOR_THICKNESS * 1.5,
-        color,
-        alpha: CURSOR_INPUT_ALPHA,
-        alignment: 1,
-      });
-      this.graphics.drawRect(offsets.x, offsets.y, offsets.width, offsets.height);
+  //     this.graphics.lineStyle({
+  //       width: CURSOR_THICKNESS * 1.5,
+  //       color,
+  //       alpha: CURSOR_INPUT_ALPHA,
+  //       alignment: 1,
+  //     });
+  //     this.graphics.drawRect(offsets.x, offsets.y, offsets.width, offsets.height);
 
-      const indicatorHalfSize = INLINE_NAVIGATE_TEXT_INDICATOR_SIZE / 2;
-      this.graphics.moveTo(offsets.x + offsets.width + indicatorHalfSize, offsets.y);
-      this.graphics.lineTo(offsets.x + offsets.width + indicatorHalfSize + 20, offsets.y);
-      this.graphics.lineTo(offsets.x + offsets.width + indicatorHalfSize + 20, offsets.y + offsets.height);
-      this.graphics.lineTo(offsets.x + offsets.width + indicatorHalfSize, offsets.y + offsets.height);
-    } else {
-      const { codeEditorState } = pixiAppSettings;
-      const codeCell = codeEditorState.codeCell;
-      if (!codeEditorState.showCodeEditor || sheets.current !== codeCell.sheetId) {
-        return;
-      }
-      offsets = sheets.sheet.getCellOffsets(codeCell.pos.x, codeCell.pos.y);
-      color =
-        codeCell.language === 'Python'
-          ? colors.cellColorUserPython
-          : codeCell.language === 'Formula'
-          ? colors.cellColorUserFormula
-          : codeCell.language === 'Javascript'
-          ? colors.cellColorUserJavascript
-          : colors.independence;
-    }
+  //     const indicatorHalfSize = INLINE_NAVIGATE_TEXT_INDICATOR_SIZE / 2;
+  //     this.graphics.moveTo(offsets.x + offsets.width + indicatorHalfSize, offsets.y);
+  //     this.graphics.lineTo(offsets.x + offsets.width + indicatorHalfSize + 20, offsets.y);
+  //     this.graphics.lineTo(offsets.x + offsets.width + indicatorHalfSize + 20, offsets.y + offsets.height);
+  //     this.graphics.lineTo(offsets.x + offsets.width + indicatorHalfSize, offsets.y + offsets.height);
+  //   } else {
+  //     const { codeEditorState } = pixiAppSettings;
+  //     const codeCell = codeEditorState.codeCell;
+  //     if (!codeEditorState.showCodeEditor || sheets.current !== codeCell.sheetId) {
+  //       return;
+  //     }
+  //     offsets = sheets.sheet.getCellOffsets(codeCell.pos.x, codeCell.pos.y);
+  //     color =
+  //       codeCell.language === 'Python'
+  //         ? colors.cellColorUserPython
+  //         : codeCell.language === 'Formula'
+  //         ? colors.cellColorUserFormula
+  //         : codeCell.language === 'Javascript'
+  //         ? colors.cellColorUserJavascript
+  //         : colors.independence;
+  //   }
 
-    if (!color || !offsets) return;
-    this.graphics.lineStyle({
-      width: CURSOR_THICKNESS,
-      color,
-      alignment: 0,
-    });
-    this.graphics.drawRect(offsets.x, offsets.y, offsets.width, offsets.height);
-  }
+  //   if (!color || !offsets) return;
+  //   this.graphics.lineStyle({
+  //     width: CURSOR_THICKNESS,
+  //     color,
+  //     alignment: 0,
+  //   });
+  //   this.graphics.drawRect(offsets.x, offsets.y, offsets.width, offsets.height);
+  // }
 
   private drawInlineCursorModeIndicator() {
     const inlineShowing = inlineEditorHandler.getShowing();

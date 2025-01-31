@@ -10,7 +10,7 @@ impl DataTable {
 
     pub(crate) fn get_format_pos_from_display_buffer(&self, mut pos: Pos) -> Pos {
         // adjust for y-axis offset
-        pos.y -= self.y_adjustment();
+        pos.y -= self.y_adjustment(true);
 
         match &self.display_buffer {
             Some(display_buffer) => {

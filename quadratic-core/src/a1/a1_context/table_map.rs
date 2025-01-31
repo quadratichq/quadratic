@@ -129,7 +129,7 @@ impl TableMapEntry {
     }
 
     /// Returns the y adjustment for the table to account for the UI elements.
-    pub fn y_adjustment(&self) -> i64 {
+    pub fn y_adjustment(&self, adjust_for_header_is_first_row: bool) -> i64 {
         let mut y_adjustment = 0;
 
         if self.show_ui {
@@ -141,7 +141,7 @@ impl TableMapEntry {
             }
         }
 
-        if self.header_is_first_row {
+        if self.header_is_first_row && adjust_for_header_is_first_row {
             y_adjustment -= 1;
         }
 

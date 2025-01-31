@@ -86,7 +86,7 @@ impl DataTable {
                     // translate to actual data table pos
                     rect.translate(data_table_pos.x - 1, data_table_pos.y - 1);
                     // add y adjustment to factor in table name and headers
-                    rect.max.y += self.y_adjustment();
+                    rect.max.y += self.y_adjustment(true);
                     dirty_hashes.extend(rect.to_hashes());
                     if needs_resize {
                         let rows = self.formats.get_rows_with_wrap_in_rect(&rect);

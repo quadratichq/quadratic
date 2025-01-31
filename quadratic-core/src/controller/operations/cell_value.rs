@@ -146,7 +146,7 @@ impl GridController {
                     if let Some(data_table) = sheet.data_table(data_table_pos.to_owned()) {
                         let mut data_table_rect =
                             data_table.output_rect(data_table_pos.to_owned(), false);
-                        data_table_rect.min.y += data_table.y_adjustment();
+                        data_table_rect.min.y += data_table.y_adjustment(true);
 
                         let is_full_table_selected = rect.contains_rect(&data_table_rect);
 

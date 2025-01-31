@@ -82,7 +82,7 @@ impl TableRef {
                         }),
                 )
             } else {
-                let min_y = bounds.min.y + table.y_adjustment();
+                let min_y = bounds.min.y + table.y_adjustment(false);
                 if min_y > to || bounds.max.y < from {
                     return rows;
                 }

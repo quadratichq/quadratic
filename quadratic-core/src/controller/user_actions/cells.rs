@@ -95,7 +95,7 @@ impl GridController {
                         // data row, add column
                         else {
                             let mut values = vec![CellValue::Blank; data_table.height(true)];
-                            let value_index = y - data_table.y_adjustment();
+                            let value_index = y - data_table.y_adjustment(true);
                             if value_index >= 0 {
                                 values[value_index as usize] = value.to_owned().into();
 
