@@ -9,7 +9,7 @@ use super::Direction;
 
 impl Sheet {
     /// Returns a new Pos after pressing an arrow key.
-    pub fn move_cursor(&self, pos: Pos, direction: Direction) -> Pos {
+    pub(crate) fn move_cursor(&self, pos: Pos, direction: Direction) -> Pos {
         match direction {
             Direction::Up => {
                 if pos.y == 1 {

@@ -56,6 +56,8 @@ async function jumpCursor(direction: Direction, jump: boolean, select: boolean) 
         break;
     }
   } else {
+    // todo: hack so we can select the table if in the table anchor (this entire
+    // fn should be moved to rust-client)
     cursor.moveTo(jumpCol, jumpRow);
   }
 }
@@ -166,7 +168,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
   // Move cursor to A0, reset viewport position with A0 at top left
   if (matchShortcut(Action.GotoA1, event)) {
     setCursorPosition(1, 1);
-    moveViewport({ topLeft: { x: 0, y: 0 }, force: true });
+    moveViewport({ topLeft: { x: 1, y: 1 }, force: true });
     return true;
   }
 
