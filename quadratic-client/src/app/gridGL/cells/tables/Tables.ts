@@ -365,10 +365,10 @@ export class Tables extends Container<Table> {
 
   /// Returns the bounds of the table name from a cell
   getTableNameBoundsFromCell(cell: JsCoordinate): Rectangle | undefined {
-    const table = this.children.find(
-      (table) =>
-        table.codeCell.show_ui && table.codeCell.show_name && table.codeCell.x === cell.x && table.codeCell.y === cell.y
-    );
+    const table = this.children.find((table) => {
+      const code = table.codeCell;
+      return code.show_ui && code.show_name && cell.x >= code.x && cell.x < code.x + code.w && code.y === cell.y;
+    });
     if (table) {
       return table.getTableNameBounds(true);
     }
