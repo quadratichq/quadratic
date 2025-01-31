@@ -134,14 +134,14 @@ class HTMLCellsHandler {
         cell.div.offsetHeight
       );
       if (intersects.rectanglePoint(bounds, world)) {
-        return { x: cell.x, y: cell.y };
+        return { x: cell.x, y: cell.adjustedY };
       }
     }
   }
 
   // returns true if the cell is an html cell
   isHtmlCell(x: number, y: number): boolean {
-    return this.getCells().some((cell) => cell.x === x && cell.y === y && cell.sheet.id === sheets.current);
+    return this.getCells().some((cell) => cell.x === x && cell.adjustedY === y && cell.sheet.id === sheets.current);
   }
 
   // returns true if the Pos overlaps with the output of an html cell
@@ -162,7 +162,7 @@ class HTMLCellsHandler {
 
   showActive(codeCell: JsRenderCodeCell, isSelected: boolean) {
     const cell = this.getCells().find(
-      (cell) => cell.x === codeCell.x && cell.y === codeCell.y && cell.sheet.id === sheets.current
+      (cell) => cell.x === codeCell.x && cell.adjustedY === codeCell.y && cell.sheet.id === sheets.current
     );
     if (cell) {
       cell.border.style.border = '2px solid hsl(var(--primary))';
@@ -173,7 +173,7 @@ class HTMLCellsHandler {
 
   hideActive(codeCell: JsRenderCodeCell) {
     const cell = this.getCells().find(
-      (cell) => cell.x === codeCell.x && cell.y === codeCell.y && cell.sheet.id === sheets.current
+      (cell) => cell.x === codeCell.x && cell.adjustedY === codeCell.y && cell.sheet.id === sheets.current
     );
     if (cell) {
       cell.border.style.border = '1px solid hsl(var(--primary))';

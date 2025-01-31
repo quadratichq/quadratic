@@ -93,13 +93,13 @@ export class PointerHtmlCells {
         // click with meta / ctrl key
         // select cell and add to selection
         else if (event.metaKey || event.ctrlKey) {
-          cursor.moveTo(cell.x, cell.y, true);
+          cursor.moveTo(cell.x, cell.adjustedY, true);
         }
         // click without meta / ctrl key
         // select cell and clear selection
         else {
           this.active = cell;
-          cursor.moveTo(cell.x, cell.y);
+          cursor.moveTo(cell.x, cell.adjustedY);
         }
         // move chart to top, useful in case of overlapping charts
         htmlCellsHandler.movetoTop(cell);

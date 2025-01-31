@@ -223,6 +223,7 @@ pub struct JsRenderCodeCell {
     pub sort: Option<Vec<DataTableSort>>,
     pub alternating_colors: bool,
     pub readonly: bool,
+    pub is_html: bool,
     pub is_html_image: bool,
     pub html_image_width: Option<f32>,
     pub show_ui: bool,

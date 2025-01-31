@@ -53,9 +53,9 @@ export class HtmlCell {
     this.div = document.createElement('div');
     this.div.className = 'html-cell';
 
-    const offset = this.sheet.getCellOffsets(Number(htmlCell.x), Number(this.y));
+    const offset = this.sheet.getCellOffsets(Number(htmlCell.x), Number(this.adjustedY));
     this.offset = new Point(offset.x, offset.y);
-    this.gridBounds = new Rectangle(Number(htmlCell.x), Number(this.y), 0, 0);
+    this.gridBounds = new Rectangle(Number(htmlCell.x), Number(this.adjustedY), 0, 0);
 
     this.div.style.left = `${offset.x}px`;
     this.div.style.top = `${offset.y}px`;
@@ -91,7 +91,7 @@ export class HtmlCell {
       this.iframe.addEventListener('load', this.afterLoad);
     }
 
-    this.sheet.gridOverflowLines.updateImageHtml(this.x, this.y, this.width, this.height);
+    this.sheet.gridOverflowLines.updateImageHtml(this.x, this.adjustedY, this.width, this.height);
 
     if (this.sheet.id !== sheets.current) {
       this.div.style.visibility = 'hidden';
@@ -100,14 +100,18 @@ export class HtmlCell {
 
   destroy() {
     this.div.remove();
-    this.sheet.gridOverflowLines.updateImageHtml(this.x, this.y);
+    this.sheet.gridOverflowLines.updateImageHtml(this.x, this.adjustedY);
   }
 
   get x(): number {
     return Number(this.htmlCell.x);
   }
-  get y(): number {
+  get adjustedY(): number {
     return Number(this.htmlCell.y) + (this.htmlCell.show_name ? 1 : 0);
+  }
+
+  get y(): number {
+    return Number(this.htmlCell.y);
   }
 
   get width(): number {
@@ -164,7 +168,7 @@ export class HtmlCell {
     this.border.style.width = `${this.width}px`;
     this.border.style.height = `${this.height}px`;
     this.calculateGridBounds();
-    this.sheet.gridOverflowLines.updateImageHtml(this.x, this.y, this.width, this.height);
+    this.sheet.gridOverflowLines.updateImageHtml(this.x, this.adjustedY, this.width, this.height);
     this.temporaryWidth = undefined;
     this.temporaryHeight = undefined;
   }
@@ -288,18 +292,18 @@ export class HtmlCell {
     this.temporaryWidth = width;
     this.iframe.width = width.toString();
     this.border.style.width = `${width}px`;
-    this.sheet.gridOverflowLines.updateImageHtml(this.x, this.y, width, this.temporaryHeight ?? this.height);
+    this.sheet.gridOverflowLines.updateImageHtml(this.x, this.adjustedY, width, this.temporaryHeight ?? this.height);
   }
 
   setHeight(height: number) {
     this.temporaryHeight = height;
     this.iframe.height = height.toString();
     this.border.style.height = `${height}px`;
-    this.sheet.gridOverflowLines.updateImageHtml(this.x, this.y, this.temporaryWidth ?? this.width, height);
+    this.sheet.gridOverflowLines.updateImageHtml(this.x, this.adjustedY, this.temporaryWidth ?? this.width, height);
   }
 
   updateOffsets() {
-    const offset = this.sheet.getCellOffsets(this.x, this.y);
+    const offset = this.sheet.getCellOffsets(this.x, this.adjustedY);
     this.offset.set(offset.x, offset.y);
     this.div.style.left = `${offset.x}px`;
     this.div.style.top = `${offset.y}px`;

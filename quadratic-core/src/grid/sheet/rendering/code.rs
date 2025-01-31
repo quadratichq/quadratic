@@ -104,6 +104,7 @@ impl Sheet {
             sort: data_table.sort.clone(),
             alternating_colors,
             readonly: data_table.readonly,
+            is_html: data_table.is_html(),
             is_html_image: data_table.is_html() || data_table.is_image(),
             html_image_width: data_table.chart_pixel_output.map(|(w, _)| w),
         })
@@ -445,6 +446,7 @@ mod tests {
                 sort: None,
                 alternating_colors: true,
                 readonly: true,
+                is_html: false,
                 is_html_image: false,
                 html_image_width: None,
             })

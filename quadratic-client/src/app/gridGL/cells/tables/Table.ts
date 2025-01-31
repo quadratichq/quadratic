@@ -89,7 +89,7 @@ export class Table extends Container {
 
   private headingPosition = (bounds: Rectangle, gridHeading: number) => {
     if (this.visible) {
-      if (this.tableBounds.top < bounds.top + gridHeading) {
+      if (!this.codeCell.is_html && this.tableBounds.top < bounds.top + gridHeading) {
         this.header.toHover(bounds, gridHeading);
         this.inOverHeadings = true;
       } else {
@@ -207,7 +207,9 @@ export class Table extends Container {
   resize(width: number, height: number) {
     this.tableBounds.width = width;
     this.tableBounds.height = height;
+    this.codeCell.html_image_width = width;
     this.outline.update();
+    this.header.update(false);
   }
 
   // Checks whether the cell is within the table
