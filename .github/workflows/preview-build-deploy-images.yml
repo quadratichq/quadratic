@@ -396,19 +396,23 @@ jobs:
           for service in client api connection files multiplayer; do
             REPO_NAME="quadratic-${service}"
             
-            # Get list of untagged image digests
+            # Get list of untagged image digests in batches
             UNTAGGED_IMAGES=$(aws ecr list-images \
               --repository-name "$REPO_NAME" \
               --filter "tagStatus=UNTAGGED" \
               --query 'imageIds[*].imageDigest' \
               --output json)
             
-            # Delete untagged images if any exist
+            # Process images in batches of 100
             if [ "$UNTAGGED_IMAGES" != "[]" ]; then
               echo "Deleting untagged images from $REPO_NAME"
-              aws ecr batch-delete-image \
-                --repository-name "$REPO_NAME" \
-                --image-ids "$(echo $UNTAGGED_IMAGES | jq -r 'map({imageDigest: .}) | @json')"
+              echo "$UNTAGGED_IMAGES" | jq -c -r '. | _nwise(100) | map({imageDigest: .})' | while read -r BATCH; do
+                if [ ! -z "$BATCH" ]; then
+                  aws ecr batch-delete-image \
+                    --repository-name "$REPO_NAME" \
+                    --image-ids "$BATCH" || true
+                fi
+              done
             else
               echo "No untagged images found in $REPO_NAME"
             fi
