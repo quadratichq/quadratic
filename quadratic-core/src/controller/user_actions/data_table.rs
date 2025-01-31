@@ -327,8 +327,8 @@ mod tests {
     fn test_insert_data_table_column_and_row() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
 
-        print_data_table(&gc, sheet_id, Rect::new(0, 0, 5, 15));
-        assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().height(true), 10);
+        print_data_table(&gc, sheet_id, Rect::new(1, 1, 5, 15));
+        assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().height(true), 11);
         assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().width(), 4);
 
         let sheet_pos = SheetPos::from((pos, sheet_id));
@@ -348,18 +348,18 @@ mod tests {
             cursor,
         );
 
-        print_data_table(&gc, sheet_id, Rect::new(0, 0, 5, 15));
-        assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().height(true), 11);
+        print_data_table(&gc, sheet_id, Rect::new(1, 1, 5, 15));
+        assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().height(true), 12);
         assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().width(), 5);
 
         gc.undo(None);
-        print_data_table(&gc, sheet_id, Rect::new(0, 0, 5, 15));
-        assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().height(true), 10);
+        print_data_table(&gc, sheet_id, Rect::new(1, 1, 5, 15));
+        assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().height(true), 11);
         assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().width(), 4);
 
         gc.redo(None);
-        print_data_table(&gc, sheet_id, Rect::new(0, 0, 5, 15));
-        assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().height(true), 11);
+        print_data_table(&gc, sheet_id, Rect::new(1, 1, 5, 15));
+        assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().height(true), 12);
         assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().width(), 5);
 
         // let data_table = sheet.data_table_mut(data_table_pos).unwrap();

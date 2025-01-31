@@ -1003,6 +1003,6 @@ mod test {
             true,
         );
 
-        assert_data_table_cell_value(&gc, sheet_id, 2, 2, "MA");
+        assert_data_table_cell_value(&gc, sheet_id, 2, 3, "MA");
     }
 }

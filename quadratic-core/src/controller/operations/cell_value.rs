@@ -396,16 +396,10 @@ mod test {
         };
         let values = CellValues::new(2, 1);
 
-        assert_eq!(operations.len(), 2);
+        assert_eq!(operations.len(), 1);
         assert_eq!(
             operations,
-            vec![
-                Operation::SetDataTableAt {
-                    sheet_pos,
-                    values: values.clone()
-                },
-                Operation::SetCellValues { sheet_pos, values },
-            ]
+            vec![Operation::SetCellValues { sheet_pos, values },]
         );
     }
 
@@ -435,22 +429,22 @@ mod test {
         let selection = A1Selection::test_a1("A2:,B");
         let operations = gc.delete_cells_operations(&selection, false);
 
-        assert_eq!(operations.len(), 4);
+        assert_eq!(operations.len(), 2);
         assert_eq!(
             operations,
             vec![
-                Operation::SetDataTableAt {
-                    sheet_pos: SheetPos::new(sheet_id, 1, 2),
-                    values: CellValues::new(2, 1)
-                },
+                // Operation::SetDataTableAt {
+                //     sheet_pos: SheetPos::new(sheet_id, 1, 2),
+                //     values: CellValues::new(2, 1)
+                // },
                 Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 1, 2),
                     values: CellValues::new(2, 1)
                 },
-                Operation::SetDataTableAt {
-                    sheet_pos: SheetPos::new(sheet_id, 2, 1),
-                    values: CellValues::new(1, 2)
-                },
+                // Operation::SetDataTableAt {
+                //     sheet_pos: SheetPos::new(sheet_id, 2, 1),
+                //     values: CellValues::new(1, 2)
+                // },
                 Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 2, 1),
                     values: CellValues::new(1, 2)

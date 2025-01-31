@@ -1436,30 +1436,30 @@ mod tests {
     fn test_execute_delete_data_table_column() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
 
-        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+        print_data_table(&gc, sheet_id, Rect::new(1, 1, 2, 11));
 
         let sheet_pos = SheetPos::from((pos, sheet_id));
         let index = 0;
         let op = Operation::DeleteDataTableColumn {
             sheet_pos,
             index,
-            flatten: true,
+            flatten: false,
         };
         let mut transaction = PendingTransaction::default();
         gc.execute_delete_data_table_column(&mut transaction, op)
             .unwrap();
 
-        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+        print_data_table(&gc, sheet_id, Rect::new(1, 1, 2, 11));
         assert_data_table_column_width(&gc, sheet_id, pos, 3, index, "region");
 
         // undo, the value should be a data table again
         execute_reverse_operations(&mut gc, &transaction);
-        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+        print_data_table(&gc, sheet_id, Rect::new(1, 1, 2, 11));
         assert_simple_csv(&gc, sheet_id, pos, "simple.csv");
 
         // redo, the value should be on the grid
         execute_forward_operations(&mut gc, &mut transaction);
-        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+        print_data_table(&gc, sheet_id, Rect::new(1, 1, 2, 11));
         assert_data_table_column_width(&gc, sheet_id, pos, 3, index, "region");
     }
 
@@ -1467,7 +1467,7 @@ mod tests {
     fn test_execute_insert_data_table_row() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
 
-        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+        print_data_table(&gc, sheet_id, Rect::new(1, 1, 2, 11));
 
         let sheet_pos = SheetPos::from((pos, sheet_id));
         let index = 2;
@@ -1480,19 +1480,19 @@ mod tests {
         gc.execute_insert_data_table_row(&mut transaction, op)
             .unwrap();
 
-        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 11));
+        print_data_table(&gc, sheet_id, Rect::new(1, 1, 2, 12));
         let blank = CellValue::Blank;
         let values = vec![blank.clone(), blank.clone(), blank.clone(), blank.clone()];
         assert_data_table_row_height(&gc, sheet_id, pos, 12, index, values);
 
         // undo, the value should be a data table again
         execute_reverse_operations(&mut gc, &transaction);
-        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+        print_data_table(&gc, sheet_id, Rect::new(1, 1, 2, 11));
         assert_simple_csv(&gc, sheet_id, pos, "simple.csv");
 
         // redo, the value should be on the grid
         execute_forward_operations(&mut gc, &mut transaction);
-        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 11));
+        print_data_table(&gc, sheet_id, Rect::new(1, 1, 2, 12));
         let values = vec![blank.clone(), blank.clone(), blank.clone(), blank.clone()];
         assert_data_table_row_height(&gc, sheet_id, pos, 12, index, values);
     }
@@ -1501,7 +1501,7 @@ mod tests {
     fn test_execute_delete_data_table_row() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
 
-        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+        print_data_table(&gc, sheet_id, Rect::new(1, 1, 4, 11));
 
         let sheet_pos = SheetPos::from((pos, sheet_id));
         let index = 2;
@@ -1516,17 +1516,17 @@ mod tests {
         gc.execute_delete_data_table_row(&mut transaction, op)
             .unwrap();
 
-        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 11));
+        print_data_table(&gc, sheet_id, Rect::new(1, 1, 4, 12));
         assert_data_table_row_height(&gc, sheet_id, pos, 10, index, values.clone());
 
         // undo, the value should be a data table again
         execute_reverse_operations(&mut gc, &transaction);
-        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+        print_data_table(&gc, sheet_id, Rect::new(1, 1, 4, 11));
         assert_simple_csv(&gc, sheet_id, pos, "simple.csv");
 
         // redo, the value should be on the grid
         execute_forward_operations(&mut gc, &mut transaction);
-        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 11));
+        print_data_table(&gc, sheet_id, Rect::new(1, 1, 4, 12));
         assert_data_table_row_height(&gc, sheet_id, pos, 10, index, values);
     }
 }

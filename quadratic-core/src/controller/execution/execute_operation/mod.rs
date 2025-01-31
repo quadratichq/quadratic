@@ -188,5 +188,8 @@ pub fn execute_forward_operations(gc: &mut GridController, transaction: &mut Pen
         operations: transaction.forward_operations.clone().into(),
         ..Default::default()
     };
-    gc.execute_operation(&mut undo_transaction);
+
+    while !undo_transaction.operations.is_empty() {
+        gc.execute_operation(&mut undo_transaction);
+    }
 }
