@@ -39,7 +39,7 @@ router.put(
 
     const result = await dbClient.$transaction(async (prisma) => {
       // Retrieve the latest checkpoint
-      const lastTransactionQuery = await dbClient.file.findUniqueOrThrow({
+      const lastTransactionQuery = await prisma.file.findUniqueOrThrow({
         where: {
           uuid: fileUuid,
         },
