@@ -1209,20 +1209,20 @@ class Core {
     rows_to_add?: number[];
     rows_to_remove?: number[];
     flatten_on_delete?: boolean;
+    swallow_on_insert?: boolean;
     cursor?: string;
   }) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const { sheetId, x, y, columns_to_add, columns_to_remove, rows_to_add, rows_to_remove, flatten_on_delete, cursor } =
-      args;
     this.gridController.dataTableMutations(
-      sheetId,
-      posToPos(x, y),
-      columns_to_add ? new Uint32Array(columns_to_add) : undefined,
-      columns_to_remove ? new Uint32Array(columns_to_remove) : undefined,
-      rows_to_add ? new Uint32Array(rows_to_add) : undefined,
-      rows_to_remove ? new Uint32Array(rows_to_remove) : undefined,
-      flatten_on_delete,
-      cursor
+      args.sheetId,
+      posToPos(args.x, args.y),
+      args.columns_to_add ? new Uint32Array(args.columns_to_add) : undefined,
+      args.columns_to_remove ? new Uint32Array(args.columns_to_remove) : undefined,
+      args.rows_to_add ? new Uint32Array(args.rows_to_add) : undefined,
+      args.rows_to_remove ? new Uint32Array(args.rows_to_remove) : undefined,
+      args.flatten_on_delete,
+      args.swallow_on_insert,
+      args.cursor
     );
   }
 

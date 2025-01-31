@@ -106,6 +106,9 @@ pub enum Operation {
         index: u32,
         column_header: Option<String>,
         values: Option<Vec<CellValue>>,
+
+        /// swallow neighboring cells
+        swallow: bool,
     },
     DeleteDataTableColumn {
         sheet_pos: SheetPos,
@@ -118,6 +121,9 @@ pub enum Operation {
         sheet_pos: SheetPos,
         index: u32,
         values: Option<Vec<CellValue>>,
+
+        /// swallow neighboring cells
+        swallow: bool,
     },
     DeleteDataTableRow {
         sheet_pos: SheetPos,
@@ -407,11 +413,12 @@ impl fmt::Display for Operation {
                 index,
                 column_header: name,
                 values,
+                swallow,
             } => {
                 write!(
                     fmt,
-                    "InsertDataTableColumn {{ sheet_pos: {}, index: {}, name: {:?}, values: {:?} }}",
-                    sheet_pos, index, name, values
+                    "InsertDataTableColumn {{ sheet_pos: {}, index: {}, name: {:?}, values: {:?}, swallow: {} }}",
+                    sheet_pos, index, name, values,swallow
                 )
             }
             Operation::DeleteDataTableColumn {
@@ -429,11 +436,12 @@ impl fmt::Display for Operation {
                 sheet_pos,
                 index,
                 values,
+                swallow,
             } => {
                 write!(
                     fmt,
-                    "InsertDataTableRow {{ sheet_pos: {}, index: {}, values: {:?} }}",
-                    sheet_pos, index, values
+                    "InsertDataTableRow {{ sheet_pos: {}, index: {}, values: {:?}, swallow: {} }}",
+                    sheet_pos, index, values, swallow
                 )
             }
             Operation::DeleteDataTableRow {

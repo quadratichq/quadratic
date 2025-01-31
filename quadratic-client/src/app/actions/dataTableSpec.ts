@@ -274,6 +274,7 @@ export const insertTableColumn = (increment: number = 0) => {
       rows_to_add: undefined,
       rows_to_remove: undefined,
       flatten_on_delete: undefined,
+      swallow_on_insert: undefined,
       cursor: sheets.getCursorPosition(),
     });
   }
@@ -293,6 +294,7 @@ export const removeTableColumn = () => {
       rows_to_add: undefined,
       rows_to_remove: undefined,
       flatten_on_delete: undefined,
+      swallow_on_insert: undefined,
       cursor: sheets.getCursorPosition(),
     });
   }
@@ -339,6 +341,7 @@ export const insertTableRow = (increment: number = 0) => {
       rows_to_add: [row + increment],
       rows_to_remove: undefined,
       flatten_on_delete: undefined,
+      swallow_on_insert: undefined,
       cursor: sheets.getCursorPosition(),
     });
   }
@@ -358,6 +361,7 @@ export const removeTableRow = () => {
       rows_to_add: undefined,
       rows_to_remove: [row - 1],
       flatten_on_delete: undefined,
+      swallow_on_insert: undefined,
       cursor: sheets.getCursorPosition(),
     });
   }

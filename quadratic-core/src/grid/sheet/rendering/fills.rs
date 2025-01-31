@@ -41,25 +41,51 @@ impl Sheet {
                 dt.formats
                     .fill_color
                     .to_rects()
-                    .filter_map(|(x0, y0, x1, y1, color)| {
+                    .flat_map(|(x0, y0, x1, y1, color)| {
+                        let mut fills = vec![];
                         if dt.spill_error || dt.has_error() {
-                            return None;
+                            return fills;
                         }
                         let mut rect = dt.output_rect(*pos, false);
                         // use table data bounds for borders, exclude table name and column headers
-                        rect.min.y += dt.y_adjustment(false);
+                        rect.min.y += dt.y_adjustment(true);
 
-                        let x = rect.min.x + x0 - 1;
-                        let y = rect.min.y + y0 - 1;
-                        let x1 = x1.map_or(rect.max.x, |x1| rect.min.x + x1 - 1);
-                        let y1 = y1.map_or(rect.max.y, |y1| rect.min.y + y1 - 1);
-                        Some(JsRenderFill {
-                            x,
-                            y,
-                            w: (x1 - x + 1) as u32,
-                            h: (y1 - y + 1) as u32,
-                            color,
-                        })
+                        let x1 = x1.unwrap_or(rect.width() as i64);
+                        let y1 = y1.unwrap_or(rect.height() as i64);
+
+                        if let Some(display_buffer) = &dt.display_buffer {
+                            for mut y in y0..=y1 {
+                                y -= 1;
+                                if y >= 0 && y < display_buffer.len() as i64 {
+                                    y = display_buffer[y as usize] as i64;
+                                }
+                                let x = rect.min.x + x0 - 1;
+                                let x1 = rect.min.x + x1 - 1;
+                                let y = rect.min.y + y;
+
+                                fills.push(JsRenderFill {
+                                    x,
+                                    y,
+                                    w: (x1 - x + 1) as u32,
+                                    h: 1,
+                                    color: color.clone(),
+                                });
+                            }
+                        } else {
+                            let x = rect.min.x + x0 - 1;
+                            let y = rect.min.y + y0 - 1;
+                            let x1 = rect.min.x + x1 - 1;
+                            let y1 = rect.min.y + y1 - 1;
+                            fills.push(JsRenderFill {
+                                x,
+                                y,
+                                w: (x1 - x + 1) as u32,
+                                h: (y1 - y + 1) as u32,
+                                color,
+                            });
+                        }
+
+                        fills
                     })
             }))
             .collect()

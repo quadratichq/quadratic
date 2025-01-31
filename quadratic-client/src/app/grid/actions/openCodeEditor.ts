@@ -40,7 +40,7 @@ export const openCodeEditor = async () => {
         escapePressed: true,
       });
     } else if (codeCell.language === 'Import') {
-      pixiAppSettings.snackbar('Cannot create code cell inside data table', { severity: 'warning' });
+      pixiAppSettings.snackbar('Cannot create code cell inside table', { severity: 'error' });
     } else {
       // if the code editor is not already open on the same cell, then open it
       // this will also open the save changes modal if there are unsaved changes

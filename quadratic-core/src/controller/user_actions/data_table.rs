@@ -81,6 +81,7 @@ impl GridController {
         rows_to_add: Option<Vec<u32>>,
         rows_to_remove: Option<Vec<u32>>,
         flatten_on_delete: Option<bool>,
+        swallow_on_insert: Option<bool>,
         cursor: Option<String>,
     ) {
         let ops = self.data_table_mutations_operations(
@@ -90,6 +91,7 @@ impl GridController {
             rows_to_add,
             rows_to_remove,
             flatten_on_delete,
+            swallow_on_insert,
             cursor.to_owned(),
         );
 
@@ -337,6 +339,7 @@ mod tests {
         let rows_to_add = Some(vec![11]);
         let rows_to_remove = None;
         let flatten_on_delete = Some(true);
+        let swallow_on_insert = Some(true);
         let cursor = None;
         gc.data_table_mutations(
             sheet_pos,
@@ -345,6 +348,7 @@ mod tests {
             rows_to_add,
             rows_to_remove,
             flatten_on_delete,
+            swallow_on_insert,
             cursor,
         );
 
