@@ -7,6 +7,7 @@ import { A1Selection, JsOffset, Rect, SheetInfo } from '@/app/quadratic-core-typ
 import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
+import { SEARCH_PARAMS } from '@/shared/constants/routes';
 import { Rectangle } from 'pixi.js';
 
 class Sheets {
@@ -38,7 +39,15 @@ class Sheets {
       this.sheets.push(sheet);
     });
     this.sort();
-    this._current = this.sheets[0].id;
+
+    // Look for an initial active sheet in the URL. If it's nott there, use the 1st sheet
+    const initialActiveSheetId = new URLSearchParams(window.location.search).get(SEARCH_PARAMS.SHEET.KEY);
+    if (initialActiveSheetId && this.getById(initialActiveSheetId)) {
+      this._current = initialActiveSheetId;
+    } else {
+      this._current = this.sheets[0].id;
+    }
+
     pixiApp.cellsSheets.create();
     this.initialized = true;
   };
