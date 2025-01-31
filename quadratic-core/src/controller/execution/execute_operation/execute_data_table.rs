@@ -443,16 +443,13 @@ impl GridController {
             let rect = Rect::from(sheet_rect);
             let sheet = self.try_sheet_result(sheet_id)?;
             let sheet_pos = sheet_rect.min.to_sheet_pos(sheet_id);
-            let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
 
             let old_values = sheet.cell_values_in_rect(&rect, false)?;
 
             let import = Import::new(self.grid.next_data_table_name());
             let data_table =
                 DataTable::from((import.to_owned(), old_values.to_owned(), &self.grid));
-            let data_table_rect = data_table
-                .output_rect(data_table_pos, true)
-                .to_sheet_rect(sheet_id);
+            let data_table_rect = data_table.output_sheet_rect(sheet_pos, true);
             let cell_value = CellValue::Import(import);
 
             let sheet = self.try_sheet_mut_result(sheet_id)?;
