@@ -349,7 +349,7 @@ export class Tables extends Container<Table> {
     const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
     if (table) {
       table.resize(width, height);
-      sheets.sheet.gridOverflowLines.updateImageHtml(x, y, width, height);
+      sheets.getById(this.cellsSheet.sheetId)?.gridOverflowLines.updateImageHtml(x, y, width, height);
       pixiApp.gridLines.dirty = true;
     }
   }
