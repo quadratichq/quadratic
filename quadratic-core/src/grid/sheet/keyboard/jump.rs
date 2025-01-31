@@ -166,9 +166,11 @@ impl Sheet {
         let mut x = current.x;
         let y = current.y;
 
-        // adjust the jump position if it is inside a chart to the right-most
-        // edge of the chart
-        if let Some((chart_pos, dt)) = self.chart_at(Pos { x, y }) {
+        // adjust the jump position if it is inside a chart or a table header to
+        // the right-most edge
+        if let Some((_, dt_rect)) = self.table_header_at(Pos { x, y }) {
+            x = dt_rect.max.x;
+        } else if let Some((chart_pos, dt)) = self.chart_at(Pos { x, y }) {
             if let Some((w, _)) = dt.chart_output {
                 x = chart_pos.x + (w as i64) - 1;
             }
@@ -216,9 +218,8 @@ impl Sheet {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
-    use serial_test::parallel;
-
     use crate::{
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
         CellValue,
@@ -250,7 +251,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn jump_right_empty() {
         let sheet = Sheet::test();
 
@@ -285,7 +285,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn jump_left_empty() {
         let sheet = Sheet::test();
 
@@ -325,7 +324,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn jump_left_chart() {
         let mut sheet = Sheet::test();
 
@@ -335,7 +333,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn jump_up_empty() {
         let sheet = Sheet::test();
 
@@ -376,7 +373,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn jump_up_chart() {
         let mut sheet = Sheet::test();
 
@@ -386,7 +382,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn jump_down_empty() {
         let sheet = Sheet::test();
 
@@ -423,7 +418,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn jump_with_consecutive_filled_cells() {
         let mut sheet = Sheet::test();
 
