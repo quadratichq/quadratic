@@ -323,7 +323,9 @@ impl GridController {
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table = sheet.delete_data_table(data_table_pos)?;
             let cell_value = sheet.cell_value_result(data_table_pos)?;
-            let data_table_rect = data_table.output_sheet_rect(sheet_pos, false);
+            let data_table_rect = data_table
+                .output_rect(data_table_pos, false)
+                .to_sheet_rect(sheet_id);
 
             let mut values = data_table.display_value()?.into_array()?;
             let ArraySize { w, h } = values.size();
@@ -441,13 +443,16 @@ impl GridController {
             let rect = Rect::from(sheet_rect);
             let sheet = self.try_sheet_result(sheet_id)?;
             let sheet_pos = sheet_rect.min.to_sheet_pos(sheet_id);
+            let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
 
             let old_values = sheet.cell_values_in_rect(&rect, false)?;
 
             let import = Import::new(self.grid.next_data_table_name());
             let data_table =
                 DataTable::from((import.to_owned(), old_values.to_owned(), &self.grid));
-            let data_table_rect = data_table.output_sheet_rect(sheet_pos, true);
+            let data_table_rect = data_table
+                .output_rect(data_table_pos, true)
+                .to_sheet_rect(sheet_id);
             let cell_value = CellValue::Import(import);
 
             let sheet = self.try_sheet_mut_result(sheet_id)?;
@@ -546,7 +551,9 @@ impl GridController {
 
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
-            let data_table_rect = data_table.output_sheet_rect(sheet_pos, true);
+            let data_table_rect = data_table
+                .output_rect(data_table_pos, true)
+                .to_sheet_rect(sheet_id);
 
             let old_alternating_colors = alternating_colors.map(|alternating_colors| {
                 // mark code cell dirty to update alternating color
