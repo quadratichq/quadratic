@@ -78,7 +78,7 @@ export class HtmlCell {
     this.iframe.style.minHeight = `${CELL_HEIGHT}px`;
     this.border = document.createElement('div');
     this.border.className = 'w-full h-full absolute top-0 left-0';
-    this.border.style.border = '1px solid hsl(var(--primary))';
+    this.border.style.border = '1px solid hsl(var(--muted-foreground))';
 
     this.div.append(this.right);
     this.div.append(this.iframe);

@@ -176,7 +176,7 @@ class HTMLCellsHandler {
       (cell) => cell.x === codeCell.x && cell.y === codeCell.y && cell.sheet.id === sheets.current
     );
     if (cell) {
-      cell.border.style.border = '1px solid hsl(var(--primary))';
+      cell.border.style.border = '1px solid hsl(var(--muted-foreground))';
       cell.pointerEvents = 'none';
       cell.iframe.style.pointerEvents = cell.pointerEvents;
     }
