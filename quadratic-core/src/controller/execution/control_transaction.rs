@@ -189,6 +189,7 @@ impl GridController {
                                 html: None,
                                 w: None,
                                 h: None,
+                                name: "".to_string(),
                                 show_name: true,
                             });
                             if let Ok(html) = serde_json::to_string(&html) {

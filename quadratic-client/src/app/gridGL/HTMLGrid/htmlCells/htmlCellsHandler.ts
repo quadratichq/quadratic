@@ -162,7 +162,7 @@ class HTMLCellsHandler {
 
   showActive(codeCell: JsRenderCodeCell, isSelected: boolean) {
     const cell = this.getCells().find(
-      (cell) => cell.x === codeCell.x && cell.adjustedY === codeCell.y && cell.sheet.id === sheets.current
+      (cell) => cell.x === codeCell.x && cell.y === codeCell.y && cell.sheet.id === sheets.current
     );
     if (cell) {
       cell.border.style.border = '2px solid hsl(var(--primary))';

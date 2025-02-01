@@ -97,23 +97,23 @@ export class PointerTable {
 
   pointerDown = (world: Point, event: PointerEvent): boolean => {
     let tableDown = pixiApp.cellsSheet().tables.pointerDown(world);
-    if (!tableDown?.table) {
-      const image = pixiApp.cellsSheet().cellsImages.contains(world);
-      if (image) {
-        if (this.doubleClickTimeout) {
-          clearTimeout(this.doubleClickTimeout);
-          this.doubleClickTimeout = undefined;
-          doubleClickCell({ column: image.x, row: image.y });
-        } else {
-          sheets.sheet.cursor.moveTo(image.x, image.y);
-          this.doubleClickTimeout = window.setTimeout(() => {
-            this.doubleClickTimeout = undefined;
-          }, DOUBLE_CLICK_TIME);
-        }
+    if (!tableDown) return false;
+
+    if (tableDown.type === 'chart') {
+      if (this.doubleClickTimeout) {
+        clearTimeout(this.doubleClickTimeout);
+        this.doubleClickTimeout = undefined;
+        doubleClickCell({ column: tableDown.table.x, row: tableDown.table.y });
         return true;
+      } else {
+        sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, 0, false, false);
+        this.doubleClickTimeout = window.setTimeout(() => {
+          this.doubleClickTimeout = undefined;
+        }, DOUBLE_CLICK_TIME);
       }
-      return false;
+      return true;
     }
+
     if (event.button === 2 || (isMac && event.button === 0 && event.ctrlKey)) {
       events.emit('contextMenu', {
         type: tableDown.type === 'column-name' ? ContextMenuType.TableColumn : ContextMenuType.Table,

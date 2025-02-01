@@ -195,6 +195,13 @@ export class Table extends Container {
     return this.header.pointerDown(world);
   }
 
+  pointerDownChart(world: Point): boolean {
+    if (this.codeCell.is_html_image) {
+      console.log(world, this.tableBounds);
+    }
+    return this.codeCell.is_html_image && intersects.rectanglePoint(this.tableBounds, world);
+  }
+
   intersectsTableName(world: Point): TablePointerDownResult | undefined {
     return this.header.intersectsTableName(world);
   }

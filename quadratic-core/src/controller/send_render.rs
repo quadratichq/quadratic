@@ -462,6 +462,7 @@ mod test {
                 w: None,
                 h: None,
                 show_name: true,
+                name: "Python1".to_string(),
             })
             .unwrap(),
             true,
@@ -510,6 +511,7 @@ mod test {
                 w: Some(1.0),
                 h: Some(2.0),
                 show_name: true,
+                name: "Python1".to_string(),
             })
             .unwrap(),
             true,

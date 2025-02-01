@@ -68,8 +68,8 @@ export class PointerHtmlCells {
     const cells = htmlCellsHandler.getCells();
     for (const cell of cells) {
       if (cell.sheet !== sheets.sheet) continue;
-
       const target = cell.hover(e);
+
       // pointer down on chart edge, start resizing
       if (target === 'right' || target === 'bottom' || target === 'corner') {
         this.resizing = cell;
@@ -93,13 +93,13 @@ export class PointerHtmlCells {
         // click with meta / ctrl key
         // select cell and add to selection
         else if (event.metaKey || event.ctrlKey) {
-          cursor.moveTo(cell.x, cell.adjustedY, true);
+          cursor.selectTable(cell.htmlCell.name, undefined, 0, false, true);
         }
         // click without meta / ctrl key
         // select cell and clear selection
         else {
           this.active = cell;
-          cursor.moveTo(cell.x, cell.adjustedY);
+          cursor.selectTable(cell.htmlCell.name, undefined, 0, false, false);
         }
         // move chart to top, useful in case of overlapping charts
         htmlCellsHandler.movetoTop(cell);

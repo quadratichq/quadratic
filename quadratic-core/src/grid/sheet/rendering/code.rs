@@ -24,6 +24,7 @@ impl Sheet {
             html: Some(output.to_display()),
             w: size.map(|(w, _)| w),
             h: size.map(|(_, h)| h),
+            name: dt.name.to_display(),
             show_name: dt.show_name,
         })
     }
@@ -44,6 +45,7 @@ impl Sheet {
                     html: Some(output.to_display()),
                     w: size.map(|(w, _)| w),
                     h: size.map(|(_, h)| h),
+                    name: dt.name.to_display(),
                     show_name: dt.show_name,
                 })
             })
@@ -265,6 +267,7 @@ mod tests {
                 w: None,
                 h: None,
                 show_name: true,
+                name: "Python1".to_string(),
             }
         );
         gc.set_chart_size(
@@ -290,6 +293,7 @@ mod tests {
                 w: Some(1.0),
                 h: Some(2.0),
                 show_name: true,
+                name: "Python1".to_string(),
             }
         );
     }

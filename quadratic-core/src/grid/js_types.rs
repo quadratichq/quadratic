@@ -239,6 +239,7 @@ pub struct JsHtmlOutput {
     pub html: Option<String>,
     pub w: Option<f32>,
     pub h: Option<f32>,
+    pub name: String,
     pub show_name: bool,
 }
 

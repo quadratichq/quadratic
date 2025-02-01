@@ -17,7 +17,7 @@ import { Container, Rectangle } from 'pixi.js';
 
 export interface TablePointerDownResult {
   table: JsRenderCodeCell;
-  type: 'table-name' | 'dropdown' | 'column-name' | 'sort';
+  type: 'table-name' | 'dropdown' | 'column-name' | 'sort' | 'chart';
   column?: number;
 }
 
@@ -215,6 +215,9 @@ export class Tables extends Container<Table> {
       const columnName = table.pointerDown(world);
       if (columnName && columnName.type !== 'table-name') {
         return columnName;
+      }
+      if (table.pointerDownChart(world)) {
+        return { type: 'chart', table: table.codeCell };
       }
     }
   }
