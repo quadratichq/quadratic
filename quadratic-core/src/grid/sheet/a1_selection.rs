@@ -48,7 +48,7 @@ impl Sheet {
             |entry: &CellValue| skip_code_runs || !matches!(entry, &CellValue::Code(_));
 
         for range in selection.ranges.iter() {
-            let rect = self.cell_ref_range_to_rect(*range);
+            let rect = self.cell_ref_range_to_rect(*range, false);
             for x in rect.x_range() {
                 for y in rect.y_range() {
                     if let Some(entry) = self.cell_value_ref(Pos { x, y }) {
@@ -187,7 +187,11 @@ impl Sheet {
 
     /// Converts a cell reference range to a minimal rectangle covering the data
     /// on the sheet.
-    pub fn cell_ref_range_to_rect(&self, cell_ref_range: CellRefRange) -> Rect {
+    pub fn cell_ref_range_to_rect(
+        &self,
+        cell_ref_range: CellRefRange,
+        ignore_formatting: bool,
+    ) -> Rect {
         match cell_ref_range {
             CellRefRange::Sheet { range } => {
                 let start = range.start;
@@ -206,7 +210,6 @@ impl Sheet {
                     },
                 };
 
-                let ignore_formatting = false;
                 let rect_end = if end.is_unbounded() {
                     if end.col.is_unbounded() && end.row.is_unbounded() {
                         match self.bounds(ignore_formatting) {
@@ -254,7 +257,7 @@ impl Sheet {
         selection
             .ranges
             .iter()
-            .map(|&range| self.cell_ref_range_to_rect(range))
+            .map(|&range| self.cell_ref_range_to_rect(range, false))
             .collect()
     }
 
@@ -273,7 +276,7 @@ impl Sheet {
     /// [`Self::cell_ref_range_to_rect()`]. Bounded ranges are returned
     /// unmodified.
     pub fn finitize_cell_ref_range(&self, cell_ref_range: CellRefRange) -> CellRefRange {
-        CellRefRange::new_relative_rect(self.cell_ref_range_to_rect(cell_ref_range))
+        CellRefRange::new_relative_rect(self.cell_ref_range_to_rect(cell_ref_range, false))
     }
 
     /// Converts unbounded regions in a selection to finite rectangular regions.
@@ -526,12 +529,12 @@ mod tests {
 
         // Test fully specified range
         let range = CellRefRange::test_a1("A1:E5");
-        let rect = sheet.cell_ref_range_to_rect(range);
+        let rect = sheet.cell_ref_range_to_rect(range, false);
         assert_eq!(rect, Rect::new(1, 1, 5, 5));
 
         // Test unbounded end
         let range = CellRefRange::test_a1("B2:");
-        let rect = sheet.cell_ref_range_to_rect(range);
+        let rect = sheet.cell_ref_range_to_rect(range, false);
         assert_eq!(rect, Rect::new(2, 2, 5, 5)); // Should extend to sheet bounds
     }
 
