@@ -30,14 +30,17 @@
   height: 100%;
   top: 0;
   right: -5px;
+  pointer-events: none;
 }
 
 .html-resize-control-right-corner {
   height: calc(100% + 5px);
+  pointer-events: none;
 }
 
 .html-resize-control-bottom-corner {
   width: calc(100% + 7px);
+  pointer-events: none;
 }
 
 .html-resize-control-bottom {
@@ -46,4 +49,5 @@
   width: 100%;
   bottom: -5px;
   left: 0;
+  pointer-events: none;
 }

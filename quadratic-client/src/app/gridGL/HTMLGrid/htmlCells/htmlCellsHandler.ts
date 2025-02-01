@@ -173,7 +173,7 @@ class HTMLCellsHandler {
 
   hideActive(codeCell: JsRenderCodeCell) {
     const cell = this.getCells().find(
-      (cell) => cell.x === codeCell.x && cell.adjustedY === codeCell.y && cell.sheet.id === sheets.current
+      (cell) => cell.x === codeCell.x && cell.y === codeCell.y && cell.sheet.id === sheets.current
     );
     if (cell) {
       cell.border.style.border = '1px solid hsl(var(--primary))';
