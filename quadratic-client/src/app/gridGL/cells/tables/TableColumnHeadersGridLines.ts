@@ -33,8 +33,8 @@ export class TableColumnHeadersGridLines extends Graphics {
       lines.forEach((line, index) => {
         if (index === 0 || index === lines.length - 1) {
           this.lineStyle({
-            color: getCSSVariableTint('primary'),
-            width: 2,
+            color: getCSSVariableTint(this.header.table.active ? 'primary' : 'muted-foreground'),
+            width: 1,
             alignment: index === lines.length - 1 ? 0 : 1,
           });
         } else {
