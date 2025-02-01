@@ -115,6 +115,7 @@ export class PointerTable {
     }
 
     if (event.button === 2 || (isMac && event.button === 0 && event.ctrlKey)) {
+      sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, 0, false, false);
       events.emit('contextMenu', {
         type: tableDown.type === 'column-name' ? ContextMenuType.TableColumn : ContextMenuType.Table,
         world,
