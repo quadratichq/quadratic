@@ -16,6 +16,9 @@ use crate::{grid::Sheet, Pos};
 
 use super::Direction;
 
+// todo: this should not return a Pos but should directly change the
+// A1Selection--ie, it should handle the entire keyboard movement logic
+
 impl Sheet {
     fn jump_up(&self, current: Pos) -> Pos {
         let mut y = current.y;
