@@ -94,7 +94,6 @@ export class PointerImages {
 
   pointerDown(point: Point): boolean {
     if (!hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions)) return false;
-
     const search = this.findImage(point);
     if (search && search.side) {
       this.resizing = { point, image: search.image, side: search.side };

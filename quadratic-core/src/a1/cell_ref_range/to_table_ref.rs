@@ -28,14 +28,17 @@ impl CellRefRange {
             };
 
             if let Some(table) = context.table_from_pos(start) {
+                let b = table.bounds;
+
                 // if we're in the name cell of the table, then we should return the table ref
                 if start == end
                     && table.show_ui
                     && table.show_name
-                    && start.x >= table.bounds.min.x
-                    && start.x <= table.bounds.max.x
-                    && start.y == table.bounds.min.y
+                    && start.x >= b.min.x
+                    && start.x <= b.max.x
+                    && start.y == b.min.y
                 {
+                    dbgjs!(1);
                     return Some(CellRefRange::Table {
                         range: TableRef {
                             table_name: table.table_name.clone(),
@@ -47,11 +50,7 @@ impl CellRefRange {
                     });
                 }
 
-                // if selection
-                if table.is_html_image
-                    && table.bounds.contains(start.into())
-                    && table.bounds.contains(end.into())
-                {
+                if table.is_html_image && b.contains(start.into()) && b.contains(end.into()) {
                     return Some(CellRefRange::Table {
                         range: TableRef {
                             table_name: table.table_name.clone(),
@@ -62,8 +61,6 @@ impl CellRefRange {
                         },
                     });
                 }
-
-                let b = table.bounds;
 
                 // if the x value is outside the table, then it's not a table ref
                 if start.x < b.min.x || end.x > b.max.x {
