@@ -123,6 +123,7 @@ export class Sheets {
         if (sheet) {
           this.current = sheetId;
           sheet.cursor.load(selection);
+          events.emit('cursorPosition');
         }
       } catch (e) {
         console.error('Error loading cursor', e);

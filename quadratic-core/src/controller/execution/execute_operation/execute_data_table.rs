@@ -485,8 +485,11 @@ impl GridController {
             // Sets the cursor to the entire table, including the new header
             if transaction.is_user() {
                 let mut sheet_rect = sheet_rect.to_owned();
-                sheet_rect.max.y += 1;
-                transaction.add_update_selection(A1Selection::from_rect(sheet_rect));
+                sheet_rect.max.y += 2;
+                transaction.add_update_selection(A1Selection::table(
+                    sheet_rect.min.to_sheet_pos(sheet_id),
+                    &data_table.name.to_display(),
+                ));
             }
 
             return Ok(());

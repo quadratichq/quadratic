@@ -1,5 +1,5 @@
 use crate::{
-    a1::{A1Context, RefRangeBounds},
+    a1::{A1Context, ColRange, RefRangeBounds, TableRef},
     OldSelection, SheetPos, SheetRect,
 };
 
@@ -71,6 +71,23 @@ impl A1Selection {
                 cursor: Self::cursor_pos_from_last_range(ranges.last().unwrap(), context),
                 ranges,
             })
+        }
+    }
+
+    /// Creates a selection with a table (only data)
+    pub fn table(pos: SheetPos, name: &str) -> Self {
+        Self {
+            sheet_id: pos.sheet_id,
+            cursor: pos.into(),
+            ranges: vec![CellRefRange::Table {
+                range: TableRef {
+                    table_name: name.to_string(),
+                    data: true,
+                    headers: false,
+                    totals: false,
+                    col_range: ColRange::All,
+                },
+            }],
         }
     }
 
