@@ -377,7 +377,8 @@ impl DataTable {
             if w == 0 || h == 0 {
                 ArraySize::_1X1
             } else {
-                ArraySize::new(w, h).unwrap_or(ArraySize::_1X1)
+                // the +1 is for the table name (which is always on a chart)
+                ArraySize::new(w, h + 1).unwrap_or(ArraySize::_1X1)
             }
         } else {
             match &self.value {
