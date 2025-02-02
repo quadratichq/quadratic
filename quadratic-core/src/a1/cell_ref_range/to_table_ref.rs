@@ -38,7 +38,6 @@ impl CellRefRange {
                     && start.x <= b.max.x
                     && start.y == b.min.y
                 {
-                    dbgjs!(1);
                     return Some(CellRefRange::Table {
                         range: TableRef {
                             table_name: table.table_name.clone(),

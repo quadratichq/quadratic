@@ -70,6 +70,10 @@ export class TableHeader extends Container {
   }
 
   update(onlyGridLines: boolean) {
+    if (this.table.codeCell.spill_error) {
+      this.visible = false;
+      return;
+    }
     if (!onlyGridLines) {
       this.updatePosition();
       this.tableName.update();

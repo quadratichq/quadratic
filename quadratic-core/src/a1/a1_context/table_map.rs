@@ -186,7 +186,7 @@ impl TableMap {
             table_name: table.name.to_display(),
             visible_columns: table.columns_map(false),
             all_columns: table.columns_map(true),
-            bounds: table.output_rect(pos, true),
+            bounds: table.output_rect(pos, false),
             show_ui: table.show_ui,
             show_name: table.show_name,
             show_columns: table.show_columns,

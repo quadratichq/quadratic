@@ -68,8 +68,8 @@ export class Table extends Container {
     this.tableBounds = this.sheet.getScreenRectangle(
       this.codeCell.x,
       this.codeCell.y,
-      this.codeCell.spill_error ? 0 : this.codeCell.w,
-      this.codeCell.spill_error ? 0 : this.codeCell.h
+      this.codeCell.spill_error ? 1 : this.codeCell.w,
+      this.codeCell.spill_error ? 1 : this.codeCell.h
     );
     this.position.set(this.tableBounds.x, this.tableBounds.y);
 

@@ -150,7 +150,9 @@ export class Tables extends Container<Table> {
   private renderCodeCells = (sheetId: string, codeCells: JsRenderCodeCell[]) => {
     if (sheetId === this.cellsSheet.sheetId) {
       this.removeChildren();
-      codeCells.forEach((codeCell) => this.addChild(new Table(this.sheet, codeCell)));
+      codeCells.forEach((codeCell) => {
+          this.addChild(new Table(this.sheet, codeCell));
+      });
     }
   };
 
