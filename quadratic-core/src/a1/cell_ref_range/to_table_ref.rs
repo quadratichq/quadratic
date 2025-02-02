@@ -28,6 +28,24 @@ impl CellRefRange {
             };
 
             if let Some(table) = context.table_from_pos(start) {
+                // if we're in the name cell of the table, then we should return the table ref
+                if start == end
+                    && table.show_ui
+                    && table.show_name
+                    && start.x >= table.bounds.min.x
+                    && start.x <= table.bounds.max.x
+                    && start.y == table.bounds.min.y
+                {
+                    return Some(CellRefRange::Table {
+                        range: TableRef {
+                            table_name: table.table_name.clone(),
+                            col_range: ColRange::All,
+                            data: true,
+                            headers: false,
+                            totals: false,
+                        },
+                    });
+                }
                 let b = table.bounds;
 
                 // if the x value is outside the table, then it's not a table ref
