@@ -114,7 +114,7 @@ export class Cursor extends Container {
     }
 
     // hide cursor if code editor is open and CodeCursor is in the same cell
-    if (codeEditorState.showCodeEditor && codeCell.pos.x === cell.x && codeCell.pos.y === cell.y) {
+    if (!tableName && codeEditorState.showCodeEditor && codeCell.pos.x === cell.x && codeCell.pos.y === cell.y) {
       this.cursorRectangle = undefined;
       return;
     }
