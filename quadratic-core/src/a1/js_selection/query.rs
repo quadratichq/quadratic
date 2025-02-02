@@ -74,6 +74,30 @@ impl JsSelection {
         serde_json::to_string(&self.selection.ranges).map_err(|e| e.to_string())
     }
 
+    // may be useful if we decide to show a selection on a chart
+    // #[wasm_bindgen(js_name = "getChartSelections")]
+    // pub fn chart_selections(&self, context: &str) -> Result<String, String> {
+    //     let Ok(context) = serde_json::from_str::<A1Context>(context) else {
+    //         return Err("Unable to parse context".to_string());
+    //     };
+    //     let chart_names = self
+    //         .selection
+    //         .ranges
+    //         .iter()
+    //         .filter_map(|range| {
+    //             if let CellRefRange::Table { range } = range {
+    //                 if let Some(t) = context.try_table(range.table_name.as_str()) {
+    //                     if t.is_html_image {
+    //                         return Some(t.table_name.clone());
+    //                     }
+    //                 }
+    //             }
+    //             None
+    //         })
+    //         .collect::<Vec<_>>();
+    //     serde_json::to_string(&chart_names).map_err(|e| e.to_string())
+    // }
+
     #[wasm_bindgen(js_name = "getFiniteRefRangeBounds")]
     pub fn finite_ref_range_bounds(&self, context: &str) -> Result<String, String> {
         let Ok(context) = serde_json::from_str::<A1Context>(context) else {
@@ -87,6 +111,14 @@ impl JsSelection {
             .filter_map(|range| match range {
                 CellRefRange::Sheet { range } => Some(*range),
                 CellRefRange::Table { range } => {
+                    // we ignore charts because their selection needs to match
+                    // up with their pixel-perfect borders
+                    if context
+                        .try_table(range.table_name.as_str())
+                        .is_some_and(|t| t.is_html_image)
+                    {
+                        return None;
+                    }
                     range.convert_to_ref_range_bounds(false, &context, false, false)
                 }
             })

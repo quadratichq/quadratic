@@ -303,6 +303,10 @@ export class Tables extends Container<Table> {
     return this.children.find((table) => table.intersects(cellRectangle));
   }
 
+  getTableFromName(name: string): Table | undefined {
+    return this.children.find((table) => table.codeCell.name === name);
+  }
+
   // Intersects a column/row rectangle
   intersects(rectangle: Rectangle): boolean {
     return this.children.some((table) => table.intersects(rectangle));
@@ -368,7 +372,7 @@ export class Tables extends Container<Table> {
 
   /// Returns the bounds of the table name from a cell
   getTableNameBoundsFromCell(cell: JsCoordinate): Rectangle | undefined {
-    const table = this.children.find((table) => {
+    for (const table of this.children) {
       const code = table.codeCell;
       if (
         table.codeCell.is_html_image &&
@@ -377,12 +381,11 @@ export class Tables extends Container<Table> {
         cell.y >= code.y &&
         cell.y <= code.y + code.h - 1
       ) {
-        return true;
+        return table.getTableNameBounds(true);
       }
-      return code.show_ui && code.show_name && cell.x >= code.x && cell.x < code.x + code.w && code.y === cell.y;
-    });
-    if (table) {
-      return table.getTableNameBounds(true);
+      if (code.show_ui && code.show_name && cell.x >= code.x && cell.x < code.x + code.w && code.y === cell.y) {
+        return table.getTableNameBounds(true);
+      }
     }
   }
 

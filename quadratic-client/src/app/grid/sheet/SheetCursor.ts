@@ -294,6 +294,15 @@ export class SheetCursor {
     }
   };
 
+  // may be useful if we decide to show a selection on a chart
+  // getChartSelections = (): string[] | undefined => {
+  //   try {
+  //     return JSON.parse(this.jsSelection.getChartSelections(this.sheet.sheets.a1Context));
+  //   } catch (e) {
+  //     console.error(e);
+  //   }
+  // };
+
   // Returns true if there is one multiselect of > 1 size
   canConvertToDataTable = (): boolean => {
     return !!this.sheet.cursor.getSingleRectangle();
