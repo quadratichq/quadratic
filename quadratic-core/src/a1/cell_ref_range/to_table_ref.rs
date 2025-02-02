@@ -46,6 +46,23 @@ impl CellRefRange {
                         },
                     });
                 }
+
+                // if selection
+                if table.is_html_image
+                    && table.bounds.contains(start.into())
+                    && table.bounds.contains(end.into())
+                {
+                    return Some(CellRefRange::Table {
+                        range: TableRef {
+                            table_name: table.table_name.clone(),
+                            col_range: ColRange::All,
+                            data: true,
+                            headers: false,
+                            totals: false,
+                        },
+                    });
+                }
+
                 let b = table.bounds;
 
                 // if the x value is outside the table, then it's not a table ref

@@ -370,6 +370,15 @@ export class Tables extends Container<Table> {
   getTableNameBoundsFromCell(cell: JsCoordinate): Rectangle | undefined {
     const table = this.children.find((table) => {
       const code = table.codeCell;
+      if (
+        table.codeCell.is_html_image &&
+        cell.x >= code.x &&
+        cell.x <= code.x + code.w - 1 &&
+        cell.y >= code.y &&
+        cell.y <= code.y + code.h - 1
+      ) {
+        return true;
+      }
       return code.show_ui && code.show_name && cell.x >= code.x && cell.x < code.x + code.w && code.y === cell.y;
     });
     if (table) {
