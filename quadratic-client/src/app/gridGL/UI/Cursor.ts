@@ -81,13 +81,13 @@ export class Cursor extends Container {
     }
     const tables = pixiApp.cellsSheet().tables;
     const table = tables.getTableFromCell(cell);
-    const tableName = tables.getTableNameBoundsFromCell(cell);
+    const tableName = table?.getTableNameBounds();
     let { x, y, width, height } = tableName ?? sheet.getCellOffsets(cell.x, cell.y);
     const color = pixiApp.accentColor;
     const codeCell = codeEditorState.codeCell;
 
-    // todo: this hides the indicator within tables. When we want to reenable
-    // it, we should change this logic.
+    // todo: this hides the indicator within tables. When we want to re-enable
+    // it so we can autocomplete within tables, then we should change this logic.
 
     // draw cursor but leave room for cursor indicator if needed
     const indicatorSize =
@@ -117,12 +117,6 @@ export class Cursor extends Container {
       if (!cursor.isMultiCursor() && !this.cursorIsOnSpill()) {
         indicatorOffset = indicatorSize / 2 + indicatorPadding;
       }
-    }
-
-    // hide cursor if code editor is open and CodeCursor is in the same cell
-    if (!tableName && codeEditorState.showCodeEditor && codeCell.pos.x === cell.x && codeCell.pos.y === cell.y) {
-      this.cursorRectangle = undefined;
-      return;
     }
 
     // draw cursor
@@ -184,10 +178,6 @@ export class Cursor extends Container {
     const cursor = sheets.sheet.cursor;
 
     if (viewport.scale.x > HIDE_INDICATORS_BELOW_SCALE) {
-      const { codeEditorState } = pixiAppSettings;
-      const codeCell = codeEditorState.codeCell;
-      const cell = cursor.position;
-
       const endCell = cursor.bottomRight;
       this.endCell = sheets.sheet.getCellOffsets(endCell.x, endCell.y);
 
@@ -199,14 +189,7 @@ export class Cursor extends Container {
       this.indicator.y = y - indicatorSize / 2;
       this.graphics.lineStyle(0);
 
-      // have cursor color match code editor mode
-      let color = pixiApp.accentColor;
-      if (
-        inlineEditorHandler.getShowing(cell.x, cell.y) ||
-        (codeEditorState.showCodeEditor && codeCell.pos.x === cell.x && codeCell.pos.y === cell.y)
-      ) {
-        color = pixiApp.accentColor;
-      }
+      const color = pixiApp.accentColor;
       this.graphics.beginFill(color).drawShape(this.indicator).endFill();
     }
   }
@@ -238,20 +221,7 @@ export class Cursor extends Container {
       this.graphics.lineTo(offsets.x + offsets.width + indicatorHalfSize + 20, offsets.y + offsets.height);
       this.graphics.lineTo(offsets.x + offsets.width + indicatorHalfSize, offsets.y + offsets.height);
     } else {
-      const { codeEditorState } = pixiAppSettings;
-      const codeCell = codeEditorState.codeCell;
-      if (!codeEditorState.showCodeEditor || sheets.current !== codeCell.sheetId) {
-        return;
-      }
-      offsets = sheets.sheet.getCellOffsets(codeCell.pos.x, codeCell.pos.y);
-      color =
-        codeCell.language === 'Python'
-          ? colors.cellColorUserPython
-          : codeCell.language === 'Formula'
-          ? colors.cellColorUserFormula
-          : codeCell.language === 'Javascript'
-          ? colors.cellColorUserJavascript
-          : colors.independence;
+      return;
     }
 
     if (!color || !offsets) return;
