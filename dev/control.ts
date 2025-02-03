@@ -261,6 +261,11 @@ export class Control {
     this.status.core = false;
     this.ui.print("core");
     await this.kill("core");
+
+    // this function is called more than once, 
+    // so we need to check if it's the first run
+    let firstRun = true;
+
     this.signals.core = new AbortController();
     this.core = spawn(
       "npm",
@@ -282,8 +287,9 @@ export class Control {
           start: ["> quadratic", "[Running "],
         },
         () => {
-          if (!restart) {
+          if (firstRun && !restart) {
             this.runNpmInstall();
+            firstRun = false;
           }
         }
       )
