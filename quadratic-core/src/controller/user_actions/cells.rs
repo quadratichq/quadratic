@@ -169,7 +169,7 @@ impl GridController {
 
     /// Starts a transaction to deletes the cell values and code in a given rect and updates dependent cells.
     pub fn delete_cells(&mut self, selection: &A1Selection, cursor: Option<String>) {
-        let ops = self.delete_cells_operations(selection, false);
+        let ops = self.delete_cells_operations(selection, true);
         self.start_user_transaction(ops, cursor, TransactionName::SetCells);
     }
 

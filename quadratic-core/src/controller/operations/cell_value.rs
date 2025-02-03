@@ -130,6 +130,8 @@ impl GridController {
 
     /// Generates and returns the set of operations to delete the values and code in a Selection
     /// Does not commit the operations or create a transaction.
+    ///
+    /// If force_table_bounds is true, then the operations will be generated for the table bounds even if the selection is not within a table.
     pub fn delete_cells_operations(
         &self,
         selection: &A1Selection,
