@@ -22,7 +22,7 @@ export class PointerCursor {
     }
 
     let foundCodeCell = false;
-    const codeCell = pixiApp.cellsSheets.current.cellsMarkers.intersectsCodeInfo(world);
+    const codeCell = pixiApp.cellsSheets.current.tables.intersectsCodeInfo(world);
     if (codeCell) {
       if (this.lastInfo?.x !== codeCell.x || this.lastInfo?.y !== codeCell.y) {
         events.emit('hoverCell', codeCell);

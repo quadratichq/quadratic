@@ -8,6 +8,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { Table } from '@/app/gridGL/cells/tables/Table';
+import { intersects } from '@/app/gridGL/helpers/intersects';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { JsCodeCell, JsCoordinate, JsHtmlOutput, JsRenderCodeCell } from '@/app/quadratic-core-types';
@@ -411,5 +412,15 @@ export class Tables extends Container<Table> {
         cell.x <= table.codeCell.x + table.codeCell.w - 1 &&
         table.codeCell.y + (table.codeCell.show_name ? 1 : 0) === cell.y
     );
+  }
+
+  intersectsCodeInfo(world: Point): JsRenderCodeCell | undefined {
+    for (const table of this.children) {
+      if (table.codeCell.state === 'SpillError' || table.codeCell.state === 'RunError') {
+        if (intersects.rectanglePoint(table.tableBounds, world)) {
+          return table.codeCell;
+        }
+      }
+    }
   }
 }
