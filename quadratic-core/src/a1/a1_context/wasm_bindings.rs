@@ -3,12 +3,20 @@ use std::str::FromStr;
 use crate::{grid::SheetId, Pos};
 
 use super::A1Context;
+use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 use wasm_bindgen::prelude::*;
 
-#[wasm_bindgen(js_name = "getTableNames")]
+#[derive(Debug, Serialize, Deserialize, PartialEq, TS)]
+pub struct JsTableInfo {
+    pub name: String,
+    pub sheet_name: String,
+}
+
+#[wasm_bindgen(js_name = "getTableInfo")]
 pub fn table_names(context: &str) -> Option<String> {
     let context = serde_json::from_str::<A1Context>(context).unwrap();
-    let table_names = context.table_names();
+    let table_names = context.table_info();
     serde_json::to_string(&table_names).ok()
 }
 

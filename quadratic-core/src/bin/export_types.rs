@@ -6,6 +6,7 @@ use quadratic_core::a1::A1Selection;
 use quadratic_core::a1::CellRefCoord;
 use quadratic_core::a1::CellRefRange;
 use quadratic_core::a1::CellRefRangeEnd;
+use quadratic_core::a1::JsTableInfo;
 use quadratic_core::a1::RefRangeBounds;
 use quadratic_core::a1::TableRef;
 use quadratic_core::color::Rgba;
@@ -131,6 +132,7 @@ fn main() {
         JsSheetFill,
         JsSnackbarSeverity,
         JsSummarizeSelectionResult,
+        JsTableInfo,
         JsValidationWarning,
         Direction,
         MinMax,
