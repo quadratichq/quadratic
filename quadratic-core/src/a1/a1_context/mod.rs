@@ -4,6 +4,7 @@
 //! named ranges.
 
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 mod sheet_map;
 mod table_map;
@@ -14,12 +15,19 @@ use crate::{grid::SheetId, SheetPos};
 pub use sheet_map::*;
 pub use table_map::*;
 pub use table_map_entry::*;
-pub use wasm_bindings::JsTableInfo;
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct A1Context {
     pub sheet_map: SheetMap,
     pub table_map: TableMap,
+}
+
+// Used by the client to get table information.
+#[derive(Debug, Serialize, Deserialize, PartialEq, TS)]
+pub struct JsTableInfo {
+    pub name: String,
+    pub sheet_name: String,
+    pub chart: bool,
 }
 
 #[cfg(test)]
@@ -61,6 +69,7 @@ impl A1Context {
                     .map(|sheet_name| JsTableInfo {
                         name: table.table_name.clone(),
                         sheet_name: sheet_name.to_string(),
+                        chart: table.is_html_image,
                     })
             })
             .collect()
@@ -132,6 +141,7 @@ mod tests {
             JsTableInfo {
                 name: "Table1".to_string(),
                 sheet_name: "Sheet1".to_string(),
+                chart: false,
             }
         );
         assert_eq!(
@@ -139,6 +149,7 @@ mod tests {
             JsTableInfo {
                 name: "Table2".to_string(),
                 sheet_name: "Sheet1".to_string(),
+                chart: false,
             }
         );
     }
