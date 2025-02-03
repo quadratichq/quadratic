@@ -79,21 +79,27 @@ export class Cursor extends Container {
     if (cursor.isSingleSelection() && pixiApp.cellsSheet().tables.isHtmlOrImage(cell)) {
       return;
     }
-    const tableName = pixiApp.cellsSheet().tables.getTableNameBoundsFromCell(cell);
+    const tables = pixiApp.cellsSheet().tables;
+    const table = tables.getTableFromCell(cell);
+    const tableName = tables.getTableNameBoundsFromCell(cell);
     let { x, y, width, height } = tableName ?? sheet.getCellOffsets(cell.x, cell.y);
     const color = pixiApp.accentColor;
     const codeCell = codeEditorState.codeCell;
 
+    // todo: this hides the indicator within tables. When we want to reenable
+    // it, we should change this logic.
+
     // draw cursor but leave room for cursor indicator if needed
     const indicatorSize =
       hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions) &&
-      !tableName &&
+      (!table || table?.isSingleValue()) &&
       !pixiApp.cellsSheet().tables.isColumnHeaderCell(cell) &&
       (!pixiAppSettings.codeEditorState.showCodeEditor ||
         cursor.position.x !== codeCell.pos.x ||
         cursor.position.y !== codeCell.pos.y)
         ? Math.max(INDICATOR_SIZE / viewport.scale.x, 4)
         : 0;
+
     this.indicator.width = this.indicator.height = indicatorSize;
     const indicatorPadding = Math.max(INDICATOR_PADDING / viewport.scale.x, 1);
     let indicatorOffset = 0;
