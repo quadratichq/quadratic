@@ -14,18 +14,33 @@ pub struct TableMap {
 
 impl TableMap {
     pub fn insert(&mut self, sheet_id: SheetId, pos: Pos, table: &DataTable) {
-        self.tables.push(TableMapEntry {
-            sheet_id,
-            table_name: table.name.to_display(),
-            visible_columns: table.columns_map(false),
-            all_columns: table.columns_map(true),
-            bounds: table.output_rect(pos, false),
-            show_ui: table.show_ui,
-            show_name: table.show_name,
-            show_columns: table.show_columns,
-            is_html_image: table.is_html() || table.is_image(),
-            header_is_first_row: table.header_is_first_row,
-        });
+        if table.spill_error || table.has_error() {
+            self.tables.push(TableMapEntry {
+                sheet_id,
+                table_name: table.name.to_display(),
+                visible_columns: table.columns_map(false),
+                all_columns: table.columns_map(true),
+                bounds: table.output_rect(pos, false),
+                show_ui: false,
+                show_name: false,
+                show_columns: false,
+                is_html_image: false,
+                header_is_first_row: false,
+            });
+        } else {
+            self.tables.push(TableMapEntry {
+                sheet_id,
+                table_name: table.name.to_display(),
+                visible_columns: table.columns_map(false),
+                all_columns: table.columns_map(true),
+                bounds: table.output_rect(pos, false),
+                show_ui: table.show_ui,
+                show_name: table.show_name,
+                show_columns: table.show_columns,
+                is_html_image: table.is_html() || table.is_image(),
+                header_is_first_row: table.header_is_first_row,
+            });
+        }
     }
 
     /// Finds a table by name.

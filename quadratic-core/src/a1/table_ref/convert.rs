@@ -15,7 +15,6 @@ impl TableRef {
             // the table may no longer exist
             return None;
         };
-
         let (mut y_start, y_end) = table.to_sheet_rows();
         if !force_table_bounds {
             y_start += if !self.headers && !force_columns {

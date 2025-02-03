@@ -108,7 +108,7 @@ export class Cursor extends Container {
         setTimeout(() => (this.dirty = true), 0);
       }
     } else {
-      if (!cursor.isMultiCursor()) {
+      if (!cursor.isMultiCursor() && !this.cursorIsOnSpill()) {
         indicatorOffset = indicatorSize / 2 + indicatorPadding;
       }
     }
@@ -301,6 +301,11 @@ export class Cursor extends Container {
     this.graphics.endFill();
   }
 
+  private cursorIsOnSpill() {
+    const table = pixiApp.cellsSheet().tables.getTableFromCell(sheets.sheet.cursor.position);
+    return table?.codeCell.spill_error;
+  }
+
   // Besides the dirty flag, we also need to update the cursor when the viewport
   // is dirty and columnRow is set because the columnRow selection is drawn to
   // visible bounds on the screen, not to the selection size.
@@ -334,7 +339,8 @@ export class Cursor extends Container {
           !columnRow &&
           cursor.rangeCount() === 1 &&
           cursor.getInfiniteRefRangeBounds().length === 0 &&
-          !cursor.isOnHtmlImage()
+          !cursor.isOnHtmlImage() &&
+          !this.cursorIsOnSpill()
         ) {
           this.drawCursorIndicator();
         }

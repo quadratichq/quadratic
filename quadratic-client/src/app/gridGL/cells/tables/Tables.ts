@@ -151,7 +151,7 @@ export class Tables extends Container<Table> {
     if (sheetId === this.cellsSheet.sheetId) {
       this.removeChildren();
       codeCells.forEach((codeCell) => {
-          this.addChild(new Table(this.sheet, codeCell));
+        this.addChild(new Table(this.sheet, codeCell));
       });
     }
   };
@@ -372,10 +372,20 @@ export class Tables extends Container<Table> {
     );
   }
 
+  getTableFromCell(cell: JsCoordinate): Table | undefined {
+    return this.children.find((table) => {
+      const code = table.codeCell;
+      return cell.x >= code.x && cell.x <= code.x + code.w - 1 && cell.y >= code.y && cell.y <= code.y + code.h - 1;
+    });
+  }
+
   /// Returns the bounds of the table name from a cell
   getTableNameBoundsFromCell(cell: JsCoordinate): Rectangle | undefined {
     for (const table of this.children) {
       const code = table.codeCell;
+      if (code.spill_error) {
+        return;
+      }
       if (
         table.codeCell.is_html_image &&
         cell.x >= code.x &&
