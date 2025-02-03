@@ -330,8 +330,19 @@ impl GridController {
             let mut values = data_table.display_value()?.into_array()?;
             let ArraySize { w, h } = values.size();
 
+            if !data_table.header_is_first_row && data_table.show_ui && data_table.show_columns {
+                let headers = data_table.column_headers_to_cell_values();
+                values.insert_row(0, headers).map_err(|e| {
+                    dbgjs!(format!(
+                        "error inserting header row in execute_flatten_data_table: {:?}",
+                        e
+                    ));
+                    e
+                })?;
+            }
+
             // delete the heading row if toggled off
-            if !data_table.show_ui || !data_table.show_columns {
+            if data_table.header_is_first_row && (!data_table.show_ui || !data_table.show_columns) {
                 values.delete_row(0)?;
             }
 

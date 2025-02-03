@@ -14,6 +14,12 @@ pub struct DataTableColumnHeader {
     pub value_index: u32,
 }
 
+impl From<DataTableColumnHeader> for CellValue {
+    fn from(header: DataTableColumnHeader) -> Self {
+        header.name
+    }
+}
+
 impl DataTableColumnHeader {
     pub fn new(name: String, display: bool, value_index: u32) -> Self {
         DataTableColumnHeader {
@@ -132,6 +138,7 @@ impl DataTable {
         }
     }
 
+    /// Get a column header by index.
     pub fn get_column_header(&self, index: usize) -> Option<&DataTableColumnHeader> {
         self.column_headers
             .as_ref()
@@ -143,6 +150,13 @@ impl DataTable {
         self.column_headers
             .as_ref()
             .and_then(|columns| columns.iter().find(|h| h.name.to_string() == name))
+    }
+
+    /// Convert column headers to a vector of cell values.
+    pub fn column_headers_to_cell_values(&self) -> Option<Vec<CellValue>> {
+        self.column_headers
+            .as_ref()
+            .map(|columns| columns.iter().map(|c| c.name.clone()).collect())
     }
 }
 
