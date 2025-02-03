@@ -99,7 +99,7 @@ export class Cursor extends Container {
         cursor.position.y !== codeCell.pos.y)
         ? Math.max(INDICATOR_SIZE / viewport.scale.x, 4)
         : 0;
-    console.log(tableName, table?.codeCell, indicatorSize, table?.isSingleValue());
+
     this.indicator.width = this.indicator.height = indicatorSize;
     const indicatorPadding = Math.max(INDICATOR_PADDING / viewport.scale.x, 1);
     let indicatorOffset = 0;
