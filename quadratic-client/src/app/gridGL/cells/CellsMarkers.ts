@@ -68,6 +68,7 @@ export class CellsMarkers extends Container {
   }
 
   add(box: Rectangle, codeCell: JsRenderCodeCell) {
+    this.remove(codeCell.x, codeCell.y);
     const isError = codeCell.state === 'RunError' || codeCell.state === 'SpillError';
     let triangle: Sprite | undefined;
     if (isError) {
