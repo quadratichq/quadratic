@@ -28,7 +28,15 @@ export class PointerTable {
     sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, tableDown.table.y, shiftKey, ctrlKey);
     if (this.doubleClickTimeout) {
       const table = tableDown.table;
-      if (table.language !== 'Import') {
+      if (table.language === 'Import') {
+        events.emit('contextMenu', {
+          type: ContextMenuType.Table,
+          table,
+          rename: true,
+          column: table.x,
+          row: table.y,
+        });
+      } else {
         pixiAppSettings.setCodeEditorState?.((prev) => ({
           ...prev,
           diffEditorContent: undefined,

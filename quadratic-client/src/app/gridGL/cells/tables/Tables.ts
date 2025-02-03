@@ -8,6 +8,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { Table } from '@/app/gridGL/cells/tables/Table';
+import { intersects } from '@/app/gridGL/helpers/intersects';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { JsCodeCell, JsCoordinate, JsHtmlOutput, JsRenderCodeCell } from '@/app/quadratic-core-types';
@@ -33,11 +34,7 @@ export class Tables extends Container<Table> {
   // tracks which tables are html or image cells
   private htmlOrImage: Set<string>;
 
-  private saveToggleOutlines?: {
-    activeTables?: Table;
-    context?: Table;
-    action?: Table;
-  };
+  private saveToggleOutlines = false;
 
   // Holds the table headers that hover over the grid.
   hoverTableHeaders: Container;
@@ -329,29 +326,16 @@ export class Tables extends Container<Table> {
 
   // Toggles the outlines of the table (used during thumbnail generation)
   toggleOutlines() {
-    // if (this.saveToggleOutlines) {
-    //   this.activeTable = this.saveToggleOutlines.active;
-    //   this.activeTable?.showActive(true);
-    //   this.hoverTable = this.saveToggleOutlines.hover;
-    //   this.hoverTable?.showActive(false);
-    //   this.contextMenuTable = this.saveToggleOutlines.context;
-    //   this.contextMenuTable?.showActive(false);
-    //   this.actionDataTable = this.saveToggleOutlines.action;
-    //   this.actionDataTable?.showActive(false);
-    //   pixiApp.setViewportDirty();
-    //   this.saveToggleOutlines = undefined;
-    // } else {
-    //   this.saveToggleOutlines = {
-    //     active: this.activeTable,
-    //     hover: this.hoverTable,
-    //     context: this.contextMenuTable,
-    //     action: this.actionDataTable,
-    //   };
-    //   this.activeTable?.hideActive();
-    //   this.hoverTable?.hideActive();
-    //   this.contextMenuTable?.hideActive();
-    //   this.actionDataTable?.hideActive();
-    // }
+    if (this.saveToggleOutlines) {
+      this.saveToggleOutlines = false;
+      this.activeTables.forEach((table) => table.showActive(true));
+      this.contextMenuTable?.showActive(true);
+      this.actionDataTable?.showActive(true);
+      pixiApp.setViewportDirty();
+    } else {
+      this.saveToggleOutlines = true;
+      this.children.forEach((table) => table.hideActive());
+    }
   }
 
   resizeTable(x: number, y: number, width: number, height: number) {
@@ -411,5 +395,15 @@ export class Tables extends Container<Table> {
         cell.x <= table.codeCell.x + table.codeCell.w - 1 &&
         table.codeCell.y + (table.codeCell.show_name ? 1 : 0) === cell.y
     );
+  }
+
+  intersectsCodeInfo(world: Point): JsRenderCodeCell | undefined {
+    for (const table of this.children) {
+      if (table.codeCell.state === 'SpillError' || table.codeCell.state === 'RunError') {
+        if (intersects.rectanglePoint(table.tableBounds, world)) {
+          return table.codeCell;
+        }
+      }
+    }
   }
 }
