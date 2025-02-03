@@ -3,15 +3,7 @@ use std::str::FromStr;
 use crate::{grid::SheetId, Pos};
 
 use super::A1Context;
-use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 use wasm_bindgen::prelude::*;
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, TS)]
-pub struct JsTableInfo {
-    pub name: String,
-    pub sheet_name: String,
-}
 
 #[wasm_bindgen(js_name = "getTableInfo")]
 pub fn table_names(context: &str) -> Option<String> {
