@@ -76,7 +76,16 @@ export async function doubleClickCell(options: {
         else {
           const isColumnHeader =
             codeCell.show_ui && codeCell.show_columns && row === codeCell.y + (codeCell.show_name ? 1 : 0);
-          if (isColumnHeader) {
+          const isTableName = codeCell.show_ui && codeCell.show_name && row === codeCell.y;
+          if (isTableName) {
+            events.emit('contextMenu', {
+              type: ContextMenuType.Table,
+              table: codeCell,
+              rename: true,
+              column: codeCell.x,
+              row: codeCell.y,
+            });
+          } else if (isColumnHeader) {
             const contextMenu = {
               type: ContextMenuType.TableColumn,
               rename: true,
