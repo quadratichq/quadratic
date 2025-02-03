@@ -7,12 +7,13 @@ use serde::{Deserialize, Serialize};
 
 mod sheet_map;
 mod table_map;
+mod table_map_entry;
 pub mod wasm_bindings;
 
+use crate::{grid::SheetId, SheetPos};
 pub use sheet_map::*;
 pub use table_map::*;
-
-use crate::{grid::SheetId, SheetPos};
+pub use table_map_entry::*;
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct A1Context {
