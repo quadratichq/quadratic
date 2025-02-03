@@ -40,7 +40,7 @@ export class CLI {
             this.options.core = true;
             this.options.multiplayer = true;
             this.options.files = true;
-            this.options.connector = true;
+            this.options.connection = true;
             this.options.rustClient = true;
             this.options.python = true;
         }

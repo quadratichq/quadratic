@@ -9,7 +9,7 @@ export const COMPONENTS = {
         shortcut: "m",
     },
     files: { color: "yellow", dark: "yellow", name: "Files", shortcut: "f" },
-    connector: {
+    connection: {
         color: "blue",
         dark: "blue",
         name: "Connection",
