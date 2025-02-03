@@ -4,6 +4,7 @@
 //! named ranges.
 
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 mod sheet_map;
 mod table_map;
@@ -19,6 +20,14 @@ pub use table_map_entry::*;
 pub struct A1Context {
     pub sheet_map: SheetMap,
     pub table_map: TableMap,
+}
+
+// Used by the client to get table information.
+#[derive(Debug, Serialize, Deserialize, PartialEq, TS)]
+pub struct JsTableInfo {
+    pub name: String,
+    pub sheet_name: String,
+    pub chart: bool,
 }
 
 #[cfg(test)]
@@ -50,11 +59,19 @@ impl A1Context {
     }
 
     /// Returns a list of all table names in the context.
-    pub fn table_names(&self) -> Vec<String> {
+    pub fn table_info(&self) -> Vec<JsTableInfo> {
         self.table_map
             .tables
             .iter()
-            .map(|table| table.table_name.clone())
+            .filter_map(|table| {
+                self.sheet_map
+                    .try_sheet_id(table.sheet_id)
+                    .map(|sheet_name| JsTableInfo {
+                        name: table.table_name.clone(),
+                        sheet_name: sheet_name.to_string(),
+                        chart: table.is_html_image,
+                    })
+            })
             .collect()
     }
 
@@ -118,8 +135,23 @@ mod tests {
         assert_eq!(table_names, vec!["Table1", "Table2"]);
 
         // Test table_names
-        let names = context.table_names();
-        assert_eq!(names, vec!["Table1", "Table2"]);
+        let info = context.table_info();
+        assert_eq!(
+            info[0],
+            JsTableInfo {
+                name: "Table1".to_string(),
+                sheet_name: "Sheet1".to_string(),
+                chart: false,
+            }
+        );
+        assert_eq!(
+            info[1],
+            JsTableInfo {
+                name: "Table2".to_string(),
+                sheet_name: "Sheet1".to_string(),
+                chart: false,
+            }
+        );
     }
 
     #[test]

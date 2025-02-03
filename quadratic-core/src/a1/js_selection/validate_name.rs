@@ -39,11 +39,7 @@ pub fn validate_table_name(name: &str, context: &str) -> Result<bool, String> {
     }
 
     let context = serde_json::from_str::<A1Context>(context).map_err(|e| e.to_string())?;
-    if context
-        .table_names()
-        .iter()
-        .any(|table_name| table_name == name)
-    {
+    if context.table_info().iter().any(|info| info.name == name) {
         return Err("Table name must be unique".to_string());
     }
 
