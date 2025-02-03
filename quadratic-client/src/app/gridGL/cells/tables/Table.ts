@@ -47,6 +47,10 @@ export class Table extends Container {
 
   destroy() {
     this.hoverTableHeaders?.removeChild(this.header);
+    const cellsMarkers = pixiApp.cellsSheets.getById(this.sheet.id)?.cellsMarkers;
+    if (cellsMarkers) {
+      cellsMarkers.remove(this.codeCell.x, this.codeCell.y);
+    }
     super.destroy();
   }
 
@@ -85,6 +89,19 @@ export class Table extends Container {
       );
     }
     this.outline.update();
+
+    const cellsMarkers = pixiApp.cellsSheets.getById(this.sheet.id)?.cellsMarkers;
+
+    if (!cellsMarkers) {
+      console.log('Expected CellsMarkers to be defined in sheet');
+      return;
+    }
+    if (this.codeCell.state === 'RunError' || this.codeCell.state === 'SpillError') {
+      const box = this.sheet.getCellOffsets(this.codeCell.x, this.codeCell.y);
+      cellsMarkers.add(box, this.codeCell);
+    } else {
+      cellsMarkers.remove(this.codeCell.x, this.codeCell.y);
+    }
   };
 
   private headingPosition = (bounds: Rectangle, gridHeading: number) => {

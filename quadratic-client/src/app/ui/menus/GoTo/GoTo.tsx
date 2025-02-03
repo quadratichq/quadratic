@@ -2,8 +2,8 @@ import { editorInteractionStateShowGoToMenuAtom } from '@/app/atoms/editorIntera
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import type { A1Error } from '@/app/quadratic-core-types';
-import { getTableNames, stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { A1Error, JsTableInfo } from '@/app/quadratic-core-types';
+import { getTableInfo, stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import '@/app/ui/styles/floating-dialog.css';
 import { GoToIcon } from '@/shared/components/Icons';
 import {
@@ -26,14 +26,14 @@ export const GoTo = () => {
     setShowGoToMenu(false);
   }, [setShowGoToMenu]);
 
-  const [tableNames, setTablesNames] = useState<string[]>();
+  const [tableInfo, setTablesInfo] = useState<JsTableInfo[]>();
   useEffect(() => {
     const sync = () => {
-      const namesStringified = getTableNames(sheets.a1Context);
-      if (namesStringified) {
+      const infoStringified = getTableInfo(sheets.a1Context);
+      if (infoStringified) {
         try {
-          const names = JSON.parse(namesStringified);
-          setTablesNames(names);
+          const names = JSON.parse(infoStringified);
+          setTablesInfo(names);
         } catch (e) {
           console.error(e);
         }
@@ -147,10 +147,10 @@ export const GoTo = () => {
         </CommandItem> */}
 
         <CommandGroup heading="Tables">
-          {tableNames?.map((name) => (
+          {tableInfo?.map(({ name, sheet_name }) => (
             <CommandItem key={name} onSelect={() => selectTable(name)} className="flex items-center justify-between">
               <div className="">{name}</div>
-              <div className="text-xs text-muted-foreground">Sheet1</div>
+              <div className="text-xs text-muted-foreground">{sheet_name}</div>
             </CommandItem>
           ))}
         </CommandGroup>

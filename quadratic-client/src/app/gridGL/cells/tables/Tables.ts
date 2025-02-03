@@ -363,28 +363,6 @@ export class Tables extends Container<Table> {
     });
   }
 
-  /// Returns the bounds of the table name from a cell
-  getTableNameBoundsFromCell(cell: JsCoordinate): Rectangle | undefined {
-    for (const table of this.children) {
-      const code = table.codeCell;
-      if (code.spill_error) {
-        return;
-      }
-      if (
-        table.codeCell.is_html_image &&
-        cell.x >= code.x &&
-        cell.x <= code.x + code.w - 1 &&
-        cell.y >= code.y &&
-        cell.y <= code.y + code.h - 1
-      ) {
-        return table.getTableNameBounds(true);
-      }
-      if (code.show_ui && code.show_name && cell.x >= code.x && cell.x < code.x + code.w && code.y === cell.y) {
-        return table.getTableNameBounds(true);
-      }
-    }
-  }
-
   /// Returns true if the cell is a column header cell in a table
   isColumnHeaderCell(cell: JsCoordinate): boolean {
     return !!this.children.find(
