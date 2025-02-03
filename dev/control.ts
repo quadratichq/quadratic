@@ -345,7 +345,7 @@ export class Control {
     this.multiplayer = spawn(
       "cargo",
       this.cli.options.multiplayer
-        ? ["watch", "-x", "run -p quadratic-multiplayer --target-dir=target"]
+        ? ["watch", "--skip-local-deps", "-x", "run -p quadratic-multiplayer --target-dir=target"]
         : ["run", "-p", "quadratic-multiplayer", "--target-dir=target"],
       {
         signal: this.signals.multiplayer.signal,
@@ -388,7 +388,7 @@ export class Control {
     this.files = spawn(
       "cargo",
       this.cli.options.files
-        ? ["watch", "-x", "run -p quadratic-files --target-dir=target"]
+        ? ["watch", "--skip-local-deps", "-x", "run -p quadratic-files --target-dir=target"]
         : ["run", "-p", "quadratic-files", "--target-dir=target"],
       {
         signal: this.signals.files.signal,
@@ -445,7 +445,7 @@ export class Control {
     this.connection = spawn(
       "cargo",
       this.cli.options.connection
-        ? ["watch", "-x", "run -p quadratic-connection --target-dir=target"]
+        ? ["watch", "--skip-local-deps", "-x", "run -p quadratic-connection --target-dir=target"]
         : ["run", "-p", "quadratic-connection", "--target-dir=target"],
       {
         signal: this.signals.connection.signal,
