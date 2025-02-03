@@ -67,7 +67,7 @@ export class CellsMarkers extends Container {
     this.markers = [];
   }
 
-  add(box: Rectangle, codeCell: JsRenderCodeCell, selected: boolean) {
+  add(box: Rectangle, codeCell: JsRenderCodeCell) {
     const isError = codeCell.state === 'RunError' || codeCell.state === 'SpillError';
     let triangle: Sprite | undefined;
     if (isError) {
@@ -96,6 +96,14 @@ export class CellsMarkers extends Container {
       });
     }
     // }
+  }
+
+  remove(x: number, y: number) {
+    const marker = this.markers.find((marker) => marker.codeCell.x === x && marker.codeCell.y === y);
+    if (marker?.triangle) {
+      this.markers = this.markers.filter((m) => m !== marker);
+      this.removeChild(marker.triangle);
+    }
   }
 
   intersectsCodeInfo(point: Point): JsRenderCodeCell | undefined {
