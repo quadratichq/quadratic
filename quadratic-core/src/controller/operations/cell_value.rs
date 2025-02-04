@@ -161,7 +161,7 @@ impl GridController {
                         } else {
                             ops.push(Operation::SetDataTableAt {
                                 sheet_pos,
-                                values: CellValues::new(
+                                values: CellValues::new_blank(
                                     rect.width().min(
                                         (data_table_rect.max.x - sheet_pos.x + 1).max(1) as u32,
                                     ),
@@ -176,7 +176,7 @@ impl GridController {
 
                 ops.push(Operation::SetCellValues {
                     sheet_pos,
-                    values: CellValues::new(rect.width(), rect.height()),
+                    values: CellValues::new_blank(rect.width(), rect.height()),
                 });
             }
         }
@@ -396,7 +396,7 @@ mod test {
             y: 2,
             sheet_id,
         };
-        let values = CellValues::new(2, 1);
+        let values = CellValues::new_blank(2, 1);
 
         assert_eq!(operations.len(), 1);
         assert_eq!(
@@ -437,19 +437,19 @@ mod test {
             vec![
                 // Operation::SetDataTableAt {
                 //     sheet_pos: SheetPos::new(sheet_id, 1, 2),
-                //     values: CellValues::new(2, 1)
+                //     values: CellValues::new_blank(2, 1)
                 // },
                 Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 1, 2),
-                    values: CellValues::new(2, 1)
+                    values: CellValues::new_blank(2, 1)
                 },
                 // Operation::SetDataTableAt {
                 //     sheet_pos: SheetPos::new(sheet_id, 2, 1),
-                //     values: CellValues::new(1, 2)
+                //     values: CellValues::new_blank(1, 2)
                 // },
                 Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 2, 1),
-                    values: CellValues::new(1, 2)
+                    values: CellValues::new_blank(1, 2)
                 },
             ]
         );

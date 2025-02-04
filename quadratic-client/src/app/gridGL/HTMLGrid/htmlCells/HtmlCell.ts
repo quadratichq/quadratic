@@ -27,6 +27,8 @@ export class HtmlCell {
   private temporaryWidth: number | undefined;
   private temporaryHeight: number | undefined;
 
+  active = false;
+
   // whether pointer events are allowed on the iframe (currently when selected
   // but not resizing)
   pointerEvents: 'auto' | 'none' = 'none';
@@ -314,5 +316,25 @@ export class HtmlCell {
   // checks if the cell contains a grid point
   contains(x: number, y: number): boolean {
     return intersects.rectanglePoint(this.gridBounds, new Point(x, y));
+  }
+
+  activate() {
+    this.active = true;
+    this.border.style.border = '2px solid hsl(var(--primary))';
+    this.pointerEvents = 'auto';
+    this.iframe.style.pointerEvents = this.pointerEvents;
+  }
+
+  deactivate() {
+    this.active = false;
+    this.border.style.border = '1px solid hsl(var(--muted-foreground))';
+    this.pointerEvents = 'none';
+    this.iframe.style.pointerEvents = this.pointerEvents;
+  }
+
+  reactivate() {
+    if (this.active) {
+      this.activate();
+    }
   }
 }

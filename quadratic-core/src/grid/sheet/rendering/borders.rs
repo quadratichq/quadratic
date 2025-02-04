@@ -7,30 +7,19 @@ impl Sheet {
         let mut vertical = vec![];
 
         // get sheet borders
-        if let Some(h) = self.borders.horizontal_borders(None, &None) {
+        if let Some(h) = self.borders.horizontal_borders(None) {
             horizontal.extend(h);
         }
-        if let Some(v) = self.borders.vertical_borders(None, &None) {
+        if let Some(v) = self.borders.vertical_borders(None) {
             vertical.extend(v);
         }
 
         // get table borders and translate them to sheet coordinates
         self.data_tables.iter().for_each(|(pos, table)| {
-            let mut table_rect = table.output_rect(*pos, true);
-
-            // use table data bounds for borders, exclude table name and column headers
-            table_rect.min.y += table.y_adjustment(true);
-
-            if let Some(h) = table
-                .borders
-                .horizontal_borders(Some(table_rect), &table.display_buffer)
-            {
+            if let Some(h) = table.borders.horizontal_borders(Some((*pos, table))) {
                 horizontal.extend(h);
             }
-            if let Some(v) = table
-                .borders
-                .vertical_borders(Some(table_rect), &table.display_buffer)
-            {
+            if let Some(v) = table.borders.vertical_borders(Some((*pos, table))) {
                 vertical.extend(v);
             }
         });

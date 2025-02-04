@@ -8,6 +8,7 @@ import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCel
 import { DOUBLE_CLICK_TIME } from '@/app/gridGL/interaction/pointer/pointerUtils';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import type { JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { isMac } from '@/shared/utils/isMac';
 import type { Point } from 'pixi.js';
 
@@ -17,7 +18,7 @@ export class PointerTable {
   cursor: string | undefined;
 
   private doubleClickTimeout: number | undefined;
-  private tableNameDown: { column: number; row: number; point: Point } | undefined;
+  private tableNameDown: { column: number; row: number; point: Point; table: JsRenderCodeCell } | undefined;
 
   private pointerDownTableName = (
     world: Point,
@@ -57,7 +58,12 @@ export class PointerTable {
       this.doubleClickTimeout = window.setTimeout(() => {
         this.doubleClickTimeout = undefined;
       }, DOUBLE_CLICK_TIME);
-      this.tableNameDown = { column: tableDown.table.x, row: tableDown.table.y, point: world };
+      this.tableNameDown = {
+        column: tableDown.table.x,
+        row: tableDown.table.y,
+        point: world,
+        table: tableDown.table,
+      };
     }
   };
 
@@ -160,7 +166,9 @@ export class PointerTable {
         pixiApp.pointer.pointerCellMoving.tableMove(
           this.tableNameDown.column,
           this.tableNameDown.row,
-          this.tableNameDown.point
+          this.tableNameDown.point,
+          this.tableNameDown.table.w,
+          this.tableNameDown.table.h
         );
       }
       this.tableNameDown = undefined;

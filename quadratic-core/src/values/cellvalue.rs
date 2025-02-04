@@ -564,6 +564,14 @@ impl CellValue {
         matches!(self, CellValue::Image(_))
     }
 
+    pub fn is_code(&self) -> bool {
+        matches!(self, CellValue::Code(_))
+    }
+
+    pub fn is_import(&self) -> bool {
+        matches!(self, CellValue::Import(_))
+    }
+
     /// Returns the contained error, or panics the value is not an error.
     #[cfg(test)]
     #[track_caller]
@@ -1180,11 +1188,57 @@ mod test {
 
     #[test]
     #[parallel]
+    fn test_is_html() {
+        let value = CellValue::Html("test".to_string());
+        assert!(value.is_html());
+        assert!(!value.is_image());
+        assert!(!value.is_code());
+        assert!(!value.is_import());
+
+        let value = CellValue::Text("test".into());
+        assert!(!value.is_html());
+    }
+
+    #[test]
+    #[parallel]
     fn test_is_image() {
-        let value = CellValue::Image("test".into());
+        let value = CellValue::Image("test".to_string());
+        assert!(!value.is_html());
         assert!(value.is_image());
+        assert!(!value.is_code());
+        assert!(!value.is_import());
+
         let value = CellValue::Text("test".into());
         assert!(!value.is_image());
+    }
+
+    #[test]
+    #[parallel]
+    fn test_is_code() {
+        let value = CellValue::Code(CodeCellValue::new(
+            CodeCellLanguage::Python,
+            "test".to_string(),
+        ));
+        assert!(!value.is_html());
+        assert!(!value.is_image());
+        assert!(value.is_code());
+        assert!(!value.is_import());
+
+        let value = CellValue::Text("test".into());
+        assert!(!value.is_code());
+    }
+
+    #[test]
+    #[parallel]
+    fn test_is_import() {
+        let value = CellValue::Import(Import::new("test".to_string()));
+        assert!(!value.is_html());
+        assert!(!value.is_image());
+        assert!(!value.is_code());
+        assert!(value.is_import());
+
+        let value = CellValue::Text("test".into());
+        assert!(!value.is_import());
     }
 
     #[test]

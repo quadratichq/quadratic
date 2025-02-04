@@ -123,40 +123,51 @@ export class TableColumnHeaders extends Container {
       this.columns.children.pop();
     }
     let x = 0;
+    let displayIndex = 0;
     const codeCell = this.table.codeCell;
-    codeCell.columns
-      .filter((c) => c.display)
-      .forEach((column, index) => {
-        const width = this.table.sheet.offsets.getColumnWidth(codeCell.x + index);
-        if (index >= this.columns.children.length) {
-          // if this is a new column, then add it
-          this.columns.addChild(
-            new TableColumnHeader({
-              table: this.table,
-              index,
-              x,
-              width,
-              height: this.headerHeight,
-              name: column.name,
-              sort: codeCell.sort?.find((s) => s.column_index === column.valueIndex),
-              onSortPressed: () => this.onSortPressed(column),
-              columnY: this.table.codeCell.show_ui && this.table.codeCell.show_name ? this.headerHeight : 0,
-            })
-          );
-        } else {
-          // otherwise, update the existing column header (this is needed to keep
-          // the sort button hover working properly)
-          this.columns.children[index].updateHeader({
+    codeCell.columns.forEach((column) => {
+      const columnHeader = this.columns.children.find((c) => c.index === column.valueIndex);
+
+      if (!column.display) {
+        if (columnHeader) {
+          this.columns.removeChild(columnHeader);
+          columnHeader.destroy();
+        }
+        return;
+      }
+
+      const width = this.table.sheet.offsets.getColumnWidth(codeCell.x + displayIndex);
+
+      if (columnHeader) {
+        // existing column, update it
+        columnHeader.updateHeader({
+          x,
+          width,
+          height: this.headerHeight,
+          name: column.name,
+          sort: codeCell.sort?.find((s) => s.column_index === column.valueIndex),
+          columnY: this.table.codeCell.show_ui && this.table.codeCell.show_name ? this.headerHeight : 0,
+        });
+      } else {
+        // new column, add it
+        this.columns.addChild(
+          new TableColumnHeader({
+            table: this.table,
+            index: column.valueIndex,
             x,
             width,
             height: this.headerHeight,
             name: column.name,
             sort: codeCell.sort?.find((s) => s.column_index === column.valueIndex),
+            onSortPressed: () => this.onSortPressed(column),
             columnY: this.table.codeCell.show_ui && this.table.codeCell.show_name ? this.headerHeight : 0,
-          });
-        }
-        x += width;
-      });
+          })
+        );
+      }
+
+      x += width;
+      displayIndex++;
+    });
   }
 
   // update appearance when there is an updated code cell
@@ -206,21 +217,20 @@ export class TableColumnHeaders extends Container {
   }
 
   getColumnHeaderBounds(index: number): Rectangle {
-    if (index < 0 || index >= this.columns.children.length) {
+    const columnHeader = this.columns.children.find((c) => c.index === index);
+    if (!columnHeader) {
       throw new Error('Invalid column header index in getColumnHeaderBounds');
     }
-    return this.columns.children[index]?.columnHeaderBounds;
+    return columnHeader.columnHeaderBounds;
   }
 
   // Hides a column header
   hide(index: number) {
-    if (index < 0 || index >= this.columns.children.length) {
+    const columnHeader = this.columns.children.find((c) => c.index === index);
+    if (!columnHeader) {
       throw new Error('Invalid column header index in hide');
     }
-    const column = this.columns.children[index];
-    if (column) {
-      column.visible = false;
-    }
+    columnHeader.visible = false;
   }
 
   // Shows all column headers

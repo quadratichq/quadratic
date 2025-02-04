@@ -142,9 +142,9 @@ export class Table extends Container {
     pixiApp.setViewportDirty();
   }
 
-  showActive(isSelected: boolean) {
+  showActive() {
     this.activate(true);
-    htmlCellsHandler.showActive(this.codeCell, isSelected);
+    htmlCellsHandler.showActive(this.codeCell);
     pixiApp.setViewportDirty();
   }
 
