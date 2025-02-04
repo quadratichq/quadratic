@@ -73,7 +73,6 @@ impl GridController {
         if let (Some(old_data_table), Some(new_data_table)) =
             (sheet.data_table(pos), &mut new_data_table)
         {
-            new_data_table.column_headers = old_data_table.column_headers.to_owned();
             new_data_table.show_ui = old_data_table.show_ui;
             new_data_table.show_name = old_data_table.show_name;
             new_data_table.show_columns = old_data_table.show_columns;
@@ -87,7 +86,6 @@ impl GridController {
             // if the width of the old and new data tables are the same,
             // then we can preserve other user-selected properties
             if old_data_table.output_size().w == new_data_table.output_size().w {
-                new_data_table.column_headers = old_data_table.column_headers.to_owned();
                 new_data_table.formats = old_data_table.formats.to_owned();
 
                 // actually apply the sort if it's set
