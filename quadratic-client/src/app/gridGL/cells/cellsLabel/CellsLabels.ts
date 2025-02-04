@@ -22,8 +22,7 @@ import type {
 } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
-import type { Point } from 'pixi.js';
-import { Container, Graphics, Rectangle } from 'pixi.js';
+import { Container, Graphics, Point, Rectangle } from 'pixi.js';
 
 export class CellsLabels extends Container {
   private cellsSheet: CellsSheet;
@@ -100,6 +99,25 @@ export class CellsLabels extends Container {
     }
     return false;
   };
+
+  // Returns whether the rect has content by checking CellsTextHashContent. If
+  // ignore is defined, we ignore content that overlaps any of the rectangles.
+  hasRectangle(rect: Rectangle, ignore?: Rectangle[]): undefined | Point[] {
+    const overlaps: Point[] = [];
+    for (let column = rect.x; column < rect.x + rect.width; column++) {
+      for (let row = rect.y; row < rect.y + rect.height; row++) {
+        if (this.hasCell(column, row)) {
+          if (ignore && ignore.some((r) => intersects.rectangleRectangle(r, new Rectangle(column, row, 1, 1)))) {
+            continue;
+          }
+          overlaps.push(new Point(column, row));
+        }
+      }
+    }
+    if (overlaps.length > 0) {
+      return overlaps;
+    }
+  }
 
   // Returns whether the rect has content by checking CellsTextHashContent.
   hasCellInRect = (rect: Rectangle): boolean => {

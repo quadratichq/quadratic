@@ -25,6 +25,7 @@ interface MoveCells {
   toRow: number;
   offset: { x: number; y: number };
   table?: { offsetX: number; offsetY: number };
+  original?: Rectangle;
 }
 
 export class PointerCellMoving {
@@ -55,19 +56,20 @@ export class PointerCellMoving {
   }
 
   // Starts a table move.
-  tableMove = (column: number, row: number, point: Point) => {
+  tableMove = (column: number, row: number, point: Point, width: number, height: number) => {
     if (this.state) return false;
     this.startCell = new Point(column, row);
     const offset = sheets.sheet.getCellOffsets(column, row);
     this.movingCells = {
       column,
       row,
-      width: 1,
-      height: 1,
+      width,
+      height,
       toColumn: column,
       toRow: row,
       offset: { x: 0, y: 0 },
       table: { offsetX: point.x - offset.x, offsetY: point.y - offset.y },
+      original: new Rectangle(column, row, width, height),
     };
     this.startMove();
   };

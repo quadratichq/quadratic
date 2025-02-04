@@ -164,21 +164,14 @@ class HTMLCellsHandler {
     const cell = this.getCells().find(
       (cell) => cell.x === codeCell.x && cell.y === codeCell.y && cell.sheet.id === sheets.current
     );
-    if (cell) {
-      cell.active = true;
-      cell.border.style.border = '2px solid hsl(var(--primary))';
-      cell.pointerEvents = 'auto';
-      cell.iframe.style.pointerEvents = cell.pointerEvents;
-    }
+    cell?.activate();
   }
 
   hideActive(codeCell: JsRenderCodeCell) {
     const cell = this.getCells().find(
       (cell) => cell.x === codeCell.x && cell.y === codeCell.y && cell.sheet.id === sheets.current
     );
-    if (cell) {
-      cell.activate();
-    }
+    cell?.deactivate();
   }
 
   disable() {
