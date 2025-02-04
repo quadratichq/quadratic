@@ -176,45 +176,7 @@ impl GridController {
         op: Operation,
     ) -> Result<()> {
         if let Operation::DeleteDataTable { sheet_pos } = op {
-            let sheet_id = sheet_pos.sheet_id;
-            let pos = Pos::from(sheet_pos);
-            let sheet = self.try_sheet_result(sheet_id)?;
-            let data_table_pos = sheet.first_data_table_within(pos)?;
-
-            // mark deleted data table as dirty
-            self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
-
-            let sheet = self.try_sheet_mut_result(sheet_id)?;
-
-            // Pull out the data table via a swap, removing it from the sheet
-            let data_table = sheet.delete_data_table(data_table_pos)?;
-            let mut data_table_rect = data_table.output_sheet_rect(sheet_pos, false);
-            let cell_value = sheet.cell_value_result(data_table_pos)?;
-
-            // send updated bounds to the client after deleting the data table
-            self.send_updated_bounds(sheet_id);
-            // mark table fills and borders as dirty
-            data_table.add_dirty_fills_and_borders(transaction, sheet_id);
-
-            let forward_operations = vec![op];
-            let reverse_operations = vec![Operation::AddDataTable {
-                sheet_pos,
-                data_table,
-                cell_value,
-            }];
-
-            self.data_table_operations(
-                transaction,
-                forward_operations,
-                reverse_operations,
-                Some(&data_table_rect),
-            );
-
-            // Sets the cursor to the entire table, including the new header
-            if transaction.is_user() {
-                data_table_rect.max.y += 1;
-                transaction.add_update_selection(A1Selection::from_rect(data_table_rect));
-            }
+            self.finalize_data_table(transaction, sheet_pos, None, None);
 
             return Ok(());
         };
@@ -332,13 +294,7 @@ impl GridController {
 
             if !data_table.header_is_first_row && data_table.show_ui && data_table.show_columns {
                 let headers = data_table.column_headers_to_cell_values();
-                values.insert_row(0, headers).map_err(|e| {
-                    dbgjs!(format!(
-                        "error inserting header row in execute_flatten_data_table: {:?}",
-                        e
-                    ));
-                    e
-                })?;
+                values.insert_row(0, headers)?;
             }
 
             // delete the heading row if toggled off
@@ -350,13 +306,7 @@ impl GridController {
             if data_table.show_ui && data_table.show_name {
                 let mut table_row = vec![CellValue::Blank; w.get() as usize];
                 table_row[0] = data_table.name.to_owned();
-                values.insert_row(0, Some(table_row)).map_err(|e| {
-                    dbgjs!(format!(
-                        "error inserting table title row in execute_flatten_data_table: {:?}",
-                        e
-                    ));
-                    e
-                })?;
+                values.insert_row(0, Some(table_row))?;
             }
 
             let max = Pos {
@@ -560,8 +510,10 @@ impl GridController {
                 }
             }
 
-            let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let data_table = sheet.data_table_mut(data_table_pos)?;
+            // let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let data_table = self
+                .try_sheet_mut_result(sheet_id)?
+                .data_table_mut(data_table_pos)?;
             let data_table_rect = data_table
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
