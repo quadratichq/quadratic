@@ -123,12 +123,16 @@ impl DataTable {
         if pos.x == 0 && pos.y == 0 && self.show_ui && self.show_name {
             return Ok(self.name.as_ref());
         }
+<<<<<<< HEAD
+        if pos.y == (if self.show_name { 1 } else { 0 }) && self.show_ui && self.show_columns {
+=======
 
         if pos.y == (if self.show_name { 1 } else { 0 })
             && self.show_ui
             && self.show_columns
             && !self.header_is_first_row
         {
+>>>>>>> 9b8f34ca9461f2cfe1f9ed22ab891a8bdfced275
             if let Some(columns) = &self.column_headers {
                 let display_columns = columns.iter().filter(|c| c.display).collect::<Vec<_>>();
                 if let Some(column) = display_columns.get(pos.x as usize) {

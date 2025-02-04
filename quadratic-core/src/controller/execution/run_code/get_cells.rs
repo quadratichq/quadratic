@@ -144,11 +144,11 @@ impl GridController {
             return Err(error);
         };
 
-        let rects = selection_sheet.selection_to_rects(
-            &selection,
-            code.language == CodeCellLanguage::Python,
-            false,
+        let force_columns = matches!(
+            code.language,
+            CodeCellLanguage::Python | CodeCellLanguage::Javascript
         );
+        let rects = selection_sheet.selection_to_rects(&selection, force_columns, false);
         if rects.len() > 1 {
             // multiple rects not supported
             let msg = "Multiple rects not supported".to_string();

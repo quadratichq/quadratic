@@ -76,7 +76,8 @@ export function CodeEditorHeaderLabel() {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target instanceof HTMLInputElement) {
         const input = e.target;
-        const value = input.value.trim();
+        const value = input.value.replace(/ /g, '_').trim();
+        input.value = value;
         if (value === tableName) {
           return;
         }

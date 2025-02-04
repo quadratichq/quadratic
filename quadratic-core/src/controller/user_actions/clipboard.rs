@@ -145,9 +145,12 @@ mod test {
 
     use super::*;
     use crate::controller::operations::clipboard::ClipboardOperation;
+    use crate::controller::user_actions::import::tests::simple_csv_at;
     use crate::grid::js_types::JsClipboard;
     use crate::grid::sheet::borders::{BorderSelection, BorderSide, BorderStyle, CellBorderLine};
+    use crate::grid::sort::SortDirection;
     use crate::test_util::{assert_code_cell_value, assert_display_cell_value};
+    use crate::Array;
     use crate::{
         controller::GridController,
         grid::{js_types::CellFormatSummary, CodeCellLanguage, CodeCellValue, SheetId},
@@ -1212,5 +1215,207 @@ mod test {
         assert_code_cell_value(&gc, sheet_id, 2, 2, "A2");
         assert_code_cell_value(&gc, sheet_id, 3, 2, r#"q.cells("A2")"#);
         assert_code_cell_value(&gc, sheet_id, 4, 2, r#"return q.cells("A2");"#);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_paste_in_data_table() {
+        let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
+
+        let sheet = gc.sheet_mut(sheet_id);
+        let values = vec![vec!["value".to_string(); 2]; 2];
+        sheet.set_cell_values(Rect::from_numbers(1, 1, 2, 2), &Array::from(values));
+
+        let selection = A1Selection::from_rect(SheetRect::new(1, 1, 2, 2, sheet_id));
+        let JsClipboard { plain_text, html } = sheet
+            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+            .unwrap();
+
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1_sheet_id("F5", &sheet_id),
+            Some(plain_text.clone()),
+            Some(html.clone()),
+            PasteSpecial::None,
+            None,
+        );
+
+        let sheet = gc.sheet_mut(sheet_id);
+        let data_table = sheet.data_table(pos).unwrap();
+        assert_eq!(
+            sheet.display_value(pos![F5]).unwrap(),
+            CellValue::Text("value".to_string())
+        );
+        assert_eq!(
+            sheet.display_value(pos![G6]).unwrap(),
+            CellValue::Text("value".to_string())
+        );
+        assert_eq!(
+            data_table.value.get(1, 2).unwrap(),
+            &CellValue::Text("value".to_string())
+        );
+        assert_eq!(
+            data_table.value.get(2, 3).unwrap(),
+            &CellValue::Text("value".to_string())
+        );
+
+        // first row is not header
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        data_table.header_is_first_row = false;
+
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1_sheet_id("G10", &sheet_id),
+            Some(plain_text.clone()),
+            Some(html.clone()),
+            PasteSpecial::None,
+            None,
+        );
+
+        let sheet = gc.sheet_mut(sheet_id);
+        let data_table = sheet.data_table(pos).unwrap();
+        assert_eq!(
+            sheet.display_value(pos![G10]).unwrap(),
+            CellValue::Text("value".to_string())
+        );
+        assert_eq!(
+            sheet.display_value(pos![H11]).unwrap(),
+            CellValue::Text("value".to_string())
+        );
+        assert_eq!(
+            data_table.value.get(2, 6).unwrap(),
+            &CellValue::Text("value".to_string())
+        );
+        assert_eq!(
+            data_table.value.get(3, 7).unwrap(),
+            &CellValue::Text("value".to_string())
+        );
+
+        // first row is not header
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        data_table.show_ui = false;
+
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1_sheet_id("E11", &sheet_id),
+            Some(plain_text),
+            Some(html),
+            PasteSpecial::None,
+            None,
+        );
+
+        let sheet = gc.sheet_mut(sheet_id);
+        let data_table = sheet.data_table(pos).unwrap();
+        assert_eq!(
+            sheet.display_value(pos![E11]).unwrap(),
+            CellValue::Text("value".to_string())
+        );
+        assert_eq!(
+            sheet.display_value(pos![F12]).unwrap(),
+            CellValue::Text("value".to_string())
+        );
+        assert_eq!(
+            data_table.value.get(0, 9).unwrap(),
+            &CellValue::Text("value".to_string())
+        );
+        assert_eq!(
+            data_table.value.get(1, 10).unwrap(),
+            &CellValue::Text("value".to_string())
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_paste_in_data_table_with_sort() {
+        let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
+
+        // sort column 3 descending
+        let sheet = gc.sheet_mut(sheet_id);
+        let data_table = sheet.data_table_mut(pos).unwrap();
+        data_table
+            .sort_column(3, SortDirection::Descending)
+            .unwrap();
+
+        let sheet = gc.sheet_mut(sheet_id);
+        let values = vec![vec!["value".to_string(); 2]; 2];
+        sheet.set_cell_values(Rect::from_numbers(1, 1, 2, 2), &Array::from(values));
+
+        let selection = A1Selection::from_rect(SheetRect::new(1, 1, 2, 2, sheet_id));
+        let JsClipboard { plain_text, html } = sheet
+            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+            .unwrap();
+
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1_sheet_id("F5", &sheet_id),
+            Some(plain_text),
+            Some(html),
+            PasteSpecial::None,
+            None,
+        );
+
+        let sheet = gc.sheet_mut(sheet_id);
+        let data_table = sheet.data_table(pos).unwrap();
+
+        assert_eq!(
+            sheet.display_value(pos![F5]).unwrap(),
+            CellValue::Text("value".to_string())
+        );
+        assert_eq!(
+            sheet.display_value(pos![G6]).unwrap(),
+            CellValue::Text("value".to_string())
+        );
+        assert_eq!(
+            data_table.value.get(1, 6).unwrap(),
+            &CellValue::Text("value".to_string())
+        );
+        assert_eq!(
+            data_table.value.get(2, 8).unwrap(),
+            &CellValue::Text("value".to_string())
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_paste_in_data_table_with_hidden_column() {
+        let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
+
+        // hide first column
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        let column_headers = data_table.column_headers.as_mut().unwrap();
+        column_headers[2].display = false;
+
+        let sheet = gc.sheet_mut(sheet_id);
+        let values = vec![vec!["value".to_string(); 2]; 2];
+        sheet.set_cell_values(Rect::from_numbers(1, 1, 2, 2), &Array::from(values));
+
+        let selection = A1Selection::from_rect(SheetRect::new(1, 1, 2, 2, sheet_id));
+        let JsClipboard { plain_text, html } = sheet
+            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+            .unwrap();
+
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1_sheet_id("F5", &sheet_id),
+            Some(plain_text),
+            Some(html),
+            PasteSpecial::None,
+            None,
+        );
+
+        let sheet = gc.sheet_mut(sheet_id);
+        let data_table = sheet.data_table(pos).unwrap();
+
+        assert_eq!(
+            sheet.display_value(pos![F5]).unwrap(),
+            CellValue::Text("value".to_string())
+        );
+        assert_eq!(
+            sheet.display_value(pos![G6]).unwrap(),
+            CellValue::Text("value".to_string())
+        );
+        assert_eq!(
+            data_table.value.get(1, 2).unwrap(),
+            &CellValue::Text("value".to_string())
+        );
+        assert_eq!(
+            data_table.value.get(3, 3).unwrap(),
+            &CellValue::Text("value".to_string())
+        );
     }
 }
