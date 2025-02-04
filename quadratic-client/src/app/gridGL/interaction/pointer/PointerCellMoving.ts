@@ -54,10 +54,6 @@ export class PointerCellMoving {
     htmlCellsHandler.disable();
   }
 
-  private afterMove() {
-    htmlCellsHandler.enable();
-  }
-
   // Starts a table move.
   tableMove = (column: number, row: number, point: Point) => {
     if (this.state) return false;
