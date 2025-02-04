@@ -20,7 +20,7 @@ import { useRecoilState } from 'recoil';
 export const GoTo = () => {
   const [showGoToMenu, setShowGoToMenu] = useRecoilState(editorInteractionStateShowGoToMenuAtom);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [value, setValue] = useState<string>(sheets.sheet.cursor.toA1String());
+  const [value, setValue] = useState<string>();
 
   const closeMenu = useCallback(() => {
     setShowGoToMenu(false);
