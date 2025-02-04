@@ -160,26 +160,26 @@ class HTMLCellsHandler {
     }
   }
 
-  showActive(codeCell: JsRenderCodeCell, isSelected: boolean) {
+  showActive(codeCell: JsRenderCodeCell) {
     const cell = this.getCells().find(
       (cell) => cell.x === codeCell.x && cell.y === codeCell.y && cell.sheet.id === sheets.current
     );
-    if (cell) {
-      cell.border.style.border = '2px solid hsl(var(--primary))';
-      cell.pointerEvents = isSelected ? 'auto' : 'none';
-      cell.iframe.style.pointerEvents = cell.pointerEvents;
-    }
+    cell?.activate();
   }
 
   hideActive(codeCell: JsRenderCodeCell) {
     const cell = this.getCells().find(
       (cell) => cell.x === codeCell.x && cell.y === codeCell.y && cell.sheet.id === sheets.current
     );
-    if (cell) {
-      cell.border.style.border = '1px solid hsl(var(--muted-foreground))';
-      cell.pointerEvents = 'none';
-      cell.iframe.style.pointerEvents = cell.pointerEvents;
-    }
+    cell?.deactivate();
+  }
+
+  disable() {
+    this.getCells().forEach((cell) => cell.deactivate());
+  }
+
+  enable() {
+    this.getCells().forEach((cell) => cell.reactivate());
   }
 }
 

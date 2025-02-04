@@ -5,19 +5,22 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { A1Error, JsTableInfo } from '@/app/quadratic-core-types';
 import { getTableInfo, stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import '@/app/ui/styles/floating-dialog.css';
-import { ArrowDropDownIcon, EditIcon, GoToIcon } from '@/shared/components/Icons';
-import { Button } from '@/shared/shadcn/ui/button';
-import { Command, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
+import { GoToIcon } from '@/shared/components/Icons';
+import {
+  Command,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from '@/shared/shadcn/ui/command';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
 export const GoTo = () => {
   const [showGoToMenu, setShowGoToMenu] = useRecoilState(editorInteractionStateShowGoToMenuAtom);
-  const [pages, setPages] = useState<string[]>([]);
-  const page = pages[pages.length - 1];
-
-  const [value, setValue] = useState<string>('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [value, setValue] = useState<string>(sheets.sheet.cursor.toA1String());
 
   const closeMenu = useCallback(() => {
     setShowGoToMenu(false);
@@ -49,7 +52,7 @@ export const GoTo = () => {
     if (!value) {
       return (
         <span>
-          Go to <span className="font-bold">A1</span>
+          <span className="font-bold">A1</span>
         </span>
       );
     }
@@ -57,7 +60,7 @@ export const GoTo = () => {
       const selection = stringToSelection(value, sheets.current, sheets.a1Context);
       return (
         <span>
-          Go to <span className="font-bold">{selection.toA1String(sheets.current, sheets.a1Context)}</span>
+          <span className="font-bold">{selection.toA1String(sheets.current, sheets.a1Context)}</span>
         </span>
       );
     } catch (e: any) {
@@ -101,20 +104,12 @@ export const GoTo = () => {
 
   const selectTable = useCallback(
     (tableName: string) => {
-      setPages([]);
       const selection = stringToSelection(tableName, sheets.current, sheets.a1Context);
       sheets.changeSelection(selection);
       closeMenu();
     },
-    [setPages, closeMenu]
+    [closeMenu]
   );
-
-  const inputRef = useRef<HTMLInputElement>(null);
-  const editCurrentValue = useCallback(() => {
-    setValue(sheets.sheet.cursor.toA1String());
-    inputRef.current?.focus();
-    inputRef.current?.select();
-  }, []);
 
   if (!showGoToMenu) {
     return null;
@@ -132,61 +127,34 @@ export const GoTo = () => {
             omitIcon={true}
           />
         </div>
-        <Tooltip>
-          <TooltipTrigger asChild className="flex-grow-0">
-            <Button variant="ghost" onClick={editCurrentValue}>
-              <EditIcon />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Edit current selection</TooltipContent>
-        </Tooltip>
       </div>
-      <CommandList className="p-2">
-        <CommandItem
-          onSelect={onSelect}
-          className="flex cursor-pointer items-center justify-between"
-          onPointerDown={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-        >
-          {convertedInput ? <div>{convertedInput}</div> : null}
-          <GoToIcon className="text-muted-foreground" />
-        </CommandItem>
+      <CommandList className="">
+        <CommandGroup heading="Go to" className="border-b border-b-border">
+          <CommandItem
+            onSelect={onSelect}
+            className="flex cursor-pointer items-center justify-between"
+            onPointerDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            {convertedInput ? <div>{convertedInput}</div> : null}
+            <GoToIcon className="text-muted-foreground" />
+          </CommandItem>
+        </CommandGroup>
         {/* <CommandItem className="flex cursor-pointer items-center justify-between">
           <div>Rename range {convertedInput}</div>
         </CommandItem> */}
-        {!page && (
-          <CommandItem
-            className="mt-2 pt-2"
-            style={{ borderTop: '2px solid hsl(var(--primary-foreground))' }}
-            onSelect={() => setPages([...pages, 'tables'])}
-          >
-            <div className="flex w-full items-center justify-between">
-              <div>Select table</div>
-              <ArrowDropDownIcon className="text-muted-foreground group-hover:text-foreground" />
-            </div>
-          </CommandItem>
-        )}
-        {page === 'tables' && (
-          <>
-            <CommandItem
-              className="mt-2 pt-2"
-              style={{ borderTop: '2px solid hsl(var(--primary-foreground))' }}
-              onSelect={() => setPages(pages.filter((s) => s !== 'tables'))}
-            >
-              <div className="flex w-full items-center justify-between">
-                <div>Select table</div>
-                <ArrowDropDownIcon className="text-muted-foreground group-hover:text-foreground" />
-              </div>
+
+        <CommandGroup heading="Tables">
+          {tableInfo?.map(({ name, sheet_name }) => (
+            <CommandItem key={name} onSelect={() => selectTable(name)} className="flex items-center justify-between">
+              <div className="">{name}</div>
+              <div className="text-xs text-muted-foreground">{sheet_name}</div>
             </CommandItem>
-            {tableInfo?.map((info) => (
-              <CommandItem key={info.name} onSelect={() => selectTable(info.name)}>
-                <div className="ml-3 font-bold">{info.name}</div>
-              </CommandItem>
-            ))}
-          </>
-        )}
+          ))}
+        </CommandGroup>
+        <CommandSeparator />
       </CommandList>
     </Command>
   );

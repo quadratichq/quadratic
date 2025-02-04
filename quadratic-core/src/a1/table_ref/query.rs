@@ -80,7 +80,7 @@ impl TableRef {
                         } else {
                             0
                         }),
-                )
+                );
             } else {
                 let min_y = bounds.min.y + table.y_adjustment(false);
                 if min_y > to || bounds.max.y < from {
@@ -234,10 +234,8 @@ impl TableRef {
         if table_name != self.table_name || !self.headers {
             return None;
         }
-        let Some(table) = context.try_table(&self.table_name) else {
-            return None;
-        };
-        if table.show_ui == false || table.show_columns == false {
+        let table = context.try_table(&self.table_name)?;
+        if !table.show_ui || !table.show_columns {
             return None;
         }
 

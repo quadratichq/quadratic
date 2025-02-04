@@ -75,7 +75,13 @@ impl Sheet {
                         let cell_value = self.cell_value(pos).unwrap_or(CellValue::Blank);
 
                         match (include_code, &cell_value) {
-                            (true, CellValue::Code(_)) => cell_value,
+                            (
+                                true,
+                                CellValue::Code(_)
+                                | CellValue::Import(_)
+                                | CellValue::Image(_)
+                                | CellValue::Html(_),
+                            ) => cell_value,
                             (_, _) => self.display_value(pos).unwrap_or(CellValue::Blank),
                         }
                     })

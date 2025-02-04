@@ -13,13 +13,14 @@ concurrency:
 jobs:
   create_deployment:
     name: Create Deployment
-    runs-on: blacksmith-2vcpu-ubuntu-2204
-    if: github.head_ref != 'qa' || github.base_ref != 'main'
     permissions:
       contents: read
       pull-requests: write
       issues: write
       deployments: write
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    if: github.head_ref != 'qa' || github.base_ref != 'main'
+    timeout-minutes: 5
     outputs:
       deployment_id: ${{ steps.deployment.outputs.id }}
     steps:
@@ -106,12 +107,12 @@ jobs:
       deployments: write
     runs-on: ${{ matrix.runner }}
     if: github.head_ref != 'qa' || github.base_ref != 'main'
-    timeout-minutes: 30
+    timeout-minutes: 15
     strategy:
       matrix:
         include:
           - service: client
-            runner: blacksmith-8vcpu-ubuntu-2204
+            runner: blacksmith-4vcpu-ubuntu-2204
           - service: api
             runner: blacksmith-2vcpu-ubuntu-2204
           - service: connection

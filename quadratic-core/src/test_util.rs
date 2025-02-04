@@ -275,7 +275,7 @@ pub fn print_sheet(sheet: &Sheet) {
 
 /// Util to print a simple grid to assist in TDD
 #[track_caller]
-pub fn print_table_sheet(sheet: &Sheet, rect: Rect, disply_cell_values: bool) {
+pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
     let mut vals = vec![];
     let mut builder = Builder::default();
     let columns = (rect.x_range())
@@ -305,7 +305,7 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, disply_cell_values: bool) {
                 fill_colors.push((count_y + 1, count_x + 1, fill_color));
             }
 
-            let cell_value = match disply_cell_values {
+            let cell_value = match display_cell_values {
                 true => sheet.cell_value(pos),
                 false => sheet
                     .data_table(rect.min)

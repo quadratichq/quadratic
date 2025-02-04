@@ -194,8 +194,8 @@ impl GridController {
 mod test {
     use crate::{
         a1::A1Selection,
-        controller::GridController,
-        grid::{NumericFormat, SheetId},
+        controller::{user_actions::import::tests::simple_csv_at, GridController},
+        grid::{sort::SortDirection, NumericFormat, SheetId},
         CellValue, Pos, Rect, SheetPos,
     };
     use std::str::FromStr;
@@ -415,7 +415,393 @@ mod test {
 
     #[test]
     #[parallel]
+    fn test_set_value_data_table() {
+        let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
+
+        let get_cell = |gc: &GridController, sheet_pos: SheetPos| {
+            gc.sheet(sheet_id)
+                .display_value(sheet_pos.into())
+                .unwrap_or_default()
+        };
+
+        let get_data_table_value = |gc: &GridController, data_table_pos: Pos, value_pos: Pos| {
+            gc.sheet(sheet_id)
+                .data_table(data_table_pos)
+                .unwrap()
+                .value
+                .get(value_pos.x as u32, value_pos.y as u32)
+                .unwrap()
+                .clone()
+        };
+
+        let sheet_pos = SheetPos::from((pos![E4], sheet_id));
+        assert_eq!(
+            get_cell(&gc, sheet_pos),
+            CellValue::Text("Southborough".into())
+        );
+        assert_eq!(
+            get_data_table_value(&gc, pos, (0, 1).into()),
+            CellValue::Text("Southborough".into())
+        );
+
+        gc.set_value(sheet_pos, "test".into(), None).unwrap();
+        assert_eq!(get_cell(&gc, sheet_pos), CellValue::Text("test".into()));
+        assert_eq!(
+            get_data_table_value(&gc, pos, (0, 1).into()),
+            CellValue::Text("test".into())
+        );
+
+        gc.undo(None);
+        assert_eq!(
+            get_cell(&gc, sheet_pos),
+            CellValue::Text("Southborough".into())
+        );
+        assert_eq!(
+            get_data_table_value(&gc, pos, (0, 1).into()),
+            CellValue::Text("Southborough".into())
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_set_value_data_table_first_row_header_and_show_ui() {
+        let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
+
+        let get_cell = |gc: &GridController, sheet_pos: SheetPos| {
+            gc.sheet(sheet_id)
+                .display_value(sheet_pos.into())
+                .unwrap_or_default()
+        };
+
+        let get_data_table_value = |gc: &GridController, data_table_pos: Pos, value_pos: Pos| {
+            gc.sheet(sheet_id)
+                .data_table(data_table_pos)
+                .unwrap()
+                .value
+                .get(value_pos.x as u32, value_pos.y as u32)
+                .unwrap()
+                .clone()
+        };
+
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        data_table.header_is_first_row = false;
+        assert_eq!(
+            get_cell(&gc, SheetPos::from((pos![E4], sheet_id))),
+            CellValue::Text("city".into())
+        );
+        assert_eq!(
+            get_data_table_value(&gc, pos, (0, 0).into()),
+            CellValue::Text("city".into())
+        );
+
+        assert_eq!(
+            get_cell(&gc, SheetPos::from((pos![H5], sheet_id))),
+            CellValue::Number(9686.into())
+        );
+        assert_eq!(
+            get_data_table_value(&gc, pos, (3, 1).into()),
+            CellValue::Number(9686.into())
+        );
+
+        // set value
+        gc.set_value(SheetPos::from((pos![E4], sheet_id)), "city1".into(), None)
+            .unwrap();
+        gc.set_value(SheetPos::from((pos![H5], sheet_id)), "1111".into(), None)
+            .unwrap();
+        assert_eq!(
+            get_cell(&gc, SheetPos::from((pos![E4], sheet_id))),
+            CellValue::Text("city1".into())
+        );
+        assert_eq!(
+            get_data_table_value(&gc, pos, (0, 0).into()),
+            CellValue::Text("city1".into())
+        );
+        assert_eq!(
+            get_cell(&gc, SheetPos::from((pos![H5], sheet_id))),
+            CellValue::Number(1111.into())
+        );
+        assert_eq!(
+            get_data_table_value(&gc, pos, (3, 1).into()),
+            CellValue::Number(1111.into())
+        );
+
+        // show name
+        let data_table: &mut crate::grid::DataTable =
+            gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        data_table.show_name = false;
+        assert_eq!(
+            get_cell(&gc, SheetPos::from((pos![E3], sheet_id))),
+            CellValue::Text("city1".into())
+        );
+        assert_eq!(
+            get_cell(&gc, SheetPos::from((pos![H4], sheet_id))),
+            CellValue::Number(1111.into())
+        );
+
+        // set value
+        gc.set_value(SheetPos::from((pos![E3], sheet_id)), "city2".into(), None)
+            .unwrap();
+        gc.set_value(SheetPos::from((pos![H4], sheet_id)), "2222".into(), None)
+            .unwrap();
+        assert_eq!(
+            get_cell(&gc, SheetPos::from((pos![E3], sheet_id))),
+            CellValue::Text("city2".into())
+        );
+        assert_eq!(
+            get_data_table_value(&gc, pos, (0, 0).into()),
+            CellValue::Text("city2".into())
+        );
+        assert_eq!(
+            get_cell(&gc, SheetPos::from((pos![H4], sheet_id))),
+            CellValue::Number(2222.into())
+        );
+        assert_eq!(
+            get_data_table_value(&gc, pos, (3, 1).into()),
+            CellValue::Number(2222.into())
+        );
+
+        // show name
+        let data_table: &mut crate::grid::DataTable =
+            gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        data_table.show_columns = false;
+        assert_eq!(
+            get_cell(&gc, SheetPos::from((pos![E2], sheet_id))),
+            CellValue::Text("city2".into())
+        );
+        assert_eq!(
+            get_cell(&gc, SheetPos::from((pos![H3], sheet_id))),
+            CellValue::Number(2222.into())
+        );
+
+        // set value
+        gc.set_value(SheetPos::from((pos![E2], sheet_id)), "city3".into(), None)
+            .unwrap();
+        gc.set_value(SheetPos::from((pos![H3], sheet_id)), "3333".into(), None)
+            .unwrap();
+        assert_eq!(
+            get_cell(&gc, SheetPos::from((pos![E2], sheet_id))),
+            CellValue::Text("city3".into())
+        );
+        assert_eq!(
+            get_data_table_value(&gc, pos, (0, 0).into()),
+            CellValue::Text("city3".into())
+        );
+        assert_eq!(
+            get_cell(&gc, SheetPos::from((pos![H3], sheet_id))),
+            CellValue::Number(3333.into())
+        );
+        assert_eq!(
+            get_data_table_value(&gc, pos, (3, 1).into()),
+            CellValue::Number(3333.into())
+        );
+
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        data_table.header_is_first_row = true;
+        assert_eq!(
+            get_cell(&gc, SheetPos::from((pos![E2], sheet_id))),
+            CellValue::Text("Southborough".into())
+        );
+        assert_eq!(
+            get_cell(&gc, SheetPos::from((pos![H2], sheet_id))),
+            CellValue::Number(3333.into())
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_set_value_data_table_first_with_hidden_column() {
+        let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
+
+        let get_cell = |gc: &GridController, sheet_pos: SheetPos| {
+            gc.sheet(sheet_id)
+                .display_value(sheet_pos.into())
+                .unwrap_or_default()
+        };
+
+        let get_data_table_value = |gc: &GridController, data_table_pos: Pos, value_pos: Pos| {
+            gc.sheet(sheet_id)
+                .data_table(data_table_pos)
+                .unwrap()
+                .value
+                .get(value_pos.x as u32, value_pos.y as u32)
+                .unwrap()
+                .clone()
+        };
+
+        // hide first column
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        let column_headers = data_table.column_headers.as_mut().unwrap();
+        column_headers[0].display = false;
+        assert_eq!(
+            get_cell(&gc, SheetPos::from((pos![G4], sheet_id))),
+            CellValue::Number(9686.into())
+        );
+        assert_eq!(
+            get_data_table_value(&gc, pos, (3, 1).into()),
+            CellValue::Number(9686.into())
+        );
+
+        // set value
+        gc.set_value(SheetPos::from((pos![G4], sheet_id)), "999999".into(), None)
+            .unwrap();
+        assert_eq!(
+            get_cell(&gc, SheetPos::from((pos![G4], sheet_id))),
+            CellValue::Number(999999.into())
+        );
+        assert_eq!(
+            get_data_table_value(&gc, pos, (3, 1).into()),
+            CellValue::Number(999999.into())
+        );
+
+        // show first column
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        let column_headers = data_table.column_headers.as_mut().unwrap();
+        column_headers[0].display = true;
+        assert_eq!(
+            get_cell(&gc, SheetPos::from((pos![H4], sheet_id))),
+            CellValue::Number(999999.into())
+        );
+        assert_eq!(
+            get_data_table_value(&gc, pos, (3, 1).into()),
+            CellValue::Number(999999.into())
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_set_value_data_table_first_with_sort() {
+        let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
+
+        let get_cell = |gc: &GridController, sheet_pos: SheetPos| {
+            gc.sheet(sheet_id)
+                .display_value(sheet_pos.into())
+                .unwrap_or_default()
+        };
+
+        let get_data_table_value = |gc: &GridController, data_table_pos: Pos, value_pos: Pos| {
+            gc.sheet(sheet_id)
+                .data_table(data_table_pos)
+                .unwrap()
+                .value
+                .get(value_pos.x as u32, value_pos.y as u32)
+                .unwrap()
+                .clone()
+        };
+
+        // sort column 3 descending
+        let sheet = gc.sheet_mut(sheet_id);
+        let data_table = sheet.data_table_mut(pos).unwrap();
+        data_table
+            .sort_column(3, SortDirection::Descending)
+            .unwrap();
+        assert_eq!(
+            get_cell(&gc, SheetPos::from((pos![H4], sheet_id))),
+            CellValue::Number(152227.into())
+        );
+        assert_eq!(
+            get_data_table_value(&gc, pos, (3, 5).into()),
+            CellValue::Number(152227.into())
+        );
+
+        // set value
+        gc.set_value(SheetPos::from((pos![H4], sheet_id)), "999999".into(), None)
+            .unwrap();
+        assert_eq!(
+            get_cell(&gc, SheetPos::from((pos![H4], sheet_id))),
+            CellValue::Number(999999.into())
+        );
+        assert_eq!(
+            get_data_table_value(&gc, pos, (3, 5).into()),
+            CellValue::Number(999999.into())
+        );
+
+        // remove sort
+        let sheet = gc.sheet_mut(sheet_id);
+        let data_table = sheet.data_table_mut(pos).unwrap();
+        data_table.sort_column(3, SortDirection::None).unwrap();
+        assert_eq!(
+            get_cell(&gc, SheetPos::from((pos![H4], sheet_id))),
+            CellValue::Number(9686.into())
+        );
+        assert_eq!(
+            get_cell(&gc, SheetPos::from((pos![H8], sheet_id))),
+            CellValue::Number(999999.into())
+        );
+        assert_eq!(
+            get_data_table_value(&gc, pos, (3, 5).into()),
+            CellValue::Number(999999.into())
+        );
+    }
+
+    #[test]
+    #[parallel]
     fn test_expand_data_table_column_row_on_setting_value() {
-        todo!("todo(ayush): add tests");
+        let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
+
+        let sheet = gc.sheet(sheet_id);
+        let data_table = sheet.data_table(pos).unwrap();
+        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 8, 13));
+
+        gc.set_cell_value(SheetPos::from((9, 4, sheet_id)), "test1".into(), None);
+
+        // column expand
+        let sheet = gc.sheet(sheet_id);
+        let data_table = sheet.data_table(pos).unwrap();
+        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 9, 13));
+        assert_eq!(
+            data_table.cell_value_at(4, 2),
+            Some(CellValue::Text("test1".into()))
+        );
+
+        gc.undo(None);
+
+        let sheet = gc.sheet(sheet_id);
+        let data_table = sheet.data_table(pos).unwrap();
+        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 8, 13));
+        assert_eq!(
+            sheet.cell_value(pos![I4]),
+            Some(CellValue::Text("test1".into()))
+        );
+
+        gc.set_cell_value(SheetPos::from((9, 6, sheet_id)), "test2".into(), None);
+
+        let sheet = gc.sheet(sheet_id);
+        let data_table = sheet.data_table(pos).unwrap();
+        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 8, 13));
+        assert_eq!(
+            sheet.cell_value(pos![I6]),
+            Some(CellValue::Text("test2".into()))
+        );
+
+        // row expand
+        gc.set_cell_value(SheetPos::from((6, 14, sheet_id)), "test3".into(), None);
+
+        let sheet = gc.sheet(sheet_id);
+        let data_table = sheet.data_table(pos).unwrap();
+        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 8, 14));
+        assert_eq!(
+            data_table.cell_value_at(1, 12),
+            Some(CellValue::Text("test3".into()))
+        );
+
+        gc.undo(None);
+
+        let sheet = gc.sheet(sheet_id);
+        let data_table = sheet.data_table(pos).unwrap();
+        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 8, 13));
+        assert_eq!(
+            sheet.cell_value(pos![F14]),
+            Some(CellValue::Text("test3".into()))
+        );
+
+        gc.set_cell_value(SheetPos::from((8, 14, sheet_id)), "test4".into(), None);
+
+        let sheet = gc.sheet(sheet_id);
+        let data_table = sheet.data_table(pos).unwrap();
+        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 8, 13));
+        assert_eq!(
+            sheet.cell_value(pos![H14]),
+            Some(CellValue::Text("test4".into()))
+        );
     }
 }

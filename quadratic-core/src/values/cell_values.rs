@@ -22,6 +22,18 @@ impl CellValues {
         }
     }
 
+    pub fn new_blank(w: u32, h: u32) -> Self {
+        let mut columns = Vec::with_capacity(w as usize);
+        let mut column = BTreeMap::new();
+        for y in 0..h {
+            column.insert(y as u64, CellValue::Blank);
+        }
+        for _ in 0..w {
+            columns.push(column.clone());
+        }
+        Self { columns, w, h }
+    }
+
     pub fn get_except_blank(&self, x: u32, y: u32) -> Option<&CellValue> {
         assert!(x < self.w && y < self.h, "CellValues::get out of bounds");
         self.columns
@@ -280,6 +292,23 @@ mod test {
         assert_eq!(cell_values.columns.len(), 2);
         assert_eq!(cell_values.columns[0].len(), 0);
         assert_eq!(cell_values.columns[1].len(), 0);
+    }
+
+    #[test]
+    #[parallel]
+    fn new_blank() {
+        let cell_values = CellValues::new_blank(2, 3);
+        assert_eq!(cell_values.w, 2);
+        assert_eq!(cell_values.h, 3);
+        assert_eq!(cell_values.columns.len(), 2);
+        assert_eq!(cell_values.columns[0].len(), 3);
+        assert_eq!(cell_values.columns[1].len(), 3);
+        assert_eq!(cell_values.columns[0].get(&0), Some(&CellValue::Blank));
+        assert_eq!(cell_values.columns[1].get(&0), Some(&CellValue::Blank));
+        assert_eq!(cell_values.columns[0].get(&1), Some(&CellValue::Blank));
+        assert_eq!(cell_values.columns[1].get(&1), Some(&CellValue::Blank));
+        assert_eq!(cell_values.columns[0].get(&2), Some(&CellValue::Blank));
+        assert_eq!(cell_values.columns[1].get(&2), Some(&CellValue::Blank));
     }
 
     #[test]

@@ -19,6 +19,7 @@ interface Props {
   styles?: React.CSSProperties;
   onClose: () => void;
   onSave: (value: string) => void;
+  onInput?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 
   hasBorder?: number;
 
@@ -37,6 +38,7 @@ export const PixiRename = (props: Props) => {
     styles,
     onClose,
     onSave,
+    onInput,
     hasBorder,
     noShrink,
     selectOnFocus = true,
@@ -138,6 +140,7 @@ export const PixiRename = (props: Props) => {
       }}
       onKeyDown={onKeyDown}
       onChange={onChange}
+      onInput={onInput}
       defaultValue={initialValue ?? defaultValue}
     />
   );

@@ -468,7 +468,11 @@ impl DataTable {
         max: Option<usize>,
     ) -> String {
         let mut builder = Builder::default();
-        let array = data_table.display_value().unwrap().into_array().unwrap();
+        let array = data_table
+            .display_value(false)
+            .unwrap()
+            .into_array()
+            .unwrap();
         let max = max.unwrap_or(array.height() as usize);
         let title = title.unwrap_or("Data Table");
         let display_buffer = data_table
@@ -516,6 +520,41 @@ impl DataTable {
         }
 
         format!("\nData Table: {title}\n{table}")
+    }
+
+    /// Returns the display column index from the column index in the values array.
+    pub fn get_display_index_from_column_index(
+        &self,
+        column_index: u32,
+        include_self: bool,
+    ) -> i64 {
+        let mut x_adjustment = 0;
+        let columns = self.column_headers.iter().flatten().collect::<Vec<_>>();
+        for (i, column) in columns.iter().enumerate() {
+            if i > column_index as usize || (!include_self && i == column_index as usize) {
+                break;
+            }
+            if !column.display {
+                x_adjustment += 1;
+            }
+        }
+        column_index as i64 - x_adjustment
+    }
+
+    /// Returns the column index from the display column index.
+    pub fn get_column_index_from_display_index(&self, display_index: u32) -> u32 {
+        let mut column_index = -1;
+        let mut seen_display_index = -1;
+        for column in self.column_headers.iter().flatten() {
+            column_index += 1;
+            if column.display {
+                seen_display_index += 1;
+                if seen_display_index == display_index as i32 {
+                    break;
+                }
+            }
+        }
+        column_index.max(0) as u32
     }
 
     /// Returns the y adjustment for the data table to account for the UI
@@ -611,7 +650,11 @@ pub mod test {
     /// Assert a data table row matches the expected values
     #[track_caller]
     pub fn assert_data_table_row(data_table: &DataTable, row_index: usize, expected: Vec<&str>) {
-        let values = data_table.display_value().unwrap().into_array().unwrap();
+        let values = data_table
+            .display_value(false)
+            .unwrap()
+            .into_array()
+            .unwrap();
 
         values.get_row(row_index).unwrap().iter().enumerate().for_each(|(index, value)| {
             let value = value.to_string();
@@ -824,5 +867,61 @@ pub mod test {
             None,
         );
         assert!(data_table.is_single_column());
+    }
+
+    #[test]
+    fn test_get_display_index_from_column_index() {
+        let code_run = CodeRun::default();
+        let mut data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "Table 1",
+            Value::Array(Array::new_empty(ArraySize::new(4, 3).unwrap())),
+            false,
+            false,
+            true,
+            None,
+        );
+
+        // Create column headers with some hidden columns
+        data_table.column_headers = Some(vec![
+            DataTableColumnHeader::new("A".to_string(), false, 0), // hidden
+            DataTableColumnHeader::new("B".to_string(), true, 1),  // visible
+            DataTableColumnHeader::new("C".to_string(), false, 2), // hidden
+            DataTableColumnHeader::new("D".to_string(), true, 3),  // visible
+        ]);
+
+        assert_eq!(data_table.get_display_index_from_column_index(0, false), 0);
+        assert_eq!(data_table.get_display_index_from_column_index(0, true), -1);
+        assert_eq!(data_table.get_display_index_from_column_index(1, false), 0);
+        assert_eq!(data_table.get_display_index_from_column_index(1, true), 0);
+        assert_eq!(data_table.get_display_index_from_column_index(2, false), 1);
+        assert_eq!(data_table.get_display_index_from_column_index(2, true), 0);
+        assert_eq!(data_table.get_display_index_from_column_index(3, false), 1);
+        assert_eq!(data_table.get_display_index_from_column_index(3, true), 1);
+    }
+
+    #[test]
+    fn test_get_column_index_from_display_index() {
+        let code_run = CodeRun::default();
+        let mut data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "Table 1",
+            Value::Array(Array::new_empty(ArraySize::new(4, 3).unwrap())),
+            false,
+            false,
+            true,
+            None,
+        );
+
+        // Create column headers with some hidden columns
+        data_table.column_headers = Some(vec![
+            DataTableColumnHeader::new("A".to_string(), false, 0), // hidden
+            DataTableColumnHeader::new("B".to_string(), true, 1),  // visible
+            DataTableColumnHeader::new("C".to_string(), false, 2), // hidden
+            DataTableColumnHeader::new("D".to_string(), true, 3),  // visible
+        ]);
+
+        assert_eq!(data_table.get_column_index_from_display_index(0), 1);
+        assert_eq!(data_table.get_column_index_from_display_index(1), 3);
     }
 }

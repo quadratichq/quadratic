@@ -167,10 +167,9 @@ impl Sheet {
                 for x in rect.x_range() {
                     let new_x = u32::try_from(pos.x - code_cell_pos.x + x).unwrap_or(0);
                     let new_y = u32::try_from(pos.y - code_cell_pos.y + y).unwrap_or(0);
-                    let value = values
-                        .remove(x as u32, y as u32)
-                        .unwrap_or(CellValue::Blank);
-                    data_table.set_cell_value_at(new_x, new_y, value);
+                    if let Some(value) = values.remove(x as u32, y as u32) {
+                        data_table.set_cell_value_at(new_x, new_y, value);
+                    };
                 }
             }
         }

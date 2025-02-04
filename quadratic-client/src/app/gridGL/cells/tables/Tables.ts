@@ -134,7 +134,7 @@ export class Tables extends Container<Table> {
         } else {
           table.updateCodeCell(renderCodeCell);
           if (this.isActive(table)) {
-            table.showActive(true);
+            table.showActive();
           }
         }
       } else if (renderCodeCell) {
@@ -173,7 +173,7 @@ export class Tables extends Container<Table> {
     this.activeTables = tables.flatMap((table) => this.children.filter((t) => t.codeCell.name === table));
     this.children.forEach((table) => {
       if (this.activeTables.includes(table)) {
-        table.showActive(true);
+        table.showActive();
       } else {
         table.hideActive();
       }
@@ -253,18 +253,18 @@ export class Tables extends Container<Table> {
     if (options.type === ContextMenuType.TableSort) {
       this.actionDataTable = this.children.find((table) => table.codeCell === options.table);
       if (this.actionDataTable) {
-        this.actionDataTable.showActive(true);
+        this.actionDataTable.showActive();
       }
     } else if (options.type === ContextMenuType.Table && options.table) {
       if (options.rename) {
         this.actionDataTable = this.children.find((table) => table.codeCell === options.table);
         if (this.actionDataTable) {
-          this.actionDataTable.showActive(true);
+          this.actionDataTable.showActive();
         }
       } else {
         this.contextMenuTable = this.children.find((table) => table.codeCell === options.table);
         if (this.contextMenuTable) {
-          this.contextMenuTable.showActive(true);
+          this.contextMenuTable.showActive();
         }
       }
     } else if (
@@ -275,7 +275,7 @@ export class Tables extends Container<Table> {
     ) {
       this.actionDataTable = this.children.find((table) => table.codeCell === options.table);
       if (this.actionDataTable) {
-        this.actionDataTable.showActive(true);
+        this.actionDataTable.showActive();
         this.actionDataTable.hideColumnHeaders(options.selectedColumn);
       }
     }
@@ -328,9 +328,9 @@ export class Tables extends Container<Table> {
   toggleOutlines() {
     if (this.saveToggleOutlines) {
       this.saveToggleOutlines = false;
-      this.activeTables.forEach((table) => table.showActive(true));
-      this.contextMenuTable?.showActive(true);
-      this.actionDataTable?.showActive(true);
+      this.activeTables.forEach((table) => table.showActive());
+      this.contextMenuTable?.showActive();
+      this.actionDataTable?.showActive();
       pixiApp.setViewportDirty();
     } else {
       this.saveToggleOutlines = true;

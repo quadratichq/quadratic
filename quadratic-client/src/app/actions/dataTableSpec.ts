@@ -71,29 +71,47 @@ export const getRow = (): number | undefined => {
 
 // returns the column index of the selected column, starting from 0
 export const getColumn = (): number | undefined => {
-  const table = getTable();
-
-  if (!table) return undefined;
-
-  const columnIndex = pixiAppSettings.contextMenu?.selectedColumn;
-
-  if (columnIndex !== undefined) {
-    return columnIndex;
+  if (pixiAppSettings.contextMenu?.selectedColumn !== undefined) {
+    const selectedColumn = pixiAppSettings.contextMenu.selectedColumn;
+    return selectedColumn;
   }
 
-  const columnX = pixiAppSettings.contextMenu?.column || JSON.parse(sheets.getRustSelection()).cursor.x;
+  const table = getTable();
+  const columns = table?.columns;
+  if (!columns) return undefined;
 
-  return columnX - table.x;
+  let displayColumnX;
+  if (pixiAppSettings.contextMenu?.column !== undefined) {
+    displayColumnX = pixiAppSettings.contextMenu?.column - table.x;
+  } else {
+    displayColumnX = JSON.parse(sheets.getRustSelection()).cursor.x - table.x;
+  }
+
+  if (columns[displayColumnX] === undefined) {
+    return undefined;
+  }
+
+  let seenDisplayColumns = -1;
+  let columnX = -1;
+  for (const column of columns) {
+    columnX++;
+    if (column.display) {
+      seenDisplayColumns++;
+      if (seenDisplayColumns === displayColumnX) {
+        break;
+      }
+    }
+  }
+  return columnX;
 };
 
 export const getColumns = (): JsDataTableColumnHeader[] | undefined => {
   const table = getTable();
-  return table?.columns;
+  return table?.columns.map((c) => ({ ...c }));
 };
 
 export const getDisplayColumns = (): JsDataTableColumnHeader[] | undefined => {
   const table = getTable();
-
   return table?.columns.filter((c) => c.display).map((c) => ({ ...c }));
 };
 
@@ -303,7 +321,7 @@ export const removeTableColumn = () => {
 export const hideTableColumn = () => {
   const table = getTable();
   const column = getColumn();
-  const columns = getDisplayColumns();
+  const columns = getColumns();
 
   if (table && columns && column !== undefined && columns[column]) {
     columns[column].display = false;
@@ -314,11 +332,7 @@ export const hideTableColumn = () => {
 
 export const showAllTableColumns = () => {
   const table = getTable();
-  const columns = JSON.parse(JSON.stringify(getColumns())) as {
-    name: string;
-    display: boolean;
-    valueIndex: number;
-  }[];
+  const columns = getColumns();
 
   if (table && columns) {
     columns.forEach((column) => (column.display = true));
@@ -475,13 +489,13 @@ export const dataTableSpec: DataTableSpec = {
     run: sortTableColumnDescending,
   },
   [Action.InsertTableColumnLeft]: {
-    label: 'Insert column to the left',
+    label: 'Insert column left',
     Icon: AddColumnLeftIcon,
     isAvailable: () => !isReadOnly() && isWithinTable(),
-    run: () => insertTableColumn(-1),
+    run: () => insertTableColumn(0),
   },
   [Action.InsertTableColumnRight]: {
-    label: 'Insert column to the right',
+    label: 'Insert column right',
     Icon: AddColumnRightIcon,
     isAvailable: () => !isReadOnly() && isWithinTable(),
     run: () => insertTableColumn(1),
@@ -506,13 +520,13 @@ export const dataTableSpec: DataTableSpec = {
     label: 'Insert row above',
     Icon: AddRowAboveIcon,
     isAvailable: () => !isReadOnly() && isWithinTable(),
-    run: () => insertTableRow(-1),
+    run: () => insertTableRow(0),
   },
   [Action.InsertTableRowBelow]: {
     label: 'Insert row below',
     Icon: AddRowBelowIcon,
     isAvailable: () => !isReadOnly() && isWithinTable(),
-    run: () => insertTableRow(0),
+    run: () => insertTableRow(1),
   },
   [Action.RemoveTableRow]: {
     label: 'Remove row',

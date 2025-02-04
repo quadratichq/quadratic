@@ -41,48 +41,73 @@ impl Sheet {
                 dt.formats
                     .fill_color
                     .to_rects()
-                    .flat_map(|(x0, y0, x1, y1, color)| {
+                    .flat_map(|(mut x0, mut y0, x1, y1, color)| {
                         let mut fills = vec![];
+
                         if dt.spill_error || dt.has_error() {
                             return fills;
                         }
+
                         let mut rect = dt.output_rect(*pos, false);
-                        // use table data bounds for borders, exclude table name and column headers
+                        // use table data bounds for fills, exclude table name and column headers
                         rect.min.y += dt.y_adjustment(true);
 
-                        let x1 = x1.unwrap_or(rect.width() as i64);
-                        let y1 = y1.unwrap_or(rect.height() as i64);
+                        // convert unbounded to bounded
+                        let mut x1 = x1.unwrap_or(rect.width() as i64);
+                        let mut y1 = y1.unwrap_or(rect.height() as i64);
+
+                        // adjust for hidden columns, and convert to 0 based
+                        x0 = dt.get_display_index_from_column_index(x0 as u32 - 1, false);
+                        x1 = dt.get_display_index_from_column_index(x1 as u32 - 1, true);
+
+                        // convert to 0 based
+                        y0 -= 1;
+                        y1 -= 1;
+
+                        let fills_min_y = (pos.y + dt.y_adjustment(false)).max(pos.y);
 
                         if let Some(display_buffer) = &dt.display_buffer {
-                            for mut y in y0..=y1 {
-                                y -= 1;
-                                if y >= 0 && y < display_buffer.len() as i64 {
-                                    y = display_buffer[y as usize] as i64;
-                                }
-                                let x = rect.min.x + x0 - 1;
-                                let x1 = rect.min.x + x1 - 1;
-                                let y = rect.min.y + y;
+                            for y in y0..=y1 {
+                                let x = rect.min.x + x0;
+                                let x1 = rect.min.x + x1;
 
+                                // formats is 1 based, display_buffer is 0 based
+                                let mut y = y;
+                                if y >= 0 && y < display_buffer.len() as i64 {
+                                    y = display_buffer
+                                        .iter()
+                                        .position(|&display_y| y == display_y as i64)
+                                        .unwrap_or(y as usize)
+                                        as i64;
+                                }
+                                y += rect.min.y;
+
+                                // check if the fill is within the table bounds and size is non zero
+                                if x1 >= x && y >= fills_min_y {
+                                    fills.push(JsRenderFill {
+                                        x,
+                                        y,
+                                        w: (x1 - x + 1) as u32,
+                                        h: 1,
+                                        color: color.clone(),
+                                    });
+                                }
+                            }
+                        } else {
+                            let x = rect.min.x + x0;
+                            let y = (rect.min.y + y0).max(fills_min_y);
+                            let x1 = rect.min.x + x1;
+                            let y1 = rect.min.y + y1;
+                            // check if size is non zero
+                            if x1 >= x && y1 >= y {
                                 fills.push(JsRenderFill {
                                     x,
                                     y,
                                     w: (x1 - x + 1) as u32,
-                                    h: 1,
-                                    color: color.clone(),
+                                    h: (y1 - y + 1) as u32,
+                                    color,
                                 });
-                            }
-                        } else {
-                            let x = rect.min.x + x0 - 1;
-                            let y = rect.min.y + y0 - 1;
-                            let x1 = rect.min.x + x1 - 1;
-                            let y1 = rect.min.y + y1 - 1;
-                            fills.push(JsRenderFill {
-                                x,
-                                y,
-                                w: (x1 - x + 1) as u32,
-                                h: (y1 - y + 1) as u32,
-                                color,
-                            });
+                            };
                         }
 
                         fills
@@ -117,9 +142,28 @@ impl Sheet {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
-    use crate::{a1::A1Selection, controller::GridController, Pos};
+    use crate::{
+        a1::A1Selection,
+        controller::{user_actions::import::tests::simple_csv_at, GridController},
+        grid::sort::SortDirection,
+        CellValue, Pos,
+    };
 
     use super::*;
+
+    #[track_caller]
+    fn assert_fill_eq(fill: &JsRenderFill, x: i64, y: i64, w: u32, h: u32, color: &str) {
+        assert_eq!(
+            fill,
+            &JsRenderFill {
+                x,
+                y,
+                w,
+                h,
+                color: color.to_string()
+            }
+        );
+    }
 
     #[test]
     fn test_get_all_render_fills() {
@@ -195,26 +239,8 @@ mod tests {
         sheet.data_table_mut(Pos { x: 5, y: 2 }).unwrap().show_ui = true;
         let fills = sheet.get_all_render_fills();
         assert_eq!(fills.len(), 2);
-        assert_eq!(
-            fills[0],
-            JsRenderFill {
-                x: 6,
-                y: 4,
-                w: 1,
-                h: 3,
-                color: "red".to_string(),
-            }
-        );
-        assert_eq!(
-            fills[1],
-            JsRenderFill {
-                x: 7,
-                y: 4,
-                w: 1,
-                h: 3,
-                color: "blue".to_string(),
-            }
-        );
+        assert_fill_eq(&fills[0], 6, 4, 1, 3, "red");
+        assert_fill_eq(&fills[1], 7, 4, 1, 3, "blue");
     }
 
     #[test]
@@ -239,5 +265,226 @@ mod tests {
         .unwrap();
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.table_has_fills(Pos { x: 5, y: 2 }));
+    }
+
+    #[test]
+    fn test_get_all_render_fills_table_show_ui_options_first_row_header() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+
+        // set a data table at E2 that's 3x3 and show_header is true
+        sheet.test_set_data_table(pos!(E2), 3, 3, false, true);
+        let context = gc.grid().a1_context();
+        gc.set_fill_color(
+            &A1Selection::test_a1_sheet_id("E5:I5", &sheet_id),
+            Some("red".to_string()),
+            None,
+        )
+        .unwrap();
+        gc.set_fill_color(
+            &A1Selection::test_a1_context("Table1[Column 2]", &context),
+            Some("blue".to_string()),
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.data_table_mut(Pos { x: 5, y: 2 }).unwrap().show_ui = false;
+        let fills = sheet.get_all_render_fills();
+        assert_fill_eq(&fills[0], 8, 5, 2, 1, "red");
+        assert_fill_eq(&fills[1], 5, 3, 1, 1, "red");
+        assert_fill_eq(&fills[2], 6, 2, 1, 3, "blue");
+        assert_fill_eq(&fills[3], 7, 3, 1, 1, "red");
+
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.data_table_mut(Pos { x: 5, y: 2 }).unwrap().show_ui = true;
+        let fills = sheet.get_all_render_fills();
+        assert_fill_eq(&fills[0], 8, 5, 2, 1, "red");
+        assert_fill_eq(&fills[1], 5, 5, 1, 1, "red");
+        assert_fill_eq(&fills[2], 6, 4, 1, 3, "blue");
+        assert_fill_eq(&fills[3], 7, 5, 1, 1, "red");
+
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.data_table_mut(Pos { x: 5, y: 2 }).unwrap().show_name = false;
+        let fills = sheet.get_all_render_fills();
+        assert_fill_eq(&fills[0], 8, 5, 2, 1, "red");
+        assert_fill_eq(&fills[1], 5, 4, 1, 1, "red");
+        assert_fill_eq(&fills[2], 6, 3, 1, 3, "blue");
+        assert_fill_eq(&fills[3], 7, 4, 1, 1, "red");
+
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet
+            .data_table_mut(Pos { x: 5, y: 2 })
+            .unwrap()
+            .show_columns = false;
+        let fills = sheet.get_all_render_fills();
+        assert_fill_eq(&fills[0], 8, 5, 2, 1, "red");
+        assert_fill_eq(&fills[1], 5, 3, 1, 1, "red");
+        assert_fill_eq(&fills[2], 6, 2, 1, 3, "blue");
+        assert_fill_eq(&fills[3], 7, 3, 1, 1, "red");
+
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet
+            .data_table_mut(Pos { x: 5, y: 2 })
+            .unwrap()
+            .header_is_first_row = true;
+        let fills = sheet.get_all_render_fills();
+        assert_fill_eq(&fills[0], 8, 5, 2, 1, "red");
+        assert_fill_eq(&fills[1], 5, 2, 1, 1, "red");
+        assert_fill_eq(&fills[2], 6, 2, 1, 2, "blue");
+        assert_fill_eq(&fills[3], 7, 2, 1, 1, "red");
+
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet
+            .data_table_mut(Pos { x: 5, y: 2 })
+            .unwrap()
+            .show_columns = true;
+        let fills = sheet.get_all_render_fills();
+        assert_fill_eq(&fills[0], 8, 5, 2, 1, "red");
+        assert_fill_eq(&fills[1], 5, 3, 1, 1, "red");
+        assert_fill_eq(&fills[2], 6, 3, 1, 2, "blue");
+        assert_fill_eq(&fills[3], 7, 3, 1, 1, "red");
+    }
+
+    #[test]
+    fn test_get_all_render_fills_table_with_sort() {
+        let (mut gc, sheet_id, pos, file_name) = simple_csv_at(pos!(E2));
+        let context = gc.grid().a1_context();
+        gc.set_fill_color(
+            &A1Selection::test_a1_sheet_id("E4:I4", &sheet_id),
+            Some("red".to_string()),
+            None,
+        )
+        .unwrap();
+        gc.set_fill_color(
+            &A1Selection::test_a1_context(&format!("{}[region]", file_name), &context),
+            Some("blue".to_string()),
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        let data_table = sheet.data_table(pos).unwrap();
+        assert_eq!(
+            data_table.cell_value_at(0, 2),
+            Some(CellValue::Text("Southborough".to_string()))
+        );
+        assert_eq!(
+            data_table.cell_value_at(0, 4),
+            Some(CellValue::Text("Westborough".to_string()))
+        );
+        let fills = sheet.get_all_render_fills();
+        assert_fill_eq(&fills[0], 9, 4, 1, 1, "red");
+        assert_fill_eq(&fills[1], 5, 4, 1, 1, "red");
+        assert_fill_eq(&fills[2], 6, 4, 1, 10, "blue");
+        assert_fill_eq(&fills[3], 7, 4, 2, 1, "red");
+
+        let sheet = gc.sheet_mut(sheet_id);
+        let data_table = sheet.data_table_mut(pos).unwrap();
+        data_table
+            .sort_column(0, SortDirection::Descending)
+            .unwrap();
+
+        let data_table = data_table.clone();
+        let sheet: &mut Sheet = gc.sheet_mut(sheet_id);
+        assert_eq!(
+            data_table.cell_value_at(0, 8),
+            Some(CellValue::Text("Southborough".to_string()))
+        );
+        let fills = sheet.get_all_render_fills();
+        assert_eq!(fills.len(), 13);
+        assert_fill_eq(&fills[0], 9, 4, 1, 1, "red");
+        assert_fill_eq(&fills[1], 5, 10, 1, 1, "red");
+        assert_fill_eq(&fills[12], 7, 10, 2, 1, "red");
+    }
+
+    #[test]
+    fn test_get_all_render_fills_table_with_hidden_columns() {
+        let (mut gc, sheet_id, pos, file_name) = simple_csv_at(pos!(E2));
+
+        let context = gc.grid().a1_context();
+
+        gc.set_fill_color(
+            &A1Selection::test_a1_sheet_id("E4:I4", &sheet_id),
+            Some("red".to_string()),
+            None,
+        )
+        .unwrap();
+        gc.set_fill_color(
+            &A1Selection::test_a1_context(&format!("{}[region]", file_name), &context),
+            Some("blue".to_string()),
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        let data_table = sheet.data_table(pos).unwrap();
+        assert_eq!(
+            data_table.cell_value_at(0, 2),
+            Some(CellValue::Text("Southborough".to_string()))
+        );
+        let fills = sheet.get_all_render_fills();
+        assert_fill_eq(&fills[0], 9, 4, 1, 1, "red");
+        assert_fill_eq(&fills[1], 5, 4, 1, 1, "red");
+        assert_fill_eq(&fills[2], 6, 4, 1, 10, "blue");
+        assert_fill_eq(&fills[3], 7, 4, 2, 1, "red");
+
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        let column_headers = data_table.column_headers.as_mut().unwrap();
+        column_headers[0].display = false;
+
+        let sheet = gc.sheet(sheet_id);
+        let data_table = sheet.data_table(pos).unwrap();
+        assert_eq!(
+            data_table.cell_value_at(0, 2),
+            Some(CellValue::Text("MA".to_string()))
+        );
+        let fills = sheet.get_all_render_fills();
+        assert_fill_eq(&fills[0], 9, 4, 1, 1, "red");
+        assert_fill_eq(&fills[1], 5, 4, 1, 10, "blue");
+        assert_fill_eq(&fills[2], 6, 4, 2, 1, "red");
+
+        gc.set_fill_color(
+            &A1Selection::test_a1_sheet_id("E10:I10", &sheet_id),
+            Some("green".to_string()),
+            None,
+        )
+        .unwrap();
+        gc.set_fill_color(
+            &A1Selection::test_a1_context(&format!("{}[country]", file_name), &context),
+            Some("yellow".to_string()),
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        let fills = sheet.get_all_render_fills();
+        assert_fill_eq(&fills[0], 8, 10, 1, 1, "green");
+        assert_fill_eq(&fills[1], 9, 4, 1, 1, "red");
+        assert_fill_eq(&fills[2], 9, 10, 1, 1, "green");
+        assert_fill_eq(&fills[3], 5, 4, 1, 6, "blue");
+        assert_fill_eq(&fills[4], 5, 10, 1, 1, "green");
+        assert_fill_eq(&fills[5], 5, 11, 1, 3, "blue");
+        assert_fill_eq(&fills[6], 6, 4, 1, 10, "yellow");
+        assert_fill_eq(&fills[7], 7, 4, 1, 1, "red");
+        assert_fill_eq(&fills[8], 7, 10, 1, 1, "green");
+
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        let column_headers = data_table.column_headers.as_mut().unwrap();
+        column_headers[0].display = true;
+
+        let sheet = gc.sheet(sheet_id);
+        let fills = sheet.get_all_render_fills();
+        assert_fill_eq(&fills[0], 8, 10, 1, 1, "green");
+        assert_fill_eq(&fills[1], 9, 4, 1, 1, "red");
+        assert_fill_eq(&fills[2], 9, 10, 1, 1, "green");
+        assert_fill_eq(&fills[3], 5, 4, 1, 1, "red");
+        assert_fill_eq(&fills[4], 6, 4, 1, 6, "blue");
+        assert_fill_eq(&fills[5], 6, 10, 1, 1, "green");
+        assert_fill_eq(&fills[6], 6, 11, 1, 3, "blue");
+        assert_fill_eq(&fills[7], 7, 4, 1, 10, "yellow");
+        assert_fill_eq(&fills[8], 8, 4, 1, 1, "red");
+        assert_fill_eq(&fills[9], 8, 10, 1, 1, "green");
     }
 }
