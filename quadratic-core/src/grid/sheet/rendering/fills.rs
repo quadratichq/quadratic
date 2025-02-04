@@ -57,8 +57,8 @@ impl Sheet {
                         let mut y1 = y1.unwrap_or(rect.height() as i64);
 
                         // adjust for hidden columns, and convert to 0 based
-                        x0 = dt.get_display_index_from_column_index(x0 as u32 - 1, false) as i64;
-                        x1 = dt.get_display_index_from_column_index(x1 as u32 - 1, true) as i64;
+                        x0 = dt.get_display_index_from_column_index(x0 as u32 - 1, false);
+                        x1 = dt.get_display_index_from_column_index(x1 as u32 - 1, true);
 
                         // convert to 0 based
                         y0 -= 1;
@@ -106,7 +106,7 @@ impl Sheet {
                                     w: (x1 - x + 1) as u32,
                                     h: (y1 - y + 1) as u32,
                                     color,
-                                })
+                                });
                             };
                         }
 

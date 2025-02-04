@@ -137,9 +137,11 @@ impl GridController {
         // set table formats
         for table_ref in table_ranges {
             if let Some(table) = context.try_table(&table_ref.table_name) {
-                table_ref
-                    .convert_to_ref_range_bounds(true, &context, false, true)
-                    .map(|range| add_table_ops(range, table, &mut ops));
+                if let Some(range) =
+                    table_ref.convert_to_ref_range_bounds(true, &context, false, true)
+                {
+                    add_table_ops(range, table, &mut ops);
+                }
             }
         }
 

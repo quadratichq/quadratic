@@ -393,9 +393,7 @@ impl GridController {
              sheet_borders: &mut BordersUpdates,
              tables_borders: &mut HashMap<SheetPos, BordersUpdates>| {
                 let table_sheet_pos = table.bounds.min.to_sheet_pos(table.sheet_id);
-                let mut table_borders = tables_borders
-                    .entry(table_sheet_pos)
-                    .or_insert_with(BordersUpdates::default);
+                let table_borders = tables_borders.entry(table_sheet_pos).or_default();
 
                 // pos relative to table pos (top left pos), 1-based for formatting
                 let table_range = table_range.translate(
@@ -434,7 +432,7 @@ impl GridController {
                         border_selection,
                         style,
                         &table_range,
-                        &mut table_borders,
+                        table_borders,
                         clear_neighbors,
                         true,
                     );
@@ -489,7 +487,7 @@ impl GridController {
                         self.a1_border_style_range(
                             border_selection,
                             style,
-                            &range,
+                            range,
                             &mut sheet_borders,
                             clear_neighbors,
                             false,
@@ -503,11 +501,11 @@ impl GridController {
         // set table formats
         for table_ref in table_ranges {
             if let Some(table) = context.try_table(&table_ref.table_name) {
-                table_ref
-                    .convert_to_ref_range_bounds(true, &context, false, true)
-                    .map(|range| {
-                        add_table_ops(range, table, &mut sheet_borders, &mut tables_borders)
-                    });
+                if let Some(range) =
+                    table_ref.convert_to_ref_range_bounds(true, &context, false, true)
+                {
+                    add_table_ops(range, table, &mut sheet_borders, &mut tables_borders);
+                }
             }
         }
 
@@ -522,9 +520,7 @@ impl GridController {
         mut style: Option<BorderStyle>,
         clear_neighbors: bool,
     ) -> Option<Vec<Operation>> {
-        let Some(sheet) = self.try_sheet(selection.sheet_id) else {
-            return None;
-        };
+        let sheet = self.try_sheet(selection.sheet_id)?;
 
         if style.is_some_and(|style| {
             let (sheet_borders, tables_borders) = self.get_sheet_and_table_border_updates(

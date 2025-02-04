@@ -12,7 +12,7 @@ use super::*;
 
 impl Borders {
     /// Returns horizontal borders for rendering.
-    pub(crate) fn horizontal_borders<'a>(
+    pub(crate) fn horizontal_borders(
         &self,
         table: Option<(Pos, &DataTable)>,
     ) -> Option<Vec<JsBorderHorizontal>> {
