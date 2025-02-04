@@ -48,6 +48,12 @@ export const TableRename = () => {
     [contextMenu.table, renameTable]
   );
 
+  const handleInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target;
+    const value = input.value.replace(/ /g, '_').trim();
+    input.value = value;
+  }, []);
+
   if (contextMenu.type !== ContextMenuType.Table || !contextMenu.rename || !contextMenu.table) {
     return null;
   }
@@ -61,6 +67,7 @@ export const TableRename = () => {
       onSave={handleSave}
       onClose={() => events.emit('contextMenu', {})}
       noShrink
+      onInput={handleInput}
     />
   );
 };
