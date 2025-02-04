@@ -543,13 +543,21 @@ impl GridController {
                 }
             }
 
-            // let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table = self
                 .try_sheet_mut_result(sheet_id)?
                 .data_table_mut(data_table_pos)?;
             let data_table_rect = data_table
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
+
+            // if the header is first row, update the column names in the data table value
+            if data_table.header_is_first_row {
+                columns.as_ref().map(|columns| {
+                    for (index, column) in columns.iter().enumerate() {
+                        data_table.set_cell_value_at(index as u32, 0, column.name.to_owned());
+                    }
+                });
+            }
 
             let old_alternating_colors = alternating_colors.map(|alternating_colors| {
                 // mark code cell dirty to update alternating color
