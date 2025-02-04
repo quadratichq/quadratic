@@ -23,7 +23,7 @@ const isRowFinite = () => sheets.sheet.cursor.isSelectedRowsFinite();
 const isColumnRowAvailableAndRowFinite = (args: ActionAvailabilityArgs) => isColumnRowAvailable(args) && isRowFinite();
 
 const insertColumnLeft: ActionSpec<void> = {
-  label: 'Insert column to the left',
+  label: 'Insert column left',
   isAvailable: isColumnRowAvailableAndColumnFinite,
   Icon: AddColumnLeftIcon,
   run: () =>
@@ -31,7 +31,7 @@ const insertColumnLeft: ActionSpec<void> = {
 };
 
 const insertColumnRight: ActionSpec<void> = {
-  label: 'Insert column to the right',
+  label: 'Insert column right',
   isAvailable: isColumnRowAvailableAndColumnFinite,
   Icon: AddColumnRightIcon,
   run: () =>

@@ -489,13 +489,13 @@ export const dataTableSpec: DataTableSpec = {
     run: sortTableColumnDescending,
   },
   [Action.InsertTableColumnLeft]: {
-    label: 'Insert column to the left',
+    label: 'Insert column left',
     Icon: AddColumnLeftIcon,
     isAvailable: () => !isReadOnly() && isWithinTable(),
     run: () => insertTableColumn(0),
   },
   [Action.InsertTableColumnRight]: {
-    label: 'Insert column to the right',
+    label: 'Insert column right',
     Icon: AddColumnRightIcon,
     isAvailable: () => !isReadOnly() && isWithinTable(),
     run: () => insertTableColumn(1),
