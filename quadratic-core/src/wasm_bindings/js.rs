@@ -70,7 +70,6 @@ extern "C" {
     pub fn jsOffsetsModified(sheet_id: String, offsets: String /* Vec<JsOffset> */);
     pub fn jsSetCursor(cursor: String);
     pub fn jsUpdateHtml(html: String /*JsHtmlOutput*/);
-    pub fn jsClearHtml(sheet_id: String, x: i64, y: i64);
     pub fn jsHtmlOutput(html: String /*Vec<JsHtmlOutput>*/);
     pub fn jsGenerateThumbnail();
     pub fn jsBordersSheet(sheet_id: String, borders: String /* JsBordersSheet */);
@@ -424,15 +423,6 @@ pub fn jsUpdateHtml(html: String /*JsHtmlOutput*/) {
         .lock()
         .unwrap()
         .push(TestFunction::new("jsUpdateHtml", html));
-}
-
-#[cfg(test)]
-#[allow(non_snake_case)]
-pub fn jsClearHtml(sheet_id: String, x: i64, y: i64) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
-        "jsClearHtml",
-        format!("{},{},{}", sheet_id, x, y),
-    ));
 }
 
 #[cfg(test)]

@@ -3,6 +3,7 @@ import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
+import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { MOUSE_EDGES_DISTANCE, MOUSE_EDGES_SPEED } from '@/app/gridGL/interaction/pointer/pointerUtils';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -24,6 +25,7 @@ interface MoveCells {
   toRow: number;
   offset: { x: number; y: number };
   table?: { offsetX: number; offsetY: number };
+  original?: Rectangle;
 }
 
 export class PointerCellMoving {
@@ -42,42 +44,42 @@ export class PointerCellMoving {
     }
   }
 
-  // Starts a table move.
-  tableMove = (column: number, row: number, point: Point) => {
-    if (this.state) return false;
+  private startMove() {
     this.state = 'move';
-    this.startCell = new Point(column, row);
-    const offset = sheets.sheet.getCellOffsets(column, row);
-    this.movingCells = {
-      column,
-      row,
-      width: 1,
-      height: 1,
-      toColumn: column,
-      toRow: row,
-      offset: { x: 0, y: 0 },
-      table: { offsetX: point.x - offset.x, offsetY: point.y - offset.y },
-    };
     events.emit('cellMoving', true);
     pixiApp.viewport.mouseEdges({
       distance: MOUSE_EDGES_DISTANCE,
       allowButtons: true,
       speed: MOUSE_EDGES_SPEED / pixiApp.viewport.scale.x,
     });
+    htmlCellsHandler.disable();
+  }
+
+  // Starts a table move.
+  tableMove = (column: number, row: number, point: Point, width: number, height: number) => {
+    if (this.state) return false;
+    this.startCell = new Point(column, row);
+    const offset = sheets.sheet.getCellOffsets(column, row);
+    this.movingCells = {
+      column,
+      row,
+      width,
+      height,
+      toColumn: column,
+      toRow: row,
+      offset: { x: 0, y: 0 },
+      table: { offsetX: point.x - offset.x, offsetY: point.y - offset.y },
+      original: new Rectangle(column, row, width, height),
+    };
+    this.startMove();
   };
 
   pointerDown = (event: PointerEvent): boolean => {
     if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled || event.button === 1) return false;
 
     if (this.state === 'hover' && this.movingCells && event.button === 0) {
-      this.state = 'move';
       this.startCell = new Point(this.movingCells.column, this.movingCells.row);
-      events.emit('cellMoving', true);
-      pixiApp.viewport.mouseEdges({
-        distance: MOUSE_EDGES_DISTANCE,
-        allowButtons: true,
-        speed: MOUSE_EDGES_SPEED / pixiApp.viewport.scale.x,
-      });
+      this.startMove();
       return true;
     }
     return false;
@@ -92,6 +94,7 @@ export class PointerCellMoving {
     }
     this.state = undefined;
     this.startCell = undefined;
+    htmlCellsHandler.enable();
   };
 
   private pointerMoveMoving = (world: Point) => {
