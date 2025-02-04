@@ -18,6 +18,7 @@ const DEFAULT_HTML_HEIGHT: f32 = 460.0;
 
 impl GridController {
     /// finalize changes to a data table
+    /// TODO(ddimaria): add documentation for this
     pub(crate) fn finalize_data_table(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -72,6 +73,7 @@ impl GridController {
         if let (Some(old_data_table), Some(new_data_table)) =
             (sheet.data_table(pos), &mut new_data_table)
         {
+            new_data_table.column_headers = old_data_table.column_headers.to_owned();
             new_data_table.show_ui = old_data_table.show_ui;
             new_data_table.show_name = old_data_table.show_name;
             new_data_table.show_columns = old_data_table.show_columns;

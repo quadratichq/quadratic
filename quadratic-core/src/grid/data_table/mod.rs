@@ -170,6 +170,7 @@ impl From<CodeRunOld> for DataTable {
             CodeRunResult::Ok(value) => value,
             CodeRunResult::Err(_) => Value::Single(CellValue::Blank),
         };
+
         DataTable::new(
             DataTableKind::CodeRun(code_run_old.into()),
             "Table1",
