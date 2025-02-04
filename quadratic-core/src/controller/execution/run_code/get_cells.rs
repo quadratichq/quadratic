@@ -209,8 +209,6 @@ impl GridController {
 
         self.transactions.add_async_transaction(&mut transaction);
 
-        dbgjs!(format!("response: {:?}", response));
-
         Ok(response)
     }
 }
