@@ -224,7 +224,7 @@ impl Sheet {
         w: u32,
         h: u32,
         header_is_first_row: bool,
-        show_header: bool,
+        show_ui: bool,
     ) {
         self.set_cell_value(
             pos,
@@ -243,7 +243,7 @@ impl Sheet {
                 value,
                 false,
                 header_is_first_row,
-                show_header,
+                show_ui,
                 None,
             )),
         );

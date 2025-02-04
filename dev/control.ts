@@ -142,6 +142,11 @@ export class Control {
       // need to ignore the error if there is no process running on port 8000
     } catch (e) {}
     this.ui.print("api");
+
+    // this function is called more than once,
+    // so we need to check if it's the first run
+    let firstRun = true;
+
     this.signals.api = new AbortController();
     this.api = spawn(
       "npm",
@@ -162,7 +167,8 @@ export class Control {
           start: "> quadratic-api",
         },
         () => {
-          if (!restart) {
+          if (firstRun && !restart) {
+            firstRun = false;
             if (this.status.multiplayer !== "killed" && !this.multiplayer) {
               this.runMultiplayer();
             }
@@ -262,7 +268,7 @@ export class Control {
     this.ui.print("core");
     await this.kill("core");
 
-    // this function is called more than once, 
+    // this function is called more than once,
     // so we need to check if it's the first run
     let firstRun = true;
 
@@ -351,7 +357,12 @@ export class Control {
     this.multiplayer = spawn(
       "cargo",
       this.cli.options.multiplayer
-        ? ["watch", "--skip-local-deps", "-x", "run -p quadratic-multiplayer --target-dir=target"]
+        ? [
+            "watch",
+            "--skip-local-deps",
+            "-x",
+            "run -p quadratic-multiplayer --target-dir=target",
+          ]
         : ["run", "-p", "quadratic-multiplayer", "--target-dir=target"],
       {
         signal: this.signals.multiplayer.signal,
@@ -394,7 +405,12 @@ export class Control {
     this.files = spawn(
       "cargo",
       this.cli.options.files
-        ? ["watch", "--skip-local-deps", "-x", "run -p quadratic-files --target-dir=target"]
+        ? [
+            "watch",
+            "--skip-local-deps",
+            "-x",
+            "run -p quadratic-files --target-dir=target",
+          ]
         : ["run", "-p", "quadratic-files", "--target-dir=target"],
       {
         signal: this.signals.files.signal,
@@ -451,7 +467,12 @@ export class Control {
     this.connection = spawn(
       "cargo",
       this.cli.options.connection
-        ? ["watch", "--skip-local-deps", "-x", "run -p quadratic-connection --target-dir=target"]
+        ? [
+            "watch",
+            "--skip-local-deps",
+            "-x",
+            "run -p quadratic-connection --target-dir=target",
+          ]
         : ["run", "-p", "quadratic-connection", "--target-dir=target"],
       {
         signal: this.signals.connection.signal,

@@ -17,7 +17,7 @@ const SORT_BUTTON_PADDING = 3;
 
 export class TableColumnHeader extends Container {
   private table: Table;
-  private index: number;
+  index: number;
 
   private columnName: BitmapText;
   private sortIcon?: Sprite;

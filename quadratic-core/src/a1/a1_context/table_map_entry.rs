@@ -125,6 +125,17 @@ impl TableMapEntry {
         self.visible_columns.get(index).cloned()
     }
 
+    /// Returns the index of the column in the all_columns vector from the
+    /// index of the column in the visible_columns vector.
+    pub fn get_column_index_from_visible_index(&self, index: usize) -> Option<usize> {
+        let visible_column_name = self.visible_columns.get(index)?;
+        let all_column_index = self
+            .all_columns
+            .iter()
+            .position(|c| c == visible_column_name)?;
+        Some(all_column_index)
+    }
+
     /// Returns the y adjustment for the table to account for the UI elements.
     pub fn y_adjustment(&self, adjust_for_header_is_first_row: bool) -> i64 {
         let mut y_adjustment = 0;
@@ -250,5 +261,27 @@ mod tests {
         assert!(entry.contains(SheetPos::new(entry.sheet_id, 2, 2)));
         assert!(!entry.contains(SheetPos::new(entry.sheet_id, 0, 0)));
         assert!(!entry.contains(SheetPos::new(SheetId::new(), 2, 2))); // Different sheet
+    }
+
+    #[test]
+    fn test_get_column_index_from_visible_index() {
+        let table = TableMapEntry::test(
+            "test",
+            &["A", "C", "E"],
+            Some(&["A", "B", "C", "D", "E"]),
+            Rect::test_a1("A1:E5"),
+        );
+
+        // visible index 0 (A) should return all_columns index 0
+        assert_eq!(table.get_column_index_from_visible_index(0), Some(0));
+
+        // visible index 1 (C) should return all_columns index 2
+        assert_eq!(table.get_column_index_from_visible_index(1), Some(2));
+
+        // visible index 2 (E) should return all_columns index 4
+        assert_eq!(table.get_column_index_from_visible_index(2), Some(4));
+
+        // out of bounds
+        assert_eq!(table.get_column_index_from_visible_index(3), None);
     }
 }

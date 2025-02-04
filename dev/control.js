@@ -119,6 +119,9 @@ export class Control {
         }
         catch (e) { }
         this.ui.print("api");
+        // this function is called more than once,
+        // so we need to check if it's the first run
+        let firstRun = true;
         this.signals.api = new AbortController();
         this.api = spawn("npm", [
             "run",
@@ -130,7 +133,8 @@ export class Control {
             error: "npm ERR!",
             start: "> quadratic-api",
         }, () => {
-            if (!restart) {
+            if (firstRun && !restart) {
+                firstRun = false;
                 if (this.status.multiplayer !== "killed" && !this.multiplayer) {
                     this.runMultiplayer();
                 }
@@ -214,7 +218,7 @@ export class Control {
         this.status.core = false;
         this.ui.print("core");
         await this.kill("core");
-        // this function is called more than once, 
+        // this function is called more than once,
         // so we need to check if it's the first run
         let firstRun = true;
         this.signals.core = new AbortController();
@@ -287,7 +291,12 @@ export class Control {
         this.signals.multiplayer = new AbortController();
         this.ui.print("multiplayer");
         this.multiplayer = spawn("cargo", this.cli.options.multiplayer
-            ? ["watch", "--skip-local-deps", "-x", "run -p quadratic-multiplayer --target-dir=target"]
+            ? [
+                "watch",
+                "--skip-local-deps",
+                "-x",
+                "run -p quadratic-multiplayer --target-dir=target",
+            ]
             : ["run", "-p", "quadratic-multiplayer", "--target-dir=target"], {
             signal: this.signals.multiplayer.signal,
             cwd: "quadratic-multiplayer",
@@ -321,7 +330,12 @@ export class Control {
         catch (e) { }
         this.signals.files = new AbortController();
         this.files = spawn("cargo", this.cli.options.files
-            ? ["watch", "--skip-local-deps", "-x", "run -p quadratic-files --target-dir=target"]
+            ? [
+                "watch",
+                "--skip-local-deps",
+                "-x",
+                "run -p quadratic-files --target-dir=target",
+            ]
             : ["run", "-p", "quadratic-files", "--target-dir=target"], {
             signal: this.signals.files.signal,
             cwd: "quadratic-files",
@@ -371,7 +385,12 @@ export class Control {
         catch (e) { }
         this.signals.connection = new AbortController();
         this.connection = spawn("cargo", this.cli.options.connection
-            ? ["watch", "--skip-local-deps", "-x", "run -p quadratic-connection --target-dir=target"]
+            ? [
+                "watch",
+                "--skip-local-deps",
+                "-x",
+                "run -p quadratic-connection --target-dir=target",
+            ]
             : ["run", "-p", "quadratic-connection", "--target-dir=target"], {
             signal: this.signals.connection.signal,
             cwd: "quadratic-connection",

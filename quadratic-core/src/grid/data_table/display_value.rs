@@ -12,15 +12,22 @@
 
 use crate::{Array, CellValue, Pos, Value};
 use anyhow::{anyhow, Ok, Result};
-use arrow_array::ArrowNativeTypeOp;
 
 use super::DataTable;
 
 impl DataTable {
     /// Get the display value from the display buffer.
-    pub fn display_value_from_buffer(&self, display_buffer: &[u64]) -> Result<Value> {
+    pub fn display_value_from_buffer(
+        &self,
+        display_buffer: &[u64],
+        include_hidden_columns: bool,
+    ) -> Result<Value> {
         let value = self.value.to_owned().into_array()?;
-        let columns_to_show = self.columns_to_show();
+        let columns_to_show = if include_hidden_columns {
+            (0..self.width()).collect::<Vec<_>>()
+        } else {
+            self.columns_to_show()
+        };
 
         let values = display_buffer
             .iter()
@@ -53,8 +60,12 @@ impl DataTable {
     }
 
     /// Get the display value from the source value.
-    pub fn display_value_from_value(&self) -> Result<Value> {
-        let columns_to_show = self.columns_to_show();
+    pub fn display_value_from_value(&self, include_hidden_columns: bool) -> Result<Value> {
+        let columns_to_show = if include_hidden_columns {
+            (0..self.width()).collect::<Vec<_>>()
+        } else {
+            self.columns_to_show()
+        };
 
         let values = self
             .value
@@ -71,35 +82,30 @@ impl DataTable {
     /// Get the display value from the source value at a given position.
     pub fn display_value_from_value_at(&self, pos: Pos) -> Result<&CellValue> {
         let output_size = self.output_size();
-        let x = pos.x as u32;
+        let mut x = pos.x as u32;
         let y = pos.y as u32;
-        let mut new_x = x;
 
         // if the x position is out of bounds, return a blank value
         if x >= output_size.w.get() {
             return Ok(&CellValue::Blank);
         }
 
-        let columns = self.column_headers.iter().flatten().collect::<Vec<_>>();
+        // add x adjustment for hidden columns
+        x = self.get_column_index_from_display_index(x);
 
-        // increase the x position if the column before it is not displayed
-        for (i, column) in columns.iter().enumerate() {
-            if !column.display && i <= x as usize {
-                new_x = new_x.add_checked(1).unwrap_or(new_x);
-            }
-        }
-
-        let cell_value = self.value.get(new_x, y)?;
+        let cell_value = self.value.get(x, y)?;
 
         Ok(cell_value)
     }
 
     /// Get the display value from the display buffer, falling back to the
     /// source value if the display buffer is not set.
-    pub fn display_value(&self) -> Result<Value> {
+    pub fn display_value(&self, include_hidden_columns: bool) -> Result<Value> {
         match self.display_buffer {
-            Some(ref display_buffer) => self.display_value_from_buffer(display_buffer),
-            None => self.display_value_from_value(),
+            Some(ref display_buffer) => {
+                self.display_value_from_buffer(display_buffer, include_hidden_columns)
+            }
+            None => self.display_value_from_value(include_hidden_columns),
         }
     }
 
@@ -117,6 +123,7 @@ impl DataTable {
         if pos.x == 0 && pos.y == 0 && self.show_ui && self.show_name {
             return Ok(self.name.as_ref());
         }
+
         if pos.y == (if self.show_name { 1 } else { 0 })
             && self.show_ui
             && self.show_columns
@@ -311,5 +318,34 @@ pub mod test {
 
         let remove_city = remove_column(3, 2, &mut data_table);
         assert_eq!(remove_city, vec!["Southborough", "MA", "United States", ""]);
+    }
+
+    #[test]
+    fn test_display_value_from_value_at() {
+        let (_, mut data_table) = new_data_table();
+        data_table.apply_first_row_as_header();
+
+        // Test normal access
+        let value = data_table
+            .display_value_from_value_at(Pos::new(0, 1))
+            .unwrap();
+        assert_eq!(value.to_string(), "Southborough");
+
+        // Test with hidden column
+        let mut columns = data_table.column_headers.clone().unwrap();
+        columns[0].display = false; // Hide the first column
+        data_table.column_headers = Some(columns);
+
+        // Should still get correct value even with hidden column
+        let value = data_table
+            .display_value_from_value_at(Pos::new(0, 1))
+            .unwrap();
+        assert_eq!(value.to_string(), "MA");
+
+        // Test out of bounds x position
+        let value = data_table
+            .display_value_from_value_at(Pos::new(10, 1))
+            .unwrap();
+        assert_eq!(value, &CellValue::Blank);
     }
 }

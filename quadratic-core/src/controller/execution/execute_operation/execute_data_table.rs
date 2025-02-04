@@ -252,6 +252,7 @@ impl GridController {
             pos.y -= data_table.y_adjustment(true);
 
             // if there is a display buffer, use it to find the row index for all the values
+            // this is used when the data table has sorted columns, maps input to actual coordinates
             if data_table.display_buffer.is_some() {
                 let rect = Rect::from_numbers(pos.x, pos.y, values.w as i64, values.h as i64);
 
@@ -272,6 +273,38 @@ impl GridController {
                             let x = u32::try_from(display_column)?;
                             let y = u32::try_from(actual_row)?;
                             actual_values.set(x, y, value);
+                        }
+                    }
+                }
+
+                pos = data_table_pos;
+                values = actual_values;
+            }
+
+            // check if any column is hidden, shift values to account for hidden columns
+            if data_table
+                .column_headers
+                .as_ref()
+                .is_some_and(|headers| headers.iter().any(|header| !header.display))
+            {
+                let rect = Rect::from_numbers(pos.x, pos.y, values.w as i64, values.h as i64);
+
+                // rebuild CellValues with actual coordinates
+                let mut actual_values = CellValues::new(0, 0);
+
+                for x in rect.x_range() {
+                    let display_column = u32::try_from(x - data_table_pos.x)?;
+                    let column_index =
+                        data_table.get_column_index_from_display_index(display_column);
+
+                    for y in rect.y_range() {
+                        let row_index: u32 = u32::try_from(y - data_table_pos.y)?;
+
+                        let value_x = u32::try_from(x - pos.x)?;
+                        let value_y = u32::try_from(y - pos.y)?;
+
+                        if let Some(value) = values.remove(value_x, value_y) {
+                            actual_values.set(column_index, row_index, value);
                         }
                     }
                 }
@@ -327,7 +360,7 @@ impl GridController {
                 .output_rect(data_table_pos, false)
                 .to_sheet_rect(sheet_id);
 
-            let mut values = data_table.display_value()?.into_array()?;
+            let mut values = data_table.display_value(false)?.into_array()?;
             let ArraySize { w, h } = values.size();
 
             if !data_table.header_is_first_row && data_table.show_ui && data_table.show_columns {
@@ -712,9 +745,9 @@ impl GridController {
                 let cell_values = sheet_values_array.into_cell_values_vec().into_vec();
 
                 // check for code cells in neighboring cells
-                let has_code_cell = cell_values
-                    .iter()
-                    .any(|value| matches!(value, CellValue::Code(_)));
+                let has_code_cell = cell_values.iter().any(|value| {
+                    value.is_code() || value.is_import() || value.is_image() || value.is_html()
+                });
                 if has_code_cell {
                     if cfg!(target_family = "wasm") || cfg!(test) {
                         crate::wasm_bindings::js::jsClientMessage(
@@ -722,8 +755,8 @@ impl GridController {
                             JsSnackbarSeverity::Error.to_string(),
                         );
                     }
+                    // clear remaining operations
                     transaction.operations.clear();
-                    transaction.forward_operations.clear();
                     bail!("Cannot add code cell to table");
                 }
 
@@ -818,7 +851,7 @@ impl GridController {
 
                 reverse_operations.push(Operation::SetCellValues {
                     sheet_pos: start_pos.to_sheet_pos(sheet_id),
-                    values: CellValues::new(rect.width(), rect.height()),
+                    values: CellValues::new_blank(rect.width(), rect.height()),
                 });
             }
 
@@ -873,9 +906,9 @@ impl GridController {
                 let cell_values = sheet_values_array.into_cell_values_vec().into_vec();
 
                 // check for code cells in neighboring cells
-                let has_code_cell = cell_values
-                    .iter()
-                    .any(|value| matches!(value, CellValue::Code(_)));
+                let has_code_cell = cell_values.iter().any(|value| {
+                    value.is_code() || value.is_import() || value.is_image() || value.is_html()
+                });
                 if has_code_cell {
                     if cfg!(target_family = "wasm") || cfg!(test) {
                         crate::wasm_bindings::js::jsClientMessage(
@@ -883,8 +916,8 @@ impl GridController {
                             JsSnackbarSeverity::Error.to_string(),
                         );
                     }
+                    // clear remaining operations
                     transaction.operations.clear();
-                    transaction.forward_operations.clear();
                     bail!("Cannot add code cell to table");
                 }
 
@@ -967,7 +1000,7 @@ impl GridController {
 
                 reverse_operations.push(Operation::SetCellValues {
                     sheet_pos: start_pos.to_sheet_pos(sheet_id),
-                    values: CellValues::new(rect.width(), rect.height()),
+                    values: CellValues::new_blank(rect.width(), rect.height()),
                 });
             }
 
@@ -1521,6 +1554,18 @@ mod tests {
         print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
         assert_data_table_column_width(&gc, sheet_id, pos, 5, index, "Column 1");
 
+        // ensure the value_index is set correctly
+        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        for (index, header) in data_table
+            .column_headers
+            .as_ref()
+            .unwrap()
+            .iter()
+            .enumerate()
+        {
+            assert_eq!(header.value_index, index as u32);
+        }
+
         // undo, the value should be a data table again
         execute_reverse_operations(&mut gc, &transaction);
         print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
@@ -1551,6 +1596,18 @@ mod tests {
 
         print_data_table(&gc, sheet_id, Rect::new(1, 1, 2, 11));
         assert_data_table_column_width(&gc, sheet_id, pos, 3, index, "region");
+
+        // ensure the value_index is set correctly
+        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        for (index, header) in data_table
+            .column_headers
+            .as_ref()
+            .unwrap()
+            .iter()
+            .enumerate()
+        {
+            assert_eq!(header.value_index, index as u32);
+        }
 
         // undo, the value should be a data table again
         execute_reverse_operations(&mut gc, &transaction);

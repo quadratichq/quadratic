@@ -31,10 +31,24 @@ impl GridController {
                              table: &TableMapEntry,
                              ops: &mut Vec<Operation>| {
             // pos relative to table pos (top left pos), 1-based for formatting
-            let range = range.translate(
+            let mut range = range.translate(
                 -table.bounds.min.x + 1,
                 -table.bounds.min.y + 1 - table.y_adjustment(true),
             );
+
+            // map visible index to actual column index
+            range.start.col.coord = table
+                .get_column_index_from_visible_index(range.start.col.coord as usize - 1)
+                .unwrap_or(range.start.col.coord as usize - 1)
+                as i64
+                + 1;
+
+            // map visible index to actual column index
+            range.end.col.coord = table
+                .get_column_index_from_visible_index(range.end.col.coord as usize - 1)
+                .unwrap_or(range.end.col.coord as usize - 1)
+                as i64
+                + 1;
 
             let mut ranges = vec![CellRefRange::Sheet { range }];
 

@@ -35,11 +35,8 @@ impl DataTable {
         if let Some(headers) = &mut self.column_headers {
             let new_header = DataTableColumnHeader::new(column_name, true, column_index as u32);
             headers.insert(column_index, new_header);
-
-            for header in headers.iter_mut() {
-                if header.value_index > column_index as u32 {
-                    header.value_index += 1;
-                }
+            for (index, header) in headers.iter_mut().enumerate() {
+                header.value_index = index as u32;
             }
         }
 
@@ -58,11 +55,8 @@ impl DataTable {
 
         if let Some(headers) = &mut self.column_headers {
             headers.remove(column_index);
-
-            for header in headers.iter_mut() {
-                if header.value_index > column_index as u32 {
-                    header.value_index -= 1;
-                }
+            for (index, header) in headers.iter_mut().enumerate() {
+                header.value_index = index as u32;
             }
         }
 
@@ -98,6 +92,17 @@ pub mod test {
 
         // there is no data at position (0, 5)
         assert!(data_table.cell_value_at(0, 5).is_none());
+
+        // ensure the value_index is set correctly
+        for (index, header) in data_table
+            .column_headers
+            .as_ref()
+            .unwrap()
+            .iter()
+            .enumerate()
+        {
+            assert_eq!(header.value_index, index as u32);
+        }
     }
 
     #[test]
@@ -154,5 +159,16 @@ pub mod test {
             data_table.cell_value_at(0, 1).unwrap(),
             CellValue::Text("city".into())
         );
+
+        // ensure the value_index is set correctly
+        for (index, header) in data_table
+            .column_headers
+            .as_ref()
+            .unwrap()
+            .iter()
+            .enumerate()
+        {
+            assert_eq!(header.value_index, index as u32);
+        }
     }
 }
