@@ -397,7 +397,11 @@ impl DataTable {
 
                     size
                 }
-                Value::Single(_) | Value::Tuple(_) => ArraySize::_1X1,
+                Value::Single(_) | Value::Tuple(_) => {
+                    let mut height: u32 = 1;
+                    height = height.saturating_add_signed(self.y_adjustment(true) as i32);
+                    ArraySize::new(1, height).unwrap_or(ArraySize::_1X1)
+                }
             }
         }
     }
@@ -925,5 +929,43 @@ pub mod test {
         assert_eq!(data_table.get_column_index_from_display_index(0), 1);
         assert_eq!(data_table.get_column_index_from_display_index(1), 3);
         assert_eq!(data_table.get_column_index_from_display_index(2), 4); // out of bounds
+    }
+
+    #[test]
+    fn test_output_size_single_value() {
+        let code_run = CodeRun {
+            std_out: None,
+            std_err: None,
+            cells_accessed: Default::default(),
+            error: None,
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
+        };
+
+        // Test with show_ui = false (no name or columns shown)
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run.clone()),
+            "Table 1",
+            Value::Single(CellValue::Number(1.into())),
+            false,
+            false,
+            false,
+            None,
+        );
+        assert_eq!(data_table.output_size(), ArraySize::_1X1);
+
+        // Test with show_ui = true (name and columns shown)
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "Table 1",
+            Value::Single(CellValue::Number(1.into())),
+            false,
+            false,
+            true,
+            None,
+        );
+        // Height should be 3 (1 for value + 1 for name + 1 for columns)
+        assert_eq!(data_table.output_size(), ArraySize::new(1, 3).unwrap());
     }
 }
