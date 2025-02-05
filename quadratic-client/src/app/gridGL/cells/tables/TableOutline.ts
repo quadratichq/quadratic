@@ -45,7 +45,16 @@ export class TableOutline extends Graphics {
         alignment: 0,
       });
       if (!this.table.active || !this.table.codeCell.spill_error) {
-        this.drawShape(new Rectangle(0, 0, this.table.tableBounds.width, this.table.tableBounds.height));
+        const width = this.table.codeCell.html_image_width ?? this.table.tableBounds.width;
+        let height = this.table.tableBounds.height;
+
+        // for images, we calculate th height as the sum of the
+        // html_image_height and the table name height
+        if (this.table.codeCell.state === 'Image') {
+          height = this.table.codeCell.html_image_height ?? this.table.tableBounds.height;
+          height += this.table.sheet.offsets.getRowHeight(this.table.codeCell.y);
+        }
+        this.drawShape(new Rectangle(0, 0, width, height));
       }
     }
 

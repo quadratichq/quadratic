@@ -33,9 +33,6 @@ impl GridController {
 
                 operations.extend(transaction.operations.drain(..));
                 transaction.operations = operations;
-
-                // let sheet = self.try_sheet(source.sheet_id).unwrap();
-                // sheet.send_all_images();
             }
         }
     }

@@ -378,9 +378,7 @@ impl DataTable {
             if w == 0 || h == 0 {
                 ArraySize::_1X1
             } else {
-                // todo: (DF) the is_html is a hack; there is an underlying problem
-                // with the height calculation only for html
-                ArraySize::new(w, h + if self.is_html() { 1 } else { 0 }).unwrap_or(ArraySize::_1X1)
+                ArraySize::new(w, h + 1).unwrap_or(ArraySize::_1X1)
             }
         } else {
             match &self.value {
