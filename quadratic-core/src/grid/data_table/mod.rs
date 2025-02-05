@@ -239,6 +239,12 @@ impl DataTable {
         self
     }
 
+    /// Adds column headers to the DataTable.
+    pub fn with_column_headers(mut self, column_headers: Vec<DataTableColumnHeader>) -> Self {
+        self.column_headers = Some(column_headers);
+        self
+    }
+
     pub fn update_table_name(&mut self, name: &str) {
         self.name = name.into();
     }
