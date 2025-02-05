@@ -229,6 +229,7 @@ impl GridController {
                 ))
             }
         };
+        let has_headers = result.has_headers;
         match &transaction.waiting_for_async {
             None => {
                 return Err(CoreError::TransactionNotFound("Expected transaction to be waiting_for_async to be defined in transaction::complete".into()));
@@ -257,8 +258,7 @@ impl GridController {
                             new_data_table.name = existing_data_table.name.clone();
                             new_data_table.show_ui = existing_data_table.show_ui;
                         } else {
-                            new_data_table.show_ui = !new_data_table.is_single_value();
-                            new_data_table.show_columns = !new_data_table.is_single_column();
+                            new_data_table.show_columns = has_headers;
                         }
                     }
 
