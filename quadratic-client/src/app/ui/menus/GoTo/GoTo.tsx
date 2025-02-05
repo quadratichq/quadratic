@@ -129,14 +129,34 @@ export const GoTo = () => {
   return (
     <Command shouldFilter={false}>
       <div className="flex w-full items-center justify-between">
-        <div className="w-full flex-grow">
+        <div className="relative w-full flex-grow">
           <CommandInput
             ref={inputRef}
             value={value}
             onValueChange={setValue}
             placeholder="Enter a cell “A1” or range “A1:B2”"
             omitIcon={true}
+            // className="pr-8"
           />
+          {/*<Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="absolute right-1.5 top-1.5 text-muted-foreground"
+                onClick={() => {
+                  setValue(sheets.sheet.cursor.toA1String());
+                  setTimeout(() => {
+                    inputRef.current?.focus();
+                    inputRef.current?.select();
+                  }, 100);
+                }}
+              >
+                <InsertCellRefIcon />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Reference current cell</TooltipContent>
+          </Tooltip>*/}
         </div>
       </div>
       <CommandList className="">
