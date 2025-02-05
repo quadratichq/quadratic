@@ -395,6 +395,7 @@ impl GridController {
                 std_err: None,
                 cells_accessed: transaction.cells_accessed.clone(),
             };
+
             return DataTable::new(
                 DataTableKind::CodeRun(code_run),
                 table_name,
@@ -470,9 +471,16 @@ impl GridController {
             true,
             js_code_result.chart_pixel_output,
         );
-
         transaction.cells_accessed.clear();
-        data_table
+
+        // If no headers were returned, we want column headers: [0, 2, 3, ...etc]
+        if !js_code_result.has_headers {
+            let column_headers =
+                data_table.default_header_with_name(|i| format!("{}", i - 1), None);
+            data_table.with_column_headers(column_headers)
+        } else {
+            data_table
+        }
     }
 }
 
