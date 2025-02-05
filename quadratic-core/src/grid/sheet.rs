@@ -112,11 +112,11 @@ impl Sheet {
     /// Should only be used for testing (as it will not propagate in multiplayer)
     pub fn random_numbers(&mut self, rect: &Rect) {
         self.columns.clear();
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         for x in rect.x_range() {
             for y in rect.y_range() {
                 let column = self.get_or_create_column(x);
-                let value = rng.gen_range(-10000..=10000).to_string();
+                let value = rng.random_range(-10000..=10000).to_string();
                 column
                     .values
                     .insert(y, CellValue::Number(BigDecimal::from_str(&value).unwrap()));

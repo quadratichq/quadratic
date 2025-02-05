@@ -139,10 +139,10 @@ impl Array {
     }
     /// Constructs an array of random float values.
     pub fn from_random_floats(size: ArraySize) -> Self {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let values = std::iter::from_fn(|| {
             Some(CellValue::Number(BigDecimal::from(
-                &rng.gen_range(-100..=100),
+                &rng.random_range(-100..=100),
             )))
         })
         .take(size.len())
