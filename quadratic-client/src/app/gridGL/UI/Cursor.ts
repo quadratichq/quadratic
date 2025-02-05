@@ -81,6 +81,7 @@ export class Cursor extends Container {
     }
     const tables = pixiApp.cellsSheet().tables;
     const table = tables.getTableFromCell(cell);
+
     const tableName = table?.getTableNameBounds();
     let { x, y, width, height } = tableName ?? sheet.getCellOffsets(cell.x, cell.y);
     const color = pixiApp.accentColor;
