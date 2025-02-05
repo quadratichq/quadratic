@@ -17,6 +17,26 @@ impl DataTable {
         Ok(column)
     }
 
+    /// Get the values of a column taking into account sorted columns.
+    ///
+    /// Maps the cells values from actual values index to display index, returning
+    /// the values in the same sequence as they are displayed.
+    pub fn get_column_sorted(&self, column_index: usize) -> Result<Vec<CellValue>> {
+        let mut column = self.get_column(column_index)?;
+        if let Some(display_buffer) = &self.display_buffer {
+            let mut sorted_column = vec![CellValue::Blank; column.len()];
+            for (y, value) in column.into_iter().enumerate() {
+                let display_index = display_buffer
+                    .iter()
+                    .position(|&display_y| display_y == y as u64)
+                    .unwrap_or(y);
+                sorted_column[display_index] = value;
+            }
+            column = sorted_column;
+        }
+        Ok(column)
+    }
+
     /// Insert a new column at the given index.
     pub fn insert_column(
         &mut self,
@@ -30,7 +50,6 @@ impl DataTable {
 
         let array = self.mut_value_as_array()?;
         array.insert_column(column_index, values)?;
-        self.display_buffer = None;
 
         if let Some(headers) = &mut self.column_headers {
             let new_header = DataTableColumnHeader::new(column_name, true, column_index as u32);
@@ -43,21 +62,49 @@ impl DataTable {
         Ok(())
     }
 
+    /// Insert a new column taking into account sorted columns.
+    ///
+    /// Maps the cells values to actual values index from display index.
+    pub fn insert_column_sorted(
+        &mut self,
+        column_index: usize,
+        column_header: Option<String>,
+        mut values: Option<Vec<CellValue>>,
+    ) -> Result<()> {
+        if self.display_buffer.is_some() {
+            if let Some(cell_values) = values {
+                let mut sorted_cell_values = vec![CellValue::Blank; cell_values.len()];
+                for (index, cell_value) in cell_values.into_iter().enumerate() {
+                    let actual_index = self.transmute_index(index as u64);
+                    sorted_cell_values[actual_index as usize] = cell_value;
+                }
+                values = Some(sorted_cell_values);
+            }
+        }
+        self.insert_column(column_index, column_header, values)?;
+        Ok(())
+    }
+
     /// Remove a column at the given index.
     pub fn delete_column(&mut self, column_index: usize) -> Result<()> {
         let array = self.mut_value_as_array()?;
         array.delete_column(column_index)?;
-        self.display_buffer = None;
 
         // formats and borders are 1 indexed
         self.formats.remove_column(column_index as i64 + 1);
         self.borders.remove_column(column_index as i64 + 1);
 
+        // remove the header and update the value_index
         if let Some(headers) = &mut self.column_headers {
             headers.remove(column_index);
             for (index, header) in headers.iter_mut().enumerate() {
                 header.value_index = index as u32;
             }
+        }
+
+        // remove the sort if it exists
+        if let Some(sort) = &mut self.sort {
+            sort.retain(|sort| sort.column_index != column_index);
         }
 
         Ok(())

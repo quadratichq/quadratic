@@ -170,12 +170,7 @@ impl DataTable {
         row.iter()
             .cloned()
             .enumerate()
-            .filter(|(i, _)| {
-                // TODO(ddimaria): removed the "*i != 0" check, delete the
-                // commented-out code if no bugs arise
-                // (*i == 0 && !self.header_is_first_row) || (*i != 0 && columns_to_show.contains(&i))
-                (*i == 0 && !self.header_is_first_row) || (columns_to_show.contains(i))
-            })
+            .filter(|(i, _)| columns_to_show.contains(i))
             .map(|(_, v)| v)
             .collect::<Vec<CellValue>>()
     }

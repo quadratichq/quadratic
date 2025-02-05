@@ -19,6 +19,19 @@ impl DataTable {
         Ok(row)
     }
 
+    /// Get the values of a row taking into account sorted columns.
+    ///
+    /// Maps the display row index to the actual row index
+    pub fn get_row_sorted(&self, mut display_row_index: usize) -> Result<Vec<CellValue>> {
+        display_row_index -= self.y_adjustment(true) as usize;
+
+        display_row_index = self.transmute_index(display_row_index as u64) as usize;
+
+        display_row_index += self.y_adjustment(true) as usize;
+
+        self.get_row(display_row_index)
+    }
+
     /// Insert a new row at the given index.
     pub fn insert_row(
         &mut self,
@@ -30,9 +43,25 @@ impl DataTable {
         let array = self.mut_value_as_array()?;
         array.insert_row(row_index, values)?;
 
-        self.display_buffer = None;
-
         Ok(())
+    }
+
+    /// Insert a new row at the given index, for table having sorted or hidden columns.
+    ///
+    /// Add blank values for hidden columns and adds the row to the display buffer.
+    pub fn insert_row_sorted_hidden(
+        &mut self,
+        mut display_row_index: usize,
+        values: Option<Vec<CellValue>>,
+    ) -> Result<()> {
+        display_row_index -= self.y_adjustment(true) as usize;
+
+        let actual_row_index = self.transmute_index(display_row_index as u64) as usize;
+        if let Some(display_buffer) = &mut self.display_buffer {
+            display_buffer.insert(actual_row_index, actual_row_index as u64);
+        }
+
+        self.insert_row(actual_row_index + self.y_adjustment(true) as usize, values)
     }
 
     /// Remove a row at the given index.
@@ -41,11 +70,24 @@ impl DataTable {
 
         let array = self.mut_value_as_array()?;
         array.delete_row(row_index)?;
-        self.display_buffer = None;
 
         // formats and borders are 1 indexed
         self.formats.remove_row(row_index as i64 + 1);
         self.borders.remove_row(row_index as i64 + 1);
+
+        Ok(())
+    }
+
+    /// Remove a row at the given index, for table having sorted columns.
+    ///
+    /// Removes the row and calls sort_all to update the display buffer.
+    pub fn delete_row_sorted(&mut self, mut display_row_index: usize) -> Result<()> {
+        display_row_index -= self.y_adjustment(true) as usize;
+
+        let actual_row_index = self.transmute_index(display_row_index as u64) as usize;
+
+        self.delete_row(actual_row_index + self.y_adjustment(true) as usize)?;
+        self.sort_all()?;
 
         Ok(())
     }

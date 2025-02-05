@@ -543,18 +543,19 @@ impl DataTable {
 
     /// Returns the column index from the display column index.
     pub fn get_column_index_from_display_index(&self, display_index: u32) -> u32 {
-        let mut column_index = -1;
+        let mut hidden_columns = 0;
         let mut seen_display_index = -1;
         for column in self.column_headers.iter().flatten() {
-            column_index += 1;
             if column.display {
                 seen_display_index += 1;
                 if seen_display_index == display_index as i32 {
                     break;
                 }
+            } else {
+                hidden_columns += 1;
             }
         }
-        column_index.max(0) as u32
+        display_index + hidden_columns
     }
 
     /// Returns the y adjustment for the data table to account for the UI
@@ -923,5 +924,6 @@ pub mod test {
 
         assert_eq!(data_table.get_column_index_from_display_index(0), 1);
         assert_eq!(data_table.get_column_index_from_display_index(1), 3);
+        assert_eq!(data_table.get_column_index_from_display_index(2), 4); // out of bounds
     }
 }
