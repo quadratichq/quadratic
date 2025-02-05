@@ -6,8 +6,10 @@ import type { A1Error, JsTableInfo } from '@/app/quadratic-core-types';
 import { getTableInfo, stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import '@/app/ui/styles/floating-dialog.css';
-import { GoToIcon } from '@/shared/components/Icons';
+import { GoToIcon, InsertCellRefIcon } from '@/shared/components/Icons';
+import { Button } from '@/shared/shadcn/ui/button';
 import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { CommandSeparator } from 'cmdk';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
@@ -129,14 +131,34 @@ export const GoTo = () => {
   return (
     <Command shouldFilter={false}>
       <div className="flex w-full items-center justify-between">
-        <div className="w-full flex-grow">
+        <div className="relative w-full flex-grow">
           <CommandInput
             ref={inputRef}
             value={value}
             onValueChange={setValue}
             placeholder="Enter a cell “A1” or range “A1:B2”"
             omitIcon={true}
+            className="pr-8"
           />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="absolute right-1.5 top-1.5 text-muted-foreground"
+                onClick={() => {
+                  setValue(sheets.sheet.cursor.toA1String());
+                  setTimeout(() => {
+                    inputRef.current?.focus();
+                    inputRef.current?.select();
+                  }, 100);
+                }}
+              >
+                <InsertCellRefIcon />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Reference current cell</TooltipContent>
+          </Tooltip>
         </div>
       </div>
       <CommandList className="">
