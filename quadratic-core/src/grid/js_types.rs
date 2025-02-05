@@ -226,6 +226,7 @@ pub struct JsRenderCodeCell {
     pub is_html: bool,
     pub is_html_image: bool,
     pub html_image_width: Option<f32>,
+    pub html_image_height: Option<f32>,
     pub show_ui: bool,
     pub show_name: bool,
     pub show_columns: bool,

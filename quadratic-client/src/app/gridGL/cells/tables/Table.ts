@@ -245,7 +245,7 @@ export class Table extends Container {
   }
 
   shouldHideTableName(): boolean {
-    return !this.codeCell.show_ui || this.isSingleValue();
+    return !this.codeCell.show_ui || !this.codeCell.show_name;
   }
 
   isCodeCell = (): boolean => {
@@ -254,9 +254,5 @@ export class Table extends Container {
 
   isSingleValue = (): boolean => {
     return this.codeCell.w === 1 && this.codeCell.h === 1;
-  };
-
-  isSingleCellOutputCodeCell = (): boolean => {
-    return this.isCodeCell() && this.isSingleValue();
   };
 }

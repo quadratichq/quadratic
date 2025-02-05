@@ -28,7 +28,7 @@ export class CellsImage extends Container {
   constructor(cellsSheet: CellsSheet, message: CoreClientImage) {
     super();
     this.cellsSheet = cellsSheet;
-    this.gridBounds = new Rectangle(message.x, message.y, 0, 0);
+    this.gridBounds = new Rectangle(message.x, message.y + 1, 0, 0);
     this.background = this.addChild(new Graphics());
     this.sprite = this.addChild(new Sprite(Texture.EMPTY));
 

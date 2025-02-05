@@ -1,4 +1,4 @@
-import { getDisplayColumns } from '@/app/actions/dataTableSpec';
+import { getColumns } from '@/app/actions/dataTableSpec';
 import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -75,10 +75,12 @@ export const TableColumnHeaderRename = () => {
       }}
       onSave={(value: string) => {
         if (contextMenu.table && contextMenu.selectedColumn !== undefined && pixiApp.cellsSheets.current) {
-          const columns = getDisplayColumns();
-
+          const columns = getColumns();
           if (columns) {
-            columns[contextMenu.selectedColumn].name = value;
+            const column = columns.find((c) => c.valueIndex === contextMenu.selectedColumn);
+            if (column) {
+              column.name = value;
+            }
 
             quadraticCore.dataTableMeta(
               pixiApp.cellsSheets.current?.sheetId,

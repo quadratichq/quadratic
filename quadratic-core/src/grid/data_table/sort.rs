@@ -35,10 +35,11 @@ impl DataTable {
 
     pub fn sort_all(&mut self) -> Result<()> {
         self.display_buffer = None;
-        let value = self.display_value(true)?.into_array()?;
-        let mut display_buffer = (0..value.height()).map(|i| i as u64).collect::<Vec<u64>>();
 
         if let Some(ref mut sort) = self.sort.to_owned() {
+            let value = self.display_value(true)?.into_array()?;
+            let mut display_buffer = (0..value.height()).map(|i| i as u64).collect::<Vec<u64>>();
+
             for sort in sort
                 .iter()
                 .rev()
@@ -65,9 +66,8 @@ impl DataTable {
                     display_buffer.insert(0, 0);
                 }
             }
+            self.display_buffer = Some(display_buffer);
         }
-
-        self.display_buffer = Some(display_buffer);
 
         Ok(())
     }

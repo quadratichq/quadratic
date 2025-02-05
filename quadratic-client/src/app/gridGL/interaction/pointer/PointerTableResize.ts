@@ -190,9 +190,9 @@ export class PointerTableResize {
       }
 
       // if below bottom, then we expand down
-      else if (row > selection.bottom + 1 && this.dragDirection !== 'right') {
+      else if (row > selection.bottom && this.dragDirection !== 'right') {
         this.stateVertical = 'expandDown';
-        boxCellsRectangle.height = row - selection.y;
+        boxCellsRectangle.height = row - selection.y + 1;
 
         if (this.dragDirection === 'bottom') {
           boxCellsRectangle.width = selection.width + 1;
