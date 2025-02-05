@@ -4,16 +4,11 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { A1Error, JsTableInfo } from '@/app/quadratic-core-types';
 import { getTableInfo, stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import '@/app/ui/styles/floating-dialog.css';
 import { GoToIcon } from '@/shared/components/Icons';
-import {
-  Command,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-} from '@/shared/shadcn/ui/command';
+import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
+import { CommandSeparator } from 'cmdk';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
@@ -111,9 +106,25 @@ export const GoTo = () => {
     [closeMenu]
   );
 
+  const selectSheet = useCallback(
+    (sheetId: string) => {
+      sheets.current = sheetId;
+      closeMenu();
+    },
+    [closeMenu]
+  );
+
   if (!showGoToMenu) {
     return null;
   }
+
+  // TODO: filter these by type AND whether there's an active search
+  const tables = tableInfo
+    ? tableInfo.filter((item) => item.name.toLowerCase().includes(value?.toLowerCase() ?? ''))
+    : [];
+  const codeTables = tableInfo
+    ? tableInfo.filter((item) => !item.chart && item.name.toLowerCase().includes(value?.toLowerCase() ?? ''))
+    : [];
 
   return (
     <Command shouldFilter={false}>
@@ -142,20 +153,75 @@ export const GoTo = () => {
             <GoToIcon className="text-muted-foreground" />
           </CommandItem>
         </CommandGroup>
-        {/* <CommandItem className="flex cursor-pointer items-center justify-between">
-          <div>Rename range {convertedInput}</div>
-        </CommandItem> */}
 
-        <CommandGroup heading="Tables">
-          {tableInfo?.map(({ name, sheet_name }) => (
-            <CommandItem key={name} onSelect={() => selectTable(name)} className="flex items-center justify-between">
-              <div className="">{name}</div>
-              <div className="text-xs text-muted-foreground">{sheet_name}</div>
-            </CommandItem>
+        <CommandGroup heading="Sheets">
+          {sheets.map((sheet) => (
+            <CommandItemGoto key={sheet.id} value={sheet.id} onSelect={() => selectSheet(sheet.id)} name={sheet.name} />
           ))}
         </CommandGroup>
-        <CommandSeparator />
+
+        {tables.length > 0 && (
+          <>
+            <CommandGroup heading="Tables">
+              {tables.map(({ name, sheet_name }, i) => (
+                <CommandItemGoto
+                  key={name}
+                  // TODO: once we filter these, we can remove the table__ prefix
+                  value={'table__' + name}
+                  onSelect={() => selectTable(name)}
+                  name={name}
+                  nameSecondary={sheet_name}
+                />
+              ))}
+            </CommandGroup>
+            <CommandSeparator />
+          </>
+        )}
+        {codeTables.length > 0 && (
+          <CommandGroup heading="Code">
+            {codeTables.map(({ name, sheet_name }, i) => (
+              <CommandItemGoto
+                key={name}
+                // TODO: once we filter these, we can remove the code__ prefix
+                value={'code__' + name}
+                onSelect={() => selectTable(name)}
+                name={name}
+                nameSecondary={sheet_name}
+                icon={<LanguageIcon language={'python'} sx={{ width: 16, height: 16 }} />}
+              />
+            ))}
+          </CommandGroup>
+        )}
       </CommandList>
     </Command>
   );
 };
+
+function CommandItemGoto({
+  value,
+  onSelect,
+  icon,
+  name,
+  nameSecondary,
+}: {
+  value: string;
+  onSelect: () => void;
+  icon?: React.ReactNode;
+  name: string;
+  nameSecondary?: string;
+}) {
+  return (
+    <CommandItem value={value} onSelect={onSelect} className="flex items-center justify-between gap-2">
+      <div className="flex items-center gap-2 overflow-hidden">
+        {icon}
+        <p className="truncate">{name}</p>
+      </div>
+      {/* TODO: insert correct range */}
+      {nameSecondary && (
+        <div className="max-w-[30%] flex-shrink-0 truncate text-right text-xs text-muted-foreground">
+          {nameSecondary}!C2:C3
+        </div>
+      )}
+    </CommandItem>
+  );
+}

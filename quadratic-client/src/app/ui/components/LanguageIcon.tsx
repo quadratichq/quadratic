@@ -19,7 +19,7 @@ export function LanguageIcon({ language, ...props }: LanguageIconProps) {
   ) : language && 'formula'.startsWith(language) ? (
     <Formula {...props} sx={{ color: colors.languageFormula, ...internalSx }} />
   ) : language && 'javascript'.startsWith(language) ? (
-    <JavaScript className="text-gray-700" sx={{ color: colors.languageJavascript, ...internalSx }} />
+    <JavaScript {...props} sx={{ color: colors.languageJavascript, ...internalSx }} />
   ) : language && 'postgres'.startsWith(language) ? (
     <PostgresIcon {...props} sx={{ color: colors.languagePostgres, ...internalSx }} />
   ) : language && 'mysql'.startsWith(language) ? (
