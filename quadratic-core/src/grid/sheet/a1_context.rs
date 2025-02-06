@@ -1,4 +1,4 @@
-use crate::a1::A1Context;
+use crate::{a1::A1Context, grid::DataTableKind};
 
 use super::*;
 
@@ -7,7 +7,17 @@ impl Sheet {
     pub fn add_sheet_to_context(&self, context: &mut A1Context) {
         context.sheet_map.insert(self);
         self.data_tables.iter().for_each(|(pos, table)| {
-            context.table_map.insert(self.id, *pos, table);
+            let language = match table.kind {
+                DataTableKind::CodeRun(_) => {
+                    if let Some(CellValue::Code(code)) = self.cell_value_ref(*pos) {
+                        Some(code.language.clone())
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            };
+            context.table_map.insert(self.id, *pos, table, language);
         });
     }
 

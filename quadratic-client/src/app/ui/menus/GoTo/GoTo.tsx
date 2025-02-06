@@ -3,7 +3,11 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { A1Error, JsTableInfo } from '@/app/quadratic-core-types';
-import { getTableInfo, stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import {
+  convertTableToRange,
+  getTableInfo,
+  stringToSelection,
+} from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import '@/app/ui/styles/floating-dialog.css';
 import { GoToIcon } from '@/shared/components/Icons';
@@ -42,6 +46,14 @@ export const GoTo = () => {
       events.off('renderCodeCells', sync);
     };
   }, []);
+
+  const tableNameToRange = (tableName: string): string => {
+    try {
+      return convertTableToRange(sheets.a1Context, tableName, sheets.current);
+    } catch (e) {
+      throw new Error('Error getting table name range in GoTo.tsx');
+    }
+  };
 
   const convertedInput = useMemo(() => {
     if (!value) {
@@ -167,7 +179,7 @@ export const GoTo = () => {
                   value={'table__' + name}
                   onSelect={() => selectTable(name)}
                   name={name}
-                  nameSecondary={sheet_name}
+                  nameSecondary={tableNameToRange(name)}
                 />
               ))}
             </CommandGroup>
@@ -225,10 +237,9 @@ function CommandItemGoto({
         {icon}
         <p className="truncate">{name}</p>
       </div>
-      {/* TODO: insert correct range */}
       {nameSecondary && (
         <div className="max-w-[30%] flex-shrink-0 truncate text-right text-xs text-muted-foreground">
-          {nameSecondary}!C2:C3
+          {nameSecondary}
         </div>
       )}
     </CommandItem>
