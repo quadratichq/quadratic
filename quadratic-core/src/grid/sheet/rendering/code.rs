@@ -108,8 +108,16 @@ impl Sheet {
             readonly: data_table.readonly,
             is_html: data_table.is_html(),
             is_html_image: data_table.is_html() || data_table.is_image(),
-            html_image_width: data_table.chart_pixel_output.map(|(w, _)| w),
-            html_image_height: data_table.chart_pixel_output.map(|(_, h)| h),
+            html_image_width: if data_table.is_html_or_image() {
+                data_table.chart_pixel_output.map(|(w, _)| w)
+            } else {
+                None
+            },
+            html_image_height: if data_table.is_html_or_image() {
+                data_table.chart_pixel_output.map(|(_, h)| h)
+            } else {
+                None
+            },
         })
     }
 

@@ -4,26 +4,21 @@ use crate::{
     controller::GridController,
     grid::{
         data_table::{column_header::DataTableColumnHeader, sort::DataTableSort},
-        DataTableKind,
+        DataTable, DataTableKind,
     },
-    CellValue, SheetPos, SheetRect,
+    CellValue, SheetPos, SheetRect, Value,
 };
 
 use anyhow::Result;
 
 impl GridController {
-    pub fn flatten_data_table_operations(
-        &self,
-        sheet_pos: SheetPos,
-        _cursor: Option<String>,
-    ) -> Vec<Operation> {
+    pub fn flatten_data_table_operations(&self, sheet_pos: SheetPos) -> Vec<Operation> {
         vec![Operation::FlattenDataTable { sheet_pos }]
     }
 
     pub fn code_data_table_to_data_table_operations(
         &self,
         sheet_pos: SheetPos,
-        _cursor: Option<String>,
     ) -> Result<Vec<Operation>> {
         let import = Import::new("".into());
         let kind = DataTableKind::Import(import.to_owned());
@@ -38,11 +33,7 @@ impl GridController {
         ])
     }
 
-    pub fn grid_to_data_table_operations(
-        &self,
-        sheet_rect: SheetRect,
-        _cursor: Option<String>,
-    ) -> Vec<Operation> {
+    pub fn grid_to_data_table_operations(&self, sheet_rect: SheetRect) -> Vec<Operation> {
         vec![Operation::GridToDataTable { sheet_rect }]
     }
 
@@ -78,7 +69,6 @@ impl GridController {
         rows_to_remove: Option<Vec<u32>>,
         flatten_on_delete: Option<bool>,
         swallow_on_insert: Option<bool>,
-        _cursor: Option<String>,
     ) -> Vec<Operation> {
         let mut ops = vec![];
 
@@ -132,7 +122,6 @@ impl GridController {
         &self,
         sheet_pos: SheetPos,
         sort: Option<Vec<DataTableSort>>,
-        _cursor: Option<String>,
     ) -> Vec<Operation> {
         vec![Operation::SortDataTable { sheet_pos, sort }]
     }
@@ -141,11 +130,38 @@ impl GridController {
         &self,
         sheet_pos: SheetPos,
         first_row_is_header: bool,
-        _cursor: Option<String>,
     ) -> Vec<Operation> {
         vec![Operation::DataTableFirstRowAsHeader {
             sheet_pos,
             first_row_is_header,
+        }]
+    }
+
+    pub fn add_data_table_operations(
+        &self,
+        sheet_pos: SheetPos,
+        name: String,
+        values: Vec<Vec<String>>,
+        first_row_is_header: bool,
+    ) -> Vec<Operation> {
+        let name = self
+            .grid
+            .unique_data_table_name(&name, false, Some(sheet_pos));
+        let import = Import::new(name.to_owned());
+        let data_table = DataTable::new(
+            DataTableKind::Import(import.to_owned()),
+            &name,
+            Value::Array(values.into()),
+            false,
+            first_row_is_header,
+            true,
+            None,
+        );
+        let cell_value = CellValue::Import(import);
+        vec![Operation::AddDataTable {
+            sheet_pos,
+            data_table,
+            cell_value,
         }]
     }
 }

@@ -28,7 +28,7 @@ impl GridController {
     }
 
     pub fn flatten_data_table(&mut self, sheet_pos: SheetPos, cursor: Option<String>) {
-        let ops = self.flatten_data_table_operations(sheet_pos, cursor.to_owned());
+        let ops = self.flatten_data_table_operations(sheet_pos);
         self.start_user_transaction(ops, cursor, TransactionName::FlattenDataTable);
     }
 
@@ -37,14 +37,14 @@ impl GridController {
         sheet_pos: SheetPos,
         cursor: Option<String>,
     ) -> Result<()> {
-        let ops = self.code_data_table_to_data_table_operations(sheet_pos, cursor.to_owned())?;
+        let ops = self.code_data_table_to_data_table_operations(sheet_pos)?;
         self.start_user_transaction(ops, cursor, TransactionName::SwitchDataTableKind);
 
         Ok(())
     }
 
     pub fn grid_to_data_table(&mut self, sheet_rect: SheetRect, cursor: Option<String>) {
-        let ops = self.grid_to_data_table_operations(sheet_rect, cursor.to_owned());
+        let ops = self.grid_to_data_table_operations(sheet_rect);
         self.start_user_transaction(ops, cursor, TransactionName::GridToDataTable);
     }
 
@@ -92,9 +92,7 @@ impl GridController {
             rows_to_remove,
             flatten_on_delete,
             swallow_on_insert,
-            cursor.to_owned(),
         );
-
         self.start_user_transaction(ops, cursor, TransactionName::DataTableMutations);
     }
 
@@ -104,7 +102,7 @@ impl GridController {
         sort: Option<Vec<DataTableSort>>,
         cursor: Option<String>,
     ) {
-        let ops = self.sort_data_table_operations(sheet_pos, sort, cursor.to_owned());
+        let ops = self.sort_data_table_operations(sheet_pos, sort);
         self.start_user_transaction(ops, cursor, TransactionName::GridToDataTable);
     }
 
@@ -114,12 +112,20 @@ impl GridController {
         first_row_is_header: bool,
         cursor: Option<String>,
     ) {
-        let ops = self.data_table_first_row_as_header_operations(
-            sheet_pos,
-            first_row_is_header,
-            cursor.to_owned(),
-        );
+        let ops = self.data_table_first_row_as_header_operations(sheet_pos, first_row_is_header);
         self.start_user_transaction(ops, cursor, TransactionName::DataTableFirstRowAsHeader);
+    }
+
+    pub fn add_data_table(
+        &mut self,
+        sheet_pos: SheetPos,
+        name: String,
+        values: Vec<Vec<String>>,
+        first_row_is_header: bool,
+        cursor: Option<String>,
+    ) {
+        let ops = self.add_data_table_operations(sheet_pos, name, values, first_row_is_header);
+        self.start_user_transaction(ops, cursor, TransactionName::DataTableAddDataTable);
     }
 }
 
@@ -369,5 +375,86 @@ mod tests {
         // let data_table = sheet.data_table_mut(data_table_pos).unwrap();
         // data_table.insert_column(0, "Column 1".into());
         // data_table.insert_row(0, vec!["1", "2", "3"]);
+    }
+
+    #[test]
+    #[serial_test::parallel]
+    fn test_add_data_table() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Data table with headers
+        let values = vec![
+            vec!["Column 1".into(), "Column 2".into(), "Column 3".into()],
+            vec!["1".into(), "2".into(), "3".into()],
+            vec!["4".into(), "5".into(), "6".into()],
+        ];
+
+        gc.add_data_table(
+            SheetPos::from((pos![A1], sheet_id)),
+            "Table 1".to_string(),
+            values.to_owned(),
+            true,
+            None,
+        );
+
+        // Verify the first data table
+        {
+            let sheet = gc.sheet(sheet_id);
+            let data_table = sheet.data_table(pos![A1]).unwrap();
+
+            // Check basic properties
+            assert_eq!(data_table.name, "Table_1".into());
+            assert_eq!(data_table.header_is_first_row, true);
+            assert_eq!(data_table.value, Value::Array(values.into()));
+
+            // Check column headers
+            let headers = data_table.column_headers.as_ref().unwrap();
+            assert_eq!(headers.len(), 3);
+            assert_eq!(headers[0].name, "Column 1".into());
+            assert_eq!(headers[1].name, "Column 2".into());
+            assert_eq!(headers[2].name, "Column 3".into());
+        }
+
+        // Data table without headers
+        let values_no_header = vec![vec!["A".into(), "B".into()], vec!["C".into(), "D".into()]];
+
+        gc.add_data_table(
+            SheetPos::from((pos![D1], sheet_id)),
+            "Table 2".to_string(),
+            values_no_header.to_owned(),
+            false,
+            None,
+        );
+
+        // Verify the second data table
+        {
+            let sheet = gc.sheet(sheet_id);
+            let data_table = sheet.data_table(pos![D1]).unwrap();
+
+            // Check basic properties
+            assert_eq!(data_table.name, "Table_2".into());
+            assert_eq!(data_table.header_is_first_row, false);
+            assert_eq!(data_table.value, Value::Array(values_no_header.into()));
+
+            // Check that column headers are automatically generated
+            let headers = data_table.column_headers.as_ref().unwrap();
+            assert_eq!(headers.len(), 2);
+            assert_eq!(headers[0].name, "Column 1".into());
+            assert_eq!(headers[1].name, "Column 2".into());
+        }
+
+        // Test undo/redo functionality
+        gc.undo(None);
+        {
+            let sheet = gc.sheet(sheet_id);
+            assert!(sheet.data_table(pos![D1]).is_none());
+        }
+
+        gc.redo(None);
+        {
+            let sheet = gc.sheet(sheet_id);
+            assert!(sheet.data_table(pos![D1]).is_some());
+        }
     }
 }

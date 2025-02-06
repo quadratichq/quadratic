@@ -38,6 +38,7 @@ import type {
   MultiplayerCoreReceiveTransactions,
 } from '@/app/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
 import type {
+  ClientCoreAddDataTable,
   ClientCoreFindNextColumnForRect,
   ClientCoreFindNextRowForRect,
   ClientCoreGetCsvPreview,
@@ -1240,6 +1241,18 @@ class Core {
   dataTableFirstRowAsHeader(sheetId: string, x: number, y: number, firstRowAsHeader: boolean, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.dataTableFirstRowAsHeader(sheetId, posToPos(x, y), firstRowAsHeader, cursor);
+  }
+
+  addDataTable(args: ClientCoreAddDataTable) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.addDataTable(
+      args.sheetId,
+      posToPos(args.x, args.y),
+      args.name,
+      args.values,
+      args.firstRowIsHeader,
+      args.cursor
+    );
   }
 
   getCellsA1(transactionId: string, a1: string, lineNumber?: number): string {

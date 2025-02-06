@@ -141,6 +141,7 @@ impl GridController {
 
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
             let rects = sheet.selection_to_rects(selection, false, force_table_bounds);
+
             for rect in rects {
                 let sheet_pos = SheetPos::from((rect.min.x, rect.min.y, selection.sheet_id));
 
@@ -178,6 +179,15 @@ impl GridController {
                     sheet_pos,
                     values: CellValues::new_blank(rect.width(), rect.height()),
                 });
+
+                // need to update the selection if a table was deleted (since we
+                // can no longer use the table ref)
+                if selection.has_table_refs() {
+                    let replaced = selection.replace_table_refs(&self.grid().a1_context());
+                    ops.push(Operation::SetCursorA1 {
+                        selection: replaced,
+                    });
+                }
             }
         }
 

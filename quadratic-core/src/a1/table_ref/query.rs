@@ -18,10 +18,8 @@ impl TableRef {
                 ColRange::All => {
                     let start = table.bounds.min.x;
                     let end = table.bounds.max.x;
-                    if start >= from && end <= to {
-                        for x in start.max(from)..=end.min(to) {
-                            cols.push(x);
-                        }
+                    for x in start.max(from)..=end.min(to) {
+                        cols.push(x);
                     }
                 }
                 ColRange::Col(col) => {
@@ -37,10 +35,8 @@ impl TableRef {
                     {
                         let start = start + table.bounds.min.x;
                         let end = end + table.bounds.min.x;
-                        if start >= from && end <= to {
-                            for x in start.max(from)..=end.min(to) {
-                                cols.push(x);
-                            }
+                        for x in start.max(from)..=end.min(to) {
+                            cols.push(x);
                         }
                     }
                 }
@@ -48,16 +44,13 @@ impl TableRef {
                     if let Some((start, end)) = table.try_col_range_to_end(col) {
                         let start = start + table.bounds.min.x;
                         let end = end + table.bounds.min.x;
-                        if start >= from && end <= to {
-                            for x in start.max(from)..=end.min(to) {
-                                cols.push(x);
-                            }
+                        for x in start.max(from)..=end.min(to) {
+                            cols.push(x);
                         }
                     }
                 }
             }
         }
-
         cols
     }
 
