@@ -16,6 +16,37 @@ export const aiToolsActions: AIToolActionsRecord = {
     // no action as this tool is only meant to get structured data from AI
     return `Executed set chat name tool successfully with name: ${args.chat_name}`;
   },
+  [AITool.AddDataTable]: async (args) => {
+    const { top_left_position, table_name, table_data } = args;
+
+    try {
+      const selection = stringToSelection(top_left_position, sheets.current, sheets.a1Context);
+      if (!selection.isSingleSelection()) {
+        return 'Invalid code cell position, this should be a single cell, not a range';
+      }
+      const { x, y } = selection.getCursor();
+
+      if (table_data.length > 0 && table_data[0].length > 0) {
+        quadraticCore.addDataTable({
+          sheetId: sheets.current,
+          x,
+          y,
+          name: table_name,
+          values: table_data,
+          firstRowIsHeader: true,
+          cursor: sheets.getCursorPosition(),
+        });
+
+        ensureRectVisible({ x, y }, { x: x + table_data[0].length - 1, y: y + table_data.length - 1 });
+
+        return `Executed add data table tool successfully with name: ${table_name}`;
+      } else {
+        return `data_table values are empty, cannot add data table without values`;
+      }
+    } catch (e) {
+      return `Error executing set cell values tool: ${e}`;
+    }
+  },
   [AITool.SetCellValues]: async (args) => {
     const { top_left_position, cell_values } = args;
     try {
@@ -25,10 +56,15 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
       const { x, y } = selection.getCursor();
 
-      quadraticCore.setCellValues(sheets.current, x, y, cell_values, sheets.getCursorPosition());
-      ensureRectVisible({ x, y }, { x: x + cell_values[0].length - 1, y: y + cell_values.length - 1 });
+      if (cell_values.length > 0 && cell_values[0].length > 0) {
+        quadraticCore.setCellValues(sheets.current, x, y, cell_values, sheets.getCursorPosition());
 
-      return 'Executed set cell values tool successfully';
+        ensureRectVisible({ x, y }, { x: x + cell_values[0].length - 1, y: y + cell_values.length - 1 });
+
+        return 'Executed set cell values tool successfully';
+      } else {
+        return 'cell_values are empty, cannot set cell values without values';
+      }
     } catch (e) {
       return `Error executing set cell values tool: ${e}`;
     }
@@ -54,6 +90,7 @@ export const aiToolsActions: AIToolActionsRecord = {
         language: code_cell_language,
         cursor: sheets.getCursorPosition(),
       });
+
       ensureRectVisible({ x, y }, { x: x + output_width - 1, y: y + output_height - 1 });
 
       return 'Executed set code cell value tool successfully';
