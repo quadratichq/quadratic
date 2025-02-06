@@ -358,4 +358,16 @@ export class SheetCursor {
       return undefined;
     }
   };
+
+  getSingleTableSelection(): string | undefined {
+    const ranges = this.getRanges();
+    if (ranges.length !== 1) {
+      return;
+    }
+    const name = this.getSelectedTableNames();
+    if (name.length !== 1) {
+      return;
+    }
+    return name[0];
+  }
 }
