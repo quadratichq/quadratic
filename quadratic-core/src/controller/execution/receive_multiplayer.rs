@@ -806,7 +806,7 @@ mod tests {
             client
                 .try_sheet(sheet_id)
                 .unwrap()
-                .display_value(Pos { x: 1, y: 1 }),
+                .display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Text("async output".to_string()))
         );
     }
@@ -879,7 +879,7 @@ mod tests {
         assert!(result.is_ok());
 
         assert_eq!(
-            client.try_sheet(sheet_id).unwrap().display_value(pos![A1]),
+            client.try_sheet(sheet_id).unwrap().display_value(pos![A2]),
             Some(CellValue::Text("async output".to_string()))
         );
     }

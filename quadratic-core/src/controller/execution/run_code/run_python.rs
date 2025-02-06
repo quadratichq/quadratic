@@ -60,7 +60,7 @@ mod tests {
         })
         .ok();
 
-        let sheet = gc.grid.try_sheet(sheet_id).unwrap();
+        let sheet = gc.grid.try_sheet_mut(sheet_id).unwrap();
         let pos = sheet_pos.into();
         let code_cell = sheet.cell_value(pos).unwrap();
         match code_cell {
@@ -70,13 +70,14 @@ mod tests {
             }
             _ => panic!("expected code cell"),
         }
-        let code_run = sheet.data_tables.get(&pos).unwrap();
-        assert_eq!(code_run.output_size(), ArraySize::_1X1);
+        let data_table = sheet.data_tables.get_mut(&pos).unwrap();
+        data_table.show_ui = false;
+        assert_eq!(data_table.output_size(), ArraySize::_1X1);
         assert_eq!(
-            code_run.cell_value_at(0, 1),
+            data_table.cell_value_at(0, 1),
             Some(CellValue::Text("test".to_string()))
         );
-        assert!(!code_run.spill_error);
+        assert!(!data_table.spill_error);
 
         // transaction should be completed
         let async_transaction = gc.transactions.get_async_transaction(transaction_id);
@@ -106,7 +107,7 @@ mod tests {
         assert!(summary.is_ok());
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_code_cell_value(pos![A1]),
+            sheet.get_code_cell_value(pos![A2]),
             Some(CellValue::Text("hello world".into()))
         );
 
@@ -165,10 +166,10 @@ mod tests {
             })
             .is_ok());
 
-        // check that the value at A2 contains the expected output
+        // check that the value at A3 contains the expected output
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(pos![A2]),
+            sheet.display_value(pos![A3]),
             Some(CellValue::Number(BigDecimal::from(10)))
         );
 
@@ -242,7 +243,7 @@ mod tests {
         // check that the value at A2 contains the expected output
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(pos![A2]),
+            sheet.display_value(pos![A3]),
             Some(CellValue::Number(BigDecimal::from(11)))
         );
 
@@ -330,7 +331,7 @@ mod tests {
         assert!(gc.async_transactions().is_empty());
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert!(sheet
-            .display_value(pos![A1])
+            .display_value(pos![A2])
             .unwrap()
             .is_blank_or_empty_string());
 
@@ -368,7 +369,7 @@ mod tests {
         // check that the value at A1 contains the expected output
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(pos![A1]),
+            sheet.display_value(pos![A2]),
             Some(CellValue::Text("original output".into()))
         );
         gc.set_code_cell(
@@ -381,7 +382,7 @@ mod tests {
         // check that the value at A1 contains the original output
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(pos![A1]),
+            sheet.display_value(pos![A2]),
             Some(CellValue::Text("original output".into()))
         );
 
@@ -400,7 +401,7 @@ mod tests {
         // repeat the same action to find a bug that occurs on second change
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(pos![A1]),
+            sheet.display_value(pos![A2]),
             Some(CellValue::Text("new output".into()))
         );
         gc.set_code_cell(
@@ -413,7 +414,7 @@ mod tests {
         // check that the value at A1 contains the original output
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(pos![A1]),
+            sheet.display_value(pos![A2]),
             Some(CellValue::Text("new output".into()))
         );
 
@@ -432,7 +433,7 @@ mod tests {
         // check that the value at A1 contains the original output
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(pos![A1]),
+            sheet.display_value(pos![A2]),
             Some(CellValue::Text("new output second time".into()))
         );
 
