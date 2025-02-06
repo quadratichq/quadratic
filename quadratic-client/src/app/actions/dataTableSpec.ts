@@ -373,7 +373,7 @@ export const removeTableRow = () => {
       columns_to_add: undefined,
       columns_to_remove: undefined,
       rows_to_add: undefined,
-      rows_to_remove: [row - 1],
+      rows_to_remove: [row],
       flatten_on_delete: undefined,
       swallow_on_insert: undefined,
       cursor: sheets.getCursorPosition(),

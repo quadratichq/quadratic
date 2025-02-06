@@ -51,7 +51,7 @@ export interface JsRowHeight { row: bigint, height: number, }
 export interface JsSheetFill { x: number, y: number, w: number | null, h: number | null, color: string, }
 export type JsSnackbarSeverity = "error" | "warning" | "success";
 export interface JsSummarizeSelectionResult { count: bigint, sum: number | null, average: number | null, }
-export interface JsTableInfo { name: string, sheet_name: string, chart: boolean, }
+export interface JsTableInfo { name: string, sheet_name: string, chart: boolean, language: CodeCellLanguage | null, }
 export interface JsValidationWarning { x: bigint, y: bigint, validation: string | null, style: ValidationStyle | null, }
 export type Direction = "Up" | "Down" | "Left" | "Right";
 export interface MinMax { min: number, max: number, }
