@@ -54,7 +54,7 @@ export class CellsImage extends Container {
     return this.gridBounds.x;
   }
   get row(): number {
-    return this.gridBounds.y;
+    return this.pos.y;
   }
 
   updateMessage(message: CoreClientImage) {

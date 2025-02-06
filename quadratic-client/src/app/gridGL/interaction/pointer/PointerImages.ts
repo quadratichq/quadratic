@@ -3,10 +3,12 @@ import type { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { IMAGE_BORDER_OFFSET } from '@/app/gridGL/UI/UICellImages';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import type { Point } from 'pixi.js';
+import { Rectangle, type Point } from 'pixi.js';
 
 const MIN_SIZE = 100;
+const CORNER_SIZE = 20;
 
 export class PointerImages {
   resizing?: { image: CellsImage; point: Point; side: 'right' | 'bottom' | 'corner' };
@@ -20,6 +22,14 @@ export class PointerImages {
     const images = cellsSheet.getCellsImages();
     if (!images?.length) return;
     for (const image of images) {
+      const cornerSize = CORNER_SIZE * pixiApp.viewport.scaled;
+      const corner = new Rectangle(
+        image.viewRight.x - cornerSize,
+        image.viewBottom.y - cornerSize,
+        cornerSize + IMAGE_BORDER_OFFSET * 2,
+        cornerSize + IMAGE_BORDER_OFFSET * 2
+      );
+      if (intersects.rectanglePoint(corner, point)) return { image, side: 'corner' };
       let right = intersects.rectanglePoint(image.viewRight, point);
       let bottom = intersects.rectanglePoint(image.viewBottom, point);
       if (right && bottom) return { image, side: 'corner' };
