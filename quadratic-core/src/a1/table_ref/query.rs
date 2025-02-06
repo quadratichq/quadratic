@@ -51,7 +51,6 @@ impl TableRef {
                 }
             }
         }
-        dbgjs!(&cols);
         cols
     }
 
