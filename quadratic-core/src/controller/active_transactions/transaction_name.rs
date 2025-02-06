@@ -22,6 +22,7 @@ pub enum TransactionName {
     DataTableMeta,
     DataTableMutations,
     DataTableFirstRowAsHeader,
+    DataTableAddDataTable,
     Import,
 
     SetSheetMetadata,

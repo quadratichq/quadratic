@@ -159,4 +159,31 @@ impl GridController {
 
         Ok(())
     }
+
+    #[wasm_bindgen(js_name = "addDataTable")]
+    pub fn js_add_data_table(
+        &mut self,
+        sheet_id: String,
+        pos: String,
+        name: String,
+        values: JsValue,
+        first_row_is_header: bool,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
+        let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
+
+        let values: Vec<Vec<String>> = serde_wasm_bindgen::from_value(values)
+            .map_err(|_| JsValue::from_str("Invalid values"))?;
+
+        self.add_data_table(
+            pos.to_sheet_pos(sheet_id),
+            name,
+            values,
+            first_row_is_header,
+            cursor,
+        );
+
+        Ok(())
+    }
 }

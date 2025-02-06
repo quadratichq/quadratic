@@ -673,6 +673,10 @@ class CoreClient {
         core.dataTableFirstRowAsHeader(e.data.sheetId, e.data.x, e.data.y, e.data.firstRowAsHeader, e.data.cursor);
         return;
 
+      case 'clientCoreAddDataTable':
+        core.addDataTable(e.data);
+        return;
+
       case 'clientCoreFiniteRectFromSelection':
         this.send({
           type: 'coreClientFiniteRectFromSelection',
