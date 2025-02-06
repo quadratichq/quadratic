@@ -107,7 +107,6 @@ export class GridHeadings extends Container {
     const leftColumn = sheet.getColumnFromScreen(left);
     const rightColumn = sheet.getColumnFromScreen(left + bounds.width);
     this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
-
     this.selectedColumns = cursor.getSelectedColumnRanges(leftColumn - 1, rightColumn + 1);
     for (let i = 0; i < this.selectedColumns.length; i += 2) {
       const startPlacement = offsets.getColumnPlacement(this.selectedColumns[i]);
