@@ -1,6 +1,8 @@
+use std::str::FromStr;
+
 use quadratic_core::{
-    a1::A1Context,
-    formulas::{self, RangeRef},
+    a1::{A1Context, CellRefRange, SheetCellRefRange},
+    formulas,
     grid::SheetId,
     Pos, Span, Spanned,
 };
@@ -18,10 +20,10 @@ pub struct JsFormulaParseResult {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JsCellRefSpan {
     pub span: Span,
-    pub cell_ref: formulas::RangeRef,
+    pub cell_ref: SheetCellRefRange,
 }
-impl From<Spanned<formulas::RangeRef>> for JsCellRefSpan {
-    fn from(value: Spanned<formulas::RangeRef>) -> Self {
+impl From<Spanned<SheetCellRefRange>> for JsCellRefSpan {
+    fn from(value: Spanned<SheetCellRefRange>) -> Self {
         JsCellRefSpan {
             span: value.span,
             cell_ref: value.inner,
@@ -68,12 +70,13 @@ impl From<Spanned<formulas::RangeRef>> for JsCellRefSpan {
 /// `parse_error_msg` may be null, and `parse_error_span` may be null. Even if
 /// `parse_error_span`, `parse_error_msg` may still be present.
 #[wasm_bindgen(js_name = "parseFormula")]
-pub fn parse_formula(formula_string: &str, ctx: &str, x: f64, y: f64) -> String {
+pub fn parse_formula(formula_string: &str, ctx: &str, sheet_id: &str, x: f64, y: f64) -> String {
     let ctx = serde_json::from_str::<A1Context>(ctx).expect("invalid A1Context");
+    let sheet_id = SheetId::from_str(sheet_id).expect("invalid SheetId");
 
     let x = x as i64;
     let y = y as i64;
-    let code_cell_pos = Pos { x, y };
+    let code_cell_pos = Pos { x, y }.to_sheet_pos(sheet_id);
 
     let parse_error = formulas::parse_formula(formula_string, &ctx, code_cell_pos).err();
 
@@ -82,17 +85,7 @@ pub fn parse_formula(formula_string: &str, ctx: &str, x: f64, y: f64) -> String 
         parse_error_span: parse_error.and_then(|e| e.span),
         cell_refs: formulas::find_cell_references(formula_string, &ctx, code_cell_pos)
             .into_iter()
-            .map(|mut spanned| {
-                if let RangeRef::CellRange { mut start, mut end } = spanned.inner {
-                    start.replace_unbounded(1, code_cell_pos);
-                    end.replace_unbounded(-1, code_cell_pos);
-                    spanned.inner = RangeRef::CellRange { start, end };
-                } else if let RangeRef::Cell { mut pos } = spanned.inner {
-                    pos.replace_unbounded(-1, code_cell_pos);
-                    spanned.inner = RangeRef::Cell { pos };
-                }
-                spanned.into()
-            })
+            .map(|spanned| spanned.into())
             .collect(),
     };
 
@@ -114,10 +107,7 @@ pub fn check_formula(formula_string: &str, ctx: &str, sheet_id: &str, x: i32, y:
 #[cfg(test)]
 mod tests {
     use super::*;
-    use quadratic_core::{
-        formulas::{CellRef, CellRefCoord, RangeRef},
-        Span,
-    };
+    use quadratic_core::Span;
 
     /// Run this test with `--nocapture` to generate the example for the
     /// `parse_formula()` docs.
@@ -129,7 +119,7 @@ mod tests {
             cell_refs: vec![
                 JsCellRefSpan {
                     span: Span { start: 1, end: 4 },
-                    cell_ref: RangeRef::from(CellRef {
+                    cell_ref: SheetCellRefRange::from(CellRef {
                         sheet: None,
                         x: CellRefCoord::Relative(0),
                         y: CellRefCoord::Absolute(1),
@@ -137,7 +127,8 @@ mod tests {
                 },
                 JsCellRefSpan {
                     span: Span { start: 15, end: 25 },
-                    cell_ref: RangeRef::CellRange {
+                    cell_ref: SheetCellRefRange {
+                        sheet_id:
                         start: CellRef {
                             sheet: None,
                             x: CellRefCoord::Absolute(0),
