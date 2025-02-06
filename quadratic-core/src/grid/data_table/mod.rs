@@ -266,7 +266,7 @@ impl DataTable {
                 if force_table_bounds {
                     array.height() as usize
                 } else {
-                    array.height() as usize + self.y_adjustment(true) as usize
+                    (array.height() as i64 + self.y_adjustment(true)) as usize
                 }
             }
             Value::Tuple(_) => 0,

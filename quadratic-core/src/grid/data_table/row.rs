@@ -1,12 +1,12 @@
 use anyhow::Result;
 
 use super::DataTable;
-use crate::CellValue;
+use crate::{CellValue, CopyFormats};
 
 impl DataTable {
     /// Get the values of a row (does not include the header)
-    pub fn get_row(&self, mut row_index: usize) -> Result<Vec<CellValue>> {
-        row_index -= self.y_adjustment(true) as usize;
+    pub fn get_row(&self, display_row_index: usize) -> Result<Vec<CellValue>> {
+        let row_index = usize::try_from(display_row_index as i64 - self.y_adjustment(true))?;
 
         let row = self
             .value_ref()?
@@ -22,58 +22,72 @@ impl DataTable {
     /// Get the values of a row taking into account sorted columns.
     ///
     /// Maps the display row index to the actual row index
-    pub fn get_row_sorted(&self, mut display_row_index: usize) -> Result<Vec<CellValue>> {
-        display_row_index -= self.y_adjustment(true) as usize;
+    pub fn get_row_sorted(&self, display_row_index: usize) -> Result<Vec<CellValue>> {
+        let row_index = display_row_index as i64 - self.y_adjustment(true);
+        let actual_row_index = self.transmute_index(row_index as u64) as i64;
 
-        display_row_index = self.transmute_index(display_row_index as u64) as usize;
-
-        display_row_index += self.y_adjustment(true) as usize;
-
-        self.get_row(display_row_index)
+        self.get_row(usize::try_from(actual_row_index + self.y_adjustment(true))?)
     }
 
     /// Insert a new row at the given index.
-    pub fn insert_row(
-        &mut self,
-        mut row_index: usize,
-        values: Option<Vec<CellValue>>,
-    ) -> Result<()> {
-        row_index -= self.y_adjustment(true) as usize;
+    pub fn insert_row(&mut self, row_index: usize, values: Option<Vec<CellValue>>) -> Result<()> {
+        let row_index = row_index as i64 - self.y_adjustment(true);
 
         let array = self.mut_value_as_array()?;
-        array.insert_row(row_index, values)?;
+        array.insert_row(usize::try_from(row_index)?, values)?;
+
+        // formats and borders are 1 indexed
+        self.formats.insert_row(row_index + 1, CopyFormats::None);
+        self.borders.insert_row(row_index + 1, CopyFormats::None);
 
         Ok(())
     }
 
     /// Insert a new row at the given index, for table having sorted or hidden columns.
     ///
-    /// Add blank values for hidden columns and adds the row to the display buffer.
+    /// Add blank values for hidden columns and sorts the table.
     pub fn insert_row_sorted_hidden(
         &mut self,
-        mut display_row_index: usize,
-        values: Option<Vec<CellValue>>,
-    ) -> Result<()> {
-        display_row_index -= self.y_adjustment(true) as usize;
-
-        let actual_row_index = self.transmute_index(display_row_index as u64) as usize;
-        if let Some(display_buffer) = &mut self.display_buffer {
-            display_buffer.insert(actual_row_index, actual_row_index as u64);
+        display_row_index: usize,
+        mut values: Option<Vec<CellValue>>,
+    ) -> Result<u32> {
+        if let Some(cell_values) = values {
+            let table_width = self.width();
+            let mut row_values = vec![CellValue::Blank; table_width];
+            for (index, cell_value) in cell_values.into_iter().enumerate() {
+                let column_index = self.get_column_index_from_display_index(index as u32);
+                row_values[usize::try_from(column_index)?] = cell_value;
+            }
+            values = Some(row_values);
         }
 
-        self.insert_row(actual_row_index + self.y_adjustment(true) as usize, values)
+        self.insert_row(display_row_index, values)?;
+
+        self.sort_all()?;
+
+        let row_index = usize::try_from(display_row_index as i64 - self.y_adjustment(true))?;
+        let mut display_row_index = row_index;
+        if let Some(display_buffer) = self.display_buffer.as_ref() {
+            display_row_index = display_buffer
+                .iter()
+                .position(|&y| y == row_index as u64)
+                .unwrap_or(row_index);
+        }
+        let reverse_row_index = u32::try_from(display_row_index as i64 + self.y_adjustment(true))?;
+
+        Ok(reverse_row_index)
     }
 
     /// Remove a row at the given index.
-    pub fn delete_row(&mut self, mut row_index: usize) -> Result<()> {
-        row_index -= self.y_adjustment(true) as usize;
+    pub fn delete_row(&mut self, display_row_index: usize) -> Result<()> {
+        let row_index = display_row_index as i64 - self.y_adjustment(true);
 
         let array = self.mut_value_as_array()?;
-        array.delete_row(row_index)?;
+        array.delete_row(usize::try_from(row_index)?)?;
 
         // formats and borders are 1 indexed
-        self.formats.remove_row(row_index as i64 + 1);
-        self.borders.remove_row(row_index as i64 + 1);
+        self.formats.remove_row(row_index + 1);
+        self.borders.remove_row(row_index + 1);
 
         Ok(())
     }
@@ -81,15 +95,27 @@ impl DataTable {
     /// Remove a row at the given index, for table having sorted columns.
     ///
     /// Removes the row and calls sort_all to update the display buffer.
-    pub fn delete_row_sorted(&mut self, mut display_row_index: usize) -> Result<()> {
-        display_row_index -= self.y_adjustment(true) as usize;
+    pub fn delete_row_sorted(&mut self, display_row_index: usize) -> Result<u32> {
+        let row_index = display_row_index as i64 - self.y_adjustment(true);
+        let actual_row_index = self.transmute_index(row_index as u64);
 
-        let actual_row_index = self.transmute_index(display_row_index as u64) as usize;
+        self.delete_row(usize::try_from(
+            actual_row_index as i64 + self.y_adjustment(true),
+        )?)?;
 
-        self.delete_row(actual_row_index + self.y_adjustment(true) as usize)?;
-        self.sort_all()?;
+        // remove the row from the display buffer
+        if let Some(display_buffer) = &mut self.display_buffer {
+            display_buffer.remove(usize::try_from(row_index)?);
+            for y in display_buffer.iter_mut() {
+                if *y > actual_row_index {
+                    *y -= 1;
+                }
+            }
+        }
 
-        Ok(())
+        let reverse_row_index = u32::try_from(actual_row_index as i64 + self.y_adjustment(true))?;
+
+        Ok(reverse_row_index)
     }
 }
 
