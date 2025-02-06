@@ -146,7 +146,7 @@ impl GridController {
     ) -> Vec<Operation> {
         let name = self
             .grid
-            .unique_data_table_name(&name, true, Some(sheet_pos));
+            .unique_data_table_name(&name, false, Some(sheet_pos));
         let import = Import::new(name.to_owned());
         let data_table = DataTable::new(
             DataTableKind::Import(import.to_owned()),
