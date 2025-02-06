@@ -2,7 +2,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { useEffect, useState } from 'react';
 
-export const CursorSelectionDisplay = () => {
+export const useCursorPosition = () => {
   const [cursorString, setCursorString] = useState('');
 
   useEffect(() => {
@@ -20,5 +20,5 @@ export const CursorSelectionDisplay = () => {
     };
   }, []);
 
-  return <span className="truncate">{cursorString}</span>;
+  return cursorString;
 };

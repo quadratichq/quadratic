@@ -17,6 +17,20 @@ use crate::{
 use anyhow::{bail, Result};
 
 impl GridController {
+    /// Selects the entire data table, including the header
+    fn select_full_data_table(
+        transaction: &mut PendingTransaction,
+        sheet_id: SheetId,
+        data_table_pos: Pos,
+        data_table: &DataTable,
+    ) {
+        if transaction.is_user_undo_redo() {
+            let sheet_pos = data_table_pos.to_sheet_pos(sheet_id);
+            transaction
+                .add_update_selection(A1Selection::table(sheet_pos, &data_table.name.to_display()));
+        }
+    }
+
     fn mark_data_table_dirty(
         &self,
         transaction: &mut PendingTransaction,
@@ -799,6 +813,7 @@ impl GridController {
                 data_table.formats.apply_updates(&format_update);
             }
 
+            Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
             self.send_updated_bounds(sheet_id);
 
@@ -928,6 +943,7 @@ impl GridController {
             let old_values = data_table.get_column_sorted(column_index)?;
             data_table.delete_column(column_index)?;
 
+            Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
             self.send_updated_bounds(sheet_id);
 
             let forward_operations = vec![op];
@@ -1037,6 +1053,7 @@ impl GridController {
                 data_table.formats.apply_updates(&format_update);
             }
 
+            Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
             self.send_updated_bounds(sheet_id);
 
@@ -1144,6 +1161,7 @@ impl GridController {
 
             let reverse_row_index = data_table.delete_row_sorted(index as usize)?;
 
+            Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
             self.send_updated_bounds(sheet_id);
 
             let forward_operations = vec![op];

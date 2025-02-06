@@ -69,11 +69,23 @@ impl DataTable {
     /// Create default column headings for the DataTable.
     /// For example, the column headings will be "Column 1", "Column 2", etc.
     pub fn default_header(&self, width: Option<u32>) -> Vec<DataTableColumnHeader> {
+        let func = |i: u32| format!("Column {i}");
+
+        self.default_header_with_name(func, width)
+    }
+
+    /// Create default column headings for the DataTable.
+    /// Accept a formatting function
+    pub fn default_header_with_name(
+        &self,
+        func: impl Fn(u32) -> String,
+        width: Option<u32>,
+    ) -> Vec<DataTableColumnHeader> {
         let width = width.unwrap_or(self.value.size().w.get());
 
         match self.value {
             Value::Array(_) => (1..=width)
-                .map(|i| DataTableColumnHeader::new(format!("Column {i}"), true, i - 1))
+                .map(|i| DataTableColumnHeader::new(func(i), true, i - 1))
                 .collect::<Vec<DataTableColumnHeader>>(),
             _ => vec![],
         }
