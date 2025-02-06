@@ -130,6 +130,7 @@ export class Tables extends Container<Table> {
         if (!renderCodeCell) {
           pixiApp.cellsSheet().cellsFills.updateAlternatingColors(x, y);
           this.removeChild(table);
+          sheets.getById(this.cellsSheet.sheetId)?.gridOverflowLines.updateImageHtml(x, y);
           table.destroy();
         } else {
           table.updateCodeCell(renderCodeCell);
@@ -344,6 +345,8 @@ export class Tables extends Container<Table> {
       table.resize(width, height);
       sheets.getById(this.cellsSheet.sheetId)?.gridOverflowLines.updateImageHtml(x, y, width, height);
       pixiApp.gridLines.dirty = true;
+    } else {
+      throw new Error(`Table ${x},${y} not found in Tables.ts`);
     }
   }
 
@@ -359,6 +362,9 @@ export class Tables extends Container<Table> {
   getTableFromCell(cell: JsCoordinate): Table | undefined {
     return this.children.find((table) => {
       const code = table.codeCell;
+      if (code.state === 'SpillError' || code.state === 'RunError') {
+        return false;
+      }
       if (
         code.is_html_image &&
         cell.x >= code.x &&
