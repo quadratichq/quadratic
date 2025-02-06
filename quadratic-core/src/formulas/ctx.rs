@@ -57,9 +57,9 @@ impl<'ctx> Ctx<'ctx> {
             .ok_or(RunErrorMsg::BadCellReference.with_span(span))?;
 
         let rect = match &range.cells {
-            CellRefRange::Sheet { range } => sheet.ref_range_bounds_to_rect(&range),
+            CellRefRange::Sheet { range } => sheet.ref_range_bounds_to_rect(range),
             CellRefRange::Table { range } => sheet
-                .table_ref_to_rect(&range, false, false)
+                .table_ref_to_rect(range, false, false)
                 .ok_or(RunErrorMsg::BadCellReference.with_span(span))?,
         };
 

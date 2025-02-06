@@ -19,7 +19,8 @@ impl GridController {
         delta: i64,
     ) -> String {
         if let Some(column) = column {
-            let new_code = replace_cell_references_with(
+            
+            replace_cell_references_with(
                 &code_cell.code,
                 parse_ctx,
                 code_cell_pos,
@@ -34,10 +35,10 @@ impl GridController {
                     },
                     row: cell_ref.row,
                 },
-            );
-            new_code
+            )
         } else if let Some(row) = row {
-            let new_code = replace_cell_references_with(
+            
+            replace_cell_references_with(
                 &code_cell.code,
                 parse_ctx,
                 code_cell_pos,
@@ -52,8 +53,7 @@ impl GridController {
                         cell_ref.row
                     },
                 },
-            );
-            new_code
+            )
         } else {
             code_cell.code.clone()
         }

@@ -104,12 +104,10 @@ impl A1Context {
             };
             if current_sheet_id == table.sheet_id {
                 Ok(format!("{range}"))
+            } else if let Some(sheet_name) = self.sheet_map.try_sheet_id(table.sheet_id) {
+                Ok(format!("{sheet_name}!{range}"))
             } else {
-                if let Some(sheet_name) = self.sheet_map.try_sheet_id(table.sheet_id) {
-                    Ok(format!("{sheet_name}!{range}"))
-                } else {
-                    Err(format!("Sheet not found"))
-                }
+                Err("Sheet not found".to_string())
             }
         } else {
             Err(format!("Table {table_name} not found"))

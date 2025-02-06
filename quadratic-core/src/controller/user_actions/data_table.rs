@@ -405,7 +405,7 @@ mod tests {
 
             // Check basic properties
             assert_eq!(data_table.name, "Table_1".into());
-            assert_eq!(data_table.header_is_first_row, true);
+            assert!(data_table.header_is_first_row);
             assert_eq!(data_table.value, Value::Array(values.into()));
 
             // Check column headers
@@ -434,7 +434,7 @@ mod tests {
 
             // Check basic properties
             assert_eq!(data_table.name, "Table_2".into());
-            assert_eq!(data_table.header_is_first_row, false);
+            assert!(!data_table.header_is_first_row);
             assert_eq!(data_table.value, Value::Array(values_no_header.into()));
 
             // Check that column headers are automatically generated

@@ -17,7 +17,7 @@ impl GridController {
     ) -> Vec<Operation> {
         let parse_ctx = self.grid.a1_context();
         let code = match language {
-            CodeCellLanguage::Formula => replace_a1_notation(&code, &parse_ctx, sheet_pos.into()),
+            CodeCellLanguage::Formula => replace_a1_notation(&code, &parse_ctx, sheet_pos),
             _ => code,
         };
 

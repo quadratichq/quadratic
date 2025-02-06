@@ -427,13 +427,7 @@ impl A1Selection {
             .iter()
             .filter_map(|range| match range {
                 CellRefRange::Table { range } => {
-                    if let Some(range) =
-                        range.convert_to_ref_range_bounds(false, context, false, true)
-                    {
-                        Some(CellRefRange::Sheet { range })
-                    } else {
-                        None
-                    }
+                    range.convert_to_ref_range_bounds(false, context, false, true).map(|range| CellRefRange::Sheet { range })
                 }
                 _ => Some(range.clone()),
             })
