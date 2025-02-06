@@ -32,7 +32,7 @@ impl A1Selection {
                     sheet_id,
                     cells: cells.clone(),
                 }
-                .to_string(default_sheet_id, context, force_sheet_name)
+                .to_a1_string(default_sheet_id, context, force_sheet_name)
             })
             .collect::<Vec<_>>()
             .join(",")

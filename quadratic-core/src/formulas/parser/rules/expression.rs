@@ -203,7 +203,7 @@ impl SyntaxRule for ExpressionWithPrecedence {
                 | Token::StringLiteral
                 | Token::UnterminatedStringLiteral
                 | Token::NumericLiteral
-                | Token::CellRef
+                | Token::CellOrTableRef
                 | Token::InternalCellRef => true,
 
                 Token::Whitespace => false,
@@ -402,7 +402,7 @@ impl SyntaxRule for FunctionCall {
     }
 }
 
-/// Matches a single cell reference.
+/// Matches a single cell or table reference.
 #[derive(Debug, Copy, Clone)]
 pub struct CellReferenceExpression;
 impl_display!(for CellReferenceExpression, "cell reference such as 'A6' or '$ZB$3'");
@@ -413,7 +413,8 @@ impl SyntaxRule for CellReferenceExpression {
         CellReference.prefix_matches(p)
     }
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
-        Ok(p.parse(CellReference)?.map(ast::AstNodeContents::CellRef))
+        Ok(p.parse(CellReference)?
+            .map(|(sheet_id, range)| ast::AstNodeContents::CellRef(sheet_id, range)))
     }
 }
 

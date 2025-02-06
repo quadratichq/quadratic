@@ -44,6 +44,11 @@ impl std::fmt::Display for A1Context {
 }
 
 impl A1Context {
+    /// Returns whether a table exists with the given name.
+    pub fn has_table(&self, table_name: &str) -> bool {
+        self.try_table(table_name).is_some()
+    }
+
     /// Finds a table by the table name.
     pub fn try_table(&self, table_name: &str) -> Option<&TableMapEntry> {
         self.table_map.try_table(table_name)

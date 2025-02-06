@@ -1,6 +1,7 @@
 use quadratic_core::{
     a1::A1Context,
     formulas::{self, RangeRef},
+    grid::SheetId,
     Pos, Span, Spanned,
 };
 use serde::{Deserialize, Serialize};
@@ -99,9 +100,15 @@ pub fn parse_formula(formula_string: &str, ctx: &str, x: f64, y: f64) -> String 
 }
 
 #[wasm_bindgen(js_name = "checkFormula")]
-pub fn check_formula(formula_string: &str, ctx: &str, x: i32, y: i32) -> bool {
+pub fn check_formula(formula_string: &str, ctx: &str, sheet_id: &str, x: i32, y: i32) -> bool {
     let ctx = serde_json::from_str::<A1Context>(ctx).expect("invalid A1Context");
-    formulas::parse_and_check_formula(formula_string, &ctx, x as i64, y as i64)
+    let sheet_id = SheetId::from_str(sheet_id).expect("invalid SheetId");
+    let pos = Pos {
+        x: x as i64,
+        y: y as i64,
+    }
+    .to_sheet_pos(sheet_id);
+    formulas::parse_and_check_formula(formula_string, &ctx, pos)
 }
 
 #[cfg(test)]

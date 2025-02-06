@@ -80,6 +80,8 @@ impl RangeRef {
 ///
 /// TODO: change this struct's relative/absolute distinction to match
 /// `CellRefRangeEnd`
+///
+/// TODO: change `sheet` to a sheet ID instead of a name
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, TS)]
 pub struct CellRef {
     pub sheet: Option<String>,
@@ -217,6 +219,14 @@ impl CellRef {
 }
 
 /// A reference to an x or y value within a CellRef
+///
+/// TODO: merge this with the other `CellRefCoord` (the one with boolean
+/// `is_absolute`).
+///
+/// Note that this type stores a relative offset, while the other type stores an
+/// absolute coordinate (and merely holds a flag that says whether it is
+/// intended to be relative). **It should be impossible to convert between them
+/// without a base coordinate from which to the resolve the reference.**
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
 #[serde(tag = "type", content = "coord")]
 pub enum CellRefCoord {
@@ -252,6 +262,19 @@ impl FromStr for CellRefCoord {
     }
 }
 impl CellRefCoord {
+    pub fn to_a1_cell_ref_coord(self, base: i64) -> crate::a1::CellRefCoord {
+        match self {
+            Self::Relative(delta) => crate::a1::CellRefCoord::new_rel(base.saturating_add(delta)),
+            Self::Absolute(coord) => crate::a1::CellRefCoord::new_abs(coord),
+        }
+    }
+    pub fn from_a1_cell_ref_coord(base: i64, value: crate::a1::CellRefCoord) -> Self {
+        match value.is_absolute {
+            true => Self::Relative(value.coord.saturating_sub(base)),
+            false => Self::Absolute(value.coord),
+        }
+    }
+
     /// Resolves the reference to an absolute coordinate, given the cell
     /// coordinate where evaluation is taking place.
     pub fn resolve_from(self, base: i64) -> i64 {

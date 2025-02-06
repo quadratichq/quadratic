@@ -3,7 +3,7 @@ use smallvec::{smallvec, SmallVec};
 
 use super::*;
 use crate::{
-    a1::UNBOUNDED,
+    a1::{CellRefRange, SheetCellRefRange, UNBOUNDED},
     grid::{CellsAccessed, Grid},
     Array, CellValue, CodeResult, CodeResultExt, Pos, RunErrorMsg, SheetPos, SheetRect, Span,
     Spanned, Value,
@@ -45,49 +45,28 @@ impl<'ctx> Ctx<'ctx> {
         }
     }
 
-    /// Resolves a cell reference relative to `self.sheet_pos`.
-    pub fn resolve_ref(&self, ref_pos: &CellRef, span: Span) -> CodeResult<Spanned<SheetPos>> {
-        let sheet = match &ref_pos.sheet {
-            Some(sheet_name) => self
-                .grid
-                .try_sheet_from_name(sheet_name.clone())
-                .ok_or(RunErrorMsg::BadCellReference.with_span(span))?,
-            None => self
-                .grid
-                .try_sheet(self.sheet_pos.sheet_id)
-                .ok_or(RunErrorMsg::BadCellReference.with_span(span))?,
-        };
-        let ref_pos = ref_pos.resolve_from(self.sheet_pos.into());
-        Ok(ref_pos.to_sheet_pos(sheet.id)).with_span(span)
-    }
     /// Resolves a cell range reference relative to `self.sheet_pos`.
     pub fn resolve_range_ref(
         &self,
-        range: &RangeRef,
+        range: &SheetCellRefRange,
         span: Span,
     ) -> CodeResult<Spanned<SheetRect>> {
-        match range {
-            RangeRef::RowRange { .. } => {
-                Err(RunErrorMsg::Unimplemented("row range".into()).with_span(span))
-            }
-            RangeRef::ColRange { .. } => {
-                Err(RunErrorMsg::Unimplemented("column range".into()).with_span(span))
-            }
-            RangeRef::CellRange { start, end } => {
-                let sheet_pos_start = self.resolve_ref(start, span)?.inner;
-                let sheet_pos_end = self.resolve_ref(end, span)?.inner;
-                Ok(SheetRect::new_pos_span(
-                    sheet_pos_start.into(),
-                    sheet_pos_end.into(),
-                    sheet_pos_start.sheet_id,
-                ))
-                .with_span(span)
-            }
-            RangeRef::Cell { pos } => {
-                let sheet_pos = self.resolve_ref(pos, span)?.inner;
-                Ok(SheetRect::single_sheet_pos(sheet_pos)).with_span(span)
-            }
-        }
+        let sheet = self
+            .grid
+            .try_sheet(range.sheet_id)
+            .ok_or(RunErrorMsg::BadCellReference.with_span(span))?;
+
+        let rect = match &range.cells {
+            CellRefRange::Sheet { range } => sheet.ref_range_bounds_to_rect(&range),
+            CellRefRange::Table { range } => sheet
+                .table_ref_to_rect(&range, false, false)
+                .ok_or(RunErrorMsg::BadCellReference.with_span(span))?,
+        };
+
+        Ok(Spanned {
+            span,
+            inner: rect.to_sheet_rect(sheet.id),
+        })
     }
 
     /// Fetches the contents of the cell at `pos` evaluated at `self.sheet_pos`,
