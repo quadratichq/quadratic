@@ -42,8 +42,7 @@ export class GridOverflowLines {
     } else {
       const start = this.sheet.offsets.getCellOffsets(column, row);
       const end = this.sheet.getColumnRow(start.x + width, start.y + height);
-      // the +1 is needed to account for the header row
-      this.overflowImageHtml.set(`${column},${row}`, new Rectangle(column, row, end.x - column, end.y - row + 1));
+      this.overflowImageHtml.set(`${column},${row}`, new Rectangle(column, row, end.x - column, end.y - row));
     }
     events.emit('gridLinesDirty');
   }
