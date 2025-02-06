@@ -43,8 +43,7 @@ export class CellsImages extends Container<CellsImage> {
   private updateImage = (message: CoreClientImage) => {
     if (message.sheetId === this.cellsSheet.sheetId) {
       let sprite = this.children.find(
-        (sprite) =>
-          (sprite as CellsImage).gridBounds.x === message.x && (sprite as CellsImage).gridBounds.y === message.y
+        (sprite) => (sprite as CellsImage).pos.x === message.x && (sprite as CellsImage).pos.y === message.y
       );
       if (sprite) {
         if (message.image) {

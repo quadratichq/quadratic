@@ -359,6 +359,9 @@ export class Tables extends Container<Table> {
   getTableFromCell(cell: JsCoordinate): Table | undefined {
     return this.children.find((table) => {
       const code = table.codeCell;
+      if (code.state === 'SpillError' || code.state === 'RunError') {
+        return false;
+      }
       if (
         code.is_html_image &&
         cell.x >= code.x &&

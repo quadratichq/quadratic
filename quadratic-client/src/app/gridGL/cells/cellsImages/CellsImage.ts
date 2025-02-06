@@ -15,6 +15,8 @@ export class CellsImage extends Container {
   private background: Graphics;
   private sprite: Sprite;
 
+  pos: { x: number; y: number };
+
   gridBounds: Rectangle;
 
   // these are user set values for the image size
@@ -28,6 +30,7 @@ export class CellsImage extends Container {
   constructor(cellsSheet: CellsSheet, message: CoreClientImage) {
     super();
     this.cellsSheet = cellsSheet;
+    this.pos = { x: message.x, y: message.y };
     this.gridBounds = new Rectangle(message.x, message.y + 1, 0, 0);
     this.background = this.addChild(new Graphics());
     this.sprite = this.addChild(new Sprite(Texture.EMPTY));
@@ -122,13 +125,8 @@ export class CellsImage extends Container {
     if (!sheet) {
       throw new Error(`Expected sheet to be defined in CellsImage.resizeImage`);
     }
-    sheet.gridOverflowLines.updateImageHtml(
-      this.gridBounds.x,
-      this.gridBounds.y,
-      this.sprite.width,
-      this.sprite.height
-    );
-    this.cellsSheet.tables.resizeTable(this.gridBounds.x, this.gridBounds.y, this.sprite.width, this.sprite.height);
+    sheet.gridOverflowLines.updateImageHtml(this.pos.x, this.pos.y, this.sprite.width, this.sprite.height);
+    this.cellsSheet.tables.resizeTable(this.pos.x, this.pos.y, this.sprite.width, this.sprite.height);
     if (this.cellsSheet.sheetId === sheets.current) {
       pixiApp.setViewportDirty();
     }
@@ -146,12 +144,12 @@ export class CellsImage extends Container {
 
   contains(world: Point): JsCoordinate | undefined {
     if (intersects.rectanglePoint(this.viewBounds, world)) {
-      return { x: this.gridBounds.x, y: this.gridBounds.y };
+      return { x: this.pos.x, y: this.pos.y };
     }
     return undefined;
   }
 
   isImageCell(x: number, y: number): boolean {
-    return x >= this.gridBounds.x && x < this.gridBounds.right && y >= this.gridBounds.y && y < this.gridBounds.bottom;
+    return x >= this.gridBounds.x && x < this.gridBounds.right && y >= this.pos.y && y < this.gridBounds.bottom;
   }
 }

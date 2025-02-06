@@ -102,7 +102,11 @@ export class PointerCellMoving {
       throw new Error('Expected moving to be defined in pointerMoveMoving');
     }
     const sheet = sheets.sheet;
-    const position = sheet.getColumnRowFromScreen(world.x, world.y);
+    const moving = this.movingCells;
+    const position = sheet.getColumnRowFromScreen(
+      world.x - (moving.table ? moving.table.offsetX : 0),
+      world.y - (moving.table ? moving.table.offsetY : 0)
+    );
     this.movingCells.toColumn = position.column + this.movingCells.offset.x;
     this.movingCells.toRow = position.row + this.movingCells.offset.y;
     pixiApp.cellMoving.dirty = true;
