@@ -323,18 +323,23 @@ mod test {
             output_type: Some("array".into()),
             ..Default::default()
         };
+
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "JavaScript1",
+            Value::Array(array),
+            false,
+            false,
+            true,
+            None,
+        );
+        let column_headers = data_table.default_header_with_name(|i| format!("{}", i - 1), None);
+
         assert_eq!(
             result,
-            DataTable::new(
-                DataTableKind::CodeRun(code_run),
-                "JavaScript1",
-                Value::Array(array),
-                false,
-                false,
-                true,
-                None,
-            )
-            .with_last_modified(result.last_modified),
+            data_table
+                .with_column_headers(column_headers)
+                .with_last_modified(result.last_modified),
         );
     }
 
