@@ -125,6 +125,9 @@ export const GoTo = () => {
   const codeTables = tableInfo
     ? tableInfo.filter((item) => !item.chart && item.name.toLowerCase().includes(value?.toLowerCase() ?? ''))
     : [];
+  const sheetsFiltered = sheets
+    .map((sheet) => sheet)
+    .filter((sheet) => (value ? sheet.name.toLowerCase().includes(value.toLowerCase()) : true));
 
   return (
     <Command shouldFilter={false}>
@@ -136,27 +139,7 @@ export const GoTo = () => {
             onValueChange={setValue}
             placeholder="Enter a cell “A1” or range “A1:B2”"
             omitIcon={true}
-            // className="pr-8"
           />
-          {/*<Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="absolute right-1.5 top-1.5 text-muted-foreground"
-                onClick={() => {
-                  setValue(sheets.sheet.cursor.toA1String());
-                  setTimeout(() => {
-                    inputRef.current?.focus();
-                    inputRef.current?.select();
-                  }, 100);
-                }}
-              >
-                <InsertCellRefIcon />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Reference current cell</TooltipContent>
-          </Tooltip>*/}
         </div>
       </div>
       <CommandList className="">
@@ -172,12 +155,6 @@ export const GoTo = () => {
             {convertedInput ? <div>{convertedInput}</div> : null}
             <GoToIcon className="text-muted-foreground" />
           </CommandItem>
-        </CommandGroup>
-
-        <CommandGroup heading="Sheets">
-          {sheets.map((sheet) => (
-            <CommandItemGoto key={sheet.id} value={sheet.id} onSelect={() => selectSheet(sheet.id)} name={sheet.name} />
-          ))}
         </CommandGroup>
 
         {tables.length > 0 && (
@@ -208,6 +185,18 @@ export const GoTo = () => {
                 name={name}
                 nameSecondary={sheet_name}
                 icon={<LanguageIcon language={'python'} sx={{ width: 16, height: 16 }} />}
+              />
+            ))}
+          </CommandGroup>
+        )}
+        {sheetsFiltered.length > 0 && (
+          <CommandGroup heading="Sheets">
+            {sheetsFiltered.map((sheet) => (
+              <CommandItemGoto
+                key={sheet.id}
+                value={sheet.id}
+                onSelect={() => selectSheet(sheet.id)}
+                name={sheet.name}
               />
             ))}
           </CommandGroup>
