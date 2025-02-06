@@ -107,38 +107,42 @@ pub fn check_formula(formula_string: &str, ctx: &str, sheet_id: &str, x: i32, y:
 #[cfg(test)]
 mod tests {
     use super::*;
-    use quadratic_core::Span;
+    use quadratic_core::{
+        a1::{CellRefCoord, SheetCellRefRange},
+        Span,
+    };
 
     /// Run this test with `--nocapture` to generate the example for the
     /// `parse_formula()` docs.
     #[test]
     fn example_parse_formula_output() {
+        let sheet_id = SheetId::new();
         let example_result = JsFormulaParseResult {
             parse_error_msg: Some("Bad argument count".to_string()),
             parse_error_span: Some(Span { start: 12, end: 46 }),
             cell_refs: vec![
                 JsCellRefSpan {
                     span: Span { start: 1, end: 4 },
-                    cell_ref: SheetCellRefRange::from(CellRef {
-                        sheet: None,
-                        x: CellRefCoord::Relative(0),
-                        y: CellRefCoord::Absolute(1),
-                    }),
+                    cell_ref: SheetCellRefRange {
+                        sheet_id,
+                        cells: CellRefRange::new_sheet_ref(
+                            CellRefCoord::new_rel(1),
+                            CellRefCoord::new_abs(2),
+                            CellRefCoord::new_rel(1),
+                            CellRefCoord::new_abs(2),
+                        ),
+                    },
                 },
                 JsCellRefSpan {
                     span: Span { start: 15, end: 25 },
                     cell_ref: SheetCellRefRange {
-                        sheet_id:
-                        start: CellRef {
-                            sheet: None,
-                            x: CellRefCoord::Absolute(0),
-                            y: CellRefCoord::Relative(-2),
-                        },
-                        end: CellRef {
-                            sheet: None,
-                            x: CellRefCoord::Absolute(0),
-                            y: CellRefCoord::Relative(2),
-                        },
+                        sheet_id,
+                        cells: CellRefRange::new_sheet_ref(
+                            CellRefCoord::new_abs(1),
+                            CellRefCoord::new_rel(3),
+                            CellRefCoord::new_abs(1),
+                            CellRefCoord::new_rel(7),
+                        ),
                     },
                 },
             ],
