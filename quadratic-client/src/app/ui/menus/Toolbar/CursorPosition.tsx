@@ -13,7 +13,8 @@ export const CursorPosition = () => {
     <div className="flex h-full items-center justify-between">
       <Input
         value={cursorPosition}
-        className="h-full flex-grow rounded-none border-none shadow-none hover:bg-accent focus-visible:bg-accent focus-visible:ring-0"
+        onChange={(e) => {}}
+        className="h-full flex-grow rounded-none border-none shadow-none focus:bg-accent focus-visible:ring-inset"
         onFocus={(e) => e.target.select()}
       />
       <Popover open={showGoToMenu} onOpenChange={(open) => setShowGoToMenu(open)}>
@@ -21,7 +22,12 @@ export const CursorPosition = () => {
           <ArrowDropDownIcon className="text-muted-foreground group-hover:text-foreground" />
         </PopoverTrigger>
 
-        <PopoverContent className="w-80 p-0" align="start" onCloseAutoFocus={(e) => e.preventDefault()}>
+        <PopoverContent
+          alignOffset={-120}
+          className="w-80 p-0"
+          align="start"
+          onCloseAutoFocus={(e) => e.preventDefault()}
+        >
           <GoTo />
         </PopoverContent>
       </Popover>
