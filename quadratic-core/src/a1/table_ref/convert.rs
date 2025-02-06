@@ -4,6 +4,15 @@ use super::*;
 
 impl TableRef {
     /// Converts the table ref to a list of CellRefRange::RefRangeBounds
+    ///
+    /// - `use_unbounded` - return an infinite column if selecting a column
+    ///   (otherwise returns finite bounds)
+    /// - `force_columns` - force column header to be included, even if not
+    ///   specified or visible
+    /// - `force_table_bounds` - adds table name and column headers if visible,
+    ///   even if not specified
+    ///
+    /// (ask David F for more details & accuracy checks on this)
     pub fn convert_to_ref_range_bounds(
         &self,
         use_unbounded: bool,

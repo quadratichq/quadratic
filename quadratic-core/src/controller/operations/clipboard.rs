@@ -501,7 +501,8 @@ impl GridController {
                                             Pos {
                                                 x: insert_at.x + x as i64,
                                                 y: insert_at.y + y as i64,
-                                            },
+                                            }
+                                            .to_sheet_pos(selection.sheet_id),
                                         );
                                     } else {
                                         code_cell.translate_cell_references(

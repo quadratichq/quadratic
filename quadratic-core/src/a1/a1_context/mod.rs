@@ -11,10 +11,15 @@ mod table_map;
 mod table_map_entry;
 pub mod wasm_bindings;
 
-use crate::{grid::SheetId, SheetPos};
+use crate::{
+    grid::{CodeCellLanguage, SheetId},
+    SheetPos,
+};
 pub use sheet_map::*;
 pub use table_map::*;
 pub use table_map_entry::*;
+
+use super::{CellRefRange, RefRangeBounds};
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct A1Context {
@@ -28,6 +33,7 @@ pub struct JsTableInfo {
     pub name: String,
     pub sheet_name: String,
     pub chart: bool,
+    pub language: Option<CodeCellLanguage>,
 }
 
 #[cfg(test)]
@@ -38,6 +44,11 @@ impl std::fmt::Display for A1Context {
 }
 
 impl A1Context {
+    /// Returns whether a table exists with the given name.
+    pub fn has_table(&self, table_name: &str) -> bool {
+        self.try_table(table_name).is_some()
+    }
+
     /// Finds a table by the table name.
     pub fn try_table(&self, table_name: &str) -> Option<&TableMapEntry> {
         self.table_map.try_table(table_name)
@@ -70,6 +81,7 @@ impl A1Context {
                         name: table.table_name.clone(),
                         sheet_name: sheet_name.to_string(),
                         chart: table.is_html_image,
+                        language: table.language.clone(),
                     })
             })
             .collect()
@@ -78,6 +90,30 @@ impl A1Context {
     /// Returns any table that intersects with the given sheet position.
     pub fn table_from_pos(&self, sheet_pos: SheetPos) -> Option<&TableMapEntry> {
         self.table_map.table_from_pos(sheet_pos)
+    }
+
+    /// Converts a table name reference to an A1 range.
+    pub fn convert_table_to_range(
+        &self,
+        table_name: &str,
+        current_sheet_id: SheetId,
+    ) -> Result<String, String> {
+        if let Some(table) = self.try_table(table_name) {
+            let range = CellRefRange::Sheet {
+                range: RefRangeBounds::new_relative_rect(table.bounds),
+            };
+            if current_sheet_id == table.sheet_id {
+                Ok(format!("{range}"))
+            } else {
+                if let Some(sheet_name) = self.sheet_map.try_sheet_id(table.sheet_id) {
+                    Ok(format!("{sheet_name}!{range}"))
+                } else {
+                    Err(format!("Sheet not found"))
+                }
+            }
+        } else {
+            Err(format!("Table {table_name} not found"))
+        }
     }
 
     /// Creates an A1Context for testing.
@@ -142,6 +178,7 @@ mod tests {
                 name: "Table1".to_string(),
                 sheet_name: "Sheet1".to_string(),
                 chart: false,
+                language: None,
             }
         );
         assert_eq!(
@@ -150,6 +187,7 @@ mod tests {
                 name: "Table2".to_string(),
                 sheet_name: "Sheet1".to_string(),
                 chart: false,
+                language: None,
             }
         );
     }
@@ -175,5 +213,32 @@ mod tests {
             Some("Sheet2")
         );
         assert_eq!(context.try_sheet_id(SheetId::new()), None);
+    }
+
+    #[test]
+    fn test_convert_table_ref_to_range() {
+        let sheet_id = SheetId::test();
+        let context = A1Context::test(
+            &[("Sheet1", sheet_id)],
+            &[("Table1", &["col1", "col2"], Rect::test_a1("A1:B3"))],
+        );
+
+        // Test conversion when default sheet matches table's sheet
+        assert_eq!(
+            context.convert_table_to_range("Table1", sheet_id),
+            Ok("A1:B3".to_string())
+        );
+
+        // Test conversion when default sheet is different
+        assert_eq!(
+            context.convert_table_to_range("Table1", SheetId::new()),
+            Ok("Sheet1!A1:B3".to_string())
+        );
+
+        // Test conversion with non-existent table
+        assert_eq!(
+            context.convert_table_to_range("NonexistentTable", sheet_id),
+            Err("Table NonexistentTable not found".to_string())
+        );
     }
 }

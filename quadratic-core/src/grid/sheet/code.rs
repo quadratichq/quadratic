@@ -247,7 +247,7 @@ impl Sheet {
                     let replaced = replace_internal_cell_references(
                         &code_cell_value.code,
                         &parse_ctx,
-                        code_pos,
+                        code_pos.to_sheet_pos(self.id),
                     );
                     code_cell_value.code = replaced;
                 }

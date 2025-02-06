@@ -60,7 +60,7 @@ impl A1Selection {
 
         let mut sheet_id = None;
         for segment in segments {
-            let range = SheetCellRefRange::parse(segment.trim(), default_sheet_id, context)?;
+            let range = SheetCellRefRange::parse(segment.trim(), *default_sheet_id, context)?;
             if *sheet.get_or_insert(range.sheet_id) != range.sheet_id {
                 return Err(A1Error::TooManySheets(a1.to_string()));
             }

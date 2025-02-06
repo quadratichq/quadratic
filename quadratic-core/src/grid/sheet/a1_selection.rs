@@ -186,6 +186,9 @@ impl Sheet {
     }
 
     /// Converts a table ref to a rect.
+    ///
+    /// See `convert_to_ref_range_bounds()` for a description of the boolean
+    /// parameters.
     pub fn table_ref_to_rect(
         &self,
         range: &TableRef,

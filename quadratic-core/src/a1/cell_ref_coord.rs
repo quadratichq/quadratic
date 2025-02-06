@@ -1,9 +1,13 @@
-use std::{fmt, ops::RangeInclusive};
+use std::{
+    fmt,
+    ops::{Add, RangeInclusive},
+};
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use wasm_bindgen::prelude::*;
 
+/// Unbounded coordinate on lower or upper end.
 pub const UNBOUNDED: i64 = i64::MAX;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
@@ -92,6 +96,18 @@ impl CellRefCoord {
         write!(f, "{}", self.coord)
     }
 
+    /// Returns the number as a string for use in RC-style notation.
+    ///
+    /// - If the coordinate is relative, returns a string containing the number
+    ///   surrounded by square brackets.
+    /// - If the coordinate is absolute, returns a string containing the number.
+    pub(crate) fn to_rc_string(self, base_coord: i64) -> String {
+        match self.is_absolute {
+            true => format!("{}", self.coord),
+            false => format!("[{}]", self.coord.saturating_sub(base_coord)), // when changing to `u64`, this MUST stay `i64`
+        }
+    }
+
     pub fn new_rel(coord: i64) -> Self {
         let is_absolute = false;
         Self { coord, is_absolute }
@@ -116,6 +132,15 @@ impl CellRefCoord {
 
     pub fn is_unbounded(&self) -> bool {
         self.coord == UNBOUNDED
+    }
+}
+
+impl Add<i64> for CellRefCoord {
+    type Output = Self;
+
+    fn add(self, rhs: i64) -> Self::Output {
+        let coord = self.coord + rhs;
+        Self { coord, ..self }
     }
 }
 

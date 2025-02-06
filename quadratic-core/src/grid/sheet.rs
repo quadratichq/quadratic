@@ -189,16 +189,16 @@ impl Sheet {
         self.data_tables.iter()
     }
 
-    pub fn iter_code_runs(&self) -> impl Iterator<Item = (&Pos, &CodeRun)> {
+    pub fn iter_code_runs(&self) -> impl Iterator<Item = (Pos, &CodeRun)> {
         self.data_tables
             .iter()
-            .flat_map(|(pos, data_table)| data_table.code_run().map(|code_run| (pos, code_run)))
+            .flat_map(|(pos, data_table)| data_table.code_run().map(|code_run| (*pos, code_run)))
     }
 
-    pub fn iter_code_runs_mut(&mut self) -> impl Iterator<Item = (&Pos, &mut CodeRun)> {
-        self.data_tables
-            .iter_mut()
-            .flat_map(|(pos, data_table)| data_table.code_run_mut().map(|code_run| (pos, code_run)))
+    pub fn iter_code_runs_mut(&mut self) -> impl Iterator<Item = (Pos, &mut CodeRun)> {
+        self.data_tables.iter_mut().flat_map(|(pos, data_table)| {
+            data_table.code_run_mut().map(|code_run| (*pos, code_run))
+        })
     }
 
     /// Returns true if the cell at Pos has content (ie, not blank). Also checks

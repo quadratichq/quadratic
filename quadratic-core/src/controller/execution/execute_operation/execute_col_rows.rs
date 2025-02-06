@@ -1,20 +1,19 @@
 use crate::{
-    a1::{A1Context, CellRefRange, UNBOUNDED},
+    a1::{A1Context, CellRefRange, CellRefRangeEnd, UNBOUNDED},
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    formulas::{replace_cell_references_with, CellRefCoord},
+    formulas::replace_cell_references_with,
     grid::{CodeCellLanguage, CodeCellValue, GridBounds, SheetId},
-    CellValue, Pos,
+    CellValue, SheetPos,
 };
 
 impl GridController {
     pub fn adjust_formula_column_row(
         code_cell: &CodeCellValue,
-        sheet_name: &String,
         parse_ctx: &A1Context,
-        code_cell_pos: &Pos,
+        code_cell_pos: SheetPos,
         column: Option<i64>,
         row: Option<i64>,
         delta: i64,
@@ -23,61 +22,35 @@ impl GridController {
             let new_code = replace_cell_references_with(
                 &code_cell.code,
                 parse_ctx,
-                *code_cell_pos,
-                |coord_sheet_name, cell_ref| {
-                    let coord_sheet_name = coord_sheet_name.as_ref().unwrap_or(sheet_name);
-                    if coord_sheet_name == sheet_name {
-                        match cell_ref {
-                            CellRefCoord::Relative(x) => {
-                                if x + code_cell_pos.x >= column {
-                                    CellRefCoord::Relative(x + delta)
-                                } else {
-                                    CellRefCoord::Relative(x)
-                                }
-                            }
-                            CellRefCoord::Absolute(x) => {
-                                if x >= column {
-                                    CellRefCoord::Absolute(x + delta)
-                                } else {
-                                    CellRefCoord::Absolute(x)
-                                }
-                            }
-                        }
+                code_cell_pos,
+                |sheet_id, cell_ref| CellRefRangeEnd {
+                    col: if sheet_id == code_cell_pos.sheet_id
+                        && cell_ref.col.coord >= column
+                        && cell_ref.col.coord < UNBOUNDED
+                    {
+                        cell_ref.col + delta
                     } else {
-                        cell_ref
-                    }
+                        cell_ref.col
+                    },
+                    row: cell_ref.row,
                 },
-                |_, cell_ref| cell_ref,
             );
             new_code
         } else if let Some(row) = row {
             let new_code = replace_cell_references_with(
                 &code_cell.code,
                 parse_ctx,
-                *code_cell_pos,
-                |_, cell_ref| cell_ref,
-                |coord_sheet_name, cell_ref| {
-                    let coord_sheet_name = coord_sheet_name.as_ref().unwrap_or(sheet_name);
-                    if coord_sheet_name == sheet_name {
-                        match cell_ref {
-                            CellRefCoord::Relative(y) => {
-                                if y + code_cell_pos.y >= row {
-                                    CellRefCoord::Relative(y + delta)
-                                } else {
-                                    CellRefCoord::Relative(y)
-                                }
-                            }
-                            CellRefCoord::Absolute(y) => {
-                                if y >= row {
-                                    CellRefCoord::Absolute(y + delta)
-                                } else {
-                                    CellRefCoord::Absolute(y)
-                                }
-                            }
-                        }
+                code_cell_pos,
+                |sheet_id, cell_ref| CellRefRangeEnd {
+                    col: cell_ref.col,
+                    row: if sheet_id == code_cell_pos.sheet_id
+                        && cell_ref.row.coord >= row
+                        && cell_ref.row.coord < UNBOUNDED
+                    {
+                        cell_ref.row + delta
                     } else {
-                        cell_ref
-                    }
+                        cell_ref.row
+                    },
                 },
             );
             new_code
@@ -114,12 +87,12 @@ impl GridController {
                             continue;
                         }
 
-                        if let Some(CellValue::Code(code)) = sheet.cell_value_ref(*pos) {
+                        if let Some(CellValue::Code(code)) = sheet.cell_value_ref(pos) {
                             let new_code = match code.language {
                                 CodeCellLanguage::Formula => {
+                                    let pos = pos.to_sheet_pos(sheet.id);
                                     GridController::adjust_formula_column_row(
                                         code,
-                                        &sheet.name,
                                         &self.grid.a1_context(),
                                         pos,
                                         column,

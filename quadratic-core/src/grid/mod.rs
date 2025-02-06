@@ -83,4 +83,9 @@ impl Grid {
         }
         ret
     }
+
+    #[cfg(test)]
+    pub fn origin_in_first_sheet(&self) -> crate::SheetPos {
+        crate::Pos::ORIGIN.to_sheet_pos(self.sheets()[0].id)
+    }
 }
