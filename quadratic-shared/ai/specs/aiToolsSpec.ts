@@ -32,6 +32,33 @@ type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
   prompt: string; // this is sent as internal message to AI, no character limit
 };
 
+const numberSchema = z.number().or(
+  z.string().transform((str) => {
+    const num = Number(str);
+    if (isNaN(num)) {
+      throw new Error('Invalid number format');
+    }
+    return num;
+  })
+);
+
+const array2DSchema = z.array(z.array(z.string())).or(
+  z.string().transform((str) => {
+    try {
+      const parsed = JSON.parse(str);
+      if (
+        Array.isArray(parsed) &&
+        parsed.every((row) => Array.isArray(row) && row.every((cell) => typeof cell === 'string'))
+      ) {
+        return parsed;
+      }
+      throw new Error('Invalid 2D array format');
+    } catch {
+      throw new Error('Invalid 2D array format');
+    }
+  })
+);
+
 export const AIToolsArgsSchema = {
   [AITool.SetChatName]: z.object({
     chat_name: z.string(),
@@ -39,18 +66,18 @@ export const AIToolsArgsSchema = {
   [AITool.AddDataTable]: z.object({
     top_left_position: z.string(),
     table_name: z.string(),
-    table_data: z.array(z.array(z.string())),
+    table_data: array2DSchema,
   }),
   [AITool.SetCodeCellValue]: z.object({
     code_cell_language: z.enum(['Python', 'Javascript', 'Formula']),
     code_cell_position: z.string(),
     code_string: z.string(),
-    output_width: z.number(),
-    output_height: z.number(),
+    output_width: numberSchema,
+    output_height: numberSchema,
   }),
   [AITool.SetCellValues]: z.object({
     top_left_position: z.string(),
-    cell_values: z.array(z.array(z.string())),
+    cell_values: array2DSchema,
   }),
   [AITool.MoveCells]: z.object({
     source_selection_rect: z.string(),

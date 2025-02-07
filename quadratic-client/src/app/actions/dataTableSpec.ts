@@ -64,7 +64,7 @@ export const getRow = (): number | undefined => {
 
   if (!table) return undefined;
 
-  let row = pixiAppSettings.contextMenu?.row || JSON.parse(sheets.getRustSelection()).cursor.y;
+  const row = pixiAppSettings.contextMenu?.row || JSON.parse(sheets.getRustSelection()).cursor.y;
 
   return row - table.y;
 };
@@ -373,7 +373,7 @@ export const removeTableRow = () => {
       columns_to_add: undefined,
       columns_to_remove: undefined,
       rows_to_add: undefined,
-      rows_to_remove: [row - 1],
+      rows_to_remove: [row],
       flatten_on_delete: undefined,
       swallow_on_insert: undefined,
       cursor: sheets.getCursorPosition(),

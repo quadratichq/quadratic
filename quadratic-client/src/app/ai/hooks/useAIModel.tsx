@@ -1,3 +1,4 @@
+import { debug } from '@/app/debugFlags';
 import type { SetValue } from '@/shared/hooks/useLocalStorage';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { DEFAULT_MODEL, DEFAULT_MODEL_VERSION, MODEL_OPTIONS } from 'quadratic-shared/ai/models/AI_MODELS';
@@ -8,7 +9,7 @@ export function useAIModel(): [AIModel, SetValue<AIModel>] {
   const [model, setModel] = useLocalStorage<AIModel>('aiModel', DEFAULT_MODEL);
   const [version, setVersion] = useLocalStorage<number>('aiModelVersion', 0);
 
-  // This is to update model stored in local storage to the current default model
+  // This is to force update model stored in local storage to the current default model
   useEffect(() => {
     if (version !== DEFAULT_MODEL_VERSION) {
       setModel(DEFAULT_MODEL);
@@ -18,10 +19,10 @@ export function useAIModel(): [AIModel, SetValue<AIModel>] {
 
   // If the model is removed from the MODELS object or is not enabled, set the model to the current default model
   useEffect(() => {
-    if (!MODEL_OPTIONS[model] || !MODEL_OPTIONS[model].enabled) {
+    if (!MODEL_OPTIONS[model] || (!debug && !MODEL_OPTIONS[model].enabled)) {
       setModel(DEFAULT_MODEL);
     }
   }, [model, setModel]);
 
-  return [MODEL_OPTIONS[model]?.enabled ? model : DEFAULT_MODEL, setModel];
+  return [model, setModel];
 }
