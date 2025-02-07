@@ -130,12 +130,24 @@ export const GoTo = () => {
     return null;
   }
 
-  // TODO: filter these by type AND whether there's an active search
-  const tables = tableInfo
-    ? tableInfo.filter((item) => item.name.toLowerCase().includes(value?.toLowerCase() ?? ''))
+  const tablesFiltered = tableInfo
+    ? tableInfo.filter(({ name, language }) => {
+        // If it has a language, it's a code table
+        if (language !== null) {
+          return false;
+        }
+
+        return value ? name.toLowerCase().includes(value.toLowerCase()) : true;
+      })
     : [];
-  const codeTables = tableInfo
-    ? tableInfo.filter((item) => !item.chart && item.name.toLowerCase().includes(value?.toLowerCase() ?? ''))
+  const codeTablesFiltered = tableInfo
+    ? tableInfo.filter(({ name, language }) => {
+        // If there's no language, it's a data table
+        if (language === null) {
+          return false;
+        }
+        return value ? name.toLowerCase().includes(value.toLowerCase()) : true;
+      })
     : [];
   const sheetsFiltered = sheets
     .map((sheet) => sheet)
@@ -169,14 +181,13 @@ export const GoTo = () => {
           </CommandItem>
         </CommandGroup>
 
-        {tables.length > 0 && (
+        {tablesFiltered.length > 0 && (
           <>
             <CommandGroup heading="Tables">
-              {tables.map(({ name, sheet_name }, i) => (
+              {tablesFiltered.map(({ name, sheet_name }, i) => (
                 <CommandItemGoto
                   key={name}
-                  // TODO: once we filter these, we can remove the table__ prefix
-                  value={'table__' + name}
+                  value={name}
                   onSelect={() => selectTable(name)}
                   name={name}
                   nameSecondary={tableNameToRange(name)}
@@ -186,17 +197,17 @@ export const GoTo = () => {
             <CommandSeparator />
           </>
         )}
-        {codeTables.length > 0 && (
+        {codeTablesFiltered.length > 0 && (
           <CommandGroup heading="Code">
-            {codeTables.map(({ name, sheet_name }, i) => (
+            {codeTablesFiltered.map(({ name, sheet_name, language }, i) => (
               <CommandItemGoto
                 key={name}
-                // TODO: once we filter these, we can remove the code__ prefix
-                value={'code__' + name}
+                value={name}
                 onSelect={() => selectTable(name)}
                 name={name}
-                nameSecondary={sheet_name}
-                icon={<LanguageIcon language={'python'} sx={{ width: 16, height: 16 }} />}
+                nameSecondary={tableNameToRange(name)}
+                // @ts-expect-error
+                icon={<LanguageIcon language={language} sx={{ width: 16, height: 16 }} />}
               />
             ))}
           </CommandGroup>

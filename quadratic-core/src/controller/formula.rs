@@ -33,30 +33,79 @@ impl From<Spanned<SheetCellRefRange>> for CellRefSpan {
 /// ```json
 /// {
 ///   "parse_error_msg": "Bad argument count",
-///   "parse_error_span": { "start": 12, "end": 46 },
+///   "parse_error_span": {
+///     "start": 12,
+///     "end": 46
+///   },
 ///   "cell_refs": [
 ///     {
-///       "span": { "start": 1, "end": 4 },
+///       "span": {
+///         "start": 1,
+///         "end": 4
+///       },
 ///       "cell_ref": {
-///         "Cell": {
-///           "x": { "Relative": 0 },
-///           "y": { "Absolute": 1 }
+///         "sheet_id": {
+///           "id": "9c04969a-d4b1-489b-87d7-d37f48cce57c"
+///         },
+///         "cells": {
+///           "range": {
+///             "start": {
+///               "col": {
+///                 "coord": 1,
+///                 "is_absolute": false
+///               },
+///               "row": {
+///                 "coord": 2,
+///                 "is_absolute": true
+///               }
+///             },
+///             "end": {
+///               "col": {
+///                 "coord": 1,
+///                 "is_absolute": false
+///               },
+///               "row": {
+///                 "coord": 2,
+///                 "is_absolute": true
+///               }
+///             }
+///           }
 ///         }
 ///       }
 ///     },
 ///     {
-///       "span": { "start": 15, "end": 25 },
+///       "span": {
+///         "start": 15,
+///         "end": 25
+///       },
 ///       "cell_ref": {
-///         "CellRange": [
-///           {
-///             "x": { "Absolute": 0 },
-///             "y": { "Relative": -2 }
-///           },
-///           {
-///             "x": { "Absolute": 0 },
-///             "y": { "Relative": 2 }
+///         "sheet_id": {
+///           "id": "9c04969a-d4b1-489b-87d7-d37f48cce57c"
+///         },
+///         "cells": {
+///           "range": {
+///             "start": {
+///               "col": {
+///                 "coord": 1,
+///                 "is_absolute": true
+///               },
+///               "row": {
+///                 "coord": 3,
+///                 "is_absolute": false
+///               }
+///             },
+///             "end": {
+///               "col": {
+///                 "coord": 1,
+///                 "is_absolute": true
+///               },
+///               "row": {
+///                 "coord": 7,
+///                 "is_absolute": false
+///               }
+///             }
 ///           }
-///         ]
+///         }
 ///       }
 ///     }
 ///   ]

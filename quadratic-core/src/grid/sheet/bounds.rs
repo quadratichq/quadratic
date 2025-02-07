@@ -501,6 +501,17 @@ impl Sheet {
     ) -> Vec<Rect> {
         let mut tabular_data_rects = Vec::new();
 
+        let is_non_data_cell = |pos: Pos| match self.cell_value(pos) {
+            Some(value) => {
+                value.is_blank_or_empty_string()
+                    || value.is_image()
+                    || value.is_html()
+                    || value.is_code()
+                    || value.is_import()
+            }
+            None => true,
+        };
+
         for selection_rect in selection_rects {
             for y in selection_rect.y_range() {
                 for x in selection_rect.x_range() {
@@ -513,19 +524,42 @@ impl Sheet {
                         continue;
                     }
 
-                    let has_value = self.display_value(pos).is_some();
+                    let is_table_cell = self.first_data_table_within(pos).is_ok();
+                    if is_table_cell {
+                        continue;
+                    }
+
+                    let has_value = self.has_content(pos);
                     if !has_value {
                         continue;
                     }
 
-                    let last_row = self
-                        .find_next_row(pos.y + 1, pos.x, false, false)
-                        .unwrap_or(pos.y + 1)
+                    let Some((col_min, col_max)) = self.row_bounds(pos.y, true) else {
+                        continue;
+                    };
+
+                    if pos.x < col_min || pos.x > col_max {
+                        continue;
+                    }
+
+                    let Some((row_min, row_max)) = self.column_bounds(pos.x, true) else {
+                        continue;
+                    };
+
+                    if pos.y < row_min || pos.y > row_max {
+                        continue;
+                    }
+
+                    // search till we find a non-data cell and use the previous row
+                    let last_row = ((pos.y + 1)..=(row_max + 1))
+                        .find(|y| is_non_data_cell(Pos { x: pos.x, y: *y }))
+                        .unwrap_or(row_max + 1)
                         - 1;
 
-                    let last_col = self
-                        .find_next_column(pos.x + 1, pos.y, false, false)
-                        .unwrap_or(pos.x + 1)
+                    // search till we find a non-data cell and use the previous column
+                    let last_col = ((pos.x + 1)..=(col_max + 1))
+                        .find(|x| is_non_data_cell(Pos { x: *x, y: pos.y }))
+                        .unwrap_or(col_max + 1)
                         - 1;
 
                     let tabular_data_rect = Rect::new(pos.x, pos.y, last_col, last_row);
@@ -533,10 +567,12 @@ impl Sheet {
                 }
             }
         }
+
         if let Some(max_rects) = max_rects {
             tabular_data_rects.sort_by_key(|rect| Reverse(rect.len()));
             tabular_data_rects.truncate(max_rects);
         }
+
         tabular_data_rects
     }
 }
@@ -546,7 +582,7 @@ impl Sheet {
 mod test {
     use crate::{
         a1::A1Selection,
-        controller::GridController,
+        controller::{user_actions::import::tests::simple_csv_at, GridController},
         grid::{
             sheet::{
                 borders::{BorderSelection, BorderStyle},
@@ -1314,18 +1350,20 @@ mod test {
 
     #[test]
     fn find_tabular_data_rects_in_selection_rects() {
-        let mut sheet = Sheet::test();
+        let (mut gc, sheet_id, _, _) = simple_csv_at(pos![B2]);
+
+        let sheet = gc.sheet_mut(sheet_id);
         sheet.set_cell_values(
             Rect {
-                min: Pos { x: 1, y: 1 },
-                max: Pos { x: 10, y: 1000 },
+                min: Pos { x: 6, y: 2 },
+                max: Pos { x: 15, y: 1001 },
             },
             &Array::from(
-                (1..=1000)
+                (2..=1001)
                     .map(|row| {
-                        (1..=10)
+                        (6..=15)
                             .map(|_| {
-                                if row == 1 {
+                                if row == 2 {
                                     "heading1".to_string()
                                 } else {
                                     "value1".to_string()
@@ -1364,7 +1402,7 @@ mod test {
         assert_eq!(tabular_data_rects.len(), 2);
 
         let expected_rects = vec![
-            Rect::from_numbers(1, 1, 10, 1000),
+            Rect::from_numbers(6, 2, 10, 1000),
             Rect::from_numbers(31, 101, 5, 1103),
         ];
         assert_eq!(tabular_data_rects, expected_rects);

@@ -1,3 +1,4 @@
+import { sheets } from '@/app/grid/controller/Sheets';
 import { maxRects } from '@/app/ui/menus/AIAnalyst/const/maxRects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { ChatMessage, Context } from 'quadratic-shared/typesAndSchemasAI';
@@ -9,6 +10,7 @@ export function useSelectionContextMessages() {
       const selectionContext = selection
         ? await quadraticCore.getAIContextRectsInSelections([selection], maxRects)
         : undefined;
+
       return [
         {
           role: 'user',
@@ -49,7 +51,10 @@ ${JSON.stringify(selectionContext[0])}
 
 Note: All this data is only for your reference to data on the sheet. This data cannot be used directly in code. Use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells in code. Always use sheet name in a1 notation to reference cells. Sheet name is always enclosed in single quotes. In Python and Javascript, the complete a1 notation selection string is enclosed in double quotes. Example: \`q.cells("'Sheet 1'!A1:B2")\`. In formula, string quotes are not to be used. Example: \`=SUM('Sheet 1'!A1:B2)\`\n\n
 `
-    : ``
+    : `
+My cursor position is at ${sheets.sheet.cursor.toCursorA1()} on the currently open sheet. Use this to position your response on the sheet.
+Always check if there is sufficient space on the sheet to position your response. Never accidentally overwrite any data on the sheet just to use this cursor position.
+`
 }
 `,
 

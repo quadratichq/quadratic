@@ -64,7 +64,7 @@ export const getRow = (): number | undefined => {
 
   if (!table) return undefined;
 
-  let row = pixiAppSettings.contextMenu?.row || JSON.parse(sheets.getRustSelection()).cursor.y;
+  const row = pixiAppSettings.contextMenu?.row || JSON.parse(sheets.getRustSelection()).cursor.y;
 
   return row - table.y;
 };

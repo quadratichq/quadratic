@@ -147,13 +147,6 @@ export class CellHighlights extends Container {
     return this.dirty || inlineEditorHandler.cursorIsMoving;
   }
 
-  evalCoord(cell: { type: 'Relative' | 'Absolute'; coord: number }, origin: number) {
-    const isRelative = cell.type === 'Relative';
-    const getOrigin = isRelative ? origin : 0;
-
-    return getOrigin + cell.coord;
-  }
-
   fromCellsAccessed(cellsAccessed: JsCellsAccessed[] | null) {
     this.cellsAccessed = cellsAccessed ?? [];
     pixiApp.cellHighlights.dirty = true;

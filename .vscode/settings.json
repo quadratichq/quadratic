@@ -79,6 +79,7 @@
     "moby",
     "msdf",
     "mysqladmin",
+    "nocapture",
     "noemit",
     "nonblank",
     "nopush",

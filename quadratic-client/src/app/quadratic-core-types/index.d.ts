@@ -37,6 +37,7 @@ export interface JsCodeCell { x: bigint, y: bigint, code_string: string, languag
 export interface JsCodeResult { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: Array<string> | null, output_array: Array<Array<Array<string>>> | null, output_display_type: string | null, cancel_compute: boolean | null, chart_pixel_output: [number, number] | null, has_headers: boolean, }
 export interface JsDataTableColumnHeader { name: string, display: boolean, valueIndex: number, }
 export interface JsCoordinate { x: number, y: number, }
+export interface JsFormulaParseResult { parse_error_msg: string | null, parse_error_span: Span | null, cells_accessed: Array<JsCellsAccessed>, spans: Array<Span>, }
 export interface JsGetCellResponse { x: bigint, y: bigint, value: string, type_name: string, }
 export interface JsHtmlOutput { sheet_id: string, x: bigint, y: bigint, html: string | null, w: number | null, h: number | null, name: string, show_name: boolean, }
 export interface JsNumber { decimals: number | null, commas: boolean | null, format: NumericFormat | null, }
