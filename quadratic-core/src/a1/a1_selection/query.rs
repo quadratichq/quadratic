@@ -808,7 +808,7 @@ mod tests {
         let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
         assert!(A1Selection::test_a1_context("Table1", &context).has_table_headers());
         assert!(A1Selection::test_a1_context("Table1[#ALL]", &context).has_table_headers());
-        assert!(!A1Selection::test_a1_context("Table1[#headers]", &context).has_table_headers());
+        assert!(A1Selection::test_a1_context("Table1[#headers]", &context).has_table_headers());
         assert!(A1Selection::test_a1_context("Table1[#all]", &context).has_table_headers());
     }
 

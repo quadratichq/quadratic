@@ -149,7 +149,7 @@ impl SyntaxRule for TableReference {
     }
 
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
-        let start_span = p.peek_next_span();
+        // let start_span = p.peek_next_span();
 
         // Sheet name is allowed but ignored for table references.
         // Table names are unique across the whole file.
