@@ -20,11 +20,7 @@ impl GridController {
             // approach.
             let mut operations = VecDeque::new();
             let selection = A1Selection::from_rect(source);
-            println!("\n\nselection: {:?}", selection);
             if let Ok((cut_ops, js_clipboard)) = self.cut_to_clipboard_operations(&selection) {
-                for op in cut_ops.clone() {
-                    println!("\n\n{:?}", op);
-                }
                 operations.extend(cut_ops);
 
                 if let Ok(paste_ops) = self.paste_html_operations(
@@ -32,9 +28,7 @@ impl GridController {
                     js_clipboard.html,
                     PasteSpecial::None,
                 ) {
-                    for op in paste_ops.clone() {
-                        println!("\n\n{:?}", op);
-                    }
+                    operations.extend(paste_ops);
                 }
 
                 operations.extend(transaction.operations.drain(..));
