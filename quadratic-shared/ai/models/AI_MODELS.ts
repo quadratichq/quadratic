@@ -68,7 +68,7 @@ export const MODEL_OPTIONS: {
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    enabled: true,
     provider: 'bedrock-anthropic',
   },
   'anthropic.claude-3-5-haiku-20241022-v1:0': {
@@ -77,7 +77,7 @@ export const MODEL_OPTIONS: {
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    enabled: false,
     provider: 'bedrock-anthropic',
   },
   'us.meta.llama3-2-90b-instruct-v1:0': {
