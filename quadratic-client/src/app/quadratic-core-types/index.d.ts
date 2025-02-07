@@ -37,6 +37,7 @@ export interface JsCodeCell { x: bigint, y: bigint, code_string: string, languag
 export interface JsCodeResult { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: Array<string> | null, output_array: Array<Array<Array<string>>> | null, output_display_type: string | null, cancel_compute: boolean | null, chart_pixel_output: [number, number] | null, has_headers: boolean, }
 export interface JsDataTableColumnHeader { name: string, display: boolean, valueIndex: number, }
 export interface JsCoordinate { x: number, y: number, }
+export interface JsFormulaParseResult { parse_error_msg: string | null, parse_error_span: Span | null, cells_accessed: Array<JsCellsAccessed>, spans: Array<Span>, }
 export interface JsGetCellResponse { x: bigint, y: bigint, value: string, type_name: string, }
 export interface JsHtmlOutput { sheet_id: string, x: bigint, y: bigint, html: string | null, w: number | null, h: number | null, name: string, show_name: boolean, }
 export interface JsNumber { decimals: number | null, commas: boolean | null, format: NumericFormat | null, }
@@ -51,7 +52,7 @@ export interface JsRowHeight { row: bigint, height: number, }
 export interface JsSheetFill { x: number, y: number, w: number | null, h: number | null, color: string, }
 export type JsSnackbarSeverity = "error" | "warning" | "success";
 export interface JsSummarizeSelectionResult { count: bigint, sum: number | null, average: number | null, }
-export interface JsTableInfo { name: string, sheet_name: string, chart: boolean, }
+export interface JsTableInfo { name: string, sheet_name: string, chart: boolean, language: CodeCellLanguage | null, }
 export interface JsValidationWarning { x: bigint, y: bigint, validation: string | null, style: ValidationStyle | null, }
 export type Direction = "Up" | "Down" | "Left" | "Right";
 export interface MinMax { min: number, max: number, }
@@ -78,7 +79,7 @@ export interface Span { start: number, end: number, }
 export interface TableRef { table_name: string, data: boolean, headers: boolean, totals: boolean, col_range: ColRange, }
 export type TextCase = { "CaseInsensitive": Array<string> } | { "CaseSensitive": Array<string> };
 export type TextMatch = { "Exactly": TextCase } | { "Contains": TextCase } | { "NotContains": TextCase } | { "TextLength": { min: number | null, max: number | null, } };
-export type TransactionName = "Unknown" | "ResizeColumn" | "ResizeRow" | "ResizeRows" | "Autocomplete" | "SetBorders" | "SetCells" | "SetFormats" | "SetDataTableAt" | "CutClipboard" | "PasteClipboard" | "SetCode" | "RunCode" | "FlattenDataTable" | "SwitchDataTableKind" | "GridToDataTable" | "DataTableMeta" | "DataTableMutations" | "DataTableFirstRowAsHeader" | "Import" | "SetSheetMetadata" | "SheetAdd" | "SheetDelete" | "DuplicateSheet" | "MoveCells" | "Validation" | "ManipulateColumnRow";
+export type TransactionName = "Unknown" | "ResizeColumn" | "ResizeRow" | "ResizeRows" | "Autocomplete" | "SetBorders" | "SetCells" | "SetFormats" | "SetDataTableAt" | "CutClipboard" | "PasteClipboard" | "SetCode" | "RunCode" | "FlattenDataTable" | "SwitchDataTableKind" | "GridToDataTable" | "DataTableMeta" | "DataTableMutations" | "DataTableFirstRowAsHeader" | "DataTableAddDataTable" | "Import" | "SetSheetMetadata" | "SheetAdd" | "SheetDelete" | "DuplicateSheet" | "MoveCells" | "Validation" | "ManipulateColumnRow";
 export interface TransientResize { row: bigint | null, column: bigint | null, old_size: number, new_size: number, }
 export interface Validation { id: string, selection: A1Selection, rule: ValidationRule, message: ValidationMessage, error: ValidationError, }
 export interface ValidationDateTime { ignore_blank: boolean, require_date: boolean, require_time: boolean, prohibit_date: boolean, prohibit_time: boolean, ranges: Array<DateTimeRange>, }

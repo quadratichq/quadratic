@@ -108,8 +108,16 @@ impl Sheet {
             readonly: data_table.readonly,
             is_html: data_table.is_html(),
             is_html_image: data_table.is_html() || data_table.is_image(),
-            html_image_width: data_table.chart_pixel_output.map(|(w, _)| w),
-            html_image_height: data_table.chart_pixel_output.map(|(_, h)| h),
+            html_image_width: if data_table.is_html_or_image() {
+                data_table.chart_pixel_output.map(|(w, _)| w)
+            } else {
+                None
+            },
+            html_image_height: if data_table.is_html_or_image() {
+                data_table.chart_pixel_output.map(|(_, h)| h)
+            } else {
+                None
+            },
         })
     }
 
@@ -419,7 +427,7 @@ mod tests {
             line_number: None,
             output_type: None,
         };
-        let data_table = DataTable::new(
+        let mut data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
             Value::Single(CellValue::Number(2.into())),
@@ -428,6 +436,7 @@ mod tests {
             true,
             None,
         );
+        data_table.show_ui = false;
 
         sheet.set_data_table(pos, Some(data_table));
         sheet.set_cell_value(pos, code);
@@ -445,7 +454,7 @@ mod tests {
                 name: "Table 1".to_string(),
                 columns: vec![], // single values don't have column headers
                 first_row_header: false,
-                show_ui: true,
+                show_ui: false,
                 show_name: true,
                 show_columns: true,
                 sort: None,

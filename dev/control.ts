@@ -278,8 +278,8 @@ export class Control {
       [
         "run",
         this.cli.options.perf
-          ? "watch:wasm:perf:javascript"
-          : "watch:wasm:javascript",
+          ? `${this.cli.options.core ? "watch" : "build"}:wasm:perf:javascript`
+          : `${this.cli.options.core ? "watch" : "build"}:wasm:javascript`,
       ],
       { signal: this.signals.core.signal }
     );
@@ -288,7 +288,7 @@ export class Control {
         "core",
         data,
         {
-          success: "[Finished running. Exit status: 0",
+          success: ["[Finished running. Exit status: 0", "ready to publish"],
           error: "error[",
           start: ["> quadratic", "[Running "],
         },
@@ -544,13 +544,7 @@ export class Control {
       "npm",
       [
         "run",
-        this.cli.options.rustClient
-          ? this.cli.options.perf
-            ? "watch:rust-client:perf"
-            : "watch:rust-client"
-          : this.cli.options.perf
-          ? "build:rust-client:perf"
-          : "build:rust-client",
+          `${this.cli.options.rustClient ? "watch" : "build"}:rust-client${this.cli.options.perf ? ":perf" : ""}`
       ],
       { signal: this.signals.rustClient.signal }
     );

@@ -494,7 +494,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn test_finalize_code_cell() {
+    fn test_finalize_data_table() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
 

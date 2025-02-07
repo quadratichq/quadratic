@@ -8,7 +8,9 @@ impl A1Selection {
     /// reference.
     pub(crate) fn check_for_table_ref(&mut self, context: &A1Context) {
         if let Some(last) = self.ranges.last_mut() {
+            dbgjs!(format!("last: {:?}", last));
             if let Some(table_ref) = last.check_for_table_ref(self.sheet_id, context) {
+                dbgjs!(format!("table_ref: {:?}", table_ref));
                 *last = table_ref;
             }
         }

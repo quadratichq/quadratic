@@ -52,6 +52,7 @@ lazy_static! {
 pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
     let parse_ctx = grid.a1_context();
     for sheet in grid.sheets.iter_mut() {
+        let sheet_id = sheet.id;
         if let GridBounds::NonEmpty(bounds) = sheet.bounds(false) {
             for x in bounds.x_range() {
                 if let Some(column) = sheet.get_column_mut(x) {
@@ -61,7 +62,7 @@ pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
                                 code_cell.code = replace_a1_notation(
                                     &code_cell.code,
                                     &parse_ctx,
-                                    (x + 1, y).into(),
+                                    crate::SheetPos::new(sheet_id, x + 1, y),
                                 );
                             }
                         }

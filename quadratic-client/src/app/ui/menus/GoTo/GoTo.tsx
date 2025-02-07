@@ -3,7 +3,11 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { A1Error, JsTableInfo } from '@/app/quadratic-core-types';
-import { getTableInfo, stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import {
+  convertTableToRange,
+  getTableInfo,
+  stringToSelection,
+} from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import '@/app/ui/styles/floating-dialog.css';
 import { GoToIcon } from '@/shared/components/Icons';
@@ -42,6 +46,14 @@ export const GoTo = () => {
       events.off('renderCodeCells', sync);
     };
   }, []);
+
+  const tableNameToRange = (tableName: string): string => {
+    try {
+      return convertTableToRange(sheets.a1Context, tableName, sheets.current);
+    } catch (e) {
+      throw new Error('Error getting table name range in GoTo.tsx');
+    }
+  };
 
   const convertedInput = useMemo(() => {
     if (!value) {
@@ -118,13 +130,28 @@ export const GoTo = () => {
     return null;
   }
 
-  // TODO: filter these by type AND whether there's an active search
-  const tables = tableInfo
-    ? tableInfo.filter((item) => item.name.toLowerCase().includes(value?.toLowerCase() ?? ''))
+  const tablesFiltered = tableInfo
+    ? tableInfo.filter(({ name, language }) => {
+        // If it has a language, it's a code table
+        if (language !== null) {
+          return false;
+        }
+
+        return value ? name.toLowerCase().includes(value.toLowerCase()) : true;
+      })
     : [];
-  const codeTables = tableInfo
-    ? tableInfo.filter((item) => !item.chart && item.name.toLowerCase().includes(value?.toLowerCase() ?? ''))
+  const codeTablesFiltered = tableInfo
+    ? tableInfo.filter(({ name, language }) => {
+        // If there's no language, it's a data table
+        if (language === null) {
+          return false;
+        }
+        return value ? name.toLowerCase().includes(value.toLowerCase()) : true;
+      })
     : [];
+  const sheetsFiltered = sheets
+    .map((sheet) => sheet)
+    .filter((sheet) => (value ? sheet.name.toLowerCase().includes(value.toLowerCase()) : true));
 
   return (
     <Command shouldFilter={false}>
@@ -136,27 +163,7 @@ export const GoTo = () => {
             onValueChange={setValue}
             placeholder="Enter a cell “A1” or range “A1:B2”"
             omitIcon={true}
-            // className="pr-8"
           />
-          {/*<Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="absolute right-1.5 top-1.5 text-muted-foreground"
-                onClick={() => {
-                  setValue(sheets.sheet.cursor.toA1String());
-                  setTimeout(() => {
-                    inputRef.current?.focus();
-                    inputRef.current?.select();
-                  }, 100);
-                }}
-              >
-                <InsertCellRefIcon />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Reference current cell</TooltipContent>
-          </Tooltip>*/}
         </div>
       </div>
       <CommandList className="">
@@ -174,40 +181,45 @@ export const GoTo = () => {
           </CommandItem>
         </CommandGroup>
 
-        <CommandGroup heading="Sheets">
-          {sheets.map((sheet) => (
-            <CommandItemGoto key={sheet.id} value={sheet.id} onSelect={() => selectSheet(sheet.id)} name={sheet.name} />
-          ))}
-        </CommandGroup>
-
-        {tables.length > 0 && (
+        {tablesFiltered.length > 0 && (
           <>
             <CommandGroup heading="Tables">
-              {tables.map(({ name, sheet_name }, i) => (
+              {tablesFiltered.map(({ name, sheet_name }, i) => (
                 <CommandItemGoto
                   key={name}
-                  // TODO: once we filter these, we can remove the table__ prefix
-                  value={'table__' + name}
+                  value={name}
                   onSelect={() => selectTable(name)}
                   name={name}
-                  nameSecondary={sheet_name}
+                  nameSecondary={tableNameToRange(name)}
                 />
               ))}
             </CommandGroup>
             <CommandSeparator />
           </>
         )}
-        {codeTables.length > 0 && (
+        {codeTablesFiltered.length > 0 && (
           <CommandGroup heading="Code">
-            {codeTables.map(({ name, sheet_name }, i) => (
+            {codeTablesFiltered.map(({ name, sheet_name, language }, i) => (
               <CommandItemGoto
                 key={name}
-                // TODO: once we filter these, we can remove the code__ prefix
-                value={'code__' + name}
+                value={name}
                 onSelect={() => selectTable(name)}
                 name={name}
-                nameSecondary={sheet_name}
-                icon={<LanguageIcon language={'python'} sx={{ width: 16, height: 16 }} />}
+                nameSecondary={tableNameToRange(name)}
+                // @ts-expect-error
+                icon={<LanguageIcon language={language} sx={{ width: 16, height: 16 }} />}
+              />
+            ))}
+          </CommandGroup>
+        )}
+        {sheetsFiltered.length > 0 && (
+          <CommandGroup heading="Sheets">
+            {sheetsFiltered.map((sheet) => (
+              <CommandItemGoto
+                key={sheet.id}
+                value={sheet.id}
+                onSelect={() => selectSheet(sheet.id)}
+                name={sheet.name}
               />
             ))}
           </CommandGroup>
@@ -236,10 +248,9 @@ function CommandItemGoto({
         {icon}
         <p className="truncate">{name}</p>
       </div>
-      {/* TODO: insert correct range */}
       {nameSecondary && (
         <div className="max-w-[30%] flex-shrink-0 truncate text-right text-xs text-muted-foreground">
-          {nameSecondary}!C2:C3
+          {nameSecondary}
         </div>
       )}
     </CommandItem>

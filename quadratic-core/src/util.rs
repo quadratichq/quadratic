@@ -103,7 +103,7 @@ macro_rules! row {
 macro_rules! pos {
     [$s:ident] => {{
         #[allow(unused_assignments, unused_variables)]
-        let pos = $crate::formulas::CellRef::parse_a1(stringify!($s), $crate::Pos::ORIGIN)
+        let pos = $crate::formulas::legacy_cell_ref::CellRef::parse_a1(stringify!($s), $crate::Pos::ORIGIN)
             .expect("invalid cell reference")
             .resolve_from(crate::Pos::ORIGIN);
         pos

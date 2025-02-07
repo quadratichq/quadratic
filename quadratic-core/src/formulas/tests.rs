@@ -5,8 +5,9 @@ use itertools::Itertools;
 use serial_test::parallel;
 
 pub(crate) use super::*;
-use crate::a1::A1Context;
+use crate::a1::{A1Context, CellRefCoord, CellRefRange, SheetCellRefRange};
 pub(crate) use crate::grid::Grid;
+use crate::grid::{Sheet, SheetId};
 pub(crate) use crate::values::*;
 pub(crate) use crate::{array, CodeResult, RunError, RunErrorMsg, Spanned};
 use crate::{CoerceInto, Pos, SheetPos};
@@ -25,7 +26,7 @@ pub(crate) fn try_check_syntax(grid: &Grid, s: &str) -> CodeResult<()> {
 pub(crate) fn eval_at(grid: &Grid, pos: SheetPos, s: &str) -> Value {
     println!("Evaluating formula {s:?}");
     let mut ctx = Ctx::new(grid, pos);
-    match parse_formula(s, &grid.a1_context(), Pos::ORIGIN) {
+    match parse_formula(s, &grid.a1_context(), grid.origin_in_first_sheet()) {
         Ok(formula) => formula.eval(&mut ctx).inner,
         Err(e) => e.into(),
     }
@@ -118,11 +119,13 @@ fn test_formula_cell_ref() {
 #[test]
 #[parallel]
 fn test_formula_circular_array_ref() {
-    let ctx = A1Context::test(&[], &[]);
-    let form = parse_formula("$B$0:$C$4", &ctx, pos![A0]).unwrap();
+    let g = Grid::new();
+    let sheet_id = g.sheets()[0].id;
+    let ctx = g.a1_context();
+    let form = parse_formula("$B$1:$C$4", &ctx, pos![A1].to_sheet_pos(sheet_id)).unwrap();
 
     let g = Grid::new();
-    let mut ctx = Ctx::new(&g, pos![B2].to_sheet_pos(g.sheets()[0].id));
+    let mut ctx = Ctx::new(&g, pos![B2].to_sheet_pos(sheet_id));
     assert_eq!(
         RunErrorMsg::CircularReference,
         form.eval(&mut ctx).inner.cell_values_slice().unwrap()[4]
@@ -320,65 +323,47 @@ fn test_formula_blank_to_string() {
 #[test]
 #[parallel]
 fn test_find_cell_references() {
-    #[track_caller]
-    fn a1(s: &str) -> CellRef {
-        CellRef::parse_a1(s, Pos::ORIGIN).expect("bad cell reference")
-    }
+    let mut g = Grid::new();
+    let sheet1 = g.sheets()[0].id;
+    let apple = SheetId::new();
+    g.add_sheet(Some(Sheet::new(apple, "apple".into(), String::new())));
+    let orange = SheetId::new();
+    g.add_sheet(Some(Sheet::new(orange, "orange".into(), String::new())));
+    let banana = SheetId::new();
+    g.add_sheet(Some(Sheet::new(banana, "banana".into(), String::new())));
+    let plum = SheetId::new();
+    g.add_sheet(Some(Sheet::new(plum, "plum".into(), String::new())));
+
+    let a = CellRefCoord::new_abs;
+    let r = CellRefCoord::new_rel;
+    let new_ref = |sheet_id, x1, y1, x2, y2| SheetCellRefRange {
+        sheet_id,
+        cells: CellRefRange::new_sheet_ref(x1, y1, x2, y2),
+    };
 
     // Another test checks that `parse_a1()` is correct.
     let test_cases = [
         // Basic cell reference
-        ("$A$1", RangeRef::Cell { pos: a1("$A$1") }),
+        ("$A$1", new_ref(sheet1, a(1), a(1), a(1), a(1))),
         // Range
-        (
-            "An1:A3",
-            RangeRef::CellRange {
-                start: a1("An1"),
-                end: a1("A3"),
-            },
-        ),
+        ("A1:A3", new_ref(sheet1, r(1), r(1), r(1), r(3))),
         // Range with spaces
-        (
-            "A$2 : Bn2",
-            RangeRef::CellRange {
-                start: a1("A$2"),
-                end: a1("Bn2"),
-            },
-        ),
+        ("A$2 : B2", new_ref(sheet1, r(1), a(2), r(2), r(2))),
         // Unquoted sheet reference
-        (
-            "apple!A$1",
-            RangeRef::Cell {
-                pos: a1("apple!A$1"),
-            },
-        ),
+        ("apple!A$1", new_ref(apple, r(1), a(1), r(1), a(1))),
         // Unquoted sheet reference range with spaces
-        (
-            "orange ! A2: $Q9",
-            RangeRef::CellRange {
-                start: a1("orange ! A2"),
-                end: a1("$Q9"),
-            },
-        ),
+        ("orange ! A2: $Q9", new_ref(orange, r(1), r(2), a(16), r(9))),
         // Quoted sheet reference range
         (
             "'banana'!$A1:QQ$222",
-            RangeRef::CellRange {
-                start: a1("'banana'!$A1"),
-                end: a1("QQ$222"),
-            },
+            new_ref(banana, a(1), r(1), r(459), a(222)),
         ),
         // Quoted sheet reference with spaces
-        (
-            "\"plum\" ! $A1",
-            RangeRef::Cell {
-                pos: a1("\"plum\"!$A1"),
-            },
-        ),
+        ("\"plum\" ! $A1", new_ref(plum, a(1), r(1), a(1), r(1))),
     ];
     let formula_string = test_cases.iter().map(|(string, _)| string).join(" + ");
     let ctx = A1Context::test(&[], &[]);
-    let cell_references_found = find_cell_references(&formula_string, &ctx, Pos::ORIGIN)
+    let cell_references_found = find_cell_references(&formula_string, &ctx, SheetPos::test())
         .into_iter()
         .map(|Spanned { span, inner }| (span.of_str(&formula_string), inner))
         .collect_vec();

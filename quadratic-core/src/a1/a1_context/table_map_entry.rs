@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{grid::SheetId, Rect, SheetPos};
+use crate::{
+    grid::{CodeCellLanguage, SheetId},
+    Rect, SheetPos,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TableMapEntry {
@@ -14,6 +17,7 @@ pub struct TableMapEntry {
     pub show_columns: bool,
     pub is_html_image: bool,
     pub header_is_first_row: bool,
+    pub language: Option<CodeCellLanguage>,
 }
 
 impl TableMapEntry {
@@ -178,6 +182,7 @@ impl TableMapEntry {
             show_columns: true,
             is_html_image: false,
             header_is_first_row: false,
+            language: None,
         }
     }
 }

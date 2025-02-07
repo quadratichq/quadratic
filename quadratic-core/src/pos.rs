@@ -192,6 +192,17 @@ pub struct SheetPos {
     pub sheet_id: SheetId,
 }
 
+impl SheetPos {
+    #[cfg(test)]
+    pub fn test() -> Self {
+        Self {
+            x: 1,
+            y: 1,
+            sheet_id: SheetId::test(),
+        }
+    }
+}
+
 impl fmt::Display for SheetPos {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} ({}, {})", self.sheet_id, self.x, self.y)

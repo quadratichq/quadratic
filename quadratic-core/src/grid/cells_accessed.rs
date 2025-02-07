@@ -6,7 +6,7 @@ use std::{
 use ts_rs::TS;
 
 use super::SheetId;
-use crate::a1::{A1Context, CellRefRange};
+use crate::a1::{A1Context, CellRefRange, SheetCellRefRange};
 use crate::{Rect, SheetPos, SheetRect};
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
@@ -14,6 +14,15 @@ use crate::{Rect, SheetPos, SheetRect};
 pub struct JsCellsAccessed {
     pub sheet_id: String,
     pub ranges: Vec<CellRefRange>,
+}
+
+impl From<SheetCellRefRange> for JsCellsAccessed {
+    fn from(value: SheetCellRefRange) -> Self {
+        JsCellsAccessed {
+            sheet_id: value.sheet_id.to_string(),
+            ranges: vec![value.cells],
+        }
+    }
 }
 
 #[derive(Default, Debug, Clone, PartialEq)]

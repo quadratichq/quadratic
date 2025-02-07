@@ -198,14 +198,15 @@ fn get_functions() -> Vec<FormulaFunction> {
 mod tests {
     use itertools::Itertools;
 
-    use crate::{a1::A1Context, formulas::tests::*, Pos};
+    use crate::{a1::A1Context, formulas::tests::*, grid::SheetId, Pos};
     use serial_test::parallel;
 
     #[test]
     #[parallel]
     fn test_formula_average() {
         let parse_ctx = A1Context::test(&[], &[]);
-        let form = parse_formula("AVERAGE(3, A1:C3)", &parse_ctx, pos![A10]).unwrap();
+        let pos = pos![A10].to_sheet_pos(SheetId::test());
+        let form = parse_formula("AVERAGE(3, A1:C3)", &parse_ctx, pos).unwrap();
 
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];

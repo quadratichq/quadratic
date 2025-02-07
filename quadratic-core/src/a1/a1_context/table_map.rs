@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    grid::{DataTable, SheetId},
+    grid::{CodeCellLanguage, DataTable, SheetId},
     Pos, SheetPos,
 };
 
@@ -13,7 +13,13 @@ pub struct TableMap {
 }
 
 impl TableMap {
-    pub fn insert(&mut self, sheet_id: SheetId, pos: Pos, table: &DataTable) {
+    pub fn insert(
+        &mut self,
+        sheet_id: SheetId,
+        pos: Pos,
+        table: &DataTable,
+        language: Option<CodeCellLanguage>,
+    ) {
         if table.spill_error || table.has_error() {
             self.tables.push(TableMapEntry {
                 sheet_id,
@@ -26,6 +32,7 @@ impl TableMap {
                 show_columns: false,
                 is_html_image: false,
                 header_is_first_row: false,
+                language,
             });
         } else {
             self.tables.push(TableMapEntry {
@@ -39,6 +46,7 @@ impl TableMap {
                 show_columns: table.show_columns,
                 is_html_image: table.is_html() || table.is_image(),
                 header_is_first_row: table.header_is_first_row,
+                language: None,
             });
         }
     }

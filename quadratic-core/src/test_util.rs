@@ -318,7 +318,7 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
                     CodeCellLanguage::Formula => replace_internal_cell_references(
                         &code_cell.code.to_string(),
                         &parse_ctx,
-                        pos,
+                        pos.to_sheet_pos(sheet.id),
                     ),
                     CodeCellLanguage::Python => code_cell.code.to_string(),
                     CodeCellLanguage::Connection { .. } => code_cell.code.to_string(),

@@ -1,12 +1,13 @@
 pub mod ast;
-mod cell_ref;
 mod criteria;
 mod ctx;
 #[allow(clippy::vec_init_then_push)]
 pub mod functions;
+pub mod legacy_cell_ref;
 mod lexer;
 pub mod lsp;
 mod params;
+pub mod parse_formula;
 mod parser;
 pub mod util;
 mod wildcards;
@@ -16,7 +17,6 @@ pub mod tests;
 
 use ast::AstNode;
 pub use ast::Formula;
-pub use cell_ref::*;
 pub use criteria::Criterion;
 pub use ctx::Ctx;
 use functions::FormulaFnArgs;

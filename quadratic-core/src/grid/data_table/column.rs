@@ -1,7 +1,7 @@
 use anyhow::Result;
 
 use super::{column_header::DataTableColumnHeader, DataTable};
-use crate::CellValue;
+use crate::{CellValue, CopyFormats};
 
 impl DataTable {
     /// Get the values of a column
@@ -25,12 +25,8 @@ impl DataTable {
         let mut column = self.get_column(column_index)?;
         if let Some(display_buffer) = &self.display_buffer {
             let mut sorted_column = vec![CellValue::Blank; column.len()];
-            for (y, value) in column.into_iter().enumerate() {
-                let display_index = display_buffer
-                    .iter()
-                    .position(|&display_y| display_y == y as u64)
-                    .unwrap_or(y);
-                sorted_column[display_index] = value;
+            for (display_index, row_index) in display_buffer.iter().enumerate() {
+                sorted_column[display_index] = std::mem::take(&mut column[*row_index as usize]);
             }
             column = sorted_column;
         }
@@ -50,6 +46,12 @@ impl DataTable {
 
         let array = self.mut_value_as_array()?;
         array.insert_column(column_index, values)?;
+
+        // formats and borders are 1 indexed
+        self.formats
+            .insert_column(column_index as i64 + 1, CopyFormats::None);
+        self.borders
+            .insert_column(column_index as i64 + 1, CopyFormats::None);
 
         if let Some(headers) = &mut self.column_headers {
             let new_header = DataTableColumnHeader::new(column_name, true, column_index as u32);
@@ -100,11 +102,6 @@ impl DataTable {
             for (index, header) in headers.iter_mut().enumerate() {
                 header.value_index = index as u32;
             }
-        }
-
-        // remove the sort if it exists
-        if let Some(sort) = &mut self.sort {
-            sort.retain(|sort| sort.column_index != column_index);
         }
 
         Ok(())

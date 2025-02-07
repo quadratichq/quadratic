@@ -70,7 +70,7 @@ export class TableHeader extends Container {
   }
 
   update(onlyGridLines: boolean) {
-    if (this.table.codeCell.spill_error) {
+    if (this.table.codeCell.state === 'SpillError' || this.table.codeCell.state === 'RunError') {
       this.visible = false;
       return;
     }

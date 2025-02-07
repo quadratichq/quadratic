@@ -13,12 +13,11 @@
 //! - Table1[[Column 1]:[Column 3]] - all data within the range of the columns
 //! - Table1[[#ALL], [Column Name]] - column header and data
 //! - Table1[#HEADERS] - only the table headers
-//! - (not yet supported) Table1[[#TOTALS][Column 1]] - reference the total line
 //!   at the end of the table (also known as the footer)
 //! - Table1[[#HEADERS], [#DATA]] - table headers and data across entire table
 //! - Table1 or Table1[#DATA] - table data without headers or totals
-//! - Table1[@Column Name] - data in column name at the same row as the code
-//!   cell
+//! - Table1[[Column1]:] - column 1 onward (Excel does not have this)
+//! - (not yet supported) Table1[[#TOTALS], [Column 1]] - reference the total line
 //!
 //! Note Table1[#THIS ROW] and Table1[@Column 1] are not supported (supported in
 //! Excel but not Google Sheets either)

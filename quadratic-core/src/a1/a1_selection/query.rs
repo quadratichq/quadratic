@@ -376,7 +376,7 @@ impl A1Selection {
             return false;
         }
         if let Some(CellRefRange::Table { range }) = self.ranges.first() {
-            range.data
+            range.data || range.headers
         } else {
             false
         }
@@ -410,6 +410,33 @@ impl A1Selection {
             }
         }
         None
+    }
+
+    /// Returns true if the selection contains any table references.
+    pub fn has_table_refs(&self) -> bool {
+        self.ranges.iter().any(|range| match range {
+            CellRefRange::Table { range } => range.data,
+            _ => false,
+        })
+    }
+
+    /// Replaces table references with sheet references.
+    pub fn replace_table_refs(&self, context: &A1Context) -> A1Selection {
+        let ranges = self
+            .ranges
+            .iter()
+            .filter_map(|range| match range {
+                CellRefRange::Table { range } => range
+                    .convert_to_ref_range_bounds(false, context, false, true)
+                    .map(|range| CellRefRange::Sheet { range }),
+                _ => Some(range.clone()),
+            })
+            .collect();
+        A1Selection {
+            ranges,
+            cursor: self.cursor,
+            sheet_id: self.sheet_id,
+        }
     }
 }
 
@@ -781,7 +808,7 @@ mod tests {
         let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
         assert!(A1Selection::test_a1_context("Table1", &context).has_table_headers());
         assert!(A1Selection::test_a1_context("Table1[#ALL]", &context).has_table_headers());
-        assert!(!A1Selection::test_a1_context("Table1[#headers]", &context).has_table_headers());
+        assert!(A1Selection::test_a1_context("Table1[#headers]", &context).has_table_headers());
         assert!(A1Selection::test_a1_context("Table1[#all]", &context).has_table_headers());
     }
 
@@ -810,5 +837,68 @@ mod tests {
         // Test selection without tables
         let selection = A1Selection::test_a1_context("A1:B2,C3", &context);
         assert_eq!(selection.selected_table_names(), Vec::<String>::new());
+    }
+
+    #[test]
+    fn test_has_table_refs() {
+        let context = A1Context::test(
+            &[],
+            &[
+                ("Table1", &["A", "B"], Rect::test_a1("A1:B2")),
+                ("Table2", &["C", "D"], Rect::test_a1("C3:D4")),
+            ],
+        );
+
+        // Test with table data reference
+        let selection = A1Selection::test_a1_context("Table1", &context);
+        assert!(selection.has_table_refs());
+
+        // Test with table headers reference (should be false since data=false)
+        let selection = A1Selection::test_a1_context("Table1[#Headers]", &context);
+        assert!(!selection.has_table_refs());
+
+        // Test with multiple selections including a table
+        let selection = A1Selection::test_a1_context("A1:B2,Table1", &context);
+        assert!(selection.has_table_refs());
+
+        // Test with no table references
+        let selection = A1Selection::test_a1_context("A1:B2,C3", &context);
+        assert!(!selection.has_table_refs());
+    }
+
+    #[test]
+    fn test_replace_table_refs() {
+        let context = A1Context::test(
+            &[],
+            &[
+                ("Table1", &["A", "B"], Rect::test_a1("A1:B2")),
+                ("Table2", &["C", "D"], Rect::test_a1("C3:D4")),
+            ],
+        );
+
+        // Test replacing single table reference
+        let selection = A1Selection::test_a1_context("Table1", &context);
+        let replaced = selection.replace_table_refs(&context);
+        let mut expected = A1Selection::test_a1("A1:B2");
+        expected.cursor = pos![A2];
+        assert_eq!(replaced, expected);
+
+        // Test replacing multiple table references
+        let selection = A1Selection::test_a1_context("Table1,Table2", &context);
+        let replaced = selection.replace_table_refs(&context);
+        let mut expected = A1Selection::test_a1("A1:B2,C3:D4");
+        expected.cursor = pos![C4];
+        assert_eq!(replaced, expected);
+
+        // Test mixed selection with tables and regular ranges
+        let selection = A1Selection::test_a1_context("A1:B2,Table1,C3", &context);
+        let replaced = selection.replace_table_refs(&context);
+        let expected = A1Selection::test_a1("A1:B2,A1:B2,C3");
+        assert_eq!(replaced, expected);
+
+        // Test selection without tables (should remain unchanged)
+        let selection = A1Selection::test_a1_context("A1:B2,C3", &context);
+        let replaced = selection.replace_table_refs(&context);
+        assert_eq!(replaced, selection);
     }
 }

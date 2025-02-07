@@ -27,8 +27,27 @@ impl CellRefRange {
                 y: range.end.row().max(range.start.row()),
             };
 
+            dbgjs!(format!("start: {:?}", start));
+            dbgjs!(format!("end: {:?}", end));
+
             if let Some(table) = context.table_from_pos(start) {
                 let b = table.bounds;
+                dbgjs!(format!("table: {:?}", table));
+                dbgjs!(format!("b: {:?}", b));
+                dbgjs!(format!(
+                    "start == end
+                    && table.show_ui
+                    && table.show_name
+                    && start.x >= b.min.x
+                    && start.x <= b.max.x
+                    && start.y == b.min.y: {:?}",
+                    start == end
+                        && table.show_ui
+                        && table.show_name
+                        && start.x >= b.min.x
+                        && start.x <= b.max.x
+                        && start.y == b.min.y
+                ));
 
                 // if we're in the name cell of the table, then we should return the table ref
                 if start == end
@@ -61,6 +80,11 @@ impl CellRefRange {
                     });
                 }
 
+                dbgjs!(format!(
+                    "start.x < b.min.x || end.x > b.max.x: {:?}",
+                    start.x < b.min.x || end.x > b.max.x
+                ));
+
                 // if the x value is outside the table, then it's not a table ref
                 if start.x < b.min.x || end.x > b.max.x {
                     return None;
@@ -78,6 +102,17 @@ impl CellRefRange {
                     let col2_name = table.col_name_from_index(end.x as usize - b.min.x as usize)?;
                     ColRange::ColRange(col1_name, col2_name)
                 };
+
+                dbgjs!(format!(
+                    "table.show_ui
+                    && table.show_columns
+                    && start.y == b.min.y + (if table.show_name {{ 1 }} else {{ 0 }})
+                    && end.y == b.min.y + (if table.show_name {{ 1 }} else {{ 0 }}): {:?}",
+                    table.show_ui
+                        && table.show_columns
+                        && start.y == b.min.y + (if table.show_name { 1 } else { 0 })
+                        && end.y == b.min.y + (if table.show_name { 1 } else { 0 })
+                ));
 
                 // only column headers
                 if table.show_ui
@@ -121,6 +156,19 @@ impl CellRefRange {
                         },
                     });
                 }
+
+                dbgjs!(format!(
+                    "start.y
+                    == b.min.y
+                        + (if table.show_ui && table.show_name {{ 1 }} else {{ 0 }}): {:?}",
+                    start.y
+                        == b.min.y
+                            + (if table.show_ui && table.show_name {
+                                1
+                            } else {
+                                0
+                            })
+                ));
 
                 // data and column headers
                 if start.y

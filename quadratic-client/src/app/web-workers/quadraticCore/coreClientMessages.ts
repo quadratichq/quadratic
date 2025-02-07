@@ -1184,6 +1184,17 @@ export interface CoreClientA1Context {
   context: string;
 }
 
+export interface ClientCoreAddDataTable {
+  type: 'clientCoreAddDataTable';
+  sheetId: string;
+  x: number;
+  y: number;
+  name: string;
+  values: string[][];
+  firstRowIsHeader: boolean;
+  cursor: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1276,7 +1287,8 @@ export type ClientCoreMessage =
   | ClientCoreMoveCodeCellVertically
   | ClientCoreMoveCodeCellHorizontally
   | ClientCoreFiniteRectFromSelection
-  | ClientCoreGetCsvPreview;
+  | ClientCoreGetCsvPreview
+  | ClientCoreAddDataTable;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

@@ -31,6 +31,8 @@ const FUNCTION_CALL_PATTERN: &str = r"[A-Za-z_](\.?[A-Za-z_\d])*\(";
 
 /// A1-style cell reference.
 ///
+/// TODO(ajf): remove `n` from this (was for parsing negative references)
+///
 /// \$?n?[a-zA-Z]+\$?n?\d+
 /// \$?        \$?            optional `$`s
 ///    n?         n?          optional `n`s
@@ -39,6 +41,12 @@ const FUNCTION_CALL_PATTERN: &str = r"[A-Za-z_](\.?[A-Za-z_\d])*\(";
 // const A1_CELL_REFERENCE_PATTERN: &str = r"\$?n?[A-Z]+\$?n?\d+";
 const A1_CELL_REFERENCE_PATTERN: &str = r"\$?n?([a-zA-Z]+\$?n?\d*|\d+)";
 const INTERNAL_CELL_REFERENCE_PATTERN: &str = r"R([\[|\{]-?\d+[\]|\}])C([\[|\{]-?\d+[\]|\}])";
+
+/// Table name.
+///
+/// This may be ambiguous between a table reference and a cell reference. For
+/// example, a table named `ALL` is ambiguous with the column named `ALL`.
+const TABLE_NAME_PATTERN: &str = r"[_a-zA-Z][_a-zA-Z\d]*";
 
 /// Floating-point or integer number, without leading sign.
 ///
@@ -92,6 +100,8 @@ const TOKEN_PATTERNS: &[&str] = &[
     INTERNAL_CELL_REFERENCE_PATTERN,
     // Reference to a cell.
     A1_CELL_REFERENCE_PATTERN,
+    // Reference to a table.
+    TABLE_NAME_PATTERN,
     // Whitespace.
     r"\s+",
     // Any other single Unicode character.
@@ -115,6 +125,10 @@ lazy_static! {
     /// Regex that matches a valid A1-style cell reference.
     pub static ref A1_CELL_REFERENCE_REGEX: Regex =
         new_fullmatch_regex(A1_CELL_REFERENCE_PATTERN);
+
+    /// Regex that matches a valid table reference.
+    pub static ref TABLE_NAME_REGEX: Regex =
+        new_fullmatch_regex(TABLE_NAME_PATTERN);
 
     /// Regex that matches a valid internal cell reference.
     pub static ref INTERNAL_CELL_REFERENCE_REGEX: Regex =
@@ -221,8 +235,8 @@ pub enum Token {
     UnterminatedStringLiteral,
     #[strum(to_string = "numeric literal")]
     NumericLiteral,
-    #[strum(to_string = "cell reference")]
-    CellRef,
+    #[strum(to_string = "cell or table reference")]
+    CellOrTableRef,
     #[strum(to_string = "internal cell reference")]
     InternalCellRef,
     #[strum(to_string = "whitespace")]
@@ -311,7 +325,8 @@ impl Token {
                 Self::NumericLiteral
             }
             s if INTERNAL_CELL_REFERENCE_REGEX.is_match(s) => Self::InternalCellRef,
-            s if A1_CELL_REFERENCE_REGEX.is_match(s) => Self::CellRef,
+            s if A1_CELL_REFERENCE_REGEX.is_match(s) => Self::CellOrTableRef,
+            s if TABLE_NAME_REGEX.is_match(s) => Self::CellOrTableRef,
             s if s.trim().is_empty() => Self::Whitespace,
 
             // Give up.

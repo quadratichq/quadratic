@@ -46,10 +46,12 @@ export function useSubmitAIAnalystPrompt() {
   const updateInternalContext = useRecoilCallback(
     ({ set }) =>
       async ({ context }: { context: Context }): Promise<ChatMessage[]> => {
-        const otherSheetsContext = await getOtherSheetsContext({ sheetNames: context.sheets });
-        const currentSheetContext = await getCurrentSheetContext({ currentSheetName: context.currentSheet });
-        const visibleContext = await getVisibleContext();
-        const selectionContext = await getSelectionContext({ selection: context.selection });
+        const [otherSheetsContext, currentSheetContext, visibleContext, selectionContext] = await Promise.all([
+          getOtherSheetsContext({ sheetNames: context.sheets }),
+          getCurrentSheetContext({ currentSheetName: context.currentSheet }),
+          getVisibleContext(),
+          getSelectionContext({ selection: context.selection }),
+        ]);
 
         let updatedMessages: ChatMessage[] = [];
         set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {

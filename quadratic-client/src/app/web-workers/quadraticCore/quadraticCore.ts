@@ -1424,6 +1424,27 @@ class QuadraticCore {
       cursor,
     });
   }
+
+  addDataTable(args: {
+    sheetId: string;
+    x: number;
+    y: number;
+    name: string;
+    values: string[][];
+    firstRowIsHeader: boolean;
+    cursor: string;
+  }) {
+    this.send({
+      type: 'clientCoreAddDataTable',
+      sheetId: args.sheetId,
+      x: args.x,
+      y: args.y,
+      name: args.name,
+      values: args.values,
+      firstRowIsHeader: args.firstRowIsHeader,
+      cursor: args.cursor,
+    });
+  }
   //#endregion
 }
 
