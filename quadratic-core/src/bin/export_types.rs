@@ -15,6 +15,7 @@ use quadratic_core::controller::execution::run_code::get_cells::CellA1Response;
 use quadratic_core::controller::execution::run_code::get_cells::JsGetCellResponse;
 use quadratic_core::controller::operations::clipboard::PasteSpecial;
 use quadratic_core::controller::transaction_types::JsCodeResult;
+use quadratic_core::formulas::parse_formula::JsFormulaParseResult;
 use quadratic_core::grid::formats::Format;
 use quadratic_core::grid::js_types::{
     CellFormatSummary, JsCellValue, JsCellValuePos, JsCellValuePosAIContext, JsClipboard,
@@ -118,6 +119,7 @@ fn main() {
         JsCodeResult,
         JsDataTableColumnHeader,
         JsCoordinate,
+        JsFormulaParseResult,
         JsGetCellResponse,
         JsHtmlOutput,
         JsNumber,

@@ -7,6 +7,7 @@ pub mod legacy_cell_ref;
 mod lexer;
 pub mod lsp;
 mod params;
+pub mod parse_formula;
 mod parser;
 pub mod util;
 mod wildcards;

@@ -8,10 +8,9 @@ import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineE
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { SheetPosTS } from '@/app/gridGL/types/size';
-import { parseFormulaReturnToCellsAccessed, type ParseFormulaReturnType } from '@/app/helpers/formulaNotation';
+import type { JsFormulaParseResult } from '@/app/quadratic-core-types';
 import { checkFormula, parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { colors } from '@/app/theme/colors';
-import { extractCellsFromParseFormula } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
 import type { editor } from 'monaco-editor';
 import * as monaco from 'monaco-editor';
 
@@ -24,62 +23,56 @@ class InlineEditorFormula {
   }
 
   cellHighlights(location: SheetPosTS, formula: string) {
-    const parsed = JSON.parse(
-      parseFormula(formula, sheets.a1Context, location.sheetId, location.x, location.y)
-    ) as ParseFormulaReturnType;
-    if (parsed) {
-      const cellsAccessed = parseFormulaReturnToCellsAccessed(
-        parsed,
-        { x: location.x, y: location.y },
-        location.sheetId
+    let parseResult: JsFormulaParseResult;
+    try {
+      parseResult = JSON.parse(parseFormula(formula, sheets.a1Context, location.sheetId, location.x, location.y));
+    } catch (e) {
+      this.clearDecorations();
+      return;
+    }
+    pixiApp.cellHighlights.fromCellsAccessed(parseResult.cells_accessed);
+
+    const newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
+    const cellColorReferences = new Map<string, number>();
+
+    parseResult.spans.forEach((span, index) => {
+      const startPosition = inlineEditorMonaco.getSpanPosition(span.start);
+
+      const cellRef = parseResult.cells_accessed[index];
+      const cellId = JSON.stringify(cellRef);
+      const cellColor = cellColorReferences.get(cellId) ?? cellColorReferences.size % colors.cellHighlightColor.length;
+      cellColorReferences.set(cellId, cellColor);
+
+      // we need to +1 since we removed the `=` character from the formula
+      const range = new monaco.Range(
+        startPosition.lineNumber,
+        startPosition.column + 1,
+        startPosition.lineNumber,
+        startPosition.column + 1 + span.end - span.start
       );
-      pixiApp.cellHighlights.fromCellsAccessed(cellsAccessed);
 
-      const extractedCells = extractCellsFromParseFormula(parsed, { x: location.x, y: location.y });
-      const newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
-      const cellColorReferences = new Map<string, number>();
-
-      extractedCells.forEach((value, index) => {
-        const { cellId, span } = value;
-        const startPosition = inlineEditorMonaco.getSpanPosition(span.start);
-
-        const cellColor =
-          cellColorReferences.get(cellId) ?? cellColorReferences.size % colors.cellHighlightColor.length;
-        cellColorReferences.set(cellId, cellColor);
-
-        // we need to +1 since we removed the `=` character from the formula
-        const range = new monaco.Range(
-          startPosition.lineNumber,
-          startPosition.column + 1,
-          startPosition.lineNumber,
-          startPosition.column + 1 + span.end - span.start
-        );
-
-        // decorations color the cell references in the editor
-        newDecorations.push({
-          range,
-          options: {
-            stickiness: 1,
-            inlineClassName: `cell-reference-${cellColorReferences.get(cellId)}`,
-          },
-        });
-
-        const editorCursorPosition = inlineEditorMonaco.getPosition();
-
-        if (editorCursorPosition && range.containsPosition(editorCursorPosition)) {
-          pixiApp.cellHighlights.setSelectedCell(index);
-        }
+      // decorations color the cell references in the editor
+      newDecorations.push({
+        range,
+        options: {
+          stickiness: 1,
+          inlineClassName: `cell-reference-${cellColorReferences.get(cellId)}`,
+        },
       });
 
-      // update the cell references in the editor
-      if (this.decorations) {
-        this.decorations.clear();
-        this.decorations.set(newDecorations);
-      } else {
-        this.decorations = inlineEditorMonaco.createDecorationsCollection(newDecorations);
+      const editorCursorPosition = inlineEditorMonaco.getPosition();
+
+      if (editorCursorPosition && range.containsPosition(editorCursorPosition)) {
+        pixiApp.cellHighlights.setSelectedCell(index);
       }
+    });
+
+    // update the cell references in the editor
+    if (this.decorations) {
+      this.decorations.clear();
+      this.decorations.set(newDecorations);
     } else {
-      this.clearDecorations();
+      this.decorations = inlineEditorMonaco.createDecorationsCollection(newDecorations);
     }
   }
 
