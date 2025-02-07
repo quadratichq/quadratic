@@ -107,7 +107,7 @@ export const useEditorCellHighlights = (
           const cellRef = parsed.cells_accessed[index];
           const cellId = JSON.stringify(cellRef);
           const startPosition = model.getPositionAt(span.start);
-          console.log(cellId);
+
           const cellColor =
             cellColorReferences.get(cellId) ?? cellColorReferences.size % colors.cellHighlightColor.length;
           cellColorReferences.set(cellId, cellColor);
