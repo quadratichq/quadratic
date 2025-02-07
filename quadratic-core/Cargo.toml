@@ -35,7 +35,13 @@ path = "src/bin/upgrade_file.rs"
 [features]
 default = ["console_error_panic_hook", "js"]
 # "js" feature is disabled for testing (particularly WASI benchmarks)
-js = ["js-sys", "serde-wasm-bindgen", "ts-rs", "wasm-bindgen", "wasm-bindgen-futures"]
+js = [
+  "js-sys",
+  "serde-wasm-bindgen",
+  "ts-rs",
+  "wasm-bindgen",
+  "wasm-bindgen-futures",
+]
 show-operations = []
 multiplayer = []
 files = []
@@ -82,7 +88,12 @@ csv = "1.3.0"
 indexmap = { version = "2.0.2", features = ["serde"] }
 thiserror = "1.0.52"
 lazy_static = "1.4.0"
-parquet = { version = "51.0.0", default-features = false, features = ["arrow", "arrow-array", "flate2", "snap"] }
+parquet = { version = "51.0.0", default-features = false, features = [
+  "arrow",
+  "arrow-array",
+  "flate2",
+  "snap",
+] }
 bytes = "1.5.0"
 arrow-array = "51.0.0"
 arrow-schema = "51.0.0"

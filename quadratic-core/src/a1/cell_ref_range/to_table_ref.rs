@@ -29,6 +29,16 @@ impl CellRefRange {
 
             if let Some(table) = context.table_from_pos(start) {
                 let b = table.bounds;
+                let adjust_for_name = if table.show_ui && table.show_name {
+                    1
+                } else {
+                    0
+                };
+                let adjust_for_columns = if table.show_ui && table.show_columns {
+                    1
+                } else {
+                    0
+                };
 
                 // if we're in the name cell of the table, then we should return the table ref
                 if start == end
@@ -82,8 +92,8 @@ impl CellRefRange {
                 // only column headers
                 if table.show_ui
                     && table.show_columns
-                    && start.y == b.min.y + (if table.show_name { 1 } else { 0 })
-                    && end.y == b.min.y + (if table.show_name { 1 } else { 0 })
+                    && start.y == b.min.y + adjust_for_name
+                    && end.y == b.min.y + adjust_for_name
                 {
                     return Some(CellRefRange::Table {
                         range: TableRef {
@@ -97,20 +107,7 @@ impl CellRefRange {
                 }
 
                 // only data
-                if start.y
-                    == b.min.y
-                        + (if table.show_ui && table.show_name {
-                            1
-                        } else {
-                            0
-                        })
-                        + (if table.show_ui && table.show_columns {
-                            1
-                        } else {
-                            0
-                        })
-                    && end.y == b.max.y
-                {
+                if start.y == b.min.y + adjust_for_name + adjust_for_columns && end.y == b.max.y {
                     return Some(CellRefRange::Table {
                         range: TableRef {
                             table_name: table.table_name.clone(),
@@ -122,16 +119,11 @@ impl CellRefRange {
                     });
                 }
 
-                // data and column headers
-                if start.y
-                    == b.min.y
-                        + (if table.show_ui && table.show_name {
-                            1
-                        } else {
-                            0
-                        })
-                    && end.y == b.max.y
-                {
+                let full_table = start.y == b.min.y && end.y == b.max.y;
+                let data_and_headers = start.y == b.min.y + adjust_for_name && end.y == b.max.y;
+
+                // full table or data and column headers
+                if full_table || data_and_headers {
                     return Some(CellRefRange::Table {
                         range: TableRef {
                             table_name: table.table_name.clone(),

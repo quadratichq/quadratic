@@ -302,7 +302,7 @@ mod tests {
             "Table1[Col1]"
         );
 
-        assert_eq!(selection.cursor, pos!(A3));
+        assert_eq!(selection.cursor, pos!(A1));
         let mut selection = A1Selection::test_a1("A1");
         selection.select_table("Table1", None, &context, 1, true, false);
         assert_eq!(selection.ranges.len(), 2);
@@ -336,7 +336,7 @@ mod tests {
         selection.move_to(1, 1, false, &context);
 
         selection.select_table("Table1", None, &context, 3, false, false);
-        assert_eq!(selection.cursor, pos!(A7));
+        assert_eq!(selection.cursor, pos!(A5));
         assert_eq!(
             selection.to_string(Some(SheetId::test()), &context),
             "Table1"

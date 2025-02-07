@@ -640,7 +640,7 @@ mod test {
                 w: 2,
                 h: 1,
                 two_dimensional: true,
-                has_headers: false,
+                has_headers: true,
             })
         );
     }

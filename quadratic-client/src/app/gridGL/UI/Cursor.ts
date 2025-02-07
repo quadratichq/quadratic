@@ -121,7 +121,7 @@ export class Cursor extends Container {
     }
 
     // draw cursor
-    if (tableName) {
+    if (table && tableName) {
       this.graphics.lineStyle({
         width: 1,
         color: 0xffffff,
@@ -134,6 +134,16 @@ export class Cursor extends Container {
       this.graphics.moveTo(x + width - offset - 1, y + height - offset);
       this.graphics.lineTo(x + offset, y + height - offset);
       this.graphics.lineTo(x + offset, y + offset);
+
+      // create the corner icon
+      this.graphics.lineStyle({
+        color: getCSSVariableTint('primary'),
+        width: 1,
+        alignment: 0,
+      });
+      this.graphics.beginFill(0xffffff, 1);
+      this.graphics.drawShape(new Rectangle(x + width - 4, y + table.tableBounds.height - 4, 8, 8));
+      this.graphics.endFill();
     } else {
       this.graphics.lineStyle({
         width: CURSOR_THICKNESS,

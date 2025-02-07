@@ -376,7 +376,7 @@ impl A1Selection {
             return false;
         }
         if let Some(CellRefRange::Table { range }) = self.ranges.first() {
-            range.data
+            range.data || range.headers
         } else {
             false
         }
@@ -426,9 +426,9 @@ impl A1Selection {
             .ranges
             .iter()
             .filter_map(|range| match range {
-                CellRefRange::Table { range } => {
-                    range.convert_to_ref_range_bounds(false, context, false, true).map(|range| CellRefRange::Sheet { range })
-                }
+                CellRefRange::Table { range } => range
+                    .convert_to_ref_range_bounds(false, context, false, true)
+                    .map(|range| CellRefRange::Sheet { range }),
                 _ => Some(range.clone()),
             })
             .collect();
@@ -808,7 +808,7 @@ mod tests {
         let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
         assert!(A1Selection::test_a1_context("Table1", &context).has_table_headers());
         assert!(A1Selection::test_a1_context("Table1[#ALL]", &context).has_table_headers());
-        assert!(!A1Selection::test_a1_context("Table1[#headers]", &context).has_table_headers());
+        assert!(A1Selection::test_a1_context("Table1[#headers]", &context).has_table_headers());
         assert!(A1Selection::test_a1_context("Table1[#all]", &context).has_table_headers());
     }
 
