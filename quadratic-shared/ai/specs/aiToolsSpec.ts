@@ -42,15 +42,17 @@ const numberSchema = z.number().or(
   })
 );
 
-const array2DSchema = z.array(z.array(z.string())).or(
+const array2DSchema = z.array(z.array(z.union([z.string(), z.number()]).transform(String))).or(
   z.string().transform((str) => {
     try {
       const parsed = JSON.parse(str);
-      if (
-        Array.isArray(parsed) &&
-        parsed.every((row) => Array.isArray(row) && row.every((cell) => typeof cell === 'string'))
-      ) {
-        return parsed;
+      if (Array.isArray(parsed)) {
+        return parsed.map((row) => {
+          if (!Array.isArray(row)) {
+            throw new Error('Invalid 2D array format - each row must be an array');
+          }
+          return row.map(String);
+        });
       }
       throw new Error('Invalid 2D array format');
     } catch {
@@ -58,6 +60,13 @@ const array2DSchema = z.array(z.array(z.string())).or(
     }
   })
 );
+
+const cellLanguageSchema = z
+  .string()
+  .transform((val) => val.toLowerCase())
+  .pipe(z.enum(['python', 'javascript', 'formula']))
+  .transform((val) => val.charAt(0).toUpperCase() + val.slice(1))
+  .pipe(z.enum(['Python', 'Javascript', 'Formula']));
 
 export const AIToolsArgsSchema = {
   [AITool.SetChatName]: z.object({
@@ -69,7 +78,7 @@ export const AIToolsArgsSchema = {
     table_data: array2DSchema,
   }),
   [AITool.SetCodeCellValue]: z.object({
-    code_cell_language: z.enum(['Python', 'Javascript', 'Formula']),
+    code_cell_language: cellLanguageSchema,
     code_cell_position: z.string(),
     code_string: z.string(),
     output_width: numberSchema,
@@ -127,7 +136,8 @@ This name should be from user's perspective, not the assistant's.\n
 Adds a data table to the currently open sheet, requires the top left cell position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
 The first row of the data table is considered to be the header row, and the data table will be created with the first row as the header row.\n
 Always use this tool when adding a new tabular data to the currently open sheet. Don't use set_cell_values function to add tabular data.\n
-Don't use this tool to add data to a data table that already exists. Use set_cell_values function to add data to a data table that already exists.\n
+Don't use this tool to add data to an existing data table. Use set_cell_values function to add data to an existing data table.\n
+Always prefer using this tool to add structured data to the currently open sheet. Don't use set_cell_values or set_code_cell_value function to add structured data.\n
 `,
     parameters: {
       type: 'object',

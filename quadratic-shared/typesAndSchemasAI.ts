@@ -8,8 +8,6 @@ const BedrockModelSchema = z
   .enum([
     'anthropic.claude-3-5-sonnet-20241022-v2:0',
     'anthropic.claude-3-5-haiku-20241022-v1:0',
-    'ai21.jamba-1-5-large-v1:0',
-    'cohere.command-r-plus-v1:0',
     'us.meta.llama3-2-90b-instruct-v1:0',
     'mistral.mistral-large-2407-v1:0',
   ])

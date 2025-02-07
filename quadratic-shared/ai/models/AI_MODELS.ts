@@ -68,7 +68,7 @@ export const MODEL_OPTIONS: {
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    enabled: false,
     provider: 'bedrock-anthropic',
   },
   'anthropic.claude-3-5-haiku-20241022-v1:0': {
@@ -79,24 +79,6 @@ export const MODEL_OPTIONS: {
     canStreamWithToolCalls: true,
     enabled: true,
     provider: 'bedrock-anthropic',
-  },
-  'ai21.jamba-1-5-large-v1:0': {
-    displayName: 'Bedrock: Jamba 1.5 Large',
-    temperature: 0,
-    max_tokens: 4096,
-    canStream: true,
-    canStreamWithToolCalls: false,
-    enabled: false,
-    provider: 'bedrock',
-  },
-  'cohere.command-r-plus-v1:0': {
-    displayName: 'Bedrock: Command R+',
-    temperature: 0,
-    max_tokens: 4096,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: false,
-    provider: 'bedrock',
   },
   'us.meta.llama3-2-90b-instruct-v1:0': {
     displayName: 'Bedrock: Llama 3.2 90B Instruct',

@@ -1,4 +1,3 @@
-import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { aiAnalystCurrentChatMessagesAtom } from '@/app/atoms/aiAnalystAtom';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
@@ -10,7 +9,6 @@ import { v4 } from 'uuid';
 
 export const useGetChatName = () => {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
-  const [model] = useAIModel();
 
   const getChatName = useRecoilCallback(
     ({ snapshot }) =>
@@ -55,7 +53,7 @@ ${JSON.stringify(chatPromptMessages)}
 
         return '';
       },
-    [handleAIRequestToAPI, model]
+    [handleAIRequestToAPI]
   );
 
   return { getChatName };
