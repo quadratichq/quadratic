@@ -27,27 +27,18 @@ impl CellRefRange {
                 y: range.end.row().max(range.start.row()),
             };
 
-            dbgjs!(format!("start: {:?}", start));
-            dbgjs!(format!("end: {:?}", end));
-
             if let Some(table) = context.table_from_pos(start) {
                 let b = table.bounds;
-                dbgjs!(format!("table: {:?}", table));
-                dbgjs!(format!("b: {:?}", b));
-                dbgjs!(format!(
-                    "start == end
-                    && table.show_ui
-                    && table.show_name
-                    && start.x >= b.min.x
-                    && start.x <= b.max.x
-                    && start.y == b.min.y: {:?}",
-                    start == end
-                        && table.show_ui
-                        && table.show_name
-                        && start.x >= b.min.x
-                        && start.x <= b.max.x
-                        && start.y == b.min.y
-                ));
+                let adjust_for_name = if table.show_ui && table.show_name {
+                    1
+                } else {
+                    0
+                };
+                let adjust_for_columns = if table.show_ui && table.show_columns {
+                    1
+                } else {
+                    0
+                };
 
                 // if we're in the name cell of the table, then we should return the table ref
                 if start == end
@@ -80,11 +71,6 @@ impl CellRefRange {
                     });
                 }
 
-                dbgjs!(format!(
-                    "start.x < b.min.x || end.x > b.max.x: {:?}",
-                    start.x < b.min.x || end.x > b.max.x
-                ));
-
                 // if the x value is outside the table, then it's not a table ref
                 if start.x < b.min.x || end.x > b.max.x {
                     return None;
@@ -103,22 +89,11 @@ impl CellRefRange {
                     ColRange::ColRange(col1_name, col2_name)
                 };
 
-                dbgjs!(format!(
-                    "table.show_ui
-                    && table.show_columns
-                    && start.y == b.min.y + (if table.show_name {{ 1 }} else {{ 0 }})
-                    && end.y == b.min.y + (if table.show_name {{ 1 }} else {{ 0 }}): {:?}",
-                    table.show_ui
-                        && table.show_columns
-                        && start.y == b.min.y + (if table.show_name { 1 } else { 0 })
-                        && end.y == b.min.y + (if table.show_name { 1 } else { 0 })
-                ));
-
                 // only column headers
                 if table.show_ui
                     && table.show_columns
-                    && start.y == b.min.y + (if table.show_name { 1 } else { 0 })
-                    && end.y == b.min.y + (if table.show_name { 1 } else { 0 })
+                    && start.y == b.min.y + adjust_for_name
+                    && end.y == b.min.y + adjust_for_name
                 {
                     return Some(CellRefRange::Table {
                         range: TableRef {
@@ -132,20 +107,7 @@ impl CellRefRange {
                 }
 
                 // only data
-                if start.y
-                    == b.min.y
-                        + (if table.show_ui && table.show_name {
-                            1
-                        } else {
-                            0
-                        })
-                        + (if table.show_ui && table.show_columns {
-                            1
-                        } else {
-                            0
-                        })
-                    && end.y == b.max.y
-                {
+                if start.y == b.min.y + adjust_for_name + adjust_for_columns && end.y == b.max.y {
                     return Some(CellRefRange::Table {
                         range: TableRef {
                             table_name: table.table_name.clone(),
@@ -157,29 +119,11 @@ impl CellRefRange {
                     });
                 }
 
-                dbgjs!(format!(
-                    "start.y
-                    == b.min.y
-                        + (if table.show_ui && table.show_name {{ 1 }} else {{ 0 }}): {:?}",
-                    start.y
-                        == b.min.y
-                            + (if table.show_ui && table.show_name {
-                                1
-                            } else {
-                                0
-                            })
-                ));
+                let full_table = start.y == b.min.y && end.y == b.max.y;
+                let data_and_headers = start.y == b.min.y + adjust_for_name && end.y == b.max.y;
 
-                // data and column headers
-                if start.y
-                    == b.min.y
-                        + (if table.show_ui && table.show_name {
-                            1
-                        } else {
-                            0
-                        })
-                    && end.y == b.max.y
-                {
+                // full table or data and column headers
+                if full_table || data_and_headers {
                     return Some(CellRefRange::Table {
                         range: TableRef {
                             table_name: table.table_name.clone(),

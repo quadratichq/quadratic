@@ -19,7 +19,10 @@ impl GridController {
             // easily implement cut/paste/move without resorting to this
             // approach.
             let mut operations = VecDeque::new();
-            let selection = A1Selection::from_rect(source);
+            let context = self.grid.a1_context();
+            let mut selection = A1Selection::from_rect(source);
+            selection.check_for_table_ref(&context);
+
             if let Ok((cut_ops, js_clipboard)) = self.cut_to_clipboard_operations(&selection) {
                 operations.extend(cut_ops);
 
