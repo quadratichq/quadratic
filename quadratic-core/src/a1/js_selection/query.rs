@@ -99,7 +99,7 @@ impl JsSelection {
     // }
 
     #[wasm_bindgen(js_name = "getFiniteRefRangeBounds")]
-    pub fn finite_ref_range_bounds(&self, context: &str) -> Result<String, String> {
+    pub fn finite_ref_range_bounds(&self, context: &str) -> Result<JsValue, String> {
         let Ok(context) = serde_json::from_str::<A1Context>(context) else {
             return Err("Unable to parse context".to_string());
         };
@@ -123,11 +123,11 @@ impl JsSelection {
                 }
             })
             .collect::<Vec<_>>();
-        serde_json::to_string(&ranges).map_err(|e| e.to_string())
+        serde_wasm_bindgen::to_value(&ranges).map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "getInfiniteRefRangeBounds")]
-    pub fn get_infinite_ref_range_bounds(&self) -> Result<String, String> {
+    pub fn get_infinite_ref_range_bounds(&self) -> Result<JsValue, String> {
         let ranges = self
             .selection
             .ranges
@@ -145,7 +145,7 @@ impl JsSelection {
                 }
             })
             .collect::<Vec<_>>();
-        serde_json::to_string(&ranges).map_err(|e| e.to_string())
+        serde_wasm_bindgen::to_value(&ranges).map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "isColumnRow")]
@@ -289,21 +289,21 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "getSelectedTableNames")]
-    pub fn get_selected_table_names(&self) -> Result<String, String> {
-        serde_json::to_string(&self.selection.selected_table_names()).map_err(|e| e.to_string())
+    pub fn get_selected_table_names(&self) -> Result<JsValue, String> {
+        serde_wasm_bindgen::to_value(&self.selection.selected_table_names())
+            .map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "getTableColumnSelection")]
-    pub fn get_table_column_selection(&self, table_name: &str, context: &str) -> Option<String> {
+    pub fn get_table_column_selection(&self, table_name: &str, context: &str) -> JsValue {
         let Ok(context) = serde_json::from_str::<A1Context>(context) else {
             dbgjs!("Unable to parse context in get_table_column_selection");
-            return None;
+            return JsValue::UNDEFINED;
         };
-        if let Some(cols) = self.selection.table_column_selection(table_name, &context) {
-            if let Ok(cols_str) = serde_json::to_string(&cols) {
-                return Some(cols_str);
-            }
-        }
-        None
+        self.selection
+            .table_column_selection(table_name, &context)
+            .map_or(JsValue::UNDEFINED, |cols| {
+                serde_wasm_bindgen::to_value(&cols).unwrap_or(JsValue::UNDEFINED)
+            })
     }
 }

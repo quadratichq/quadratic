@@ -22,6 +22,7 @@ use crate::{Array, CellValue, Pos, Rect};
 
 pub mod a1_context;
 pub mod a1_selection;
+pub mod ai_context;
 pub mod borders;
 pub mod bounds;
 pub mod cell_array;

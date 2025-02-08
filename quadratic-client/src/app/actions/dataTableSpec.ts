@@ -64,7 +64,7 @@ export const getRow = (): number | undefined => {
 
   if (!table) return undefined;
 
-  const row = pixiAppSettings.contextMenu?.row || JSON.parse(sheets.getRustSelection()).cursor.y;
+  const row = pixiAppSettings.contextMenu?.row ?? sheets.sheet.cursor.position.y;
 
   return row - table.y;
 };
@@ -84,7 +84,7 @@ export const getColumn = (): number | undefined => {
   if (pixiAppSettings.contextMenu?.column !== undefined) {
     displayColumnX = pixiAppSettings.contextMenu?.column - table.x;
   } else {
-    displayColumnX = JSON.parse(sheets.getRustSelection()).cursor.x - table.x;
+    displayColumnX = sheets.sheet.cursor.position.x - table.x;
   }
 
   if (columns[displayColumnX] === undefined) {

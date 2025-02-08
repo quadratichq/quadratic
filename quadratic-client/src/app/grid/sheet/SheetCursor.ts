@@ -276,22 +276,23 @@ export class SheetCursor {
   };
 
   getFiniteRefRangeBounds = (): RefRangeBounds[] => {
+    let ranges: RefRangeBounds[] = [];
     try {
-      return JSON.parse(this.jsSelection.getFiniteRefRangeBounds(this.sheet.sheets.a1Context));
+      ranges = this.jsSelection.getFiniteRefRangeBounds(this.sheet.sheets.a1Context);
     } catch (e) {
       console.warn('Error getting ref range bounds', e);
-      return [];
     }
+    return ranges;
   };
 
   getInfiniteRefRangeBounds = (): RefRangeBounds[] => {
-    const ranges = this.jsSelection.getInfiniteRefRangeBounds();
+    let ranges: RefRangeBounds[] = [];
     try {
-      return JSON.parse(ranges);
+      ranges = this.jsSelection.getInfiniteRefRangeBounds();
     } catch (e) {
       console.error(e);
-      return [];
     }
+    return ranges;
   };
 
   // may be useful if we decide to show a selection on a chart
@@ -336,27 +337,23 @@ export class SheetCursor {
 
   /// Returns the names of the tables that are selected.
   getSelectedTableNames = (): string[] => {
+    let names: string[] = [];
     try {
-      const names = this.jsSelection.getSelectedTableNames();
-      return JSON.parse(names);
+      names = this.jsSelection.getSelectedTableNames();
     } catch (e) {
       console.warn('Error getting selected table names', e);
-      return [];
     }
+    return names;
   };
 
   getTableColumnSelection = (tableName: string): number[] | undefined => {
-    const cols = this.jsSelection.getTableColumnSelection(tableName, this.sheet.sheets.a1Context);
-    if (!cols) {
-      return undefined;
-    }
+    let cols: number[] | undefined;
     try {
-      const colsArray = JSON.parse(cols);
-      return colsArray.map((col: number) => Number(col));
+      cols = this.jsSelection.getTableColumnSelection(tableName, this.sheet.sheets.a1Context);
     } catch (e) {
       console.warn('Error getting table column selection', e);
-      return undefined;
     }
+    return cols;
   };
 
   getSingleTableSelection(): string | undefined {

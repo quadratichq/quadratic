@@ -46,7 +46,7 @@ impl TableMap {
                 show_columns: table.show_columns,
                 is_html_image: table.is_html() || table.is_image(),
                 header_is_first_row: table.header_is_first_row,
-                language: None,
+                language,
             });
         }
     }

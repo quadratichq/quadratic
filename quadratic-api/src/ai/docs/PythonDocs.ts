@@ -103,10 +103,10 @@ To reference another sheet's table, individual cells , or range of cells use the
 \`\`\`python
 # Use the sheet name as an argument for referencing range of cells 
 q.cells("'Sheet_name_here'!A1:C9")
-​
+
 # For individual cell reference 
 q.cells("'Sheet_name_here'!A1")
-​
+
 # Since tables are global to a file, they can be referenced across sheets without defining sheet name
 q.cells("Table1[#ALL]"
 \`\`\`

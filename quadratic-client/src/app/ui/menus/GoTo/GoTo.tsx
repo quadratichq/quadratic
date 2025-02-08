@@ -2,6 +2,7 @@ import { editorInteractionStateShowGoToMenuAtom } from '@/app/atoms/editorIntera
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import type { A1Error, JsTableInfo } from '@/app/quadratic-core-types';
 import {
   convertTableToRange,
@@ -28,17 +29,17 @@ export const GoTo = () => {
   const [tableInfo, setTablesInfo] = useState<JsTableInfo[]>();
   useEffect(() => {
     const sync = () => {
-      const infoStringified = getTableInfo(sheets.a1Context);
-      if (infoStringified) {
-        try {
-          const names = JSON.parse(infoStringified);
-          setTablesInfo(names);
-        } catch (e) {
-          console.error(e);
-        }
+      let tableInfo: JsTableInfo[] = [];
+      try {
+        tableInfo = getTableInfo(sheets.a1Context);
+      } catch (e) {
+        console.error('Error getting table info in GoTo.tsx', e);
       }
+      setTablesInfo(tableInfo);
     };
+
     sync();
+
     events.on('updateCodeCell', sync);
     events.on('renderCodeCells', sync);
     return () => {
@@ -47,13 +48,15 @@ export const GoTo = () => {
     };
   }, []);
 
-  const tableNameToRange = (tableName: string): string => {
+  const tableNameToRange = useCallback((tableName: string): string => {
+    let range = '';
     try {
-      return convertTableToRange(sheets.a1Context, tableName, sheets.current);
+      range = convertTableToRange(sheets.a1Context, tableName, sheets.current);
     } catch (e) {
-      throw new Error('Error getting table name range in GoTo.tsx');
+      console.error('Error getting table name range in GoTo.tsx', e);
     }
-  };
+    return range;
+  }, []);
 
   const convertedInput = useMemo(() => {
     if (!value) {
@@ -126,32 +129,46 @@ export const GoTo = () => {
     [closeMenu]
   );
 
+  const tablesFiltered = useMemo(
+    () =>
+      tableInfo
+        ? tableInfo.filter(({ name, language }) => {
+            // If it has a language, it's a code table
+            if (language !== null) {
+              return false;
+            }
+
+            return value ? name.toLowerCase().includes(value.toLowerCase()) : true;
+          })
+        : [],
+    [tableInfo, value]
+  );
+
+  const codeTablesFiltered = useMemo(
+    () =>
+      tableInfo
+        ? tableInfo.filter(({ name, language }) => {
+            // If there's no language, it's a data table
+            if (language === null) {
+              return false;
+            }
+            return value ? name.toLowerCase().includes(value.toLowerCase()) : true;
+          })
+        : [],
+    [tableInfo, value]
+  );
+
+  const sheetsFiltered = useMemo(
+    () =>
+      sheets
+        .map((sheet) => sheet)
+        .filter((sheet) => (value ? sheet.name.toLowerCase().includes(value.toLowerCase()) : true)),
+    [value]
+  );
+
   if (!showGoToMenu) {
     return null;
   }
-
-  const tablesFiltered = tableInfo
-    ? tableInfo.filter(({ name, language }) => {
-        // If it has a language, it's a code table
-        if (language !== null) {
-          return false;
-        }
-
-        return value ? name.toLowerCase().includes(value.toLowerCase()) : true;
-      })
-    : [];
-  const codeTablesFiltered = tableInfo
-    ? tableInfo.filter(({ name, language }) => {
-        // If there's no language, it's a data table
-        if (language === null) {
-          return false;
-        }
-        return value ? name.toLowerCase().includes(value.toLowerCase()) : true;
-      })
-    : [];
-  const sheetsFiltered = sheets
-    .map((sheet) => sheet)
-    .filter((sheet) => (value ? sheet.name.toLowerCase().includes(value.toLowerCase()) : true));
 
   return (
     <Command shouldFilter={false}>
@@ -166,6 +183,7 @@ export const GoTo = () => {
           />
         </div>
       </div>
+
       <CommandList className="">
         <CommandGroup heading="Go to" className="border-b border-b-border">
           <CommandItem
@@ -197,21 +215,22 @@ export const GoTo = () => {
             <CommandSeparator />
           </>
         )}
+
         {codeTablesFiltered.length > 0 && (
           <CommandGroup heading="Code">
-            {codeTablesFiltered.map(({ name, sheet_name, language }, i) => (
+            {codeTablesFiltered.map(({ name, language }, i) => (
               <CommandItemGoto
                 key={name}
                 value={name}
                 onSelect={() => selectTable(name)}
                 name={name}
                 nameSecondary={tableNameToRange(name)}
-                // @ts-expect-error
-                icon={<LanguageIcon language={language} sx={{ width: 16, height: 16 }} />}
+                icon={<LanguageIcon language={getLanguage(language)} sx={{ width: 16, height: 16 }} />}
               />
             ))}
           </CommandGroup>
         )}
+
         {sheetsFiltered.length > 0 && (
           <CommandGroup heading="Sheets">
             {sheetsFiltered.map((sheet) => (

@@ -25,7 +25,7 @@ class InlineEditorFormula {
   cellHighlights(location: SheetPosTS, formula: string) {
     let parseResult: JsFormulaParseResult;
     try {
-      parseResult = JSON.parse(parseFormula(formula, sheets.a1Context, location.sheetId, location.x, location.y));
+      parseResult = parseFormula(formula, sheets.a1Context, location.sheetId, location.x, location.y);
     } catch (e) {
       this.clearDecorations();
       return;

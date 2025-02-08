@@ -5,7 +5,7 @@ import { Subject } from '@mui/icons-material';
 import type { SvgIconProps } from '@mui/material/SvgIcon';
 
 interface LanguageIconProps extends SvgIconProps {
-  language?: CodeCellIds | string;
+  language: CodeCellIds | string | null | undefined;
 }
 
 export function LanguageIcon({ language, ...props }: LanguageIconProps) {
