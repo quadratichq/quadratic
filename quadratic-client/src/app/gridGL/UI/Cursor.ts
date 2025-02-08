@@ -98,7 +98,7 @@ export class Cursor extends Container {
       (!pixiAppSettings.codeEditorState.showCodeEditor ||
         cursor.position.x !== codeCell.pos.x ||
         cursor.position.y !== codeCell.pos.y)
-        ? Math.max(INDICATOR_SIZE / viewport.scale.x, 4)
+        ? Math.max(INDICATOR_SIZE / viewport.scale.x, INDICATOR_SIZE / 2)
         : 0;
 
     this.indicator.width = this.indicator.height = indicatorSize;
@@ -134,16 +134,6 @@ export class Cursor extends Container {
       this.graphics.moveTo(x + width - offset - 1, y + height - offset);
       this.graphics.lineTo(x + offset, y + height - offset);
       this.graphics.lineTo(x + offset, y + offset);
-
-      // create the corner icon
-      this.graphics.lineStyle({
-        color: getCSSVariableTint('primary'),
-        width: 1,
-        alignment: 0,
-      });
-      this.graphics.beginFill(0xffffff, 1);
-      this.graphics.drawShape(new Rectangle(x + width - 4, y + table.tableBounds.height - 4, 8, 8));
-      this.graphics.endFill();
     } else {
       this.graphics.lineStyle({
         width: CURSOR_THICKNESS,
@@ -173,6 +163,27 @@ export class Cursor extends Container {
     }
   }
 
+  // draws the corner icon
+  private drawTableCornerIndicator() {
+    const tableName = sheets.sheet.cursor.getSingleFullTableSelectionName();
+    if (!tableName) return;
+    const table = pixiApp.cellsSheet().tables.getTableFromName(tableName);
+    if (!table) return;
+
+    const indicatorSize = Math.max(INDICATOR_SIZE / pixiApp.viewport.scaled, INDICATOR_SIZE);
+    this.graphics.lineStyle({
+      color: getCSSVariableTint('primary'),
+      width: 1,
+      alignment: 0,
+    });
+    this.graphics.beginFill(getCSSVariableTint('background'));
+    const b = table.tableBounds;
+    this.graphics.drawShape(
+      new Rectangle(b.right - indicatorSize / 2, b.bottom - indicatorSize / 2, indicatorSize, indicatorSize)
+    );
+    this.graphics.endFill();
+  }
+
   private drawFiniteCursor(ranges: RefRangeBounds[]) {
     const sheet = sheets.sheet;
     const { cursor } = sheet;
@@ -193,7 +204,7 @@ export class Cursor extends Container {
       this.endCell = sheets.sheet.getCellOffsets(endCell.x, endCell.y);
 
       // draw cursor indicator
-      const indicatorSize = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
+      const indicatorSize = Math.max(INDICATOR_SIZE / viewport.scale.x, INDICATOR_SIZE / 2);
       const x = this.endCell.x + this.endCell.width;
       const y = this.endCell.y + this.endCell.height;
       this.indicator.x = x - indicatorSize / 2;
@@ -332,6 +343,8 @@ export class Cursor extends Container {
           this.drawCursorIndicator();
         }
       }
+
+      this.drawTableCornerIndicator();
 
       if (pixiApp.pointer.pointerDown.unselectDown) {
         this.drawUnselectDown();

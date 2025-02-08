@@ -366,4 +366,8 @@ export class SheetCursor {
     }
     return name[0];
   }
+
+  getSingleFullTableSelectionName(): string | undefined {
+    return this.jsSelection.getSingleFullTableSelectionName();
+  }
 }

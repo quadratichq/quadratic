@@ -438,6 +438,20 @@ impl A1Selection {
             sheet_id: self.sheet_id,
         }
     }
+
+    /// Returns true if the selection is a single table selection (needs only
+    /// data to be true).
+    pub fn get_single_full_table_selection_name(&self) -> Option<String> {
+        if self.ranges.len() != 1 {
+            return None;
+        }
+        if let Some(CellRefRange::Table { range }) = self.ranges.first() {
+            if range.data {
+                return Some(range.table_name.clone());
+            }
+        }
+        None
+    }
 }
 
 #[cfg(test)]
@@ -900,5 +914,35 @@ mod tests {
         let selection = A1Selection::test_a1_context("A1:B2,C3", &context);
         let replaced = selection.replace_table_refs(&context);
         assert_eq!(replaced, selection);
+    }
+
+    #[test]
+    fn test_get_single_full_table_selection_name() {
+        let context = A1Context::test(
+            &[],
+            &[
+                ("Table1", &["A", "B"], Rect::test_a1("A1:B2")),
+                ("Table2", &["C", "D"], Rect::test_a1("C3:D4")),
+            ],
+        );
+
+        // Test single full table selection
+        let selection = A1Selection::test_a1_context("Table1", &context);
+        assert_eq!(
+            selection.get_single_full_table_selection_name(),
+            Some("Table1".to_string())
+        );
+
+        // Test multiple table selections
+        let selection = A1Selection::test_a1_context("Table1,Table2", &context);
+        assert_eq!(selection.get_single_full_table_selection_name(), None);
+
+        // Test table headers only
+        let selection = A1Selection::test_a1_context("Table1[#Headers]", &context);
+        assert_eq!(selection.get_single_full_table_selection_name(), None);
+
+        // Test non-table selection
+        let selection = A1Selection::test_a1_context("A1:B2", &context);
+        assert_eq!(selection.get_single_full_table_selection_name(), None);
     }
 }

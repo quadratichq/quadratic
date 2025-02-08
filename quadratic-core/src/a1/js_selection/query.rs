@@ -306,4 +306,9 @@ impl JsSelection {
                 serde_wasm_bindgen::to_value(&cols).unwrap_or(JsValue::UNDEFINED)
             })
     }
+
+    #[wasm_bindgen(js_name = "getSingleFullTableSelectionName")]
+    pub fn get_single_full_table_selection_name(&self) -> Option<String> {
+        self.selection.get_single_full_table_selection_name()
+    }
 }
