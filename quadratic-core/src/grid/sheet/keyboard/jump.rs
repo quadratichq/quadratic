@@ -80,7 +80,7 @@ impl Sheet {
         // edge of the chart
         if let Some((chart_pos, dt)) = self.chart_at(Pos { x, y }) {
             if let Some((_, h)) = dt.chart_output {
-                y = chart_pos.y + (h as i64) - 1;
+                y = chart_pos.y + (h as i64);
             }
         }
 
@@ -357,11 +357,11 @@ mod tests {
         create_3x3_chart(&mut sheet, Pos { x: 3, y: 25 });
 
         // jump to the last cell in the second chart
-        assert_eq!(sheet.jump_up(Pos { x: 3, y: 30 }), Pos { x: 3, y: 27 });
+        assert_eq!(sheet.jump_up(Pos { x: 3, y: 30 }), Pos { x: 3, y: 28 });
 
         // jump to the last cell in the first chart
-        assert_eq!(sheet.jump_up(Pos { x: 3, y: 27 }), Pos { x: 3, y: 22 });
-        assert_eq!(sheet.jump_up(Pos { x: 3, y: 23 }), Pos { x: 3, y: 22 });
+        assert_eq!(sheet.jump_up(Pos { x: 3, y: 28 }), Pos { x: 3, y: 23 });
+        assert_eq!(sheet.jump_up(Pos { x: 3, y: 24 }), Pos { x: 3, y: 23 });
 
         assert_eq!(sheet.jump_up(Pos { x: 3, y: 22 }), Pos { x: 3, y: 10 });
         assert_eq!(sheet.jump_up(Pos { x: 3, y: 12 }), Pos { x: 3, y: 10 });
@@ -381,7 +381,7 @@ mod tests {
 
         create_3x3_chart(&mut sheet, Pos { x: 5, y: 1 });
 
-        assert_eq!(sheet.jump_up(Pos { x: 6, y: 4 }), Pos { x: 6, y: 3 });
+        assert_eq!(sheet.jump_up(Pos { x: 6, y: 5 }), Pos { x: 6, y: 4 });
     }
 
     #[test]
@@ -417,7 +417,7 @@ mod tests {
         assert_eq!(sheet.jump_down(Pos { x: 3, y: 20 }), Pos { x: 3, y: 25 });
         assert_eq!(sheet.jump_down(Pos { x: 3, y: 23 }), Pos { x: 3, y: 25 });
 
-        assert_eq!(sheet.jump_down(Pos { x: 3, y: 26 }), Pos { x: 3, y: 28 });
+        assert_eq!(sheet.jump_down(Pos { x: 3, y: 26 }), Pos { x: 3, y: 29 });
     }
 
     #[test]
@@ -460,12 +460,13 @@ mod tests {
         assert_eq!(sheet.jump_right(Pos { x: 2, y: 1 }), Pos { x: 4, y: 1 });
         assert_eq!(sheet.jump_right(Pos { x: 3, y: 1 }), Pos { x: 4, y: 1 });
 
-        assert_eq!(sheet.jump_up(Pos { x: 1, y: 5 }), Pos { x: 1, y: 3 });
-        assert_eq!(sheet.jump_up(Pos { x: 2, y: 4 }), Pos { x: 2, y: 3 });
-        assert_eq!(sheet.jump_up(Pos { x: 3, y: 3 }), Pos { x: 3, y: 1 });
+        assert_eq!(sheet.jump_up(Pos { x: 1, y: 5 }), Pos { x: 1, y: 4 });
+        assert_eq!(sheet.jump_up(Pos { x: 2, y: 5 }), Pos { x: 2, y: 4 });
+        assert_eq!(sheet.jump_up(Pos { x: 3, y: 4 }), Pos { x: 3, y: 1 });
 
-        assert_eq!(sheet.jump_down(Pos { x: 1, y: 1 }), Pos { x: 1, y: 4 });
-        assert_eq!(sheet.jump_down(Pos { x: 2, y: 2 }), Pos { x: 2, y: 4 });
+        assert_eq!(sheet.jump_down(Pos { x: 1, y: 1 }), Pos { x: 1, y: 5 });
+        assert_eq!(sheet.jump_down(Pos { x: 2, y: 2 }), Pos { x: 2, y: 5 });
+
         assert_eq!(sheet.jump_down(Pos { x: 3, y: 4 }), Pos { x: 3, y: 5 });
     }
 }
