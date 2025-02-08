@@ -881,6 +881,9 @@ mod tests {
         );
         let mut selection = A1Selection::test_a1("A1");
         selection.select_to(col![A], 3, false, &context);
-        assert_eq!(selection, A1Selection::test_a1_context("A1:A3", &context));
+        assert_eq!(
+            selection,
+            A1Selection::test_a1_context("Table1[[#DATA],[#HEADERS],[col1]]", &context)
+        );
     }
 }
