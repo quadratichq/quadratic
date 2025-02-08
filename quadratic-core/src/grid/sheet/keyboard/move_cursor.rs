@@ -147,7 +147,7 @@ mod tests {
         // Test moving down from chart
         assert_eq!(
             sheet.move_cursor(Pos { x: 4, y: 3 }, Direction::Down),
-            Pos { x: 4, y: 5 }
+            Pos { x: 4, y: 6 }
         );
 
         // Test moving up into chart

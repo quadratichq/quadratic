@@ -80,7 +80,7 @@ impl Sheet {
         // edge of the chart
         if let Some((chart_pos, dt)) = self.chart_at(Pos { x, y }) {
             if let Some((_, h)) = dt.chart_output {
-                y = chart_pos.y + (h as i64) - 1;
+                y = chart_pos.y + (h as i64);
             }
         }
 
@@ -460,12 +460,13 @@ mod tests {
         assert_eq!(sheet.jump_right(Pos { x: 2, y: 1 }), Pos { x: 4, y: 1 });
         assert_eq!(sheet.jump_right(Pos { x: 3, y: 1 }), Pos { x: 4, y: 1 });
 
-        assert_eq!(sheet.jump_up(Pos { x: 1, y: 5 }), Pos { x: 1, y: 3 });
-        assert_eq!(sheet.jump_up(Pos { x: 2, y: 4 }), Pos { x: 2, y: 3 });
-        assert_eq!(sheet.jump_up(Pos { x: 3, y: 3 }), Pos { x: 3, y: 1 });
+        assert_eq!(sheet.jump_up(Pos { x: 1, y: 5 }), Pos { x: 1, y: 4 });
+        assert_eq!(sheet.jump_up(Pos { x: 2, y: 5 }), Pos { x: 2, y: 4 });
+        assert_eq!(sheet.jump_up(Pos { x: 3, y: 4 }), Pos { x: 3, y: 1 });
 
-        assert_eq!(sheet.jump_down(Pos { x: 1, y: 1 }), Pos { x: 1, y: 4 });
-        assert_eq!(sheet.jump_down(Pos { x: 2, y: 2 }), Pos { x: 2, y: 4 });
+        assert_eq!(sheet.jump_down(Pos { x: 1, y: 1 }), Pos { x: 1, y: 5 });
+        assert_eq!(sheet.jump_down(Pos { x: 2, y: 2 }), Pos { x: 2, y: 5 });
+
         assert_eq!(sheet.jump_down(Pos { x: 3, y: 4 }), Pos { x: 3, y: 5 });
     }
 }
