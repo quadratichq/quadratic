@@ -2,15 +2,11 @@ export const JavascriptDocs = `# Javascript Docs
 
 With Javascript in Quadratic, the world's most popular programming language meets the world's most popular tool for working with data - spreadsheets. 
 
-Below are a bunch of quick links to find more details on how to write Javascript in Quadratic.
-
-# Reference cells
-
-Reference cells from JavaScript.
+# Reference cells from JavaScript
 
 In Quadratic, reference individual cells from Javascript for single values or reference a range of cells for multiple values. 
 
-Referencing individual cells
+## Referencing individual cells
 
 To reference an individual cell, use the global function \`q.cells\` which returns the cell value.
 
@@ -23,7 +19,7 @@ let x = q.cells('A1')
 return x;
 \`\`\`
 
-Referencing a range of cells
+## Referencing a range of cells
 
 To reference a range of cells, use the global function \`q.cells\`. This returns an array.
 
@@ -41,7 +37,7 @@ let let x = q.cells('A5:A') // Returns all values in column A starting at A5 and
 let let x = q.cells('A5:C') // Returns all values in column A to C, starting at A5 and going down
 \`\`\`
 
-Referencing another sheet
+## Referencing another sheet
 
 To reference another sheet's cells or range of cells use the following: 
 
@@ -53,7 +49,7 @@ let x = q.cells("'Sheet_name_here'!A1:C9")
 let x = q.cells("'Sheet_name_here'!A1")
 \`\`\`
 
-Column references
+## Column references
 
 To reference all the data in a column or set of columns without defining the range, use the following syntax. 
 
@@ -72,7 +68,7 @@ let x = q.cells('A5:C') // returns all values from A5 to end of content in C
 let x = q.cells("'Sheet2'!A:C") // same rules to reference in other sheets apply
 \`\`\`
 
-Relative vs absolute references
+## Relative vs absolute references
 
 By default when you copy paste a reference it will update the row reference unless you use $ notation in your references. 
 
