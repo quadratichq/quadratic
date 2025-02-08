@@ -99,7 +99,7 @@ export class PixiApp {
     this.cellImages = new UICellImages();
     this.validations = new UIValidations();
     this.hoverTableHeaders = new Container();
-    this.viewport = new Viewport();
+    this.viewport = new Viewport(this);
     this.background = new Background();
     this.momentumDetector = new MomentumScrollDetector();
     this.copy = new UICopy();

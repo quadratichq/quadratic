@@ -34,7 +34,7 @@ export const getCodeCell = (language?: CodeCellLanguage) => {
   return undefined;
 };
 
-export const getLanguage = (language?: CodeCellLanguage): CodeCellType => {
+export const getLanguage = (language?: CodeCellLanguage | null): CodeCellType => {
   if (typeof language === 'string') {
     return language;
   } else if (typeof language === 'object') {

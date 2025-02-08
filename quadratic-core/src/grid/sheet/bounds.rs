@@ -501,7 +501,7 @@ impl Sheet {
     ) -> Vec<Rect> {
         let mut tabular_data_rects = Vec::new();
 
-        let is_non_data_cell = |pos: Pos| match self.cell_value(pos) {
+        let is_non_data_cell = |pos: Pos| match self.cell_value_ref(pos) {
             Some(value) => {
                 value.is_blank_or_empty_string()
                     || value.is_image()

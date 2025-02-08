@@ -47,6 +47,7 @@ const InternalContextTypeSchema = z.enum([
   'toolUse',
   'selection',
   'codeCell',
+  'tables',
 ]);
 const ToolResultContextTypeSchema = z.literal('toolResult');
 const UserPromptContextTypeSchema = z.literal('userPrompt');

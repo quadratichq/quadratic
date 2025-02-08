@@ -222,7 +222,7 @@ export class Tables extends Container<Table> {
     }
   }
 
-  pointerMove(world: Point): boolean {
+  pointerMove = (world: Point): boolean => {
     for (const table of this.children) {
       const result = table.pointerMove(world);
       if (result) {
@@ -232,7 +232,7 @@ export class Tables extends Container<Table> {
     }
     this.tableCursor = undefined;
     return false;
-  }
+  };
 
   // track and activate a table whose context menu is open (this handles the
   // case where you hover a table and open the context menu; we want to keep

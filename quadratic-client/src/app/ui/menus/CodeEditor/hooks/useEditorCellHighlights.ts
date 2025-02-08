@@ -14,31 +14,6 @@ import type * as monaco from 'monaco-editor';
 import { useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 
-// export function extractCellsFromParseFormula(
-//   parsedFormula: JsFormulaParseResult,
-//   cell: JsCoordinate
-// ): { cellId: CellRefId; span: Span; index: number }[] {
-//   for (let i = 0; i < parsedFormula.spans.length; i++) {
-//     const ref = parsedFormula.cells_accessed[i];
-//     const span = parsedFormula.spans[i];
-
-//       return {
-//         cellId: `${getKey(startX, startY)}:${getKey(endX, endY)}`,
-//         span,
-//         index,
-//       };
-//     } else if (cell_ref.type === 'Cell') {
-//       const x = pixiApp.cellHighlights.evalCoord(cell_ref.pos.x, cell.x) + cell_ref.pos.x.coord;
-//       const y = pixiApp.cellHighlights.evalCoord(cell_ref.pos.y, cell.y) + cell_ref.pos.y.coord;
-//       return { cellId: getKey(x, y), span, index };
-//     } else {
-//       throw new Error('Unhandled cell_ref type in extractCellsFromParseFormula');
-//     }
-//   });
-// }
-
-// type CellRefId = StringId | `${StringId}:${StringId}`;
-
 export const createFormulaStyleHighlights = () => {
   const id = 'useEditorCellHighlights';
 
@@ -94,13 +69,12 @@ export const useEditorCellHighlights = (
       } else if (codeCell.language === 'Formula') {
         let parsed: JsFormulaParseResult;
         try {
-          parsed = JSON.parse(
-            parseFormula(modelValue, sheets.a1Context, codeCell.sheetId, codeCell.pos.x, codeCell.pos.y)
-          );
+          parsed = parseFormula(modelValue, sheets.a1Context, codeCell.sheetId, codeCell.pos.x, codeCell.pos.y);
         } catch (e) {
           console.error(e);
           return;
         }
+
         pixiApp.cellHighlights.fromCellsAccessed(parsed.cells_accessed);
 
         parsed.spans.forEach((span, index) => {
@@ -147,7 +121,8 @@ export const useEditorCellHighlights = (
   }, [
     cellsAccessed,
     codeCell.language,
-    codeCell.pos,
+    codeCell.pos.x,
+    codeCell.pos.y,
     codeCell.sheetId,
     editorInst,
     isValidRef,

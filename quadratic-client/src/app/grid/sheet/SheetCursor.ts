@@ -2,7 +2,6 @@
 //! that state as you switch between sheets, a multiplayer user follows your
 //! cursor, or you save the cursor state in the URL at ?state=.
 
-import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -276,22 +275,23 @@ export class SheetCursor {
   };
 
   getFiniteRefRangeBounds = (): RefRangeBounds[] => {
+    let ranges: RefRangeBounds[] = [];
     try {
-      return JSON.parse(this.jsSelection.getFiniteRefRangeBounds(this.sheet.sheets.a1Context));
+      ranges = this.jsSelection.getFiniteRefRangeBounds(this.sheet.sheets.a1Context);
     } catch (e) {
       console.warn('Error getting ref range bounds', e);
-      return [];
     }
+    return ranges;
   };
 
   getInfiniteRefRangeBounds = (): RefRangeBounds[] => {
-    const ranges = this.jsSelection.getInfiniteRefRangeBounds();
+    let ranges: RefRangeBounds[] = [];
     try {
-      return JSON.parse(ranges);
+      ranges = this.jsSelection.getInfiniteRefRangeBounds();
     } catch (e) {
       console.error(e);
-      return [];
     }
+    return ranges;
   };
 
   // may be useful if we decide to show a selection on a chart
@@ -331,32 +331,28 @@ export class SheetCursor {
 
   /// Returns true if the cursor is on an html or image cell.
   isOnHtmlImage = (): boolean => {
-    return this.jsSelection.cursorIsOnHtmlImage(sheets.a1Context);
+    return this.jsSelection.cursorIsOnHtmlImage(this.sheet.sheets.a1Context);
   };
 
   /// Returns the names of the tables that are selected.
   getSelectedTableNames = (): string[] => {
+    let names: string[] = [];
     try {
-      const names = this.jsSelection.getSelectedTableNames();
-      return JSON.parse(names);
+      names = this.jsSelection.getSelectedTableNames();
     } catch (e) {
       console.warn('Error getting selected table names', e);
-      return [];
     }
+    return names;
   };
 
   getTableColumnSelection = (tableName: string): number[] | undefined => {
-    const cols = this.jsSelection.getTableColumnSelection(tableName, this.sheet.sheets.a1Context);
-    if (!cols) {
-      return undefined;
-    }
+    let cols: number[] | undefined;
     try {
-      const colsArray = JSON.parse(cols);
-      return colsArray.map((col: number) => Number(col));
+      cols = this.jsSelection.getTableColumnSelection(tableName, this.sheet.sheets.a1Context);
     } catch (e) {
       console.warn('Error getting table column selection', e);
-      return undefined;
     }
+    return cols;
   };
 
   getSingleTableSelection(): string | undefined {

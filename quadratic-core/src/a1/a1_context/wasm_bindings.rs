@@ -6,10 +6,10 @@ use super::A1Context;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(js_name = "getTableInfo")]
-pub fn table_names(context: &str) -> Option<String> {
+pub fn table_names(context: &str) -> JsValue {
     let context = serde_json::from_str::<A1Context>(context).unwrap();
     let table_info = context.table_info();
-    serde_json::to_string(&table_info).ok()
+    serde_wasm_bindgen::to_value(&table_info).unwrap_or(JsValue::UNDEFINED)
 }
 
 #[wasm_bindgen(js_name = "getTableNameFromPos")]
@@ -33,5 +33,7 @@ pub fn convert_table_to_range(
     let context = serde_json::from_str::<A1Context>(context).map_err(|e| e.to_string())?;
     let sheet_id =
         SheetId::from_str(current_sheet_id).map_err(|e| format!("Sheet not found: {e}"))?;
-    context.convert_table_to_range(table_name, sheet_id)
+    context
+        .convert_table_to_range(table_name, sheet_id)
+        .map_err(|e| e.to_string())
 }

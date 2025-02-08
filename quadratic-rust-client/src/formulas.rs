@@ -16,12 +16,12 @@ pub fn parse_formula(
     sheet_id: &str,
     x: i32,
     y: i32,
-) -> Result<String, String> {
+) -> Result<JsValue, String> {
     let ctx = serde_json::from_str::<A1Context>(ctx).expect("invalid A1Context");
     let sheet_id = SheetId::from_str(sheet_id).map_err(|e| e.to_string())?;
 
     let results = parse_formula_results(formula_string, ctx, sheet_id, x, y);
-    serde_json::to_string(&results).map_err(|e| e.to_string())
+    serde_wasm_bindgen::to_value(&results).map_err(|e| e.to_string())
 }
 
 #[wasm_bindgen(js_name = "checkFormula")]
