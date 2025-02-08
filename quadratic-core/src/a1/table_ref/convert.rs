@@ -12,12 +12,19 @@ impl TableRef {
     /// - `force_table_bounds` - adds table name and column headers if visible,
     ///   even if not specified
     ///
+    /// todo: we should probably break this into a few separate functions since
+    /// it's use varies so much
+    ///
     /// (ask David F for more details & accuracy checks on this)
     pub fn convert_to_ref_range_bounds(
         &self,
         use_unbounded: bool,
         context: &A1Context,
+
+        // forces the columns to be included, regardless of range settings
         force_columns: bool,
+
+        // this returns the table's entire bounds, regardless of the range
         force_table_bounds: bool,
     ) -> Option<RefRangeBounds> {
         let Some(table) = context.try_table(&self.table_name) else {

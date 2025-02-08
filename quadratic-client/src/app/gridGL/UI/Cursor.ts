@@ -81,7 +81,6 @@ export class Cursor extends Container {
     }
     const tables = pixiApp.cellsSheet().tables;
     const table = tables.getTableFromCell(cell);
-
     const tableName = table?.getTableNameBounds();
     let { x, y, width, height } = tableName ?? sheet.getCellOffsets(cell.x, cell.y);
     const color = pixiApp.accentColor;
@@ -163,7 +162,7 @@ export class Cursor extends Container {
     }
   }
 
-  // draws the corner icon
+  // draws the corner icon to resize the table
   private drawTableCornerIndicator() {
     const tableName = sheets.sheet.cursor.getSingleFullTableSelectionName();
     if (!tableName) return;

@@ -17,6 +17,9 @@ impl A1Selection {
             return;
         };
 
+        // used for the cursor position
+        let mut y = table.bounds.min.y;
+
         // Check for row range selection w/shift key
         let last = self.ranges.last().cloned();
         if shift_key {
@@ -50,15 +53,22 @@ impl A1Selection {
                                     false
                                 };
                                 self.ranges.pop();
+
+                                // if the col is already selected, then we don't need to do anything
                                 let table_ref = TableRef {
                                     table_name: table_name.to_string(),
                                     data: true,
-                                    headers,
+                                    headers: if existing_col == col {
+                                        !table_ref.headers
+                                    } else {
+                                        headers
+                                    },
                                     totals: false,
-                                    col_range: ColRange::ColRange(
-                                        existing_col.clone(),
-                                        col.clone(),
-                                    ),
+                                    col_range: if existing_col == col {
+                                        ColRange::Col(existing_col.clone())
+                                    } else {
+                                        ColRange::ColRange(existing_col.clone(), col.clone())
+                                    },
                                 };
                                 self.ranges.push(CellRefRange::Table { range: table_ref });
                                 return;
@@ -127,6 +137,9 @@ impl A1Selection {
 
         let (col_range, x) = if let Some(col) = col {
             if let Some(col_index) = table.try_col_index(&col) {
+                if table.show_ui && table.show_name {
+                    y += 1;
+                }
                 (
                     ColRange::Col(table.visible_columns[col_index as usize].clone()),
                     col_index + table.bounds.min.x,
@@ -186,7 +199,6 @@ impl A1Selection {
             return;
         }
         self.ranges.push(table_ref);
-        let y = table.bounds.min.y;
         self.cursor = Pos {
             x,
             y: if y < screen_row_top {

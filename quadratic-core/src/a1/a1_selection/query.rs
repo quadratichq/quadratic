@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::{
-    a1::{A1Context, RefRangeBounds},
+    a1::{A1Context, ColRange, RefRangeBounds},
     grid::Sheet,
     Pos, Rect, SheetPos,
 };
@@ -382,12 +382,17 @@ impl A1Selection {
         }
     }
 
-    /// Returns the names of the tables that are selected.
+    /// Returns the names of the tables that are fully selected (either data and data+headers).
     pub fn selected_table_names(&self) -> Vec<String> {
         self.ranges
             .iter()
             .filter_map(|range| match range {
-                CellRefRange::Table { range } => Some(range.table_name.clone()),
+                CellRefRange::Table { range } => {
+                    if range.data && range.col_range == ColRange::All {
+                        return Some(range.table_name.clone());
+                    }
+                    None
+                }
                 _ => None,
             })
             .collect()
@@ -446,7 +451,7 @@ impl A1Selection {
             return None;
         }
         if let Some(CellRefRange::Table { range }) = self.ranges.first() {
-            if range.data {
+            if range.data && range.col_range == ColRange::All {
                 return Some(range.table_name.clone());
             }
         }
@@ -850,7 +855,11 @@ mod tests {
 
         // Test selection without tables
         let selection = A1Selection::test_a1_context("A1:B2,C3", &context);
-        assert_eq!(selection.selected_table_names(), Vec::<String>::new());
+        assert!(selection.selected_table_names().is_empty());
+
+        // Test column selection
+        let selection = A1Selection::test_a1_context("Table1[A]", &context);
+        assert!(selection.selected_table_names().is_empty());
     }
 
     #[test]

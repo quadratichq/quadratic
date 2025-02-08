@@ -375,7 +375,7 @@ export class Tables extends Container<Table> {
         return true;
       }
       if (!code.show_ui) return false;
-      return cell.x >= code.x && cell.x <= code.x + code.w - 1 && cell.y >= code.y && cell.y <= code.y;
+      return cell.x >= code.x && cell.x <= code.x + code.w - 1 && cell.y === code.y;
     });
   }
 
