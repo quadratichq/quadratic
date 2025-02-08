@@ -1231,11 +1231,11 @@ mod test {
         assert_eq!(sheet.find_next_row(6, 6, false, true), Some(20));
 
         // should find the second table moving backwards
-        assert_eq!(sheet.find_next_row(30, 6, true, true), Some(24));
+        assert_eq!(sheet.find_next_row(30, 6, true, true), Some(25));
 
         // should find the first table moving backwards even though we're inside
         // the second table
-        assert_eq!(sheet.find_next_row(23, 6, true, true), Some(9));
+        assert_eq!(sheet.find_next_row(23, 6, true, true), Some(10));
     }
 
     #[test]
