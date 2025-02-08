@@ -2,7 +2,6 @@
 //! that state as you switch between sheets, a multiplayer user follows your
 //! cursor, or you save the cursor state in the URL at ?state=.
 
-import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -332,7 +331,7 @@ export class SheetCursor {
 
   /// Returns true if the cursor is on an html or image cell.
   isOnHtmlImage = (): boolean => {
-    return this.jsSelection.cursorIsOnHtmlImage(sheets.a1Context);
+    return this.jsSelection.cursorIsOnHtmlImage(this.sheet.sheets.a1Context);
   };
 
   /// Returns the names of the tables that are selected.
