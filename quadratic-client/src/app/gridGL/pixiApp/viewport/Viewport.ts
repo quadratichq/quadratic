@@ -1,5 +1,6 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { MOUSE_EDGES_DISTANCE, MOUSE_EDGES_SPEED } from '@/app/gridGL/interaction/pointer/pointerUtils';
 import type { PixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Decelerate } from '@/app/gridGL/pixiApp/viewport/Decelerate';
 import { Drag } from '@/app/gridGL/pixiApp/viewport/Drag';
@@ -144,6 +145,20 @@ export class Viewport extends PixiViewport {
     this.dirty = true;
   };
 
+  enableMouseEdges = () => {
+    const mouseEdges = this.plugins.get('mouse-edges');
+    if (mouseEdges && !mouseEdges.paused) return;
+    this.mouseEdges({
+      distance: MOUSE_EDGES_DISTANCE,
+      allowButtons: true,
+      speed: MOUSE_EDGES_SPEED / this.scale.x,
+    });
+  };
+
+  disableMouseEdges = () => {
+    this.plugins.remove('mouse-edges');
+  };
+
   sendRenderViewport() {
     const bounds = this.getVisibleBounds();
     const scale = this.scale.x;
@@ -186,7 +201,7 @@ export class Viewport extends PixiViewport {
     if (event.type === 'mouse-edges') {
       const headings = this.pixiApp.headings.headingSize;
       if (this.x > headings.width || this.y > headings.height) {
-        this.plugins.remove('mouse-edges');
+        this.disableMouseEdges();
 
         let nextX = this.x > headings.width ? headings.width : this.x;
         let nextY = this.y > headings.height ? headings.height : this.y;

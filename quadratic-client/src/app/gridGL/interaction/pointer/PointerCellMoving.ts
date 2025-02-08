@@ -4,7 +4,6 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
-import { MOUSE_EDGES_DISTANCE, MOUSE_EDGES_SPEED } from '@/app/gridGL/interaction/pointer/pointerUtils';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -29,7 +28,7 @@ interface MoveCells {
 }
 
 export class PointerCellMoving {
-  startCell?: Point;
+  private startCell?: Point;
   movingCells?: MoveCells;
   state?: 'hover' | 'move';
 
@@ -44,16 +43,12 @@ export class PointerCellMoving {
     }
   }
 
-  private startMove() {
+  private startMove = () => {
     this.state = 'move';
     events.emit('cellMoving', true);
-    pixiApp.viewport.mouseEdges({
-      distance: MOUSE_EDGES_DISTANCE,
-      allowButtons: true,
-      speed: MOUSE_EDGES_SPEED / pixiApp.viewport.scale.x,
-    });
+    pixiApp.viewport.enableMouseEdges();
     htmlCellsHandler.disable();
-  }
+  };
 
   // Starts a table move.
   tableMove = (column: number, row: number, point: Point, width: number, height: number) => {
@@ -90,7 +85,7 @@ export class PointerCellMoving {
     if (this.state === 'move') {
       pixiApp.cellMoving.dirty = true;
       events.emit('cellMoving', false);
-      pixiApp.viewport.plugins.remove('mouse-edges');
+      pixiApp.viewport.disableMouseEdges();
     }
     this.state = undefined;
     this.startCell = undefined;
@@ -101,6 +96,7 @@ export class PointerCellMoving {
     if (this.state !== 'move' || !this.movingCells) {
       throw new Error('Expected moving to be defined in pointerMoveMoving');
     }
+    pixiApp.viewport.enableMouseEdges();
     const sheet = sheets.sheet;
     const moving = this.movingCells;
     const position = sheet.getColumnRowFromScreen(
