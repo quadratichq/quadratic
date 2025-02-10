@@ -889,11 +889,11 @@ mod tests {
         (transaction.id, transaction.operations.clone())
     }
 
-    // creates A2 = "q.cells("A1") + 1"
+    // creates B1 = "q.cells("A1") + 1"
     fn create_multiple_calculations_1(gc: &mut GridController) -> (Uuid, Vec<Operation>) {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            pos![A2].to_sheet_pos(sheet_id),
+            pos![B1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "q.cells(\"A1\") + 1".into(),
             None,
@@ -915,18 +915,18 @@ mod tests {
         (transaction_id, transaction.operations.clone())
     }
 
-    // creates A3 = "q.cells("A2") + 1"
+    // creates C1 = "q.cells("B1") + 1"
     fn create_multiple_calculations_2(gc: &mut GridController) -> (Uuid, Vec<Operation>) {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            pos![A3].to_sheet_pos(sheet_id),
+            pos![C1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
-            "q.cells(\"A2\") + 1".into(),
+            "q.cells(\"B1\") + 1".into(),
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         let _ = gc
-            .calculation_get_cells_a1(transaction_id.to_string(), "A2".to_string(), None)
+            .calculation_get_cells_a1(transaction_id.to_string(), "B1".to_string(), None)
             .ok()
             .unwrap();
 
@@ -969,11 +969,11 @@ mod tests {
             Some(CellValue::Number(BigDecimal::from(1)))
         );
         assert_eq!(
-            sheet.display_value(pos![A2]),
+            sheet.display_value(pos![B2]),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
         assert_eq!(
-            sheet.display_value(pos![A3]),
+            sheet.display_value(pos![C2]),
             Some(CellValue::Number(BigDecimal::from(3)))
         );
     }
@@ -996,11 +996,11 @@ mod tests {
             Some(CellValue::Number(BigDecimal::from(1)))
         );
         assert_eq!(
-            sheet.display_value(pos![A2]),
+            sheet.display_value(pos![B2]),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
         assert_eq!(
-            sheet.display_value(pos![A3]),
+            sheet.display_value(pos![C2]),
             Some(CellValue::Number(BigDecimal::from(3)))
         );
     }
@@ -1132,11 +1132,11 @@ mod tests {
             Some(CellValue::Number(BigDecimal::from(1)))
         );
         assert_eq!(
-            sheet.display_value(pos![A2]),
+            sheet.display_value(pos![B2]),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
         assert_eq!(
-            sheet.display_value(pos![A3]),
+            sheet.display_value(pos![C2]),
             Some(CellValue::Number(BigDecimal::from(3)))
         );
     }
