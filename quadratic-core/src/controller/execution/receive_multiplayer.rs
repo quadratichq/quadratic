@@ -979,7 +979,7 @@ mod tests {
     }
 
     #[test]
-    fn test_python_multiple_calculations_receive_back_between() {
+    fn test_multiplayer_python_multiple_calculations_receive_back_between() {
         let mut gc = GridController::test();
         let (transaction_id_0, operations_0) = create_multiple_calculations_0(&mut gc);
         gc.received_transaction(transaction_id_0, 1, operations_0);

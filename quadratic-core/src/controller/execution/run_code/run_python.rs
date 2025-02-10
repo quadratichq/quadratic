@@ -449,7 +449,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_value(pos![A1].to_sheet_pos(sheet_id), "1".to_string(), None);
         gc.set_code_cell(
-            pos![A2].to_sheet_pos(sheet_id),
+            pos![B1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "q.cells('A1') + 1".into(),
             None,
@@ -482,21 +482,21 @@ mod tests {
         // assert!(result.ok().unwrap().generate_thumbnail);
 
         gc.set_code_cell(
-            pos![A3].to_sheet_pos(sheet_id),
+            pos![C1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
-            "q.cells('A2') + 1".into(),
+            "q.cells('B2') + 1".into(),
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         let result = gc
-            .calculation_get_cells_a1(transaction_id.to_string(), "A2".to_string(), None)
+            .calculation_get_cells_a1(transaction_id.to_string(), "B2".to_string(), None)
             .ok()
             .unwrap();
         assert_eq!(result.cells.len(), 1);
         assert_eq!(
             result.cells[0],
             JsGetCellResponse {
-                x: 1,
+                x: 2,
                 y: 2,
                 value: "2".into(),
                 type_name: "number".into(),
@@ -519,11 +519,11 @@ mod tests {
             Some(CellValue::Number(BigDecimal::from(1)))
         );
         assert_eq!(
-            sheet.display_value(pos![A2]),
+            sheet.display_value(pos![B2]),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
         assert_eq!(
-            sheet.display_value(pos![A3]),
+            sheet.display_value(pos![C2]),
             Some(CellValue::Number(BigDecimal::from(3)))
         );
 
