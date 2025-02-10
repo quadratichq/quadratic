@@ -21,6 +21,7 @@ import type {
   JsSheetFill,
   JsSnackbarSeverity,
   JsSummarizeSelectionResult,
+  JsTablesContext,
   JsValidationWarning,
   MinMax,
   Pos,
@@ -285,6 +286,12 @@ export interface ClientCoreSetCellValues {
   y: number;
   values: string[][];
   cursor?: string;
+  id: number;
+}
+
+export interface CoreClientSetCellValues {
+  type: 'coreClientSetCellValues';
+  id: number;
 }
 
 export interface ClientCoreSetCellBold {
@@ -449,6 +456,12 @@ export interface ClientCoreDeleteCellValues {
   type: 'clientCoreDeleteCellValues';
   selection: string;
   cursor?: string;
+  id: number;
+}
+
+export interface CoreClientDeleteCellValues {
+  type: 'coreClientDeleteCellValues';
+  id: number;
 }
 
 export interface ClientCoreSetCodeCellValue {
@@ -867,11 +880,17 @@ export interface CoreClientUndoRedo {
 
 export interface ClientCoreMoveCells {
   type: 'clientCoreMoveCells';
+  id: number;
   source: SheetRect;
   targetSheetId: string;
   targetX: number;
   targetY: number;
   cursor: string;
+}
+
+export interface CoreClientMoveCells {
+  type: 'coreClientMoveCells';
+  id: number;
 }
 
 export interface ClientCoreMoveCodeCellVertically {
@@ -1045,6 +1064,17 @@ export interface CoreClientGetErroredCodeCellsInSelections {
   value: JsCodeCell[][] | undefined;
 }
 
+export interface ClientCoreGetAITablesContext {
+  type: 'clientCoreGetAITablesContext';
+  id: number;
+}
+
+export interface CoreClientGetAITablesContext {
+  type: 'coreClientGetAITablesContext';
+  id: number;
+  value: JsTablesContext[] | undefined;
+}
+
 export interface ClientCoreNeighborText {
   type: 'clientCoreNeighborText';
   id: number;
@@ -1186,6 +1216,7 @@ export interface CoreClientA1Context {
 
 export interface ClientCoreAddDataTable {
   type: 'clientCoreAddDataTable';
+  id: number;
   sheetId: string;
   x: number;
   y: number;
@@ -1193,6 +1224,11 @@ export interface ClientCoreAddDataTable {
   values: string[][];
   firstRowIsHeader: boolean;
   cursor: string;
+}
+
+export interface CoreClientAddDataTable {
+  type: 'coreClientAddDataTable';
+  id: number;
 }
 
 export type ClientCoreMessage =
@@ -1282,6 +1318,7 @@ export type ClientCoreMessage =
   | ClientCoreGetCellValue
   | ClientCoreGetAIContextRectsInSelections
   | ClientCoreGetErroredCodeCellsInSelections
+  | ClientCoreGetAITablesContext
   | ClientCoreFindNextColumnForRect
   | ClientCoreFindNextRowForRect
   | ClientCoreMoveCodeCellVertically
@@ -1350,10 +1387,15 @@ export type CoreClientMessage =
   | CoreClientClientMessage
   | CoreClientGetAIContextRectsInSelections
   | CoreClientGetErroredCodeCellsInSelections
+  | CoreClientGetAITablesContext
   | CoreClientFindNextColumnForRect
   | CoreClientFindNextRowForRect
   | CoreClientMoveCodeCellVertically
   | CoreClientMoveCodeCellHorizontally
   | CoreClientFiniteRectFromSelection
   | CoreClientA1Context
-  | CoreClientGetCsvPreview;
+  | CoreClientGetCsvPreview
+  | CoreClientAddDataTable
+  | CoreClientSetCellValues
+  | CoreClientMoveCells
+  | CoreClientDeleteCellValues;

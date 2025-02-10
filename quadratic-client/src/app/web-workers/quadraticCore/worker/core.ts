@@ -25,6 +25,7 @@ import type {
   JsCoordinate,
   JsRenderCell,
   JsSummarizeSelectionResult,
+  JsTablesContext,
   MinMax,
   Pos,
   Rect,
@@ -1001,18 +1002,21 @@ class Core {
   }
 
   moveCells(message: ClientCoreMoveCells) {
-    this.clientQueue.push(() => {
-      if (!this.gridController) throw new Error('Expected gridController to be defined');
-      const dest: SheetPos = {
-        x: BigInt(message.targetX),
-        y: BigInt(message.targetY),
-        sheet_id: { id: message.targetSheetId },
-      };
-      this.gridController.moveCells(
-        JSON.stringify(message.source, bigIntReplacer),
-        JSON.stringify(dest, bigIntReplacer),
-        message.cursor
-      );
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        const dest: SheetPos = {
+          x: BigInt(message.targetX),
+          y: BigInt(message.targetY),
+          sheet_id: { id: message.targetSheetId },
+        };
+        this.gridController.moveCells(
+          JSON.stringify(message.source, bigIntReplacer),
+          JSON.stringify(dest, bigIntReplacer),
+          message.cursor
+        );
+        resolve(undefined);
+      });
     });
   }
 
@@ -1124,6 +1128,12 @@ class Core {
     const erroredCodeCells: JsCodeCell[][] | undefined =
       this.gridController.getErroredCodeCellsInSelections(selections);
     return erroredCodeCells;
+  }
+
+  getAITablesContext(): JsTablesContext[] | undefined {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const tablesContext: JsTablesContext[] | undefined = this.gridController.getAITablesContext();
+    return tablesContext;
   }
 
   neighborText(sheetId: string, x: number, y: number): string[] {

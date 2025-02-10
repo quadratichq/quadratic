@@ -183,6 +183,10 @@ class CoreClient {
 
       case 'clientCoreSetCellValues':
         await core.setCellValues(e.data.sheetId, e.data.x, e.data.y, e.data.values, e.data.cursor);
+        this.send({
+          type: 'coreClientSetCellValues',
+          id: e.data.id,
+        });
         return;
 
       case 'clientCoreGetEditCell':
@@ -274,6 +278,10 @@ class CoreClient {
 
       case 'clientCoreDeleteCellValues':
         await core.deleteCellValues(e.data.selection, e.data.cursor);
+        this.send({
+          type: 'coreClientDeleteCellValues',
+          id: e.data.id,
+        });
         return;
 
       case 'clientCoreSetCodeCellValue':
@@ -509,6 +517,10 @@ class CoreClient {
 
       case 'clientCoreMoveCells':
         core.moveCells(e.data);
+        this.send({
+          type: 'coreClientMoveCells',
+          id: e.data.id,
+        });
         return;
 
       case 'clientCoreMoveCodeCellVertically':
@@ -607,6 +619,14 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreGetAITablesContext':
+        this.send({
+          type: 'coreClientGetAITablesContext',
+          id: e.data.id,
+          value: core.getAITablesContext(),
+        });
+        return;
+
       case 'clientCoreDeleteColumns':
         core.deleteColumns(e.data.sheetId, e.data.columns, e.data.cursor);
         return;
@@ -675,6 +695,10 @@ class CoreClient {
 
       case 'clientCoreAddDataTable':
         core.addDataTable(e.data);
+        this.send({
+          type: 'coreClientAddDataTable',
+          id: e.data.id,
+        });
         return;
 
       case 'clientCoreFiniteRectFromSelection':

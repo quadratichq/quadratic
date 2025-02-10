@@ -27,7 +27,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       const { x, y } = selection.getCursor();
 
       if (table_data.length > 0 && table_data[0].length > 0) {
-        quadraticCore.addDataTable({
+        await quadraticCore.addDataTable({
           sheetId: sheets.current,
           x,
           y,
@@ -57,7 +57,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       const { x, y } = selection.getCursor();
 
       if (cell_values.length > 0 && cell_values[0].length > 0) {
-        quadraticCore.setCellValues(sheets.current, x, y, cell_values, sheets.getCursorPosition());
+        await quadraticCore.setCellValues(sheets.current, x, y, cell_values, sheets.getCursorPosition());
 
         ensureRectVisible({ x, y }, { x: x + cell_values[0].length - 1, y: y + cell_values.length - 1 });
 
@@ -126,7 +126,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
       const { x, y } = targetSelection.getCursor();
 
-      quadraticCore.moveCells(sheetRect, x, y, sheets.current);
+      await quadraticCore.moveCells(sheetRect, x, y, sheets.current);
 
       return `Executed move cells tool successfully.`;
     } catch (e) {
@@ -138,7 +138,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     try {
       const sourceSelection = stringToSelection(selection, sheets.current, sheets.a1Context);
 
-      quadraticCore.deleteCellValues(sourceSelection.save(), sheets.getCursorPosition());
+      await quadraticCore.deleteCellValues(sourceSelection.save(), sheets.getCursorPosition());
 
       return `Executed delete cells tool successfully.`;
     } catch (e) {

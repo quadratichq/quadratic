@@ -5,6 +5,7 @@ use js_sys::{ArrayBuffer, Uint8Array};
 use std::str::FromStr;
 use util::set_panic_hook;
 
+pub mod ai_context;
 pub mod auto_complete;
 pub mod borders;
 pub mod bounds;

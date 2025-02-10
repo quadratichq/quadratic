@@ -1,7 +1,10 @@
 use crate::{
     a1::A1Selection,
-    grid::js_types::{JsCellValuePosAIContext, JsCodeCell},
-    CellValue,
+    grid::js_types::{
+        JsCellValuePosAIContext, JsChartContext, JsCodeCell, JsCodeTableContext,
+        JsDataTableContext, JsTablesContext,
+    },
+    CellValue, Rect,
 };
 
 use super::Sheet;
@@ -23,8 +26,7 @@ impl Sheet {
                 rect_origin: tabular_data_rect.min.a1_string(),
                 rect_width: tabular_data_rect.width(),
                 rect_height: tabular_data_rect.height(),
-                starting_rect_values: self
-                    .get_js_cell_value_pos_in_rect(tabular_data_rect, Some(3)),
+                starting_rect_values: self.js_cell_value_pos_in_rect(tabular_data_rect, Some(3)),
             };
             ai_context_rects.push(js_cell_value_pos_ai_context);
         }
@@ -59,8 +61,94 @@ impl Sheet {
         }
         code_cells
     }
-}
 
+    /// Returns JsTablesContext for all tables (data, code, charts) in the sheet
+    pub fn get_ai_tables_context(&self) -> Option<JsTablesContext> {
+        let mut tables_context = JsTablesContext {
+            sheet_name: self.name.clone(),
+            data_tables: Vec::new(),
+            code_tables: Vec::new(),
+            charts: Vec::new(),
+        };
+
+        for (pos, table) in self.data_tables.iter() {
+            let Some(cell_value) = self.cell_value_ref(pos.to_owned()) else {
+                continue;
+            };
+
+            if table.is_single_value() {
+                continue;
+            }
+
+            if table.is_html_or_image() {
+                tables_context.charts.push(JsChartContext {
+                    sheet_name: self.name.clone(),
+                    chart_name: table.name.to_string(),
+                    bounds: table.output_rect(pos.to_owned(), false).a1_string(),
+                    spill: table.spill_error,
+                });
+                continue;
+            }
+
+            let bounds = table.output_rect(pos.to_owned(), false);
+
+            let first_row_index = table.y_adjustment(false);
+            let first_row_rect = Rect::from_numbers(
+                bounds.min.x,
+                bounds.min.y + first_row_index,
+                bounds.width() as i64,
+                1,
+            );
+            let first_row_visible_values = self
+                .js_cell_value_pos_in_rect(first_row_rect, Some(1))
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>();
+
+            if let CellValue::Code(code_cell_value) = cell_value {
+                let Some(code_run) = table.code_run() else {
+                    continue;
+                };
+
+                tables_context.code_tables.push(JsCodeTableContext {
+                    sheet_name: self.name.clone(),
+                    code_table_name: table.name.to_string(),
+                    all_columns: table.columns_map(true),
+                    visible_columns: table.columns_map(false),
+                    first_row_visible_values,
+                    bounds: bounds.a1_string(),
+                    show_name: table.show_name,
+                    show_columns: table.show_columns,
+                    language: code_cell_value.language.to_owned(),
+                    code_string: code_cell_value.code.to_owned(),
+                    std_err: code_run.std_err.to_owned(),
+                    error: code_run.error.is_some(),
+                    spill: table.spill_error,
+                });
+            } else if cell_value.is_import() {
+                tables_context.data_tables.push(JsDataTableContext {
+                    sheet_name: self.name.clone(),
+                    data_table_name: table.name.to_string(),
+                    all_columns: table.columns_map(true),
+                    visible_columns: table.columns_map(false),
+                    first_row_visible_values,
+                    bounds: bounds.a1_string(),
+                    show_name: table.show_name,
+                    show_columns: table.show_columns,
+                });
+            }
+        }
+
+        if tables_context.data_tables.is_empty()
+            && tables_context.code_tables.is_empty()
+            && tables_context.charts.is_empty()
+        {
+            None
+        } else {
+            Some(tables_context)
+        }
+    }
+}
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
@@ -135,7 +223,7 @@ mod tests {
                 rect_origin: Pos { x: 1, y: 1 }.a1_string(),
                 rect_width: 10,
                 rect_height: 1000,
-                starting_rect_values: sheet.get_js_cell_value_pos_in_rect(
+                starting_rect_values: sheet.js_cell_value_pos_in_rect(
                     Rect {
                         min: Pos { x: 1, y: 1 },
                         max: Pos { x: 10, y: 1000 },
@@ -148,7 +236,7 @@ mod tests {
                 rect_origin: Pos { x: 31, y: 101 }.a1_string(),
                 rect_width: 10,
                 rect_height: 1000,
-                starting_rect_values: sheet.get_js_cell_value_pos_in_rect(
+                starting_rect_values: sheet.js_cell_value_pos_in_rect(
                     Rect {
                         min: Pos { x: 31, y: 101 },
                         max: Pos { x: 40, y: 1100 },

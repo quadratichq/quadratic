@@ -256,7 +256,7 @@ impl Sheet {
     }
 
     /// Returns the JsCellValuePos in a rect
-    pub fn get_js_cell_value_pos_in_rect(
+    pub fn js_cell_value_pos_in_rect(
         &self,
         rect: Rect,
         max_rows: Option<u32>,
@@ -1084,7 +1084,7 @@ mod test {
     }
 
     #[test]
-    fn get_js_cell_value_pos_in_rect() {
+    fn test_js_cell_value_pos_in_rect() {
         let mut sheet = Sheet::test();
         sheet.set_cell_values(
             Rect {
@@ -1110,7 +1110,7 @@ mod test {
 
         let max_rows = 3;
 
-        let js_cell_value_pos_in_rect = sheet.get_js_cell_value_pos_in_rect(
+        let js_cell_value_pos_in_rect = sheet.js_cell_value_pos_in_rect(
             Rect {
                 min: Pos { x: 1, y: 1 },
                 max: Pos { x: 10, y: 1000 },

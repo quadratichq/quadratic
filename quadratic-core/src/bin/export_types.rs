@@ -17,6 +17,10 @@ use quadratic_core::controller::operations::clipboard::PasteSpecial;
 use quadratic_core::controller::transaction_types::JsCodeResult;
 use quadratic_core::formulas::parse_formula::JsFormulaParseResult;
 use quadratic_core::grid::formats::Format;
+use quadratic_core::grid::js_types::JsChartContext;
+use quadratic_core::grid::js_types::JsCodeTableContext;
+use quadratic_core::grid::js_types::JsDataTableContext;
+use quadratic_core::grid::js_types::JsTablesContext;
 use quadratic_core::grid::js_types::{
     CellFormatSummary, JsCellValue, JsCellValuePos, JsCellValuePosAIContext, JsClipboard,
     JsCodeCell, JsDataTableColumnHeader, JsHtmlOutput, JsNumber, JsOffset, JsRenderCell,
@@ -104,11 +108,13 @@ fn main() {
         CodeCellLanguage,
         ColumnRow,
         ConnectionKind,
+        DataTableSort,
         DateTimeRange,
+        Direction,
         Format,
         GridBounds,
-        JsBordersSheet,
         JsBorderHorizontal,
+        JsBordersSheet,
         JsBorderVertical,
         JsCellsAccessed,
         JsCellValue,
@@ -117,8 +123,8 @@ fn main() {
         JsClipboard,
         JsCodeCell,
         JsCodeResult,
-        JsDataTableColumnHeader,
         JsCoordinate,
+        JsDataTableColumnHeader,
         JsFormulaParseResult,
         JsGetCellResponse,
         JsHtmlOutput,
@@ -134,9 +140,12 @@ fn main() {
         JsSheetFill,
         JsSnackbarSeverity,
         JsSummarizeSelectionResult,
+        JsDataTableContext,
+        JsCodeTableContext,
+        JsChartContext,
+        JsTablesContext,
         JsTableInfo,
         JsValidationWarning,
-        Direction,
         MinMax,
         NumberRange,
         NumericFormat,
@@ -154,9 +163,8 @@ fn main() {
         SheetInfo,
         SheetPos,
         SheetRect,
-        SortDirection,
-        DataTableSort,
         SmallTimestamp,
+        SortDirection,
         Span,
         TableRef,
         TextCase,

@@ -90,6 +90,8 @@ pub struct CodeRun {
     pub std_err: Option<String>,
 
     pub cells_accessed: CellsAccessed,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<RunError>,
 
     #[serde(skip_serializing_if = "Option::is_none")]

@@ -22,11 +22,13 @@ export type CellWrap = "overflow" | "wrap" | "clip";
 export type CodeCellLanguage = "Python" | "Formula" | { "Connection": { kind: ConnectionKind, id: string, } } | "Javascript" | "Import";
 export interface ColumnRow { column: number, row: number, }
 export type ConnectionKind = "POSTGRES" | "MYSQL" | "MSSQL" | "SNOWFLAKE";
+export interface DataTableSort { column_index: number, direction: SortDirection, }
 export type DateTimeRange = { "DateRange": [bigint | null, bigint | null] } | { "DateEqual": Array<bigint> } | { "DateNotEqual": Array<bigint> } | { "TimeRange": [number | null, number | null] } | { "TimeEqual": Array<number> } | { "TimeNotEqual": Array<number> };
+export type Direction = "Up" | "Down" | "Left" | "Right";
 export interface Format { align: CellAlign | null, vertical_align: CellVerticalAlign | null, wrap: CellWrap | null, numeric_format: NumericFormat | null, numeric_decimals: number | null, numeric_commas: boolean | null, bold: boolean | null, italic: boolean | null, text_color: string | null, fill_color: string | null, date_time: string | null, underline: boolean | null, strike_through: boolean | null, }
 export type GridBounds = { "type": "empty" } | { "type": "nonEmpty" } & Rect;
-export interface JsBordersSheet { horizontal: Array<JsBorderHorizontal> | null, vertical: Array<JsBorderVertical> | null, }
 export interface JsBorderHorizontal { color: Rgba, line: CellBorderLine, x: bigint, y: bigint, width: bigint | null, unbounded: boolean, }
+export interface JsBordersSheet { horizontal: Array<JsBorderHorizontal> | null, vertical: Array<JsBorderVertical> | null, }
 export interface JsBorderVertical { color: Rgba, line: CellBorderLine, x: bigint, y: bigint, height: bigint | null, unbounded: boolean, }
 export interface JsCellsAccessed { sheetId: string, ranges: Array<CellRefRange>, }
 export interface JsCellValue { value: string, kind: string, }
@@ -35,8 +37,8 @@ export interface JsCellValuePosAIContext { sheet_name: string, rect_origin: stri
 export interface JsClipboard { plainText: string, html: string, }
 export interface JsCodeCell { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: Array<JsCellsAccessed> | null, }
 export interface JsCodeResult { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: Array<string> | null, output_array: Array<Array<Array<string>>> | null, output_display_type: string | null, cancel_compute: boolean | null, chart_pixel_output: [number, number] | null, has_headers: boolean, }
-export interface JsDataTableColumnHeader { name: string, display: boolean, valueIndex: number, }
 export interface JsCoordinate { x: number, y: number, }
+export interface JsDataTableColumnHeader { name: string, display: boolean, valueIndex: number, }
 export interface JsFormulaParseResult { parse_error_msg: string | null, parse_error_span: Span | null, cells_accessed: Array<JsCellsAccessed>, spans: Array<Span>, }
 export interface JsGetCellResponse { x: bigint, y: bigint, value: string, type_name: string, }
 export interface JsHtmlOutput { sheet_id: string, x: bigint, y: bigint, html: string | null, w: number | null, h: number | null, name: string, show_name: boolean, }
@@ -52,9 +54,12 @@ export interface JsRowHeight { row: bigint, height: number, }
 export interface JsSheetFill { x: number, y: number, w: number | null, h: number | null, color: string, }
 export type JsSnackbarSeverity = "error" | "warning" | "success";
 export interface JsSummarizeSelectionResult { count: bigint, sum: number | null, average: number | null, }
+export interface JsDataTableContext { sheet_name: string, data_table_name: string, all_columns: Array<string>, visible_columns: Array<string>, first_row_visible_values: Array<JsCellValuePos>, bounds: string, show_name: boolean, show_columns: boolean, }
+export interface JsCodeTableContext { sheet_name: string, code_table_name: string, all_columns: Array<string>, visible_columns: Array<string>, first_row_visible_values: Array<JsCellValuePos>, bounds: string, show_name: boolean, show_columns: boolean, language: CodeCellLanguage, code_string: string, std_err: string | null, error: boolean, spill: boolean, }
+export interface JsChartContext { sheet_name: string, chart_name: string, bounds: string, spill: boolean, }
+export interface JsTablesContext { sheet_name: string, data_tables: Array<JsDataTableContext>, code_tables: Array<JsCodeTableContext>, charts: Array<JsChartContext>, }
 export interface JsTableInfo { name: string, sheet_name: string, chart: boolean, language: CodeCellLanguage | null, }
 export interface JsValidationWarning { x: bigint, y: bigint, validation: string | null, style: ValidationStyle | null, }
-export type Direction = "Up" | "Down" | "Left" | "Right";
 export interface MinMax { min: number, max: number, }
 export type NumberRange = { "Range": [number | null, number | null] } | { "Equal": Array<number> } | { "NotEqual": Array<number> };
 export interface NumericFormat { type: NumericFormatKind, symbol: string | null, }
@@ -72,9 +77,8 @@ export interface SheetId { id: string, }
 export interface SheetInfo { sheet_id: string, name: string, order: string, color: string | null, offsets: string, bounds: GridBounds, bounds_without_formatting: GridBounds, }
 export interface SheetPos { x: bigint, y: bigint, sheet_id: SheetId, }
 export interface SheetRect { min: Pos, max: Pos, sheet_id: SheetId, }
-export type SortDirection = "Ascending" | "Descending" | "None";
-export interface DataTableSort { column_index: number, direction: SortDirection, }
 export type SmallTimestamp = number;
+export type SortDirection = "Ascending" | "Descending" | "None";
 export interface Span { start: number, end: number, }
 export interface TableRef { table_name: string, data: boolean, headers: boolean, totals: boolean, col_range: ColRange, }
 export type TextCase = { "CaseInsensitive": Array<string> } | { "CaseSensitive": Array<string> };

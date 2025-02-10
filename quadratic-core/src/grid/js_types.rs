@@ -75,6 +75,51 @@ pub struct JsCellValuePosAIContext {
     pub starting_rect_values: Vec<Vec<JsCellValuePos>>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+pub struct JsTablesContext {
+    pub sheet_name: String,
+    pub data_tables: Vec<JsDataTableContext>,
+    pub code_tables: Vec<JsCodeTableContext>,
+    pub charts: Vec<JsChartContext>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+pub struct JsDataTableContext {
+    pub sheet_name: String,
+    pub data_table_name: String,
+    pub all_columns: Vec<String>,
+    pub visible_columns: Vec<String>,
+    pub first_row_visible_values: Vec<JsCellValuePos>,
+    pub bounds: String,
+    pub show_name: bool,
+    pub show_columns: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+pub struct JsCodeTableContext {
+    pub sheet_name: String,
+    pub code_table_name: String,
+    pub all_columns: Vec<String>,
+    pub visible_columns: Vec<String>,
+    pub first_row_visible_values: Vec<JsCellValuePos>,
+    pub bounds: String,
+    pub show_name: bool,
+    pub show_columns: bool,
+    pub language: CodeCellLanguage,
+    pub code_string: String,
+    pub std_err: Option<String>,
+    pub error: bool,
+    pub spill: bool,
+}
+
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+pub struct JsChartContext {
+    pub sheet_name: String,
+    pub chart_name: String,
+    pub bounds: String,
+    pub spill: bool,
+}
+
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct JsRenderCell {

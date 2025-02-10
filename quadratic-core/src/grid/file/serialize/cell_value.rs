@@ -16,11 +16,11 @@ pub fn export_cell_value(cell_value: CellValue) -> current::CellValueSchema {
         CellValue::Code(cell_code) => current::CellValueSchema::Code(current::CodeCellSchema {
             code: cell_code.code,
             language: match cell_code.language {
-                CodeCellLanguage::Python => current::CodeCellLanguage::Python,
-                CodeCellLanguage::Formula => current::CodeCellLanguage::Formula,
-                CodeCellLanguage::Javascript => current::CodeCellLanguage::Javascript,
+                CodeCellLanguage::Python => current::CodeCellLanguageSchema::Python,
+                CodeCellLanguage::Formula => current::CodeCellLanguageSchema::Formula,
+                CodeCellLanguage::Javascript => current::CodeCellLanguageSchema::Javascript,
                 CodeCellLanguage::Connection { kind, id } => {
-                    current::CodeCellLanguage::Connection {
+                    current::CodeCellLanguageSchema::Connection {
                         kind: match kind {
                             ConnectionKind::Postgres => current::ConnectionKindSchema::Postgres,
                             ConnectionKind::Mysql => current::ConnectionKindSchema::Mysql,
@@ -30,7 +30,7 @@ pub fn export_cell_value(cell_value: CellValue) -> current::CellValueSchema {
                         id,
                     }
                 }
-                CodeCellLanguage::Import => current::CodeCellLanguage::Import,
+                CodeCellLanguage::Import => current::CodeCellLanguageSchema::Import,
             },
         }),
         CellValue::Logical(logical) => current::CellValueSchema::Logical(logical),
@@ -70,10 +70,10 @@ pub fn import_cell_value(value: current::CellValueSchema) -> CellValue {
         current::CellValueSchema::Code(code_cell) => CellValue::Code(CodeCellValue {
             code: code_cell.code,
             language: match code_cell.language {
-                current::CodeCellLanguage::Python => CodeCellLanguage::Python,
-                current::CodeCellLanguage::Formula => CodeCellLanguage::Formula,
-                current::CodeCellLanguage::Javascript => CodeCellLanguage::Javascript,
-                current::CodeCellLanguage::Connection { kind, id } => {
+                current::CodeCellLanguageSchema::Python => CodeCellLanguage::Python,
+                current::CodeCellLanguageSchema::Formula => CodeCellLanguage::Formula,
+                current::CodeCellLanguageSchema::Javascript => CodeCellLanguage::Javascript,
+                current::CodeCellLanguageSchema::Connection { kind, id } => {
                     CodeCellLanguage::Connection {
                         kind: match kind {
                             current::ConnectionKindSchema::Postgres => ConnectionKind::Postgres,
@@ -84,7 +84,7 @@ pub fn import_cell_value(value: current::CellValueSchema) -> CellValue {
                         id,
                     }
                 }
-                current::CodeCellLanguage::Import => CodeCellLanguage::Import,
+                current::CodeCellLanguageSchema::Import => CodeCellLanguage::Import,
             },
         }),
         current::CellValueSchema::Logical(logical) => CellValue::Logical(logical),
