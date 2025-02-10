@@ -413,6 +413,56 @@ fn test_sheet_references() {
 }
 
 #[test]
+#[parallel]
+fn test_table_references() {
+    let (gc, _sheet_id, _pos, _file_name) =
+        crate::controller::user_actions::import::tests::simple_csv();
+
+    for (formula, expected) in [
+        (
+            "simple.csv",
+            "{Southborough, MA, United States, 9686; Northbridge, MA, United States, 14061; Westborough, MA, United States, 29313; Marlborough, MA, United States, 38334; Springfield, MA, United States, 152227; Springfield, MO, United States, 150443; Springfield, NJ, United States, 14976; Springfield, OH, United States, 64325; Springfield, OR, United States, 56032; Concord, NH, United States, 42605}",
+        ),
+        (
+            "simple.csv[#HEADERS]",
+            "{city, region, country, population}",
+        ),
+        (
+            "simple.csv[[#HEADERS]]",
+            "{city, region, country, population}",
+        ),
+        ("simple.csv[region]", "{MA; MA; MA; MA; MA; MO; NJ; OH; OR; NH}"),
+        ("simple.csv[[region]]", "{MA; MA; MA; MA; MA; MO; NJ; OH; OR; NH}"),
+        (
+            "simple.csv[[city]:[country]]",
+            "{Southborough, MA, United States; Northbridge, MA, United States; Westborough, MA, United States; Marlborough, MA, United States; Springfield, MA, United States; Springfield, MO, United States; Springfield, NJ, United States; Springfield, OH, United States; Springfield, OR, United States; Concord, NH, United States}",
+        ),
+        (
+            "simple.csv[[#dAtA], [city]:[country]]",
+            "{Southborough, MA, United States; Northbridge, MA, United States; Westborough, MA, United States; Marlborough, MA, United States; Springfield, MA, United States; Springfield, MO, United States; Springfield, NJ, United States; Springfield, OH, United States; Springfield, OR, United States; Concord, NH, United States}",
+        ),
+        (
+            "simple.csv[[#headers], [[city]:[country]]]",
+            "{city, region, country}",
+        ),
+        (
+            "simple.csv[ [#Headers],[#Data], [city]:[country]]",
+            "{city, region, country; Southborough, MA, United States; Northbridge, MA, United States; Westborough, MA, United States; Marlborough, MA, United States; Springfield, MA, United States; Springfield, MO, United States; Springfield, NJ, United States; Springfield, OH, United States; Springfield, OR, United States; Concord, NH, United States}",
+        ),
+        (
+            "simple.csv[[#aLL],  [city]:[country]  ]",
+            "{city, region, country; Southborough, MA, United States; Northbridge, MA, United States; Westborough, MA, United States; Marlborough, MA, United States; Springfield, MA, United States; Springfield, MO, United States; Springfield, NJ, United States; Springfield, OH, United States; Springfield, OR, United States; Concord, NH, United States}",
+        ),
+        (
+            "simple.csv[[#All], [country]:]",
+            "{country, population; United States, 9686; United States, 14061; United States, 29313; United States, 38334; United States, 152227; United States, 150443; United States, 14976; United States, 64325; United States, 56032; United States, 42605}",
+        ),
+    ] {
+        assert_eq!(expected, eval_to_string(gc.grid(), formula));
+    }
+}
+
+#[test]
 fn test_cell_range_op_errors() {
     let g = Grid::new();
 

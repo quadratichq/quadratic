@@ -206,6 +206,7 @@ impl SyntaxRule for ExpressionWithPrecedence {
                 | Token::CellOrTableRef
                 | Token::InternalCellRef => true,
 
+                Token::TableRefBracketsExpression => false,
                 Token::Whitespace => false,
                 Token::Unknown => false,
             }
@@ -222,6 +223,7 @@ impl SyntaxRule for ExpressionWithPrecedence {
                 [
                     FunctionCall.map(Some),
                     CellReferenceExpression.map(Some),
+                    TableReferenceExpression.map(Some),
                     StringLiteralExpression.map(Some),
                     NumericLiteral.map(Some),
                     ArrayLiteral.map(Some),
@@ -402,7 +404,7 @@ impl SyntaxRule for FunctionCall {
     }
 }
 
-/// Matches a single cell or table reference.
+/// Matches a single cell reference.
 #[derive(Debug, Copy, Clone)]
 pub struct CellReferenceExpression;
 impl_display!(for CellReferenceExpression, "cell reference such as 'A6' or '$ZB$3'");
@@ -415,6 +417,31 @@ impl SyntaxRule for CellReferenceExpression {
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         Ok(p.parse(CellReference)?
             .map(|(sheet_id, range)| ast::AstNodeContents::CellRef(sheet_id, range)))
+    }
+}
+
+/// Matches a table reference.
+#[derive(Debug, Copy, Clone)]
+pub struct TableReferenceExpression;
+impl_display!(for TableReferenceExpression, "table reference such as 'MyTable' or 'MyTable[ColumnName]'");
+impl SyntaxRule for TableReferenceExpression {
+    type Output = AstNode;
+
+    fn prefix_matches(&self, p: Parser<'_>) -> bool {
+        TableReference.prefix_matches(p)
+    }
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
+        let spanned = p.parse(TableReference)?;
+        spanned.try_map(|table_ref| {
+            Ok(ast::AstNodeContents::RangeRef(SheetCellRefRange {
+                sheet_id: p
+                    .ctx
+                    .try_table(&table_ref.table_name)
+                    .ok_or(RunErrorMsg::BadCellReference)?
+                    .sheet_id,
+                cells: CellRefRange::Table { range: table_ref },
+            }))
+        })
     }
 }
 

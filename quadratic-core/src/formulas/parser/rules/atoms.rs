@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::{a1::SheetCellRefRange, TableRef};
+use crate::a1::SheetCellRefRange;
 
 use super::*;
 
@@ -93,24 +93,6 @@ impl SyntaxRule for SheetRefPrefix {
     }
 }
 
-/// Returns `Some(true)` if this matches the start of a table reference,
-/// `Some(false)` if this matches the start of a cell reference, or `None` if it
-/// matches neither.
-fn is_table_ref(mut p: Parser<'_>) -> Option<bool> {
-    match p.next()? {
-        Token::CellOrTableRef | Token::InternalCellRef => Some(p.ctx.has_table(p.token_str())),
-        Token::UnquotedSheetReference => {
-            p.next();
-            Some(p.ctx.has_table(p.token_str()))
-        }
-        Token::StringLiteral if p.next()? == Token::SheetRefOp => {
-            p.next();
-            Some(p.ctx.has_table(p.token_str()))
-        }
-        _ => None,
-    }
-}
-
 /// Matches a single cell reference.
 #[derive(Debug, Copy, Clone)]
 pub struct CellReference;
@@ -134,43 +116,6 @@ impl SyntaxRule for CellReference {
             span: Span::merge(start_span, p.span()),
             inner: (opt_sheet_id, ref_range_bounds),
         })
-    }
-}
-
-/// Matches a single table reference.
-#[derive(Debug, Copy, Clone)]
-pub struct TableReference;
-impl_display!(for TableReference, "table reference such as 'MyTable[Column Name]'");
-impl SyntaxRule for TableReference {
-    type Output = Spanned<TableRef>;
-
-    fn prefix_matches(&self, p: Parser<'_>) -> bool {
-        is_table_ref(p) == Some(true)
-    }
-
-    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
-        // let start_span = p.peek_next_span();
-
-        // Sheet name is allowed but ignored for table references.
-        // Table names are unique across the whole file.
-        let _sheet_name = p.try_parse(SheetRefPrefix).transpose()?;
-
-        p.next();
-
-        let table_name = p.token_str();
-
-        if !p.ctx.has_table(table_name) {
-            return Err(RunErrorMsg::BadCellReference.with_span(p.span()));
-        }
-
-        todo!("parse the rest of the table reference")
-
-        // TableRef::parse(s, context);
-
-        // match p.try_parse(todo!()) {
-        //     Some(_) => todo!(),
-        //     None => todo!(),
-        // }
     }
 }
 
