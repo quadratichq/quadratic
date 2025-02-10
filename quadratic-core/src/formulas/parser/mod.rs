@@ -60,8 +60,14 @@ pub fn find_cell_references(
     while !p.is_done() {
         if let Some(Ok(cell_ref)) = p.try_parse(rules::CellRangeReference) {
             ret.push(cell_ref);
-        } else {
-            p.next();
+        } else if let Some(Ok(table_ref)) = p.try_parse(rules::TableReference) {
+            ret.push(table_ref.map(|range| SheetCellRefRange {
+                sheet_id: match ctx.try_table(&range.table_name) {
+                    Some(table) => table.sheet_id,
+                    None => pos.sheet_id,
+                },
+                cells: CellRefRange::Table { range },
+            }));
         }
     }
 
