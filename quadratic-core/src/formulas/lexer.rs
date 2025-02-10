@@ -107,14 +107,6 @@ const UNTERMINATED_STRING_LITERAL_PATTERN: &str = r#"["']"#;
 lazy_static! {
     /// List of token patterns, arranged roughly from least to most general.
     static ref TOKEN_PATTERNS: &'static [&'static str] = vec![
-        // Reference to a table.
-        TABLE_NAME_PATTERN,
-        // Square brackets containing table reference.
-        dbg!(*TABLE_BRACKETS_PATTERN),
-        // Comparison operators `==`, `!=`, `<=`, `>=` and `<>`.
-        r#"[=!<>]=|<>"#,
-        // Double and triple dot.
-        r"\.\.\.?",
         // Line comment.
         r"//[^\n]*",
         // Start of a block comment (block comment has special handling).
@@ -135,6 +127,14 @@ lazy_static! {
         INTERNAL_CELL_REFERENCE_PATTERN,
         // Reference to a cell.
         A1_CELL_REFERENCE_PATTERN,
+        // Reference to a table.
+        TABLE_NAME_PATTERN,
+        // Square brackets containing table reference.
+        dbg!(*TABLE_BRACKETS_PATTERN),
+        // Comparison operators `==`, `!=`, `<=`, `>=` and `<>`.
+        r#"[=!<>]=|<>"#,
+        // Double and triple dot.
+        r"\.\.\.?",
         // Whitespace.
         r"\s+",
         // Any other single Unicode character.
