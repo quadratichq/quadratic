@@ -108,6 +108,7 @@ fn simple_parse_and_check_formula(formula_string: &str) -> bool {
 /// let replaced = replace_internal_cell_references("SUM(R[1]C[0])", pos);
 /// assert_eq!(replaced, "SUM(A1)");
 /// ```
+#[deprecated = "use `replace_cell_references_with()` instead"]
 pub fn replace_internal_cell_references(source: &str, ctx: &A1Context, pos: SheetPos) -> String {
     let replace_fn = |range_ref: SheetCellRefRange| range_ref.to_a1_string(None, ctx, false);
     replace_cell_range_references(source, ctx, pos, replace_fn)
@@ -126,6 +127,7 @@ pub fn replace_internal_cell_references(source: &str, ctx: &A1Context, pos: Shee
 /// let replaced = replace_a1_notation("SUM(A1)", pos);
 /// assert_eq!(replaced, "SUM(R[1]C[0])");
 /// ```
+#[deprecated = "use `replace_cell_references_with()` instead"]
 pub fn replace_a1_notation(source: &str, ctx: &A1Context, pos: SheetPos) -> String {
     let replace_fn = |range_ref: SheetCellRefRange| {
         range_ref.to_rc_string(Some(pos.sheet_id), ctx, false, pos.into())
@@ -133,11 +135,7 @@ pub fn replace_a1_notation(source: &str, ctx: &A1Context, pos: SheetPos) -> Stri
     replace_cell_range_references(source, ctx, pos, replace_fn)
 }
 
-/// Replace all cell references with internal cell references (RC notation) by
-/// applying the function `replace_x_fn` to X coordinates and `replace_y_fn` to
-/// Y coordinates.
-///
-/// TODO: remove this
+/// Replace all cell references by applying the function `replace_xy_fn` to them.
 pub fn replace_cell_references_with(
     source: &str,
     ctx: &A1Context,
