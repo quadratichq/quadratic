@@ -130,7 +130,7 @@ lazy_static! {
         // Reference to a table.
         TABLE_NAME_PATTERN,
         // Square brackets containing table reference.
-        dbg!(*TABLE_BRACKETS_PATTERN),
+        *TABLE_BRACKETS_PATTERN,
         // Comparison operators `==`, `!=`, `<=`, `>=` and `<>`.
         r#"[=!<>]=|<>"#,
         // Double and triple dot.
