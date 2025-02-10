@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
     fmt::{self, Display},
+    num::NonZeroU32,
 };
 
 use serde::{Deserialize, Serialize};
@@ -126,6 +127,14 @@ pub struct OutputArray {
 pub struct OutputSize {
     pub w: i64,
     pub h: i64,
+}
+impl From<(NonZeroU32, NonZeroU32)> for OutputSize {
+    fn from((w, h): (NonZeroU32, NonZeroU32)) -> Self {
+        Self {
+            w: w.get().into(),
+            h: h.get().into(),
+        }
+    }
 }
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

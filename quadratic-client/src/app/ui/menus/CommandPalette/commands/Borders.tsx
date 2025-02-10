@@ -1,4 +1,8 @@
-import { ChangeBorder, useBorders, UseBordersResults } from '@/app/ui/hooks/useBorders';
+import { isAvailableBecauseCanEditFile } from '@/app/actions';
+import type { ChangeBorder, UseBordersResults } from '@/app/ui/hooks/useBorders';
+import { useBorders } from '@/app/ui/hooks/useBorders';
+import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import {
   BorderAllIcon,
   BorderBottomIcon,
@@ -11,8 +15,6 @@ import {
   BorderTopIcon,
   BorderVerticalIcon,
 } from '@/shared/components/Icons';
-import { isAvailableBecauseCanEditFile } from '../../../../actions';
-import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
 export const BordersHook = (): CommandGroup => {
   const borders = useBorders();

@@ -7,20 +7,20 @@ import {
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { codeCellIsAConnection, getCodeCell, getConnectionUuid, getLanguage } from '@/app/helpers/codeCellLanguage';
+import { codeCellIsAConnection, getCodeCell, getLanguage } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
-import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
-import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
+import { CodeEditorHeaderLabel } from '@/app/ui/menus/CodeEditor/CodeEditorHeaderLabel';
 import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
 import { SnippetsPopover } from '@/app/ui/menus/CodeEditor/SnippetsPopover';
 import { useCancelRun } from '@/app/ui/menus/CodeEditor/hooks/useCancelRun';
 import { useCloseCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useCloseCodeEditor';
 import { useSaveAndRunCell } from '@/app/ui/menus/CodeEditor/hooks/useSaveAndRunCell';
-import { PanelPosition, useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
+import type { PanelPosition } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
+import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
-import { LanguageState } from '@/app/web-workers/languageTypes';
-import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import type { LanguageState } from '@/app/web-workers/languageTypes';
+import type { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import {
   CloseIcon,
   DockToBottomIcon,
@@ -33,8 +33,9 @@ import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import * as monaco from 'monaco-editor';
-import { MouseEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import type * as monaco from 'monaco-editor';
+import type { MouseEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 interface CodeEditorHeaderProps {
@@ -47,7 +48,6 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
   } = useFileRouteLoaderData();
 
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
-  const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
   const codeCellState = useRecoilValue(codeEditorCodeCellAtom);
   const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
   const showDiffEditor = useRecoilValue(codeEditorShowDiffEditorAtom);
@@ -59,48 +59,10 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
     [permissions, teamPermissions, isConnection]
   );
   const { panelPosition, setPanelPosition } = useCodeEditorPanelData();
-  const connectionsFetcher = useConnectionsFetcher();
-
-  const a1Pos = useMemo(
-    () => xyToA1(codeCellState.pos.x, codeCellState.pos.y),
-    [codeCellState.pos.x, codeCellState.pos.y]
-  );
-
-  // Get the connection name (it's possible the user won't have access to it
-  // because they're in a file they have access to but not the team — or
-  // the connection was deleted)
-  const currentConnectionName = useMemo(() => {
-    if (connectionsFetcher.data) {
-      const connectionUuid = getConnectionUuid(codeCellState.language);
-      const foundConnection = connectionsFetcher.data.connections.find(({ uuid }) => uuid === connectionUuid);
-      if (foundConnection) {
-        return foundConnection.name;
-      }
-    }
-    return '';
-  }, [codeCellState.language, connectionsFetcher.data]);
-
-  // Keep track of the current sheet ID so we know whether to show the sheet name or not
-  const currentCodeEditorCellIsNotInActiveSheet = useMemo(
-    () => currentSheetId !== codeCellState.sheetId,
-    [currentSheetId, codeCellState.sheetId]
-  );
-  const currentSheetNameOfActiveCodeEditorCell = useMemo(
-    () => sheets.getById(codeCellState.sheetId)?.name,
-    [codeCellState.sheetId]
-  );
 
   const { cancelRun } = useCancelRun();
   const { saveAndRunCell } = useSaveAndRunCell();
   const { closeEditor } = useCloseCodeEditor({ editorInst });
-
-  useEffect(() => {
-    const updateSheetName = () => setCurrentSheetId(sheets.sheet.id);
-    events.on('changeSheet', updateSheetName);
-    return () => {
-      events.off('changeSheet', updateSheetName);
-    };
-  }, []);
 
   // show when this cell is already in the execution queue
   const [isRunningComputation, setIsRunningComputation] = useState<false | 'multiplayer' | 'player'>(false);
@@ -109,7 +71,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
     const playerState = (_state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
       if (
         current &&
-        current.sheetPos.sheetId === sheets.sheet.id &&
+        current.sheetPos.sheetId === sheets.current &&
         current.sheetPos.x === codeCellState.pos.x &&
         current.sheetPos.y === codeCellState.pos.y
       ) {
@@ -118,7 +80,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
         awaitingExecution?.length &&
         awaitingExecution.find(
           (cell) =>
-            cell.sheetPos.sheetId === sheets.sheet.id &&
+            cell.sheetPos.sheetId === sheets.current &&
             cell.sheetPos.x === codeCellState.pos.x &&
             cell.sheetPos.y === codeCellState.pos.y
         )
@@ -171,6 +133,24 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
     };
   }, [codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId]);
 
+  // const description = useMemo(() => {
+  //   if (codeCell) {
+  //     if (htmlCellsHandler.isHtmlCell(codeCellState.pos.x, codeCellState.pos.y)) {
+  //       return 'Python chart at';
+  //     } else if (
+  //       pixiApp.cellsSheets
+  //         .getById(codeCellState.sheetId)
+  //         ?.cellsImages.isImageCell(codeCellState.pos.x, codeCellState.pos.y)
+  //     ) {
+  //       return 'JS chart at';
+  //     } else {
+  //       return 'Cell at';
+  //     }
+  //   } else {
+  //     return '';
+  //   }
+  // }, [codeCell, codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId]);
+
   const changePanelPosition = useCallback(
     (e: MouseEvent<HTMLButtonElement>) => {
       setPanelPosition((prev: PanelPosition) => (prev === 'left' ? 'bottom' : 'left'));
@@ -180,7 +160,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
   );
 
   return (
-    <div className="flex items-center border-l border-border py-1 pl-3 pr-2">
+    <div className="flex h-12 items-center border-l border-border pl-3 pr-2">
       <div
         className={cn(
           `relative`,
@@ -195,23 +175,14 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
         </TooltipPopover>
       </div>
 
-      <div className="mx-2 flex flex-col truncate">
-        <div className="text-sm font-medium leading-4">
-          {`Cell ${a1Pos}`}
-          {currentCodeEditorCellIsNotInActiveSheet && (
-            <span className="ml-1 min-w-0 truncate">- {currentSheetNameOfActiveCodeEditorCell}</span>
-          )}
-        </div>
-
-        {currentConnectionName && (
-          <div className="text-xs leading-4 text-muted-foreground">Connection: {currentConnectionName}</div>
-        )}
-      </div>
+      <CodeEditorHeaderLabel />
 
       <div className="ml-auto flex flex-shrink-0 items-center gap-1 py-1">
         {isRunningComputation && (
           <TooltipPopover label={`${language} executing…`} side="bottom">
-            <SpinnerIcon className="mr-2 text-primary" />
+            <div>
+              <SpinnerIcon className="mr-2 text-primary" />
+            </div>
           </TooltipPopover>
         )}
 

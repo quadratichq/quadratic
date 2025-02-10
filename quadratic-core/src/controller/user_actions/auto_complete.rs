@@ -29,6 +29,7 @@ impl GridController {
 mod tests {
     use super::*;
     use crate::{
+        a1::A1Selection,
         array,
         grid::{
             sheet::borders::{BorderSelection, BorderStyle},
@@ -38,7 +39,7 @@ mod tests {
             assert_cell_format_bold_row, assert_cell_format_cell_fill_color_row,
             assert_cell_value_row, assert_code_cell_value, assert_display_cell_value, print_table,
         },
-        A1Selection, CellValue, Pos, SheetPos, SheetRect,
+        CellValue, Pos, SheetPos, SheetRect,
     };
 
     fn test_setup_rect(selection: &Rect) -> (GridController, SheetId) {
@@ -86,7 +87,7 @@ mod tests {
                 if let Some(is_bold) = bolds.get(count) {
                     if *is_bold {
                         grid_controller
-                            .set_bold(&A1Selection::from_single_cell(sheet_pos), true, None)
+                            .set_bold(&A1Selection::from_single_cell(sheet_pos), Some(true), None)
                             .unwrap();
                     }
                 }
@@ -439,29 +440,29 @@ mod tests {
     #[test]
     fn test_expand_horizontal_series_up_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 6, y: 15 }, Pos { x: 9, y: 19 });
-        let range: Rect = Rect::new_span(Pos { x: 6, y: 12 }, Pos { x: 15, y: 19 });
+        let range: Rect = Rect::new_span(Pos { x: 6, y: 12 }, Pos { x: 13, y: 19 });
         let (mut grid, sheet_id) = test_setup_rect_horiz_series(&selected);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
         print_table(&grid, sheet_id, range);
 
         let expected = vec!["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun", "Mon"];
-        assert_cell_value_row(&grid, sheet_id, 6, 15, 12, expected.clone());
-        assert_cell_value_row(&grid, sheet_id, 6, 15, 17, expected);
+        assert_cell_value_row(&grid, sheet_id, 6, 13, 12, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 6, 13, 17, expected);
 
         let expected = vec!["May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        assert_cell_value_row(&grid, sheet_id, 6, 15, 13, expected.clone());
-        assert_cell_value_row(&grid, sheet_id, 6, 15, 18, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 6, 13, 13, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 6, 13, 18, expected.clone());
 
         let expected = vec!["32", "64", "128", "256", "512", "1024", "2048", "4096"];
-        assert_cell_value_row(&grid, sheet_id, 6, 15, 14, expected.clone());
-        assert_cell_value_row(&grid, sheet_id, 6, 15, 19, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 6, 13, 14, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 6, 13, 19, expected.clone());
 
         let expected = vec!["8", "9", "10", "11", "12", "13", "14", "15"];
-        assert_cell_value_row(&grid, sheet_id, 6, 15, 15, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 6, 13, 15, expected.clone());
 
         let expected = vec!["10", "9", "8", "7", "6", "5", "4", "3"];
-        assert_cell_value_row(&grid, sheet_id, 6, 15, 16, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 6, 13, 16, expected.clone());
     }
 
     #[test]

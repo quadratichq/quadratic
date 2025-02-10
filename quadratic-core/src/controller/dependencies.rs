@@ -7,13 +7,14 @@ use crate::{SheetPos, SheetRect};
 use super::GridController;
 
 impl GridController {
-    /// Searches all code_runs in all sheets for cells that are dependent on the given sheet_rect.
+    /// Searches all data_tables in all sheets for cells that are dependent on the given sheet_rect.
     pub fn get_dependent_code_cells(&self, sheet_rect: &SheetRect) -> Option<HashSet<SheetPos>> {
         let mut dependent_cells = HashSet::new();
 
+        let context = self.grid.a1_context();
         self.grid.sheets().iter().for_each(|sheet| {
-            sheet.code_runs.iter().for_each(|(pos, code_run)| {
-                if code_run.cells_accessed.intersects(sheet_rect) {
+            sheet.iter_code_runs().for_each(|(pos, code_run)| {
+                if code_run.cells_accessed.intersects(sheet_rect, &context) {
                     dependent_cells.insert(pos.to_sheet_pos(sheet.id));
                 }
             });
@@ -30,11 +31,9 @@ impl GridController {
 #[cfg(test)]
 #[serial_test::parallel]
 mod test {
-    use chrono::Utc;
-
     use crate::{
         controller::GridController,
-        grid::{CellsAccessed, CodeCellLanguage, CodeRun, CodeRunResult},
+        grid::{CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind},
         CellValue, Pos, SheetPos, SheetRect, Value,
     };
 
@@ -62,20 +61,26 @@ mod test {
             sheet_id,
         };
         cells_accessed.add_sheet_rect(sheet_rect);
-        sheet.set_code_run(
+        let code_run = CodeRun {
+            std_err: None,
+            std_out: None,
+            error: None,
+            return_type: Some("text".into()),
+            line_number: None,
+            output_type: None,
+            cells_accessed: cells_accessed.clone(),
+        };
+        sheet.set_data_table(
             Pos { x: 0, y: 2 },
-            Some(CodeRun {
-                formatted_code_string: None,
-                last_modified: Utc::now(),
-                std_err: None,
-                std_out: None,
-                spill_error: false,
-                result: CodeRunResult::Ok(Value::Single(CellValue::Text("test".to_string()))),
-                return_type: Some("text".into()),
-                line_number: None,
-                output_type: None,
-                cells_accessed: cells_accessed.clone(),
-            }),
+            Some(DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                "Table 1",
+                Value::Single(CellValue::Text("test".to_string())),
+                false,
+                false,
+                true,
+                None,
+            )),
         );
         let sheet_pos_02 = SheetPos {
             x: 0,

@@ -3,7 +3,9 @@ use crate::grid::js_types::*;
 use crate::wasm_bindings::controller::sheet_info::SheetInfo;
 use js_sys::{ArrayBuffer, Uint8Array};
 use std::str::FromStr;
+use util::set_panic_hook;
 
+pub mod ai_context;
 pub mod auto_complete;
 pub mod borders;
 pub mod bounds;
@@ -11,6 +13,7 @@ pub mod cells;
 pub mod clipboard;
 pub mod code;
 pub mod col_row;
+pub mod data_table;
 pub mod export;
 pub mod formatting;
 pub mod import;
@@ -33,6 +36,8 @@ impl GridController {
         last_sequence_num: u32,
         initialize: bool,
     ) -> Result<GridController, JsValue> {
+        set_panic_hook();
+
         match file::import(file).map_err(|e| e.to_string()) {
             Ok(file) => {
                 let mut grid = GridController::from_grid(file, last_sequence_num as u64);
@@ -40,6 +45,9 @@ impl GridController {
                 // populate data for client and text renderer
                 if initialize {
                     grid.send_viewport_buffer();
+
+                    // a1 context needs to be sent before SheetInfo
+                    grid.send_a1_context();
 
                     // first recalculate all bounds in sheets
                     let mut html = vec![];
@@ -84,7 +92,7 @@ impl GridController {
                             sheet.send_all_validation_warnings();
 
                             // sends all borders to the client
-                            sheet.borders.send_sheet_borders(*sheet_id);
+                            sheet.send_sheet_borders(*sheet_id);
                         }
                     });
                 }

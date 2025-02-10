@@ -4,7 +4,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 
 export class UrlParamsUser {
   private pixiAppSettingsInitialized = false;

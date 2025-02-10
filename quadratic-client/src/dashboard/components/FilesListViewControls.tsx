@@ -2,7 +2,8 @@ import { CloseIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import React from 'react';
-import { FileListViewControlsDropdown, ViewPreferences } from './FilesListViewControlsDropdown';
+import type { ViewPreferences } from './FilesListViewControlsDropdown';
+import { FileListViewControlsDropdown } from './FilesListViewControlsDropdown';
 
 export function FilesListViewControls({
   filterValue,

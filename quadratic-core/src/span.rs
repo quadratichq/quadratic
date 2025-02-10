@@ -6,6 +6,8 @@ use std::ops::Range;
 
 use serde::{Deserialize, Serialize};
 
+use crate::CodeResultExt;
+
 /// A contiguous span of text from one byte index to another in a formula.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
@@ -117,10 +119,7 @@ impl<T> Spanned<T> {
         f: impl FnOnce(T) -> Result<U, crate::RunErrorMsg>,
     ) -> Result<Spanned<U>, crate::RunError> {
         let Spanned { span, inner } = self;
-        match f(inner) {
-            Ok(ok) => Ok(Spanned { span, inner: ok }),
-            Err(e) => Err(e.with_span(span)),
-        }
+        f(inner).with_span(span)
     }
     /// Converts a `&Spanned<T>` to a `Spanned<&T>`.
     pub fn as_ref(&self) -> Spanned<&T> {

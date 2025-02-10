@@ -411,14 +411,16 @@ fn get_functions() -> Vec<FormulaFunction> {
 mod tests {
     use proptest::proptest;
 
-    use crate::{formulas::tests::*, Pos};
+    use crate::{a1::A1Context, formulas::tests::*, Pos};
     use serial_test::parallel;
 
     #[test]
     #[parallel]
     fn test_sum() {
         let g = Grid::new();
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
+        let parse_ctx = A1Context::test(&[], &[]);
+        let pos = g.origin_in_first_sheet();
+        let mut eval_ctx = Ctx::new(&g, pos);
         assert_eq!(
             RunErrorMsg::Expected {
                 expected: "number".into(),
@@ -433,9 +435,9 @@ mod tests {
                 func_name: "SUM".into(),
                 arg_name: "numbers".into()
             },
-            parse_formula("SUM()", Pos::ORIGIN)
+            parse_formula("SUM()", &parse_ctx, pos)
                 .unwrap()
-                .eval(&mut ctx)
+                .eval(&mut eval_ctx)
                 .unwrap_err()
                 .msg,
         );
@@ -527,8 +529,8 @@ mod tests {
         // Test mismatched range
         assert_eq!(
             RunErrorMsg::ExactArraySizeMismatch {
-                expected: ArraySize::try_from((1, 12)).unwrap(),
-                got: ArraySize::try_from((1, 11)).unwrap(),
+                expected: ArraySize::try_from((1_i64, 12_i64)).unwrap(),
+                got: ArraySize::try_from((1_i64, 11_i64)).unwrap(),
             },
             eval_to_err(&g, "SUMIFS(0..10, 0..11, \"<=5\")").msg,
         );
@@ -538,15 +540,17 @@ mod tests {
     #[parallel]
     fn test_product() {
         let g = Grid::new();
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
+        let pos = g.origin_in_first_sheet();
+        let parse_ctx = A1Context::test(&[], &[]);
+        let mut eval_ctx = Ctx::new(&g, pos);
         assert_eq!(
             RunErrorMsg::MissingRequiredArgument {
                 func_name: "PRODUCT".into(),
                 arg_name: "numbers".into()
             },
-            parse_formula("PRODUCT()", Pos::ORIGIN)
+            parse_formula("PRODUCT()", &parse_ctx, pos)
                 .unwrap()
-                .eval(&mut ctx)
+                .eval(&mut eval_ctx)
                 .unwrap_err()
                 .msg,
         );
@@ -576,29 +580,30 @@ mod tests {
     #[parallel]
     fn test_abs() {
         let g = Grid::new();
+        let pos = g.origin_in_first_sheet();
         assert_eq!("10", eval_to_string(&g, "ABS(-10)"));
         assert_eq!("10", eval_to_string(&g, "ABS(10)"));
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
+        let parse_ctx = A1Context::test(&[], &[]);
+        let mut eval_ctx = Ctx::new(&g, pos);
         assert_eq!(
             RunErrorMsg::MissingRequiredArgument {
                 func_name: "ABS".into(),
                 arg_name: "number".into(),
             },
-            parse_formula("ABS()", Pos::ORIGIN)
+            parse_formula("ABS()", &parse_ctx, pos)
                 .unwrap()
-                .eval(&mut ctx)
+                .eval(&mut eval_ctx)
                 .unwrap_err()
                 .msg,
         );
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         assert_eq!(
             RunErrorMsg::TooManyArguments {
                 func_name: "ABS".into(),
                 max_arg_count: 1,
             },
-            parse_formula("ABS(16, 17)", Pos::ORIGIN)
+            parse_formula("ABS(16, 17)", &parse_ctx, pos)
                 .unwrap()
-                .eval(&mut ctx)
+                .eval(&mut eval_ctx)
                 .unwrap_err()
                 .msg,
         );
@@ -904,7 +909,7 @@ mod tests {
                 func_name: "PI".into(),
                 max_arg_count: 0,
             },
-            parse_formula("PI(16)", Pos::ORIGIN)
+            simple_parse_formula("PI(16)")
                 .unwrap()
                 .eval(&mut ctx)
                 .unwrap_err()
@@ -923,7 +928,7 @@ mod tests {
                 func_name: "TAU".into(),
                 max_arg_count: 0,
             },
-            parse_formula("TAU(16)", Pos::ORIGIN)
+            simple_parse_formula("TAU(16)")
                 .unwrap()
                 .eval(&mut ctx)
                 .unwrap_err()

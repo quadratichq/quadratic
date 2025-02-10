@@ -1,16 +1,16 @@
-import { describe, expect, it, vi } from 'vitest';
-import * as Sentry from '@sentry/react';
 import {
-  convertReactColorToString,
-  convertColorStringToTint,
-  convertTintToString,
-  convertTintToHex,
-  convertTintToArray,
   convertColorStringToHex,
+  convertColorStringToTint,
+  convertReactColorToString,
   convertRgbaToTint,
-} from './convertColor';
-import { colors } from '../theme/colors';
-import { ColorResult } from 'react-color';
+  convertTintToArray,
+  convertTintToHex,
+  convertTintToString,
+} from '@/app/helpers/convertColor';
+import { colors } from '@/app/theme/colors';
+import * as Sentry from '@sentry/react';
+import type { ColorResult } from 'react-color';
+import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@sentry/react');
 

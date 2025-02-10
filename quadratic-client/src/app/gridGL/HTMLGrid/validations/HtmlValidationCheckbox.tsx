@@ -1,6 +1,6 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { HtmlValidationsData } from '@/app/gridGL/HTMLGrid/validations/useHtmlValidations';
+import type { HtmlValidationsData } from '@/app/gridGL/HTMLGrid/validations/useHtmlValidations';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useEffect } from 'react';
 
@@ -16,9 +16,9 @@ export const HtmlValidationCheckbox = (props: Props) => {
       if (!validation) return;
       if (!location || location.x !== column || location.y !== row) return;
       if (validation.rule !== 'None' && 'Logical' in validation.rule) {
-        const value = await quadraticCore.getDisplayCell(sheets.sheet.id, column, row);
+        const value = await quadraticCore.getDisplayCell(sheets.current, column, row);
         quadraticCore.setCellValue(
-          sheets.sheet.id,
+          sheets.current,
           column,
           row,
           value === 'true' ? 'false' : 'true',

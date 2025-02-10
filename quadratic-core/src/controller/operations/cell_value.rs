@@ -7,7 +7,7 @@ use crate::cell_values::CellValues;
 use crate::controller::GridController;
 use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
 use crate::grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind};
-use crate::{A1Selection, CellValue, SheetPos};
+use crate::{a1::A1Selection, CellValue, SheetPos};
 
 // when a number's decimal is larger than this value, then it will treat it as text (this avoids an attempt to allocate a huge vector)
 // there is an unmerged alternative that might be interesting: https://github.com/declanvk/bigdecimal-rs/commit/b0a2ea3a403ddeeeaeef1ddfc41ff2ae4a4252d6
@@ -17,7 +17,7 @@ const MAX_BIG_DECIMAL_SIZE: usize = 10000000;
 impl GridController {
     /// Convert string to a cell_value and generate necessary operations
     pub(super) fn string_to_cell_value(
-        &mut self,
+        &self,
         sheet_pos: SheetPos,
         value: &str,
     ) -> (Vec<Operation>, CellValue) {
@@ -130,18 +130,67 @@ impl GridController {
 
     /// Generates and returns the set of operations to delete the values and code in a Selection
     /// Does not commit the operations or create a transaction.
-    pub fn delete_cells_operations(&self, selection: &A1Selection) -> Vec<Operation> {
+    ///
+    /// If force_table_bounds is true, then the operations will be generated for the table bounds even if the selection is not within a table.
+    pub fn delete_cells_operations(
+        &self,
+        selection: &A1Selection,
+        force_table_bounds: bool,
+    ) -> Vec<Operation> {
         let mut ops = vec![];
+
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-            let rects = sheet.selection_to_rects(selection);
+            let rects = sheet.selection_to_rects(selection, false, force_table_bounds);
+
             for rect in rects {
-                let cell_values = CellValues::new(rect.width(), rect.height());
+                let sheet_pos = SheetPos::from((rect.min.x, rect.min.y, selection.sheet_id));
+
+                if let Ok(data_table_pos) = sheet.first_data_table_within(sheet_pos.into()) {
+                    if let Some(data_table) = sheet.data_table(data_table_pos.to_owned()) {
+                        let mut data_table_rect =
+                            data_table.output_rect(data_table_pos.to_owned(), false);
+                        data_table_rect.min.y += data_table.y_adjustment(true);
+
+                        let is_full_table_selected = rect.contains_rect(&data_table_rect);
+
+                        let can_delete = is_full_table_selected || data_table.readonly;
+
+                        if can_delete {
+                            ops.push(Operation::DeleteDataTable {
+                                sheet_pos: data_table_pos.to_sheet_pos(sheet_pos.sheet_id),
+                            });
+                        } else {
+                            ops.push(Operation::SetDataTableAt {
+                                sheet_pos,
+                                values: CellValues::new_blank(
+                                    rect.width().min(
+                                        (data_table_rect.max.x - sheet_pos.x + 1).max(1) as u32,
+                                    ),
+                                    rect.height().min(
+                                        (data_table_rect.max.y - sheet_pos.y + 1).max(1) as u32,
+                                    ),
+                                ),
+                            });
+                        }
+                    }
+                }
+
                 ops.push(Operation::SetCellValues {
-                    sheet_pos: (rect.min.x, rect.min.y, selection.sheet_id).into(),
-                    values: cell_values,
+                    sheet_pos,
+                    values: CellValues::new_blank(rect.width(), rect.height()),
                 });
+
+                // need to update the selection if a table was deleted (since we
+                // can no longer use the table ref)
+                if selection.has_table_refs() {
+                    let replaced = selection.replace_table_refs(&self.grid().a1_context());
+                    ops.push(Operation::SetCursorA1 {
+                        selection: replaced,
+                    });
+                }
             }
-        };
+        }
+
         ops
     }
 
@@ -149,9 +198,10 @@ impl GridController {
     pub fn delete_values_and_formatting_operations(
         &mut self,
         selection: &A1Selection,
+        force_table_bounds: bool,
     ) -> Vec<Operation> {
-        let mut ops = self.delete_cells_operations(selection);
-        ops.extend(self.clear_format_borders_operations(selection));
+        let mut ops = self.clear_format_borders_operations(selection);
+        ops.extend(self.delete_cells_operations(selection, force_table_bounds));
         ops
     }
 }
@@ -167,7 +217,7 @@ mod test {
     use crate::controller::operations::operation::Operation;
     use crate::controller::GridController;
     use crate::grid::{CodeCellLanguage, CodeCellValue, SheetId};
-    use crate::{A1Selection, CellValue, SheetPos, SheetRect};
+    use crate::{a1::A1Selection, CellValue, SheetPos, SheetRect};
 
     #[test]
     #[parallel]
@@ -203,7 +253,7 @@ mod test {
     #[test]
     #[parallel]
     fn boolean_to_cell_value() {
-        let mut gc = GridController::test();
+        let gc = GridController::test();
         let sheet_pos = SheetPos {
             x: 1,
             y: 2,
@@ -237,7 +287,7 @@ mod test {
     #[test]
     #[parallel]
     fn number_to_cell_value() {
-        let mut gc = GridController::test();
+        let gc = GridController::test();
         let sheet_pos = SheetPos {
             x: 1,
             y: 2,
@@ -272,7 +322,7 @@ mod test {
     #[test]
     #[parallel]
     fn formula_to_cell_value() {
-        let mut gc = GridController::test();
+        let gc = GridController::test();
         let sheet_pos = SheetPos {
             x: 1,
             y: 2,
@@ -313,7 +363,7 @@ mod test {
     #[test]
     #[parallel]
     fn problematic_number() {
-        let mut gc = GridController::test();
+        let gc = GridController::test();
         let value = "980E92207901934";
         let (_, cell_value) = gc.string_to_cell_value(
             SheetPos {
@@ -350,18 +400,18 @@ mod test {
             None,
         );
         let selection = A1Selection::from_rect(SheetRect::from_numbers(1, 2, 2, 1, sheet_id));
-        let operations = gc.delete_cells_operations(&selection);
+        let operations = gc.delete_cells_operations(&selection, false);
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 2,
+            sheet_id,
+        };
+        let values = CellValues::new_blank(2, 1);
+
         assert_eq!(operations.len(), 1);
         assert_eq!(
             operations,
-            vec![Operation::SetCellValues {
-                sheet_pos: SheetPos {
-                    x: 1,
-                    y: 2,
-                    sheet_id
-                },
-                values: CellValues::new(2, 1)
-            }]
+            vec![Operation::SetCellValues { sheet_pos, values },]
         );
     }
 
@@ -389,27 +439,28 @@ mod test {
             None,
         );
         let selection = A1Selection::test_a1("A2:,B");
-        let operations = gc.delete_cells_operations(&selection);
+        let operations = gc.delete_cells_operations(&selection, false);
+
         assert_eq!(operations.len(), 2);
         assert_eq!(
             operations,
             vec![
+                // Operation::SetDataTableAt {
+                //     sheet_pos: SheetPos::new(sheet_id, 1, 2),
+                //     values: CellValues::new_blank(2, 1)
+                // },
                 Operation::SetCellValues {
-                    sheet_pos: SheetPos {
-                        x: 1,
-                        y: 2,
-                        sheet_id
-                    },
-                    values: CellValues::new(2, 1)
+                    sheet_pos: SheetPos::new(sheet_id, 1, 2),
+                    values: CellValues::new_blank(2, 1)
                 },
+                // Operation::SetDataTableAt {
+                //     sheet_pos: SheetPos::new(sheet_id, 2, 1),
+                //     values: CellValues::new_blank(1, 2)
+                // },
                 Operation::SetCellValues {
-                    sheet_pos: SheetPos {
-                        x: 2,
-                        y: 1,
-                        sheet_id
-                    },
-                    values: CellValues::new(1, 2)
-                }
+                    sheet_pos: SheetPos::new(sheet_id, 2, 1),
+                    values: CellValues::new_blank(1, 2)
+                },
             ]
         );
     }

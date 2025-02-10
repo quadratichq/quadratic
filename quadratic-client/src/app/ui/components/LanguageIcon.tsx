@@ -1,11 +1,11 @@
-import { CodeCellIds } from '@/app/helpers/codeCellLanguage';
+import type { CodeCellIds } from '@/app/helpers/codeCellLanguage';
 import { colors } from '@/app/theme/colors';
 import { Formula, JavaScript, MssqlIcon, MysqlIcon, PostgresIcon, Python, SnowflakeIcon } from '@/app/ui/icons';
 import { Subject } from '@mui/icons-material';
-import { SvgIconProps } from '@mui/material/SvgIcon';
+import type { SvgIconProps } from '@mui/material/SvgIcon';
 
 interface LanguageIconProps extends SvgIconProps {
-  language?: CodeCellIds | string;
+  language: CodeCellIds | string | null | undefined;
 }
 
 export function LanguageIcon({ language, ...props }: LanguageIconProps) {
@@ -19,7 +19,7 @@ export function LanguageIcon({ language, ...props }: LanguageIconProps) {
   ) : language && 'formula'.startsWith(language) ? (
     <Formula {...props} sx={{ color: colors.languageFormula, ...internalSx }} />
   ) : language && 'javascript'.startsWith(language) ? (
-    <JavaScript className="text-gray-700" sx={{ color: colors.languageJavascript, ...internalSx }} />
+    <JavaScript {...props} sx={{ color: colors.languageJavascript, ...internalSx }} />
   ) : language && 'postgres'.startsWith(language) ? (
     <PostgresIcon {...props} sx={{ color: colors.languagePostgres, ...internalSx }} />
   ) : language && 'mysql'.startsWith(language) ? (

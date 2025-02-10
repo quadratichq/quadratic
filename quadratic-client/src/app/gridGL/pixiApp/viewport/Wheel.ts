@@ -3,8 +3,10 @@
 import { events } from '@/app/events/events';
 import { CELL_HEIGHT } from '@/shared/constants/gridConstants';
 import { isMac } from '@/shared/utils/isMac';
-import { IPointData, Point } from '@pixi/math';
-import { Plugin, Viewport } from 'pixi-viewport';
+import type { IPointData } from '@pixi/math';
+import { Point } from '@pixi/math';
+import type { Viewport } from 'pixi-viewport';
+import { Plugin } from 'pixi-viewport';
 
 export const SCALE_OUT_OF_BOUNDS_SCROLL = 0.1;
 

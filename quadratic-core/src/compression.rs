@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use bincode::Options;
 use flate2::{
     write::{ZlibDecoder, ZlibEncoder},
     Compression,
@@ -7,6 +8,7 @@ use serde::de::DeserializeOwned;
 use std::io::prelude::*;
 
 const HEADER_DELIMITER: u8 = "*".as_bytes()[0];
+const BUFFER_SIZE: usize = 8192; // 8KB chunks
 
 pub enum CompressionFormat {
     None,
@@ -59,9 +61,21 @@ where
     T: DeserializeOwned,
 {
     match serialization_format {
-        SerializationFormat::Bincode => Ok(bincode::deserialize(data)?),
+        SerializationFormat::Bincode => Ok(deserialize_bincode(data)?),
         SerializationFormat::Json => Ok(serde_json::from_slice(data)?),
     }
+}
+
+pub fn deserialize_bincode<T>(data: &[u8]) -> Result<T>
+where
+    T: DeserializeOwned,
+{
+    let config = bincode::DefaultOptions::new()
+        .with_fixint_encoding()
+        .with_limit(1024 * 1024)
+        .allow_trailing_bytes();
+
+    Ok(config.deserialize(data)?)
 }
 
 // COMPRESSION
@@ -75,7 +89,11 @@ pub fn compress(compression_format: &CompressionFormat, data: Vec<u8>) -> Result
 
 pub fn compress_zlib(data: Vec<u8>) -> Result<Vec<u8>> {
     let mut encoder = ZlibEncoder::new(Vec::new(), Compression::fast());
-    encoder.write_all(data.as_slice())?;
+
+    for chunk in data.chunks(BUFFER_SIZE) {
+        encoder.write_all(chunk)?;
+    }
+
     Ok(encoder.finish()?)
 }
 
@@ -89,7 +107,10 @@ pub fn decompress(compression_format: &CompressionFormat, data: &[u8]) -> Result
 pub fn decompress_zlib(data: &[u8]) -> Result<Vec<u8>> {
     let writer = Vec::new();
     let mut decoder = ZlibDecoder::new(writer);
-    decoder.write_all(data)?;
+
+    for chunk in data.chunks(BUFFER_SIZE) {
+        decoder.write_all(chunk)?;
+    }
 
     Ok(decoder.finish()?)
 }

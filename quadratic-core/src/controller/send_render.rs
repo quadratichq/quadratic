@@ -7,7 +7,7 @@ use crate::{
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     viewport::ViewportBuffer,
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
-    CellValue, Pos, SheetPos, SheetRect,
+    Pos, SheetPos, SheetRect,
 };
 
 use super::{active_transactions::pending_transaction::PendingTransaction, GridController};
@@ -271,28 +271,7 @@ impl GridController {
     pub fn send_image(&self, sheet_pos: SheetPos) {
         if cfg!(target_family = "wasm") || cfg!(test) {
             if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
-                let image = sheet.code_run(sheet_pos.into()).and_then(|code_run| {
-                    code_run
-                        .cell_value_at(0, 0)
-                        .and_then(|cell_value| match cell_value {
-                            CellValue::Image(image) => Some(image.clone()),
-                            _ => None,
-                        })
-                });
-                let (w, h) = if let Some(size) = sheet.formats.render_size.get(sheet_pos.into()) {
-                    (Some(size.w), Some(size.h))
-                } else {
-                    (None, None)
-                };
-
-                crate::wasm_bindings::js::jsSendImage(
-                    sheet_pos.sheet_id.to_string(),
-                    sheet_pos.x as i32,
-                    sheet_pos.y as i32,
-                    image,
-                    w,
-                    h,
-                );
+                sheet.send_image(sheet_pos.into());
             }
         }
     }
@@ -308,6 +287,17 @@ impl GridController {
             transaction.operations.len() as i32,
         );
     }
+
+    pub fn send_a1_context(&self) {
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
+            return;
+        }
+
+        let context = self.grid().a1_context();
+        if let Ok(context) = serde_json::to_string(&context) {
+            crate::wasm_bindings::js::jsA1Context(context);
+        }
+    }
 }
 
 #[cfg(test)]
@@ -319,10 +309,10 @@ mod test {
         },
         grid::{
             js_types::{JsHtmlOutput, JsRenderCell},
-            RenderSize, SheetId,
+            SheetId,
         },
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
-        A1Selection, Pos,
+        Pos, SheetPos,
     };
     use serial_test::serial;
     use std::collections::HashSet;
@@ -374,11 +364,11 @@ mod test {
             ]),
         );
         gc.process_visible_dirty_hashes(&mut transaction);
-        assert!(!transaction.dirty_hashes.is_empty());
+        assert!(transaction.dirty_hashes.is_empty());
         expect_js_call_count("jsRenderCellSheets", 0, false);
         expect_js_call_count("jsHashesDirty", 0, false);
         gc.process_remaining_dirty_hashes(&mut transaction);
-        assert!(!transaction.dirty_hashes.is_empty());
+        assert!(transaction.dirty_hashes.is_empty());
         expect_js_call_count("jsRenderCellSheets", 0, false);
         expect_js_call_count("jsHashesDirty", 0, false);
     }
@@ -458,13 +448,8 @@ mod test {
         let _ = gc.calculation_complete(JsCodeResult {
             transaction_id,
             success: true,
-            std_err: None,
-            std_out: None,
             output_value: Some(vec!["<html></html>".to_string(), "text".to_string()]),
-            output_array: None,
-            line_number: None,
-            output_display_type: None,
-            cancel_compute: None,
+            ..Default::default()
         });
 
         expect_js_call(
@@ -476,6 +461,8 @@ mod test {
                 html: Some("<html></html>".to_string()),
                 w: None,
                 h: None,
+                show_name: true,
+                name: "Python1".to_string(),
             })
             .unwrap(),
             true,
@@ -498,25 +485,21 @@ mod test {
         gc.calculation_complete(JsCodeResult {
             transaction_id,
             success: true,
-            std_err: None,
-            std_out: None,
             output_value: Some(vec!["<html></html>".to_string(), "text".to_string()]),
-            output_array: None,
-            line_number: None,
-            output_display_type: None,
-            cancel_compute: None,
+            ..Default::default()
         })
         .unwrap();
 
-        gc.set_render_size(
-            &A1Selection::test_a1("A1"),
-            Some(RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string(),
-            }),
+        gc.set_chart_size(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            1.0,
+            2.0,
             None,
-        )
-        .unwrap();
+        );
 
         expect_js_call(
             "jsUpdateHtml",
@@ -525,8 +508,10 @@ mod test {
                 x: 1,
                 y: 1,
                 html: Some("<html></html>".to_string()),
-                w: Some("1".to_string()),
-                h: Some("2".to_string()),
+                w: Some(1.0),
+                h: Some(2.0),
+                show_name: true,
+                name: "Python1".to_string(),
             })
             .unwrap(),
             true,

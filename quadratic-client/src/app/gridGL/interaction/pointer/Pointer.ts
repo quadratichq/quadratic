@@ -6,30 +6,36 @@ import { PointerHeading } from '@/app/gridGL/interaction/pointer/PointerHeading'
 import { PointerHtmlCells } from '@/app/gridGL/interaction/pointer/PointerHtmlCells';
 import { PointerImages } from '@/app/gridGL/interaction/pointer/PointerImages';
 import { PointerLink } from '@/app/gridGL/interaction/pointer/PointerLink';
+import { PointerTable } from '@/app/gridGL/interaction/pointer/PointerTable';
+import { PointerTableResize } from '@/app/gridGL/interaction/pointer/PointerTableResize';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { Viewport } from 'pixi-viewport';
-import { InteractionEvent } from 'pixi.js';
+import type { Viewport } from 'pixi-viewport';
+import type { InteractionEvent } from 'pixi.js';
 
 export class Pointer {
   pointerHeading: PointerHeading;
   private pointerImages: PointerImages;
   pointerAutoComplete: PointerAutoComplete;
+  pointerTableResize: PointerTableResize;
   private pointerHtmlCells: PointerHtmlCells;
   private pointerCursor: PointerCursor;
   pointerDown: PointerDown;
   pointerCellMoving: PointerCellMoving;
+  private pointerTable: PointerTable;
   private pointerLink: PointerLink;
 
   constructor(viewport: Viewport) {
     this.pointerHeading = new PointerHeading();
     this.pointerAutoComplete = new PointerAutoComplete();
+    this.pointerTableResize = new PointerTableResize();
     this.pointerImages = new PointerImages();
     this.pointerDown = new PointerDown();
     this.pointerCursor = new PointerCursor();
     this.pointerHtmlCells = new PointerHtmlCells();
     this.pointerCellMoving = new PointerCellMoving();
+    this.pointerTable = new PointerTable();
     this.pointerLink = new PointerLink();
 
     viewport.on('pointerdown', this.handlePointerDown);
@@ -63,6 +69,7 @@ export class Pointer {
     viewport.off('pointerupoutside', this.pointerUp);
     pixiApp.canvas.removeEventListener('pointerleave', this.pointerLeave);
     window.removeEventListener('blur', this.pointerLeave);
+    window.removeEventListener('visibilitychange', this.visibilityChange);
     this.pointerDown.destroy();
     this.pointerHtmlCells.destroy();
   }
@@ -97,9 +104,11 @@ export class Pointer {
       this.pointerImages.pointerDown(world) ||
       this.pointerCellMoving.pointerDown(event) ||
       this.pointerHtmlCells.pointerDown(e) ||
+      this.pointerTable.pointerDown(world, event) ||
       this.pointerHeading.pointerDown(world, event) ||
       this.pointerLink.pointerDown(world, event) ||
       this.pointerAutoComplete.pointerDown(world) ||
+      this.pointerTableResize.pointerDown(world) ||
       this.pointerDown.pointerDown(world, event);
 
     this.updateCursor();
@@ -121,10 +130,12 @@ export class Pointer {
       this.pointerImages.pointerMove(world) ||
       this.pointerCellMoving.pointerMove(event, world) ||
       this.pointerHtmlCells.pointerMove(e) ||
+      this.pointerTable.pointerMove(world) ||
       this.pointerHeading.pointerMove(world) ||
       this.pointerAutoComplete.pointerMove(world) ||
+      this.pointerTableResize.pointerMove(world) ||
       this.pointerDown.pointerMove(world, event) ||
-      this.pointerCursor.pointerMove(world) ||
+      this.pointerCursor.pointerMove(world, event) ||
       this.pointerLink.pointerMove(world, event);
 
     this.updateCursor();
@@ -138,7 +149,9 @@ export class Pointer {
       this.pointerImages.cursor ??
       this.pointerHeading.cursor ??
       this.pointerAutoComplete.cursor ??
-      this.pointerLink.cursor;
+      this.pointerTableResize.cursor ??
+      this.pointerLink.cursor ??
+      this.pointerTable.cursor;
 
     pixiApp.canvas.style.cursor = cursor ?? 'unset';
   }
@@ -150,8 +163,10 @@ export class Pointer {
     this.pointerHtmlCells.pointerUp(e) ||
       this.pointerImages.pointerUp() ||
       this.pointerCellMoving.pointerUp() ||
+      this.pointerTable.pointerUp() ||
       this.pointerHeading.pointerUp() ||
       this.pointerAutoComplete.pointerUp() ||
+      this.pointerTableResize.pointerUp() ||
       this.pointerDown.pointerUp(event);
 
     this.updateCursor();
@@ -171,11 +186,12 @@ export class Pointer {
       this.pointerHtmlCells.handleEscape() ||
       this.pointerImages.handleEscape() ||
       this.pointerHeading.handleEscape() ||
-      this.pointerAutoComplete.handleEscape()
+      this.pointerAutoComplete.handleEscape() ||
+      this.pointerTableResize.handleEscape()
     );
   }
 
   getCursor(): string {
-    return this.pointerHeading.cursor || this.pointerAutoComplete.cursor || 'default';
+    return this.pointerHeading.cursor || this.pointerAutoComplete.cursor || this.pointerTableResize.cursor || 'default';
   }
 }

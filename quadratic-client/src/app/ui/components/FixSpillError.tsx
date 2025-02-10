@@ -1,8 +1,8 @@
 import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
-import { CodeCell } from '@/app/gridGL/types/codeCell';
-import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
+import type { CodeCell } from '@/app/gridGL/types/codeCell';
+import type { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { ArrowDropDownIcon, SpillErrorMoveIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';

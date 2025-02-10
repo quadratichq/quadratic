@@ -45,6 +45,22 @@ export const AccountIcon: IconComponent = (props) => {
   return <Icon {...props}>account_circle</Icon>;
 };
 
+export const AddColumnLeftIcon: IconComponent = (props) => {
+  return <Icon {...props}>add_column_left</Icon>;
+};
+
+export const AddColumnRightIcon: IconComponent = (props) => {
+  return <Icon {...props}>add_column_right</Icon>;
+};
+
+export const AddRowAboveIcon: IconComponent = (props) => {
+  return <Icon {...props}>add_row_above</Icon>;
+};
+
+export const AddRowBelowIcon: IconComponent = (props) => {
+  return <Icon {...props}>add_row_below</Icon>;
+};
+
 export const AddIcon: IconComponent = (props) => {
   return <Icon {...props}>add</Icon>;
 };
@@ -130,6 +146,10 @@ export const BorderStyleIcon: IconComponent = (props) => {
 
 export const BorderColorIcon: IconComponent = (props) => {
   return <Icon {...props}>border_color</Icon>;
+};
+
+export const CheckBoxEmptyIcon: IconComponent = (props) => {
+  return <Icon {...props}>check_box_outline_blank</Icon>;
 };
 
 export const CheckBoxIcon: IconComponent = (props) => {
@@ -553,6 +573,55 @@ export const ZoomInIcon: IconComponent = (props) => {
 
 export const ZoomOutIcon: IconComponent = (props) => {
   return <Icon {...props}>zoom_out</Icon>;
+};
+
+export const TableEditIcon: IconComponent = (props) => {
+  return <Icon {...props}>table_edit</Icon>;
+};
+
+export const TableConvertIcon: IconComponent = (props) => {
+  return <Icon {...props}>table_convert</Icon>;
+};
+
+export const FlattenTableIcon: IconComponent = (props) => {
+  return <Icon {...props}>view_compact</Icon>;
+};
+
+export const SortIcon: IconComponent = (props) => {
+  return <Icon {...props}>sort</Icon>;
+};
+
+export const SortDescendingIcon: IconComponent = (props) => {
+  return <Icon {...props}>sort</Icon>;
+};
+
+export const SortAscendingIcon: IconComponent = (props) => {
+  const { className, ...rest } = props;
+  return (
+    <Icon {...rest} className={cn(className, 'rotate-180 scale-x-[-1]')}>
+      sort
+    </Icon>
+  );
+};
+
+export const DragIndicatorIcon: IconComponent = (props) => {
+  return <Icon {...props}>drag_indicator</Icon>;
+};
+
+export const UpArrowIcon: IconComponent = (props) => {
+  return <Icon {...props}>arrow_upward</Icon>;
+};
+
+export const DownArrowIcon: IconComponent = (props) => {
+  return <Icon {...props}>arrow_downward</Icon>;
+};
+
+export const HideIcon: IconComponent = (props) => {
+  return <Icon {...props}>visibility_off</Icon>;
+};
+
+export const ShowIcon: IconComponent = (props) => {
+  return <Icon {...props}>visibility</Icon>;
 };
 
 export const FileOpenIcon: IconComponent = (props) => {

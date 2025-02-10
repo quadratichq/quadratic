@@ -9,10 +9,18 @@ import { debugShowLoadingHashes } from '@/app/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { isFloatEqual } from '@/app/helpers/float';
-import { ColumnRow, JsOffset, JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
-import { Pos } from '@/app/quadratic-core/quadratic_core';
-import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import { RenderBitmapFonts } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
+import type {
+  ColumnRow,
+  JsOffset,
+  JsRenderCell,
+  JsRowHeight,
+  Pos,
+  SheetBounds,
+  SheetInfo,
+} from '@/app/quadratic-core-types';
+import type { SheetOffsets } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { RenderBitmapFonts } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
 import { CellsTextHash } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHash';
 import { renderText } from '@/app/web-workers/renderWebWorker/worker/renderText';
 import { CELL_HEIGHT } from '@/shared/constants/gridConstants';

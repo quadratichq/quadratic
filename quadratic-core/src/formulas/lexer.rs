@@ -31,6 +31,8 @@ const FUNCTION_CALL_PATTERN: &str = r"[A-Za-z_](\.?[A-Za-z_\d])*\(";
 
 /// A1-style cell reference.
 ///
+/// TODO(ajf): remove `n` from this (was for parsing negative references)
+///
 /// \$?n?[a-zA-Z]+\$?n?\d+
 /// \$?        \$?            optional `$`s
 ///    n?         n?          optional `n`s
@@ -39,6 +41,42 @@ const FUNCTION_CALL_PATTERN: &str = r"[A-Za-z_](\.?[A-Za-z_\d])*\(";
 // const A1_CELL_REFERENCE_PATTERN: &str = r"\$?n?[A-Z]+\$?n?\d+";
 const A1_CELL_REFERENCE_PATTERN: &str = r"\$?n?([a-zA-Z]+\$?n?\d*|\d+)";
 const INTERNAL_CELL_REFERENCE_PATTERN: &str = r"R([\[|\{]-?\d+[\]|\}])C([\[|\{]-?\d+[\]|\}])";
+
+/// Table name.
+///
+/// This may be ambiguous between a table reference and a cell reference. For
+/// example, a table named `ALL` is ambiguous with the column named `ALL`.
+const TABLE_NAME_PATTERN: &str = r"[\\_a-zA-Z][\\_a-zA-Z\d\.]*";
+
+/// Contents of the inner square brackets of a table reference.
+///
+///           |                  either of ...
+/// #[a-zA-Z]*                     #header, #data, #all, #totals, etc.
+///            ('.|[^'\[\]])*      any number of times ...
+///               |                  either of ...
+///             '.                     a character escaped using '.
+///                [^'\[\]]            any character other than a single quote or square bracket
+const TABLE_BRACKETS_SEGMENT_CONTENTS_PATTERN: &str = r"#[a-zA-Z]*|('.|[^'\[\]])*";
+
+lazy_static! {
+    /// Inner square brackets of a table reference.
+    ///
+    /// \[    \]    square brackets containing ...
+    ///   ({})        contents of inner square brackets
+    static ref TABLE_BRACKETS_SEGMENT_PATTERN: &'static str =
+        format!(r"\[({})\]", TABLE_BRACKETS_SEGMENT_CONTENTS_PATTERN).leak();
+
+    /// Outermost square brackets of a table reference.
+    ///
+    /// \[                      \]    square brackets containing ...
+    ///   (    |               )        either of ...
+    ///    ({})                           contents of inner square brackets
+    ///         (    |       )*           any of number of times, either of ...
+    ///          ({})                       inner square brackets
+    ///               [^\[\]]               any non-square-bracket symbol
+    static ref TABLE_BRACKETS_PATTERN: &'static str =
+        format!(r"\[(({})|(({})|[^\[\]])*)\]", TABLE_BRACKETS_SEGMENT_CONTENTS_PATTERN, *TABLE_BRACKETS_SEGMENT_PATTERN).leak();
+}
 
 /// Floating-point or integer number, without leading sign.
 ///
@@ -66,37 +104,43 @@ const UNQUOTED_SHEET_REFERENCE_PATTERN: &str = r"[A-Za-z_][A-Za-z0-9_\.]*\s*!";
 /// Unterminated string literal.
 const UNTERMINATED_STRING_LITERAL_PATTERN: &str = r#"["']"#;
 
-/// List of token patterns, arranged roughly from least to most general.
-const TOKEN_PATTERNS: &[&str] = &[
-    // Comparison operators `==`, `!=`, `<=`, `>=` and `<>`.
-    r#"[=!<>]=|<>"#,
-    // Double and triple dot.
-    r"\.\.\.?",
-    // Line comment.
-    r"//[^\n]*",
-    // Start of a block comment (block comment has special handling).
-    r"/\*",
-    // Sheet reference.
-    UNQUOTED_SHEET_REFERENCE_PATTERN,
-    // String literal.
-    SINGLE_QUOTE_STRING_LITERAL_PATTERN,
-    DOUBLE_QUOTE_STRING_LITERAL_PATTERN,
-    UNTERMINATED_STRING_LITERAL_PATTERN,
-    // Numeric literal.
-    NUMERIC_LITERAL_PATTERN,
-    // Function call.
-    FUNCTION_CALL_PATTERN,
-    // Boolean literal (case-insensitive).
-    r#"false|true"#,
-    // Internal cell reference.
-    INTERNAL_CELL_REFERENCE_PATTERN,
-    // Reference to a cell.
-    A1_CELL_REFERENCE_PATTERN,
-    // Whitespace.
-    r"\s+",
-    // Any other single Unicode character.
-    r"[\s\S]",
-];
+lazy_static! {
+    /// List of token patterns, arranged roughly from least to most general.
+    static ref TOKEN_PATTERNS: &'static [&'static str] = vec![
+        // Line comment.
+        r"//[^\n]*",
+        // Start of a block comment (block comment has special handling).
+        r"/\*",
+        // Sheet reference.
+        UNQUOTED_SHEET_REFERENCE_PATTERN,
+        // String literal.
+        SINGLE_QUOTE_STRING_LITERAL_PATTERN,
+        DOUBLE_QUOTE_STRING_LITERAL_PATTERN,
+        UNTERMINATED_STRING_LITERAL_PATTERN,
+        // Numeric literal.
+        NUMERIC_LITERAL_PATTERN,
+        // Function call.
+        FUNCTION_CALL_PATTERN,
+        // Boolean literal (case-insensitive).
+        r#"false|true"#,
+        // Internal cell reference.
+        INTERNAL_CELL_REFERENCE_PATTERN,
+        // Reference to a cell.
+        A1_CELL_REFERENCE_PATTERN,
+        // Reference to a table.
+        TABLE_NAME_PATTERN,
+        // Square brackets containing table reference.
+        dbg!(*TABLE_BRACKETS_PATTERN),
+        // Comparison operators `==`, `!=`, `<=`, `>=` and `<>`.
+        r#"[=!<>]=|<>"#,
+        // Double and triple dot.
+        r"\.\.\.?",
+        // Whitespace.
+        r"\s+",
+        // Any other single Unicode character.
+        r"[\s\S]",
+    ].leak();
+}
 
 lazy_static! {
     /// Single regex that matches any token, including comments and strings,
@@ -115,6 +159,14 @@ lazy_static! {
     /// Regex that matches a valid A1-style cell reference.
     pub static ref A1_CELL_REFERENCE_REGEX: Regex =
         new_fullmatch_regex(A1_CELL_REFERENCE_PATTERN);
+
+    /// Regex that matches a valid table name.
+    pub static ref TABLE_NAME_REGEX: Regex =
+        new_fullmatch_regex(TABLE_NAME_PATTERN);
+
+    /// Regex that matches a valid table reference, excluding the name.
+    pub static ref TABLE_BRACKETS_REGEX: Regex =
+        new_fullmatch_regex(*TABLE_BRACKETS_PATTERN);
 
     /// Regex that matches a valid internal cell reference.
     pub static ref INTERNAL_CELL_REFERENCE_REGEX: Regex =
@@ -221,8 +273,10 @@ pub enum Token {
     UnterminatedStringLiteral,
     #[strum(to_string = "numeric literal")]
     NumericLiteral,
-    #[strum(to_string = "cell reference")]
-    CellRef,
+    #[strum(to_string = "cell or table reference")]
+    CellOrTableRef,
+    #[strum(to_string = "table reference bracket expression")]
+    TableRefBracketsExpression,
     #[strum(to_string = "internal cell reference")]
     InternalCellRef,
     #[strum(to_string = "whitespace")]
@@ -311,7 +365,9 @@ impl Token {
                 Self::NumericLiteral
             }
             s if INTERNAL_CELL_REFERENCE_REGEX.is_match(s) => Self::InternalCellRef,
-            s if A1_CELL_REFERENCE_REGEX.is_match(s) => Self::CellRef,
+            s if A1_CELL_REFERENCE_REGEX.is_match(s) => Self::CellOrTableRef,
+            s if TABLE_NAME_REGEX.is_match(s) => Self::CellOrTableRef,
+            s if TABLE_BRACKETS_REGEX.is_match(s) => Self::TableRefBracketsExpression,
             s if s.trim().is_empty() => Self::Whitespace,
 
             // Give up.

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::grid::file::v1_6::schema as v1_6;
 use crate::grid::file::v1_6::schema_validation as v1_6_validation;
+use crate::grid::file::v1_8::ImportSchema;
 use chrono::DateTime;
 use chrono::NaiveDate;
 use chrono::NaiveDateTime;
@@ -25,9 +26,9 @@ pub type OutputSizeSchema = v1_6::OutputSize;
 pub type OutputValueValueSchema = v1_6::OutputValueValue;
 pub type NumericFormatKindSchema = v1_6::NumericFormatKind;
 pub type NumericFormatSchema = v1_6::NumericFormat;
-pub type CodeCellLanguageSchema = v1_6::CodeCellLanguage;
 pub type ConnectionKindSchema = v1_6::ConnectionKind;
 pub type CodeCellSchema = v1_6::CodeCell;
+pub type CodeCellLanguageSchema = v1_6::CodeCellLanguage;
 pub type CellAlignSchema = v1_6::CellAlign;
 pub type CellVerticalAlignSchema = v1_6::CellVerticalAlign;
 pub type CellWrapSchema = v1_6::CellWrap;
@@ -106,6 +107,7 @@ pub enum CellValueSchema {
     Duration(String),
     Error(RunErrorSchema),
     Image(String),
+    Import(ImportSchema),
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -3,6 +3,7 @@ import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
 import { useSelectionContextMessages } from '@/app/ai/hooks/useSelectionContextMessages';
+import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
 import {
@@ -16,7 +17,7 @@ import {
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import {
+import type {
   AIMessage,
   AIMessagePrompt,
   ChatMessage,
@@ -38,6 +39,7 @@ export type SubmitAIAnalystPromptArgs = {
 export function useSubmitAIAnalystPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
   const { getOtherSheetsContext } = useOtherSheetsContextMessages();
+  const { getTablesContext } = useTablesContextMessages();
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
   const { getSelectionContext } = useSelectionContextMessages();
@@ -46,10 +48,14 @@ export function useSubmitAIAnalystPrompt() {
   const updateInternalContext = useRecoilCallback(
     ({ set }) =>
       async ({ context }: { context: Context }): Promise<ChatMessage[]> => {
-        const otherSheetsContext = await getOtherSheetsContext({ sheetNames: context.sheets });
-        const currentSheetContext = await getCurrentSheetContext({ currentSheetName: context.currentSheet });
-        const visibleContext = await getVisibleContext();
-        const selectionContext = await getSelectionContext({ selection: context.selection });
+        const [otherSheetsContext, tablesContext, currentSheetContext, visibleContext, selectionContext] =
+          await Promise.all([
+            getOtherSheetsContext({ sheetNames: context.sheets }),
+            getTablesContext(),
+            getCurrentSheetContext({ currentSheetName: context.currentSheet }),
+            getVisibleContext(),
+            getSelectionContext({ selection: context.selection }),
+          ]);
 
         let updatedMessages: ChatMessage[] = [];
         set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {
@@ -57,6 +63,7 @@ export function useSubmitAIAnalystPrompt() {
 
           updatedMessages = [
             ...otherSheetsContext,
+            ...tablesContext,
             ...currentSheetContext,
             ...visibleContext,
             ...selectionContext,
@@ -68,7 +75,7 @@ export function useSubmitAIAnalystPrompt() {
 
         return updatedMessages;
       },
-    [getOtherSheetsContext, getCurrentSheetContext, getVisibleContext, getSelectionContext]
+    [getOtherSheetsContext, getTablesContext, getCurrentSheetContext, getVisibleContext, getSelectionContext]
   );
 
   const submitPrompt = useRecoilCallback(

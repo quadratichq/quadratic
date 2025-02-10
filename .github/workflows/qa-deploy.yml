@@ -23,9 +23,11 @@ jobs:
     if: github.head_ref == 'qa' && github.base_ref == 'main'
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 18
+
       - uses: pulumi/actions@v4
 
       - name: Update Pulumi Infrastructure

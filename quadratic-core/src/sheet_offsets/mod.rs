@@ -105,11 +105,11 @@ impl SheetOffsets {
     }
 
     /// gets the column index from an x-coordinate on the screen
-    pub fn column_from_x(&mut self, x: f64) -> (i64, f64) {
+    pub fn column_from_x(&self, x: f64) -> (i64, f64) {
         self.column_widths.find_offset(x)
     }
     /// gets the column index from an x-coordinate on the screen
-    pub fn row_from_y(&mut self, y: f64) -> (i64, f64) {
+    pub fn row_from_y(&self, y: f64) -> (i64, f64) {
         self.row_heights.find_offset(y)
     }
 
@@ -284,6 +284,14 @@ impl SheetOffsets {
         self.row_heights.delete(row)
     }
 
+    /// Calculates the grid width and height for a given grid position and pixel size.
+    pub fn calculate_grid_size(&self, pos: Pos, width: f32, height: f32) -> (u32, u32) {
+        let start = self.cell_offsets(pos.x, pos.y);
+        let (end_x, _) = self.column_from_x(start.x + width as f64);
+        let (end_y, _) = self.row_from_y(start.y + height as f64);
+        ((end_x - pos.x + 1) as u32, (end_y - pos.y + 1) as u32)
+    }
+
     /// Returns the default column width and row height.
     pub fn defaults(&self) -> (f64, f64) {
         (self.column_width(0), self.row_height(0))
@@ -296,6 +304,8 @@ mod test {
     use super::*;
 
     use crate::Rect;
+
+    use crate::Pos;
 
     #[test]
     fn test_screen_rect_cell_offsets() {
@@ -337,5 +347,13 @@ mod test {
     fn test_defaults() {
         let sheet = super::SheetOffsets::default();
         assert_eq!(sheet.defaults(), (100.0, 21.0));
+    }
+
+    #[test]
+    fn calculate_grid_size() {
+        let sheet = super::SheetOffsets::default();
+        let (width, height) = sheet.calculate_grid_size(Pos { x: 1, y: 1 }, 100.0, 21.0);
+        assert_eq!(width, 2);
+        assert_eq!(height, 2);
     }
 }

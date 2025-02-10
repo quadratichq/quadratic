@@ -4,9 +4,10 @@ use lazy_static::lazy_static;
 use regex::Regex;
 
 use crate::{
+    a1::CellRefRange,
     formulas::replace_a1_notation,
     grid::{CodeCellLanguage, CodeCellValue, Grid, GridBounds},
-    CellRefRange, CellValue, Pos, Rect,
+    CellValue, Pos, Rect,
 };
 
 const PYTHON_C_CELL_GETCELL_REGEX: &str = r#"\b(?:c|cell|getCell)\s*\(\s*(-?\d+)\s*,\s*(-?\d+)\s*(?:,\s*(?:sheet\s*=\s*)?['"`]([^'"`]+)['"`]\s*)?\)"#;
@@ -49,15 +50,20 @@ lazy_static! {
 }
 
 pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
+    let parse_ctx = grid.a1_context();
     for sheet in grid.sheets.iter_mut() {
+        let sheet_id = sheet.id;
         if let GridBounds::NonEmpty(bounds) = sheet.bounds(false) {
             for x in bounds.x_range() {
                 if let Some(column) = sheet.get_column_mut(x) {
                     for y in bounds.y_range() {
                         if let Some(CellValue::Code(code_cell)) = column.values.get_mut(&y) {
                             if code_cell.language == CodeCellLanguage::Formula {
-                                code_cell.code =
-                                    replace_a1_notation(&code_cell.code, (x + 1, y).into());
+                                code_cell.code = replace_a1_notation(
+                                    &code_cell.code,
+                                    &parse_ctx,
+                                    crate::SheetPos::new(sheet_id, x + 1, y),
+                                );
                             }
                         }
                     }

@@ -13,7 +13,7 @@ import { ReturnTypeInspector } from '@/app/ui/menus/CodeEditor/ReturnTypeInspect
 import { SaveChangesAlert } from '@/app/ui/menus/CodeEditor/SaveChangesAlert';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { cn } from '@/shared/shadcn/utils';
-import * as monaco from 'monaco-editor';
+import type * as monaco from 'monaco-editor';
 import { useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import './CodeEditor.css';
@@ -36,7 +36,15 @@ export const CodeEditor = () => {
       <CodeEditorEscapeEffect editorInst={editorInst} />
 
       {showCodeEditor && (
-        <div className="relative flex h-full flex-col">
+        <div
+          className="relative flex h-full flex-col"
+          style={{
+            width: `${
+              codeEditorPanelData.editorWidth +
+              (codeEditorPanelData.panelPosition === 'left' ? codeEditorPanelData.panelWidth : 0)
+            }px`,
+          }}
+        >
           <CodeEditorHeader editorInst={editorInst} />
           <div
             ref={codeEditorRef}
@@ -44,12 +52,6 @@ export const CodeEditor = () => {
               'relative -mt-[1px] flex h-full flex-col overflow-visible border-t border-transparent bg-background',
               codeEditorPanelData.panelPosition === 'left' ? 'flex-row border-t border-border' : 'flex-col'
             )}
-            style={{
-              width: `${
-                codeEditorPanelData.editorWidth +
-                (codeEditorPanelData.panelPosition === 'left' ? codeEditorPanelData.panelWidth : 0)
-              }px`,
-            }}
             onCopy={(e) => e.stopPropagation()}
             onCut={(e) => e.stopPropagation()}
             onPaste={(e) => e.stopPropagation()}

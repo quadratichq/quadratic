@@ -1,6 +1,6 @@
 import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 export const openCodeEditor = async () => {
   const { codeEditorState, setCodeEditorState, setEditorInteractionState } = pixiAppSettings;
@@ -13,7 +13,8 @@ export const openCodeEditor = async () => {
   }
 
   const { x, y } = sheets.sheet.cursor.position;
-  const codeCell = await quadraticCore.getCodeCell(sheets.sheet.id, x, y);
+  const table = pixiApp.cellsSheet().tables.getTableFromTableCell(x, y);
+  const codeCell = table?.codeCell;
   if (codeCell) {
     const {
       codeCell: {
@@ -38,6 +39,8 @@ export const openCodeEditor = async () => {
         ...codeEditorState,
         escapePressed: true,
       });
+    } else if (codeCell.language === 'Import') {
+      pixiAppSettings.snackbar('Cannot create code cell inside table', { severity: 'error' });
     } else {
       // if the code editor is not already open on the same cell, then open it
       // this will also open the save changes modal if there are unsaved changes
@@ -47,7 +50,7 @@ export const openCodeEditor = async () => {
         waitingForEditorClose: {
           codeCell: {
             sheetId: sheets.current,
-            pos: { x, y },
+            pos: { x: codeCell.x, y: codeCell.y },
             language: codeCell.language,
           },
           showCellTypeMenu: false,

@@ -1,27 +1,126 @@
+//! Prepare borders for rendering.
+
 use crate::{
+    a1::UNBOUNDED,
     grid::{
         sheet::borders::{JsBorderHorizontal, JsBorderVertical},
-        SheetId,
+        DataTable,
     },
-    wasm_bindings::js::jsBordersSheet,
 };
 
 use super::*;
 
 impl Borders {
     /// Returns horizontal borders for rendering.
-    pub(crate) fn horizontal_borders(&self) -> Option<Vec<JsBorderHorizontal>> {
+    pub(crate) fn horizontal_borders(
+        &self,
+        table: Option<(Pos, &DataTable)>,
+    ) -> Option<Vec<JsBorderHorizontal>> {
+        let table = match table {
+            Some((pos, table)) => {
+                let mut table_rect = table.output_rect(pos, true);
+                // use table data bounds for borders, exclude table name and column headers
+                table_rect.min.y += table.y_adjustment(true);
+                Some((table, table_rect))
+            }
+            None => None,
+        };
+
         let mut horizontal_rects = self
             .top
             .into_iter()
+            .map(|(x1, y1, x2, y2, border)| {
+                if let Some((table, table_rect)) = table {
+                    // Move the borders from table coordinates to screen
+                    // coordinates, and clamp infinite bounds. We subtract 1
+                    // because borders are 1-based, and tables are 0-based.
+                    let delta_x = table_rect.min.x as u64 - 1;
+                    let adjust_y = |mut y: u64| {
+                        y = y.saturating_add_signed(-1);
+                        if let Some(display_buffer) = &table.display_buffer {
+                            if y < display_buffer.len() as u64 {
+                                y = display_buffer[y as usize];
+                            }
+                        }
+                        y.saturating_add_signed(table_rect.min.y)
+                    };
+
+                    (
+                        x1.saturating_add(delta_x),
+                        adjust_y(y1),
+                        if let Some(x2) = x2 {
+                            Some(x2.saturating_add(delta_x))
+                        } else {
+                            Some(table_rect.max.x as u64)
+                        },
+                        if let Some(y2) = y2 {
+                            Some(adjust_y(y2))
+                        } else {
+                            Some(table_rect.max.y as u64)
+                        },
+                        border,
+                    )
+                } else {
+                    (x1, y1, x2, y2, border)
+                }
+            })
             .chain(self.bottom.into_iter().map(|(x1, y1, x2, y2, border)| {
-                (
-                    x1,
-                    y1.saturating_add(1),
-                    x2,
-                    y2.map(|y2| y2.saturating_add(1)),
-                    border,
-                )
+                if let Some((table, table_rect)) = table {
+                    // Move the borders from table coordinates to screen
+                    // coordinates, and place bounds on any infinite borders. We
+                    // subtract 1 because borders are 1-based, and tables are
+                    // 0-based.
+                    let delta_x = table_rect.min.x as u64 - 1;
+                    let adjust_y = |mut y: u64| {
+                        y = y.saturating_add_signed(-1);
+                        if let Some(display_buffer) = &table.display_buffer {
+                            if y < display_buffer.len() as u64 {
+                                y = display_buffer[y as usize];
+                            }
+                        }
+                        y.saturating_add_signed(table_rect.min.y)
+                    };
+
+                    // we use UNBOUNDED as a special value to indicate the last
+                    // row of the table
+                    if y1 == UNBOUNDED as u64 && y2 == Some(UNBOUNDED as u64) {
+                        (
+                            x1.saturating_add(delta_x),
+                            table_rect.max.y as u64 + 1,
+                            if let Some(x2) = x2 {
+                                Some(x2.saturating_add(delta_x))
+                            } else {
+                                Some(table_rect.max.x as u64)
+                            },
+                            Some(table_rect.max.y as u64 + 1),
+                            border,
+                        )
+                    } else {
+                        (
+                            x1.saturating_add(delta_x),
+                            adjust_y(y1) + 1,
+                            if let Some(x2) = x2 {
+                                Some(x2.saturating_add(delta_x))
+                            } else {
+                                Some(table_rect.max.x as u64)
+                            },
+                            if let Some(y2) = y2 {
+                                Some(adjust_y(y2) + 1)
+                            } else {
+                                Some(table_rect.max.y as u64 + 1)
+                            },
+                            border,
+                        )
+                    }
+                } else {
+                    (
+                        x1,
+                        y1.saturating_add_signed(1),
+                        x2,
+                        y2.map(|y2| y2.saturating_add_signed(1)),
+                        border,
+                    )
+                }
             }))
             .collect::<Vec<_>>();
         horizontal_rects.sort_unstable_by(|a, b| a.4.timestamp.cmp(&b.4.timestamp));
@@ -81,18 +180,118 @@ impl Borders {
     }
 
     /// Returns vertical borders for rendering.
-    pub(crate) fn vertical_borders(&self) -> Option<Vec<JsBorderVertical>> {
+    pub(crate) fn vertical_borders(
+        &self,
+        table: Option<(Pos, &DataTable)>,
+    ) -> Option<Vec<JsBorderVertical>> {
+        let table = match table {
+            Some((pos, table)) => {
+                let mut table_rect = table.output_rect(pos, true);
+
+                // use table data bounds for borders, exclude table name and column headers
+                table_rect.min.y += table.y_adjustment(true);
+
+                Some((table, table_rect))
+            }
+            None => None,
+        };
+
         let mut vertical_rects = self
             .left
             .into_iter()
+            .map(|(x1, y1, x2, y2, border)| {
+                if let Some((table, table_rect)) = table {
+                    // Move the borders from table coordinates to screen
+                    // coordinates, and place bounds on any infinite borders. We
+                    // subtract 1 because borders are 1-based, and tables are
+                    // 0-based.
+                    let delta_x = table_rect.min.x as u64 - 1;
+                    let adjust_y = |mut y: u64| {
+                        y = y.saturating_add_signed(-1);
+                        if let Some(display_buffer) = &table.display_buffer {
+                            if y < display_buffer.len() as u64 {
+                                y = display_buffer[y as usize];
+                            }
+                        }
+                        y.saturating_add_signed(table_rect.min.y)
+                    };
+
+                    (
+                        x1.saturating_add(delta_x),
+                        adjust_y(y1),
+                        if let Some(x2) = x2 {
+                            Some(x2.saturating_add(delta_x))
+                        } else {
+                            Some(table_rect.max.x as u64)
+                        },
+                        if let Some(y2) = y2 {
+                            Some(adjust_y(y2))
+                        } else {
+                            Some(table_rect.max.y as u64)
+                        },
+                        border,
+                    )
+                } else {
+                    (x1, y1, x2, y2, border)
+                }
+            })
             .chain(self.right.into_iter().map(|(x1, y1, x2, y2, border)| {
-                (
-                    x1.saturating_add(1),
-                    y1,
-                    x2.map(|x2| x2.saturating_add(1)),
-                    y2,
-                    border,
-                )
+                if let Some((table, table_rect)) = table {
+                    // Move the borders from table coordinates to screen
+                    // coordinates, and place bounds on any infinite borders. We
+                    // subtract 1 because borders are 1-based, and tables are
+                    // 0-based.
+                    let delta_x = table_rect.min.x as u64 - 1;
+                    let adjust_y = |mut y: u64| {
+                        y = y.saturating_add_signed(-1);
+                        if let Some(display_buffer) = &table.display_buffer {
+                            if y < display_buffer.len() as u64 {
+                                y = display_buffer[y as usize];
+                            }
+                        }
+                        y.saturating_add_signed(table_rect.min.y)
+                    };
+
+                    // we use UNBOUNDED as a special value to indicate the last
+                    // column of the table
+                    if x1 == UNBOUNDED as u64 && x2 == Some(UNBOUNDED as u64) {
+                        (
+                            table_rect.max.x as u64 + 1,
+                            adjust_y(y1),
+                            Some(table_rect.max.x as u64 + 1),
+                            if let Some(y2) = y2 {
+                                Some(adjust_y(y2))
+                            } else {
+                                Some(table_rect.max.y as u64)
+                            },
+                            border,
+                        )
+                    } else {
+                        (
+                            x1.saturating_add(delta_x + 1),
+                            adjust_y(y1),
+                            if let Some(x2) = x2 {
+                                Some(x2.saturating_add(delta_x + 1))
+                            } else {
+                                Some(table_rect.max.x as u64 + 1)
+                            },
+                            if let Some(y2) = y2 {
+                                Some(adjust_y(y2))
+                            } else {
+                                Some(table_rect.max.y as u64)
+                            },
+                            border,
+                        )
+                    }
+                } else {
+                    (
+                        x1.saturating_add(1),
+                        y1,
+                        x2.map(|x2| x2.saturating_add(1)),
+                        y2,
+                        border,
+                    )
+                }
             }))
             .collect::<Vec<_>>();
         vertical_rects.sort_unstable_by(|a, b| a.4.timestamp.cmp(&b.4.timestamp));
@@ -148,37 +347,12 @@ impl Borders {
             Some(vertical_vec)
         }
     }
-
-    /// Gets packaged borders to send to the client.
-    pub(crate) fn borders_in_sheet(&self) -> Option<JsBordersSheet> {
-        let horizontal = self.horizontal_borders();
-        let vertical = self.vertical_borders();
-
-        Some(JsBordersSheet {
-            horizontal,
-            vertical,
-        })
-    }
-
-    /// Sends the borders for the sheet to the client.
-    pub fn send_sheet_borders(&self, sheet_id: SheetId) {
-        match self.borders_in_sheet() {
-            Some(b) => {
-                if let Ok(borders) = serde_json::to_string(&b) {
-                    jsBordersSheet(sheet_id.to_string(), borders);
-                } else {
-                    dbgjs!("Unable to serialize borders in send_sheet_borders");
-                }
-            }
-            None => jsBordersSheet(sheet_id.to_string(), String::new()),
-        }
-    }
 }
 
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
-    use crate::{controller::GridController, A1Selection};
+    use crate::{a1::A1Selection, controller::GridController, grid::SheetId};
 
     use super::*;
 
@@ -187,8 +361,8 @@ mod tests {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.borders.horizontal_borders(), None);
-        assert_eq!(sheet.borders.vertical_borders(), None);
+        assert_eq!(sheet.borders.horizontal_borders(None), None);
+        assert_eq!(sheet.borders.vertical_borders(None), None);
     }
 
     #[test]
@@ -202,9 +376,9 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        let horizontal = sheet.borders.horizontal_borders().unwrap();
+        let horizontal = sheet.borders.horizontal_borders(None).unwrap();
         assert_eq!(horizontal.len(), 6);
-        let vertical = sheet.borders.vertical_borders().unwrap();
+        let vertical = sheet.borders.vertical_borders(None).unwrap();
         assert_eq!(vertical.len(), 6);
     }
 
@@ -219,9 +393,9 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        let horizontal = sheet.borders.horizontal_borders().unwrap();
+        let horizontal = sheet.borders.horizontal_borders(None).unwrap();
         assert_eq!(horizontal.len(), 1);
-        assert!(sheet.borders.vertical_borders().is_none());
+        assert!(sheet.borders.vertical_borders(None).is_none());
     }
 
     #[test]
@@ -235,9 +409,9 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        let horizontal = sheet.borders.horizontal_borders().unwrap();
+        let horizontal = sheet.borders.horizontal_borders(None).unwrap();
         assert_eq!(horizontal.len(), 1);
-        assert!(sheet.borders.vertical_borders().is_none());
+        assert!(sheet.borders.vertical_borders(None).is_none());
     }
 
     #[test]
@@ -251,8 +425,8 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        assert!(sheet.borders.horizontal_borders().is_none());
-        let vertical = sheet.borders.vertical_borders().unwrap();
+        assert!(sheet.borders.horizontal_borders(None).is_none());
+        let vertical = sheet.borders.vertical_borders(None).unwrap();
         assert_eq!(vertical.len(), 1);
     }
 
@@ -267,8 +441,8 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        assert!(sheet.borders.horizontal_borders().is_none());
-        let vertical = sheet.borders.vertical_borders().unwrap();
+        assert!(sheet.borders.horizontal_borders(None).is_none());
+        let vertical = sheet.borders.vertical_borders(None).unwrap();
         assert_eq!(vertical.len(), 1);
     }
 
@@ -283,9 +457,9 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        let horizontal = sheet.borders.horizontal_borders().unwrap();
+        let horizontal = sheet.borders.horizontal_borders(None).unwrap();
         assert_eq!(horizontal.len(), 2);
-        let vertical = sheet.borders.vertical_borders().unwrap();
+        let vertical = sheet.borders.vertical_borders(None).unwrap();
         assert_eq!(vertical.len(), 2);
     }
 
@@ -300,9 +474,9 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        let horizontal = sheet.borders.horizontal_borders().unwrap();
+        let horizontal = sheet.borders.horizontal_borders(None).unwrap();
         assert_eq!(horizontal.len(), 4);
-        let vertical = sheet.borders.vertical_borders().unwrap();
+        let vertical = sheet.borders.vertical_borders(None).unwrap();
         assert_eq!(vertical.len(), 4);
     }
 
@@ -317,9 +491,9 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        let horizontal = sheet.borders.horizontal_borders().unwrap();
+        let horizontal = sheet.borders.horizontal_borders(None).unwrap();
         assert_eq!(horizontal.len(), 4);
-        assert!(sheet.borders.vertical_borders().is_none());
+        assert!(sheet.borders.vertical_borders(None).is_none());
     }
 
     #[test]
@@ -333,8 +507,8 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        assert!(sheet.borders.horizontal_borders().is_none());
-        let vertical = sheet.borders.vertical_borders().unwrap();
+        assert!(sheet.borders.horizontal_borders(None).is_none());
+        let vertical = sheet.borders.vertical_borders(None).unwrap();
         assert_eq!(vertical.len(), 4);
     }
 
@@ -348,11 +522,11 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(SheetId::TEST);
-        let horizontal = sheet.borders.horizontal_borders().unwrap();
+        let horizontal = sheet.borders.horizontal_borders(None).unwrap();
         assert_eq!(horizontal.len(), 3);
         assert!(!horizontal[0].unbounded);
 
-        let vertical = sheet.borders.vertical_borders().unwrap();
+        let vertical = sheet.borders.vertical_borders(None).unwrap();
         assert_eq!(vertical.len(), 3);
         assert!(!vertical[0].unbounded);
 
@@ -364,10 +538,10 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(SheetId::TEST);
-        let horizontal = sheet.borders.horizontal_borders().unwrap();
+        let horizontal = sheet.borders.horizontal_borders(None).unwrap();
         assert_eq!(horizontal.len(), 1);
         assert!(horizontal[0].unbounded);
-        let vertical = sheet.borders.vertical_borders().unwrap();
+        let vertical = sheet.borders.vertical_borders(None).unwrap();
         assert_eq!(vertical.len(), 1);
         assert!(vertical[0].unbounded);
     }
@@ -382,8 +556,8 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(SheetId::TEST);
-        assert_eq!(sheet.borders.horizontal_borders().unwrap().len(), 1);
-        assert_eq!(sheet.borders.vertical_borders().unwrap().len(), 2);
+        assert_eq!(sheet.borders.horizontal_borders(None).unwrap().len(), 1);
+        assert_eq!(sheet.borders.vertical_borders(None).unwrap().len(), 2);
     }
 
     #[test]
@@ -405,7 +579,7 @@ mod tests {
         assert_eq!(sheet.borders.get_side(BorderSide::Left, pos![b5]), None);
         assert_eq!(sheet.borders.get_side(BorderSide::Right, pos![b5]), None);
 
-        let horizontal = sheet.borders.horizontal_borders().unwrap();
+        let horizontal = sheet.borders.horizontal_borders(None).unwrap();
         assert_eq!(horizontal.len(), 8);
     }
 }

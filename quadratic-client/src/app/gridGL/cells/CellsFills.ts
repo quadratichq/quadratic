@@ -1,11 +1,11 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Sheet } from '@/app/grid/sheet/Sheet';
-import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
+import type { Sheet } from '@/app/grid/sheet/Sheet';
+import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { convertColorStringToTint } from '@/app/helpers/convertColor';
-import { JsRenderFill, JsSheetFill } from '@/app/quadratic-core-types';
+import { convertColorStringToTint, getCSSVariableTint } from '@/app/helpers/convertColor';
+import type { JsRenderCodeCell, JsRenderFill, JsSheetFill } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { Container, Graphics, ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
 
@@ -13,15 +13,25 @@ interface SpriteBounds extends Sprite {
   viewBounds: Rectangle;
 }
 
+// TODO: (jimniels) this doesn't match the table header and also doesn't match
+// the theme. The problem here is that a table cell might have a background
+// of orange, which is why this is a solid color with lightened opacity.
+// We should figure out how to make this better match the theme and light/dark mode
+const ALTERNATING_BG_OPACITY = 0.035;
+const ALTERNATING_BG_COLOR = getCSSVariableTint('text');
+
 export class CellsFills extends Container {
   private cellsSheet: CellsSheet;
   private cells: JsRenderFill[] = [];
   private sheetFills?: JsSheetFill[];
+  private alternatingColorsGraphics: Graphics;
 
   private cellsContainer: ParticleContainer;
   private meta: Graphics;
+  private alternatingColors: Map<string, JsRenderCodeCell> = new Map();
 
   private dirty = false;
+  private dirtyTables = false;
 
   constructor(cellsSheet: CellsSheet) {
     super();
@@ -30,15 +40,16 @@ export class CellsFills extends Container {
     this.cellsContainer = this.addChild(
       new ParticleContainer(undefined, { vertices: true, tint: true }, undefined, true)
     );
+    this.alternatingColorsGraphics = this.addChild(new Graphics());
 
     events.on('sheetFills', this.handleSheetFills);
     events.on('sheetMetaFills', this.handleSheetMetaFills);
     events.on('sheetOffsets', this.drawSheetCells);
     events.on('cursorPosition', this.setDirty);
     events.on('resizeHeadingColumn', this.drawCells);
+    events.on('resizeHeadingColumn', this.drawSheetCells);
     events.on('resizeHeadingRow', this.drawCells);
     events.on('resizeHeadingRow', this.drawSheetCells);
-    events.on('resizeHeadingColumn', this.drawSheetCells);
     events.on('viewportChanged', this.setDirty);
   }
 
@@ -124,6 +135,10 @@ export class CellsFills extends Container {
       this.dirty = false;
       this.drawMeta();
     }
+    if (this.dirtyTables) {
+      this.dirtyTables = false;
+      this.drawAlternatingColors();
+    }
   };
 
   private drawMeta = () => {
@@ -174,5 +189,41 @@ export class CellsFills extends Container {
       });
       pixiApp.setViewportDirty();
     }
+  };
+
+  // this is called by Table.ts
+  updateAlternatingColors = (x: number, y: number, table?: JsRenderCodeCell) => {
+    const key = `${x},${y}`;
+    if (table && table.show_ui && table.alternating_colors && !table.is_html_image) {
+      this.alternatingColors.set(key, table);
+      this.dirtyTables = true;
+    } else {
+      if (this.alternatingColors.has(key)) {
+        this.alternatingColors.delete(key);
+        this.dirtyTables = true;
+      }
+    }
+  };
+
+  private drawAlternatingColors = () => {
+    this.alternatingColorsGraphics.clear();
+    this.alternatingColors.forEach((table) => {
+      const bounds = this.sheet.getScreenRectangle(table.x, table.y, table.w, table.y);
+      let yOffset = bounds.y;
+      for (let y = 0; y < table.h; y++) {
+        let height = this.sheet.offsets.getRowHeight(y + table.y);
+        // TODO: (jimniels) fix this so 1st row _of data_ is always white
+        if (!(table.show_ui || table.show_name !== table.show_columns ? 1 : 0)) {
+          break;
+        }
+        if (y % 2 === 0) {
+          this.alternatingColorsGraphics.beginFill(ALTERNATING_BG_COLOR, ALTERNATING_BG_OPACITY);
+          this.alternatingColorsGraphics.drawRect(bounds.x, yOffset, bounds.width, height);
+          this.alternatingColorsGraphics.endFill();
+        }
+        yOffset += height;
+      }
+    });
+    pixiApp.setViewportDirty();
   };
 }

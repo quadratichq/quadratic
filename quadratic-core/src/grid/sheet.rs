@@ -1,6 +1,7 @@
 use std::collections::{btree_map, BTreeMap, HashSet};
 use std::str::FromStr;
 
+use anyhow::{anyhow, Result};
 use bigdecimal::{BigDecimal, RoundingMode};
 use borders::Borders;
 use indexmap::IndexMap;
@@ -10,14 +11,18 @@ use validations::Validations;
 
 use super::bounds::GridBounds;
 use super::column::Column;
+use super::data_table::DataTable;
 use super::ids::SheetId;
 use super::js_types::{CellFormatSummary, CellType, JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;
-use super::{CellWrap, CodeRun, NumericFormatKind, SheetFormatting};
+use super::{CellWrap, CodeRun, Format, NumericFormatKind, SheetFormatting};
+use crate::a1::{A1Selection, CellRefRange};
 use crate::sheet_offsets::SheetOffsets;
-use crate::{A1Selection, Array, CellValue, Pos, Rect};
+use crate::{Array, CellValue, Pos, Rect};
 
+pub mod a1_context;
 pub mod a1_selection;
+pub mod ai_context;
 pub mod borders;
 pub mod bounds;
 pub mod cell_array;
@@ -25,23 +30,20 @@ pub mod cell_values;
 pub mod clipboard;
 pub mod code;
 pub mod col_row;
+pub mod data_table;
 pub mod formats;
-pub mod jump_cursor;
+pub mod keyboard;
 pub mod rendering;
 pub mod rendering_date_time;
 pub mod row_resize;
 pub mod search;
 pub mod send_render;
+#[cfg(test)]
 pub mod sheet_test;
 pub mod summarize;
 pub mod validations;
 
 /// Sheet in a file.
-///
-/// Internal invariants (not an exhaustive list):
-/// - `infinite_sheet_format`, `infinite_column_formats`,
-///   `infinite_row_formats`, and formatting in stored in `columns` must never
-///   overlap
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Sheet {
     pub id: SheetId,
@@ -56,12 +58,11 @@ pub struct Sheet {
     pub columns: BTreeMap<i64, Column>,
 
     #[serde(with = "crate::util::indexmap_serde")]
-    pub code_runs: IndexMap<Pos, CodeRun>,
+    pub data_tables: IndexMap<Pos, DataTable>,
 
     /// Formatting for the entire sheet.
     pub formats: SheetFormatting,
 
-    #[serde(default)]
     pub validations: Validations,
 
     // bounds for the grid with only data
@@ -84,7 +85,7 @@ impl Sheet {
             order,
             offsets: SheetOffsets::default(),
             columns: BTreeMap::new(),
-            code_runs: IndexMap::new(),
+            data_tables: IndexMap::new(),
             formats: SheetFormatting::default(),
             data_bounds: GridBounds::Empty,
             format_bounds: GridBounds::Empty,
@@ -96,18 +97,27 @@ impl Sheet {
 
     /// Creates a sheet for testing.
     pub fn test() -> Self {
-        Sheet::new(SheetId::TEST, String::from("Sheet 1"), String::from("a0"))
+        Sheet::new(SheetId::TEST, String::from("Sheet1"), String::from("a0"))
+    }
+
+    pub fn update_sheet_name(&mut self, old_name: &str, new_name: &str) {
+        self.replace_in_code_cells(|code_cell_value, a1_context, id| {
+            code_cell_value
+                .replace_sheet_name_in_cell_references(old_name, new_name, id, a1_context);
+        });
+
+        self.name = new_name.to_string();
     }
 
     /// Populates the current sheet with random values
     /// Should only be used for testing (as it will not propagate in multiplayer)
     pub fn random_numbers(&mut self, rect: &Rect) {
         self.columns.clear();
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         for x in rect.x_range() {
             for y in rect.y_range() {
                 let column = self.get_or_create_column(x);
-                let value = rng.gen_range(-10000..=10000).to_string();
+                let value = rng.random_range(-10000..=10000).to_string();
                 column
                     .values
                     .insert(y, CellValue::Number(BigDecimal::from_str(&value).unwrap()));
@@ -167,13 +177,29 @@ impl Sheet {
         }
 
         // remove code_cells where the rect overlaps the anchor cell
-        self.code_runs.retain(|pos, _| !rect.contains(*pos));
+        self.data_tables.retain(|pos, _| !rect.contains(*pos));
 
         old_cell_values_array
     }
 
     pub fn iter_columns(&self) -> impl Iterator<Item = (&i64, &Column)> {
         self.columns.iter()
+    }
+
+    pub fn iter_data_tables(&self) -> impl Iterator<Item = (&Pos, &DataTable)> {
+        self.data_tables.iter()
+    }
+
+    pub fn iter_code_runs(&self) -> impl Iterator<Item = (Pos, &CodeRun)> {
+        self.data_tables
+            .iter()
+            .flat_map(|(pos, data_table)| data_table.code_run().map(|code_run| (*pos, code_run)))
+    }
+
+    pub fn iter_code_runs_mut(&mut self) -> impl Iterator<Item = (Pos, &mut CodeRun)> {
+        self.data_tables.iter_mut().flat_map(|(pos, data_table)| {
+            data_table.code_run_mut().map(|code_run| (*pos, code_run))
+        })
     }
 
     /// Returns true if the cell at Pos has content (ie, not blank). Also checks
@@ -189,27 +215,25 @@ impl Sheet {
         self.has_table_content(pos)
     }
 
-    /// Returns the cell_value at a Pos using both column.values and code_runs (i.e., what would be returned if code asked
+    /// Returns the cell_value at a Pos using both column.values and data_tables (i.e., what would be returned if code asked
     /// for it).
     pub fn display_value(&self, pos: Pos) -> Option<CellValue> {
         let cell_value = self
             .get_column(pos.x)
             .and_then(|column| column.values.get(&pos.y));
 
-        // if CellValue::Code, then we need to get the value from code_runs
+        // if CellValue::Code or CellValue::Import, then we need to get the value from data_tables
         if let Some(cell_value) = cell_value {
-            match cell_value {
-                CellValue::Code(_) => self
-                    .code_runs
-                    .get(&pos)
-                    .and_then(|run| run.cell_value_at(0, 0)),
-                CellValue::Blank => self.get_code_cell_value(pos),
-                _ => Some(cell_value.clone()),
+            if !matches!(
+                cell_value,
+                CellValue::Code(_) | CellValue::Import(_) | CellValue::Blank
+            ) {
+                return Some(cell_value.clone());
             }
-        } else {
-            // if there is no CellValue at Pos, then we still need to check code_runs
-            self.get_code_cell_value(pos)
         }
+
+        // if there is no CellValue at Pos, then we still need to check data_tables
+        self.get_code_cell_value(pos)
     }
 
     /// Returns the JsCellValue at a position
@@ -232,7 +256,7 @@ impl Sheet {
     }
 
     /// Returns the JsCellValuePos in a rect
-    pub fn get_js_cell_value_pos_in_rect(
+    pub fn js_cell_value_pos_in_rect(
         &self,
         rect: Rect,
         max_rows: Option<u32>,
@@ -261,13 +285,27 @@ impl Sheet {
         column.values.get(&pos.y).cloned()
     }
 
+    /// Returns the ref of the cell_value at the Pos in column.values. This does
+    /// not check or return results within data_tables.
     pub fn cell_value_ref(&self, pos: Pos) -> Option<&CellValue> {
         let column = self.get_column(pos.x)?;
         column.values.get(&pos.y)
     }
 
+    /// Returns the cell value at a position, or an error if the cell value is not found.
+    pub fn cell_value_result(&self, pos: Pos) -> Result<CellValue> {
+        self.cell_value(pos)
+            .ok_or_else(|| anyhow!("Cell value not found at {:?}", pos))
+    }
+
+    /// Returns a mutable reference to the cell value at the Pos in column.values.
+    pub fn cell_value_mut(&mut self, pos: Pos) -> Option<&mut CellValue> {
+        let column = self.get_column_mut(pos.x)?;
+        column.values.get_mut(&pos.y)
+    }
+
     /// Returns the cell value at a position using both `column.values` and
-    /// `code_runs`, for use when a formula references a cell.
+    /// `data_tables`, for use when a formula references a cell.
     pub fn get_cell_for_formula(&self, pos: Pos) -> CellValue {
         let cell_value = self
             .get_column(pos.x)
@@ -275,10 +313,15 @@ impl Sheet {
 
         if let Some(cell_value) = cell_value {
             match cell_value {
-                CellValue::Blank | CellValue::Code(_) => match self.code_runs.get(&pos) {
-                    Some(run) => run.get_cell_for_formula(0, 0),
-                    None => CellValue::Blank,
-                },
+                CellValue::Blank | CellValue::Code(_) | CellValue::Import(_) => {
+                    match self.data_tables.get(&pos) {
+                        Some(data_table) => data_table.get_cell_for_formula(
+                            0,
+                            if data_table.header_is_first_row { 1 } else { 0 },
+                        ),
+                        None => CellValue::Blank,
+                    }
+                }
                 other => other.clone(),
             }
         } else {
@@ -294,9 +337,32 @@ impl Sheet {
         }
     }
 
+    /// Returns the format of a cell taking into account the sheet and data_tables formatting.
+    pub fn cell_format(&self, pos: Pos) -> Format {
+        let mut sheet_format = self.formats.try_format(pos).unwrap_or_default();
+
+        if let Ok(data_table_pos) = self.first_data_table_within(pos) {
+            if let Ok(data_table) = self.data_table_result(data_table_pos) {
+                if !data_table.spill_error && !data_table.has_error() {
+                    // pos relative to data table pos (top left pos)
+                    let pos = pos.translate(-data_table_pos.x, -data_table_pos.y, 0, 0);
+                    if let Some(mut table_format) = data_table.try_format(pos) {
+                        table_format.wrap = table_format.wrap.or(Some(CellWrap::Clip));
+                        let combined_format = table_format.combine(&sheet_format);
+                        return combined_format;
+                    } else {
+                        sheet_format.wrap = sheet_format.wrap.or(Some(CellWrap::Clip));
+                    }
+                }
+            }
+        }
+
+        sheet_format
+    }
+
     /// Returns a summary of formatting in a region.
     pub fn cell_format_summary(&self, pos: Pos) -> CellFormatSummary {
-        let format = self.formats.try_format(pos).unwrap_or_default();
+        let format = self.cell_format(pos);
         let cell_type = self
             .display_value(pos)
             .and_then(|cell_value| match cell_value {
@@ -319,18 +385,6 @@ impl Sheet {
             strike_through: format.strike_through,
         }
     }
-
-    // /// Sets a formatting property for a cell.
-    // pub fn set_formatting_value<A: CellFmtAttr>(
-    //     &mut self,
-    //     pos: Pos,
-    //     value: Option<A::Value>,
-    // ) -> Option<A::Value> {
-    //     // TODO(perf): avoid double lookup
-    //     let mut cell_format = self.formats.get(pos).cloned().unwrap_or_default();
-    //     *A::get_from_format_mut(&mut cell_format) = value;
-    //     A::get_from_format(&self.formats.set(pos, Some(cell_format))?).clone()
-    // }
 
     /// Returns a column of a sheet from the column index.
     pub(crate) fn get_column(&self, index: i64) -> Option<&Column> {
@@ -360,7 +414,7 @@ impl Sheet {
     /// Deletes all data and formatting in the sheet, effectively recreating it.
     pub fn clear(&mut self) {
         self.columns.clear();
-        self.code_runs.clear();
+        self.data_tables.clear();
         self.recalculate_bounds();
     }
 
@@ -411,7 +465,7 @@ impl Sheet {
 
     /// Returns true if the cell at Pos has wrap formatting.
     pub fn check_if_wrap_in_cell(&self, pos: Pos) -> bool {
-        if self.cell_value(pos).is_none() {
+        if !self.has_content(pos) {
             return false;
         }
         self.formats.wrap.get(pos) == Some(CellWrap::Wrap)
@@ -420,7 +474,7 @@ impl Sheet {
     pub fn check_if_wrap_in_row(&self, y: i64) -> bool {
         self.formats.wrap.any_in_row(y, |wrap| {
             let pos = Pos { x: 1, y };
-            self.cell_value(pos).is_some() && *wrap == Some(CellWrap::Wrap)
+            self.has_content(pos) && *wrap == Some(CellWrap::Wrap)
         })
     }
 
@@ -428,7 +482,7 @@ impl Sheet {
         let mut rows = vec![];
         if let Some((start, end)) = self.column_bounds(x, true) {
             for y in start..=end {
-                if self.cell_value(Pos { x, y }).is_some()
+                if self.has_content(Pos { x, y })
                     && self
                         .formats
                         .wrap
@@ -446,7 +500,7 @@ impl Sheet {
         let mut rows = vec![];
         for y in rect.y_range() {
             for x in rect.x_range() {
-                if (include_blanks || self.cell_value((x, y).into()).is_some())
+                if (include_blanks || self.has_content(Pos { x, y }))
                     && self
                         .formats
                         .wrap
@@ -468,9 +522,13 @@ impl Sheet {
     ) -> Vec<i64> {
         let mut rows_set = HashSet::<i64>::new();
         selection.ranges.iter().for_each(|range| {
-            let rect = self.cell_ref_range_to_rect(*range);
-            let rows = self.get_rows_with_wrap_in_rect(&rect, include_blanks);
-            rows_set.extend(rows);
+            if let Some(rect) = match range {
+                CellRefRange::Sheet { range } => Some(self.ref_range_bounds_to_rect(range)),
+                CellRefRange::Table { range } => self.table_ref_to_rect(range, false, false),
+            } {
+                let rows = self.get_rows_with_wrap_in_rect(&rect, include_blanks);
+                rows_set.extend(rows);
+            }
         });
         rows_set.into_iter().collect()
     }
@@ -483,13 +541,13 @@ mod test {
 
     use bigdecimal::BigDecimal;
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
-    use serial_test::parallel;
 
     use super::*;
+    use crate::a1::A1Selection;
     use crate::controller::GridController;
-    use crate::grid::{CodeCellLanguage, CodeCellValue, NumericFormat};
+    use crate::grid::{CodeCellLanguage, CodeCellValue, DataTableKind, NumericFormat};
     use crate::test_util::print_table;
-    use crate::{A1Selection, SheetPos, SheetRect};
+    use crate::{SheetPos, SheetRect, Value};
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
         let mut grid_controller = GridController::test();
@@ -936,7 +994,56 @@ mod test {
     }
 
     #[test]
-    #[parallel]
+    fn test_has_content() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        let pos = Pos { x: 1, y: 1 };
+
+        // Empty cell should have no content
+        assert!(!sheet.has_content(pos));
+
+        // Text content
+        sheet.set_cell_value(pos, "test");
+        assert!(sheet.has_content(pos));
+
+        // Blank value should count as no content
+        sheet.set_cell_value(pos, CellValue::Blank);
+        assert!(!sheet.has_content(pos));
+
+        // Empty string should count as no content
+        sheet.set_cell_value(pos, "");
+        assert!(!sheet.has_content(pos));
+
+        // Number content
+        sheet.set_cell_value(pos, CellValue::Text("test".to_string()));
+        assert!(sheet.has_content(pos));
+
+        // Table content
+        let dt = DataTable::new(
+            DataTableKind::CodeRun(CodeRun::default()),
+            "test",
+            Value::Array(Array::from(vec![vec!["test", "test"]])),
+            false,
+            false,
+            true,
+            None,
+        );
+        sheet.data_tables.insert(pos, dt.clone());
+        assert!(sheet.has_content(pos));
+        assert!(sheet.has_content(Pos { x: 2, y: 2 }));
+        assert!(!sheet.has_content(Pos { x: 3, y: 2 }));
+
+        let mut dt = dt.clone();
+        dt.chart_output = Some((5, 5));
+        let pos2 = Pos { x: 10, y: 10 };
+        sheet.data_tables.insert(pos2, dt);
+        assert!(sheet.has_content(pos2));
+        assert!(sheet.has_content(Pos { x: 14, y: 10 }));
+        assert!(!sheet.has_content(Pos { x: 15, y: 10 }));
+    }
+
+    #[test]
     fn js_cell_value_pos() {
         let mut sheet = Sheet::test();
         let pos = pos![A1];
@@ -977,8 +1084,7 @@ mod test {
     }
 
     #[test]
-    #[parallel]
-    fn get_js_cell_value_pos_in_rect() {
+    fn test_js_cell_value_pos_in_rect() {
         let mut sheet = Sheet::test();
         sheet.set_cell_values(
             Rect {
@@ -1004,7 +1110,7 @@ mod test {
 
         let max_rows = 3;
 
-        let js_cell_value_pos_in_rect = sheet.get_js_cell_value_pos_in_rect(
+        let js_cell_value_pos_in_rect = sheet.js_cell_value_pos_in_rect(
             Rect {
                 min: Pos { x: 1, y: 1 },
                 max: Pos { x: 10, y: 1000 },

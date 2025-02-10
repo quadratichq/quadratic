@@ -1,6 +1,6 @@
 import { isAvailableBecauseLoggedIn } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
-import { ActionSpecRecord } from '@/app/actions/actionsSpec';
+import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { openLink } from '@/app/helpers/links';
 import { ExternalLinkIcon, FeedbackIcon } from '@/shared/components/Icons';

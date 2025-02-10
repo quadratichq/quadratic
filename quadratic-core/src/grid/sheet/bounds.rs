@@ -32,7 +32,7 @@ impl Sheet {
             self.format_bounds.add_rect(rect);
         }
 
-        self.code_runs.iter().for_each(|(pos, code_cell_value)| {
+        self.data_tables.iter().for_each(|(pos, code_cell_value)| {
             let output_rect = code_cell_value.output_rect(*pos, false);
             self.data_bounds.add(output_rect.min);
             self.data_bounds.add(output_rect.max);
@@ -40,7 +40,7 @@ impl Sheet {
 
         for validation in self.validations.validations.iter() {
             if validation.render_special().is_some() {
-                if let Some(rect) = self.selection_bounds(&validation.selection) {
+                if let Some(rect) = self.selection_bounds(&validation.selection, false) {
                     self.data_bounds.add(rect.min);
                     self.data_bounds.add(rect.max);
                 }
@@ -258,6 +258,8 @@ impl Sheet {
     /// if reverse is true it searches to the left of the start
     /// if with_content is true it searches for a column with content; otherwise it searches for a column without content
     ///
+    /// For charts, is uses the chart's bounds for intersection test (since charts are considered a single cell)
+    ///
     /// Returns the found column matching the criteria of with_content
     pub fn find_next_column(
         &self,
@@ -275,7 +277,29 @@ impl Sheet {
         };
         let mut x = column_start;
         while (reverse && x >= bounds.0) || (!reverse && x <= bounds.1) {
-            let has_content = self.display_value(Pos { x, y: row });
+            let mut has_content = self.display_value(Pos { x, y: row });
+            if (has_content.is_none()
+                || has_content
+                    .as_ref()
+                    .is_some_and(|cell_value| *cell_value == CellValue::Blank))
+                && self.table_intersects(
+                    x,
+                    row,
+                    Some(if reverse {
+                        column_start + 1
+                    } else {
+                        column_start - 1
+                    }),
+                    None,
+                )
+            {
+                // we use a dummy CellValue::Logical to share that there is
+                // content here (so we don't have to check for the actual
+                // Table content--as it's not really needed except for a
+                // Blank check)
+                has_content = Some(CellValue::Logical(true));
+            }
+
             if has_content.is_some_and(|cell_value| cell_value != CellValue::Blank) {
                 if with_content {
                     return Some(x);
@@ -285,8 +309,11 @@ impl Sheet {
             }
             x += if reverse { -1 } else { 1 };
         }
-        let has_content = self.display_value(Pos { x, y: row });
-        if with_content == has_content.is_some() {
+
+        // final check when we've exited the loop
+        let has_content = self.display_value(Pos { x, y: row }).is_some()
+            || self.table_intersects(x, row, Some(column_start), None);
+        if with_content == has_content {
             Some(x)
         } else {
             None
@@ -310,7 +337,29 @@ impl Sheet {
         };
         let mut y = row_start;
         while (reverse && y >= bounds.0) || (!reverse && y <= bounds.1) {
-            let has_content = self.display_value(Pos { x: column, y });
+            let mut has_content = self.display_value(Pos { x: column, y });
+            if has_content.is_none()
+                || has_content
+                    .as_ref()
+                    .is_some_and(|cell_value| *cell_value == CellValue::Blank)
+            {
+                // we use a dummy CellValue::Logical to share that there is
+                // content here (so we don't have to check for the actual
+                // Table content--as it's not really needed except for a
+                // Blank check)
+                if self.table_intersects(
+                    column,
+                    y,
+                    None,
+                    Some(if reverse {
+                        row_start + 1
+                    } else {
+                        row_start - 1
+                    }),
+                ) {
+                    has_content = Some(CellValue::Logical(true));
+                }
+            }
             if has_content.is_some_and(|cell_value| cell_value != CellValue::Blank) {
                 if with_content {
                     return Some(y);
@@ -320,8 +369,11 @@ impl Sheet {
             }
             y += if reverse { -1 } else { 1 };
         }
-        let has_content = self.display_value(Pos { x: column, y });
-        if with_content == has_content.is_some() {
+
+        // final check when we've exited the loop
+        let has_content = self.display_value(Pos { x: column, y }).is_some()
+            || self.table_intersects(column, y, None, Some(row_start));
+        if with_content == has_content {
             Some(y)
         } else {
             None
@@ -449,6 +501,17 @@ impl Sheet {
     ) -> Vec<Rect> {
         let mut tabular_data_rects = Vec::new();
 
+        let is_non_data_cell = |pos: Pos| match self.cell_value_ref(pos) {
+            Some(value) => {
+                value.is_blank_or_empty_string()
+                    || value.is_image()
+                    || value.is_html()
+                    || value.is_code()
+                    || value.is_import()
+            }
+            None => true,
+        };
+
         for selection_rect in selection_rects {
             for y in selection_rect.y_range() {
                 for x in selection_rect.x_range() {
@@ -461,19 +524,42 @@ impl Sheet {
                         continue;
                     }
 
-                    let has_value = self.display_value(pos).is_some();
+                    let is_table_cell = self.first_data_table_within(pos).is_ok();
+                    if is_table_cell {
+                        continue;
+                    }
+
+                    let has_value = self.has_content(pos);
                     if !has_value {
                         continue;
                     }
 
-                    let last_row = self
-                        .find_next_row(pos.y + 1, pos.x, false, false)
-                        .unwrap_or(pos.y + 1)
+                    let Some((col_min, col_max)) = self.row_bounds(pos.y, true) else {
+                        continue;
+                    };
+
+                    if pos.x < col_min || pos.x > col_max {
+                        continue;
+                    }
+
+                    let Some((row_min, row_max)) = self.column_bounds(pos.x, true) else {
+                        continue;
+                    };
+
+                    if pos.y < row_min || pos.y > row_max {
+                        continue;
+                    }
+
+                    // search till we find a non-data cell and use the previous row
+                    let last_row = ((pos.y + 1)..=(row_max + 1))
+                        .find(|y| is_non_data_cell(Pos { x: pos.x, y: *y }))
+                        .unwrap_or(row_max + 1)
                         - 1;
 
-                    let last_col = self
-                        .find_next_column(pos.x + 1, pos.y, false, false)
-                        .unwrap_or(pos.x + 1)
+                    // search till we find a non-data cell and use the previous column
+                    let last_col = ((pos.x + 1)..=(col_max + 1))
+                        .find(|x| is_non_data_cell(Pos { x: *x, y: pos.y }))
+                        .unwrap_or(col_max + 1)
                         - 1;
 
                     let tabular_data_rect = Rect::new(pos.x, pos.y, last_col, last_row);
@@ -481,10 +567,12 @@ impl Sheet {
                 }
             }
         }
+
         if let Some(max_rects) = max_rects {
             tabular_data_rects.sort_by_key(|rect| Reverse(rect.len()));
             tabular_data_rects.truncate(max_rects);
         }
+
         tabular_data_rects
     }
 }
@@ -493,7 +581,8 @@ impl Sheet {
 #[serial_test::parallel]
 mod test {
     use crate::{
-        controller::GridController,
+        a1::A1Selection,
+        controller::{user_actions::import::tests::simple_csv_at, GridController},
         grid::{
             sheet::{
                 borders::{BorderSelection, BorderStyle},
@@ -502,9 +591,10 @@ mod test {
                     validation_rules::{validation_logical::ValidationLogical, ValidationRule},
                 },
             },
-            CellAlign, CellWrap, CodeCellLanguage, GridBounds, Sheet,
+            CellAlign, CellWrap, CodeCellLanguage, CodeCellValue, CodeRun, DataTable,
+            DataTableKind, GridBounds, Sheet,
         },
-        A1Selection, Array, CellValue, Pos, Rect, SheetPos,
+        Array, CellValue, Pos, Rect, SheetPos, Value,
     };
     use proptest::proptest;
     use std::collections::HashMap;
@@ -919,7 +1009,7 @@ mod test {
             None,
         );
         gc.set_cell_value((3, 1, sheet_id).into(), "d".into(), None);
-        gc.set_bold(&A1Selection::test_a1("D1"), true, None)
+        gc.set_bold(&A1Selection::test_a1("D1"), Some(true), None)
             .unwrap();
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.row_bounds(1, true), Some((1, 3)));
@@ -1006,6 +1096,146 @@ mod test {
 
         // Check that the data bounds are still empty
         assert_eq!(sheet.data_bounds, GridBounds::Empty);
+    }
+
+    fn chart_5x5_dt() -> DataTable {
+        let mut dt = DataTable::new(
+            DataTableKind::CodeRun(CodeRun::default()),
+            "test",
+            Value::Single(CellValue::Html("html".to_string())),
+            false,
+            false,
+            true,
+            // make the chart take up 5x5 cells
+            Some((100.0 * 5.0, 20.0 * 5.0)),
+        );
+        dt.show_name = false;
+        dt.chart_output = Some((5, 5));
+        dt
+    }
+
+    #[test]
+    fn find_next_column_with_table() {
+        let mut sheet = Sheet::test();
+        let dt = chart_5x5_dt();
+        sheet.set_cell_value(
+            Pos { x: 5, y: 5 },
+            CellValue::Code(CodeCellValue::new(
+                CodeCellLanguage::Javascript,
+                "".to_string(),
+            )),
+        );
+        sheet.set_data_table(Pos { x: 5, y: 5 }, Some(dt));
+        sheet.recalculate_bounds();
+
+        // should find the anchor of the table
+        assert_eq!(sheet.find_next_column(1, 5, false, true), Some(5));
+
+        // ensure we're not finding the table if we're in the wrong row
+        assert_eq!(sheet.find_next_column(1, 1, false, true), None);
+
+        // should find the chart-sized table
+        assert_eq!(sheet.find_next_column(1, 7, false, true), Some(5));
+
+        // should not find the table if we're already inside the table
+        assert_eq!(sheet.find_next_column(6, 5, false, true), None);
+    }
+
+    #[test]
+    fn find_next_column_with_two_tables() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(
+            Pos { x: 5, y: 5 },
+            CellValue::Code(CodeCellValue::new(
+                CodeCellLanguage::Javascript,
+                "".to_string(),
+            )),
+        );
+        sheet.set_data_table(Pos { x: 5, y: 5 }, Some(chart_5x5_dt()));
+        sheet.set_cell_value(
+            Pos { x: 20, y: 5 },
+            CellValue::Code(CodeCellValue::new(
+                CodeCellLanguage::Javascript,
+                "".to_string(),
+            )),
+        );
+        sheet.set_data_table(Pos { x: 20, y: 5 }, Some(chart_5x5_dt()));
+        sheet.recalculate_bounds();
+
+        // should find the first table
+        assert_eq!(sheet.find_next_column(1, 6, false, true), Some(5));
+
+        // should find the second table even though we're inside the first
+        assert_eq!(sheet.find_next_column(6, 6, false, true), Some(20));
+
+        // should find the second table moving backwards
+        assert_eq!(sheet.find_next_column(30, 6, true, true), Some(24));
+
+        // should find the first table moving backwards even though we're inside
+        // the second table
+        assert_eq!(sheet.find_next_column(23, 6, true, true), Some(9));
+    }
+
+    #[test]
+    fn find_next_row_with_table() {
+        let mut sheet = Sheet::test();
+        let dt = chart_5x5_dt();
+        sheet.set_cell_value(
+            Pos { x: 5, y: 5 },
+            CellValue::Code(CodeCellValue::new(
+                CodeCellLanguage::Javascript,
+                "".to_string(),
+            )),
+        );
+        sheet.set_data_table(Pos { x: 5, y: 5 }, Some(dt));
+        sheet.recalculate_bounds();
+
+        // should find the anchor of the table
+        assert_eq!(sheet.find_next_row(1, 5, false, true), Some(5));
+
+        // ensure we're not finding the table if we're in the wrong column
+        assert_eq!(sheet.find_next_column(1, 1, false, true), None);
+
+        // should find the chart-sized table
+        assert_eq!(sheet.find_next_row(1, 7, false, true), Some(5));
+
+        // should not find the table if we're already inside the table
+        assert_eq!(sheet.find_next_row(6, 6, false, true), None);
+    }
+
+    #[test]
+    fn find_next_row_with_two_tables() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(
+            Pos { x: 5, y: 5 },
+            CellValue::Code(CodeCellValue::new(
+                CodeCellLanguage::Javascript,
+                "".to_string(),
+            )),
+        );
+        sheet.set_data_table(Pos { x: 5, y: 5 }, Some(chart_5x5_dt()));
+        sheet.set_cell_value(
+            Pos { x: 5, y: 20 },
+            CellValue::Code(CodeCellValue::new(
+                CodeCellLanguage::Javascript,
+                "".to_string(),
+            )),
+        );
+        sheet.set_data_table(Pos { x: 5, y: 20 }, Some(chart_5x5_dt()));
+        sheet.recalculate_bounds();
+
+        // should find the first table
+        assert_eq!(sheet.find_next_row(1, 6, false, true), Some(5));
+
+        // should find the second table even though we're inside the first
+        assert_eq!(sheet.find_next_row(6, 6, false, true), Some(20));
+
+        // should find the second table moving backwards
+        assert_eq!(sheet.find_next_row(30, 6, true, true), Some(25));
+
+        // should find the first table moving backwards even though we're inside
+        // the second table
+        assert_eq!(sheet.find_next_row(23, 6, true, true), Some(10));
     }
 
     #[test]
@@ -1120,18 +1350,20 @@ mod test {
 
     #[test]
     fn find_tabular_data_rects_in_selection_rects() {
-        let mut sheet = Sheet::test();
+        let (mut gc, sheet_id, _, _) = simple_csv_at(pos![B2]);
+
+        let sheet = gc.sheet_mut(sheet_id);
         sheet.set_cell_values(
             Rect {
-                min: Pos { x: 1, y: 1 },
-                max: Pos { x: 10, y: 1000 },
+                min: Pos { x: 6, y: 2 },
+                max: Pos { x: 15, y: 1001 },
             },
             &Array::from(
-                (1..=1000)
+                (2..=1001)
                     .map(|row| {
-                        (1..=10)
+                        (6..=15)
                             .map(|_| {
-                                if row == 1 {
+                                if row == 2 {
                                     "heading1".to_string()
                                 } else {
                                     "value1".to_string()
@@ -1170,7 +1402,7 @@ mod test {
         assert_eq!(tabular_data_rects.len(), 2);
 
         let expected_rects = vec![
-            Rect::from_numbers(1, 1, 10, 1000),
+            Rect::from_numbers(6, 2, 10, 1000),
             Rect::from_numbers(31, 101, 5, 1103),
         ];
         assert_eq!(tabular_data_rects, expected_rects);

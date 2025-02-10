@@ -6,9 +6,13 @@
  */
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import { JsOffset, JsRenderCell, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
-import { CoreRenderMessage, RenderCoreMessage, RenderCoreRequestRenderCells } from '../coreRenderMessages';
-import { core } from './core';
+import type { JsOffset, JsRenderCell, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import type {
+  CoreRenderMessage,
+  RenderCoreMessage,
+  RenderCoreRequestRenderCells,
+} from '@/app/web-workers/quadraticCore/coreRenderMessages';
+import { core } from '@/app/web-workers/quadraticCore/worker/core';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {

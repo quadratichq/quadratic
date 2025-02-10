@@ -5,7 +5,9 @@ use itertools::Itertools;
 use serial_test::parallel;
 
 pub(crate) use super::*;
+use crate::a1::{A1Context, CellRefCoord, CellRefRange, SheetCellRefRange};
 pub(crate) use crate::grid::Grid;
+use crate::grid::{Sheet, SheetId};
 pub(crate) use crate::values::*;
 pub(crate) use crate::{array, CodeResult, RunError, RunErrorMsg, Spanned};
 use crate::{CoerceInto, Pos, SheetPos};
@@ -14,7 +16,7 @@ use crate::{CoerceInto, Pos, SheetPos};
 pub(crate) fn try_check_syntax(grid: &Grid, s: &str) -> CodeResult<()> {
     println!("Checking syntax of formula {s:?}");
     let mut ctx = Ctx::new_for_syntax_check(grid);
-    parse_formula(s, Pos::ORIGIN)?
+    simple_parse_formula(s)?
         .eval(&mut ctx)
         .into_non_error_value()
         .map(|_| ())
@@ -24,7 +26,7 @@ pub(crate) fn try_check_syntax(grid: &Grid, s: &str) -> CodeResult<()> {
 pub(crate) fn eval_at(grid: &Grid, pos: SheetPos, s: &str) -> Value {
     println!("Evaluating formula {s:?}");
     let mut ctx = Ctx::new(grid, pos);
-    match parse_formula(s, Pos::ORIGIN) {
+    match parse_formula(s, &grid.a1_context(), grid.origin_in_first_sheet()) {
         Ok(formula) => formula.eval(&mut ctx).inner,
         Err(e) => e.into(),
     }
@@ -98,7 +100,7 @@ pub(crate) fn datetime(s: &str) -> CellValue {
 #[parallel]
 // TODO(ddimaria): @HactarCE fix broken test
 fn test_formula_cell_ref() {
-    let form = parse_formula("SUM(A1:A5)", Pos::ORIGIN).unwrap();
+    let form = simple_parse_formula("SUM(A1:A5)").unwrap();
 
     let mut g = Grid::new();
     let sheet = &mut g.sheets_mut()[0];
@@ -117,10 +119,13 @@ fn test_formula_cell_ref() {
 #[test]
 #[parallel]
 fn test_formula_circular_array_ref() {
-    let form = parse_formula("$B$0:$C$4", pos![A0]).unwrap();
+    let g = Grid::new();
+    let sheet_id = g.sheets()[0].id;
+    let ctx = g.a1_context();
+    let form = parse_formula("$B$1:$C$4", &ctx, pos![A1].to_sheet_pos(sheet_id)).unwrap();
 
     let g = Grid::new();
-    let mut ctx = Ctx::new(&g, pos![B2].to_sheet_pos(g.sheets()[0].id));
+    let mut ctx = Ctx::new(&g, pos![B2].to_sheet_pos(sheet_id));
     assert_eq!(
         RunErrorMsg::CircularReference,
         form.eval(&mut ctx).inner.cell_values_slice().unwrap()[4]
@@ -144,7 +149,7 @@ fn test_formula_range_operator() {
 
     assert_eq!(
         RunErrorMsg::Unexpected("ellipsis".into()),
-        parse_formula("1...5", Pos::ORIGIN).unwrap_err().msg,
+        simple_parse_formula("1...5").unwrap_err().msg,
     );
 }
 
@@ -318,64 +323,47 @@ fn test_formula_blank_to_string() {
 #[test]
 #[parallel]
 fn test_find_cell_references() {
-    #[track_caller]
-    fn a1(s: &str) -> CellRef {
-        CellRef::parse_a1(s, Pos::ORIGIN).expect("bad cell reference")
-    }
+    let mut g = Grid::new();
+    let sheet1 = g.sheets()[0].id;
+    let apple = SheetId::new();
+    g.add_sheet(Some(Sheet::new(apple, "apple".into(), String::new())));
+    let orange = SheetId::new();
+    g.add_sheet(Some(Sheet::new(orange, "orange".into(), String::new())));
+    let banana = SheetId::new();
+    g.add_sheet(Some(Sheet::new(banana, "banana".into(), String::new())));
+    let plum = SheetId::new();
+    g.add_sheet(Some(Sheet::new(plum, "plum".into(), String::new())));
+
+    let a = CellRefCoord::new_abs;
+    let r = CellRefCoord::new_rel;
+    let new_ref = |sheet_id, x1, y1, x2, y2| SheetCellRefRange {
+        sheet_id,
+        cells: CellRefRange::new_sheet_ref(x1, y1, x2, y2),
+    };
 
     // Another test checks that `parse_a1()` is correct.
     let test_cases = [
         // Basic cell reference
-        ("$A$1", RangeRef::Cell { pos: a1("$A$1") }),
+        ("$A$1", new_ref(sheet1, a(1), a(1), a(1), a(1))),
         // Range
-        (
-            "An1:A3",
-            RangeRef::CellRange {
-                start: a1("An1"),
-                end: a1("A3"),
-            },
-        ),
+        ("A1:A3", new_ref(sheet1, r(1), r(1), r(1), r(3))),
         // Range with spaces
-        (
-            "A$2 : Bn2",
-            RangeRef::CellRange {
-                start: a1("A$2"),
-                end: a1("Bn2"),
-            },
-        ),
+        ("A$2 : B2", new_ref(sheet1, r(1), a(2), r(2), r(2))),
         // Unquoted sheet reference
-        (
-            "apple!A$1",
-            RangeRef::Cell {
-                pos: a1("apple!A$1"),
-            },
-        ),
+        ("apple!A$1", new_ref(apple, r(1), a(1), r(1), a(1))),
         // Unquoted sheet reference range with spaces
-        (
-            "orange ! A2: $Q9",
-            RangeRef::CellRange {
-                start: a1("orange ! A2"),
-                end: a1("$Q9"),
-            },
-        ),
+        ("orange ! A2: $Q9", new_ref(orange, r(1), r(2), a(16), r(9))),
         // Quoted sheet reference range
         (
             "'banana'!$A1:QQ$222",
-            RangeRef::CellRange {
-                start: a1("'banana'!$A1"),
-                end: a1("QQ$222"),
-            },
+            new_ref(banana, a(1), r(1), r(459), a(222)),
         ),
         // Quoted sheet reference with spaces
-        (
-            "\"plum\" ! $A1",
-            RangeRef::Cell {
-                pos: a1("\"plum\"!$A1"),
-            },
-        ),
+        ("\"plum\" ! $A1", new_ref(plum, a(1), r(1), a(1), r(1))),
     ];
     let formula_string = test_cases.iter().map(|(string, _)| string).join(" + ");
-    let cell_references_found = find_cell_references(&formula_string, Pos::ORIGIN)
+    let ctx = A1Context::test(&[], &[]);
+    let cell_references_found = find_cell_references(&formula_string, &ctx, SheetPos::test())
         .into_iter()
         .map(|Spanned { span, inner }| (span.of_str(&formula_string), inner))
         .collect_vec();
@@ -422,6 +410,56 @@ fn test_sheet_references() {
         "{76; 706}",
         eval_to_string_at(&g, pos1, "\"My Other Sheet\"!A3:A4 & A3"),
     );
+}
+
+#[test]
+#[parallel]
+fn test_table_references() {
+    let (gc, _sheet_id, _pos, _file_name) =
+        crate::controller::user_actions::import::tests::simple_csv();
+
+    for (formula, expected) in [
+        (
+            "simple.csv",
+            "{Southborough, MA, United States, 9686; Northbridge, MA, United States, 14061; Westborough, MA, United States, 29313; Marlborough, MA, United States, 38334; Springfield, MA, United States, 152227; Springfield, MO, United States, 150443; Springfield, NJ, United States, 14976; Springfield, OH, United States, 64325; Springfield, OR, United States, 56032; Concord, NH, United States, 42605}",
+        ),
+        (
+            "simple.csv[#HEADERS]",
+            "{city, region, country, population}",
+        ),
+        (
+            "simple.csv[[#HEADERS]]",
+            "{city, region, country, population}",
+        ),
+        ("simple.csv[region]", "{MA; MA; MA; MA; MA; MO; NJ; OH; OR; NH}"),
+        ("simple.csv[[region]]", "{MA; MA; MA; MA; MA; MO; NJ; OH; OR; NH}"),
+        (
+            "simple.csv[[city]:[country]]",
+            "{Southborough, MA, United States; Northbridge, MA, United States; Westborough, MA, United States; Marlborough, MA, United States; Springfield, MA, United States; Springfield, MO, United States; Springfield, NJ, United States; Springfield, OH, United States; Springfield, OR, United States; Concord, NH, United States}",
+        ),
+        (
+            "simple.csv[[#dAtA], [city]:[country]]",
+            "{Southborough, MA, United States; Northbridge, MA, United States; Westborough, MA, United States; Marlborough, MA, United States; Springfield, MA, United States; Springfield, MO, United States; Springfield, NJ, United States; Springfield, OH, United States; Springfield, OR, United States; Concord, NH, United States}",
+        ),
+        (
+            "simple.csv[[#headers], [[city]:[country]]]",
+            "{city, region, country}",
+        ),
+        (
+            "simple.csv[ [#Headers],[#Data], [city]:[country]]",
+            "{city, region, country; Southborough, MA, United States; Northbridge, MA, United States; Westborough, MA, United States; Marlborough, MA, United States; Springfield, MA, United States; Springfield, MO, United States; Springfield, NJ, United States; Springfield, OH, United States; Springfield, OR, United States; Concord, NH, United States}",
+        ),
+        (
+            "simple.csv[[#aLL],  [city]:[country]  ]",
+            "{city, region, country; Southborough, MA, United States; Northbridge, MA, United States; Westborough, MA, United States; Marlborough, MA, United States; Springfield, MA, United States; Springfield, MO, United States; Springfield, NJ, United States; Springfield, OH, United States; Springfield, OR, United States; Concord, NH, United States}",
+        ),
+        (
+            "simple.csv[[#All], [country]:]",
+            "{country, population; United States, 9686; United States, 14061; United States, 29313; United States, 38334; United States, 152227; United States, 150443; United States, 14976; United States, 64325; United States, 56032; United States, 42605}",
+        ),
+    ] {
+        assert_eq!(expected, eval_to_string(gc.grid(), formula));
+    }
 }
 
 #[test]

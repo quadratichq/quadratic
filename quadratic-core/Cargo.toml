@@ -24,6 +24,14 @@ path = "src/bin/export_types.rs"
 name = "generate_blank_current_file"
 path = "src/bin/generate_blank_current_file.rs"
 
+[[bin]]
+name = "convert_grid_to_json"
+path = "src/bin/convert_grid_to_json.rs"
+
+[[bin]]
+name = "upgrade_file"
+path = "src/bin/upgrade_file.rs"
+
 [features]
 default = ["console_error_panic_hook", "js"]
 # "js" feature is disabled for testing (particularly WASI benchmarks)
@@ -43,8 +51,8 @@ anyhow = "1.0"
 async-trait = "0.1.63"
 futures = "0.3.25"
 itertools = "0.10.5"
-rand = "0.8.5"
-getrandom = { version = "0.2.15", features = ["js"] }
+rand = "0.9.0"
+getrandom = { version = "0.3.1", features = ["wasm_js"] }
 regex = "1.7"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -55,7 +63,7 @@ strum_macros = "0.26.3"
 tabled = { version = "0.14.0", features = ["color"] }
 pollster = "0.2.5"
 unicode-case-mapping = "0.5.0"
-uuid = { version = "1.4.0", features = ["v4", "serde"] }
+uuid = { version = "1.13.1", features = ["serde", "v4", "rng-rand"] }
 chrono = { version = "0.4", features = ["serde", "wasmbind"] }
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
@@ -76,7 +84,7 @@ wasm-bindgen-futures = { version = "0.4.33", optional = true }
 lexicon_fractional_index = "0.0.3"
 htmlescape = "0.3.1"
 bigdecimal = { version = "0.4.7", features = ["serde"] }
-csv = "1.2.2"
+csv = "1.3.0"
 indexmap = { version = "2.0.2", features = ["serde"] }
 thiserror = "1.0.52"
 lazy_static = "1.4.0"
@@ -85,7 +93,6 @@ parquet = { version = "51.0.0", default-features = false, features = [
   "arrow-array",
   "flate2",
   "snap",
-  "zstd",
 ] }
 bytes = "1.5.0"
 arrow-array = "51.0.0"
@@ -99,11 +106,13 @@ flate2 = "1.0.30"
 serde_with = "3.8.1"
 dateparser = "0.2.1"
 fancy-regex = "0.14.0"
+csv-sniffer = "0.3.1"
 
 [dev-dependencies]
 criterion = { version = "0.4", default-features = false }
 tokio-test = "0.4.3"
 serial_test = "3.0.0"
+memory-stats = "1.2.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 proptest = "1.2.0"
@@ -127,7 +136,7 @@ wasm-opt = false
 [package.metadata.wasm-pack.profile.dev.wasm-bindgen]
 debug-js-glue = true
 demangle-name-section = true
-dwarf-debug-info = true
+dwarf-debug-info = false
 
 [package.metadata.wasm-pack.profile.profiling]
 wasm-opt = ['-O0', '-g']

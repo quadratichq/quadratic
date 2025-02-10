@@ -8,7 +8,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { validationRuleSimple } from '@/app/ui/menus/Validations/Validation/validationType';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { cn } from '@/shared/shadcn/utils';
-import { Rectangle } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
 import { useCallback, useEffect, useState } from 'react';
 
 export const SuggestionDropDown = () => {
@@ -40,7 +40,7 @@ export const SuggestionDropDown = () => {
           inlineEditorMonaco.autocompleteList = values;
         } else if (validationRuleSimple(validation) === 'list') {
           if (validation && validationRuleSimple(validation) === 'list') {
-            const values = await quadraticCore.getValidationList(sheets.sheet.id, pos.x, pos.y);
+            const values = await quadraticCore.getValidationList(sheets.current, pos.x, pos.y);
             if (values) {
               // we set the list to undefined so the dropdown doesn't show (it will show only if validation is set to show list)
               // we still want the autocomplete to work so we send the values to the monaco editor

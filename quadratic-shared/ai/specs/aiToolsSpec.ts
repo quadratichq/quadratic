@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 export enum AITool {
   SetChatName = 'set_chat_name',
+  AddDataTable = 'add_data_table',
   SetCellValues = 'set_cell_values',
   SetCodeCellValue = 'set_code_cell_value',
   MoveCells = 'move_cells',
@@ -11,6 +12,7 @@ export enum AITool {
 
 export const AIToolSchema = z.enum([
   AITool.SetChatName,
+  AITool.AddDataTable,
   AITool.SetCellValues,
   AITool.SetCodeCellValue,
   AITool.MoveCells,
@@ -30,20 +32,61 @@ type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
   prompt: string; // this is sent as internal message to AI, no character limit
 };
 
+const numberSchema = z.number().or(
+  z.string().transform((str) => {
+    const num = Number(str);
+    if (isNaN(num)) {
+      throw new Error('Invalid number format');
+    }
+    return num;
+  })
+);
+
+const array2DSchema = z.array(z.array(z.union([z.string(), z.number()]).transform(String))).or(
+  z.string().transform((str) => {
+    try {
+      const parsed = JSON.parse(str);
+      if (Array.isArray(parsed)) {
+        return parsed.map((row) => {
+          if (!Array.isArray(row)) {
+            throw new Error('Invalid 2D array format - each row must be an array');
+          }
+          return row.map(String);
+        });
+      }
+      throw new Error('Invalid 2D array format');
+    } catch {
+      throw new Error('Invalid 2D array format');
+    }
+  })
+);
+
+const cellLanguageSchema = z
+  .string()
+  .transform((val) => val.toLowerCase())
+  .pipe(z.enum(['python', 'javascript', 'formula']))
+  .transform((val) => val.charAt(0).toUpperCase() + val.slice(1))
+  .pipe(z.enum(['Python', 'Javascript', 'Formula']));
+
 export const AIToolsArgsSchema = {
   [AITool.SetChatName]: z.object({
     chat_name: z.string(),
   }),
+  [AITool.AddDataTable]: z.object({
+    top_left_position: z.string(),
+    table_name: z.string(),
+    table_data: array2DSchema,
+  }),
   [AITool.SetCodeCellValue]: z.object({
-    code_cell_language: z.enum(['Python', 'Javascript', 'Formula']),
+    code_cell_language: cellLanguageSchema,
     code_cell_position: z.string(),
     code_string: z.string(),
-    output_width: z.number(),
-    output_height: z.number(),
+    output_width: numberSchema,
+    output_height: numberSchema,
   }),
   [AITool.SetCellValues]: z.object({
     top_left_position: z.string(),
-    cell_values: z.array(z.array(z.string())),
+    cell_values: array2DSchema,
   }),
   [AITool.MoveCells]: z.object({
     source_selection_rect: z.string(),
@@ -87,10 +130,57 @@ The chat name should be based on user's messages and should reflect his/her quer
 This name should be from user's perspective, not the assistant's.\n
 `,
   },
+  [AITool.AddDataTable]: {
+    internalTool: false,
+    description: `
+Adds a data table to the currently open sheet, requires the top left cell position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
+The first row of the data table is considered to be the header row, and the data table will be created with the first row as the header row.\n
+Always use this tool when adding a new tabular data to the currently open sheet. Don't use set_cell_values function to add tabular data.\n
+Don't use this tool to add data to an existing data table. Use set_cell_values function to add data to an existing data table.\n
+Always prefer using this tool to add structured data to the currently open sheet. Don't use set_cell_values or set_code_cell_value function to add structured data.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        top_left_position: {
+          type: 'string',
+          description:
+            'The top left position of the data table on the currently open sheet, in a1 notation. This should be a single cell, not a range.',
+        },
+        table_name: {
+          type: 'string',
+          description:
+            "The name of the data table to add to the currently open sheet. This should be a concise and descriptive name of the data table. Don't use special characters or spaces in the name. Always use a unique name for the data table. Spaces, if any, in name are replaced with underscores.",
+        },
+        table_data: {
+          type: 'array',
+          items: {
+            type: 'array',
+            items: {
+              type: 'string',
+              description: 'The string that is the value to set in the cell',
+            },
+          },
+        },
+      },
+      required: ['top_left_position', 'table_name', 'table_data'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.AddDataTable],
+    prompt: `
+Adds a data table to the currently open sheet, requires the top_left_position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
+top_left_position is the anchor position of the data table.\n
+The first row of the data table is considered to be the header row, and the data table will be created with the first row as the header row.\n
+Always use this tool when adding a new tabular data to the currently open sheet. Don't use set_cell_values function to add tabular data.\n
+Don't use this tool to add data to a data table that already exists. Use set_cell_values function to add data to a data table that already exists.\n
+All values can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add values manually in code cells.\n
+To delete a data table, use set_cell_values function with the top_left_position of the data table and with just one empty string value at the top_left_position. Overwriting the top_left_position (anchor position) deletes the data table.\n
+`,
+  },
   [AITool.SetCellValues]: {
     internalTool: false,
     description: `
-Sets the values of the currently open sheet cells to a 2d array of strings, requires the top left cell position (in a1 notation) and the 2d array of strings representing the cell values to set.\n
+Sets the values of the currently open sheet cells to a 2d array of strings, requires the top_left_position (in a1 notation) and the 2d array of strings representing the cell values to set.\n
 Use set_cell_values function to add data to the currently open sheet. Don't use code cell for adding data. Always add data using this function.\n
 Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
 top_left_position is the position of the top left corner of the 2d array of values on the currently open sheet, in a1 notation. This should be a single cell, not a range. Each sub array represents a row of values.\n
@@ -123,7 +213,7 @@ To clear the values of a cell, set the value to an empty string.\n
     prompt: `
 You should use the set_cell_values function to set the values of the currently open sheet cells to a 2d array of strings.\n
 Use this function to add data to the currently open sheet. Don't use code cell for adding data. Always add data using this function.\n
-This function requires the top left cell position (in a1 notation) and the 2d array of strings representing the cell values to set. Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
+This function requires the top_left_position (in a1 notation) and the 2d array of strings representing the cell values to set. Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
 Values set using this function will replace the existing values in the cell and can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add these in code cells.\n
 To clear the values of a cell, set the value to an empty string.\n
 `,

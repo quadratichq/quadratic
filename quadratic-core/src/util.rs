@@ -3,6 +3,12 @@ use std::ops::Range;
 
 use chrono::Utc;
 use itertools::Itertools;
+use lazy_static::lazy_static;
+use regex::Regex;
+
+lazy_static! {
+    pub static ref MATCH_NUMBERS: Regex = Regex::new(r"\d+$").expect("regex should compile");
+}
 
 pub(crate) mod btreemap_serde {
     use std::collections::{BTreeMap, HashMap};
@@ -97,7 +103,7 @@ macro_rules! row {
 macro_rules! pos {
     [$s:ident] => {{
         #[allow(unused_assignments, unused_variables)]
-        let pos = $crate::formulas::CellRef::parse_a1(stringify!($s), $crate::Pos::ORIGIN)
+        let pos = $crate::formulas::legacy_cell_ref::CellRef::parse_a1(stringify!($s), $crate::Pos::ORIGIN)
             .expect("invalid cell reference")
             .resolve_from(crate::Pos::ORIGIN);
         pos
@@ -170,7 +176,42 @@ pub fn unused_name(prefix: &str, already_used: &[&str]) -> String {
         Some(i) => i + 1,
         None => 1,
     };
-    format!("{prefix} {i}")
+    format!("{prefix}{i}")
+}
+
+/// Returns a unique name by appending numbers to the base name if the name is not unique.
+/// Starts at 1, and checks if the name is unique, then 2, etc.
+/// If `require_number` is true, the name will always have an appended number.
+pub fn unique_name(name: &str, all_names: &[String], require_number: bool) -> String {
+    let base = MATCH_NUMBERS.replace(name, "");
+    let contains_number = base != name;
+    let should_short_circuit = !require_number || contains_number;
+
+    // short circuit if the name is unique
+    if should_short_circuit && !all_names.contains(&name.to_owned()) {
+        return name.to_string();
+    }
+
+    // if not unique, try appending numbers until we find a unique name
+    let mut num = 1;
+    let mut name = String::from("");
+
+    while name.is_empty() {
+        let new_name = format!("{}{}", base, num);
+        let new_name_alt = format!("{} {}", base, num);
+        let new_names = [new_name.as_str(), new_name_alt.as_str()];
+
+        if !all_names
+            .iter()
+            .any(|item| new_names.contains(&item.as_str()))
+        {
+            name = new_name;
+        }
+
+        num += 1;
+    }
+
+    name
 }
 
 pub fn maybe_reverse<I: DoubleEndedIterator>(
@@ -185,6 +226,7 @@ pub fn maybe_reverse<I: DoubleEndedIterator>(
 }
 
 /// For debugging both in tests and in the JS console
+#[track_caller]
 pub fn dbgjs(val: impl fmt::Debug) {
     if cfg!(target_family = "wasm") {
         crate::wasm_bindings::js::log(&(format!("{:?}", val)));
@@ -231,6 +273,25 @@ pub fn round(number: f64, precision: i64) -> f64 {
 /// Returns a string suitable for case-insensitive comparison.
 pub fn case_fold(s: &str) -> String {
     s.to_uppercase() // TODO: want proper Unicode case folding
+}
+
+pub fn set_panic_hook() {
+    // When the `console_error_panic_hook` feature is enabled, we can call the
+    // `set_panic_hook` function at least once during initialization, and then
+    // we will get better error messages if our code ever panics.
+    //
+    // For more details see
+    // https://github.com/rustwasm/console_error_panic_hook#readme
+    #[cfg(feature = "console_error_panic_hook")]
+    console_error_panic_hook::set_once();
+}
+
+// normalizes the bounds so that the first is always less than the second
+pub fn sort_bounds(a: i64, b: Option<i64>) -> (i64, Option<i64>) {
+    match b {
+        Some(b) if b < a => (b, Some(a)),
+        _ => (a, b),
+    }
 }
 
 #[cfg(test)]
@@ -281,9 +342,9 @@ mod tests {
     #[test]
     #[parallel]
     fn test_unused_name() {
-        let used = ["Sheet 1", "Sheet 2"];
-        assert_eq!(unused_name("Sheet", &used), "Sheet 3");
-        let used = ["Sheet 2", "Sheet 3"];
-        assert_eq!(unused_name("Sheet", &used), "Sheet 4");
+        let used = ["Sheet1", "Sheet2"];
+        assert_eq!(unused_name("Sheet", &used), "Sheet3");
+        let used = ["Sheet2", "Sheet3"];
+        assert_eq!(unused_name("Sheet", &used), "Sheet4");
     }
 }

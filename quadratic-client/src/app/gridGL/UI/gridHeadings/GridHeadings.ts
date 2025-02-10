@@ -1,15 +1,17 @@
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { intersects } from '@/app/gridGL/helpers/intersects';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import type { Size } from '@/app/gridGL/types/size';
+import { getColumnA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
+import { GridHeadingsLabels } from '@/app/gridGL/UI/gridHeadings/GridHeadingsLabels';
+import { GridHeadingRows } from '@/app/gridGL/UI/gridHeadings/GridHeadingsRows';
+import { calculateAlphaForGridLines } from '@/app/gridGL/UI/gridUtils';
+import { colors } from '@/app/theme/colors';
 import { CELL_HEIGHT, CELL_WIDTH } from '@/shared/constants/gridConstants';
-import { BitmapText, Container, Graphics, Point, Rectangle } from 'pixi.js';
-import { sheets } from '../../../grid/controller/Sheets';
-import { colors } from '../../../theme/colors';
-import { intersects } from '../../helpers/intersects';
-import { pixiApp } from '../../pixiApp/PixiApp';
-import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
-import { Size } from '../../types/size';
-import { calculateAlphaForGridLines } from '../gridUtils';
-import { GridHeadingsLabels } from './GridHeadingsLabels';
-import { getColumnA1Notation } from './getA1Notation';
+import type { Point } from 'pixi.js';
+import { BitmapText, Container, Graphics, Rectangle } from 'pixi.js';
 
 type Selected = 'all' | number[] | undefined;
 
@@ -44,6 +46,10 @@ export class GridHeadings extends Container {
   private columnRect: Rectangle | undefined;
   private cornerRect: Rectangle | undefined;
 
+  // this needs to be a child of viewportContents so it it is placed over the
+  // grid lines
+  gridHeadingsRows: GridHeadingRows;
+
   dirty = true;
 
   constructor() {
@@ -51,6 +57,7 @@ export class GridHeadings extends Container {
     this.headingsGraphics = this.addChild(new Graphics());
     this.labels = this.addChild(new GridHeadingsLabels());
     this.corner = this.addChild(new Graphics());
+    this.gridHeadingsRows = new GridHeadingRows();
   }
 
   // calculates static character size (used in overlap calculations)
@@ -100,8 +107,7 @@ export class GridHeadings extends Container {
     const leftColumn = sheet.getColumnFromScreen(left);
     const rightColumn = sheet.getColumnFromScreen(left + bounds.width);
     this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
-
-    this.selectedColumns = cursor.getSelectedColumnRanges(leftColumn, rightColumn);
+    this.selectedColumns = cursor.getSelectedColumnRanges(leftColumn - 1, rightColumn + 1);
     for (let i = 0; i < this.selectedColumns.length; i += 2) {
       const startPlacement = offsets.getColumnPlacement(this.selectedColumns[i]);
       const start = startPlacement.position;
@@ -319,15 +325,15 @@ export class GridHeadings extends Container {
     for (let y = topOffset; y <= bottomOffset; y += currentHeight) {
       currentHeight = offsets.getRowHeight(row);
       if (gridAlpha !== 0) {
-        this.headingsGraphics.lineStyle(
+        this.gridHeadingsRows.headingsGraphics.lineStyle(
           1,
           colors.gridLines,
           colors.headerSelectedRowColumnBackgroundColorAlpha * gridAlpha,
           0.5,
           true
         );
-        this.headingsGraphics.moveTo(bounds.left, y);
-        this.headingsGraphics.lineTo(bounds.left + this.rowWidth, y);
+        this.gridHeadingsRows.headingsGraphics.moveTo(bounds.left, y);
+        this.gridHeadingsRows.headingsGraphics.lineTo(bounds.left + this.rowWidth, y);
         this.gridLinesRows.push({ row: row - 1, y, height: offsets.getRowHeight(row - 1) });
       }
 
@@ -421,8 +427,10 @@ export class GridHeadings extends Container {
     }
     this.dirty = false;
     this.labels.clear();
-
     this.headingsGraphics.clear();
+
+    this.gridHeadingsRows.labels.clear();
+    this.gridHeadingsRows.headingsGraphics.clear();
 
     if (!pixiAppSettings.showHeadings) {
       this.visible = false;

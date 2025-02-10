@@ -2,7 +2,7 @@ use itertools::Itertools;
 use regex::Regex;
 use smallvec::smallvec;
 
-use crate::{ArraySize, CodeResultExt};
+use crate::{a1::SheetCellRefRange, ArraySize, CodeResultExt};
 
 use super::*;
 
@@ -19,14 +19,17 @@ fn get_functions() -> Vec<FormulaFunction> {
         formula_fn!(
             /// Returns the value of the cell at a given location.
             #[examples("INDIRECT(\"Cn7\")", "INDIRECT(\"F\" & B0)")]
-            #[zip_map]
-            fn INDIRECT(ctx: Ctx, [cellref_string]: (Spanned<String>)) {
+            fn INDIRECT(ctx: Ctx, cellref_string: (Spanned<String>)) {
                 let span = cellref_string.span;
-                // TODO: support array references
-                let cell_ref = CellRef::parse_a1(&cellref_string.inner, ctx.sheet_pos.into())
-                    .ok_or(RunErrorMsg::BadCellReference.with_span(span))?;
-                let pos = ctx.resolve_ref(&cell_ref, span)?.inner;
-                ctx.get_cell(pos, span, true).inner
+                // TODO(ajf): add tests for range references
+                let cell_ref = SheetCellRefRange::parse(
+                    &cellref_string.inner,
+                    ctx.sheet_pos.sheet_id,
+                    &ctx.grid.a1_context(),
+                )
+                .map_err(|_| RunErrorMsg::BadCellReference.with_span(span))?;
+                let sheet_rect = ctx.resolve_range_ref(&cell_ref, span)?.inner;
+                ctx.get_cell_array(sheet_rect, span)?.inner
             }
         ),
         formula_fn!(
@@ -673,10 +676,12 @@ mod tests {
     #[test]
     #[parallel]
     fn test_formula_indirect() {
-        let form = parse_formula("INDIRECT(\"D5\")", pos![B2]).unwrap();
-
         let mut g = Grid::new();
+        let ctx = g.a1_context();
         let sheet = &mut g.sheets_mut()[0];
+        let pos = pos![B2].to_sheet_pos(sheet.id);
+        let form = parse_formula("INDIRECT(\"D5\")", &ctx, pos).unwrap();
+
         let _ = sheet.set_cell_value(pos![D5], 35);
         let sheet_id = sheet.id;
 

@@ -1,8 +1,8 @@
 import { sheets } from '@/app/grid/controller/Sheets';
+import type { HtmlCell } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCell';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { InteractionEvent } from 'pixi.js';
-import { pixiApp } from '../../pixiApp/PixiApp';
-import { HtmlCell } from './HtmlCell';
+import type { InteractionEvent } from 'pixi.js';
 
 // tolerance of snapping to the grid
 // const snapping = 10;
@@ -79,14 +79,20 @@ export class HtmlCellResizing {
     return yScreen;
   }
 
+  private resizeTable() {
+    pixiApp.cellsSheet().tables.resizeTable(this.htmlCell.x, this.htmlCell.y, this.width, this.height);
+  }
+
   private moveRight(e: InteractionEvent) {
     this.width = this.originalWidth + (this.snapX(e) - this.startX) / pixiApp.viewport.scale.x;
     this.htmlCell.setWidth(this.width);
+    this.resizeTable();
   }
 
   private moveBottom(e: InteractionEvent) {
     this.height = this.originalHeight + (this.snapY(e) - this.startY) / pixiApp.viewport.scale.y;
     this.htmlCell.setHeight(this.height);
+    this.resizeTable();
   }
 
   private moveCorner(e: InteractionEvent) {
@@ -94,14 +100,18 @@ export class HtmlCellResizing {
     this.height = Math.round(this.originalHeight + (this.snapY(e) - this.startY) / pixiApp.viewport.scale.y);
     this.htmlCell.setWidth(this.width);
     this.htmlCell.setHeight(this.height);
+    this.resizeTable();
   }
 
   completeResizing() {
-    quadraticCore.setCellRenderResize(sheets.sheet.id, this.htmlCell.x, this.htmlCell.y, this.width, this.height);
+    quadraticCore.setCellRenderResize(sheets.current, this.htmlCell.x, this.htmlCell.y, this.width, this.height);
   }
 
   cancelResizing() {
     this.htmlCell.setWidth(this.originalWidth);
     this.htmlCell.setHeight(this.originalHeight);
+    this.width = this.originalWidth;
+    this.height = this.originalHeight;
+    this.resizeTable();
   }
 }

@@ -10,7 +10,7 @@ import { QuadraticLoading } from '@/app/ui/loading/QuadraticLoading';
 import QuadraticUIContext from '@/app/ui/QuadraticUIContext';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
+import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import { useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';

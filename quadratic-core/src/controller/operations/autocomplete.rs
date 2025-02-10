@@ -1,4 +1,5 @@
 use crate::{
+    a1::A1Selection,
     cell_values::CellValues,
     controller::GridController,
     grid::{
@@ -8,7 +9,7 @@ use crate::{
         SheetId,
     },
     util::maybe_reverse,
-    A1Selection, CellValue, Pos, Rect, SheetPos, SheetRect,
+    CellValue, Pos, Rect, SheetPos, SheetRect,
 };
 use anyhow::{Error, Result};
 use itertools::Itertools;
@@ -159,7 +160,7 @@ impl GridController {
         let mut ops = vec![];
 
         let selection = A1Selection::from_rect(delete_rect);
-        ops.extend(self.delete_cells_operations(&selection));
+        ops.extend(self.delete_cells_operations(&selection, false));
         ops.extend(self.clear_format_borders_operations(&selection));
         ops
     }
@@ -639,18 +640,18 @@ impl GridController {
         });
 
         // gather ComputeCode operations for any code cells
+        let context = self.grid.a1_context();
         let compute_code_ops = final_range
             .iter()
             .enumerate()
             .filter_map(|(i, Pos { x, y })| {
                 if let Some((CellValue::Code(code_cell), original_pos)) = series.get_mut(i) {
                     if let Some(original_pos) = original_pos {
-                        let sheet_map = self.grid.sheet_name_id_map();
-                        code_cell.update_cell_references(
+                        code_cell.translate_cell_references(
                             x - original_pos.x,
                             y - original_pos.y,
                             &sheet_id,
-                            &sheet_map,
+                            &context,
                         );
                         original_pos.x = x;
                         original_pos.y = y;

@@ -24,16 +24,16 @@ impl GridController {
                         return;
                     }
 
-                    if cfg!(target_family = "wasm")
-                        && !transaction.is_server()
-                        && values.into_iter().any(|(_, _, value)| value.is_html())
-                    {
-                        if let Some(html) = sheet.get_single_html_output(sheet_pos.into()) {
-                            if let Ok(html) = serde_json::to_string(&html) {
-                                crate::wasm_bindings::js::jsUpdateHtml(html);
-                            }
-                        }
-                    };
+                    // if cfg!(target_family = "wasm")
+                    //     && !transaction.is_server()
+                    //     && values.into_iter().any(|(_, _, value)| value.is_html())
+                    // {
+                    //     if let Some(html) = sheet.get_single_html_output(sheet_pos.into()) {
+                    //         if let Ok(html) = serde_json::to_string(&html) {
+                    //             crate::wasm_bindings::js::jsUpdateHtml(html);
+                    //         }
+                    //     }
+                    // };
 
                     let min = sheet_pos.into();
                     let sheet_rect = SheetRect {
@@ -50,9 +50,9 @@ impl GridController {
                             .push(Operation::SetCellValues { sheet_pos, values });
 
                         if transaction.is_user() {
-                            self.check_deleted_code_runs(transaction, &sheet_rect);
+                            self.check_deleted_data_tables(transaction, &sheet_rect);
                             self.add_compute_operations(transaction, &sheet_rect, None);
-                            self.check_all_spills(transaction, sheet_rect.sheet_id, true);
+                            self.check_all_spills(transaction, sheet_rect.sheet_id);
                         }
 
                         transaction

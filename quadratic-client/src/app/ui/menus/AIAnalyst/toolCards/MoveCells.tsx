@@ -2,7 +2,7 @@ import { ToolCard } from '@/app/ui/menus/AIAnalyst/toolCards/ToolCard';
 import { GridActionIcon } from '@/shared/components/Icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { useEffect, useState } from 'react';
-import { z } from 'zod';
+import type { z } from 'zod';
 
 type MoveCellsResponse = z.infer<(typeof aiToolsSpec)[AITool.MoveCells]['responseSchema']>;
 

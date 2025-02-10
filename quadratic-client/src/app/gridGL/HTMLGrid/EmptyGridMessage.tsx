@@ -5,15 +5,13 @@ import {
   editorInteractionStateShowConnectionsMenuAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
-import { sheets } from '@/app/grid/controller/Sheets';
+import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { useEffect, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useSetRecoilState } from 'recoil';
-
-const fileHasData = () => sheets.sheets.filter((sheet) => sheet.bounds.type === 'nonEmpty').length > 0;
 
 // When a file loads, if it's totally empty, show this message. Then once the
 // user has edited the file, we'll hide it permanently.
@@ -22,7 +20,7 @@ export function EmptyGridMessage() {
     userMakingRequest: { filePermissions },
   } = useFileRouteLoaderData();
   const canEdit = filePermissions.includes('FILE_EDIT');
-  const [open, setOpen] = useState(fileHasData() ? false : true);
+  const [open, setOpen] = useState(!fileHasData());
   const showConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
   const showCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
   const { data } = useConnectionsFetcher();
@@ -31,7 +29,7 @@ export function EmptyGridMessage() {
   // Show/hide depending on whether the file has any data in it
   useEffect(() => {
     const checkBounds = () => {
-      setOpen(fileHasData() ? false : true);
+      setOpen(!fileHasData());
     };
 
     events.on('hashContentChanged', checkBounds);

@@ -4,7 +4,7 @@ import { editorInteractionStateShowSearchAtom } from '@/app/atoms/editorInteract
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { SearchOptions, SheetPos } from '@/app/quadratic-core-types';
+import type { SearchOptions, SheetPos } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
@@ -29,7 +29,7 @@ export function Search() {
     case_sensitive: false,
     whole_cell: false,
     search_code: false,
-    sheet_id: sheets.sheet.id,
+    sheet_id: sheets.current,
   });
   const [results, setResults] = useState<SheetPos[]>([]);
   const [current, setCurrent] = useState(0);
@@ -59,7 +59,7 @@ export function Search() {
   );
 
   const moveCursor = (pos: SheetPos) => {
-    if (sheets.sheet.id !== pos.sheet_id.id) {
+    if (sheets.current !== pos.sheet_id.id) {
       sheets.current = pos.sheet_id.id;
     }
     sheets.sheet.cursor.moveTo(Number(pos.x), Number(pos.y));
@@ -89,7 +89,7 @@ export function Search() {
         });
       } else {
         setSearchOptions((prev) => {
-          updatedSearchOptions = { ...prev, sheet_id: sheets.sheet.id };
+          updatedSearchOptions = { ...prev, sheet_id: sheets.current };
           return updatedSearchOptions;
         });
       }
@@ -116,7 +116,7 @@ export function Search() {
       }
       const newSearchOptions = { ...searchOptions };
       if (searchOptions.sheet_id) {
-        newSearchOptions.sheet_id = sheets.sheet.id;
+        newSearchOptions.sheet_id = sheets.current;
       }
       setSearchOptions(newSearchOptions);
       onChange((inputRef.current as HTMLInputElement).value, newSearchOptions);
@@ -136,7 +136,7 @@ export function Search() {
         case_sensitive: false,
         whole_cell: false,
         search_code: false,
-        sheet_id: sheets.sheet.id,
+        sheet_id: sheets.current,
       });
 
       // if it's not true then it's of type SearchOptions

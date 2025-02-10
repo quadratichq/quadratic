@@ -1,19 +1,20 @@
+import { hasPermissionToEditFile } from '@/app/actions';
+import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { zoomToFit } from '@/app/gridGL/helpers/zoom';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { TransientResize } from '@/app/quadratic-core-types/index.js';
+import { DOUBLE_CLICK_TIME } from '@/app/gridGL/interaction/pointer/pointerUtils';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import type { TransientResize } from '@/app/quadratic-core-types/index.js';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { isMac } from '@/shared/utils/isMac';
-import { InteractivePointerEvent, Point } from 'pixi.js';
-import { hasPermissionToEditFile } from '../../../actions';
-import { sheets } from '../../../grid/controller/Sheets';
-import { zoomToFit } from '../../helpers/zoom';
-import { pixiApp } from '../../pixiApp/PixiApp';
-import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
-import { DOUBLE_CLICK_TIME } from './pointerUtils';
+import type { InteractivePointerEvent, Point } from 'pixi.js';
 
 const MINIMUM_COLUMN_SIZE = 20;
 
@@ -124,7 +125,14 @@ export class PointerHeading {
         cursor.selectRow(intersects.row, event.ctrlKey || event.metaKey, event.shiftKey, isRightClick, left);
       }
       if (isRightClick) {
-        setTimeout(() => events.emit('gridContextMenu', world, intersects.column, intersects.row));
+        setTimeout(() =>
+          events.emit('contextMenu', {
+            world,
+            column: intersects.column ?? undefined,
+            row: intersects.row ?? undefined,
+            type: ContextMenuType.Grid,
+          })
+        );
       }
     }
 
@@ -173,19 +181,19 @@ export class PointerHeading {
           offsets.resizeColumnTransiently(this.resizing.column, size);
           const delta = this.resizing.width ? this.resizing.lastSize - this.resizing.width : undefined;
           if (delta) {
-            renderWebWorker.updateSheetOffsetsTransient(sheets.sheet.id, this.resizing.column, null, delta);
+            renderWebWorker.updateSheetOffsetsTransient(sheets.current, this.resizing.column, null, delta);
             gridLines.dirty = true;
             cursor.dirty = true;
             headings.dirty = true;
             pixiApp.adjustHeadings({
-              sheetId: sheets.sheet.id,
+              sheetId: sheets.current,
               column: this.resizing.column,
               row: null,
               delta: size - this.resizing.lastSize,
             });
           }
           this.resizing.lastSize = size;
-          events.emit('resizeHeadingColumn', sheets.sheet.id, this.resizing.column);
+          events.emit('resizeHeadingColumn', sheets.current, this.resizing.column);
         }
       } else if (this.resizing.row !== null) {
         let size: number;
@@ -205,19 +213,19 @@ export class PointerHeading {
           offsets.resizeRowTransiently(this.resizing.row, size);
           const delta = this.resizing.height ? this.resizing.lastSize - this.resizing.height : undefined;
           if (delta) {
-            renderWebWorker.updateSheetOffsetsTransient(sheets.sheet.id, null, this.resizing.row, delta);
+            renderWebWorker.updateSheetOffsetsTransient(sheets.current, null, this.resizing.row, delta);
             gridLines.dirty = true;
             cursor.dirty = true;
             headings.dirty = true;
             pixiApp.adjustHeadings({
-              sheetId: sheets.sheet.id,
+              sheetId: sheets.current,
               column: null,
               row: this.resizing.row,
               delta: size - this.resizing.lastSize,
             });
           }
           this.resizing.lastSize = size;
-          events.emit('resizeHeadingRow', sheets.sheet.id, this.resizing.row);
+          events.emit('resizeHeadingRow', sheets.current, this.resizing.row);
         }
       }
     }
@@ -239,7 +247,7 @@ export class PointerHeading {
             const { old_size, new_size } = JSON.parse(transientResize) as TransientResize;
             const delta = old_size - new_size;
             if (delta !== 0) {
-              quadraticCore.commitTransientResize(sheets.sheet.id, transientResize);
+              quadraticCore.commitTransientResize(sheets.current, transientResize);
             }
           } catch (error) {
             console.error('[PointerHeading] pointerUp: error parsing TransientResize: ', error);
@@ -264,7 +272,7 @@ export class PointerHeading {
       const contentSizePlusMargin = maxWidth + CELL_TEXT_MARGIN_LEFT * 3;
       size = Math.max(contentSizePlusMargin, MIN_CELL_WIDTH);
     }
-    const sheetId = sheets.sheet.id;
+    const sheetId = sheets.current;
     const originalSize = sheets.sheet.getCellOffsets(column, 0);
     if (originalSize.width !== size) {
       quadraticCore.commitSingleResize(sheetId, column, undefined, size);
@@ -274,7 +282,7 @@ export class PointerHeading {
   async autoResizeRow(row: number) {
     const maxHeight = await pixiApp.cellsSheets.getCellsContentMaxHeight(row);
     const size = Math.max(maxHeight, CELL_HEIGHT);
-    const sheetId = sheets.sheet.id;
+    const sheetId = sheets.current;
     const originalSize = sheets.sheet.getCellOffsets(0, row);
     if (originalSize.height !== size) {
       quadraticCore.commitSingleResize(sheetId, undefined, row, size);

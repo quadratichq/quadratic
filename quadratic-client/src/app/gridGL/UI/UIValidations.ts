@@ -6,16 +6,19 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { drawCheckbox, drawDropdown, SpecialSprite } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
+import type { SpecialSprite } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
+import { drawCheckbox, drawDropdown } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { getRangeRectangleFromCellRefRange } from '@/app/gridGL/helpers/selection';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { CellRefRange } from '@/app/quadratic-core-types';
-import { A1SelectionValueToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import { ValidationUIType, validationUIType } from '@/app/ui/menus/Validations/Validation/validationType';
+import type { RefRangeBounds } from '@/app/quadratic-core-types';
+import { A1SelectionToJsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { ValidationUIType } from '@/app/ui/menus/Validations/Validation/validationType';
+import { validationUIType } from '@/app/ui/menus/Validations/Validation/validationType';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { Container, Point } from 'pixi.js';
+import type { Point } from 'pixi.js';
+import { Container } from 'pixi.js';
 
 const MINIMUM_SCALE_TO_SHOW_VALIDATIONS = 0.25;
 const FADE_SCALE = 0.1;
@@ -39,7 +42,7 @@ export class UIValidations extends Container<SpecialSprite> {
   }
 
   setDirty = (sheetId: string) => {
-    if (sheetId === sheets.sheet.id) {
+    if (sheetId === sheets.current) {
       this.dirty = true;
     }
   };
@@ -50,16 +53,20 @@ export class UIValidations extends Container<SpecialSprite> {
     for (let i = validations.length - 1; i >= 0; i--) {
       const v = validations[i];
       const type = validationUIType(v);
-      if (v.selection.sheet_id.id !== sheets.sheet.id || !type) continue;
+      if (v.selection.sheet_id.id !== sheets.current || !type) continue;
 
-      const jsSelection = A1SelectionValueToSelection(v.selection);
-      const infiniteRangesStringified = jsSelection.getInfiniteRanges();
-      const infiniteRanges: CellRefRange[] = JSON.parse(infiniteRangesStringified);
-      infiniteRanges.forEach((range) => this.drawInfiniteRange(range, type));
+      try {
+        const jsSelection = A1SelectionToJsSelection(v.selection);
+        const infiniteRangesStringified = jsSelection.getInfiniteRefRangeBounds();
+        const infiniteRanges: RefRangeBounds[] = JSON.parse(infiniteRangesStringified);
+        infiniteRanges.forEach((range) => this.drawInfiniteRange(range, type));
+      } catch (e) {
+        console.log('UIValidations.ts: Error drawing infinite range', e);
+      }
     }
   }
 
-  private drawInfiniteRange(range: CellRefRange, type: ValidationUIType) {
+  private drawInfiniteRange(range: RefRangeBounds, type: ValidationUIType) {
     const screenRangeRectangle = getRangeRectangleFromCellRefRange(range);
     const visibleRectangle = sheets.getVisibleRectangle();
     const intersection = intersects.rectangleClip(screenRangeRectangle, visibleRectangle);
@@ -127,7 +134,7 @@ export class UIValidations extends Container<SpecialSprite> {
       if (special.column === column && special.row === row) {
         if (special.type === 'checkbox' && (world === true || intersects.rectanglePoint(special.rectangle, world))) {
           quadraticCore.setCellValue(
-            sheets.sheet.id,
+            sheets.current,
             column,
             row,
             special.checkbox ? 'false' : 'true',

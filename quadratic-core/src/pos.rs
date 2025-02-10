@@ -1,7 +1,7 @@
 use crate::{
+    a1::CellRefRangeEnd,
     grid::SheetId,
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-    CellRefRangeEnd,
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -64,7 +64,6 @@ impl Pos {
         format!("{col}{row}")
     }
 
-    // TODO: rename this method (`from_str`?)
     pub fn try_a1_string(a1: &str) -> Option<Self> {
         if let Ok(end) = CellRefRangeEnd::parse_end(a1) {
             if end.is_unbounded() {
@@ -131,6 +130,22 @@ impl From<(i64, i64)> for Pos {
         Pos { x: pos.0, y: pos.1 }
     }
 }
+impl From<(i32, i32)> for Pos {
+    fn from(pos: (i32, i32)) -> Self {
+        Pos {
+            x: pos.0 as i64,
+            y: pos.1 as i64,
+        }
+    }
+}
+impl From<(u32, u32)> for Pos {
+    fn from(pos: (u32, u32)) -> Self {
+        Pos {
+            x: pos.0 as i64,
+            y: pos.1 as i64,
+        }
+    }
+}
 impl From<[i64; 2]> for Pos {
     fn from(pos: [i64; 2]) -> Self {
         Pos {
@@ -177,6 +192,17 @@ pub struct SheetPos {
     pub sheet_id: SheetId,
 }
 
+impl SheetPos {
+    #[cfg(test)]
+    pub fn test() -> Self {
+        Self {
+            x: 1,
+            y: 1,
+            sheet_id: SheetId::test(),
+        }
+    }
+}
+
 impl fmt::Display for SheetPos {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} ({}, {})", self.sheet_id, self.x, self.y)
@@ -186,6 +212,16 @@ impl fmt::Display for SheetPos {
 impl From<(i64, i64, SheetId)> for SheetPos {
     fn from((x, y, sheet_id): (i64, i64, SheetId)) -> Self {
         Self { x, y, sheet_id }
+    }
+}
+
+impl From<(Pos, SheetId)> for SheetPos {
+    fn from((pos, sheet_id): (Pos, SheetId)) -> Self {
+        Self {
+            x: pos.x,
+            y: pos.y,
+            sheet_id,
+        }
     }
 }
 

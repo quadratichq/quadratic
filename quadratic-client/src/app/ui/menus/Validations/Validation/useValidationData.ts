@@ -8,16 +8,13 @@ import {
 } from '@/app/atoms/editorInteractionStateAtom';
 import { bigIntReplacer } from '@/app/bigint';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Validation, ValidationRule } from '@/app/quadratic-core-types';
-import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import {
-  validationRuleSimple,
-  ValidationRuleSimple,
-  ValidationRuleSimpleValues,
-  ValidationUndefined,
-} from '@/app/ui/menus/Validations/Validation/validationType';
+import type { Validation, ValidationRule } from '@/app/quadratic-core-types';
+import type { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { ValidationRuleSimple, ValidationUndefined } from '@/app/ui/menus/Validations/Validation/validationType';
+import { validationRuleSimple, ValidationRuleSimpleValues } from '@/app/ui/menus/Validations/Validation/validationType';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { v4 } from 'uuid';
 
@@ -52,7 +49,7 @@ export const useValidationData = (): ValidationData => {
   const [originalValidation, setOriginalValidation] = useState<ValidationUndefined>();
   const [moreOptions, setMoreOptions] = useState(false);
   const [triggerError, setTriggerError] = useState(false);
-  const [sheetId] = useState(sheets.sheet.id);
+  const [sheetId] = useState(sheets.current);
 
   const toggleMoreOptions = useCallback(() => {
     setMoreOptions((old) => !old);
@@ -281,7 +278,7 @@ export const useValidationData = (): ValidationData => {
           return {
             ...old,
             selection: {
-              sheet_id: { id: sheets.sheet.id },
+              sheet_id: { id: sheets.current },
               cursor: {
                 x: BigInt(0),
                 y: BigInt(0),

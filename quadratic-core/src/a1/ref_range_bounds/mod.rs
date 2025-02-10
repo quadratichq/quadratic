@@ -6,11 +6,12 @@ use ts_rs::TS;
 use super::{range_might_intersect, A1Error, CellRefRangeEnd};
 use crate::{Pos, Rect};
 
-pub mod ref_range_bounds_contains;
-pub mod ref_range_bounds_create;
-pub mod ref_range_bounds_intersection;
-pub mod ref_range_bounds_query;
-pub mod ref_range_bounds_translate;
+mod contains;
+mod create;
+mod intersects;
+mod normalize;
+mod query;
+mod translate;
 
 #[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -32,7 +33,7 @@ impl fmt::Display for RefRangeBounds {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if *self == Self::ALL {
             write!(f, "*")?;
-        } else if self.is_column_range() {
+        } else if self.is_col_range() {
             if self.start.col() == self.end.col() {
                 self.start.col.fmt_as_column(f)?;
             } else {
@@ -113,6 +114,39 @@ impl RefRangeBounds {
         Self {
             start: CellRefRangeEnd::new_relative_xy(start_col, 1),
             end: CellRefRangeEnd::new_infinite_col_end(end_col),
+        }
+    }
+
+    /// Returns an R[1]C[1]-style reference relative to the given position.
+    pub fn to_rc_string(&self, base_pos: Pos) -> String {
+        let start_col = self.start.col.to_rc_string(base_pos.x);
+        let start_row = self.start.row.to_rc_string(base_pos.y);
+        let end_col = self.end.col.to_rc_string(base_pos.x);
+        let end_row = self.end.row.to_rc_string(base_pos.y);
+        if *self == Self::ALL {
+            "*".to_string()
+        } else if self.is_col_range() {
+            if self.start.col == self.end.col {
+                format!("C{start_col}")
+            } else {
+                format!("C{start_col}:C{end_col}")
+            }
+        } else if self.is_row_range() {
+            // handle special case of An: (show as An: instead of n:)
+            if self.end.col.is_unbounded()
+                && self.end.row.is_unbounded()
+                && self.start.col.coord == 1
+            {
+                format!("R{start_row}:")
+            } else if self.start.row == self.end.row {
+                format!("R{start_row}:R{end_row}")
+            } else {
+                format!("R{start_row}:R{end_row}")
+            }
+        } else if self.start == self.end {
+            format!("R{start_row}C{start_col}")
+        } else {
+            format!("R{start_row}C{start_col}:R{end_row}C{end_col}")
         }
     }
 }

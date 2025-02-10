@@ -2,14 +2,13 @@ use std::str::FromStr;
 
 use wasm_bindgen::prelude::*;
 
+use crate::a1::A1Selection;
 use crate::controller::GridController;
-use crate::A1Selection;
 use crate::Pos;
+use crate::SheetPos;
 
 use super::CellFormatSummary;
 use super::NumericFormatKind;
-use super::Rect;
-use super::RenderSize;
 use super::SheetId;
 
 #[wasm_bindgen]
@@ -131,7 +130,7 @@ impl GridController {
     pub fn js_set_commas(
         &mut self,
         selection: String,
-        commas: bool,
+        commas: Option<bool>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
@@ -145,7 +144,7 @@ impl GridController {
     pub fn js_set_bold(
         &mut self,
         selection: String,
-        bold: bool,
+        bold: Option<bool>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
@@ -158,7 +157,7 @@ impl GridController {
     pub fn js_set_italic(
         &mut self,
         selection: String,
-        italic: bool,
+        italic: Option<bool>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
@@ -196,33 +195,18 @@ impl GridController {
     }
 
     /// Sets cell render size (used for Html-style cells).
-    #[wasm_bindgen(js_name = "setCellRenderSize")]
-    pub fn js_set_render_size(
+    #[wasm_bindgen(js_name = "setChartSize")]
+    pub fn js_set_chart_size(
         &mut self,
-        sheet_id: String,
-        rect: String,
-        w: Option<String>,
-        h: Option<String>,
+        sheet_pos: String,
+        w: f32,
+        h: f32,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let rect = serde_json::from_str::<Rect>(&rect).map_err(|_| "Invalid rect")?;
-        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
-            return Result::Err("Invalid sheet id".into());
-        };
-        let value = if let (Some(w), Some(h)) = (w, h) {
-            Some(RenderSize {
-                w: w.to_owned(),
-                h: h.to_owned(),
-            })
-        } else {
-            None
-        };
-
-        self.set_render_size(
-            &A1Selection::from_rect(rect.to_sheet_rect(sheet_id)),
-            value,
-            cursor,
-        )
+        let sheet_pos =
+            serde_json::from_str::<SheetPos>(&sheet_pos).map_err(|_| "Invalid sheet pos")?;
+        self.set_chart_size(sheet_pos, w, h, cursor);
+        Ok(())
     }
 
     #[wasm_bindgen(js_name = "setDateTimeFormat")]
@@ -257,7 +241,7 @@ impl GridController {
     pub fn js_set_underline(
         &mut self,
         selection: String,
-        underline: bool,
+        underline: Option<bool>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
@@ -271,7 +255,7 @@ impl GridController {
     pub fn js_set_strike_through(
         &mut self,
         selection: String,
-        strike_through: bool,
+        strike_through: Option<bool>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
@@ -297,10 +281,7 @@ impl GridController {
     pub fn js_get_format_cell(&self, sheet_id: String, x: i32, y: i32) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| JsValue::UNDEFINED)?;
         let sheet = self.try_sheet(sheet_id).ok_or(JsValue::UNDEFINED)?;
-        serde_wasm_bindgen::to_value(&sheet.formats.try_format(Pos {
-            x: x as i64,
-            y: y as i64,
-        }))
-        .map_err(|_| JsValue::UNDEFINED)
+        serde_wasm_bindgen::to_value(&sheet.cell_format((x, y).into()))
+            .map_err(|_| JsValue::UNDEFINED)
     }
 }

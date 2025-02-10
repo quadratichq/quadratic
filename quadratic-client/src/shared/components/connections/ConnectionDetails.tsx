@@ -1,7 +1,7 @@
 import { useConnectionSchemaBrowserTableQueryActionNewFile } from '@/dashboard/hooks/useConnectionSchemaBrowserTableQueryAction';
 import { ConnectionHeader } from '@/shared/components/connections/ConnectionHeader';
 import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
-import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 
 export const ConnectionDetails = ({
   connectionType,

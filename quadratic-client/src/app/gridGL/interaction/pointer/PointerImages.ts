@@ -1,12 +1,14 @@
 import { hasPermissionToEditFile } from '@/app/actions';
-import { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
+import type { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { IMAGE_BORDER_OFFSET } from '@/app/gridGL/UI/UICellImages';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { Point } from 'pixi.js';
+import { Rectangle, type Point } from 'pixi.js';
 
 const MIN_SIZE = 100;
+const CORNER_SIZE = 20;
 
 export class PointerImages {
   resizing?: { image: CellsImage; point: Point; side: 'right' | 'bottom' | 'corner' };
@@ -20,6 +22,14 @@ export class PointerImages {
     const images = cellsSheet.getCellsImages();
     if (!images?.length) return;
     for (const image of images) {
+      const cornerSize = CORNER_SIZE * pixiApp.viewport.scaled;
+      const corner = new Rectangle(
+        image.viewRight.x - cornerSize,
+        image.viewBottom.y - cornerSize,
+        cornerSize + IMAGE_BORDER_OFFSET * 2,
+        cornerSize + IMAGE_BORDER_OFFSET * 2
+      );
+      if (intersects.rectanglePoint(corner, point)) return { image, side: 'corner' };
       let right = intersects.rectanglePoint(image.viewRight, point);
       let bottom = intersects.rectanglePoint(image.viewBottom, point);
       if (right && bottom) return { image, side: 'corner' };
@@ -66,26 +76,24 @@ export class PointerImages {
       }
       this.resizing.image.temporaryResize(width, height);
       pixiApp.cellImages.dirtyResizing = true;
-      pixiApp.cellImages.dirtyBorders = true;
+      pixiApp.cellsSheet().tables.resizeTable(this.resizing.image.column, this.resizing.image.row, width, height);
       pixiApp.setViewportDirty();
       return true;
     }
 
     const search = this.findImage(point);
-    if (search) {
-      if (search.side) {
-        pixiApp.cellImages.activate(search.image);
-        switch (search.side) {
-          case 'bottom':
-            this.cursor = 'ns-resize';
-            break;
-          case 'right':
-            this.cursor = 'ew-resize';
-            break;
-          case 'corner':
-            this.cursor = 'nwse-resize';
-            break;
-        }
+    if (search?.side) {
+      pixiApp.cellImages.activate(search.image);
+      switch (search.side) {
+        case 'bottom':
+          this.cursor = 'row-resize';
+          break;
+        case 'right':
+          this.cursor = 'col-resize';
+          break;
+        case 'corner':
+          this.cursor = 'all-scroll';
+          break;
       }
       return true;
     }
@@ -96,13 +104,10 @@ export class PointerImages {
 
   pointerDown(point: Point): boolean {
     if (!hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions)) return false;
-
     const search = this.findImage(point);
-    if (search) {
-      if (search.side) {
-        this.resizing = { point, image: search.image, side: search.side };
-        pixiApp.cellImages.activate(search.image);
-      }
+    if (search && search.side) {
+      this.resizing = { point, image: search.image, side: search.side };
+      pixiApp.cellImages.activate(search.image);
       return true;
     }
     return false;
@@ -129,7 +134,7 @@ export class PointerImages {
       this.resizing.image.width = this.resizing.image.viewBounds.width;
       this.resizing.image.height = this.resizing.image.viewBounds.height;
       pixiApp.cellImages.dirtyResizing = true;
-      pixiApp.cellImages.dirtyBorders = true;
+      // pixiApp.cellImages.dirtyBorders = true;
       this.resizing = undefined;
       return true;
     }

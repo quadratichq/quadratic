@@ -1,4 +1,4 @@
-import { connectionClient } from '@/shared/api/connectionClient';
+import type { connectionClient } from '@/shared/api/connectionClient';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useFetcher } from 'react-router-dom';

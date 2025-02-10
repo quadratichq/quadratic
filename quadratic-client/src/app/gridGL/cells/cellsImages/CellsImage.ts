@@ -1,10 +1,13 @@
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Sheet } from '@/app/grid/sheet/Sheet';
-import { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
+import type { Sheet } from '@/app/grid/sheet/Sheet';
+import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
+import { intersects } from '@/app/gridGL/helpers/intersects';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { IMAGE_BORDER_OFFSET, IMAGE_BORDER_WIDTH } from '@/app/gridGL/UI/UICellImages';
+import type { JsCoordinate } from '@/app/quadratic-core-types';
+import type { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
+import type { Point } from 'pixi.js';
 import { Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
-import { IMAGE_BORDER_OFFSET, IMAGE_BORDER_WIDTH } from '../../UI/UICellImages';
-import { pixiApp } from '../../pixiApp/PixiApp';
-import { CellsSheet } from '../CellsSheet';
 
 export class CellsImage extends Container {
   private cellsSheet: CellsSheet;
@@ -12,8 +15,9 @@ export class CellsImage extends Container {
   private background: Graphics;
   private sprite: Sprite;
 
-  column: number;
-  row: number;
+  pos: { x: number; y: number };
+
+  gridBounds: Rectangle;
 
   // these are user set values for the image size
   imageWidth?: number;
@@ -26,8 +30,8 @@ export class CellsImage extends Container {
   constructor(cellsSheet: CellsSheet, message: CoreClientImage) {
     super();
     this.cellsSheet = cellsSheet;
-    this.column = message.x;
-    this.row = message.y;
+    this.pos = { x: message.x, y: message.y };
+    this.gridBounds = new Rectangle(message.x, message.y + 1, 0, 0);
     this.background = this.addChild(new Graphics());
     this.sprite = this.addChild(new Sprite(Texture.EMPTY));
 
@@ -44,6 +48,13 @@ export class CellsImage extends Container {
 
   get sheetId(): string {
     return this.cellsSheet.sheetId;
+  }
+
+  get column(): number {
+    return this.gridBounds.x;
+  }
+  get row(): number {
+    return this.pos.y;
   }
 
   updateMessage(message: CoreClientImage) {
@@ -110,14 +121,35 @@ export class CellsImage extends Container {
       this.sprite.width,
       IMAGE_BORDER_WIDTH
     );
+    const sheet = sheets.getById(this.sheetId);
+    if (!sheet) {
+      throw new Error(`Expected sheet to be defined in CellsImage.resizeImage`);
+    }
+    sheet.gridOverflowLines.updateImageHtml(this.pos.x, this.pos.y, this.sprite.width, this.sprite.height);
+    this.cellsSheet.tables.resizeTable(this.pos.x, this.pos.y, this.sprite.width, this.sprite.height);
     if (this.cellsSheet.sheetId === sheets.current) {
       pixiApp.setViewportDirty();
     }
+    const right = this.sheet.offsets.getXPlacement(this.viewRight.x + IMAGE_BORDER_WIDTH).index;
+    const bottom = this.sheet.offsets.getYPlacement(this.viewBottom.y + IMAGE_BORDER_WIDTH).index;
+    this.gridBounds.width = right - this.gridBounds.x + 1;
+    this.gridBounds.height = bottom - this.gridBounds.y + 1;
   };
 
   reposition() {
-    const screen = this.sheet.getCellOffsets(this.column, this.row + 1);
+    const screen = this.sheet.getCellOffsets(this.gridBounds.x, this.gridBounds.y);
     this.position.set(screen.x, screen.y);
     this.resizeImage();
+  }
+
+  contains(world: Point): JsCoordinate | undefined {
+    if (intersects.rectanglePoint(this.viewBounds, world)) {
+      return { x: this.pos.x, y: this.pos.y };
+    }
+    return undefined;
+  }
+
+  isImageCell(x: number, y: number): boolean {
+    return x >= this.gridBounds.x && x < this.gridBounds.right && y >= this.pos.y && y < this.gridBounds.bottom;
   }
 }

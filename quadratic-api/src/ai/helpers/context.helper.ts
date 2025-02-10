@@ -23,7 +23,7 @@ ${
     : 'Choose the language of your response based on the context and user prompt.'
 }
 Provide complete code blocks with language syntax highlighting. Don't provide small code snippets of changes.
-Respond in minimum number of words and include a concise explanation of the actions you are taking. Don't guess the answer itself, just the actions you are taking to respond to the user prompt and what the user can do next. Use Formulas for simple tasks like summing and averaging and use Python for more complex tasks.
+Respond in minimum number of words and include a concise explanation of the actions you are taking. Don't guess the answer itself, just the actions you are taking to respond to the user prompt and what the user can do next. Use Formulas for simple tasks like summing and averaging and use Python for more complex tasks. Think step by step before responding.
 `,
     contextType: 'quadraticDocs',
   },

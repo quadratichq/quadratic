@@ -1,8 +1,8 @@
 import { connectionsByType } from '@/shared/components/connections/connectionsByType';
 import { Button } from '@/shared/shadcn/ui/button';
 import { ArrowLeftIcon } from '@radix-ui/react-icons';
-import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { ReactNode } from 'react';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import type { ReactNode } from 'react';
 
 export const ConnectionHeader = ({
   type,
