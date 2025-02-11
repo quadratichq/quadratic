@@ -25,6 +25,9 @@ export const Component = () => {
       team,
       userMakingRequest: { teamPermissions },
       billing,
+      users,
+      files,
+      filesPrivate,
     },
   } = useDashboardRouteLoaderData();
 
@@ -140,8 +143,8 @@ export const Component = () => {
                   </div>
 
                   {/* Team AI Plan */}
-                  <div className="rounded-lg border border-border bg-secondary/20 p-4">
-                    <h3 className="mb-3 text-lg font-semibold">Team AI Plan</h3>
+                  <div className="rounded-lg border border-border  p-4">
+                    <h3 className="mb-3 text-lg font-semibold">Team Plan</h3>
                     <div className="space-y-3">
                       <div className="flex justify-between">
                         <span className="text-sm">AI Messages / User / Month</span>
@@ -169,7 +172,7 @@ export const Component = () => {
                         }}
                         className="mt-4 w-full"
                       >
-                        Upgrade to Team AI
+                        Upgrade Team
                       </Button>
                     )}
                   </div>
@@ -211,21 +214,21 @@ export const Component = () => {
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Connection Runs / Month</span>
                       <div className="flex items-start gap-2">
-                        <span className="w-4 text-right font-medium">0</span>
+                        <span className="w-4 text-right font-medium">-</span>
                         <span className="w-8 translate-y-[5px] text-xs text-muted-foreground">/ ∞</span>
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Team Members</span>
                       <div className="flex items-start gap-2">
-                        <span className="w-4 text-right font-medium">0</span>
+                        <span className="w-4 text-right font-medium">{users.length}</span>
                         <span className="w-8 translate-y-[5px] text-xs text-muted-foreground">/ ∞</span>
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Files</span>
                       <div className="flex items-start gap-2">
-                        <span className="w-4 text-right font-medium">0</span>
+                        <span className="w-4 text-right font-medium">{files.length + filesPrivate.length}</span>
                         <span className="w-8 translate-y-[5px] text-xs text-muted-foreground">/ ∞</span>
                       </div>
                     </div>
