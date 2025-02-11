@@ -8,6 +8,7 @@ const BedrockModelSchema = z
   .enum([
     'anthropic.claude-3-5-sonnet-20241022-v2:0',
     'anthropic.claude-3-5-haiku-20241022-v1:0',
+    'anthropic.claude-3-haiku-20240307-v1:0',
     'us.meta.llama3-2-90b-instruct-v1:0',
     'mistral.mistral-large-2407-v1:0',
   ])
@@ -15,7 +16,11 @@ const BedrockModelSchema = z
 export type BedrockModel = z.infer<typeof BedrockModelSchema>;
 
 const BedrockAnthropicModelSchema = z
-  .enum(['anthropic.claude-3-5-sonnet-20241022-v2:0', 'anthropic.claude-3-5-haiku-20241022-v1:0'])
+  .enum([
+    'anthropic.claude-3-5-sonnet-20241022-v2:0',
+    'anthropic.claude-3-5-haiku-20241022-v1:0',
+    'anthropic.claude-3-haiku-20240307-v1:0',
+  ])
   .default('anthropic.claude-3-5-sonnet-20241022-v2:0');
 export type BedrockAnthropicModel = z.infer<typeof BedrockAnthropicModelSchema>;
 
@@ -37,6 +42,17 @@ const AIModelSchema = z.union([
 ]);
 export type AIModel = z.infer<typeof AIModelSchema>;
 
+const AIModelOptionsSchema = z.object({
+  displayName: z.string(),
+  temperature: z.number(),
+  max_tokens: z.number(),
+  canStream: z.boolean(),
+  canStreamWithToolCalls: z.boolean(),
+  enabled: z.boolean(),
+  provider: AIProvidersSchema,
+});
+export type AIModelOptions = z.infer<typeof AIModelOptionsSchema>;
+
 const InternalContextTypeSchema = z.enum([
   'quadraticDocs',
   'currentFile',
@@ -50,7 +66,9 @@ const InternalContextTypeSchema = z.enum([
   'tables',
 ]);
 const ToolResultContextTypeSchema = z.literal('toolResult');
+export type ToolResultContextType = z.infer<typeof ToolResultContextTypeSchema>;
 const UserPromptContextTypeSchema = z.literal('userPrompt');
+export type UserPromptContextType = z.infer<typeof UserPromptContextTypeSchema>;
 const ContextTypeSchema = z.union([
   InternalContextTypeSchema,
   ToolResultContextTypeSchema,
@@ -178,3 +196,17 @@ export const AIRequestBodySchema = z.object({
 });
 export type AIRequestBody = z.infer<typeof AIRequestBodySchema>;
 export type AIRequestHelperArgs = Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'source' | 'model'>;
+
+const AIUsageSchema = z.object({
+  inputTokens: z.number(),
+  outputTokens: z.number(),
+  cacheReadTokens: z.number(),
+  cacheWriteTokens: z.number(),
+});
+export type AIUsage = z.infer<typeof AIUsageSchema>;
+
+const parsedAIResponseSchema = z.object({
+  responseMessage: AIMessagePromptSchema,
+  usage: AIUsageSchema,
+});
+export type ParsedAIResponse = z.infer<typeof parsedAIResponseSchema>;

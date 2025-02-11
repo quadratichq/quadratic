@@ -1,7 +1,7 @@
 import { type Response } from 'express';
 import OpenAI from 'openai';
 import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
-import type { AIMessagePrompt, AIRequestHelperArgs, OpenAIModel } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIRequestHelperArgs, OpenAIModel, ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
 import { OPENAI_API_KEY } from '../../env-vars';
 import { getOpenAIApiArgs, parseOpenAIResponse, parseOpenAIStream } from '../helpers/openai.helper';
 
@@ -13,7 +13,7 @@ export const handleOpenAIRequest = async (
   model: OpenAIModel,
   args: AIRequestHelperArgs,
   response: Response
-): Promise<AIMessagePrompt | undefined> => {
+): Promise<ParsedAIResponse | undefined> => {
   const { messages, tools, tool_choice } = getOpenAIApiArgs(args);
   const { stream, temperature } = getModelOptions(model, args);
 
@@ -26,14 +26,17 @@ export const handleOpenAIRequest = async (
         stream: true,
         tools,
         tool_choice,
+        stream_options: {
+          include_usage: true,
+        },
       });
 
       response.setHeader('Content-Type', 'text/event-stream');
       response.setHeader('Cache-Control', 'no-cache');
       response.setHeader('Connection', 'keep-alive');
 
-      const responseMessage = await parseOpenAIStream(completion, response, model);
-      return responseMessage;
+      const parsedResponse = await parseOpenAIStream(completion, response, model);
+      return parsedResponse;
     } catch (error: any) {
       if (!response.headersSent) {
         if (error instanceof OpenAI.APIError) {
@@ -57,8 +60,8 @@ export const handleOpenAIRequest = async (
         tool_choice,
       });
 
-      const responseMessage = parseOpenAIResponse(result, response, model);
-      return responseMessage;
+      const parsedResponse = parseOpenAIResponse(result, response, model);
+      return parsedResponse;
     } catch (error: any) {
       if (error instanceof OpenAI.APIError) {
         response.status(error.status ?? 400).json(error.message);
