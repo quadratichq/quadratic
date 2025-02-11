@@ -427,6 +427,7 @@ impl GridController {
             let data_table_pos = sheet.first_data_table_within(pos)?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
             let old_data_table_kind = data_table.kind.to_owned();
+            let old_readonly = data_table.readonly;
             let sheet_rect = data_table.output_sheet_rect(sheet_pos, false);
 
             data_table.kind = match old_data_table_kind {
@@ -439,15 +440,28 @@ impl GridController {
                     DataTableKind::Import(_) => kind,
                 },
             };
+            data_table.readonly = !old_readonly;
 
             // mark code cell as dirty
             transaction.add_code_cell(sheet_id, data_table_pos);
 
             let forward_operations = vec![op];
-            let reverse_operations = vec![Operation::SwitchDataTableKind {
-                sheet_pos,
-                kind: old_data_table_kind,
-            }];
+            let reverse_operations = vec![
+                Operation::SwitchDataTableKind {
+                    sheet_pos,
+                    kind: old_data_table_kind,
+                },
+                Operation::DataTableMeta {
+                    sheet_pos,
+                    name: None,
+                    alternating_colors: None,
+                    columns: None,
+                    show_ui: None,
+                    show_name: None,
+                    show_columns: None,
+                    readonly: Some(old_readonly),
+                },
+            ];
             self.data_table_operations(
                 transaction,
                 forward_operations,
@@ -562,6 +576,7 @@ impl GridController {
             show_ui,
             show_name,
             show_columns,
+            readonly,
         } = op.to_owned()
         {
             // do grid mutations first to keep the borrow checker happy
@@ -651,6 +666,10 @@ impl GridController {
                 .as_ref()
                 .map(|show_columns| std::mem::replace(&mut data_table.show_columns, *show_columns));
 
+            let old_readonly = readonly
+                .as_ref()
+                .map(|readonly| std::mem::replace(&mut data_table.readonly, *readonly));
+
             let data_table_rect = data_table
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
@@ -674,6 +693,7 @@ impl GridController {
                 show_ui: old_show_ui,
                 show_name: old_show_name,
                 show_columns: old_show_columns,
+                readonly: old_readonly,
             }];
             self.data_table_operations(
                 transaction,
@@ -1657,6 +1677,7 @@ mod tests {
             show_ui: None,
             show_name: None,
             show_columns: None,
+            readonly: None,
         };
         let mut transaction = PendingTransaction::default();
         gc.execute_data_table_meta(&mut transaction, op.clone())
@@ -1696,6 +1717,7 @@ mod tests {
             show_ui: None,
             show_name: None,
             show_columns: None,
+            readonly: None,
         };
         let mut transaction = PendingTransaction::default();
         gc.execute_data_table_meta(&mut transaction, op).unwrap();
