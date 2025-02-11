@@ -185,7 +185,10 @@ impl GridController {
             } else {
                 false
             };
+
             let cells = selection_sheet.get_cells_response(*rect);
+            let is_python = matches!(code.language, CodeCellLanguage::Python);
+
             CellA1Response {
                 cells,
                 x: rect.min.x,
@@ -193,7 +196,7 @@ impl GridController {
                 w: rect.width() as i64,
                 h: rect.height() as i64,
                 two_dimensional,
-                has_headers: selection.has_table_headers(),
+                has_headers: selection.has_table_headers(&context, is_python),
             }
         } else {
             CellA1Response {
