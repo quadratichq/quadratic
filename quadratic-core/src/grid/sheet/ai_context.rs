@@ -1,8 +1,11 @@
+use std::collections::HashSet;
+
 use crate::{
     a1::A1Selection,
     grid::js_types::{
-        JsCellValuePosAIContext, JsChartContext, JsCodeCell, JsCodeTableContext,
-        JsDataTableContext, JsTablesContext,
+        JsCellValuePosContext, JsChartContext, JsChartSummaryContext, JsCodeCell,
+        JsCodeTableContext, JsDataTableContext, JsSelectionContext, JsTableSummaryContext,
+        JsTableType, JsTablesContext,
     },
     CellValue, Rect,
 };
@@ -10,31 +13,51 @@ use crate::{
 use super::Sheet;
 
 impl Sheet {
-    /// Returns tabular data rects of JsCellValuePos in a1 selection
-    pub fn get_ai_context_rects_in_selection(
+    pub fn get_ai_selection_context(
         &self,
         selection: A1Selection,
         max_rects: Option<usize>,
-    ) -> Vec<JsCellValuePosAIContext> {
-        let mut ai_context_rects = Vec::new();
+        include_errored_code_cells: bool,
+        include_tables_summary: bool,
+        include_charts_summary: bool,
+    ) -> JsSelectionContext {
+        JsSelectionContext {
+            sheet_name: self.name.clone(),
+            data_rects: self.get_data_rects_in_selection(&selection, max_rects),
+            errored_code_cells: include_errored_code_cells
+                .then(|| self.get_errored_code_cells_in_selection(&selection)),
+            tables_summary: include_tables_summary
+                .then(|| self.get_tables_summary_in_selection(&selection)),
+            charts_summary: include_charts_summary
+                .then(|| self.get_charts_summary_in_selection(&selection)),
+        }
+    }
+
+    /// Returns tabular data rects of JsCellValuePos in a1 selection
+    fn get_data_rects_in_selection(
+        &self,
+        selection: &A1Selection,
+        max_rects: Option<usize>,
+    ) -> Vec<JsCellValuePosContext> {
+        let mut data_rects = Vec::new();
         let selection_rects = self.selection_to_rects(&selection, false, false);
         let tabular_data_rects =
             self.find_tabular_data_rects_in_selection_rects(selection_rects, max_rects);
         for tabular_data_rect in tabular_data_rects {
-            let js_cell_value_pos_ai_context = JsCellValuePosAIContext {
+            let cell_value_pos = JsCellValuePosContext {
                 sheet_name: self.name.clone(),
                 rect_origin: tabular_data_rect.min.a1_string(),
                 rect_width: tabular_data_rect.width(),
                 rect_height: tabular_data_rect.height(),
                 starting_rect_values: self.js_cell_value_pos_in_rect(tabular_data_rect, Some(3)),
             };
-            ai_context_rects.push(js_cell_value_pos_ai_context);
+            data_rects.push(cell_value_pos);
         }
-        ai_context_rects
+        data_rects
     }
 
     /// Returns JsCodeCell for all code cells in selection rects that have errors
-    pub fn get_errored_code_cells_in_selection(&self, selection: A1Selection) -> Vec<JsCodeCell> {
+    fn get_errored_code_cells_in_selection(&self, selection: &A1Selection) -> Vec<JsCodeCell> {
         let mut code_cells = Vec::new();
         let selection_rects = self.selection_to_rects(&selection, false, false);
         for selection_rect in selection_rects {
@@ -60,6 +83,85 @@ impl Sheet {
             }
         }
         code_cells
+    }
+
+    fn get_tables_summary_in_selection(
+        &self,
+        selection: &A1Selection,
+    ) -> Vec<JsTableSummaryContext> {
+        let mut tables_summary = Vec::new();
+        let selection_rects = self.selection_to_rects(&selection, false, false);
+        let mut seen_tables = HashSet::new();
+        for rect in selection_rects {
+            let tables_summary_in_rect = self
+                .data_tables
+                .iter()
+                .filter_map(|(pos, table)| {
+                    if !seen_tables.insert(pos) {
+                        return None;
+                    }
+
+                    if table.is_html_or_image() || table.is_single_value() {
+                        return None;
+                    }
+
+                    let table_type = match self.cell_value_ref(pos.to_owned()) {
+                        Some(CellValue::Code(_)) => JsTableType::CodeTable,
+                        Some(CellValue::Import(_)) => JsTableType::DataTable,
+                        _ => return None,
+                    };
+
+                    if table.output_rect(*pos, false).intersects(rect) {
+                        Some(JsTableSummaryContext {
+                            sheet_name: self.name.clone(),
+                            table_name: table.name.to_string(),
+                            table_type,
+                            bounds: table.output_rect(*pos, false).a1_string(),
+                        })
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<JsTableSummaryContext>>();
+            tables_summary.extend(tables_summary_in_rect);
+        }
+        tables_summary
+    }
+
+    fn get_charts_summary_in_selection(
+        &self,
+        selection: &A1Selection,
+    ) -> Vec<JsChartSummaryContext> {
+        let mut charts_summary = Vec::new();
+        let selection_rects = self.selection_to_rects(&selection, false, false);
+        let mut seen_tables = HashSet::new();
+        for rect in selection_rects {
+            let charts_summary_in_rect = self
+                .data_tables
+                .iter()
+                .filter_map(|(pos, table)| {
+                    if !seen_tables.insert(pos) {
+                        return None;
+                    }
+
+                    if !table.is_html_or_image() || table.spill_error {
+                        return None;
+                    }
+
+                    if table.output_rect(*pos, false).intersects(rect) {
+                        Some(JsChartSummaryContext {
+                            sheet_name: self.name.clone(),
+                            chart_name: table.name.to_string(),
+                            bounds: table.output_rect(*pos, false).a1_string(),
+                        })
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<JsChartSummaryContext>>();
+            charts_summary.extend(charts_summary_in_rect);
+        }
+        charts_summary
     }
 
     /// Returns JsTablesContext for all tables (data, code, charts) in the sheet
@@ -92,15 +194,22 @@ impl Sheet {
 
             let bounds = table.output_rect(pos.to_owned(), false);
 
-            let first_row_index = table.y_adjustment(false);
             let first_row_rect = Rect::from_numbers(
                 bounds.min.x,
-                bounds.min.y + first_row_index,
+                bounds.min.y + table.y_adjustment(false),
                 bounds.width() as i64,
                 1,
             );
             let first_row_visible_values = self
                 .js_cell_value_pos_in_rect(first_row_rect, Some(1))
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>();
+
+            let last_row_rect =
+                Rect::from_numbers(bounds.min.x, bounds.max.y, bounds.width() as i64, 1);
+            let last_row_visible_values = self
+                .js_cell_value_pos_in_rect(last_row_rect, Some(1))
                 .into_iter()
                 .flatten()
                 .collect::<Vec<_>>();
@@ -116,6 +225,7 @@ impl Sheet {
                     all_columns: table.columns_map(true),
                     visible_columns: table.columns_map(false),
                     first_row_visible_values,
+                    last_row_visible_values,
                     bounds: bounds.a1_string(),
                     show_name: table.show_name,
                     show_columns: table.show_columns,
@@ -132,6 +242,7 @@ impl Sheet {
                     all_columns: table.columns_map(true),
                     visible_columns: table.columns_map(false),
                     first_row_visible_values,
+                    last_row_visible_values,
                     bounds: bounds.a1_string(),
                     show_name: table.show_name,
                     show_columns: table.show_columns,
@@ -149,6 +260,7 @@ impl Sheet {
         }
     }
 }
+
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
@@ -156,7 +268,7 @@ mod tests {
     use crate::{
         a1::A1Selection,
         grid::{
-            js_types::{JsCellValuePosAIContext, JsCodeCell, JsReturnInfo},
+            js_types::{JsCellValuePosContext, JsCodeCell, JsReturnInfo},
             CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
         },
         Array, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetRect, Value,
@@ -165,7 +277,7 @@ mod tests {
     use super::Sheet;
 
     #[test]
-    fn get_ai_context_rects_in_selection() {
+    fn test_get_data_rects_in_selection() {
         let mut sheet = Sheet::test();
         sheet.set_cell_values(
             Rect {
@@ -212,13 +324,12 @@ mod tests {
         );
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 50, 1300, sheet.id));
-        let ai_context_rects_in_selection =
-            sheet.get_ai_context_rects_in_selection(selection, None);
+        let data_rects_in_selection = sheet.get_data_rects_in_selection(&selection, None);
 
         let max_rows = 3;
 
-        let expected_ai_context_rects_in_selection = vec![
-            JsCellValuePosAIContext {
+        let expected_data_rects_in_selection = vec![
+            JsCellValuePosContext {
                 sheet_name: sheet.name.clone(),
                 rect_origin: Pos { x: 1, y: 1 }.a1_string(),
                 rect_width: 10,
@@ -231,7 +342,7 @@ mod tests {
                     Some(max_rows),
                 ),
             },
-            JsCellValuePosAIContext {
+            JsCellValuePosContext {
                 sheet_name: sheet.name.clone(),
                 rect_origin: Pos { x: 31, y: 101 }.a1_string(),
                 rect_width: 10,
@@ -246,10 +357,7 @@ mod tests {
             },
         ];
 
-        assert_eq!(
-            ai_context_rects_in_selection,
-            expected_ai_context_rects_in_selection
-        );
+        assert_eq!(data_rects_in_selection, expected_data_rects_in_selection);
     }
 
     #[test]
@@ -357,7 +465,7 @@ mod tests {
         );
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 1000, 1000, sheet.id));
-        let js_errored_code_cells = sheet.get_errored_code_cells_in_selection(selection);
+        let js_errored_code_cells = sheet.get_errored_code_cells_in_selection(&selection);
 
         assert_eq!(js_errored_code_cells.len(), 2);
 

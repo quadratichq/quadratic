@@ -66,8 +66,17 @@ pub struct JsCellValuePos {
     pub pos: String,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
-pub struct JsCellValuePosAIContext {
+#[derive(Serialize, Debug, PartialEq, Eq, TS)]
+pub struct JsSelectionContext {
+    pub sheet_name: String,
+    pub data_rects: Vec<JsCellValuePosContext>,
+    pub errored_code_cells: Option<Vec<JsCodeCell>>,
+    pub tables_summary: Option<Vec<JsTableSummaryContext>>,
+    pub charts_summary: Option<Vec<JsChartSummaryContext>>,
+}
+
+#[derive(Serialize, Debug, PartialEq, Eq, TS)]
+pub struct JsCellValuePosContext {
     pub sheet_name: String,
     pub rect_origin: String,
     pub rect_width: u32,
@@ -75,7 +84,29 @@ pub struct JsCellValuePosAIContext {
     pub starting_rect_values: Vec<Vec<JsCellValuePos>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[derive(Serialize, Debug, PartialEq, Eq, TS)]
+pub struct JsTableSummaryContext {
+    pub sheet_name: String,
+    pub table_name: String,
+    pub table_type: JsTableType,
+    pub bounds: String,
+}
+
+#[derive(Serialize, Debug, PartialEq, Eq, TS)]
+#[serde(rename_all = "camelCase")]
+pub enum JsTableType {
+    DataTable,
+    CodeTable,
+}
+
+#[derive(Serialize, Debug, PartialEq, Eq, TS)]
+pub struct JsChartSummaryContext {
+    pub sheet_name: String,
+    pub chart_name: String,
+    pub bounds: String,
+}
+
+#[derive(Serialize, Debug, PartialEq, Eq, TS)]
 pub struct JsTablesContext {
     pub sheet_name: String,
     pub data_tables: Vec<JsDataTableContext>,
@@ -83,25 +114,27 @@ pub struct JsTablesContext {
     pub charts: Vec<JsChartContext>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[derive(Serialize, Debug, PartialEq, Eq, TS)]
 pub struct JsDataTableContext {
     pub sheet_name: String,
     pub data_table_name: String,
     pub all_columns: Vec<String>,
     pub visible_columns: Vec<String>,
     pub first_row_visible_values: Vec<JsCellValuePos>,
+    pub last_row_visible_values: Vec<JsCellValuePos>,
     pub bounds: String,
     pub show_name: bool,
     pub show_columns: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[derive(Serialize, Debug, PartialEq, Eq, TS)]
 pub struct JsCodeTableContext {
     pub sheet_name: String,
     pub code_table_name: String,
     pub all_columns: Vec<String>,
     pub visible_columns: Vec<String>,
     pub first_row_visible_values: Vec<JsCellValuePos>,
+    pub last_row_visible_values: Vec<JsCellValuePos>,
     pub bounds: String,
     pub show_name: bool,
     pub show_columns: bool,
@@ -112,7 +145,7 @@ pub struct JsCodeTableContext {
     pub spill: bool,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[derive(Serialize, Debug, PartialEq, Eq, TS)]
 pub struct JsChartContext {
     pub sheet_name: String,
     pub chart_name: String,
@@ -233,13 +266,13 @@ pub struct CellFormatSummary {
     pub strike_through: Option<bool>,
 }
 
-#[derive(Serialize, PartialEq, Debug, TS)]
+#[derive(Serialize, Debug, PartialEq, Eq, TS)]
 pub struct JsReturnInfo {
     pub line_number: Option<u32>,
     pub output_type: Option<String>,
 }
 
-#[derive(Serialize, PartialEq, Debug, TS)]
+#[derive(Serialize, Debug, PartialEq, Eq, TS)]
 pub struct JsCodeCell {
     pub x: i64,
     pub y: i64,

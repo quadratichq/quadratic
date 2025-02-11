@@ -12,9 +12,12 @@ import { Point, Rectangle } from 'pixi.js';
 // number of screen pixels to trigger the resize cursor
 const tolerance = 5;
 
-// this should be kept in sync with run_code/mod.rs
+// this should be kept in sync with run_code/mod.rs and aiToolsSpec.ts
 export const DEFAULT_HTML_WIDTH = 600;
 const DEFAULT_HTML_HEIGHT = 460;
+
+export const DEFAULT_HTML_CELL_WIDTH = Math.ceil(DEFAULT_HTML_WIDTH / CELL_WIDTH);
+export const DEFAULT_HTML_CELL_HEIGHT = Math.ceil(DEFAULT_HTML_HEIGHT / CELL_HEIGHT);
 
 export class HtmlCell {
   private right: HTMLDivElement;

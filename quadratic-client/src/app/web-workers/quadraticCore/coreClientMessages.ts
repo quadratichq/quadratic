@@ -10,7 +10,6 @@ import type {
   Format,
   JsBordersSheet,
   JsCellValue,
-  JsCellValuePosAIContext,
   JsCodeCell,
   JsCoordinate,
   JsHtmlOutput,
@@ -18,6 +17,7 @@ import type {
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
+  JsSelectionContext,
   JsSheetFill,
   JsSnackbarSeverity,
   JsSummarizeSelectionResult,
@@ -1039,29 +1039,20 @@ export interface CoreClientGetCellValue {
   value: JsCellValue | undefined;
 }
 
-export interface ClientCoreGetAIContextRectsInSelections {
-  type: 'clientCoreGetAIContextRectsInSelections';
+export interface ClientCoreGetAISelectionContexts {
+  type: 'clientCoreGetAISelectionContexts';
   id: number;
   selections: string[];
   maxRects: number | undefined;
+  includeErroredCodeCells: boolean;
+  includeTablesSummary: boolean;
+  includeChartsSummary: boolean;
 }
 
-export interface CoreClientGetAIContextRectsInSelections {
-  type: 'coreClientGetAIContextRectsInSelections';
+export interface CoreClientGetAISelectionContexts {
+  type: 'coreClientGetAISelectionContexts';
   id: number;
-  value: JsCellValuePosAIContext[][] | undefined;
-}
-
-export interface ClientCoreGetErroredCodeCellsInSelections {
-  type: 'clientCoreGetErroredCodeCellsInSelections';
-  id: number;
-  selections: string[];
-}
-
-export interface CoreClientGetErroredCodeCellsInSelections {
-  type: 'coreClientGetErroredCodeCellsInSelections';
-  id: number;
-  value: JsCodeCell[][] | undefined;
+  selectionContexts: JsSelectionContext[] | undefined;
 }
 
 export interface ClientCoreGetAITablesContext {
@@ -1072,7 +1063,7 @@ export interface ClientCoreGetAITablesContext {
 export interface CoreClientGetAITablesContext {
   type: 'coreClientGetAITablesContext';
   id: number;
-  value: JsTablesContext[] | undefined;
+  tablesContext: JsTablesContext[] | undefined;
 }
 
 export interface ClientCoreNeighborText {
@@ -1316,8 +1307,7 @@ export type ClientCoreMessage =
   | ClientCoreSortDataTable
   | ClientCoreDataTableFirstRowAsHeader
   | ClientCoreGetCellValue
-  | ClientCoreGetAIContextRectsInSelections
-  | ClientCoreGetErroredCodeCellsInSelections
+  | ClientCoreGetAISelectionContexts
   | ClientCoreGetAITablesContext
   | ClientCoreFindNextColumnForRect
   | ClientCoreFindNextRowForRect
@@ -1385,8 +1375,7 @@ export type CoreClientMessage =
   | CoreClientBordersSheet
   | CoreClientGetCellValue
   | CoreClientClientMessage
-  | CoreClientGetAIContextRectsInSelections
-  | CoreClientGetErroredCodeCellsInSelections
+  | CoreClientGetAISelectionContexts
   | CoreClientGetAITablesContext
   | CoreClientFindNextColumnForRect
   | CoreClientFindNextRowForRect

@@ -23,16 +23,51 @@ export function useOtherSheetsContextMessages() {
       }, []);
       if (selections.length === 0) return [];
 
-      const sheetsRectContext = await quadraticCore.getAIContextRectsInSelections(selections, maxRects);
-      if (!sheetsRectContext || sheetsRectContext.length === 0 || sheetsRectContext[0].length === 0) return [];
+      const otherSheetsContext = await quadraticCore.getAISelectionContexts({
+        selections,
+        maxRects,
+        includeErroredCodeCells: false,
+        includeTablesSummary: true,
+        includeChartsSummary: false,
+      });
+
+      if (!otherSheetsContext || otherSheetsContext.length === 0) return [];
 
       return [
         {
           role: 'user',
-          content: `Note: This is an internal message for context. Do not quote it in your response.\n\n
-I have following other sheets in the same file having the following data:
+          content: `
+Note: This is an internal message for context. Do not quote it in your response.\n\n
 
-Data in the currently open file in other sheets:\n
+I have the following sheets in the currently open file:\n
+\`\`\`json
+${JSON.stringify(sheetNames)}
+\`\`\`
+
+You can reference data from these sheets in the context of following messages. Refer to cells if required in code.\n\n
+
+Tables in the currently open file in other sheets (other than the currently open sheet):\n
+
+I am sharing tables summary as an array of table summary objects, each table summary object has following properties:\n
+- sheet_name: This is the name of the sheet.\n
+- table_name: This is the name of the table. You can use this name to reference the table in code.\n
+- table_type: This denotes whether the table is an editable data table or a read only code table (code output).\n
+- bounds: This is the bounds (top left cell and bottom right cell, both inclusive) of the data table in A1 notation, this includes the table name and column headers if they are visible.\n
+
+${otherSheetsContext.map((otherSheetContext) => {
+  if (!otherSheetContext.tables_summary || otherSheetContext.tables_summary.length === 0) return '';
+  return `
+Tables in sheet '${otherSheetContext.sheet_name}':
+
+\`\`\`json
+${JSON.stringify(otherSheetContext.tables_summary)}
+\`\`\`
+`;
+})}
+
+\n\n
+
+Data in the currently open file in other sheets (other than the currently open sheet):\n
 
 I am sharing other sheets data as an array of tabular data rectangles, each tabular data rectangle in this array has following properties:\n
 - sheet_name: This is the name of the sheet.\n
@@ -48,27 +83,29 @@ Each cell value is a JSON object having the following properties:\n
 
 This is being shared so that you can understand the table format, size and value types inside the data rectangle.\n
 
-Data from cells can be referenced by Formulas, Python, Javascript or SQL code.
-In formula, cell reference are done using A1 notation directly, without quotes. Example: \`=SUM(A1:B2)\`. Always use sheet name in a1 notation to reference cells from different sheets. Sheet name is always enclosed in single quotes. Example: \`=SUM('Sheet 1'!A1:B2)\`.\n
-In Python and Javascript use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells. Always use sheet name in a1 notation to reference cells from different sheets. Sheet name is always enclosed in single quotes. In Python and Javascript, the complete a1 notation selection string is enclosed in double quotes. Example: \`q.cells("'Sheet 1'!A1:B2")\`.
-Sheet name is optional, if not provided, it is assumed to be the currently open sheet.\n
-Sheet name is case sensitive, and is required to be enclosed in single quotes.\n
-To reference data from different tabular data rectangles, use multiple \`q.cells\` functions.\n
-Use this sheet data in the context of following messages. Refer to cells if required in code.\n\n
-
-${sheetsRectContext.map((sheetRectContext) => {
-  if (sheetRectContext.length === 0) return '';
+${otherSheetsContext.map((otherSheetContext) => {
+  if (otherSheetContext.data_rects.length === 0) return '';
   return `
-Data in sheet '${sheetRectContext[0].sheet_name}':
+Data in sheet '${otherSheetContext.sheet_name}':
 
 \`\`\`json
-${JSON.stringify(sheetRectContext)}
+${JSON.stringify(otherSheetContext.data_rects)}
 \`\`\`
 `;
 })}
 
-Note: All this data is only for your reference to data on the sheet. This data cannot be used directly in code. Use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells in code. Always use sheet name in a1 notation to reference cells. Sheet name is always enclosed in single quotes. In Python and Javascript, the complete a1 notation selection string is enclosed in double quotes. Example: \`q.cells("'Sheet 1'!A1:B2")\`. In formula, string quotes are not to be used. Example: \`=SUM('Sheet 1'!A1:B2)\`\n\n
-`,
+Note: All this data is only for your reference to data on the sheet. This data cannot be used directly in code, always reference data from the sheet. Use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells in code.
+- In formula, cell reference are done using A1 notation directly, without quotes. Example: \`=SUM(A1:B2)\`. Always use sheet name in a1 notation to reference cells from different sheets. Sheet name is always enclosed in single quotes. Example: \`=SUM('Sheet 1'!A1:B2)\`.\n
+- In Python and Javascript use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells. Always use sheet name in a1 notation to reference cells from different sheets. Sheet name is always enclosed in single quotes. In Python and Javascript, the complete a1 notation selection string is enclosed in double quotes. Example: \`q.cells("'Sheet 1'!A1:B2")\`.\n
+- Tables can be referenced using \`q.cells("Table_Name")\` to reference the entire table.\n
+- Use \`q.cells("Table_Name[#ALL]")\` to reference the entire table including the header.\n
+- Use \`q.cells("Table_Name[#HEADERS]")\` to reference the header of the table.\n
+- Use \`q.cells("Table_Name[#DATA]")\` to reference the data of the table.\n
+- Sheet name is optional, if not provided, it is assumed to be the currently open sheet.\n
+- Sheet name is case sensitive, and is required to be enclosed in single quotes.\n
+- To reference data from different tabular data rectangles, use multiple \`q.cells\` functions.\n
+
+Use this visible data in the context of following messages. Refer to cells if required in code.\n\n`,
           contextType: 'otherSheets',
         },
         {

@@ -9,7 +9,7 @@ use super::SheetId;
 use crate::a1::{A1Context, CellRefRange, SheetCellRefRange};
 use crate::{Rect, SheetPos, SheetRect};
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct JsCellsAccessed {
     pub sheet_id: String,
