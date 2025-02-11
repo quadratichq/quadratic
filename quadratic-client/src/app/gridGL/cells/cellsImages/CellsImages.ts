@@ -54,8 +54,6 @@ export class CellsImages extends Container<CellsImage> {
           // remove the image from the overflow lines
           const sheet = sheets.getById(this.cellsSheet.sheetId);
           if (!sheet) throw new Error(`Expected sheet to be defined in CellsImages.updateImage`);
-          sheet.gridOverflowLines.updateImageHtml(message.x, message.y);
-
           sprite = undefined;
         }
       } else if (message.image) {

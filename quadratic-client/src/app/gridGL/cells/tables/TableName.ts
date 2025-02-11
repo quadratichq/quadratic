@@ -3,7 +3,6 @@ import { getLanguageSymbol } from '@/app/gridGL/cells/CellsMarkers';
 import type { Table } from '@/app/gridGL/cells/tables/Table';
 import { type TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { intersects } from '@/app/gridGL/helpers/intersects';
-import { DEFAULT_HTML_WIDTH } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCell';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import { CELL_HEIGHT } from '@/shared/constants/gridConstants';
@@ -51,12 +50,7 @@ export class TableName extends Container {
   }
 
   private drawBackground = () => {
-    if (this.table.codeCell.is_html_image) {
-      this.backgroundWidth = this.table.codeCell.html_image_width ?? DEFAULT_HTML_WIDTH;
-    } else {
-      this.backgroundWidth = this.table.tableBounds.width;
-    }
-
+    this.backgroundWidth = this.table.tableBounds.width;
     this.background.clear();
     const color = this.table.active ? 'primary' : 'muted-foreground';
     this.background.beginFill(getCSSVariableTint(color));

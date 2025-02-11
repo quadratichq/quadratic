@@ -36,6 +36,8 @@ class HTMLCellsHandler {
   };
 
   private htmlUpdate = (data: JsHtmlOutput) => {
+    console.log('htmlUpdate');
+
     // update an existing cell
     for (const cell of this.cells) {
       if (cell.isOutputEqual(data)) {

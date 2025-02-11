@@ -5,7 +5,7 @@
 }
 
 .html-cell {
-  background: white;
+  background: lightgray;
   position: absolute;
   box-sizing: border-box;
   pointer-events: none;

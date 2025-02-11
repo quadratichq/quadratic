@@ -7,23 +7,26 @@ import { IMAGE_BORDER_OFFSET, IMAGE_BORDER_WIDTH } from '@/app/gridGL/UI/UICellI
 import type { JsCoordinate } from '@/app/quadratic-core-types';
 import type { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import type { Point } from 'pixi.js';
-import { Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
+import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
 
 export class CellsImage extends Container {
   private cellsSheet: CellsSheet;
 
-  private background: Graphics;
   private sprite: Sprite;
 
   pos: { x: number; y: number };
 
+  // size of the image in grid coordinates (excluding the header row)
   gridBounds: Rectangle;
 
-  // these are user set values for the image size
-  imageWidth?: number;
-  imageHeight?: number;
+  // original size of the image in pixels
+  originalWidth?: number;
+  originalHeight?: number;
 
+  // cell size of the image + padding in screen coordinates (excluding the header row)
   viewBounds: Rectangle;
+
+  // corners of the image for pointer interactions
   viewRight: Rectangle;
   viewBottom: Rectangle;
 
@@ -31,19 +34,24 @@ export class CellsImage extends Container {
     super();
     this.cellsSheet = cellsSheet;
     this.pos = { x: message.x, y: message.y };
-    this.gridBounds = new Rectangle(message.x, message.y + 1, 0, 0);
-    this.background = this.addChild(new Graphics());
+    this.gridBounds = new Rectangle(message.x, message.y + 1, message.w, message.h - 1);
+
     this.sprite = this.addChild(new Sprite(Texture.EMPTY));
 
-    // placeholders until we can properly resize the image (we need to wait
-    // until the baseTexture loads from the string before we can calculate
-    // bounds)
-    this.viewBounds = new Rectangle();
+    this.viewBounds = this.sheet.getScreenRectangle(
+      this.gridBounds.x,
+      this.gridBounds.y,
+      this.gridBounds.width,
+      this.gridBounds.height
+    );
+
     this.viewRight = new Rectangle();
     this.viewBottom = new Rectangle();
 
     this.reposition();
     this.updateMessage(message);
+
+    console.log(message);
   }
 
   get sheetId(): string {
@@ -62,78 +70,87 @@ export class CellsImage extends Container {
       throw new Error('Expected message.image to be defined in SpriteImage.updateMessage');
     }
     this.sprite.texture = Texture.from(message.image);
-    this.imageWidth = message.w ? parseFloat(message.w) : undefined;
-    this.imageHeight = message.h ? parseFloat(message.h) : undefined;
+    // this.imageWidth = message.pixel_width;
+    // this.imageHeight = message.pixel_height;
     this.resizeImage();
   }
 
-  private get sheet(): Sheet {
+  get sheet(): Sheet {
     const sheet = sheets.getById(this.sheetId);
     if (!sheet) throw new Error(`Expected sheet to be defined in CellsFills.sheet`);
     return sheet;
   }
 
-  temporaryResize(width: number, height: number) {
-    this.sprite.width = width;
-    this.sprite.height = height;
-    this.redrawBackground();
+  fitImage(width = this.viewBounds.width, height = this.viewBounds.height) {
+    if (this.originalWidth === undefined || this.originalHeight === undefined) {
+      return;
+    }
+    const aspectRatio = this.originalWidth / this.originalHeight;
+    const headerHeight = this.sheet.offsets.getRowHeight(this.pos.y);
+
+    // Calculate maximum dimensions
+    const maxWidth = Math.min(width, this.originalWidth);
+    const maxHeight = Math.min(height - headerHeight, this.originalHeight);
+
+    if (maxWidth / maxHeight > aspectRatio) {
+      this.sprite.width = maxHeight * aspectRatio;
+      this.sprite.height = maxHeight;
+    } else {
+      this.sprite.width = maxWidth;
+      this.sprite.height = maxWidth / aspectRatio;
+    }
+
+    // center the image
+    this.sprite.position.set(width / 2 - this.sprite.width / 2, (height - headerHeight) / 2 - this.sprite.height / 2);
   }
 
-  private redrawBackground() {
-    this.background.clear();
-    this.background.beginFill(0xffffff);
-    this.background.drawRect(0, 0, this.sprite.width, this.sprite.height);
+  temporaryResize(width: number, height: number) {
+    this.fitImage(width, height);
   }
 
   resizeImage = (width?: number, height?: number) => {
-    if (width !== undefined && height !== undefined) {
-      this.imageWidth = width;
-      this.imageHeight = height;
-    }
+    // if (width !== undefined && height !== undefined) {
+    // this.imageWidth = width;
+    // this.imageHeight = height;
+    // }
 
     // We need to wait until the baseTexture loads from the string before we can
     // calculate bounds. We do not have to wait if we have a user-set size.
-    else if (!this.sprite.texture.baseTexture.valid) {
+    if (!this.sprite.texture.baseTexture.valid) {
       this.sprite.texture.once('update', this.resizeImage);
       return;
     }
 
-    if (this.imageWidth && this.imageHeight) {
-      this.sprite.width = this.imageWidth;
-      this.sprite.height = this.imageHeight;
-    } else {
-      this.sprite.width = this.sprite.texture.width;
-      this.sprite.height = this.sprite.texture.height;
-    }
+    this.originalWidth = this.sprite.width;
+    this.originalHeight = this.sprite.height;
 
-    this.redrawBackground();
+    // if (this.imageWidth && this.imageHeight) {
+    //   this.sprite.width = this.imageWidth;
+    //   this.sprite.height = this.imageHeight;
+    // } else {
+    //   this.sprite.width = this.sprite.texture.width;
+    //   this.sprite.height = this.sprite.texture.height;
+    // }
 
-    this.viewBounds = new Rectangle(this.x, this.y, this.sprite.width, this.sprite.height);
     this.viewRight = new Rectangle(
-      this.x + this.sprite.width - IMAGE_BORDER_OFFSET,
-      this.y,
+      this.viewBounds.right - IMAGE_BORDER_OFFSET,
+      this.viewBounds.y,
       IMAGE_BORDER_WIDTH,
-      this.sprite.height
+      this.viewBounds.height
     );
     this.viewBottom = new Rectangle(
-      this.x,
-      this.y + this.sprite.height - IMAGE_BORDER_OFFSET,
-      this.sprite.width,
+      this.viewBounds.x,
+      this.viewBounds.bottom - IMAGE_BORDER_OFFSET,
+      this.viewBounds.width,
       IMAGE_BORDER_WIDTH
     );
-    const sheet = sheets.getById(this.sheetId);
-    if (!sheet) {
-      throw new Error(`Expected sheet to be defined in CellsImage.resizeImage`);
-    }
-    sheet.gridOverflowLines.updateImageHtml(this.pos.x, this.pos.y, this.sprite.width, this.sprite.height);
-    this.cellsSheet.tables.resizeTable(this.pos.x, this.pos.y, this.sprite.width, this.sprite.height);
+
     if (this.cellsSheet.sheetId === sheets.current) {
       pixiApp.setViewportDirty();
     }
-    const right = this.sheet.offsets.getXPlacement(this.viewRight.x + IMAGE_BORDER_WIDTH).index;
-    const bottom = this.sheet.offsets.getYPlacement(this.viewBottom.y + IMAGE_BORDER_WIDTH).index;
-    this.gridBounds.width = right - this.gridBounds.x + 1;
-    this.gridBounds.height = bottom - this.gridBounds.y + 1;
+    this.sheet.gridOverflowLines.updateImageHtml(this.pos.x, this.pos.y, this.gridBounds.width, this.gridBounds.height);
+
+    this.fitImage();
   };
 
   reposition() {
@@ -150,6 +167,6 @@ export class CellsImage extends Container {
   }
 
   isImageCell(x: number, y: number): boolean {
-    return x >= this.gridBounds.x && x < this.gridBounds.right && y >= this.pos.y && y < this.gridBounds.bottom;
+    return x >= this.gridBounds.x && x < this.gridBounds.right && y >= this.pos.y && y < this.gridBounds.bottom - 1;
   }
 }

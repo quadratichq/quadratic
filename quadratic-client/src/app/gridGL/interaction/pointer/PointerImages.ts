@@ -1,13 +1,13 @@
 import { hasPermissionToEditFile } from '@/app/actions';
+import { sheets } from '@/app/grid/controller/Sheets';
 import type { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { IMAGE_BORDER_OFFSET } from '@/app/gridGL/UI/UICellImages';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle, type Point } from 'pixi.js';
 
-const MIN_SIZE = 100;
+// const MIN_SIZE = 100;
 const CORNER_SIZE = 20;
 
 export class PointerImages {
@@ -24,8 +24,8 @@ export class PointerImages {
     for (const image of images) {
       const cornerSize = CORNER_SIZE * pixiApp.viewport.scaled;
       const corner = new Rectangle(
-        image.viewRight.x - cornerSize,
-        image.viewBottom.y - cornerSize,
+        image.viewBounds.right - cornerSize,
+        image.viewBounds.bottom - cornerSize,
         cornerSize + IMAGE_BORDER_OFFSET * 2,
         cornerSize + IMAGE_BORDER_OFFSET * 2
       );
@@ -45,38 +45,60 @@ export class PointerImages {
     if (!hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions)) return false;
 
     if (this.resizing) {
-      let width: number, height: number;
-      const rightLarger =
-        Math.abs(point.x - this.resizing.image.viewBounds.right) >
-        Math.abs(point.y - this.resizing.image.viewBounds.bottom);
-      if (this.resizing.side === 'right' || (this.resizing.side === 'corner' && rightLarger)) {
-        width =
-          this.resizing.image.viewBounds.right +
-          (point.x - this.resizing.point.x) -
-          this.resizing.image.viewBounds.left;
-        const aspectRatio = width / this.resizing.image.viewBounds.width;
-        height = this.resizing.image.viewBounds.height * aspectRatio;
-      } else {
-        height =
-          this.resizing.image.viewBounds.bottom +
-          (point.y - this.resizing.point.y) -
-          this.resizing.image.viewBounds.top;
-        const aspectRatio = height / this.resizing.image.viewBounds.height;
-        width = this.resizing.image.viewBounds.width * aspectRatio;
+      const image = this.resizing.image;
+      const end = sheets.sheet.getColumnRowFromScreen(point.x, point.y);
+
+      // if not corner, then keep the original width/height
+      if (this.resizing.side === 'right') {
+        end.row = image.gridBounds.bottom;
+      } else if (this.resizing.side === 'bottom') {
+        end.column = image.gridBounds.right;
       }
-      if (width < MIN_SIZE) {
-        width = MIN_SIZE;
-        const aspectRatio = width / this.resizing.image.viewBounds.width;
-        height = this.resizing.image.viewBounds.height * aspectRatio;
-      }
-      if (height < MIN_SIZE) {
-        height = MIN_SIZE;
-        const aspectRatio = height / this.resizing.image.viewBounds.height;
-        width = this.resizing.image.viewBounds.width * aspectRatio;
-      }
-      this.resizing.image.temporaryResize(width, height);
+      const screenRectangle = sheets.sheet.getScreenRectangle(
+        image.column,
+        image.row,
+        end.column - image.column + 1,
+        end.row - image.row
+      );
+      // let width: number, height: number;
+      // const rightLarger =
+      //   Math.abs(point.x - this.resizing.image.viewBounds.right) >
+      //   Math.abs(point.y - this.resizing.image.viewBounds.bottom);
+      // if (this.resizing.side === 'right' || (this.resizing.side === 'corner' && rightLarger)) {
+      //   width =
+      //     this.resizing.image.viewBounds.right +
+      //     (point.x - this.resizing.point.x) -
+      //     this.resizing.image.viewBounds.left;
+      //   const aspectRatio = width / this.resizing.image.viewBounds.width;
+      //   height = this.resizing.image.viewBounds.height * aspectRatio;
+      // } else {
+      //   height =
+      //     this.resizing.image.viewBounds.bottom +
+      //     (point.y - this.resizing.point.y) -
+      //     this.resizing.image.viewBounds.top;
+      //   const aspectRatio = height / this.resizing.image.viewBounds.height;
+      //   width = this.resizing.image.viewBounds.width * aspectRatio;
+      // }
+      // if (width < MIN_SIZE) {
+      //   width = MIN_SIZE;
+      //   const aspectRatio = width / this.resizing.image.viewBounds.width;
+      //   height = this.resizing.image.viewBounds.height * aspectRatio;
+      // }
+      // if (height < MIN_SIZE) {
+      //   height = MIN_SIZE;
+      //   const aspectRatio = height / this.resizing.image.viewBounds.height;
+      //   width = this.resizing.image.viewBounds.width * aspectRatio;
+      // }
+      this.resizing.image.temporaryResize(screenRectangle.width, screenRectangle.height);
       pixiApp.cellImages.dirtyResizing = true;
-      pixiApp.cellsSheet().tables.resizeTable(this.resizing.image.column, this.resizing.image.row, width, height);
+      pixiApp
+        .cellsSheet()
+        .tables.resizeTable(
+          this.resizing.image.column,
+          this.resizing.image.row,
+          screenRectangle.width,
+          screenRectangle.height
+        );
       pixiApp.setViewportDirty();
       return true;
     }
@@ -115,15 +137,17 @@ export class PointerImages {
 
   pointerUp(): boolean {
     if (this.resizing) {
-      quadraticCore.setCellRenderResize(
-        this.resizing.image.sheetId,
-        this.resizing.image.column,
-        this.resizing.image.row,
-        this.resizing.image.width,
-        this.resizing.image.height
-      );
-      this.resizing.image.resizeImage(this.resizing.image.width, this.resizing.image.height);
-      this.resizing = undefined;
+      //   quadraticCore.setCellRenderResize(
+      //     this.resizing.image.sheetId,
+      //     this.resizing.image.column,
+      //     this.resizing.image.row,
+      //     this.resizing.image.width,
+      //     this.resizing.image.height
+      //   );
+
+      // todo???
+      // this.resizing.image.resizeImage(this.resizing.image.width, this.resizing.image.height);
+      // this.resizing = undefined;
       return true;
     }
     return false;

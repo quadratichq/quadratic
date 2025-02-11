@@ -107,9 +107,11 @@ extern "C" {
         sheet_id: String,
         x: i32,
         y: i32,
+        w: i32,
+        h: i32,
         image: Option<String>,
-        w: Option<f32>,
-        h: Option<f32>,
+        pixel_width: Option<i32>,
+        pixel_height: Option<i32>,
     );
 
     // rows: Vec<i64>
@@ -556,20 +558,24 @@ pub fn jsSendImage(
     sheet_id: String,
     x: i32,
     y: i32,
+    w: i32,
+    h: i32,
     image: Option<String>,
-    w: Option<f32>,
-    h: Option<f32>,
+    pixel_width: Option<i32>,
+    pixel_height: Option<i32>,
 ) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsSendImage",
         format!(
-            "{},{},{},{:?},{:?},{:?}",
+            "{},{},{},{:?},{:?},{:?},{:?},{:?}",
             sheet_id,
             x,
             y,
             image.is_some(),
             w,
             h,
+            pixel_width,
+            pixel_height,
         ),
     ));
 }

@@ -104,7 +104,15 @@ export class HtmlCellResizing {
   }
 
   completeResizing() {
-    quadraticCore.setCellRenderResize(sheets.current, this.htmlCell.x, this.htmlCell.y, this.width, this.height);
+    const topHeight = sheets.sheet.offsets.getRowHeight(this.htmlCell.y);
+    quadraticCore.setCellRenderResize(
+      sheets.current,
+      this.htmlCell.x,
+      this.htmlCell.y,
+      this.width,
+      this.height - topHeight
+    );
+    console.log('completeResizing', this.width, this.height - topHeight);
   }
 
   cancelResizing() {

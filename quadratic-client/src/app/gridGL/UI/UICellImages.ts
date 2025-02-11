@@ -10,7 +10,6 @@ const TRANSITION_DELAY_MS = 200;
 const TRANSITION_TIME_MS = 300;
 
 export class UICellImages extends Container {
-  private borders: Graphics;
   private resizing: Graphics;
 
   private active?: CellsImage;
@@ -23,7 +22,6 @@ export class UICellImages extends Container {
 
   constructor() {
     super();
-    this.borders = this.addChild(new Graphics());
     this.resizing = this.addChild(new Graphics());
     events.on('changeSheet', this.changeSheet);
   }
@@ -55,23 +53,6 @@ export class UICellImages extends Container {
     }
   }
 
-  // drawBorders(): boolean {
-  //   if (this.dirtyBorders) {
-  //     this.dirtyBorders = false;
-  //     this.borders.clear();
-  //     const images = pixiApp.cellsSheets.current?.getCellsImages();
-  //     if (!images) return true;
-  //     const hslColorFromCssVar = window.getComputedStyle(document.documentElement).getPropertyValue('--primary');
-  //     const color = convertColorStringToTint(`hsl(${hslColorFromCssVar})`);
-  //     this.borders.lineStyle({ color, width: 1 });
-  //     images.forEach((image) => {
-  //       this.borders.drawRect(image.x, image.y, image.width, image.height);
-  //     });
-  //     return true;
-  //   }
-  //   return false;
-  // }
-
   drawResizing(): boolean {
     if (this.dirtyResizing) {
       this.dirtyResizing = false;
@@ -82,17 +63,18 @@ export class UICellImages extends Container {
         this.resizing.lineStyle({ color, width: IMAGE_BORDER_WIDTH });
 
         // vertical line on the right
-        this.resizing.moveTo(this.active.x + this.active.width + IMAGE_BORDER_OFFSET, this.active.y);
+        const top = this.active.sheet.offsets.getRowHeight(this.active.pos.y);
+        this.resizing.moveTo(this.active.viewBounds.right + IMAGE_BORDER_OFFSET, this.active.viewBounds.top - top);
         this.resizing.lineTo(
-          this.active.x + this.active.width,
-          this.active.y + this.active.height + IMAGE_BORDER_OFFSET
+          this.active.viewBounds.right + IMAGE_BORDER_OFFSET,
+          this.active.viewBounds.bottom + IMAGE_BORDER_OFFSET
         );
 
         // horizontal line on the bottom
-        this.resizing.moveTo(this.active.x, this.active.y + this.active.height + IMAGE_BORDER_OFFSET);
+        this.resizing.moveTo(this.active.viewBounds.left, this.active.viewBounds.bottom + IMAGE_BORDER_OFFSET);
         this.resizing.lineTo(
-          this.active.x + this.active.width + IMAGE_BORDER_OFFSET,
-          this.active.y + this.active.height
+          this.active.viewBounds.right + IMAGE_BORDER_OFFSET,
+          this.active.viewBounds.bottom + IMAGE_BORDER_OFFSET
         );
       }
       return true;
