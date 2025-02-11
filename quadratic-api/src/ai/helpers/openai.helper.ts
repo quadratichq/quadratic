@@ -203,6 +203,7 @@ export async function parseOpenAIStream(
     response.end();
   }
 
+  input_tokens -= cache_read_tokens;
   const usage = calculateUsage({ model, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens: 0 });
 
   return { responseMessage, usage };
@@ -258,9 +259,9 @@ export function parseOpenAIResponse(
 
   response.json(responseMessage);
 
-  const input_tokens = result.usage?.prompt_tokens ?? 0;
-  const output_tokens = result.usage?.completion_tokens ?? 0;
   const cache_read_tokens = result.usage?.prompt_tokens_details?.cached_tokens ?? 0;
+  const input_tokens = (result.usage?.prompt_tokens ?? 0) - cache_read_tokens;
+  const output_tokens = result.usage?.completion_tokens ?? 0;
   const usage = calculateUsage({ model, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens: 0 });
 
   return { responseMessage, usage };

@@ -15,10 +15,10 @@ export function calculateUsage({
   const rate_per_million_cache_read_tokens = MODEL_OPTIONS[model].rate_per_million_cache_read_tokens;
   const rate_per_million_cache_write_tokens = MODEL_OPTIONS[model].rate_per_million_cache_write_tokens;
   const net_cost =
-    (cache_read_tokens * rate_per_million_cache_read_tokens +
-      cache_write_tokens * rate_per_million_cache_write_tokens +
-      (input_tokens - cache_read_tokens) * rate_per_million_input_tokens +
-      output_tokens * rate_per_million_output_tokens) /
+    (input_tokens * rate_per_million_input_tokens +
+      output_tokens * rate_per_million_output_tokens +
+      cache_read_tokens * rate_per_million_cache_read_tokens +
+      cache_write_tokens * rate_per_million_cache_write_tokens) /
     1000000;
 
   const usage: AIUsage = {
