@@ -156,7 +156,7 @@ export class Control {
         this.status.types = false;
         await this.kill("types");
         if (!this.cli.options.skipTypes || restart) {
-            this.types = spawn("npm", ["run", "build:wasm:types"]);
+            this.types = spawn("npm run compile --workspace=quadratic-shared && npm run build:wasm:types", { shell: true });
             this.ui.printOutput("types", (data) => {
                 this.handleResponse("types", data, {
                     success: "Running ",

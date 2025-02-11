@@ -18,12 +18,12 @@ import type {
   Direction,
   Format,
   JsCellValue,
-  JsCellValuePosAIContext,
   JsClipboard,
   JsCodeCell,
   JsCodeResult,
   JsCoordinate,
   JsRenderCell,
+  JsSelectionContext,
   JsSummarizeSelectionResult,
   JsTablesContext,
   MinMax,
@@ -1114,26 +1114,28 @@ class Core {
     return cellValue;
   }
 
-  getAIContextRectsInSelection(selections: string[], maxRects?: number): JsCellValuePosAIContext[][] | undefined {
+  getAISelectionContexts(args: {
+    selections: string[];
+    maxRects?: number;
+    includeErroredCodeCells: boolean;
+    includeTablesSummary: boolean;
+    includeChartsSummary: boolean;
+  }): JsSelectionContext[] | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const aiContextRects: JsCellValuePosAIContext[][] | undefined = this.gridController.getAIContextRectsInSelections(
-      selections,
-      maxRects
+    const aiSelectionContexts: JsSelectionContext[] | undefined = this.gridController.getAISelectionContexts(
+      args.selections,
+      args.maxRects,
+      args.includeErroredCodeCells,
+      args.includeTablesSummary,
+      args.includeChartsSummary
     );
-    return aiContextRects;
-  }
-
-  getErroredCodeCellsInSelection(selections: string[]): JsCodeCell[][] | undefined {
-    if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const erroredCodeCells: JsCodeCell[][] | undefined =
-      this.gridController.getErroredCodeCellsInSelections(selections);
-    return erroredCodeCells;
+    return aiSelectionContexts;
   }
 
   getAITablesContext(): JsTablesContext[] | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const tablesContext: JsTablesContext[] | undefined = this.gridController.getAITablesContext();
-    return tablesContext;
+    const aiTablesContext: JsTablesContext[] | undefined = this.gridController.getAITablesContext();
+    return aiTablesContext;
   }
 
   neighborText(sheetId: string, x: number, y: number): string[] {

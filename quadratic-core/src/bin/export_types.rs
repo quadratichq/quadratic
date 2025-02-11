@@ -20,12 +20,13 @@ use quadratic_core::grid::formats::Format;
 use quadratic_core::grid::js_types::JsChartContext;
 use quadratic_core::grid::js_types::JsCodeTableContext;
 use quadratic_core::grid::js_types::JsDataTableContext;
+use quadratic_core::grid::js_types::JsSelectionContext;
 use quadratic_core::grid::js_types::JsTablesContext;
 use quadratic_core::grid::js_types::{
-    CellFormatSummary, JsCellValue, JsCellValuePos, JsCellValuePosAIContext, JsClipboard,
-    JsCodeCell, JsDataTableColumnHeader, JsHtmlOutput, JsNumber, JsOffset, JsRenderCell,
-    JsRenderCellSpecial, JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsReturnInfo,
-    JsRowHeight, JsSheetFill, JsSnackbarSeverity, JsSummarizeSelectionResult, JsValidationWarning,
+    CellFormatSummary, JsCellValue, JsCellValuePos, JsCellValuePosContext, JsClipboard, JsCodeCell,
+    JsDataTableColumnHeader, JsHtmlOutput, JsNumber, JsOffset, JsRenderCell, JsRenderCellSpecial,
+    JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsReturnInfo, JsRowHeight, JsSheetFill,
+    JsSnackbarSeverity, JsSummarizeSelectionResult, JsValidationWarning,
 };
 use quadratic_core::grid::sheet::borders::BorderSelection;
 use quadratic_core::grid::sheet::borders::BorderSide;
@@ -114,17 +115,20 @@ fn main() {
         Format,
         GridBounds,
         JsBorderHorizontal,
-        JsBordersSheet,
         JsBorderVertical,
+        JsBordersSheet,
         JsCellsAccessed,
         JsCellValue,
         JsCellValuePos,
-        JsCellValuePosAIContext,
+        JsCellValuePosContext,
+        JsChartContext,
         JsClipboard,
         JsCodeCell,
         JsCodeResult,
+        JsCodeTableContext,
         JsCoordinate,
         JsDataTableColumnHeader,
+        JsDataTableContext,
         JsFormulaParseResult,
         JsGetCellResponse,
         JsHtmlOutput,
@@ -137,14 +141,12 @@ fn main() {
         JsRenderFill,
         JsReturnInfo,
         JsRowHeight,
+        JsSelectionContext,
         JsSheetFill,
         JsSnackbarSeverity,
         JsSummarizeSelectionResult,
-        JsDataTableContext,
-        JsCodeTableContext,
-        JsChartContext,
-        JsTablesContext,
         JsTableInfo,
+        JsTablesContext,
         JsValidationWarning,
         MinMax,
         NumberRange,
@@ -152,8 +154,8 @@ fn main() {
         NumericFormatKind,
         PasteSpecial,
         Pos,
-        RefRangeBounds,
         Rect,
+        RefRangeBounds,
         Rgba,
         RunError,
         RunErrorMsg,

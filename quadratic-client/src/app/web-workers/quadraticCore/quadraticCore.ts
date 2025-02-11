@@ -19,11 +19,11 @@ import type {
   Direction,
   Format,
   JsCellValue,
-  JsCellValuePosAIContext,
   JsClipboard,
   JsCodeCell,
   JsCoordinate,
   JsRenderCell,
+  JsSelectionContext,
   JsSummarizeSelectionResult,
   JsTablesContext,
   MinMax,
@@ -391,34 +391,35 @@ class QuadraticCore {
     });
   }
 
-  getAIContextRectsInSelections(
-    selections: string[],
-    maxRects?: number
-  ): Promise<JsCellValuePosAIContext[][] | undefined> {
+  getAISelectionContexts(args: {
+    selections: string[];
+    maxRects?: number;
+    includeErroredCodeCells: boolean;
+    includeTablesSummary: boolean;
+    includeChartsSummary: boolean;
+  }): Promise<JsSelectionContext[] | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { value: JsCellValuePosAIContext[][] | undefined }) => {
-        resolve(message.value);
+      this.waitingForResponse[id] = (message: { selectionContexts: JsSelectionContext[] | undefined }) => {
+        resolve(message.selectionContexts);
       };
-      this.send({ type: 'clientCoreGetAIContextRectsInSelections', selections, maxRects, id });
-    });
-  }
-
-  getErroredCodeCellsInSelections(selections: string[]): Promise<JsCodeCell[][] | undefined> {
-    const id = this.id++;
-    return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { value: JsCodeCell[][] | undefined }) => {
-        resolve(message.value);
-      };
-      this.send({ type: 'clientCoreGetErroredCodeCellsInSelections', selections, id });
+      this.send({
+        type: 'clientCoreGetAISelectionContexts',
+        id,
+        selections: args.selections,
+        maxRects: args.maxRects,
+        includeErroredCodeCells: args.includeErroredCodeCells,
+        includeTablesSummary: args.includeTablesSummary,
+        includeChartsSummary: args.includeChartsSummary,
+      });
     });
   }
 
   getAITablesContext(): Promise<JsTablesContext[] | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { value: JsTablesContext[] | undefined }) => {
-        resolve(message.value);
+      this.waitingForResponse[id] = (message: { tablesContext: JsTablesContext[] | undefined }) => {
+        resolve(message.tablesContext);
       };
       this.send({ type: 'clientCoreGetAITablesContext', id });
     });

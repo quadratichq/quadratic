@@ -84,6 +84,7 @@ pub enum Operation {
         show_ui: Option<bool>,
         show_name: Option<bool>,
         show_columns: Option<bool>,
+        readonly: Option<bool>,
     },
     DataTableFormats {
         sheet_pos: SheetPos,
@@ -370,11 +371,12 @@ impl fmt::Display for Operation {
                 show_ui,
                 show_name,
                 show_columns,
+                readonly,
             } => {
                 write!(
                     fmt,
-                    "DataTableMeta {{ sheet_pos: {} name: {:?} alternating_colors: {:?} columns: {:?} show_ui: {:?} show_name: {:?} show_columns: {:?} }}",
-                    sheet_pos, name, alternating_colors, columns, show_ui, show_name, show_columns
+                    "DataTableMeta {{ sheet_pos: {} name: {:?} alternating_colors: {:?} columns: {:?} show_ui: {:?} show_name: {:?} show_columns: {:?} readonly: {:?} }}",
+                    sheet_pos, name, alternating_colors, columns, show_ui, show_name, show_columns, readonly
                 )
             }
             Operation::DataTableFormats { sheet_pos, formats } => {

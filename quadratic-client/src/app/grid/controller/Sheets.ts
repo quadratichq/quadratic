@@ -1,10 +1,8 @@
 import { events } from '@/app/events/events';
-import { getRectSelection } from '@/app/grid/sheet/selection';
 import { Sheet } from '@/app/grid/sheet/Sheet';
-import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { A1Selection, JsOffset, Rect, SheetInfo } from '@/app/quadratic-core-types';
-import type { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { type JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import type { Rectangle } from 'pixi.js';
@@ -360,25 +358,6 @@ export class Sheets {
   getVisibleRectangle = (): Rectangle => {
     const visibleRect = this.getVisibleRect();
     return rectToRectangle(visibleRect);
-  };
-
-  getVisibleSelection = (): string | undefined => {
-    const sheetBounds = this.sheet.boundsWithoutFormatting;
-    if (sheetBounds.type === 'empty') {
-      return undefined;
-    }
-
-    const sheetBoundsRect: Rect = {
-      min: sheetBounds.min,
-      max: sheetBounds.max,
-    };
-    const visibleRect = this.getVisibleRect();
-    if (!intersects.rectRect(sheetBoundsRect, visibleRect)) {
-      return undefined;
-    }
-
-    const visibleRectSelection = getRectSelection(this.current, visibleRect);
-    return visibleRectSelection;
   };
 }
 
