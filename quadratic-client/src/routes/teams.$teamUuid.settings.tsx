@@ -193,6 +193,10 @@ export const Component = () => {
                             <DialogHeader>
                               <DialogTitle>Usage History</DialogTitle>
                             </DialogHeader>
+                            <p className="mb-4 text-sm text-muted-foreground">
+                              Users receive 50 free AI messages per month across all teams. If a user belongs to a paid
+                              team, they'll use that team's unlimited messages instead.
+                            </p>
                             <div className="space-y-3">
                               {billing.usage.map((usage) => (
                                 <div key={usage.month} className="flex justify-between">
