@@ -8,7 +8,7 @@ import {
 } from 'quadratic-shared/ai/helpers/model.helper';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
-import { type AIMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
+import { type ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 import { handleAnthropicRequest } from '../../ai/handler/anthropic';
 import { handleBedrockRequest } from '../../ai/handler/bedrock';
@@ -49,20 +49,23 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     args.messages.unshift(...quadraticContext);
   }
 
-  let responseMessage: AIMessagePrompt | undefined;
+  let parsedResponse: ParsedAIResponse | undefined;
   if (isBedrockAnthropicModel(model) || isBedrockModel(model)) {
-    responseMessage = await handleBedrockRequest(model, args, res);
+    parsedResponse = await handleBedrockRequest(model, args, res);
   } else if (isAnthropicModel(model)) {
-    responseMessage = await handleAnthropicRequest(model, args, res);
+    parsedResponse = await handleAnthropicRequest(model, args, res);
   } else if (isOpenAIModel(model)) {
-    responseMessage = await handleOpenAIRequest(model, args, res);
+    parsedResponse = await handleOpenAIRequest(model, args, res);
   } else {
     throw new Error(`Model not supported: ${model}`);
   }
 
-  if (responseMessage) {
-    args.messages.push(responseMessage);
+  if (parsedResponse) {
+    args.messages.push(parsedResponse.responseMessage);
   }
+
+  // todo(ayush): save to db and remove log
+  console.log('Usage: ', parsedResponse?.usage);
 
   const {
     file: { id: fileId, ownerTeam },

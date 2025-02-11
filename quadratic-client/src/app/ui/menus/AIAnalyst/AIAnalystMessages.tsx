@@ -4,7 +4,6 @@ import {
   aiAnalystCurrentChatMessagesCountAtom,
   aiAnalystLoadingAtom,
 } from '@/app/atoms/aiAnalystAtom';
-import { editorInteractionStateSettingsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { debugShowAIInternalContext } from '@/app/debugFlags';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
@@ -164,18 +163,12 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
 function FeedbackButtons() {
   // true=positive, false=negative, null=neutral
   const [like, setLike] = useState<boolean | null>(null);
-  const settings = useRecoilValue(editorInteractionStateSettingsAtom);
 
   const logFeedback = useRecoilCallback(
     ({ snapshot }) =>
       (newLike: boolean | null) => {
         // Log it to mixpanel
         mixpanel.track('[AIAnalyst].feedback', { like: newLike });
-
-        // If they have AI analytics turned off, don't do anything else
-        if (!settings.analyticsAi) {
-          return;
-        }
 
         // Otherwise, log it to our DB
         const messages = snapshot.getLoadable(aiAnalystCurrentChatMessagesAtom).getValue();

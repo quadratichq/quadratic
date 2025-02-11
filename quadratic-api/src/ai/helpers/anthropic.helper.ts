@@ -10,7 +10,9 @@ import type {
   AIRequestBody,
   AnthropicModel,
   BedrockAnthropicModel,
+  ParsedAIResponse,
 } from 'quadratic-shared/typesAndSchemasAI';
+import { calculateUsage } from './usage.helper';
 
 export function getAnthropicApiArgs(args: Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'source' | 'model'>): {
   system: string | TextBlockParam[] | undefined;
@@ -120,7 +122,7 @@ export async function parseAnthropicStream(
   chunks: Stream<Anthropic.Messages.RawMessageStreamEvent>,
   response: Response,
   model: AnthropicModel | BedrockAnthropicModel
-) {
+): Promise<ParsedAIResponse> {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: '',
@@ -129,46 +131,70 @@ export async function parseAnthropicStream(
     model,
   };
 
+  let input_tokens = 0;
+  let output_tokens = 0;
+  let cache_read_tokens = 0;
+  let cache_write_tokens = 0;
+
   for await (const chunk of chunks) {
     if (!response.writableEnded) {
-      if (chunk.type === 'content_block_start') {
-        if (chunk.content_block.type === 'text') {
-          responseMessage.content += chunk.content_block.text;
-        } else if (chunk.content_block.type === 'tool_use') {
-          const toolCalls = [...responseMessage.toolCalls];
-          const toolCall = {
-            id: chunk.content_block.id,
-            name: chunk.content_block.name,
-            arguments: '',
-            loading: true,
-          };
-          toolCalls.push(toolCall);
-          responseMessage.toolCalls = toolCalls;
-        }
-      } else if (chunk.type === 'content_block_delta') {
-        if (chunk.delta.type === 'text_delta') {
-          responseMessage.content += chunk.delta.text;
-        } else if (chunk.delta.type === 'input_json_delta') {
-          const toolCalls = [...responseMessage.toolCalls];
-          const toolCall = {
-            ...(toolCalls.pop() ?? {
-              id: '',
-              name: '',
+      switch (chunk.type) {
+        case 'content_block_start':
+          if (chunk.content_block.type === 'text') {
+            responseMessage.content += chunk.content_block.text;
+          } else if (chunk.content_block.type === 'tool_use') {
+            const toolCalls = [...responseMessage.toolCalls];
+            const toolCall = {
+              id: chunk.content_block.id,
+              name: chunk.content_block.name,
               arguments: '',
               loading: true,
-            }),
-          };
-          toolCall.arguments += chunk.delta.partial_json;
-          toolCalls.push(toolCall);
-          responseMessage.toolCalls = toolCalls;
-        }
-      } else if (chunk.type === 'content_block_stop') {
-        const toolCalls = [...responseMessage.toolCalls];
-        const toolCall = toolCalls.pop();
-        if (toolCall) {
-          toolCalls.push({ ...toolCall, loading: false });
-          responseMessage.toolCalls = toolCalls;
-        }
+            };
+            toolCalls.push(toolCall);
+            responseMessage.toolCalls = toolCalls;
+          }
+          break;
+        case 'content_block_delta':
+          if (chunk.delta.type === 'text_delta') {
+            responseMessage.content += chunk.delta.text;
+          } else if (chunk.delta.type === 'input_json_delta') {
+            const toolCalls = [...responseMessage.toolCalls];
+            const toolCall = {
+              ...(toolCalls.pop() ?? {
+                id: '',
+                name: '',
+                arguments: '',
+                loading: true,
+              }),
+            };
+            toolCall.arguments += chunk.delta.partial_json;
+            toolCalls.push(toolCall);
+            responseMessage.toolCalls = toolCalls;
+          }
+          break;
+        case 'content_block_stop':
+          {
+            const toolCalls = [...responseMessage.toolCalls];
+            const toolCall = toolCalls.pop();
+            if (toolCall) {
+              toolCalls.push({ ...toolCall, loading: false });
+              responseMessage.toolCalls = toolCalls;
+            }
+          }
+          break;
+        case 'message_start':
+          if (chunk.message.usage) {
+            input_tokens = Math.max(input_tokens, chunk.message.usage.input_tokens);
+            output_tokens = Math.max(output_tokens, chunk.message.usage.output_tokens);
+            cache_read_tokens = Math.max(cache_read_tokens, chunk.message.usage.cache_read_input_tokens ?? 0);
+            cache_write_tokens = Math.max(cache_write_tokens, chunk.message.usage.cache_creation_input_tokens ?? 0);
+          }
+          break;
+        case 'message_delta':
+          if (chunk.usage) {
+            output_tokens = Math.max(output_tokens, chunk.usage.output_tokens);
+          }
+          break;
       }
 
       response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
@@ -187,14 +213,16 @@ export async function parseAnthropicStream(
     response.end();
   }
 
-  return responseMessage;
+  const usage = calculateUsage({ model, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens });
+
+  return { responseMessage, usage };
 }
 
 export function parseAnthropicResponse(
   result: Anthropic.Messages.Message,
   response: Response,
   model: AnthropicModel | BedrockAnthropicModel
-): AIMessagePrompt {
+): ParsedAIResponse {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: '',
@@ -233,5 +261,11 @@ export function parseAnthropicResponse(
 
   response.json(responseMessage);
 
-  return responseMessage;
+  const input_tokens = result.usage.input_tokens;
+  const output_tokens = result.usage.output_tokens;
+  const cache_read_tokens = result.usage.cache_read_input_tokens ?? 0;
+  const cache_write_tokens = result.usage.cache_creation_input_tokens ?? 0;
+  const usage = calculateUsage({ model, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens });
+
+  return { responseMessage, usage };
 }
