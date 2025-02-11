@@ -34,7 +34,7 @@ export interface JsCellsAccessed { sheetId: string, ranges: Array<CellRefRange>,
 export interface JsCellValue { value: string, kind: string, }
 export interface JsCellValuePos { value: string, kind: string, pos: string, }
 export interface JsCellValuePosContext { sheet_name: string, rect_origin: string, rect_width: number, rect_height: number, starting_rect_values: Array<Array<JsCellValuePos>>, }
-export interface JsChartContext { sheet_name: string, chart_name: string, bounds: string, spill: boolean, }
+export interface JsChartContext { sheet_name: string, chart_name: string, bounds: string, language: CodeCellLanguage, code_string: string, spill: boolean, }
 export interface JsClipboard { plainText: string, html: string, }
 export interface JsCodeCell { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: Array<JsCellsAccessed> | null, }
 export interface JsCodeResult { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: Array<string> | null, output_array: Array<Array<Array<string>>> | null, output_display_type: string | null, cancel_compute: boolean | null, chart_pixel_output: [number, number] | null, has_headers: boolean, }
