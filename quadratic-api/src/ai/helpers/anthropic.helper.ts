@@ -23,7 +23,17 @@ export function getAnthropicApiArgs(args: Omit<AIRequestBody, 'chatId' | 'fileUu
   const { messages: chatMessages, useTools, toolName } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
+
+  // without prompt caching of system messages
   const system = systemMessages.join('\n\n');
+
+  // with prompt caching of system messages
+  // const system: TextBlockParam[] = systemMessages.map((message, index) => ({
+  //   type: 'text' as const,
+  //   text: message,
+  //   ...(index < 4 ? { cache_control: { type: 'ephemeral' } } : {}),
+  // }));
+
   const messages: MessageParam[] = promptMessages.reduce<MessageParam[]>((acc, message) => {
     if (message.role === 'assistant' && message.contextType === 'userPrompt' && message.toolCalls.length > 0) {
       const anthropicMessages: MessageParam[] = [
