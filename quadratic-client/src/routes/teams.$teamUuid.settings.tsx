@@ -112,11 +112,11 @@ export const Component = () => {
                     <h3 className="mb-3 text-lg font-semibold">Free Plan</h3>
                     <div className="space-y-3">
                       <div className="flex justify-between">
-                        <span className="text-sm">AI Messages Monthly</span>
+                        <span className="text-sm">AI Messages / User / Month</span>
                         <span className="text-sm font-medium">50</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm">Connection Runs Monthly</span>
+                        <span className="text-sm">Connection Runs / Month</span>
                         <span className="text-sm font-medium">∞</span>
                       </div>
                       <div className="flex justify-between">
@@ -140,11 +140,11 @@ export const Component = () => {
                     <h3 className="mb-3 text-lg font-semibold">Team AI Plan</h3>
                     <div className="space-y-3">
                       <div className="flex justify-between">
-                        <span className="text-sm">AI Messages Month / User</span>
+                        <span className="text-sm">AI Messages / User / Month</span>
                         <span className="text-sm font-medium">∞</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm">Connection Runs Monthly</span>
+                        <span className="text-sm">Connection Runs / Month</span>
                         <span className="text-sm font-medium">∞</span>
                       </div>
                       <div className="flex justify-between">
@@ -176,7 +176,7 @@ export const Component = () => {
                   <h3 className="mb-3 text-lg font-semibold">Current Usage</h3>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">AI Messages Month / User</span>
+                      <span className="text-sm">AI Messages / User / Month</span>
                       <div className="flex items-start gap-2">
                         <span className="w-4 text-right font-medium">0</span>
                         <span className="w-8 translate-y-[5px] text-xs text-muted-foreground">
@@ -185,7 +185,7 @@ export const Component = () => {
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">Connection Runs Monthly</span>
+                      <span className="text-sm">Connection Runs / Month</span>
                       <div className="flex items-start gap-2">
                         <span className="w-4 text-right font-medium">0</span>
                         <span className="w-8 translate-y-[5px] text-xs text-muted-foreground">/ ∞</span>

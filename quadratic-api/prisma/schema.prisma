@@ -291,7 +291,7 @@ model AnalyticsAIChatMessage {
     chat          AnalyticsAIChat @relation(fields: [chatId], references: [id])
     model         String
     messageIndex  Int             @map("message_index")
-    s3Key         String          @map("s3_key")
+    s3Key         String?         @map("s3_key")
     like          Boolean?
     undo          Boolean?
     codeRunError  String?         @map("code_run_error")

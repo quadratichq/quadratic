@@ -68,7 +68,9 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     file: { id: fileId, ownerTeam },
   } = await getFile({ uuid: fileUuid, userId });
 
-  if (!ownerTeam.settingAnalyticsAi || STORAGE_TYPE !== 's3' || !getBucketName(S3Bucket.ANALYTICS)) {
+  // If we aren't using s3 or the analytics bucket name is not set, don't save the data
+  // This path is also used for self-hosted users, so we don't want to save the data in that case
+  if (STORAGE_TYPE !== 's3' || !getBucketName(S3Bucket.ANALYTICS)) {
     return;
   }
 
@@ -82,8 +84,12 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     const messageIndex = getLastUserPromptMessageIndex(args.messages);
     const key = `${fileUuid}-${source}_${chatId.replace(/-/g, '_')}_${messageIndex}.json`;
 
-    const contents = Buffer.from(JSON.stringify(args)).toString('base64');
-    const response = await uploadFile(key, contents, jwt, S3Bucket.ANALYTICS);
+    let s3Key;
+    if (ownerTeam.settingAnalyticsAi) {
+      const contents = Buffer.from(JSON.stringify(args)).toString('base64');
+      const response = await uploadFile(key, contents, jwt, S3Bucket.ANALYTICS);
+      s3Key = response.key;
+    }
 
     await dbClient.analyticsAIChat.upsert({
       where: {
@@ -98,7 +104,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
           create: {
             model,
             messageIndex,
-            s3Key: response.key,
+            s3Key,
           },
         },
       },
@@ -107,7 +113,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
           create: {
             model,
             messageIndex,
-            s3Key: response.key,
+            s3Key,
           },
         },
         updatedDate: new Date(),
