@@ -2,6 +2,7 @@ import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 import { SettingControl } from '@/dashboard/components/SettingControl';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { getActionUpdateTeam, type TeamAction } from '@/routes/teams.$teamUuid';
+import { apiClient } from '@/shared/api/apiClient';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CheckIcon } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
@@ -21,6 +22,7 @@ export const Component = () => {
     activeTeam: {
       team,
       userMakingRequest: { teamPermissions },
+      billing,
     },
   } = useDashboardRouteLoaderData();
 
@@ -68,21 +70,6 @@ export const Component = () => {
     });
   };
 
-  // One day, when we have billing, we can add something akin to this
-  //
-  // {teamPermissions.includes('TEAM_MANAGE') && (
-  //   <DropdownMenuItem
-  //     onClick={() => {
-  //       // Get the billing session URL
-  //       apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
-  //         window.location.href = data.url;
-  //       });
-  //     }}
-  //   >
-  //     Update billing
-  //   </DropdownMenuItem>
-  // )}
-
   // If for some reason it failed, display an error
   useEffect(() => {
     if (fetcher.data && fetcher.data.ok === false) {
@@ -90,7 +77,7 @@ export const Component = () => {
     }
   }, [fetcher.data, addGlobalSnackbar]);
 
-  // If you don’t have permission, you can't see this view
+  // If you don't have permission, you can't see this view
   if (!teamPermissions.includes('TEAM_EDIT')) {
     return <Navigate to={ROUTES.TEAM(team.uuid)} />;
   }
@@ -112,41 +99,165 @@ export const Component = () => {
         </Row>
 
         {teamPermissions.includes('TEAM_MANAGE') && (
-          <Row>
-            <Type variant="body2" className="font-bold">
-              Privacy
-            </Type>
+          <>
+            <Row>
+              <Type variant="body2" className="font-bold">
+                Billing
+              </Type>
+              <div className="flex flex-col gap-4">
+                {/* Plan Comparison */}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Free Plan */}
+                  <div className="rounded-lg border border-border p-4">
+                    <h3 className="mb-3 text-lg font-semibold">Free Plan</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-sm">AI Messages Monthly</span>
+                        <span className="text-sm font-medium">50</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm">Connection Runs Monthly</span>
+                        <span className="text-sm font-medium">∞</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm">Team Members</span>
+                        <span className="text-sm font-medium">∞</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm">Files</span>
+                        <span className="text-sm font-medium">∞</span>
+                      </div>
+                    </div>
+                    {billing.status === undefined && (
+                      <Button disabled variant="secondary" className="mt-4 w-full">
+                        Current Plan
+                      </Button>
+                    )}
+                  </div>
 
-            <div>
-              <SettingControl
-                label="Improve AI results"
-                description={
-                  <>
-                    Help improve AI results by allowing Quadratic to store and analyze user prompts.{' '}
-                    <a href={DOCUMENTATION_ANALYTICS_AI} target="_blank" className="underline hover:text-primary">
-                      Learn more
-                    </a>
-                    .
-                  </>
-                }
-                onCheckedChange={(checked) => {
-                  handleUpdatePreference('analyticsAi', checked);
-                }}
-                checked={optimisticSettings.analyticsAi}
-                className="rounded border border-border px-3 py-2 shadow-sm"
-              />
-              <p className="mt-2 text-sm text-muted-foreground">
-                When using AI features your data is sent to our AI providers:
-              </p>
-              <ul className="mt-2 text-sm text-muted-foreground">
-                {['OpenAI', 'Anthropic', 'AWS Bedrock'].map((item, i) => (
-                  <li className="flex items-center gap-2" key={i}>
-                    <CheckIcon /> <span className="font-semibold">{item}:</span> zero-day data retention
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </Row>
+                  {/* Team AI Plan */}
+                  <div className="rounded-lg border border-border bg-secondary/20 p-4">
+                    <h3 className="mb-3 text-lg font-semibold">Team AI Plan</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-sm">AI Messages Month / User</span>
+                        <span className="text-sm font-medium">∞</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm">Connection Runs Monthly</span>
+                        <span className="text-sm font-medium">∞</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm">Team Members</span>
+                        <span className="text-sm font-medium">∞</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm">Files</span>
+                        <span className="text-sm font-medium">∞</span>
+                      </div>
+                    </div>
+                    {billing.status === undefined && (
+                      <Button
+                        onClick={() => {
+                          apiClient.teams.billing.getCheckoutSessionUrl(team.uuid).then((data) => {
+                            window.location.href = data.url;
+                          });
+                        }}
+                        className="mt-4 w-full"
+                      >
+                        Upgrade to Team AI
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Current Usage */}
+                <div className="rounded-lg border border-border p-4">
+                  <h3 className="mb-3 text-lg font-semibold">Current Usage</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">AI Messages Month / User</span>
+                      <div className="flex items-start gap-2">
+                        <span className="w-4 text-right font-medium">0</span>
+                        <span className="w-8 translate-y-[5px] text-xs text-muted-foreground">
+                          / {billing.status === undefined ? '50' : '∞'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Connection Runs Monthly</span>
+                      <div className="flex items-start gap-2">
+                        <span className="w-4 text-right font-medium">0</span>
+                        <span className="w-8 translate-y-[5px] text-xs text-muted-foreground">/ ∞</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Team Members</span>
+                      <div className="flex items-start gap-2">
+                        <span className="w-4 text-right font-medium">0</span>
+                        <span className="w-8 translate-y-[5px] text-xs text-muted-foreground">/ ∞</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Files</span>
+                      <div className="flex items-start gap-2">
+                        <span className="w-4 text-right font-medium">0</span>
+                        <span className="w-8 translate-y-[5px] text-xs text-muted-foreground">/ ∞</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {billing.status !== undefined && (
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
+                        window.location.href = data.url;
+                      });
+                    }}
+                  >
+                    Manage Billing
+                  </Button>
+                )}
+              </div>
+            </Row>
+            <Row>
+              <Type variant="body2" className="font-bold">
+                Privacy
+              </Type>
+
+              <div>
+                <SettingControl
+                  label="Improve AI results"
+                  description={
+                    <>
+                      Help improve AI results by allowing Quadratic to store and analyze user prompts.{' '}
+                      <a href={DOCUMENTATION_ANALYTICS_AI} target="_blank" className="underline hover:text-primary">
+                        Learn more
+                      </a>
+                      .
+                    </>
+                  }
+                  onCheckedChange={(checked) => {
+                    handleUpdatePreference('analyticsAi', checked);
+                  }}
+                  checked={optimisticSettings.analyticsAi}
+                  className="rounded border border-border px-3 py-2 shadow-sm"
+                />
+                <p className="mt-2 text-sm text-muted-foreground">
+                  When using AI features your data is sent to our AI providers:
+                </p>
+                <ul className="mt-2 text-sm text-muted-foreground">
+                  {['OpenAI', 'Anthropic', 'AWS Bedrock'].map((item, i) => (
+                    <li className="flex items-center gap-2" key={i}>
+                      <CheckIcon /> <span className="font-semibold">{item}:</span> zero-day data retention
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Row>
+          </>
         )}
       </div>
     </>

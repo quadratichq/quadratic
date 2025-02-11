@@ -1,11 +1,14 @@
+import { SubscriptionStatus } from '@prisma/client';
 import type { Request, Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
+import { getUsersFromAuth0 } from '../../auth/auth0';
+import dbClient from '../../dbClient';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
-import { createCheckoutSession, getMonthlyPriceId } from '../../stripe/stripe';
+import { createCheckoutSession, createCustomer, getMonthlyPriceId } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
 
 export default [
@@ -24,15 +27,35 @@ export default [
 async function handler(req: Request, res: Response) {
   const {
     params: { uuid },
-    user: { id: userId },
+    user: { id: userId, auth0Id },
   } = req as RequestWithUser;
-  const { userMakingRequest } = await getTeam({ uuid, userId });
+  const { userMakingRequest, team } = await getTeam({ uuid, userId });
 
   // Can the user even edit this team?
   if (!userMakingRequest.permissions.includes('TEAM_MANAGE')) {
     return res
       .status(403)
       .json({ error: { message: 'User does not have permission to access billing for this team.' } });
+  }
+
+  if (team?.stripeSubscriptionStatus === SubscriptionStatus.ACTIVE) {
+    return res.status(400).json({ error: { message: 'Team already has an active subscription.' } });
+  }
+
+  // create a stripe customer if one doesn't exist
+  if (!team?.stripeCustomerId) {
+    // Get user email from Auth0
+    const auth0Record = await getUsersFromAuth0([{ id: userId, auth0Id }]);
+    const auth0User = auth0Record[userId];
+
+    // create Stripe customer
+    const stripeCustomer = await createCustomer(team.name, auth0User.email);
+    await dbClient.team.update({
+      where: { uuid },
+      data: { stripeCustomerId: stripeCustomer.id },
+    });
+
+    team.stripeCustomerId = stripeCustomer.id;
   }
 
   const monthlyPriceId = await getMonthlyPriceId();

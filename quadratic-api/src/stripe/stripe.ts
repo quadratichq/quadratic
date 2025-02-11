@@ -112,7 +112,7 @@ export const getMonthlyPriceId = async () => {
     active: true,
   });
 
-  const data = prices.data.filter((price) => price.lookup_key === 'team_monthly');
+  const data = prices.data.filter((price) => price.lookup_key === 'team_monthly_ai');
   if (data.length === 0) {
     throw new Error('No monthly price found');
   }
