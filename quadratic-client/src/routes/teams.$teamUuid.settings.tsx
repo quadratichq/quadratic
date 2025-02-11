@@ -116,7 +116,12 @@ export const Component = () => {
                 <div className="grid grid-cols-2 gap-4">
                   {/* Free Plan */}
                   <div className="rounded-lg border border-border p-4">
-                    <h3 className="mb-3 text-lg font-semibold">Free Plan</h3>
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Free Plan</h3>
+                      {billing.status === undefined && (
+                        <span className="rounded-full bg-muted px-2 py-1 text-xs">Current Plan</span>
+                      )}
+                    </div>
                     <div className="space-y-3">
                       <div className="flex justify-between">
                         <span className="text-sm">AI Messages / User / Month</span>
@@ -135,16 +140,16 @@ export const Component = () => {
                         <span className="text-sm font-medium">∞</span>
                       </div>
                     </div>
-                    {billing.status === undefined && (
-                      <Button disabled variant="secondary" className="mt-4 w-full">
-                        Current Plan
-                      </Button>
-                    )}
                   </div>
 
                   {/* Team AI Plan */}
-                  <div className="rounded-lg border border-border  p-4">
-                    <h3 className="mb-3 text-lg font-semibold">Team Plan</h3>
+                  <div className="rounded-lg border border-border p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Team Plan</h3>
+                      {billing.status === 'ACTIVE' && (
+                        <span className="rounded-full bg-muted px-2 py-1 text-xs">Current Plan</span>
+                      )}
+                    </div>
                     <div className="space-y-3">
                       <div className="flex justify-between">
                         <span className="text-sm">AI Messages / User / Month</span>
@@ -163,7 +168,7 @@ export const Component = () => {
                         <span className="text-sm font-medium">∞</span>
                       </div>
                     </div>
-                    {billing.status === undefined && (
+                    {billing.status === undefined ? (
                       <Button
                         onClick={() => {
                           apiClient.teams.billing.getCheckoutSessionUrl(team.uuid).then((data) => {
@@ -174,6 +179,20 @@ export const Component = () => {
                       >
                         Upgrade Team
                       </Button>
+                    ) : (
+                      billing.status === 'ACTIVE' && (
+                        <Button
+                          variant="secondary"
+                          className="mt-4 w-full"
+                          onClick={() => {
+                            apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
+                              window.location.href = data.url;
+                            });
+                          }}
+                        >
+                          Manage Billing
+                        </Button>
+                      )
                     )}
                   </div>
                 </div>
@@ -238,19 +257,6 @@ export const Component = () => {
                     </div>
                   </div>
                 </div>
-
-                {billing.status !== undefined && (
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
-                        window.location.href = data.url;
-                      });
-                    }}
-                  >
-                    Manage Billing
-                  </Button>
-                )}
               </div>
             </Row>
             <Row>

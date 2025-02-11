@@ -22,6 +22,7 @@ export const getAIMessageUsageForUser = async (userId: number) => {
     AND ac.source IN ('ai_assistant', 'ai_analyst', 'ai_researcher')
   LEFT JOIN "AnalyticsAIChatMessage" acm ON 
     acm.chat_id = ac.id
+    AND acm.message_type = 'user_prompt'
   GROUP BY m.month
   ORDER BY m.month ASC;
 `;
