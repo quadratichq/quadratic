@@ -121,6 +121,15 @@ pub enum CodeCellLanguage {
     Import,
 }
 
+impl CodeCellLanguage {
+    pub fn is_code_language(&self) -> bool {
+        matches!(
+            self,
+            CodeCellLanguage::Python | CodeCellLanguage::Javascript
+        )
+    }
+}
+
 #[derive(Serialize, Deserialize, Display, Copy, Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "UPPERCASE")]

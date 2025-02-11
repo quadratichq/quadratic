@@ -245,6 +245,12 @@ impl DataTable {
         self
     }
 
+    /// Sets the show_columns flag.
+    pub fn with_show_columns(mut self, show_columns: bool) -> Self {
+        self.show_columns = show_columns;
+        self
+    }
+
     pub fn update_table_name(&mut self, name: &str) {
         self.name = name.into();
     }
@@ -608,6 +614,15 @@ impl DataTable {
         match &self.value {
             Value::Array(a) => a.width() == 1,
             _ => false,
+        }
+    }
+
+    /// Returns true if the data table is a pandas DataFrame
+    pub fn is_dataframe(&self) -> bool {
+        if let DataTableKind::CodeRun(code_run) = &self.kind {
+            code_run.output_type == Some("DataFrame".into())
+        } else {
+            false
         }
     }
 }

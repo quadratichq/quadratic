@@ -75,8 +75,12 @@ impl GridController {
         {
             new_data_table.show_ui = old_data_table.show_ui;
             new_data_table.show_name = old_data_table.show_name;
-            new_data_table.show_columns = old_data_table.show_columns;
             new_data_table.alternating_colors = old_data_table.alternating_colors;
+
+            // for python dataframes, we don't want preserve the show_columns setting
+            if !new_data_table.is_dataframe() {
+                new_data_table.show_columns = old_data_table.show_columns;
+            }
 
             // if the old data table has headers, then the new data table should
             // have headers; if the data table already has headers (eg, via data
@@ -229,52 +233,48 @@ impl GridController {
                 ))
             }
         };
-        let has_headers = result.has_headers;
+
         match &transaction.waiting_for_async {
             None => {
                 return Err(CoreError::TransactionNotFound("Expected transaction to be waiting_for_async to be defined in transaction::complete".into()));
             }
-            Some(waiting_for_async) => match waiting_for_async {
-                CodeCellLanguage::Python | CodeCellLanguage::Javascript => {
-                    let mut new_data_table = self.js_code_result_to_code_cell_value(
-                        transaction,
-                        result,
-                        current_sheet_pos,
-                        waiting_for_async.clone(),
-                    );
-
-                    transaction.waiting_for_async = None;
-
-                    // Keep chart_pixel_output and table name consistent if
-                    // there already exists a data table at the same position.
-                    if let Some(sheet) = self.try_sheet(current_sheet_pos.sheet_id) {
-                        if let Some((_, existing_data_table)) = sheet
-                            .data_tables
-                            .iter()
-                            .find(|(p, _)| **p == current_sheet_pos.into())
-                        {
-                            new_data_table.chart_pixel_output =
-                                existing_data_table.chart_pixel_output;
-                            new_data_table.name = existing_data_table.name.clone();
-                            new_data_table.show_ui = existing_data_table.show_ui;
-                        } else {
-                            new_data_table.show_columns = has_headers;
-                        }
-                    }
-
-                    self.finalize_data_table(
-                        transaction,
-                        current_sheet_pos,
-                        Some(new_data_table),
-                        None,
-                    );
-                }
-                _ => {
+            Some(language) => {
+                if !language.is_code_language() {
                     return Err(CoreError::UnhandledLanguage(
                         "Transaction.complete called for an unhandled language".into(),
                     ));
                 }
-            },
+
+                let mut new_data_table = self.js_code_result_to_code_cell_value(
+                    transaction,
+                    result,
+                    current_sheet_pos,
+                    language.clone(),
+                );
+
+                transaction.waiting_for_async = None;
+
+                // Keep chart_pixel_output and table name consistent if
+                // there already exists a data table at the same position.
+                if let Some(sheet) = self.try_sheet(current_sheet_pos.sheet_id) {
+                    if let Some((_, existing_data_table)) = sheet
+                        .data_tables
+                        .iter()
+                        .find(|(p, _)| **p == current_sheet_pos.into())
+                    {
+                        new_data_table.chart_pixel_output = existing_data_table.chart_pixel_output;
+                        new_data_table.name = existing_data_table.name.clone();
+                        new_data_table.show_ui = existing_data_table.show_ui;
+                    }
+                }
+
+                self.finalize_data_table(
+                    transaction,
+                    current_sheet_pos,
+                    Some(new_data_table),
+                    None,
+                );
+            }
         }
         // continue the compute loop after a successful async call
         self.start_transaction(transaction);
@@ -368,7 +368,7 @@ impl GridController {
     pub(super) fn js_code_result_to_code_cell_value(
         &mut self,
         transaction: &mut PendingTransaction,
-        js_code_result: JsCodeResult,
+        mut js_code_result: JsCodeResult,
         start: SheetPos,
         language: CodeCellLanguage,
     ) -> DataTable {
@@ -378,6 +378,7 @@ impl GridController {
             CodeCellLanguage::Python => "Python1",
             _ => "Table1",
         };
+
         let Some(sheet) = self.try_sheet_mut(start.sheet_id) else {
             // todo: this is probably not the best place to handle this
             // sheet may have been deleted before the async operation completed
@@ -408,7 +409,20 @@ impl GridController {
         };
 
         let value = if js_code_result.success {
-            if let Some(array_output) = js_code_result.output_array {
+            if let Some(mut array_output) = js_code_result.output_array {
+                // if the output is a dataframe of headers only, we want to convert it to a list
+                let is_headers_only = js_code_result.has_headers && array_output.len() == 1;
+                if is_headers_only && js_code_result.output_display_type == Some("DataFrame".into())
+                {
+                    js_code_result.has_headers = false;
+                    js_code_result.output_display_type = Some("list".into());
+                    array_output = array_output[0]
+                        .clone()
+                        .into_iter()
+                        .map(|row| vec![row])
+                        .collect();
+                }
+
                 let (array, ops) = Array::from_string_list(start.into(), sheet, array_output);
                 transaction.reverse_operations.extend(ops);
                 if let Some(array) = array {
@@ -462,7 +476,8 @@ impl GridController {
             std_err: js_code_result.std_err,
             cells_accessed: transaction.cells_accessed.clone(),
         };
-        let data_table = DataTable::new(
+
+        let mut data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             table_name,
             value,
@@ -471,7 +486,13 @@ impl GridController {
             true,
             js_code_result.chart_pixel_output,
         );
+
         transaction.cells_accessed.clear();
+
+        data_table.show_columns = match language {
+            CodeCellLanguage::Javascript => data_table.width() > 1,
+            _ => js_code_result.has_headers,
+        };
 
         // If no headers were returned, we want column headers: [0, 2, 3, ...etc]
         if !js_code_result.has_headers {

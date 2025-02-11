@@ -266,7 +266,8 @@ mod test {
                 true,
                 None,
             )
-            .with_last_modified(result.last_modified),
+            .with_last_modified(result.last_modified)
+            .with_show_columns(false),
         );
     }
 
@@ -290,6 +291,7 @@ mod test {
             success: true,
             output_array: Some(array_output),
             output_display_type: Some("array".into()),
+            has_headers: false,
             ..Default::default()
         };
 
@@ -324,7 +326,7 @@ mod test {
             ..Default::default()
         };
 
-        let data_table = DataTable::new(
+        let mut data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "JavaScript1",
             Value::Array(array),
@@ -334,13 +336,13 @@ mod test {
             None,
         );
         let column_headers = data_table.default_header_with_name(|i| format!("{}", i - 1), None);
+        data_table = data_table
+            .with_column_headers(column_headers)
+            .with_last_modified(result.last_modified);
 
-        assert_eq!(
-            result,
-            data_table
-                .with_column_headers(column_headers)
-                .with_last_modified(result.last_modified),
-        );
+        crate::grid::data_table::test::pretty_print_data_table(&data_table, None, None);
+
+        assert_eq!(result, data_table);
     }
 
     #[test]
