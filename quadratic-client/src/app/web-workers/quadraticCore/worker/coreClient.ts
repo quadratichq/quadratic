@@ -603,19 +603,11 @@ class CoreClient {
         });
         return;
 
-      case 'clientCoreGetAIContextRectsInSelections':
+      case 'clientCoreGetAISelectionContexts':
         this.send({
-          type: 'coreClientGetAIContextRectsInSelections',
+          type: 'coreClientGetAISelectionContexts',
           id: e.data.id,
-          value: core.getAIContextRectsInSelection(e.data.selections, e.data.maxRects),
-        });
-        return;
-
-      case 'clientCoreGetErroredCodeCellsInSelections':
-        this.send({
-          type: 'coreClientGetErroredCodeCellsInSelections',
-          id: e.data.id,
-          value: core.getErroredCodeCellsInSelection(e.data.selections),
+          selectionContexts: core.getAISelectionContexts(e.data),
         });
         return;
 
@@ -623,7 +615,7 @@ class CoreClient {
         this.send({
           type: 'coreClientGetAITablesContext',
           id: e.data.id,
-          value: core.getAITablesContext(),
+          tablesContext: core.getAITablesContext(),
         });
         return;
 

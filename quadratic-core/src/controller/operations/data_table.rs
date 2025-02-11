@@ -56,6 +56,7 @@ impl GridController {
             show_ui,
             show_name,
             show_columns,
+            readonly: None,
         }]
     }
 

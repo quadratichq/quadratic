@@ -289,6 +289,7 @@ impl GridController {
                                             show_ui: None,
                                             show_name: None,
                                             show_columns: None,
+                                            readonly: None,
                                         });
                                     }
 

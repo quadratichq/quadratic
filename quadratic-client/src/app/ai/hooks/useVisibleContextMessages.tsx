@@ -1,5 +1,7 @@
 import { sheets } from '@/app/grid/controller/Sheets';
-import { rectToA1, xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { getRectSelection } from '@/app/grid/sheet/selection';
+import { intersects } from '@/app/gridGL/helpers/intersects';
+import { A1SelectionStringToSelection, xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { maxRects } from '@/app/ui/menus/AIAnalyst/const/maxRects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -7,32 +9,75 @@ import { useCallback } from 'react';
 
 export function useVisibleContextMessages() {
   const getVisibleContext = useCallback(async (): Promise<ChatMessage[]> => {
+    const visibleRect = sheets.getVisibleRect();
+    const visibleRectSelection = getRectSelection(sheets.current, visibleRect);
+    const visibleA1String = A1SelectionStringToSelection(visibleRectSelection).toA1String(
+      sheets.current,
+      sheets.a1Context
+    );
+
     const sheetBounds = sheets.sheet.boundsWithoutFormatting;
-    const visibleSelection = sheets.getVisibleSelection();
-    const [visibleContext, erroredCodeCells] = visibleSelection
-      ? await Promise.all([
-          quadraticCore.getAIContextRectsInSelections([visibleSelection], maxRects),
-          quadraticCore.getErroredCodeCellsInSelections([visibleSelection]),
-        ])
-      : [undefined, undefined];
+    const isVisibleEmpty = sheetBounds.type === 'empty' || !intersects.rectRect(sheetBounds, visibleRect);
+    const visibleContext = isVisibleEmpty
+      ? undefined
+      : await quadraticCore.getAISelectionContexts({
+          selections: [visibleRectSelection],
+          maxRects,
+          includeErroredCodeCells: true,
+          includeTablesSummary: true,
+          includeChartsSummary: true,
+        });
 
     return [
       {
         role: 'user',
-        content: `Note: This is an internal message for context. Do not quote it in your response.\n\n
-I have an open sheet with the following data:
+        content: `
+Note: This is an internal message for context. Do not quote it in your response.\n\n
+I have an open sheet with the following part of the sheet visible: ${visibleA1String}\n\n
 ${
-  sheetBounds.type === 'nonEmpty'
-    ? `- Data range: ${rectToA1(sheetBounds)}
-- Note: This range may contain empty cells.`
-    : '- The sheet is currently empty.'
-}\n\n
+  !!visibleContext && visibleContext.length === 1
+    ? `
+${
+  !!visibleContext[0].tables_summary && visibleContext[0].tables_summary.length > 0
+    ? `
+Visible tables in the viewport:\n
+I am sharing visible tables summary in the viewport as an array of table summary objects, each table summary object has following properties:\n
+- sheet_name: This is the name of the sheet.\n
+- table_name: This is the name of the table. You can use this name to reference the table in code.\n
+- table_type: This denotes whether the table is an editable data table or a read only code table (code output).\n
+- bounds: This is the bounds (top left cell and bottom right cell, both inclusive) of the data table in A1 notation, this includes the table name and column headers if they are visible.\n
+
+There are following visible tables in the viewport:\n
+\`\`\`json
+${JSON.stringify(visibleContext[0].tables_summary)}
+\`\`\`
+`
+    : ''
+}
 
 ${
-  visibleContext && visibleContext.length === 1 && visibleContext[0].length > 0
+  !!visibleContext[0].charts_summary && visibleContext[0].charts_summary.length > 0
+    ? `
+Visible charts in the viewport:\n
+I am sharing visible charts summary in the viewport as an array of chart summary objects, each chart summary object has following properties:\n
+- sheet_name: This is the name of the sheet.\n
+- chart_name: This is the name of the chart.\n
+- bounds: This is the bounds (top left cell and bottom right cell, both inclusive) of the chart in A1 notation, this includes the chart name.\n
+
+Take into account chart bounds when adding values, code or charts to the sheet. Always avoid overplay with chart bounds.\n
+
+There are following visible charts in the viewport:\n
+\`\`\`json
+${JSON.stringify(visibleContext[0].charts_summary)}
+\`\`\`
+`
+    : ''
+}
+
+${
+  !!visibleContext[0].data_rects && visibleContext[0].data_rects.length > 0
     ? `
 Visible data in the viewport:\n
-
 I am sharing visible data as an array of tabular data rectangles, each tabular data rectangle in this array has following properties:\n
 - sheet_name: This is the name of the sheet.\n
 - rect_origin: This is the position of the top left cell of the data rectangle in A1 notation. Columns are represented by letters and rows are represented by numbers.\n
@@ -45,27 +90,31 @@ Each cell value is a JSON object having the following properties:\n
 - kind: The kind of the value. This can be blank, text, number, logical, time instant, duration, error, html, code, image, date, time, date time, null or undefined.\n
 - pos: This is the position of the cell in A1 notation. Columns are represented by letters and rows are represented by numbers.\n\n
 
-This is being shared so that you can understand the table format, size and value types inside the data rectangle.\n
+This is being shared so that you can understand the data format, size and value types inside the data rectangle.\n
 
-Data from cells can be referenced by Formulas, Python, Javascript or SQL code.
-In formula, cell reference are done using A1 notation directly, without quotes. Example: \`=SUM(A1:B2)\`. Always use sheet name in a1 notation to reference cells from different sheets. Sheet name is always enclosed in single quotes. Example: \`=SUM('Sheet 1'!A1:B2)\`.\n
-In Python and Javascript use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells. Always use sheet name in a1 notation to reference cells from different sheets. Sheet name is always enclosed in single quotes. In Python and Javascript, the complete a1 notation selection string is enclosed in double quotes. Example: \`q.cells("'Sheet 1'!A1:B2")\`.\n
-Sheet name is optional, if not provided, it is assumed to be the currently open sheet.\n
-Sheet name is case sensitive, and is required to be enclosed in single quotes.\n
-To reference data from different tabular data rectangles, use multiple \`q.cells\` functions.\n
+There are following visible data in the viewport:\n
+\`\`\`json
+${JSON.stringify(visibleContext[0].data_rects)}
+\`\`\`
+`
+    : ''
+}
+
+Note: All this data is only for your reference to data on the sheet. This data cannot be used directly in code, always reference data from the sheet. Use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells in code.
+- In formula, cell reference are done using A1 notation directly, without quotes. Example: \`=SUM(A1:B2)\`. Always use sheet name in a1 notation to reference cells from different sheets. Sheet name is always enclosed in single quotes. Example: \`=SUM('Sheet 1'!A1:B2)\`.\n
+- In Python and Javascript use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells. Always use sheet name in a1 notation to reference cells from different sheets. Sheet name is always enclosed in single quotes. In Python and Javascript, the complete a1 notation selection string is enclosed in double quotes. Example: \`q.cells("'Sheet 1'!A1:B2")\`.\n
+- Tables can be referenced using \`q.cells("Table_Name")\` to reference the entire table.\n
+- Use \`q.cells("Table_Name[#ALL]")\` to reference the entire table including the header.\n
+- Use \`q.cells("Table_Name[#HEADERS]")\` to reference the header of the table.\n
+- Use \`q.cells("Table_Name[#DATA]")\` to reference the data of the table.\n
+- Sheet name is optional, if not provided, it is assumed to be the currently open sheet.\n
+- Sheet name is case sensitive, and is required to be enclosed in single quotes.\n
+- To reference data from different tabular data rectangles, use multiple \`q.cells\` functions.\n
+
 Use this visible data in the context of following messages. Refer to cells if required in code.\n\n
 
-Current visible data is:\n
-\`\`\`json
-${JSON.stringify(visibleContext[0])}
-\`\`\`
-Note: All this data is only for your reference to data on the sheet. This data cannot be used directly in code. Use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells in code. Always use sheet name in a1 notation to reference cells. Sheet name is always enclosed in single quotes. In Python and Javascript, the complete a1 notation selection string is enclosed in double quotes. Example: \`q.cells("'Sheet 1'!A1:B2")\`. In formula, string quotes are not to be used. Example: \`=SUM('Sheet 1'!A1:B2)\`\n\n
-`
-    : `This visible part of the sheet has no data.\n`
-}\n
-
 ${
-  erroredCodeCells && erroredCodeCells.length === 1 && erroredCodeCells[0].length > 0
+  !!visibleContext[0].errored_code_cells && visibleContext[0].errored_code_cells.length > 0
     ? `
 Note: There are code cells in the visible part of the sheet that have errors. Use this to understand if the code cell has any errors and take action when prompted by user to specifically solve the error.\n\n
 
@@ -78,7 +127,7 @@ A code cell cannot display multiple charts at the same time.\n
 Do not use any markdown syntax besides triple backticks for code cell language code blocks.\n
 Do not reply code blocks in plain text, use markdown with triple backticks and language name code cell language.\n
 
-${erroredCodeCells[0].map(({ x, y, language, code_string, std_out, std_err }) => {
+${visibleContext[0].errored_code_cells.map(({ x, y, language, code_string, std_out, std_err }) => {
   const consoleOutput = {
     std_out: std_out ?? '',
     std_err: std_err ?? '',
@@ -94,8 +143,9 @@ Code was run recently and the console output is:\n
 `;
 })}`
     : ''
-}
-`,
+}`
+    : 'The visible part of the sheet is empty.'
+}`,
         contextType: 'visibleData',
       },
       {
