@@ -13,10 +13,10 @@ import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
   AIMessagePrompt,
   AIRequestHelperArgs,
+  AIUsage,
   BedrockModel,
   ParsedAIResponse,
 } from 'quadratic-shared/typesAndSchemasAI';
-import { calculateUsage } from './usage.helper';
 
 export function getBedrockApiArgs(args: AIRequestHelperArgs): {
   system: SystemContentBlock[] | undefined;
@@ -136,13 +136,17 @@ export async function parseBedrockStream(
     model,
   };
 
-  let input_tokens = 0;
-  let output_tokens = 0;
+  const usage: AIUsage = {
+    inputTokens: 0,
+    outputTokens: 0,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+  };
 
   for await (const chunk of chunks) {
     if (chunk.metadata) {
-      input_tokens = Math.max(input_tokens, chunk.metadata.usage?.inputTokens ?? 0);
-      output_tokens = Math.max(output_tokens, chunk.metadata.usage?.outputTokens ?? 0);
+      usage.inputTokens = Math.max(usage.inputTokens, chunk.metadata.usage?.inputTokens ?? 0);
+      usage.outputTokens = Math.max(usage.outputTokens, chunk.metadata.usage?.outputTokens ?? 0);
     }
 
     if (!response.writableEnded) {
@@ -209,8 +213,6 @@ export async function parseBedrockStream(
     response.end();
   }
 
-  const usage = calculateUsage({ model, input_tokens, output_tokens, cache_read_tokens: 0, cache_write_tokens: 0 });
-
   return { responseMessage, usage };
 }
 
@@ -256,9 +258,12 @@ export function parseBedrockResponse(
 
   response.json(responseMessage);
 
-  const input_tokens = result.usage?.inputTokens ?? 0;
-  const output_tokens = result.usage?.outputTokens ?? 0;
-  const usage = calculateUsage({ model, input_tokens, output_tokens, cache_read_tokens: 0, cache_write_tokens: 0 });
+  const usage: AIUsage = {
+    inputTokens: result.usage?.inputTokens ?? 0,
+    outputTokens: result.usage?.outputTokens ?? 0,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+  };
 
   return { responseMessage, usage };
 }

@@ -8,10 +8,10 @@ import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
   AIMessagePrompt,
   AIRequestHelperArgs,
+  AIUsage,
   OpenAIModel,
   ParsedAIResponse,
 } from 'quadratic-shared/typesAndSchemasAI';
-import { calculateUsage } from './usage.helper';
 
 export function getOpenAIApiArgs(args: AIRequestHelperArgs): {
   messages: ChatCompletionMessageParam[];
@@ -122,15 +122,19 @@ export async function parseOpenAIStream(
     model,
   };
 
-  let input_tokens = 0;
-  let output_tokens = 0;
-  let cache_read_tokens = 0;
+  const usage: AIUsage = {
+    inputTokens: 0,
+    outputTokens: 0,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+  };
 
   for await (const chunk of chunks) {
     if (chunk.usage) {
-      input_tokens = Math.max(input_tokens, chunk.usage.prompt_tokens);
-      output_tokens = Math.max(output_tokens, chunk.usage.completion_tokens);
-      cache_read_tokens = Math.max(cache_read_tokens, chunk.usage.prompt_tokens_details?.cached_tokens ?? 0);
+      usage.inputTokens = Math.max(usage.inputTokens, chunk.usage.prompt_tokens);
+      usage.outputTokens = Math.max(usage.outputTokens, chunk.usage.completion_tokens);
+      usage.cacheReadTokens = Math.max(usage.cacheReadTokens, chunk.usage.prompt_tokens_details?.cached_tokens ?? 0);
+      usage.inputTokens -= usage.cacheReadTokens;
     }
 
     if (!response.writableEnded) {
@@ -203,9 +207,6 @@ export async function parseOpenAIStream(
     response.end();
   }
 
-  input_tokens -= cache_read_tokens;
-  const usage = calculateUsage({ model, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens: 0 });
-
   return { responseMessage, usage };
 }
 
@@ -259,10 +260,13 @@ export function parseOpenAIResponse(
 
   response.json(responseMessage);
 
-  const cache_read_tokens = result.usage?.prompt_tokens_details?.cached_tokens ?? 0;
-  const input_tokens = (result.usage?.prompt_tokens ?? 0) - cache_read_tokens;
-  const output_tokens = result.usage?.completion_tokens ?? 0;
-  const usage = calculateUsage({ model, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens: 0 });
+  const cacheReadTokens = result.usage?.prompt_tokens_details?.cached_tokens ?? 0;
+  const usage: AIUsage = {
+    inputTokens: (result.usage?.prompt_tokens ?? 0) - cacheReadTokens,
+    outputTokens: result.usage?.completion_tokens ?? 0,
+    cacheReadTokens,
+    cacheWriteTokens: 0,
+  };
 
   return { responseMessage, usage };
 }

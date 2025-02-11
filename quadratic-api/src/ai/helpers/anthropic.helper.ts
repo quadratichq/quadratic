@@ -8,14 +8,14 @@ import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
   AIMessagePrompt,
   AIRequestBody,
+  AIUsage,
   AnthropicModel,
   BedrockAnthropicModel,
   ParsedAIResponse,
 } from 'quadratic-shared/typesAndSchemasAI';
-import { calculateUsage } from './usage.helper';
 
 export function getAnthropicApiArgs(args: Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'source' | 'model'>): {
-  system: string | TextBlockParam[] | undefined;
+  system: TextBlockParam[] | undefined;
   messages: MessageParam[];
   tools: Tool[] | undefined;
   tool_choice: ToolChoice | undefined;
@@ -25,7 +25,10 @@ export function getAnthropicApiArgs(args: Omit<AIRequestBody, 'chatId' | 'fileUu
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
 
   // without prompt caching of system messages
-  const system = systemMessages.join('\n\n');
+  const system: TextBlockParam[] = systemMessages.map((message) => ({
+    type: 'text' as const,
+    text: message,
+  }));
 
   // with prompt caching of system messages
   // const system: TextBlockParam[] = systemMessages.map((message, index) => ({
@@ -141,10 +144,12 @@ export async function parseAnthropicStream(
     model,
   };
 
-  let input_tokens = 0;
-  let output_tokens = 0;
-  let cache_read_tokens = 0;
-  let cache_write_tokens = 0;
+  const usage: AIUsage = {
+    inputTokens: 0,
+    outputTokens: 0,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+  };
 
   for await (const chunk of chunks) {
     if (!response.writableEnded) {
@@ -194,15 +199,18 @@ export async function parseAnthropicStream(
           break;
         case 'message_start':
           if (chunk.message.usage) {
-            input_tokens = Math.max(input_tokens, chunk.message.usage.input_tokens);
-            output_tokens = Math.max(output_tokens, chunk.message.usage.output_tokens);
-            cache_read_tokens = Math.max(cache_read_tokens, chunk.message.usage.cache_read_input_tokens ?? 0);
-            cache_write_tokens = Math.max(cache_write_tokens, chunk.message.usage.cache_creation_input_tokens ?? 0);
+            usage.inputTokens = Math.max(usage.inputTokens, chunk.message.usage.input_tokens);
+            usage.outputTokens = Math.max(usage.outputTokens, chunk.message.usage.output_tokens);
+            usage.cacheReadTokens = Math.max(usage.cacheReadTokens, chunk.message.usage.cache_read_input_tokens ?? 0);
+            usage.cacheWriteTokens = Math.max(
+              usage.cacheWriteTokens,
+              chunk.message.usage.cache_creation_input_tokens ?? 0
+            );
           }
           break;
         case 'message_delta':
           if (chunk.usage) {
-            output_tokens = Math.max(output_tokens, chunk.usage.output_tokens);
+            usage.outputTokens = Math.max(usage.outputTokens, chunk.usage.output_tokens);
           }
           break;
       }
@@ -222,8 +230,6 @@ export async function parseAnthropicStream(
   if (!response.writableEnded) {
     response.end();
   }
-
-  const usage = calculateUsage({ model, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens });
 
   return { responseMessage, usage };
 }
@@ -271,11 +277,12 @@ export function parseAnthropicResponse(
 
   response.json(responseMessage);
 
-  const input_tokens = result.usage.input_tokens;
-  const output_tokens = result.usage.output_tokens;
-  const cache_read_tokens = result.usage.cache_read_input_tokens ?? 0;
-  const cache_write_tokens = result.usage.cache_creation_input_tokens ?? 0;
-  const usage = calculateUsage({ model, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens });
+  const usage: AIUsage = {
+    inputTokens: result.usage.input_tokens,
+    outputTokens: result.usage.output_tokens,
+    cacheReadTokens: result.usage.cache_read_input_tokens ?? 0,
+    cacheWriteTokens: result.usage.cache_creation_input_tokens ?? 0,
+  };
 
   return { responseMessage, usage };
 }

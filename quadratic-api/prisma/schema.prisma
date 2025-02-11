@@ -285,19 +285,29 @@ enum AIChatSource {
     GetFileName  @map("get_file_name")
 }
 
+enum AIChatMessageType {
+    userPrompt @map("user_prompt")
+    toolResult @map("tool_result")
+}
+
 model AnalyticsAIChatMessage {
-    id            Int             @id @default(autoincrement())
-    chatId        Int             @map("chat_id")
-    chat          AnalyticsAIChat @relation(fields: [chatId], references: [id])
-    model         String
-    messageIndex  Int             @map("message_index")
-    s3Key         String?         @map("s3_key")
-    like          Boolean?
-    undo          Boolean?
-    codeRunError  String?         @map("code_run_error")
-    responseError String?         @map("response_error")
-    createdDate   DateTime        @default(now()) @map("created_date")
-    updatedDate   DateTime        @default(now()) @map("updated_date")
+    id               Int                @id @default(autoincrement())
+    chatId           Int                @map("chat_id")
+    chat             AnalyticsAIChat    @relation(fields: [chatId], references: [id])
+    model            String
+    messageIndex     Int                @map("message_index")
+    messageType      AIChatMessageType? @map("message_type")
+    s3Key            String?            @map("s3_key")
+    like             Boolean?
+    undo             Boolean?
+    codeRunError     String?            @map("code_run_error")
+    responseError    String?            @map("response_error")
+    inputTokens      Int?               @map("input_tokens")
+    outputTokens     Int?               @map("output_tokens")
+    cacheReadTokens  Int?               @map("cache_read_tokens")
+    cacheWriteTokens Int?               @map("cache_write_tokens")
+    createdDate      DateTime           @default(now()) @map("created_date")
+    updatedDate      DateTime           @default(now()) @map("updated_date")
 
     @@unique([chatId, messageIndex], name: "chatId_messageIndex")
     @@index([chatId, messageIndex])

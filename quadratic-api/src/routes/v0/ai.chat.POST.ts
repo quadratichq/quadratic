@@ -1,5 +1,5 @@
 import type { Response } from 'express';
-import { getLastUserPromptMessageIndex } from 'quadratic-shared/ai/helpers/message.helper';
+import { getLastPromptMessageType, getLastUserPromptMessageIndex } from 'quadratic-shared/ai/helpers/message.helper';
 import {
   isAnthropicModel,
   isBedrockAnthropicModel,
@@ -64,13 +64,11 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     args.messages.push(parsedResponse.responseMessage);
   }
 
-  // todo(ayush): save to db and remove log
-  console.log('Usage: ', parsedResponse?.usage);
-
   const {
     file: { id: fileId, ownerTeam },
   } = await getFile({ uuid: fileUuid, userId });
 
+  const messageType = getLastPromptMessageType(args.messages);
   const messageIndex = getLastUserPromptMessageIndex(args.messages);
 
   const chat = await dbClient.analyticsAIChat.upsert({
@@ -86,6 +84,11 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
         create: {
           model,
           messageIndex,
+          messageType,
+          inputTokens: parsedResponse?.usage?.inputTokens,
+          outputTokens: parsedResponse?.usage?.outputTokens,
+          cacheReadTokens: parsedResponse?.usage?.cacheReadTokens,
+          cacheWriteTokens: parsedResponse?.usage?.cacheWriteTokens,
         },
       },
     },
@@ -94,6 +97,11 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
         create: {
           model,
           messageIndex,
+          messageType,
+          inputTokens: parsedResponse?.usage?.inputTokens,
+          outputTokens: parsedResponse?.usage?.outputTokens,
+          cacheReadTokens: parsedResponse?.usage?.cacheReadTokens,
+          cacheWriteTokens: parsedResponse?.usage?.cacheWriteTokens,
         },
       },
       updatedDate: new Date(),

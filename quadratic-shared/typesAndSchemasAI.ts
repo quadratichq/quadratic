@@ -42,24 +42,15 @@ const AIModelSchema = z.union([
 ]);
 export type AIModel = z.infer<typeof AIModelSchema>;
 
-const AIRatesSchema = z.object({
-  rate_per_million_input_tokens: z.number(),
-  rate_per_million_output_tokens: z.number(),
-  rate_per_million_cache_read_tokens: z.number(),
-  rate_per_million_cache_write_tokens: z.number(),
+const AIModelOptionsSchema = z.object({
+  displayName: z.string(),
+  temperature: z.number(),
+  max_tokens: z.number(),
+  canStream: z.boolean(),
+  canStreamWithToolCalls: z.boolean(),
+  enabled: z.boolean(),
+  provider: AIProvidersSchema,
 });
-
-const AIModelOptionsSchema = z
-  .object({
-    displayName: z.string(),
-    temperature: z.number(),
-    max_tokens: z.number(),
-    canStream: z.boolean(),
-    canStreamWithToolCalls: z.boolean(),
-    enabled: z.boolean(),
-    provider: AIProvidersSchema,
-  })
-  .extend(AIRatesSchema.shape);
 export type AIModelOptions = z.infer<typeof AIModelOptionsSchema>;
 
 const InternalContextTypeSchema = z.enum([
@@ -75,7 +66,9 @@ const InternalContextTypeSchema = z.enum([
   'tables',
 ]);
 const ToolResultContextTypeSchema = z.literal('toolResult');
+export type ToolResultContextType = z.infer<typeof ToolResultContextTypeSchema>;
 const UserPromptContextTypeSchema = z.literal('userPrompt');
+export type UserPromptContextType = z.infer<typeof UserPromptContextTypeSchema>;
 const ContextTypeSchema = z.union([
   InternalContextTypeSchema,
   ToolResultContextTypeSchema,
@@ -204,16 +197,12 @@ export const AIRequestBodySchema = z.object({
 export type AIRequestBody = z.infer<typeof AIRequestBodySchema>;
 export type AIRequestHelperArgs = Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'source' | 'model'>;
 
-const AIUsageSchema = z
-  .object({
-    model: AIModelSchema,
-    input_tokens: z.number(),
-    output_tokens: z.number(),
-    cache_read_tokens: z.number(),
-    cache_write_tokens: z.number(),
-    net_cost: z.number(),
-  })
-  .extend(AIRatesSchema.shape);
+const AIUsageSchema = z.object({
+  inputTokens: z.number(),
+  outputTokens: z.number(),
+  cacheReadTokens: z.number(),
+  cacheWriteTokens: z.number(),
+});
 export type AIUsage = z.infer<typeof AIUsageSchema>;
 
 const parsedAIResponseSchema = z.object({
