@@ -7,6 +7,7 @@ import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
+import { updateCustomer } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
 
@@ -29,7 +30,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   } = req;
   const {
     userMakingRequest: { permissions },
-    team: { clientDataKv: existingClientDataKv },
+    team: { clientDataKv: existingClientDataKv, name: existingName, stripeCustomerId },
   } = await getTeam({ uuid, userId });
 
   // Can they make the edits they’re trying to make?
@@ -54,6 +55,13 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
       ...(settings ? { settingAnalyticsAi: settings.analyticsAi } : {}),
     },
   });
+
+  // Update Stripe Customer if the name has changed
+  if (name && name !== existingName) {
+    if (stripeCustomerId) {
+      await updateCustomer(stripeCustomerId, name);
+    }
+  }
 
   // Return the new data
   const newClientDataKv = validateClientDataKv(newTeam.clientDataKv);
