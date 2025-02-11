@@ -9,9 +9,11 @@ import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { DOCUMENTATION_ANALYTICS_AI } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/shadcn/ui/dialog';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
+import { InfoCircledIcon } from '@radix-ui/react-icons';
 import type { TeamSettings } from 'quadratic-shared/typesAndSchemas';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
@@ -81,6 +83,8 @@ export const Component = () => {
   if (!teamPermissions.includes('TEAM_EDIT')) {
     return <Navigate to={ROUTES.TEAM(team.uuid)} />;
   }
+
+  const latestUsage = billing.usage[billing.usage.length - 1] || { ai_messages: 0 };
 
   return (
     <>
@@ -176,9 +180,29 @@ export const Component = () => {
                   <h3 className="mb-3 text-lg font-semibold">Current Usage</h3>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">AI Messages / User / Month</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">AI Messages / User / Month</span>
+                        <Dialog>
+                          <DialogTrigger>
+                            <InfoCircledIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Usage History</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-3">
+                              {billing.usage.map((usage) => (
+                                <div key={usage.month} className="flex justify-between">
+                                  <span>{usage.month}</span>
+                                  <span>{usage.ai_messages}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
                       <div className="flex items-start gap-2">
-                        <span className="w-4 text-right font-medium">0</span>
+                        <span className="w-4 text-right font-medium">{latestUsage.ai_messages}</span>
                         <span className="w-8 translate-y-[5px] text-xs text-muted-foreground">
                           / {billing.status === undefined ? '50' : '∞'}
                         </span>

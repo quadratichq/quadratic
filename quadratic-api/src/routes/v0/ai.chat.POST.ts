@@ -68,57 +68,62 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     file: { id: fileId, ownerTeam },
   } = await getFile({ uuid: fileUuid, userId });
 
-  // If we aren't using s3 or the analytics bucket name is not set, don't save the data
-  // This path is also used for self-hosted users, so we don't want to save the data in that case
-  if (STORAGE_TYPE !== 's3' || !getBucketName(S3Bucket.ANALYTICS)) {
-    return;
-  }
+  const messageIndex = getLastUserPromptMessageIndex(args.messages);
 
-  const jwt = req.header('Authorization');
-  if (!jwt) {
-    return;
-  }
+  const chat = await dbClient.analyticsAIChat.upsert({
+    where: {
+      chatId,
+    },
+    create: {
+      userId,
+      fileId,
+      chatId,
+      source,
+      messages: {
+        create: {
+          model,
+          messageIndex,
+        },
+      },
+    },
+    update: {
+      messages: {
+        create: {
+          model,
+          messageIndex,
+        },
+      },
+      updatedDate: new Date(),
+    },
+  });
 
+  // Save the data to s3
   try {
-    // key: <fileUuid>-<source>_<chatUuid>_<messageIndex>.json
-    const messageIndex = getLastUserPromptMessageIndex(args.messages);
-    const key = `${fileUuid}-${source}_${chatId.replace(/-/g, '_')}_${messageIndex}.json`;
-
-    let s3Key;
     if (ownerTeam.settingAnalyticsAi) {
+      const key = `${fileUuid}-${source}_${chatId.replace(/-/g, '_')}_${messageIndex}.json`;
+
+      // If we aren't using s3 or the analytics bucket name is not set, don't save the data
+      // This path is also used for self-hosted users, so we don't want to save the data in that case
+      if (STORAGE_TYPE !== 's3' || !getBucketName(S3Bucket.ANALYTICS)) {
+        return;
+      }
+
+      const jwt = req.header('Authorization');
+      if (!jwt) {
+        return;
+      }
+
       const contents = Buffer.from(JSON.stringify(args)).toString('base64');
       const response = await uploadFile(key, contents, jwt, S3Bucket.ANALYTICS);
-      s3Key = response.key;
-    }
+      const s3Key = response.key;
 
-    await dbClient.analyticsAIChat.upsert({
-      where: {
-        chatId,
-      },
-      create: {
-        userId,
-        fileId,
-        chatId,
-        source,
-        messages: {
-          create: {
-            model,
-            messageIndex,
-            s3Key,
-          },
+      await dbClient.analyticsAIChatMessage.update({
+        where: {
+          chatId_messageIndex: { chatId: chat.id, messageIndex },
         },
-      },
-      update: {
-        messages: {
-          create: {
-            model,
-            messageIndex,
-            s3Key,
-          },
-        },
-        updatedDate: new Date(),
-      },
-    });
+        data: { s3Key },
+      });
+    }
   } catch (e) {
     console.error(e);
   }

@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
+import { getAIMessageUsageForUser } from '../../ai/usage';
 import { getUsers } from '../../auth/auth';
 import dbClient from '../../dbClient';
 import { licenseClient } from '../../licenseClient';
@@ -13,7 +14,6 @@ import type { RequestWithUser } from '../../types/Request';
 import type { ResponseError } from '../../types/Response';
 import { ApiError } from '../../utils/ApiError';
 import { getFilePermissions } from '../../utils/permissions';
-
 export default [validateAccessToken, userMiddleware, handler];
 
 const schema = z.object({
@@ -124,6 +124,8 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
     })
   );
 
+  const usage = await getAIMessageUsageForUser(userMakingRequestId);
+
   const response = {
     team: {
       id: team.id,
@@ -136,6 +138,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
     billing: {
       status: dbTeam.stripeSubscriptionStatus || undefined,
       currentPeriodEnd: dbTeam.stripeCurrentPeriodEnd?.toISOString(),
+      usage,
     },
     userMakingRequest: {
       id: userMakingRequestId,
