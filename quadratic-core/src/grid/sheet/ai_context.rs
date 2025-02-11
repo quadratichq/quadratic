@@ -174,21 +174,25 @@ impl Sheet {
         };
 
         for (pos, table) in self.data_tables.iter() {
-            let Some(cell_value) = self.cell_value_ref(pos.to_owned()) else {
-                continue;
-            };
-
             if table.is_single_value() {
                 continue;
             }
 
+            let Some(cell_value) = self.cell_value_ref(pos.to_owned()) else {
+                continue;
+            };
+
             if table.is_html_or_image() {
-                tables_context.charts.push(JsChartContext {
-                    sheet_name: self.name.clone(),
-                    chart_name: table.name.to_string(),
-                    bounds: table.output_rect(pos.to_owned(), false).a1_string(),
-                    spill: table.spill_error,
-                });
+                if let CellValue::Code(code_cell_value) = cell_value {
+                    tables_context.charts.push(JsChartContext {
+                        sheet_name: self.name.clone(),
+                        chart_name: table.name.to_string(),
+                        bounds: table.output_rect(pos.to_owned(), false).a1_string(),
+                        language: code_cell_value.language.to_owned(),
+                        code_string: code_cell_value.code.to_owned(),
+                        spill: table.spill_error,
+                    });
+                }
                 continue;
             }
 

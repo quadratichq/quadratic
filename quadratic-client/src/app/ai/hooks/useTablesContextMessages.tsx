@@ -47,98 +47,100 @@ If there is any data present in the sheet where the table or chart is suppose to
 ${
   dataTables.length > 0
     ? `
-  I am sharing data tables in the currently open file for reference as an array of objects described below:\n
-  Each data table has following properties:\n
-  - sheet_name: This is the name of the sheet.\n
-  - data_table_name: This is the name of the data table.\n
-  - all_columns: This is an array of all columns in the data table.\n
-  - visible_columns: This is an array of visible columns in the data table.\n
-  - first_row_visible_values: This is an array of visible values in the first row of the data table.\n
-  - last_row_visible_values: This is an array of visible values in the last row of the data table.\n
-  - bounds: This is the bounds (top left cell and bottom right cell, both inclusive) of the data table in A1 notation, this includes the table name and column headers if they are visible.\n
-  - show_name: This is a boolean value representing if the table name is visible.\n
-  - show_columns: This is a boolean value representing if the column headers are visible.\n\n
+I am sharing data tables in the currently open file for reference as an array of objects described below:\n
+Each data table has following properties:\n
+- sheet_name: This is the name of the sheet.\n
+- data_table_name: This is the name of the data table.\n
+- all_columns: This is an array of all columns in the data table.\n
+- visible_columns: This is an array of visible columns in the data table.\n
+- first_row_visible_values: This is an array of visible values in the first row of the data table.\n
+- last_row_visible_values: This is an array of visible values in the last row of the data table.\n
+- bounds: This is the bounds (top left cell and bottom right cell, both inclusive) of the data table in A1 notation, this includes the table name and column headers if they are visible.\n
+- show_name: This is a boolean value representing if the table name is visible.\n
+- show_columns: This is a boolean value representing if the column headers are visible.\n\n
 
-  first_row_visible_values is an array of objects with following properties:\n
-  - value: This is the value of the cell.\n
-  - kind: This is the kind of the value.\n
-  - pos: This is the position of the cell in A1 notation.\n
+first_row_visible_values is an array of objects with following properties:\n
+- value: This is the value of the cell.\n
+- kind: This is the kind of the value.\n
+- pos: This is the position of the cell in A1 notation.\n
 
-  There are following data tables in the currently open file:\n
+There are following data tables in the currently open file:\n
 
-  \`\`\`json
-  ${JSON.stringify(dataTables)}
-  \`\`\`
+\`\`\`json
+${JSON.stringify(dataTables)}
+\`\`\`
 
-  Always avoid table bounds when adding values, code or charts to the sheet. Reference table values where ever required.\n
+Always avoid table bounds when adding values, code or charts to the sheet. Reference table values where ever required.\n
 
-  Data tables are editable and can values can be modified by using set_cell_values tool.\n
-  - Add values directly at the cells where values will be displayed on the sheet, within the bounds of the table to add or modify values in table.\n
-  - Adding values in the row just below the table bounds will add a row with the new values to the table.\n
-  - Adding values in the column just right of the table bounds will add a column with the new values to the table. If there is value in the column header row, adjacent to the table, this is added as new column header.\n
-  \n\n
-  `
+Data tables are editable and can values can be modified by using set_cell_values tool.\n
+- Add values directly at the cells where values will be displayed on the sheet, within the bounds of the table to add or modify values in table.\n
+- Adding values in the row just below the table bounds will add a row with the new values to the table.\n
+- Adding values in the column just right of the table bounds will add a column with the new values to the table. If there is value in the column header row, adjacent to the table, this is added as new column header.\n
+\n\n
+`
     : 'There are no data tables in the currently open file.\n\n'
 }
 
 ${
   codeTables.length > 0
     ? `
-  I am sharing code tables in the currently open file for reference as an array of objects described below:\n
-  Each code table has following properties:\n
-  - sheet_name: This is the name of the sheet.\n
-  - code_table_name: This is the name of the code table.\n
-  - all_columns: This is an array of all columns in the code table.\n
-  - visible_columns: This is an array of visible columns in the code table.\n
-  - first_row_visible_values: This is an array of visible values in the first row of the data table.\n
-  - last_row_visible_values: This is an array of visible values in the last row of the data table.\n
-  - bounds: This is the bounds (top left cell and bottom right cell, both inclusive) of the data table in A1 notation, this includes the table name and column headers if they are visible.\n
-  - show_name: This is a boolean value representing if the table name is visible.\n
-  - show_columns: This is a boolean value representing if the column headers are visible.\n
-  - language: This is the language of the code code which outputs the table.\n
-  - code_string: This is the code in the code cell which outputs the table.\n
-  - std_err: This is the standard error of the after running the code, this is an optional property only if the code has an error.\n
-  - error: This is a boolean value representing if the code table has an error.\n
-  - spill: This is a boolean value representing if the code table has a spill.\n\n
+I am sharing code tables in the currently open file for reference as an array of objects described below:\n
+Each code table has following properties:\n
+- sheet_name: This is the name of the sheet.\n
+- code_table_name: This is the name of the code table.\n
+- all_columns: This is an array of all columns in the code table.\n
+- visible_columns: This is an array of visible columns in the code table.\n
+- first_row_visible_values: This is an array of visible values in the first row of the data table.\n
+- last_row_visible_values: This is an array of visible values in the last row of the data table.\n
+- bounds: This is the bounds (top left cell and bottom right cell, both inclusive) of the data table in A1 notation, this includes the table name and column headers if they are visible.\n
+- show_name: This is a boolean value representing if the table name is visible.\n
+- show_columns: This is a boolean value representing if the column headers are visible.\n
+- language: This is the language of the code code which outputs the table.\n
+- code_string: This is the code in the code cell which outputs the table.\n
+- std_err: This is the standard error of the after running the code, this is an optional property only if the code has an error.\n
+- error: This is a boolean value representing if the code table has an error.\n
+- spill: This is a boolean value representing if the code table has a spill.\n\n
 
-  first_row_visible_values is an array of objects with following properties:\n
-  - value: This is the value of the cell.\n
-  - kind: This is the kind of the value.\n
-  - pos: This is the position of the cell in A1 notation.\n\n
+first_row_visible_values is an array of objects with following properties:\n
+- value: This is the value of the cell.\n
+- kind: This is the kind of the value.\n
+- pos: This is the position of the cell in A1 notation.\n\n
 
-  There are following code tables in the currently open file:\n
+There are following code tables in the currently open file:\n
 
-  \`\`\`json
-  ${JSON.stringify(codeTables)}
-  \`\`\`
+\`\`\`json
+${JSON.stringify(codeTables)}
+\`\`\`
 
-  Always avoid table bounds when adding values, code or charts to the sheet. Reference table values where ever required.\n
-  \n\n
-  `
+Always avoid table bounds when adding values, code or charts to the sheet. Reference table values where ever required.\n
+\n\n
+`
     : 'There are no code tables in the currently open file.\n\n'
 }
 
 ${
   charts.length > 0
     ? `
-  I am sharing charts in the currently open file for reference as an array of objects described below:\n
-  Each chart has following properties:\n
-  - sheet_name: This is the name of the sheet.\n
-  - chart_name: This is the name of the chart.\n
-  - bounds: This is the bounds (top left cell and bottom right cell, both inclusive) of the chart in A1 notation. This includes the first row of the chart which is the chart name and always visible.\n
-  - spill: This is a boolean value representing if the chart has a spill.\n\n
+I am sharing charts in the currently open file for reference as an array of objects described below:\n
+Each chart has following properties:\n
+- sheet_name: This is the name of the sheet.\n
+- chart_name: This is the name of the chart.\n
+- bounds: This is the bounds (top left cell and bottom right cell, both inclusive) of the chart in A1 notation. This includes the first row of the chart which is the chart name and always visible.\n
+- language: This is the language of the code cell which outputs the chart.\n
+- code_string: This is the code in the code cell which outputs the chart.\n
+- spill: This is a boolean value representing if the chart has a spill.\n\n
 
-  There are following charts in the currently open file:\n
-  \`\`\`json
-  ${JSON.stringify(charts)}
-  \`\`\`
+There are following charts in the currently open file:\n
+\`\`\`json
+${JSON.stringify(charts)}
+\`\`\`
 
-  Always avoid chart bounds when adding values, code or charts to the sheet. Reference chart values where ever required.
+Always avoid chart bounds when adding values, code or charts to the sheet. Reference chart values where ever required.
 
-  Charts take up space on the sheet grid and spill if there is any data present in the sheet where the chart is suppose to take place.\n
-  Default size of a new chart is ${DEFAULT_HTML_CELL_WIDTH}x${DEFAULT_HTML_CELL_HEIGHT} cells.\n
-  \n\n
-    `
+Charts take up space on the sheet grid and spill if there is any data present in the sheet where the chart is suppose to take place.\n
+Default size of a new chart is ${DEFAULT_HTML_CELL_WIDTH}x${DEFAULT_HTML_CELL_HEIGHT} cells.\n
+\n\n
+`
     : 'There are no charts in the currently open file.\n\n'
 }
 

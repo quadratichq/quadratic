@@ -150,6 +150,8 @@ pub struct JsChartContext {
     pub sheet_name: String,
     pub chart_name: String,
     pub bounds: String,
+    pub language: CodeCellLanguage,
+    pub code_string: String,
     pub spill: bool,
 }
 
