@@ -368,7 +368,7 @@ impl GridController {
     pub(super) fn js_code_result_to_code_cell_value(
         &mut self,
         transaction: &mut PendingTransaction,
-        mut js_code_result: JsCodeResult,
+        js_code_result: JsCodeResult,
         start: SheetPos,
         language: CodeCellLanguage,
     ) -> DataTable {
@@ -409,20 +409,7 @@ impl GridController {
         };
 
         let value = if js_code_result.success {
-            if let Some(mut array_output) = js_code_result.output_array {
-                // if the output is a dataframe of headers only, we want to convert it to a list
-                let is_headers_only = js_code_result.has_headers && array_output.len() == 1;
-                if is_headers_only && js_code_result.output_display_type == Some("DataFrame".into())
-                {
-                    js_code_result.has_headers = false;
-                    js_code_result.output_display_type = Some("list".into());
-                    array_output = array_output[0]
-                        .clone()
-                        .into_iter()
-                        .map(|row| vec![row])
-                        .collect();
-                }
-
+            if let Some(array_output) = js_code_result.output_array {
                 let (array, ops) = Array::from_string_list(start.into(), sheet, array_output);
                 transaction.reverse_operations.extend(ops);
                 if let Some(array) = array {
@@ -488,11 +475,7 @@ impl GridController {
         );
 
         transaction.cells_accessed.clear();
-
-        data_table.show_columns = match language {
-            CodeCellLanguage::Javascript => data_table.width() > 1,
-            _ => js_code_result.has_headers,
-        };
+        data_table.show_columns = js_code_result.has_headers;
 
         // If no headers were returned, we want column headers: [0, 2, 3, ...etc]
         if !js_code_result.has_headers {
