@@ -86,7 +86,7 @@ pub fn parse_formula_results(
     let parse_result = super::find_cell_references(formula_string, &ctx, code_cell_pos);
     let spans = parse_result
         .iter()
-        .map(|spanned| spanned.span.clone())
+        .map(|spanned| spanned.span)
         .collect();
     let cells_accessed = parse_result
         .into_iter()
