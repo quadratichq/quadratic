@@ -141,7 +141,7 @@ impl SyntaxRule for TableReference {
                                             _ => col_range = Some(ColRange::ColToEnd(start_col)),
                                         }
                                     } else {
-                                        col_range = Some(ColRange::Col(start_col))
+                                        col_range = Some(ColRange::Col(start_col));
                                     }
                                 }
                                 TableRefToken::Special(s) => special_segments.push(s),
