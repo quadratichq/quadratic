@@ -57,7 +57,7 @@ export class UICellImages extends Container {
     }
   }
 
-  drawResizing(): boolean {
+  private drawResizing(): boolean {
     if (this.dirtyResizing) {
       this.dirtyResizing = false;
       this.resizing.clear();

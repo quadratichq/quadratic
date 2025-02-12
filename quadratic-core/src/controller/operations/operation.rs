@@ -57,16 +57,10 @@ pub enum Operation {
     DeleteDataTable {
         sheet_pos: SheetPos,
     },
-    // **Deprecated** Feb 12 in favor of SetChartDimensions
     SetChartSize {
         sheet_pos: SheetPos,
         pixel_width: f32,
         pixel_height: f32,
-    },
-    SetChartDimensions {
-        sheet_pos: SheetPos,
-        w: u32,
-        h: u32,
     },
     SetDataTableAt {
         sheet_pos: SheetPos,
@@ -626,11 +620,6 @@ impl fmt::Display for Operation {
                     "InsertRow {{ sheet_id: {sheet_id}, row: {row}, copy_formats: {copy_formats:?} }}"
                 )
             }
-            Operation::SetChartDimensions { sheet_pos, w, h } => write!(
-                fmt,
-                "SetChartDimensions {{ sheet_pos: {}, w: {}, h: {} }}",
-                sheet_pos, w, h
-            ),
             Operation::SetChartSize {
                 sheet_pos,
                 pixel_width,

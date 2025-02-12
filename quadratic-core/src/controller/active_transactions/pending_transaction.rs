@@ -337,12 +337,10 @@ impl PendingTransaction {
 
         if is_html {
             self.add_html_cell(sheet_id, pos);
-            dbgjs!("adding html cell");
         }
 
         if is_image {
             self.add_image_cell(sheet_id, pos);
-            dbgjs!("adding image cell");
         }
     }
 

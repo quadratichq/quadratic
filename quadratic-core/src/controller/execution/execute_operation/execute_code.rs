@@ -84,17 +84,22 @@ impl GridController {
         }
     }
 
-    pub(super) fn execute_set_chart_dimensions(
+    pub(super) fn execute_set_chart_size(
         &mut self,
         transaction: &mut PendingTransaction,
         op: Operation,
     ) -> Result<()> {
-        if let Operation::SetChartDimensions { sheet_pos, w, h } = op {
+        if let Operation::SetChartSize {
+            sheet_pos,
+            pixel_width,
+            pixel_height,
+        } = op
+        {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
-            data_table.chart_output = Some((w, h));
+            data_table.chart_pixel_output = Some((pixel_width, pixel_height));
             let new_data_table = data_table.clone();
 
             self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None);

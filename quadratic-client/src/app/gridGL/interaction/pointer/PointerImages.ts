@@ -76,7 +76,7 @@ export class PointerImages {
         image.column,
         image.row,
         end.column - image.column + 1,
-        end.row - image.row
+        end.row - image.row + 1
       );
       this.resizing.image.temporaryResize(screenRectangle.width, screenRectangle.height);
       this.resizing.table.resize(screenRectangle.width, screenRectangle.height);
@@ -136,13 +136,13 @@ export class PointerImages {
   pointerUp(): boolean {
     if (this.resizing) {
       const tableBounds = this.resizing.table.tableBounds;
-      const end = sheets.sheet.getColumnRowFromScreen(tableBounds.right, tableBounds.bottom);
+      const top = sheets.sheet.offsets.getRowHeight(this.resizing.image.row);
       quadraticCore.setCellRenderResize(
         this.resizing.image.sheetId,
         this.resizing.image.column,
         this.resizing.image.row,
-        end.column - this.resizing.image.column,
-        end.row - this.resizing.image.row - 1 // -1 to account for the chart name
+        tableBounds.right - tableBounds.left - 1,
+        tableBounds.bottom - tableBounds.top - top - 1
       );
       this.resizing = undefined;
       return true;
@@ -152,9 +152,14 @@ export class PointerImages {
 
   handleEscape(): boolean {
     if (this.resizing) {
-      this.resizing.image.width = this.resizing.originalWidth;
-      this.resizing.image.height = this.resizing.originalHeight;
-      pixiApp.cellImages.drawResizing();
+      const originalWidth = this.resizing.originalWidth;
+      const originalHeight = this.resizing.originalHeight;
+      this.resizing.table.resize(originalWidth, originalHeight);
+      this.resizing.image.temporaryResize(originalWidth, originalHeight);
+      pixiApp.cellImages.setDirty();
+      pixiApp
+        .cellsSheet()
+        .tables.resizeTable(this.resizing.image.column, this.resizing.image.row, originalWidth, originalHeight);
       this.resizing = undefined;
       return true;
     }

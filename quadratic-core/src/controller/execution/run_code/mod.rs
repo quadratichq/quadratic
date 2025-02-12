@@ -26,7 +26,6 @@ impl GridController {
         mut new_data_table: Option<DataTable>,
         index: Option<usize>,
     ) {
-        dbgjs!("in finalize_transaction");
         let sheet_id = sheet_pos.sheet_id;
 
         // enforce unique data table names

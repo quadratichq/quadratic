@@ -221,7 +221,7 @@ pub mod test {
             ..Default::default()
         })
         .unwrap();
-        gc.set_chart_dimensions(sheet_pos, 100.0, 100.0, None);
+        gc.set_chart_size(sheet_pos, 100.0, 100.0, None);
 
         let sheet = gc.sheet(sheet_id);
 
