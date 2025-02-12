@@ -81,6 +81,18 @@ export function initMixpanelAnalytics(user: User) {
     return;
   }
 
+  // Read UTM cookie if it exists
+  let utmData = {};
+  try {
+    const utmCookie = document.cookie.split('; ').find((row) => row.startsWith('quadratic_utm='));
+
+    if (utmCookie) {
+      utmData = JSON.parse(decodeURIComponent(utmCookie.split('=')[1]));
+    }
+  } catch (e) {
+    console.error('Failed to parse UTM cookie:', e);
+  }
+
   mixpanel.init(import.meta.env.VITE_MIXPANEL_ANALYTICS_KEY, {
     api_host: 'https://mixpanel-proxy.quadratichq.com',
     cross_subdomain_cookie: true,
@@ -90,6 +102,7 @@ export function initMixpanelAnalytics(user: User) {
   mixpanel.register({
     email: user?.email,
     distinct_id: user?.sub,
+    ...utmData, // Add UTM data to all future events
   });
 
   mixpanel.identify(user?.sub);
@@ -99,6 +112,7 @@ export function initMixpanelAnalytics(user: User) {
     $email: user?.email,
     $name: user?.name,
     $avatar: user?.picture,
+    ...utmData, // Add UTM data to user profile
   });
 
   console.log('[Analytics] Mixpanel activated');

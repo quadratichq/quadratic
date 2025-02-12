@@ -934,9 +934,11 @@ export interface CoreClientImage {
   sheetId: string;
   x: number;
   y: number;
+  w: number;
+  h: number;
   image?: string;
-  w?: string;
-  h?: string;
+  pixel_width?: number;
+  pixel_height?: number;
 }
 
 export interface ClientCoreGetValidations {

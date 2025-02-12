@@ -197,8 +197,8 @@ impl GridController {
                     .filter(|html_output| {
                         sheet_rect.contains(SheetPos {
                             sheet_id: sheet_rect.sheet_id,
-                            x: html_output.x,
-                            y: html_output.y,
+                            x: html_output.x as i64,
+                            y: html_output.y as i64,
                         })
                     })
                     .for_each(|html_output| {
@@ -458,9 +458,11 @@ mod test {
                 sheet_id: sheet_id.to_string(),
                 x: 0,
                 y: 0,
+                w: 8,
+                h: 24,
                 html: Some("<html></html>".to_string()),
-                w: None,
-                h: None,
+                pixel_width: None,
+                pixel_height: None,
                 show_name: true,
                 name: "Python1".to_string(),
             })
@@ -490,6 +492,8 @@ mod test {
         })
         .unwrap();
 
+        clear_js_calls();
+
         gc.set_chart_size(
             SheetPos {
                 x: 1,
@@ -507,9 +511,11 @@ mod test {
                 sheet_id: sheet_id.to_string(),
                 x: 1,
                 y: 1,
+                w: 1,
+                h: 2,
                 html: Some("<html></html>".to_string()),
-                w: Some(1.0),
-                h: Some(2.0),
+                pixel_width: Some(1.0),
+                pixel_height: Some(2.0),
                 show_name: true,
                 name: "Python1".to_string(),
             })

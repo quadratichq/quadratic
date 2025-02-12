@@ -5,7 +5,7 @@ import type { HtmlCell } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCell';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { DOUBLE_CLICK_TIME } from '@/app/gridGL/interaction/pointer/pointerUtils.js';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { InteractionEvent } from 'pixi.js';
+import type { InteractionEvent, Point } from 'pixi.js';
 
 export class PointerHtmlCells {
   private resizing: HtmlCell | undefined; // cell that is being resized
@@ -16,11 +16,11 @@ export class PointerHtmlCells {
 
   cursor: string | undefined;
 
-  pointerMove(e: InteractionEvent): boolean {
+  pointerMove(e: InteractionEvent, world: Point): boolean {
     if (!hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions)) return false;
 
     if (this.resizing) {
-      this.resizing.pointerMove(e);
+      this.resizing.pointerMove(world);
       return true;
     }
 

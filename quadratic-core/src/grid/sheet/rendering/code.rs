@@ -19,11 +19,16 @@ impl Sheet {
 
         Some(JsHtmlOutput {
             sheet_id: self.id.to_string(),
-            x: pos.x,
-            y: pos.y,
+            x: pos.x as i32,
+            y: pos.y as i32,
+            w: dt.chart_output.map(|(w, _)| w as i32).unwrap_or_default(),
+            h: dt
+                .chart_output
+                .map(|(_, h)| h as i32 + 1)
+                .unwrap_or_default(),
             html: Some(output.to_display()),
-            w: size.map(|(w, _)| w),
-            h: size.map(|(_, h)| h),
+            pixel_width: size.map(|(w, _)| w),
+            pixel_height: size.map(|(_, h)| h),
             name: dt.name.to_display(),
             show_name: dt.show_name,
         })
@@ -40,11 +45,16 @@ impl Sheet {
                 let size = dt.chart_pixel_output;
                 Some(JsHtmlOutput {
                     sheet_id: self.id.to_string(),
-                    x: pos.x,
-                    y: pos.y,
+                    x: pos.x as i32,
+                    y: pos.y as i32,
+                    w: dt.chart_output.map(|(w, _)| w as i32).unwrap_or_default(),
+                    h: dt
+                        .chart_output
+                        .map(|(_, h)| h as i32 + 1)
+                        .unwrap_or_default(),
                     html: Some(output.to_display()),
-                    w: size.map(|(w, _)| w),
-                    h: size.map(|(_, h)| h),
+                    pixel_width: size.map(|(w, _)| w),
+                    pixel_height: size.map(|(_, h)| h),
                     name: dt.name.to_display(),
                     show_name: dt.show_name,
                 })
@@ -146,15 +156,17 @@ impl Sheet {
 
         self.data_tables.iter().for_each(|(pos, data_table)| {
             if let Some(CellValue::Image(image)) = data_table.cell_value_at(0, 0) {
-                let size = data_table.chart_pixel_output;
-
+                let cell_size = data_table.chart_output;
+                let pixel_size = data_table.chart_pixel_output;
                 crate::wasm_bindings::js::jsSendImage(
                     self.id.to_string(),
                     pos.x as i32,
                     pos.y as i32,
+                    cell_size.map(|(w, _)| w as i32).unwrap_or(0),
+                    cell_size.map(|(_, h)| h as i32 + 1).unwrap_or(0),
                     Some(image),
-                    size.map(|(w, _)| w),
-                    size.map(|(_, h)| h),
+                    pixel_size.map(|(w, _)| w as i32),
+                    pixel_size.map(|(_, h)| h as i32),
                 );
             }
         });
@@ -202,14 +214,17 @@ impl Sheet {
         let mut sent = false;
         if let Some(table) = self.data_table(pos) {
             if let Some(CellValue::Image(image)) = table.cell_value_at(0, 0) {
-                let chart_size = table.chart_pixel_output;
+                let output_size = table.chart_output;
+                let pixel_size = table.chart_pixel_output;
                 crate::wasm_bindings::js::jsSendImage(
                     self.id.to_string(),
                     pos.x as i32,
                     pos.y as i32,
+                    output_size.map(|(w, _)| w as i32).unwrap_or(0),
+                    output_size.map(|(_, h)| h as i32 + 1).unwrap_or(0),
                     Some(image),
-                    chart_size.map(|(w, _)| w),
-                    chart_size.map(|(_, h)| h),
+                    pixel_size.map(|(w, _)| w as i32),
+                    pixel_size.map(|(_, h)| h as i32),
                 );
                 sent = true;
             }
@@ -219,6 +234,8 @@ impl Sheet {
                 self.id.to_string(),
                 pos.x as i32,
                 pos.y as i32,
+                0,
+                0,
                 None,
                 None,
                 None,
@@ -272,9 +289,11 @@ mod tests {
                 sheet_id: sheet.id.to_string(),
                 x: 1,
                 y: 2,
+                w: 7,
+                h: 23,
                 html: Some("<html></html>".to_string()),
-                w: None,
-                h: None,
+                pixel_width: None,
+                pixel_height: None,
                 show_name: true,
                 name: "Python1".to_string(),
             }
@@ -298,9 +317,11 @@ mod tests {
                 sheet_id: sheet.id.to_string(),
                 x: 1,
                 y: 2,
+                w: 1,
+                h: 2,
                 html: Some("<html></html>".to_string()),
-                w: Some(1.0),
-                h: Some(2.0),
+                pixel_width: Some(1.0),
+                pixel_height: Some(2.0),
                 show_name: true,
                 name: "Python1".to_string(),
             }
@@ -509,8 +530,8 @@ mod tests {
         expect_js_call(
             "jsSendImage",
             format!(
-                "{},{},{},{:?},{:?},{:?}",
-                sheet_id, pos.x as u32, pos.y as u32, true, None::<String>, None::<String>
+                "{},{},{},{:?},{},{},{:?},{:?}",
+                sheet_id, pos.x as u32, pos.y as u32, true, 0, 0, None::<f32>, None::<f32>
             ),
             true,
         );
@@ -547,8 +568,8 @@ mod tests {
         expect_js_call(
             "jsSendImage",
             format!(
-                "{},{},{},{:?},{:?},{:?}",
-                sheet_id, pos.x as u32, pos.y as u32, true, None::<f32>, None::<f32>
+                "{},{},{},{},{},{:?},{:?},{:?}",
+                sheet_id, pos.x as u32, pos.y as u32, true, 0, 0, None::<f32>, None::<f32>
             ),
             true,
         );

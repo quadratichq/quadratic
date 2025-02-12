@@ -149,13 +149,13 @@ impl GridController {
     pub fn set_chart_size_operations(
         &self,
         sheet_pos: SheetPos,
-        width: f32,
-        height: f32,
+        pixel_width: f32,
+        pixel_height: f32,
     ) -> Vec<Operation> {
         vec![Operation::SetChartSize {
             sheet_pos,
-            pixel_width: width,
-            pixel_height: height,
+            pixel_width,
+            pixel_height,
         }]
     }
 
@@ -293,7 +293,7 @@ mod test {
                     sheet_id: sheet_id_2,
                 },
                 CodeCellLanguage::Formula,
-                "'Sheet1'!A1".to_string(),
+                "Sheet1!A1".to_string(),
                 None,
             );
         };
