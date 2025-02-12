@@ -190,7 +190,7 @@ mod tests {
     #[parallel]
     fn test_parse_formula_output() {
         let g = Grid::new();
-        let result = parse(&g, "'Sheet2'!A0");
+        let result = parse(&g, "'Sheet2'!A1");
         assert_eq!(result.parse_error_msg, None);
         assert_eq!(result.parse_error_span, None);
         assert_eq!(result.cell_refs.len(), 1);
@@ -222,7 +222,7 @@ mod tests {
                         CellRefCoord::new_rel(1),
                         CellRefCoord::new_rel(1),
                         CellRefCoord::new_rel(1),
-                        CellRefCoord::new_abs(UNBOUNDED),
+                        CellRefCoord::new_rel(UNBOUNDED),
                     ),
                 },
             }]

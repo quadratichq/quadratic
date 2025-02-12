@@ -11,7 +11,7 @@ use crate::{
         js_types::JsSnackbarSeverity,
         DataTable, DataTableKind, SheetId,
     },
-    Array, ArraySize, CellValue, Pos, Rect, SheetRect,
+    Array, ArraySize, CellValue, Pos, Rect, SheetPos, SheetRect,
 };
 
 use anyhow::{bail, Result};
@@ -207,7 +207,7 @@ impl GridController {
         op: Operation,
     ) -> Result<()> {
         if let Operation::SetDataTableAt {
-            sheet_pos,
+            mut sheet_pos,
             mut values,
         } = op.to_owned()
         {
@@ -226,7 +226,7 @@ impl GridController {
             }
 
             let rect = Rect::from_numbers(pos.x, pos.y, values.w as i64, values.h as i64);
-            let old_values = sheet.get_code_cell_values(rect);
+            let mut old_values = sheet.get_code_cell_values(rect);
 
             pos.y -= data_table.y_adjustment(true);
 
@@ -235,8 +235,9 @@ impl GridController {
             if data_table.display_buffer.is_some() {
                 let rect = Rect::from_numbers(pos.x, pos.y, values.w as i64, values.h as i64);
 
-                // rebuild CellValues with actual coordinates
-                let mut actual_values = CellValues::new(0, 0);
+                // rebuild CellValues with unsorted coordinates
+                let mut values_unsorted = CellValues::new(0, 0);
+                let mut old_values_unsorted = CellValues::new(0, 0);
 
                 for y in rect.y_range() {
                     let display_row = y - data_table_pos.y;
@@ -248,16 +249,28 @@ impl GridController {
                         let value_x = u32::try_from(x - pos.x)?;
                         let value_y = u32::try_from(y - pos.y)?;
 
+                        let x = u32::try_from(display_column)?;
+                        let y = u32::try_from(actual_row)?;
                         if let Some(value) = values.remove(value_x, value_y) {
-                            let x = u32::try_from(display_column)?;
-                            let y = u32::try_from(actual_row)?;
-                            actual_values.set(x, y, value);
+                            values_unsorted.set(x, y, value);
+                        }
+
+                        // account for hidden columns
+                        let column_index = data_table.get_column_index_from_display_index(x);
+                        if let Ok(value) = data_table.value.get(column_index, y) {
+                            old_values_unsorted.set(x, y, value.to_owned());
                         }
                     }
                 }
 
                 pos = data_table_pos;
-                values = actual_values;
+                values = values_unsorted;
+                sheet_pos = SheetPos::new(
+                    sheet_id,
+                    data_table_pos.x,
+                    data_table_pos.y + data_table.y_adjustment(true),
+                );
+                old_values = old_values_unsorted;
             }
 
             // check if any column is hidden, shift values to account for hidden columns
@@ -268,7 +281,7 @@ impl GridController {
             {
                 let rect = Rect::from_numbers(pos.x, pos.y, values.w as i64, values.h as i64);
 
-                // rebuild CellValues with actual coordinates
+                // rebuild CellValues with actual coordinates, mapped from display coordinates due to hidden columns
                 let mut actual_values = CellValues::new(0, 0);
 
                 for x in rect.x_range() {
@@ -277,7 +290,7 @@ impl GridController {
                         data_table.get_column_index_from_display_index(display_column);
 
                     for y in rect.y_range() {
-                        let row_index: u32 = u32::try_from(y - data_table_pos.y)?;
+                        let row_index = u32::try_from(y - data_table_pos.y)?;
 
                         let value_x = u32::try_from(x - pos.x)?;
                         let value_y = u32::try_from(y - pos.y)?;
@@ -295,9 +308,38 @@ impl GridController {
             // send the new value
             sheet.set_code_cell_values(pos, values);
 
+            let data_table = sheet.data_table_mut(data_table_pos)?;
+            if data_table.display_buffer.is_some() {
+                data_table.sort_all()?;
+
+                if let Some(display_buffer) = data_table.display_buffer.as_ref() {
+                    let rect = Rect::from_numbers(0, 0, old_values.w as i64, old_values.h as i64);
+
+                    let mut old_sorted_values = CellValues::new(0, 0);
+
+                    for x in rect.x_range() {
+                        for y in rect.y_range() {
+                            let value_x = u32::try_from(x)?;
+                            let value_y = u32::try_from(y)?;
+
+                            let display_y = display_buffer
+                                .iter()
+                                .position(|&y| y == value_y as u64)
+                                .unwrap_or(value_y as usize);
+
+                            if let Some(value) = old_values.remove(value_x, value_y) {
+                                old_sorted_values.set(value_x, display_y as u32, value);
+                            }
+                        }
+                    }
+
+                    old_values = old_sorted_values;
+                }
+            }
+
             // mark new data table as dirty
             self.send_updated_bounds(sheet_id);
-            self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
+            self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?; // todo(ayush): optimize this
 
             let forward_operations = vec![op];
             let reverse_operations = vec![Operation::SetDataTableAt {
@@ -427,6 +469,7 @@ impl GridController {
             let data_table_pos = sheet.first_data_table_within(pos)?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
             let old_data_table_kind = data_table.kind.to_owned();
+            let old_readonly = data_table.readonly;
             let sheet_rect = data_table.output_sheet_rect(sheet_pos, false);
 
             data_table.kind = match old_data_table_kind {
@@ -439,15 +482,28 @@ impl GridController {
                     DataTableKind::Import(_) => kind,
                 },
             };
+            data_table.readonly = !old_readonly;
 
             // mark code cell as dirty
             transaction.add_code_cell(sheet_id, data_table_pos);
 
             let forward_operations = vec![op];
-            let reverse_operations = vec![Operation::SwitchDataTableKind {
-                sheet_pos,
-                kind: old_data_table_kind,
-            }];
+            let reverse_operations = vec![
+                Operation::SwitchDataTableKind {
+                    sheet_pos,
+                    kind: old_data_table_kind,
+                },
+                Operation::DataTableMeta {
+                    sheet_pos,
+                    name: None,
+                    alternating_colors: None,
+                    columns: None,
+                    show_ui: None,
+                    show_name: None,
+                    show_columns: None,
+                    readonly: Some(old_readonly),
+                },
+            ];
             self.data_table_operations(
                 transaction,
                 forward_operations,
@@ -562,6 +618,7 @@ impl GridController {
             show_ui,
             show_name,
             show_columns,
+            readonly,
         } = op.to_owned()
         {
             // do grid mutations first to keep the borrow checker happy
@@ -651,6 +708,10 @@ impl GridController {
                 .as_ref()
                 .map(|show_columns| std::mem::replace(&mut data_table.show_columns, *show_columns));
 
+            let old_readonly = readonly
+                .as_ref()
+                .map(|readonly| std::mem::replace(&mut data_table.readonly, *readonly));
+
             let data_table_rect = data_table
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
@@ -674,6 +735,7 @@ impl GridController {
                 show_ui: old_show_ui,
                 show_name: old_show_name,
                 show_columns: old_show_columns,
+                readonly: old_readonly,
             }];
             self.data_table_operations(
                 transaction,
@@ -1657,6 +1719,7 @@ mod tests {
             show_ui: None,
             show_name: None,
             show_columns: None,
+            readonly: None,
         };
         let mut transaction = PendingTransaction::default();
         gc.execute_data_table_meta(&mut transaction, op.clone())
@@ -1696,6 +1759,7 @@ mod tests {
             show_ui: None,
             show_name: None,
             show_columns: None,
+            readonly: None,
         };
         let mut transaction = PendingTransaction::default();
         gc.execute_data_table_meta(&mut transaction, op).unwrap();
