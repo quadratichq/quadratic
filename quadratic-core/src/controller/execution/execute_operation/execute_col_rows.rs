@@ -19,7 +19,6 @@ impl GridController {
         delta: i64,
     ) -> String {
         if let Some(column) = column {
-            
             replace_cell_references_with(
                 &code_cell.code,
                 parse_ctx,
@@ -37,7 +36,6 @@ impl GridController {
                 },
             )
         } else if let Some(row) = row {
-            
             replace_cell_references_with(
                 &code_cell.code,
                 parse_ctx,
@@ -379,7 +377,7 @@ mod tests {
                 },
                 values: CellValue::Code(CodeCellValue {
                     language: CodeCellLanguage::Formula,
-                    code: "R[0]C[1] + R[2]C[1]".to_string()
+                    code: "B1 + B3".to_string()
                 })
                 .into(),
             }
