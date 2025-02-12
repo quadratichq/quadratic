@@ -98,7 +98,6 @@ pub(crate) fn datetime(s: &str) -> CellValue {
 
 #[test]
 #[parallel]
-// TODO(ddimaria): @HactarCE fix broken test
 fn test_formula_cell_ref() {
     let form = simple_parse_formula("SUM(A1:A5)").unwrap();
 
