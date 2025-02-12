@@ -184,11 +184,13 @@ impl GridController {
                             // prepare the html for the client, or fallback to an empty html cell
                             let html = sheet.get_single_html_output(*pos).unwrap_or(JsHtmlOutput {
                                 sheet_id: sheet_id.to_string(),
-                                x: pos.x,
-                                y: pos.y,
+                                x: pos.x as i32,
+                                y: pos.y as i32,
+                                w: 0,
+                                h: 0,
                                 html: None,
-                                w: None,
-                                h: None,
+                                pixel_width: None,
+                                pixel_height: None,
                                 name: "".to_string(),
                                 show_name: true,
                             });

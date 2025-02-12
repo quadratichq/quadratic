@@ -5,7 +5,6 @@
 }
 
 .html-cell {
-  background: white;
   position: absolute;
   box-sizing: border-box;
   pointer-events: none;

@@ -315,11 +315,13 @@ pub struct JsRenderCodeCell {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct JsHtmlOutput {
     pub sheet_id: String,
-    pub x: i64,
-    pub y: i64,
+    pub x: i32,
+    pub y: i32,
+    pub w: i32,
+    pub h: i32,
     pub html: Option<String>,
-    pub w: Option<f32>,
-    pub h: Option<f32>,
+    pub pixel_width: Option<f32>,
+    pub pixel_height: Option<f32>,
     pub name: String,
     pub show_name: bool,
 }

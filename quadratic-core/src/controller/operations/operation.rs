@@ -57,6 +57,9 @@ pub enum Operation {
     DeleteDataTable {
         sheet_pos: SheetPos,
     },
+
+    // todo: this needs to be replaced with a chart size based on cells instead
+    // of pixels
     SetChartSize {
         sheet_pos: SheetPos,
         pixel_width: f32,

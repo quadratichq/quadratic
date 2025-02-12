@@ -81,7 +81,16 @@ declare var self: WorkerGlobalScope &
       renderCodeCell?: JsRenderCodeCell
     ) => void;
     sendUndoRedo: (undo: boolean, redo: boolean) => void;
-    sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
+    sendImage: (
+      sheetId: string,
+      x: number,
+      y: number,
+      w: number,
+      h: number,
+      image?: string,
+      pixel_width?: number,
+      pixel_height?: number
+    ) => void;
     sendSheetValidations: (sheetId: string, validations: Validation[]) => void;
     sendRenderValidationWarnings: (
       sheetId: string,
@@ -843,8 +852,17 @@ class CoreClient {
       this.send({ type: 'coreClientGetJwt', id });
     });
   }
-  sendImage = (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => {
-    this.send({ type: 'coreClientImage', sheetId, x, y, image, w, h });
+  sendImage = (
+    sheetId: string,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    image?: string,
+    pixel_width?: number,
+    pixel_height?: number
+  ) => {
+    this.send({ type: 'coreClientImage', sheetId, x, y, image, w, h, pixel_width, pixel_height });
   };
 
   sendSheetValidations = (sheetId: string, validations: Validation[]) => {
