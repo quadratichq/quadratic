@@ -293,7 +293,7 @@ mod test {
                     sheet_id: sheet_id_2,
                 },
                 CodeCellLanguage::Formula,
-                "'Sheet1'!A1".to_string(),
+                "Sheet1!A1".to_string(),
                 None,
             );
         };
