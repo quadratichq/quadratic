@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use crate::a1::SheetCellRefRange;
 
 use super::*;
@@ -109,7 +107,7 @@ impl SyntaxRule for CellReference {
 
         p.next();
 
-        let ref_range_bounds = RefRangeBounds::from_str(p.token_str())
+        let ref_range_bounds = RefRangeBounds::from_str(p.token_str(), Some(p.pos.into()))
             .map_err(|_| RunErrorMsg::BadCellReference.with_span(p.span()))?;
 
         Ok(Spanned {

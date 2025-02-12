@@ -10,7 +10,7 @@ impl GridController {
         default_sheet_id: &SheetId,
     ) -> Result<A1Selection, A1Error> {
         let context = self.grid().a1_context();
-        A1Selection::parse(a1, default_sheet_id, &context)
+        A1Selection::parse_a1(a1, default_sheet_id, &context)
     }
 }
 

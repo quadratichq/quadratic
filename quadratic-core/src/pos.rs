@@ -29,6 +29,7 @@ pub struct Pos {
 }
 
 impl Pos {
+    // TODO: change this to 1,1
     pub const ORIGIN: Self = Self { x: 1, y: 0 };
 
     pub fn new(x: i64, y: i64) -> Self {
@@ -65,7 +66,7 @@ impl Pos {
     }
 
     pub fn try_a1_string(a1: &str) -> Option<Self> {
-        if let Ok(end) = CellRefRangeEnd::parse_end(a1) {
+        if let Ok(end) = CellRefRangeEnd::parse_end(a1, None) {
             if end.is_unbounded() {
                 return None;
             }

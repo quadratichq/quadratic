@@ -11,7 +11,8 @@ use super::*;
 /// matches neither.
 pub(super) fn is_table_ref(mut p: Parser<'_>) -> Option<bool> {
     match p.next()? {
-        Token::CellOrTableRef | Token::InternalCellRef => Some(p.ctx.has_table(p.token_str())),
+        Token::CellOrTableRef => Some(p.ctx.has_table(p.token_str())),
+        Token::InternalCellRef => Some(false),
         Token::UnquotedSheetReference => {
             p.next();
             Some(p.ctx.has_table(p.token_str()))

@@ -2,10 +2,12 @@ use crate::a1::CellRefCoord;
 
 use super::*;
 
-impl FromStr for RefRangeBounds {
-    type Err = A1Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+impl RefRangeBounds {
+    /// Parses A1 or RC notation.
+    ///
+    /// If `base_pos` is `None`, then only A1 notation is accepted. If it is
+    /// `Some`, then A1 and RC notation are both accepted.
+    pub fn from_str(s: &str, base_pos: Option<Pos>) -> Result<Self, A1Error> {
         if s.is_empty() {
             return Err(A1Error::InvalidRange(s.to_string()));
         }
@@ -16,18 +18,16 @@ impl FromStr for RefRangeBounds {
 
         match s.split_once(':') {
             Some((left, right)) => Ok(RefRangeBounds {
-                start: CellRefRangeEnd::parse_start(left)?,
-                end: CellRefRangeEnd::parse_end(right)?,
+                start: CellRefRangeEnd::parse_start(left, base_pos)?,
+                end: CellRefRangeEnd::parse_end(right, base_pos)?,
             }),
             None => Ok(RefRangeBounds {
-                start: CellRefRangeEnd::parse_start(s)?,
-                end: CellRefRangeEnd::parse_end(s)?,
+                start: CellRefRangeEnd::parse_start(s, base_pos)?,
+                end: CellRefRangeEnd::parse_end(s, base_pos)?,
             }),
         }
     }
-}
 
-impl RefRangeBounds {
     pub fn new_relative_all_from(pos: Pos) -> Self {
         let start = CellRefRangeEnd::new_relative_pos(pos);
         RefRangeBounds {
@@ -119,7 +119,7 @@ impl RefRangeBounds {
     /// Returns a test range from the A1-string.
     #[cfg(test)]
     pub fn test_a1(a1: &str) -> Self {
-        Self::from_str(a1).unwrap()
+        Self::from_str(a1, None).unwrap()
     }
 }
 
