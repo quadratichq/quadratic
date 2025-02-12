@@ -309,29 +309,32 @@ impl GridController {
             sheet.set_code_cell_values(pos, values);
 
             let data_table = sheet.data_table_mut(data_table_pos)?;
-            data_table.sort_all()?;
-            if let Some(display_buffer) = data_table.display_buffer.as_ref() {
-                let rect = Rect::from_numbers(0, 0, old_values.w as i64, old_values.h as i64);
+            if data_table.display_buffer.is_some() {
+                data_table.sort_all()?;
 
-                let mut old_sorted_values = CellValues::new(0, 0);
+                if let Some(display_buffer) = data_table.display_buffer.as_ref() {
+                    let rect = Rect::from_numbers(0, 0, old_values.w as i64, old_values.h as i64);
 
-                for x in rect.x_range() {
-                    for y in rect.y_range() {
-                        let value_x = u32::try_from(x)?;
-                        let value_y = u32::try_from(y)?;
+                    let mut old_sorted_values = CellValues::new(0, 0);
 
-                        let display_y = display_buffer
-                            .iter()
-                            .position(|&y| y == value_y as u64)
-                            .unwrap_or(value_y as usize);
+                    for x in rect.x_range() {
+                        for y in rect.y_range() {
+                            let value_x = u32::try_from(x)?;
+                            let value_y = u32::try_from(y)?;
 
-                        if let Some(value) = old_values.remove(value_x, value_y) {
-                            old_sorted_values.set(value_x, display_y as u32, value);
+                            let display_y = display_buffer
+                                .iter()
+                                .position(|&y| y == value_y as u64)
+                                .unwrap_or(value_y as usize);
+
+                            if let Some(value) = old_values.remove(value_x, value_y) {
+                                old_sorted_values.set(value_x, display_y as u32, value);
+                            }
                         }
                     }
-                }
 
-                old_values = old_sorted_values;
+                    old_values = old_sorted_values;
+                }
             }
 
             // mark new data table as dirty
