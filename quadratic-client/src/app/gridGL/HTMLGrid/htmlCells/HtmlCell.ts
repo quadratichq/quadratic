@@ -78,12 +78,11 @@ export class HtmlCell {
     this.iframe.srcdoc = htmlCell.html;
     this.iframe.width = `${this.width}px`;
     this.iframe.height = `${this.height}px`;
-    this.iframe.style.paddingRight = `${this.offset.width - (htmlCell.pixel_width ?? 0)}px`;
-    this.iframe.style.paddingBottom = `${this.offset.height - (htmlCell.pixel_height ?? 0)}px`;
     this.iframe.setAttribute('border', '0');
     this.iframe.setAttribute('scrolling', 'no');
     this.iframe.style.minWidth = `${CELL_WIDTH}px`;
     this.iframe.style.minHeight = `${CELL_HEIGHT}px`;
+    this.iframe.style.backgroundColor = 'hsl(var(--background))';
     this.border = document.createElement('div');
     this.border.className = 'w-full h-full absolute top-0 left-0';
     this.border.style.border = '1px solid hsl(var(--muted-foreground))';
@@ -172,8 +171,6 @@ export class HtmlCell {
     this.offset = this.sheet.getScreenRectangle(htmlCell.x, this.adjustedY, htmlCell.w ?? 0, htmlCell.h ?? 0);
     this.iframe.width = this.width.toString();
     this.iframe.height = this.height.toString();
-    this.iframe.style.paddingRight = `${this.offset.width - (htmlCell.pixel_width ?? 0)}px`;
-    this.iframe.style.paddingBottom = `${this.offset.height - (htmlCell.pixel_height ?? 0)}px`;
     this.border.style.width = `${this.width}px`;
     this.border.style.height = `${this.height}px`;
     this.recalculateBounds();
@@ -245,11 +242,11 @@ export class HtmlCell {
     }
   }
 
-  pointerMove(e: InteractionEvent) {
+  pointerMove(world: Point) {
     if (!this.resizing) {
       throw new Error('Expected resizing to be defined in HtmlCell.pointerMove');
     }
-    this.resizing.pointerMove(e);
+    this.resizing.pointerMove(world);
   }
 
   startResizing(x: number, y: number) {
@@ -265,8 +262,6 @@ export class HtmlCell {
       x,
       y
     );
-    this.iframe.style.paddingRight = '0px';
-    this.iframe.style.paddingBottom = '0px';
   }
 
   cancelResizing() {
@@ -305,13 +300,10 @@ export class HtmlCell {
     this.div.style.top = `${this.offset.y}px`;
     this.iframe.width = this.width.toString();
     this.iframe.height = this.height.toString();
-    this.iframe.style.paddingRight = `${this.offset.width - (this.htmlCell.pixel_width ?? 0)}px`;
-    this.iframe.style.paddingBottom = `${this.offset.height - (this.htmlCell.pixel_height ?? 0)}px`;
 
     const topHeight = this.sheet.offsets.getRowHeight(this.y);
     this.right.style.top = `-${topHeight}px`;
     this.right.style.height = `calc(100% + ${topHeight}px)`;
-    console.log('recalculating bounds');
   }
 
   updateOffsets() {
