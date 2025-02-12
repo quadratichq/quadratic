@@ -40,8 +40,21 @@ const FUNCTION_CALL_PATTERN: &str = r"[A-Za-z_](\.?[A-Za-z_\d])*\(";
 ///                 \d+       digits
 // const A1_CELL_REFERENCE_PATTERN: &str = r"\$?n?[A-Z]+\$?n?\d+";
 const A1_CELL_REFERENCE_PATTERN: &str = r"\$?n?([a-zA-Z]+\$?n?\d*|\d+)";
-// TODO(ajf): document this regex and describe that we use `{}` for absolute references
-const INTERNAL_CELL_REFERENCE_PATTERN: &str = r"R([\[|\{]-?\d+[\]|\}])C([\[|\{]-?\d+[\]|\}])";
+/// RC-style cell reference
+///
+///                                  |                   either of ...
+/// R[\[{]-?\d+[]}](C[\[{]-?\d+[]}])?                      row reference + optional column reference
+/// R[\[{]-?\d+[]}]                                          row reference
+/// R                                                          literal R
+///  [\[{]     []}]                                            surrounding `[]` or `{}` (allows mismatched but it's fine)
+///       -?\d+                                                positive or negative integer
+///                (               )?                        optional ...
+///                 C[\[{]-?\d+[]}]                            column reference
+///                 C                                            literal C
+///                  [\[{]     []}]                              surrounding `[]` or `{}` (allows mismatched but it's fine)
+///                       -?\d+                                  positive or negative integer
+///                                   C[\[{]-?\d+[]}]      just a column reference
+const INTERNAL_CELL_REFERENCE_PATTERN: &str = r"R[\[{]-?\d+[]}](C[\[{]-?\d+[]}])?|C[\[{]-?\d+[]}]";
 
 /// Table name.
 ///
@@ -126,10 +139,10 @@ lazy_static! {
         r#"false|true"#,
         // Internal cell reference.
         INTERNAL_CELL_REFERENCE_PATTERN,
-        // Reference to a cell.
-        A1_CELL_REFERENCE_PATTERN,
         // Reference to a table.
         TABLE_NAME_PATTERN,
+        // Reference to a cell.
+        A1_CELL_REFERENCE_PATTERN,
         // Square brackets containing table reference.
         *TABLE_BRACKETS_PATTERN,
         // Comparison operators `==`, `!=`, `<=`, `>=` and `<>`.

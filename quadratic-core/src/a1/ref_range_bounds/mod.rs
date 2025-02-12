@@ -21,10 +21,10 @@ pub struct RefRangeBounds {
 
 impl fmt::Debug for RefRangeBounds {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "RefRangeBounds(")?;
-        fmt::Display::fmt(self, f)?;
-        write!(f, ")")?;
-        Ok(())
+        f.debug_tuple("RefRangeBounds")
+            .field(&self.start)
+            .field(&self.end)
+            .finish()
     }
 }
 

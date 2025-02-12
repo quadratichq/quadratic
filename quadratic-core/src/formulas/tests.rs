@@ -442,7 +442,7 @@ fn test_table_references() {
             "{Southborough, MA, United States; Northbridge, MA, United States; Westborough, MA, United States; Marlborough, MA, United States; Springfield, MA, United States; Springfield, MO, United States; Springfield, NJ, United States; Springfield, OH, United States; Springfield, OR, United States; Concord, NH, United States}",
         ),
         (
-            "simple.csv[[#headers], [[city]:[country]]]",
+            "simple.csv[[#headers], [city]:[country]]",
             "{city, region, country}",
         ),
         (
