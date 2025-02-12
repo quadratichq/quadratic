@@ -39,7 +39,8 @@ const insertColumnRight: ActionSpec<void> = {
 };
 
 const deleteColumns: ActionSpec<void> = {
-  label: 'Delete columns',
+  // TODO:(ddimaria) would love to make these labels dynamic based on the number of columns selected, but might not be easy...
+  label: 'Delete column(s)',
   isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) => !isEmbed && isAuthenticated && isColumnFinite(),
   Icon: DeleteIcon,
   run: () => {
@@ -64,7 +65,7 @@ const insertRowBelow: ActionSpec<void> = {
 };
 
 const deleteRows: ActionSpec<void> = {
-  label: 'Delete rows',
+  label: 'Delete row(s)',
   isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) => !isEmbed && isAuthenticated && isRowFinite(),
   Icon: DeleteIcon,
   run: () => {

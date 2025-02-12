@@ -1,91 +1,77 @@
-//! This shows the grid heading context menu.
+import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
+import { GridContextMenuCell } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuCell';
+import { GridContextMenuCodeTable } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuCodeTable';
+import { GridContextMenuCodeTableCell } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuCodeTableCell';
+import { GridContextMenuCodeTableChart } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuCodeTableChart';
+import { GridContextMenuCodeTableColumn } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuCodeTableColumn';
+import { GridContextMenuDataTable } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuDataTable';
+import { GridContextMenuDataTableCell } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuDataTableCell';
+import { GridContextMenuDataTableColumn } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuDataTableColumn';
+import { useRecoilValue } from 'recoil';
 
-import { Action } from '@/app/actions/actions';
-import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
-import { events } from '@/app/events/events';
-import { sheets } from '@/app/grid/controller/Sheets';
-import { ContextMenuBase } from '@/app/gridGL/HTMLGrid/contextMenus/ContextMenuBase';
-import { ContextMenuItem, ContextMenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/ContextMenuItem';
-import { TableMenu } from '@/app/gridGL/HTMLGrid/contextMenus/TableMenu';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import type { JsRenderCodeCell } from '@/app/quadratic-core-types';
-import { TableIcon } from '@/shared/components/Icons';
-import {
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-} from '@/shared/shadcn/ui/dropdown-menu';
-import { useEffect, useState } from 'react';
-
+/**
+ * Different context menus based on the current cursor selection:
+ *
+ * <GridContextMenuCell> - Cell(s) on the grid
+ * <GridContextMenuDataTable> - Data table selection
+ * <GridContextMenuDataTableColumn> - Data table column selection
+ * <GridContextMenuDataTableCell> - Data table cell that's selected
+ * <GridContextMenuCodeTable> - Code table selection
+ * <GridContextMenuCodeTableColumn> - Code table column selection
+ * <GridContextMenuCodeTableCell> - Code table cell that's selected
+ * <GridContextMenuCodeTableChart> - Chart table selection
+ */
 export const GridContextMenu = () => {
-  const [columnRowAvailable, setColumnRowAvailable] = useState(false);
-  const [canConvertToDataTable, setCanConvertToDataTable] = useState(false);
-  const [table, setTable] = useState<JsRenderCodeCell | undefined>();
-  useEffect(() => {
-    const updateCursor = () => {
-      setColumnRowAvailable(sheets.sheet.cursor.hasOneColumnRowSelection(true));
-      setCanConvertToDataTable(sheets.sheet.cursor.canConvertToDataTable());
-      const codeCell = pixiApp.cellsSheet().cursorOnDataTable();
-      setTable(codeCell);
-    };
+  const contextMenu = useRecoilValue(contextMenuAtom);
+  if (contextMenu.type === ContextMenuType.Table && contextMenu.table) {
+    if (contextMenu.table.language === 'Import') {
+      return <GridContextMenuDataTable />;
+    }
+    // Formula
+    if (contextMenu.table.language === 'Formula') {
+      return <GridContextMenuCell />;
+    }
 
-    updateCursor();
-    events.on('contextMenu', updateCursor);
+    // Chart
+    if (contextMenu.table.is_html) {
+      return <GridContextMenuCodeTableChart />;
+    }
 
-    return () => {
-      events.off('contextMenu', updateCursor);
-    };
-  }, []);
+    // Code
+    return <GridContextMenuCodeTable />;
 
-  return (
-    <ContextMenuBase contextMenuType={ContextMenuType.Grid}>
-      {({ contextMenu }) => (
-        <>
-          <ContextMenuItemAction action={Action.Cut} />
-          <ContextMenuItemAction action={Action.Copy} />
-          <ContextMenuItemAction action={Action.Paste} />
-          <ContextMenuItemAction action={Action.PasteValuesOnly} />
-          <ContextMenuItemAction action={Action.PasteFormattingOnly} />
-          <ContextMenuItemAction action={Action.CopyAsPng} />
-          <ContextMenuItemAction action={Action.DownloadAsCsv} />
+    // TODO:(ddimaria/jimniels) How do we handle spill errors for different menus?
+  }
 
-          {contextMenu.column === null || !!table ? null : (
-            <>
-              <DropdownMenuSeparator />
-              {columnRowAvailable && <ContextMenuItemAction action={Action.InsertColumnLeft} />}
-              {columnRowAvailable && <ContextMenuItemAction action={Action.InsertColumnRight} />}
-              <ContextMenuItemAction action={Action.DeleteColumn} />
-            </>
-          )}
+  // It's a table column selection
+  if (contextMenu.type === ContextMenuType.TableColumn && contextMenu.table) {
+    // Data table
+    if (contextMenu.table.language === 'Import') {
+      return <GridContextMenuDataTableColumn />;
+    }
+    // Code table
+    return <GridContextMenuCodeTableColumn />;
+  }
 
-          {contextMenu.row === null || !!table ? null : (
-            <>
-              {columnRowAvailable && <DropdownMenuSeparator />}
-              {columnRowAvailable && <ContextMenuItemAction action={Action.InsertRowAbove} />}
-              {columnRowAvailable && <ContextMenuItemAction action={Action.InsertRowBelow} />}
-              <ContextMenuItemAction action={Action.DeleteRow} />
-            </>
-          )}
+  // It's a grid selection
+  if (contextMenu.type === ContextMenuType.Grid) {
+    // Is it a cell in a table?
+    if (contextMenu.table) {
+      // Data table
+      if (contextMenu.table.language === 'Import') {
+        return <GridContextMenuDataTableCell />;
+      }
+      // Code table
+      return <GridContextMenuCodeTableCell />;
+    }
+    // It's a grid cell
+    return <GridContextMenuCell />;
+  }
 
-          {canConvertToDataTable && <DropdownMenuSeparator />}
-          {canConvertToDataTable && <ContextMenuItemAction action={Action.GridToDataTable} />}
+  // This isn't a context menu, but more of a menu that pops up when you click 'sort' on a table
+  if (contextMenu.type === ContextMenuType.TableSort) {
+    return null;
+  }
 
-          {table && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  <ContextMenuItem icon={<TableIcon />} text={'Table'} />
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  <TableMenu defaultEdit={false} codeCell={table} />
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-            </>
-          )}
-        </>
-      )}
-    </ContextMenuBase>
-  );
+  return null;
 };
