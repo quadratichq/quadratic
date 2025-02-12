@@ -73,7 +73,7 @@ pub fn to_selection(
 ) -> Result<JsSelection, String> {
     let default_sheet_id = SheetId::from_str(default_sheet_id).map_err(|e| e.to_string())?;
     let context = serde_json::from_str::<A1Context>(context).map_err(|e| e.to_string())?;
-    let selection = A1Selection::parse(a1, &default_sheet_id, &context)
+    let selection = A1Selection::parse_a1(a1, &default_sheet_id, &context)
         .map_err(|e| serde_json::to_string(&e).unwrap_or(e.to_string()))?;
     Ok(JsSelection { selection })
 }

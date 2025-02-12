@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use std::str::FromStr;
 use ts_rs::TS;
 
 use super::{range_might_intersect, A1Error, CellRefRangeEnd};
@@ -161,10 +160,15 @@ mod tests {
     proptest! {
         #[test]
         fn proptest_cell_ref_range_parsing(ref_range_bounds: RefRangeBounds) {
+            let base_pos = Pos::new(10, 15);
+
             // We skip tests where start = end since we remove the end when parsing
             if ref_range_bounds.end != ref_range_bounds.start {
-                assert_eq!(ref_range_bounds, ref_range_bounds.to_string().parse().unwrap());
+                assert_eq!(ref_range_bounds, RefRangeBounds::from_str(&ref_range_bounds.to_string(), None).unwrap());
+                assert_eq!(ref_range_bounds, RefRangeBounds::from_str(&ref_range_bounds.to_string(), Some(base_pos)).unwrap());
             }
+
+            assert_eq!(ref_range_bounds, RefRangeBounds::from_str(&ref_range_bounds.to_rc_string(base_pos), Some(base_pos)).unwrap());
         }
     }
 

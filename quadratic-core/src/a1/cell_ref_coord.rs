@@ -103,7 +103,7 @@ impl CellRefCoord {
     /// - If the coordinate is absolute, returns a string containing the number.
     pub(crate) fn to_rc_string(self, base_coord: i64) -> String {
         match self.is_absolute {
-            true => format!("{}", self.coord),
+            true => format!("{{{}}}", self.coord),
             false => format!("[{}]", self.coord.saturating_sub(base_coord)), // when changing to `u64`, this MUST stay `i64`
         }
     }
