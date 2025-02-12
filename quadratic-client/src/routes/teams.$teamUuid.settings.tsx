@@ -87,7 +87,7 @@ export const Component = () => {
     return <Navigate to={ROUTES.TEAM(team.uuid)} />;
   }
 
-  const latestUsage = billing.usage[billing.usage.length - 1] || { ai_messages: 0 };
+  const latestUsage = billing.usage[0] || { ai_messages: 0 };
 
   return (
     <>

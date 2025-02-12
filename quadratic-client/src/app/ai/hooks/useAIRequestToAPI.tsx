@@ -51,10 +51,16 @@ export function useAIRequestToAPI() {
 
           if (!response.ok) {
             const data = await response.json();
-            const error =
-              response.status === 429
-                ? 'You have exceeded the maximum number of requests. Please try again later.'
-                : `Looks like there was a problem. Error: ${data}`;
+            const error = (() => {
+              switch (response.status) {
+                case 429:
+                  return 'You have exceeded the maximum number of requests. Please try again later.';
+                case 402:
+                  return 'You have exceeded your AI message limit. Please upgrade your plan to continue.';
+                default:
+                  return `Looks like there was a problem. Error: ${data.error}`;
+              }
+            })();
             setMessages?.((prev) => [
               ...prev.slice(0, -1),
               { role: 'assistant', content: error, contextType: 'userPrompt', model, toolCalls: [] },

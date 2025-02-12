@@ -24,6 +24,10 @@ export const getAIMessageUsageForUser = async (userId: number) => {
     acm.chat_id = ac.id
     AND acm.message_type = 'user_prompt'
   GROUP BY m.month
-  ORDER BY m.month ASC;
+  ORDER BY m.month DESC;
 `;
+};
+
+export const userExceededUsageLimit = async (monthlyUsage: Awaited<ReturnType<typeof getAIMessageUsageForUser>>) => {
+  return monthlyUsage[0]?.ai_messages > 5;
 };
