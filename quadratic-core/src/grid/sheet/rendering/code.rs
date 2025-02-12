@@ -568,8 +568,8 @@ mod tests {
         expect_js_call(
             "jsSendImage",
             format!(
-                "{},{},{},{:?},{:?},{:?}",
-                sheet_id, pos.x as u32, pos.y as u32, true, None::<f32>, None::<f32>
+                "{},{},{},{},{},{:?},{:?},{:?}",
+                sheet_id, pos.x as u32, pos.y as u32, true, 0, 0, None::<f32>, None::<f32>
             ),
             true,
         );
