@@ -59,7 +59,7 @@ export class HtmlCell {
     this.div = document.createElement('div');
     this.div.className = 'html-cell';
 
-    this.offset = this.sheet.getScreenRectangle(this.x, this.adjustedY, this.htmlCell.w, this.htmlCell.h);
+    this.offset = this.sheet.getScreenRectangle(this.x, this.adjustedY, this.htmlCell.w, this.htmlCell.h - 1);
     this.div.style.left = `${this.offset.x}px`;
     this.div.style.top = `${this.offset.y}px`;
 
@@ -83,6 +83,7 @@ export class HtmlCell {
     this.iframe.style.minWidth = `${CELL_WIDTH}px`;
     this.iframe.style.minHeight = `${CELL_HEIGHT}px`;
     this.iframe.style.backgroundColor = 'hsl(var(--background))';
+
     this.border = document.createElement('div');
     this.border.className = 'w-full h-full absolute top-0 left-0';
     this.border.style.border = '1px solid hsl(var(--muted-foreground))';
@@ -91,8 +92,8 @@ export class HtmlCell {
     this.div.append(this.iframe);
     this.div.append(this.bottom);
     this.div.append(this.border);
-    this.gridBounds = new Rectangle(this.x, this.y, this.htmlCell.w - 1, this.htmlCell.h);
-    console.log(this.htmlCell.x + this.htmlCell.w, this.gridBounds.right);
+    this.gridBounds = new Rectangle(this.x, this.y, this.htmlCell.w - 1, this.htmlCell.h - 1);
+
     if (this.iframe.contentWindow?.document.readyState === 'complete') {
       this.afterLoad();
     } else {
@@ -168,7 +169,7 @@ export class HtmlCell {
       this.iframe.srcdoc = htmlCell.html;
     }
     this.htmlCell = htmlCell;
-    this.offset = this.sheet.getScreenRectangle(htmlCell.x, this.adjustedY, htmlCell.w ?? 0, htmlCell.h ?? 0);
+    this.offset = this.sheet.getScreenRectangle(htmlCell.x, htmlCell.y + 1, htmlCell.w, htmlCell.h - 1);
     this.iframe.width = this.width.toString();
     this.iframe.height = this.height.toString();
     this.border.style.width = `${this.width}px`;
@@ -295,7 +296,12 @@ export class HtmlCell {
   }
 
   private recalculateBounds() {
-    this.offset = this.sheet.getScreenRectangle(this.x, this.adjustedY, this.htmlCell.w ?? 0, this.htmlCell.h ?? 0);
+    this.offset = this.sheet.getScreenRectangle(
+      this.x,
+      this.adjustedY,
+      this.htmlCell.w ?? 0,
+      (this.htmlCell.h ?? 0) - 1
+    );
     this.div.style.left = `${this.offset.x}px`;
     this.div.style.top = `${this.offset.y}px`;
     this.iframe.width = this.width.toString();

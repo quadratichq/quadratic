@@ -83,7 +83,7 @@ export class HtmlCellResizing {
       this.htmlCell.x,
       this.htmlCell.y,
       this.width - 1,
-      this.height - topHeight - 1
+      this.height - topHeight
     );
   }
 
