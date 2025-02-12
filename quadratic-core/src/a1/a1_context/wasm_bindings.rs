@@ -6,10 +6,10 @@ use super::A1Context;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(js_name = "getTableInfo")]
-pub fn table_names(context: &str) -> JsValue {
+pub fn table_names(context: &str) -> Result<JsValue, String> {
     let context = serde_json::from_str::<A1Context>(context).unwrap();
     let table_info = context.table_info();
-    serde_wasm_bindgen::to_value(&table_info).unwrap_or(JsValue::UNDEFINED)
+    serde_wasm_bindgen::to_value(&table_info).map_err(|e| e.to_string())
 }
 
 #[wasm_bindgen(js_name = "getTableNameFromPos")]

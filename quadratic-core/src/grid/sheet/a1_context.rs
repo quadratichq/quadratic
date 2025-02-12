@@ -1,4 +1,7 @@
-use crate::{a1::A1Context, grid::DataTableKind};
+use crate::{
+    a1::A1Context,
+    grid::{CodeCellLanguage, DataTableKind},
+};
 
 use super::*;
 
@@ -15,7 +18,7 @@ impl Sheet {
                         None
                     }
                 }
-                _ => None,
+                DataTableKind::Import(_) => Some(CodeCellLanguage::Import),
             };
             context.table_map.insert(self.id, *pos, table, language);
         });
