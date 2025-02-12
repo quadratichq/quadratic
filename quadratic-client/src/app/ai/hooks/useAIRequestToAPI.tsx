@@ -1,6 +1,8 @@
 import { editorInteractionStateFileUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
+import { ROUTES } from '@/shared/constants/routes';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import {
   AIMessagePromptSchema,
@@ -17,6 +19,11 @@ type HandleAIPromptProps = Omit<AIRequestBody, 'fileUuid'> & {
 };
 
 export function useAIRequestToAPI() {
+  const { team } = useFileRouteLoaderData();
+  console.log('team', team.uuid);
+  const url = ROUTES.TEAM_SETTINGS(team.uuid);
+  console.log('url', url);
+
   const handleAIRequestToAPI = useRecoilCallback(
     ({ snapshot }) =>
       async ({
