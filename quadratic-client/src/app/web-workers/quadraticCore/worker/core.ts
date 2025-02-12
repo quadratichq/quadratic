@@ -771,7 +771,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setChartSize(toSheetPos(x, y, sheetId), width, height, cursor);
+        this.gridController.setChartDimensions(toSheetPos(x, y, sheetId), width, height, cursor);
         resolve(undefined);
       });
     });

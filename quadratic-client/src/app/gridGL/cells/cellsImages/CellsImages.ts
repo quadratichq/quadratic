@@ -35,8 +35,8 @@ export class CellsImages extends Container<CellsImage> {
   };
 
   cheapCull(bounds: Rectangle) {
-    this.children.forEach((sprite) => {
-      sprite.visible = intersects.rectangleRectangle(bounds, sprite.viewBounds);
+    this.children.forEach((cellsImage) => {
+      cellsImage.visible = intersects.rectangleRectangle(bounds, cellsImage.table.tableBounds);
     });
   }
 

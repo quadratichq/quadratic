@@ -79,7 +79,6 @@ export class Cursor extends Container {
     if (cursor.isSingleSelection() && pixiApp.cellsSheet().tables.isHtmlOrImage(cell)) {
       return;
     }
-    console.log(2);
     const tables = pixiApp.cellsSheet().tables;
     const table = tables.getTableFromCell(cell);
     const tableName = table?.getTableNameBounds();

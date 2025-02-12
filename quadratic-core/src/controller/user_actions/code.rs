@@ -35,14 +35,14 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::RunCode);
     }
 
-    pub fn set_chart_size(
+    pub fn set_chart_dimensions(
         &mut self,
         sheet_pos: SheetPos,
-        width: f32,
-        height: f32,
+        width: i32,
+        height: i32,
         cursor: Option<String>,
     ) {
-        let ops = self.set_chart_size_operations(sheet_pos, width, height);
+        let ops = self.set_chart_dimensions_operations(sheet_pos, width, height);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
     }
 }

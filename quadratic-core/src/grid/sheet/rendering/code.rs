@@ -298,7 +298,7 @@ mod tests {
                 name: "Python1".to_string(),
             }
         );
-        gc.set_chart_size(
+        gc.set_chart_dimensions(
             SheetPos {
                 x: 1,
                 y: 2,

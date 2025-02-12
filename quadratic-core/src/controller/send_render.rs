@@ -494,14 +494,14 @@ mod test {
 
         clear_js_calls();
 
-        gc.set_chart_size(
+        gc.set_chart_dimensions(
             SheetPos {
                 x: 1,
                 y: 1,
                 sheet_id,
             },
-            1.0,
-            2.0,
+            1,
+            2,
             None,
         );
 

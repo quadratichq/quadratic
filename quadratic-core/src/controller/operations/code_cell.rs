@@ -146,16 +146,16 @@ impl GridController {
         vec![Operation::ComputeCode { sheet_pos }]
     }
 
-    pub fn set_chart_size_operations(
+    pub fn set_chart_dimensions_operations(
         &self,
         sheet_pos: SheetPos,
-        width: f32,
-        height: f32,
+        width: i32,
+        height: i32,
     ) -> Vec<Operation> {
-        vec![Operation::SetChartSize {
+        vec![Operation::SetChartDimensions {
             sheet_pos,
-            pixel_width: width,
-            pixel_height: height,
+            w: width as u32,
+            h: height as u32,
         }]
     }
 

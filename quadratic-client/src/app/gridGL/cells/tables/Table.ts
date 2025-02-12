@@ -43,7 +43,6 @@ export class Table extends Container {
     this.header = this.addChild(new TableHeader(this));
     this.outline = this.addChild(new TableOutline(this));
     this.updateCodeCell(codeCell);
-    console.log(codeCell);
   }
 
   destroy() {

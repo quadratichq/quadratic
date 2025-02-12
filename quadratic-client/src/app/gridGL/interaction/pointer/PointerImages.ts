@@ -1,41 +1,55 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
+import type { Table } from '@/app/gridGL/cells/tables/Table';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { IMAGE_BORDER_OFFSET } from '@/app/gridGL/UI/UICellImages';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle, type Point } from 'pixi.js';
 
 // const MIN_SIZE = 100;
 const CORNER_SIZE = 20;
 
+export type ResizeSide = 'right' | 'bottom' | 'both';
+
+interface Resizing {
+  image: CellsImage;
+  table: Table;
+  point: Point;
+  side: ResizeSide;
+  originalWidth: number;
+  originalHeight: number;
+}
+
 export class PointerImages {
-  resizing?: { image: CellsImage; point: Point; side: 'right' | 'bottom' | 'corner' };
+  resizing?: Resizing;
 
   cursor: string | undefined;
 
   // Finds a line that is being hovered.
-  private findImage(point: Point): { image: CellsImage; side?: 'right' | 'bottom' | 'corner' } | undefined {
+  private findImage(point: Point): { image: CellsImage; side?: ResizeSide } | undefined {
     const cellsSheet = pixiApp.cellsSheets.current;
     if (!cellsSheet) return;
     const images = cellsSheet.getCellsImages();
     if (!images?.length) return;
     for (const image of images) {
       const cornerSize = CORNER_SIZE * pixiApp.viewport.scaled;
+      const bounds = image.table.tableBounds;
       const corner = new Rectangle(
-        image.viewBounds.right - cornerSize,
-        image.viewBounds.bottom - cornerSize,
+        bounds.right - cornerSize,
+        bounds.bottom - cornerSize,
         cornerSize + IMAGE_BORDER_OFFSET * 2,
         cornerSize + IMAGE_BORDER_OFFSET * 2
       );
-      if (intersects.rectanglePoint(corner, point)) return { image, side: 'corner' };
+      if (intersects.rectanglePoint(corner, point)) return { image, side: 'both' };
       let right = intersects.rectanglePoint(image.viewRight, point);
       let bottom = intersects.rectanglePoint(image.viewBottom, point);
-      if (right && bottom) return { image, side: 'corner' };
+      if (right && bottom) return { image, side: 'both' };
       if (right) return { image, side: 'right' };
       if (bottom) return { image, side: 'bottom' };
-      if (intersects.rectanglePoint(image.viewBounds, point)) {
+      if (intersects.rectanglePoint(bounds, point)) {
         return { image };
       }
     }
@@ -48,11 +62,15 @@ export class PointerImages {
       const image = this.resizing.image;
       const end = sheets.sheet.getColumnRowFromScreen(point.x, point.y);
 
+      // ensure we're not into negative space
+      end.column = Math.max(end.column, image.column);
+      end.row = Math.max(end.row, image.row + 1);
+
       // if not corner, then keep the original width/height
       if (this.resizing.side === 'right') {
-        end.row = image.gridBounds.bottom;
+        end.row = image.table.tableBounds.bottom;
       } else if (this.resizing.side === 'bottom') {
-        end.column = image.gridBounds.right;
+        end.column = image.table.tableBounds.right;
       }
       const screenRectangle = sheets.sheet.getScreenRectangle(
         image.column,
@@ -60,37 +78,9 @@ export class PointerImages {
         end.column - image.column + 1,
         end.row - image.row
       );
-      // let width: number, height: number;
-      // const rightLarger =
-      //   Math.abs(point.x - this.resizing.image.viewBounds.right) >
-      //   Math.abs(point.y - this.resizing.image.viewBounds.bottom);
-      // if (this.resizing.side === 'right' || (this.resizing.side === 'corner' && rightLarger)) {
-      //   width =
-      //     this.resizing.image.viewBounds.right +
-      //     (point.x - this.resizing.point.x) -
-      //     this.resizing.image.viewBounds.left;
-      //   const aspectRatio = width / this.resizing.image.viewBounds.width;
-      //   height = this.resizing.image.viewBounds.height * aspectRatio;
-      // } else {
-      //   height =
-      //     this.resizing.image.viewBounds.bottom +
-      //     (point.y - this.resizing.point.y) -
-      //     this.resizing.image.viewBounds.top;
-      //   const aspectRatio = height / this.resizing.image.viewBounds.height;
-      //   width = this.resizing.image.viewBounds.width * aspectRatio;
-      // }
-      // if (width < MIN_SIZE) {
-      //   width = MIN_SIZE;
-      //   const aspectRatio = width / this.resizing.image.viewBounds.width;
-      //   height = this.resizing.image.viewBounds.height * aspectRatio;
-      // }
-      // if (height < MIN_SIZE) {
-      //   height = MIN_SIZE;
-      //   const aspectRatio = height / this.resizing.image.viewBounds.height;
-      //   width = this.resizing.image.viewBounds.width * aspectRatio;
-      // }
       this.resizing.image.temporaryResize(screenRectangle.width, screenRectangle.height);
-      pixiApp.cellImages.dirtyResizing = true;
+      this.resizing.table.resize(screenRectangle.width, screenRectangle.height);
+      pixiApp.cellImages.setDirty();
       pixiApp
         .cellsSheet()
         .tables.resizeTable(
@@ -106,16 +96,12 @@ export class PointerImages {
     const search = this.findImage(point);
     if (search?.side) {
       pixiApp.cellImages.activate(search.image);
-      switch (search.side) {
-        case 'bottom':
-          this.cursor = 'row-resize';
-          break;
-        case 'right':
-          this.cursor = 'col-resize';
-          break;
-        case 'corner':
-          this.cursor = 'all-scroll';
-          break;
+      if (search.side === 'bottom') {
+        this.cursor = 'row-resize';
+      } else if (search.side === 'right') {
+        this.cursor = 'col-resize';
+      } else if (search.side === 'both') {
+        this.cursor = 'all-scroll';
       }
       return true;
     }
@@ -128,7 +114,19 @@ export class PointerImages {
     if (!hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions)) return false;
     const search = this.findImage(point);
     if (search && search.side) {
-      this.resizing = { point, image: search.image, side: search.side };
+      const table = pixiApp.cellsSheet().tables.getTableFromTableCell(search.image.column, search.image.row);
+      if (!table) {
+        console.error('Table not found in PointerImages.pointerDown');
+        return false;
+      }
+      this.resizing = {
+        point,
+        image: search.image,
+        side: search.side,
+        table,
+        originalWidth: table.tableBounds.width,
+        originalHeight: table.tableBounds.height,
+      };
       pixiApp.cellImages.activate(search.image);
       return true;
     }
@@ -137,17 +135,16 @@ export class PointerImages {
 
   pointerUp(): boolean {
     if (this.resizing) {
-      //   quadraticCore.setCellRenderResize(
-      //     this.resizing.image.sheetId,
-      //     this.resizing.image.column,
-      //     this.resizing.image.row,
-      //     this.resizing.image.width,
-      //     this.resizing.image.height
-      //   );
-
-      // todo???
-      // this.resizing.image.resizeImage(this.resizing.image.width, this.resizing.image.height);
-      // this.resizing = undefined;
+      const tableBounds = this.resizing.table.tableBounds;
+      const end = sheets.sheet.getColumnRowFromScreen(tableBounds.right, tableBounds.bottom);
+      quadraticCore.setCellRenderResize(
+        this.resizing.image.sheetId,
+        this.resizing.image.column,
+        this.resizing.image.row,
+        end.column - this.resizing.image.column,
+        end.row - this.resizing.image.row - 1 // -1 to account for the chart name
+      );
+      this.resizing = undefined;
       return true;
     }
     return false;
@@ -155,10 +152,9 @@ export class PointerImages {
 
   handleEscape(): boolean {
     if (this.resizing) {
-      this.resizing.image.width = this.resizing.image.viewBounds.width;
-      this.resizing.image.height = this.resizing.image.viewBounds.height;
-      pixiApp.cellImages.dirtyResizing = true;
-      // pixiApp.cellImages.dirtyBorders = true;
+      this.resizing.image.width = this.resizing.originalWidth;
+      this.resizing.image.height = this.resizing.originalHeight;
+      pixiApp.cellImages.drawResizing();
       this.resizing = undefined;
       return true;
     }

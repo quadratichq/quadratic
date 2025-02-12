@@ -9,6 +9,8 @@ export const IMAGE_BORDER_OFFSET = 2;
 const TRANSITION_DELAY_MS = 200;
 const TRANSITION_TIME_MS = 300;
 
+// todo: this should have separate alphas for the right and bottom borders
+
 export class UICellImages extends Container {
   private resizing: Graphics;
 
@@ -17,13 +19,16 @@ export class UICellImages extends Container {
   private animationTime = 0;
   private animationLastTime = 0;
 
-  // dirtyBorders = false;
   dirtyResizing = false;
 
   constructor() {
     super();
     this.resizing = this.addChild(new Graphics());
     events.on('changeSheet', this.changeSheet);
+  }
+
+  setDirty() {
+    this.dirtyResizing = true;
   }
 
   destroy() {
@@ -33,7 +38,6 @@ export class UICellImages extends Container {
 
   private changeSheet = () => {
     this.active = undefined;
-    // this.dirtyBorders = true;
     this.dirtyResizing = true;
   };
 
@@ -62,19 +66,20 @@ export class UICellImages extends Container {
         const color = convertColorStringToTint(`hsl(${hslColorFromCssVar})`);
         this.resizing.lineStyle({ color, width: IMAGE_BORDER_WIDTH });
 
+        const table = this.active.table;
         // vertical line on the right
         const top = this.active.sheet.offsets.getRowHeight(this.active.pos.y);
-        this.resizing.moveTo(this.active.viewBounds.right + IMAGE_BORDER_OFFSET, this.active.viewBounds.top - top);
+        this.resizing.moveTo(table.tableBounds.right + IMAGE_BORDER_OFFSET, table.tableBounds.top - top);
         this.resizing.lineTo(
-          this.active.viewBounds.right + IMAGE_BORDER_OFFSET,
-          this.active.viewBounds.bottom + IMAGE_BORDER_OFFSET
+          table.tableBounds.right + IMAGE_BORDER_OFFSET,
+          table.tableBounds.bottom + IMAGE_BORDER_OFFSET
         );
 
         // horizontal line on the bottom
-        this.resizing.moveTo(this.active.viewBounds.left, this.active.viewBounds.bottom + IMAGE_BORDER_OFFSET);
+        this.resizing.moveTo(table.tableBounds.left, table.tableBounds.bottom + IMAGE_BORDER_OFFSET);
         this.resizing.lineTo(
-          this.active.viewBounds.right + IMAGE_BORDER_OFFSET,
-          this.active.viewBounds.bottom + IMAGE_BORDER_OFFSET
+          table.tableBounds.right + IMAGE_BORDER_OFFSET,
+          table.tableBounds.bottom + IMAGE_BORDER_OFFSET
         );
       }
       return true;
@@ -88,7 +93,7 @@ export class UICellImages extends Container {
   }
 
   get dirty(): boolean {
-    return !!this.animationState || /*this.dirtyBorders ||*/ this.dirtyResizing;
+    return !!this.animationState || this.dirtyResizing;
   }
 
   update(): boolean {
@@ -117,13 +122,10 @@ export class UICellImages extends Container {
           this.resizing.alpha = (1 - this.easeInOutSine(this.animationTime, TRANSITION_TIME_MS)) as number;
         }
       }
-      // this.drawBorders();
       this.drawResizing();
       return true;
     } else {
-      // let rendered = this.drawBorders();
       if (this.drawResizing()) return true;
-      // return rendered;
       return false;
     }
   }
