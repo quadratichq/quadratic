@@ -9,7 +9,6 @@ import { IMAGE_BORDER_OFFSET } from '@/app/gridGL/UI/UICellImages';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle, type Point } from 'pixi.js';
 
-// const MIN_SIZE = 100;
 const CORNER_SIZE = 20;
 
 export type ResizeSide = 'right' | 'bottom' | 'both';
@@ -66,18 +65,20 @@ export class PointerImages {
       end.column = Math.max(end.column, image.column);
       end.row = Math.max(end.row, image.row + 1);
 
-      // if not corner, then keep the original width/height
-      if (this.resizing.side === 'right') {
-        end.row = image.table.tableBounds.bottom;
-      } else if (this.resizing.side === 'bottom') {
-        end.column = image.table.tableBounds.right;
-      }
       const screenRectangle = sheets.sheet.getScreenRectangle(
         image.column,
         image.row,
         end.column - image.column + 1,
         end.row - image.row + 1
       );
+
+      // if not corner, then keep the original width/height
+      if (this.resizing.side === 'right') {
+        screenRectangle.height = image.table.tableBounds.bottom - screenRectangle.top;
+      } else if (this.resizing.side === 'bottom') {
+        screenRectangle.width = image.table.tableBounds.right - screenRectangle.left;
+      }
+
       this.resizing.image.temporaryResize(screenRectangle.width, screenRectangle.height);
       this.resizing.table.resize(screenRectangle.width, screenRectangle.height);
       pixiApp.cellImages.setDirty();
@@ -142,7 +143,7 @@ export class PointerImages {
         this.resizing.image.column,
         this.resizing.image.row,
         tableBounds.right - tableBounds.left - 1,
-        tableBounds.bottom - tableBounds.top - top - 1
+        tableBounds.bottom - tableBounds.top - top - 2
       );
       this.resizing = undefined;
       return true;

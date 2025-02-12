@@ -68,8 +68,7 @@ export class UICellImages extends Container {
 
         const table = this.active.table;
         // vertical line on the right
-        const top = this.active.sheet.offsets.getRowHeight(this.active.pos.y);
-        this.resizing.moveTo(table.tableBounds.right + IMAGE_BORDER_OFFSET, table.tableBounds.top - top);
+        this.resizing.moveTo(table.tableBounds.right + IMAGE_BORDER_OFFSET, table.tableBounds.top);
         this.resizing.lineTo(
           table.tableBounds.right + IMAGE_BORDER_OFFSET,
           table.tableBounds.bottom + IMAGE_BORDER_OFFSET

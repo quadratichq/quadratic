@@ -10,6 +10,8 @@ import type { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClient
 import type { Point } from 'pixi.js';
 import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
 
+// todo: rename to resize; separate bottom and right bars so they can animate separately
+
 export class CellsImage extends Container {
   private cellsSheet: CellsSheet;
 
@@ -65,8 +67,6 @@ export class CellsImage extends Container {
       throw new Error('Expected message.image to be defined in SpriteImage.updateMessage');
     }
     this.sprite.texture = Texture.from(message.image);
-    // this.imageWidth = message.pixel_width;
-    // this.imageHeight = message.pixel_height;
     this.resizeImage();
   }
 
