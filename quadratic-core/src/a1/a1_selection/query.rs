@@ -371,11 +371,19 @@ impl A1Selection {
     /// Used to trigger Python get_cells call to return a DataFrame with the
     /// appropriate column headers. This is true if the selection is a table and
     /// data is included.
-    pub fn has_table_headers(&self) -> bool {
+    pub fn has_table_headers(&self, context: &A1Context, is_python: bool) -> bool {
         if self.ranges.len() != 1 {
             return false;
         }
+
         if let Some(CellRefRange::Table { range }) = self.ranges.first() {
+            if is_python {
+                let show_columns = context
+                    .try_table(&range.table_name)
+                    .map_or(false, |table| table.show_columns);
+                return show_columns || range.headers;
+            }
+
             range.data || range.headers
         } else {
             false
@@ -825,10 +833,13 @@ mod tests {
     #[test]
     fn test_has_table_headers() {
         let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
-        assert!(A1Selection::test_a1_context("Table1", &context).has_table_headers());
-        assert!(A1Selection::test_a1_context("Table1[#ALL]", &context).has_table_headers());
-        assert!(A1Selection::test_a1_context("Table1[#headers]", &context).has_table_headers());
-        assert!(A1Selection::test_a1_context("Table1[#all]", &context).has_table_headers());
+        assert!(A1Selection::test_a1_context("Table1", &context).has_table_headers(&context, false));
+        assert!(A1Selection::test_a1_context("Table1[#ALL]", &context)
+            .has_table_headers(&context, false));
+        assert!(A1Selection::test_a1_context("Table1[#headers]", &context)
+            .has_table_headers(&context, false));
+        assert!(A1Selection::test_a1_context("Table1[#all]", &context)
+            .has_table_headers(&context, false));
     }
 
     #[test]
