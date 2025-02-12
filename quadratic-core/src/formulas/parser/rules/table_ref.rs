@@ -74,8 +74,8 @@ impl_display!(for TableReference, "table reference such as 'MyTable[Column Name]
 impl SyntaxRule for TableReference {
     type Output = Spanned<TableRef>;
 
-    fn prefix_matches(&self, p: Parser<'_>) -> bool {
-        is_table_ref(p) == Some(true)
+    fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
+        p.try_parse(SheetRefPrefix).transpose().is_ok() && is_table_ref(p) == Some(true)
     }
 
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {

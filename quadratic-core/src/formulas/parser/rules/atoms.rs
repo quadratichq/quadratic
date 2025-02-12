@@ -100,8 +100,8 @@ impl_display!(for CellReference, "cell reference such as 'A6' or '$ZB$3'");
 impl SyntaxRule for CellReference {
     type Output = Spanned<(Option<SheetId>, RefRangeBounds)>;
 
-    fn prefix_matches(&self, p: Parser<'_>) -> bool {
-        is_table_ref(p) == Some(false)
+    fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
+        p.try_parse(SheetRefPrefix).transpose().is_ok() && is_table_ref(p) == Some(false)
     }
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         let start_span = p.peek_next_span();
