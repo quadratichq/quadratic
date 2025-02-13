@@ -38,7 +38,6 @@ const insertColumnRight: ActionSpec<void> = {
     quadraticCore.insertColumn(sheets.current, sheets.sheet.cursor.position.x + 1, false, sheets.getCursorPosition()),
 };
 
-
 const deleteColumns: ActionSpec<void> = {
   label: `Delete column(s)`,
   isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) => {

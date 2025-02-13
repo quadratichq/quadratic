@@ -7,7 +7,12 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { CodeCellLanguage, JsDataTableColumnHeader, JsRenderCodeCell, SheetRect } from '@/app/quadratic-core-types';
+import type {
+  CodeCellLanguage,
+  JsDataTableColumnHeader,
+  JsRenderCodeCell,
+  SheetRect,
+} from '@/app/quadratic-core-types';
 import { newRectSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
@@ -69,14 +74,15 @@ export const getRow = (): number | undefined => {
   return row - table.y;
 };
 
-
 export const getSelectedRows = (): number[] | undefined => {
   const table = getTable();
 
   if (!table) return undefined;
 
-  return sheets.sheet.cursor.getSelectedRows().map((r) => r - table.y).sort((a, b) => b - a);
-
+  return sheets.sheet.cursor
+    .getSelectedRows()
+    .map((r) => r - table.y)
+    .sort((a, b) => b - a);
 };
 
 // returns the column index of the selected column, starting from 0
@@ -121,8 +127,10 @@ export const getColumns = (): JsDataTableColumnHeader[] | undefined => {
 };
 
 export const getSelectedColumns = (): number[] | undefined => {
-  return sheets.sheet.cursor.getSelectedColumns().map((c) => c - 1).sort((a, b) => b - a);
-
+  return sheets.sheet.cursor
+    .getSelectedColumns()
+    .map((c) => c - 1)
+    .sort((a, b) => b - a);
 };
 
 export const getDisplayColumns = (): JsDataTableColumnHeader[] | undefined => {
@@ -342,7 +350,6 @@ export const insertTableColumn = (increment: number = 0, selectTable = true) => 
 //     });
 //   }
 // };
-
 
 export const removeTableColumn = (selectTable = true) => {
   const table = getTable();
@@ -583,7 +590,7 @@ export const dataTableSpec: DataTableSpec = {
     isAvailable: () => {
       const length = sheets.sheet.cursor.getSelectedColumns().length;
       const plural = length > 1 ? 's' : '';
-      dataTableSpec[Action.RemoveTableColumn].label= `Delete ${length} column${plural}`;
+      dataTableSpec[Action.RemoveTableColumn].label = `Delete ${length} column${plural}`;
       return !isReadOnly() && isWithinTable();
     },
     run: () => removeTableColumn(true),
@@ -616,7 +623,7 @@ export const dataTableSpec: DataTableSpec = {
     isAvailable: () => {
       const length = sheets.sheet.cursor.getSelectedRows().length;
       const plural = length > 1 ? 's' : '';
-      dataTableSpec[Action.RemoveTableRow].label= `Delete ${length} row${plural}`;
+      dataTableSpec[Action.RemoveTableRow].label = `Delete ${length} row${plural}`;
       return !isReadOnly() && isWithinTable();
     },
     run: () => removeTableRow(true),
