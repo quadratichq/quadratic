@@ -130,14 +130,14 @@ impl SyntaxRule for CellRangeReference {
     }
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         let ref1 = p.parse(CellReference)?;
-        dbg!(ref1.span.of_str(p.source_str));
+        ref1.span.of_str(p.source_str);
         let (sheet1, range1) = ref1.inner;
         let sheet_id = sheet1.unwrap_or(p.pos.sheet_id);
 
         // Check for a range reference.
         let span;
         let range;
-        if dbg!(p.try_parse(Token::CellRangeOp)).is_some() {
+        if p.try_parse(Token::CellRangeOp).is_some() {
             let ref2 = p.parse(CellReference)?;
             let (sheet2, range2) = ref2.inner;
             if sheet2.is_some() {
