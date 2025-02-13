@@ -20,8 +20,7 @@ export function GridContextMenuCodeTable() {
 }
 
 export function ContextMenuCodeTableItems({ showUseFirstRowAsHeader }: { showUseFirstRowAsHeader?: boolean }) {
-  // TODO:(ddimaria) only show useFirstRowAsHeader if the language is Javascript
-  // Also: don't show 'use first row as...' if 'show column names' is true (see: data tables)
+  // TODO:(ddimaria: don't show 'use first row as...' if 'show column names' is true (see: data tables)
 
   return (
     <>
@@ -29,12 +28,7 @@ export function ContextMenuCodeTableItems({ showUseFirstRowAsHeader }: { showUse
       <ContextMenuItemAction action={Action.SortTable} />
       <ContextMenuItemAction action={Action.FlattenTable} />
       <ContextMenuItemAction action={Action.GridToDataTable} />
-      {false && (
-        <>
-          <ContextMenuItemAction action={Action.ToggleFirstRowAsHeaderTable} />
-        </>
-      )}
-
+      <ContextMenuItemAction action={Action.ToggleFirstRowAsHeaderTable} />
       <DropdownMenuSeparator />
       <ContextMenuItemAction action={Action.ToggleTableName} />
       <ContextMenuItemAction action={Action.ToggleTableColumns} />
