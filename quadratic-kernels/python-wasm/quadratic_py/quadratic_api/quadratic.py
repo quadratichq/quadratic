@@ -142,7 +142,7 @@ class q:
         Typical usage example:
             c = q.cells("A1:B5")
         """
-        result = getCellsA1(a1, int(stack_line_number()), first_row_header)
+        result = getCellsA1(a1, first_row_header)
 
         if result.w == 1 and result.h == 1:
             return result_to_value(result.cells[0])
