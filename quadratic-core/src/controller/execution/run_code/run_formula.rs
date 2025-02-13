@@ -355,7 +355,7 @@ mod test {
                 y: 1,
                 sheet_id,
             },
-            vec![vec!["1", "2", "3"]],
+            vec![vec!["1".into(), "2".into(), "3".into()]],
             None,
         );
 

@@ -88,30 +88,24 @@ impl TryFrom<Value> for Vec<Array> {
     }
 }
 
-// TODO(ddimaria): this function makes a copy of the data, consider consuming the vec
 impl From<Vec<Vec<String>>> for Array {
     fn from(v: Vec<Vec<String>>) -> Self {
         let w = v[0].len();
         let h = v.len();
         Array {
             size: ArraySize::new(w as u32, h as u32).unwrap(),
-            values: v
-                .iter()
-                .flatten()
-                .map(|s| CellValue::from(s.as_ref()))
-                .collect(),
+            values: v.into_iter().flatten().map(CellValue::from).collect(),
         }
     }
 }
 
-// TODO(ddimaria): this function makes a copy of the data, consider consuming the vec
 impl From<Vec<Vec<&str>>> for Array {
     fn from(v: Vec<Vec<&str>>) -> Self {
         let w = v[0].len();
         let h = v.len();
         Array {
             size: ArraySize::new(w as u32, h as u32).unwrap(),
-            values: v.iter().flatten().map(|s| (*s).into()).collect(),
+            values: v.into_iter().flatten().map(CellValue::from).collect(),
         }
     }
 }

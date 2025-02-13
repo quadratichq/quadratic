@@ -380,7 +380,7 @@ impl A1Selection {
             if is_python {
                 let show_columns = context
                     .try_table(&range.table_name)
-                    .map_or(false, |table| table.show_columns);
+                    .is_some_and(|table| table.show_columns);
                 return show_columns || range.headers;
             }
 

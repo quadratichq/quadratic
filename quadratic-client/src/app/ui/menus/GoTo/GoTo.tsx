@@ -133,8 +133,7 @@ export const GoTo = () => {
     () =>
       tableInfo
         ? tableInfo.filter(({ name, language }) => {
-            // If it has a language, it's a code table
-            if (language !== null) {
+            if (language !== 'Import') {
               return false;
             }
 
@@ -148,8 +147,7 @@ export const GoTo = () => {
     () =>
       tableInfo
         ? tableInfo.filter(({ name, language }) => {
-            // If there's no language, it's a data table
-            if (language === null) {
+            if (!language || language === 'Formula' || language === 'Import') {
               return false;
             }
             return value ? name.toLowerCase().includes(value.toLowerCase()) : true;

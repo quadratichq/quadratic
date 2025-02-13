@@ -5,6 +5,7 @@ use crate::{
     },
     grid::{file::sheet_schema::export_sheet, Sheet, SheetId},
 };
+use anyhow::Result;
 use lexicon_fractional_index::key_between;
 
 impl GridController {
@@ -38,15 +39,28 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         op: Operation,
-    ) {
+    ) -> Result<()> {
         if let Operation::AddSheetSchema { schema } = op {
             if let Ok(sheet) = schema.clone().into_latest() {
                 if self.grid.try_sheet(sheet.id).is_some() {
                     // sheet already exists (unlikely but possible if this operation is run twice)
-                    return;
+                    return Ok(());
                 }
                 let sheet_id = sheet.id;
+                let data_tables = sheet
+                    .data_tables
+                    .iter()
+                    .map(|(pos, data_table)| (pos.to_owned(), data_table.name.to_string()))
+                    .collect::<Vec<_>>();
                 self.grid.add_sheet(Some(sheet));
+
+                for (pos, name) in data_tables.iter() {
+                    let sheet_pos = pos.to_sheet_pos(sheet_id);
+                    self.grid
+                        .update_data_table_name(sheet_pos, name, name, false)?;
+                    // mark code cells dirty to update meta data
+                    transaction.add_code_cell(sheet_id, *pos);
+                }
 
                 self.send_add_sheet(sheet_id, transaction);
                 self.send_all_fills(sheet_id);
@@ -61,6 +75,7 @@ impl GridController {
                 transaction.sheet_borders.insert(sheet_id);
             }
         }
+        Ok(())
     }
 
     pub(crate) fn execute_delete_sheet(

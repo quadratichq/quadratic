@@ -57,13 +57,16 @@ pub enum Operation {
     DeleteDataTable {
         sheet_pos: SheetPos,
     },
-
-    // todo: this needs to be replaced with a chart size based on cells instead
-    // of pixels
+    // **Deprecated** and replaced with SetChartCellSize
     SetChartSize {
         sheet_pos: SheetPos,
         pixel_width: f32,
         pixel_height: f32,
+    },
+    SetChartCellSize {
+        sheet_pos: SheetPos,
+        w: u32,
+        h: u32,
     },
     SetDataTableAt {
         sheet_pos: SheetPos,
@@ -113,6 +116,9 @@ pub enum Operation {
 
         /// swallow neighboring cells
         swallow: bool,
+
+        /// select the table after the operation
+        select_table: bool,
     },
     DeleteDataTableColumn {
         sheet_pos: SheetPos,
@@ -120,6 +126,9 @@ pub enum Operation {
 
         /// Inserts the removed column into sheet at the same position.
         flatten: bool,
+
+        /// select the table after the operation
+        select_table: bool,
     },
     InsertDataTableRow {
         sheet_pos: SheetPos,
@@ -128,6 +137,9 @@ pub enum Operation {
 
         /// swallow neighboring cells
         swallow: bool,
+
+        /// select the table after the operation
+        select_table: bool,
     },
     DeleteDataTableRow {
         sheet_pos: SheetPos,
@@ -135,6 +147,9 @@ pub enum Operation {
 
         /// Inserts the removed row into sheet at the same position.
         flatten: bool,
+
+        /// select the table after the operation
+        select_table: bool,
     },
     SetCodeRun {
         sheet_pos: SheetPos,
@@ -419,22 +434,24 @@ impl fmt::Display for Operation {
                 column_header: name,
                 values,
                 swallow,
+                select_table,
             } => {
                 write!(
                     fmt,
-                    "InsertDataTableColumn {{ sheet_pos: {}, index: {}, name: {:?}, values: {:?}, swallow: {} }}",
-                    sheet_pos, index, name, values,swallow
+                    "InsertDataTableColumn {{ sheet_pos: {}, index: {}, name: {:?}, values: {:?}, swallow: {}, select_table: {} }}",
+                    sheet_pos, index, name, values, swallow, select_table
                 )
             }
             Operation::DeleteDataTableColumn {
                 sheet_pos,
                 index,
                 flatten,
+                select_table,
             } => {
                 write!(
                     fmt,
-                    "DeleteDataTableColumn {{ sheet_pos: {}, index: {}, flatten: {} }}",
-                    sheet_pos, index, flatten
+                    "DeleteDataTableColumn {{ sheet_pos: {}, index: {}, flatten: {}, select_table: {} }}",
+                    sheet_pos, index, flatten, select_table
                 )
             }
             Operation::InsertDataTableRow {
@@ -442,22 +459,24 @@ impl fmt::Display for Operation {
                 index,
                 values,
                 swallow,
+                select_table,
             } => {
                 write!(
                     fmt,
-                    "InsertDataTableRow {{ sheet_pos: {}, index: {}, values: {:?}, swallow: {} }}",
-                    sheet_pos, index, values, swallow
+                    "InsertDataTableRow {{ sheet_pos: {}, index: {}, values: {:?}, swallow: {}, select_table: {} }}",
+                    sheet_pos, index, values, swallow, select_table
                 )
             }
             Operation::DeleteDataTableRow {
                 sheet_pos,
                 index,
                 flatten,
+                select_table,
             } => {
                 write!(
                     fmt,
-                    "DeleteDataTableRow {{ sheet_pos: {}, index: {}, flatten: {} }}",
-                    sheet_pos, index, flatten
+                    "DeleteDataTableRow {{ sheet_pos: {}, index: {}, flatten: {}, select_table: {} }}",
+                    sheet_pos, index, flatten, select_table
                 )
             }
             Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats - deprecated",),
@@ -632,6 +651,13 @@ impl fmt::Display for Operation {
                 "SetChartSize {{ sheet_pos: {}, pixel_width: {}, pixel_height: {} }}",
                 sheet_pos, pixel_width, pixel_height
             ),
+            Operation::SetChartCellSize { sheet_pos, w, h } => {
+                write!(
+                    fmt,
+                    "SetChartCellSize {{ sheet_pos: {}, w: {}, h: {} }}",
+                    sheet_pos, w, h
+                )
+            }
         }
     }
 }

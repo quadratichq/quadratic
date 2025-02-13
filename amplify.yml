@@ -1,6 +1,14 @@
 version: 1
 frontend:
   phases:
+    preBuild:
+      commands:
+        - export NODE_OPTIONS=--max-old-space-size=16384
+        - sudo fallocate -l 16G swapfile || sudo dd if=/dev/zero of=swapfile bs=1M count=8192
+        - sudo chmod 600 swapfile
+        - sudo mkswap swapfile
+        - sudo swapon swapfile
+        - free -h
     build:
       commands:
         - ./infra/client/build-client-ci.sh
@@ -8,6 +16,16 @@ frontend:
     baseDirectory: build
     files:
       - "**/*"
+  cache:
+    paths:
+      - node_modules/**/*
+      - target/release/**/*
+      - target/debug/deps/**/*
+      - target/debug/build/**/*
+      - target/wasm32-unknown-unknown/**/*
+      - ~/.cargo/registry/cache/**/*
+      - ~/.cargo/registry/index/**/*
+      - ~/.cargo/git/db/**/*
   customHeaders:
     - pattern: "**/*"
       headers:

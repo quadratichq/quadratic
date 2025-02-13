@@ -41,7 +41,7 @@ impl GridController {
         let pos = Pos::from(sheet_pos);
 
         if let Ok(sheet) = self.try_sheet_mut_result(sheet_pos.sheet_id) {
-            if pos.x > 1 && pos.y > 1 {
+            if pos.x > 1 {
                 let data_table_left = sheet.first_data_table_within(Pos::new(pos.x - 1, pos.y));
                 if let Ok(data_table_left) = data_table_left {
                     if let Some(data_table) =
@@ -101,11 +101,14 @@ impl GridController {
                                 column_header: None,
                                 values: None,
                                 swallow: true,
+                                select_table: false,
                             });
                         }
                     }
                 }
+            }
 
+            if pos.y > 1 {
                 let data_table_above = sheet.first_data_table_within(Pos::new(pos.x, pos.y - 1));
                 if let Ok(data_table_above) = data_table_above {
                     if let Some(data_table) =
@@ -129,6 +132,7 @@ impl GridController {
                             index: data_table.height(false) as u32,
                             values: None,
                             swallow: true,
+                            select_table: false,
                         });
                     }
                 }
@@ -149,22 +153,10 @@ impl GridController {
     pub fn set_cell_values(
         &mut self,
         sheet_pos: SheetPos,
-        values: Vec<Vec<&str>>,
+        values: Vec<Vec<String>>,
         cursor: Option<String>,
     ) {
-        let mut ops = vec![];
-        let mut x = sheet_pos.x;
-        let mut y = sheet_pos.y;
-
-        for row in values {
-            for value in row {
-                let op_sheet_pos = SheetPos::new(sheet_pos.sheet_id, x, y);
-                ops.extend(self.set_cell_value_operations(op_sheet_pos, value.to_string()));
-                x += 1;
-            }
-            x = sheet_pos.x;
-            y += 1;
-        }
+        let ops = self.set_cell_values_operations(sheet_pos, values);
         self.start_user_transaction(ops, cursor, TransactionName::SetCells);
     }
 

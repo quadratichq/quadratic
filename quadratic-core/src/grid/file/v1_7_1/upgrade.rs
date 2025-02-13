@@ -2,10 +2,16 @@ use anyhow::Result;
 
 use crate::grid::file::serialize::contiguous_2d::import_contiguous_2d;
 use crate::grid::file::serialize::contiguous_2d::opt_fn;
+use crate::grid::file::v1_7::schema::OffsetsSchema;
 use crate::grid::file::v1_7_1 as current;
 use crate::grid::file::v1_8;
 use crate::grid::formatting::RenderSize;
 use crate::Pos;
+
+use super::sheet_offsets::Offsets;
+
+const DEFAULT_HTML_WIDTH: f32 = 600.0;
+const DEFAULT_HTML_HEIGHT: f32 = 460.0;
 
 fn import_render_size(render_size: current::RenderSizeSchema) -> RenderSize {
     RenderSize {
@@ -18,6 +24,7 @@ fn upgrade_code_runs(
     code_runs: Vec<(current::PosSchema, current::CodeRunSchema)>,
     columns: &[(i64, current::ColumnSchema)],
     render_size: current::Contiguous2DSchema<Option<current::RenderSizeSchema>>,
+    offsets: &OffsetsSchema,
 ) -> Result<Vec<(v1_8::PosSchema, v1_8::DataTableSchema)>> {
     let render_size = import_contiguous_2d(render_size, opt_fn(import_render_size));
     code_runs
@@ -43,29 +50,16 @@ fn upgrade_code_runs(
                 .get(i)
                 .ok_or_else(|| anyhow::anyhow!("Column {} not found", i))?;
 
-            let data_table_name = column
-                .1
-                .iter()
-                .filter_map(|(_, value)| {
-                    if let current::CellValueSchema::Code(code_cell) = value {
-                        let language = match code_cell.language {
-                            current::CodeCellLanguageSchema::Formula => "Formula",
-                            current::CodeCellLanguageSchema::Javascript => "JavaScript",
-                            current::CodeCellLanguageSchema::Python => "Python",
-                            _ => "Table1",
-                        };
-                        return Some(language);
-                    }
-                    None
-                })
-                .collect::<Vec<_>>();
-
-            let data_table_name = data_table_name.first().unwrap_or(&"Table");
-            let data_table_name = format!("{}{}", data_table_name, i);
-
+            let mut is_chart_or_html = false;
             let value = if let current::CodeRunResultSchema::Ok(value) = &code_run.result {
                 match value.to_owned() {
                     current::OutputValueSchema::Single(cell_value) => {
+                        if matches!(
+                            cell_value,
+                            current::CellValueSchema::Html(_) | current::CellValueSchema::Image(_)
+                        ) {
+                            is_chart_or_html = true;
+                        }
                         v1_8::OutputValueSchema::Single(cell_value)
                     }
                     current::OutputValueSchema::Array(array) => {
@@ -82,6 +76,26 @@ fn upgrade_code_runs(
                 v1_8::OutputValueSchema::Single(v1_8::CellValueSchema::Blank)
             };
 
+            let data_table_name = column
+                .1
+                .iter()
+                .filter_map(|(_, value)| {
+                    if let current::CellValueSchema::Code(code_cell) = value {
+                        let language = match code_cell.language {
+                            current::CodeCellLanguageSchema::Formula => "Formula",
+                            current::CodeCellLanguageSchema::Javascript => "JavaScript",
+                            current::CodeCellLanguageSchema::Python => "Python",
+                            _ => "Table",
+                        };
+                        return Some(language);
+                    }
+                    None
+                })
+                .collect::<Vec<_>>();
+
+            let data_table_name = data_table_name.first().unwrap_or(&"Table");
+            let data_table_name = format!("{}{}", data_table_name, i + 1);
+
             let chart_pos = Pos { x: pos.x, y: pos.y };
             let chart_pixel_output = render_size.get(chart_pos).and_then(|render_size| {
                 render_size
@@ -90,11 +104,27 @@ fn upgrade_code_runs(
                     .ok()
                     .and_then(|w| render_size.h.parse::<f32>().ok().map(|h| (w, h)))
             });
+            let chart_output = if is_chart_or_html {
+                let (pixel_width, pixel_height) =
+                    chart_pixel_output.unwrap_or((DEFAULT_HTML_WIDTH, DEFAULT_HTML_HEIGHT));
+                let column_widths = Offsets::import_columns(offsets.0.clone());
+                let start_x = column_widths.position(pos.x);
+                let end = column_widths.find_offset(start_x + pixel_width as f64).0;
+                let w = end - pos.x + 1;
+
+                let row_heights = Offsets::import_rows(offsets.1.clone());
+                let start_y = row_heights.position(pos.y);
+                let end = row_heights.find_offset(start_y + pixel_height as f64).0;
+                let h = end - pos.y + 1;
+                Some((w as u32, h as u32))
+            } else {
+                None
+            };
             let new_data_table = v1_8::DataTableSchema {
                 kind: v1_8::DataTableKindSchema::CodeRun(new_code_run),
                 name: data_table_name,
                 header_is_first_row: false,
-                show_ui: false,
+                show_ui: chart_output.is_some(),
                 show_name: true,
                 show_columns: true,
                 columns: None,
@@ -108,7 +138,7 @@ fn upgrade_code_runs(
                 formats: Default::default(),
                 borders: Default::default(),
                 chart_pixel_output,
-                chart_output: None,
+                chart_output,
             };
             Ok((v1_8::PosSchema::from(pos), new_data_table))
         })
@@ -148,6 +178,9 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_8::SheetSchema {
         strike_through: formats.strike_through,
     };
 
+    let data_tables =
+        upgrade_code_runs(code_runs, &columns, render_size, &offsets).unwrap_or_default();
+
     v1_8::SheetSchema {
         id,
         name,
@@ -158,7 +191,7 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_8::SheetSchema {
         validations,
         borders,
         formats: upgraded_formats,
-        data_tables: upgrade_code_runs(code_runs, &columns, render_size).unwrap_or_default(),
+        data_tables,
         columns,
     }
 }

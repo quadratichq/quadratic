@@ -1217,6 +1217,7 @@ class Core {
     sheetId: string;
     x: number;
     y: number;
+    select_table: boolean;
     columns_to_add?: number[];
     columns_to_remove?: number[];
     rows_to_add?: number[];
@@ -1229,6 +1230,7 @@ class Core {
     this.gridController.dataTableMutations(
       args.sheetId,
       posToPos(args.x, args.y),
+      args.select_table,
       args.columns_to_add ? new Uint32Array(args.columns_to_add) : undefined,
       args.columns_to_remove ? new Uint32Array(args.columns_to_remove) : undefined,
       args.rows_to_add ? new Uint32Array(args.rows_to_add) : undefined,

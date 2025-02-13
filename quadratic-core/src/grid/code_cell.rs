@@ -47,7 +47,7 @@ impl CodeCellValue {
                 let full_match = &caps[0]; // Capture the entire match
                 let a1_str = &caps[2]; // Capture the first argument which is inside quotes
 
-                match A1Selection::parse(a1_str, default_sheet_id, a1_context) {
+                match A1Selection::parse_a1(a1_str, default_sheet_id, a1_context) {
                     Ok(mut a1_selection) => {
                         let a1_str = func(&mut a1_selection);
 

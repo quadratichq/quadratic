@@ -98,7 +98,6 @@ pub(crate) fn datetime(s: &str) -> CellValue {
 
 #[test]
 #[parallel]
-// TODO(ddimaria): @HactarCE fix broken test
 fn test_formula_cell_ref() {
     let form = simple_parse_formula("SUM(A1:A5)").unwrap();
 
@@ -442,7 +441,7 @@ fn test_table_references() {
             "{Southborough, MA, United States; Northbridge, MA, United States; Westborough, MA, United States; Marlborough, MA, United States; Springfield, MA, United States; Springfield, MO, United States; Springfield, NJ, United States; Springfield, OH, United States; Springfield, OR, United States; Concord, NH, United States}",
         ),
         (
-            "simple.csv[[#headers], [[city]:[country]]]",
+            "simple.csv[[#headers], [city]:[country]]",
             "{city, region, country}",
         ),
         (

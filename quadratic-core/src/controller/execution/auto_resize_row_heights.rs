@@ -212,14 +212,14 @@ mod tests {
                 sheet_id,
             },
             vec![
-                vec!["1"],
-                vec!["2"],
-                vec!["3"],
-                vec!["4"],
-                vec!["5"],
-                vec!["6"],
-                vec!["7"],
-                vec!["8"],
+                vec!["1".into()],
+                vec!["2".into()],
+                vec!["3".into()],
+                vec!["4".into()],
+                vec!["5".into()],
+                vec!["6".into()],
+                vec!["7".into()],
+                vec!["8".into()],
             ],
             None,
         );
@@ -565,7 +565,12 @@ mod tests {
         };
         gc.set_cell_values(
             sheet_pos,
-            vec![vec!["one"], vec!["two"], vec!["three"], vec!["four"]],
+            vec![
+                vec!["one".into()],
+                vec!["two".into()],
+                vec!["three".into()],
+                vec!["four".into()],
+            ],
             None,
         );
         gc.set_cell_wrap(&A1Selection::test_a1("A1:J10"), CellWrap::Wrap, None)

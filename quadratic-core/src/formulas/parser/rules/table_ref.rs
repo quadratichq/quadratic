@@ -11,7 +11,8 @@ use super::*;
 /// matches neither.
 pub(super) fn is_table_ref(mut p: Parser<'_>) -> Option<bool> {
     match p.next()? {
-        Token::CellOrTableRef | Token::InternalCellRef => Some(p.ctx.has_table(p.token_str())),
+        Token::CellOrTableRef => Some(p.ctx.has_table(p.token_str())),
+        Token::InternalCellRef => Some(false),
         Token::UnquotedSheetReference => {
             p.next();
             Some(p.ctx.has_table(p.token_str()))
@@ -74,8 +75,8 @@ impl_display!(for TableReference, "table reference such as 'MyTable[Column Name]
 impl SyntaxRule for TableReference {
     type Output = Spanned<TableRef>;
 
-    fn prefix_matches(&self, p: Parser<'_>) -> bool {
-        is_table_ref(p) == Some(true)
+    fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
+        p.try_parse(SheetRefPrefix).transpose().is_ok() && is_table_ref(p) == Some(true)
     }
 
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
@@ -140,7 +141,7 @@ impl SyntaxRule for TableReference {
                                             _ => col_range = Some(ColRange::ColToEnd(start_col)),
                                         }
                                     } else {
-                                        col_range = Some(ColRange::Col(start_col))
+                                        col_range = Some(ColRange::Col(start_col));
                                     }
                                 }
                                 TableRefToken::Special(s) => special_segments.push(s),

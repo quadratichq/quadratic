@@ -222,7 +222,7 @@ mod tests {
                         CellRefCoord::new_rel(1),
                         CellRefCoord::new_rel(1),
                         CellRefCoord::new_rel(1),
-                        CellRefCoord::new_abs(UNBOUNDED),
+                        CellRefCoord::UNBOUNDED,
                     ),
                 },
             }]

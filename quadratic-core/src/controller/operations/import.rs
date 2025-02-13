@@ -6,12 +6,11 @@ use csv_sniffer::Sniffer;
 
 use crate::{
     arrow::arrow_col_to_cell_value_vec,
-    cell_values::CellValues,
     cellvalue::Import,
     controller::GridController,
     grid::{
-        file::sheet_schema::export_sheet, CodeCellLanguage, CodeCellValue, DataTable, Sheet,
-        SheetId,
+        file::sheet_schema::export_sheet, formats::SheetFormatUpdates, CodeCellLanguage,
+        CodeCellValue, DataTable, Sheet, SheetId,
     },
     Array, ArraySize, CellValue, Pos, SheetPos,
 };
@@ -83,7 +82,7 @@ impl GridController {
         has_heading: Option<bool>,
     ) -> Result<Vec<Operation>> {
         let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
-        let import = Import::new(file_name.into());
+
         let file: &[u8] = match String::from_utf8_lossy(&file) {
             Cow::Borrowed(_) => &file,
             Cow::Owned(_) => {
@@ -136,9 +135,10 @@ impl GridController {
             bail!("empty files cannot be processed");
         }
 
-        let mut ops = vec![] as Vec<Operation>;
         let array_size = ArraySize::new_or_err(width, height).map_err(|e| error(e.to_string()))?;
         let mut cell_values = Array::new_empty(array_size);
+        let mut sheet_format_updates = SheetFormatUpdates::default();
+
         let mut y: u32 = 0;
 
         for entry in reader(true).records() {
@@ -146,18 +146,19 @@ impl GridController {
                 Err(e) => return Err(error(format!("line {}: {}", y + 1, e))),
                 Ok(record) => {
                     for (x, value) in record.iter().enumerate() {
-                        let (operations, cell_value) = self.string_to_cell_value(
-                            SheetPos {
-                                x: insert_at.x + x as i64,
-                                y: insert_at.y + y as i64,
-                                sheet_id,
-                            },
-                            value,
-                        );
-                        ops.extend(operations);
+                        let (cell_value, format_update) = self.string_to_cell_value(value, false);
+
                         cell_values
-                            .set(x as u32, y, cell_value)
+                            .set(u32::try_from(x)?, y, cell_value)
                             .map_err(|e| error(e.to_string()))?;
+
+                        if !format_update.is_default() {
+                            let pos = Pos {
+                                x: x as i64 + 1,
+                                y: y as i64 + 1,
+                            };
+                            sheet_format_updates.set_format_cell(pos, format_update);
+                        }
                     }
                 }
             }
@@ -180,30 +181,22 @@ impl GridController {
             }
         }
 
-        // finally add the final operation
-        let mut data_table = DataTable::from((import.to_owned(), cell_values, &self.grid));
+        let import = Import::new(file_name.into());
+        let mut data_table =
+            DataTable::from((import.to_owned(), Array::new_empty(array_size), &self.grid));
+        data_table.name = CellValue::Text(file_name.to_string());
+        data_table.value = cell_values.into();
+        data_table.formats.apply_updates(&sheet_format_updates);
+        drop(sheet_format_updates);
         if Some(true) == has_heading {
             data_table.apply_first_row_as_header();
         }
 
-        data_table.name = CellValue::Text(file_name.to_string());
-        let sheet_pos = SheetPos::from((insert_at, sheet_id));
-
-        // this operation must be before the SetCodeRun operations
-        ops.push(Operation::SetCellValues {
-            sheet_pos,
-            values: CellValues::from(CellValue::Import(import)),
-        });
-
-        ops.push(Operation::SetDataTable {
-            sheet_pos: SheetPos {
-                x: insert_at.x,
-                y: insert_at.y,
-                sheet_id,
-            },
-            data_table: Some(data_table),
-            index: y as usize,
-        });
+        let ops = vec![Operation::AddDataTable {
+            sheet_pos: SheetPos::from((insert_at, sheet_id)),
+            data_table,
+            cell_value: CellValue::Import(import),
+        }];
 
         Ok(ops)
     }
@@ -382,8 +375,6 @@ impl GridController {
         file_name: &str,
         insert_at: Pos,
     ) -> Result<Vec<Operation>> {
-        let mut ops = vec![] as Vec<Operation>;
-        let import = Import::new(file_name.into());
         let error =
             |message: String| anyhow!("Error parsing Parquet file {}: {}", file_name, message);
 
@@ -450,21 +441,15 @@ impl GridController {
             }
         }
 
-        let sheet_pos = SheetPos::from((insert_at, sheet_id));
+        let import = Import::new(file_name.into());
         let mut data_table = DataTable::from((import.to_owned(), cell_values, &self.grid));
         data_table.apply_first_row_as_header();
 
-        // this operation must be before the SetCodeRun operations
-        ops.push(Operation::SetCellValues {
-            sheet_pos,
-            values: CellValues::from(CellValue::Import(import)),
-        });
-
-        ops.push(Operation::SetDataTable {
-            sheet_pos,
-            data_table: Some(data_table),
-            index: 0,
-        });
+        let ops = vec![Operation::AddDataTable {
+            sheet_pos: SheetPos::from((insert_at, sheet_id)),
+            data_table,
+            cell_value: CellValue::Import(import),
+        }];
 
         Ok(ops)
     }
@@ -585,25 +570,21 @@ mod test {
         let mut expected_data_table = DataTable::from((import, values.into(), &gc.grid));
         assert_display_cell_value(&gc, sheet_id, 1, 1, &cell_value.to_string());
 
-        let data_table = match ops[1].clone() {
-            Operation::SetDataTable { data_table, .. } => data_table.unwrap(),
-            _ => panic!("Expected SetCodeRun operation"),
+        let data_table = match ops[0].clone() {
+            Operation::AddDataTable { data_table, .. } => data_table,
+            _ => panic!("Expected AddDataTable operation"),
         };
         expected_data_table.last_modified = data_table.last_modified;
         expected_data_table.name = CellValue::Text(file_name.to_string());
 
-        let expected = Operation::SetDataTable {
-            sheet_pos: SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
-            data_table: Some(expected_data_table),
-            index: 2,
+        let expected = Operation::AddDataTable {
+            sheet_pos: SheetPos::new(sheet_id, 1, 1),
+            data_table: expected_data_table,
+            cell_value,
         };
 
-        assert_eq!(ops.len(), 2);
-        assert_eq!(ops[1], expected);
+        assert_eq!(ops.len(), 1);
+        assert_eq!(ops[0], expected);
     }
 
     #[test]
@@ -631,14 +612,14 @@ mod test {
         let cell_value = CellValue::Import(import.clone());
         assert_display_cell_value(&gc, sheet_id, 0, 0, &cell_value.to_string());
 
-        assert_eq!(ops.as_ref().unwrap().len(), 2);
+        assert_eq!(ops.as_ref().unwrap().len(), 1);
 
-        let (sheet_pos, data_table) = match &ops.unwrap()[1] {
-            Operation::SetDataTable {
+        let (sheet_pos, data_table) = match &ops.unwrap()[0] {
+            Operation::AddDataTable {
                 sheet_pos,
                 data_table,
                 ..
-            } => (*sheet_pos, data_table.clone().unwrap()),
+            } => (*sheet_pos, data_table.clone()),
             _ => panic!("Expected SetDataTable operation"),
         };
         assert_eq!(sheet_pos.x, 1);

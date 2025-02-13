@@ -127,19 +127,16 @@ mod tests {
 
     #[test]
     #[parallel]
-    // TODO(ddimaria): @HactarCE fix broken test
     fn test_formula_if() {
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, "q");
-        sheet.set_cell_value(Pos { x: 2, y: 1 }, "w");
-        let sheet_id = sheet.id;
+        sheet.set_cell_value(Pos { x: 1, y: 2 }, "q");
+        sheet.set_cell_value(Pos { x: 2, y: 2 }, "w");
 
-        let s = "IF(A1='q', 'yep', 'nope')";
-        let pos = pos![A0].to_sheet_pos(sheet_id);
-        assert_eq!("yep", eval_to_string_at(&g, pos, s));
-        let pos = pos![B1].to_sheet_pos(sheet_id);
-        assert_eq!("nope", eval_to_string_at(&g, pos, s));
+        let s = "IF(A2='q', 'yep', 'nope')";
+        assert_eq!("yep", eval_to_string(&g, s));
+        let s = "IF(B2='q', 'yep', 'nope')";
+        assert_eq!("nope", eval_to_string(&g, s));
 
         // Test short-circuiting
         assert_eq!("ok", eval_to_string(&g, "IF(TRUE,\"ok\",1/0)"));

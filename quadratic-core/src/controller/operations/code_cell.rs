@@ -1,9 +1,10 @@
 use super::operation::Operation;
 use crate::{
+    a1::A1Selection,
     cell_values::CellValues,
     controller::GridController,
     formulas::replace_a1_notation,
-    grid::{CodeCellLanguage, CodeCellValue, DataTable, SheetId},
+    grid::{formats::SheetFormatUpdates, CodeCellLanguage, CodeCellValue, DataTable, SheetId},
     CellValue, SheetPos,
 };
 
@@ -33,12 +34,47 @@ impl GridController {
     pub fn set_data_table_operations_at(
         &self,
         sheet_pos: SheetPos,
-        values: String,
+        value: String,
     ) -> Vec<Operation> {
-        let (_, cell_value) = self.string_to_cell_value(sheet_pos, &values);
-        let values = CellValues::from(cell_value);
+        let mut ops = vec![];
 
-        vec![Operation::SetDataTableAt { sheet_pos, values }]
+        let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) else {
+            return ops;
+        };
+
+        let Ok(data_table_pos) = sheet.first_data_table_within(sheet_pos.into()) else {
+            return ops;
+        };
+
+        let Some(data_table) = sheet.data_table(data_table_pos) else {
+            return ops;
+        };
+
+        // strip whitespace
+        let value = value.trim();
+
+        let (cell_value, format_update, ..) = self.string_to_cell_value(value, false);
+
+        ops.push(Operation::SetDataTableAt {
+            sheet_pos,
+            values: CellValues::from(cell_value),
+        });
+
+        if !format_update.is_default() {
+            ops.push(Operation::DataTableFormats {
+                sheet_pos: data_table_pos.to_sheet_pos(sheet_pos.sheet_id),
+                formats: SheetFormatUpdates::from_selection(
+                    &A1Selection::from_xy(
+                        sheet_pos.x - data_table_pos.x + 1,
+                        sheet_pos.y - data_table_pos.y + 1 - data_table.y_adjustment(true),
+                        sheet_pos.sheet_id,
+                    ),
+                    format_update,
+                ),
+            });
+        }
+
+        ops
     }
 
     // Returns whether a code_cell is dependent on another code_cell.
@@ -158,50 +194,6 @@ impl GridController {
             pixel_height,
         }]
     }
-
-    /// Creates operations if changes to the column width would affect the chart
-    /// size.
-    pub fn check_chart_size_column_change(&self, sheet_id: SheetId, column: i64) -> Vec<Operation> {
-        let mut ops = vec![];
-        if let Some(sheet) = self.try_sheet(sheet_id) {
-            sheet.data_tables.iter().for_each(|(pos, dt)| {
-                if let (Some((width, _)), Some((pixel_width, pixel_height))) =
-                    (dt.chart_output, dt.chart_pixel_output)
-                {
-                    if column >= pos.x && column < pos.x + width as i64 {
-                        ops.push(Operation::SetChartSize {
-                            sheet_pos: pos.to_sheet_pos(sheet_id),
-                            pixel_width,
-                            pixel_height,
-                        });
-                    }
-                }
-            });
-        }
-        ops
-    }
-
-    /// Creates operations if changes to the row height would affect the chart
-    /// size.
-    pub fn check_chart_size_row_change(&self, sheet_id: SheetId, row: i64) -> Vec<Operation> {
-        let mut ops = vec![];
-        if let Some(sheet) = self.try_sheet(sheet_id) {
-            sheet.data_tables.iter().for_each(|(pos, dt)| {
-                if let (Some((_, height)), Some((pixel_width, pixel_height))) =
-                    (dt.chart_output, dt.chart_pixel_output)
-                {
-                    if row >= pos.y && row < pos.y + height as i64 {
-                        ops.push(Operation::SetChartSize {
-                            sheet_pos: pos.to_sheet_pos(sheet_id),
-                            pixel_width,
-                            pixel_height,
-                        });
-                    }
-                }
-            });
-        }
-        ops
-    }
 }
 
 #[cfg(test)]
@@ -210,11 +202,7 @@ mod test {
     use bigdecimal::BigDecimal;
 
     use super::*;
-    use crate::{
-        grid::{CodeRun, DataTableKind},
-        Pos, Value,
-    };
-    use serial_test::parallel;
+    use crate::Pos;
 
     #[test]
     fn test_set_code_cell_operations() {
@@ -450,74 +438,5 @@ mod test {
         gc.rerun_all_code_cells(None);
         gc.rerun_code_cell(sheet_pos, None);
         gc.rerun_sheet_code_cells(sheet_id, None);
-    }
-
-    #[test]
-    #[parallel]
-    fn test_check_chart_size_changes() {
-        let mut gc = GridController::default();
-        let sheet_id = gc.sheet_ids()[0];
-        let pos = Pos { x: 1, y: 1 };
-        let sheet_pos = pos.to_sheet_pos(sheet_id);
-
-        // Set up a data table with chart output
-        let mut dt = DataTable::new(
-            DataTableKind::CodeRun(CodeRun::default()),
-            "Table",
-            Value::Single(CellValue::Image("image".to_string())),
-            false,
-            false,
-            true,
-            None,
-        );
-        dt.chart_output = Some((2, 3));
-        dt.chart_pixel_output = Some((100.0, 150.0));
-        gc.grid_mut()
-            .try_sheet_mut(sheet_id)
-            .unwrap()
-            .data_tables
-            .insert(pos, dt);
-
-        // Test column changes
-        let ops = gc.check_chart_size_column_change(sheet_id, 1);
-        assert_eq!(ops.len(), 1);
-        assert_eq!(
-            ops[0],
-            Operation::SetChartSize {
-                sheet_pos,
-                pixel_width: 100.0,
-                pixel_height: 150.0,
-            }
-        );
-
-        let ops = gc.check_chart_size_column_change(sheet_id, 2); // Change within chart
-        assert_eq!(ops.len(), 1);
-
-        let ops = gc.check_chart_size_column_change(sheet_id, 0); // Change before chart
-        assert_eq!(ops.len(), 0);
-
-        let ops = gc.check_chart_size_column_change(sheet_id, 4); // Change after chart
-        assert_eq!(ops.len(), 0);
-
-        // Test row changes
-        let ops = gc.check_chart_size_row_change(sheet_id, 1); // Change at start of chart
-        assert_eq!(ops.len(), 1);
-        assert_eq!(
-            ops[0],
-            Operation::SetChartSize {
-                sheet_pos,
-                pixel_width: 100.0,
-                pixel_height: 150.0,
-            }
-        );
-
-        let ops = gc.check_chart_size_row_change(sheet_id, 2); // Change within chart
-        assert_eq!(ops.len(), 1);
-
-        let ops = gc.check_chart_size_row_change(sheet_id, 0); // Change before chart
-        assert_eq!(ops.len(), 0);
-
-        let ops = gc.check_chart_size_row_change(sheet_id, 5); // Change after chart
-        assert_eq!(ops.len(), 0);
     }
 }

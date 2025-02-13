@@ -38,9 +38,15 @@ const insertColumnRight: ActionSpec<void> = {
     quadraticCore.insertColumn(sheets.current, sheets.sheet.cursor.position.x + 1, false, sheets.getCursorPosition()),
 };
 
+
 const deleteColumns: ActionSpec<void> = {
-  label: 'Delete columns',
-  isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) => !isEmbed && isAuthenticated && isColumnFinite(),
+  label: `Delete column(s)`,
+  isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) => {
+    const length = sheets.sheet.cursor.getSelectedColumns().length;
+    const plural = length > 1 ? 's' : '';
+    deleteColumns.label = `Delete ${length} column${plural}`;
+    return !isEmbed && isAuthenticated && isColumnFinite();
+  },
   Icon: DeleteIcon,
   run: () => {
     const columns = sheets.sheet.cursor.getSelectedColumns();
@@ -64,8 +70,13 @@ const insertRowBelow: ActionSpec<void> = {
 };
 
 const deleteRows: ActionSpec<void> = {
-  label: 'Delete rows',
-  isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) => !isEmbed && isAuthenticated && isRowFinite(),
+  label: 'Delete row(s)',
+  isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) => {
+    const length = sheets.sheet.cursor.getSelectedRows().length;
+    const plural = length > 1 ? 's' : '';
+    deleteRows.label = `Delete ${length} row${plural}`;
+    return !isEmbed && isAuthenticated && isRowFinite();
+  },
   Icon: DeleteIcon,
   run: () => {
     const rows = sheets.sheet.cursor.getSelectedRows();

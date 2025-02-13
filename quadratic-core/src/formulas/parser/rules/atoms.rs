@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use crate::a1::SheetCellRefRange;
 
 use super::*;
@@ -100,8 +98,8 @@ impl_display!(for CellReference, "cell reference such as 'A6' or '$ZB$3'");
 impl SyntaxRule for CellReference {
     type Output = Spanned<(Option<SheetId>, RefRangeBounds)>;
 
-    fn prefix_matches(&self, p: Parser<'_>) -> bool {
-        is_table_ref(p) == Some(false)
+    fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
+        p.try_parse(SheetRefPrefix).transpose().is_ok() && is_table_ref(p) == Some(false)
     }
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         let start_span = p.peek_next_span();
@@ -109,7 +107,7 @@ impl SyntaxRule for CellReference {
 
         p.next();
 
-        let ref_range_bounds = RefRangeBounds::from_str(p.token_str())
+        let ref_range_bounds = RefRangeBounds::from_str(p.token_str(), Some(p.pos.into()))
             .map_err(|_| RunErrorMsg::BadCellReference.with_span(p.span()))?;
 
         Ok(Spanned {

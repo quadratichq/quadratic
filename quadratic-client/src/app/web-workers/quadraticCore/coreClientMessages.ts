@@ -1154,9 +1154,11 @@ export interface ClientCoreDataTableMeta {
 
 export interface ClientCoreDataTableMutations {
   type: 'clientCoreDataTableMutations';
+  id: number;
   sheetId: string;
   x: number;
   y: number;
+  select_table: boolean;
   columns_to_add?: number[];
   columns_to_remove?: number[];
   rows_to_add?: number[];
@@ -1164,6 +1166,11 @@ export interface ClientCoreDataTableMutations {
   flatten_on_delete?: boolean;
   swallow_on_insert?: boolean;
   cursor?: string;
+}
+
+export interface CoreClientDataTableMutations {
+  type: 'coreClientDataTableMutations';
+  id: number;
 }
 
 export interface ClientCoreSortDataTable {
@@ -1389,4 +1396,5 @@ export type CoreClientMessage =
   | CoreClientAddDataTable
   | CoreClientSetCellValues
   | CoreClientMoveCells
-  | CoreClientDeleteCellValues;
+  | CoreClientDeleteCellValues
+  | CoreClientDataTableMutations;

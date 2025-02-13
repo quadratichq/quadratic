@@ -76,6 +76,7 @@ impl GridController {
     pub fn data_table_mutations(
         &mut self,
         sheet_pos: SheetPos,
+        select_table: bool,
         columns_to_add: Option<Vec<u32>>,
         columns_to_remove: Option<Vec<u32>>,
         rows_to_add: Option<Vec<u32>>,
@@ -86,6 +87,7 @@ impl GridController {
     ) {
         let ops = self.data_table_mutations_operations(
             sheet_pos,
+            select_table,
             columns_to_add,
             columns_to_remove,
             rows_to_add,
@@ -133,6 +135,7 @@ impl GridController {
 #[serial_test::parallel]
 mod tests {
     use crate::{
+        a1::A1Selection,
         cellvalue::Import,
         controller::{
             transaction_types::JsCodeResult, user_actions::import::tests::simple_csv,
@@ -140,6 +143,7 @@ mod tests {
         },
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
         test_util::{assert_cell_value, assert_data_table_cell_value_row, print_data_table},
+        wasm_bindings::js::{clear_js_calls, expect_js_call},
         Array, CellValue, Pos, Rect, SheetPos, Value,
     };
 
@@ -331,15 +335,18 @@ mod tests {
     }
 
     #[test]
-    #[serial_test::parallel]
+    #[serial_test::serial]
     fn test_insert_data_table_column_and_row() {
-        let (mut gc, sheet_id, pos, _) = simple_csv();
+        clear_js_calls();
+
+        let (mut gc, sheet_id, pos, file_name) = simple_csv();
 
         print_data_table(&gc, sheet_id, Rect::new(1, 1, 5, 15));
         assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().height(true), 11);
         assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().width(), 4);
 
         let sheet_pos = SheetPos::from((pos, sheet_id));
+        let select_table = true;
         let columns_to_add = Some(vec![4]);
         let columns_to_remove = None;
         let rows_to_add = Some(vec![11]);
@@ -349,6 +356,7 @@ mod tests {
         let cursor = None;
         gc.data_table_mutations(
             sheet_pos,
+            select_table,
             columns_to_add,
             columns_to_remove,
             rows_to_add,
@@ -371,6 +379,12 @@ mod tests {
         print_data_table(&gc, sheet_id, Rect::new(1, 1, 5, 15));
         assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().height(true), 12);
         assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().width(), 5);
+
+        expect_js_call(
+            "jsSetCursor",
+            serde_json::to_string(&A1Selection::table(sheet_pos, file_name)).unwrap(),
+            true,
+        );
 
         // let data_table = sheet.data_table_mut(data_table_pos).unwrap();
         // data_table.insert_column(0, "Column 1".into());
@@ -406,7 +420,26 @@ mod tests {
             // Check basic properties
             assert_eq!(data_table.name, "Table_1".into());
             assert!(data_table.header_is_first_row);
-            assert_eq!(data_table.value, Value::Array(values.into()));
+            assert_eq!(
+                data_table.value,
+                Value::Array(Array::from(vec![
+                    vec![
+                        CellValue::Text("Column 1".into()),
+                        CellValue::Text("Column 2".into()),
+                        CellValue::Text("Column 3".into()),
+                    ],
+                    vec![
+                        CellValue::Number(1.into()),
+                        CellValue::Number(2.into()),
+                        CellValue::Number(3.into()),
+                    ],
+                    vec![
+                        CellValue::Number(4.into()),
+                        CellValue::Number(5.into()),
+                        CellValue::Number(6.into()),
+                    ],
+                ]))
+            );
 
             // Check column headers
             let headers = data_table.column_headers.as_ref().unwrap();

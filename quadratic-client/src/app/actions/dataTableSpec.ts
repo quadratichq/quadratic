@@ -7,7 +7,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { JsDataTableColumnHeader, JsRenderCodeCell, SheetRect } from '@/app/quadratic-core-types';
+import type { CodeCellLanguage, JsDataTableColumnHeader, JsRenderCodeCell, SheetRect } from '@/app/quadratic-core-types';
 import { newRectSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
@@ -150,6 +150,11 @@ const isTableColumnsShowing = (): boolean => {
   return !!table?.show_columns;
 };
 
+const isCodeCell = (language: CodeCellLanguage) => {
+  let table = getTable();
+  return table?.language === language;
+};
+
 export const gridToDataTable = () => {
   const rectangle = sheets.sheet.cursor.getSingleRectangle();
   if (rectangle) {
@@ -278,7 +283,7 @@ export const sortTableColumnDescending = () => {
   sortTableColumn('Descending');
 };
 
-export const insertTableColumn = (increment: number = 0) => {
+export const insertTableColumn = (increment: number = 0, selectTable = true) => {
   const table = getTable();
   const column = getColumn();
 
@@ -287,6 +292,7 @@ export const insertTableColumn = (increment: number = 0) => {
       sheetId: sheets.current,
       x: table.x,
       y: table.y,
+      select_table: selectTable,
       columns_to_add: [column + increment],
       columns_to_remove: undefined,
       rows_to_add: undefined,
@@ -298,7 +304,7 @@ export const insertTableColumn = (increment: number = 0) => {
   }
 };
 
-export const removeTableColumn = () => {
+export const removeTableColumn = (selectTable = true) => {
   const table = getTable();
   const column = getColumn();
 
@@ -307,6 +313,7 @@ export const removeTableColumn = () => {
       sheetId: sheets.current,
       x: table.x,
       y: table.y,
+      select_table: selectTable,
       columns_to_add: undefined,
       columns_to_remove: [column],
       rows_to_add: undefined,
@@ -341,15 +348,16 @@ export const showAllTableColumns = () => {
   }
 };
 
-export const insertTableRow = (increment: number = 0) => {
+export const insertTableRow = (increment: number = 0, selectTable = true) => {
   const table = getTable();
   const row = getRow();
 
   if (table && row !== undefined) {
-    quadraticCore.dataTableMutations({
+    return quadraticCore.dataTableMutations({
       sheetId: sheets.current,
       x: table.x,
       y: table.y,
+      select_table: selectTable,
       columns_to_add: undefined,
       columns_to_remove: undefined,
       rows_to_add: [row + increment],
@@ -361,7 +369,7 @@ export const insertTableRow = (increment: number = 0) => {
   }
 };
 
-export const removeTableRow = () => {
+export const removeTableRow = (selectTable = true) => {
   const table = getTable();
   const row = getRow();
 
@@ -370,6 +378,7 @@ export const removeTableRow = () => {
       sheetId: sheets.current,
       x: table.x,
       y: table.y,
+      select_table: selectTable,
       columns_to_add: undefined,
       columns_to_remove: undefined,
       rows_to_add: undefined,
@@ -443,8 +452,9 @@ export const dataTableSpec: DataTableSpec = {
     run: gridToDataTable,
   },
   [Action.ToggleFirstRowAsHeaderTable]: {
-    label: 'Use 1st row as column headers',
+    label: 'Use first row as column names',
     checkbox: isFirstRowHeader,
+    isAvailable: () => !isCodeCell('Python'),
     run: toggleFirstRowAsHeader,
   },
   [Action.RenameTable]: {
@@ -473,38 +483,41 @@ export const dataTableSpec: DataTableSpec = {
     run: toggleTableAlternatingColors,
   },
   [Action.RenameTableColumn]: {
-    label: 'Rename column',
+    label: 'Rename',
+    labelVerbose: 'Rename column',
     defaultOption: true,
     Icon: FileRenameIcon,
     run: renameTableColumn,
   },
   [Action.SortTableColumnAscending]: {
-    label: 'Sort column ascending',
+    label: 'Sort ascending',
+    labelVerbose: 'Sort column ascending',
     Icon: SortAscendingIcon,
     run: sortTableColumnAscending,
   },
   [Action.SortTableColumnDescending]: {
-    label: 'Sort column descending',
+    label: 'Sort descending',
+    labelVerbose: 'Sort column descending',
     Icon: SortDescendingIcon,
     run: sortTableColumnDescending,
   },
   [Action.InsertTableColumnLeft]: {
-    label: 'Insert column left',
+    label: 'Insert table column left',
     Icon: AddColumnLeftIcon,
     isAvailable: () => !isReadOnly() && isWithinTable(),
     run: () => insertTableColumn(0),
   },
   [Action.InsertTableColumnRight]: {
-    label: 'Insert column right',
+    label: 'Insert table column right',
     Icon: AddColumnRightIcon,
     isAvailable: () => !isReadOnly() && isWithinTable(),
     run: () => insertTableColumn(1),
   },
   [Action.RemoveTableColumn]: {
-    label: 'Remove column',
+    label: 'Delete table column',
     Icon: DeleteIcon,
     isAvailable: () => !isReadOnly() && isWithinTable(),
-    run: removeTableColumn,
+    run: () => removeTableColumn(true),
   },
   [Action.HideTableColumn]: {
     label: 'Hide column',
@@ -517,26 +530,26 @@ export const dataTableSpec: DataTableSpec = {
     run: showAllTableColumns,
   },
   [Action.InsertTableRowAbove]: {
-    label: 'Insert row above',
+    label: 'Insert table row above',
     Icon: AddRowAboveIcon,
     isAvailable: () => !isReadOnly() && isWithinTable(),
     run: () => insertTableRow(0),
   },
   [Action.InsertTableRowBelow]: {
-    label: 'Insert row below',
+    label: 'Insert table row below',
     Icon: AddRowBelowIcon,
     isAvailable: () => !isReadOnly() && isWithinTable(),
     run: () => insertTableRow(1),
   },
   [Action.RemoveTableRow]: {
-    label: 'Remove row',
+    label: 'Delete table row',
     Icon: DeleteIcon,
     isAvailable: () => !isReadOnly() && isWithinTable(),
-    run: removeTableRow,
+    run: () => removeTableRow(true),
   },
   [Action.EditTableCode]: {
     defaultOption: true,
-    label: 'Edit code',
+    label: 'Open code editor',
     Icon: EditIcon,
     run: editTableCode,
   },
@@ -546,12 +559,13 @@ export const dataTableSpec: DataTableSpec = {
     run: toggleTableUI,
   },
   [Action.ToggleTableColumns]: {
-    label: 'Show column headings',
+    label: 'Show column names',
     checkbox: isTableColumnsShowing,
     run: toggleTableColumns,
   },
   [Action.ToggleTableName]: {
-    label: 'Show table name',
+    label: 'Show name',
+    labelVerbose: 'Show table name',
     checkbox: isTableNameShowing,
     run: toggleTableName,
   },

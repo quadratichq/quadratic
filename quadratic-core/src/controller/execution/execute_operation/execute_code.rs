@@ -84,6 +84,7 @@ impl GridController {
         }
     }
 
+    /// **Deprecated** and replaced with SetChartCellSize
     pub(super) fn execute_set_chart_size(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -103,6 +104,38 @@ impl GridController {
             let new_data_table = data_table.clone();
 
             self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None);
+        }
+
+        Ok(())
+    }
+
+    pub(super) fn execute_set_chart_cell_size(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
+        if let Operation::SetChartCellSize { sheet_pos, w, h } = op {
+            let sheet_id = sheet_pos.sheet_id;
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let data_table = sheet.data_table_mut(sheet_pos.into())?;
+            let original = data_table.chart_output;
+            data_table.chart_output = Some((w, h));
+
+            transaction.forward_operations.push(op);
+            transaction
+                .reverse_operations
+                .push(Operation::SetChartCellSize {
+                    sheet_pos,
+                    w: original.map(|(w, _)| w).unwrap_or(w),
+                    h: original.map(|(_, h)| h).unwrap_or(h),
+                });
+
+            transaction.add_code_cell(sheet_pos.sheet_id, sheet_pos.into());
+            if data_table.is_html() {
+                transaction.add_html_cell(sheet_pos.sheet_id, sheet_pos.into());
+            } else if data_table.is_image() {
+                transaction.add_image_cell(sheet_pos.sheet_id, sheet_pos.into());
+            }
         }
 
         Ok(())
@@ -153,17 +186,20 @@ impl GridController {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
     use crate::{
-        controller::GridController,
+        controller::{
+            active_transactions::pending_transaction::PendingTransaction,
+            operations::operation::Operation, GridController,
+        },
         grid::CodeCellLanguage,
         wasm_bindings::js::{clear_js_calls, expect_js_call_count},
         CellValue, Pos, SheetPos,
     };
-    use serial_test::{parallel, serial};
+    use serial_test::serial;
 
     #[test]
-    #[parallel]
     fn test_spilled_output_over_normal_cell() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -248,5 +284,34 @@ mod tests {
         expect_js_call_count("jsRunPython", 1, true);
 
         // formula is already tested since it works solely in Rust
+    }
+
+    #[test]
+    fn test_execute_set_chart_cell_size() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.test_set_chart(pos![A1], 3, 3);
+
+        let mut transaction = PendingTransaction::default();
+        gc.execute_set_chart_cell_size(
+            &mut transaction,
+            Operation::SetChartCellSize {
+                sheet_pos: SheetPos {
+                    x: 1,
+                    y: 1,
+                    sheet_id,
+                },
+                w: 4,
+                h: 5,
+            },
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.data_table(pos![A1]).unwrap().chart_output,
+            Some((4, 5))
+        );
     }
 }

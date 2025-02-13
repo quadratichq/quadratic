@@ -19,7 +19,6 @@ impl GridController {
         delta: i64,
     ) -> String {
         if let Some(column) = column {
-            
             replace_cell_references_with(
                 &code_cell.code,
                 parse_ctx,
@@ -37,7 +36,6 @@ impl GridController {
                 },
             )
         } else if let Some(row) = row {
-            
             replace_cell_references_with(
                 &code_cell.code,
                 parse_ctx,
@@ -147,6 +145,10 @@ impl GridController {
                 // here since it's across sheets)
                 self.adjust_code_cells_column_row(transaction, sheet_id, Some(column), None, -1);
 
+                transaction
+                    .operations
+                    .extend(self.check_chart_delete_col_operations(sheet_id, column as u32));
+
                 // update information for all cells to the right of the deleted column
                 if let Some(sheet) = self.try_sheet(sheet_id) {
                     if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
@@ -181,6 +183,10 @@ impl GridController {
                 // adjust formulas to account for deleted column (needs to be
                 // here since it's across sheets)
                 self.adjust_code_cells_column_row(transaction, sheet_id, None, Some(row), -1);
+
+                transaction
+                    .operations
+                    .extend(self.check_chart_delete_row_operations(sheet_id, row as u32));
 
                 // update information for all cells below the deleted row
                 if let Some(sheet) = self.try_sheet(sheet_id) {
@@ -222,6 +228,10 @@ impl GridController {
                 // here since it's across sheets)
                 self.adjust_code_cells_column_row(transaction, sheet_id, Some(column), None, 1);
 
+                transaction
+                    .operations
+                    .extend(self.check_chart_insert_col_operations(sheet_id, column as u32));
+
                 // update information for all cells to the right of the inserted column
                 if let Some(sheet) = self.try_sheet(sheet_id) {
                     if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
@@ -261,6 +271,10 @@ impl GridController {
                 // adjust formulas to account for deleted column (needs to be
                 // here since it's across sheets)
                 self.adjust_code_cells_column_row(transaction, sheet_id, None, Some(row), 1);
+
+                transaction
+                    .operations
+                    .extend(self.check_chart_insert_row_operations(sheet_id, row as u32));
 
                 // update information for all cells below the deleted row
                 if let Some(sheet) = self.try_sheet(sheet_id) {
@@ -379,7 +393,7 @@ mod tests {
                 },
                 values: CellValue::Code(CodeCellValue {
                     language: CodeCellLanguage::Formula,
-                    code: "R[0]C[1] + R[2]C[1]".to_string()
+                    code: "B1 + B3".to_string()
                 })
                 .into(),
             }
@@ -563,7 +577,7 @@ mod tests {
                 y: 1,
                 sheet_id,
             },
-            vec![vec!["A", "B", "C"]],
+            vec![vec!["A".into(), "B".into(), "C".into()]],
             None,
         );
 
@@ -593,7 +607,7 @@ mod tests {
                 y: 1,
                 sheet_id,
             },
-            vec![vec!["A"], vec!["B"], vec!["C"]],
+            vec![vec!["A".into()], vec!["B".into()], vec!["C".into()]],
             None,
         );
 
@@ -835,7 +849,7 @@ mod tests {
                 y: 1,
                 sheet_id,
             },
-            vec![vec!["A", "B", "C", "D"]],
+            vec![vec!["A".into(), "B".into(), "C".into(), "D".into()]],
             None,
         );
 
@@ -867,7 +881,12 @@ mod tests {
                 y: 1,
                 sheet_id,
             },
-            vec![vec!["A"], vec!["B"], vec!["C"], vec!["D"]],
+            vec![
+                vec!["A".into()],
+                vec!["B".into()],
+                vec!["C".into()],
+                vec!["D".into()],
+            ],
             None,
         );
 
@@ -1006,5 +1025,50 @@ mod tests {
         assert_eq!(sheet.offsets.row_height(1), 100.0);
         assert_eq!(sheet.offsets.row_height(2), 400.0);
         assert_eq!(sheet.offsets.row_height(3), DEFAULT_ROW_HEIGHT);
+    }
+
+    #[test]
+    fn test_insert_delete_chart() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.test_set_chart(pos![A1], 3, 3);
+        sheet.test_set_chart(pos![B5], 3, 3);
+
+        gc.insert_column(sheet_id, 3, true, None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.data_table(pos![A1]).unwrap().chart_output.unwrap(),
+            (4, 3)
+        );
+        assert_eq!(
+            sheet.data_table(pos![B5]).unwrap().chart_output.unwrap(),
+            (4, 3)
+        );
+
+        gc.undo(None);
+
+        let sheet = gc.sheet(sheet_id);
+        let dt = sheet.data_table(pos![A1]).unwrap();
+        assert_eq!(dt.chart_output.unwrap(), (3, 3));
+        let dt_2 = sheet.data_table(pos![B5]).unwrap();
+        assert_eq!(dt_2.chart_output.unwrap(), (3, 3));
+
+        gc.insert_row(sheet_id, 3, true, None);
+
+        let sheet = gc.sheet(sheet_id);
+        let dt = sheet.data_table(pos![A1]).unwrap();
+        assert_eq!(dt.chart_output.unwrap(), (3, 4));
+        let dt_2 = sheet.data_table(pos![B6]).unwrap();
+        assert_eq!(dt_2.chart_output.unwrap(), (3, 3));
+
+        gc.undo(None);
+        let sheet = gc.sheet(sheet_id);
+        let dt = sheet.data_table(pos![A1]).unwrap();
+        assert_eq!(dt.chart_output.unwrap(), (3, 3));
+        let dt_2 = sheet.data_table(pos![B5]).unwrap();
+        assert_eq!(dt_2.chart_output.unwrap(), (3, 3));
     }
 }
