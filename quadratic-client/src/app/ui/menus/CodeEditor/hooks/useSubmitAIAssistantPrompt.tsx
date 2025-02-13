@@ -16,7 +16,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import type { CodeCell } from '@/app/gridGL/types/codeCell';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
-import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIMessage, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 
@@ -47,6 +47,28 @@ export function useSubmitAIAssistantPrompt() {
         set(aiAssistantLoadingAtom, true);
 
         const abortController = new AbortController();
+        abortController.signal.addEventListener('abort', () => {
+          set(aiAssistantMessagesAtom, (prevMessages) => {
+            const lastMessage = prevMessages.at(-1);
+            if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
+              const newLastMessage = { ...lastMessage };
+              newLastMessage.content += '\n\nRequest aborted by the user.';
+              newLastMessage.content = newLastMessage.content.trim();
+              newLastMessage.toolCalls = [];
+              return [...prevMessages.slice(0, -1), newLastMessage];
+            } else if (lastMessage?.role === 'user') {
+              const newLastMessage: AIMessage = {
+                role: 'assistant',
+                content: 'Request aborted by the user.',
+                contextType: 'userPrompt',
+                toolCalls: [],
+                model,
+              };
+              return [...prevMessages, newLastMessage];
+            }
+            return prevMessages;
+          });
+        });
         set(aiAssistantAbortControllerAtom, abortController);
 
         if (clearMessages) {

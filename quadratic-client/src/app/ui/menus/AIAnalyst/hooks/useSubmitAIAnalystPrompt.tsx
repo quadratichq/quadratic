@@ -89,6 +89,28 @@ export function useSubmitAIAnalystPrompt() {
         set(aiAnalystLoadingAtom, true);
 
         const abortController = new AbortController();
+        abortController.signal.addEventListener('abort', () => {
+          set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {
+            const lastMessage = prevMessages.at(-1);
+            if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
+              const newLastMessage = { ...lastMessage };
+              newLastMessage.content += '\n\nRequest aborted by the user.';
+              newLastMessage.content = newLastMessage.content.trim();
+              newLastMessage.toolCalls = [];
+              return [...prevMessages.slice(0, -1), newLastMessage];
+            } else if (lastMessage?.role === 'user') {
+              const newLastMessage: AIMessage = {
+                role: 'assistant',
+                content: 'Request aborted by the user.',
+                contextType: 'userPrompt',
+                toolCalls: [],
+                model,
+              };
+              return [...prevMessages, newLastMessage];
+            }
+            return prevMessages;
+          });
+        });
         set(aiAnalystAbortControllerAtom, abortController);
 
         if (clearMessages) {
