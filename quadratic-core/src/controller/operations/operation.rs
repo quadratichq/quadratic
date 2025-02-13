@@ -113,6 +113,9 @@ pub enum Operation {
 
         /// swallow neighboring cells
         swallow: bool,
+
+        /// select the table after the operation
+        select_table: bool,
     },
     DeleteDataTableColumn {
         sheet_pos: SheetPos,
@@ -120,6 +123,9 @@ pub enum Operation {
 
         /// Inserts the removed column into sheet at the same position.
         flatten: bool,
+
+        /// select the table after the operation
+        select_table: bool,
     },
     InsertDataTableRow {
         sheet_pos: SheetPos,
@@ -128,6 +134,9 @@ pub enum Operation {
 
         /// swallow neighboring cells
         swallow: bool,
+
+        /// select the table after the operation
+        select_table: bool,
     },
     DeleteDataTableRow {
         sheet_pos: SheetPos,
@@ -135,6 +144,9 @@ pub enum Operation {
 
         /// Inserts the removed row into sheet at the same position.
         flatten: bool,
+
+        /// select the table after the operation
+        select_table: bool,
     },
     SetCodeRun {
         sheet_pos: SheetPos,
@@ -419,22 +431,24 @@ impl fmt::Display for Operation {
                 column_header: name,
                 values,
                 swallow,
+                select_table,
             } => {
                 write!(
                     fmt,
-                    "InsertDataTableColumn {{ sheet_pos: {}, index: {}, name: {:?}, values: {:?}, swallow: {} }}",
-                    sheet_pos, index, name, values,swallow
+                    "InsertDataTableColumn {{ sheet_pos: {}, index: {}, name: {:?}, values: {:?}, swallow: {}, select_table: {} }}",
+                    sheet_pos, index, name, values, swallow, select_table
                 )
             }
             Operation::DeleteDataTableColumn {
                 sheet_pos,
                 index,
                 flatten,
+                select_table,
             } => {
                 write!(
                     fmt,
-                    "DeleteDataTableColumn {{ sheet_pos: {}, index: {}, flatten: {} }}",
-                    sheet_pos, index, flatten
+                    "DeleteDataTableColumn {{ sheet_pos: {}, index: {}, flatten: {}, select_table: {} }}",
+                    sheet_pos, index, flatten, select_table
                 )
             }
             Operation::InsertDataTableRow {
@@ -442,22 +456,24 @@ impl fmt::Display for Operation {
                 index,
                 values,
                 swallow,
+                select_table,
             } => {
                 write!(
                     fmt,
-                    "InsertDataTableRow {{ sheet_pos: {}, index: {}, values: {:?}, swallow: {} }}",
-                    sheet_pos, index, values, swallow
+                    "InsertDataTableRow {{ sheet_pos: {}, index: {}, values: {:?}, swallow: {}, select_table: {} }}",
+                    sheet_pos, index, values, swallow, select_table
                 )
             }
             Operation::DeleteDataTableRow {
                 sheet_pos,
                 index,
                 flatten,
+                select_table,
             } => {
                 write!(
                     fmt,
-                    "DeleteDataTableRow {{ sheet_pos: {}, index: {}, flatten: {} }}",
-                    sheet_pos, index, flatten
+                    "DeleteDataTableRow {{ sheet_pos: {}, index: {}, flatten: {}, select_table: {} }}",
+                    sheet_pos, index, flatten, select_table
                 )
             }
             Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats - deprecated",),

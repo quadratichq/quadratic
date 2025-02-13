@@ -278,7 +278,7 @@ export const sortTableColumnDescending = () => {
   sortTableColumn('Descending');
 };
 
-export const insertTableColumn = (increment: number = 0) => {
+export const insertTableColumn = (increment: number = 0, selectTable = true) => {
   const table = getTable();
   const column = getColumn();
 
@@ -287,6 +287,7 @@ export const insertTableColumn = (increment: number = 0) => {
       sheetId: sheets.current,
       x: table.x,
       y: table.y,
+      select_table: selectTable,
       columns_to_add: [column + increment],
       columns_to_remove: undefined,
       rows_to_add: undefined,
@@ -298,7 +299,7 @@ export const insertTableColumn = (increment: number = 0) => {
   }
 };
 
-export const removeTableColumn = () => {
+export const removeTableColumn = (selectTable = true) => {
   const table = getTable();
   const column = getColumn();
 
@@ -307,6 +308,7 @@ export const removeTableColumn = () => {
       sheetId: sheets.current,
       x: table.x,
       y: table.y,
+      select_table: selectTable,
       columns_to_add: undefined,
       columns_to_remove: [column],
       rows_to_add: undefined,
@@ -341,15 +343,16 @@ export const showAllTableColumns = () => {
   }
 };
 
-export const insertTableRow = (increment: number = 0) => {
+export const insertTableRow = (increment: number = 0, selectTable = true) => {
   const table = getTable();
   const row = getRow();
 
   if (table && row !== undefined) {
-    quadraticCore.dataTableMutations({
+    return quadraticCore.dataTableMutations({
       sheetId: sheets.current,
       x: table.x,
       y: table.y,
+      select_table: selectTable,
       columns_to_add: undefined,
       columns_to_remove: undefined,
       rows_to_add: [row + increment],
@@ -361,7 +364,7 @@ export const insertTableRow = (increment: number = 0) => {
   }
 };
 
-export const removeTableRow = () => {
+export const removeTableRow = (selectTable = true) => {
   const table = getTable();
   const row = getRow();
 
@@ -370,6 +373,7 @@ export const removeTableRow = () => {
       sheetId: sheets.current,
       x: table.x,
       y: table.y,
+      select_table: selectTable,
       columns_to_add: undefined,
       columns_to_remove: undefined,
       rows_to_add: undefined,
@@ -507,7 +511,7 @@ export const dataTableSpec: DataTableSpec = {
     label: 'Delete table column',
     Icon: DeleteIcon,
     isAvailable: () => !isReadOnly() && isWithinTable(),
-    run: removeTableColumn,
+    run: () => removeTableColumn(true),
   },
   [Action.HideTableColumn]: {
     label: 'Hide column',
@@ -535,7 +539,7 @@ export const dataTableSpec: DataTableSpec = {
     label: 'Delete table row',
     Icon: DeleteIcon,
     isAvailable: () => !isReadOnly() && isWithinTable(),
-    run: removeTableRow,
+    run: () => removeTableRow(true),
   },
   [Action.EditTableCode]: {
     defaultOption: true,

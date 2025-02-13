@@ -101,6 +101,7 @@ impl GridController {
                                 column_header: None,
                                 values: None,
                                 swallow: true,
+                                select_table: false,
                             });
                         }
                     }
@@ -131,6 +132,7 @@ impl GridController {
                             index: data_table.height(false) as u32,
                             values: None,
                             swallow: true,
+                            select_table: false,
                         });
                     }
                 }

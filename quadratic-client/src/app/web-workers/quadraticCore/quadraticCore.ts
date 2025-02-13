@@ -1412,6 +1412,7 @@ class QuadraticCore {
     sheetId: string;
     x: number;
     y: number;
+    select_table: boolean;
     columns_to_add?: number[];
     columns_to_remove?: number[];
     rows_to_add?: number[];
@@ -1420,18 +1421,26 @@ class QuadraticCore {
     swallow_on_insert?: boolean;
     cursor?: string;
   }) {
-    this.send({
-      type: 'clientCoreDataTableMutations',
-      sheetId: args.sheetId,
-      x: args.x,
-      y: args.y,
-      columns_to_add: args.columns_to_add,
-      columns_to_remove: args.columns_to_remove,
-      rows_to_add: args.rows_to_add,
-      rows_to_remove: args.rows_to_remove,
-      flatten_on_delete: args.flatten_on_delete,
-      swallow_on_insert: args.swallow_on_insert,
-      cursor: args.cursor,
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = () => {
+        resolve(undefined);
+      };
+      this.send({
+        type: 'clientCoreDataTableMutations',
+        id,
+        sheetId: args.sheetId,
+        x: args.x,
+        y: args.y,
+        select_table: args.select_table,
+        columns_to_add: args.columns_to_add,
+        columns_to_remove: args.columns_to_remove,
+        rows_to_add: args.rows_to_add,
+        rows_to_remove: args.rows_to_remove,
+        flatten_on_delete: args.flatten_on_delete,
+        swallow_on_insert: args.swallow_on_insert,
+        cursor: args.cursor,
+      });
     });
   }
 
