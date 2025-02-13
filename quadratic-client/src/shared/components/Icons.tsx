@@ -188,6 +188,10 @@ export const CodeIcon: IconComponent = (props) => {
   return <Icon {...props}>code</Icon>;
 };
 
+export const CodeTableIcon: IconComponent = (props) => {
+  return <Icon {...props}>code_blocks</Icon>;
+};
+
 export const CopyIcon: IconComponent = (props) => {
   return <Icon {...props}>content_copy</Icon>;
 };

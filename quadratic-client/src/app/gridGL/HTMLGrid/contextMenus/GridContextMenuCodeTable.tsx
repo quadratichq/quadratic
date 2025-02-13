@@ -1,6 +1,12 @@
 import { Action } from '@/app/actions/actions';
 import { ContextMenuBase, ContextMenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/Base';
-import { DropdownMenuSeparator } from '@/shared/shadcn/ui/dropdown-menu';
+import { CodeTableIcon } from '@/shared/components/Icons';
+import {
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+} from '@/shared/shadcn/ui/dropdown-menu';
 
 export function GridContextMenuCodeTable() {
   return (
@@ -18,6 +24,24 @@ export function GridContextMenuCodeTable() {
     </ContextMenuBase>
   );
 }
+
+export const ContextMenuCodeTableNested = ({ isShowingColumnNames }: { isShowingColumnNames: boolean }) => {
+  return (
+    <>
+      <DropdownMenuSub>
+        <DropdownMenuSubTrigger>
+          <span className="mr-1 flex h-6 w-6 items-center justify-center">
+            <CodeTableIcon />
+          </span>
+          Code
+        </DropdownMenuSubTrigger>
+        <DropdownMenuSubContent>
+          <ContextMenuCodeTableItems />
+        </DropdownMenuSubContent>
+      </DropdownMenuSub>
+    </>
+  );
+};
 
 export function ContextMenuCodeTableItems({ showUseFirstRowAsHeader }: { showUseFirstRowAsHeader?: boolean }) {
   // TODO:(ddimaria: don't show 'use first row as...' if 'show column names' is true (see: data tables)
