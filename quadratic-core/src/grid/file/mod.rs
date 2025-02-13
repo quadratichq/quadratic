@@ -180,10 +180,7 @@ fn handle_negative_offsets(grid: &mut Result<Grid>, check_for_negative_offsets: 
 }
 
 fn import_json(file_contents: String) -> Result<Grid> {
-    let json = serde_json::from_str::<GridFile>(&file_contents).map_err(|e| {
-        dbg!(&e);
-        anyhow!(e)
-    })?;
+    let json = serde_json::from_str::<GridFile>(&file_contents).map_err(|e| anyhow!(e))?;
     drop(file_contents);
 
     let check_for_negative_offsets = matches!(
