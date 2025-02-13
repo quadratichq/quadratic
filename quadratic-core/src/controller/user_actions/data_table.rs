@@ -406,7 +406,26 @@ mod tests {
             // Check basic properties
             assert_eq!(data_table.name, "Table_1".into());
             assert!(data_table.header_is_first_row);
-            assert_eq!(data_table.value, Value::Array(values.into()));
+            assert_eq!(
+                data_table.value,
+                Value::Array(Array::from(vec![
+                    vec![
+                        CellValue::Text("Column 1".into()),
+                        CellValue::Text("Column 2".into()),
+                        CellValue::Text("Column 3".into()),
+                    ],
+                    vec![
+                        CellValue::Number(1.into()),
+                        CellValue::Number(2.into()),
+                        CellValue::Number(3.into()),
+                    ],
+                    vec![
+                        CellValue::Number(4.into()),
+                        CellValue::Number(5.into()),
+                        CellValue::Number(6.into()),
+                    ],
+                ]))
+            );
 
             // Check column headers
             let headers = data_table.column_headers.as_ref().unwrap();

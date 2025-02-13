@@ -18,12 +18,12 @@ rustup target add wasm32-unknown-unknown
 echo 'Packaging quadratic_py'
 ./quadratic-kernels/python-wasm/package.sh --no-poetry
 
-echo 'Building core...' && npm run build --workspace=quadratic-core
-
-echo 'Building TS/Rust types...' && npm run export_types --workspace=quadratic-core
-
-echo 'Building rust-client...' && npm run build --workspace=quadratic-rust-client
+echo 'Starting parallel rust builds...'
+(echo 'Building core...' && npm run build --workspace=quadratic-core) & \
+(echo 'Building TS/Rust types...' && npm run export_types --workspace=quadratic-core) & \
+(echo 'Building rust-client...' && npm run build --workspace=quadratic-rust-client) & \
+wait
 
 echo 'Building front-end...'
-npm ci --no-audit --no-fund
+npm install --no-audit --no-fund
 npm run build --workspace=quadratic-client

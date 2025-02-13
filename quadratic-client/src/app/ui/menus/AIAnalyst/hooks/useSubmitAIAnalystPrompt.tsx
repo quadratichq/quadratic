@@ -50,7 +50,7 @@ export function useSubmitAIAnalystPrompt() {
       async ({ context }: { context: Context }): Promise<ChatMessage[]> => {
         const [otherSheetsContext, tablesContext, currentSheetContext, visibleContext, selectionContext] =
           await Promise.all([
-            getOtherSheetsContext({ sheetNames: context.sheets }),
+            getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
             getTablesContext(),
             getCurrentSheetContext({ currentSheetName: context.currentSheet }),
             getVisibleContext(),
@@ -89,6 +89,28 @@ export function useSubmitAIAnalystPrompt() {
         set(aiAnalystLoadingAtom, true);
 
         const abortController = new AbortController();
+        abortController.signal.addEventListener('abort', () => {
+          set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {
+            const lastMessage = prevMessages.at(-1);
+            if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
+              const newLastMessage = { ...lastMessage };
+              newLastMessage.content += '\n\nRequest aborted by the user.';
+              newLastMessage.content = newLastMessage.content.trim();
+              newLastMessage.toolCalls = [];
+              return [...prevMessages.slice(0, -1), newLastMessage];
+            } else if (lastMessage?.role === 'user') {
+              const newLastMessage: AIMessage = {
+                role: 'assistant',
+                content: 'Request aborted by the user.',
+                contextType: 'userPrompt',
+                toolCalls: [],
+                model,
+              };
+              return [...prevMessages, newLastMessage];
+            }
+            return prevMessages;
+          });
+        });
         set(aiAnalystAbortControllerAtom, abortController);
 
         if (clearMessages) {
@@ -119,8 +141,7 @@ export function useSubmitAIAnalystPrompt() {
             content: userPrompt,
             contextType: 'userPrompt' as const,
             context: {
-              sheets: context.currentSheet ? [context.currentSheet, ...context.sheets] : context.sheets,
-              currentSheet: '',
+              ...context,
               selection: context.selection ?? sheets.sheet.cursor.save(),
             },
           },
@@ -206,19 +227,24 @@ export function useSubmitAIAnalystPrompt() {
           }
         } catch (error) {
           set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {
-            const aiMessage: AIMessage = {
-              role: 'assistant',
-              content: 'Looks like there was a problem. Please try again.',
-              contextType: 'userPrompt',
-              toolCalls: [],
-              model,
-            };
-
             const lastMessage = prevMessages.at(-1);
-            if (lastMessage?.role === 'assistant') {
-              return [...prevMessages.slice(0, -1), aiMessage];
+            if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
+              const newLastMessage = { ...lastMessage };
+              newLastMessage.content += '\n\nLooks like there was a problem. Please try again.';
+              newLastMessage.content = newLastMessage.content.trim();
+              newLastMessage.toolCalls = [];
+              return [...prevMessages.slice(0, -1), newLastMessage];
+            } else if (lastMessage?.role === 'user') {
+              const newLastMessage: AIMessage = {
+                role: 'assistant',
+                content: 'Looks like there was a problem. Please try again.',
+                contextType: 'userPrompt',
+                toolCalls: [],
+                model,
+              };
+              return [...prevMessages, newLastMessage];
             }
-            return [...prevMessages, aiMessage];
+            return prevMessages;
           });
 
           console.error(error);

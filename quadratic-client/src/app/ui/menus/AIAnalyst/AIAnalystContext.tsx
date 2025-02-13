@@ -60,7 +60,6 @@ export const AIAnalystContext = ({
       if (editing) {
         setContext((prev) => ({
           ...prev,
-          sheets: prev.sheets.filter((sheet) => sheet !== sheets.sheet.name),
           currentSheet: sheets.sheet.name,
         }));
       }
@@ -84,12 +83,7 @@ export const AIAnalystContext = ({
         )
         .at(-1);
       if (lastUserMessage) {
-        const prevContext = lastUserMessage.context ?? defaultAIAnalystContext;
-        setContext({
-          ...prevContext,
-          sheets: prevContext.sheets.filter((sheet) => sheet !== sheets.sheet.name),
-          currentSheet: sheets.sheet.name,
-        });
+        setContext(lastUserMessage.context ?? defaultAIAnalystContext);
       }
     }
   }, [initialContext, messages, messagesCount, setContext]);
@@ -128,25 +122,34 @@ export const AIAnalystContext = ({
           key={context.currentSheet}
           primary={context.currentSheet}
           secondary={'Sheet'}
-          onClick={() => setContext((prev) => ({ ...prev, currentSheet: '' }))}
+          onClick={() =>
+            setContext((prev) => ({
+              ...prev,
+              sheets: prev.sheets.filter((sheet) => sheet !== prev.currentSheet),
+              currentSheet: '',
+            }))
+          }
           disabled={disabled}
         />
       )}
 
-      {context.sheets.map((sheet) => (
-        <ContextPill
-          key={sheet}
-          primary={sheet}
-          secondary={'Sheet'}
-          disabled={disabled}
-          onClick={() =>
-            setContext((prev) => ({
-              ...prev,
-              sheets: prev.sheets.filter((prevSheet) => prevSheet !== sheet),
-            }))
-          }
-        />
-      ))}
+      {context.sheets
+        .filter((sheet) => sheet !== context.currentSheet)
+        .map((sheet) => (
+          <ContextPill
+            key={sheet}
+            primary={sheet}
+            secondary={'Sheet'}
+            disabled={disabled}
+            onClick={() =>
+              setContext((prev) => ({
+                ...prev,
+                sheets: prev.sheets.filter((prevSheet) => prevSheet !== sheet),
+                currentSheet: prev.currentSheet === sheet ? '' : prev.currentSheet,
+              }))
+            }
+          />
+        ))}
     </div>
   );
 };

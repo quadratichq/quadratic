@@ -1,9 +1,10 @@
 use super::operation::Operation;
 use crate::{
+    a1::A1Selection,
     cell_values::CellValues,
     controller::GridController,
     formulas::replace_a1_notation,
-    grid::{CodeCellLanguage, CodeCellValue, DataTable, SheetId},
+    grid::{formats::SheetFormatUpdates, CodeCellLanguage, CodeCellValue, DataTable, SheetId},
     CellValue, SheetPos,
 };
 
@@ -33,12 +34,47 @@ impl GridController {
     pub fn set_data_table_operations_at(
         &self,
         sheet_pos: SheetPos,
-        values: String,
+        value: String,
     ) -> Vec<Operation> {
-        let (_, cell_value) = self.string_to_cell_value(sheet_pos, &values);
-        let values = CellValues::from(cell_value);
+        let mut ops = vec![];
 
-        vec![Operation::SetDataTableAt { sheet_pos, values }]
+        let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) else {
+            return ops;
+        };
+
+        let Ok(data_table_pos) = sheet.first_data_table_within(sheet_pos.into()) else {
+            return ops;
+        };
+
+        let Some(data_table) = sheet.data_table(data_table_pos) else {
+            return ops;
+        };
+
+        // strip whitespace
+        let value = value.trim();
+
+        let (cell_value, format_update, ..) = self.string_to_cell_value(value, false);
+
+        ops.push(Operation::SetDataTableAt {
+            sheet_pos,
+            values: CellValues::from(cell_value),
+        });
+
+        if !format_update.is_default() {
+            ops.push(Operation::DataTableFormats {
+                sheet_pos: data_table_pos.to_sheet_pos(sheet_pos.sheet_id),
+                formats: SheetFormatUpdates::from_selection(
+                    &A1Selection::from_xy(
+                        sheet_pos.x - data_table_pos.x + 1,
+                        sheet_pos.y - data_table_pos.y + 1 - data_table.y_adjustment(true),
+                        sheet_pos.sheet_id,
+                    ),
+                    format_update,
+                ),
+            });
+        }
+
+        ops
     }
 
     // Returns whether a code_cell is dependent on another code_cell.

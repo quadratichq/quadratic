@@ -561,7 +561,7 @@ mod tests {
                 y: 1,
                 sheet_id,
             },
-            vec![vec!["A", "B", "C"]],
+            vec![vec!["A".into(), "B".into(), "C".into()]],
             None,
         );
 
@@ -591,7 +591,7 @@ mod tests {
                 y: 1,
                 sheet_id,
             },
-            vec![vec!["A"], vec!["B"], vec!["C"]],
+            vec![vec!["A".into()], vec!["B".into()], vec!["C".into()]],
             None,
         );
 
@@ -833,7 +833,7 @@ mod tests {
                 y: 1,
                 sheet_id,
             },
-            vec![vec!["A", "B", "C", "D"]],
+            vec![vec!["A".into(), "B".into(), "C".into(), "D".into()]],
             None,
         );
 
@@ -865,7 +865,12 @@ mod tests {
                 y: 1,
                 sheet_id,
             },
-            vec![vec!["A"], vec!["B"], vec!["C"], vec!["D"]],
+            vec![
+                vec!["A".into()],
+                vec!["B".into()],
+                vec!["C".into()],
+                vec!["D".into()],
+            ],
             None,
         );
 

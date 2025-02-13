@@ -146,7 +146,10 @@ impl GridController {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = Pos::from(sheet_pos);
-            let mut data_table_rect = data_table.output_sheet_rect(sheet_pos, false);
+            let data_table_rect = data_table.output_sheet_rect(sheet_pos, false);
+
+            // select the entire data table
+            Self::select_full_data_table(transaction, sheet_id, data_table_pos, &data_table);
 
             // mark table fills and borders as dirty
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
@@ -174,12 +177,6 @@ impl GridController {
                 reverse_operations,
                 Some(&data_table_rect),
             );
-
-            // Sets the cursor to the entire table, including the new header
-            if transaction.is_user() {
-                data_table_rect.max.y += 1;
-                transaction.add_update_selection(A1Selection::from_rect(data_table_rect));
-            }
 
             return Ok(());
         };

@@ -7,6 +7,7 @@ use crate::cell_values::CellValues;
 use crate::controller::GridController;
 use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
 use crate::grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind};
+use crate::Pos;
 use crate::{a1::A1Selection, CellValue, SheetPos};
 
 // when a number's decimal is larger than this value, then it will treat it as text (this avoids an attempt to allocate a huge vector)
@@ -18,14 +19,15 @@ impl GridController {
     /// Convert string to a cell_value and generate necessary operations
     pub(super) fn string_to_cell_value(
         &self,
-        sheet_pos: SheetPos,
         value: &str,
-    ) -> (Vec<Operation>, CellValue) {
-        let mut ops = vec![];
+        allow_code: bool,
+    ) -> (CellValue, FormatUpdate) {
+        let mut format_update = FormatUpdate::default();
+
         let cell_value = if value.is_empty() {
             CellValue::Blank
         } else if let Some((currency, number)) = CellValue::unpack_currency(value) {
-            let mut format_update = FormatUpdate {
+            format_update = FormatUpdate {
                 numeric_format: Some(Some(NumericFormat {
                     kind: NumericFormatKind::Currency,
                     symbol: Some(currency),
@@ -36,14 +38,6 @@ impl GridController {
             if value.contains(',') {
                 format_update.numeric_commas = Some(Some(true));
             }
-
-            ops.push(Operation::SetCellFormatsA1 {
-                sheet_id: sheet_pos.sheet_id,
-                formats: SheetFormatUpdates::from_selection(
-                    &A1Selection::from_single_cell(sheet_pos),
-                    format_update,
-                ),
-            });
 
             // We no longer automatically set numeric decimals for
             // currency; instead, we handle changes in currency decimal
@@ -57,35 +51,21 @@ impl GridController {
                 CellValue::Text(value.into())
             } else {
                 if value.contains(',') {
-                    let format_update = FormatUpdate {
+                    format_update = FormatUpdate {
                         numeric_commas: Some(Some(true)),
                         ..Default::default()
                     };
-                    ops.push(Operation::SetCellFormatsA1 {
-                        sheet_id: sheet_pos.sheet_id,
-                        formats: SheetFormatUpdates::from_selection(
-                            &A1Selection::from_single_cell(sheet_pos),
-                            format_update,
-                        ),
-                    });
                 }
                 CellValue::Number(bd)
             }
         } else if let Some(percent) = CellValue::unpack_percentage(value) {
-            let format_update = FormatUpdate {
+            format_update = FormatUpdate {
                 numeric_format: Some(Some(NumericFormat {
                     kind: NumericFormatKind::Percentage,
                     symbol: None,
                 })),
                 ..Default::default()
             };
-            ops.push(Operation::SetCellFormatsA1 {
-                sheet_id: sheet_pos.sheet_id,
-                formats: SheetFormatUpdates::from_selection(
-                    &A1Selection::from_single_cell(sheet_pos),
-                    format_update,
-                ),
-            });
             CellValue::Number(percent)
         } else if let Some(time) = CellValue::unpack_time(value) {
             time
@@ -96,15 +76,19 @@ impl GridController {
         } else if let Some(duration) = CellValue::unpack_duration(value) {
             duration
         } else if let Some(code) = value.strip_prefix("=") {
-            ops.push(Operation::ComputeCode { sheet_pos });
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: code.to_string(),
-            })
+            if allow_code {
+                CellValue::Code(CodeCellValue {
+                    language: CodeCellLanguage::Formula,
+                    code: code.to_string(),
+                })
+            } else {
+                CellValue::Text(code.to_string())
+            }
         } else {
             CellValue::Text(value.into())
         };
-        (ops, cell_value)
+
+        (cell_value, format_update)
     }
 
     /// Generate operations for a user-initiated change to a cell value
@@ -119,12 +103,95 @@ impl GridController {
         let value = value.trim();
 
         // convert the string to a cell value and generate necessary operations
-        let (operations, cell_value) = self.string_to_cell_value(sheet_pos, value);
+        let (cell_value, format_update) = self.string_to_cell_value(value, true);
+
+        let is_code = matches!(cell_value, CellValue::Code(_));
+
         ops.push(Operation::SetCellValues {
             sheet_pos,
             values: CellValues::from(cell_value),
         });
-        ops.extend(operations);
+
+        if !format_update.is_default() {
+            ops.push(Operation::SetCellFormatsA1 {
+                sheet_id: sheet_pos.sheet_id,
+                formats: SheetFormatUpdates::from_selection(
+                    &A1Selection::from_single_cell(sheet_pos),
+                    format_update,
+                ),
+            });
+        }
+
+        if is_code {
+            ops.push(Operation::ComputeCode { sheet_pos });
+        }
+
+        ops
+    }
+
+    /// Generate operations for a user-initiated change to a cell value
+    pub fn set_cell_values_operations(
+        &mut self,
+        sheet_pos: SheetPos,
+        values: Vec<Vec<String>>,
+    ) -> Vec<Operation> {
+        let mut ops = vec![];
+        let mut compute_code_ops = vec![];
+
+        let height = values.len();
+        if height == 0 {
+            dbgjs!("[set_cell_values] Empty values");
+            return ops;
+        }
+
+        let width = values[0].len();
+        if width == 0 {
+            dbgjs!("[set_cell_values] Empty values");
+            return ops;
+        }
+
+        let mut cell_values = CellValues::new(width as u32, height as u32);
+        let mut sheet_format_updates = SheetFormatUpdates::default();
+
+        for (y, row) in values.iter().enumerate() {
+            for (x, value) in row.iter().enumerate() {
+                let (cell_value, format_update) = self.string_to_cell_value(value, true);
+
+                let is_code = matches!(cell_value, CellValue::Code(_));
+
+                cell_values.set(x as u32, y as u32, cell_value);
+
+                let pos = Pos {
+                    x: sheet_pos.x + x as i64,
+                    y: sheet_pos.y + y as i64,
+                };
+
+                if !format_update.is_default() {
+                    sheet_format_updates.set_format_cell(pos, format_update);
+                }
+
+                if is_code {
+                    compute_code_ops.push(Operation::ComputeCode {
+                        sheet_pos: pos.to_sheet_pos(sheet_pos.sheet_id),
+                    });
+                }
+            }
+        }
+
+        ops.push(Operation::SetCellValues {
+            sheet_pos,
+            values: cell_values,
+        });
+
+        if !sheet_format_updates.is_default() {
+            ops.push(Operation::SetCellFormatsA1 {
+                sheet_id: sheet_pos.sheet_id,
+                formats: sheet_format_updates,
+            });
+        }
+
+        ops.extend(compute_code_ops);
+
         ops
     }
 
@@ -254,83 +321,69 @@ mod test {
     #[parallel]
     fn boolean_to_cell_value() {
         let gc = GridController::test();
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 2,
-            sheet_id: SheetId::test(),
-        };
-        let (ops, value) = gc.string_to_cell_value(sheet_pos, "true");
-        assert_eq!(ops.len(), 0);
+
+        let (value, format_update) = gc.string_to_cell_value("true", true);
         assert_eq!(value, true.into());
+        assert!(format_update.is_default());
 
-        let (ops, value) = gc.string_to_cell_value(sheet_pos, "false");
-        assert_eq!(ops.len(), 0);
+        let (value, format_update) = gc.string_to_cell_value("false", true);
         assert_eq!(value, false.into());
+        assert!(format_update.is_default());
 
-        let (ops, value) = gc.string_to_cell_value(sheet_pos, "TRUE");
-        assert_eq!(ops.len(), 0);
+        let (value, format_update) = gc.string_to_cell_value("TRUE", true);
         assert_eq!(value, true.into());
+        assert!(format_update.is_default());
 
-        let (ops, value) = gc.string_to_cell_value(sheet_pos, "FALSE");
-        assert_eq!(ops.len(), 0);
+        let (value, format_update) = gc.string_to_cell_value("FALSE", true);
         assert_eq!(value, false.into());
+        assert!(format_update.is_default());
 
-        let (ops, value) = gc.string_to_cell_value(sheet_pos, "tRue");
-        assert_eq!(ops.len(), 0);
+        let (value, format_update) = gc.string_to_cell_value("tRue", true);
         assert_eq!(value, true.into());
+        assert!(format_update.is_default());
 
-        let (ops, value) = gc.string_to_cell_value(sheet_pos, "FaLse");
-        assert_eq!(ops.len(), 0);
+        let (value, format_update) = gc.string_to_cell_value("FaLse", true);
         assert_eq!(value, false.into());
+        assert!(format_update.is_default());
     }
 
     #[test]
     #[parallel]
     fn number_to_cell_value() {
         let gc = GridController::test();
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 2,
-            sheet_id: SheetId::test(),
-        };
-        let (ops, value) = gc.string_to_cell_value(sheet_pos, "123");
-        assert_eq!(ops.len(), 0);
-        assert_eq!(value, 123.into());
 
-        let (ops, value) = gc.string_to_cell_value(sheet_pos, "123.45");
-        assert_eq!(ops.len(), 0);
+        let (value, format_update) = gc.string_to_cell_value("123", true);
+        assert_eq!(value, 123.into());
+        assert!(format_update.is_default());
+
+        let (value, format_update) = gc.string_to_cell_value("123.45", true);
         assert_eq!(
             value,
             CellValue::Number(BigDecimal::from_str("123.45").unwrap())
         );
+        assert!(format_update.is_default());
 
-        let (ops, value) = gc.string_to_cell_value(sheet_pos, "123,456.78");
-        assert_eq!(ops.len(), 1);
+        let (value, format_update) = gc.string_to_cell_value("123,456.78", true);
         assert_eq!(
             value,
             CellValue::Number(BigDecimal::from_str("123456.78").unwrap())
         );
+        assert_eq!(format_update.numeric_commas, Some(Some(true)));
 
-        let (ops, value) = gc.string_to_cell_value(sheet_pos, "123,456,789.01");
-        assert_eq!(ops.len(), 1);
+        let (value, format_update) = gc.string_to_cell_value("123,456,789.01", true);
         assert_eq!(
             value,
             CellValue::Number(BigDecimal::from_str("123456789.01").unwrap())
         );
+        assert_eq!(format_update.numeric_commas, Some(Some(true)));
     }
 
     #[test]
     #[parallel]
     fn formula_to_cell_value() {
         let gc = GridController::test();
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 2,
-            sheet_id: SheetId::test(),
-        };
 
-        let (ops, value) = gc.string_to_cell_value(sheet_pos, "=1+1");
-        assert_eq!(ops.len(), 1);
+        let (value, _) = gc.string_to_cell_value("=1+1", true);
         assert_eq!(
             value,
             CellValue::Code(CodeCellValue {
@@ -339,8 +392,7 @@ mod test {
             })
         );
 
-        let (ops, value) = gc.string_to_cell_value(sheet_pos, "=1/0");
-        assert_eq!(ops.len(), 1);
+        let (value, _) = gc.string_to_cell_value("=1/0", true);
         assert_eq!(
             value,
             CellValue::Code(CodeCellValue {
@@ -349,8 +401,7 @@ mod test {
             })
         );
 
-        let (ops, value) = gc.string_to_cell_value(sheet_pos, "=A1+A2");
-        assert_eq!(ops.len(), 1);
+        let (value, _) = gc.string_to_cell_value("=A1+A2", true);
         assert_eq!(
             value,
             CellValue::Code(CodeCellValue {
@@ -358,6 +409,9 @@ mod test {
                 code: "A1+A2".to_string(),
             })
         );
+
+        let (value, _) = gc.string_to_cell_value("=A1+A2", false);
+        assert_eq!(value, CellValue::Text("A1+A2".to_string()));
     }
 
     #[test]
@@ -365,14 +419,7 @@ mod test {
     fn problematic_number() {
         let gc = GridController::test();
         let value = "980E92207901934";
-        let (_, cell_value) = gc.string_to_cell_value(
-            SheetPos {
-                sheet_id: gc.sheet_ids()[0],
-                x: 0,
-                y: 0,
-            },
-            value,
-        );
+        let (cell_value, _) = gc.string_to_cell_value(value, true);
         assert_eq!(cell_value.to_string(), value.to_string());
     }
 
