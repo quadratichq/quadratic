@@ -16,6 +16,10 @@ frontend:
     baseDirectory: build
     files:
       - "**/*"
+  cache:
+    paths:
+      - node_modules/**/*
+      - target/**/*
   customHeaders:
     - pattern: "**/*"
       headers:
