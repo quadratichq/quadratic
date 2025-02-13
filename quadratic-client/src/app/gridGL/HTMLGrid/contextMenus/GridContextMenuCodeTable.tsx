@@ -20,8 +20,7 @@ export function GridContextMenuCodeTable() {
 }
 
 export function ContextMenuCodeTableItems({ showUseFirstRowAsHeader }: { showUseFirstRowAsHeader?: boolean }) {
-  // TODO:(ddimaria) only show useFirstRowAsHeader if the language is Javascript
-  // Also: don't show 'use first row as...' if 'show column names' is true (see: data tables)
+  // TODO:(ddimaria: don't show 'use first row as...' if 'show column names' is true (see: data tables)
 
   return (
     <>
