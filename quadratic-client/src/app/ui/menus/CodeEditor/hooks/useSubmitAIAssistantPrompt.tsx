@@ -137,6 +137,27 @@ export function useSubmitAIAssistantPrompt() {
             signal: abortController.signal,
           });
         } catch (error) {
+          set(aiAssistantMessagesAtom, (prevMessages) => {
+            const lastMessage = prevMessages.at(-1);
+            if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
+              const newLastMessage = { ...lastMessage };
+              newLastMessage.content += '\n\nLooks like there was a problem. Please try again.';
+              newLastMessage.content = newLastMessage.content.trim();
+              newLastMessage.toolCalls = [];
+              return [...prevMessages.slice(0, -1), newLastMessage];
+            } else if (lastMessage?.role === 'user') {
+              const newLastMessage: AIMessage = {
+                role: 'assistant',
+                content: 'Looks like there was a problem. Please try again.',
+                contextType: 'userPrompt',
+                toolCalls: [],
+                model,
+              };
+              return [...prevMessages, newLastMessage];
+            }
+            return prevMessages;
+          });
+
           console.error(error);
         }
 
