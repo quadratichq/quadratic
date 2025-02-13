@@ -560,6 +560,9 @@ impl GridController {
                 .data_tables
                 .insert_sorted(sheet_rect.min, data_table.to_owned());
 
+            // Sets the cursor to the entire table, including the new header
+            Self::select_full_data_table(transaction, sheet_id, sheet_rect.min, &data_table);
+
             // mark deleted cells as dirty
             transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
 
@@ -585,16 +588,6 @@ impl GridController {
                 reverse_operations,
                 Some(&sheet_rect.union(&data_table_rect)),
             );
-
-            // Sets the cursor to the entire table, including the new header
-            if transaction.is_user() {
-                let mut sheet_rect = sheet_rect.to_owned();
-                sheet_rect.max.y += 2;
-                transaction.add_update_selection(A1Selection::table(
-                    sheet_rect.min.to_sheet_pos(sheet_id),
-                    &data_table.name.to_display(),
-                ));
-            }
 
             return Ok(());
         };
