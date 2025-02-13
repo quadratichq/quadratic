@@ -121,18 +121,19 @@ export class Cursor extends Container {
 
     // draw cursor
     if (table && tableName) {
-      this.graphics.lineStyle({
-        width: 1,
-        color: 0xffffff,
-        alignment: 0,
-      });
-      const offset = 1;
-      this.graphics.moveTo(x + offset, y + offset);
-      this.graphics.lineTo(x + width - offset, y + offset);
-      this.graphics.lineTo(x + width - offset, y + height - offset);
-      this.graphics.moveTo(x + width - offset - 1, y + height - offset);
-      this.graphics.lineTo(x + offset, y + height - offset);
-      this.graphics.lineTo(x + offset, y + offset);
+      // TODO:(jimniels) this is the old cursor code that draws a border around the table
+      // this.graphics.lineStyle({
+      //   width: 1,
+      //   color: 0xffffff,
+      //   alignment: 0,
+      // });
+      // const offset = 1;
+      // this.graphics.moveTo(x + offset, y + offset);
+      // this.graphics.lineTo(x + width - offset, y + offset);
+      // this.graphics.lineTo(x + width - offset, y + height - offset);
+      // this.graphics.moveTo(x + width - offset - 1, y + height - offset);
+      // this.graphics.lineTo(x + offset, y + height - offset);
+      // this.graphics.lineTo(x + offset, y + offset);
     } else {
       this.graphics.lineStyle({
         width: CURSOR_THICKNESS,
