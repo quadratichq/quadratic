@@ -166,7 +166,7 @@ impl CellRefRangeEnd {
         base_pos: Pos,
     ) -> Result<(Option<i64>, bool, Option<i64>, bool), A1Error> {
         lazy_static! {
-            /// ^(R(\[(-?\d+)\]|\{(\d+)\}))?(C(\[(-?\d+)\]|\{(\d+)\)}))?$
+            /// ^(R(\[(-?\d+)\]|\{(\d+)\}))?(C(\[(-?\d+)\]|\{(\d+)\}))?$
             /// ^                                                      $    match whole string
             ///  (                        )?                                group 1: optional row
             ///   R                                                           literal R
