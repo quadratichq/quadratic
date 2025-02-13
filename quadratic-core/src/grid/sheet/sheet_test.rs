@@ -206,8 +206,41 @@ impl Sheet {
             pos,
             Some(DataTable::new(
                 DataTableKind::CodeRun(code_run),
-                "Chart 1",
+                &format!("Chart {}", self.data_tables.len() + 1),
                 Value::Single(CellValue::Image("chart".to_string())),
+                false,
+                false,
+                true,
+                Some((1.0, 1.0)),
+            )),
+        );
+        self.data_tables.get_mut(&pos).unwrap().chart_output = Some((w, h));
+    }
+
+    /// Sets a JS chart at the given position with the given width and height (in cells).
+    pub fn test_set_chart_html(&mut self, pos: Pos, w: u32, h: u32) {
+        self.set_cell_value(
+            pos,
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Python,
+                code: "code".to_string(),
+            }),
+        );
+        let code_run = CodeRun {
+            std_out: None,
+            std_err: None,
+            cells_accessed: Default::default(),
+            error: None,
+            return_type: None,
+            line_number: None,
+            output_type: None,
+        };
+        self.set_data_table(
+            pos,
+            Some(DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                &format!("Chart {}", self.data_tables.len() + 1),
+                Value::Single(CellValue::Html("chart".to_string())),
                 false,
                 false,
                 true,

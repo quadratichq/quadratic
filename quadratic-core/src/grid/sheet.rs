@@ -27,6 +27,7 @@ pub mod borders;
 pub mod bounds;
 pub mod cell_array;
 pub mod cell_values;
+mod chart;
 pub mod clipboard;
 pub mod code;
 pub mod col_row;

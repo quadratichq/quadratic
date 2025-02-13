@@ -57,13 +57,16 @@ pub enum Operation {
     DeleteDataTable {
         sheet_pos: SheetPos,
     },
-
-    // todo: this needs to be replaced with a chart size based on cells instead
-    // of pixels
+    // **Deprecated** and replaced with SetChartCellSize
     SetChartSize {
         sheet_pos: SheetPos,
         pixel_width: f32,
         pixel_height: f32,
+    },
+    SetChartCellSize {
+        sheet_pos: SheetPos,
+        w: u32,
+        h: u32,
     },
     SetDataTableAt {
         sheet_pos: SheetPos,
@@ -648,6 +651,13 @@ impl fmt::Display for Operation {
                 "SetChartSize {{ sheet_pos: {}, pixel_width: {}, pixel_height: {} }}",
                 sheet_pos, pixel_width, pixel_height
             ),
+            Operation::SetChartCellSize { sheet_pos, w, h } => {
+                write!(
+                    fmt,
+                    "SetChartCellSize {{ sheet_pos: {}, w: {}, h: {} }}",
+                    sheet_pos, w, h
+                )
+            }
         }
     }
 }
