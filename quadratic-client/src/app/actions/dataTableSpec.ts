@@ -69,6 +69,16 @@ export const getRow = (): number | undefined => {
   return row - table.y;
 };
 
+
+export const getSelectedRows = (): number[] | undefined => {
+  const table = getTable();
+
+  if (!table) return undefined;
+
+  return sheets.sheet.cursor.getSelectedRows().map((r) => r - table.y).sort((a, b) => b - a);
+
+};
+
 // returns the column index of the selected column, starting from 0
 export const getColumn = (): number | undefined => {
   if (pixiAppSettings.contextMenu?.selectedColumn !== undefined) {
@@ -108,6 +118,11 @@ export const getColumn = (): number | undefined => {
 export const getColumns = (): JsDataTableColumnHeader[] | undefined => {
   const table = getTable();
   return table?.columns.map((c) => ({ ...c }));
+};
+
+export const getSelectedColumns = (): number[] | undefined => {
+  return sheets.sheet.cursor.getSelectedColumns().map((c) => c - 1).sort((a, b) => b - a);
+
 };
 
 export const getDisplayColumns = (): JsDataTableColumnHeader[] | undefined => {
@@ -304,18 +319,43 @@ export const insertTableColumn = (increment: number = 0, selectTable = true) => 
   }
 };
 
+// TODO(ddimaria): remove this once ull column selection is working in order
+// to test removing a column from the full column selection context menu
+//
+// export const removeTableColumn = (selectTable = true) => {
+//   const table = getTable();
+//   const column = getColumn();
+
+//   if (table && column !== undefined) {
+//     quadraticCore.dataTableMutations({
+//       sheetId: sheets.current,
+//       x: table.x,
+//       y: table.y,
+//       select_table: selectTable,
+//       columns_to_add: undefined,
+//       columns_to_remove: [column],
+//       rows_to_add: undefined,
+//       rows_to_remove: undefined,
+//       flatten_on_delete: undefined,
+//       swallow_on_insert: undefined,
+//       cursor: sheets.getCursorPosition(),
+//     });
+//   }
+// };
+
+
 export const removeTableColumn = (selectTable = true) => {
   const table = getTable();
-  const column = getColumn();
+  const columns = getSelectedColumns();
 
-  if (table && column !== undefined) {
+  if (table && columns && columns.length > 0) {
     quadraticCore.dataTableMutations({
       sheetId: sheets.current,
       x: table.x,
       y: table.y,
       select_table: selectTable,
       columns_to_add: undefined,
-      columns_to_remove: [column],
+      columns_to_remove: columns,
       rows_to_add: undefined,
       rows_to_remove: undefined,
       flatten_on_delete: undefined,
@@ -369,11 +409,35 @@ export const insertTableRow = (increment: number = 0, selectTable = true) => {
   }
 };
 
+// TODO(ddimaria): remove this once ull row selection is working in order
+// to test removing a row from the full row selection context menu
+//
+// export const removeTableRow = (selectTable = true) => {
+//   const table = getTable();
+//   const row = getRow();
+
+//   if (table && row !== undefined) {
+//     quadraticCore.dataTableMutations({
+//       sheetId: sheets.current,
+//       x: table.x,
+//       y: table.y,
+//       select_table: selectTable,
+//       columns_to_add: undefined,
+//       columns_to_remove: undefined,
+//       rows_to_add: undefined,
+//       rows_to_remove: [row],
+//       flatten_on_delete: undefined,
+//       swallow_on_insert: undefined,
+//       cursor: sheets.getCursorPosition(),
+//     });
+//   }
+// };
+
 export const removeTableRow = (selectTable = true) => {
   const table = getTable();
-  const row = getRow();
+  const rows = getSelectedRows();
 
-  if (table && row !== undefined) {
+  if (table && rows && rows.length > 0) {
     quadraticCore.dataTableMutations({
       sheetId: sheets.current,
       x: table.x,
@@ -382,7 +446,7 @@ export const removeTableRow = (selectTable = true) => {
       columns_to_add: undefined,
       columns_to_remove: undefined,
       rows_to_add: undefined,
-      rows_to_remove: [row],
+      rows_to_remove: rows,
       flatten_on_delete: undefined,
       swallow_on_insert: undefined,
       cursor: sheets.getCursorPosition(),
@@ -514,9 +578,14 @@ export const dataTableSpec: DataTableSpec = {
     run: () => insertTableColumn(1),
   },
   [Action.RemoveTableColumn]: {
-    label: 'Delete table column',
+    label: 'Delete table column(s)',
     Icon: DeleteIcon,
-    isAvailable: () => !isReadOnly() && isWithinTable(),
+    isAvailable: () => {
+      const length = sheets.sheet.cursor.getSelectedColumns().length;
+      const plural = length > 1 ? 's' : '';
+      dataTableSpec[Action.RemoveTableColumn].label= `Delete ${length} column${plural}`;
+      return !isReadOnly() && isWithinTable();
+    },
     run: () => removeTableColumn(true),
   },
   [Action.HideTableColumn]: {
@@ -544,7 +613,12 @@ export const dataTableSpec: DataTableSpec = {
   [Action.RemoveTableRow]: {
     label: 'Delete table row',
     Icon: DeleteIcon,
-    isAvailable: () => !isReadOnly() && isWithinTable(),
+    isAvailable: () => {
+      const length = sheets.sheet.cursor.getSelectedRows().length;
+      const plural = length > 1 ? 's' : '';
+      dataTableSpec[Action.RemoveTableRow].label= `Delete ${length} row${plural}`;
+      return !isReadOnly() && isWithinTable();
+    },
     run: () => removeTableRow(true),
   },
   [Action.EditTableCode]: {
@@ -560,6 +634,7 @@ export const dataTableSpec: DataTableSpec = {
   },
   [Action.ToggleTableColumns]: {
     label: 'Show column names',
+    isAvailable: () => !isCodeCell('Python') && isTableColumnsShowing(),
     checkbox: isTableColumnsShowing,
     run: toggleTableColumns,
   },
