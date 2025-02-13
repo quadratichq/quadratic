@@ -4,9 +4,10 @@ use crate::{
     controller::GridController,
     grid::{
         data_table::{column_header::DataTableColumnHeader, sort::DataTableSort},
+        formats::SheetFormatUpdates,
         DataTable, DataTableKind,
     },
-    CellValue, SheetPos, SheetRect, Value,
+    Array, ArraySize, CellValue, Pos, SheetPos, SheetRect,
 };
 
 use anyhow::Result;
@@ -145,25 +146,72 @@ impl GridController {
         values: Vec<Vec<String>>,
         first_row_is_header: bool,
     ) -> Vec<Operation> {
+        let mut ops = vec![];
+
+        let height = values.len();
+        if height == 0 {
+            dbgjs!("[set_cell_values] Empty values");
+            return ops;
+        }
+
+        let width = values[0].len();
+        if width == 0 {
+            dbgjs!("[set_cell_values] Empty values");
+            return ops;
+        }
+
+        let Ok(array_size) = ArraySize::try_from((width as u32, height as u32)) else {
+            return ops;
+        };
+
+        let mut cell_values = Array::new_empty(array_size);
+        let mut sheet_format_updates = SheetFormatUpdates::default();
+
+        for (y, row) in values.iter().enumerate() {
+            for (x, value) in row.iter().enumerate() {
+                let value = value.trim();
+
+                let (cell_value, format_update) = self.string_to_cell_value(value, false);
+
+                if let Err(e) = cell_values.set(x as u32, y as u32, cell_value) {
+                    dbgjs!(format!(
+                        "[add_data_table_operations] Error setting cell value: {}",
+                        e
+                    ));
+                    return ops;
+                }
+
+                if !format_update.is_default() {
+                    let pos = Pos {
+                        x: x as i64 + 1,
+                        y: y as i64 + 1,
+                    };
+                    sheet_format_updates.set_format_cell(pos, format_update);
+                }
+            }
+        }
+
+        let import = Import::new(name.to_owned());
         let name = self
             .grid
             .unique_data_table_name(&name, false, Some(sheet_pos));
-        let import = Import::new(name.to_owned());
         let data_table = DataTable::new(
             DataTableKind::Import(import.to_owned()),
             &name,
-            Value::Array(values.into()),
+            cell_values.into(),
             false,
             first_row_is_header,
             true,
             None,
         );
-        let cell_value = CellValue::Import(import);
-        vec![Operation::AddDataTable {
+
+        ops.push(Operation::AddDataTable {
             sheet_pos,
             data_table,
-            cell_value,
-        }]
+            cell_value: CellValue::Import(import),
+        });
+
+        ops
     }
 }
 

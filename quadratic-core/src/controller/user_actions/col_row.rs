@@ -129,7 +129,7 @@ mod tests {
 
         gc.set_cell_values(
             SheetPos::new(sheet_id, 1, 1),
-            vec![vec!["1"], vec!["2"], vec!["3"]],
+            vec![vec!["1".into()], vec!["2".into()], vec!["3".into()]],
             None,
         );
 

@@ -418,6 +418,7 @@ impl GridController {
         let lines: Vec<&str> = clipboard.split('\n').collect();
 
         let mut ops = vec![];
+        let mut compute_code_ops = vec![];
 
         // calculate the width by checking the first line (with the assumption that all lines should have the same width)
         let w = lines
@@ -425,30 +426,48 @@ impl GridController {
             .map(|line| line.split('\t').count())
             .unwrap_or(0);
         let mut cell_values = CellValues::new(w as u32, lines.len() as u32);
+        let mut sheet_format_updates = SheetFormatUpdates::default();
         lines.iter().enumerate().for_each(|(y, line)| {
             line.split('\t').enumerate().for_each(|(x, value)| {
-                let (operations, cell_value) = self.string_to_cell_value(
-                    SheetPos {
-                        x: start_pos.x + x as i64,
-                        y: start_pos.y + y as i64,
-                        sheet_id: start_pos.sheet_id,
-                    },
-                    value,
-                );
-                ops.extend(operations);
+                let (cell_value, format_update) = self.string_to_cell_value(value, true);
+
+                let is_code = matches!(cell_value, CellValue::Code(_));
+
                 if cell_value != CellValue::Blank {
                     cell_values.set(x as u32, y as u32, cell_value);
+                }
+
+                let pos = Pos {
+                    x: start_pos.x + x as i64,
+                    y: start_pos.y + y as i64,
+                };
+
+                if !format_update.is_default() {
+                    sheet_format_updates.set_format_cell(pos, format_update);
+                }
+
+                if is_code {
+                    compute_code_ops.push(Operation::ComputeCode {
+                        sheet_pos: pos.to_sheet_pos(start_pos.sheet_id),
+                    });
                 }
             });
         });
 
-        ops.insert(
-            0,
-            Operation::SetCellValues {
-                sheet_pos: start_pos,
-                values: cell_values,
-            },
-        );
+        ops.push(Operation::SetCellValues {
+            sheet_pos: start_pos,
+            values: cell_values,
+        });
+
+        if !sheet_format_updates.is_default() {
+            ops.push(Operation::SetCellFormatsA1 {
+                sheet_id: start_pos.sheet_id,
+                formats: sheet_format_updates,
+            });
+        }
+
+        ops.extend(compute_code_ops);
+
         ops
     }
 
@@ -710,7 +729,7 @@ mod test {
                 y: 1,
                 sheet_id,
             },
-            vec![vec!["1"], vec!["2"], vec!["3"]],
+            vec![vec!["1".into()], vec!["2".into()], vec!["3".into()]],
             None,
         );
 

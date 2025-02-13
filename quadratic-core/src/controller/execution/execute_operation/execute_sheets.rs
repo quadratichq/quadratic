@@ -57,7 +57,7 @@ impl GridController {
                 for (pos, name) in data_tables.iter() {
                     let sheet_pos = pos.to_sheet_pos(sheet_id);
                     self.grid
-                        .update_data_table_name(sheet_pos, &name, &name, false)?;
+                        .update_data_table_name(sheet_pos, name, name, false)?;
                     // mark code cells dirty to update meta data
                     transaction.add_code_cell(sheet_id, *pos);
                 }

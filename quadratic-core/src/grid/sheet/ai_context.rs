@@ -40,7 +40,7 @@ impl Sheet {
         max_rects: Option<usize>,
     ) -> Vec<JsCellValuePosContext> {
         let mut data_rects = Vec::new();
-        let selection_rects = self.selection_to_rects(&selection, false, false);
+        let selection_rects = self.selection_to_rects(selection, false, false);
         let tabular_data_rects =
             self.find_tabular_data_rects_in_selection_rects(selection_rects, max_rects);
         for tabular_data_rect in tabular_data_rects {
@@ -59,7 +59,7 @@ impl Sheet {
     /// Returns JsCodeCell for all code cells in selection rects that have errors
     fn get_errored_code_cells_in_selection(&self, selection: &A1Selection) -> Vec<JsCodeCell> {
         let mut code_cells = Vec::new();
-        let selection_rects = self.selection_to_rects(&selection, false, false);
+        let selection_rects = self.selection_to_rects(selection, false, false);
         for selection_rect in selection_rects {
             for x in selection_rect.x_range() {
                 if let Some(column) = self.get_column(x) {
@@ -90,7 +90,7 @@ impl Sheet {
         selection: &A1Selection,
     ) -> Vec<JsTableSummaryContext> {
         let mut tables_summary = Vec::new();
-        let selection_rects = self.selection_to_rects(&selection, false, false);
+        let selection_rects = self.selection_to_rects(selection, false, false);
         let mut seen_tables = HashSet::new();
         for rect in selection_rects {
             let tables_summary_in_rect = self
@@ -133,7 +133,7 @@ impl Sheet {
         selection: &A1Selection,
     ) -> Vec<JsChartSummaryContext> {
         let mut charts_summary = Vec::new();
-        let selection_rects = self.selection_to_rects(&selection, false, false);
+        let selection_rects = self.selection_to_rects(selection, false, false);
         let mut seen_tables = HashSet::new();
         for rect in selection_rects {
             let charts_summary_in_rect = self

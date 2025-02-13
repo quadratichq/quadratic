@@ -149,22 +149,10 @@ impl GridController {
     pub fn set_cell_values(
         &mut self,
         sheet_pos: SheetPos,
-        values: Vec<Vec<&str>>,
+        values: Vec<Vec<String>>,
         cursor: Option<String>,
     ) {
-        let mut ops = vec![];
-        let mut x = sheet_pos.x;
-        let mut y = sheet_pos.y;
-
-        for row in values {
-            for value in row {
-                let op_sheet_pos = SheetPos::new(sheet_pos.sheet_id, x, y);
-                ops.extend(self.set_cell_value_operations(op_sheet_pos, value.to_string()));
-                x += 1;
-            }
-            x = sheet_pos.x;
-            y += 1;
-        }
+        let ops = self.set_cell_values_operations(sheet_pos, values);
         self.start_user_transaction(ops, cursor, TransactionName::SetCells);
     }
 
