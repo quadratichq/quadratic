@@ -41,7 +41,7 @@ impl GridController {
         let pos = Pos::from(sheet_pos);
 
         if let Ok(sheet) = self.try_sheet_mut_result(sheet_pos.sheet_id) {
-            if pos.x > 1 && pos.y > 1 {
+            if pos.x > 1 {
                 let data_table_left = sheet.first_data_table_within(Pos::new(pos.x - 1, pos.y));
                 if let Ok(data_table_left) = data_table_left {
                     if let Some(data_table) =
@@ -105,7 +105,9 @@ impl GridController {
                         }
                     }
                 }
+            }
 
+            if pos.y > 1 {
                 let data_table_above = sheet.first_data_table_within(Pos::new(pos.x, pos.y - 1));
                 if let Ok(data_table_above) = data_table_above {
                     if let Some(data_table) =
