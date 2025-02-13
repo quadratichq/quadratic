@@ -135,6 +135,7 @@ impl GridController {
         &mut self,
         sheet_id: String,
         pos: String,
+        select_table: bool,
         columns_to_add: Option<Vec<u32>>,
         columns_to_remove: Option<Vec<u32>>,
         rows_to_add: Option<Vec<u32>>,
@@ -148,6 +149,7 @@ impl GridController {
 
         self.data_table_mutations(
             pos.to_sheet_pos(sheet_id),
+            select_table,
             columns_to_add,
             columns_to_remove,
             rows_to_add,

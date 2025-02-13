@@ -560,6 +560,9 @@ impl GridController {
                 .data_tables
                 .insert_sorted(sheet_rect.min, data_table.to_owned());
 
+            // Sets the cursor to the entire table, including the new header
+            Self::select_full_data_table(transaction, sheet_id, sheet_rect.min, &data_table);
+
             // mark deleted cells as dirty
             transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
 
@@ -585,16 +588,6 @@ impl GridController {
                 reverse_operations,
                 Some(&sheet_rect.union(&data_table_rect)),
             );
-
-            // Sets the cursor to the entire table, including the new header
-            if transaction.is_user() {
-                let mut sheet_rect = sheet_rect.to_owned();
-                sheet_rect.max.y += 2;
-                transaction.add_update_selection(A1Selection::table(
-                    sheet_rect.min.to_sheet_pos(sheet_id),
-                    &data_table.name.to_display(),
-                ));
-            }
 
             return Ok(());
         };
@@ -798,6 +791,7 @@ impl GridController {
             mut column_header,
             mut values,
             swallow,
+            select_table,
         } = op.to_owned()
         {
             let sheet_id = sheet_pos.sheet_id;
@@ -872,7 +866,9 @@ impl GridController {
                 data_table.formats.apply_updates(&format_update);
             }
 
-            Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
+            if select_table {
+                Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
+            }
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
             self.send_updated_bounds(sheet_id);
 
@@ -881,6 +877,7 @@ impl GridController {
                 sheet_pos,
                 index,
                 flatten: swallow,
+                select_table,
             }];
             self.data_table_operations(
                 transaction,
@@ -904,6 +901,7 @@ impl GridController {
             sheet_pos,
             index,
             flatten,
+            select_table,
         } = op.to_owned()
         {
             let sheet_id = sheet_pos.sheet_id;
@@ -1002,7 +1000,9 @@ impl GridController {
             let old_values = data_table.get_column_sorted(column_index)?;
             data_table.delete_column(column_index)?;
 
-            Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
+            if select_table {
+                Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
+            }
             self.send_updated_bounds(sheet_id);
 
             let forward_operations = vec![op];
@@ -1012,6 +1012,7 @@ impl GridController {
                 column_header: old_column_header,
                 values: Some(old_values),
                 swallow: false,
+                select_table,
             });
             self.data_table_operations(
                 transaction,
@@ -1036,6 +1037,7 @@ impl GridController {
             index,
             mut values,
             swallow,
+            select_table,
         } = op.to_owned()
         {
             let sheet_id = sheet_pos.sheet_id;
@@ -1112,7 +1114,10 @@ impl GridController {
                 data_table.formats.apply_updates(&format_update);
             }
 
-            Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
+            if select_table {
+                println!("select_table");
+                Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
+            }
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
             self.send_updated_bounds(sheet_id);
 
@@ -1121,6 +1126,7 @@ impl GridController {
                 sheet_pos,
                 index: reverse_row_index,
                 flatten: false,
+                select_table,
             });
             self.data_table_operations(
                 transaction,
@@ -1144,6 +1150,7 @@ impl GridController {
             sheet_pos,
             index,
             flatten,
+            select_table,
         } = op.to_owned()
         {
             let sheet_id = sheet_pos.sheet_id;
@@ -1220,7 +1227,9 @@ impl GridController {
 
             let reverse_row_index = data_table.delete_row_sorted(index as usize)?;
 
-            Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
+            if select_table {
+                Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
+            }
             self.send_updated_bounds(sheet_id);
 
             let forward_operations = vec![op];
@@ -1229,6 +1238,7 @@ impl GridController {
                 index: reverse_row_index,
                 values: Some(old_values),
                 swallow: false,
+                select_table,
             });
             self.data_table_operations(
                 transaction,
@@ -1779,6 +1789,7 @@ mod tests {
             column_header: None,
             values: None,
             swallow: false,
+            select_table: true,
         };
         let mut transaction = PendingTransaction::default();
         gc.execute_insert_data_table_column(&mut transaction, op)
@@ -1823,6 +1834,7 @@ mod tests {
             sheet_pos,
             index,
             flatten: false,
+            select_table: true,
         };
         let mut transaction = PendingTransaction::default();
         gc.execute_delete_data_table_column(&mut transaction, op)
@@ -1868,6 +1880,7 @@ mod tests {
             index,
             values: None,
             swallow: false,
+            select_table: true,
         };
         let mut transaction = PendingTransaction::default();
         gc.execute_insert_data_table_row(&mut transaction, op)
@@ -1905,6 +1918,7 @@ mod tests {
             sheet_pos,
             index,
             flatten: true,
+            select_table: true,
         };
         let mut transaction = PendingTransaction::default();
         gc.execute_delete_data_table_row(&mut transaction, op)
@@ -1951,6 +1965,7 @@ mod tests {
             column_header: None,
             values: None,
             swallow: true,
+            select_table: true,
         };
         let column_result = gc.execute_insert_data_table_column(&mut transaction, insert_column_op);
         assert!(column_result.is_err());
@@ -1970,6 +1985,7 @@ mod tests {
             index: 12,
             values: None,
             swallow: true,
+            select_table: true,
         };
         let row_result = gc.execute_insert_data_table_row(&mut transaction, insert_row_op);
         assert!(row_result.is_err());
@@ -2013,6 +2029,7 @@ mod tests {
             column_header: None,
             values: None,
             swallow: true,
+            select_table: true,
         };
         let column_result = gc.execute_insert_data_table_column(&mut transaction, insert_column_op);
         assert!(column_result.is_err());
@@ -2032,6 +2049,7 @@ mod tests {
             index: 12,
             values: None,
             swallow: true,
+            select_table: true,
         };
         let row_result = gc.execute_insert_data_table_row(&mut transaction, insert_row_op);
         assert!(row_result.is_err());

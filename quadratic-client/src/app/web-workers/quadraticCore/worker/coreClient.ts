@@ -676,6 +676,7 @@ class CoreClient {
           sheetId: e.data.sheetId,
           x: e.data.x,
           y: e.data.y,
+          select_table: e.data.select_table,
           columns_to_add: e.data.columns_to_add,
           columns_to_remove: e.data.columns_to_remove,
           rows_to_add: e.data.rows_to_add,
@@ -683,6 +684,10 @@ class CoreClient {
           flatten_on_delete: e.data.flatten_on_delete,
           swallow_on_insert: e.data.swallow_on_insert,
           cursor: e.data.cursor,
+        });
+        this.send({
+          type: 'coreClientDataTableMutations',
+          id: e.data.id,
         });
         return;
 

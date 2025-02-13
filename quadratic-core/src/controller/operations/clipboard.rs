@@ -200,7 +200,6 @@ impl GridController {
             .selection
             .translate(cursor_translate_x, cursor_translate_y);
         cursor.sheet_id = selection.sheet_id;
-        ops.push(Operation::SetCursorA1 { selection: cursor });
 
         match special {
             PasteSpecial::None => {
@@ -336,22 +335,22 @@ impl GridController {
                         };
 
                         if let Some(data_table) = clipboard.data_tables.get(&source_pos) {
+                            let mut data_table = data_table.to_owned();
+                            let old_name = data_table.name.to_display();
+                            let new_name =
+                                self.grid().unique_data_table_name(&old_name, false, None);
+
+                            // update table name in paste cursor selection
+                            cursor.replace_table_name(&old_name, &new_name);
+
+                            data_table.name = new_name.into();
+
                             ops.push(Operation::SetDataTable {
                                 sheet_pos,
-                                data_table: Some(data_table.to_owned()),
+                                data_table: Some(data_table),
                                 index: 0,
                             });
                         }
-
-                        // if let Some(data_table) = sheet.data_table(source_pos) {
-                        //     if matches!(data_table.kind, DataTableKind::Import(_)) {
-                        //         ops.push(Operation::SetDataTable {
-                        //             sheet_pos,
-                        //             data_table: Some(data_table.to_owned()),
-                        //             index: 0,
-                        //         });
-                        //     }
-                        // }
 
                         ops.push(Operation::ComputeCode { sheet_pos });
                     });
@@ -401,6 +400,8 @@ impl GridController {
                 start_pos.to_sheet_pos(selection.sheet_id),
             ));
         }
+
+        ops.push(Operation::SetCursorA1 { selection: cursor });
 
         ops
     }
@@ -770,8 +771,10 @@ mod test {
     }
 
     #[test]
-    #[parallel]
+    #[serial]
     fn copy_paste_clipboard_with_data_table() {
+        clear_js_calls();
+
         let (mut gc, sheet_id, _, _) = simple_csv();
         let paste = |gc: &mut GridController, x, y, html| {
             gc.paste_from_clipboard(
@@ -806,6 +809,9 @@ mod test {
         paste(&mut gc, 10, 1, html.clone());
         print_table(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
         assert_cell_value_row(&gc, sheet_id, 10, 13, 0, expected_row1);
+
+        let cursor = A1Selection::table(pos![J2].to_sheet_pos(sheet_id), "simple.csv1");
+        expect_js_call("jsSetCursor", serde_json::to_string(&cursor).unwrap(), true);
     }
 
     #[test]

@@ -65,6 +65,7 @@ impl GridController {
     pub fn data_table_mutations_operations(
         &self,
         sheet_pos: SheetPos,
+        select_table: bool,
         columns_to_add: Option<Vec<u32>>,
         columns_to_remove: Option<Vec<u32>>,
         rows_to_add: Option<Vec<u32>>,
@@ -82,6 +83,7 @@ impl GridController {
                     column_header: None,
                     values: None,
                     swallow: swallow_on_insert.unwrap_or(false),
+                    select_table,
                 });
             }
         }
@@ -92,6 +94,7 @@ impl GridController {
                     sheet_pos,
                     index,
                     flatten: flatten_on_delete.unwrap_or(false),
+                    select_table,
                 });
             }
         }
@@ -103,6 +106,7 @@ impl GridController {
                     index,
                     values: None,
                     swallow: swallow_on_insert.unwrap_or(false),
+                    select_table,
                 });
             }
         }
@@ -113,6 +117,7 @@ impl GridController {
                     sheet_pos,
                     index,
                     flatten: flatten_on_delete.unwrap_or(false),
+                    select_table,
                 });
             }
         }

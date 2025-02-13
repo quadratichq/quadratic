@@ -1,5 +1,6 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
+import { insertTableRow } from '@/app/actions/dataTableSpec';
 import type { CodeEditorState } from '@/app/atoms/codeEditorAtom';
 import { events } from '@/app/events/events';
 import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
@@ -43,7 +44,28 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
 
   // Move cursor right, don't clear selection
   if (matchShortcut(Action.MoveCursorRightWithSelection, event)) {
-    cursor.moveTo(cursorPosition.x + 1, cursorPosition.y);
+    const { x: cursorX, y: cursorY } = sheets.sheet.cursor.position;
+    const table = pixiApp.cellsSheet().tables.getTableFromTableCell(cursorX, cursorY);
+    if (table) {
+      const tableStartX = table.codeCell.x;
+      const tableStartY = table.codeCell.y;
+      const tableEndX = tableStartX + table.codeCell.w - 1;
+      const tableEndY = tableStartY + table.codeCell.h - 1;
+      if (cursorX + 1 <= tableEndX) {
+        // move cursor to the right within the table
+        cursor.moveTo(cursorX + 1, cursorY);
+      } else if (cursorY + 1 <= tableEndY) {
+        // move cursor to the first cell of the next row
+        cursor.moveTo(tableStartX, cursorY + 1);
+      } else {
+        // insert a new row and move cursor to the first cell of the new row
+        insertTableRow(1, false)?.then(() => {
+          cursor.moveTo(tableStartX, tableEndY + 1);
+        });
+      }
+    } else {
+      cursor.moveTo(cursorPosition.x + 1, cursorPosition.y);
+    }
     return true;
   }
 
