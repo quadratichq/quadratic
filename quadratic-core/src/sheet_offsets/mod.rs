@@ -100,6 +100,16 @@ impl SheetOffsets {
         self.column_widths.get_size(x)
     }
 
+    /// Gets the sum of the widths of a range of columns.
+    pub fn total_columns_width(&self, from: i64, to: i64) -> f64 {
+        self.column_widths.iter_offsets(from..(to + 1)).sum()
+    }
+
+    /// Gets the sum of the heights of a range of rows.
+    pub fn total_rows_height(&self, from: i64, to: i64) -> f64 {
+        self.row_heights.iter_offsets(from..(to + 1)).sum()
+    }
+
     pub fn row_height(&self, y: i64) -> f64 {
         self.row_heights.get_size(y)
     }
@@ -355,5 +365,27 @@ mod test {
         let (width, height) = sheet.calculate_grid_size(Pos { x: 1, y: 1 }, 100.0, 21.0);
         assert_eq!(width, 2);
         assert_eq!(height, 2);
+    }
+
+    #[test]
+    fn test_total_widths_heights() {
+        let sheet = SheetOffsets::default();
+        let (default_col, default_row) = sheet.defaults();
+
+        // Test total width for a range of columns
+        assert_eq!(sheet.total_columns_width(1, 3), default_col * 3.0);
+        assert_eq!(sheet.total_columns_width(1, 1), default_col);
+
+        // Test total height for a range of rows
+        assert_eq!(sheet.total_rows_height(1, 3), default_row * 3.0);
+        assert_eq!(sheet.total_rows_height(1, 1), default_row);
+
+        // Test with modified sizes
+        let mut sheet = SheetOffsets::default();
+        sheet.set_column_width(2, 150.0);
+        sheet.set_row_height(2, 30.0);
+
+        assert_eq!(sheet.total_columns_width(1, 3), default_col * 2.0 + 150.0);
+        assert_eq!(sheet.total_rows_height(1, 3), default_row * 2.0 + 30.0);
     }
 }

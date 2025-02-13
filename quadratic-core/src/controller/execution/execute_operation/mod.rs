@@ -59,6 +59,9 @@ impl GridController {
                 Operation::SetChartSize { .. } => Self::handle_execution_operation_result(
                     self.execute_set_chart_size(transaction, op),
                 ),
+                Operation::SetChartCellSize { .. } => Self::handle_execution_operation_result(
+                    self.execute_set_chart_cell_size(transaction, op),
+                ),
                 Operation::AddDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_add_data_table(transaction, op),
                 ),
