@@ -7,7 +7,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { JsDataTableColumnHeader, JsRenderCodeCell, SheetRect } from '@/app/quadratic-core-types';
+import type { CodeCellLanguage, JsDataTableColumnHeader, JsRenderCodeCell, SheetRect } from '@/app/quadratic-core-types';
 import { newRectSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
@@ -148,6 +148,11 @@ const isTableNameShowing = (): boolean => {
 const isTableColumnsShowing = (): boolean => {
   const table = getTable();
   return !!table?.show_columns;
+};
+
+const isCodeCell = (language: CodeCellLanguage) => {
+  let table = getTable();
+  return table?.language === language;
 };
 
 export const gridToDataTable = () => {
@@ -445,6 +450,7 @@ export const dataTableSpec: DataTableSpec = {
   [Action.ToggleFirstRowAsHeaderTable]: {
     label: 'Use first row as column names',
     checkbox: isFirstRowHeader,
+    isAvailable: () => !isCodeCell('Python'),
     run: toggleFirstRowAsHeader,
   },
   [Action.RenameTable]: {
