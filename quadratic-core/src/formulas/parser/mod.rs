@@ -379,13 +379,13 @@ mod tests {
     fn test_replace_a1_notation() {
         let ctx = A1Context::test(&[], &[]);
         let pos = SheetPos::test();
-        let src = "SUM(A1)
-        + SUM(B3)";
-        let expected = "SUM(R[0]C[0])
-        + SUM(R[1]C[2])";
+        let src = "SUM(A$1)
+        + SUM($B3)";
+        let expected = "SUM(R{1}C[0])
+        + SUM(R[2]C{2})";
 
         let replaced = replace_a1_notation(src, &ctx, pos);
-        assert_eq!(replaced, expected);
+        assert_eq!(expected, replaced);
     }
 
     #[test]

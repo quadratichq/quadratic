@@ -351,7 +351,7 @@ fn test_find_cell_references() {
         // Unquoted sheet reference
         ("apple!A$1", new_ref(apple, r(1), a(1), r(1), a(1))),
         // Unquoted sheet reference range with spaces
-        ("orange ! A2: $Q9", new_ref(orange, r(1), r(2), a(16), r(9))),
+        ("orange ! A2: $Q9", new_ref(orange, r(1), r(2), a(17), r(9))),
         // Quoted sheet reference range
         (
             "'banana'!$A1:QQ$222",
