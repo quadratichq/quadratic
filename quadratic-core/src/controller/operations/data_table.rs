@@ -195,7 +195,7 @@ impl GridController {
         let name = self
             .grid
             .unique_data_table_name(&name, false, Some(sheet_pos));
-        let data_table = DataTable::new(
+        let mut data_table = DataTable::new(
             DataTableKind::Import(import.to_owned()),
             &name,
             cell_values.into(),
@@ -204,6 +204,8 @@ impl GridController {
             true,
             None,
         );
+        data_table.formats.apply_updates(&sheet_format_updates);
+        drop(sheet_format_updates);
 
         ops.push(Operation::AddDataTable {
             sheet_pos,
@@ -216,4 +218,81 @@ impl GridController {
 }
 
 #[cfg(test)]
-mod test {}
+mod test {
+    use crate::{
+        cellvalue::Import,
+        controller::{operations::operation::Operation, GridController},
+        grid::{NumericFormat, NumericFormatKind},
+        test_util::assert_display_cell_value,
+        CellValue, SheetPos,
+    };
+
+    #[test]
+    fn test_add_data_table_operations() {
+        let gc = GridController::test();
+        let sheet_id = gc.grid.sheets()[0].id;
+        let sheet_pos = SheetPos::new(sheet_id, 1, 1);
+        let name = "test".to_string();
+        let values = vec![
+            vec!["header 1".into(), "header 2".into()],
+            vec!["$123".into(), "123,456.00".into()],
+        ];
+        let ops = gc.add_data_table_operations(sheet_pos, name.to_owned(), values, true);
+        assert_eq!(ops.len(), 1);
+
+        let import = Import::new(name.to_owned());
+        let cell_value = CellValue::Import(import.to_owned());
+        assert_display_cell_value(&gc, sheet_id, 1, 1, &cell_value.to_string());
+
+        match &ops[0] {
+            Operation::AddDataTable {
+                data_table,
+                cell_value,
+                ..
+            } => {
+                assert!(data_table.header_is_first_row);
+                assert_eq!(data_table.name, name.into());
+                assert_eq!(cell_value, &CellValue::Import(import));
+                assert_eq!(data_table.column_headers.as_ref().unwrap().len(), 2);
+                assert_eq!(
+                    data_table.column_headers.as_ref().unwrap()[0].name,
+                    "header 1".into()
+                );
+                assert_eq!(
+                    data_table.column_headers.as_ref().unwrap()[1].name,
+                    "header 2".into()
+                );
+                // values are 0 based
+                assert_eq!(
+                    data_table.value.get(0, 0).unwrap(),
+                    &CellValue::Text("header 1".into())
+                );
+                assert_eq!(
+                    data_table.value.get(1, 0).unwrap(),
+                    &CellValue::Text("header 2".into())
+                );
+                assert_eq!(
+                    data_table.value.get(0, 1).unwrap(),
+                    &CellValue::Number(123.into())
+                );
+                assert_eq!(
+                    data_table.value.get(1, 1).unwrap(),
+                    &CellValue::Number(123456.into())
+                );
+                // formats are 1 based
+                assert_eq!(
+                    data_table.formats.numeric_format.get((1, 2).into()),
+                    Some(NumericFormat {
+                        kind: NumericFormatKind::Currency,
+                        symbol: Some("$".into()),
+                    })
+                );
+                assert_eq!(
+                    data_table.formats.numeric_commas.get((2, 2).into()),
+                    Some(true)
+                );
+            }
+            _ => panic!("Expected AddDataTable operation"),
+        }
+    }
+}
