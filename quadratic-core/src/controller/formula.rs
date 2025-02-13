@@ -135,9 +135,8 @@ pub fn parse_formula(formula_string: &str, ctx: &A1Context, pos: SheetPos) -> Fo
 mod tests {
     use super::{parse_formula, CellRefSpan, FormulaParseResult};
     use crate::a1::{CellRefCoord, CellRefRange, SheetCellRefRange};
-    use crate::grid::{Grid, SheetId};
-    use crate::Pos;
-    use crate::{a1::UNBOUNDED, Span};
+    use crate::grid::{Grid, Sheet, SheetId};
+    use crate::{Pos, Span};
     use serial_test::parallel;
 
     fn parse(grid: &Grid, s: &str) -> FormulaParseResult {
@@ -189,8 +188,13 @@ mod tests {
     #[test]
     #[parallel]
     fn test_parse_formula_output() {
-        let g = Grid::new();
-        let result = parse(&g, "'Sheet2'!A0");
+        let mut g = Grid::new();
+        g.add_sheet(Some(Sheet::new(
+            SheetId::new(),
+            "Sheet2".to_string(),
+            String::new(),
+        )));
+        let result = parse(&g, "'Sheet2'!A1");
         assert_eq!(result.parse_error_msg, None);
         assert_eq!(result.parse_error_span, None);
         assert_eq!(result.cell_refs.len(), 1);
@@ -243,9 +247,9 @@ mod tests {
                 cell_ref: SheetCellRefRange {
                     sheet_id,
                     cells: CellRefRange::new_sheet_ref(
-                        CellRefCoord::new_rel(UNBOUNDED),
+                        CellRefCoord::START,
                         CellRefCoord::new_rel(2),
-                        CellRefCoord::new_rel(UNBOUNDED),
+                        CellRefCoord::UNBOUNDED,
                         CellRefCoord::new_rel(3),
                     )
                 }

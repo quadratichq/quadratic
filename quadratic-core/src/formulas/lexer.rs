@@ -56,11 +56,24 @@ const A1_CELL_REFERENCE_PATTERN: &str = r"\$?n?([a-zA-Z]+\$?n?\d*|\d+)";
 ///                                   C[\[{]-?\d+[]}]      just a column reference
 const INTERNAL_CELL_REFERENCE_PATTERN: &str = r"R[\[{]-?\d+[]}](C[\[{]-?\d+[]}])?|C[\[{]-?\d+[]}]";
 
-/// Table name.
+/// A1-style cell reference or table name.
+///
+/// This regex is carefully written so that it does not terminate the match
+/// early. For example, matching `A$1` naively as a table name will only match
+/// `A` and matching `MY.table` naively as a cell reference will only match
+/// `MY`. It's ok if we match strings that are invalid as cell references and
+/// invalid as table names, as long as they aren't valid as some other token.
+///
+/// Numeric literals are matched by an earlier regex, so it's ok to match those
+/// here too.
 ///
 /// This may be ambiguous between a table reference and a cell reference. For
-/// example, a table named `ALL` is ambiguous with the column named `ALL`.
-const TABLE_NAME_PATTERN: &str = r"[\\_a-zA-Z][\\_a-zA-Z\d\.]*";
+/// example, a table named `ABC` is ambiguous with the column named `ABC`.
+///
+/// This regex matches any sequence of letters, digits, periods, underscores,
+/// dollar signs, and backslashes (which are allowed in table names for some
+/// reason?) as long as it starts with a letter, underscore, or dollar sign.
+const A1_CELL_REFERENCE_OR_TABLE_NAME_PATTERN: &str = r"[\p{Letter}\$_][\p{Letter}\d\$\._\\]*";
 
 /// Contents of the inner square brackets of a table reference.
 ///
@@ -140,7 +153,7 @@ lazy_static! {
         // Internal cell reference.
         INTERNAL_CELL_REFERENCE_PATTERN,
         // Reference to a table.
-        TABLE_NAME_PATTERN,
+        A1_CELL_REFERENCE_OR_TABLE_NAME_PATTERN,
         // Reference to a cell.
         A1_CELL_REFERENCE_PATTERN,
         // Square brackets containing table reference.
@@ -176,7 +189,7 @@ lazy_static! {
 
     /// Regex that matches a valid table name.
     pub static ref TABLE_NAME_REGEX: Regex =
-        new_fullmatch_regex(TABLE_NAME_PATTERN);
+        new_fullmatch_regex(A1_CELL_REFERENCE_OR_TABLE_NAME_PATTERN);
 
     /// Regex that matches a valid table reference, excluding the name.
     pub static ref TABLE_BRACKETS_REGEX: Regex =

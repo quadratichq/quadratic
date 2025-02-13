@@ -58,7 +58,7 @@ impl SyntaxRule for SheetRefPrefix {
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
         match p.next() {
             Some(Token::UnquotedSheetReference) => true,
-            Some(Token::StringLiteral) => p.peek_next() == Some(Token::SheetRefOp),
+            Some(Token::StringLiteral) => p.next() == Some(Token::SheetRefOp),
             _ => false,
         }
     }
@@ -98,8 +98,8 @@ impl_display!(for CellReference, "cell reference such as 'A6' or '$ZB$3'");
 impl SyntaxRule for CellReference {
     type Output = Spanned<(Option<SheetId>, RefRangeBounds)>;
 
-    fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
-        p.try_parse(SheetRefPrefix).transpose().is_ok() && is_table_ref(p) == Some(false)
+    fn prefix_matches(&self, p: Parser<'_>) -> bool {
+        is_table_ref(p) == Some(false)
     }
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         let start_span = p.peek_next_span();
@@ -130,13 +130,14 @@ impl SyntaxRule for CellRangeReference {
     }
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         let ref1 = p.parse(CellReference)?;
+        dbg!(ref1.span.of_str(p.source_str));
         let (sheet1, range1) = ref1.inner;
         let sheet_id = sheet1.unwrap_or(p.pos.sheet_id);
 
         // Check for a range reference.
         let span;
         let range;
-        if p.try_parse(Token::CellRangeOp).is_some() {
+        if dbg!(p.try_parse(Token::CellRangeOp)).is_some() {
             let ref2 = p.parse(CellReference)?;
             let (sheet2, range2) = ref2.inner;
             if sheet2.is_some() {

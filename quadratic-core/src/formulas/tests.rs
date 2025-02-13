@@ -5,7 +5,7 @@ use itertools::Itertools;
 use serial_test::parallel;
 
 pub(crate) use super::*;
-use crate::a1::{A1Context, CellRefCoord, CellRefRange, SheetCellRefRange};
+use crate::a1::{CellRefCoord, CellRefRange, SheetCellRefRange};
 pub(crate) use crate::grid::Grid;
 use crate::grid::{Sheet, SheetId};
 pub(crate) use crate::values::*;
@@ -361,16 +361,16 @@ fn test_find_cell_references() {
         ("\"plum\" ! $A1", new_ref(plum, a(1), r(1), a(1), r(1))),
     ];
     let formula_string = test_cases.iter().map(|(string, _)| string).join(" + ");
-    let ctx = A1Context::test(&[], &[]);
-    let cell_references_found = find_cell_references(&formula_string, &ctx, SheetPos::test())
+    let pos = Pos::ORIGIN.to_sheet_pos(sheet1);
+    let cell_references_found = find_cell_references(&formula_string, &g.a1_context(), pos)
         .into_iter()
         .map(|Spanned { span, inner }| (span.of_str(&formula_string), inner))
         .collect_vec();
     // Assert each individual one for better error messages on test failure.
     for i in 0..test_cases.len() {
-        assert_eq!(&cell_references_found[i], &test_cases[i]);
+        assert_eq!(&test_cases[i], &cell_references_found[i]);
     }
-    assert_eq!(cell_references_found.len(), test_cases.len());
+    assert_eq!(test_cases.len(), cell_references_found.len());
 }
 
 #[test]

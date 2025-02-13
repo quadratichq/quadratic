@@ -367,8 +367,8 @@ mod tests {
         let pos = SheetPos::test();
         let src = "SUM(R[1]C[2])
         + SUM(R[2]C[4])";
-        let expected = "SUM(B3)
-        + SUM(C5)";
+        let expected = "SUM(C2)
+        + SUM(E3)";
 
         let replaced = replace_internal_cell_references(src, &ctx, pos);
         assert_eq!(replaced, expected);
@@ -400,7 +400,13 @@ mod tests {
             replace_cell_references_with(src, &ctx, pos, |_sheet, range_end| CellRefRangeEnd {
                 col: range_end.col,
                 row: {
-                    let delta = if range_end.row.is_absolute { -1 } else { 3 };
+                    let delta = if range_end.row.is_unbounded() {
+                        0
+                    } else if range_end.row.is_absolute {
+                        -1
+                    } else {
+                        3
+                    };
                     range_end.row + delta
                 },
             });

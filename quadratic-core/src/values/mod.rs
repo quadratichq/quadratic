@@ -185,8 +185,8 @@ impl Value {
     #[cfg(test)]
     #[track_caller]
     pub fn unwrap_err(self) -> crate::RunError {
-        match self {
-            Value::Single(v) => v.unwrap_err(),
+        match self.into_cell_value() {
+            Ok(v) => v.unwrap_err(),
             other => panic!("expected error value; got {other:?}"),
         }
     }
