@@ -49,6 +49,7 @@ export class CellsImages extends Container<CellsImage> {
         if (message.image) {
           sprite.updateMessage(message);
         } else {
+          sprite.destroy();
           this.removeChild(sprite);
 
           // remove the image from the overflow lines

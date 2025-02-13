@@ -377,7 +377,7 @@ mod tests {
                 },
                 values: CellValue::Code(CodeCellValue {
                     language: CodeCellLanguage::Formula,
-                    code: "R[0]C[1] + R[2]C[1]".to_string()
+                    code: "B1 + B3".to_string()
                 })
                 .into(),
             }

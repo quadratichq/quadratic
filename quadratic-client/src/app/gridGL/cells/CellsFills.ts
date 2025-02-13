@@ -212,7 +212,6 @@ export class CellsFills extends Container {
       let yOffset = bounds.y;
       for (let y = 0; y < table.h; y++) {
         let height = this.sheet.offsets.getRowHeight(y + table.y);
-        // TODO: (jimniels) fix this so 1st row _of data_ is always white
         if (!(table.show_ui || table.show_name !== table.show_columns ? 1 : 0)) {
           break;
         }

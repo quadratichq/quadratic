@@ -45,6 +45,11 @@ export class CellsImage extends Container {
     this.updateMessage(message);
   }
 
+  destroy() {
+    this.sheet.gridOverflowLines.updateImageHtml(this.pos.x, this.pos.y);
+    super.destroy();
+  }
+
   get table(): Table {
     const table = this.cellsSheet.tables.getTableFromCell(this.pos);
     if (!table) throw new Error('Expected table to be defined in CellsImage.table');
