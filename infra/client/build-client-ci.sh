@@ -25,5 +25,5 @@ echo 'Starting parallel rust builds...'
 wait
 
 echo 'Building front-end...'
-npm ci --no-audit --no-fund
+npm install --no-audit --no-fund
 npm run build --workspace=quadratic-client
