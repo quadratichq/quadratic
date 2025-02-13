@@ -3,6 +3,7 @@ mod borders_a1_schema;
 mod cells_accessed_schema;
 mod contiguous_2d_schema;
 mod sheet_formatting_schema;
+mod sheet_offsets;
 mod upgrade;
 mod validations_schema;
 
