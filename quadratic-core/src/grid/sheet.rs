@@ -425,7 +425,7 @@ impl Sheet {
     /// get or calculate decimal places for a cell
     pub fn calculate_decimal_places(&self, pos: Pos, kind: NumericFormatKind) -> Option<i16> {
         // first check if numeric_decimals already exists for this cell
-        if let Some(decimals) = self.formats.numeric_decimals.get(pos) {
+        if let Some(decimals) = self.cell_format(pos).numeric_decimals {
             return Some(decimals);
         }
 
