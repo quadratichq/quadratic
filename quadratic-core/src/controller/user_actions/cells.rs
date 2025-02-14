@@ -95,14 +95,20 @@ impl GridController {
                         // data row, add column
                         else {
                             // insert column with swallow
-                            data_table_ops.push(Operation::InsertDataTableColumn {
-                                sheet_pos: (data_table_left, sheet_pos.sheet_id).into(),
-                                index: (data_table.width()) as u32,
-                                column_header: None,
-                                values: None,
-                                swallow: true,
-                                select_table: false,
-                            });
+                            let column_index = data_table.width();
+                            let display_column_index = data_table
+                                .get_display_index_from_column_index(column_index as u32, true);
+
+                            if let Ok(display_column_index) = u32::try_from(display_column_index) {
+                                data_table_ops.push(Operation::InsertDataTableColumn {
+                                    sheet_pos: (data_table_left, sheet_pos.sheet_id).into(),
+                                    index: display_column_index as u32,
+                                    column_header: None,
+                                    values: None,
+                                    swallow: true,
+                                    select_table: false,
+                                });
+                            }
                         }
                     }
                 }
