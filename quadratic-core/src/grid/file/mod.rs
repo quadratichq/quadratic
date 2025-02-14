@@ -308,7 +308,7 @@ mod tests {
 
         match cell_value {
             crate::grid::CellValue::Code(formula) => {
-                assert_eq!(formula.code, "SUM(A0:A1)");
+                assert_eq!(formula.code, "SUM(A1:A2)");
             }
             _ => panic!("Expected a formula"),
         };

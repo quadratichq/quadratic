@@ -147,8 +147,8 @@ mod tests {
 
     #[test]
     fn test_expand_code_cell() {
-        let selected: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 1 });
-        let range: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 10, y: 10 });
+        let selected: Rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 2 });
+        let range: Rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 11, y: 11 });
         let code_1 = CodeCellValue {
             language: CodeCellLanguage::Formula,
             code: "SUM(A1)".into(),

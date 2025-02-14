@@ -619,7 +619,7 @@ mod tests {
         let sheet_expected = gc_expected.sheet(sheet_id);
         assert!(Borders::compare_borders(
             &sheet.borders,
-            &sheet_expected.borders
+            &sheet_expected.borders,
         ));
 
         // this will remove the inserted row
