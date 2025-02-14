@@ -458,7 +458,6 @@ impl A1Selection {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::{grid::SheetId, Rect};
 

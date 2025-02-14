@@ -31,7 +31,6 @@ impl GridController {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::grid::{sheet::borders::BorderStyle, SheetId};
 

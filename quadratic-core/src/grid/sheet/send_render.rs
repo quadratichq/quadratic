@@ -236,7 +236,6 @@ mod test {
         wasm_bindings::js::{clear_js_calls, expect_js_call, hash_test},
         CellValue,
     };
-    use serial_test::serial;
 
     fn expect_render_cell_sheet(sheet: &Sheet, hash_x: i64, hash_y: i64, clear: bool) {
         let rect = Rect::from_numbers(
@@ -251,7 +250,6 @@ mod test {
     }
 
     #[test]
-    #[serial]
     fn send_render_cells() {
         clear_js_calls();
         let mut sheet = Sheet::test();
@@ -264,7 +262,6 @@ mod test {
     }
 
     #[test]
-    #[serial]
     fn send_all_render_cells() {
         clear_js_calls();
         let mut sheet = Sheet::test();
@@ -282,7 +279,6 @@ mod test {
     }
 
     #[test]
-    #[serial]
     fn send_column_render_cells() {
         clear_js_calls();
         let mut sheet = Sheet::test();
@@ -303,7 +299,6 @@ mod test {
     }
 
     #[test]
-    #[serial]
     fn send_row_render_cells() {
         clear_js_calls();
         let mut sheet = Sheet::test();
@@ -324,7 +319,6 @@ mod test {
     }
 
     #[test]
-    #[serial]
     fn test_send_sheet_fills() {
         clear_js_calls();
         let mut sheet = Sheet::test();

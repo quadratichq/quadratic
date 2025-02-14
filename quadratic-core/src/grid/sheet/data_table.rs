@@ -158,7 +158,6 @@ impl Sheet {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod test {
     use super::*;
     use crate::{
@@ -172,7 +171,6 @@ mod test {
         CellValue, Value,
     };
     use bigdecimal::BigDecimal;
-    use std::vec;
 
     #[test]
     fn test_set_data_table() {

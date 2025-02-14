@@ -322,7 +322,6 @@ impl Sheet {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod test {
     use super::*;
     use crate::{

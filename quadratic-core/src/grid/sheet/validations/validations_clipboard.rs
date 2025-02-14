@@ -38,7 +38,6 @@ impl Validations {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use uuid::Uuid;
 

@@ -643,7 +643,6 @@ mod tests {
     use smallvec::smallvec;
 
     use crate::{formulas::tests::*, Pos};
-    use serial_test::parallel;
 
     lazy_static! {
         static ref NUMBERS_LOOKUP_ARRAY: Array = array![
@@ -674,7 +673,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_formula_indirect() {
         let mut g = Grid::new();
         let ctx = g.a1_context();
@@ -702,7 +700,6 @@ mod tests {
 
     /// Test VLOOKUP error conditions.
     #[test]
-    #[parallel]
     fn test_vlookup_errors() {
         // Test using numbers ...
         let array = &*NUMBERS_LOOKUP_ARRAY;
@@ -749,7 +746,6 @@ mod tests {
 
     /// Test VLOOKUP.
     #[test]
-    #[parallel]
     fn test_vlookup() {
         // Test exact match (unsorted)
         let array = &*MIXED_LOOKUP_ARRAY;
@@ -788,7 +784,6 @@ mod tests {
 
     /// Test that VLOOKUP ignores error values.
     #[test]
-    #[parallel]
     fn test_vlookup_ignore_errors() {
         let g = Grid::from_array(pos![A1], &array!["a", 10; 1.0 / 0.0, 20; "b", 30]);
         assert_eq!("10", eval_to_string(&g, "VLOOKUP(\"a\", A1:B3, 2)"));
@@ -797,7 +792,6 @@ mod tests {
 
     /// Test HLOOKUP error conditions.
     #[test]
-    #[parallel]
     fn test_hlookup_errors() {
         // Test using numbers ...
         let transposed_array = &*NUMBERS_LOOKUP_ARRAY;
@@ -846,7 +840,6 @@ mod tests {
 
     /// Test HLOOKUP.
     #[test]
-    #[parallel]
     fn test_hlookup() {
         // Test exact match (unsorted)
         let transposed_array = &*MIXED_LOOKUP_ARRAY;
@@ -887,7 +880,6 @@ mod tests {
 
     /// Test XLOOKUP input validation
     #[test]
-    #[parallel]
     fn test_xlookup_validation() {
         let array = &*NUMBERS_LOOKUP_ARRAY;
         let g = Grid::from_array(pos![A1], array);
@@ -968,7 +960,6 @@ mod tests {
 
     /// Test XLOOKUP's various search modes.
     #[test]
-    #[parallel]
     fn test_xlookup_search_modes() {
         // #[track_caller]
         fn test_exact_xlookup_with_array(
@@ -1100,7 +1091,6 @@ mod tests {
 
     /// Tests XLOOKUP's various match modes.
     #[test]
-    #[parallel]
     fn test_xlookup_match_modes() {
         let numbers_grid = Grid::from_array(pos![A1], &NUMBERS_LOOKUP_ARRAY);
         let rev_numbers_grid = Grid::from_array(pos![A1], &NUMBERS_LOOKUP_ARRAY.flip_vertically());
@@ -1187,7 +1177,6 @@ mod tests {
     /// Test XLOOKUP's zip mapping, which is completely orthogonal to its search
     /// modes.
     #[test]
-    #[parallel]
     fn test_xlookup_zip_map() {
         let array = &*NUMBERS_LOOKUP_ARRAY;
         let g = Grid::from_array(pos![A1], array);
@@ -1215,7 +1204,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_xlookup() {
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];

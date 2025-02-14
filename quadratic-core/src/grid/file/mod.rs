@@ -225,7 +225,6 @@ pub fn export_json(grid: Grid) -> Result<Vec<u8>> {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use super::*;
     use crate::{

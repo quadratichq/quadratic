@@ -120,10 +120,8 @@ pub(crate) fn cell_value_text(values: Vec<&str>) -> Vec<(CellValue, Option<Pos>)
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn copies_a_series() {
         let options = SeriesOptions {
             series: cell_value_number(vec![1, 2, 3]),
@@ -138,7 +136,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn copies_a_non_series() {
         let options = SeriesOptions {
             series: cell_value_text(vec!["a", "s", "d", "f"]),
@@ -153,7 +150,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn copies_a_non_series_negative() {
         let options = SeriesOptions {
             series: cell_value_text(vec!["a", "s", "d", "f"]),

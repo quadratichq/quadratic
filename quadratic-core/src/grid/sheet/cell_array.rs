@@ -185,10 +185,8 @@ mod tests {
         CellValue, Pos, Rect, SheetPos,
     };
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_has_cell_values_in_rect() {
         let mut sheet = Sheet::test();
         let rect = Rect::from_numbers(0, 0, 10, 10);
@@ -199,7 +197,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn get_cells_response() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
@@ -279,7 +276,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_find_spill_error_reasons() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -325,7 +321,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn set_cell_values() {
         let mut sheet = Sheet::test();
         let rect = Rect::from_numbers(0, 0, 2, 2);

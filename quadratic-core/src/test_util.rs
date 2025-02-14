@@ -408,7 +408,6 @@ pub fn print_table_sheet_formats(sheet: &Sheet, rect: Rect) {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod test {
     use super::*;
 

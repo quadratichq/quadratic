@@ -104,7 +104,6 @@ impl DataTable {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 pub mod test {
     use crate::{
         a1::A1Selection, controller::user_actions::import::tests::simple_csv_at,

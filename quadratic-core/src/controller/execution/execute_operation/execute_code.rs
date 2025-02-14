@@ -186,7 +186,6 @@ impl GridController {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::{
         controller::{
@@ -197,7 +196,6 @@ mod tests {
         wasm_bindings::js::{clear_js_calls, expect_js_call_count},
         CellValue, Pos, SheetPos,
     };
-    use serial_test::serial;
 
     #[test]
     fn test_spilled_output_over_normal_cell() {
@@ -261,7 +259,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn execute_code() {
         clear_js_calls();
 

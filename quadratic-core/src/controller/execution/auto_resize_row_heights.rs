@@ -72,7 +72,6 @@ mod tests {
     use std::collections::HashMap;
 
     use bigdecimal::BigDecimal;
-    use serial_test::serial;
 
     use crate::controller::active_transactions::pending_transaction::PendingTransaction;
     use crate::controller::execution::run_code::get_cells::CellA1Response;
@@ -122,7 +121,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_auto_resize_row_heights_on_set_cell_value() {
         clear_js_calls();
         let mut gc = GridController::test();
@@ -199,7 +197,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_auto_resize_row_heights_on_set_cell_format() {
         clear_js_calls();
         let mut gc = GridController::test();
@@ -408,7 +405,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_auto_resize_row_heights_on_compute_code_formula() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -453,7 +449,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_auto_resize_row_heights_on_compute_code_python() {
         clear_js_calls();
 
@@ -554,7 +549,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_auto_resize_row_heights_on_offset_resize() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -634,7 +628,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_auto_resize_row_heights_on_user_transaction_only() {
         clear_js_calls();
         let mut gc = GridController::test();
@@ -699,7 +692,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_transaction_save_when_auto_resize_row_heights_when_not_executed() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

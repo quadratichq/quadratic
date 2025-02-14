@@ -119,10 +119,8 @@ mod test {
     use crate::controller::user_actions::import::tests::simple_csv;
 
     use super::*;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_move_sheet_operation() {
         let mut gc = GridController::test();
         gc.add_sheet(None);
@@ -169,7 +167,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn get_sheet_next_name() {
         // Sheet1
         let mut gc = GridController::test();
@@ -189,7 +186,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn sheet_names() {
         let mut gc = GridController::test();
         gc.add_sheet(None);
@@ -198,7 +194,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_duplidate_sheet_with_data_table() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap().clone();

@@ -83,7 +83,6 @@ impl fmt::Display for ColRange {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::Rect;
 

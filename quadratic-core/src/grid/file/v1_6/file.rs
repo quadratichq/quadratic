@@ -294,7 +294,6 @@ pub fn upgrade(grid: current::GridSchema) -> Result<v1_7::GridSchema> {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::parallel;
 
     use super::*;
 
@@ -312,7 +311,6 @@ mod tests {
     const V1_6_BORDERS_FILE: &[u8] = include_bytes!("../../../../test-files/borders_1_6.grid");
 
     #[test]
-    #[parallel]
     fn import_and_export_a_v1_5_file() {
         let imported = import(V1_5_FILE.to_vec()).unwrap();
         let exported = export(imported.clone()).unwrap();
@@ -321,7 +319,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn import_and_export_a_v1_6_borders_file() {
         let imported = import(V1_6_BORDERS_FILE.to_vec()).unwrap();
 

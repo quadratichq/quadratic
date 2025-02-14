@@ -31,10 +31,8 @@ mod test {
     use crate::{CellValue, Pos};
 
     use super::*;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn search() {
         let mut grid = Grid::new();
         let sheet_id = grid.sheet_ids()[0];
@@ -93,7 +91,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn search_multiple_sheets() {
         let mut grid = Grid::new();
         let sheet_id1 = grid.sheet_ids()[0];

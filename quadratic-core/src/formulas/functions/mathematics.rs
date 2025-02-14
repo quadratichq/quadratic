@@ -412,10 +412,8 @@ mod tests {
     use proptest::proptest;
 
     use crate::{a1::A1Context, formulas::tests::*, Pos};
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_sum() {
         let g = Grid::new();
         let parse_ctx = A1Context::test(&[], &[]);
@@ -471,7 +469,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_sum_with_tuples() {
         let g = Grid::new();
         assert_eq!("10", eval_to_string(&g, "SUM(({1, 2}, {3, 4}))"));
@@ -483,7 +480,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_sumif() {
         let g = Grid::new();
         assert_eq!("15", eval_to_string(&g, "SUMIF(0..10, \"<=5\")"));
@@ -496,7 +492,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_sumifs() {
         let g = Grid::new();
         assert_eq!("15", eval_to_string(&g, "SUMIFS(0..10, 0..10, \"<=5\")"));
@@ -537,7 +532,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_product() {
         let g = Grid::new();
         let pos = g.origin_in_first_sheet();
@@ -577,7 +571,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_abs() {
         let g = Grid::new();
         let pos = g.origin_in_first_sheet();
@@ -610,7 +603,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_sqrt() {
         let g = Grid::new();
         crate::util::assert_f64_approx_eq(
@@ -637,7 +629,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_ceiling() {
         let g = Grid::new();
         let test_cases = [
@@ -674,7 +665,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_floor() {
         let g = Grid::new();
         let test_cases = [
@@ -711,7 +701,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_floor_math_and_ceiling_math() {
         let g = Grid::new();
         let test_inputs = &[3.5, 2.5, 0.0, -2.5, -3.5];
@@ -741,7 +730,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_int() {
         let g = Grid::new();
         assert_eq!(
@@ -751,7 +739,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_rounding() {
         let test_values = [
             -2025.0, -10.0, -5.0, -0.8, -0.5, -0.3, 0.0, 0.3, 0.5, 0.8, 5.0, 10.0, 2025.0,
@@ -810,7 +797,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_mod() {
         let g = Grid::new();
         assert_eq!("-0.5", eval_to_string(&g, "MOD(1.5, -1)"));
@@ -821,7 +807,6 @@ mod tests {
 
     proptest! {
         #[test]
-        #[parallel]
         fn proptest_int_mod_invariant(n in -100.0..100.0_f64, d in -100.0..100.0_f64) {
             let g = Grid::new();
             crate::util::assert_f64_approx_eq(
@@ -834,7 +819,6 @@ mod tests {
 
     proptest! {
         #[test]
-        #[parallel]
         fn test_pow_log_invariant(n in -10.0..10.0_f64) {
             let g = Grid::new();
 
@@ -853,7 +837,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_pow_0_0() {
         // See https://en.wikipedia.org/wiki/Zero_to_the_power_of_zero
 
@@ -864,7 +847,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_log_errors() {
         let g = Grid::new();
         let e = RunErrorMsg::NaN;
@@ -880,7 +862,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_negative_pow() {
         let g = Grid::new();
         let e = RunErrorMsg::NaN;
@@ -899,7 +880,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_pi() {
         let g = Grid::new();
         assert!(eval_to_string(&g, "PI()").starts_with("3.14159"));
@@ -918,7 +898,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_tau() {
         let g = Grid::new();
         assert!(eval_to_string(&g, "TAU()").starts_with("6.283"));

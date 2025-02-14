@@ -555,7 +555,6 @@ impl PendingTransaction {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::{
         controller::operations::operation::Operation,

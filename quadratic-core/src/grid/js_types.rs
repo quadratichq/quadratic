@@ -442,14 +442,12 @@ impl fmt::Display for JsSnackbarSeverity {
 
 #[cfg(test)]
 mod test {
-    use serial_test::parallel;
 
     use super::JsNumber;
     use crate::grid::formats::Format;
     use crate::grid::NumericFormat;
 
     #[test]
-    #[parallel]
     fn to_js_number() {
         let format = Format {
             numeric_decimals: Some(2),

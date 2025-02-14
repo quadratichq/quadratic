@@ -307,7 +307,6 @@ impl From<Format> for FormatUpdate {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod test {
     use super::*;
     use crate::grid::{CellAlign, CellWrap, NumericFormat, NumericFormatKind};

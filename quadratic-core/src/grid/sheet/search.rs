@@ -266,10 +266,8 @@ mod test {
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
         Array,
     };
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn simple_search() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
@@ -284,7 +282,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn case_sensitive_search() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
@@ -316,7 +313,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn whole_cell_search() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
@@ -366,7 +362,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn whole_cell_search_case_sensitive() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Text("hello world".into()));
@@ -417,7 +412,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn search_numbers() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Number(123.into()));
@@ -441,7 +435,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn search_display_numbers() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -516,7 +509,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn search_code_runs() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(
@@ -568,7 +560,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn search_within_code_runs() {
         let mut sheet = Sheet::test();
         let code_run = CodeRun {
@@ -626,7 +617,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn neighbor_text_single_column() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
@@ -638,7 +628,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn neighbor_text_with_gaps() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
@@ -651,7 +640,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn neighbor_text_no_neighbors() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
@@ -661,7 +649,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn neighbor_text_deduplication() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 1, y: 0 }, CellValue::Text("B".into()));
@@ -674,7 +661,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn neighbor_text_multiple_columns() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
@@ -687,7 +673,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn neighbor_text_empty_column() {
         let sheet = Sheet::test();
         let neighbors = sheet.neighbor_text(Pos { x: 1, y: 1 });
@@ -695,7 +680,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn max_neighbor_text() {
         let mut sheet = Sheet::test();
         for y in 0..MAX_NEIGHBOR_TEXT + 10 {
@@ -709,7 +693,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn neighbor_text_table() {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 

@@ -283,7 +283,6 @@ impl From<&FormatUpdate> for Format {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use super::*;
     use crate::grid::NumericFormatKind;

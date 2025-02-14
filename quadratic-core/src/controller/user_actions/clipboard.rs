@@ -141,7 +141,6 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use bigdecimal::BigDecimal;
-    use serial_test::parallel;
 
     use super::*;
     use crate::controller::operations::clipboard::ClipboardOperation;
@@ -205,7 +204,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_copy_to_clipboard() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -354,7 +352,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_copy_code_to_clipboard() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -442,7 +439,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_copy_code_to_clipboard_with_array_output() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -504,7 +500,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_copy_borders_to_clipboard() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -542,7 +537,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_copy_borders_inside() {
         let mut gc = GridController::test();
         let sheet_id_1 = gc.sheet_ids()[0];
@@ -629,7 +623,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_paste_from_quadratic_clipboard() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -674,7 +667,6 @@ mod test {
     // paste the code cell (2,1) => A1 from the clipboard to (2,2),
     // expect value to change to 2
     #[test]
-    #[parallel]
     fn test_paste_relative_code_from_quadratic_clipboard() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -729,7 +721,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn paste_special_values() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -776,7 +767,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn paste_special_formats() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -845,7 +835,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn copy_part_of_code_run() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -891,7 +880,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn move_cells() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -933,7 +921,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn copy_cell_formats() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -996,7 +983,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_move_code_cell_vertically() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -1062,7 +1048,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_move_code_cell_horizontally() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -1128,7 +1113,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_translate_code_cell_references_on_cut() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -1173,7 +1157,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_translate_code_cell_references_on_copy() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -1218,7 +1201,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_paste_in_data_table() {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
@@ -1322,7 +1304,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_paste_in_data_table_with_sort() {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
@@ -1372,7 +1353,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_paste_in_data_table_with_hidden_column() {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 

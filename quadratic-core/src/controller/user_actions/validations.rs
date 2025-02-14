@@ -111,7 +111,6 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::{parallel, serial};
 
     use crate::{
         grid::sheet::validations::{
@@ -128,7 +127,6 @@ mod tests {
     use super::*;
 
     #[test]
-    #[parallel]
     fn validations() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -139,7 +137,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn update_validation() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -172,7 +169,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn remove_validations() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -228,7 +224,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn get_validation_from_pos() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -257,7 +252,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn validation_list_strings() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -284,7 +278,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn validation_list_cells() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -323,7 +316,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn validate_input() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -366,7 +358,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn validate_input_logical() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

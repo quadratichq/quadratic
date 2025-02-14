@@ -123,10 +123,8 @@ fn get_functions() -> Vec<FormulaFunction> {
 #[cfg(test)]
 mod tests {
     use crate::{formulas::tests::*, Pos};
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_formula_if() {
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];
@@ -148,7 +146,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_formula_iferror() {
         let mut g = Grid::new();
 
@@ -181,7 +178,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_formula_ifna() {
         let mut g = Grid::new();
 

@@ -47,7 +47,6 @@ pub fn validate_table_name(name: &str, context: &str) -> Result<bool, String> {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::{grid::SheetId, Rect};
 

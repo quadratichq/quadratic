@@ -329,7 +329,6 @@ impl Sheet {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::{
         controller::execution::TransactionSource,

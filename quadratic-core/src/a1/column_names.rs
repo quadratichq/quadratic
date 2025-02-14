@@ -42,7 +42,6 @@ pub fn column_from_name(s: &str) -> Option<i64> {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use super::*;
 

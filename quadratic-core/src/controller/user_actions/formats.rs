@@ -447,7 +447,6 @@ impl GridController {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod test {
     use crate::controller::operations::operation::Operation;
     use crate::controller::GridController;

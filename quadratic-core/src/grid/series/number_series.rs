@@ -95,10 +95,8 @@ mod tests {
     use crate::grid::series::{cell_value_number, find_auto_complete};
 
     use super::*;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn find_a_number_series_positive_addition_by_one() {
         let options = SeriesOptions {
             series: cell_value_number(vec![1, 2, 3]),
@@ -110,7 +108,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn find_a_number_series_positive_addition_by_two() {
         let options = SeriesOptions {
             series: cell_value_number(vec![2, 4, 6]),
@@ -122,7 +119,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn find_a_number_series_positive_addition_by_minus_one() {
         let options = SeriesOptions {
             series: cell_value_number(vec![6, 5, 4]),
@@ -134,7 +130,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn find_a_number_series_positive_addition_by_minus_two() {
         let options = SeriesOptions {
             series: cell_value_number(vec![6, 4, 2]),
@@ -146,7 +141,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn find_a_number_series_positive_addition_by_add_one_negative() {
         let options = SeriesOptions {
             series: cell_value_number(vec![1, 2, 3]),
@@ -158,7 +152,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn find_a_number_series_positive_addition_by_add_two_negative() {
         let options = SeriesOptions {
             series: cell_value_number(vec![2, 4, 6]),
@@ -170,7 +163,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn find_a_number_series_positive_addition_by_minus_one_negative() {
         let options = SeriesOptions {
             series: cell_value_number(vec![6, 5, 4]),
@@ -182,7 +174,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn find_a_number_series_positive_addition_by_minus_two_negative() {
         let options = SeriesOptions {
             series: cell_value_number(vec![6, 4, 2]),
@@ -194,7 +185,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn find_a_number_series_positive_positive_multiplication() {
         let options = SeriesOptions {
             series: cell_value_number(vec![2, 4, 8]),
@@ -206,7 +196,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn find_a_number_series_positive_descending_multiplication() {
         let options = SeriesOptions {
             series: cell_value_number(vec![128, 64, 32]),
@@ -218,7 +207,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn find_a_number_series_positive_positive_multiplication_negative() {
         let options = SeriesOptions {
             series: cell_value_number(vec![16, 32, 64, 128]),
@@ -230,7 +218,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn find_a_number_series_positive_descending_multiplication_negative() {
         let options = SeriesOptions {
             series: cell_value_number(vec![128, 64, 32]),

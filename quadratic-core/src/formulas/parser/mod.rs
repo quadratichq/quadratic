@@ -356,12 +356,10 @@ impl<'a> Parser<'a> {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::parallel;
 
     use super::*;
 
     #[test]
-    #[parallel]
     fn test_replace_internal_cell_references() {
         let ctx = A1Context::test(&[], &[]);
         let pos = SheetPos::test();
@@ -375,7 +373,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_replace_a1_notation() {
         let ctx = A1Context::test(&[], &[]);
         let pos = SheetPos::test();
@@ -389,7 +386,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_replace_xy_shift() {
         let ctx = A1Context::test(&[], &[]);
         let pos = pos![C6].to_sheet_pos(SheetId::new());
@@ -416,7 +412,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn check_formula() {
         assert!(simple_parse_and_check_formula("SUM(10)"));
         assert!(!simple_parse_and_check_formula("SUM()"));

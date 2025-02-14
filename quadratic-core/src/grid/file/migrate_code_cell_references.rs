@@ -550,7 +550,6 @@ fn migrate_python_javascript_pos(code_cell: &mut CodeCellValue) {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod test {
     use std::collections::HashMap;
 

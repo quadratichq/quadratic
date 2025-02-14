@@ -44,12 +44,10 @@ pub fn export_selection(selection: A1Selection) -> current::A1SelectionSchema {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::parallel;
 
     use super::*;
 
     #[test]
-    #[parallel]
     fn import_export_selection() {
         let selection = A1Selection::test_a1("A2,C4:E6,G8:I10,1:3,D:E");
         let imported = import_selection(export_selection(selection.clone()));

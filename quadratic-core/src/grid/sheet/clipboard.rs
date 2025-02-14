@@ -320,7 +320,6 @@ impl Sheet {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use super::*;
     use crate::controller::operations::clipboard::PasteSpecial;

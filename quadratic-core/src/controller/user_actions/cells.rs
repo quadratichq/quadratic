@@ -200,10 +200,8 @@ mod test {
     use std::str::FromStr;
 
     use bigdecimal::BigDecimal;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_set_cell_value_undo_redo() {
         let mut g = GridController::test();
         let sheet_id = g.grid.sheets()[0].id;
@@ -263,7 +261,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_unpack_currency() {
         let value = String::from("$123.123");
         assert_eq!(
@@ -282,7 +279,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_set_cell_value() {
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
@@ -364,7 +360,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn clear_formatting() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -389,7 +384,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn delete_values_and_formatting() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -413,7 +407,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_set_value_data_table() {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
@@ -462,7 +455,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_set_value_data_table_first_row_header_and_show_ui() {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
@@ -607,7 +599,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_set_value_data_table_first_with_hidden_column() {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
@@ -667,7 +658,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_set_value_data_table_first_with_sort() {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
@@ -733,7 +723,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_expand_data_table_column_row_on_setting_value() {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 

@@ -243,12 +243,10 @@ impl FromStr for SheetRect {
 
 #[cfg(test)]
 mod test {
-    use serial_test::parallel;
 
     use super::*;
 
     #[test]
-    #[parallel]
     fn test_sheet_rect_from_numbers() {
         let rect = SheetRect::from_numbers(1, 2, 3, 4, SheetId::new());
         assert_eq!(rect.min, Pos { x: 1, y: 2 });
@@ -256,7 +254,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_sheet_rect_union() {
         let sheet_id = SheetId::new();
         let rect1 = SheetRect::from_numbers(1, 2, 3, 4, sheet_id);
@@ -267,7 +264,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     #[should_panic]
     fn test_sheet_rect_union_different_sheets() {
         let rect1 = SheetRect::from_numbers(1, 2, 3, 4, SheetId::new());
@@ -276,7 +272,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_top_left() {
         let sheet_id = SheetId::new();
         let rect = SheetRect::from_numbers(1, 2, 3, 4, sheet_id);
@@ -291,7 +286,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn from_sheet_rect_to_pos() {
         let sheet_id = SheetId::new();
         let rect = SheetRect::from_numbers(1, 2, 3, 4, sheet_id);
@@ -300,7 +294,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn from_sheet_rect_to_sheet_pos() {
         let sheet_id = SheetId::new();
         let rect = SheetRect::from_numbers(1, 2, 3, 4, sheet_id);

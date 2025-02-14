@@ -278,7 +278,6 @@ mod test {
     use std::str::FromStr;
 
     use bigdecimal::BigDecimal;
-    use serial_test::parallel;
 
     use crate::cell_values::CellValues;
     use crate::controller::operations::operation::Operation;
@@ -287,7 +286,6 @@ mod test {
     use crate::{a1::A1Selection, CellValue, SheetPos, SheetRect};
 
     #[test]
-    #[parallel]
     fn test() {
         let mut client = GridController::test();
         let sheet_id = SheetId::test();
@@ -318,7 +316,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn boolean_to_cell_value() {
         let gc = GridController::test();
 
@@ -348,7 +345,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn number_to_cell_value() {
         let gc = GridController::test();
 
@@ -379,7 +375,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn formula_to_cell_value() {
         let gc = GridController::test();
 
@@ -415,7 +410,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn problematic_number() {
         let gc = GridController::test();
         let value = "980E92207901934";
@@ -424,7 +418,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn delete_cells_operations() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -463,7 +456,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn delete_columns() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

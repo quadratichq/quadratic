@@ -120,7 +120,6 @@ impl DataTable {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 pub mod test {
     use crate::{
         grid::test::{new_data_table, pretty_print_data_table},

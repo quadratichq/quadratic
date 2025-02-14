@@ -245,7 +245,6 @@ impl Sheet {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::{
         controller::{transaction_types::JsCodeResult, GridController},
@@ -253,8 +252,6 @@ mod tests {
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
         Rect, SheetPos,
     };
-
-    use serial_test::serial;
 
     use super::*;
 
@@ -490,7 +487,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_render_images() {
         clear_js_calls();
         let mut gc = GridController::test();
@@ -538,7 +534,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_send_image() {
         let mut sheet = Sheet::test();
         let sheet_id = sheet.id;

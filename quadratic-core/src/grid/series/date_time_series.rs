@@ -75,7 +75,6 @@ pub(crate) fn find_date_time_series(options: &SeriesOptions) -> Option<Vec<CellV
 #[cfg(test)]
 mod tests {
     use chrono::{NaiveDate, NaiveTime};
-    use serial_test::parallel;
 
     use crate::{grid::series::find_auto_complete, Pos};
 
@@ -99,7 +98,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn date_time_series_days() {
         let options = SeriesOptions {
             series: vec![
@@ -138,7 +136,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn date_time_series_months() {
         let options = SeriesOptions {
             series: vec![
@@ -177,7 +174,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn date_time_series_years() {
         let options = SeriesOptions {
             series: vec![
@@ -216,7 +212,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn date_time_series_hours() {
         let options = SeriesOptions {
             series: vec![
@@ -255,7 +250,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn date_time_series_minutes() {
         let options = SeriesOptions {
             series: vec![
@@ -294,7 +288,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn date_time_series_seconds() {
         let options = SeriesOptions {
             series: vec![
@@ -333,7 +326,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn date_time_series_of_one() {
         let options = SeriesOptions {
             series: vec![date_time(2021, 1, 1, 0, 1, 0)],

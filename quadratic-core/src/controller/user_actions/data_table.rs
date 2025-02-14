@@ -132,7 +132,6 @@ impl GridController {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::{
         a1::A1Selection,
@@ -209,7 +208,6 @@ mod tests {
     }
 
     #[test]
-    #[serial_test::parallel]
     fn test_data_table_meta_change_table_name() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
         let pos_code_cell = Pos { x: 10, y: 10 };
@@ -264,7 +262,6 @@ mod tests {
     }
 
     #[test]
-    #[serial_test::parallel]
     fn test_data_table_meta_change_column_name() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
         let pos_code_cell = Pos { x: 10, y: 10 };
@@ -335,7 +332,6 @@ mod tests {
     }
 
     #[test]
-    #[serial_test::serial]
     fn test_insert_data_table_column_and_row() {
         clear_js_calls();
 
@@ -392,7 +388,6 @@ mod tests {
     }
 
     #[test]
-    #[serial_test::parallel]
     fn test_add_data_table() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

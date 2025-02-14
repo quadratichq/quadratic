@@ -622,7 +622,6 @@ pub fn add_months<T: Add<chrono::Months, Output = T> + Sub<chrono::Months, Outpu
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use super::*;
 

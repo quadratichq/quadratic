@@ -195,7 +195,6 @@ impl BordersUpdates {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use super::*;
 

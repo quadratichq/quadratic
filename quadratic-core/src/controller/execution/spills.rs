@@ -102,7 +102,6 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::{parallel, serial};
 
     use crate::controller::active_transactions::pending_transaction::PendingTransaction;
     use crate::controller::transaction_types::JsCodeResult;
@@ -143,7 +142,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_check_spills() {
         let mut gc = GridController::test();
         let mut transaction = PendingTransaction::default();
@@ -178,7 +176,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_check_all_spills() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -242,7 +239,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_check_spills_by_code_run() {
         let mut gc = GridController::default();
         let sheet_id = gc.grid.sheet_ids()[0];
@@ -310,7 +306,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_check_spills_over_code() {
         let mut gc = GridController::default();
         let sheet_id = gc.grid.sheet_ids()[0];
@@ -365,7 +360,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_check_spills_over_code_array() {
         let mut gc = GridController::default();
         let sheet_id = gc.grid.sheet_ids()[0];
@@ -433,7 +427,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_check_deleted_data_tables() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -461,7 +454,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_spill_from_js_chart() {
         let mut gc = GridController::default();
         let sheet_id = gc.grid.sheet_ids()[0];

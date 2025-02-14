@@ -159,7 +159,6 @@ pub(crate) fn range_might_intersect(
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use super::*;
 

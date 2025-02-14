@@ -2,7 +2,6 @@ use std::str::FromStr;
 
 use bigdecimal::ToPrimitive;
 use itertools::Itertools;
-use serial_test::parallel;
 
 pub(crate) use super::*;
 use crate::a1::{CellRefCoord, CellRefRange, SheetCellRefRange};
@@ -97,7 +96,6 @@ pub(crate) fn datetime(s: &str) -> CellValue {
 }
 
 #[test]
-#[parallel]
 fn test_formula_cell_ref() {
     let form = simple_parse_formula("SUM(A1:A5)").unwrap();
 
@@ -116,7 +114,6 @@ fn test_formula_cell_ref() {
 }
 
 #[test]
-#[parallel]
 fn test_formula_circular_array_ref() {
     let g = Grid::new();
     let sheet_id = g.sheets()[0].id;
@@ -133,7 +130,6 @@ fn test_formula_circular_array_ref() {
 }
 
 #[test]
-#[parallel]
 fn test_formula_range_operator() {
     let expected = "{1; 2; 3; 4; 5}";
     let all_a = ["1", "1.0", ".9"];
@@ -151,7 +147,6 @@ fn test_formula_range_operator() {
 }
 
 #[test]
-#[parallel]
 fn test_formula_blank_array_parsing() {
     let g = Grid::new();
     const B: CellValue = CellValue::Blank;
@@ -166,7 +161,6 @@ fn test_formula_blank_array_parsing() {
 }
 
 #[test]
-#[parallel]
 fn test_formula_array_op() {
     let mut g = Grid::new();
     let sheet = &mut g.sheets_mut()[0];
@@ -219,7 +213,6 @@ fn test_formula_array_op() {
 }
 
 #[test]
-#[parallel]
 fn test_array_parsing() {
     let g = Grid::new();
 
@@ -259,7 +252,6 @@ fn test_array_parsing() {
 }
 
 #[test]
-#[parallel]
 fn test_bool_parsing() {
     let g = Grid::new();
 
@@ -270,7 +262,6 @@ fn test_bool_parsing() {
 }
 
 #[test]
-#[parallel]
 fn test_leading_equals() {
     let g = Grid::new();
     assert_eq!("7", eval_to_string(&g, "=3+4"));
@@ -279,7 +270,6 @@ fn test_leading_equals() {
 
 /// Regression test for quadratic#253
 #[test]
-#[parallel]
 fn test_hyphen_after_cell_ref() {
     let mut g = Grid::new();
     let _ = g.sheets_mut()[0].set_cell_value(pos![Z1], 30);
@@ -288,7 +278,6 @@ fn test_hyphen_after_cell_ref() {
 }
 
 #[test]
-#[parallel]
 fn test_formula_omit_required_argument() {
     let g = Grid::new();
     assert!(eval_to_string(&g, "ATAN2(,1)").starts_with("1.57"));
@@ -311,14 +300,12 @@ fn test_formula_omit_required_argument() {
 }
 
 #[test]
-#[parallel]
 fn test_formula_blank_to_string() {
     let g = Grid::new();
     assert_eq!("", eval_to_string(&g, "IF(1=1,,)"));
 }
 
 #[test]
-#[parallel]
 fn test_find_cell_references() {
     let mut g = Grid::new();
     let sheet1 = g.sheets()[0].id;
@@ -372,7 +359,6 @@ fn test_find_cell_references() {
 }
 
 #[test]
-#[parallel]
 fn test_sheet_references() {
     let mut g = Grid::new();
 
@@ -410,7 +396,6 @@ fn test_sheet_references() {
 }
 
 #[test]
-#[parallel]
 fn test_table_references() {
     let (gc, _sheet_id, _pos, _file_name) =
         crate::controller::user_actions::import::tests::simple_csv();
@@ -487,7 +472,6 @@ fn test_cell_range_op_errors() {
 
 /// Regression test for quadratic#410
 #[test]
-#[parallel]
 fn test_currency_string() {
     let g = Grid::new();
     assert_eq!("30", eval_to_string(&g, "\"$10\" + 20"));

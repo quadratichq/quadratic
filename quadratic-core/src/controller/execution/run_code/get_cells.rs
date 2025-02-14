@@ -217,7 +217,6 @@ impl GridController {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod test {
     use super::*;
     use crate::{grid::CodeCellLanguage, Pos, Rect, SheetPos};

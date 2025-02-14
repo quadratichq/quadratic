@@ -427,10 +427,8 @@ mod tests {
     use itertools::Itertools;
 
     use super::*;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_lex_block_comment() {
         test_block_comment(true, "/* basic */");
         test_block_comment(true, "/* line1 \n line2 */");
