@@ -74,7 +74,7 @@ impl SheetCellRefRange {
                 );
             }
         }
-        format!("{}", self.cells)
+        self.cells.to_rc_string(base_pos)
     }
 }
 

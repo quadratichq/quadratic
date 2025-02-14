@@ -72,7 +72,11 @@ export class TableName extends Container {
         this.symbol.anchor.set(0, 0.5);
         this.symbol.y = this.h / 2;
         this.symbol.x = SYMBOL_PADDING;
-        if (this.table.codeCell.language === 'Formula' || this.table.codeCell.language === 'Python') {
+        if (
+          this.table.codeCell.language === 'Formula' ||
+          this.table.codeCell.language === 'Python' ||
+          this.table.codeCell.language === 'Javascript'
+        ) {
           this.symbol.tint = 0xffffff;
         }
       }

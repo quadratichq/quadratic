@@ -21,7 +21,6 @@ fn get_functions() -> Vec<FormulaFunction> {
             #[examples("INDIRECT(\"Cn7\")", "INDIRECT(\"F\" & B0)")]
             fn INDIRECT(ctx: Ctx, cellref_string: (Spanned<String>)) {
                 let span = cellref_string.span;
-                // TODO(ajf): add tests for range references
                 let cell_ref = SheetCellRefRange::parse(
                     &cellref_string.inner,
                     ctx.sheet_pos.sheet_id,
@@ -684,6 +683,8 @@ mod tests {
         let form = parse_formula("INDIRECT(\"D5\")", &ctx, pos).unwrap();
 
         let _ = sheet.set_cell_value(pos![D5], 35);
+        let _ = sheet.set_cell_value(pos![D6], 36);
+        let _ = sheet.set_cell_value(pos![D7], 37);
         let sheet_id = sheet.id;
 
         let mut ctx = Ctx::new(&g, pos![D5].to_sheet_pos(sheet_id));
@@ -692,7 +693,11 @@ mod tests {
             form.eval(&mut ctx).unwrap_err().msg,
         );
 
-        assert_eq!("35".to_string(), eval_to_string(&g, "INDIRECT(\"D5\")"));
+        assert_eq!("{35}".to_string(), eval_to_string(&g, "INDIRECT(\"D5\")"));
+        assert_eq!(
+            "{35; 36; 37}".to_string(),
+            eval_to_string(&g, "INDIRECT(\"D5:D7\")"),
+        );
     }
 
     /// Test VLOOKUP error conditions.

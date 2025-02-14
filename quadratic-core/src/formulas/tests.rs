@@ -120,11 +120,9 @@ fn test_formula_cell_ref() {
 fn test_formula_circular_array_ref() {
     let g = Grid::new();
     let sheet_id = g.sheets()[0].id;
-    let ctx = g.a1_context();
-    let form = parse_formula("$B$1:$C$4", &ctx, pos![A1].to_sheet_pos(sheet_id)).unwrap();
-
-    let g = Grid::new();
-    let mut ctx = Ctx::new(&g, pos![B2].to_sheet_pos(sheet_id));
+    let pos = pos![B3].to_sheet_pos(sheet_id);
+    let form = parse_formula("$B$1:$C$4", &g.a1_context(), pos).unwrap();
+    let mut ctx = Ctx::new(&g, pos);
     assert_eq!(
         RunErrorMsg::CircularReference,
         form.eval(&mut ctx).inner.cell_values_slice().unwrap()[4]
@@ -351,7 +349,7 @@ fn test_find_cell_references() {
         // Unquoted sheet reference
         ("apple!A$1", new_ref(apple, r(1), a(1), r(1), a(1))),
         // Unquoted sheet reference range with spaces
-        ("orange ! A2: $Q9", new_ref(orange, r(1), r(2), a(16), r(9))),
+        ("orange ! A2: $Q9", new_ref(orange, r(1), r(2), a(17), r(9))),
         // Quoted sheet reference range
         (
             "'banana'!$A1:QQ$222",
