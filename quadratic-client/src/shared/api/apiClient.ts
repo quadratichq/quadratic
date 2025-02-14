@@ -160,12 +160,11 @@ export const apiClient = {
       downloadQuadraticFile(file.name, new Uint8Array(checkpointData));
     },
 
-    async duplicate(uuid: string, isPrivate?: boolean) {
+    async duplicate({ uuid, isPrivate, teamUuid }: { uuid: string; isPrivate: boolean; teamUuid: string }) {
       mixpanel.track('[Files].duplicateFile', { id: uuid });
       // Get the file we want to duplicate
       const {
         file: { name, lastCheckpointDataUrl, lastCheckpointVersion, thumbnail },
-        team,
       } = await apiClient.files.get(uuid);
 
       // Get the most recent checkpoint for the file
@@ -182,7 +181,7 @@ export const apiClient = {
           version: lastCheckpointVersion,
           contents,
         },
-        teamUuid: team.uuid,
+        teamUuid,
         isPrivate,
       });
 

@@ -7,6 +7,7 @@ import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
 import getActiveTeam from '@/dashboard/shared/getActiveTeam';
 import { apiClient } from '@/shared/api/apiClient';
 import { MenuIcon } from '@/shared/components/Icons';
+import { ACTIVE_TEAM_UUID_KEY } from '@/shared/constants/appConstants';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -33,7 +34,6 @@ import {
 import { RecoilRoot } from 'recoil';
 
 export const DRAWER_WIDTH = 264;
-export const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
 
 /**
  * Revalidation

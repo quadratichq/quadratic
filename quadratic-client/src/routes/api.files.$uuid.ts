@@ -54,8 +54,8 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
 
   if (action === 'duplicate') {
     try {
-      const { redirect, isPrivate } = json as Action['request.duplicate'];
-      const { uuid: newFileUuid } = await apiClient.files.duplicate(uuid, isPrivate);
+      const { redirect, isPrivate, teamUuid } = json as Action['request.duplicate'];
+      const { uuid: newFileUuid } = await apiClient.files.duplicate({ uuid, isPrivate, teamUuid });
       return redirect ? redirectDocument(ROUTES.FILE(newFileUuid)) : { ok: true };
     } catch (error) {
       return { ok: false };
@@ -104,11 +104,20 @@ export const getActionFileMove = (ownerUserId: number | null) => {
  * @param {boolean} args.isPrivate - Whether the file is private to the user on the team where its created
  * @returns
  */
-export const getActionFileDuplicate = ({ isPrivate, redirect }: { isPrivate: boolean; redirect: boolean }) => {
+export const getActionFileDuplicate = ({
+  isPrivate,
+  redirect,
+  teamUuid,
+}: {
+  isPrivate: boolean;
+  redirect: boolean;
+  teamUuid: string;
+}) => {
   return {
     action: 'duplicate' as const,
     isPrivate,
     redirect,
+    teamUuid,
   };
 };
 
