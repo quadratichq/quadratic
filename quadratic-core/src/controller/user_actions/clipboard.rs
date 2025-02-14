@@ -721,11 +721,11 @@ mod test {
 
         // paste code cell (2,1) from the clipboard to (2,2)
         let dest_pos: SheetPos = (2, 2, sheet_id).into();
-        assert_code_cell(&mut gc, dest_pos, "SUM(A2)", 2);
+        assert_code_cell(&mut gc, dest_pos, "SUM(R[0]C[-1])", 2);
 
         // paste code cell (2,1) from the clipboard to (2,3)
         let dest_pos: SheetPos = (2, 3, sheet_id).into();
-        assert_code_cell(&mut gc, dest_pos, "SUM(A3)", 3);
+        assert_code_cell(&mut gc, dest_pos, "SUM(R[0]C[-1])", 3);
     }
 
     #[test]

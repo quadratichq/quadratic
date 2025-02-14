@@ -9,7 +9,6 @@ use uuid::Uuid;
 use super::operation::Operation;
 use crate::cell_values::CellValues;
 use crate::controller::GridController;
-use crate::formulas::replace_internal_cell_references;
 use crate::grid::formats::Format;
 use crate::grid::formats::SheetFormatUpdates;
 use crate::grid::js_types::JsClipboard;
@@ -17,7 +16,7 @@ use crate::grid::js_types::JsSnackbarSeverity;
 use crate::grid::sheet::borders::BordersUpdates;
 use crate::grid::sheet::validations::validation::Validation;
 use crate::grid::DataTable;
-use crate::grid::{CodeCellLanguage, DataTableKind};
+use crate::grid::DataTableKind;
 use crate::{a1::A1Selection, CellValue, Pos, Rect, SheetPos, SheetRect};
 
 // todo: break up this file so tests are easier to write
@@ -510,29 +509,16 @@ impl GridController {
                     let context = self.grid.a1_context();
 
                     // loop through the clipboard and replace cell references in formulas
-                    for (x, col) in clipboard.cells.columns.iter_mut().enumerate() {
-                        for (&y, cell) in col.iter_mut() {
+                    for col in clipboard.cells.columns.iter_mut() {
+                        for (_, cell) in col.iter_mut() {
                             match cell {
                                 CellValue::Code(code_cell) => {
-                                    if matches!(code_cell.language, CodeCellLanguage::Formula) {
-                                        let parse_ctx = self.grid.a1_context();
-                                        code_cell.code = replace_internal_cell_references(
-                                            &code_cell.code,
-                                            &parse_ctx,
-                                            Pos {
-                                                x: insert_at.x + x as i64,
-                                                y: insert_at.y + y as i64,
-                                            }
-                                            .to_sheet_pos(selection.sheet_id),
-                                        );
-                                    } else {
-                                        code_cell.translate_cell_references(
-                                            delta_x,
-                                            delta_y,
-                                            &selection.sheet_id,
-                                            &context,
-                                        );
-                                    }
+                                    code_cell.translate_cell_references(
+                                        delta_x,
+                                        delta_y,
+                                        &selection.sheet_id,
+                                        &context,
+                                    );
                                 }
                                 _ => { /* noop */ }
                             };
@@ -561,7 +547,7 @@ mod test {
     use crate::controller::user_actions::import::tests::{simple_csv, simple_csv_at};
     use crate::grid::js_types::JsClipboard;
     use crate::grid::sheet::validations::validation_rules::ValidationRule;
-    use crate::grid::SheetId;
+    use crate::grid::{CodeCellLanguage, SheetId};
     use crate::test_util::{
         assert_cell_value_row, assert_data_table_cell_value, print_data_table, print_table,
     };
