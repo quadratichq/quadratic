@@ -1,4 +1,8 @@
-use crate::{a1::ColRange, grid::SheetId, SheetPos};
+use crate::{
+    a1::ColRange,
+    grid::{CodeCellLanguage, SheetId},
+    SheetPos,
+};
 
 use super::*;
 
@@ -28,6 +32,12 @@ impl CellRefRange {
             };
 
             if let Some(table) = context.table_from_pos(start) {
+                // We don't change to TableRef if the table is a formula. This
+                // is a hack since we don't show table UI for formulas. if this
+                // changes, we can remove this check.
+                if table.language == Some(CodeCellLanguage::Formula) {
+                    return None;
+                }
                 let b = table.bounds;
                 let adjust_for_name = if table.show_ui && table.show_name {
                     1

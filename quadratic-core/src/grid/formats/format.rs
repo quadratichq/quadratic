@@ -42,6 +42,22 @@ impl Format {
             && self.strike_through.is_none()
     }
 
+    pub fn is_table_default(&self) -> bool {
+        self.align.is_none()
+            && self.vertical_align.is_none()
+            && matches!(self.wrap, Some(CellWrap::Clip))
+            && self.numeric_format.is_none()
+            && self.numeric_decimals.is_none()
+            && self.numeric_commas.is_none()
+            && self.bold.is_none()
+            && self.italic.is_none()
+            && self.text_color.is_none()
+            && self.fill_color.is_none()
+            && self.date_time.is_none()
+            && self.underline.is_none()
+            && self.strike_through.is_none()
+    }
+
     /// Clears all formatting.
     pub fn clear(&mut self) {
         self.align = None;

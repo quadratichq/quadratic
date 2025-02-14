@@ -95,14 +95,20 @@ impl GridController {
                         // data row, add column
                         else {
                             // insert column with swallow
-                            data_table_ops.push(Operation::InsertDataTableColumn {
-                                sheet_pos: (data_table_left, sheet_pos.sheet_id).into(),
-                                index: (data_table.width()) as u32,
-                                column_header: None,
-                                values: None,
-                                swallow: true,
-                                select_table: false,
-                            });
+                            let column_index = data_table.width();
+                            let display_column_index = data_table
+                                .get_display_index_from_column_index(column_index as u32, true);
+
+                            if let Ok(display_column_index) = u32::try_from(display_column_index) {
+                                data_table_ops.push(Operation::InsertDataTableColumn {
+                                    sheet_pos: (data_table_left, sheet_pos.sheet_id).into(),
+                                    index: display_column_index as u32,
+                                    column_header: None,
+                                    values: None,
+                                    swallow: true,
+                                    select_table: false,
+                                });
+                            }
                         }
                     }
                 }
@@ -735,14 +741,19 @@ mod test {
         let data_table = sheet.data_table(pos).unwrap();
         assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 8, 13));
 
-        gc.set_cell_value(SheetPos::from((9, 4, sheet_id)), "test1".into(), None);
+        // hide first column
+        let sheet = gc.sheet_mut(sheet_id);
+        let data_table = sheet.data_table_mut(pos).unwrap();
+        let column_headers = data_table.column_headers.as_mut().unwrap();
+        column_headers[0].display = false;
+
+        gc.set_cell_value(SheetPos::from((8, 4, sheet_id)), "test1".into(), None);
 
         // column expand
-        let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
-        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 9, 13));
+        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 8, 13));
         assert_eq!(
-            data_table.cell_value_at(4, 2),
+            data_table.cell_value_at(3, 2),
             Some(CellValue::Text("test1".into()))
         );
 
@@ -750,19 +761,19 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table(pos).unwrap();
-        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 8, 13));
+        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 7, 13));
         assert_eq!(
-            sheet.cell_value(pos![I4]),
+            sheet.cell_value(pos![H4]),
             Some(CellValue::Text("test1".into()))
         );
 
-        gc.set_cell_value(SheetPos::from((9, 6, sheet_id)), "test2".into(), None);
+        gc.set_cell_value(SheetPos::from((8, 6, sheet_id)), "test2".into(), None);
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table(pos).unwrap();
-        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 8, 13));
+        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 7, 13));
         assert_eq!(
-            sheet.cell_value(pos![I6]),
+            sheet.cell_value(pos![H6]),
             Some(CellValue::Text("test2".into()))
         );
 
@@ -771,7 +782,7 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table(pos).unwrap();
-        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 8, 14));
+        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 7, 14));
         assert_eq!(
             data_table.cell_value_at(1, 12),
             Some(CellValue::Text("test3".into()))
@@ -781,7 +792,7 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table(pos).unwrap();
-        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 8, 13));
+        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 7, 13));
         assert_eq!(
             sheet.cell_value(pos![F14]),
             Some(CellValue::Text("test3".into()))
@@ -791,7 +802,7 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table(pos).unwrap();
-        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 8, 13));
+        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 7, 13));
         assert_eq!(
             sheet.cell_value(pos![H14]),
             Some(CellValue::Text("test4".into()))

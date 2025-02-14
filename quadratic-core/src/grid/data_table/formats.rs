@@ -1,16 +1,18 @@
 use anyhow::Result;
 
 use crate::{
-    grid::{formats::SheetFormatUpdates, Format, Sheet},
+    grid::{formats::SheetFormatUpdates, CellWrap, Format, Sheet},
     Pos, Rect,
 };
 
 use super::DataTable;
 
 impl DataTable {
-    pub fn try_format(&self, pos: Pos) -> Option<Format> {
+    pub fn get_format(&self, pos: Pos) -> Format {
         let pos = self.get_format_pos_from_display_buffer(pos);
-        self.formats.try_format(pos)
+        let mut format = self.formats.try_format(pos).unwrap_or_default();
+        format.wrap = format.wrap.or(Some(CellWrap::Clip));
+        format
     }
 
     pub(crate) fn get_format_pos_from_display_buffer(&self, mut pos: Pos) -> Pos {
@@ -127,16 +129,12 @@ pub mod test {
 
         assert_eq!(sheet.cell_format(pos![E4]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![E4]).is_none());
-        let data_table_format = data_table
-            .try_format(pos![E4].translate(-pos.x, -pos.y, 0, 0))
-            .unwrap();
+        let data_table_format = data_table.get_format(pos![E4].translate(-pos.x, -pos.y, 0, 0));
         assert_eq!(data_table_format.bold, Some(true));
 
         assert_eq!(sheet.cell_format(pos![G5]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![G5]).is_none());
-        let data_table_format = data_table
-            .try_format(pos![G5].translate(-pos.x, -pos.y, 0, 0))
-            .unwrap();
+        let data_table_format = data_table.get_format(pos![G5].translate(-pos.x, -pos.y, 0, 0));
         assert_eq!(data_table_format.bold, Some(true));
 
         assert_eq!(sheet.cell_format(pos![J5]).bold, Some(true));
@@ -167,20 +165,18 @@ pub mod test {
         assert_eq!(sheet.cell_format(pos![E4]).bold, None);
         assert!(sheet.formats.try_format(pos![E4]).is_none());
         assert!(data_table
-            .try_format(pos![E4].translate(-pos.x, -pos.y, 0, 0))
-            .is_none());
+            .get_format(pos![E4].translate(-pos.x, -pos.y, 0, 0))
+            .is_table_default());
 
         assert_eq!(sheet.cell_format(pos![G5]).bold, None);
         assert!(sheet.formats.try_format(pos![G5]).is_none());
         assert!(data_table
-            .try_format(pos![G5].translate(-pos.x, -pos.y, 0, 0))
-            .is_none());
+            .get_format(pos![G5].translate(-pos.x, -pos.y, 0, 0))
+            .is_table_default());
 
         assert_eq!(sheet.cell_format(pos![G4]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![G4]).is_none());
-        let data_table_format = data_table
-            .try_format(pos![G4].translate(-pos.x, -pos.y, 0, 0))
-            .unwrap();
+        let data_table_format = data_table.get_format(pos![G4].translate(-pos.x, -pos.y, 0, 0));
         assert_eq!(data_table_format.bold, Some(true));
 
         assert_eq!(sheet.cell_format(pos![J5]).bold, Some(true));
@@ -198,14 +194,12 @@ pub mod test {
         assert_eq!(sheet.cell_format(pos![G4]).bold, None);
         assert!(sheet.formats.try_format(pos![G4]).is_none());
         assert!(data_table
-            .try_format(pos![G4].translate(-pos.x, -pos.y, 0, 0))
-            .is_none());
+            .get_format(pos![G4].translate(-pos.x, -pos.y, 0, 0))
+            .is_table_default());
 
         assert_eq!(sheet.cell_format(pos![G3]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![G3]).is_none());
-        let data_table_format = data_table
-            .try_format(pos![G3].translate(-pos.x, -pos.y, 0, 0))
-            .unwrap();
+        let data_table_format = data_table.get_format(pos![G3].translate(-pos.x, -pos.y, 0, 0));
         assert_eq!(data_table_format.bold, Some(true));
 
         // show column headers
@@ -219,14 +213,12 @@ pub mod test {
         assert_eq!(sheet.cell_format(pos![G3]).bold, None);
         assert!(sheet.formats.try_format(pos![G3]).is_none());
         assert!(data_table
-            .try_format(pos![G3].translate(-pos.x, -pos.y, 0, 0))
-            .is_none());
+            .get_format(pos![G3].translate(-pos.x, -pos.y, 0, 0))
+            .is_table_default());
 
         assert_eq!(sheet.cell_format(pos![G2]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![G2]).is_none());
-        let data_table_format = data_table
-            .try_format(pos![G2].translate(-pos.x, -pos.y, 0, 0))
-            .unwrap();
+        let data_table_format = data_table.get_format(pos![G2].translate(-pos.x, -pos.y, 0, 0));
         assert_eq!(data_table_format.bold, Some(true));
 
         // first row is header
@@ -239,21 +231,17 @@ pub mod test {
         assert_eq!(sheet.cell_format(pos![G2]).bold, None);
         assert!(sheet.formats.try_format(pos![G2]).is_none());
         assert!(data_table
-            .try_format(pos![G2].translate(-pos.x, -pos.y, 0, 0))
-            .is_none());
+            .get_format(pos![G2].translate(-pos.x, -pos.y, 0, 0))
+            .is_table_default());
 
         assert_eq!(sheet.cell_format(pos![G3]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![G3]).is_none());
-        let data_table_format = data_table
-            .try_format(pos![G3].translate(-pos.x, -pos.y, 0, 0))
-            .unwrap();
+        let data_table_format = data_table.get_format(pos![G3].translate(-pos.x, -pos.y, 0, 0));
         assert_eq!(data_table_format.bold, Some(true));
 
         assert_eq!(sheet.cell_format(pos![E2]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![E2]).is_none());
-        let data_table_format = data_table
-            .try_format(pos![E2].translate(-pos.x, -pos.y, 0, 0))
-            .unwrap();
+        let data_table_format = data_table.get_format(pos![E2].translate(-pos.x, -pos.y, 0, 0));
         assert_eq!(data_table_format.bold, Some(true));
     }
 
@@ -282,14 +270,12 @@ pub mod test {
         assert_eq!(sheet.cell_format(pos![E4]).bold, None);
         assert!(sheet.formats.try_format(pos![E4]).is_none());
         assert!(data_table
-            .try_format(pos![E4].translate(-pos.x, -pos.y, 0, 0))
-            .is_none());
+            .get_format(pos![E4].translate(-pos.x, -pos.y, 0, 0))
+            .is_table_default());
 
         assert_eq!(sheet.cell_format(pos![F5]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![F5]).is_none());
-        let data_table_format = data_table
-            .try_format(pos![F5].translate(-pos.x, -pos.y, 0, 0))
-            .unwrap();
+        let data_table_format = data_table.get_format(pos![F5].translate(-pos.x, -pos.y, 0, 0));
         assert_eq!(data_table_format.bold, Some(true));
 
         assert_eq!(sheet.cell_format(pos![H5]).bold, None);
@@ -315,16 +301,12 @@ pub mod test {
 
         assert_eq!(sheet.cell_format(pos![F10]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![F10]).is_none());
-        let data_table_format = data_table
-            .try_format(pos![F10].translate(-pos.x, -pos.y, 0, 0))
-            .unwrap();
+        let data_table_format = data_table.get_format(pos![F10].translate(-pos.x, -pos.y, 0, 0));
         assert_eq!(data_table_format.bold, Some(true));
 
         assert_eq!(sheet.cell_format(pos![G12]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![G12]).is_none());
-        let data_table_format = data_table
-            .try_format(pos![G12].translate(-pos.x, -pos.y, 0, 0))
-            .unwrap();
+        let data_table_format = data_table.get_format(pos![G12].translate(-pos.x, -pos.y, 0, 0));
         assert_eq!(data_table_format.bold, Some(true));
 
         assert_eq!(sheet.cell_format(pos![J12]).bold, Some(true));
@@ -342,30 +324,24 @@ pub mod test {
 
         assert_eq!(sheet.cell_format(pos![E4]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![E4]).is_none());
-        let data_table_format = data_table
-            .try_format(pos![E4].translate(-pos.x, -pos.y, 0, 0))
-            .unwrap();
+        let data_table_format = data_table.get_format(pos![E4].translate(-pos.x, -pos.y, 0, 0));
         assert_eq!(data_table_format.bold, Some(true));
 
         assert_eq!(sheet.cell_format(pos![H5]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![H5]).is_none());
-        let data_table_format = data_table
-            .try_format(pos![H5].translate(-pos.x, -pos.y, 0, 0))
-            .unwrap();
+        let data_table_format = data_table.get_format(pos![H5].translate(-pos.x, -pos.y, 0, 0));
         assert_eq!(data_table_format.bold, Some(true));
 
         assert_eq!(sheet.cell_format(pos![F10]).bold, None);
         assert!(sheet.formats.try_format(pos![F10]).is_none());
         assert!(data_table
-            .try_format(pos![F10].translate(-pos.x, -pos.y, 0, 0))
-            .is_none());
+            .get_format(pos![F10].translate(-pos.x, -pos.y, 0, 0))
+            .is_table_default());
 
         assert_eq!(sheet.cell_format(pos![H12]).bold, Some(true));
         let sheet_format = sheet.formats.try_format(pos![H12]).unwrap();
         assert_eq!(sheet_format.bold, Some(true));
-        let data_table_format = data_table
-            .try_format(pos![H12].translate(-pos.x, -pos.y, 0, 0))
-            .unwrap();
+        let data_table_format = data_table.get_format(pos![H12].translate(-pos.x, -pos.y, 0, 0));
         assert_eq!(data_table_format.bold, Some(true));
     }
 
@@ -385,16 +361,12 @@ pub mod test {
 
         assert_eq!(sheet.cell_format(pos![E4]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![E4]).is_none());
-        let data_table_format = data_table
-            .try_format(pos![E4].translate(-pos.x, -pos.y, 0, 0))
-            .unwrap();
+        let data_table_format = data_table.get_format(pos![E4].translate(-pos.x, -pos.y, 0, 0));
         assert_eq!(data_table_format.bold, Some(true));
 
         assert_eq!(sheet.cell_format(pos![H5]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![H5]).is_none());
-        let data_table_format = data_table
-            .try_format(pos![H5].translate(-pos.x, -pos.y, 0, 0))
-            .unwrap();
+        let data_table_format = data_table.get_format(pos![H5].translate(-pos.x, -pos.y, 0, 0));
         assert_eq!(data_table_format.bold, Some(true));
 
         // sort column 3 descending
@@ -410,27 +382,23 @@ pub mod test {
         assert_eq!(sheet.cell_format(pos![E4]).bold, None);
         assert!(sheet.formats.try_format(pos![E4]).is_none());
         assert!(data_table
-            .try_format(pos![E4].translate(-pos.x, -pos.y, 0, 0))
-            .is_none());
+            .get_format(pos![E4].translate(-pos.x, -pos.y, 0, 0))
+            .is_table_default());
 
         assert_eq!(sheet.cell_format(pos![H5]).bold, None);
         assert!(sheet.formats.try_format(pos![H5]).is_none());
         assert!(data_table
-            .try_format(pos![H5].translate(-pos.x, -pos.y, 0, 0))
-            .is_none());
+            .get_format(pos![H5].translate(-pos.x, -pos.y, 0, 0))
+            .is_table_default());
 
         assert_eq!(sheet.cell_format(pos![E13]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![E13]).is_none());
-        let data_table_format = data_table
-            .try_format(pos![E13].translate(-pos.x, -pos.y, 0, 0))
-            .unwrap();
+        let data_table_format = data_table.get_format(pos![E13].translate(-pos.x, -pos.y, 0, 0));
         assert_eq!(data_table_format.bold, Some(true));
 
         assert_eq!(sheet.cell_format(pos![H12]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![H12]).is_none());
-        let data_table_format = data_table
-            .try_format(pos![H12].translate(-pos.x, -pos.y, 0, 0))
-            .unwrap();
+        let data_table_format = data_table.get_format(pos![H12].translate(-pos.x, -pos.y, 0, 0));
         assert_eq!(data_table_format.bold, Some(true));
 
         // add new bold formats with sort
@@ -446,30 +414,22 @@ pub mod test {
 
         assert_eq!(sheet.cell_format(pos![E4]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![E4]).is_none());
-        let data_table_format = data_table
-            .try_format(pos![E4].translate(-pos.x, -pos.y, 0, 0))
-            .unwrap();
+        let data_table_format = data_table.get_format(pos![E4].translate(-pos.x, -pos.y, 0, 0));
         assert_eq!(data_table_format.bold, Some(true));
 
         assert_eq!(sheet.cell_format(pos![H5]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![H5]).is_none());
-        let data_table_format = data_table
-            .try_format(pos![H5].translate(-pos.x, -pos.y, 0, 0))
-            .unwrap();
+        let data_table_format = data_table.get_format(pos![H5].translate(-pos.x, -pos.y, 0, 0));
         assert_eq!(data_table_format.bold, Some(true));
 
         assert_eq!(sheet.cell_format(pos![E13]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![E13]).is_none());
-        let data_table_format = data_table
-            .try_format(pos![E13].translate(-pos.x, -pos.y, 0, 0))
-            .unwrap();
+        let data_table_format = data_table.get_format(pos![E13].translate(-pos.x, -pos.y, 0, 0));
         assert_eq!(data_table_format.bold, Some(true));
 
         assert_eq!(sheet.cell_format(pos![H12]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![H12]).is_none());
-        let data_table_format = data_table
-            .try_format(pos![H12].translate(-pos.x, -pos.y, 0, 0))
-            .unwrap();
+        let data_table_format = data_table.get_format(pos![H12].translate(-pos.x, -pos.y, 0, 0));
         assert_eq!(data_table_format.bold, Some(true));
 
         // remove sort
@@ -482,30 +442,22 @@ pub mod test {
 
         assert_eq!(sheet.cell_format(pos![E4]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![E4]).is_none());
-        let data_table_format = data_table
-            .try_format(pos![E4].translate(-pos.x, -pos.y, 0, 0))
-            .unwrap();
+        let data_table_format = data_table.get_format(pos![E4].translate(-pos.x, -pos.y, 0, 0));
         assert_eq!(data_table_format.bold, Some(true));
 
         assert_eq!(sheet.cell_format(pos![H5]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![H5]).is_none());
-        let data_table_format = data_table
-            .try_format(pos![H5].translate(-pos.x, -pos.y, 0, 0))
-            .unwrap();
+        let data_table_format = data_table.get_format(pos![H5].translate(-pos.x, -pos.y, 0, 0));
         assert_eq!(data_table_format.bold, Some(true));
 
         assert_eq!(sheet.cell_format(pos![E8]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![E8]).is_none());
-        let data_table_format = data_table
-            .try_format(pos![E8].translate(-pos.x, -pos.y, 0, 0))
-            .unwrap();
+        let data_table_format = data_table.get_format(pos![E8].translate(-pos.x, -pos.y, 0, 0));
         assert_eq!(data_table_format.bold, Some(true));
 
         assert_eq!(sheet.cell_format(pos![H9]).bold, Some(true));
         assert!(sheet.formats.try_format(pos![H9]).is_none());
-        let data_table_format = data_table
-            .try_format(pos![H9].translate(-pos.x, -pos.y, 0, 0))
-            .unwrap();
+        let data_table_format = data_table.get_format(pos![H9].translate(-pos.x, -pos.y, 0, 0));
         assert_eq!(data_table_format.bold, Some(true));
     }
 }

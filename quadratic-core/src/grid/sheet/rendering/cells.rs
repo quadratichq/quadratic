@@ -1,7 +1,7 @@
 use crate::{
     grid::{
         js_types::{JsNumber, JsRenderCell, JsRenderCellSpecial},
-        CellAlign, CodeCellLanguage, DataTable, Sheet,
+        CellAlign, CodeCellLanguage, DataTable, Format, Sheet,
     },
     CellValue, Pos, Rect, RunError, RunErrorMsg,
 };
@@ -23,6 +23,7 @@ impl Sheet {
         x: i64,
         y: i64,
         value: &CellValue,
+        mut format: Format,
         language: Option<CodeCellLanguage>,
         special: Option<JsRenderCellSpecial>,
     ) -> JsRenderCell {
@@ -66,23 +67,9 @@ impl Sheet {
         } else {
             None
         };
-        let context = self.a1_context();
-        let special = special.or_else(|| {
-            self.validations
-                .render_special_pos(Pos { x, y }, &context)
-                .or({
-                    if matches!(value, CellValue::Logical(_)) {
-                        Some(JsRenderCellSpecial::Logical)
-                    } else {
-                        None
-                    }
-                })
-        });
-
-        let mut format = self.cell_format(Pos { x, y });
 
         let mut number: Option<JsNumber> = None;
-        let value = match &value {
+        let value = match value {
             CellValue::Number(_) => {
                 // get numeric_format and numeric_decimal to turn number into a string
                 // if align is not set, set it to right only for numbers
@@ -118,7 +105,7 @@ impl Sheet {
         &self,
         code: &CellValue,
         data_table: &DataTable,
-        output_rect: &Rect,
+        render_rect: &Rect,
         code_rect: &Rect,
     ) -> Vec<JsRenderCell> {
         let mut cells = vec![];
@@ -132,6 +119,7 @@ impl Sheet {
                         span: None,
                         msg: RunErrorMsg::Spill,
                     })),
+                    Format::default(),
                     Some(code_cell_value.language),
                     None,
                 ));
@@ -140,50 +128,45 @@ impl Sheet {
                     code_rect.min.x,
                     code_rect.min.y,
                     &CellValue::Error(Box::new(error)),
+                    Format::default(),
                     Some(code_cell_value.language),
                     None,
                 ));
             } else {
-                // find overlap of code_rect into rect
-                let x_start = if code_rect.min.x > output_rect.min.x {
-                    code_rect.min.x
-                } else {
-                    output_rect.min.x
-                };
-                let x_end = if code_rect.max.x > output_rect.max.x {
-                    output_rect.max.x
-                } else {
-                    code_rect.max.x
-                };
-                let y_start = if code_rect.min.y > output_rect.min.y {
-                    code_rect.min.y
-                } else {
-                    output_rect.min.y
-                };
-                let y_end = if code_rect.max.y > output_rect.max.y {
-                    output_rect.max.y
-                } else {
-                    code_rect.max.y
-                };
-                let code_rect_start_y = code_rect.min.y + data_table.y_adjustment(true);
-                for x in x_start..=x_end {
-                    for y in y_start..=y_end {
-                        // We skip rendering the header rows because we render it separately.
-                        if y < code_rect_start_y {
-                            continue;
-                        }
-                        let value = data_table.cell_value_at(
-                            (x - code_rect.min.x) as u32,
-                            (y - code_rect.min.y) as u32,
-                        );
+                let code_rect_start_y = code_rect.min.y + data_table.y_adjustment(false);
+                if let Some(intersection) = code_rect.intersection(render_rect) {
+                    for x in intersection.x_range() {
+                        for y in intersection.y_range() {
+                            // We skip rendering the header rows because we render it separately.
+                            if y < code_rect_start_y {
+                                continue;
+                            }
 
-                        if let Some(value) = value {
-                            let language = if x == code_rect.min.x && y == code_rect.min.y {
-                                Some(code_cell_value.language.to_owned())
-                            } else {
-                                None
+                            let pos = Pos {
+                                x: x - code_rect.min.x,
+                                y: y - code_rect.min.y,
                             };
-                            cells.push(self.get_render_cell(x, y, &value, language, None));
+
+                            let value = data_table.cell_value_at(pos.x as u32, pos.y as u32);
+
+                            if let Some(value) = value {
+                                let format = data_table.get_format(pos);
+
+                                let language = if x == code_rect.min.x && y == code_rect.min.y {
+                                    Some(code_cell_value.language.to_owned())
+                                } else {
+                                    None
+                                };
+
+                                let special = match value {
+                                    CellValue::Logical(_) => Some(JsRenderCellSpecial::Logical),
+                                    _ => None,
+                                };
+
+                                cells.push(
+                                    self.get_render_cell(x, y, &value, format, language, special),
+                                );
+                            }
                         }
                     }
                 }
@@ -202,12 +185,24 @@ impl Sheet {
         rect.x_range()
             .filter_map(|x| Some((x, self.get_column(x)?)))
             .for_each(|(x, column)| {
-                column.values.range(rect.y_range()).for_each(|(y, value)| {
+                column.values.range(rect.y_range()).for_each(|(&y, value)| {
                     // ignore code cells when rendering since they will be taken care in the next part
-                    if !matches!(value, CellValue::Code(_))
-                        && !matches!(value, CellValue::Import(_))
-                    {
-                        render_cells.push(self.get_render_cell(x, *y, value, None, None));
+                    if !matches!(value, CellValue::Code(_) | CellValue::Import(_)) {
+                        let context = self.a1_context();
+                        let special = self
+                            .validations
+                            .render_special_pos(Pos { x, y }, &context)
+                            .or({
+                                if matches!(value, CellValue::Logical(_)) {
+                                    Some(JsRenderCellSpecial::Logical)
+                                } else {
+                                    None
+                                }
+                            });
+
+                        let format = self.formats.try_format(Pos { x, y }).unwrap_or_default();
+
+                        render_cells.push(self.get_render_cell(x, y, value, format, None, special));
                     }
                 });
             });
@@ -266,6 +261,7 @@ impl Sheet {
                         });
                 }
             });
+
         render_cells
     }
 }
@@ -545,7 +541,7 @@ mod tests {
             "{TRUE(), FALSE(), TRUE()}".into(),
             None,
         );
-        let cells = vec![
+        let expected = vec![
             JsRenderCell {
                 x: 1,
                 y: 1,
@@ -573,15 +569,15 @@ mod tests {
             },
         ];
         let sheet = gc.sheet(sheet_id);
-        let expected = sheet.get_render_cells(Rect::new(1, 1, 3, 1));
+        let cells = sheet.get_render_cells(Rect::new(1, 1, 3, 1));
 
-        println!("{:?}", expected);
         println!("{:?}", cells);
+        println!("{:?}", expected);
 
-        assert_eq!(expected.len(), cells.len());
+        assert_eq!(cells.len(), expected.len());
         assert!(expected.iter().all(|cell| cells.contains(cell)));
 
-        let cells_string = serde_json::to_string(&cells).unwrap();
+        let cells_string = serde_json::to_string(&expected).unwrap();
         expect_js_call(
             "jsRenderCellSheets",
             format!("{},{},{},{}", sheet_id, 0, 0, hash_test(&cells_string)),
