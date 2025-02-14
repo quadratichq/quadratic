@@ -1270,12 +1270,14 @@ impl GridController {
             let data_table = sheet.data_table_mut(data_table_pos)?;
 
             data_table.toggle_first_row_as_header(first_row_is_header);
-
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
+            dbgjs!(format!("data_table: {:?}", data_table));
 
             let data_table_rect = data_table
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
+
+            dbgjs!(format!("data_table_rect: {:?}", data_table_rect));
 
             self.send_updated_bounds(sheet_id);
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;

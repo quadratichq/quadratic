@@ -138,10 +138,22 @@ impl GridController {
         sheet_pos: SheetPos,
         first_row_is_header: bool,
     ) -> Vec<Operation> {
-        vec![Operation::DataTableFirstRowAsHeader {
-            sheet_pos,
-            first_row_is_header,
-        }]
+        vec![
+            Operation::DataTableFirstRowAsHeader {
+                sheet_pos,
+                first_row_is_header,
+            },
+            Operation::DataTableMeta {
+                sheet_pos,
+                name: None,
+                alternating_colors: None,
+                columns: None,
+                show_ui: None,
+                show_name: None,
+                show_columns: Some(true),
+                readonly: None,
+            },
+        ]
     }
 
     pub fn add_data_table_operations(
