@@ -69,7 +69,7 @@ impl Sheet {
         };
 
         let mut number: Option<JsNumber> = None;
-        let value = match &value {
+        let value = match value {
             CellValue::Number(_) => {
                 // get numeric_format and numeric_decimal to turn number into a string
                 // if align is not set, set it to right only for numbers
@@ -149,16 +149,22 @@ impl Sheet {
 
                             let value = data_table.cell_value_at(pos.x as u32, pos.y as u32);
 
-                            let format = data_table.try_format(pos).unwrap_or_default();
-
                             if let Some(value) = value {
+                                let format = data_table.get_format(pos);
+
                                 let language = if x == code_rect.min.x && y == code_rect.min.y {
                                     Some(code_cell_value.language.to_owned())
                                 } else {
                                     None
                                 };
+
+                                let special = match value {
+                                    CellValue::Logical(_) => Some(JsRenderCellSpecial::Logical),
+                                    _ => None,
+                                };
+
                                 cells.push(
-                                    self.get_render_cell(x, y, &value, format, language, None),
+                                    self.get_render_cell(x, y, &value, format, language, special),
                                 );
                             }
                         }
@@ -535,7 +541,7 @@ mod tests {
             "{TRUE(), FALSE(), TRUE()}".into(),
             None,
         );
-        let cells = vec![
+        let expected = vec![
             JsRenderCell {
                 x: 1,
                 y: 1,
@@ -563,15 +569,15 @@ mod tests {
             },
         ];
         let sheet = gc.sheet(sheet_id);
-        let expected = sheet.get_render_cells(Rect::new(1, 1, 3, 1));
+        let cells = sheet.get_render_cells(Rect::new(1, 1, 3, 1));
 
-        println!("{:?}", expected);
         println!("{:?}", cells);
+        println!("{:?}", expected);
 
-        assert_eq!(expected.len(), cells.len());
+        assert_eq!(cells.len(), expected.len());
         assert!(expected.iter().all(|cell| cells.contains(cell)));
 
-        let cells_string = serde_json::to_string(&cells).unwrap();
+        let cells_string = serde_json::to_string(&expected).unwrap();
         expect_js_call(
             "jsRenderCellSheets",
             format!("{},{},{},{}", sheet_id, 0, 0, hash_test(&cells_string)),

@@ -346,7 +346,7 @@ impl Sheet {
                 if !data_table.spill_error && !data_table.has_error() {
                     // pos relative to data table pos (top left pos)
                     let format_pos = pos.translate(-data_table_pos.x, -data_table_pos.y, 0, 0);
-                    format = data_table.try_format(format_pos).unwrap_or_default();
+                    format = data_table.get_format(format_pos);
                 }
             }
         } else {
