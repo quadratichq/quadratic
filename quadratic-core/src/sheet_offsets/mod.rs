@@ -102,20 +102,12 @@ impl SheetOffsets {
 
     /// Gets the sum of the widths of a range of columns.
     pub fn total_columns_width(&self, from: i64, to: i64) -> f64 {
-        let mut w = 0.0;
-        for i in from..(to + 1) {
-            w += self.column_width(i);
-        }
-        w
+        (from..=to).map(|i| self.column_width(i)).sum()
     }
 
     /// Gets the sum of the heights of a range of rows.
     pub fn total_rows_height(&self, from: i64, to: i64) -> f64 {
-        let mut h = 0.0;
-        for i in from..(to + 1) {
-            h += self.row_height(i);
-        }
-        h
+        (from..=to).map(|i| self.row_height(i)).sum()
     }
 
     pub fn row_height(&self, y: i64) -> f64 {
