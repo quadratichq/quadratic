@@ -79,13 +79,28 @@ fn upgrade_code_runs(
             let data_table_name = column
                 .1
                 .iter()
-                .filter_map(|(_, value)| {
+                .filter_map(|(y, value)| {
+                    if *y != pos.y {
+                        return None;
+                    }
                     if let current::CellValueSchema::Code(code_cell) = value {
                         let language = match code_cell.language {
                             current::CodeCellLanguageSchema::Formula => "Formula",
-                            current::CodeCellLanguageSchema::Javascript => "JavaScript",
-                            current::CodeCellLanguageSchema::Python => "Python",
-                            _ => "Table",
+                            current::CodeCellLanguageSchema::Javascript => {
+                                if is_chart_or_html {
+                                    "Chart"
+                                } else {
+                                    "JavaScript"
+                                }
+                            }
+                            current::CodeCellLanguageSchema::Python => {
+                                if is_chart_or_html {
+                                    "Chart"
+                                } else {
+                                    "Python"
+                                }
+                            }
+                            _ => "Table1",
                         };
                         return Some(language);
                     }
