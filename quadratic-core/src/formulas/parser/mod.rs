@@ -274,6 +274,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Moves the cursor forward and then returns the token at the cursor.
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Option<Token> {
         loop {
             self.next_noskip();
