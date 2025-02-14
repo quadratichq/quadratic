@@ -2,6 +2,15 @@ import { apiClient } from '@/shared/api/apiClient';
 import { ACTIVE_TEAM_UUID_KEY } from '@/shared/constants/appConstants';
 import * as Sentry from '@sentry/react';
 
+// TODO: probably rename this to `determineActiveTeam`
+
+// TODO: add a function in here called `getActiveTeamUuid` that will return the
+// active team UUID from localstorage with a note saying: YOU MUST RUN `determineActiveTeam`
+// BEFORE YOU EVER USE THIS FUNCTION
+
+// TODO: add another called `setActiveTeamUuid` that can be used where we do that
+// this should do away with the need for doing localStorage.get/set ACTIVE_TEAM_UUID_KEY
+
 // When a user lands on the app, we don't necessarily know what their "active"
 // team is. It’s semi-implicit, but we can make a guess.
 // Only once we do a get of the team do we know for sure the user has access to it.
