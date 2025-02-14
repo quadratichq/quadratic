@@ -94,10 +94,7 @@ mod tests {
     use crate::{
         a1::A1Selection,
         controller::GridController,
-        grid::{
-            sheet::borders::{BorderSelection, BorderStyle, Borders},
-            CodeCellLanguage,
-        },
+        grid::sheet::borders::{BorderSelection, BorderStyle, Borders},
         CellValue, CopyFormats,
     };
 
