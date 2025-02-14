@@ -104,7 +104,6 @@ impl RefRangeBounds {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use super::*;
 

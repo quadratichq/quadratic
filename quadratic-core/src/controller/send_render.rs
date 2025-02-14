@@ -314,11 +314,9 @@ mod test {
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
         Pos, SheetPos,
     };
-    use serial_test::serial;
     use std::collections::HashSet;
 
     #[test]
-    #[serial]
     fn test_process_visible_dirty_hashes() {
         clear_js_calls();
         let gc = GridController::test_with_viewport_buffer();
@@ -374,7 +372,6 @@ mod test {
     }
 
     #[test]
-    #[serial]
     fn test_process_remaining_dirty_hashes() {
         clear_js_calls();
 
@@ -398,7 +395,6 @@ mod test {
     }
 
     #[test]
-    #[serial]
     fn send_render_cells() {
         clear_js_calls();
 
@@ -433,7 +429,6 @@ mod test {
     }
 
     #[test]
-    #[serial]
     fn send_html_output_rect() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -472,7 +467,6 @@ mod test {
     }
 
     #[test]
-    #[serial]
     fn send_html_output_rect_after_resize() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -525,7 +519,6 @@ mod test {
     }
 
     #[test]
-    #[serial]
     fn send_render_cells_from_rects() {
         let mut gc = GridController::test_with_viewport_buffer();
         let sheet_id = gc.sheet_ids()[0];

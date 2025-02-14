@@ -9,7 +9,6 @@ use uuid::Uuid;
 use super::operation::Operation;
 use crate::cell_values::CellValues;
 use crate::controller::GridController;
-use crate::formulas::replace_internal_cell_references;
 use crate::grid::formats::Format;
 use crate::grid::formats::SheetFormatUpdates;
 use crate::grid::js_types::JsClipboard;
@@ -17,7 +16,7 @@ use crate::grid::js_types::JsSnackbarSeverity;
 use crate::grid::sheet::borders::BordersUpdates;
 use crate::grid::sheet::validations::validation::Validation;
 use crate::grid::DataTable;
-use crate::grid::{CodeCellLanguage, DataTableKind};
+use crate::grid::DataTableKind;
 use crate::{a1::A1Selection, CellValue, Pos, Rect, SheetPos, SheetRect};
 
 // todo: break up this file so tests are easier to write
@@ -510,29 +509,16 @@ impl GridController {
                     let context = self.grid.a1_context();
 
                     // loop through the clipboard and replace cell references in formulas
-                    for (x, col) in clipboard.cells.columns.iter_mut().enumerate() {
-                        for (&y, cell) in col.iter_mut() {
+                    for col in clipboard.cells.columns.iter_mut() {
+                        for (_, cell) in col.iter_mut() {
                             match cell {
                                 CellValue::Code(code_cell) => {
-                                    if matches!(code_cell.language, CodeCellLanguage::Formula) {
-                                        let parse_ctx = self.grid.a1_context();
-                                        code_cell.code = replace_internal_cell_references(
-                                            &code_cell.code,
-                                            &parse_ctx,
-                                            Pos {
-                                                x: insert_at.x + x as i64,
-                                                y: insert_at.y + y as i64,
-                                            }
-                                            .to_sheet_pos(selection.sheet_id),
-                                        );
-                                    } else {
-                                        code_cell.translate_cell_references(
-                                            delta_x,
-                                            delta_y,
-                                            &selection.sheet_id,
-                                            &context,
-                                        );
-                                    }
+                                    code_cell.translate_cell_references(
+                                        delta_x,
+                                        delta_y,
+                                        &selection.sheet_id,
+                                        &context,
+                                    );
                                 }
                                 _ => { /* noop */ }
                             };
@@ -553,7 +539,6 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use bigdecimal::BigDecimal;
-    use serial_test::{parallel, serial};
 
     use super::{PasteSpecial, *};
     use crate::a1::{A1Context, A1Selection, CellRefRange, TableRef};
@@ -561,7 +546,7 @@ mod test {
     use crate::controller::user_actions::import::tests::{simple_csv, simple_csv_at};
     use crate::grid::js_types::JsClipboard;
     use crate::grid::sheet::validations::validation_rules::ValidationRule;
-    use crate::grid::SheetId;
+    use crate::grid::{CodeCellLanguage, SheetId};
     use crate::test_util::{
         assert_cell_value_row, assert_data_table_cell_value, print_data_table, print_table,
     };
@@ -569,7 +554,6 @@ mod test {
     use crate::Rect;
 
     #[test]
-    #[parallel]
     fn move_cell_operations() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -581,7 +565,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn paste_clipboard_cells_columns() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -604,7 +587,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn paste_clipboard_cells_rows() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -627,7 +609,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn paste_clipboard_cells_all() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -654,7 +635,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn sheet_formats_operations_column_rows() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -690,7 +670,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn set_clipboard_validations() {
         let gc = GridController::test();
         let validations = ClipboardValidations {
@@ -719,7 +698,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn paste_clipboard_with_formula() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -771,7 +749,6 @@ mod test {
     }
 
     #[test]
-    #[serial]
     fn copy_paste_clipboard_with_data_table() {
         clear_js_calls();
 
@@ -815,7 +792,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn cut_paste_clipboard_with_data_table() {
         let (mut gc, sheet_id, _, _) = simple_csv();
         let paste = |gc: &mut GridController, x, y, html| {
@@ -859,7 +835,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn update_code_cell_references_python() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -895,7 +870,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn paste_clipboard_on_top_of_data_table() {
         let (mut gc, sheet_id, _, _) = simple_csv_at(Pos { x: 2, y: 0 });
         let sheet = gc.sheet_mut(sheet_id);
@@ -958,7 +932,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn update_code_cell_references_javascript() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -994,7 +967,6 @@ mod test {
     }
 
     #[test]
-    #[serial]
     fn paste_code_cell_inside_data_table() {
         clear_js_calls();
 

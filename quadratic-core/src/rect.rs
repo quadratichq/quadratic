@@ -383,7 +383,6 @@ impl Arbitrary for Rect {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod test {
     use super::*;
 

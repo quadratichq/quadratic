@@ -301,10 +301,8 @@ impl GridController {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use bigdecimal::BigDecimal;
-    use serial_test::serial;
     use uuid::Uuid;
 
     use super::*;
@@ -643,7 +641,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_send_request_transactions() {
         let mut client = GridController::test();
         let sheet_id = client.sheet_ids()[0];

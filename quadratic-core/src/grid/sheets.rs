@@ -171,7 +171,6 @@ impl Grid {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod test {
     use super::*;
 

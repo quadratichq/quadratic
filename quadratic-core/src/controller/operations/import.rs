@@ -481,7 +481,6 @@ fn read_utf16(bytes: &[u8]) -> Option<String> {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod test {
     use super::{read_utf16, *};
     use crate::{

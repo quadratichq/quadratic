@@ -116,7 +116,6 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::parallel;
 
     use crate::{
         controller::{
@@ -127,7 +126,6 @@ mod tests {
     };
 
     #[test]
-    #[parallel]
     fn test_replace_handlebars() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -171,7 +169,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_replace_handlebars_relative() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -210,7 +207,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_replace_handlebars_actual_case() {
         let code = "SELECT age FROM 'public'.'test_table' WHERE name='{{A1}}' LIMIT 100";
         let mut gc = GridController::test();
@@ -236,7 +232,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_run_connection_sheet_name_error() {
         fn test_error(gc: &mut GridController, code: &str, sheet_id: SheetId) {
             gc.set_code_cell(

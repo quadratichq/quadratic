@@ -143,7 +143,6 @@ impl A1Context {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::Rect;
 

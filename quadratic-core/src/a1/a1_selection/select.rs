@@ -458,7 +458,6 @@ impl A1Selection {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::{grid::SheetId, Rect};
 
@@ -548,7 +547,7 @@ mod tests {
         let context = A1Context::default();
         let mut selection = A1Selection::test_a1("A1");
         selection.select_row(2, false, false, false, 1, &context);
-        assert_eq!(selection.test_to_string(), "A2:2");
+        assert_eq!(selection.test_to_string(), "2:2");
     }
 
     #[test]

@@ -52,7 +52,6 @@ impl GridController {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod test {
     use std::str::FromStr;
 
@@ -296,23 +295,29 @@ mod test {
         };
 
         let sheet_pos = SheetPos {
-            x: 0,
-            y: 0,
+            x: 1,
+            y: 1,
             sheet_id,
         };
         let mut array = Array::new_empty(ArraySize::new(2, 2).unwrap());
-        let _ = array.set(
-            0,
-            0,
-            CellValue::Number(BigDecimal::from_str("1.1").unwrap()),
-        );
-        let _ = array.set(
-            1,
-            0,
-            CellValue::Number(BigDecimal::from_str("0.2").unwrap()),
-        );
-        let _ = array.set(0, 1, CellValue::Number(BigDecimal::from_str("3").unwrap()));
-        let _ = array.set(1, 1, CellValue::Text("Hello".into()));
+        array
+            .set(
+                0,
+                0,
+                CellValue::Number(BigDecimal::from_str("1.1").unwrap()),
+            )
+            .unwrap();
+        array
+            .set(
+                1,
+                0,
+                CellValue::Number(BigDecimal::from_str("0.2").unwrap()),
+            )
+            .unwrap();
+        array
+            .set(0, 1, CellValue::Number(BigDecimal::from_str("3").unwrap()))
+            .unwrap();
+        array.set(1, 1, CellValue::Text("Hello".into())).unwrap();
 
         let result = gc.js_code_result_to_code_cell_value(
             &mut transaction,
@@ -326,7 +331,7 @@ mod test {
             ..Default::default()
         };
 
-        let mut data_table = DataTable::new(
+        let mut expected_result = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "JavaScript1",
             Value::Array(array),
@@ -334,15 +339,18 @@ mod test {
             false,
             true,
             None,
-        );
-        let column_headers = data_table.default_header_with_name(|i| format!("{}", i - 1), None);
-        data_table = data_table
+        )
+        .with_show_columns(false);
+        let column_headers =
+            expected_result.default_header_with_name(|i| format!("{}", i - 1), None);
+        expected_result = expected_result
             .with_column_headers(column_headers)
             .with_last_modified(result.last_modified);
 
-        crate::grid::data_table::test::pretty_print_data_table(&data_table, None, None);
+        crate::grid::data_table::test::pretty_print_data_table(&result, None, None);
+        crate::grid::data_table::test::pretty_print_data_table(&expected_result, None, None);
 
-        assert_eq!(result, data_table);
+        assert_eq!(result, expected_result);
     }
 
     #[test]

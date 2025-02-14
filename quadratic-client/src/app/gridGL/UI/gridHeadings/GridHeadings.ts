@@ -325,13 +325,13 @@ export class GridHeadings extends Container {
     for (let y = topOffset; y <= bottomOffset; y += currentHeight) {
       currentHeight = offsets.getRowHeight(row);
       if (gridAlpha !== 0) {
-        this.gridHeadingsRows.headingsGraphics.lineStyle(
-          1,
-          colors.gridLines,
-          colors.headerSelectedRowColumnBackgroundColorAlpha * gridAlpha,
-          0.5,
-          true
-        );
+        this.gridHeadingsRows.headingsGraphics.lineStyle({
+          width: 1,
+          color: colors.gridLines,
+          alpha: colors.headerSelectedRowColumnBackgroundColorAlpha * gridAlpha,
+          alignment: 0.5,
+          native: true,
+        });
         this.gridHeadingsRows.headingsGraphics.moveTo(bounds.left, y);
         this.gridHeadingsRows.headingsGraphics.lineTo(bounds.left + this.rowWidth, y);
         this.gridLinesRows.push({ row: row - 1, y, height: offsets.getRowHeight(row - 1) });

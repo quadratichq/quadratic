@@ -207,14 +207,12 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serial_test::serial;
 
     use crate::grid::sheet::validations::validation_rules::ValidationRule;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
     use crate::{a1::A1Selection, CellValue};
 
     #[test]
-    #[serial]
     fn execute_set_validation() {
         clear_js_calls();
 
@@ -286,7 +284,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn execute_remove_validation() {
         clear_js_calls();
 

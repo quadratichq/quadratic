@@ -384,7 +384,6 @@ impl From<Pos> for CellHash {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::parallel;
 
     use super::*;
     use crate::cell_values::CellValues;
@@ -408,7 +407,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_transactions_finalize_transaction() {
         let mut gc = GridController::test();
         let (operation, operation_undo) = get_operations(&mut gc);
@@ -456,7 +454,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_transactions_undo_redo() {
         let mut gc = GridController::test();
         let (operation, operation_undo) = get_operations(&mut gc);
@@ -481,7 +478,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_transactions_updated_bounds_in_transaction() {
         let mut gc = GridController::test();
         let (operation, _) = get_operations(&mut gc);
@@ -500,7 +496,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_transactions_cell_hash() {
         let hash = "test".to_string();
         let cell_hash = CellHash(hash.clone());
@@ -512,7 +507,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_js_calculation_complete() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -539,7 +533,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_connection_complete() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

@@ -274,10 +274,8 @@ mod tests {
         CellValue, SheetPos,
     };
     use bigdecimal::BigDecimal;
-    use serial_test::serial;
 
     #[test]
-    #[serial]
     fn test_add_sheet() {
         let mut gc = GridController::test();
         gc.add_sheet(None);
@@ -298,7 +296,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_delete_sheet() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -321,7 +318,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_undo_delete_sheet_code_rerun() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -391,7 +387,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_execute_operation_set_sheet_name() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -417,7 +412,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_set_sheet_color() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -442,7 +436,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_sheet_reorder() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -499,7 +492,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn duplicate_sheet() {
         clear_js_calls();
 

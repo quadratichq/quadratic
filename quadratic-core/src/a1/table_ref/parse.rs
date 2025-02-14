@@ -124,7 +124,6 @@ impl TableRef {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::Rect;
 

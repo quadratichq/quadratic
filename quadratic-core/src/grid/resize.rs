@@ -54,10 +54,8 @@ impl ResizeMap {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_default_behavior() {
         let resize_map = ResizeMap::default();
         assert_eq!(resize_map.get_resize(0), Resize::Auto);
@@ -65,7 +63,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_set_and_get_resize() {
         let mut resize_map = ResizeMap::default();
 
@@ -81,7 +78,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_reset() {
         let mut resize_map = ResizeMap::default();
 
@@ -95,7 +91,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_set_to_default() {
         let mut resize_map = ResizeMap::default();
 
@@ -107,7 +102,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_iter_resize() {
         let mut resize_map = ResizeMap::default();
 
@@ -120,7 +114,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_serde() {
         let mut resize_map = ResizeMap::default();
         resize_map.set_resize(0, Resize::Manual);

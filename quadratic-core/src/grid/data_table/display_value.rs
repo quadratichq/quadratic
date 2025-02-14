@@ -185,7 +185,6 @@ impl DataTable {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 pub mod test {
     use crate::{
         controller::{transaction_types::JsCodeResult, GridController},

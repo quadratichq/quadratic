@@ -1371,8 +1371,6 @@ impl GridController {
 #[cfg(test)]
 mod tests {
 
-    use serial_test::{parallel, serial};
-
     use crate::{
         controller::{
             execution::execute_operation::{
@@ -1500,7 +1498,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_execute_set_data_table_at() {
         let (mut gc, sheet_id, _, _) = simple_csv();
 
@@ -1554,7 +1551,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_execute_flatten_data_table() {
         let (mut gc, sheet_id, pos, file_name) = simple_csv();
         assert_simple_csv(&gc, sheet_id, pos, file_name);
@@ -1575,7 +1571,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_execute_code_data_table_to_data_table() {
         let code_run = CodeRun {
             std_err: None,
@@ -1643,7 +1638,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_execute_grid_to_data_table() {
         let (mut gc, sheet_id, pos, file_name) = simple_csv();
         print_table(&gc, sheet_id, Rect::new(1, 1, 4, 11));
@@ -1675,7 +1669,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_execute_sort_data_table() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
@@ -1710,7 +1703,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_execute_update_data_table_name() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
@@ -1777,7 +1769,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_execute_insert_data_table_column() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
 
@@ -1824,7 +1815,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_execute_delete_data_table_column() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
 
@@ -1869,7 +1859,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_execute_insert_data_table_row() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
 
@@ -1906,7 +1895,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_execute_delete_data_table_row() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
 
@@ -1941,7 +1929,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_execute_insert_column_row_over_code_cell() {
         clear_js_calls();
 
@@ -2003,7 +1990,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_execute_insert_column_row_over_data_table() {
         clear_js_calls();
 

@@ -252,7 +252,6 @@ impl Validations {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::serial;
     use uuid::Uuid;
 
     use crate::{
@@ -267,7 +266,6 @@ mod tests {
     use super::*;
 
     #[test]
-    #[serial]
     fn test_remove_column() {
         clear_js_calls();
 
@@ -422,7 +420,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_remove_row() {
         clear_js_calls();
 
@@ -574,7 +571,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn inserted_column() {
         clear_js_calls();
 
@@ -711,7 +707,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn inserted_row() {
         clear_js_calls();
 

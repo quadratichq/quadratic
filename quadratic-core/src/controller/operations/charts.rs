@@ -17,7 +17,7 @@ impl GridController {
                     sheet_pos,
                     w: width + 1,
                     h: height,
-                })
+                });
             }
         }
 

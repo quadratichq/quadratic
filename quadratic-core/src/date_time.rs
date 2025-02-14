@@ -287,12 +287,10 @@ pub fn i64_to_naive_date(timestamp: i64) -> Option<NaiveDate> {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::parallel;
 
     use super::*;
 
     #[test]
-    #[parallel]
     fn time() {
         let date_time = "12/23/2024 4:45 PM".to_string();
         let format = "%m/%d/%Y %-I:%M %p".to_string();
@@ -305,7 +303,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn naive_time_i32() {
         let time = NaiveTime::from_hms_opt(12, 34, 56);
         assert_eq!(naive_time_to_i32(time.unwrap()), 45296);
@@ -313,7 +310,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn naive_date_i64() {
         let date = NaiveDate::from_ymd_opt(2024, 12, 23);
         assert_eq!(naive_date_to_i64(date.unwrap()), Some(1734912000));
@@ -321,7 +317,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_parse_date() {
         let parsed_date = parse_date("12/23/2024").unwrap();
         assert_eq!(parsed_date, NaiveDate::from_ymd_opt(2024, 12, 23).unwrap());
@@ -352,7 +347,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_parse_time() {
         let time = "4:45 PM".to_string();
         let parsed_time = parse_time(&time).unwrap();
@@ -362,7 +356,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn parse_simple_times() {
         let time = "4pm".to_string();
         let parsed_time = parse_time(&time).unwrap();
@@ -374,7 +367,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn format_date_with_bad_ordering() {
         let date = NaiveDate::from_ymd_opt(2024, 12, 23);
         let format = "%d/%m/%Y %S %m %Y".to_string();
@@ -383,7 +375,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn format_time_wrong_order() {
         let time = NaiveTime::from_hms_opt(12, 34, 56).unwrap();
         let format = "%H:%M:%S %A";
@@ -392,7 +383,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn format_time() {
         let time = NaiveTime::from_hms_opt(12, 34, 56).unwrap();
         let format = "%A %H:%M:%S";
@@ -401,7 +391,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn format_date() {
         let date = NaiveDate::from_ymd_opt(2024, 12, 23);
         let format = "%A %d %B %Y %H:%M:%S";
@@ -410,7 +399,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn format_date_opposite_order() {
         let date = NaiveDate::from_ymd_opt(2024, 12, 23);
         let format = "%H:%M:%S %Y %B %d %A";
@@ -419,7 +407,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_parse_date_time() {
         assert_eq!(parse_date("1893-01"), None);
         assert_eq!(parse_date("1902-01"), None);

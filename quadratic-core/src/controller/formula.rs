@@ -137,7 +137,6 @@ mod tests {
     use crate::a1::{CellRefCoord, CellRefRange, SheetCellRefRange};
     use crate::grid::{Grid, Sheet, SheetId};
     use crate::{Pos, Span};
-    use serial_test::parallel;
 
     fn parse(grid: &Grid, s: &str) -> FormulaParseResult {
         println!("Parsing {s}");
@@ -148,7 +147,6 @@ mod tests {
     /// Run this test with `--nocapture` to generate the example for the
     /// `parse_formula()` docs.
     #[test]
-    #[parallel]
     fn example_parse_formula_output() {
         let sheet_id = SheetId::new();
         let example_result = FormulaParseResult {
@@ -186,7 +184,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_parse_formula_output() {
         let mut g = Grid::new();
         g.add_sheet(Some(Sheet::new(
@@ -202,7 +199,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_parse_formula_case_insensitive() {
         let g = Grid::new();
         assert_eq!(parse(&g, "A1:A2"), parse(&g, "a1:a2"));
@@ -210,7 +206,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_parse_formula_column() {
         let g = Grid::new();
         let sheet_id = g.sheets()[0].id;
@@ -234,7 +229,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_parse_formula_row() {
         let g = Grid::new();
         let sheet_id = g.sheets()[0].id;

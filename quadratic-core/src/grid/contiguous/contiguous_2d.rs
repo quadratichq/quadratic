@@ -635,7 +635,6 @@ fn convert_rect(
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use super::*;
 

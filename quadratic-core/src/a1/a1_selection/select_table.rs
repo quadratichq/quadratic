@@ -212,7 +212,6 @@ impl A1Selection {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::{a1::RefRangeBounds, Rect};
 

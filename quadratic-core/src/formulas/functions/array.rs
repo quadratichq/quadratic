@@ -272,7 +272,6 @@ fn by_column_to_axis(by_column: Option<bool>) -> Axis {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::formulas::tests::*;
 

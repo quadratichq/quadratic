@@ -207,12 +207,10 @@ mod tests {
         controller::GridController,
         wasm_bindings::js::{clear_js_calls, expect_js_offsets},
     };
-    use serial_test::serial;
 
     // also see tests in sheet_offsets.rs
 
     #[test]
-    #[serial]
     fn test_execute_operation_resize_column() {
         clear_js_calls();
 
@@ -235,7 +233,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_execute_operation_resize_row() {
         clear_js_calls();
 

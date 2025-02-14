@@ -13,7 +13,6 @@ import { useRecoilValue } from 'recoil';
 
 export const GridContextMenuDataTable = () => {
   const contextMenu = useRecoilValue(contextMenuAtom);
-  const isShowingColumnNames = Boolean(contextMenu.table?.show_columns);
   const hasSpillError = Boolean(contextMenu.table?.spill_error);
 
   if (hasSpillError) {
@@ -35,7 +34,7 @@ export const GridContextMenuDataTable = () => {
       <ContextMenuItemAction action={Action.CopyAsPng} />
       <ContextMenuItemAction action={Action.DownloadAsCsv} />
       <DropdownMenuSeparator />
-      <ContextMenuDataTableItems highlightDefault={true} isShowingColumnNames={isShowingColumnNames} />
+      <ContextMenuDataTableItems highlightDefault={true} />
     </ContextMenuBase>
   );
 };
@@ -52,27 +51,22 @@ export const ContextMenuDataTableNested = ({ isShowingColumnNames }: { isShowing
           Table
         </DropdownMenuSubTrigger>
         <DropdownMenuSubContent>
-          <ContextMenuDataTableItems isShowingColumnNames={isShowingColumnNames} />
+          <ContextMenuDataTableItems />
         </DropdownMenuSubContent>
       </DropdownMenuSub>
     </>
   );
 };
 
-export const ContextMenuDataTableItems = ({
-  highlightDefault,
-  isShowingColumnNames,
-}: {
-  highlightDefault?: boolean;
-  isShowingColumnNames: boolean;
-}) => {
+export const ContextMenuDataTableItems = ({ highlightDefault }: { highlightDefault?: boolean }) => {
   return (
     <>
       <ContextMenuItemAction action={Action.RenameTable} overrideDefaultOption={highlightDefault} />
       <ContextMenuItemAction action={Action.SortTable} />
       <ContextMenuItemAction action={Action.FlattenTable} />
-      {isShowingColumnNames && <ContextMenuItemAction action={Action.ToggleFirstRowAsHeaderTable} />}
+      <ContextMenuItemAction action={Action.ShowAllColumns} />
       <DropdownMenuSeparator />
+      <ContextMenuItemAction action={Action.ToggleFirstRowAsHeaderTable} />
       <ContextMenuItemAction action={Action.ToggleTableName} />
       <ContextMenuItemAction action={Action.ToggleTableColumns} />
       <ContextMenuItemAction action={Action.ToggleTableAlternatingColors} />

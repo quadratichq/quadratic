@@ -191,7 +191,6 @@ impl Offsets {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use super::*;
 

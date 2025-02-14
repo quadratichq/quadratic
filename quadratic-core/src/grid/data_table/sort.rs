@@ -106,10 +106,8 @@ pub mod test {
     use crate::grid::test::{
         assert_data_table_row, new_data_table, pretty_print_data_table, test_csv_values,
     };
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_data_table_sort() {
         let (_, mut data_table) = new_data_table();
         data_table.apply_first_row_as_header();
@@ -135,7 +133,6 @@ pub mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_data_table_sort_with_hidden_columns() {
         let (_, mut data_table) = new_data_table();
         data_table.apply_first_row_as_header();

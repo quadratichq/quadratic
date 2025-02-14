@@ -491,14 +491,12 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use serial_test::{parallel, serial};
 
     use super::*;
     use crate::grid::CodeCellValue;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call_count};
 
     #[test]
-    #[parallel]
     fn test_finalize_data_table() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -604,7 +602,6 @@ mod test {
     }
 
     #[test]
-    #[serial]
     fn code_run_image() {
         clear_js_calls();
 
@@ -633,7 +630,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn ensure_chart_size_remains_same_if_same_cell() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

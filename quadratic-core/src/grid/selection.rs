@@ -15,7 +15,6 @@ impl GridController {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod test {
     use crate::a1::CellRefRange;
     use crate::controller::GridController;

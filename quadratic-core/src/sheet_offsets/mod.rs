@@ -102,12 +102,12 @@ impl SheetOffsets {
 
     /// Gets the sum of the widths of a range of columns.
     pub fn total_columns_width(&self, from: i64, to: i64) -> f64 {
-        self.column_widths.iter_offsets(from..(to + 1)).sum()
+        (from..=to).map(|i| self.column_width(i)).sum()
     }
 
     /// Gets the sum of the heights of a range of rows.
     pub fn total_rows_height(&self, from: i64, to: i64) -> f64 {
-        self.row_heights.iter_offsets(from..(to + 1)).sum()
+        (from..=to).map(|i| self.row_height(i)).sum()
     }
 
     pub fn row_height(&self, y: i64) -> f64 {
@@ -309,7 +309,6 @@ impl SheetOffsets {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod test {
     use super::*;
 

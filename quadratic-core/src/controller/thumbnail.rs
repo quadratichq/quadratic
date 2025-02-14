@@ -84,10 +84,8 @@ mod test {
         },
         Pos, Rect, SheetPos, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH,
     };
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_thumbnail_dirty_pos() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -114,7 +112,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_thumbnail_dirty_a1() {
         let gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
@@ -128,7 +125,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_thumbnail_dirty_formats() {
         let gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
@@ -177,7 +173,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_thumbnail_dirty_borders() {
         let gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];

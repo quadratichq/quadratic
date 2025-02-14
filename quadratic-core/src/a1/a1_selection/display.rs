@@ -51,7 +51,6 @@ impl A1Selection {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::Rect;
 
@@ -77,10 +76,10 @@ mod tests {
     #[test]
     fn test_to_a1_rows() {
         let context = A1Context::default();
-        let selection = A1Selection::test_a1("1:5,10:12,A15:15");
+        let selection = A1Selection::test_a1("1:5,10:12,15:15");
         assert_eq!(
             selection.to_string(Some(SheetId::test()), &context),
-            "1:5,10:12,A15:15",
+            "1:5,10:12,15:15",
         );
     }
 
@@ -123,7 +122,7 @@ mod tests {
         };
         assert_eq!(
             selection.to_string(Some(SheetId::test()), &A1Context::default()),
-            "A:E,J:L,O,1:5,10:12,A15:15",
+            "A:E,J:L,O,1:5,10:12,15:15",
         );
     }
 
@@ -146,7 +145,7 @@ mod tests {
         let selection = A1Selection::parse_a1("1,", &sheet_id, &A1Context::default()).unwrap();
         assert_eq!(
             selection.to_string(Some(sheet_id), &A1Context::default()),
-            "A1:1",
+            "1:1",
         );
     }
 

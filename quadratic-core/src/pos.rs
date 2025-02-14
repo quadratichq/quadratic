@@ -241,7 +241,6 @@ impl SheetPos {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod test {
     use crate::{
         grid::SheetId,

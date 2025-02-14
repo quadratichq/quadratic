@@ -578,7 +578,6 @@ impl Sheet {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod test {
     use crate::{
         a1::A1Selection,

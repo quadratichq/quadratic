@@ -512,10 +512,8 @@ impl OldSelection {
 #[cfg(test)]
 mod test {
     use super::*;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_largest_rect() {
         let sheet_id = SheetId::test();
         let selection = OldSelection {
@@ -551,7 +549,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_pos_in_selection() {
         let sheet_id = SheetId::test();
         let selection = OldSelection {
@@ -591,7 +588,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_origin() {
         let sheet_id = SheetId::test();
         let selection = OldSelection {
@@ -611,7 +607,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_translate() {
         let sheet_id = SheetId::test();
         let selection = OldSelection {
@@ -641,7 +636,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_count() {
         let sheet_id = SheetId::test();
         let selection = OldSelection {
@@ -670,7 +664,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_selection_columns() {
         let sheet_id = SheetId::test();
         let selection = OldSelection::columns(&[1, 2, 3], sheet_id);
@@ -685,7 +678,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_selection_rows() {
         let sheet_id = SheetId::test();
         let selection = OldSelection::rows(&[1, 2, 3], sheet_id);
@@ -700,7 +692,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_contains_column() {
         let sheet_id = SheetId::test();
         let selection = OldSelection::columns(&[1, 2, 3], sheet_id);
@@ -709,7 +700,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_contains_row() {
         let sheet_id = SheetId::test();
         let selection = OldSelection::rows(&[1, 2, 3], sheet_id);
@@ -718,7 +708,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_in_rect() {
         let sheet_id = SheetId::test();
         let selection = OldSelection {
@@ -735,7 +724,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_is_empty() {
         let sheet_id = SheetId::test();
         let selection = OldSelection {
@@ -762,7 +750,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_translate_in_place() {
         let sheet_id = SheetId::test();
         let mut selection = OldSelection {
@@ -790,7 +777,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_intersection() {
         let sheet_id = SheetId::test();
         let selection1 = OldSelection {
@@ -839,7 +825,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_count_parts() {
         let sheet_id = SheetId::test();
         let selection = OldSelection {
@@ -891,7 +876,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_inserted_column() {
         let sheet_id = SheetId::test();
         let mut selection = OldSelection {
@@ -914,7 +898,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_inserted_row() {
         let sheet_id = SheetId::test();
         let mut selection = OldSelection {
@@ -936,7 +919,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_removed_column() {
         let sheet_id = SheetId::test();
         let mut selection = OldSelection {
@@ -966,7 +948,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_removed_row() {
         let sheet_id = SheetId::test();
         let mut selection = OldSelection {
@@ -996,7 +977,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_rects_to_hashes() {
         let selection = OldSelection {
             sheet_id: SheetId::test(),
@@ -1010,7 +990,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_add_rect() {
         let mut selection = OldSelection::default();
         selection.add_rect(Rect::new(1, 1, 3, 3));
@@ -1033,7 +1012,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_add_columns() {
         let mut selection = OldSelection::default();
         selection.add_columns(vec![1, 2, 3]);
@@ -1067,7 +1045,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_add_rows() {
         let mut selection = OldSelection::default();
         selection.add_rows(vec![1, 2, 3]);

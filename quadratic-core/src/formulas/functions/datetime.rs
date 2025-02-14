@@ -516,7 +516,6 @@ fn add_months_offset_to_day(day: NaiveDate, months: i64) -> Option<NaiveDate> {
 }
 
 #[cfg(test)]
-#[cfg_attr(test, serial_test::parallel)]
 mod tests {
     use crate::formulas::tests::*;
 

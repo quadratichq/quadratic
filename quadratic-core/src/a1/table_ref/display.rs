@@ -48,7 +48,6 @@ impl fmt::Display for TableRef {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::{a1::A1Context, Rect};
 

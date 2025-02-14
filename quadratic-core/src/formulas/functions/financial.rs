@@ -53,10 +53,8 @@ fn get_functions() -> Vec<FormulaFunction> {
 mod tests {
     use crate::formulas::tests::*;
     use crate::util::assert_f64_approx_eq;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_pmt() {
         let g = Grid::new();
 

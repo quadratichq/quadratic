@@ -530,7 +530,6 @@ impl Sheet {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod test {
     use std::str::FromStr;
 

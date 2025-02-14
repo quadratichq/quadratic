@@ -267,7 +267,6 @@ impl Sheet {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::{
         a1::A1Selection,
@@ -276,8 +275,6 @@ mod tests {
         wasm_bindings::js::{clear_js_calls, expect_js_call, hash_test},
         SheetPos, Value,
     };
-
-    use serial_test::serial;
 
     use super::*;
 
@@ -528,7 +525,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn render_bool_on_code_run() {
         clear_js_calls();
 

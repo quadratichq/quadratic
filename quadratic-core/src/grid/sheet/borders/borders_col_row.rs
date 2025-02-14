@@ -89,15 +89,11 @@ impl Borders {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::{
         a1::A1Selection,
         controller::GridController,
-        grid::{
-            sheet::borders::{BorderSelection, BorderStyle, Borders},
-            CodeCellLanguage,
-        },
+        grid::sheet::borders::{BorderSelection, BorderStyle, Borders},
         CellValue, CopyFormats,
     };
 
@@ -506,24 +502,10 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
-            CodeCellLanguage::Formula,
-            "12".to_string(),
-            None,
-        );
-        gc.set_code_cell(
-            pos![A2].to_sheet_pos(sheet_id),
-            CodeCellLanguage::Formula,
-            "34".to_string(),
-            None,
-        );
-        gc.set_code_cell(
-            pos![A3].to_sheet_pos(sheet_id),
-            CodeCellLanguage::Formula,
-            "56".to_string(),
-            None,
-        );
+        gc.set_cell_value(pos![A1].to_sheet_pos(sheet_id), "12".to_string(), None);
+        gc.set_cell_value(pos![A2].to_sheet_pos(sheet_id), "34".to_string(), None);
+        gc.set_cell_value(pos![A3].to_sheet_pos(sheet_id), "56".to_string(), None);
+
         gc.set_borders(
             A1Selection::test_a1("A1:J10"),
             BorderSelection::All,
@@ -553,6 +535,7 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
+        assert_eq!(sheet.borders, sheet_expected.borders);
         assert!(Borders::compare_borders(
             &sheet.borders,
             &sheet_expected.borders
@@ -595,24 +578,10 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
-            CodeCellLanguage::Formula,
-            "12".to_string(),
-            None,
-        );
-        gc.set_code_cell(
-            pos![A2].to_sheet_pos(sheet_id),
-            CodeCellLanguage::Formula,
-            "34".to_string(),
-            None,
-        );
-        gc.set_code_cell(
-            pos![A3].to_sheet_pos(sheet_id),
-            CodeCellLanguage::Formula,
-            "56".to_string(),
-            None,
-        );
+        gc.set_cell_value(pos![A1].to_sheet_pos(sheet_id), "12".to_string(), None);
+        gc.set_cell_value(pos![A2].to_sheet_pos(sheet_id), "34".to_string(), None);
+        gc.set_cell_value(pos![A3].to_sheet_pos(sheet_id), "56".to_string(), None);
+
         gc.set_borders(
             A1Selection::test_a1("A1:J10"),
             BorderSelection::All,
@@ -649,7 +618,7 @@ mod tests {
         let sheet_expected = gc_expected.sheet(sheet_id);
         assert!(Borders::compare_borders(
             &sheet.borders,
-            &sheet_expected.borders
+            &sheet_expected.borders,
         ));
 
         // this will remove the inserted row

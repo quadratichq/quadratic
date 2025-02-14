@@ -410,12 +410,10 @@ impl<T: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + PartialEq>
 
 #[cfg(test)]
 mod test {
-    use serial_test::parallel;
 
     use super::*;
 
     #[test]
-    #[parallel]
     fn column_data_set_range() {
         let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
 
@@ -442,7 +440,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn has_blocks_in_range() {
         let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
 
@@ -461,7 +458,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn min_max() {
         let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
 
@@ -474,7 +470,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn insert_block() {
         let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
 
@@ -485,7 +480,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn insert_and_shift_right_simple() {
         let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
         cd.set_range(10..13, true);
@@ -498,7 +492,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn insert_and_shift_right_start() {
         let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
         cd.set_range(1..4, true);
@@ -514,7 +507,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn insert_and_shift_right_middle() {
         let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
         cd.set_range(1..4, true);
@@ -530,7 +522,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn insert_and_shift_right_end() {
         let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
         assert!(!cd.insert_and_shift_right(1));
@@ -547,7 +538,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn remove_and_shift_left_start() {
         let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
         cd.set_range(1..4, true);
@@ -561,7 +551,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn remove_and_shift_left_middle() {
         let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
         cd.set_range(1..4, true);
@@ -575,7 +564,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn remove_and_shift_left_end() {
         let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
         assert!(!cd.remove_and_shift_left(1));
@@ -590,7 +578,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn is_empty() {
         let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
         assert!(cd.is_empty());
