@@ -48,7 +48,9 @@ export type ActionSpec<ActionArgsType> = {
   // double clicking will trigger the action)
   defaultOption?: boolean;
 
+  // function to show/hide the action
   isAvailable?: (args: ActionAvailabilityArgs) => boolean;
+  
   // Used for command palette search
   keywords?: string[];
 };

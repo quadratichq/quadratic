@@ -23,7 +23,6 @@ import { useRecoilValue } from 'recoil';
  */
 export const GridContextMenu = () => {
   const contextMenu = useRecoilValue(contextMenuAtom);
-  console.log('contextMenu.table.language', contextMenu);
   if (contextMenu.type === ContextMenuType.Table && contextMenu.table) {
     if (contextMenu.table.language === 'Import') {
       return <GridContextMenuDataTable />;

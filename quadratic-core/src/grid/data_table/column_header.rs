@@ -42,17 +42,21 @@ impl DataTable {
     pub fn apply_first_row_as_header(&mut self) {
         self.header_is_first_row = true;
 
-        self.column_headers = match self.value {
-            // Value::Array(ref mut array) => array.shift().ok().map(|array| {
-            Value::Array(ref mut array) => array.get_row(0).ok().map(|array| {
-                array
-                    .iter()
-                    .enumerate()
-                    .map(|(i, value)| DataTableColumnHeader::new(value.to_string(), true, i as u32))
-                    .collect::<Vec<DataTableColumnHeader>>()
-            }),
+        let first_row = match &self.value {
+            Value::Array(array) => array.get_row(0).ok(),
             _ => None,
         };
+
+        self.column_headers = first_row.map(|array| {
+            array
+                .iter()
+                .enumerate()
+                .map(|(i, value)| {
+                    let display = self.header_display(i);
+                    DataTableColumnHeader::new(value.to_string(), display, i as u32)
+                })
+                .collect()
+        });
 
         self.normalize_column_header_names();
     }
@@ -85,7 +89,10 @@ impl DataTable {
 
         match self.value {
             Value::Array(_) => (1..=width)
-                .map(|i| DataTableColumnHeader::new(func(i), true, i - 1))
+                .map(|i| {
+                    let display = self.header_display(i as usize);
+                    DataTableColumnHeader::new(func(i), display, i - 1)
+                })
                 .collect::<Vec<DataTableColumnHeader>>(),
             _ => vec![],
         }
@@ -97,6 +104,14 @@ impl DataTable {
         self.column_headers = Some(self.default_header(None));
     }
 
+    /// Get the display of a column header at the given index.
+    pub fn header_display(&self, index: usize) -> bool {
+        self.column_headers.as_ref().map_or(true, |headers| {
+            headers.get(index).map_or(true, |header| header.display)
+        })
+    }
+
+    /// Adjust the index for the header.
     pub fn adjust_for_header(&self, index: usize) -> usize {
         if self.header_is_first_row {
             index + 1
@@ -121,6 +136,7 @@ impl DataTable {
             .collect()
     }
 
+    /// Create a unique column header name.
     pub fn unique_column_header_name(&self, name: Option<&str>, index: usize) -> String {
         let default_name = format!("Column {index}");
         let name = name.unwrap_or(&default_name);

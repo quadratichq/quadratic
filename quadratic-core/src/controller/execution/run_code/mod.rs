@@ -478,14 +478,13 @@ impl GridController {
         data_table.show_columns = js_code_result.has_headers;
 
         // If no headers were returned, we want column headers: [0, 1, 2, 3, ...etc]
-        // if !js_code_result.has_headers {
-        //     let column_headers =
-        //         data_table.default_header_with_name(|i| format!("{}", i - 1), None);
-        //     data_table.with_column_headers(column_headers)
-        // } else {
-        //     data_table
-        // }
-        data_table
+        if !js_code_result.has_headers {
+            let column_headers =
+                data_table.default_header_with_name(|i| format!("{}", i - 1), None);
+            data_table.with_column_headers(column_headers)
+        } else {
+            data_table
+        }
     }
 }
 
