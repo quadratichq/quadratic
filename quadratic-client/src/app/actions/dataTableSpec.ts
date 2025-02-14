@@ -525,7 +525,7 @@ export const dataTableSpec: DataTableSpec = {
   [Action.ToggleFirstRowAsHeaderTable]: {
     label: 'Use first row as column names',
     checkbox: isFirstRowHeader,
-    isAvailable: () => !isCodeCell('Python'),
+    isAvailable: () => !isCodeCell('Python') && isTableColumnsShowing(),
     run: toggleFirstRowAsHeader,
   },
   [Action.RenameTable]: {
@@ -596,14 +596,32 @@ export const dataTableSpec: DataTableSpec = {
     run: () => removeTableColumn(true),
   },
   [Action.HideTableColumn]: {
-    label: 'Hide column',
+    label: 'Hide',
+    labelVerbose: 'Hide column',
     Icon: HideIcon,
     run: hideTableColumn,
+    isAvailable: () => !isCodeCell('Formula') && !isCodeCell('Python'),
   },
   [Action.ShowAllColumns]: {
-    label: 'Show all columns',
+    label: 'Reveal hidden columns',
     Icon: ShowIcon,
     run: showAllTableColumns,
+    isAvailable: () => {
+      if (isCodeCell('Formula') || isCodeCell('Python')) {
+        return false;
+      }
+
+      const table = getTable();
+      const hiddenColumns = table?.columns.filter((c) => !c.display).length || 0;
+      if (hiddenColumns === 0) {
+        return false;
+      }
+
+      dataTableSpec[Action.ShowAllColumns].label = `Reveal ${hiddenColumns} hidden column${
+        hiddenColumns > 1 ? 's' : ''
+      }`;
+      return true;
+    },
   },
   [Action.InsertTableRowAbove]: {
     label: 'Insert table row above',
@@ -641,7 +659,7 @@ export const dataTableSpec: DataTableSpec = {
   },
   [Action.ToggleTableColumns]: {
     label: 'Show column names',
-    isAvailable: () => !isCodeCell('Python') && isTableColumnsShowing(),
+    isAvailable: () => !isCodeCell('Python'),
     checkbox: isTableColumnsShowing,
     run: toggleTableColumns,
   },

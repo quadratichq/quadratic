@@ -1,6 +1,5 @@
 import { Action } from '@/app/actions/actions';
 import { contextMenuAtom } from '@/app/atoms/contextMenuAtom';
-import { debug } from '@/app/debugFlags';
 import { ContextMenuBase, ContextMenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/Base';
 import { ContextMenuDataTableNested } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuDataTable';
 import { DropdownMenuSeparator } from '@/shared/shadcn/ui/dropdown-menu';
@@ -22,6 +21,7 @@ export const GridContextMenuDataTableColumn = () => {
       <ContextMenuItemAction action={Action.RenameTableColumn} />
       <ContextMenuItemAction action={Action.SortTableColumnAscending} />
       <ContextMenuItemAction action={Action.SortTableColumnDescending} />
+      <ContextMenuItemAction action={Action.HideTableColumn} />
       <DropdownMenuSeparator />
 
       {/* TODO:(ddimaria) these aren’t showing for some reason? */}
@@ -31,14 +31,6 @@ export const GridContextMenuDataTableColumn = () => {
       <DropdownMenuSeparator />
 
       <ContextMenuDataTableNested isShowingColumnNames={isShowingColumnNames} />
-
-      {debug && (
-        <>
-          <DropdownMenuSeparator />
-          <ContextMenuItemAction action={Action.HideTableColumn} />
-          <ContextMenuItemAction action={Action.ShowAllColumns} />
-        </>
-      )}
     </ContextMenuBase>
   );
 };

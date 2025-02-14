@@ -52,8 +52,9 @@ export function ContextMenuCodeTableItems({ showUseFirstRowAsHeader }: { showUse
       <ContextMenuItemAction action={Action.SortTable} />
       <ContextMenuItemAction action={Action.FlattenTable} />
       <ContextMenuItemAction action={Action.GridToDataTable} />
-      <ContextMenuItemAction action={Action.ToggleFirstRowAsHeaderTable} />
+      <ContextMenuItemAction action={Action.ShowAllColumns} />
       <DropdownMenuSeparator />
+      <ContextMenuItemAction action={Action.ToggleFirstRowAsHeaderTable} />
       <ContextMenuItemAction action={Action.ToggleTableName} />
       <ContextMenuItemAction action={Action.ToggleTableColumns} />
       <ContextMenuItemAction action={Action.ToggleTableAlternatingColors} />
