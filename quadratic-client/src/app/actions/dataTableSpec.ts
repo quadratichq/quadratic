@@ -641,7 +641,7 @@ export const dataTableSpec: DataTableSpec = {
   },
   [Action.ToggleTableColumns]: {
     label: 'Show column names',
-    isAvailable: () => !isCodeCell('Python') && isTableColumnsShowing(),
+    isAvailable: () => !(isCodeCell('Python') || isCodeCell('Formula')),
     checkbox: isTableColumnsShowing,
     run: toggleTableColumns,
   },

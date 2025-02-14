@@ -23,13 +23,10 @@ import { useRecoilValue } from 'recoil';
  */
 export const GridContextMenu = () => {
   const contextMenu = useRecoilValue(contextMenuAtom);
+  console.log('contextMenu.table.language', contextMenu);
   if (contextMenu.type === ContextMenuType.Table && contextMenu.table) {
     if (contextMenu.table.language === 'Import') {
       return <GridContextMenuDataTable />;
-    }
-    // Formula
-    if (contextMenu.table.language === 'Formula') {
-      return <GridContextMenuCell />;
     }
 
     // Chart
@@ -60,6 +57,10 @@ export const GridContextMenu = () => {
       // Data table
       if (contextMenu.table.language === 'Import') {
         return <GridContextMenuDataTableCell />;
+      }
+      // Formula
+      if (contextMenu.table.language === 'Formula') {
+        return <GridContextMenuCell />;
       }
       // Code table
       return <GridContextMenuCodeTableCell />;
