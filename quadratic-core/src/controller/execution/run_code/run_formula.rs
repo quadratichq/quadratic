@@ -347,7 +347,6 @@ mod test {
         expected_result = expected_result
             .with_column_headers(column_headers)
             .with_last_modified(result.last_modified);
-        data_table.show_columns = false;
 
         crate::grid::data_table::test::pretty_print_data_table(&result, None, None);
         crate::grid::data_table::test::pretty_print_data_table(&expected_result, None, None);
