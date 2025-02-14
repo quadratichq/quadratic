@@ -1,4 +1,5 @@
 import { Action } from '@/app/actions/actions';
+import { debug } from '@/app/debugFlags';
 import { ContextMenuBase, ContextMenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/Base';
 import { ContextMenuCodeTableItems } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuCodeTable';
 import { DropdownMenuSeparator } from '@/shared/shadcn/ui/dropdown-menu';
@@ -19,6 +20,14 @@ export function GridContextMenuCodeTableColumn() {
       <ContextMenuItemAction action={Action.SortTableColumnDescending} />
       <DropdownMenuSeparator />
       <ContextMenuCodeTableItems />
+
+      {debug && (
+        <>
+          <DropdownMenuSeparator />
+          <ContextMenuItemAction action={Action.HideTableColumn} />
+          <ContextMenuItemAction action={Action.ShowAllColumns} />
+        </>
+      )}
     </ContextMenuBase>
   );
 }

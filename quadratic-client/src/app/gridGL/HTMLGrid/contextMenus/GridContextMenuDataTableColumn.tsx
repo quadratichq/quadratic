@@ -1,5 +1,6 @@
 import { Action } from '@/app/actions/actions';
 import { contextMenuAtom } from '@/app/atoms/contextMenuAtom';
+import { debug } from '@/app/debugFlags';
 import { ContextMenuBase, ContextMenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/Base';
 import { ContextMenuDataTableNested } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuDataTable';
 import { DropdownMenuSeparator } from '@/shared/shadcn/ui/dropdown-menu';
@@ -30,6 +31,14 @@ export const GridContextMenuDataTableColumn = () => {
       <DropdownMenuSeparator />
 
       <ContextMenuDataTableNested isShowingColumnNames={isShowingColumnNames} />
+
+      {debug && (
+        <>
+          <DropdownMenuSeparator />
+          <ContextMenuItemAction action={Action.HideTableColumn} />
+          <ContextMenuItemAction action={Action.ShowAllColumns} />
+        </>
+      )}
     </ContextMenuBase>
   );
 };

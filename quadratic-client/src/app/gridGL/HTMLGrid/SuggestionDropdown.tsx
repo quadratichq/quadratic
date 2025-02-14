@@ -53,7 +53,12 @@ export const SuggestionDropDown = () => {
           inlineEditorMonaco.autocompleteShowingList = false;
         }
       } else {
-        const values = await quadraticCore.neighborText(sheets.current, pos.x, pos.y);
+        let values: string[] | undefined;
+        try {
+          values = await quadraticCore.neighborText(sheets.current, pos.x, pos.y);
+        } catch (e) {
+          console.error(`[SuggestionDropDown] Error getting neighbor text: ${e}`);
+        }
         setList(values);
         inlineEditorMonaco.autocompleteList = values;
         if (values) {
