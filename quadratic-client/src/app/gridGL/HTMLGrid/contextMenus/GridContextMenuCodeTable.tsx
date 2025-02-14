@@ -50,9 +50,9 @@ export function ContextMenuCodeTableItems({ showUseFirstRowAsHeader }: { showUse
     <>
       <ContextMenuItemAction action={Action.RenameTable} />
       <ContextMenuItemAction action={Action.SortTable} />
+      <ContextMenuItemAction action={Action.ShowAllColumns} />
       <ContextMenuItemAction action={Action.FlattenTable} />
       <ContextMenuItemAction action={Action.GridToDataTable} />
-      <ContextMenuItemAction action={Action.ShowAllColumns} />
       <DropdownMenuSeparator />
       <ContextMenuItemAction action={Action.ToggleFirstRowAsHeaderTable} />
       <ContextMenuItemAction action={Action.ToggleTableName} />
