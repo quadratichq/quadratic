@@ -44,7 +44,6 @@ export const ContextMenuCodeTableNested = ({ isShowingColumnNames }: { isShowing
 };
 
 export function ContextMenuCodeTableItems({ showUseFirstRowAsHeader }: { showUseFirstRowAsHeader?: boolean }) {
-
   return (
     <>
       <ContextMenuItemAction action={Action.RenameTable} />

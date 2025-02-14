@@ -26,7 +26,6 @@ export function GridContextMenuCell() {
     };
   }, []);
 
-
   return (
     <ContextMenuBase>
       <ContextMenuItemAction action={Action.Cut} />
