@@ -1,5 +1,4 @@
 import { Action } from '@/app/actions/actions';
-import { debug } from '@/app/debugFlags';
 import { ContextMenuBase, ContextMenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/Base';
 import { ContextMenuCodeTableNested } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuCodeTable';
 import { DropdownMenuSeparator } from '@/shared/shadcn/ui/dropdown-menu';
@@ -18,18 +17,11 @@ export function GridContextMenuCodeTableColumn() {
       <ContextMenuItemAction action={Action.EditTableCode} />
       <ContextMenuItemAction action={Action.SortTableColumnAscending} />
       <ContextMenuItemAction action={Action.SortTableColumnDescending} />
+      <ContextMenuItemAction action={Action.HideTableColumn} />
       <DropdownMenuSeparator />
 
       {/* TODO:(ddimaria) wire this up to show appropriately nested menu for code tables */}
       <ContextMenuCodeTableNested isShowingColumnNames={true} />
-
-      {debug && (
-        <>
-          <DropdownMenuSeparator />
-          <ContextMenuItemAction action={Action.HideTableColumn} />
-          <ContextMenuItemAction action={Action.ShowAllColumns} />
-        </>
-      )}
     </ContextMenuBase>
   );
 }

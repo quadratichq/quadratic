@@ -17,6 +17,7 @@ export function GridContextMenuCodeTableCell() {
       <ContextMenuItemAction action={Action.DownloadAsCsv} />
       <DropdownMenuSeparator />
       <ContextMenuItemAction action={Action.EditTableCode} />
+      <ContextMenuItemAction action={Action.HideTableColumn} labelOverride={'Hide column'} />
       <DropdownMenuSeparator />
       {/* TODO:(ddimaria) wire this up to show appropriately nested menu for code tables */}
       <ContextMenuCodeTableNested isShowingColumnNames={false} />
