@@ -597,7 +597,7 @@ export const dataTableSpec: DataTableSpec = {
   },
   [Action.HideTableColumn]: {
     label: 'Hide',
-    labelVerbose: 'Hide column',
+    labelVerbose: 'Hide table column',
     Icon: HideIcon,
     run: hideTableColumn,
     isAvailable: () => !isCodeCell('Formula') && !isCodeCell('Python'),

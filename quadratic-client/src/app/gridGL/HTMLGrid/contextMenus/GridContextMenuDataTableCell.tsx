@@ -1,4 +1,5 @@
 import { Action } from '@/app/actions/actions';
+import { dataTableSpec } from '@/app/actions/dataTableSpec';
 import { contextMenuAtom } from '@/app/atoms/contextMenuAtom';
 import { ContextMenuBase, ContextMenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/Base';
 import { ContextMenuDataTableNested } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuDataTable';
@@ -26,6 +27,11 @@ export function GridContextMenuDataTableCell() {
       <ContextMenuItemAction action={Action.InsertTableRowAbove} />
       <ContextMenuItemAction action={Action.InsertTableRowBelow} />
       <ContextMenuItemAction action={Action.RemoveTableRow} />
+      <DropdownMenuSeparator />
+      <ContextMenuItemAction
+        action={Action.HideTableColumn}
+        labelOverride={dataTableSpec[Action.HideTableColumn].labelVerbose}
+      />
       <DropdownMenuSeparator />
       <ContextMenuDataTableNested isShowingColumnNames={isShowingColumnNames} />
     </ContextMenuBase>
