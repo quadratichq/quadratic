@@ -215,7 +215,7 @@ impl Sheet {
 
             let row_index = pos.y - data_table_pos.y - data_table.y_adjustment(true);
 
-            for cell in column.iter().skip(row_index as usize + 1) {
+            for cell in column.iter().skip((row_index + 1) as usize) {
                 if text.len() >= MAX_NEIGHBOR_TEXT {
                     break;
                 }

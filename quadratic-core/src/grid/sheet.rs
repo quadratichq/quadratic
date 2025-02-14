@@ -340,19 +340,21 @@ impl Sheet {
 
     /// Returns the format of a cell taking into account the sheet and data_tables formatting.
     pub fn cell_format(&self, pos: Pos) -> Format {
-        let mut format = Format::default();
+        let sheet_format = self.formats.try_format(pos).unwrap_or_default();
+
         if let Ok(data_table_pos) = self.first_data_table_within(pos) {
             if let Some(data_table) = self.data_table(data_table_pos) {
                 if !data_table.spill_error && !data_table.has_error() {
                     // pos relative to data table pos (top left pos)
                     let format_pos = pos.translate(-data_table_pos.x, -data_table_pos.y, 0, 0);
-                    format = data_table.get_format(format_pos);
+                    let table_format = data_table.get_format(format_pos);
+                    let combined_format = table_format.combine(&sheet_format);
+                    return combined_format;
                 }
             }
-        } else {
-            format = self.formats.try_format(pos).unwrap_or_default();
         }
-        format
+
+        sheet_format
     }
 
     /// Returns a summary of formatting in a region.

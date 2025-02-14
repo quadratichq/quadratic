@@ -150,7 +150,10 @@ impl Sheet {
                             let value = data_table.cell_value_at(pos.x as u32, pos.y as u32);
 
                             if let Some(value) = value {
-                                let format = data_table.get_format(pos);
+                                let table_format = data_table.get_format(pos);
+                                let sheet_format =
+                                    self.formats.try_format(Pos { x, y }).unwrap_or_default();
+                                let combined_format = table_format.combine(&sheet_format);
 
                                 let language = if x == code_rect.min.x && y == code_rect.min.y {
                                     Some(code_cell_value.language.to_owned())
@@ -163,9 +166,14 @@ impl Sheet {
                                     _ => None,
                                 };
 
-                                cells.push(
-                                    self.get_render_cell(x, y, &value, format, language, special),
-                                );
+                                cells.push(self.get_render_cell(
+                                    x,
+                                    y,
+                                    &value,
+                                    combined_format,
+                                    language,
+                                    special,
+                                ));
                             }
                         }
                     }
