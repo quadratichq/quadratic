@@ -113,7 +113,6 @@ mod tests {
                         }
                         _ => code_cell.to_owned(),
                     };
-                    println!("code_cell: {:?}", code_cell);
 
                     grid_controller.set_code_cell(
                         sheet_pos,
@@ -147,7 +146,7 @@ mod tests {
     #[test]
     fn test_expand_code_cell() {
         let selected: Rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 2 });
-        let range: Rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 11, y: 11 });
+        let range: Rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 10, y: 10 });
         let code_1 = CodeCellValue {
             language: CodeCellLanguage::Formula,
             code: "SUM(A1)".into(),
@@ -160,12 +159,12 @@ mod tests {
             test_setup(&selected, &[], &[], &[], &[code_1.clone(), code_2.clone()]);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
-        assert_code_cell_value(&grid, sheet_id, 0, 0, "SUM(A1)");
-        assert_code_cell_value(&grid, sheet_id, 10, 0, "SUM(K1)");
-        assert_code_cell_value(&grid, sheet_id, 0, 10, "SUM(A11)");
-        assert_code_cell_value(&grid, sheet_id, 0, 1, "ABS(A2)");
-        assert_code_cell_value(&grid, sheet_id, 10, 1, "ABS(K2)");
-        assert_code_cell_value(&grid, sheet_id, 1, 9, "ABS(B10)");
+        assert_code_cell_value(&grid, sheet_id, 1, 1, "SUM(A1)");
+        assert_code_cell_value(&grid, sheet_id, 10, 1, "SUM(J1)");
+        assert_code_cell_value(&grid, sheet_id, 1, 9, "SUM(A9)");
+        assert_code_cell_value(&grid, sheet_id, 1, 2, "ABS(A2)");
+        assert_code_cell_value(&grid, sheet_id, 10, 2, "ABS(J2)");
+        assert_code_cell_value(&grid, sheet_id, 2, 10, "ABS(B10)");
     }
 
     #[test]
