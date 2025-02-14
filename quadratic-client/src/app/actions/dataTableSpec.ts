@@ -525,7 +525,7 @@ export const dataTableSpec: DataTableSpec = {
   [Action.ToggleFirstRowAsHeaderTable]: {
     label: 'Use first row as column names',
     checkbox: isFirstRowHeader,
-    isAvailable: () => !isCodeCell('Python') && isTableColumnsShowing(),
+    isAvailable: () => !isCodeCell('Python') && !isCodeCell('Formula') && isTableColumnsShowing(),
     run: toggleFirstRowAsHeader,
   },
   [Action.RenameTable]: {
@@ -659,7 +659,7 @@ export const dataTableSpec: DataTableSpec = {
   },
   [Action.ToggleTableColumns]: {
     label: 'Show column names',
-    isAvailable: () => !isCodeCell('Python'),
+    isAvailable: () => !isCodeCell('Python') && !isCodeCell('Formula'),
     checkbox: isTableColumnsShowing,
     run: toggleTableColumns,
   },
