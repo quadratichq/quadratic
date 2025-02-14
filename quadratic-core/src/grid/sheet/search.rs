@@ -254,7 +254,6 @@ impl Sheet {
         }
         text.sort();
         text.dedup();
-        dbgjs!(format!("text: {:?}", text));
         text
     }
 }
