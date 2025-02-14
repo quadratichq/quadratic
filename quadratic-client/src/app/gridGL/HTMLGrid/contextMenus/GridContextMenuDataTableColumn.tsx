@@ -23,8 +23,6 @@ export const GridContextMenuDataTableColumn = () => {
       <ContextMenuItemAction action={Action.SortTableColumnDescending} />
       <ContextMenuItemAction action={Action.HideTableColumn} />
       <DropdownMenuSeparator />
-
-      {/* TODO:(ddimaria) these aren’t showing for some reason? */}
       <ContextMenuItemAction action={Action.InsertTableColumnLeft} />
       <ContextMenuItemAction action={Action.InsertTableColumnRight} />
       <ContextMenuItemAction action={Action.RemoveTableColumn} />

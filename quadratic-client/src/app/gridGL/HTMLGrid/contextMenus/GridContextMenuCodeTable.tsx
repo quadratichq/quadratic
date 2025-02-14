@@ -44,7 +44,6 @@ export const ContextMenuCodeTableNested = ({ isShowingColumnNames }: { isShowing
 };
 
 export function ContextMenuCodeTableItems({ showUseFirstRowAsHeader }: { showUseFirstRowAsHeader?: boolean }) {
-  // TODO:(ddimaria: don't show 'use first row as...' if 'show column names' is true (see: data tables)
 
   return (
     <>

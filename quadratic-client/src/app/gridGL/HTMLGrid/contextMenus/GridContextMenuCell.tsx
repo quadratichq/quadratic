@@ -26,8 +26,6 @@ export function GridContextMenuCell() {
     };
   }, []);
 
-  // TODO:(ddimaria) Insert columns isn't showing when right-clicking a formula cell
-  // Seems to be an issue with `hasOneColumnRowSelection` which doesn't return true for a single cell if it's a formula
 
   return (
     <ContextMenuBase>
