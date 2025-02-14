@@ -47,8 +47,9 @@ fn upgrade_code_runs(
             };
 
             let column = columns
-                .get(i)
-                .ok_or_else(|| anyhow::anyhow!("Column {} not found", i))?;
+                .iter()
+                .find(|(x, _)| *x == pos.x)
+                .ok_or_else(|| anyhow::anyhow!("Column {} not found", pos.x))?;
 
             let mut is_chart_or_html = false;
             let value = if let current::CodeRunResultSchema::Ok(value) = &code_run.result {
@@ -76,40 +77,35 @@ fn upgrade_code_runs(
                 v1_8::OutputValueSchema::Single(v1_8::CellValueSchema::Blank)
             };
 
-            let data_table_name = column
-                .1
-                .iter()
-                .filter_map(|(y, value)| {
-                    if *y != pos.y {
-                        return None;
-                    }
-                    if let current::CellValueSchema::Code(code_cell) = value {
-                        let language = match code_cell.language {
-                            current::CodeCellLanguageSchema::Formula => "Formula",
-                            current::CodeCellLanguageSchema::Javascript => {
-                                if is_chart_or_html {
-                                    "Chart"
-                                } else {
-                                    "JavaScript"
-                                }
-                            }
-                            current::CodeCellLanguageSchema::Python => {
-                                if is_chart_or_html {
-                                    "Chart"
-                                } else {
-                                    "Python"
-                                }
-                            }
-                            _ => "Table1",
-                        };
-                        return Some(language);
-                    }
-                    None
-                })
-                .collect::<Vec<_>>();
+            let code =
+                column
+                    .1
+                    .iter()
+                    .find_map(|(y, value)| if *y == pos.y { Some(value) } else { None });
 
-            let data_table_name = data_table_name.first().unwrap_or(&"Table");
-            let data_table_name = format!("{}{}", data_table_name, i + 1);
+            let data_table_name = if let Some(current::CellValueSchema::Code(code_cell)) = code {
+                match code_cell.language {
+                    current::CodeCellLanguageSchema::Formula => Some("Formula"),
+                    current::CodeCellLanguageSchema::Javascript => {
+                        if is_chart_or_html {
+                            Some("Chart")
+                        } else {
+                            Some("JavaScript")
+                        }
+                    }
+                    current::CodeCellLanguageSchema::Python => {
+                        if is_chart_or_html {
+                            Some("Chart")
+                        } else {
+                            Some("Python")
+                        }
+                    }
+                    _ => Some("Table"),
+                }
+            } else {
+                Some("Table")
+            };
+            let data_table_name = format!("{}{}", data_table_name.unwrap_or("Table"), i + 1);
 
             let chart_pos = Pos { x: pos.x, y: pos.y };
             let chart_pixel_output = render_size.get(chart_pos).and_then(|render_size| {
