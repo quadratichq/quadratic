@@ -1,6 +1,6 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { drawFiniteSelection, drawInfiniteSelection } from '@/app/gridGL/UI/drawCursor';
-import type { JsCoordinate } from '@/app/quadratic-core-types';
+import type { JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { Graphics } from 'pixi.js';
 
@@ -96,8 +96,7 @@ export class UIMultiPlayerCursor extends Graphics {
           }
 
           try {
-            const infiniteRangesStringified = player.parsedSelection.getInfiniteRefRangeBounds();
-            const infiniteRanges = JSON.parse(infiniteRangesStringified);
+            const infiniteRanges: RefRangeBounds[] = player.parsedSelection.getInfiniteRefRangeBounds();
             drawInfiniteSelection({
               g: this,
               color,

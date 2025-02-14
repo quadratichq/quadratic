@@ -1,7 +1,7 @@
 use anyhow::Result;
 
 use crate::{
-    grid::{formats::SheetFormatUpdates, Format, Sheet},
+    grid::{formats::SheetFormatUpdates, CellWrap, Format, Sheet},
     Pos, Rect,
 };
 
@@ -10,7 +10,9 @@ use super::DataTable;
 impl DataTable {
     pub fn try_format(&self, pos: Pos) -> Option<Format> {
         let pos = self.get_format_pos_from_display_buffer(pos);
-        self.formats.try_format(pos)
+        let mut format = self.formats.try_format(pos)?;
+        format.wrap = format.wrap.or(Some(CellWrap::Clip));
+        Some(format)
     }
 
     pub(crate) fn get_format_pos_from_display_buffer(&self, mut pos: Pos) -> Pos {
