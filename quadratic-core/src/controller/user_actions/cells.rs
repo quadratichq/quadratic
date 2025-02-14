@@ -102,7 +102,7 @@ impl GridController {
                             if let Ok(display_column_index) = u32::try_from(display_column_index) {
                                 data_table_ops.push(Operation::InsertDataTableColumn {
                                     sheet_pos: (data_table_left, sheet_pos.sheet_id).into(),
-                                    index: display_column_index as u32,
+                                    index: display_column_index,
                                     column_header: None,
                                     values: None,
                                     swallow: true,
