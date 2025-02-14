@@ -33,15 +33,18 @@ const FUNCTION_CALL_PATTERN: &str = r"[A-Za-z_](\.?[A-Za-z_\d])*\(";
 ///
 /// TODO(ajf): remove `n` from this (was for parsing negative references)
 ///
+/// ```ignored
 /// \$?n?[a-zA-Z]+\$?n?\d+
 /// \$?        \$?            optional `$`s
 ///    n?         n?          optional `n`s
 ///      [a-zA-Z]+            letters
 ///                 \d+       digits
+/// ```
 // const A1_CELL_REFERENCE_PATTERN: &str = r"\$?n?[A-Z]+\$?n?\d+";
 const A1_CELL_REFERENCE_PATTERN: &str = r"\$?n?([a-zA-Z]+\$?n?\d*|\d+)";
 /// RC-style cell reference
 ///
+/// ```ignored
 ///                                  |                   either of ...
 /// R[\[{]-?\d+[]}](C[\[{]-?\d+[]}])?                      row reference + optional column reference
 /// R[\[{]-?\d+[]}]                                          row reference
@@ -54,6 +57,7 @@ const A1_CELL_REFERENCE_PATTERN: &str = r"\$?n?([a-zA-Z]+\$?n?\d*|\d+)";
 ///                  [\[{]     []}]                              surrounding `[]` or `{}` (allows mismatched but it's fine)
 ///                       -?\d+                                  positive or negative integer
 ///                                   C[\[{]-?\d+[]}]      just a column reference
+/// ```
 const INTERNAL_CELL_REFERENCE_PATTERN: &str = r"R[\[{]-?\d+[]}](C[\[{]-?\d+[]}])?|C[\[{]-?\d+[]}]";
 
 /// A1-style cell reference or table name.
@@ -77,36 +81,43 @@ const A1_CELL_REFERENCE_OR_TABLE_NAME_PATTERN: &str = r"[\p{Letter}\$_][\p{Lette
 
 /// Contents of the inner square brackets of a table reference.
 ///
+/// ```ignored
 ///           |                  either of ...
 /// #[a-zA-Z]*                     #header, #data, #all, #totals, etc.
 ///            ('.|[^'\[\]])*      any number of times ...
 ///               |                  either of ...
 ///             '.                     a character escaped using '.
 ///                [^'\[\]]            any character other than a single quote or square bracket
+/// ```
 const TABLE_BRACKETS_SEGMENT_CONTENTS_PATTERN: &str = r"#[a-zA-Z]*|('.|[^'\[\]])*";
 
 lazy_static! {
     /// Inner square brackets of a table reference.
     ///
+    /// ```ignored
     /// \[    \]    square brackets containing ...
     ///   ({})        contents of inner square brackets
+    /// ```
     static ref TABLE_BRACKETS_SEGMENT_PATTERN: &'static str =
         format!(r"\[({})\]", TABLE_BRACKETS_SEGMENT_CONTENTS_PATTERN).leak();
 
     /// Outermost square brackets of a table reference.
     ///
+    /// ```ignored
     /// \[                      \]    square brackets containing ...
     ///   (    |               )        either of ...
     ///    ({})                           contents of inner square brackets
     ///         (    |       )*           any of number of times, either of ...
     ///          ({})                       inner square brackets
     ///               [^\[\]]               any non-square-bracket symbol
+    /// ```
     static ref TABLE_BRACKETS_PATTERN: &'static str =
         format!(r"\[(({})|(({})|[^\[\]])*)\]", TABLE_BRACKETS_SEGMENT_CONTENTS_PATTERN, *TABLE_BRACKETS_SEGMENT_PATTERN).leak();
 }
 
 /// Floating-point or integer number, without leading sign.
 ///
+/// ```ignored
 /// (\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?
 /// (           |     )                   EITHER
 ///  \d+                                    integer part
@@ -116,6 +127,7 @@ lazy_static! {
 ///                    ([eE]        )?    optional exponent
 ///                         [+-]?           with an optional sign
 ///                              \d+        followed by some digits
+/// ```
 const NUMERIC_LITERAL_PATTERN: &str = r"(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?";
 
 /// Single-quoted string. Note that like Rust strings, this can span multiple

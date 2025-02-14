@@ -63,8 +63,8 @@ export const ContextMenuDataTableItems = ({ highlightDefault }: { highlightDefau
     <>
       <ContextMenuItemAction action={Action.RenameTable} overrideDefaultOption={highlightDefault} />
       <ContextMenuItemAction action={Action.SortTable} />
-      <ContextMenuItemAction action={Action.FlattenTable} />
       <ContextMenuItemAction action={Action.ShowAllColumns} />
+      <ContextMenuItemAction action={Action.FlattenTable} />
       <DropdownMenuSeparator />
       <ContextMenuItemAction action={Action.ToggleFirstRowAsHeaderTable} />
       <ContextMenuItemAction action={Action.ToggleTableName} />

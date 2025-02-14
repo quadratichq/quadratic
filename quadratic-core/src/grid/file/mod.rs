@@ -303,11 +303,13 @@ mod tests {
             .data_tables
             .get(&Pos { x: 1, y: 3 })
             .is_some());
-        let cell_value = imported.sheets[0].cell_value(Pos { x: 1, y: 3 }).unwrap();
+        let code_cell = imported.sheets[0]
+            .edit_code_value(Pos { x: 1, y: 3 })
+            .unwrap();
 
-        match cell_value {
-            crate::grid::CellValue::Code(formula) => {
-                assert_eq!(formula.code, "SUM(A1:A2)");
+        match code_cell.language {
+            CodeCellLanguage::Formula => {
+                assert_eq!(code_cell.code_string, "SUM(A1:A2)");
             }
             _ => panic!("Expected a formula"),
         };

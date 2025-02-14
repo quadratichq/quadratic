@@ -92,15 +92,15 @@ fn simple_parse_and_check_formula(formula_string: &str) -> bool {
 
 /// Replace internal cell references in a formula with A1 notation.
 ///
-/// TODO: remove this
-///
 /// # Example
-/// ```rust
-/// use quadratic_core::{formulas::replace_internal_cell_references, Pos};
 ///
-/// let pos = Pos { x: 1, y: 0 };
-/// let replaced = replace_internal_cell_references("SUM(R[1]C[0])", pos);
-/// assert_eq!(replaced, "SUM(A1)");
+/// ```rust
+/// use quadratic_core::{Pos, a1::A1Context, formulas::replace_internal_cell_references, grid::{Grid, SheetId}};
+///
+/// let g = Grid::new();
+/// let pos = Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id);
+/// let replaced = replace_internal_cell_references("SUM(R{3}C[1])", &g.a1_context(), pos);
+/// assert_eq!(replaced, "SUM(B$3)");
 /// ```
 pub fn replace_internal_cell_references(source: &str, ctx: &A1Context, pos: SheetPos) -> String {
     let replace_fn = |range_ref: SheetCellRefRange| range_ref.to_a1_string(None, ctx, false);
@@ -110,15 +110,15 @@ pub fn replace_internal_cell_references(source: &str, ctx: &A1Context, pos: Shee
 /// Replace A1 notation in a formula with internal cell references (RC
 /// notation).
 ///
-/// TODO: remove this
-///
 /// # Example
-/// ```rust
-/// use quadratic_core::{formulas::replace_a1_notation, Pos};
 ///
-/// let pos = Pos { x: 1, y: 0 };
-/// let replaced = replace_a1_notation("SUM(A1)", pos);
-/// assert_eq!(replaced, "SUM(R[1]C[0])");
+/// ```rust
+/// use quadratic_core::{Pos, a1::A1Context, formulas::replace_a1_notation, grid::{Grid, SheetId}};
+///
+/// let g = Grid::new();
+/// let pos = Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id);
+/// let replaced = replace_a1_notation("SUM(B$3)", &g.a1_context(), pos);
+/// assert_eq!(replaced, "SUM(R{3}C[1])");
 /// ```
 pub fn replace_a1_notation(source: &str, ctx: &A1Context, pos: SheetPos) -> String {
     let replace_fn = |range_ref: SheetCellRefRange| {
@@ -130,8 +130,6 @@ pub fn replace_a1_notation(source: &str, ctx: &A1Context, pos: SheetPos) -> Stri
 /// Replace all cell references with internal cell references (RC notation) by
 /// applying the function `replace_x_fn` to X coordinates and `replace_y_fn` to
 /// Y coordinates.
-///
-/// TODO: remove this
 pub fn replace_cell_references_with(
     source: &str,
     ctx: &A1Context,

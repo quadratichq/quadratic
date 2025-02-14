@@ -140,7 +140,6 @@ impl CellRefRangeEnd {
                 row_str
                     .parse()
                     .ok()
-                    .filter(|&y| y > 0)
                     .ok_or_else(|| A1Error::InvalidRow(row_str.to_owned()))?,
             ),
         };
@@ -453,8 +452,6 @@ mod tests {
     #[test]
     fn test_parse_invalid_cell_ref_range_end_start() {
         assert!(CellRefRangeEnd::parse_start("$", None).is_err());
-        assert!(CellRefRangeEnd::parse_start("A0", None).is_err());
-        assert!(CellRefRangeEnd::parse_start("0", None).is_err());
         assert!(CellRefRangeEnd::parse_start("$A$", None).is_err());
         assert!(CellRefRangeEnd::parse_start("", None).is_ok());
     }
@@ -462,8 +459,6 @@ mod tests {
     #[test]
     fn test_parse_invalid_cell_ref_range_end_end() {
         assert!(CellRefRangeEnd::parse_end("$", None).is_err());
-        assert!(CellRefRangeEnd::parse_end("A0", None).is_err());
-        assert!(CellRefRangeEnd::parse_end("0", None).is_err());
         assert!(CellRefRangeEnd::parse_end("$A$", None).is_err());
         assert!(CellRefRangeEnd::parse_end("", None).is_ok());
     }
