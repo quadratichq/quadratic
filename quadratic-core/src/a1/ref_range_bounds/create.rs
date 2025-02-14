@@ -154,7 +154,7 @@ mod tests {
     #[test]
     fn test_new_relative_row() {
         let range = RefRangeBounds::new_relative_row(5);
-        assert_eq!(range.to_string(), "A5:5");
+        assert_eq!(range.to_string(), "5:5");
     }
 
     #[test]
@@ -174,7 +174,7 @@ mod tests {
 
         // Test same row case
         let range = RefRangeBounds::new_relative_row_range(3, 3);
-        assert_eq!(range.to_string(), "A3:3");
+        assert_eq!(range.to_string(), "3:3");
     }
 
     #[test]

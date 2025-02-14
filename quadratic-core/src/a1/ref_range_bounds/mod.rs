@@ -49,11 +49,6 @@ impl fmt::Display for RefRangeBounds {
                 write!(f, "A")?;
                 self.start.row.fmt_as_row(f)?;
                 write!(f, ":")?;
-            } else if self.start.row() == self.end.row() {
-                write!(f, "A")?;
-                self.start.row.fmt_as_row(f)?;
-                write!(f, ":")?;
-                self.start.row.fmt_as_row(f)?;
             } else {
                 self.start.row.fmt_as_row(f)?;
                 write!(f, ":")?;
@@ -137,8 +132,6 @@ impl RefRangeBounds {
                 && self.start.col.coord == 1
             {
                 format!("R{start_row}:")
-            } else if self.start.row == self.end.row {
-                format!("R{start_row}:R{end_row}")
             } else {
                 format!("R{start_row}:R{end_row}")
             }
@@ -219,7 +212,7 @@ mod tests {
     #[test]
     fn test_display_row_range() {
         let range = RefRangeBounds::new_infinite_row(1);
-        assert_eq!(range.to_string(), "A1:1");
+        assert_eq!(range.to_string(), "1:1");
 
         let range = RefRangeBounds::new_infinite_rows(1, 2);
         assert_eq!(range.to_string(), "1:2");
