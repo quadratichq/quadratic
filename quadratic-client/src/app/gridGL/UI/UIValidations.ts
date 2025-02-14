@@ -57,8 +57,7 @@ export class UIValidations extends Container<SpecialSprite> {
 
       try {
         const jsSelection = A1SelectionToJsSelection(v.selection);
-        const infiniteRangesStringified = jsSelection.getInfiniteRefRangeBounds();
-        const infiniteRanges: RefRangeBounds[] = JSON.parse(infiniteRangesStringified);
+        const infiniteRanges: RefRangeBounds[] = jsSelection.getInfiniteRefRangeBounds();
         infiniteRanges.forEach((range) => this.drawInfiniteRange(range, type));
       } catch (e) {
         console.log('UIValidations.ts: Error drawing infinite range', e);
