@@ -3,7 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { BedrockRuntimeClient, ConverseCommand, ConverseStreamCommand } from '@aws-sdk/client-bedrock-runtime';
 import { type Response } from 'express';
 import { getModelOptions, isBedrockAnthropicModel } from 'quadratic-shared/ai/helpers/model.helper';
-import type { AIMessagePrompt, AIRequestBody, BedrockModel } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIRequestBody, BedrockModel, ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
 import { AWS_S3_ACCESS_KEY_ID, AWS_S3_REGION, AWS_S3_SECRET_ACCESS_KEY } from '../../env-vars';
 import { getAnthropicApiArgs, parseAnthropicResponse, parseAnthropicStream } from '../helpers/anthropic.helper';
 import { getBedrockApiArgs, parseBedrockResponse, parseBedrockStream } from '../helpers/bedrock.helper';
@@ -25,7 +25,7 @@ export const handleBedrockRequest = async (
   model: BedrockModel,
   args: Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'source' | 'model'>,
   response: Response
-): Promise<AIMessagePrompt | undefined> => {
+): Promise<ParsedAIResponse | undefined> => {
   const { stream, temperature, max_tokens } = getModelOptions(model, args);
 
   if (isBedrockAnthropicModel(model)) {
@@ -47,8 +47,8 @@ export const handleBedrockRequest = async (
         response.setHeader('Cache-Control', 'no-cache');
         response.setHeader('Connection', 'keep-alive');
 
-        const responseMessage = await parseAnthropicStream(chunks, response, model);
-        return responseMessage;
+        const parsedResponse = await parseAnthropicStream(chunks, response, model);
+        return parsedResponse;
       } catch (error: any) {
         if (!response.headersSent) {
           if (error instanceof Anthropic.APIError) {
@@ -74,8 +74,8 @@ export const handleBedrockRequest = async (
           tool_choice,
         });
 
-        const responseMessage = parseAnthropicResponse(result, response, model);
-        return responseMessage;
+        const parsedResponse = parseAnthropicResponse(result, response, model);
+        return parsedResponse;
       } catch (error: any) {
         if (error instanceof Anthropic.APIError) {
           response.status(error.status ?? 400).json(error.message);
@@ -108,8 +108,8 @@ export const handleBedrockRequest = async (
         response.setHeader('Cache-Control', 'no-cache');
         response.setHeader('Connection', 'keep-alive');
 
-        const responseMessage = await parseBedrockStream(chunks, response, model);
-        return responseMessage;
+        const parsedResponse = await parseBedrockStream(chunks, response, model);
+        return parsedResponse;
       } catch (error: any) {
         if (!response.headersSent) {
           if (error.response) {
@@ -138,8 +138,8 @@ export const handleBedrockRequest = async (
         });
 
         const result = await bedrock.send(command);
-        const responseMessage = parseBedrockResponse(result.output, response, model);
-        return responseMessage;
+        const parsedResponse = parseBedrockResponse(result, response, model);
+        return parsedResponse;
       } catch (error: any) {
         if (error.response) {
           response.status(error.response.status).json(error.response.data);

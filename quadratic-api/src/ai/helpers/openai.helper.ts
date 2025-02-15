@@ -5,7 +5,13 @@ import type { Stream } from 'openai/streaming';
 import { getSystemPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { AIMessagePrompt, AIRequestHelperArgs, OpenAIModel } from 'quadratic-shared/typesAndSchemasAI';
+import type {
+  AIMessagePrompt,
+  AIRequestHelperArgs,
+  AIUsage,
+  OpenAIModel,
+  ParsedAIResponse,
+} from 'quadratic-shared/typesAndSchemasAI';
 
 export function getOpenAIApiArgs(args: AIRequestHelperArgs): {
   messages: ChatCompletionMessageParam[];
@@ -107,7 +113,7 @@ export async function parseOpenAIStream(
   chunks: Stream<OpenAI.Chat.Completions.ChatCompletionChunk>,
   response: Response,
   model: OpenAIModel
-) {
+): Promise<ParsedAIResponse> {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: '',
@@ -116,7 +122,21 @@ export async function parseOpenAIStream(
     model,
   };
 
+  const usage: AIUsage = {
+    inputTokens: 0,
+    outputTokens: 0,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+  };
+
   for await (const chunk of chunks) {
+    if (chunk.usage) {
+      usage.inputTokens = Math.max(usage.inputTokens, chunk.usage.prompt_tokens);
+      usage.outputTokens = Math.max(usage.outputTokens, chunk.usage.completion_tokens);
+      usage.cacheReadTokens = Math.max(usage.cacheReadTokens, chunk.usage.prompt_tokens_details?.cached_tokens ?? 0);
+      usage.inputTokens -= usage.cacheReadTokens;
+    }
+
     if (!response.writableEnded) {
       if (chunk.choices && chunk.choices[0] && chunk.choices[0].delta) {
         // text delta
@@ -187,14 +207,14 @@ export async function parseOpenAIStream(
     response.end();
   }
 
-  return responseMessage;
+  return { responseMessage, usage };
 }
 
 export function parseOpenAIResponse(
   result: OpenAI.Chat.Completions.ChatCompletion,
   response: Response,
   model: OpenAIModel
-): AIMessagePrompt {
+): ParsedAIResponse {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: '',
@@ -240,5 +260,13 @@ export function parseOpenAIResponse(
 
   response.json(responseMessage);
 
-  return responseMessage;
+  const cacheReadTokens = result.usage?.prompt_tokens_details?.cached_tokens ?? 0;
+  const usage: AIUsage = {
+    inputTokens: (result.usage?.prompt_tokens ?? 0) - cacheReadTokens,
+    outputTokens: result.usage?.completion_tokens ?? 0,
+    cacheReadTokens,
+    cacheWriteTokens: 0,
+  };
+
+  return { responseMessage, usage };
 }

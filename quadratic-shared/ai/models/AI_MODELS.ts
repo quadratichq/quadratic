@@ -1,21 +1,13 @@
-import type { AIModel, AIProviders } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIModel, AIModelOptions } from 'quadratic-shared/typesAndSchemasAI';
 
 export const DEFAULT_MODEL: AIModel = 'anthropic.claude-3-5-sonnet-20241022-v2:0';
-export const DEFAULT_GET_CHAT_NAME_MODEL: AIModel = 'anthropic.claude-3-5-haiku-20241022-v1:0';
+export const DEFAULT_GET_CHAT_NAME_MODEL: AIModel = 'anthropic.claude-3-haiku-20240307-v1:0';
 
 // updating this will force the model to be reset to the default model in local storage
 export const DEFAULT_MODEL_VERSION = 2;
 
 export const MODEL_OPTIONS: {
-  [key in AIModel]: {
-    displayName: string;
-    temperature: number;
-    max_tokens: number;
-    canStream: boolean;
-    canStreamWithToolCalls: boolean;
-    enabled: boolean;
-    provider: AIProviders;
-  };
+  [key in AIModel]: AIModelOptions;
 } = {
   'gpt-4o-2024-11-20': {
     displayName: 'OpenAI: GPT-4o',
@@ -75,6 +67,15 @@ export const MODEL_OPTIONS: {
     displayName: 'Bedrock: Claude 3.5 Haiku',
     temperature: 0,
     max_tokens: 8192,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: false,
+    provider: 'bedrock-anthropic',
+  },
+  'anthropic.claude-3-haiku-20240307-v1:0': {
+    displayName: 'Bedrock: Claude 3 Haiku',
+    temperature: 0,
+    max_tokens: 4096,
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: false,

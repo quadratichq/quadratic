@@ -27,6 +27,7 @@ import type {
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 
+const USE_STREAM = true;
 const MAX_TOOL_CALL_ITERATIONS = 25;
 
 export type SubmitAIAnalystPromptArgs = {
@@ -165,7 +166,7 @@ export function useSubmitAIAnalystPrompt() {
             source: 'AIAnalyst',
             model,
             messages: updatedMessages,
-            useStream: true,
+            useStream: USE_STREAM,
             useTools: true,
             useToolsPrompt: true,
             language: undefined,
@@ -215,7 +216,7 @@ export function useSubmitAIAnalystPrompt() {
               source: 'AIAnalyst',
               model,
               messages: updatedMessages,
-              useStream: true,
+              useStream: USE_STREAM,
               useTools: true,
               useToolsPrompt: true,
               language: undefined,

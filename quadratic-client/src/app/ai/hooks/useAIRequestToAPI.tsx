@@ -1,6 +1,8 @@
 import { editorInteractionStateFileUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
+import { ROUTES } from '@/shared/constants/routes';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import {
   AIMessagePromptSchema,
@@ -17,6 +19,11 @@ type HandleAIPromptProps = Omit<AIRequestBody, 'fileUuid'> & {
 };
 
 export function useAIRequestToAPI() {
+  const { team } = useFileRouteLoaderData();
+  console.log('team', team.uuid);
+  const url = ROUTES.TEAM_SETTINGS(team.uuid);
+  console.log('url', url);
+
   const handleAIRequestToAPI = useRecoilCallback(
     ({ snapshot }) =>
       async ({
@@ -51,10 +58,16 @@ export function useAIRequestToAPI() {
 
           if (!response.ok) {
             const data = await response.json();
-            const error =
-              response.status === 429
-                ? 'You have exceeded the maximum number of requests. Please try again later.'
-                : `Looks like there was a problem. Error: ${data}`;
+            const error = (() => {
+              switch (response.status) {
+                case 429:
+                  return 'You have exceeded the maximum number of requests. Please try again later.';
+                case 402:
+                  return 'You have exceeded your AI message limit. Please upgrade your plan to continue.';
+                default:
+                  return `Looks like there was a problem. Error: ${data.error}`;
+              }
+            })();
             setMessages?.((prev) => [
               ...prev.slice(0, -1),
               { role: 'assistant', content: error, contextType: 'userPrompt', model, toolCalls: [] },

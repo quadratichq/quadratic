@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { Response } from 'express';
 import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
-import type { AIMessagePrompt, AIRequestHelperArgs, AnthropicModel } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIRequestHelperArgs, AnthropicModel, ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
 import { ANTHROPIC_API_KEY } from '../../env-vars';
 import { getAnthropicApiArgs, parseAnthropicResponse, parseAnthropicStream } from '../helpers/anthropic.helper';
 
@@ -13,7 +13,7 @@ export const handleAnthropicRequest = async (
   model: AnthropicModel,
   args: AIRequestHelperArgs,
   response: Response
-): Promise<AIMessagePrompt | undefined> => {
+): Promise<ParsedAIResponse | undefined> => {
   const { system, messages, tools, tool_choice } = getAnthropicApiArgs(args);
   const { stream, temperature, max_tokens } = getModelOptions(model, args);
 
@@ -34,8 +34,8 @@ export const handleAnthropicRequest = async (
       response.setHeader('Cache-Control', 'no-cache');
       response.setHeader('Connection', 'keep-alive');
 
-      const responseMessage = await parseAnthropicStream(chunks, response, model);
-      return responseMessage;
+      const parsedResponse = await parseAnthropicStream(chunks, response, model);
+      return parsedResponse;
     } catch (error: any) {
       if (!response.headersSent) {
         if (error instanceof Anthropic.APIError) {
@@ -62,8 +62,8 @@ export const handleAnthropicRequest = async (
         tool_choice,
       });
 
-      const responseMessage = parseAnthropicResponse(result, response, model);
-      return responseMessage;
+      const parsedResponse = parseAnthropicResponse(result, response, model);
+      return parsedResponse;
     } catch (error: any) {
       if (error instanceof Anthropic.APIError) {
         response.status(error.status ?? 400).json(error.message);

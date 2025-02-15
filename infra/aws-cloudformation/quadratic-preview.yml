@@ -139,6 +139,9 @@ Resources:
           ANTHROPIC_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/ANTHROPIC_API_KEY" --with-decryption --query "Parameter.Value" --output text)
           EXA_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/EXA_API_KEY" --with-decryption --query "Parameter.Value" --output text)
 
+          # stripe 
+          STRIPE_SECRET_KEY=$(aws ssm get-parameter --name "/quadratic-development/STRIPE_SECRET_KEY" --with-decryption --query "Parameter.Value" --output text)
+
           # aws ecr
           ECR_URL=${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
           IMAGE_TAG=${ImageTag}
