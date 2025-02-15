@@ -29,8 +29,8 @@ export function GridFileInput() {
 
         if (files) {
           handleFileImport({
-            files,
-            sheetId: sheets.sheet.id,
+            files: Array.from(files),
+            sheetId: sheets.current,
             insertAt: { x: sheets.sheet.cursor.position.x, y: sheets.sheet.cursor.position.y },
             cursor: sheets.getCursorPosition(),
             teamUuid,

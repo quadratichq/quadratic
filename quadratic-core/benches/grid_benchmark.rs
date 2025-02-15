@@ -1,9 +1,9 @@
 use criterion::{criterion_group, criterion_main, Bencher, Criterion};
-use quadratic_core::controller::operations::clipboard::PasteSpecial;
+use quadratic_core::controller::operations::clipboard::{ClipboardOperation, PasteSpecial};
 use quadratic_core::controller::GridController;
 use quadratic_core::grid::js_types::JsClipboard;
 use quadratic_core::grid::{CellAlign, Grid};
-use quadratic_core::{A1Selection, Pos, Rect, SheetRect};
+use quadratic_core::{a1::A1Selection, Pos, Rect, SheetRect};
 use std::time::Duration;
 
 criterion_group!(benches, criterion_benchmark);
@@ -58,7 +58,10 @@ fn criterion_benchmark(c: &mut Criterion) {
 
             let sheet = gc.try_sheet(sheet_id).unwrap();
             let JsClipboard { plain_text, html } = sheet
-                .copy_to_clipboard(&A1Selection::from_rect(sheet_rect))
+                .copy_to_clipboard(
+                    &A1Selection::from_rect(sheet_rect),
+                    ClipboardOperation::Copy,
+                )
                 .unwrap();
 
             let pos = Pos { x: 10000, y: 10000 };
@@ -84,7 +87,10 @@ fn criterion_benchmark(c: &mut Criterion) {
 
             let sheet = gc.try_sheet(sheet_id).unwrap();
             let JsClipboard { plain_text, html } = sheet
-                .copy_to_clipboard(&A1Selection::from_rect(sheet_rect))
+                .copy_to_clipboard(
+                    &A1Selection::from_rect(sheet_rect),
+                    ClipboardOperation::Copy,
+                )
                 .unwrap();
 
             let pos = Pos { x: 10000, y: 10000 };
@@ -108,7 +114,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     //             max: Pos { x: 1000, y: 1000 },
     //         };
     //         let pos = Pos { x: 10000, y: 10000 };
-    //         let contents = gc.copy_to_clipboard(sheet_id, rect);
+    //         let contents = gc.copy_to_clipboard(sheet_id, rect, true);
     //         gc.paste_from_clipboard(sheet_id, pos, Some(contents.0), Some(contents.1), None);
     //     });
     // });
@@ -341,6 +347,8 @@ fn criterion_benchmark(c: &mut Criterion) {
                     "smallpop.csv",
                     pos,
                     None,
+                    Some(b','),
+                    Some(false),
                 );
             },
             criterion::BatchSize::SmallInput,

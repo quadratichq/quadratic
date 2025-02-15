@@ -5,7 +5,6 @@
 }
 
 .html-cell {
-  background: white;
   position: absolute;
   box-sizing: border-box;
   pointer-events: none;
@@ -13,6 +12,7 @@
 
 .html-cell-iframe {
   margin: 0;
+  overflow: hidden;
 }
 
 .html-resize-control-right,
@@ -26,23 +26,27 @@
 .html-resize-control-right {
   position: absolute;
   width: 5px;
-  height: calc(100% + 2px);
-  top: -1px;
-  right: -6px;
+  height: 100%;
+  top: 0;
+  right: -5px;
+  pointer-events: none;
 }
 
 .html-resize-control-right-corner {
-  height: calc(100% + 7px);
+  height: calc(100% + 5px);
+  pointer-events: none;
 }
 
 .html-resize-control-bottom-corner {
   width: calc(100% + 7px);
+  pointer-events: none;
 }
 
 .html-resize-control-bottom {
   position: absolute;
   height: 5px;
-  width: calc(100% + 2px);
-  bottom: -6px;
-  left: -1px;
+  width: 100%;
+  bottom: -5px;
+  left: 0;
+  pointer-events: none;
 }

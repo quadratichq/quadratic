@@ -204,6 +204,13 @@ pub struct JsBorderHorizontal {
     pub unbounded: bool,
 }
 
+impl JsBorderHorizontal {
+    pub fn translate_in_place(&mut self, x: i64, y: i64) {
+        self.x += x;
+        self.y += y;
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, TS)]
 pub struct JsBorderVertical {
     pub color: Rgba,
@@ -214,6 +221,13 @@ pub struct JsBorderVertical {
 
     // whether there are unbounded vertical lines to the right
     pub unbounded: bool,
+}
+
+impl JsBorderVertical {
+    pub fn translate_in_place(&mut self, x: i64, y: i64) {
+        self.x += x;
+        self.y += y;
+    }
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, TS)]

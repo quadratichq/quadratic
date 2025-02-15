@@ -186,7 +186,7 @@ pub(crate) async fn serve() -> Result<()> {
                     tracing::info!(
                         r#"{{ "files_to_process_in_pubsub": "{:#?}", "last_processed_file_time": "{:#?}" }}"#,
                         stats.files_to_process_in_pubsub,
-                        stats.last_processed_file_time,
+                        stats.last_processed_file_time.unwrap_or_default(),
                     );
                 }
             }

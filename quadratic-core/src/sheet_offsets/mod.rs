@@ -100,16 +100,26 @@ impl SheetOffsets {
         self.column_widths.get_size(x)
     }
 
+    /// Gets the sum of the widths of a range of columns.
+    pub fn total_columns_width(&self, from: i64, to: i64) -> f64 {
+        (from..=to).map(|i| self.column_width(i)).sum()
+    }
+
+    /// Gets the sum of the heights of a range of rows.
+    pub fn total_rows_height(&self, from: i64, to: i64) -> f64 {
+        (from..=to).map(|i| self.row_height(i)).sum()
+    }
+
     pub fn row_height(&self, y: i64) -> f64 {
         self.row_heights.get_size(y)
     }
 
     /// gets the column index from an x-coordinate on the screen
-    pub fn column_from_x(&mut self, x: f64) -> (i64, f64) {
+    pub fn column_from_x(&self, x: f64) -> (i64, f64) {
         self.column_widths.find_offset(x)
     }
     /// gets the column index from an x-coordinate on the screen
-    pub fn row_from_y(&mut self, y: f64) -> (i64, f64) {
+    pub fn row_from_y(&self, y: f64) -> (i64, f64) {
         self.row_heights.find_offset(y)
     }
 
@@ -284,6 +294,14 @@ impl SheetOffsets {
         self.row_heights.delete(row)
     }
 
+    /// Calculates the grid width and height for a given grid position and pixel size.
+    pub fn calculate_grid_size(&self, pos: Pos, width: f32, height: f32) -> (u32, u32) {
+        let start = self.cell_offsets(pos.x, pos.y);
+        let (end_x, _) = self.column_from_x(start.x + width as f64);
+        let (end_y, _) = self.row_from_y(start.y + height as f64);
+        ((end_x - pos.x + 1) as u32, (end_y - pos.y + 1) as u32)
+    }
+
     /// Returns the default column width and row height.
     pub fn defaults(&self) -> (f64, f64) {
         (self.column_width(0), self.row_height(0))
@@ -291,11 +309,12 @@ impl SheetOffsets {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod test {
     use super::*;
 
     use crate::Rect;
+
+    use crate::Pos;
 
     #[test]
     fn test_screen_rect_cell_offsets() {
@@ -337,5 +356,35 @@ mod test {
     fn test_defaults() {
         let sheet = super::SheetOffsets::default();
         assert_eq!(sheet.defaults(), (100.0, 21.0));
+    }
+
+    #[test]
+    fn calculate_grid_size() {
+        let sheet = super::SheetOffsets::default();
+        let (width, height) = sheet.calculate_grid_size(Pos { x: 1, y: 1 }, 100.0, 21.0);
+        assert_eq!(width, 2);
+        assert_eq!(height, 2);
+    }
+
+    #[test]
+    fn test_total_widths_heights() {
+        let sheet = SheetOffsets::default();
+        let (default_col, default_row) = sheet.defaults();
+
+        // Test total width for a range of columns
+        assert_eq!(sheet.total_columns_width(1, 3), default_col * 3.0);
+        assert_eq!(sheet.total_columns_width(1, 1), default_col);
+
+        // Test total height for a range of rows
+        assert_eq!(sheet.total_rows_height(1, 3), default_row * 3.0);
+        assert_eq!(sheet.total_rows_height(1, 1), default_row);
+
+        // Test with modified sizes
+        let mut sheet = SheetOffsets::default();
+        sheet.set_column_width(2, 150.0);
+        sheet.set_row_height(2, 30.0);
+
+        assert_eq!(sheet.total_columns_width(1, 3), default_col * 2.0 + 150.0);
+        assert_eq!(sheet.total_rows_height(1, 3), default_row * 2.0 + 30.0);
     }
 }

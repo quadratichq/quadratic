@@ -1,5 +1,5 @@
-import { JsCoordinate } from '@/app/quadratic-core-types';
-import { Rectangle } from 'pixi.js';
+import type { JsCoordinate } from '@/app/quadratic-core-types';
+import type { Rectangle } from 'pixi.js';
 
 export interface Link {
   pos: JsCoordinate;

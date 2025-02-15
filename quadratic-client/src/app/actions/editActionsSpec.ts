@@ -1,6 +1,6 @@
 import { isAvailableBecauseCanEditFile } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
-import { ActionSpecRecord } from '@/app/actions/actionsSpec';
+import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { events } from '@/app/events/events';
 import {
   copySelectionToPNG,
@@ -12,6 +12,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { downloadFile } from '@/app/helpers/downloadFileInBrowser';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -141,10 +142,14 @@ export const editActionsSpec: EditActionSpec = {
     labelVerbose: 'Download selection as CSV',
     Icon: CsvIcon,
     run: async () => {
-      // Convert ISO timestamp to a string without colons or dots
-      // (since those aren't valid in filenames on some OSes)
-      const timestamp = new Date().toISOString().replace(/:|\./g, '-');
-      const fileName = `quadratic-csv-export-${timestamp}`;
+      // use table name if available, otherwise use timestamp
+      let fileName = sheets.sheet.cursor.getSingleTableSelection();
+      if (!fileName) {
+        // Convert ISO timestamp to a string without colons or dots
+        // (since those aren't valid in filenames on some OSes)
+        const timestamp = new Date().toISOString().replace(/:|\./g, '-');
+        fileName = `quadratic-csv-export-${timestamp}`;
+      }
       downloadFile(fileName, await quadraticCore.exportCsvSelection(sheets.getRustSelection()), 'text/plain', 'csv');
     },
   },
@@ -165,25 +170,24 @@ export const editActionsSpec: EditActionSpec = {
     run: () => {
       if (!inlineEditorHandler.isEditingFormula()) {
         const { x, y } = sheets.sheet.cursor.position;
-        quadraticCore.getCodeCell(sheets.sheet.id, x, y).then((code) => {
-          if (code) {
+        const table = pixiApp.cellsSheet().tables.getTableFromTableCell(x, y);
+        if (table) {
+          doubleClickCell({
+            column: x,
+            row: y,
+            cell: '',
+          });
+        } else {
+          quadraticCore.getEditCell(sheets.current, x, y).then((cell) => {
             doubleClickCell({
-              column: Number(code.x),
-              row: Number(code.y),
-              language: code.language,
-              cell: '',
+              column: x,
+              row: y,
+              cell,
+              cursorMode: cell ? CursorMode.Edit : CursorMode.Enter,
             });
-          } else {
-            quadraticCore.getEditCell(sheets.sheet.id, x, y).then((cell) => {
-              doubleClickCell({
-                column: x,
-                row: y,
-                cell,
-                cursorMode: cell ? CursorMode.Edit : CursorMode.Enter,
-              });
-            });
-          }
-        });
+          });
+        }
+
         return true;
       }
     },
@@ -193,21 +197,19 @@ export const editActionsSpec: EditActionSpec = {
     run: () => {
       if (!inlineEditorHandler.isEditingFormula()) {
         const { x, y } = sheets.sheet.cursor.position;
-        quadraticCore.getCodeCell(sheets.sheet.id, x, y).then((code) => {
-          if (code) {
-            doubleClickCell({
-              column: Number(code.x),
-              row: Number(code.y),
-              language: code.language,
-              cell: '',
-              cursorMode: CursorMode.Edit,
-            });
-          } else {
-            quadraticCore.getEditCell(sheets.sheet.id, x, y).then((cell) => {
-              doubleClickCell({ column: x, row: y, cell, cursorMode: CursorMode.Edit });
-            });
-          }
-        });
+        const table = pixiApp.cellsSheet().tables.getTableFromTableCell(x, y);
+        if (table) {
+          doubleClickCell({
+            column: x,
+            row: y,
+            cell: '',
+            cursorMode: CursorMode.Edit,
+          });
+        } else {
+          quadraticCore.getEditCell(sheets.current, x, y).then((cell) => {
+            doubleClickCell({ column: x, row: y, cell, cursorMode: CursorMode.Edit });
+          });
+        }
         return true;
       }
     },

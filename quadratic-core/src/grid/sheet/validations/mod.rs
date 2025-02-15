@@ -7,7 +7,9 @@ use uuid::Uuid;
 use validation::{Validation, ValidationDisplay, ValidationDisplaySheet};
 
 use crate::{
-    controller::operations::operation::Operation, grid::js_types::JsRenderCellSpecial, A1Selection,
+    a1::{A1Context, A1Selection},
+    controller::operations::operation::Operation,
+    grid::js_types::JsRenderCellSpecial,
     Pos, Rect,
 };
 
@@ -74,11 +76,11 @@ impl Validations {
     }
 
     /// Gets the JsRenderCellSpecial for a cell based on Validation.
-    pub fn render_special_pos(&self, pos: Pos) -> Option<JsRenderCellSpecial> {
+    pub fn render_special_pos(&self, pos: Pos, context: &A1Context) -> Option<JsRenderCellSpecial> {
         let mut checkbox = false;
         let mut list = false;
         for v in &self.validations {
-            if v.selection.might_contain_pos(pos) {
+            if v.selection.might_contain_pos(pos, context) {
                 match v.rule {
                     validation_rules::ValidationRule::List(ref validation_list) => {
                         if validation_list.drop_down {
@@ -121,7 +123,7 @@ impl Validations {
             v.selection.ranges.iter().for_each(|range| {
                 if !range.is_finite() {
                     displays.push(ValidationDisplay {
-                        range: *range,
+                        range: range.clone(),
                         checkbox: v.rule.is_logical(),
                         list: v.rule.is_list(),
                     });
@@ -148,15 +150,15 @@ impl Validations {
     }
 
     /// Validates a pos in the sheet. Returns any failing Validation.
-    pub fn validate(&self, sheet: &Sheet, pos: Pos) -> Option<&Validation> {
+    pub fn validate(&self, sheet: &Sheet, pos: Pos, context: &A1Context) -> Option<&Validation> {
         self.validations.iter().rev().find(|v| {
-            v.selection.might_contain_pos(pos) && !v.rule.validate(sheet, sheet.cell_value_ref(pos))
+            v.selection.might_contain_pos(pos, context)
+                && !v.rule.validate(sheet, sheet.cell_value_ref(pos))
         })
     }
 
-    /// Returns validations that intersect with a rect. Note: this only checks
-    /// Selection.rects; it ignore Selection.all, rows, and columns.
-    pub fn in_rect(&self, rect: Rect) -> Vec<&Validation> {
+    /// Returns validations that intersect with a rect.
+    pub fn in_rect(&self, rect: Rect, context: &A1Context) -> Vec<&Validation> {
         self.validations
             .iter()
             .filter(|validation| {
@@ -164,16 +166,16 @@ impl Validations {
                     .selection
                     .ranges
                     .iter()
-                    .any(|range| range.is_finite() && range.might_intersect_rect(rect))
+                    .any(|range| range.is_finite() && range.might_intersect_rect(rect, context))
             })
             .collect()
     }
 
     /// Gets a validation from a position
-    pub fn get_validation_from_pos(&self, pos: Pos) -> Option<&Validation> {
+    pub fn get_validation_from_pos(&self, pos: Pos, context: &A1Context) -> Option<&Validation> {
         self.validations
             .iter()
-            .find(|v| v.selection.might_contain_pos(pos))
+            .find(|v| v.selection.might_contain_pos(pos, context))
     }
 }
 
@@ -181,7 +183,7 @@ impl Validations {
 mod tests {
     use validation_rules::{validation_logical::ValidationLogical, ValidationRule};
 
-    use crate::{grid::SheetId, CellRefRange, SheetRect};
+    use crate::{a1::CellRefRange, grid::SheetId, SheetRect};
 
     use super::*;
 
@@ -200,6 +202,7 @@ mod tests {
 
     #[test]
     fn validation_rect() {
+        let context = A1Context::default();
         let mut validations = Validations::default();
 
         let validation = create_validation_rect(0, 0, 5, 5);
@@ -215,7 +218,7 @@ mod tests {
             }
         );
         assert_eq!(
-            validations.render_special_pos((0, 0).into()),
+            validations.render_special_pos((0, 0).into(), &context),
             Some(JsRenderCellSpecial::Checkbox)
         );
 
@@ -231,7 +234,10 @@ mod tests {
                 validation: validation.clone()
             }
         );
-        assert_eq!(validations.render_special_pos((0, 0).into()), None);
+        assert_eq!(
+            validations.render_special_pos((0, 0).into(), &context),
+            None
+        );
     }
 
     #[test]
@@ -269,7 +275,7 @@ mod tests {
             })
         );
         assert_eq!(
-            validations.render_special_pos(pos![A1]),
+            validations.render_special_pos(pos![A1], &A1Context::default()),
             Some(JsRenderCellSpecial::Checkbox)
         );
     }
@@ -321,7 +327,7 @@ mod tests {
             ]
         );
         assert_eq!(
-            validations.render_special_pos((1, 1).into()),
+            validations.render_special_pos((1, 1).into(), &A1Context::default()),
             Some(JsRenderCellSpecial::Checkbox)
         );
     }
@@ -373,7 +379,7 @@ mod tests {
             ]
         );
         assert_eq!(
-            validations.render_special_pos((1, 1).into()),
+            validations.render_special_pos((1, 1).into(), &A1Context::default()),
             Some(JsRenderCellSpecial::Checkbox)
         );
     }
@@ -413,26 +419,37 @@ mod tests {
 
     #[test]
     fn render_special_pos() {
+        let context = A1Context::default();
         let mut validations = Validations::default();
         let v = create_validation_rect(0, 0, 1, 1);
         validations.set(v.clone());
         assert_eq!(
-            validations.render_special_pos((0, 0).into()),
+            validations.render_special_pos((0, 0).into(), &context),
             Some(JsRenderCellSpecial::Checkbox)
         );
         assert_eq!(
-            validations.render_special_pos((0, 0).into()),
+            validations.render_special_pos((0, 0).into(), &context),
             Some(JsRenderCellSpecial::Checkbox)
         );
-        assert_eq!(validations.render_special_pos((2, 2).into()), None);
+        assert_eq!(
+            validations.render_special_pos((2, 2).into(), &context),
+            None
+        );
     }
 
     #[test]
     fn get_validation_from_pos() {
+        let context = A1Context::default();
         let mut validations = Validations::default();
         let v = create_validation_rect(0, 0, 1, 1);
         validations.set(v.clone());
-        assert_eq!(validations.get_validation_from_pos((0, 0).into()), Some(&v));
-        assert_eq!(validations.get_validation_from_pos((2, 2).into()), None);
+        assert_eq!(
+            validations.get_validation_from_pos((0, 0).into(), &context),
+            Some(&v)
+        );
+        assert_eq!(
+            validations.get_validation_from_pos((2, 2).into(), &context),
+            None
+        );
     }
 }

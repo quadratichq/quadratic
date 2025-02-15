@@ -9,13 +9,13 @@ export const Toolbar = () => {
 
   return (
     <div className="hidden h-8 flex-shrink-0 select-none justify-between border-b border-border md:flex">
-      <div className="w-24 flex-shrink-0 border-r border-border md:w-40">
+      <div className="w-32 flex-shrink-0 border-r border-border xl:w-40">
         <CursorPosition />
       </div>
       <div className="no-scrollbar flex flex-grow items-stretch overflow-y-hidden overflow-x-scroll lg:justify-center">
         {permissions.includes('FILE_EDIT') && <FormattingBar />}
       </div>
-      <div className="flex items-center justify-end lg:w-40">
+      <div className="flex w-32 items-center justify-end xl:w-40">
         <ZoomMenu />
       </div>
     </div>

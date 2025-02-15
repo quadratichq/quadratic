@@ -1,11 +1,12 @@
 import { Action } from '@/app/actions/actions';
 import { aiAnalystAbortControllerAtom, aiAnalystLoadingAtom, showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
-import { AIUserMessageForm, AIUserMessageFormWrapperProps } from '@/app/ui/components/AIUserMessageForm';
+import type { AIUserMessageFormWrapperProps } from '@/app/ui/components/AIUserMessageForm';
+import { AIUserMessageForm } from '@/app/ui/components/AIUserMessageForm';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import mixpanel from 'mixpanel-browser';
-import { Context } from 'quadratic-shared/typesAndSchemasAI';
+import type { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { forwardRef, useState } from 'react';
 import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
 

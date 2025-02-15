@@ -34,7 +34,6 @@ impl Sheet {
 
     pub fn get_cells_response(&self, rect: Rect) -> Vec<JsGetCellResponse> {
         let mut response = vec![];
-
         for y in rect.y_range() {
             for x in rect.x_range() {
                 if let Some(cell) = self.display_value(Pos { x, y }) {
@@ -76,7 +75,13 @@ impl Sheet {
                         let cell_value = self.cell_value(pos).unwrap_or(CellValue::Blank);
 
                         match (include_code, &cell_value) {
-                            (true, CellValue::Code(_)) => cell_value,
+                            (
+                                true,
+                                CellValue::Code(_)
+                                | CellValue::Import(_)
+                                | CellValue::Image(_)
+                                | CellValue::Html(_),
+                            ) => cell_value,
                             (_, _) => self.display_value(pos).unwrap_or(CellValue::Blank),
                         }
                     })
@@ -155,7 +160,7 @@ impl Sheet {
         }
 
         // then check code runs
-        for (pos, code_run) in &self.code_runs {
+        for (pos, code_run) in &self.data_tables {
             // once we reach the code_pos, no later code runs can be the cause of the spill error
             if pos == &code_pos {
                 break;
@@ -180,10 +185,8 @@ mod tests {
         CellValue, Pos, Rect, SheetPos,
     };
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_has_cell_values_in_rect() {
         let mut sheet = Sheet::test();
         let rect = Rect::from_numbers(0, 0, 10, 10);
@@ -194,7 +197,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn get_cells_response() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
@@ -274,7 +276,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_find_spill_error_reasons() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -308,7 +309,7 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        let run = sheet.code_run(Pos { x: 0, y: 0 }).unwrap();
+        let run = sheet.data_table(Pos { x: 0, y: 0 }).unwrap();
         assert!(run.spill_error);
         let reasons = sheet.find_spill_error_reasons(
             &run.output_rect(Pos { x: 0, y: 0 }, true),
@@ -320,7 +321,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn set_cell_values() {
         let mut sheet = Sheet::test();
         let rect = Rect::from_numbers(0, 0, 2, 2);

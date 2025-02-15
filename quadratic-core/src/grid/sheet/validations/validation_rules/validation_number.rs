@@ -61,12 +61,10 @@ impl ValidationNumber {
 #[cfg(test)]
 mod tests {
     use bigdecimal::BigDecimal;
-    use serial_test::parallel;
 
     use super::*;
 
     #[test]
-    #[parallel]
     fn validate_number_ignore_blank() {
         let rule = ValidationNumber {
             ignore_blank: true,
@@ -83,7 +81,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn validate_number_less_than() {
         let rule = ValidationNumber {
             ranges: vec![NumberRange::Range(None, Some(9f64))],
@@ -96,7 +93,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn validate_number_greater_than() {
         let rule = ValidationNumber {
             ranges: vec![NumberRange::Range(Some(9f64), None)],
@@ -108,7 +104,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn validate_number_equal_to() {
         let rule = ValidationNumber {
             ranges: vec![NumberRange::Equal(vec![9f64, -10f64])],
@@ -121,7 +116,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn validate_number_not_equal_to() {
         let rule = ValidationNumber {
             ranges: vec![NumberRange::NotEqual(vec![9f64, -10f64])],
@@ -134,7 +128,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn validate_ranges() {
         let rule = ValidationNumber {
             ranges: vec![

@@ -15,8 +15,8 @@ pub(crate) struct StatsResponse {
     pub(crate) last_processed_file_time: String,
     pub(crate) last_processed_file_elapsed: String,
     pub(crate) files_to_process_in_pubsub: u64,
-    pub(crate) last_processed_transaction_time: String,
-    pub(crate) last_processed_transaction_elapsed: String,
+    pub(crate) last_truncated_transaction_time: String,
+    pub(crate) last_truncated_transaction_elapsed: String,
     pub(crate) channels_to_truncate_in_pubsub: u64,
 }
 
@@ -32,8 +32,8 @@ impl From<&Stats> for StatsResponse {
             last_processed_file_time: to_rfc3339(stats.last_processed_file_time),
             last_processed_file_elapsed: last_processed_file_elapsed,
             files_to_process_in_pubsub: stats.files_to_process_in_pubsub,
-            last_processed_transaction_time: to_rfc3339(stats.last_truncated_transaction_time),
-            last_processed_transaction_elapsed: last_processed_transaction_elapsed,
+            last_truncated_transaction_time: to_rfc3339(stats.last_truncated_transaction_time),
+            last_truncated_transaction_elapsed: last_processed_transaction_elapsed,
             channels_to_truncate_in_pubsub: stats.channels_to_truncate_in_pubsub,
         }
     }

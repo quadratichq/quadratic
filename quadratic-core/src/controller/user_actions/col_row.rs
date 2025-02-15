@@ -73,7 +73,6 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::parallel;
 
     use crate::{
         grid::{formats::Format, CodeCellLanguage, CodeCellValue},
@@ -83,7 +82,6 @@ mod tests {
     use super::*;
 
     #[test]
-    #[parallel]
     fn delete_row_undo_code() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
@@ -122,14 +120,13 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn delete_row_undo_values_code() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_cell_values(
             SheetPos::new(sheet_id, 1, 1),
-            vec![vec!["1"], vec!["2"], vec!["3"]],
+            vec![vec!["1".into()], vec!["2".into()], vec!["3".into()]],
             None,
         );
 
@@ -174,7 +171,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn column_insert_formatting_after() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
@@ -233,7 +229,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn column_insert_formatting_before() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
@@ -297,7 +292,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn row_insert_formatting_after() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
@@ -361,7 +355,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn row_insert_formatting_before() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];

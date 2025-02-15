@@ -1,26 +1,30 @@
-import { type ConverseOutput, type ConverseStreamOutput } from '@aws-sdk/client-bedrock-runtime';
+import {
+  type ConverseOutput,
+  type ConverseStreamOutput,
+  type Message,
+  type SystemContentBlock,
+  type Tool,
+  type ToolChoice,
+} from '@aws-sdk/client-bedrock-runtime';
 import type { Response } from 'express';
 import { getSystemPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type {
-  AIMessagePrompt,
-  AIRequestHelperArgs,
-  BedrockModel,
-  BedrockPromptMessage,
-  BedrockRequestBody,
-  BedrockTool,
-  BedrockToolChoice,
-} from 'quadratic-shared/typesAndSchemasAI';
+import type { AIMessagePrompt, AIRequestHelperArgs, BedrockModel } from 'quadratic-shared/typesAndSchemasAI';
 
-export function getBedrockApiArgs(args: AIRequestHelperArgs): Omit<BedrockRequestBody, 'model'> {
+export function getBedrockApiArgs(args: AIRequestHelperArgs): {
+  system: SystemContentBlock[] | undefined;
+  messages: Message[];
+  tools: Tool[] | undefined;
+  tool_choice: ToolChoice | undefined;
+} {
   const { messages: chatMessages, useTools, toolName } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
-  const system = systemMessages.map((message) => ({ text: message }));
-  const messages: BedrockPromptMessage[] = promptMessages.map<BedrockPromptMessage>((message) => {
+  const system: SystemContentBlock[] = systemMessages.map((message) => ({ text: message }));
+  const messages: Message[] = promptMessages.map<Message>((message) => {
     if (message.role === 'assistant' && message.contextType === 'userPrompt' && message.toolCalls.length > 0) {
-      const bedrockMessage: BedrockPromptMessage = {
+      const bedrockMessage: Message = {
         role: message.role,
         content: [
           ...(message.content
@@ -41,7 +45,7 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): Omit<BedrockReques
       };
       return bedrockMessage;
     } else if (message.role === 'user' && message.contextType === 'toolResult') {
-      const bedrockMessage: BedrockPromptMessage = {
+      const bedrockMessage: Message = {
         role: message.role,
         content: [
           ...message.content.map((toolResult) => ({
@@ -59,7 +63,7 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): Omit<BedrockReques
       };
       return bedrockMessage;
     } else {
-      const bedrockMessage: BedrockPromptMessage = {
+      const bedrockMessage: Message = {
         role: message.role,
         content: [
           {
@@ -77,7 +81,7 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): Omit<BedrockReques
   return { system, messages, tools, tool_choice };
 }
 
-function getBedrockTools(useTools?: boolean, toolName?: AITool): BedrockTool[] | undefined {
+function getBedrockTools(useTools?: boolean, toolName?: AITool): Tool[] | undefined {
   if (!useTools) {
     return undefined;
   }
@@ -89,8 +93,8 @@ function getBedrockTools(useTools?: boolean, toolName?: AITool): BedrockTool[] |
     return name === toolName;
   });
 
-  const bedrockTools: BedrockTool[] = tools.map(
-    ([name, { description, parameters: input_schema }]): BedrockTool => ({
+  const bedrockTools: Tool[] = tools.map(
+    ([name, { description, parameters: input_schema }]): Tool => ({
       toolSpec: {
         name,
         description,
@@ -104,12 +108,12 @@ function getBedrockTools(useTools?: boolean, toolName?: AITool): BedrockTool[] |
   return bedrockTools;
 }
 
-function getBedrockToolChoice(useTools?: boolean, name?: AITool): BedrockToolChoice | undefined {
+function getBedrockToolChoice(useTools?: boolean, name?: AITool): ToolChoice | undefined {
   if (!useTools) {
     return undefined;
   }
 
-  const toolChoice: BedrockToolChoice = name === undefined ? { auto: {} } : { tool: { name } };
+  const toolChoice: ToolChoice = name === undefined ? { auto: {} } : { tool: { name } };
   return toolChoice;
 }
 
@@ -154,7 +158,7 @@ export async function parseBedrockStream(
           responseMessage.content += chunk.contentBlockDelta.delta.text;
         }
         // tool use delta
-        else if ('toolUse' in chunk.contentBlockDelta.delta) {
+        if ('toolUse' in chunk.contentBlockDelta.delta) {
           const toolCalls = [...responseMessage.toolCalls];
           const toolCall = {
             ...(toolCalls.pop() ?? {
@@ -205,7 +209,9 @@ export function parseBedrockResponse(
   result?.message?.content?.forEach((contentBlock) => {
     if ('text' in contentBlock) {
       responseMessage.content += contentBlock.text;
-    } else if ('toolUse' in contentBlock) {
+    }
+
+    if ('toolUse' in contentBlock) {
       responseMessage.toolCalls = [
         ...responseMessage.toolCalls,
         {
@@ -215,7 +221,9 @@ export function parseBedrockResponse(
           loading: false,
         },
       ];
-    } else {
+    }
+
+    if (!('text' in contentBlock) && !('toolUse' in contentBlock)) {
       console.error(`Invalid AI response: ${JSON.stringify(contentBlock)}`);
     }
   });

@@ -3,8 +3,8 @@
  */
 
 import { bigIntReplacer } from '@/app/bigint';
-import { RectangleLike } from '@/app/grid/sheet/SheetCursor';
-import { Pos, Rect, SheetRect } from '@/app/quadratic-core-types';
+import type { RectangleLike } from '@/app/grid/sheet/SheetCursor';
+import type { Pos, Rect, SheetPos, SheetRect } from '@/app/quadratic-core-types';
 import { Point, Rectangle } from 'pixi.js';
 
 export function rectangleToRect(rectangle: Rectangle | RectangleLike): Rect {
@@ -74,4 +74,13 @@ export function rectToSheetRect(rectangle: Rectangle, sheetId: string): SheetRec
     max: { x: BigInt(rectangle.x + rectangle.width - 1), y: BigInt(rectangle.y + rectangle.height - 1) },
     sheet_id: { id: sheetId },
   };
+}
+
+export function toSheetPos(x: number, y: number, sheetId: string): string {
+  const sheetPos: SheetPos = {
+    x: BigInt(x),
+    y: BigInt(y),
+    sheet_id: { id: sheetId },
+  };
+  return JSON.stringify(sheetPos, bigIntReplacer);
 }

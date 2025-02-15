@@ -1,26 +1,23 @@
 import type { Response } from 'express';
 import type OpenAI from 'openai';
+import type { ChatCompletionMessageParam, ChatCompletionTool, ChatCompletionToolChoiceOption } from 'openai/resources';
 import type { Stream } from 'openai/streaming';
 import { getSystemPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type {
-  AIMessagePrompt,
-  AIRequestHelperArgs,
-  OpenAIModel,
-  OpenAIPromptMessage,
-  OpenAIRequestBody,
-  OpenAITool,
-  OpenAIToolChoice,
-} from 'quadratic-shared/typesAndSchemasAI';
+import type { AIMessagePrompt, AIRequestHelperArgs, OpenAIModel } from 'quadratic-shared/typesAndSchemasAI';
 
-export function getOpenAIApiArgs(args: AIRequestHelperArgs): Omit<OpenAIRequestBody, 'model'> {
+export function getOpenAIApiArgs(args: AIRequestHelperArgs): {
+  messages: ChatCompletionMessageParam[];
+  tools: ChatCompletionTool[] | undefined;
+  tool_choice: ChatCompletionToolChoiceOption | undefined;
+} {
   const { messages: chatMessages, useTools, toolName } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
-  const messages: OpenAIPromptMessage[] = promptMessages.reduce<OpenAIPromptMessage[]>((acc, message) => {
+  const messages: ChatCompletionMessageParam[] = promptMessages.reduce<ChatCompletionMessageParam[]>((acc, message) => {
     if (message.role === 'assistant' && message.contextType === 'userPrompt' && message.toolCalls.length > 0) {
-      const openaiMessages: OpenAIPromptMessage[] = [
+      const openaiMessages: ChatCompletionMessageParam[] = [
         ...acc,
         {
           role: message.role,
@@ -37,7 +34,7 @@ export function getOpenAIApiArgs(args: AIRequestHelperArgs): Omit<OpenAIRequestB
       ];
       return openaiMessages;
     } else if (message.role === 'user' && message.contextType === 'toolResult') {
-      const openaiMessages: OpenAIPromptMessage[] = [
+      const openaiMessages: ChatCompletionMessageParam[] = [
         ...acc,
         ...message.content.map((toolResult) => ({
           role: 'tool' as const,
@@ -47,7 +44,7 @@ export function getOpenAIApiArgs(args: AIRequestHelperArgs): Omit<OpenAIRequestB
       ];
       return openaiMessages;
     } else {
-      const openaiMessages: OpenAIPromptMessage[] = [
+      const openaiMessages: ChatCompletionMessageParam[] = [
         ...acc,
         {
           role: message.role,
@@ -58,7 +55,7 @@ export function getOpenAIApiArgs(args: AIRequestHelperArgs): Omit<OpenAIRequestB
     }
   }, []);
 
-  const openaiMessages: OpenAIPromptMessage[] = [
+  const openaiMessages: ChatCompletionMessageParam[] = [
     { role: 'system', content: systemMessages.map((message) => ({ type: 'text', text: message })) },
     ...messages,
   ];
@@ -69,7 +66,7 @@ export function getOpenAIApiArgs(args: AIRequestHelperArgs): Omit<OpenAIRequestB
   return { messages: openaiMessages, tools, tool_choice };
 }
 
-function getOpenAITools(useTools?: boolean, toolName?: AITool): OpenAITool[] | undefined {
+function getOpenAITools(useTools?: boolean, toolName?: AITool): ChatCompletionTool[] | undefined {
   if (!useTools) {
     return undefined;
   }
@@ -81,8 +78,8 @@ function getOpenAITools(useTools?: boolean, toolName?: AITool): OpenAITool[] | u
     return name === toolName;
   });
 
-  const openaiTools: OpenAITool[] = tools.map(
-    ([name, { description, parameters }]): OpenAITool => ({
+  const openaiTools: ChatCompletionTool[] = tools.map(
+    ([name, { description, parameters }]): ChatCompletionTool => ({
       type: 'function' as const,
       function: {
         name,
@@ -96,12 +93,13 @@ function getOpenAITools(useTools?: boolean, toolName?: AITool): OpenAITool[] | u
   return openaiTools;
 }
 
-function getOpenAIToolChoice(useTools?: boolean, name?: AITool): OpenAIToolChoice | undefined {
+function getOpenAIToolChoice(useTools?: boolean, name?: AITool): ChatCompletionToolChoiceOption | undefined {
   if (!useTools) {
     return undefined;
   }
 
-  const toolChoice: OpenAIToolChoice = name === undefined ? 'auto' : { type: 'function', function: { name } };
+  const toolChoice: ChatCompletionToolChoiceOption =
+    name === undefined ? 'auto' : { type: 'function', function: { name } };
   return toolChoice;
 }
 
@@ -207,9 +205,15 @@ export function parseOpenAIResponse(
 
   const message = result.choices[0].message;
 
+  if (message.refusal) {
+    throw new Error(`Invalid AI response: ${message.refusal}`);
+  }
+
   if (message.content) {
     responseMessage.content += message.content;
-  } else if (message.tool_calls) {
+  }
+
+  if (message.tool_calls) {
     message.tool_calls.forEach((toolCall) => {
       switch (toolCall.type) {
         case 'function':
@@ -227,8 +231,6 @@ export function parseOpenAIResponse(
           throw new Error(`Invalid AI response: ${toolCall}`);
       }
     });
-  } else if (message.refusal) {
-    throw new Error(`Invalid AI response: ${message.refusal}`);
   }
 
   if (!responseMessage.content) {

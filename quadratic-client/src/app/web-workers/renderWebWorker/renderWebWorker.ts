@@ -1,15 +1,15 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Rectangle } from 'pixi.js';
-import { prepareBitmapFontInformation } from './renderBitmapFonts';
-import {
+import { getCSSVariableTint } from '@/app/helpers/convertColor';
+import { prepareBitmapFontInformation } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
+import type {
   ClientRenderInit,
   ClientRenderMessage,
-  ClientRenderViewport,
   RenderClientColumnMaxWidth,
   RenderClientMessage,
   RenderClientRowMaxHeight,
-} from './renderClientMessages';
+} from '@/app/web-workers/renderWebWorker/renderClientMessages';
+import type { Rectangle } from 'pixi.js';
 
 class RenderWebWorker {
   private worker?: Worker;
@@ -32,6 +32,7 @@ class RenderWebWorker {
     const message: ClientRenderInit = {
       type: 'clientRenderInit',
       bitmapFonts: prepareBitmapFontInformation(),
+      tableColumnHeaderForeground: getCSSVariableTint('table-column-header-foreground'),
     };
     this.worker.postMessage(message, [coreMessagePort]);
     if (debugWebWorkers) console.log('[renderWebWorker] initialized.');
@@ -95,8 +96,7 @@ class RenderWebWorker {
   }
 
   updateViewport(sheetId: string, bounds: Rectangle, scale: number) {
-    const message: ClientRenderViewport = { type: 'clientRenderViewport', sheetId, bounds, scale };
-    this.send(message);
+    this.send({ type: 'clientRenderViewport', sheetId, bounds, scale });
   }
 
   updateSheetOffsetsTransient(sheetId: string, column: number | null, row: number | null, delta: number) {

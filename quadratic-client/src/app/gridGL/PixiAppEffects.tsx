@@ -1,5 +1,6 @@
 import { aiAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { codeEditorAtom, codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
+import { contextMenuAtom } from '@/app/atoms/contextMenuAtom';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { gridPanModeAtom } from '@/app/atoms/gridPanModeAtom';
 import { gridSettingsAtom, presentationModeAtom, showHeadingsAtom } from '@/app/atoms/gridSettingsAtom';
@@ -67,6 +68,11 @@ export const PixiAppEffects = () => {
   useEffect(() => {
     pixiAppSettings.updateGridPanMode(gridPanMode, setGridPanMode);
   }, [gridPanMode, setGridPanMode]);
+
+  const [contextMenu, setContextMenu] = useRecoilState(contextMenuAtom);
+  useEffect(() => {
+    pixiAppSettings.updateContextMenu(contextMenu, setContextMenu);
+  }, [contextMenu, setContextMenu]);
 
   const [aiAnalystState, setAIAnalystState] = useRecoilState(aiAnalystAtom);
   const { submitPrompt } = useSubmitAIAnalystPrompt();

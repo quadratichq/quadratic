@@ -1,5 +1,5 @@
-import { ValidationData } from './useValidationData';
-import { ValidationMessage } from './ValidationMessage';
+import type { ValidationData } from '@/app/ui/menus/Validations/Validation/useValidationData';
+import { ValidationMessage } from '@/app/ui/menus/Validations/Validation/ValidationMessage';
 
 interface Props {
   validationData: ValidationData;

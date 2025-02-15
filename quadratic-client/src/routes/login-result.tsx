@@ -16,9 +16,25 @@ export const loader = async () => {
       // Special case for first-time users
       if (userCreated) {
         try {
+          // Read UTM cookie if it exists
+          const utmCookie = document.cookie.split('; ').find((row) => row.startsWith('quadratic_utm='));
+
+          let utmData = {};
+          if (utmCookie) {
+            try {
+              utmData = JSON.parse(decodeURIComponent(utmCookie.split('=')[1]));
+            } catch (e) {
+              console.error('Failed to parse UTM cookie:', e);
+            }
+          }
+
+          // remove null values
+          utmData = Object.fromEntries(Object.entries(utmData).filter(([_, value]) => value !== null));
+
           // @ts-expect-error
           window.dataLayer.push({
             event: 'registrationComplete',
+            ...utmData,
           });
         } catch (e) {
           // No google analytics available

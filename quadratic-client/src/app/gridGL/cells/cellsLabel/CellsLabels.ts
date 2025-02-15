@@ -10,13 +10,13 @@ import { debugShowCellsHashBoxes, debugShowCellsSheetCulling } from '@/app/debug
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { CellsTextHash } from '@/app/gridGL/cells/cellsLabel/CellsTextHash';
-import { CellsSheet, ErrorMarker, ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
+import type { CellsSheet, ErrorMarker, ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Link } from '@/app/gridGL/types/links';
-import { JsValidationWarning } from '@/app/quadratic-core-types';
-import {
+import type { Link } from '@/app/gridGL/types/links';
+import type { JsValidationWarning } from '@/app/quadratic-core-types';
+import type {
   RenderClientCellsTextHashClear,
   RenderClientLabelMeshEntry,
 } from '@/app/web-workers/renderWebWorker/renderClientMessages';
@@ -100,10 +100,29 @@ export class CellsLabels extends Container {
     return false;
   };
 
+  // Returns whether the rect has content by checking CellsTextHashContent. If
+  // ignore is defined, we ignore content that overlaps any of the rectangles.
+  hasRectangle(rect: Rectangle, ignore?: Rectangle[]): undefined | Point[] {
+    const overlaps: Point[] = [];
+    for (let column = rect.x; column < rect.x + rect.width; column++) {
+      for (let row = rect.y; row < rect.y + rect.height; row++) {
+        if (this.hasCell(column, row)) {
+          if (ignore && ignore.some((r) => intersects.rectangleRectangle(r, new Rectangle(column, row, 1, 1)))) {
+            continue;
+          }
+          overlaps.push(new Point(column, row));
+        }
+      }
+    }
+    if (overlaps.length > 0) {
+      return overlaps;
+    }
+  }
+
   // Returns whether the rect has content by checking CellsTextHashContent.
   hasCellInRect = (rect: Rectangle): boolean => {
-    for (let column = rect.x; column <= rect.x + rect.width; column++) {
-      for (let row = rect.y; row <= rect.y + rect.height; row++) {
+    for (let column = rect.x; column < rect.x + rect.width; column++) {
+      for (let row = rect.y; row < rect.y + rect.height; row++) {
         if (this.hasCell(column, row)) {
           return true;
         }
@@ -130,7 +149,7 @@ export class CellsLabels extends Container {
       cellsTextHash.finalizeLabelMeshEntries(special);
 
       // refresh viewport if necessary
-      if (sheets.sheet.id === this.cellsSheet.sheetId) {
+      if (sheets.current === this.cellsSheet.sheetId) {
         const bounds = pixiApp.viewport.getVisibleBounds();
         const hashBounds = cellsTextHash.bounds.toRectangle();
         if (hashBounds && intersects.rectangleRectangle(hashBounds, bounds)) {
@@ -219,7 +238,7 @@ export class CellsLabels extends Container {
   }
 
   private clickedToCell = (column: number, row: number, world: Point | true) => {
-    if (sheets.sheet.id !== this.sheetId) return;
+    if (sheets.current !== this.sheetId) return;
     const hash = this.getHash(column, row);
     if (hash) {
       hash.special.clickedToCell(column, row, world);

@@ -1,8 +1,8 @@
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
-import { Monaco } from '@monaco-editor/react';
-import * as monaco from 'monaco-editor';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
+import type { Monaco } from '@monaco-editor/react';
+import type * as monaco from 'monaco-editor';
 import { useEffect, useRef } from 'react';
-import { Diagnostic } from 'vscode-languageserver-types';
+import type { Diagnostic } from 'vscode-languageserver-types';
 
 export const useEditorDiagnostics = (
   isValidRef: boolean,

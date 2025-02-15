@@ -1,7 +1,9 @@
+import { getTable } from '@/app/actions/dataTableSpec';
 import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
+import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -13,10 +15,6 @@ import { isMobile } from 'react-device-detect';
 const TOP_LEFT_CORNER_THRESHOLD_SQUARED = 50;
 const BORDER_THRESHOLD = 8;
 
-// Speed when turning on the mouseEdges plugin for pixi-viewport
-const MOUSE_EDGES_SPEED = 8;
-const MOUSE_EDGES_DISTANCE = 20;
-
 interface MoveCells {
   column: number;
   row: number;
@@ -25,10 +23,12 @@ interface MoveCells {
   toColumn: number;
   toRow: number;
   offset: { x: number; y: number };
+  table?: { offsetX: number; offsetY: number };
+  original?: Rectangle;
 }
 
 export class PointerCellMoving {
-  startCell?: Point;
+  private startCell?: Point;
   movingCells?: MoveCells;
   state?: 'hover' | 'move';
 
@@ -43,49 +43,72 @@ export class PointerCellMoving {
     }
   }
 
-  findCorner(world: Point): Point {
-    return world;
-  }
-  pointerDown(event: PointerEvent): boolean {
+  private startMove = () => {
+    this.state = 'move';
+    events.emit('cellMoving', true);
+    pixiApp.viewport.enableMouseEdges();
+    htmlCellsHandler.disable();
+  };
+
+  // Starts a table move.
+  tableMove = (column: number, row: number, point: Point, width: number, height: number) => {
+    if (this.state) return false;
+    this.startCell = new Point(column, row);
+    const offset = sheets.sheet.getCellOffsets(column, row);
+    this.movingCells = {
+      column,
+      row,
+      width,
+      height,
+      toColumn: column,
+      toRow: row,
+      offset: { x: 0, y: 0 },
+      table: { offsetX: point.x - offset.x, offsetY: point.y - offset.y },
+      original: new Rectangle(column, row, width, height),
+    };
+    this.startMove();
+  };
+
+  pointerDown = (event: PointerEvent): boolean => {
     if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled || event.button === 1) return false;
 
     if (this.state === 'hover' && this.movingCells && event.button === 0) {
-      this.state = 'move';
       this.startCell = new Point(this.movingCells.column, this.movingCells.row);
-      events.emit('cellMoving', true);
-      pixiApp.viewport.mouseEdges({
-        distance: MOUSE_EDGES_DISTANCE,
-        allowButtons: true,
-        speed: MOUSE_EDGES_SPEED / pixiApp.viewport.scale.x,
-      });
+      this.startMove();
       return true;
     }
     return false;
-  }
+  };
 
-  private reset() {
+  private reset = () => {
     this.movingCells = undefined;
     if (this.state === 'move') {
       pixiApp.cellMoving.dirty = true;
       events.emit('cellMoving', false);
-      pixiApp.viewport.plugins.remove('mouse-edges');
+      pixiApp.viewport.disableMouseEdges();
     }
     this.state = undefined;
     this.startCell = undefined;
-  }
+    htmlCellsHandler.enable();
+  };
 
-  private pointerMoveMoving(world: Point) {
+  private pointerMoveMoving = (world: Point) => {
     if (this.state !== 'move' || !this.movingCells) {
       throw new Error('Expected moving to be defined in pointerMoveMoving');
     }
+    pixiApp.viewport.enableMouseEdges();
     const sheet = sheets.sheet;
-    const position = sheet.getColumnRowFromScreen(world.x, world.y);
+    const moving = this.movingCells;
+    const position = sheet.getColumnRowFromScreen(
+      world.x - (moving.table ? moving.table.offsetX : 0),
+      world.y - (moving.table ? moving.table.offsetY : 0)
+    );
     this.movingCells.toColumn = position.column + this.movingCells.offset.x;
     this.movingCells.toRow = position.row + this.movingCells.offset.y;
     pixiApp.cellMoving.dirty = true;
-  }
+  };
 
-  private moveOverlaps(world: Point): false | 'corner' | 'top' | 'bottom' | 'left' | 'right' {
+  private moveOverlaps = (world: Point): false | 'corner' | 'top' | 'bottom' | 'left' | 'right' => {
     const cursorRectangle = pixiApp.cursor.cursorRectangle;
     if (!cursorRectangle) return false;
 
@@ -145,9 +168,9 @@ export class PointerCellMoving {
     }
 
     return false;
-  }
+  };
 
-  private pointerMoveHover(world: Point): boolean {
+  private pointerMoveHover = (world: Point): boolean => {
     // we do not move if there are multiple rectangles (for now)
     const rectangle = sheets.sheet.cursor.getSingleRectangleOrCursor();
     if (!rectangle) return false;
@@ -182,9 +205,9 @@ export class PointerCellMoving {
     }
     this.reset();
     return false;
-  }
+  };
 
-  pointerMove(event: PointerEvent, world: Point): boolean {
+  pointerMove = (event: PointerEvent, world: Point): boolean => {
     if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled || event.button === 1) return false;
 
     if (this.state === 'move') {
@@ -194,9 +217,9 @@ export class PointerCellMoving {
       return this.pointerMoveHover(world);
     }
     return false;
-  }
+  };
 
-  pointerUp(): boolean {
+  pointerUp = (): boolean => {
     if (this.state === 'move') {
       if (this.startCell === undefined) {
         throw new Error('[PointerCellMoving] Expected startCell to be defined in pointerUp');
@@ -205,12 +228,21 @@ export class PointerCellMoving {
         this.movingCells &&
         (this.startCell.x !== this.movingCells.toColumn || this.startCell.y !== this.movingCells.toRow)
       ) {
+        const table = getTable();
         const rectangle = sheets.sheet.cursor.getLargestRectangle();
+
+        if (table) {
+          rectangle.x = table.x;
+          rectangle.y = table.y;
+          rectangle.width = table.w;
+          rectangle.height = table.h;
+        }
+
         quadraticCore.moveCells(
-          rectToSheetRect(rectangle, sheets.sheet.id),
+          rectToSheetRect(rectangle, sheets.current),
           this.movingCells.toColumn,
           this.movingCells.toRow,
-          sheets.sheet.id
+          sheets.current
         );
 
         const { showCodeEditor, codeCell } = pixiAppSettings.codeEditorState;
@@ -235,13 +267,13 @@ export class PointerCellMoving {
       return true;
     }
     return false;
-  }
+  };
 
-  handleEscape(): boolean {
+  handleEscape = (): boolean => {
     if (this.state === 'move') {
       this.reset();
       return true;
     }
     return false;
-  }
+  };
 }

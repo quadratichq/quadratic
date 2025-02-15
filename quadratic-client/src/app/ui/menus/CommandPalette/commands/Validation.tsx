@@ -1,5 +1,5 @@
 import { Action } from '@/app/actions/actions';
-import { CommandGroup } from '../CommandPaletteListItem';
+import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 
 export const validationCommandGroup: CommandGroup = {
   heading: 'Data validation',

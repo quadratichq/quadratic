@@ -526,7 +526,6 @@ fn first_char_of_nonempty_string(arg: &Option<Spanned<String>>) -> CodeResult<Op
 }
 
 #[cfg(test)]
-#[cfg_attr(test, serial_test::parallel)]
 mod tests {
     use crate::formulas::tests::*;
 

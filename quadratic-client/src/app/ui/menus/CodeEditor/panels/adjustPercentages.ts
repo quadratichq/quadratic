@@ -1,4 +1,4 @@
-import { SetValue } from '@/shared/hooks/useLocalStorage';
+import type { SetValue } from '@/shared/hooks/useLocalStorage';
 
 // panel percent minimum and maximum values
 export const MIN_PANEL_HEIGHT_PERCENT = 20;

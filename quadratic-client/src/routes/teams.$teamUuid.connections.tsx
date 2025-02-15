@@ -3,7 +3,8 @@ import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { Connections } from '@/shared/components/connections/Connections';
 import { ROUTES } from '@/shared/constants/routes';
-import { LoaderFunctionArgs, Navigate, useLoaderData } from 'react-router-dom';
+import type { LoaderFunctionArgs } from 'react-router-dom';
+import { Navigate, useLoaderData } from 'react-router-dom';
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const { teamUuid } = params;

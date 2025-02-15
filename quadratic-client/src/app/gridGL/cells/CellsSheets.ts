@@ -3,14 +3,15 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { SheetInfo } from '@/app/quadratic-core-types';
-import {
+import type { SheetInfo } from '@/app/quadratic-core-types';
+import type {
   RenderClientCellsTextHashClear,
   RenderClientFinalizeCellsTextHash,
   RenderClientLabelMeshEntry,
 } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { Container, Rectangle } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
+import { Container } from 'pixi.js';
 
 export class CellsSheets extends Container<CellsSheet> {
   current?: CellsSheet;
@@ -28,14 +29,16 @@ export class CellsSheets extends Container<CellsSheet> {
   }
 
   async create() {
+    this.children.forEach((child) => child.destroy());
     this.removeChildren();
     for (const sheet of sheets.sheets) {
       const child = this.addChild(new CellsSheet(sheet.id));
-      if (sheet.id === sheets.sheet.id) {
+      if (sheet.id === sheets.current) {
         this.current = child;
+        pixiApp.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
       }
     }
-    renderWebWorker.pixiIsReady(sheets.sheet.id, pixiApp.viewport.getVisibleBounds(), pixiApp.viewport.scale.x);
+    renderWebWorker.pixiIsReady(sheets.current, pixiApp.viewport.getVisibleBounds(), pixiApp.viewport.scale.x);
   }
 
   isReady(): boolean {
@@ -60,6 +63,7 @@ export class CellsSheets extends Container<CellsSheet> {
         if (this.current?.sheetId !== child?.sheetId) {
           this.current = child;
           child.show(pixiApp.viewport.getVisibleBounds());
+          pixiApp.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
         }
       } else {
         child.hide();
@@ -73,6 +77,7 @@ export class CellsSheets extends Container<CellsSheet> {
         if (this.current?.sheetId !== child?.sheetId) {
           this.current = child;
           child.show(pixiApp.viewport.getVisibleBounds());
+          pixiApp.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
         }
       } else {
         child.hide();
@@ -95,7 +100,7 @@ export class CellsSheets extends Container<CellsSheet> {
       throw new Error('Expected to find cellsSheet in cellsTextHashClear');
     }
     cellsSheet.cellsLabels.clearCellsTextHash(message);
-    if (debugShowCellsHashBoxes && sheets.sheet.id === message.sheetId) {
+    if (debugShowCellsHashBoxes && sheets.current === message.sheetId) {
       pixiApp.setViewportDirty();
     }
 
@@ -130,7 +135,7 @@ export class CellsSheets extends Container<CellsSheet> {
     const cellsSheet = this.getById(sheetId);
     if (!cellsSheet) throw new Error('Expected to find cellsSheet in adjustHeadings');
     cellsSheet.cellsLabels.adjustHeadings(column, row, delta);
-    if (sheets.sheet.id === sheetId) {
+    if (sheets.current === sheetId) {
       if (debugShowCellsHashBoxes) {
         const sheet = this.getById(sheetId);
         sheet?.show(pixiApp.viewport.getVisibleBounds());
@@ -138,7 +143,6 @@ export class CellsSheets extends Container<CellsSheet> {
       pixiApp.gridLines.dirty = true;
       pixiApp.cursor.dirty = true;
       pixiApp.headings.dirty = true;
-      this.updateCellsArray();
     }
   }
 
@@ -150,11 +154,6 @@ export class CellsSheets extends Container<CellsSheet> {
   getCellsContentMaxHeight(row: number): Promise<number> {
     if (!this.current) throw new Error('Expected current to be defined in CellsSheets.getCellsContentMaxHeight');
     return this.current.cellsLabels.getCellsContentMaxHeight(row);
-  }
-
-  updateCellsArray(): void {
-    if (!this.current) throw new Error('Expected current to be defined in CellsSheets.updateCellsArray');
-    this.current.updateCellsArray();
   }
 
   adjustOffsetsBorders(sheetId: string): void {
@@ -191,10 +190,17 @@ export class CellsSheets extends Container<CellsSheet> {
     const cellsSheet = this.current;
     if (!cellsSheet) return false;
     const cursor = sheets.sheet.cursor.position;
-    return cellsSheet.cellsArray.isCodeCell(cursor.x, cursor.y);
+    return cellsSheet.tables.isWithinCodeCell(cursor.x, cursor.y);
   }
 
-  update() {
-    this.current?.update();
+  isCursorOnCodeCellOutput(): boolean {
+    const cellsSheet = this.current;
+    if (!cellsSheet) return false;
+    const cursor = sheets.sheet.cursor.position;
+    return cellsSheet.tables.isTable(cursor.x, cursor.y);
+  }
+
+  update(dirtyViewport: boolean) {
+    this.current?.update(dirtyViewport);
   }
 }

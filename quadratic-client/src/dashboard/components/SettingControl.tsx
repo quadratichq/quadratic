@@ -1,7 +1,8 @@
 import { Label } from '@/shared/shadcn/ui/label';
 import { Switch } from '@/shared/shadcn/ui/switch';
 import { cn } from '@/shared/shadcn/utils';
-import { ReactNode, useId } from 'react';
+import type { ReactNode } from 'react';
+import { useId } from 'react';
 
 /**
  * Component that renders a preference control (a label, description, and a switch)

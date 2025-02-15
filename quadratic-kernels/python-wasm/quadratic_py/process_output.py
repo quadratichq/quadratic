@@ -14,6 +14,7 @@ def process_output_value(output_value):
     array_output = None
     output_type = type(output_value).__name__
     output_size = None
+    has_headers = False
 
     # TODO(ddimaria): figure out if we need to covert back to a list for array_output
     # We should have a single output
@@ -37,6 +38,8 @@ def process_output_value(output_value):
         output_size = (shape[1], shape[0])
         # If output_value columns is not the default (RangeIndex)
         if type(output_value.columns) != pd.core.indexes.range.RangeIndex:
+            has_headers = True
+
             # Return Column names and values
             array_output = [
                 output_value.columns.tolist()
@@ -65,7 +68,9 @@ def process_output_value(output_value):
 
     if array_output is not None:
         typed_array_output = []
-        is_2d_array = isinstance(array_output[0], list) and len(array_output[0]) > 0
+        # Check array_output is an array before accessing index 0
+        is_2d_array = (isinstance(array_output, list) and len(array_output) > 0 and
+                      isinstance(array_output[0], list) and len(array_output[0]) > 0)
 
         # insure that all rows are the same length
         if not is_2d_array:
@@ -101,12 +106,17 @@ def process_output_value(output_value):
         "output_value": output_value,
         "output_type": output_type,
         "output_size": output_size,
+        "has_headers": has_headers,
     }
 
 
 # Override the default show method for plotly figures
 def to_html_with_cdn(self):
-    html = self.to_html(include_plotlyjs="cdn", include_mathjax="cdn").replace(
+    html = self.to_html(
+        include_plotlyjs="cdn",
+        include_mathjax="cdn",
+        config={"displaylogo": False},
+    ).replace(
         ' src="https://', ' crossorigin="anonymous" src="https://'
     )
     return html

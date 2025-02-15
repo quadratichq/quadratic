@@ -1,0 +1,77 @@
+import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
+import { GridContextMenuCell } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuCell';
+import { GridContextMenuCodeTable } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuCodeTable';
+import { GridContextMenuCodeTableCell } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuCodeTableCell';
+import { GridContextMenuCodeTableChart } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuCodeTableChart';
+import { GridContextMenuCodeTableColumn } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuCodeTableColumn';
+import { GridContextMenuDataTable } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuDataTable';
+import { GridContextMenuDataTableCell } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuDataTableCell';
+import { GridContextMenuDataTableColumn } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuDataTableColumn';
+import { useRecoilValue } from 'recoil';
+
+/**
+ * Different context menus based on the current cursor selection:
+ *
+ * <GridContextMenuCell> - Cell(s) on the grid
+ * <GridContextMenuDataTable> - Data table selection
+ * <GridContextMenuDataTableColumn> - Data table column selection
+ * <GridContextMenuDataTableCell> - Data table cell that's selected
+ * <GridContextMenuCodeTable> - Code table selection
+ * <GridContextMenuCodeTableColumn> - Code table column selection
+ * <GridContextMenuCodeTableCell> - Code table cell that's selected
+ * <GridContextMenuCodeTableChart> - Chart table selection
+ */
+export const GridContextMenu = () => {
+  const contextMenu = useRecoilValue(contextMenuAtom);
+  if (contextMenu.type === ContextMenuType.Table && contextMenu.table) {
+    if (contextMenu.table.language === 'Import') {
+      return <GridContextMenuDataTable />;
+    }
+
+    // Chart
+    if (contextMenu.table.is_html) {
+      return <GridContextMenuCodeTableChart />;
+    }
+
+    // Code
+    return <GridContextMenuCodeTable />;
+
+    // TODO:(ddimaria/jimniels) How do we handle spill errors for different menus?
+  }
+
+  // It's a table column selection
+  if (contextMenu.type === ContextMenuType.TableColumn && contextMenu.table) {
+    // Data table
+    if (contextMenu.table.language === 'Import') {
+      return <GridContextMenuDataTableColumn />;
+    }
+    // Code table
+    return <GridContextMenuCodeTableColumn />;
+  }
+
+  // It's a grid selection
+  if (contextMenu.type === ContextMenuType.Grid) {
+    // Is it a cell in a table?
+    if (contextMenu.table) {
+      // Data table
+      if (contextMenu.table.language === 'Import') {
+        return <GridContextMenuDataTableCell />;
+      }
+      // Formula
+      if (contextMenu.table.language === 'Formula') {
+        return <GridContextMenuCell />;
+      }
+      // Code table
+      return <GridContextMenuCodeTableCell />;
+    }
+    // It's a grid cell
+    return <GridContextMenuCell />;
+  }
+
+  // This isn't a context menu, but more of a menu that pops up when you click 'sort' on a table
+  if (contextMenu.type === ContextMenuType.TableSort) {
+    return null;
+  }
+
+  return null;
+};

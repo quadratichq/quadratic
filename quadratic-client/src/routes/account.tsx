@@ -3,7 +3,7 @@ import { useRootRouteLoaderData } from '@/routes/_root';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Form } from 'react-router-dom';
 
 export const Component = () => {

@@ -23,7 +23,8 @@ import {
   MenubarSubTrigger,
   MenubarTrigger,
 } from '@/shared/shadcn/ui/menubar';
-import { clearRecentFiles, RECENT_FILES_KEY, RecentFile } from '@/shared/utils/updateRecentFiles';
+import type { RecentFile } from '@/shared/utils/updateRecentFiles';
+import { clearRecentFiles, RECENT_FILES_KEY } from '@/shared/utils/updateRecentFiles';
 import { useMemo } from 'react';
 import { useSubmit } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';

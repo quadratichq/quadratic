@@ -4,7 +4,7 @@ import {
   codeEditorUnsavedChangesAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { useCloseCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useCloseCodeEditor';
-import * as monaco from 'monaco-editor';
+import type * as monaco from 'monaco-editor';
 import { useEffect } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 

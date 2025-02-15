@@ -1,11 +1,11 @@
 use super::operation::Operation;
 use crate::{
+    a1::A1Selection,
     controller::GridController,
     grid::{
         formats::{FormatUpdate, SheetFormatUpdates},
         sheet::borders::BorderSelection,
     },
-    A1Selection,
 };
 
 impl GridController {
@@ -31,7 +31,6 @@ impl GridController {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::grid::{sheet::borders::BorderStyle, SheetId};
 

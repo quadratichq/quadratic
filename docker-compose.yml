@@ -51,6 +51,7 @@ services:
     image: localstack/localstack:latest
     ports:
       - "127.0.0.1:4566:4566" # LocalStack Gateway
+      # - "127.0.0.1:4567:4566"
       - "127.0.0.1:4510-4559:4510-4559"
     environment:
       # LocalStack configuration: https://docs.localstack.cloud/references/configuration/
@@ -99,8 +100,10 @@ services:
       /bin/sh -c "/client/scripts/replace_env_vars.sh && nginx -g \"daemon off;\""
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://host.docker.internal:3000/ || exit 1" ]
+      start_period: 10s
       interval: 10s
       timeout: 5s
+      retries: 10
     restart: "always"
     volumes:
       - ./docker/client:/client

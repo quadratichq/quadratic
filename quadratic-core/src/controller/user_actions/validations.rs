@@ -1,6 +1,7 @@
 use uuid::Uuid;
 
 use crate::{
+    a1::A1Selection,
     controller::{
         active_transactions::transaction_name::TransactionName, operations::operation::Operation,
         GridController,
@@ -12,7 +13,7 @@ use crate::{
         },
         SheetId,
     },
-    A1Selection, CellValue, Pos,
+    CellValue, Pos,
 };
 
 impl GridController {
@@ -69,14 +70,19 @@ impl GridController {
     }
 
     pub fn get_validation_from_pos(&self, sheet_id: SheetId, pos: Pos) -> Option<&Validation> {
-        self.try_sheet(sheet_id)
-            .and_then(|sheet| sheet.validations.get_validation_from_pos(pos))
+        self.try_sheet(sheet_id).and_then(|sheet| {
+            sheet
+                .validations
+                .get_validation_from_pos(pos, &sheet.a1_context())
+        })
     }
 
     /// Gets a list of strings for a validation list (user defined or from a selection).
     pub fn validation_list(&self, sheet_id: SheetId, x: i64, y: i64) -> Option<Vec<String>> {
         let sheet = self.try_sheet(sheet_id)?;
-        let validation = sheet.validations.get_validation_from_pos(Pos { x, y })?;
+        let validation = sheet
+            .validations
+            .get_validation_from_pos(Pos { x, y }, &sheet.a1_context())?;
         match validation.rule {
             ValidationRule::List(ref list) => list.to_drop_down(sheet),
             _ => None,
@@ -88,7 +94,9 @@ impl GridController {
     /// condition.
     pub fn validate_input(&self, sheet_id: SheetId, pos: Pos, input: &str) -> Option<Uuid> {
         let sheet = self.try_sheet(sheet_id)?;
-        let validation = sheet.validations.get_validation_from_pos(pos)?;
+        let validation = sheet
+            .validations
+            .get_validation_from_pos(pos, &sheet.a1_context())?;
         if validation.error.style != ValidationStyle::Stop {
             return None;
         }
@@ -103,7 +111,6 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::{parallel, serial};
 
     use crate::{
         grid::sheet::validations::{
@@ -120,7 +127,6 @@ mod tests {
     use super::*;
 
     #[test]
-    #[parallel]
     fn validations() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -131,7 +137,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn update_validation() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -164,7 +169,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn remove_validations() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -220,7 +224,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn get_validation_from_pos() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -249,7 +252,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn validation_list_strings() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -276,7 +278,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn validation_list_cells() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -315,7 +316,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn validate_input() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -358,7 +358,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn validate_input_logical() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

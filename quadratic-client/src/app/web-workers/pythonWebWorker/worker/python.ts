@@ -1,12 +1,18 @@
 import { debugWebWorkers } from '@/app/debugFlags';
-import { JsGetCellResponse } from '@/app/quadratic-core-types';
+import type { JsGetCellResponse } from '@/app/quadratic-core-types';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
-import { LanguageState } from '@/app/web-workers/languageTypes';
-import { CorePythonRun } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
-import { InspectPython, PythonError, PythonSuccess, outputType } from '@/app/web-workers/pythonWebWorker/pythonTypes';
+import type { LanguageState } from '@/app/web-workers/languageTypes';
+import type { CorePythonRun } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
+import type {
+  InspectPython,
+  PythonError,
+  PythonSuccess,
+  outputType,
+} from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { pythonClient } from '@/app/web-workers/pythonWebWorker/worker/pythonClient';
 import { pythonCore } from '@/app/web-workers/pythonWebWorker/worker/pythonCore';
-import { PyodideInterface, loadPyodide } from 'pyodide';
+import type { PyodideInterface } from 'pyodide';
+import { loadPyodide } from 'pyodide';
 
 const TRY_AGAIN_TIMEOUT = 500;
 const IS_TEST = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
@@ -33,7 +39,7 @@ class Python {
   private getCellsA1 = (
     a1: string,
     lineNumber?: number
-  ): { cells: JsGetCellResponse[]; x: number; y: number; w: number; h: number } | undefined => {
+  ): { cells: JsGetCellResponse[]; x: number; y: number; w: number; h: number; has_headers: boolean } | undefined => {
     if (!this.transactionId) {
       throw new Error('No transactionId in getCellsA1');
     }
@@ -262,6 +268,7 @@ class Python {
         success: false,
         std_err: String(e),
         input_python_stack_trace: String(e),
+        has_headers: false,
       };
     }
     if (pythonRun) pythonCore.sendPythonResults(message.transactionId, pythonRun);

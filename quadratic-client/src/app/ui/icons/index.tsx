@@ -1,4 +1,5 @@
-import SvgIcon, { SvgIconProps } from '@mui/material/SvgIcon';
+import type { SvgIconProps } from '@mui/material/SvgIcon';
+import SvgIcon from '@mui/material/SvgIcon';
 
 // Built on doc guidance from material UI:
 // https://mui.com/material-ui/icons/

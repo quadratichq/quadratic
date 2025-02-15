@@ -1,7 +1,7 @@
 import { authClient } from '@/auth/auth';
 import { ApiError } from '@/shared/api/fetchFromApi';
 import * as Sentry from '@sentry/react';
-import z from 'zod';
+import type z from 'zod';
 import { apiClient } from './apiClient';
 
 interface XhrRequestConfig {

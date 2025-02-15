@@ -101,7 +101,9 @@ impl Connection for MsSqlConnection {
         if let Some(username) = &self.username {
             config.authentication(AuthMethod::sql_server(
                 username,
-                self.password.as_ref().unwrap(),
+                self.password.as_deref().ok_or_else(|| {
+                    SharedError::Sql(SqlError::Connect("Password is required".into()))
+                })?,
             ));
         }
 
@@ -242,7 +244,9 @@ ORDER BY
                 ColumnData::F64(_) => convert_mssql_type::<f64, _>(column_data, ArrowType::Float64),
                 ColumnData::Numeric(_) => {
                     convert_mssql_type::<Decimal, _>(column_data, |decimal| {
-                        ArrowType::BigDecimal(BigDecimal::from_str(&decimal.to_string()).unwrap())
+                        ArrowType::BigDecimal(
+                            BigDecimal::from_str(&decimal.to_string()).unwrap_or_default(),
+                        )
                     })
                 }
                 ColumnData::Guid(_) => convert_mssql_type::<Uuid, _>(column_data, ArrowType::Uuid),

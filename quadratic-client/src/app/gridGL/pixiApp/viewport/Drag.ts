@@ -2,9 +2,11 @@
 //! dragging (zoom has different clamping).
 
 import { SCALE_OUT_OF_BOUNDS_SCROLL } from '@/app/gridGL/pixiApp/viewport/Wheel';
-import { JsCoordinate } from '@/app/quadratic-core-types';
-import { Decelerate, Plugin, Viewport } from 'pixi-viewport';
-import { InteractionEvent, Point } from 'pixi.js';
+import type { JsCoordinate } from '@/app/quadratic-core-types';
+import type { Decelerate, Viewport } from 'pixi-viewport';
+import { Plugin } from 'pixi-viewport';
+import type { InteractionEvent } from 'pixi.js';
+import { Point } from 'pixi.js';
 
 /** Options for {@link Drag}. */
 export interface IDragOptions {

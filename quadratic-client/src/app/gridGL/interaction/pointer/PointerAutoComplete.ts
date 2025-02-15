@@ -4,10 +4,11 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { JsCoordinate } from '@/app/quadratic-core-types';
+import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { Point, Rectangle } from 'pixi.js';
+import type { Point } from 'pixi.js';
+import { Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 
 export type StateVertical = 'expandDown' | 'expandUp' | 'shrink' | undefined;

@@ -1,4 +1,4 @@
-import { PythonRun } from '@/app/web-workers/pythonWebWorker/pythonTypes';
+import type { PythonRun } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 
 // mock the python output
 export const mockPythonOutput = (responses: Record<string, string>): void => {

@@ -411,14 +411,14 @@ fn get_functions() -> Vec<FormulaFunction> {
 mod tests {
     use proptest::proptest;
 
-    use crate::{formulas::tests::*, Pos};
-    use serial_test::parallel;
+    use crate::{a1::A1Context, formulas::tests::*, Pos};
 
     #[test]
-    #[parallel]
     fn test_sum() {
         let g = Grid::new();
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
+        let parse_ctx = A1Context::test(&[], &[]);
+        let pos = g.origin_in_first_sheet();
+        let mut eval_ctx = Ctx::new(&g, pos);
         assert_eq!(
             RunErrorMsg::Expected {
                 expected: "number".into(),
@@ -433,9 +433,9 @@ mod tests {
                 func_name: "SUM".into(),
                 arg_name: "numbers".into()
             },
-            parse_formula("SUM()", Pos::ORIGIN)
+            parse_formula("SUM()", &parse_ctx, pos)
                 .unwrap()
-                .eval(&mut ctx)
+                .eval(&mut eval_ctx)
                 .unwrap_err()
                 .msg,
         );
@@ -469,7 +469,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_sum_with_tuples() {
         let g = Grid::new();
         assert_eq!("10", eval_to_string(&g, "SUM(({1, 2}, {3, 4}))"));
@@ -481,7 +480,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_sumif() {
         let g = Grid::new();
         assert_eq!("15", eval_to_string(&g, "SUMIF(0..10, \"<=5\")"));
@@ -494,7 +492,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_sumifs() {
         let g = Grid::new();
         assert_eq!("15", eval_to_string(&g, "SUMIFS(0..10, 0..10, \"<=5\")"));
@@ -527,26 +524,27 @@ mod tests {
         // Test mismatched range
         assert_eq!(
             RunErrorMsg::ExactArraySizeMismatch {
-                expected: ArraySize::try_from((1, 12)).unwrap(),
-                got: ArraySize::try_from((1, 11)).unwrap(),
+                expected: ArraySize::try_from((1_i64, 12_i64)).unwrap(),
+                got: ArraySize::try_from((1_i64, 11_i64)).unwrap(),
             },
             eval_to_err(&g, "SUMIFS(0..10, 0..11, \"<=5\")").msg,
         );
     }
 
     #[test]
-    #[parallel]
     fn test_product() {
         let g = Grid::new();
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
+        let pos = g.origin_in_first_sheet();
+        let parse_ctx = A1Context::test(&[], &[]);
+        let mut eval_ctx = Ctx::new(&g, pos);
         assert_eq!(
             RunErrorMsg::MissingRequiredArgument {
                 func_name: "PRODUCT".into(),
                 arg_name: "numbers".into()
             },
-            parse_formula("PRODUCT()", Pos::ORIGIN)
+            parse_formula("PRODUCT()", &parse_ctx, pos)
                 .unwrap()
-                .eval(&mut ctx)
+                .eval(&mut eval_ctx)
                 .unwrap_err()
                 .msg,
         );
@@ -573,39 +571,38 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_abs() {
         let g = Grid::new();
+        let pos = g.origin_in_first_sheet();
         assert_eq!("10", eval_to_string(&g, "ABS(-10)"));
         assert_eq!("10", eval_to_string(&g, "ABS(10)"));
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
+        let parse_ctx = A1Context::test(&[], &[]);
+        let mut eval_ctx = Ctx::new(&g, pos);
         assert_eq!(
             RunErrorMsg::MissingRequiredArgument {
                 func_name: "ABS".into(),
                 arg_name: "number".into(),
             },
-            parse_formula("ABS()", Pos::ORIGIN)
+            parse_formula("ABS()", &parse_ctx, pos)
                 .unwrap()
-                .eval(&mut ctx)
+                .eval(&mut eval_ctx)
                 .unwrap_err()
                 .msg,
         );
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         assert_eq!(
             RunErrorMsg::TooManyArguments {
                 func_name: "ABS".into(),
                 max_arg_count: 1,
             },
-            parse_formula("ABS(16, 17)", Pos::ORIGIN)
+            parse_formula("ABS(16, 17)", &parse_ctx, pos)
                 .unwrap()
-                .eval(&mut ctx)
+                .eval(&mut eval_ctx)
                 .unwrap_err()
                 .msg,
         );
     }
 
     #[test]
-    #[parallel]
     fn test_sqrt() {
         let g = Grid::new();
         crate::util::assert_f64_approx_eq(
@@ -632,7 +629,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_ceiling() {
         let g = Grid::new();
         let test_cases = [
@@ -669,7 +665,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_floor() {
         let g = Grid::new();
         let test_cases = [
@@ -706,7 +701,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_floor_math_and_ceiling_math() {
         let g = Grid::new();
         let test_inputs = &[3.5, 2.5, 0.0, -2.5, -3.5];
@@ -736,7 +730,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_int() {
         let g = Grid::new();
         assert_eq!(
@@ -746,7 +739,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_rounding() {
         let test_values = [
             -2025.0, -10.0, -5.0, -0.8, -0.5, -0.3, 0.0, 0.3, 0.5, 0.8, 5.0, 10.0, 2025.0,
@@ -805,7 +797,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_mod() {
         let g = Grid::new();
         assert_eq!("-0.5", eval_to_string(&g, "MOD(1.5, -1)"));
@@ -816,7 +807,6 @@ mod tests {
 
     proptest! {
         #[test]
-        #[parallel]
         fn proptest_int_mod_invariant(n in -100.0..100.0_f64, d in -100.0..100.0_f64) {
             let g = Grid::new();
             crate::util::assert_f64_approx_eq(
@@ -829,7 +819,6 @@ mod tests {
 
     proptest! {
         #[test]
-        #[parallel]
         fn test_pow_log_invariant(n in -10.0..10.0_f64) {
             let g = Grid::new();
 
@@ -848,7 +837,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_pow_0_0() {
         // See https://en.wikipedia.org/wiki/Zero_to_the_power_of_zero
 
@@ -859,7 +847,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_log_errors() {
         let g = Grid::new();
         let e = RunErrorMsg::NaN;
@@ -875,7 +862,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_negative_pow() {
         let g = Grid::new();
         let e = RunErrorMsg::NaN;
@@ -894,7 +880,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_pi() {
         let g = Grid::new();
         assert!(eval_to_string(&g, "PI()").starts_with("3.14159"));
@@ -904,7 +889,7 @@ mod tests {
                 func_name: "PI".into(),
                 max_arg_count: 0,
             },
-            parse_formula("PI(16)", Pos::ORIGIN)
+            simple_parse_formula("PI(16)")
                 .unwrap()
                 .eval(&mut ctx)
                 .unwrap_err()
@@ -913,7 +898,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_tau() {
         let g = Grid::new();
         assert!(eval_to_string(&g, "TAU()").starts_with("6.283"));
@@ -923,7 +907,7 @@ mod tests {
                 func_name: "TAU".into(),
                 max_arg_count: 0,
             },
-            parse_formula("TAU(16)", Pos::ORIGIN)
+            simple_parse_formula("TAU(16)")
                 .unwrap()
                 .eval(&mut ctx)
                 .unwrap_err()

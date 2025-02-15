@@ -1,4 +1,5 @@
-use sheet::jump_cursor::JumpDirection;
+use a1::A1Selection;
+use sheet::keyboard::Direction;
 use ts_rs::TS;
 use wasm_bindgen::prelude::*;
 
@@ -73,38 +74,43 @@ impl GridController {
         }
     }
 
-    /// finds nearest column with or without content
-    #[wasm_bindgen(js_name = "findNextColumn")]
-    pub fn js_find_next_column(
+    #[wasm_bindgen(js_name = "moveCursor")]
+    pub fn js_move_cursor(
         &self,
         sheet_id: String,
-        column_start: i32,
-        row: i32,
-        reverse: bool,
-        with_content: bool,
-    ) -> Option<i32> {
-        // todo: this should have Result return type and handle no sheet found (which should not happen)
-        let sheet = self.try_sheet_from_string_id(sheet_id)?;
-        sheet
-            .find_next_column(column_start as i64, row as i64, reverse, with_content)
-            .map(|x| x as i32)
+        pos: String,
+        direction: String,
+    ) -> Result<Pos, JsValue> {
+        let sheet = self
+            .try_sheet_from_string_id(sheet_id)
+            .ok_or_else(|| JsValue::from_str("Sheet not found"))?;
+        let pos: Pos = serde_json::from_str(&pos)
+            .map_err(|e| JsValue::from_str(&format!("Invalid current position: {}", e)))?;
+        let direction: Direction = serde_json::from_str(&direction)
+            .map_err(|e| JsValue::from_str(&format!("Invalid direction: {}", e)))?;
+        Ok(sheet.move_cursor(pos, direction))
     }
 
-    /// finds nearest row with or without content
-    #[wasm_bindgen(js_name = "findNextRow")]
-    pub fn js_find_next_row(
+    #[wasm_bindgen(js_name = "jumpCursor")]
+    pub fn js_jump_cursor(
         &self,
         sheet_id: String,
-        row_start: i32,
-        column: i32,
-        reverse: bool,
-        with_content: bool,
-    ) -> Option<i32> {
-        // todo: this should have Result return type and handle no sheet found (which should not happen)
-        let sheet = self.try_sheet_from_string_id(sheet_id)?;
-        sheet
-            .find_next_row(row_start as i64, column as i64, reverse, with_content)
-            .map(|y| y as i32)
+        pos: String,
+        jump: bool,
+        direction: String,
+    ) -> Result<Pos, JsValue> {
+        let sheet = self
+            .try_sheet_from_string_id(sheet_id)
+            .ok_or_else(|| JsValue::from_str("Sheet not found"))?;
+        let pos: Pos = serde_json::from_str(&pos)
+            .map_err(|e| JsValue::from_str(&format!("Invalid current position: {}", e)))?;
+        let direction: Direction = serde_json::from_str(&direction)
+            .map_err(|e| JsValue::from_str(&format!("Invalid direction: {}", e)))?;
+        if jump {
+            Ok(sheet.jump_cursor(pos, direction))
+        } else {
+            Ok(sheet.move_cursor(pos, direction))
+        }
     }
 
     /// finds nearest column that can be used to place a rect
@@ -158,24 +164,7 @@ impl GridController {
             .try_sheet(selection.sheet_id)
             .ok_or(JsValue::UNDEFINED)?;
         let selection = sheet.finitize_selection(&selection);
-        serde_wasm_bindgen::to_value(&selection.ranges[0].to_rect()).map_err(|_| JsValue::UNDEFINED)
-    }
-
-    #[wasm_bindgen(js_name = "jumpCursor")]
-    pub fn js_jump_cursor(
-        &self,
-        sheet_id: String,
-        pos: String,
-        direction: String,
-    ) -> Result<Pos, JsValue> {
-        let sheet = self
-            .try_sheet_from_string_id(sheet_id)
-            .ok_or_else(|| JsValue::from_str("Sheet not found"))?;
-        let pos: Pos = serde_json::from_str(&pos)
-            .map_err(|e| JsValue::from_str(&format!("Invalid current position: {}", e)))?;
-        let direction: JumpDirection = serde_json::from_str(&direction)
-            .map_err(|e| JsValue::from_str(&format!("Invalid direction: {}", e)))?;
-        let next = sheet.jump_cursor(pos, direction);
-        Ok(next)
+        serde_wasm_bindgen::to_value(&selection.ranges[0].to_rect(&sheet.a1_context()))
+            .map_err(|_| JsValue::UNDEFINED)
     }
 }

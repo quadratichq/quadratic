@@ -3,7 +3,7 @@ import { focusGrid } from '@/app/helpers/focusGrid';
 import { useAfterDialogCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useAfterDialogCodeEditor';
 import { useSaveAndRunCell } from '@/app/ui/menus/CodeEditor/hooks/useSaveAndRunCell';
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
-import * as monaco from 'monaco-editor';
+import type * as monaco from 'monaco-editor';
 import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 

@@ -23,6 +23,8 @@ export default defineConfig(() => {
         server.middlewares.use((_req, res, next) => {
           res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
           res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+          res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+          res.setHeader('Access-Control-Allow-Origin', '*');
           next();
         });
       },
@@ -40,18 +42,27 @@ export default defineConfig(() => {
   }
 
   return {
+    define: {
+      global: 'globalThis',
+    },
     build: {
       outDir: '../build',
-      sourcemap: process.env.VERCEL_ENV !== 'preview' || process.env.VITEST !== 'true', // Source map generation must be turned on
+      sourcemap: process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_AUTH_TOKEN !== 'none',
     },
     publicDir: './public',
     assetsInclude: ['**/*.py'],
     server: {
       host: '0.0.0.0',
       port: 3000,
+      // uncomment once we have a way to hot reload web workers on wasm changes
+      // watch: {
+      //   ignored: [
+      //     '**/src/app/quadratic-core/**',
+      //   ],
+      // },
     },
     resolve: {
-      preserveSymlinks: process.env.VERCEL_ENV !== 'preview' || process.env.VITEST !== 'true',
+      preserveSymlinks: true,
       alias: {
         '@': path.resolve(__dirname, './src'),
       },

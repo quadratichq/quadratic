@@ -265,10 +265,8 @@ pub fn contiguous_optional_blocks<B: BlockContent>(
 #[cfg(test)]
 mod test_blocks {
     use super::*;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn idk() {
         let blocks = vec![
             Block::<SameValue<String>> {
@@ -313,7 +311,6 @@ mod test_blocks {
     }
 
     #[test]
-    #[parallel]
     fn contiguous_singles() {
         let blocks = vec![
             Block::<SameValue<String>> {

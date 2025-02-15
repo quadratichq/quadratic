@@ -49,7 +49,6 @@ impl<T: Clone> From<&Option<T>> for ClearOption<T> {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use super::*;
 

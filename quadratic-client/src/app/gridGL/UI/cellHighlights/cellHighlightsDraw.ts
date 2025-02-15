@@ -2,11 +2,16 @@ import { DASHED, DASHED_THICKNESS, generatedTextures } from '@/app/gridGL/genera
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { getRangeScreenRectangleFromCellRefRange } from '@/app/gridGL/helpers/selection';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { CURSOR_THICKNESS, FILL_ALPHA } from '@/app/gridGL/UI/Cursor';
-import { CellRefRange } from '@/app/quadratic-core-types';
-import { Graphics } from 'pixi.js';
+import { CURSOR_THICKNESS, FILL_SELECTION_ALPHA } from '@/app/gridGL/UI/Cursor';
+import type { RefRangeBounds } from '@/app/quadratic-core-types';
+import type { Graphics } from 'pixi.js';
 
-export function drawDashedRectangle(options: { g: Graphics; color: number; isSelected: boolean; range: CellRefRange }) {
+export function drawDashedRectangle(options: {
+  g: Graphics;
+  color: number;
+  isSelected: boolean;
+  range: RefRangeBounds;
+}) {
   const { g, color, isSelected, range } = options;
 
   const selectionRect = getRangeScreenRectangleFromCellRefRange(range);
@@ -49,7 +54,7 @@ export function drawDashedRectangle(options: { g: Graphics; color: number; isSel
       alignment: 0,
     });
     g.moveTo(selectionRect.left, selectionRect.top);
-    g.beginFill(color, FILL_ALPHA);
+    g.beginFill(color, FILL_SELECTION_ALPHA);
     g.drawRect(
       selectionRect.left,
       selectionRect.top,
@@ -67,7 +72,7 @@ export function drawDashedRectangleMarching(options: {
   noFill?: boolean;
   alpha?: number;
   offset?: number;
-  range: CellRefRange;
+  range: RefRangeBounds;
 }): boolean {
   const { g, color, march, noFill, alpha = 1, offset = 0, range } = options;
 
@@ -93,7 +98,7 @@ export function drawDashedRectangleMarching(options: {
     alignment: 0,
   });
   if (!noFill) {
-    g.beginFill(color, FILL_ALPHA);
+    g.beginFill(color, FILL_SELECTION_ALPHA);
     g.drawRect(minX, minY, boundedRight - minX, boundedBottom - minY);
     g.endFill();
   }

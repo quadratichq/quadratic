@@ -72,7 +72,6 @@ mod tests {
     use std::collections::HashMap;
 
     use bigdecimal::BigDecimal;
-    use serial_test::serial;
 
     use crate::controller::active_transactions::pending_transaction::PendingTransaction;
     use crate::controller::execution::run_code::get_cells::CellA1Response;
@@ -82,16 +81,17 @@ mod tests {
     use crate::controller::GridController;
     use crate::grid::formats::FormatUpdate;
     use crate::grid::formats::SheetFormatUpdates;
+    use crate::grid::formatting::RenderSize;
     use crate::grid::js_types::JsRowHeight;
     use crate::grid::{
         CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, NumericFormat, NumericFormatKind,
-        RenderSize, SheetId,
+        SheetId,
     };
     use crate::sheet_offsets::resize_transient::TransientResize;
     use crate::wasm_bindings::js::{
         clear_js_calls, expect_js_call, expect_js_call_count, expect_js_offsets,
     };
-    use crate::{A1Selection, CellValue, Pos, SheetPos};
+    use crate::{a1::A1Selection, CellValue, Pos, SheetPos};
 
     fn mock_auto_resize_row_heights(
         gc: &mut GridController,
@@ -121,7 +121,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_auto_resize_row_heights_on_set_cell_value() {
         clear_js_calls();
         let mut gc = GridController::test();
@@ -198,7 +197,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_auto_resize_row_heights_on_set_cell_format() {
         clear_js_calls();
         let mut gc = GridController::test();
@@ -211,14 +209,14 @@ mod tests {
                 sheet_id,
             },
             vec![
-                vec!["1"],
-                vec!["2"],
-                vec!["3"],
-                vec!["4"],
-                vec!["5"],
-                vec!["6"],
-                vec!["7"],
-                vec!["8"],
+                vec!["1".into()],
+                vec!["2".into()],
+                vec!["3".into()],
+                vec!["4".into()],
+                vec!["5".into()],
+                vec!["6".into()],
+                vec!["7".into()],
+                vec!["8".into()],
             ],
             None,
         );
@@ -407,7 +405,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_auto_resize_row_heights_on_compute_code_formula() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -452,7 +449,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_auto_resize_row_heights_on_compute_code_python() {
         clear_js_calls();
 
@@ -511,6 +507,7 @@ mod tests {
                 w: 1,
                 h: 1,
                 two_dimensional: false,
+                has_headers: false,
             })
         );
         // pending cal
@@ -518,21 +515,16 @@ mod tests {
         assert_eq!(transaction.has_async, 1);
 
         assert!(gc
-            .calculation_complete(JsCodeResult::new(
-                transaction_id.to_string(),
-                true,
-                None,
-                None,
-                Some(vec!["10".into(), "number".into()]),
-                None,
-                None,
-                None,
-                None,
-            ))
+            .calculation_complete(JsCodeResult {
+                transaction_id: transaction_id.to_string(),
+                success: true,
+                output_value: Some(vec!["10".into(), "number".into()]),
+                ..Default::default()
+            })
             .is_ok());
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 2 }),
+            sheet.display_value(Pos { x: 1, y: 3 }),
             Some(CellValue::Number(BigDecimal::from(10)))
         );
 
@@ -557,7 +549,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_auto_resize_row_heights_on_offset_resize() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -568,7 +559,12 @@ mod tests {
         };
         gc.set_cell_values(
             sheet_pos,
-            vec![vec!["one"], vec!["two"], vec!["three"], vec!["four"]],
+            vec![
+                vec!["one".into()],
+                vec!["two".into()],
+                vec!["three".into()],
+                vec!["four".into()],
+            ],
             None,
         );
         gc.set_cell_wrap(&A1Selection::test_a1("A1:J10"), CellWrap::Wrap, None)
@@ -632,7 +628,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_auto_resize_row_heights_on_user_transaction_only() {
         clear_js_calls();
         let mut gc = GridController::test();
@@ -697,7 +692,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_transaction_save_when_auto_resize_row_heights_when_not_executed() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

@@ -1,5 +1,5 @@
-import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
-import { User } from '@/auth/auth';
+import type { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import type { User } from '@/auth/auth';
 
 export const displayName = (user: User | MultiplayerUser | undefined, you: boolean): string => {
   let name = '';

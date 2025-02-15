@@ -4,16 +4,18 @@
 
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import type { Table } from '@/app/gridGL/cells/tables/Table';
+import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
 import { CursorMode, inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { inlineEditorMonaco, PADDING_FOR_INLINE_EDITOR } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { SheetPosTS } from '@/app/gridGL/types/size';
+import type { SheetPosTS } from '@/app/gridGL/types/size';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { convertColorStringToHex } from '@/app/helpers/convertColor';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { CellFormatSummary } from '@/app/quadratic-core-types';
+import type { CellFormatSummary } from '@/app/quadratic-core-types';
 import { createFormulaStyleHighlights } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -21,7 +23,6 @@ import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLab
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
 import mixpanel from 'mixpanel-browser';
 import { Rectangle } from 'pixi.js';
-import { inlineEditorEvents } from './inlineEditorEvents';
 
 class InlineEditorHandler {
   private div?: HTMLDivElement;
@@ -46,12 +47,15 @@ class InlineEditorHandler {
   temporaryUnderline: boolean | undefined;
   temporaryStrikeThrough: boolean | undefined;
 
+  private table?: Table;
+
   constructor() {
     events.on('changeInput', this.changeInput);
     events.on('changeSheet', this.changeSheet);
     events.on('sheetOffsets', this.sheetOffsets);
     events.on('resizeHeadingColumn', this.sheetOffsets);
     events.on('resizeHeadingRow', this.sheetOffsets);
+    events.on('contextMenu', this.closeIfOpen);
     inlineEditorEvents.on('replaceText', this.replaceText);
     createFormulaStyleHighlights();
   }
@@ -79,18 +83,18 @@ class InlineEditorHandler {
     this.temporaryItalic = undefined;
     this.temporaryUnderline = undefined;
     this.temporaryStrikeThrough = undefined;
+    this.table = undefined;
     this.changeToFormula(false);
     inlineEditorKeyboard.resetKeyboardPosition();
     inlineEditorFormula.clearDecorations();
     window.removeEventListener('keydown', inlineEditorKeyboard.keyDown);
     multiplayer.sendEndCellEdit();
-    pixiApp.cellsSheets.updateCellsArray();
     this.hideDiv();
   }
 
   // Keeps the cursor visible in the viewport.
   keepCursorVisible = () => {
-    if (sheets.sheet.id !== this.location?.sheetId || !this.showing) return;
+    if (sheets.current !== this.location?.sheetId || !this.showing) return;
 
     const sheetRectangle = pixiApp.getViewportRectangle();
     const scale = pixiApp.viewport.scale.x;
@@ -155,7 +159,7 @@ class InlineEditorHandler {
   private changeSheet = () => {
     if (!this.div || !this.location || !this.open) return;
     if (this.formula) {
-      if (sheets.sheet.id !== this.location.sheetId) {
+      if (sheets.current !== this.location.sheetId) {
         this.hideDiv();
         // not sure why this is here
         window.removeEventListener('keydown', inlineEditorKeyboard.keyDown);
@@ -194,6 +198,7 @@ class InlineEditorHandler {
         x: cursor.x,
         y: cursor.y,
       };
+      this.table = pixiApp.cellsSheet().tables.getTableFromTableCell(this.location.x, this.location.y);
       let value: string;
       let changeToFormula = false;
       if (initialValue) {
@@ -208,6 +213,12 @@ class InlineEditorHandler {
           value = (await quadraticCore.getEditCell(this.location.sheetId, this.location.x, this.location.y)) || '';
           changeToFormula = false;
         }
+      }
+
+      if (this.table?.codeCell.language === 'Import' && changeToFormula) {
+        pixiAppSettings.snackbar('Cannot create formula inside table', { severity: 'error' });
+        this.closeIfOpen();
+        return;
       }
 
       if (cursorMode === undefined) {
@@ -237,7 +248,6 @@ class InlineEditorHandler {
         this.formatSummary.fillColor ? convertColorStringToHex(this.formatSummary.fillColor) : '#ffffff'
       );
       this.updateFont();
-      pixiApp.cellsSheets.updateCellsArray();
       this.sendMultiplayerUpdate();
       this.showDiv();
       this.changeToFormula(changeToFormula);
@@ -249,7 +259,7 @@ class InlineEditorHandler {
   };
 
   // Sends CellEdit updates to the multiplayer server.
-  sendMultiplayerUpdate() {
+  sendMultiplayerUpdate = () => {
     multiplayer.sendCellEdit({
       text: inlineEditorMonaco.get(),
       cursor: inlineEditorMonaco.getCursorColumn() - 1,
@@ -260,9 +270,9 @@ class InlineEditorHandler {
       underline: this.temporaryUnderline,
       strikeThrough: this.temporaryStrikeThrough,
     });
-  }
+  };
 
-  toggleItalics() {
+  toggleItalics = () => {
     if (this.temporaryItalic === undefined) {
       this.temporaryItalic = !this.formatSummary?.italic;
     } else {
@@ -270,9 +280,9 @@ class InlineEditorHandler {
     }
     this.updateFont();
     this.sendMultiplayerUpdate();
-  }
+  };
 
-  toggleBold() {
+  toggleBold = () => {
     if (this.temporaryBold === undefined) {
       this.temporaryBold = !this.formatSummary?.bold;
     } else {
@@ -280,9 +290,9 @@ class InlineEditorHandler {
     }
     this.updateFont();
     this.sendMultiplayerUpdate();
-  }
+  };
 
-  toggleUnderline() {
+  toggleUnderline = () => {
     if (this.temporaryUnderline === undefined) {
       this.temporaryUnderline = !this.formatSummary?.underline;
     } else {
@@ -290,9 +300,9 @@ class InlineEditorHandler {
     }
     inlineEditorMonaco.setUnderline(this.temporaryUnderline);
     this.sendMultiplayerUpdate();
-  }
+  };
 
-  toggleStrikeThrough() {
+  toggleStrikeThrough = () => {
     if (this.temporaryStrikeThrough === undefined) {
       this.temporaryStrikeThrough = !this.formatSummary?.strikeThrough;
     } else {
@@ -300,9 +310,9 @@ class InlineEditorHandler {
     }
     inlineEditorMonaco.setStrikeThrough(this.temporaryStrikeThrough);
     this.sendMultiplayerUpdate();
-  }
+  };
 
-  private updateFont() {
+  private updateFont = () => {
     let fontFamily = 'OpenSans';
     if (!this.formula) {
       const italic = this.temporaryItalic === undefined ? this.formatSummary?.italic : this.temporaryItalic;
@@ -316,7 +326,7 @@ class InlineEditorHandler {
       }
     }
     inlineEditorMonaco.setFontFamily(fontFamily);
-  }
+  };
 
   // Handles updates to the Monaco editor cursor position
   updateMonacoCursorPosition = () => {
@@ -385,6 +395,11 @@ class InlineEditorHandler {
     if (!pixiAppSettings.setInlineEditorState) {
       throw new Error('Expected pixiAppSettings.setInlineEditorState to be defined in InlineEditorHandler');
     }
+    if (this.table?.codeCell.language === 'Import' && formula) {
+      pixiAppSettings.snackbar('Cannot create formula inside table', { severity: 'error' });
+      this.closeIfOpen();
+      return;
+    }
     this.formula = formula;
     if (formula) {
       inlineEditorMonaco.setLanguage('Formula');
@@ -408,11 +423,11 @@ class InlineEditorHandler {
     this.updateFont();
   };
 
-  closeIfOpen() {
+  closeIfOpen = () => {
     if (this.open) {
       this.close(0, 0, false);
     }
-  }
+  };
 
   validateInput = async (): Promise<string | undefined> => {
     if (!this.open || !this.location || this.formula) return;

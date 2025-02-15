@@ -1,9 +1,10 @@
 use super::operation::Operation;
 use crate::{
+    a1::A1Selection,
     cell_values::CellValues,
     controller::GridController,
     formulas::replace_a1_notation,
-    grid::{CodeCellLanguage, CodeCellValue, CodeRun, SheetId},
+    grid::{formats::SheetFormatUpdates, CodeCellLanguage, CodeCellValue, DataTable, SheetId},
     CellValue, SheetPos,
 };
 
@@ -15,8 +16,9 @@ impl GridController {
         language: CodeCellLanguage,
         code: String,
     ) -> Vec<Operation> {
+        let parse_ctx = self.grid.a1_context();
         let code = match language {
-            CodeCellLanguage::Formula => replace_a1_notation(&code, sheet_pos.into()),
+            CodeCellLanguage::Formula => replace_a1_notation(&code, &parse_ctx, sheet_pos),
             _ => code,
         };
 
@@ -29,13 +31,63 @@ impl GridController {
         ]
     }
 
+    pub fn set_data_table_operations_at(
+        &self,
+        sheet_pos: SheetPos,
+        value: String,
+    ) -> Vec<Operation> {
+        let mut ops = vec![];
+
+        let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) else {
+            return ops;
+        };
+
+        let Ok(data_table_pos) = sheet.first_data_table_within(sheet_pos.into()) else {
+            return ops;
+        };
+
+        let Some(data_table) = sheet.data_table(data_table_pos) else {
+            return ops;
+        };
+
+        // strip whitespace
+        let value = value.trim();
+
+        let (cell_value, format_update, ..) = self.string_to_cell_value(value, false);
+
+        ops.push(Operation::SetDataTableAt {
+            sheet_pos,
+            values: CellValues::from(cell_value),
+        });
+
+        if !format_update.is_default() {
+            ops.push(Operation::DataTableFormats {
+                sheet_pos: data_table_pos.to_sheet_pos(sheet_pos.sheet_id),
+                formats: SheetFormatUpdates::from_selection(
+                    &A1Selection::from_xy(
+                        sheet_pos.x - data_table_pos.x + 1,
+                        sheet_pos.y - data_table_pos.y + 1 - data_table.y_adjustment(true),
+                        sheet_pos.sheet_id,
+                    ),
+                    format_update,
+                ),
+            });
+        }
+
+        ops
+    }
+
     // Returns whether a code_cell is dependent on another code_cell.
-    fn is_dependent_on(&self, current: &CodeRun, other_pos: SheetPos) -> bool {
-        current.cells_accessed.contains(other_pos)
+    fn is_dependent_on(&self, current: &DataTable, other_pos: SheetPos) -> bool {
+        let context = self.grid.a1_context();
+        current
+            .code_run()
+            .map(|code_run| code_run.cells_accessed.contains(other_pos, &context))
+            .unwrap_or(false)
     }
 
     /// Orders code cells to ensure earlier computes do not depend on later computes.
-    fn order_code_cells(&self, code_cell_positions: &mut Vec<(SheetPos, &CodeRun)>) {
+    fn order_code_cells(&self, code_cell_positions: &mut Vec<(SheetPos, &DataTable)>) {
         // Change the ordering of code_cell_positions to ensure earlier operations do not depend on later operations.
         //
         // Algorithm: iterate through all code cells and check if they are dependent on later code cells. If they are,
@@ -86,7 +138,7 @@ impl GridController {
             return vec![];
         };
         let mut code_cell_positions = sheet
-            .code_runs
+            .data_tables
             .iter()
             .map(|(pos, code_run)| (pos.to_sheet_pos(sheet_id), code_run))
             .collect::<Vec<_>>();
@@ -109,7 +161,7 @@ impl GridController {
             .iter()
             .flat_map(|sheet| {
                 sheet
-                    .code_runs
+                    .data_tables
                     .iter()
                     .map(|(pos, code_run)| (pos.to_sheet_pos(sheet.id), code_run))
             })
@@ -129,10 +181,22 @@ impl GridController {
     pub fn rerun_code_cell_operations(&self, sheet_pos: SheetPos) -> Vec<Operation> {
         vec![Operation::ComputeCode { sheet_pos }]
     }
+
+    pub fn set_chart_size_operations(
+        &self,
+        sheet_pos: SheetPos,
+        pixel_width: f32,
+        pixel_height: f32,
+    ) -> Vec<Operation> {
+        vec![Operation::SetChartSize {
+            sheet_pos,
+            pixel_width,
+            pixel_height,
+        }]
+    }
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod test {
     use bigdecimal::BigDecimal;
 
@@ -206,7 +270,7 @@ mod test {
             );
         };
 
-        // (1, 1, sheet 2) = sheet 1:A1
+        // (1, 1, Sheet2) = Sheet1:A1
         let third = |gc: &mut GridController| {
             let sheet_id_2 = gc.sheet_ids()[1];
             gc.set_code_cell(
@@ -216,7 +280,7 @@ mod test {
                     sheet_id: sheet_id_2,
                 },
                 CodeCellLanguage::Formula,
-                "'Sheet 1'!A1".to_string(),
+                "Sheet1!A1".to_string(),
                 None,
             );
         };

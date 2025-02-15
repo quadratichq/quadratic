@@ -9,7 +9,7 @@ import { colors } from '@/app/theme/colors';
 import { SidebarToggle, SidebarTooltip } from '@/app/ui/QuadraticSidebar';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
-import { LanguageState } from '@/app/web-workers/languageTypes';
+import type { LanguageState } from '@/app/web-workers/languageTypes';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
@@ -121,7 +121,7 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
                 <div className="ml-5 text-sm">
                   <StopIcon style={{ color: colors.darkGray }} />
                   Cell {xyToA1(pythonCodeRunning.sheetPos.x, pythonCodeRunning.sheetPos.y)}
-                  {pythonCodeRunning.sheetPos.sheetId !== sheets.sheet.id
+                  {pythonCodeRunning.sheetPos.sheetId !== sheets.current
                     ? `, "${sheets.getById(pythonCodeRunning.sheetPos.sheetId)?.name || ''}"`
                     : ''}
                   {' is running...'}
@@ -144,7 +144,7 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
                 <div className="ml-5 text-sm">
                   <StopIcon style={{ color: colors.darkGray }} />
                   Cell {xyToA1(javascriptCodeRunning.sheetPos.x, javascriptCodeRunning.sheetPos.y)}
-                  {javascriptCodeRunning.sheetPos.sheetId !== sheets.sheet.id
+                  {javascriptCodeRunning.sheetPos.sheetId !== sheets.current
                     ? `, "${sheets.getById(javascriptCodeRunning.sheetPos.sheetId)?.name || ''}"`
                     : ''}
                   {' is running...'}
@@ -167,7 +167,7 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
                 <div className="ml-5 text-sm">
                   <StopIcon style={{ color: colors.darkGray }} />
                   Cell {xyToA1(connectionCodeRunning.sheetPos.x, connectionCodeRunning.sheetPos.y)}
-                  {connectionCodeRunning.sheetPos.sheetId !== sheets.sheet.id
+                  {connectionCodeRunning.sheetPos.sheetId !== sheets.current
                     ? `, "${sheets.getById(connectionCodeRunning.sheetPos.sheetId)?.name || ''}"`
                     : ''}
                   {' is running...'}
@@ -181,7 +181,7 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
           disabled={disableRunCodeCell}
           onClick={() =>
             quadraticCore.rerunCodeCells(
-              sheets.sheet.id,
+              sheets.current,
               sheets.sheet.cursor.position.x,
               sheets.sheet.cursor.position.y,
               sheets.getCursorPosition()
@@ -194,9 +194,7 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
           </DropdownMenuShortcut>
         </DropdownMenuItem>
         <DropdownMenuItem
-          onClick={() =>
-            quadraticCore.rerunCodeCells(sheets.sheet.id, undefined, undefined, sheets.getCursorPosition())
-          }
+          onClick={() => quadraticCore.rerunCodeCells(sheets.current, undefined, undefined, sheets.getCursorPosition())}
         >
           Run all code cells in sheet
           <DropdownMenuShortcut className="pl-4">

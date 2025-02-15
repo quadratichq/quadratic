@@ -387,7 +387,6 @@ pub(crate) fn upgrade(schema: v1_5::GridSchema) -> Result<v1_6::GridSchema> {
 #[cfg(test)]
 mod tests {
     use anyhow::{anyhow, Result};
-    use serial_test::parallel;
 
     use crate::grid::file::v1_5::schema::GridSchema;
 
@@ -404,7 +403,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn import_and_export_a_v1_5_file() {
         let imported = import(V1_5_FILE).unwrap();
         let _ = export(&imported).unwrap();

@@ -1,6 +1,6 @@
 import { TYPE } from '@/shared/constants/appConstants';
 import { cn } from '@/shared/shadcn/utils';
-import { ElementType } from 'react';
+import type { ElementType } from 'react';
 
 type Props = {
   children: React.ReactNode;

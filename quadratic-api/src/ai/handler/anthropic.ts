@@ -61,6 +61,7 @@ export const handleAnthropicRequest = async (
         tools,
         tool_choice,
       });
+
       const responseMessage = parseAnthropicResponse(result, response, model);
       return responseMessage;
     } catch (error: any) {

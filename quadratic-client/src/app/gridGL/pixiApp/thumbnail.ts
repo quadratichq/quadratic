@@ -18,15 +18,15 @@ class Thumbnail {
   private renderer?: Renderer;
 
   constructor() {
-    events.on('generateThumbnail', this.generateThumbnail);
+    events.on('generateThumbnail', this.setThumbnailDirty);
   }
 
-  generateThumbnail = () => {
+  setThumbnailDirty = () => {
     this.thumbnailDirty = true;
   };
 
   destroy() {
-    events.off('generateThumbnail', this.generateThumbnail);
+    events.off('generateThumbnail', this.setThumbnailDirty);
     if (this.renderer) {
       this.renderer.destroy(false);
     }
@@ -46,7 +46,7 @@ class Thumbnail {
           debugTimeReset();
           this.generate().then((blob) => {
             if (blob) {
-              debugTimeCheck('thumbnail');
+              debugTimeCheck('thumbnail', 20);
               apiClient.files.thumbnail.update(uuid, blob).then(() => {
                 if (debugShowFileIO) {
                   console.log(`[Thumbnail] uploaded file (${Math.round(blob!.size / 1000)}kb).`);

@@ -2,7 +2,7 @@ use itertools::Itertools;
 use regex::Regex;
 use smallvec::smallvec;
 
-use crate::{ArraySize, CodeResultExt};
+use crate::{a1::SheetCellRefRange, ArraySize, CodeResultExt};
 
 use super::*;
 
@@ -19,14 +19,17 @@ fn get_functions() -> Vec<FormulaFunction> {
         formula_fn!(
             /// Returns the value of the cell at a given location.
             #[examples("INDIRECT(\"Cn7\")", "INDIRECT(\"F\" & B0)")]
-            #[zip_map]
-            fn INDIRECT(ctx: Ctx, [cellref_string]: (Spanned<String>)) {
+            fn INDIRECT(ctx: Ctx, cellref_string: (Spanned<String>)) {
                 let span = cellref_string.span;
-                // TODO: support array references
-                let cell_ref = CellRef::parse_a1(&cellref_string.inner, ctx.sheet_pos.into())
-                    .ok_or(RunErrorMsg::BadCellReference.with_span(span))?;
-                let pos = ctx.resolve_ref(&cell_ref, span)?.inner;
-                ctx.get_cell(pos, span, true).inner
+                let cell_ref = SheetCellRefRange::parse(
+                    &cellref_string.inner,
+                    ctx.sheet_pos.sheet_id,
+                    &ctx.grid.a1_context(),
+                    Some(ctx.sheet_pos.into()),
+                )
+                .map_err(|_| RunErrorMsg::BadCellReference.with_span(span))?;
+                let sheet_rect = ctx.resolve_range_ref(&cell_ref, span)?.inner;
+                ctx.get_cell_array(sheet_rect, span)?.inner
             }
         ),
         formula_fn!(
@@ -640,7 +643,6 @@ mod tests {
     use smallvec::smallvec;
 
     use crate::{formulas::tests::*, Pos};
-    use serial_test::parallel;
 
     lazy_static! {
         static ref NUMBERS_LOOKUP_ARRAY: Array = array![
@@ -671,13 +673,16 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_formula_indirect() {
-        let form = parse_formula("INDIRECT(\"D5\")", pos![B2]).unwrap();
-
         let mut g = Grid::new();
+        let ctx = g.a1_context();
         let sheet = &mut g.sheets_mut()[0];
+        let pos = pos![B2].to_sheet_pos(sheet.id);
+        let form = parse_formula("INDIRECT(\"D5\")", &ctx, pos).unwrap();
+
         let _ = sheet.set_cell_value(pos![D5], 35);
+        let _ = sheet.set_cell_value(pos![D6], 36);
+        let _ = sheet.set_cell_value(pos![D7], 37);
         let sheet_id = sheet.id;
 
         let mut ctx = Ctx::new(&g, pos![D5].to_sheet_pos(sheet_id));
@@ -686,12 +691,15 @@ mod tests {
             form.eval(&mut ctx).unwrap_err().msg,
         );
 
-        assert_eq!("35".to_string(), eval_to_string(&g, "INDIRECT(\"D5\")"));
+        assert_eq!("{35}".to_string(), eval_to_string(&g, "INDIRECT(\"D5\")"));
+        assert_eq!(
+            "{35; 36; 37}".to_string(),
+            eval_to_string(&g, "INDIRECT(\"D5:D7\")"),
+        );
     }
 
     /// Test VLOOKUP error conditions.
     #[test]
-    #[parallel]
     fn test_vlookup_errors() {
         // Test using numbers ...
         let array = &*NUMBERS_LOOKUP_ARRAY;
@@ -738,7 +746,6 @@ mod tests {
 
     /// Test VLOOKUP.
     #[test]
-    #[parallel]
     fn test_vlookup() {
         // Test exact match (unsorted)
         let array = &*MIXED_LOOKUP_ARRAY;
@@ -777,7 +784,6 @@ mod tests {
 
     /// Test that VLOOKUP ignores error values.
     #[test]
-    #[parallel]
     fn test_vlookup_ignore_errors() {
         let g = Grid::from_array(pos![A1], &array!["a", 10; 1.0 / 0.0, 20; "b", 30]);
         assert_eq!("10", eval_to_string(&g, "VLOOKUP(\"a\", A1:B3, 2)"));
@@ -786,7 +792,6 @@ mod tests {
 
     /// Test HLOOKUP error conditions.
     #[test]
-    #[parallel]
     fn test_hlookup_errors() {
         // Test using numbers ...
         let transposed_array = &*NUMBERS_LOOKUP_ARRAY;
@@ -835,7 +840,6 @@ mod tests {
 
     /// Test HLOOKUP.
     #[test]
-    #[parallel]
     fn test_hlookup() {
         // Test exact match (unsorted)
         let transposed_array = &*MIXED_LOOKUP_ARRAY;
@@ -876,7 +880,6 @@ mod tests {
 
     /// Test XLOOKUP input validation
     #[test]
-    #[parallel]
     fn test_xlookup_validation() {
         let array = &*NUMBERS_LOOKUP_ARRAY;
         let g = Grid::from_array(pos![A1], array);
@@ -957,7 +960,6 @@ mod tests {
 
     /// Test XLOOKUP's various search modes.
     #[test]
-    #[parallel]
     fn test_xlookup_search_modes() {
         // #[track_caller]
         fn test_exact_xlookup_with_array(
@@ -1089,7 +1091,6 @@ mod tests {
 
     /// Tests XLOOKUP's various match modes.
     #[test]
-    #[parallel]
     fn test_xlookup_match_modes() {
         let numbers_grid = Grid::from_array(pos![A1], &NUMBERS_LOOKUP_ARRAY);
         let rev_numbers_grid = Grid::from_array(pos![A1], &NUMBERS_LOOKUP_ARRAY.flip_vertically());
@@ -1176,7 +1177,6 @@ mod tests {
     /// Test XLOOKUP's zip mapping, which is completely orthogonal to its search
     /// modes.
     #[test]
-    #[parallel]
     fn test_xlookup_zip_map() {
         let array = &*NUMBERS_LOOKUP_ARRAY;
         let g = Grid::from_array(pos![A1], array);
@@ -1204,7 +1204,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_xlookup() {
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];
