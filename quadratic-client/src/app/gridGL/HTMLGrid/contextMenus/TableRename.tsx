@@ -63,7 +63,11 @@ export const TableRename = () => {
       defaultValue={contextMenu.table.name}
       position={position}
       className="reverse-selection origin-bottom-left bg-primary px-3 text-sm font-bold text-primary-foreground"
-      styles={{ fontSize: TABLE_NAME_FONT_SIZE, paddingLeft: TABLE_NAME_PADDING[0] }}
+      styles={{
+        fontFamily: 'OpenSans-Bold, sans-serif',
+        fontSize: TABLE_NAME_FONT_SIZE,
+        paddingLeft: TABLE_NAME_PADDING[0],
+      }}
       onSave={handleSave}
       onClose={() => events.emit('contextMenu', {})}
       noShrink

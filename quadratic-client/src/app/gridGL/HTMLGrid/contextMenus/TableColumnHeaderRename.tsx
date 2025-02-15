@@ -69,6 +69,7 @@ export const TableColumnHeaderRename = () => {
       position={position}
       className="darker-selection origin-bottom-left border-none p-0 text-sm font-bold text-primary-foreground outline-none"
       styles={{
+        fontFamily: 'OpenSans-Bold, sans-serif',
         fontSize: FONT_SIZE,
         color: 'var(--primary-foreground)',
         backgroundColor: 'var(--accent)',
