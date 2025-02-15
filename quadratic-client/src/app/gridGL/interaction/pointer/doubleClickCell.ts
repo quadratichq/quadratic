@@ -38,7 +38,6 @@ export async function doubleClickCell(options: {
   if (language) {
     const formula = language === 'Formula';
     const file_import = language === 'Import';
-
     if (pixiAppSettings.codeEditorState.showCodeEditor && !file_import) {
       pixiAppSettings.setCodeEditorState({
         ...pixiAppSettings.codeEditorState,
@@ -60,8 +59,8 @@ export async function doubleClickCell(options: {
         const cursor = sheets.sheet.cursor.position;
 
         // ensure we're in the right cell (which may change if we double clicked on a CodeRun)
-        if (cursor.x !== column || cursor.y !== row) {
-          sheets.sheet.cursor.moveTo(column, row);
+        if (codeCell && (cursor.x !== codeCell.x || cursor.y !== codeCell.y)) {
+          sheets.sheet.cursor.moveTo(codeCell.x, codeCell.y);
         }
         pixiAppSettings.changeInput(true, cell, cursorMode);
       }
