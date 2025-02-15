@@ -1,4 +1,4 @@
-use crate::grid::{sheet::borders::JsBordersSheet, Sheet, SheetId};
+use crate::grid::{sheet::borders::JsBordersSheet, Sheet};
 
 impl Sheet {
     /// Gets packaged borders to send to the client.
@@ -39,7 +39,7 @@ impl Sheet {
     }
 
     /// Sends the borders for the sheet to the client.
-    pub fn send_sheet_borders(&self, sheet_id: SheetId) {
+    pub fn send_sheet_borders(&self) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
@@ -47,12 +47,12 @@ impl Sheet {
         match self.borders_in_sheet() {
             Some(b) => {
                 if let Ok(borders) = serde_json::to_string(&b) {
-                    crate::wasm_bindings::js::jsBordersSheet(sheet_id.to_string(), borders);
+                    crate::wasm_bindings::js::jsBordersSheet(self.id_to_string(), borders);
                 } else {
                     dbgjs!("Unable to serialize borders in send_sheet_borders");
                 }
             }
-            None => crate::wasm_bindings::js::jsBordersSheet(sheet_id.to_string(), String::new()),
+            None => crate::wasm_bindings::js::jsBordersSheet(self.id_to_string(), String::new()),
         }
     }
 }

@@ -161,9 +161,7 @@ impl GridController {
                 }
             }
 
-            if !transaction.is_server() {
-                self.send_updated_bounds(sheet_id);
-            }
+            self.send_updated_bounds(transaction, sheet_id);
         }
     }
 
@@ -200,9 +198,7 @@ impl GridController {
                 }
             }
 
-            if !transaction.is_server() {
-                self.send_updated_bounds(sheet_id);
-            }
+            self.send_updated_bounds(transaction, sheet_id);
         }
     }
 
@@ -244,9 +240,7 @@ impl GridController {
                 }
             }
 
-            if !transaction.is_server() {
-                self.send_updated_bounds(sheet_id);
-            }
+            self.send_updated_bounds(transaction, sheet_id);
         }
     }
 
@@ -288,9 +282,7 @@ impl GridController {
                 }
             }
 
-            if !transaction.is_server() {
-                self.send_updated_bounds(sheet_id);
-            }
+            self.send_updated_bounds(transaction, sheet_id);
         }
     }
 }

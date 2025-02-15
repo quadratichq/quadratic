@@ -166,29 +166,29 @@ impl GridController {
             transaction.add_borders(sheet_id);
         }
 
-        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-            transaction.add_from_code_run(
-                sheet_id,
-                pos,
-                old_data_table.as_ref().is_some_and(|dt| dt.is_image()),
-                old_data_table.as_ref().is_some_and(|dt| dt.is_html()),
-            );
-            transaction.add_from_code_run(
-                sheet_id,
-                pos,
-                new_data_table.as_ref().is_some_and(|dt| dt.is_image()),
-                new_data_table.as_ref().is_some_and(|dt| dt.is_html()),
-            );
+        self.send_updated_bounds(transaction, sheet_id);
 
-            self.send_updated_bounds(sheet_rect.sheet_id);
-            transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
-            if transaction.is_user() {
-                if let Some(sheet) = self.try_sheet(sheet_id) {
-                    let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into(), true);
-                    if !rows.is_empty() {
-                        let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
-                        resize_rows.extend(rows);
-                    }
+        transaction.add_from_code_run(
+            sheet_id,
+            pos,
+            old_data_table.as_ref().is_some_and(|dt| dt.is_image()),
+            old_data_table.as_ref().is_some_and(|dt| dt.is_html()),
+        );
+        transaction.add_from_code_run(
+            sheet_id,
+            pos,
+            new_data_table.as_ref().is_some_and(|dt| dt.is_image()),
+            new_data_table.as_ref().is_some_and(|dt| dt.is_html()),
+        );
+
+        transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
+
+        if (cfg!(target_family = "wasm") || cfg!(test)) && transaction.is_user() {
+            if let Some(sheet) = self.try_sheet(sheet_id) {
+                let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into(), true);
+                if !rows.is_empty() {
+                    let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
+                    resize_rows.extend(rows);
                 }
             }
         }

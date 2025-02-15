@@ -49,7 +49,7 @@ impl GridController {
             ..Default::default()
         };
         self.start_transaction(&mut rollback);
-        rollback.send_transaction();
+        rollback.send_transaction_to_multiplayer();
         transaction.add_updates_from_transaction(rollback);
     }
 
@@ -74,7 +74,7 @@ impl GridController {
             ..Default::default()
         };
         self.start_transaction(&mut reapply);
-        reapply.send_transaction();
+        reapply.send_transaction_to_multiplayer();
         transaction.add_updates_from_transaction(reapply);
     }
 
@@ -159,7 +159,7 @@ impl GridController {
             ..Default::default()
         };
         self.start_transaction(&mut out_of_order_transaction);
-        out_of_order_transaction.send_transaction();
+        out_of_order_transaction.send_transaction_to_multiplayer();
         transaction.add_updates_from_transaction(out_of_order_transaction);
         self.transactions.last_sequence_num = sequence_num;
     }

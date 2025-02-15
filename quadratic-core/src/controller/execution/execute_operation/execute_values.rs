@@ -65,9 +65,8 @@ impl GridController {
 
                     transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
 
+                    self.send_updated_bounds(transaction, sheet_rect.sheet_id);
                     if !transaction.is_server() {
-                        self.send_updated_bounds(sheet_rect.sheet_id);
-
                         transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
 
                         if transaction.is_user() {

@@ -22,7 +22,7 @@ impl GridController {
             }
             let sheet_id = self.grid.add_sheet(Some((*sheet).clone()));
 
-            self.send_add_sheet(sheet_id, transaction);
+            self.send_add_sheet(transaction, sheet_id);
 
             transaction
                 .forward_operations
@@ -62,7 +62,7 @@ impl GridController {
                     transaction.add_code_cell(sheet_id, *pos);
                 }
 
-                self.send_add_sheet(sheet_id, transaction);
+                self.send_add_sheet(transaction, sheet_id);
                 self.send_all_fills(sheet_id);
 
                 transaction
@@ -121,10 +121,10 @@ impl GridController {
                 });
 
                 // if that's the last sheet, then we created a new one and we have to let the workers know
-                self.send_add_sheet(new_first_sheet_id, transaction);
+                self.send_add_sheet(transaction, new_first_sheet_id);
             }
             // send the delete sheet information to the workers
-            self.send_delete_sheet(sheet_id, transaction);
+            self.send_delete_sheet(transaction, sheet_id);
         }
     }
 
@@ -244,7 +244,7 @@ impl GridController {
             }
             self.grid.add_sheet(Some(new_sheet));
 
-            self.send_add_sheet(new_sheet_id, transaction);
+            self.send_add_sheet(transaction, new_sheet_id);
 
             transaction
                 .forward_operations
