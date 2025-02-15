@@ -7,13 +7,12 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import type { DataTableSort } from '@/app/quadratic-core-types';
 import { FONT_SIZE, OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
+import { SORT_BUTTON_PADDING, SORT_BUTTON_RADIUS } from '@/shared/constants/gridConstants';
 import type { Point } from 'pixi.js';
 import { BitmapText, Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
 
 const SORT_BACKGROUND_ALPHA = 0.1;
-const SORT_BUTTON_RADIUS = 7;
 const SORT_ICON_SIZE = 12;
-const SORT_BUTTON_PADDING = 3;
 
 export class TableColumnHeader extends Container {
   private table: Table;

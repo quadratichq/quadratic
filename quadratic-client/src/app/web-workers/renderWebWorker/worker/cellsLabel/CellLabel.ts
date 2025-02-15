@@ -29,7 +29,13 @@ import type { CellsLabels } from '@/app/web-workers/renderWebWorker/worker/cells
 import { convertNumber, reduceDecimals } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/convertNumber';
 import type { LabelMeshEntry } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/LabelMeshEntry';
 import type { LabelMeshes } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/LabelMeshes';
-import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
+import {
+  CELL_HEIGHT,
+  CELL_TEXT_MARGIN_LEFT,
+  MIN_CELL_WIDTH,
+  SORT_BUTTON_PADDING,
+  SORT_BUTTON_RADIUS,
+} from '@/shared/constants/gridConstants';
 import { removeItems } from '@pixi/utils';
 import { Point, Rectangle } from 'pixi.js';
 
@@ -131,6 +137,8 @@ export class CellLabel {
   private textTop: number;
   private textBottom: number;
 
+  private columnHeader: boolean;
+
   private getText = (cell: JsRenderCell) => {
     switch (cell?.special) {
       case 'SpillError':
@@ -207,6 +215,7 @@ export class CellLabel {
     this.wrap = cell.wrap === undefined && this.isNumber() ? 'clip' : cell.wrap ?? 'overflow';
     this.underline = cell.underline ?? this.link;
     this.strikeThrough = !!cell.strikeThrough;
+    this.columnHeader = !!cell.columnHeader;
     this.updateCellLimits();
   }
 
@@ -353,7 +362,7 @@ export class CellLabel {
 
     this.calculatePosition();
 
-    if (this.checkNumberClip()) {
+    if (!this.columnHeader && this.checkNumberClip()) {
       const clippedNumber = this.getClippedNumber(this.originalText, this.text, this.number);
       const processedText = this.processText(labelMeshes, clippedNumber);
       if (!processedText) return;
@@ -522,7 +531,10 @@ export class CellLabel {
       maxUnwrappedTextWidth = Math.max(maxUnwrappedTextWidth, curUnwrappedTextWidth);
       prevCharCode = charCode;
     }
-    const unwrappedTextWidth = (maxUnwrappedTextWidth + 3 * CELL_TEXT_MARGIN_LEFT) * scale;
+    let unwrappedTextWidth = (maxUnwrappedTextWidth + 3 * CELL_TEXT_MARGIN_LEFT) * scale;
+    if (this.columnHeader) {
+      unwrappedTextWidth += SORT_BUTTON_RADIUS * 2 + SORT_BUTTON_PADDING;
+    }
     return unwrappedTextWidth;
   };
 
