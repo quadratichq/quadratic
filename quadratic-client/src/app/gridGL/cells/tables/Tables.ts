@@ -379,6 +379,32 @@ export class Tables extends Container<Table> {
     });
   }
 
+  getColumnHeaderCell(
+    cell: JsCoordinate
+  ): { table: Table; x: number; y: number; width: number; height: number } | undefined {
+    for (const table of this.children) {
+      if (table.codeCell.show_ui && table.codeCell.show_columns && table.inOverHeadings) {
+        if (
+          cell.x >= table.codeCell.x &&
+          cell.x <= table.codeCell.x + table.codeCell.w - 1 &&
+          table.codeCell.y + (table.codeCell.show_name ? 1 : 0) === cell.y
+        ) {
+          const index = table.codeCell.columns.findIndex((c) => c.valueIndex === cell.x - table.codeCell.x);
+          if (index !== -1) {
+            const bounds = table.header.getColumnHeaderBounds(index);
+            return {
+              table,
+              x: bounds.x,
+              y: bounds.y,
+              width: bounds.width,
+              height: bounds.height,
+            };
+          }
+        }
+      }
+    }
+  }
+
   /// Returns true if the cell is a column header cell in a table
   isColumnHeaderCell(cell: JsCoordinate): boolean {
     return !!this.children.find(

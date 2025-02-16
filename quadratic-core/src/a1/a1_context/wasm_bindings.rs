@@ -37,3 +37,19 @@ pub fn convert_table_to_range(
         .convert_table_to_range(table_name, sheet_id)
         .map_err(|e| e.to_string())
 }
+
+#[wasm_bindgen(js_name = "getTableNameInNameOrColumn")]
+pub fn get_table_name_in_name_or_column(
+    sheet_id: &str,
+    x: u32,
+    y: u32,
+    context: &str,
+) -> Option<String> {
+    let Ok(sheet_id) = SheetId::from_str(sheet_id) else {
+        return None;
+    };
+    let Ok(context) = serde_json::from_str::<A1Context>(context) else {
+        return None;
+    };
+    context.table_in_name_or_column(sheet_id, x, y)
+}

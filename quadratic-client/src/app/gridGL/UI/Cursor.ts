@@ -24,6 +24,8 @@ const CURSOR_CELL_DEFAULT_VALUE = new Rectangle(0, 0, 0, 0);
 // outside border when editing the cell
 const CURSOR_INPUT_ALPHA = 0.333;
 
+// todo: DF: this needs to be refactored as many of the table changes were hacks.
+
 export class Cursor extends Container {
   indicator: Rectangle;
   dirty = true;
@@ -82,9 +84,12 @@ export class Cursor extends Container {
     const tables = pixiApp.cellsSheet().tables;
     const table = tables.getTableFromCell(cell);
     const tableName = table?.getTableNameBounds();
-    let { x, y, width, height } = tableName ?? sheet.getCellOffsets(cell.x, cell.y);
+    const tableColumn = tables.getColumnHeaderCell(cell);
+    let { x, y, width, height } = tableName ?? tableColumn ?? sheet.getCellOffsets(cell.x, cell.y);
     const color = pixiApp.accentColor;
     const codeCell = codeEditorState.codeCell;
+
+    pixiApp.hoverTableColumnsSelection.clear();
 
     // todo: this hides the indicator within tables. When we want to re-enable
     // it so we can autocomplete within tables, then we should change this logic.
@@ -119,32 +124,40 @@ export class Cursor extends Container {
       }
     }
 
-    // draw cursor
     if (table && tableName) {
-      this.graphics.lineStyle({
+      // draw cursor
+      let g = this.graphics;
+      if (table.inOverHeadings) {
+        g = pixiApp.hoverTableColumnsSelection;
+      }
+      g.lineStyle({
         width: 1,
         color: 0xffffff,
         alignment: 0,
       });
       const offset = 1;
-      this.graphics.moveTo(x + offset, y + offset);
-      this.graphics.lineTo(x + width - offset, y + offset);
-      this.graphics.lineTo(x + width - offset, y + height - offset);
-      this.graphics.moveTo(x + width - offset - 1, y + height - offset);
-      this.graphics.lineTo(x + offset, y + height - offset);
-      this.graphics.lineTo(x + offset, y + offset);
+      g.moveTo(x + offset, y + offset);
+      g.lineTo(x + width - offset, y + offset);
+      g.lineTo(x + width - offset, y + height - offset);
+      g.moveTo(x + width - offset - 1, y + height - offset);
+      g.lineTo(x + offset, y + height - offset);
+      g.lineTo(x + offset, y + offset);
     } else {
-      this.graphics.lineStyle({
+      let g = this.graphics;
+      if (tableColumn) {
+        g = pixiApp.hoverTableColumnsSelection;
+      }
+      g.lineStyle({
         width: CURSOR_THICKNESS,
         color,
         alignment: 0,
       });
-      this.graphics.moveTo(x, y);
-      this.graphics.lineTo(x + width, y);
-      this.graphics.lineTo(x + width, y + height - indicatorOffset);
-      this.graphics.moveTo(x + width - indicatorOffset, y + height);
-      this.graphics.lineTo(x, y + height);
-      this.graphics.lineTo(x, y);
+      g.moveTo(x, y);
+      g.lineTo(x + width, y);
+      g.lineTo(x + width, y + height - indicatorOffset);
+      g.moveTo(x + width - indicatorOffset, y + height);
+      g.lineTo(x, y + height);
+      g.lineTo(x, y);
     }
 
     if (showInput && inlineShowing) {

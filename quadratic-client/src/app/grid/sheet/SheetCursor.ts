@@ -2,11 +2,12 @@
 //! that state as you switch between sheets, a multiplayer user follows your
 //! cursor, or you save the cursor state in the URL at ?state=.
 
+import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { A1Selection, CellRefRange, JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
-import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { getTableNameInNameOrColumn, JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import type { IViewportTransformState } from 'pixi-viewport';
@@ -294,15 +295,6 @@ export class SheetCursor {
     return ranges;
   };
 
-  // may be useful if we decide to show a selection on a chart
-  // getChartSelections = (): string[] | undefined => {
-  //   try {
-  //     return JSON.parse(this.jsSelection.getChartSelections(this.sheet.sheets.a1Context));
-  //   } catch (e) {
-  //     console.error(e);
-  //   }
-  // };
-
   // Returns true if there is one multiselect of > 1 size
   canConvertToDataTable = (): boolean => {
     return !!this.sheet.cursor.getSingleRectangle();
@@ -320,8 +312,10 @@ export class SheetCursor {
     }
   };
 
-  selectTable = (tableName: string, column: string | undefined, top: number, shiftKey: boolean, ctrlKey: boolean) => {
-    this.jsSelection.selectTable(tableName, column, this.sheet.sheets.a1Context, top, shiftKey, ctrlKey);
+  selectTable = (tableName: string, column: string | undefined, shiftKey: boolean, ctrlKey: boolean) => {
+    const bounds = pixiApp.viewport.getVisibleBounds();
+    const left = sheets.sheet.getColumnFromScreen(bounds.left) + 1;
+    this.jsSelection.selectTable(tableName, column, this.sheet.sheets.a1Context, left, shiftKey, ctrlKey);
     this.updatePosition(true);
   };
 
@@ -369,5 +363,8 @@ export class SheetCursor {
 
   getSingleFullTableSelectionName(): string | undefined {
     return this.jsSelection.getSingleFullTableSelectionName();
+  }
+  getTableNameInNameOrColumn(sheetId: string, x: number, y: number): string | undefined {
+    return getTableNameInNameOrColumn(sheetId, x, y, this.sheet.sheets.a1Context);
   }
 }
