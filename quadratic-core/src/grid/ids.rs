@@ -48,9 +48,4 @@ impl Display for SheetId {
 impl SheetId {
     /// Sheet ID for testing.
     pub const TEST: Self = Self { id: Uuid::nil() };
-
-    /// **Deprecated** Nov 2024 in favor of [`SheetId::TEST`].
-    pub fn test() -> Self {
-        Self { id: Uuid::nil() }
-    }
 }

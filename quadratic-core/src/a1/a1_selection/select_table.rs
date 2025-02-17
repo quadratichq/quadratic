@@ -260,7 +260,7 @@ mod tests {
         );
         assert_eq!(selection.cursor, pos!(A1));
         assert_eq!(
-            selection.to_string(Some(SheetId::test()), &context),
+            selection.to_string(Some(SheetId::TEST), &context),
             "Table1[Col1]"
         );
     }
@@ -286,7 +286,7 @@ mod tests {
         );
         assert_eq!(selection.cursor, pos!(A1));
         assert_eq!(
-            selection.to_string(Some(SheetId::test()), &context),
+            selection.to_string(Some(SheetId::TEST), &context),
             "A1,Table1"
         );
     }
@@ -309,7 +309,7 @@ mod tests {
         );
         assert_eq!(selection.ranges.len(), 1);
         assert_eq!(
-            selection.to_string(Some(SheetId::test()), &context),
+            selection.to_string(Some(SheetId::TEST), &context),
             "Table1[Col1]"
         );
 
@@ -331,7 +331,7 @@ mod tests {
         );
         assert_eq!(selection.cursor, pos!(A1));
         assert_eq!(
-            selection.to_string(Some(SheetId::test()), &context),
+            selection.to_string(Some(SheetId::TEST), &context),
             "A1,Table1"
         );
     }
@@ -348,9 +348,6 @@ mod tests {
 
         selection.select_table("Table1", None, &context, 3, false, false);
         assert_eq!(selection.cursor, pos!(A5));
-        assert_eq!(
-            selection.to_string(Some(SheetId::test()), &context),
-            "Table1"
-        );
+        assert_eq!(selection.to_string(Some(SheetId::TEST), &context), "Table1");
     }
 }

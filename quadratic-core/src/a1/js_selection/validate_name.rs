@@ -103,7 +103,7 @@ mod tests {
     #[test]
     fn test_duplicate_table_names() {
         let context = A1Context::test(
-            &[("Sheet1", SheetId::test())],
+            &[("Sheet1", SheetId::TEST)],
             &[
                 ("Table1", &["col1", "col2"], Rect::test_a1("A1:B3")),
                 ("Table2", &["col3", "col4"], Rect::test_a1("D1:E3")),

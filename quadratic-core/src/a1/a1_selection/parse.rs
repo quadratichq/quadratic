@@ -107,7 +107,7 @@ mod tests {
 
     #[test]
     fn test_from_a1() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let context = A1Context::default();
         assert_eq!(
             A1Selection::parse_a1("A1", &sheet_id, &context),
@@ -117,7 +117,7 @@ mod tests {
 
     #[test]
     fn test_from_a1_all() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let context = A1Context::default();
         assert_eq!(
             A1Selection::parse_a1("*", &sheet_id, &context),
@@ -131,7 +131,7 @@ mod tests {
 
     #[test]
     fn test_from_a1_rect() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let context = A1Context::default();
         assert_eq!(
             A1Selection::parse_a1("A1:B2", &sheet_id, &context),
@@ -149,7 +149,7 @@ mod tests {
 
     #[test]
     fn test_from_a1_everything() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let context = A1Context::default();
         let selection =
             A1Selection::parse_a1("A1,B1:D2,E:G,2:3,5:7,F6:G8,4", &sheet_id, &context).unwrap();
@@ -172,7 +172,7 @@ mod tests {
 
     #[test]
     fn test_row_to_a1() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let context = A1Context::default();
         assert_eq!(
             A1Selection::parse_a1("1", &sheet_id, &context),
@@ -207,7 +207,7 @@ mod tests {
 
     #[test]
     fn test_invalid_sheet_name() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let context = A1Context::default();
         assert_eq!(
             A1Selection::parse_a1("Sheet' 1'!A1", &sheet_id, &context),
@@ -217,7 +217,7 @@ mod tests {
 
     #[test]
     fn test_a1_parse_table() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let context = A1Context::test(
             &[("First", sheet_id)],
             &[("test_table", &["Col1"], Rect::test_a1("A1:C3"))],

@@ -686,7 +686,7 @@ mod test {
             SheetPos {
                 x: 2,
                 y: 2,
-                sheet_id: SheetId::test(),
+                sheet_id: SheetId::TEST,
             },
         );
         assert_eq!(operations.len(), 1);

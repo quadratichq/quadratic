@@ -136,7 +136,7 @@ mod test {
         assert_eq!(
             selection,
             OldSelection {
-                sheet_id: SheetId::test(),
+                sheet_id: SheetId::TEST,
                 x: 0,
                 y: 1,
                 rects: Some(vec![Rect::from_numbers(0, 1, 4, 4)]),
@@ -154,7 +154,7 @@ mod test {
         assert_eq!(
             selection,
             OldSelection {
-                sheet_id: SheetId::test(),
+                sheet_id: SheetId::TEST,
                 x: 0,
                 y: 3,
                 rects: None,
@@ -174,7 +174,7 @@ mod test {
             OldSelection {
                 x: 7,
                 y: 0,
-                sheet_id: SheetId::test(),
+                sheet_id: SheetId::TEST,
                 rects: None,
                 rows: None,
                 columns: Some(vec!(7, 8, 9)),
@@ -192,7 +192,7 @@ mod test {
             OldSelection {
                 x: 0,
                 y: 0,
-                sheet_id: SheetId::test(),
+                sheet_id: SheetId::TEST,
                 rects: None,
                 rows: None,
                 columns: None,
@@ -204,13 +204,13 @@ mod test {
     #[test]
     fn selection_from_rect() {
         let rect = Rect::from_numbers(0, 0, 1, 1);
-        let selection = OldSelection::rect(rect, SheetId::test());
+        let selection = OldSelection::rect(rect, SheetId::TEST);
         assert_eq!(
             selection,
             OldSelection {
                 x: 0,
                 y: 0,
-                sheet_id: SheetId::test(),
+                sheet_id: SheetId::TEST,
                 rects: Some(vec!(rect)),
                 rows: None,
                 columns: None,
@@ -221,13 +221,13 @@ mod test {
 
     #[test]
     fn selection_from_pos() {
-        let selection = OldSelection::pos(0, 0, SheetId::test());
+        let selection = OldSelection::pos(0, 0, SheetId::TEST);
         assert_eq!(
             selection,
             OldSelection {
                 x: 0,
                 y: 0,
-                sheet_id: SheetId::test(),
+                sheet_id: SheetId::TEST,
                 rects: Some(vec!(Rect::from_numbers(0, 0, 1, 1))),
                 rows: None,
                 columns: None,
@@ -238,14 +238,14 @@ mod test {
 
     #[test]
     fn selection_from_sheet_rect() {
-        let sheet_rect = SheetRect::from_numbers(0, 0, 1, 1, SheetId::test());
+        let sheet_rect = SheetRect::from_numbers(0, 0, 1, 1, SheetId::TEST);
         let selection = OldSelection::sheet_rect(sheet_rect);
         assert_eq!(
             selection,
             OldSelection {
                 x: 0,
                 y: 0,
-                sheet_id: SheetId::test(),
+                sheet_id: SheetId::TEST,
                 rects: Some(vec!(Rect::from_numbers(0, 0, 1, 1))),
                 rows: None,
                 columns: None,
@@ -259,7 +259,7 @@ mod test {
         let sheet_pos = SheetPos {
             x: 1,
             y: 2,
-            sheet_id: SheetId::test(),
+            sheet_id: SheetId::TEST,
         };
         let selection = OldSelection::sheet_pos(sheet_pos);
         assert_eq!(
@@ -278,7 +278,7 @@ mod test {
 
     #[test]
     fn new_sheet_pos() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let selection = OldSelection::new_sheet_pos(1, 1, sheet_id);
         assert_eq!(
             selection,
@@ -294,11 +294,11 @@ mod test {
 
     #[test]
     fn new() {
-        let selection = OldSelection::new(SheetId::test());
+        let selection = OldSelection::new(SheetId::TEST);
         assert_eq!(
             selection,
             OldSelection {
-                sheet_id: SheetId::test(),
+                sheet_id: SheetId::TEST,
                 ..Default::default()
             }
         );
@@ -307,11 +307,11 @@ mod test {
     #[test]
     fn test_rects() {
         let rects = vec![Rect::new(1, 1, 2, 2), Rect::new(3, 3, 4, 4)];
-        let selection = OldSelection::rects(&rects, SheetId::test());
+        let selection = OldSelection::rects(&rects, SheetId::TEST);
         assert_eq!(
             selection,
             OldSelection {
-                sheet_id: SheetId::test(),
+                sheet_id: SheetId::TEST,
                 rects: Some(rects),
                 ..Default::default()
             }

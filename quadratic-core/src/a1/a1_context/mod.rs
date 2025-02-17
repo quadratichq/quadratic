@@ -151,7 +151,7 @@ mod tests {
     #[test]
     fn test_table_operations() {
         let context = A1Context::test(
-            &[("Sheet1", SheetId::test())],
+            &[("Sheet1", SheetId::TEST)],
             &[
                 ("Table1", &["col1", "col2"], Rect::test_a1("A1:B3")),
                 ("Table2", &["col3", "col4"], Rect::test_a1("D1:E3")),
@@ -214,7 +214,7 @@ mod tests {
 
     #[test]
     fn test_convert_table_ref_to_range() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let context = A1Context::test(
             &[("Sheet1", sheet_id)],
             &[("Table1", &["col1", "col2"], Rect::test_a1("A1:B3"))],

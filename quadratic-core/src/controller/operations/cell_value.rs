@@ -288,7 +288,7 @@ mod test {
     #[test]
     fn test() {
         let mut client = GridController::test();
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         client.sheet_mut(client.sheet_ids()[0]).id = sheet_id;
         client.set_cell_value(
             SheetPos {
@@ -308,7 +308,7 @@ mod test {
                 sheet_pos: SheetPos {
                     x: 1,
                     y: 2,
-                    sheet_id: SheetId::test()
+                    sheet_id: SheetId::TEST
                 },
                 values
             }]

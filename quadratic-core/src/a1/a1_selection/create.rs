@@ -147,7 +147,7 @@ impl A1Selection {
         Self::from_single_cell(pos![A1].to_sheet_pos(sheet))
     }
 
-    /// Returns a test selection from the A1-string with SheetId::test().
+    /// Returns a test selection from the A1-string with SheetId::TEST.
     #[cfg(test)]
     pub fn test_a1(a1: &str) -> Self {
         Self::parse(a1, &SheetId::TEST, &A1Context::default(), None).unwrap()

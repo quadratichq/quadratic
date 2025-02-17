@@ -787,7 +787,7 @@ mod tests {
     #[test]
     fn test_get_ref_range_bounds() {
         let context = A1Context::test(
-            &[("Sheet1", SheetId::test())],
+            &[("Sheet1", SheetId::TEST)],
             &[("Table1", &["A", "B", "C"], Rect::test_a1("A1:C4"))],
         );
         // note we do not return the D5: range as it is infinite
@@ -808,7 +808,7 @@ mod tests {
     fn test_is_on_html_image() {
         // Create a context with a table that has an HTML image
         let mut context = A1Context::test(
-            &[("Sheet1", SheetId::test()), ("Sheet2", SheetId::new())],
+            &[("Sheet1", SheetId::TEST), ("Sheet2", SheetId::new())],
             &[("Table1", &["A"], Rect::test_a1("B2:D4"))],
         );
         context.table_map.tables.first_mut().unwrap().is_html_image = true;

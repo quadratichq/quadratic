@@ -27,7 +27,7 @@ mod tests {
     use super::*;
 
     fn setup_test_context() -> (A1Context, SheetId) {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
 
         let mut context = A1Context::default();
         context

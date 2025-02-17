@@ -370,7 +370,7 @@ mod tests {
 
     #[test]
     fn test_replace_sheet_name_in_cell_references() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let a1_context = A1Context::test(
             &[("Sheet1", sheet_id)],
             &[("test.csv", &["city"], Rect::test_a1("A1:C3"))],
@@ -383,7 +383,7 @@ mod tests {
 
     #[test]
     fn test_replace_table_name_in_cell_references() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let a1_context = A1Context::test(
             &[("Sheet1", sheet_id)],
             &[("simple", &["city"], Rect::test_a1("A1:C3"))],
@@ -404,7 +404,7 @@ mod tests {
 
     #[test]
     fn test_replace_column_name_in_cell_references() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let a1_context = A1Context::test(
             &[("Sheet1", sheet_id)],
             &[("test.csv", &["city", "state"], Rect::test_a1("A1:C3"))],
