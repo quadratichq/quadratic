@@ -117,7 +117,7 @@ impl JsSelection {
         table_name: &str,
         col: Option<String>,
         context: &str,
-        screen_row_top: i32,
+        screen_col_left: i32,
         shift_key: bool,
         ctrl_key: bool,
     ) {
@@ -126,7 +126,7 @@ impl JsSelection {
                 table_name,
                 col,
                 &context,
-                screen_row_top as i64,
+                screen_col_left as i64,
                 shift_key,
                 ctrl_key,
             );
