@@ -27,7 +27,7 @@ export const GridContextMenu = () => {
   const contextMenu = useRecoilValue(contextMenuAtom);
   let cursor = sheets.sheet.cursor;
   const fullColumnSelection = cursor.getTableColumnSelection(getTable()?.name || '');
-  
+
   if (contextMenu.type === ContextMenuType.Table && contextMenu.table) {
     if (contextMenu.table.language === 'Import') {
       return <GridContextMenuDataTable />;
@@ -45,7 +45,7 @@ export const GridContextMenu = () => {
   }
 
   // It's a table column selection
-  if ((contextMenu.type === ContextMenuType.TableColumn || fullColumnSelection)&& contextMenu.table) {
+  if ((contextMenu.type === ContextMenuType.TableColumn || fullColumnSelection) && contextMenu.table) {
     // Data table
     if (contextMenu.table.language === 'Import') {
       return <GridContextMenuDataTableColumn />;
