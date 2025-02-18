@@ -621,39 +621,38 @@ impl GridController {
         {
             // do grid mutations first to keep the borrow checker happy
             let sheet_id = sheet_pos.sheet_id;
-            let pos = Pos::from(sheet_pos);
             let sheet = self.try_sheet_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table_sheet_pos = data_table_pos.to_sheet_pos(sheet_id);
-            let old_name = self
-                .grid
-                .data_table(sheet_id, data_table_pos)?
-                .name
-                .to_display();
+            let data_table = self.grid.data_table(sheet_id, data_table_pos)?;
+            let old_name = data_table.name.to_display();
+            let old_columns = data_table.column_headers.to_owned();
 
-            if let Some(name) = name {
-                // validate table name
-                if let Err(e) = DataTable::validate_table_name(&name, self.a1_context()) {
-                    if cfg!(target_family = "wasm") || cfg!(test) {
-                        crate::wasm_bindings::js::jsClientMessage(
-                            e.to_owned(),
-                            JsSnackbarSeverity::Error.to_string(),
-                        );
+            if let Some(name) = name.to_owned() {
+                if old_name != name {
+                    // validate table name
+                    if let Err(e) = DataTable::validate_table_name(&name, self.a1_context()) {
+                        if cfg!(target_family = "wasm") || cfg!(test) {
+                            crate::wasm_bindings::js::jsClientMessage(
+                                e.to_owned(),
+                                JsSnackbarSeverity::Error.to_string(),
+                            );
+                        }
+                        // clear remaining operations
+                        transaction.operations.clear();
+                        bail!(e);
                     }
-                    // clear remaining operations
-                    transaction.operations.clear();
-                    bail!(e);
+
+                    self.grid.update_data_table_name(
+                        data_table_sheet_pos,
+                        &old_name,
+                        &name,
+                        false,
+                    )?;
+                    // mark code cells dirty to update meta data
+                    transaction.add_code_cell(sheet_id, data_table_pos);
                 }
-
-                self.grid
-                    .update_data_table_name(data_table_sheet_pos, &old_name, &name, false)?;
-                // mark code cells dirty to update meta data
-                transaction.add_code_cell(sheet_id, data_table_pos);
             }
-
-            let old_data_table = self.grid.data_table(sheet_id, pos)?;
-            let old_columns = old_data_table.column_headers.to_owned();
-            let old_data_table_name = old_data_table.name.to_display();
 
             // update column names that have changed in code cells
             if let (Some(columns), Some(old_columns)) = (columns.to_owned(), old_columns) {
@@ -663,7 +662,7 @@ impl GridController {
                             // validate column name
                             if let Err(e) = DataTable::validate_column_name(
                                 &new_column.name.to_string(),
-                                &old_data_table_name,
+                                &old_name,
                                 self.a1_context(),
                             ) {
                                 if cfg!(target_family = "wasm") || cfg!(test) {
@@ -753,6 +752,8 @@ impl GridController {
             {
                 self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
                 self.send_updated_bounds(transaction, sheet_id);
+                self.send_code_cells(transaction);
+            } else if name.is_some() {
                 self.send_code_cells(transaction);
             }
 
