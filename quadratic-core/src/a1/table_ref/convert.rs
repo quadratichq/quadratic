@@ -141,7 +141,13 @@ mod tests {
     #[test]
     fn test_convert_all_columns_without_header() {
         let mut context = create_test_context(Rect::test_a1("A1:C3"));
-        context.table_map.tables.first_mut().unwrap().show_ui = false;
+        context
+            .table_map
+            .tables
+            .values_mut()
+            .next()
+            .unwrap()
+            .show_ui = false;
 
         let table_ref = TableRef {
             table_name: "test_table".to_string(),

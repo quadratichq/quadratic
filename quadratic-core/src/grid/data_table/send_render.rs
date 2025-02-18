@@ -25,11 +25,9 @@ impl DataTable {
         }
 
         let data_table_sheet_pos = data_table_pos.to_sheet_pos(sheet.id);
-
         let data_table_rect = self.output_sheet_rect(data_table_sheet_pos, false);
 
         transaction.add_dirty_hashes_from_sheet_rect(data_table_rect);
-        transaction.add_code_cell(data_table_sheet_pos.sheet_id, data_table_pos);
 
         if transaction.is_user() {
             let sheet_rows = sheet.get_rows_with_wrap_in_rect(&data_table_rect.into(), true);

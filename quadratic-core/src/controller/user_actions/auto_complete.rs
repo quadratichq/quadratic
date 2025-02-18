@@ -75,7 +75,6 @@ mod tests {
     ) -> (GridController, SheetId) {
         let mut grid_controller = GridController::test();
         let sheet_id = grid_controller.grid.sheets()[0].id;
-        let parse_ctx = grid_controller.grid.a1_context();
         let mut count = 0;
 
         for y in selection.y_range() {
@@ -107,8 +106,11 @@ mod tests {
                     let code_cell = match code_cell.language {
                         CodeCellLanguage::Formula => {
                             let mut code_cell = code_cell.to_owned();
-                            code_cell.code =
-                                replace_a1_notation(&code_cell.code, &parse_ctx, sheet_pos);
+                            code_cell.code = replace_a1_notation(
+                                &code_cell.code,
+                                grid_controller.a1_context(),
+                                sheet_pos,
+                            );
                             code_cell
                         }
                         _ => code_cell.to_owned(),

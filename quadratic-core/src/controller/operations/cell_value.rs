@@ -250,7 +250,7 @@ impl GridController {
                 // need to update the selection if a table was deleted (since we
                 // can no longer use the table ref)
                 if selection.has_table_refs() {
-                    let replaced = selection.replace_table_refs(&self.grid().a1_context());
+                    let replaced = selection.replace_table_refs(self.a1_context());
                     ops.push(Operation::SetCursorA1 {
                         selection: replaced,
                     });

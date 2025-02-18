@@ -50,6 +50,8 @@ impl GridController {
                         data_table.is_image(),
                         data_table.is_html(),
                     );
+
+                    self.update_a1_context_table_map(sheet_id, code_pos);
                 }
             }
         }

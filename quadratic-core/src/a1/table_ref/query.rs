@@ -479,10 +479,22 @@ mod tests {
         };
         assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A2]);
 
-        context.table_map.tables.first_mut().unwrap().show_ui = false;
+        context
+            .table_map
+            .tables
+            .values_mut()
+            .next()
+            .unwrap()
+            .show_ui = false;
         assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A1]);
 
-        context.table_map.tables.first_mut().unwrap().show_ui = true;
+        context
+            .table_map
+            .tables
+            .values_mut()
+            .next()
+            .unwrap()
+            .show_ui = true;
         table_ref.headers = true;
         assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A1]);
     }

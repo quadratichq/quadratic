@@ -18,7 +18,7 @@ impl GridController {
         insert_at: Pos,
         cursor: Option<String>,
         delimiter: Option<u8>,
-        has_heading: Option<bool>,
+        header_is_first_row: Option<bool>,
     ) -> Result<()> {
         let ops = self.import_csv_operations(
             sheet_id,
@@ -26,7 +26,7 @@ impl GridController {
             file_name,
             insert_at,
             delimiter,
-            has_heading,
+            header_is_first_row,
         )?;
         if cursor.is_some() {
             self.start_user_transaction(ops, cursor, TransactionName::Import);
@@ -108,8 +108,8 @@ pub(crate) mod tests {
 
     // const EXCEL_FILE: &str = "../quadratic-rust-shared/data/excel/temperature.xlsx";
     const EXCEL_FILE: &str = "../quadratic-rust-shared/data/excel/basic.xlsx";
-    // const EXCEL_FUNCTIONS_FILE: &str =
-    //     "../quadratic-rust-shared/data/excel/all_excel_functions.xlsx";
+    const EXCEL_FUNCTIONS_FILE: &str =
+        "../quadratic-rust-shared/data/excel/all_excel_functions.xlsx";
     // const EXCEL_FILE: &str = "../quadratic-rust-shared/data/excel/financial_sample.xlsx";
     const PARQUET_FILE: &str = "../quadratic-rust-shared/data/parquet/all_supported_types.parquet";
     // const SIMPLE_PARQUET_FILE: &str = "../quadratic-rust-shared/data/parquet/simple.parquet";
@@ -134,14 +134,9 @@ pub(crate) mod tests {
             pos,
             None,
             Some(b','),
-            Some(false),
+            Some(true),
         )
         .unwrap();
-
-        let sheet = gc.sheet_mut(sheet_id);
-        let data_table_pos = sheet.first_data_table_within(pos).unwrap();
-        let data_table = sheet.data_table_mut(data_table_pos).unwrap();
-        data_table.apply_first_row_as_header();
 
         (gc, sheet_id, pos, file_name)
     }
@@ -334,47 +329,45 @@ pub(crate) mod tests {
         // );
     }
 
-    // This test runs too slowly
-    //
-    // #[test]
-    // fn import_all_excel_functions() {
-    //     let mut grid_controller = GridController::new_blank();
-    //     let pos = pos![A1];
-    //     let file: Vec<u8> = std::fs::read(EXCEL_FUNCTIONS_FILE).expect("Failed to read file");
-    //     let _ = grid_controller.import_excel(file, "all_excel_functions.xlsx", None);
-    //     let sheet_id = grid_controller.grid.sheets()[0].id;
+    #[test]
+    fn import_all_excel_functions() {
+        let mut grid_controller = GridController::new_blank();
+        let pos = pos![A1];
+        let file: Vec<u8> = std::fs::read(EXCEL_FUNCTIONS_FILE).expect("Failed to read file");
+        let _ = grid_controller.import_excel(file, "all_excel_functions.xlsx", None);
+        let sheet_id = grid_controller.grid.sheets()[0].id;
 
-    //     print_table(
-    //         &grid_controller,
-    //         sheet_id,
-    //         Rect::new_span(pos, Pos { x: 10, y: 10 }),
-    //     );
+        print_table(
+            &grid_controller,
+            sheet_id,
+            Rect::new_span(pos, Pos { x: 10, y: 10 }),
+        );
 
-    //     let sheet = grid_controller.grid.try_sheet(sheet_id).unwrap();
-    //     let (y_start, y_end) = sheet.column_bounds(1, true).unwrap();
-    //     assert_eq!(y_start, 1);
-    //     assert_eq!(y_end, 512);
-    //     for y in y_start..=y_end {
-    //         let pos = Pos { x: 1, y };
-    //         // all cells should be formula code cells
-    //         let code_cell = sheet.cell_value(pos).unwrap();
-    //         match &code_cell {
-    //             CellValue::Code(code_cell_value) => {
-    //                 assert_eq!(code_cell_value.language, CodeCellLanguage::Formula);
-    //             }
-    //             _ => panic!("expected code cell"),
-    //         }
+        let sheet = grid_controller.grid.try_sheet(sheet_id).unwrap();
+        let (y_start, y_end) = sheet.column_bounds(1, true).unwrap();
+        assert_eq!(y_start, 1);
+        assert_eq!(y_end, 512);
+        for y in y_start..=y_end {
+            let pos = Pos { x: 1, y };
+            // all cells should be formula code cells
+            let code_cell = sheet.cell_value(pos).unwrap();
+            match &code_cell {
+                CellValue::Code(code_cell_value) => {
+                    assert_eq!(code_cell_value.language, CodeCellLanguage::Formula);
+                }
+                _ => panic!("expected code cell"),
+            }
 
-    //         // all code cells should have valid function names,
-    //         // valid functions may not be implemented yet
-    //         let code_run = sheet.data_table(pos).unwrap().code_run().unwrap();
-    //         if let Some(error) = &code_run.error {
-    //             if error.msg == RunErrorMsg::BadFunctionName {
-    //                 panic!("expected valid function name")
-    //             }
-    //         }
-    //     }
-    // }
+            // all code cells should have valid function names,
+            // valid functions may not be implemented yet
+            let code_run = sheet.data_table(pos).unwrap().code_run().unwrap();
+            if let Some(error) = &code_run.error {
+                if error.msg == RunErrorMsg::BadFunctionName {
+                    panic!("expected valid function name")
+                }
+            }
+        }
+    }
 
     #[test]
     fn imports_a_simple_parquet() {

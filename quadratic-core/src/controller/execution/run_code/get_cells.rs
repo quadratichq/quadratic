@@ -83,11 +83,11 @@ impl GridController {
             }
         };
 
-        let context = self.grid().a1_context();
+        let context = self.a1_context();
 
         // ensure that the selection is not a direct self reference
         if selection.sheet_id == code_sheet_pos.sheet_id
-            && selection.might_contain_pos(code_sheet_pos.into(), &context)
+            && selection.might_contain_pos(code_sheet_pos.into(), context)
         {
             let msg = "Self reference not allowed".to_string();
             let run_error = get_run_error(&msg);
@@ -196,7 +196,7 @@ impl GridController {
                 w: rect.width() as i64,
                 h: rect.height() as i64,
                 two_dimensional,
-                has_headers: selection.has_table_headers(&context, is_python),
+                has_headers: selection.has_table_headers(context, is_python),
             }
         } else {
             CellA1Response {
@@ -593,8 +593,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.test_set_code_run_array_2d(1, 1, 2, 2, vec!["1", "2", "3", "4"]);
+        gc.test_set_code_run_array_2d(sheet_id, 1, 1, 2, 2, vec!["1", "2", "3", "4"]);
 
         // set show_ui = true
         gc.data_table_meta(
@@ -652,8 +651,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.test_set_code_run_array_2d(1, 1, 2, 1, vec!["1", "2"]);
+        gc.test_set_code_run_array_2d(sheet_id, 1, 1, 2, 1, vec!["1", "2"]);
 
         // set show_ui = true
         gc.data_table_meta(
@@ -723,8 +721,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.test_set_code_run_array_2d(1, 1, 2, 2, vec!["1", "2", "3", "4"]);
+        gc.test_set_code_run_array_2d(sheet_id, 1, 1, 2, 2, vec!["1", "2", "3", "4"]);
 
         gc.set_code_cell(
             SheetPos::new(sheet_id, 1, 10),
@@ -746,8 +743,7 @@ mod test {
         let sheet2_id = gc.sheet_ids()[1];
 
         // set table in sheet 2
-        let sheet = gc.sheet_mut(sheet1_id);
-        sheet.test_set_code_run_array_2d(1, 1, 2, 2, vec!["1", "2", "3", "4"]);
+        gc.test_set_code_run_array_2d(sheet1_id, 1, 1, 2, 2, vec!["1", "2", "3", "4"]);
 
         gc.set_code_cell(
             SheetPos {

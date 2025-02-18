@@ -46,15 +46,14 @@ impl GridController {
         sheet_id: SheetId,
         validation: Validation,
     ) {
-        let Some(sheet) = self.try_sheet_mut(sheet_id) else {
+        let Some(sheet) = self.try_sheet(sheet_id) else {
             return;
         };
-
         let mut warnings = vec![];
-        let context = sheet.a1_context();
+        let context = self.a1_context();
         if let Some(values) = sheet.selection_values(&validation.selection, None, false, true) {
             values.iter().for_each(|(pos, _)| {
-                if let Some(validation) = sheet.validations.validate(sheet, *pos, &context) {
+                if let Some(validation) = sheet.validations.validate(sheet, *pos, context) {
                     warnings.push((*pos, validation.id));
                 }
             });
@@ -64,6 +63,9 @@ impl GridController {
             .entry(sheet_id)
             .or_default();
 
+        let Some(sheet) = self.try_sheet_mut(sheet_id) else {
+            return;
+        };
         warnings.iter().for_each(|(pos, validation_id)| {
             let sheet_pos = pos.to_sheet_pos(sheet_id);
             let old = sheet
@@ -119,7 +121,11 @@ impl GridController {
 
             self.send_updated_bounds(transaction, sheet_id);
             if let Some(sheet) = self.grid.try_sheet(sheet_id) {
-                transaction.add_dirty_hashes_from_selections(sheet, vec![validation.selection]);
+                transaction.add_dirty_hashes_from_selections(
+                    sheet,
+                    self.a1_context(),
+                    vec![validation.selection],
+                );
             }
         }
     }
@@ -165,7 +171,11 @@ impl GridController {
             self.send_updated_bounds(transaction, sheet_id);
             if let Some(selection) = selection {
                 if let Some(sheet) = self.grid.try_sheet(sheet_id) {
-                    transaction.add_dirty_hashes_from_selections(sheet, vec![selection]);
+                    transaction.add_dirty_hashes_from_selections(
+                        sheet,
+                        self.a1_context(),
+                        vec![selection],
+                    );
                 }
             }
         }

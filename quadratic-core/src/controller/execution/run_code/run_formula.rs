@@ -15,10 +15,10 @@ impl GridController {
         code: String,
     ) {
         let mut eval_ctx = Ctx::new(self.grid(), sheet_pos);
-        let parse_ctx = self.grid.a1_context();
+        let parse_ctx = self.a1_context();
         transaction.current_sheet_pos = Some(sheet_pos);
 
-        match parse_formula(&code, &parse_ctx, sheet_pos) {
+        match parse_formula(&code, parse_ctx, sheet_pos) {
             Ok(parsed) => {
                 let output = parsed.eval(&mut eval_ctx).into_non_tuple();
                 let errors = output.inner.errors();

@@ -32,8 +32,9 @@ impl GridController {
 
             self.execute_operation(transaction);
             self.send_transaction_progress(transaction);
-            self.process_visible_dirty_hashes(transaction);
+            self.send_sheet_info(transaction);
             self.send_code_cells(transaction);
+            self.process_visible_dirty_hashes(transaction);
 
             if transaction.has_async > 0 {
                 self.transactions.update_async_transaction(transaction);

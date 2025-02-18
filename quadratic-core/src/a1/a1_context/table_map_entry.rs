@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    grid::{CodeCellLanguage, SheetId},
-    Rect, SheetPos,
+    grid::{CodeCellLanguage, DataTable, SheetId},
+    Pos, Rect, SheetPos,
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct TableMapEntry {
     pub sheet_id: SheetId,
     pub table_name: String,
@@ -21,6 +21,43 @@ pub struct TableMapEntry {
 }
 
 impl TableMapEntry {
+    pub fn from_table(
+        sheet_id: SheetId,
+        pos: Pos,
+        table: &DataTable,
+        language: Option<CodeCellLanguage>,
+    ) -> Self {
+        if table.spill_error || table.has_error() {
+            Self {
+                sheet_id,
+                table_name: table.name.to_display(),
+                visible_columns: table.columns_map(false),
+                all_columns: table.columns_map(true),
+                bounds: table.output_rect(pos, false),
+                show_ui: false,
+                show_name: false,
+                show_columns: false,
+                is_html_image: false,
+                header_is_first_row: false,
+                language,
+            }
+        } else {
+            Self {
+                sheet_id,
+                table_name: table.name.to_display(),
+                visible_columns: table.columns_map(false),
+                all_columns: table.columns_map(true),
+                bounds: table.output_rect(pos, false),
+                show_ui: table.show_ui,
+                show_name: table.show_name,
+                show_columns: table.show_columns,
+                is_html_image: table.is_html() || table.is_image(),
+                header_is_first_row: table.header_is_first_row,
+                language,
+            }
+        }
+    }
+
     /// Returns the start and end of the table in row coordinates relative to
     /// the sheet.
     pub fn to_sheet_rows(&self) -> (i64, i64) {
@@ -172,7 +209,7 @@ impl TableMapEntry {
             c.iter().map(|c| c.to_string()).collect()
         });
         TableMapEntry {
-            sheet_id: SheetId::test(),
+            sheet_id: SheetId::TEST,
             table_name: table_name.to_string(),
             visible_columns,
             all_columns,

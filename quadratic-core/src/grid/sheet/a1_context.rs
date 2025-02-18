@@ -6,21 +6,29 @@ use crate::{
 use super::*;
 
 impl Sheet {
+    pub fn get_table_language(&self, pos: Pos, table: &DataTable) -> Option<CodeCellLanguage> {
+        let language = match table.kind {
+            DataTableKind::CodeRun(_) => {
+                if let Some(CellValue::Code(code)) = self.cell_value_ref(pos) {
+                    Some(code.language.clone())
+                } else {
+                    dbgjs!(&format!("No cell value for code run at {:?}", pos));
+                    None
+                }
+            }
+            DataTableKind::Import(_) => Some(CodeCellLanguage::Import),
+        };
+        language
+    }
+
     /// Adds this sheet to the A1Context.
-    pub fn add_sheet_to_context(&self, context: &mut A1Context) {
+    pub fn add_sheet_to_a1_context(&self, context: &mut A1Context) {
         context.sheet_map.insert(self);
         self.data_tables.iter().for_each(|(pos, table)| {
-            let language = match table.kind {
-                DataTableKind::CodeRun(_) => {
-                    if let Some(CellValue::Code(code)) = self.cell_value_ref(*pos) {
-                        Some(code.language.clone())
-                    } else {
-                        None
-                    }
-                }
-                DataTableKind::Import(_) => Some(CodeCellLanguage::Import),
-            };
-            context.table_map.insert(self.id, *pos, table, language);
+            let language = self.get_table_language(*pos, table);
+            context
+                .table_map
+                .insert_table(self.id, *pos, table, language);
         });
     }
 
@@ -28,7 +36,7 @@ impl Sheet {
     /// not have info from other sheets within the grid).
     pub(crate) fn a1_context(&self) -> A1Context {
         let mut context = A1Context::default();
-        self.add_sheet_to_context(&mut context);
+        self.add_sheet_to_a1_context(&mut context);
         context
     }
 }

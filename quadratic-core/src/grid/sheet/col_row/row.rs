@@ -224,7 +224,7 @@ impl Sheet {
         let changed_selections =
             self.validations
                 .remove_row(transaction, self.id, row, &self.a1_context());
-        transaction.add_dirty_hashes_from_selections(self, changed_selections);
+        transaction.add_dirty_hashes_from_selections(self, &self.a1_context(), changed_selections);
 
         if transaction.is_user_undo_redo() {
             // reverse operation to create the row (this will also shift all impacted rows)
@@ -316,10 +316,8 @@ impl Sheet {
                 self.data_tables.insert_sorted(new_pos, code_run);
 
                 // signal the client to updates to the code cells (to draw the code arrays)
-                if send_client {
-                    transaction.add_code_cell(self.id, old_pos);
-                    transaction.add_code_cell(self.id, new_pos);
-                }
+                transaction.add_code_cell(self.id, old_pos);
+                transaction.add_code_cell(self.id, new_pos);
             }
         }
 
@@ -332,7 +330,11 @@ impl Sheet {
             self.validations
                 .insert_row(transaction, self.id, row, &self.a1_context());
         if send_client {
-            transaction.add_dirty_hashes_from_selections(self, changed_selections);
+            transaction.add_dirty_hashes_from_selections(
+                self,
+                &self.a1_context(),
+                changed_selections,
+            );
         }
 
         let changes = self.offsets.insert_row(row);

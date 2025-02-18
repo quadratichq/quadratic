@@ -16,9 +16,9 @@ impl GridController {
         language: CodeCellLanguage,
         code: String,
     ) -> Vec<Operation> {
-        let parse_ctx = self.grid.a1_context();
+        let parse_ctx = self.a1_context();
         let code = match language {
-            CodeCellLanguage::Formula => replace_a1_notation(&code, &parse_ctx, sheet_pos),
+            CodeCellLanguage::Formula => replace_a1_notation(&code, parse_ctx, sheet_pos),
             _ => code,
         };
 
@@ -79,10 +79,10 @@ impl GridController {
 
     // Returns whether a code_cell is dependent on another code_cell.
     fn is_dependent_on(&self, current: &DataTable, other_pos: SheetPos) -> bool {
-        let context = self.grid.a1_context();
+        let context = self.a1_context();
         current
             .code_run()
-            .map(|code_run| code_run.cells_accessed.contains(other_pos, &context))
+            .map(|code_run| code_run.cells_accessed.contains(other_pos, context))
             .unwrap_or(false)
     }
 

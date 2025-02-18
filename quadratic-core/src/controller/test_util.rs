@@ -3,6 +3,7 @@ use crate::{
     cellvalue::Import,
     grid::column_header::DataTableColumnHeader,
     grid::Grid,
+    grid::SheetId,
     grid::{DataTable, DataTableKind},
     viewport::ViewportBuffer,
     Array, ArraySize, CellValue, SheetPos, Value,
@@ -25,6 +26,20 @@ impl GridController {
 
     pub fn new_blank() -> Self {
         Self::from_grid(Grid::new_blank(), 0)
+    }
+
+    pub fn test_set_code_run_array_2d(
+        &mut self,
+        sheet_id: SheetId,
+        x: i64,
+        y: i64,
+        w: u32,
+        h: u32,
+        n: Vec<&str>,
+    ) {
+        let sheet = self.sheet_mut(sheet_id);
+        sheet.test_set_code_run_array_2d(x, y, w, h, n);
+        self.update_a1_context_table_map(sheet_id, (x, y).into());
     }
 
     pub fn test_set_data_table(

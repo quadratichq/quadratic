@@ -811,7 +811,13 @@ mod tests {
             &[("Sheet1", SheetId::TEST), ("Sheet2", SheetId::new())],
             &[("Table1", &["A"], Rect::test_a1("B2:D4"))],
         );
-        context.table_map.tables.first_mut().unwrap().is_html_image = true;
+        context
+            .table_map
+            .tables
+            .values_mut()
+            .next()
+            .unwrap()
+            .is_html_image = true;
 
         // Test position inside the table
         assert!(A1Selection::test_a1("B2").cursor_is_on_html_image(&context));

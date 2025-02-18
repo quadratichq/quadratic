@@ -106,9 +106,9 @@ impl DataTable {
 
     /// Get the display of a column header at the given index.
     pub fn header_display(&self, index: usize) -> bool {
-        self.column_headers.as_ref().map_or(true, |headers| {
-            headers.get(index).map_or(true, |header| header.display)
-        })
+        self.column_headers
+            .as_ref()
+            .is_none_or(|headers| headers.get(index).is_none_or(|header| header.display))
     }
 
     /// Adjust the index for the header.

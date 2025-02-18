@@ -9,7 +9,7 @@ use crate::{
     util::case_fold,
 };
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct SheetMap {
     sheet_map: HashMap<String, SheetId>,
 }
@@ -38,8 +38,14 @@ impl SheetMap {
             .map(|(name, _)| name)
     }
 
-    pub fn remove(&mut self, name: &str) -> Option<SheetId> {
+    pub fn remove_name(&mut self, name: &str) -> Option<SheetId> {
         self.sheet_map.remove(name)
+    }
+
+    pub fn remove_sheet_id(&mut self, sheet_id: SheetId) {
+        if let Some(name) = self.try_sheet_id(sheet_id) {
+            self.sheet_map.remove(&name.to_owned());
+        }
     }
 
     pub fn replace_sheet_name(&mut self, old_name: &str, new_name: &str) {

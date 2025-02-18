@@ -10,7 +10,7 @@ impl Grid {
     pub fn a1_context(&self) -> A1Context {
         let mut context = A1Context::default();
         self.sheets.iter().for_each(|sheet| {
-            sheet.add_sheet_to_context(&mut context);
+            sheet.add_sheet_to_a1_context(&mut context);
         });
         context
     }

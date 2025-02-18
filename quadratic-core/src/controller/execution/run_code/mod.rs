@@ -167,6 +167,7 @@ impl GridController {
         }
 
         self.send_updated_bounds(transaction, sheet_id);
+        self.update_a1_context_table_map(sheet_id, pos);
 
         transaction.add_from_code_run(
             sheet_id,

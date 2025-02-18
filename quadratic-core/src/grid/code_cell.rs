@@ -118,7 +118,7 @@ impl CodeCellValue {
 
             // create a copy of the a1_context so that we can send it to the to_string() function
             let mut new_a1_context = old_a1_context.clone();
-            new_a1_context.sheet_map.remove(old_name);
+            new_a1_context.sheet_map.remove_name(old_name);
 
             self.replace_q_cells_a1_selection(default_sheet_id, &old_a1_context, |a1_selection| {
                 a1_selection.to_string_force_sheet_name(

@@ -69,12 +69,11 @@ mod tests {
     fn test_render_borders_table_1x1() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.test_set_data_table(pos![A1], 1, 1, false, false);
+        gc.test_set_data_table(pos![A1].to_sheet_pos(sheet_id), 1, 1, false, false);
 
-        let context = gc.grid().a1_context();
+        let context = gc.a1_context();
         gc.set_borders(
-            A1Selection::test_a1_context("Table1", &context),
+            A1Selection::test_a1_context("Table1", context),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
@@ -91,12 +90,11 @@ mod tests {
     fn test_render_borders_table_3x3() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.test_set_data_table(pos![A1], 3, 3, false, false);
+        gc.test_set_data_table(pos![A1].to_sheet_pos(sheet_id), 3, 3, false, false);
 
-        let context = gc.grid().a1_context();
+        let context = gc.a1_context();
         gc.set_borders(
-            A1Selection::test_a1_context("Table1", &context),
+            A1Selection::test_a1_context("Table1", context),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
@@ -113,12 +111,11 @@ mod tests {
     fn test_render_borders_table_3x3_two_columns() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.test_set_data_table(pos![A1], 3, 3, false, false);
+        gc.test_set_data_table(pos![A1].to_sheet_pos(sheet_id), 3, 3, false, false);
 
-        let context = gc.grid().a1_context();
+        let context = gc.a1_context();
         gc.set_borders(
-            A1Selection::test_a1_context("Table1[[Column 1]:[Column 2]]", &context),
+            A1Selection::test_a1_context("Table1[[Column 1]:[Column 2]]", context),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
@@ -135,12 +132,11 @@ mod tests {
     fn test_render_borders_table_3x3_outer() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.test_set_data_table(pos![A1], 3, 3, false, false);
+        gc.test_set_data_table(pos![A1].to_sheet_pos(sheet_id), 3, 3, false, false);
 
-        let context = gc.grid().a1_context();
+        let context = gc.a1_context();
         gc.set_borders(
-            A1Selection::test_a1_context("Table1[#All]", &context),
+            A1Selection::test_a1_context("Table1[#All]", context),
             BorderSelection::Outer,
             Some(BorderStyle::default()),
             None,

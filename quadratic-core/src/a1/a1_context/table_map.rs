@@ -1,71 +1,52 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
     grid::{CodeCellLanguage, DataTable, SheetId},
+    util::case_fold,
     Pos, SheetPos,
 };
 
 use super::TableMapEntry;
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct TableMap {
-    pub tables: Vec<TableMapEntry>,
+    pub tables: HashMap<String, TableMapEntry>,
 }
 
 impl TableMap {
-    pub fn insert(
+    pub fn insert(&mut self, table_map_entry: TableMapEntry) {
+        let table_name_folded = case_fold(&table_map_entry.table_name);
+        self.tables.insert(table_name_folded, table_map_entry);
+    }
+
+    pub fn insert_table(
         &mut self,
         sheet_id: SheetId,
         pos: Pos,
         table: &DataTable,
         language: Option<CodeCellLanguage>,
     ) {
-        if table.spill_error || table.has_error() {
-            self.tables.push(TableMapEntry {
-                sheet_id,
-                table_name: table.name.to_display(),
-                visible_columns: table.columns_map(false),
-                all_columns: table.columns_map(true),
-                bounds: table.output_rect(pos, false),
-                show_ui: false,
-                show_name: false,
-                show_columns: false,
-                is_html_image: false,
-                header_is_first_row: false,
-                language,
-            });
-        } else {
-            self.tables.push(TableMapEntry {
-                sheet_id,
-                table_name: table.name.to_display(),
-                visible_columns: table.columns_map(false),
-                all_columns: table.columns_map(true),
-                bounds: table.output_rect(pos, false),
-                show_ui: table.show_ui,
-                show_name: table.show_name,
-                show_columns: table.show_columns,
-                is_html_image: table.is_html() || table.is_image(),
-                header_is_first_row: table.header_is_first_row,
-                language,
-            });
-        }
+        let table_name_folded = case_fold(&table.name.to_display());
+        let table_map_entry = TableMapEntry::from_table(sheet_id, pos, table, language);
+        self.tables.insert(table_name_folded, table_map_entry);
     }
 
     /// Finds a table by name.
     pub fn try_table(&self, table_name: &str) -> Option<&TableMapEntry> {
-        self.tables
-            .iter()
-            .find(|table| table.table_name.to_lowercase() == table_name.to_lowercase())
+        let table_name = case_fold(table_name);
+        self.tables.get(&table_name)
     }
 
     /// Returns a list of all table names in the table map.
     pub fn table_names(&self) -> Vec<String> {
-        self.tables.iter().map(|t| t.table_name.clone()).collect()
+        self.tables.values().map(|t| t.table_name.clone()).collect()
     }
 
     /// Finds a table by position
     pub fn table_from_pos(&self, sheet_pos: SheetPos) -> Option<&TableMapEntry> {
-        self.tables.iter().find(|table| {
+        self.tables.values().find(|table| {
             table.sheet_id == sheet_pos.sheet_id && table.bounds.contains(sheet_pos.into())
         })
     }
@@ -81,19 +62,17 @@ impl TableMap {
         all_columns: Option<&[&str]>,
         bounds: crate::Rect,
     ) {
-        self.tables.push(TableMapEntry::test(
-            table_name,
-            visible_columns,
-            all_columns,
-            bounds,
-        ));
+        let table_name_folded = case_fold(table_name);
+        self.tables.insert(
+            table_name_folded,
+            TableMapEntry::test(table_name, visible_columns, all_columns, bounds),
+        );
     }
 
     #[cfg(test)]
     pub fn get_mut(&mut self, table_name: &str) -> Option<&mut TableMapEntry> {
-        self.tables
-            .iter_mut()
-            .find(|table| table.table_name.to_lowercase() == table_name.to_lowercase())
+        let table_name_folded = case_fold(table_name);
+        self.tables.get_mut(&table_name_folded)
     }
 }
 

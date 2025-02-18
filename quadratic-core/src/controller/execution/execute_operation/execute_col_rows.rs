@@ -91,7 +91,7 @@ impl GridController {
                                     let pos = pos.to_sheet_pos(sheet.id);
                                     GridController::adjust_formula_column_row(
                                         code,
-                                        &self.grid.a1_context(),
+                                        self.a1_context(),
                                         pos,
                                         column,
                                         row,
@@ -100,9 +100,9 @@ impl GridController {
                                 }
                                 _ => {
                                     let mut new_code = code.clone();
-                                    let context = self.grid.a1_context();
+                                    let context = self.a1_context();
                                     new_code.adjust_code_cell_column_row(
-                                        column, row, delta, &sheet_id, &context,
+                                        column, row, delta, &sheet_id, context,
                                     );
                                     new_code.code
                                 }

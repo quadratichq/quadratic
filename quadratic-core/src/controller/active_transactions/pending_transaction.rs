@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use uuid::Uuid;
 
 use crate::{
-    a1::A1Selection,
+    a1::{A1Context, A1Selection},
     controller::{
         execution::TransactionSource, operations::operation::Operation, transaction::Transaction,
     },
@@ -319,6 +319,26 @@ impl PendingTransaction {
         }
     }
 
+    /// Adds dirty hashes for all hashes from a list of selections.
+    pub fn add_dirty_hashes_from_selections(
+        &mut self,
+        sheet: &Sheet,
+        a1_context: &A1Context,
+        selections: Vec<A1Selection>,
+    ) {
+        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
+            return;
+        }
+
+        selections.iter().for_each(|selection| {
+            let dirty_hashes = selection.rects_to_hashes(sheet, a1_context);
+            self.dirty_hashes
+                .entry(sheet.id)
+                .or_default()
+                .extend(dirty_hashes);
+        });
+    }
+
     /// Adds a code cell, html cell and image cell to the transaction from a
     /// CodeRun. If the code_cell no longer exists, then it sends the empty code
     /// cell so the client can remove it.
@@ -329,11 +349,11 @@ impl PendingTransaction {
         is_image: bool,
         is_html: bool,
     ) {
+        self.add_code_cell(sheet_id, pos);
+
         if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
             return;
         }
-
-        self.add_code_cell(sheet_id, pos);
 
         if is_html {
             self.add_html_cell(sheet_id, pos);
@@ -346,10 +366,6 @@ impl PendingTransaction {
 
     /// Adds a code cell to the transaction
     pub fn add_code_cell(&mut self, sheet_id: SheetId, pos: Pos) {
-        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
-            return;
-        }
-
         self.code_cells.entry(sheet_id).or_default().insert(pos);
     }
 
@@ -369,26 +385,6 @@ impl PendingTransaction {
         }
 
         self.image_cells.entry(sheet_id).or_default().insert(pos);
-    }
-
-    /// Adds dirty hashes for all hashes from a list of selections.
-    pub fn add_dirty_hashes_from_selections(
-        &mut self,
-        sheet: &Sheet,
-        selections: Vec<A1Selection>,
-    ) {
-        if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
-            return;
-        }
-
-        let context = sheet.a1_context();
-        selections.iter().for_each(|selection| {
-            let dirty_hashes = selection.rects_to_hashes(sheet, &context);
-            self.dirty_hashes
-                .entry(sheet.id)
-                .or_default()
-                .extend(dirty_hashes);
-        });
     }
 
     /// Inserts the changed validations into PendingTransaction. Also returns an

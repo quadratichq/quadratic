@@ -506,7 +506,7 @@ impl GridController {
                     let delta_x = insert_at.x - clipboard.origin.x;
                     let delta_y = insert_at.y - clipboard.origin.y;
 
-                    let context = self.grid.a1_context();
+                    let context = self.a1_context();
 
                     // loop through the clipboard and replace cell references in formulas
                     for col in clipboard.cells.columns.iter_mut() {
@@ -517,7 +517,7 @@ impl GridController {
                                         delta_x,
                                         delta_y,
                                         &selection.sheet_id,
-                                        &context,
+                                        context,
                                     );
                                 }
                                 _ => { /* noop */ }

@@ -434,14 +434,4 @@ mod tests {
             Some(CellValue::Number(BigDecimal::from(4)))
         );
     }
-
-    #[test]
-    fn test_set_data_table() {
-        let mut sheet = Sheet::test();
-        sheet.test_set_data_table(pos!(E5), 3, 3, false, true);
-        assert_eq!(
-            sheet.data_tables.get(&pos!(E5)).unwrap().name.to_display(),
-            "Table1"
-        );
-    }
 }

@@ -37,6 +37,8 @@ impl GridController {
         sheet_id: SheetId,
         data_table_pos: Pos,
     ) -> Result<()> {
+        transaction.add_code_cell(sheet_id, data_table_pos);
+
         if !(cfg!(target_family = "wasm") || cfg!(test)) || transaction.is_server() {
             return Ok(());
         }
@@ -627,7 +629,7 @@ impl GridController {
                 self.grid
                     .update_data_table_name(data_table_sheet_pos, &old_name, &name, false)?;
                 // mark code cells dirty to update meta data
-                transaction.add_code_cell(sheet_id, pos);
+                transaction.add_code_cell(sheet_id, data_table_pos);
             }
 
             let old_data_table = self.grid.data_table(sheet_id, pos)?;
@@ -665,7 +667,7 @@ impl GridController {
 
             let old_alternating_colors = alternating_colors.map(|alternating_colors| {
                 // mark code cell dirty to update alternating color
-                transaction.add_code_cell(sheet_id, pos);
+                transaction.add_code_cell(sheet_id, data_table_pos);
                 std::mem::replace(&mut data_table.alternating_colors, alternating_colors)
             });
 
@@ -682,7 +684,7 @@ impl GridController {
                 let old_columns = std::mem::replace(&mut data_table.column_headers, Some(columns));
                 data_table.normalize_column_header_names();
                 // mark code cells as dirty to updata meta data
-                transaction.add_code_cell(sheet_id, pos);
+                transaction.add_code_cell(sheet_id, data_table_pos);
                 old_columns
             });
 
@@ -811,8 +813,8 @@ impl GridController {
                 data_table_rect.height() as i64 - data_table.y_adjustment(true),
             );
 
-            transaction.add_dirty_hashes_from_sheet_rect(values_rect.to_sheet_rect(sheet_id));
             transaction.add_code_cell(sheet_id, data_table_pos);
+            transaction.add_dirty_hashes_from_sheet_rect(values_rect.to_sheet_rect(sheet_id));
 
             let mut format_update = SheetFormatUpdates::default();
 
@@ -926,8 +928,8 @@ impl GridController {
                 old_values.len() as i64,
             );
 
-            transaction.add_dirty_hashes_from_sheet_rect(values_rect.to_sheet_rect(sheet_id));
             transaction.add_code_cell(sheet_id, data_table_pos);
+            transaction.add_dirty_hashes_from_sheet_rect(values_rect.to_sheet_rect(sheet_id));
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
 
             let mut reverse_operations = vec![];
@@ -1055,8 +1057,8 @@ impl GridController {
                 1,
             );
 
-            transaction.add_dirty_hashes_from_sheet_rect(values_rect.to_sheet_rect(sheet_id));
             transaction.add_code_cell(sheet_id, data_table_pos);
+            transaction.add_dirty_hashes_from_sheet_rect(values_rect.to_sheet_rect(sheet_id));
 
             let mut reverse_operations = vec![];
 
@@ -1171,8 +1173,8 @@ impl GridController {
                 1,
             );
 
-            transaction.add_dirty_hashes_from_sheet_rect(values_rect.to_sheet_rect(sheet_id));
             transaction.add_code_cell(sheet_id, data_table_pos);
+            transaction.add_dirty_hashes_from_sheet_rect(values_rect.to_sheet_rect(sheet_id));
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
 
             let mut reverse_operations = vec![];
@@ -1268,6 +1270,9 @@ impl GridController {
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
+            if data_table.header_is_first_row == first_row_is_header {
+                return Ok(());
+            }
 
             data_table.toggle_first_row_as_header(first_row_is_header);
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);

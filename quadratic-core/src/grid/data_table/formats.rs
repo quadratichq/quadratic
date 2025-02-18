@@ -114,8 +114,8 @@ pub mod test {
     fn test_try_format_data_table() {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        data_table.header_is_first_row = false;
+        gc.test_data_table_first_row_as_header(pos.to_sheet_pos(sheet_id), false);
+
         gc.set_bold(
             &A1Selection::test_a1_sheet_id("E4,G5:J5", &sheet_id),
             Some(true),
@@ -145,8 +145,8 @@ pub mod test {
     fn test_try_format_data_table_first_row_header_and_show_ui() {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        data_table.header_is_first_row = false;
+        gc.test_data_table_first_row_as_header(pos.to_sheet_pos(sheet_id), false);
+
         gc.set_bold(
             &A1Selection::test_a1_sheet_id("E4,G5:J5", &sheet_id),
             Some(true),
@@ -155,9 +155,7 @@ pub mod test {
         .unwrap();
 
         // first row is header
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        data_table.header_is_first_row = true;
-
+        gc.test_data_table_first_row_as_header(pos.to_sheet_pos(sheet_id), true);
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table(pos).unwrap();
 
@@ -183,9 +181,7 @@ pub mod test {
         assert_eq!(sheet_format.bold, Some(true));
 
         // show name
-        let data_table: &mut crate::grid::DataTable =
-            gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        data_table.show_name = false;
+        gc.test_data_table_update_meta(pos.to_sheet_pos(sheet_id), None, None, Some(false), None);
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table(pos).unwrap();
@@ -202,9 +198,7 @@ pub mod test {
         assert_eq!(data_table_format.bold, Some(true));
 
         // show column headers
-        let data_table: &mut crate::grid::DataTable =
-            gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        data_table.show_columns = false;
+        gc.test_data_table_update_meta(pos.to_sheet_pos(sheet_id), None, None, None, Some(false));
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table(pos).unwrap();
@@ -221,8 +215,7 @@ pub mod test {
         assert_eq!(data_table_format.bold, Some(true));
 
         // first row is header
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        data_table.header_is_first_row = false;
+        gc.test_data_table_first_row_as_header(pos.to_sheet_pos(sheet_id), false);
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table(pos).unwrap();
@@ -248,8 +241,8 @@ pub mod test {
     fn test_try_format_data_table_with_hidden_column() {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        data_table.header_is_first_row = false;
+        gc.test_data_table_first_row_as_header(pos.to_sheet_pos(sheet_id), false);
+
         gc.set_bold(
             &A1Selection::test_a1_sheet_id("E4,G5:J5", &sheet_id),
             Some(true),
@@ -258,9 +251,16 @@ pub mod test {
         .unwrap();
 
         // hide first column
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        let column_headers = data_table.column_headers.as_mut().unwrap();
+        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[0].display = false;
+        gc.test_data_table_update_meta(
+            pos.to_sheet_pos(sheet_id),
+            Some(column_headers),
+            None,
+            None,
+            None,
+        );
 
         // check formats after hiding first column
         let sheet = gc.sheet(sheet_id);
@@ -285,8 +285,7 @@ pub mod test {
         assert_eq!(sheet_format.bold, Some(true));
 
         // add new bold formats with first column hidden
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        data_table.header_is_first_row = false;
+        gc.test_data_table_first_row_as_header(pos.to_sheet_pos(sheet_id), false);
         gc.set_bold(
             &A1Selection::test_a1_sheet_id("F10,G12:J12", &sheet_id),
             Some(true),
@@ -313,9 +312,16 @@ pub mod test {
         assert_eq!(sheet_format.bold, Some(true));
 
         // show first column
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        let column_headers = data_table.column_headers.as_mut().unwrap();
+        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[0].display = true;
+        gc.test_data_table_update_meta(
+            pos.to_sheet_pos(sheet_id),
+            Some(column_headers),
+            None,
+            None,
+            None,
+        );
 
         // check formats after showing first column
         let sheet = gc.sheet(sheet_id);

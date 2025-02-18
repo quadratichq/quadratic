@@ -19,12 +19,12 @@ impl GridController {
         let values = sheet.selection_sorted_vec(selection, false);
         let mut writer = Writer::from_writer(vec![]);
         let mut iter = values.iter();
-        let context = self.grid().a1_context();
+        let context = self.a1_context();
         for y in bounds.min.y..=bounds.max.y {
             let mut line = vec![];
             for x in bounds.min.x..=bounds.max.x {
                 // we need to ignore unselected columns or rows
-                if selection.might_contain_pos(Pos { x, y }, &context) {
+                if selection.might_contain_pos(Pos { x, y }, context) {
                     if let Some((_, value)) = iter.peeking_next(|(pos, _)| pos.x == x && pos.y == y)
                     {
                         line.push(value.to_string());

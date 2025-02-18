@@ -27,7 +27,7 @@ impl GridController {
     }
 
     /// Sends all pending updates to the client
-    pub(crate) fn send_transaction_client_updates(&self, transaction: &mut PendingTransaction) {
+    pub(crate) fn send_transaction_client_updates(&mut self, transaction: &mut PendingTransaction) {
         if !(cfg!(target_family = "wasm") || cfg!(test)) || transaction.is_server() {
             return;
         }
@@ -257,7 +257,9 @@ impl GridController {
     }
 
     /// Sends add sheet to the client
-    pub(crate) fn send_add_sheet(&self, transaction: &PendingTransaction, sheet_id: SheetId) {
+    pub(crate) fn send_add_sheet(&mut self, transaction: &PendingTransaction, sheet_id: SheetId) {
+        self.update_a1_context_sheet_map(sheet_id);
+
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
             return;
         }
@@ -281,7 +283,13 @@ impl GridController {
     }
 
     /// Sends delete sheet to the client
-    pub(crate) fn send_delete_sheet(&self, transaction: &PendingTransaction, sheet_id: SheetId) {
+    pub(crate) fn send_delete_sheet(
+        &mut self,
+        transaction: &PendingTransaction,
+        sheet_id: SheetId,
+    ) {
+        self.update_a1_context_sheet_map(sheet_id);
+
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
             return;
         }
@@ -293,12 +301,14 @@ impl GridController {
     }
 
     /// Sends sheet info to the client
-    pub(crate) fn send_sheet_info(&self, transaction: &mut PendingTransaction) {
-        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
-            return;
-        }
-
+    pub(crate) fn send_sheet_info(&mut self, transaction: &mut PendingTransaction) {
         for sheet_id in transaction.sheet_info.iter() {
+            self.update_a1_context_sheet_map(*sheet_id);
+
+            if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+                continue;
+            }
+
             let Some(sheet) = self.try_sheet(*sheet_id) else {
                 continue;
             };
@@ -319,7 +329,13 @@ impl GridController {
         transaction.sheet_info.clear();
     }
 
-    pub(crate) fn send_code_cells(&self, transaction: &mut PendingTransaction) {
+    pub(crate) fn send_code_cells(&mut self, transaction: &mut PendingTransaction) {
+        for (sheet_id, positions) in transaction.code_cells.iter() {
+            for pos in positions.iter() {
+                self.update_a1_context_table_map(*sheet_id, *pos);
+            }
+        }
+
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
             return;
         }
@@ -483,8 +499,8 @@ impl GridController {
             return;
         }
 
-        let context = self.grid().a1_context();
-        if let Ok(context) = serde_json::to_string(&context) {
+        let context = self.a1_context();
+        if let Ok(context) = serde_json::to_string(context) {
             crate::wasm_bindings::js::jsA1Context(context);
         }
     }
