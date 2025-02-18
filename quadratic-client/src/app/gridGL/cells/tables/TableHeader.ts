@@ -101,7 +101,9 @@ export class TableHeader extends Container {
     );
 
     // need to keep columnHeaders in the same position in the z-order
-    this.table.addChildAt(this, 0);
+    if (this.parent !== this.table) {
+      this.table.addChildAt(this, 0);
+    }
   }
 
   toHover = (bounds: Rectangle, gridHeading: number) => {
@@ -114,7 +116,9 @@ export class TableHeader extends Container {
       this.y + (this.table.codeCell.show_ui && this.table.codeCell.show_name ? this.columnHeaders.y : 0)
     );
     this.tableName.toHover(this.y);
-    this.table.hoverTableHeaders?.addChild(this);
+    if (this.parent !== this.table.hoverTableHeaders) {
+      this.table.hoverTableHeaders.addChild(this);
+    }
     this.columnHeadersGridLines.visible = true;
   };
 

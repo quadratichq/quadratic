@@ -55,8 +55,12 @@ export class Table extends Container {
     super.destroy();
   }
 
-  get hoverTableHeaders() {
-    return pixiApp.cellsSheets.getById(this.sheet.id)?.tables.hoverTableHeaders;
+  get hoverTableHeaders(): Container {
+    const cellsSheet = pixiApp.cellsSheets.getById(this.sheet.id);
+    if (!cellsSheet) {
+      throw new Error('Expected cellsSheet to be defined in Table.ts');
+    }
+    return cellsSheet.tables.hoverTableHeaders;
   }
 
   activate = (active: boolean) => {
@@ -106,20 +110,18 @@ export class Table extends Container {
   };
 
   private headingPosition = (bounds: Rectangle, gridHeading: number) => {
-    if (this.visible) {
-      const codeCell = this.codeCell;
-      if (
-        !codeCell.is_html &&
-        codeCell.show_ui &&
-        (codeCell.show_name || codeCell.show_columns) &&
-        this.tableBounds.top < bounds.top + gridHeading
-      ) {
-        this.header.toHover(bounds, gridHeading);
-        this.inOverHeadings = true;
-      } else {
-        this.header.toGrid();
-        this.inOverHeadings = false;
-      }
+    const codeCell = this.codeCell;
+    if (
+      !codeCell.is_html &&
+      codeCell.show_ui &&
+      (codeCell.show_name || codeCell.show_columns) &&
+      this.tableBounds.top < bounds.top + gridHeading
+    ) {
+      this.header.toHover(bounds, gridHeading);
+      this.inOverHeadings = true;
+    } else {
+      this.header.toGrid();
+      this.inOverHeadings = false;
     }
   };
 
@@ -139,13 +141,13 @@ export class Table extends Container {
   update(bounds: Rectangle, gridHeading: number) {
     if (!intersects.rectangleRectangle(this.tableBounds, bounds)) {
       this.visible = false;
+      this.header.visible = false;
       return;
     }
     this.visible = true;
+    this.header.visible = true;
     this.headingPosition(bounds, gridHeading);
-    if (this.visible && this.inOverHeadings) {
-      this.header.update(true);
-    }
+    if (this.inOverHeadings) this.header.update(true);
   }
 
   hideActive() {
