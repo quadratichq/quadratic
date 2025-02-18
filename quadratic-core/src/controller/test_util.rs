@@ -1,9 +1,16 @@
 #[cfg(test)]
+use bigdecimal::BigDecimal;
+
+#[cfg(test)]
+use std::str::FromStr;
+
+#[cfg(test)]
 use crate::{
     cellvalue::Import,
     grid::column_header::DataTableColumnHeader,
     grid::Grid,
     grid::SheetId,
+    grid::{CodeCellLanguage, CodeCellValue, CodeRun},
     grid::{DataTable, DataTableKind},
     viewport::ViewportBuffer,
     Array, ArraySize, CellValue, SheetPos, Value,
@@ -37,9 +44,50 @@ impl GridController {
         h: u32,
         n: Vec<&str>,
     ) {
-        let sheet = self.sheet_mut(sheet_id);
-        sheet.test_set_code_run_array_2d(x, y, w, h, n);
-        self.update_a1_context_table_map(sheet_id, (x, y).into());
+        let cell_value = CellValue::Code(CodeCellValue {
+            language: CodeCellLanguage::Formula,
+            code: "code".to_string(),
+        });
+
+        let array_size = ArraySize::new(w, h).unwrap();
+        let mut array = Array::new_empty(array_size);
+        for (i, s) in n.iter().enumerate() {
+            if !s.is_empty() {
+                let value = if let Ok(bd) = BigDecimal::from_str(s) {
+                    CellValue::Number(bd)
+                } else {
+                    CellValue::Text(s.to_string())
+                };
+                array.set(i as u32 % w, i as u32 / w, value).unwrap();
+            }
+        }
+
+        let code_run = CodeRun {
+            std_out: None,
+            std_err: None,
+            cells_accessed: Default::default(),
+            error: None,
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
+        };
+
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "Table1",
+            Value::Array(array),
+            false,
+            false,
+            false,
+            None,
+        );
+
+        let op = Operation::AddDataTable {
+            sheet_pos: SheetPos::new(sheet_id, x, y),
+            data_table,
+            cell_value,
+        };
+        self.start_user_transaction(vec![op], None, TransactionName::Unknown);
     }
 
     pub fn test_set_data_table(

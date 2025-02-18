@@ -1,3 +1,5 @@
+use std::collections::{HashMap, HashSet};
+
 use self::{active_transactions::ActiveTransactions, transaction::Transaction};
 use crate::{
     a1::{A1Context, TableMapEntry},
@@ -103,30 +105,44 @@ impl GridController {
         &self.a1_context
     }
 
-    fn remove_a1_context_table_map_for_sheet(&mut self, sheet_id: SheetId) {
-        self.a1_context
-            .table_map
-            .tables
-            .retain(|_, table| table.sheet_id != sheet_id);
-    }
+    pub(crate) fn update_a1_context_table_map(
+        &mut self,
+        code_cells: &HashMap<SheetId, HashSet<Pos>>,
+    ) {
+        for (sheet_id, positions) in code_cells.iter() {
+            let Some(sheet) = self.try_sheet(*sheet_id) else {
+                self.a1_context
+                    .table_map
+                    .tables
+                    .retain(|_, table| table.sheet_id != *sheet_id);
+                continue;
+            };
 
-    pub(crate) fn update_a1_context_table_map(&mut self, sheet_id: SheetId, pos: Pos) {
-        let Some(sheet) = self.try_sheet(sheet_id) else {
-            self.remove_a1_context_table_map_for_sheet(sheet_id);
-            return;
-        };
+            let mut to_remove = Vec::new();
+            let mut to_insert = Vec::new();
 
-        let Some(table) = sheet.data_table(pos) else {
-            self.a1_context
-                .table_map
-                .tables
-                .retain(|_, table| table.sheet_id != sheet_id || table.bounds.min != pos);
-            return;
-        };
+            for pos in positions.iter() {
+                let Some(table) = sheet.data_table(*pos) else {
+                    to_remove.push(*pos);
+                    continue;
+                };
 
-        let language = sheet.get_table_language(pos, table);
-        let table_map_entry = TableMapEntry::from_table(sheet_id, pos, table, language);
-        self.a1_context.table_map.insert(table_map_entry);
+                let language = sheet.get_table_language(*pos, table);
+                let table_map_entry = TableMapEntry::from_table(*sheet_id, *pos, table, language);
+                to_insert.push(table_map_entry);
+            }
+
+            for pos in to_remove.into_iter() {
+                self.a1_context
+                    .table_map
+                    .tables
+                    .retain(|_, table| table.sheet_id != *sheet_id || table.bounds.min != pos);
+            }
+
+            for table_map_entry in to_insert.into_iter() {
+                self.a1_context.table_map.insert(table_map_entry);
+            }
+        }
     }
 
     pub(crate) fn update_a1_context_sheet_map(&mut self, sheet_id: SheetId) {

@@ -177,7 +177,7 @@ impl PendingTransaction {
     }
 
     /// Sends the transaction to the multiplayer server (if needed)
-    pub fn send_transaction_to_multiplayer(&self) {
+    pub fn send_transaction(&self) {
         if self.complete
             && self.is_user_undo_redo()
             && (cfg!(target_family = "wasm") || cfg!(test))

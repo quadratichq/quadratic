@@ -51,7 +51,7 @@ impl GridController {
                         data_table.is_html(),
                     );
 
-                    self.update_a1_context_table_map(sheet_id, code_pos);
+                    self.send_code_cells(transaction);
                 }
             }
         }

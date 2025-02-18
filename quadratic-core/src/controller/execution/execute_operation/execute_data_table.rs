@@ -162,8 +162,9 @@ impl GridController {
             sheet.data_tables.insert_sorted(data_table_pos, data_table);
 
             // mark new data table as dirty
-            self.send_updated_bounds(transaction, sheet_id);
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
+            self.send_updated_bounds(transaction, sheet_id);
+            self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
             let reverse_operations = vec![
@@ -337,8 +338,9 @@ impl GridController {
             }
 
             // mark new data table as dirty
-            self.send_updated_bounds(transaction, sheet_id);
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?; // todo(ayush): optimize this
+            self.send_updated_bounds(transaction, sheet_id);
+            self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
             let reverse_operations = vec![Operation::SetDataTableAt {
@@ -435,6 +437,7 @@ impl GridController {
             transaction.add_dirty_hashes_from_sheet_rect(values_sheet_rect);
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
             self.send_updated_bounds(transaction, sheet_id);
+            self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
             reverse_operations.push(Operation::AddDataTable {
@@ -503,6 +506,8 @@ impl GridController {
                     readonly: Some(old_readonly),
                 },
             ];
+            self.send_updated_bounds(transaction, sheet_id);
+            self.send_code_cells(transaction);
             self.data_table_operations(
                 transaction,
                 forward_operations,
@@ -571,6 +576,7 @@ impl GridController {
             // mark new data table as dirty
             self.mark_data_table_dirty(transaction, sheet_id, sheet_rect.min)?;
             self.send_updated_bounds(transaction, sheet_id);
+            self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
             let reverse_operations = vec![
@@ -714,8 +720,9 @@ impl GridController {
                 || show_columns.is_some()
                 || columns.is_some()
             {
-                self.send_updated_bounds(transaction, sheet_id);
                 self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
+                self.send_updated_bounds(transaction, sheet_id);
+                self.send_code_cells(transaction);
             }
 
             let forward_operations = vec![op];
@@ -761,8 +768,9 @@ impl GridController {
             data_table.sort_all()?;
 
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
-            self.send_updated_bounds(transaction, sheet_id);
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
+            self.send_updated_bounds(transaction, sheet_id);
+            self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
             let reverse_operations = vec![Operation::SortDataTable {
@@ -873,6 +881,7 @@ impl GridController {
             }
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
             self.send_updated_bounds(transaction, sheet_id);
+            self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
             let reverse_operations = vec![Operation::DeleteDataTableColumn {
@@ -1006,6 +1015,7 @@ impl GridController {
                 Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
             }
             self.send_updated_bounds(transaction, sheet_id);
+            self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
             reverse_operations.push(Operation::InsertDataTableColumn {
@@ -1122,6 +1132,7 @@ impl GridController {
             }
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
             self.send_updated_bounds(transaction, sheet_id);
+            self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
             reverse_operations.push(Operation::DeleteDataTableRow {
@@ -1233,6 +1244,7 @@ impl GridController {
                 Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
             }
             self.send_updated_bounds(transaction, sheet_id);
+            self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
             reverse_operations.push(Operation::InsertDataTableRow {
@@ -1281,8 +1293,9 @@ impl GridController {
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
 
-            self.send_updated_bounds(transaction, sheet_id);
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
+            self.send_updated_bounds(transaction, sheet_id);
+            self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
             let reverse_operations = vec![Operation::DataTableFirstRowAsHeader {

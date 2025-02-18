@@ -135,6 +135,7 @@ impl GridController {
                 transaction.forward_operations.push(op);
 
                 sheet.recalculate_bounds();
+                self.send_code_cells(transaction);
             } else {
                 // nothing more can be done
                 return;
@@ -172,6 +173,7 @@ impl GridController {
                 transaction.forward_operations.push(op);
 
                 sheet.recalculate_bounds();
+                self.send_code_cells(transaction);
             } else {
                 // nothing more can be done
                 return;
@@ -214,6 +216,7 @@ impl GridController {
                 transaction.forward_operations.push(op);
 
                 sheet.recalculate_bounds();
+                self.send_code_cells(transaction);
             } else {
                 // nothing more can be done
                 return;
@@ -256,6 +259,7 @@ impl GridController {
                 transaction.forward_operations.push(op);
 
                 sheet.recalculate_bounds();
+                self.send_code_cells(transaction);
             } else {
                 // nothing more can be done
                 return;

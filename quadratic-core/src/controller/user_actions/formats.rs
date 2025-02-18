@@ -38,14 +38,14 @@ impl GridController {
 
             // map visible index to actual column index
             range.start.col.coord = table
-                .get_column_index_from_visible_index(range.start.col.coord as usize - 1)
+                .get_column_index_from_display_index(range.start.col.coord as usize - 1)
                 .unwrap_or(range.start.col.coord as usize - 1)
                 as i64
                 + 1;
 
             // map visible index to actual column index
             range.end.col.coord = table
-                .get_column_index_from_visible_index(range.end.col.coord as usize - 1)
+                .get_column_index_from_display_index(range.end.col.coord as usize - 1)
                 .unwrap_or(range.end.col.coord as usize - 1)
                 as i64
                 + 1;

@@ -111,7 +111,7 @@ impl GridController {
 
         self.send_transaction_client_updates(&mut transaction);
 
-        transaction.send_transaction_to_multiplayer();
+        transaction.send_transaction();
     }
 
     pub fn start_user_transaction(

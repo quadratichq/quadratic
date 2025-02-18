@@ -249,8 +249,6 @@ impl DataTable {
         }
 
         if !transaction.is_server() {
-            // self.send_updated_bounds(sheet_id);
-
             if !dirty_hashes.is_empty() {
                 let dirty_hashes_transaction =
                     transaction.dirty_hashes.entry(sheet_id).or_default();

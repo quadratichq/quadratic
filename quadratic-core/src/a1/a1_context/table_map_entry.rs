@@ -168,7 +168,7 @@ impl TableMapEntry {
 
     /// Returns the index of the column in the all_columns vector from the
     /// index of the column in the visible_columns vector.
-    pub fn get_column_index_from_visible_index(&self, index: usize) -> Option<usize> {
+    pub fn get_column_index_from_display_index(&self, index: usize) -> Option<usize> {
         let visible_column_name = self.visible_columns.get(index)?;
         let all_column_index = self
             .all_columns
@@ -314,15 +314,15 @@ mod tests {
         );
 
         // visible index 0 (A) should return all_columns index 0
-        assert_eq!(table.get_column_index_from_visible_index(0), Some(0));
+        assert_eq!(table.get_column_index_from_display_index(0), Some(0));
 
         // visible index 1 (C) should return all_columns index 2
-        assert_eq!(table.get_column_index_from_visible_index(1), Some(2));
+        assert_eq!(table.get_column_index_from_display_index(1), Some(2));
 
         // visible index 2 (E) should return all_columns index 4
-        assert_eq!(table.get_column_index_from_visible_index(2), Some(4));
+        assert_eq!(table.get_column_index_from_display_index(2), Some(4));
 
         // out of bounds
-        assert_eq!(table.get_column_index_from_visible_index(3), None);
+        assert_eq!(table.get_column_index_from_display_index(3), None);
     }
 }

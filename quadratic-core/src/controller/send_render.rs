@@ -330,25 +330,20 @@ impl GridController {
     }
 
     pub(crate) fn send_code_cells(&mut self, transaction: &mut PendingTransaction) {
-        for (sheet_id, positions) in transaction.code_cells.iter() {
-            for pos in positions.iter() {
-                self.update_a1_context_table_map(*sheet_id, *pos);
+        self.update_a1_context_table_map(&transaction.code_cells);
+
+        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+            for (sheet_id, positions) in transaction.code_cells.iter() {
+                let Some(sheet) = self.try_sheet(*sheet_id) else {
+                    continue;
+                };
+
+                for pos in positions.iter() {
+                    sheet.send_code_cell(*pos);
+                }
             }
         }
 
-        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
-            return;
-        }
-
-        for (sheet_id, positions) in transaction.code_cells.iter() {
-            let Some(sheet) = self.try_sheet(*sheet_id) else {
-                continue;
-            };
-
-            for pos in positions.iter() {
-                sheet.send_code_cell(*pos);
-            }
-        }
         transaction.code_cells.clear();
     }
 
