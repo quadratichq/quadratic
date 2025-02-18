@@ -70,7 +70,7 @@ export const GoTo = () => {
       const selection = stringToSelection(value, sheets.current, sheets.a1Context);
       return (
         <span>
-          <span className="font-bold">{selection.toA1String(sheets.current, sheets.a1Context)}</span>
+          <span className="font-bold">{selection.toA1String(sheets.current)}</span>
         </span>
       );
     } catch (e: any) {

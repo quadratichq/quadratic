@@ -13,6 +13,7 @@ impl Default for JsSelection {
     fn default() -> Self {
         JsSelection {
             selection: A1Selection::from_xy(1, 1, SheetId::TEST),
+            context: A1Context::default(),
         }
     }
 }
@@ -20,13 +21,18 @@ impl Default for JsSelection {
 #[wasm_bindgen]
 impl JsSelection {
     #[wasm_bindgen(constructor)]
-    pub fn new(sheet_id: String) -> Self {
+    pub fn new(sheet_id: String, context: &str) -> Self {
         let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
             dbgjs!("Unable to parse sheet_id in JsSelection::new");
             return JsSelection::default();
         };
+        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
+            dbgjs!("Unable to parse context in JsSelection::new");
+            return JsSelection::default();
+        };
         JsSelection {
             selection: A1Selection::from_xy(1, 1, sheet_id),
+            context,
         }
     }
 
@@ -75,7 +81,7 @@ pub fn to_selection(
     let context = serde_json::from_str::<A1Context>(context).map_err(|e| e.to_string())?;
     let selection = A1Selection::parse_a1(a1, &default_sheet_id, &context)
         .map_err(|e| serde_json::to_string(&e).unwrap_or(e.to_string()))?;
-    Ok(JsSelection { selection })
+    Ok(JsSelection { selection, context })
 }
 
 #[wasm_bindgen(js_name = "newSingleSelection")]
@@ -83,6 +89,9 @@ pub fn new_single_selection(sheet_id: String, x: u32, y: u32) -> Result<JsSelect
     let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
     Ok(JsSelection {
         selection: A1Selection::from_xy(x as i64, y as i64, sheet_id),
+
+        // the context is not important
+        context: A1Context::default(),
     })
 }
 
@@ -97,6 +106,9 @@ pub fn new_rect_selection(
     let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
     let selection = JsSelection {
         selection: A1Selection::from_rect(SheetRect::new(x0, y0, x1, y1, sheet_id)),
+
+        // the context is not important
+        context: A1Context::default(),
     };
     selection.save()
 }
@@ -106,21 +118,32 @@ pub fn new_all_selection(sheet_id: String) -> Result<String, String> {
     let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
     let selection = JsSelection {
         selection: A1Selection::all(sheet_id),
+
+        // the context is not important
+        context: A1Context::default(),
     };
     selection.save()
 }
 
 #[wasm_bindgen(js_name = "A1SelectionStringToSelection")]
-pub fn a1_selection_string_to_selection(a1_selection: &str) -> Result<JsSelection, String> {
+pub fn a1_selection_string_to_selection(
+    a1_selection: &str,
+    context: &str,
+) -> Result<JsSelection, String> {
     let selection = serde_json::from_str::<A1Selection>(a1_selection).map_err(|e| e.to_string())?;
-    Ok(JsSelection { selection })
+    let context = serde_json::from_str::<A1Context>(context).map_err(|e| e.to_string())?;
+    Ok(JsSelection { selection, context })
 }
 
 #[wasm_bindgen(js_name = "A1SelectionToJsSelection")]
-pub fn a1_selection_value_to_selection(a1_selection: JsValue) -> Result<JsSelection, String> {
+pub fn a1_selection_value_to_selection(
+    a1_selection: JsValue,
+    context: &str,
+) -> Result<JsSelection, String> {
     let selection =
         serde_wasm_bindgen::from_value::<A1Selection>(a1_selection).map_err(|e| e.to_string())?;
-    Ok(JsSelection { selection })
+    let context = serde_json::from_str::<A1Context>(context).map_err(|e| e.to_string())?;
+    Ok(JsSelection { selection, context })
 }
 
 #[wasm_bindgen(js_name = "cellRefRangeToRefRangeBounds")]

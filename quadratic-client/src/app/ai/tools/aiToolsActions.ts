@@ -102,7 +102,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     const { source_selection_rect, target_top_left_position } = args;
     try {
       const sourceSelection = stringToSelection(source_selection_rect, sheets.current, sheets.a1Context);
-      const sourceRect = sourceSelection.getSingleRectangleOrCursor(sheets.a1Context);
+      const sourceRect = sourceSelection.getSingleRectangleOrCursor();
       if (!sourceRect) {
         return 'Invalid source selection, this should be a single rectangle, not a range';
       }

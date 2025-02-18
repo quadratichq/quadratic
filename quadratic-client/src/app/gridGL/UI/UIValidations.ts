@@ -56,7 +56,7 @@ export class UIValidations extends Container<SpecialSprite> {
       if (v.selection.sheet_id.id !== sheets.current || !type) continue;
 
       try {
-        const jsSelection = A1SelectionToJsSelection(v.selection);
+        const jsSelection = A1SelectionToJsSelection(v.selection, sheets.a1Context);
         const infiniteRanges: RefRangeBounds[] = jsSelection.getInfiniteRefRangeBounds();
         infiniteRanges.forEach((range) => this.drawInfiniteRange(range, type));
       } catch (e) {

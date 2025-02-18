@@ -89,7 +89,7 @@ export class UIMultiPlayerCursor extends Graphics {
           cursor: player.parsedSelection?.getCursor(),
         });
 
-        const rangesStringified = player.parsedSelection.getFiniteRefRangeBounds(sheets.a1Context);
+        const rangesStringified = player.parsedSelection.getFiniteRefRangeBounds();
         try {
           const ranges = JSON.parse(rangesStringified);
           drawFiniteSelection(this, color, FILL_ALPHA, ranges);

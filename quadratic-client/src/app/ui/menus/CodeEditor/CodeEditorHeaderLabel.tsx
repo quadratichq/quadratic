@@ -27,7 +27,7 @@ export function CodeEditorHeaderLabel() {
     const updateCellRef = () => {
       if (!codeCellState.sheetId) return;
       const selection = newSingleSelection(codeCellState.sheetId, codeCellState.pos.x, codeCellState.pos.y);
-      const cellRef = selection.toA1String(sheets.current, sheets.a1Context);
+      const cellRef = selection.toA1String(sheets.current);
       setCellRef(cellRef);
     };
 

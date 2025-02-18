@@ -37,36 +37,24 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "getLargestRectangle")]
-    pub fn get_largest_rectangle(&self, context: &str) -> Result<Rect, String> {
-        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
-            return Err("Unable to parse context".to_string());
-        };
-        Ok(self.selection.largest_rect_finite(&context))
+    pub fn get_largest_rectangle(&self) -> Result<Rect, String> {
+        Ok(self.selection.largest_rect_finite(&self.context))
     }
 
     #[wasm_bindgen(js_name = "getSingleRectangle")]
-    pub fn get_single_rectangle(&self, context: &str) -> Result<Option<Rect>, String> {
-        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
-            return Err("Unable to parse context".to_string());
-        };
-        Ok(self.selection.single_rect(&context))
+    pub fn get_single_rectangle(&self) -> Result<Option<Rect>, String> {
+        Ok(self.selection.single_rect(&self.context))
     }
 
     #[wasm_bindgen(js_name = "getSingleRectangleOrCursor")]
-    pub fn get_single_rectangle_or_cursor(&self, context: &str) -> Result<Option<Rect>, String> {
-        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
-            return Err("Unable to parse context".to_string());
-        };
-        Ok(self.selection.single_rect_or_cursor(&context))
+    pub fn get_single_rectangle_or_cursor(&self) -> Result<Option<Rect>, String> {
+        Ok(self.selection.single_rect_or_cursor(&self.context))
     }
 
     #[wasm_bindgen(js_name = "contains")]
-    pub fn contains(&self, x: u32, y: u32, context: &str) -> bool {
-        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
-            return false;
-        };
+    pub fn contains(&self, x: u32, y: u32) -> bool {
         self.selection
-            .might_contain_xy(x as i64, y as i64, &context)
+            .might_contain_xy(x as i64, y as i64, &self.context)
     }
 
     #[wasm_bindgen(js_name = "getRanges")]
@@ -99,10 +87,7 @@ impl JsSelection {
     // }
 
     #[wasm_bindgen(js_name = "getFiniteRefRangeBounds")]
-    pub fn finite_ref_range_bounds(&self, context: &str) -> Result<JsValue, String> {
-        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
-            return Err("Unable to parse context".to_string());
-        };
+    pub fn finite_ref_range_bounds(&self) -> Result<JsValue, String> {
         let ranges = self
             .selection
             .ranges
@@ -113,13 +98,14 @@ impl JsSelection {
                 CellRefRange::Table { range } => {
                     // we ignore charts because their selection needs to match
                     // up with their pixel-perfect borders
-                    if context
+                    if self
+                        .context
                         .try_table(range.table_name.as_str())
                         .is_some_and(|t| t.is_html_image)
                     {
                         return None;
                     }
-                    range.convert_to_ref_range_bounds(false, &context, false, false)
+                    range.convert_to_ref_range_bounds(false, &self.context, false, false)
                 }
             })
             .collect::<Vec<_>>();
@@ -154,24 +140,19 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "overlapsA1Selection")]
-    pub fn overlaps_a1_selection(&self, selection: &str, context: &str) -> Result<bool, String> {
+    pub fn overlaps_a1_selection(&self, selection: &str) -> Result<bool, String> {
         let selection =
             serde_json::from_str::<A1Selection>(selection).map_err(|e| e.to_string())?;
-        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
-            return Err("Unable to parse context".to_string());
-        };
-        Ok(self.selection.overlaps_a1_selection(&selection, &context))
+        Ok(self
+            .selection
+            .overlaps_a1_selection(&selection, &self.context))
     }
 
     #[wasm_bindgen(js_name = "bottomRightCell")]
-    pub fn bottom_right_cell(&self, context: &str) -> JsCoordinate {
-        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
-            dbgjs!("Unable to parse context in bottom_right_cell");
-            return JsCoordinate { x: 0, y: 0 };
-        };
+    pub fn bottom_right_cell(&self) -> JsCoordinate {
         JsCoordinate {
-            x: self.selection.last_selection_end(&context).x as u32,
-            y: self.selection.last_selection_end(&context).y as u32,
+            x: self.selection.last_selection_end(&self.context).x as u32,
+            y: self.selection.last_selection_end(&self.context).y as u32,
         }
     }
 
@@ -181,70 +162,46 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "isSelectedColumnsFinite")]
-    pub fn is_selected_columns_finite(&self, context: &str) -> bool {
-        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
-            dbgjs!("Unable to parse context in is_selected_columns_finite");
-            return false;
-        };
-        self.selection.is_selected_columns_finite(&context)
+    pub fn is_selected_columns_finite(&self) -> bool {
+        self.selection.is_selected_columns_finite(&self.context)
     }
 
     #[wasm_bindgen(js_name = "isSelectedRowsFinite")]
-    pub fn is_selected_rows_finite(&self, context: &str) -> bool {
-        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
-            dbgjs!("Unable to parse context in is_selected_rows_finite");
-            return false;
-        };
-        self.selection.is_selected_rows_finite(&context)
+    pub fn is_selected_rows_finite(&self) -> bool {
+        self.selection.is_selected_rows_finite(&self.context)
     }
 
     #[wasm_bindgen(js_name = "getSelectedColumns")]
-    pub fn get_selected_columns(&self, context: &str) -> Vec<u32> {
-        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
-            dbgjs!("Unable to parse context in get_selected_columns");
-            return vec![];
-        };
+    pub fn get_selected_columns(&self) -> Vec<u32> {
         self.selection
-            .selected_columns_finite(&context)
+            .selected_columns_finite(&self.context)
             .iter()
             .map(|c| *c as u32)
             .collect()
     }
 
     #[wasm_bindgen(js_name = "getSelectedRows")]
-    pub fn get_selected_rows(&self, context: &str) -> Vec<u32> {
-        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
-            dbgjs!("Unable to parse context in get_selected_rows");
-            return vec![];
-        };
+    pub fn get_selected_rows(&self) -> Vec<u32> {
         self.selection
-            .selected_rows_finite(&context)
+            .selected_rows_finite(&self.context)
             .iter()
             .map(|c| *c as u32)
             .collect()
     }
 
     #[wasm_bindgen(js_name = "getSelectedColumnRanges")]
-    pub fn get_selected_column_ranges(&self, from: u32, to: u32, context: &str) -> Vec<u32> {
-        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
-            dbgjs!("Unable to parse context in get_selected_column_ranges");
-            return vec![];
-        };
+    pub fn get_selected_column_ranges(&self, from: u32, to: u32) -> Vec<u32> {
         self.selection
-            .selected_column_ranges(from as i64, to as i64, &context)
+            .selected_column_ranges(from as i64, to as i64, &self.context)
             .iter()
             .map(|c| *c as u32)
             .collect()
     }
 
     #[wasm_bindgen(js_name = "getSelectedRowRanges")]
-    pub fn get_selected_row_ranges(&self, from: u32, to: u32, context: &str) -> Vec<u32> {
-        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
-            dbgjs!("Unable to parse context in get_selected_row_ranges");
-            return vec![];
-        };
+    pub fn get_selected_row_ranges(&self, from: u32, to: u32) -> Vec<u32> {
         self.selection
-            .selected_row_ranges(from as i64, to as i64, &context)
+            .selected_row_ranges(from as i64, to as i64, &self.context)
             .iter()
             .map(|c| *c as u32)
             .collect()
@@ -261,31 +218,21 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "isMultiCursor")]
-    pub fn is_multi_cursor(&self, context: &str) -> bool {
-        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
-            dbgjs!("Unable to parse context in isMultiCursor");
-            return false;
-        };
-        self.selection.is_multi_cursor(&context)
+    pub fn is_multi_cursor(&self) -> bool {
+        self.selection.is_multi_cursor(&self.context)
     }
 
     #[wasm_bindgen(js_name = "toA1String")]
-    pub fn to_string(&self, default_sheet_id: String, context: &str) -> Result<String, String> {
-        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
-            dbgjs!("Unable to parse context in to_string");
-            return Err("Unable to parse context".to_string());
-        };
+    pub fn to_string(&self, default_sheet_id: String) -> Result<String, String> {
         let default_sheet_id = SheetId::from_str(&default_sheet_id).map_err(|e| e.to_string())?;
-        Ok(self.selection.to_string(Some(default_sheet_id), &context))
+        Ok(self
+            .selection
+            .to_string(Some(default_sheet_id), &self.context))
     }
 
     #[wasm_bindgen(js_name = "cursorIsOnHtmlImage")]
-    pub fn cursor_is_on_html_image(&self, context: &str) -> bool {
-        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
-            dbgjs!("Unable to parse context in is_on_html_image");
-            return false;
-        };
-        self.selection.cursor_is_on_html_image(&context)
+    pub fn cursor_is_on_html_image(&self) -> bool {
+        self.selection.cursor_is_on_html_image(&self.context)
     }
 
     #[wasm_bindgen(js_name = "getSelectedTableNames")]
@@ -295,13 +242,9 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "getTableColumnSelection")]
-    pub fn get_table_column_selection(&self, table_name: &str, context: &str) -> JsValue {
-        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
-            dbgjs!("Unable to parse context in get_table_column_selection");
-            return JsValue::UNDEFINED;
-        };
+    pub fn get_table_column_selection(&self, table_name: &str) -> JsValue {
         self.selection
-            .table_column_selection(table_name, &context)
+            .table_column_selection(table_name, &self.context)
             .map_or(JsValue::UNDEFINED, |cols| {
                 serde_wasm_bindgen::to_value(&cols).unwrap_or(JsValue::UNDEFINED)
             })

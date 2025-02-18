@@ -319,7 +319,7 @@ export class Sheets {
   }
 
   getA1String = (sheetId = this.current): string => {
-    return this.sheet.cursor.jsSelection.toA1String(sheetId, this.a1Context);
+    return this.sheet.cursor.jsSelection.toA1String(sheetId);
   };
 
   // Changes the cursor to the incoming selection
