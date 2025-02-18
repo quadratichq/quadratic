@@ -98,7 +98,7 @@ export class UIValidations extends Container<SpecialSprite> {
     }
   }
 
-  update(viewportDirty: boolean) {
+  update = (viewportDirty: boolean) => {
     if (!viewportDirty && !this.dirty) return;
     if (pixiApp.viewport.scale.x < MINIMUM_SCALE_TO_SHOW_VALIDATIONS) {
       this.visible = false;
@@ -118,7 +118,7 @@ export class UIValidations extends Container<SpecialSprite> {
     if (sheets.sheet.validations.length === 0) return;
 
     this.drawValidations();
-  }
+  };
 
   // handle clicking on UI elements
   // if world is true, it skips the check and automatically triggers (reuse by pressing Space on cell)

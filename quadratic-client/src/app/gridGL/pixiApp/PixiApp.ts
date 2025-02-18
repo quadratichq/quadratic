@@ -230,16 +230,16 @@ export class PixiApp {
     return rectangle;
   }
 
-  setViewportDirty(): void {
+  setViewportDirty = (): void => {
     this.viewport.dirty = true;
-  }
+  };
 
   viewportChanged = (): void => {
     this.viewport.dirty = true;
     this.gridLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
-    this.cellHighlights.dirty = true;
+    this.cellHighlights.setDirty();
     this.cellsSheets?.cull(this.viewport.getVisibleBounds());
 
     // we only set the viewport if update has completed firstRenderComplete
@@ -279,7 +279,7 @@ export class PixiApp {
     this.gridLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
-    this.cellHighlights.dirty = true;
+    this.cellHighlights.setDirty();
     this.render();
   };
 
@@ -294,7 +294,7 @@ export class PixiApp {
     this.gridLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
-    this.cellHighlights.dirty = true;
+    this.cellHighlights.setDirty();
     this.render();
   };
 
@@ -348,7 +348,7 @@ export class PixiApp {
     this.gridLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
-    this.cellHighlights.dirty = true;
+    this.cellHighlights.setDirty();
     this.multiplayerCursor.dirty = true;
     this.boxCells.reset();
     this.paused = false;
@@ -368,7 +368,7 @@ export class PixiApp {
 
   updateCursorPosition(visible: boolean | JsCoordinate = true) {
     this.cursor.dirty = true;
-    this.cellHighlights.dirty = true;
+    this.cellHighlights.setDirty();
     this.headings.dirty = true;
 
     if (visible) {
@@ -386,7 +386,7 @@ export class PixiApp {
     if (sheets.current === options.sheetId) {
       this.gridLines.dirty = true;
       this.cursor.dirty = true;
-      this.cellHighlights.dirty = true;
+      this.cellHighlights.setDirty();
       this.headings.dirty = true;
       this.multiplayerCursor.dirty = true;
     }

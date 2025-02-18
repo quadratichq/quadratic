@@ -322,47 +322,49 @@ export class Cursor extends Container {
   update(viewportDirty: boolean) {
     const cursor = sheets.sheet.cursor;
     const columnRow = cursor.isColumnRow();
-    if (this.dirty || (viewportDirty && columnRow)) {
-      this.dirty = false;
-      this.graphics.clear();
-      while (this.children.length > 1) {
-        this.removeChildAt(1);
-      }
-      if (!inlineEditorHandler.isEditingFormula()) {
-        this.drawCursor();
-      }
-      this.drawCodeCursor();
-
-      this.drawInlineCursorModeIndicator();
-
-      if (!pixiAppSettings.input.show) {
-        const finiteRanges = cursor.getFiniteRefRangeBounds();
-        this.drawFiniteCursor(finiteRanges);
-        const infiniteRanges = cursor.getInfiniteRefRangeBounds();
-        drawInfiniteSelection({
-          g: this.graphics,
-          color: pixiApp.accentColor,
-          alpha: FILL_SELECTION_ALPHA,
-          ranges: infiniteRanges,
-        });
-        if (
-          !columnRow &&
-          cursor.rangeCount() === 1 &&
-          cursor.getInfiniteRefRangeBounds().length === 0 &&
-          !cursor.isOnHtmlImage() &&
-          !this.cursorIsOnSpill()
-        ) {
-          this.drawCursorIndicator();
-        }
-      }
-
-      this.drawTableCornerIndicator();
-
-      if (pixiApp.pointer.pointerDown.unselectDown) {
-        this.drawUnselectDown();
-      }
-
-      pixiApp.setViewportDirty();
+    if (!this.dirty && !(viewportDirty && columnRow)) {
+      return;
     }
+
+    this.dirty = false;
+    this.graphics.clear();
+    while (this.children.length > 1) {
+      this.removeChildAt(1);
+    }
+    if (!inlineEditorHandler.isEditingFormula()) {
+      this.drawCursor();
+    }
+    this.drawCodeCursor();
+
+    this.drawInlineCursorModeIndicator();
+
+    if (!pixiAppSettings.input.show) {
+      const finiteRanges = cursor.getFiniteRefRangeBounds();
+      this.drawFiniteCursor(finiteRanges);
+      const infiniteRanges = cursor.getInfiniteRefRangeBounds();
+      drawInfiniteSelection({
+        g: this.graphics,
+        color: pixiApp.accentColor,
+        alpha: FILL_SELECTION_ALPHA,
+        ranges: infiniteRanges,
+      });
+      if (
+        !columnRow &&
+        cursor.rangeCount() === 1 &&
+        cursor.getInfiniteRefRangeBounds().length === 0 &&
+        !cursor.isOnHtmlImage() &&
+        !this.cursorIsOnSpill()
+      ) {
+        this.drawCursorIndicator();
+      }
+    }
+
+    this.drawTableCornerIndicator();
+
+    if (pixiApp.pointer.pointerDown.unselectDown) {
+      this.drawUnselectDown();
+    }
+
+    pixiApp.setViewportDirty();
   }
 }
