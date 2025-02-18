@@ -68,6 +68,7 @@ export class PointerTable {
   };
 
   private pointerDownDropdown = (world: Point, tableDown: TablePointerDownResult) => {
+    sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, false, false);
     events.emit('contextMenu', {
       type: ContextMenuType.Table,
       world,

@@ -217,7 +217,7 @@ impl TableRef {
         range.try_to_pos()
     }
 
-    /// Returns true if the column name is part of the selection
+    /// Returns the columns that are selected in the table.
     pub fn table_column_selection(
         &self,
         table_name: &str,

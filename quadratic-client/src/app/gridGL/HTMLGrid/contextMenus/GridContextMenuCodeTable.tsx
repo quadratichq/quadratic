@@ -1,4 +1,5 @@
 import { Action } from '@/app/actions/actions';
+import { contextMenuAtom } from '@/app/atoms/contextMenuAtom';
 import { ContextMenuBase, ContextMenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/Base';
 import { CodeTableIcon } from '@/shared/components/Icons';
 import {
@@ -7,8 +8,21 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+import { useRecoilValue } from 'recoil';
 
 export function GridContextMenuCodeTable() {
+  const contextMenu = useRecoilValue(contextMenuAtom);
+  const hasSpillError = Boolean(contextMenu.table?.spill_error);
+
+  if (hasSpillError) {
+    return (
+      <ContextMenuBase>
+        <ContextMenuItemAction action={Action.Cut} />
+        <ContextMenuItemAction action={Action.Copy} />
+      </ContextMenuBase>
+    );
+  }
+
   return (
     <ContextMenuBase>
       <ContextMenuItemAction action={Action.Cut} />
