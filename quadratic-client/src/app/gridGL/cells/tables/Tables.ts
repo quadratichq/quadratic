@@ -22,6 +22,9 @@ export interface TablePointerDownResult {
   column?: number;
 }
 
+// todo: tables needs to have a hash of table headers, so we can batch the
+// drawing of the table headers
+
 export class Tables extends Container<Table> {
   private cellsSheet: CellsSheet;
 
