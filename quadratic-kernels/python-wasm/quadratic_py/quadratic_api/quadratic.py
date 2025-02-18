@@ -144,6 +144,9 @@ class q:
         """
         result = getCellsA1(a1, first_row_header)
 
+        if result == None:
+            return None
+
         if result.w == 1 and result.h == 1:
             return result_to_value(result.cells[0])
 
