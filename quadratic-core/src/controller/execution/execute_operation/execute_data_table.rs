@@ -486,8 +486,11 @@ impl GridController {
             };
             data_table.readonly = !old_readonly;
 
-            // mark code cell as dirty
+            transaction.add_dirty_hashes_from_sheet_rect(sheet_rect); // todo(ayush): optimize this
             transaction.add_code_cell(sheet_id, data_table_pos);
+            self.mark_data_table_dirty(transaction, sheet_id, sheet_rect.min)?;
+            self.send_updated_bounds(transaction, sheet_id);
+            self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
             let reverse_operations = vec![
@@ -506,15 +509,12 @@ impl GridController {
                     readonly: Some(old_readonly),
                 },
             ];
-            self.send_updated_bounds(transaction, sheet_id);
-            self.send_code_cells(transaction);
             self.data_table_operations(
                 transaction,
                 forward_operations,
                 reverse_operations,
                 Some(&sheet_rect),
             );
-            self.check_deleted_data_tables(transaction, &sheet_rect);
 
             return Ok(());
         };
