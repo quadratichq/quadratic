@@ -59,9 +59,12 @@ export class PixiApp {
   cellHighlights!: CellHighlights;
   multiplayerCursor!: UIMultiPlayerCursor;
 
-  // this is used to display content over the headings (eg, table name when off
-  // the screen)
+  // this is used to display content over the headings (table name and columns
+  // when off the screen)
   private hoverTableHeaders: Container;
+
+  // used to draw selection (via Cursor.ts) for hoverTableHeaders content
+  hoverTableColumnsSelection: Graphics;
 
   cellMoving!: UICellMoving;
   headings!: GridHeadings;
@@ -99,6 +102,7 @@ export class PixiApp {
     this.cellImages = new UICellImages();
     this.validations = new UIValidations();
     this.hoverTableHeaders = new Container();
+    this.hoverTableColumnsSelection = new Graphics();
     this.viewport = new Viewport(this);
     this.background = new Background();
     this.momentumDetector = new MomentumScrollDetector();
@@ -183,6 +187,7 @@ export class PixiApp {
     this.cellMoving = this.viewportContents.addChild(new UICellMoving());
     this.validations = this.viewportContents.addChild(this.validations);
     this.viewportContents.addChild(this.hoverTableHeaders);
+    this.viewportContents.addChild(this.hoverTableColumnsSelection);
     this.headings = this.viewportContents.addChild(gridHeadings);
 
     this.reset();

@@ -114,6 +114,10 @@ impl A1Context {
         }
     }
 
+    pub fn table_in_name_or_column(&self, sheet_id: SheetId, x: u32, y: u32) -> Option<String> {
+        self.table_map.table_in_name_or_column(sheet_id, x, y)
+    }
+
     /// Creates an A1Context for testing.
     ///
     /// sheets: Vec<(sheet_name: &str, sheet_id: SheetId)>
