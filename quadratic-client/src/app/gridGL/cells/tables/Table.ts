@@ -144,7 +144,7 @@ export class Table extends Container {
       this.header.visible = false;
       return;
     }
-    if (this.codeCell.show_ui && (this.codeCell.show_name)) {
+    if (this.codeCell.show_ui && this.codeCell.show_name) {
       this.header.visible = true;
     }
     this.visible = true;

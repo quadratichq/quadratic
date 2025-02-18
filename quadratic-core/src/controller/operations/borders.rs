@@ -401,57 +401,29 @@ impl GridController {
                     -table.bounds.min.y + 1 - table.y_adjustment(true),
                 );
 
-                let mut table_ranges = vec![table_range];
+                self.a1_border_style_range(
+                    border_selection,
+                    style,
+                    &table_range,
+                    table_borders,
+                    clear_neighbors,
+                    true,
+                );
 
-                if let Some(rect) = table_range.to_rect() {
-                    let Some(sheet) = self.try_sheet(table.sheet_id) else {
-                        return;
-                    };
+                let sheet_range = table_range.translate(
+                    table.bounds.min.x - 1,
+                    table.bounds.min.y - 1 + table.y_adjustment(true),
+                );
 
-                    let data_table_pos = table.bounds.min;
-                    let Some(data_table) = sheet.data_table(data_table_pos) else {
-                        return;
-                    };
-
-                    if data_table.display_buffer.is_some() {
-                        table_ranges.clear();
-                        // y is 1-based
-                        for y in rect.y_range() {
-                            // get actual row index and convert to 1-based
-                            let actual_row = data_table.transmute_index(y as u64 - 1) + 1;
-                            for x in rect.x_range() {
-                                table_ranges
-                                    .push(RefRangeBounds::new_relative_xy(x, actual_row as i64));
-                            }
-                        }
-                    }
-                }
-
-                for table_range in table_ranges {
-                    self.a1_border_style_range(
-                        border_selection,
-                        style,
-                        &table_range,
-                        table_borders,
-                        clear_neighbors,
-                        true,
-                    );
-
-                    let sheet_range = table_range.translate(
-                        table.bounds.min.x - 1,
-                        table.bounds.min.y - 1 + table.y_adjustment(true),
-                    );
-
-                    // clear sheet borders for the range
-                    self.a1_border_style_range(
-                        BorderSelection::Clear,
-                        None,
-                        &sheet_range,
-                        sheet_borders,
-                        clear_neighbors,
-                        false,
-                    );
-                }
+                // clear sheet borders for the range
+                self.a1_border_style_range(
+                    BorderSelection::Clear,
+                    None,
+                    &sheet_range,
+                    sheet_borders,
+                    clear_neighbors,
+                    false,
+                );
             };
 
         let (sheet_ranges, table_ranges) = selection.separate_table_ranges();
