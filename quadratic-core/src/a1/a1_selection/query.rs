@@ -970,4 +970,48 @@ mod tests {
         let selection = A1Selection::test_a1_context("A1:B2", &context);
         assert_eq!(selection.get_single_full_table_selection_name(), None);
     }
+
+    #[test]
+    fn test_table_column_selection() {
+        let context = A1Context::test(
+            &[],
+            &[
+                ("Table1", &["A", "B", "C"], Rect::test_a1("A1:C3")),
+                ("Table2", &["D", "E"], Rect::test_a1("D1:E3")),
+            ],
+        );
+
+        // Test selecting specific columns from a table
+        let selection = A1Selection::test_a1_context("Table1[[A]:[C]]", &context);
+        assert_eq!(
+            selection.table_column_selection("Table1", &context),
+            Some(vec![0, 1, 2])
+        );
+
+        // Test selecting all columns from a table
+        let selection = A1Selection::test_a1_context("Table1", &context);
+        assert_eq!(
+            selection.table_column_selection("Table1", &context),
+            Some(vec![0, 1, 2])
+        );
+
+        // Test selecting from wrong table name
+        let selection = A1Selection::test_a1_context("Table1[[A]:[C]]", &context);
+        assert_eq!(selection.table_column_selection("Table2", &context), None);
+
+        // Test non-table selection
+        let selection = A1Selection::test_a1_context("A1:C3", &context);
+        assert_eq!(selection.table_column_selection("Table1", &context), None);
+
+        // Test multiple table selections
+        let selection = A1Selection::test_a1_context("Table1[A],Table2[D]", &context);
+        assert_eq!(
+            selection.table_column_selection("Table1", &context),
+            Some(vec![0])
+        );
+        assert_eq!(
+            selection.table_column_selection("Table2", &context),
+            Some(vec![0])
+        );
+    }
 }
