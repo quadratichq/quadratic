@@ -1,53 +1,25 @@
 import { editorInteractionStateShowGoToMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import type { A1Error, JsTableInfo } from '@/app/quadratic-core-types';
-import {
-  convertTableToRange,
-  getTableInfo,
-  stringToSelection,
-} from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { convertTableToRange, stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import '@/app/ui/styles/floating-dialog.css';
 import { GoToIcon } from '@/shared/components/Icons';
 import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
 import { CommandSeparator } from 'cmdk';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
-export const GoTo = () => {
-  const [showGoToMenu, setShowGoToMenu] = useRecoilState(editorInteractionStateShowGoToMenuAtom);
+export const GoTo = ({ tableInfo }: { tableInfo: JsTableInfo[] }) => {
+  const [, setShowGoToMenu] = useRecoilState(editorInteractionStateShowGoToMenuAtom);
   const inputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState<string>();
 
   const closeMenu = useCallback(() => {
     setShowGoToMenu(false);
   }, [setShowGoToMenu]);
-
-  const [tableInfo, setTablesInfo] = useState<JsTableInfo[]>();
-  useEffect(() => {
-    const sync = () => {
-      let tableInfo: JsTableInfo[] = [];
-      try {
-        tableInfo = getTableInfo(sheets.a1Context);
-      } catch (e) {
-        console.error('Error getting table info in GoTo.tsx', e);
-      }
-      tableInfo.sort((a, b) => a.name.localeCompare(b.name));
-      setTablesInfo(tableInfo);
-    };
-
-    sync();
-
-    events.on('updateCodeCell', sync);
-    events.on('renderCodeCells', sync);
-    return () => {
-      events.off('updateCodeCell', sync);
-      events.off('renderCodeCells', sync);
-    };
-  }, []);
 
   const tableNameToRange = useCallback((tableName: string): string => {
     let range = '';
@@ -164,10 +136,6 @@ export const GoTo = () => {
         .filter((sheet) => (value ? sheet.name.toLowerCase().includes(value.toLowerCase()) : true)),
     [value]
   );
-
-  if (!showGoToMenu) {
-    return null;
-  }
 
   return (
     <Command shouldFilter={false}>
