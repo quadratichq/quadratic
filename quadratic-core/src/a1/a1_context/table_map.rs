@@ -77,16 +77,14 @@ impl TableMap {
                     x: x as i64,
                     y: y as i64,
                 })
+                && table.show_ui
+                && y < (table.bounds.min.y as u32)
+                    + (if table.show_name { 1 } else { 0 } + if table.show_columns { 1 } else { 0 })
+                        as u32
             {
-                if table.show_ui
-                    && y < (table.bounds.min.y as u32)
-                        + (if table.show_name { 1 } else { 0 }
-                            + if table.show_columns { 1 } else { 0 })
-                            as u32
-                {
-                    return Some(table.table_name.clone());
-                }
+                return Some(table.table_name.clone());
             }
+
             None
         })
     }
