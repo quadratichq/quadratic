@@ -23,23 +23,23 @@ export class UICopy extends Graphics {
 
   constructor() {
     super();
-    events.on('changeSheet', this.updateNextTick);
-    events.on('viewportChanged', this.updateNextTick);
+    events.on('changeSheet', this.setDirty);
+    events.on('viewportChanged', this.setDirty);
     events.on('transactionStart', this.clearCopyRanges);
   }
 
   destroy() {
-    events.off('changeSheet', this.updateNextTick);
-    events.off('viewportChanged', this.updateNextTick);
+    events.off('changeSheet', this.setDirty);
+    events.off('viewportChanged', this.setDirty);
     events.off('transactionStart', this.clearCopyRanges);
     super.destroy();
   }
 
-  isShowing(): boolean {
+  isShowing = (): boolean => {
     return !!this.ranges && this.sheetId === sheets.current;
-  }
+  };
 
-  private updateNextTick = () => {
+  private setDirty = () => {
     if (!!this.sheetId && !!this.ranges) {
       this.dirty = true;
     }
@@ -64,7 +64,7 @@ export class UICopy extends Graphics {
     this.dirty = true;
   };
 
-  private draw() {
+  private draw = () => {
     if (!this.ranges) return;
     const bounds = pixiApp.viewport.getVisibleBounds();
     let render = false;
@@ -109,15 +109,14 @@ export class UICopy extends Graphics {
     if (render) {
       pixiApp.setViewportDirty();
     }
-  }
+  };
 
   update = () => {
     if (!this.dirty) return;
 
-    this.dirty = false;
-
     if (this.sheetId !== sheets.current || !this.ranges) {
       this.clear();
+      this.dirty = false;
       return;
     }
 

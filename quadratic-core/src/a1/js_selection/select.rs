@@ -2,8 +2,6 @@
 
 use wasm_bindgen::prelude::*;
 
-use crate::a1::A1Context;
-
 use super::*;
 
 #[wasm_bindgen]

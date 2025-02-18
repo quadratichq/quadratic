@@ -632,6 +632,19 @@ impl GridController {
                 .to_display();
 
             if let Some(name) = name {
+                // validate table name
+                if let Err(e) = DataTable::validate_table_name(&name, self.a1_context()) {
+                    if cfg!(target_family = "wasm") || cfg!(test) {
+                        crate::wasm_bindings::js::jsClientMessage(
+                            e.to_owned(),
+                            JsSnackbarSeverity::Error.to_string(),
+                        );
+                    }
+                    // clear remaining operations
+                    transaction.operations.clear();
+                    bail!(e);
+                }
+
                 self.grid
                     .update_data_table_name(data_table_sheet_pos, &old_name, &name, false)?;
                 // mark code cells dirty to update meta data
@@ -640,12 +653,30 @@ impl GridController {
 
             let old_data_table = self.grid.data_table(sheet_id, pos)?;
             let old_columns = old_data_table.column_headers.to_owned();
+            let old_data_table_name = old_data_table.name.to_display();
 
             // update column names that have changed in code cells
             if let (Some(columns), Some(old_columns)) = (columns.to_owned(), old_columns) {
                 for (index, old_column) in old_columns.iter().enumerate() {
                     if let Some(new_column) = columns.get(index) {
                         if old_column.name != new_column.name {
+                            // validate column name
+                            if let Err(e) = DataTable::validate_column_name(
+                                &new_column.name.to_string(),
+                                &old_data_table_name,
+                                self.a1_context(),
+                            ) {
+                                if cfg!(target_family = "wasm") || cfg!(test) {
+                                    crate::wasm_bindings::js::jsClientMessage(
+                                        e.to_owned(),
+                                        JsSnackbarSeverity::Error.to_string(),
+                                    );
+                                }
+                                // clear remaining operations
+                                transaction.operations.clear();
+                                bail!(e);
+                            }
+
                             self.grid.replace_data_table_column_name_in_code_cells(
                                 &old_column.name.to_string(),
                                 &new_column.name.to_string(),

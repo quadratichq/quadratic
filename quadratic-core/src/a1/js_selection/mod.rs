@@ -5,9 +5,11 @@ use std::str::FromStr;
 use ts_rs::TS;
 use wasm_bindgen::prelude::*;
 
-use crate::{grid::SheetId, Pos, Rect, SheetRect};
-
-use super::{A1Context, A1Selection};
+use crate::{
+    a1::{A1Context, A1Selection},
+    grid::{DataTable, Sheet, SheetId},
+    Pos, Rect, SheetRect,
+};
 
 pub mod create;
 pub mod query;

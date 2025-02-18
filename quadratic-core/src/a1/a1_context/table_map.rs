@@ -39,6 +39,19 @@ impl TableMap {
         self.tables.get(&table_name)
     }
 
+    /// Returns true if the table has a column with the given name.
+    pub fn table_has_column(&self, table_name: &str, column_name: &str) -> bool {
+        let column_name_folded = case_fold(column_name);
+        self.try_table(table_name)
+            .map(|table| {
+                table
+                    .all_columns
+                    .iter()
+                    .any(|col| case_fold(col) == column_name_folded)
+            })
+            .unwrap_or(false)
+    }
+
     /// Returns a list of all table names in the table map.
     pub fn table_names(&self) -> Vec<String> {
         self.tables.values().map(|t| t.table_name.clone()).collect()
@@ -335,5 +348,43 @@ mod tests {
 
         // Test position in data area (y=6)
         assert_eq!(map.table_in_name_or_column(sheet_id_1, 5, 6), None);
+    }
+
+    #[test]
+    fn test_table_has_column() {
+        let mut map = TableMap::default();
+
+        // Create a table with visible and hidden columns
+        map.test_insert(
+            "test_table",
+            &["Visible1", "Visible2"],                  // visible columns
+            Some(&["Visible1", "Hidden1", "Visible2"]), // all columns
+            Rect::new(1, 1, 3, 5),
+        );
+
+        // Test existing visible column (exact match)
+        assert!(map.table_has_column("test_table", "Visible1"));
+        assert!(map.table_has_column("test_table", "Visible2"));
+
+        // Test existing hidden column
+        assert!(map.table_has_column("test_table", "Hidden1"));
+
+        // Test case insensitivity
+        assert!(map.table_has_column("TEST_TABLE", "visible1"));
+        assert!(map.table_has_column("test_table", "VISIBLE2"));
+        assert!(map.table_has_column("TEST_TABLE", "HIDDEN1"));
+
+        // Test non-existent column
+        assert!(!map.table_has_column("test_table", "NonExistent"));
+
+        // Test non-existent table
+        assert!(!map.table_has_column("non_existent_table", "Visible1"));
+
+        // Test empty column name
+        assert!(!map.table_has_column("test_table", ""));
+
+        // Create a table with empty column list
+        map.test_insert("empty_table", &[], None, Rect::new(1, 1, 3, 5));
+        assert!(!map.table_has_column("empty_table", "AnyColumn"));
     }
 }
