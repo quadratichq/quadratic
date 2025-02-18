@@ -224,7 +224,7 @@ impl TableRef {
         context: &A1Context,
     ) -> Option<Vec<i64>> {
         let mut cols = vec![];
-        if table_name != self.table_name || !self.headers {
+        if table_name != self.table_name {
             return None;
         }
         let table = context.try_table(&self.table_name)?;
