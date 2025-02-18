@@ -35,6 +35,7 @@ export const GoTo = () => {
       } catch (e) {
         console.error('Error getting table info in GoTo.tsx', e);
       }
+      tableInfo.sort((a, b) => a.name.localeCompare(b.name));
       setTablesInfo(tableInfo);
     };
 
