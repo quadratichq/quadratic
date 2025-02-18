@@ -14,6 +14,7 @@ pub mod sort;
 
 use std::num::NonZeroU32;
 
+use crate::a1::A1Context;
 use crate::cellvalue::Import;
 use crate::grid::CodeRun;
 use crate::util::unique_name;
@@ -24,6 +25,8 @@ use anyhow::{anyhow, bail, Ok, Result};
 use chrono::{DateTime, Utc};
 use column_header::DataTableColumnHeader;
 use itertools::Itertools;
+use lazy_static::lazy_static;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use sort::DataTableSort;
 use strum_macros::Display;
@@ -114,6 +117,20 @@ impl Grid {
             sheet.replace_data_table_column_name_in_code_cells(old_name, new_name);
         }
     }
+}
+
+const A1_REGEX: &str = r#"\b\$?[a-zA-Z]+\$\d+\b"#;
+const R1C1_REGEX: &str = r#"\bR\d+C\d+\b"#;
+const TABLE_NAME_VALID_CHARS: &str = r#"^[a-zA-Z_\\][a-zA-Z0-9_.]*$"#;
+const COLUMN_NAME_VALID_CHARS: &str = r#"^[a-zA-Z_\-(][a-zA-Z0-9_\- .()\p{Pd}]*[a-zA-Z0-9_\-)]$"#;
+lazy_static! {
+    static ref A1_REGEX_COMPILED: Regex = Regex::new(A1_REGEX).expect("Failed to compile A1_REGEX");
+    static ref R1C1_REGEX_COMPILED: Regex =
+        Regex::new(R1C1_REGEX).expect("Failed to compile R1C1_REGEX");
+    static ref TABLE_NAME_VALID_CHARS_COMPILED: Regex =
+        Regex::new(TABLE_NAME_VALID_CHARS).expect("Failed to compile TABLE_NAME_VALID_CHARS");
+    static ref COLUMN_NAME_VALID_CHARS_COMPILED: Regex =
+        Regex::new(COLUMN_NAME_VALID_CHARS).expect("Failed to compile COLUMN_NAME_VALID_CHARS");
 }
 
 #[allow(clippy::large_enum_variant)]
@@ -249,6 +266,61 @@ impl DataTable {
     pub fn with_show_columns(mut self, show_columns: bool) -> Self {
         self.show_columns = show_columns;
         self
+    }
+
+    pub fn validate_table_name(
+        name: &str,
+        context: &A1Context,
+    ) -> std::result::Result<bool, String> {
+        // Check length limit
+        if name.is_empty() || name.len() > 255 {
+            return Err("Table name must be between 1 and 255 characters".to_string());
+        }
+
+        // Check if name is a single "R", "r", "C", or "c"
+        if matches!(name.to_uppercase().as_str(), "R" | "C") {
+            return Err("Table name cannot be a single 'R' or 'C'".to_string());
+        }
+
+        // Check if name matches a cell reference pattern (A1 or R1C1)
+        if A1_REGEX_COMPILED.is_match(name) || R1C1_REGEX_COMPILED.is_match(name) {
+            return Err("Table name cannot be a cell reference".to_string());
+        }
+
+        // Validate characters using regex pattern
+        if !TABLE_NAME_VALID_CHARS_COMPILED.is_match(name) {
+            return Err("Table name contains invalid characters".to_string());
+        }
+
+        // Check if table name already exists
+        if context.table_map.try_table(name).is_some() {
+            return Err("Table name must be unique".to_string());
+        }
+
+        std::result::Result::Ok(true)
+    }
+
+    pub fn validate_column_name(
+        column_name: &str,
+        table_name: &str,
+        context: &A1Context,
+    ) -> std::result::Result<bool, String> {
+        // Check length limit
+        if column_name.is_empty() || column_name.len() > 255 {
+            return Err("Column name must be between 1 and 255 characters".to_string());
+        }
+
+        // Validate characters using regex pattern
+        if !COLUMN_NAME_VALID_CHARS_COMPILED.is_match(column_name) {
+            return Err("Column name contains invalid characters".to_string());
+        }
+
+        // Check if column name already exists
+        if context.table_map.table_has_column(table_name, column_name) {
+            return Err("Column name must be unique".to_string());
+        }
+
+        std::result::Result::Ok(true)
     }
 
     pub fn update_table_name(&mut self, name: &str) {
@@ -985,5 +1057,162 @@ pub mod test {
         );
         // Height should be 3 (1 for value + 1 for name + 1 for columns)
         assert_eq!(data_table.output_size(), ArraySize::new(1, 3).unwrap());
+    }
+
+    #[test]
+    fn test_validate_table_name() {
+        // valid table name
+        let context = A1Context::default();
+        let longest_name = "a".repeat(255);
+        let valid_names = vec![
+            "Sales",
+            "tbl_Sales",
+            "First_Quarter",
+            "First.Quarter",
+            "Table_2023",
+            "_hidden",
+            "\\special",
+            longest_name.as_str(),
+        ];
+
+        for name in valid_names {
+            assert!(DataTable::validate_table_name(name, &context).is_ok());
+        }
+
+        // invalid table name
+        let context = A1Context::default();
+        let long_name = "a".repeat(256);
+        let test_cases = vec![
+            ("", "Table name must be between 1 and 255 characters"),
+            (
+                long_name.as_str(),
+                "Table name must be between 1 and 255 characters",
+            ),
+            ("R", "Table name cannot be a single 'R' or 'C'"),
+            ("C", "Table name cannot be a single 'R' or 'C'"),
+            ("r", "Table name cannot be a single 'R' or 'C'"),
+            ("c", "Table name cannot be a single 'R' or 'C'"),
+            ("A$1", "Table name cannot be a cell reference"),
+            ("R1C1", "Table name cannot be a cell reference"),
+            ("2Sales", "Table name contains invalid characters"),
+            ("Sales Space", "Table name contains invalid characters"),
+            ("#Invalid", "Table name contains invalid characters"),
+        ];
+
+        for (name, expected_error) in test_cases {
+            let result = DataTable::validate_table_name(name, &context);
+            assert!(result.is_err());
+            assert_eq!(result.unwrap_err(), expected_error);
+        }
+
+        // duplicate table name
+        let context = A1Context::test(
+            &[("Sheet1", SheetId::TEST)],
+            &[
+                ("Table1", &["col1", "col2"], Rect::test_a1("A1:B3")),
+                ("Table2", &["col3", "col4"], Rect::test_a1("D1:E3")),
+            ],
+        );
+        let result = DataTable::validate_table_name("Table1", &context);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Table name must be unique");
+    }
+
+    #[test]
+    fn test_validate_column_name() {
+        // Test valid column names
+        let context = A1Context::test(
+            &[("Sheet1", SheetId::TEST)],
+            &[("Table1", &["existing_col"], Rect::test_a1("A1:A3"))],
+        );
+        let table_name = "Table1";
+        let longest_name = "a".repeat(255);
+        let valid_names = vec![
+            "Sales",
+            "First Quarter",
+            "Revenue-2023",
+            "Cost (USD)",
+            "profit_margin",
+            "column-with-dashes",
+            "column_with_underscore",
+            "Column With Spaces",
+            "Column.With.Dots",
+            "Column(With)Parentheses",
+            "_hidden_column",
+            "Column-with–en—dash", // Testing various dash characters
+            longest_name.as_str(),
+        ];
+
+        for name in valid_names {
+            assert!(
+                DataTable::validate_column_name(name, table_name, &context).is_ok(),
+                "Expected '{}' to be valid",
+                name
+            );
+        }
+
+        // Test invalid column names
+        let long_name = "a".repeat(256);
+        let test_cases = vec![
+            ("", "Column name must be between 1 and 255 characters"),
+            (
+                long_name.as_str(),
+                "Column name must be between 1 and 255 characters",
+            ),
+            ("#Invalid", "Column name contains invalid characters"),
+            ("@Column", "Column name contains invalid characters"),
+            ("Column!", "Column name contains invalid characters"),
+            ("Column?", "Column name contains invalid characters"),
+            ("Column*", "Column name contains invalid characters"),
+            ("Column/", "Column name contains invalid characters"),
+            ("Column\\", "Column name contains invalid characters"),
+            ("Column$", "Column name contains invalid characters"),
+            ("Column%", "Column name contains invalid characters"),
+            ("Column^", "Column name contains invalid characters"),
+            ("Column&", "Column name contains invalid characters"),
+            ("Column+", "Column name contains invalid characters"),
+            ("Column=", "Column name contains invalid characters"),
+            ("Column;", "Column name contains invalid characters"),
+            ("Column,", "Column name contains invalid characters"),
+            ("Column<", "Column name contains invalid characters"),
+            ("Column>", "Column name contains invalid characters"),
+            ("Column[", "Column name contains invalid characters"),
+            ("Column]", "Column name contains invalid characters"),
+            ("Column{", "Column name contains invalid characters"),
+            ("Column}", "Column name contains invalid characters"),
+            ("Column|", "Column name contains invalid characters"),
+            ("Column`", "Column name contains invalid characters"),
+            ("Column~", "Column name contains invalid characters"),
+            ("Column'", "Column name contains invalid characters"),
+            ("Column\"", "Column name contains invalid characters"),
+            // Test names ending with invalid characters
+            ("Column ", "Column name contains invalid characters"),
+            ("Column.", "Column name contains invalid characters"),
+            // Test names starting with invalid characters (except underscore and dash)
+            ("1Column", "Column name contains invalid characters"),
+            ("2Sales", "Column name contains invalid characters"),
+            (".Column", "Column name contains invalid characters"),
+            (" Column", "Column name contains invalid characters"),
+        ];
+
+        for (name, expected_error) in test_cases {
+            let result = DataTable::validate_column_name(name, table_name, &context);
+            assert!(
+                result.is_err(),
+                "Expected '{}' to be invalid, but it was valid",
+                name
+            );
+            assert_eq!(
+                result.unwrap_err(),
+                expected_error,
+                "Unexpected error message for '{}'",
+                name
+            );
+        }
+
+        // Test duplicate column name
+        let result = DataTable::validate_column_name("existing_col", table_name, &context);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Column name must be unique");
     }
 }

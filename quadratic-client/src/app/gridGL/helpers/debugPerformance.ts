@@ -1,7 +1,7 @@
 import { debugShowCountRenderedObjects, debugShowFPS, debugShowTime } from '@/app/debugFlags';
 import { Container } from 'pixi.js';
 
-const MINIMUM_MS_TO_DISPLAY = 1;
+const MINIMUM_MS_TO_DISPLAY = 10;
 
 let lastTime = 0;
 

@@ -5,7 +5,9 @@ use anyhow::{anyhow, Result};
 use bigdecimal::{BigDecimal, RoundingMode};
 use borders::Borders;
 use indexmap::IndexMap;
+use lazy_static::lazy_static;
 use rand::Rng;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use validations::Validations;
 
@@ -16,7 +18,7 @@ use super::ids::SheetId;
 use super::js_types::{CellFormatSummary, CellType, JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;
 use super::{CellWrap, CodeRun, Format, NumericFormatKind, SheetFormatting};
-use crate::a1::{A1Selection, CellRefRange};
+use crate::a1::{A1Context, A1Selection, CellRefRange};
 use crate::sheet_offsets::SheetOffsets;
 use crate::{Array, CellValue, Pos, Rect};
 
@@ -42,6 +44,12 @@ pub mod search;
 pub mod sheet_test;
 pub mod summarize;
 pub mod validations;
+
+const SHEET_NAME_VALID_CHARS: &str = r#"^[a-zA-Z0-9_\-(][a-zA-Z0-9_\- .()\p{Pd}]*[a-zA-Z0-9_\-)]$"#;
+lazy_static! {
+    static ref SHEET_NAME_VALID_CHARS_COMPILED: Regex =
+        Regex::new(SHEET_NAME_VALID_CHARS).expect("Failed to compile SHEET_NAME_VALID_CHARS");
+}
 
 /// Sheet in a file.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -98,6 +106,26 @@ impl Sheet {
     /// Creates a sheet for testing.
     pub fn test() -> Self {
         Sheet::new(SheetId::TEST, String::from("Sheet1"), String::from("a0"))
+    }
+
+    pub fn validate_sheet_name(name: &str, context: &A1Context) -> Result<bool, String> {
+        // Check length limit
+        if name.is_empty() || name.len() > 31 {
+            return Err("Sheet name must be between 1 and 31 characters".to_string());
+        }
+
+        // Validate characters using regex pattern
+        if !SHEET_NAME_VALID_CHARS_COMPILED.is_match(name) {
+            return Err("Sheet name contains invalid characters".to_string());
+        }
+
+        // Check if sheet name already exists
+
+        if context.sheet_map.try_sheet_name(name).is_some() {
+            return Err("Sheet name must be unique".to_string());
+        }
+
+        Ok(true)
     }
 
     pub fn update_sheet_name(&mut self, old_name: &str, new_name: &str) {
@@ -1149,5 +1177,102 @@ mod test {
             js_cell_value_pos_in_rect,
             expected_js_cell_value_pos_in_rect
         );
+    }
+
+    #[test]
+    fn test_validate_sheet_name() {
+        // Setup test context with an existing sheet
+        let context = A1Context::test(&[("ExistingSheet", SheetId::TEST)], &[]);
+
+        // Test valid sheet names
+        let longest_name = "a".repeat(31);
+        let valid_names = vec![
+            "Sheet1",
+            "MySheet",
+            "Test_Sheet",
+            "Sheet-1",
+            "Sheet (1)",
+            "Sheet.1",
+            "1Sheet",
+            "Sheet_with_underscore",
+            "Sheet-with-dashes",
+            "Sheet With Spaces",
+            "Sheet.With.Dots",
+            "Sheet(With)Parentheses",
+            "_hidden_sheet",
+            "Sheet-with–en—dash", // Testing various dash characters
+            longest_name.as_str(),
+        ];
+
+        for name in valid_names {
+            assert!(
+                Sheet::validate_sheet_name(name, &context).is_ok(),
+                "Expected '{}' to be valid",
+                name
+            );
+        }
+
+        // Test invalid sheet names
+        let long_name = "a".repeat(32);
+        let test_cases = vec![
+            ("", "Sheet name must be between 1 and 31 characters"),
+            (
+                long_name.as_str(),
+                "Sheet name must be between 1 and 31 characters",
+            ),
+            ("#Invalid", "Sheet name contains invalid characters"),
+            ("@Sheet", "Sheet name contains invalid characters"),
+            ("Sheet!", "Sheet name contains invalid characters"),
+            ("Sheet?", "Sheet name contains invalid characters"),
+            ("Sheet*", "Sheet name contains invalid characters"),
+            ("Sheet/", "Sheet name contains invalid characters"),
+            ("Sheet\\", "Sheet name contains invalid characters"),
+            ("Sheet$", "Sheet name contains invalid characters"),
+            ("Sheet%", "Sheet name contains invalid characters"),
+            ("Sheet^", "Sheet name contains invalid characters"),
+            ("Sheet&", "Sheet name contains invalid characters"),
+            ("Sheet+", "Sheet name contains invalid characters"),
+            ("Sheet=", "Sheet name contains invalid characters"),
+            ("Sheet;", "Sheet name contains invalid characters"),
+            ("Sheet,", "Sheet name contains invalid characters"),
+            ("Sheet<", "Sheet name contains invalid characters"),
+            ("Sheet>", "Sheet name contains invalid characters"),
+            ("Sheet[", "Sheet name contains invalid characters"),
+            ("Sheet]", "Sheet name contains invalid characters"),
+            ("Sheet{", "Sheet name contains invalid characters"),
+            ("Sheet}", "Sheet name contains invalid characters"),
+            ("Sheet|", "Sheet name contains invalid characters"),
+            ("Sheet`", "Sheet name contains invalid characters"),
+            ("Sheet~", "Sheet name contains invalid characters"),
+            ("Sheet'", "Sheet name contains invalid characters"),
+            ("Sheet\"", "Sheet name contains invalid characters"),
+            // Test names with leading/trailing spaces
+            (" Sheet", "Sheet name contains invalid characters"),
+            ("Sheet ", "Sheet name contains invalid characters"),
+            // Test names with other invalid patterns
+            ("\tSheet", "Sheet name contains invalid characters"),
+            ("\nSheet", "Sheet name contains invalid characters"),
+            ("Sheet\r", "Sheet name contains invalid characters"),
+        ];
+
+        for (name, expected_error) in test_cases {
+            let result = Sheet::validate_sheet_name(name, &context);
+            assert!(
+                result.is_err(),
+                "Expected '{}' to be invalid, but it was valid",
+                name
+            );
+            assert_eq!(
+                result.unwrap_err(),
+                expected_error,
+                "Unexpected error message for '{}'",
+                name
+            );
+        }
+
+        // Test duplicate sheet name
+        let result = Sheet::validate_sheet_name("ExistingSheet", &context);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Sheet name must be unique");
     }
 }

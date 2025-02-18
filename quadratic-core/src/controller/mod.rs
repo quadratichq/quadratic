@@ -122,8 +122,9 @@ impl GridController {
             let mut to_insert = Vec::new();
 
             for pos in positions.iter() {
+                to_remove.push(*pos);
+
                 let Some(table) = sheet.data_table(*pos) else {
-                    to_remove.push(*pos);
                     continue;
                 };
 
@@ -146,13 +147,13 @@ impl GridController {
     }
 
     pub(crate) fn update_a1_context_sheet_map(&mut self, sheet_id: SheetId) {
+        self.a1_context.sheet_map.remove_sheet_id(sheet_id);
+
         if let Some(sheet) = self.try_sheet(sheet_id) {
             let sheet_name = sheet.name.to_owned();
             self.a1_context
                 .sheet_map
                 .insert_parts(&sheet_name, sheet_id);
-        } else {
-            self.a1_context.sheet_map.remove_sheet_id(sheet_id);
         }
     }
 

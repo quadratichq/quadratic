@@ -7,13 +7,13 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { focusGrid } from '@/app/helpers/focusGrid';
+import { validateSheetName } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { SheetBarTabDropdownMenu } from '@/app/ui/menus/SheetBar/SheetBarTabDropdownMenu';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { cn } from '@/shared/shadcn/utils';
 import { Box, Fade, Paper, Popper, Stack, Typography, useTheme } from '@mui/material';
 import type { PointerEvent } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
 
@@ -36,7 +36,7 @@ interface Props {
 export const SheetBarTab = (props: Props): JSX.Element => {
   const [isOpenDropdown, setIsOpenDropdown] = useState(false);
   const { sheet, order, active, onPointerDown, forceRename, clearRename } = props;
-  const [nameExists, setNameExists] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
   const [isRenaming, setIsRenaming] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const theme = useTheme();
@@ -85,7 +85,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
           active={active}
           clearRename={clearRename}
           isRenaming={isRenaming}
-          setNameExists={setNameExists}
+          setErrorMessage={setErrorMessage}
           setIsRenaming={setIsRenaming}
           sheet={sheet}
         />
@@ -100,7 +100,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
             />
           )}
         </div>
-        <Popper open={nameExists} anchorEl={containerRef.current} transition>
+        <Popper open={!!errorMessage} anchorEl={containerRef.current} transition>
           {({ TransitionProps }) => (
             <Fade {...TransitionProps} timeout={350}>
               <Paper
@@ -113,7 +113,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
                   backgroundColor: theme.palette.error.main,
                 }}
               >
-                <Typography variant="caption">Sheet name must be unique</Typography>
+                <Typography variant="caption">{errorMessage}</Typography>
               </Paper>
             </Fade>
           )}
@@ -166,7 +166,7 @@ function TabName({
   active,
   clearRename,
   isRenaming,
-  setNameExists,
+  setErrorMessage,
   setIsRenaming,
   sheet,
 }: {
@@ -174,11 +174,25 @@ function TabName({
   clearRename: Props['clearRename'];
   isRenaming: boolean;
   setIsRenaming: React.Dispatch<React.SetStateAction<boolean>>;
-  setNameExists: React.Dispatch<React.SetStateAction<boolean>>;
+  setErrorMessage: React.Dispatch<React.SetStateAction<string | undefined>>;
   sheet: Props['sheet'];
 }) {
   const contentEditableRef = useRef<HTMLDivElement | null>(null);
   const isRenamingTimeRef = useRef(0);
+
+  const validateName = useCallback(
+    (value: string) => {
+      try {
+        validateSheetName(value, sheets.a1Context);
+        return true;
+      } catch (error) {
+        setErrorMessage(error as string);
+        setTimeout(() => setErrorMessage(undefined), 1500);
+        return false;
+      }
+    },
+    [setErrorMessage]
+  );
 
   // When a rename begins, focus contenteditable and select its contents
   useEffect(() => {
@@ -201,25 +215,23 @@ function TabName({
       ref={contentEditableRef}
       onKeyDown={(event) => {
         const div = event.currentTarget as HTMLDivElement;
-        const value = div.textContent || '';
+        const value = (div.textContent || '').trim();
         if (event.code === 'Enter') {
           if (value !== sheet.name) {
-            if (sheets.nameExists(value)) {
+            if (!validateName(value)) {
               event.preventDefault();
-              setNameExists(true);
               div.focus();
               return;
             } else {
-              setNameExists(false);
+              setErrorMessage(undefined);
               setIsRenaming(false);
               sheet.setName(value);
-              quadraticCore.setSheetName(sheet.id, value, sheets.getCursorPosition());
             }
           }
           focusGrid();
         } else if (event.code === 'Escape') {
           setIsRenaming(false);
-          setNameExists(false);
+          setErrorMessage(undefined);
           focusGrid();
         } else if (
           event.key === 'Delete' ||
@@ -236,27 +248,20 @@ function TabName({
           event.preventDefault();
         }
       }}
-      onInput={() => setNameExists(false)}
+      onInput={() => setErrorMessage(undefined)}
       onBlur={(event) => {
         if (Date.now() - isRenamingTimeRef.current < HACK_TO_NOT_BLUR_ON_RENAME) {
-          console.log('hack');
           contentEditableRef.current?.focus();
           return;
         }
-        const div = event.currentTarget as HTMLInputElement;
-        const value = div.innerText;
-        if (!div) return false;
+        const div = event.currentTarget;
+        if (!(div instanceof HTMLInputElement)) return false;
+        const value = div.innerText.trim();
         if (!isRenaming) return;
         setIsRenaming((isRenaming) => {
           if (!isRenaming) return false;
-          if (value.trim() === '') return false; // Don't allow empty names
-          if (value !== sheet.name) {
-            if (!sheets.nameExists(value)) {
-              sheet.setName(value);
-            } else {
-              setNameExists(true);
-              setTimeout(() => setNameExists(false), 1500);
-            }
+          if (!!value && value !== sheet.name && validateName(value)) {
+            sheet.setName(value);
           }
           return false;
         });

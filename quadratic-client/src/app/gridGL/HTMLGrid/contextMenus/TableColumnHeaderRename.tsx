@@ -1,13 +1,12 @@
 import { getColumns } from '@/app/actions/dataTableSpec';
 import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
-import { sheets } from '@/app/grid/controller/Sheets';
 import { PixiRename } from '@/app/gridGL/HTMLGrid/contextMenus/PixiRename';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { useRenameTableColumnName } from '@/app/ui/hooks/useRenameTableColumnName';
 import { FONT_SIZE } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import type { Rectangle } from 'pixi.js';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export const TableColumnHeaderRename = () => {
@@ -39,6 +38,34 @@ export const TableColumnHeaderRename = () => {
       events.off('viewportChangedReady', updatePosition);
     };
   }, [contextMenu]);
+
+  const { renameTableColumnHeader } = useRenameTableColumnName();
+
+  const handleSave = useCallback(
+    (value: string) => {
+      if (contextMenu.table && contextMenu.selectedColumn !== undefined && pixiApp.cellsSheets.current) {
+        const columns = getColumns();
+        if (columns) {
+          value = value.trim();
+
+          const column = columns.find((c) => c.valueIndex === contextMenu.selectedColumn);
+          if (column) {
+            column.name = value;
+          }
+
+          renameTableColumnHeader({
+            sheetId: pixiApp.cellsSheets.current?.sheetId,
+            x: contextMenu.table.x,
+            y: contextMenu.table.y,
+            columnName: value,
+            tableName: contextMenu.table.name,
+            columns,
+          });
+        }
+      }
+    },
+    [contextMenu.selectedColumn, contextMenu.table, renameTableColumnHeader]
+  );
 
   const defaultValue = useMemo(() => {
     if (!contextMenu.table || contextMenu.selectedColumn === undefined) {
@@ -74,25 +101,7 @@ export const TableColumnHeaderRename = () => {
         color: 'var(--primary-foreground)',
         backgroundColor: 'var(--accent)',
       }}
-      onSave={(value: string) => {
-        if (contextMenu.table && contextMenu.selectedColumn !== undefined && pixiApp.cellsSheets.current) {
-          const columns = getColumns();
-          if (columns) {
-            const column = columns.find((c) => c.valueIndex === contextMenu.selectedColumn);
-            if (column) {
-              column.name = value;
-            }
-
-            quadraticCore.dataTableMeta(
-              pixiApp.cellsSheets.current?.sheetId,
-              contextMenu.table.x,
-              contextMenu.table.y,
-              { columns },
-              sheets.getCursorPosition()
-            );
-          }
-        }
-      }}
+      onSave={handleSave}
       onClose={() => events.emit('contextMenu', {})}
       selectOnFocus={selectOnFocus}
     />
