@@ -30,26 +30,15 @@ impl Borders {
             .top
             .into_iter()
             .map(|(x1, y1, x2, y2, border)| {
-                if let Some((table, table_rect)) = table {
-                    // Move the borders from table coordinates to screen
-                    // coordinates, and clamp infinite bounds. We subtract 1
-                    // because borders are 1-based, and tables are 0-based.
-                    let delta_x = table_rect.min.x as u64 - 1;
-                    let adjust_y = |mut y: u64| {
-                        y = y.saturating_add_signed(-1);
-                        if let Some(display_buffer) = &table.display_buffer {
-                            if y < display_buffer.len() as u64 {
-                                y = display_buffer[y as usize];
-                            }
-                        }
-                        y.saturating_add_signed(table_rect.min.y)
-                    };
+                if let Some((_table, table_rect)) = table {
+                    let adjust_x = |x: u64| x.saturating_add_signed(table_rect.min.x - 1);
+                    let adjust_y = |y: u64| y.saturating_add_signed(table_rect.min.y - 1);
 
                     (
-                        x1.saturating_add(delta_x),
+                        adjust_x(x1),
                         adjust_y(y1),
                         if let Some(x2) = x2 {
-                            Some(x2.saturating_add(delta_x))
+                            Some(adjust_x(x2))
                         } else {
                             Some(table_rect.max.x as u64)
                         },
@@ -65,30 +54,18 @@ impl Borders {
                 }
             })
             .chain(self.bottom.into_iter().map(|(x1, y1, x2, y2, border)| {
-                if let Some((table, table_rect)) = table {
-                    // Move the borders from table coordinates to screen
-                    // coordinates, and place bounds on any infinite borders. We
-                    // subtract 1 because borders are 1-based, and tables are
-                    // 0-based.
-                    let delta_x = table_rect.min.x as u64 - 1;
-                    let adjust_y = |mut y: u64| {
-                        y = y.saturating_add_signed(-1);
-                        if let Some(display_buffer) = &table.display_buffer {
-                            if y < display_buffer.len() as u64 {
-                                y = display_buffer[y as usize];
-                            }
-                        }
-                        y.saturating_add_signed(table_rect.min.y)
-                    };
+                if let Some((_, table_rect)) = table {
+                    let adjust_x = |x: u64| x.saturating_add_signed(table_rect.min.x - 1);
+                    let adjust_y = |y: u64| y.saturating_add_signed(table_rect.min.y - 1);
 
                     // we use UNBOUNDED as a special value to indicate the last
                     // row of the table
                     if y1 == UNBOUNDED as u64 && y2 == Some(UNBOUNDED as u64) {
                         (
-                            x1.saturating_add(delta_x),
+                            adjust_x(x1),
                             table_rect.max.y as u64 + 1,
                             if let Some(x2) = x2 {
-                                Some(x2.saturating_add(delta_x))
+                                Some(adjust_x(x2))
                             } else {
                                 Some(table_rect.max.x as u64)
                             },
@@ -97,10 +74,10 @@ impl Borders {
                         )
                     } else {
                         (
-                            x1.saturating_add(delta_x),
+                            adjust_x(x1),
                             adjust_y(y1) + 1,
                             if let Some(x2) = x2 {
-                                Some(x2.saturating_add(delta_x))
+                                Some(adjust_x(x2))
                             } else {
                                 Some(table_rect.max.x as u64)
                             },
@@ -200,27 +177,15 @@ impl Borders {
             .left
             .into_iter()
             .map(|(x1, y1, x2, y2, border)| {
-                if let Some((table, table_rect)) = table {
-                    // Move the borders from table coordinates to screen
-                    // coordinates, and place bounds on any infinite borders. We
-                    // subtract 1 because borders are 1-based, and tables are
-                    // 0-based.
-                    let delta_x = table_rect.min.x as u64 - 1;
-                    let adjust_y = |mut y: u64| {
-                        y = y.saturating_add_signed(-1);
-                        if let Some(display_buffer) = &table.display_buffer {
-                            if y < display_buffer.len() as u64 {
-                                y = display_buffer[y as usize];
-                            }
-                        }
-                        y.saturating_add_signed(table_rect.min.y)
-                    };
+                if let Some((_, table_rect)) = table {
+                    let adjust_x = |x: u64| x.saturating_add_signed(table_rect.min.x - 1);
+                    let adjust_y = |y: u64| y.saturating_add_signed(table_rect.min.y - 1);
 
                     (
-                        x1.saturating_add(delta_x),
+                        adjust_x(x1),
                         adjust_y(y1),
                         if let Some(x2) = x2 {
-                            Some(x2.saturating_add(delta_x))
+                            Some(adjust_x(x2))
                         } else {
                             Some(table_rect.max.x as u64)
                         },
@@ -236,21 +201,9 @@ impl Borders {
                 }
             })
             .chain(self.right.into_iter().map(|(x1, y1, x2, y2, border)| {
-                if let Some((table, table_rect)) = table {
-                    // Move the borders from table coordinates to screen
-                    // coordinates, and place bounds on any infinite borders. We
-                    // subtract 1 because borders are 1-based, and tables are
-                    // 0-based.
-                    let delta_x = table_rect.min.x as u64 - 1;
-                    let adjust_y = |mut y: u64| {
-                        y = y.saturating_add_signed(-1);
-                        if let Some(display_buffer) = &table.display_buffer {
-                            if y < display_buffer.len() as u64 {
-                                y = display_buffer[y as usize];
-                            }
-                        }
-                        y.saturating_add_signed(table_rect.min.y)
-                    };
+                if let Some((_, table_rect)) = table {
+                    let adjust_x = |x: u64| x.saturating_add_signed(table_rect.min.x);
+                    let adjust_y = |y: u64| y.saturating_add_signed(table_rect.min.y - 1);
 
                     // we use UNBOUNDED as a special value to indicate the last
                     // column of the table
@@ -268,10 +221,10 @@ impl Borders {
                         )
                     } else {
                         (
-                            x1.saturating_add(delta_x + 1),
+                            adjust_x(x1),
                             adjust_y(y1),
                             if let Some(x2) = x2 {
-                                Some(x2.saturating_add(delta_x + 1))
+                                Some(adjust_x(x2))
                             } else {
                                 Some(table_rect.max.x as u64 + 1)
                             },
