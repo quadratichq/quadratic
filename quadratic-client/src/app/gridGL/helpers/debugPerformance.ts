@@ -1,7 +1,7 @@
-import * as PIXI from 'pixi.js';
-import { debugShowCountRenderedObjects, debugShowFPS, debugShowTime } from '../../debugFlags';
+import { debugShowCountRenderedObjects, debugShowFPS, debugShowTime } from '@/app/debugFlags';
+import { Container } from 'pixi.js';
 
-const MINIMUM_MS_TO_DISPLAY = 10;
+const MINIMUM_MS_TO_DISPLAY = 1;
 
 let lastTime = 0;
 
@@ -28,19 +28,19 @@ export function debugRendererLight(on: boolean): void {
 
 let count = 0;
 let visibleCount = 0;
-function countChildren(parent: PIXI.Container): void {
+function countChildren(parent: Container): void {
   count++;
   if (parent.visible) {
     visibleCount++;
   }
   parent.children.forEach((child) => {
-    if (child instanceof PIXI.Container) {
+    if (child instanceof Container) {
       countChildren(child);
     }
   });
 }
 
-export function debugShowChildren(parent: PIXI.Container, name?: string): void {
+export function debugShowChildren(parent: Container, name?: string): void {
   if (!debugShowCountRenderedObjects) return;
   count = 0;
   visibleCount = 0;
