@@ -107,7 +107,13 @@ export class Table extends Container {
 
   private headingPosition = (bounds: Rectangle, gridHeading: number) => {
     if (this.visible) {
-      if (!this.codeCell.is_html && this.tableBounds.top < bounds.top + gridHeading) {
+      const codeCell = this.codeCell;
+      if (
+        !codeCell.is_html &&
+        codeCell.show_ui &&
+        (codeCell.show_name || codeCell.show_columns) &&
+        this.tableBounds.top < bounds.top + gridHeading
+      ) {
         this.header.toHover(bounds, gridHeading);
         this.inOverHeadings = true;
       } else {
@@ -131,6 +137,11 @@ export class Table extends Container {
   };
 
   update(bounds: Rectangle, gridHeading: number) {
+    if (!intersects.rectangleRectangle(this.tableBounds, bounds)) {
+      this.visible = false;
+      return;
+    }
+    this.visible = true;
     this.headingPosition(bounds, gridHeading);
     if (this.visible && this.inOverHeadings) {
       this.header.update(true);

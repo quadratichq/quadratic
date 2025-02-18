@@ -22,18 +22,14 @@ impl JsSelection {
         shift_key: bool,
         is_right_click: bool,
         top: u32,
-        context: &str,
     ) {
-        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
-            return;
-        };
         self.selection.select_column(
             column as i64,
             ctrl_key || shift_key,
             shift_key,
             is_right_click,
             top as i64,
-            &context,
+            &self.context,
         );
     }
 
@@ -45,70 +41,49 @@ impl JsSelection {
         shift_key: bool,
         is_right_click: bool,
         left: u32,
-        context: &str,
     ) {
-        let Ok(context) = serde_json::from_str::<A1Context>(context) else {
-            return;
-        };
         self.selection.select_row(
             row as i64,
             ctrl_key || shift_key,
             shift_key,
             is_right_click,
             left as i64,
-            &context,
+            &self.context,
         );
     }
 
     #[wasm_bindgen(js_name = "selectRect")]
-    pub fn select_rect(
-        &mut self,
-        left: u32,
-        top: u32,
-        right: u32,
-        bottom: u32,
-        append: bool,
-        context: &str,
-    ) {
-        if let Ok(context) = serde_json::from_str::<A1Context>(context) {
-            self.selection.select_rect(
-                left as i64,
-                top as i64,
-                right as i64,
-                bottom as i64,
-                append,
-                &context,
-            );
-        }
+    pub fn select_rect(&mut self, left: u32, top: u32, right: u32, bottom: u32, append: bool) {
+        self.selection.select_rect(
+            left as i64,
+            top as i64,
+            right as i64,
+            bottom as i64,
+            append,
+            &self.context,
+        );
     }
 
     #[wasm_bindgen(js_name = "selectTo")]
-    pub fn select_to(&mut self, x: u32, y: u32, append: bool, context: &str) {
-        if let Ok(context) = serde_json::from_str::<A1Context>(context) {
-            self.selection
-                .select_to(x as i64, y as i64, append, &context);
-        }
+    pub fn select_to(&mut self, x: u32, y: u32, append: bool) {
+        self.selection
+            .select_to(x as i64, y as i64, append, &self.context);
     }
 
     #[wasm_bindgen(js_name = "moveTo")]
-    pub fn move_to(&mut self, x: u32, y: u32, append: bool, context: &str) {
-        if let Ok(context) = serde_json::from_str::<A1Context>(context) {
-            self.selection.move_to(x as i64, y as i64, append, &context);
-        }
+    pub fn move_to(&mut self, x: u32, y: u32, append: bool) {
+        self.selection
+            .move_to(x as i64, y as i64, append, &self.context);
     }
 
     #[wasm_bindgen(js_name = "setColumnsSelected")]
-    pub fn set_columns_selected(&mut self, context: &str) {
-        if let Ok(context) = serde_json::from_str::<A1Context>(context) {
-            self.selection.set_columns_selected(&context);
-        }
+    pub fn set_columns_selected(&mut self) {
+        self.selection.set_columns_selected(&self.context);
     }
 
     #[wasm_bindgen(js_name = "setRowsSelected")]
-    pub fn set_rows_selected(&mut self, context: &str) {
-        if let Ok(context) = serde_json::from_str::<A1Context>(context) {
-            self.selection.set_rows_selected(&context);
-        }
+    pub fn set_rows_selected(&mut self) {
+        self.selection.set_rows_selected(&self.context);
     }
 
     #[wasm_bindgen(js_name = "selectTable")]
@@ -116,20 +91,17 @@ impl JsSelection {
         &mut self,
         table_name: &str,
         col: Option<String>,
-        context: &str,
         screen_col_left: i32,
         shift_key: bool,
         ctrl_key: bool,
     ) {
-        if let Ok(context) = serde_json::from_str::<A1Context>(context) {
-            self.selection.select_table(
-                table_name,
-                col,
-                &context,
-                screen_col_left as i64,
-                shift_key,
-                ctrl_key,
-            );
-        }
+        self.selection.select_table(
+            table_name,
+            col,
+            &self.context,
+            screen_col_left as i64,
+            shift_key,
+            ctrl_key,
+        );
     }
 }
