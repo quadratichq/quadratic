@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 
-use crate::a1::{A1Context, CellRefRange};
+use crate::a1::CellRefRange;
 
 use super::*;
 
