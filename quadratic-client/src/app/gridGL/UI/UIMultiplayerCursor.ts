@@ -19,7 +19,6 @@ export class UIMultiPlayerCursor extends Graphics {
     this.alpha = ALPHA;
   }
 
-  // todo: handle multiple people in the same cell
   private drawCursor({
     color,
     cursor,
@@ -89,9 +88,8 @@ export class UIMultiPlayerCursor extends Graphics {
           cursor: player.parsedSelection?.getCursor(),
         });
 
-        const rangesStringified = player.parsedSelection.getFiniteRefRangeBounds();
         try {
-          const ranges = JSON.parse(rangesStringified);
+          const ranges = player.parsedSelection.getFiniteRefRangeBounds();
           drawFiniteSelection(this, color, FILL_ALPHA, ranges);
         } catch (e) {
           // it's possible for a table to no longer exist, so we don't want to

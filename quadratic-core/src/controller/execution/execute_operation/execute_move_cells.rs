@@ -1,5 +1,3 @@
-use std::collections::VecDeque;
-
 use crate::{
     a1::A1Selection,
     controller::{
@@ -18,25 +16,26 @@ impl GridController {
             // store, we should implement higher-level functions that would more
             // easily implement cut/paste/move without resorting to this
             // approach.
-            let mut operations = VecDeque::new();
             let context = self.a1_context();
             let mut selection = A1Selection::from_rect(source);
             selection.check_for_table_ref(context);
 
-            if let Ok((cut_ops, js_clipboard)) = self.cut_to_clipboard_operations(&selection) {
-                operations.extend(cut_ops);
+            let mut ops = vec![];
 
-                if let Ok(paste_ops) = self.paste_html_operations(
+            if let Ok((cut_ops, js_clipboard)) = self.cut_to_clipboard_operations(&selection) {
+                ops.extend(cut_ops);
+
+                match self.paste_html_operations(
                     &A1Selection::from_single_cell(dest),
                     js_clipboard.html,
                     PasteSpecial::None,
                 ) {
-                    operations.extend(paste_ops);
+                    Ok(paste_ops) => ops.extend(paste_ops),
+                    Err(_) => return,
                 }
-
-                operations.extend(transaction.operations.drain(..));
-                transaction.operations = operations;
             }
+
+            transaction.operations.extend(ops);
         }
     }
 }

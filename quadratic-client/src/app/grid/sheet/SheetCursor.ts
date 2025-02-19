@@ -95,7 +95,7 @@ export class SheetCursor {
     pixiApp.cursor.dirty = true;
   }
 
-  updatePosition(ensureVisible = true) {
+  updatePosition(ensureVisible: boolean | JsCoordinate = true) {
     pixiApp.updateCursorPosition(ensureVisible);
     if (!inlineEditorHandler.cursorIsMoving) {
       multiplayer.sendSelection(this.save());
@@ -232,6 +232,28 @@ export class SheetCursor {
   selectRow = (row: number, ctrlKey: boolean, shiftKey: boolean, isRightClick: boolean, left: number) => {
     this.jsSelection.selectRow(row, ctrlKey || shiftKey, shiftKey, isRightClick, left);
     this.updatePosition(true);
+  };
+
+  selectPageDown = () => {
+    // todo...
+    // let end = this.jsSelection.getBottomRightCell();
+    // console.log(end.x, end.y);
+    // const bounds = pixiApp.viewport.getVisibleBounds();
+    // const y = sheets.sheet.getRowY(end.x);
+    // const distanceTopToCursorTop = y - bounds.top;
+    // const row = sheets.sheet.getRowFromScreen(y + bounds.height);
+    // this.jsSelection.selectTo(end.x, row, false);
+    // this.updatePosition(false);
+    // const gridHeadings = pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
+    // pixiApp.viewport.y = Math.min(gridHeadings, -(y + bounds.height) + distanceTopToCursorTop);
+    // pixiApp.viewportChanged();
+  };
+
+  selectPageUp = () => {
+    // todo...
+    // const bounds = pixiApp.viewport.getVisibleBounds();
+    // this.jsSelection.selectPage(bounds.height, true);
+    // this.updatePosition(true);
   };
 
   isMultiCursor = (): boolean => {

@@ -23,5 +23,17 @@ export function keyboardSelect(event: React.KeyboardEvent<HTMLElement>): boolean
     return true;
   }
 
+  // Select page down
+  if (matchShortcut(Action.SelectPageDown, event)) {
+    cursor.selectPageDown();
+    return true;
+  }
+
+  // Select page up
+  if (matchShortcut(Action.SelectPageUp, event)) {
+    cursor.selectPageUp();
+    return true;
+  }
+
   return false;
 }

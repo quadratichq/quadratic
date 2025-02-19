@@ -156,8 +156,6 @@ impl GridController {
             // mark table fills and borders as dirty
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
 
-            let old_values = sheet.delete_cell_values(data_table_rect.into());
-
             sheet.set_cell_value(data_table_pos, cell_value);
             sheet.data_tables.insert_sorted(data_table_pos, data_table);
 
@@ -167,13 +165,8 @@ impl GridController {
             self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
-            let reverse_operations = vec![
-                Operation::DeleteDataTable { sheet_pos },
-                Operation::SetCellValues {
-                    sheet_pos,
-                    values: old_values.into(),
-                },
-            ];
+            let reverse_operations = vec![Operation::DeleteDataTable { sheet_pos }];
+
             self.data_table_operations(
                 transaction,
                 forward_operations,
@@ -193,7 +186,39 @@ impl GridController {
         op: Operation,
     ) -> Result<()> {
         if let Operation::DeleteDataTable { sheet_pos } = op {
-            self.finalize_data_table(transaction, sheet_pos, None, None);
+            let sheet_id = sheet_pos.sheet_id;
+            let pos = Pos::from(sheet_pos);
+            let sheet = self.try_sheet_result(sheet_id)?;
+            let data_table_pos = sheet.first_data_table_within(pos)?;
+
+            // mark the data table as dirty
+            self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
+
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let data_table = sheet.delete_data_table(data_table_pos)?;
+            let data_table_rect = data_table
+                .output_rect(data_table_pos, false)
+                .to_sheet_rect(sheet_id);
+
+            let old_cell_value = sheet.cell_value_result(data_table_pos)?;
+            sheet.set_cell_value(data_table_pos, CellValue::Blank);
+
+            self.send_updated_bounds(transaction, sheet_id);
+            self.send_code_cells(transaction);
+
+            let forward_operations = vec![op];
+            let reverse_operations = vec![Operation::AddDataTable {
+                sheet_pos,
+                data_table,
+                cell_value: old_cell_value,
+            }];
+
+            self.data_table_operations(
+                transaction,
+                forward_operations,
+                reverse_operations,
+                Some(&data_table_rect),
+            );
 
             return Ok(());
         };
@@ -850,8 +875,11 @@ impl GridController {
                 // check for code cells in neighboring cells
                 let sheet_values_array = sheet.cell_values_in_rect(&values_rect, true)?;
                 let cell_values = sheet_values_array.into_cell_values_vec().into_vec();
-                let has_code_cell = cell_values.iter().any(|value| {
-                    value.is_code() || value.is_import() || value.is_image() || value.is_html()
+                let has_code_cell = cell_values.iter().any(|cell_value| {
+                    cell_value.is_code()
+                        || cell_value.is_import()
+                        || cell_value.is_image()
+                        || cell_value.is_html()
                 });
                 if has_code_cell {
                     if cfg!(target_family = "wasm") || cfg!(test) {
@@ -1087,9 +1115,6 @@ impl GridController {
                 1,
             );
 
-            transaction.add_code_cell(sheet_id, data_table_pos);
-            transaction.add_dirty_hashes_from_sheet_rect(values_rect.to_sheet_rect(sheet_id));
-
             let mut reverse_operations = vec![];
 
             let mut format_update = SheetFormatUpdates::default();
@@ -1150,8 +1175,11 @@ impl GridController {
                 println!("select_table");
                 Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
             }
+
+            transaction.add_dirty_hashes_from_sheet_rect(values_rect.to_sheet_rect(sheet_id));
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
             self.send_updated_bounds(transaction, sheet_id);
+            transaction.add_code_cell(sheet_id, data_table_pos);
             self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
