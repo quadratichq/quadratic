@@ -194,7 +194,10 @@ export class Table extends Container {
     );
   }
 
-  getTableNameBounds(ignoreOverHeadings = false): Rectangle {
+  getTableNameBounds(ignoreOverHeadings = false): Rectangle | undefined {
+    if (!this.codeCell.show_ui || !this.codeCell.show_name) {
+      return;
+    }
     const bounds = this.header.getTableNameBounds().clone();
     if (!ignoreOverHeadings && this.inOverHeadings) {
       const bounds = pixiApp.viewport.getVisibleBounds();
