@@ -1009,7 +1009,7 @@ mod test {
                 html,
                 PasteSpecial::None,
             )
-            .is_ok());
+            .is_err());
 
         expect_js_call(
             "jsClientMessage",
