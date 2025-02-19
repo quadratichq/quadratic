@@ -65,18 +65,21 @@ impl Sheet {
                             CellValue::Code(code_cell) => {
                                 if matches!(code_cell.language, CodeCellLanguage::Formula) {
                                     let sheet_pos = pos.to_sheet_pos(self.id);
-                                    if clipboard_operation == ClipboardOperation::Copy {
-                                        code_cell.code = replace_a1_notation(
-                                            &code_cell.code,
-                                            &context,
-                                            sheet_pos,
-                                        );
-                                    } else {
-                                        code_cell.code = replace_internal_cell_references(
-                                            &code_cell.code,
-                                            &context,
-                                            sheet_pos,
-                                        );
+                                    match clipboard_operation {
+                                        ClipboardOperation::Cut => {
+                                            code_cell.code = replace_internal_cell_references(
+                                                &code_cell.code,
+                                                &context,
+                                                sheet_pos,
+                                            );
+                                        }
+                                        ClipboardOperation::Copy => {
+                                            code_cell.code = replace_a1_notation(
+                                                &code_cell.code,
+                                                &context,
+                                                sheet_pos,
+                                            );
+                                        }
                                     }
                                 }
                             }
