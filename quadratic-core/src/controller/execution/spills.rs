@@ -61,6 +61,11 @@ impl GridController {
     fn check_spill(&self, sheet_id: SheetId, index: usize) -> Option<bool> {
         if let Some(sheet) = self.grid.try_sheet(sheet_id) {
             if let Some((pos, data_table)) = sheet.data_tables.get_index(index) {
+                // we can short circuit the output if the size is now 1x1, which can never spill
+                if matches!(data_table.output_size(), ArraySize::_1X1) && data_table.spill_error {
+                    return Some(false);
+                }
+
                 let output: Rect = data_table
                     .output_sheet_rect(pos.to_sheet_pos(sheet_id), true)
                     .into();
@@ -70,6 +75,7 @@ impl GridController {
                     || sheet.has_code_cell_in_rect(&output, *pos)
                 {
                     // if spill error has not been set, then set it and start the more expensive checks for all later code_cells.
+                    //
                     if !data_table.spill_error {
                         return Some(true);
                     }
