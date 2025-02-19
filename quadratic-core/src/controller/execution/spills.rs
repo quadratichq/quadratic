@@ -64,7 +64,7 @@ impl GridController {
                 // we can short circuit the output if the size is now 1x1, which can never spill
                 if matches!(data_table.output_size(), ArraySize::_1X1) {
                     if data_table.spill_error {
-                        return Some(true);
+                        return Some(false);
                     }
                     return None;
                 }
