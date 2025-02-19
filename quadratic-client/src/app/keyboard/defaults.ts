@@ -361,4 +361,12 @@ export const defaultShortcuts: ActionShortcut = {
     mac: [[MacModifiers.Cmd, Keys.K]],
     windows: [[WindowsModifiers.Ctrl, Keys.K]],
   },
+  [Action.SelectPageDown]: {
+    mac: [[MacModifiers.Shift, Keys.PageDown]],
+    windows: [[WindowsModifiers.Shift, Keys.PageDown]],
+  },
+  [Action.SelectPageUp]: {
+    mac: [[MacModifiers.Shift, Keys.PageUp]],
+    windows: [[WindowsModifiers.Shift, Keys.PageUp]],
+  },
 };
