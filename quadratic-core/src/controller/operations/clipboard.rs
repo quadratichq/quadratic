@@ -170,6 +170,7 @@ impl GridController {
         selection: &A1Selection,
         clipboard: Clipboard,
         special: PasteSpecial,
+        force_unique_data_table_name: bool,
     ) -> Vec<Operation> {
         let mut ops = vec![];
 
@@ -335,14 +336,17 @@ impl GridController {
 
                         if let Some(data_table) = clipboard.data_tables.get(&source_pos) {
                             let mut data_table = data_table.to_owned();
-                            let old_name = data_table.name.to_display();
-                            let new_name =
-                                self.grid().unique_data_table_name(&old_name, false, None);
 
-                            // update table name in paste cursor selection
-                            cursor.replace_table_name(&old_name, &new_name);
+                            if force_unique_data_table_name {
+                                let old_name = data_table.name.to_display();
+                                let new_name =
+                                    self.grid().unique_data_table_name(&old_name, false, None);
 
-                            data_table.name = new_name.into();
+                                // update table name in paste cursor selection
+                                cursor.replace_table_name(&old_name, &new_name);
+
+                                data_table.name = new_name.into();
+                            }
 
                             ops.push(Operation::SetDataTable {
                                 sheet_pos,
@@ -477,6 +481,7 @@ impl GridController {
         selection: &A1Selection,
         html: String,
         special: PasteSpecial,
+        force_unique_data_table_name: bool,
     ) -> Result<Vec<Operation>> {
         let error = |e, msg| Error::msg(format!("Clipboard Paste {:?}: {:?}", msg, e));
         let insert_at = selection.cursor;
@@ -526,7 +531,12 @@ impl GridController {
                     }
                 }
 
-                Ok(self.set_clipboard_cells(selection, clipboard, special))
+                Ok(self.set_clipboard_cells(
+                    selection,
+                    clipboard,
+                    special,
+                    force_unique_data_table_name,
+                ))
             }
         }
     }
@@ -575,7 +585,7 @@ mod test {
             .copy_to_clipboard(&selection, ClipboardOperation::Copy)
             .unwrap();
         let operations = gc
-            .paste_html_operations(&A1Selection::test_a1("E"), html, PasteSpecial::None)
+            .paste_html_operations(&A1Selection::test_a1("E"), html, PasteSpecial::None, false)
             .unwrap();
         gc.start_user_transaction(operations, None, TransactionName::PasteClipboard);
 
@@ -597,7 +607,7 @@ mod test {
             .copy_to_clipboard(&selection, ClipboardOperation::Copy)
             .unwrap();
         let operations = gc
-            .paste_html_operations(&A1Selection::test_a1("5"), html, PasteSpecial::None)
+            .paste_html_operations(&A1Selection::test_a1("5"), html, PasteSpecial::None, false)
             .unwrap();
         gc.start_user_transaction(operations, None, TransactionName::PasteClipboard);
 
@@ -623,7 +633,7 @@ mod test {
 
         let sheet_id = gc.sheet_ids()[1];
         let operations = gc
-            .paste_html_operations(&A1Selection::all(sheet_id), html, PasteSpecial::None)
+            .paste_html_operations(&A1Selection::all(sheet_id), html, PasteSpecial::None, false)
             .unwrap();
         gc.start_user_transaction(operations, None, TransactionName::PasteClipboard);
 
