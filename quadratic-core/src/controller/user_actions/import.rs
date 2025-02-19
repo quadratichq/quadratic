@@ -18,7 +18,7 @@ impl GridController {
         insert_at: Pos,
         cursor: Option<String>,
         delimiter: Option<u8>,
-        has_heading: Option<bool>,
+        header_is_first_row: Option<bool>,
     ) -> Result<()> {
         let ops = self.import_csv_operations(
             sheet_id,
@@ -26,7 +26,7 @@ impl GridController {
             file_name,
             insert_at,
             delimiter,
-            has_heading,
+            header_is_first_row,
         )?;
         if cursor.is_some() {
             self.start_user_transaction(ops, cursor, TransactionName::Import);
@@ -134,14 +134,9 @@ pub(crate) mod tests {
             pos,
             None,
             Some(b','),
-            Some(false),
+            Some(true),
         )
         .unwrap();
-
-        let sheet = gc.sheet_mut(sheet_id);
-        let data_table_pos = sheet.first_data_table_within(pos).unwrap();
-        let data_table = sheet.data_table_mut(data_table_pos).unwrap();
-        data_table.apply_first_row_as_header();
 
         (gc, sheet_id, pos, file_name)
     }

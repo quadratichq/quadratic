@@ -97,6 +97,7 @@ impl Sheet {
             number,
             underline: format.underline,
             strike_through: format.strike_through,
+            column_header: None,
         }
     }
 
@@ -137,8 +138,12 @@ impl Sheet {
                 if let Some(intersection) = code_rect.intersection(render_rect) {
                     for x in intersection.x_range() {
                         for y in intersection.y_range() {
+                            let is_header = data_table.show_ui
+                                && data_table.show_columns
+                                && y == code_rect_start_y - 1;
+
                             // We skip rendering the header rows because we render it separately.
-                            if y < code_rect_start_y {
+                            if y < code_rect_start_y && !is_header {
                                 continue;
                             }
 
@@ -150,10 +155,18 @@ impl Sheet {
                             let value = data_table.cell_value_at(pos.x as u32, pos.y as u32);
 
                             if let Some(value) = value {
-                                let table_format = data_table.get_format(pos);
-                                let sheet_format =
-                                    self.formats.try_format(Pos { x, y }).unwrap_or_default();
-                                let combined_format = table_format.combine(&sheet_format);
+                                let format = if is_header {
+                                    // column headers are bold
+                                    Format {
+                                        bold: Some(true),
+                                        ..Default::default()
+                                    }
+                                } else {
+                                    let table_format = data_table.get_format(pos);
+                                    let sheet_format =
+                                        self.formats.try_format(Pos { x, y }).unwrap_or_default();
+                                    table_format.combine(&sheet_format)
+                                };
 
                                 let language = if x == code_rect.min.x && y == code_rect.min.y {
                                     Some(code_cell_value.language.to_owned())
@@ -166,14 +179,12 @@ impl Sheet {
                                     _ => None,
                                 };
 
-                                cells.push(self.get_render_cell(
-                                    x,
-                                    y,
-                                    &value,
-                                    combined_format,
-                                    language,
-                                    special,
-                                ));
+                                let mut render_cell =
+                                    self.get_render_cell(x, y, &value, format, language, special);
+                                if is_header {
+                                    render_cell.column_header = Some(true);
+                                }
+                                cells.push(render_cell);
                             }
                         }
                     }

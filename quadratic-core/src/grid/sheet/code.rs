@@ -169,7 +169,7 @@ impl Sheet {
                     let new_y = u32::try_from(pos.y - code_cell_pos.y + y).unwrap_or(0);
                     if let Some(value) = values.remove(x as u32, y as u32) {
                         data_table.set_cell_value_at(new_x, new_y, value);
-                    };
+                    }
                 }
             }
         }

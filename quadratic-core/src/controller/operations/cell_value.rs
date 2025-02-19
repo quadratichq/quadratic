@@ -244,13 +244,13 @@ impl GridController {
 
                 ops.push(Operation::SetCellValues {
                     sheet_pos,
-                    values: CellValues::new_blank(rect.width(), rect.height()),
+                    values: CellValues::new(rect.width(), rect.height()),
                 });
 
                 // need to update the selection if a table was deleted (since we
                 // can no longer use the table ref)
                 if selection.has_table_refs() {
-                    let replaced = selection.replace_table_refs(&self.grid().a1_context());
+                    let replaced = selection.replace_table_refs(self.a1_context());
                     ops.push(Operation::SetCursorA1 {
                         selection: replaced,
                     });
@@ -288,7 +288,7 @@ mod test {
     #[test]
     fn test() {
         let mut client = GridController::test();
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         client.sheet_mut(client.sheet_ids()[0]).id = sheet_id;
         client.set_cell_value(
             SheetPos {
@@ -308,7 +308,7 @@ mod test {
                 sheet_pos: SheetPos {
                     x: 1,
                     y: 2,
-                    sheet_id: SheetId::test()
+                    sheet_id: SheetId::TEST
                 },
                 values
             }]
@@ -446,7 +446,7 @@ mod test {
             y: 2,
             sheet_id,
         };
-        let values = CellValues::new_blank(2, 1);
+        let values = CellValues::new(2, 1);
 
         assert_eq!(operations.len(), 1);
         assert_eq!(
@@ -484,21 +484,13 @@ mod test {
         assert_eq!(
             operations,
             vec![
-                // Operation::SetDataTableAt {
-                //     sheet_pos: SheetPos::new(sheet_id, 1, 2),
-                //     values: CellValues::new_blank(2, 1)
-                // },
                 Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 1, 2),
-                    values: CellValues::new_blank(2, 1)
+                    values: CellValues::new(2, 1)
                 },
-                // Operation::SetDataTableAt {
-                //     sheet_pos: SheetPos::new(sheet_id, 2, 1),
-                //     values: CellValues::new_blank(1, 2)
-                // },
                 Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 2, 1),
-                    values: CellValues::new_blank(1, 2)
+                    values: CellValues::new(1, 2)
                 },
             ]
         );

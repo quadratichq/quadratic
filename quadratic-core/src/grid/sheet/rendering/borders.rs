@@ -1,4 +1,4 @@
-use crate::grid::{sheet::borders::JsBordersSheet, Sheet, SheetId};
+use crate::grid::{sheet::borders::JsBordersSheet, Sheet};
 
 impl Sheet {
     /// Gets packaged borders to send to the client.
@@ -39,7 +39,7 @@ impl Sheet {
     }
 
     /// Sends the borders for the sheet to the client.
-    pub fn send_sheet_borders(&self, sheet_id: SheetId) {
+    pub fn send_sheet_borders(&self) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
@@ -47,12 +47,12 @@ impl Sheet {
         match self.borders_in_sheet() {
             Some(b) => {
                 if let Ok(borders) = serde_json::to_string(&b) {
-                    crate::wasm_bindings::js::jsBordersSheet(sheet_id.to_string(), borders);
+                    crate::wasm_bindings::js::jsBordersSheet(self.id_to_string(), borders);
                 } else {
                     dbgjs!("Unable to serialize borders in send_sheet_borders");
                 }
             }
-            None => crate::wasm_bindings::js::jsBordersSheet(sheet_id.to_string(), String::new()),
+            None => crate::wasm_bindings::js::jsBordersSheet(self.id_to_string(), String::new()),
         }
     }
 }
@@ -69,12 +69,11 @@ mod tests {
     fn test_render_borders_table_1x1() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.test_set_data_table(pos![A1], 1, 1, false, false);
+        gc.test_set_data_table(pos![A1].to_sheet_pos(sheet_id), 1, 1, false, false);
 
-        let context = gc.grid().a1_context();
+        let context = gc.a1_context();
         gc.set_borders(
-            A1Selection::test_a1_context("Table1", &context),
+            A1Selection::test_a1_context("Table1", context),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
@@ -91,12 +90,11 @@ mod tests {
     fn test_render_borders_table_3x3() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.test_set_data_table(pos![A1], 3, 3, false, false);
+        gc.test_set_data_table(pos![A1].to_sheet_pos(sheet_id), 3, 3, false, false);
 
-        let context = gc.grid().a1_context();
+        let context = gc.a1_context();
         gc.set_borders(
-            A1Selection::test_a1_context("Table1", &context),
+            A1Selection::test_a1_context("Table1", context),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
@@ -113,12 +111,11 @@ mod tests {
     fn test_render_borders_table_3x3_two_columns() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.test_set_data_table(pos![A1], 3, 3, false, false);
+        gc.test_set_data_table(pos![A1].to_sheet_pos(sheet_id), 3, 3, false, false);
 
-        let context = gc.grid().a1_context();
+        let context = gc.a1_context();
         gc.set_borders(
-            A1Selection::test_a1_context("Table1[[Column 1]:[Column 2]]", &context),
+            A1Selection::test_a1_context("Table1[[Column 1]:[Column 2]]", context),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
@@ -135,12 +132,11 @@ mod tests {
     fn test_render_borders_table_3x3_outer() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.test_set_data_table(pos![A1], 3, 3, false, false);
+        gc.test_set_data_table(pos![A1].to_sheet_pos(sheet_id), 3, 3, false, false);
 
-        let context = gc.grid().a1_context();
+        let context = gc.a1_context();
         gc.set_borders(
-            A1Selection::test_a1_context("Table1[#All]", &context),
+            A1Selection::test_a1_context("Table1[#All]", context),
             BorderSelection::Outer,
             Some(BorderStyle::default()),
             None,

@@ -640,7 +640,7 @@ impl GridController {
         });
 
         // gather ComputeCode operations for any code cells
-        let context = self.grid.a1_context();
+        let context = self.a1_context();
         let compute_code_ops = final_range
             .iter()
             .enumerate()
@@ -651,7 +651,7 @@ impl GridController {
                             x - original_pos.x,
                             y - original_pos.y,
                             &sheet_id,
-                            &context,
+                            context,
                         );
                         original_pos.x = x;
                         original_pos.y = y;

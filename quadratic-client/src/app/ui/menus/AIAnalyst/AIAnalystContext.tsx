@@ -109,7 +109,7 @@ export const AIAnalystContext = ({
         key="cursor"
         primary={
           context.selection
-            ? A1SelectionStringToSelection(context.selection).toA1String(sheets.current, sheets.a1Context)
+            ? A1SelectionStringToSelection(context.selection, sheets.a1Context).toA1String(sheets.current)
             : sheets.sheet.cursor.toCursorA1()
         }
         secondary="Cursor"

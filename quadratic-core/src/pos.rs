@@ -199,7 +199,7 @@ impl SheetPos {
         Self {
             x: 1,
             y: 1,
-            sheet_id: SheetId::test(),
+            sheet_id: SheetId::TEST,
         }
     }
 }

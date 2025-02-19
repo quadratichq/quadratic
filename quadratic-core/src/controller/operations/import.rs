@@ -79,7 +79,7 @@ impl GridController {
         file_name: &str,
         insert_at: Pos,
         delimiter: Option<u8>,
-        has_heading: Option<bool>,
+        header_is_first_row: Option<bool>,
     ) -> Result<Vec<Operation>> {
         let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
 
@@ -93,7 +93,7 @@ impl GridController {
                         file_name,
                         insert_at,
                         delimiter,
-                        has_heading,
+                        header_is_first_row,
                     );
                 }
                 &file
@@ -188,7 +188,7 @@ impl GridController {
         data_table.value = cell_values.into();
         data_table.formats.apply_updates(&sheet_format_updates);
         drop(sheet_format_updates);
-        if Some(true) == has_heading {
+        if Some(true) == header_is_first_row {
             data_table.apply_first_row_as_header();
         }
 
@@ -619,7 +619,7 @@ mod test {
                 data_table,
                 ..
             } => (*sheet_pos, data_table.clone()),
-            _ => panic!("Expected SetDataTable operation"),
+            _ => panic!("Expected AddDataTable operation"),
         };
         assert_eq!(sheet_pos.x, 1);
         assert_eq!(

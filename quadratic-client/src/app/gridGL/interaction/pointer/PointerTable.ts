@@ -26,7 +26,7 @@ export class PointerTable {
     shiftKey: boolean,
     ctrlKey: boolean
   ) => {
-    sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, tableDown.table.y, shiftKey, ctrlKey);
+    sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, shiftKey, ctrlKey);
     if (this.doubleClickTimeout) {
       const table = tableDown.table;
       if (table.language === 'Import') {
@@ -68,6 +68,7 @@ export class PointerTable {
   };
 
   private pointerDownDropdown = (world: Point, tableDown: TablePointerDownResult) => {
+    sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, false, false);
     events.emit('contextMenu', {
       type: ContextMenuType.Table,
       world,
@@ -99,7 +100,7 @@ export class PointerTable {
     } else {
       // move cursor to column header
       const columnName = tableDown.table.columns[tableDown.column].name;
-      sheets.sheet.cursor.selectTable(tableDown.table.name, columnName, tableDown.table.y, shiftKey, ctrlKey);
+      sheets.sheet.cursor.selectTable(tableDown.table.name, columnName, shiftKey, ctrlKey);
 
       if (!tableDown.table.language || tableDown.table.language === 'Import') {
         this.doubleClickTimeout = window.setTimeout(() => {
@@ -120,7 +121,7 @@ export class PointerTable {
         doubleClickCell({ column: tableDown.table.x, row: tableDown.table.y });
         return true;
       } else {
-        sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, 0, false, false);
+        sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, false, false);
         this.doubleClickTimeout = window.setTimeout(() => {
           this.doubleClickTimeout = undefined;
         }, DOUBLE_CLICK_TIME);
@@ -129,7 +130,7 @@ export class PointerTable {
     }
 
     if (event.button === 2 || (isMac && event.button === 0 && event.ctrlKey)) {
-      sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, 0, false, false);
+      sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, false, false);
       events.emit('contextMenu', {
         type: tableDown.type === 'column-name' ? ContextMenuType.TableColumn : ContextMenuType.Table,
         world,

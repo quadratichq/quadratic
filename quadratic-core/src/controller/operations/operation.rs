@@ -78,6 +78,7 @@ pub enum Operation {
     SwitchDataTableKind {
         sheet_pos: SheetPos,
         kind: DataTableKind,
+        value: CellValue,
     },
     GridToDataTable {
         sheet_rect: SheetRect,
@@ -371,11 +372,15 @@ impl fmt::Display for Operation {
             Operation::FlattenDataTable { sheet_pos } => {
                 write!(fmt, "FlattenDataTable {{ sheet_pos: {} }}", sheet_pos)
             }
-            Operation::SwitchDataTableKind { sheet_pos, kind } => {
+            Operation::SwitchDataTableKind {
+                sheet_pos,
+                kind,
+                value,
+            } => {
                 write!(
                     fmt,
-                    "SwitchDataTableKind {{ sheet_pos: {}, kind: {} }}",
-                    sheet_pos, kind
+                    "SwitchDataTableKind {{ sheet_pos: {}, kind: {}, value: {:?} }}",
+                    sheet_pos, kind, value
                 )
             }
             Operation::GridToDataTable { sheet_rect } => {

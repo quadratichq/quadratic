@@ -55,7 +55,7 @@ mod tests {
 
     #[test]
     fn test_to_clipboard() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let mut validations = Validations::default();
 
         let validation_outside_selection = Validation {

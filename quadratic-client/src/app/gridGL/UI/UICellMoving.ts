@@ -44,23 +44,25 @@ export class UICellMoving extends Container {
     this.graphics.drawRect(start.x, start.y, end.x + end.width - start.x, end.y + end.height - start.y);
   }
 
-  update() {
-    if (this.dirty) {
-      this.dirty = false;
-      switch (pixiApp.pointer.pointerCellMoving.state) {
-        case 'hover':
-          if (this.visible) {
-            this.visible = false;
-          }
-          break;
-        case 'move':
-          this.drawMove();
-          break;
-        default:
-          if (this.visible) {
-            this.visible = false;
-          }
-      }
+  update = () => {
+    if (!this.dirty) {
+      return;
     }
-  }
+
+    this.dirty = false;
+    switch (pixiApp.pointer.pointerCellMoving.state) {
+      case 'hover':
+        if (this.visible) {
+          this.visible = false;
+        }
+        break;
+      case 'move':
+        this.drawMove();
+        break;
+      default:
+        if (this.visible) {
+          this.visible = false;
+        }
+    }
+  };
 }

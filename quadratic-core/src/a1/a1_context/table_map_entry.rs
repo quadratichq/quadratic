@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    grid::{CodeCellLanguage, SheetId},
-    Rect, SheetPos,
+    grid::{CodeCellLanguage, DataTable, SheetId},
+    Pos, Rect, SheetPos,
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct TableMapEntry {
     pub sheet_id: SheetId,
     pub table_name: String,
@@ -21,6 +21,43 @@ pub struct TableMapEntry {
 }
 
 impl TableMapEntry {
+    pub fn from_table(
+        sheet_id: SheetId,
+        pos: Pos,
+        table: &DataTable,
+        language: Option<CodeCellLanguage>,
+    ) -> Self {
+        if table.spill_error || table.has_error() {
+            Self {
+                sheet_id,
+                table_name: table.name.to_display(),
+                visible_columns: table.columns_map(false),
+                all_columns: table.columns_map(true),
+                bounds: table.output_rect(pos, false),
+                show_ui: false,
+                show_name: false,
+                show_columns: false,
+                is_html_image: false,
+                header_is_first_row: false,
+                language,
+            }
+        } else {
+            Self {
+                sheet_id,
+                table_name: table.name.to_display(),
+                visible_columns: table.columns_map(false),
+                all_columns: table.columns_map(true),
+                bounds: table.output_rect(pos, false),
+                show_ui: table.show_ui,
+                show_name: table.show_name,
+                show_columns: table.show_columns,
+                is_html_image: table.is_html() || table.is_image(),
+                header_is_first_row: table.header_is_first_row,
+                language,
+            }
+        }
+    }
+
     /// Returns the start and end of the table in row coordinates relative to
     /// the sheet.
     pub fn to_sheet_rows(&self) -> (i64, i64) {
@@ -131,7 +168,7 @@ impl TableMapEntry {
 
     /// Returns the index of the column in the all_columns vector from the
     /// index of the column in the visible_columns vector.
-    pub fn get_column_index_from_visible_index(&self, index: usize) -> Option<usize> {
+    pub fn get_column_index_from_display_index(&self, index: usize) -> Option<usize> {
         let visible_column_name = self.visible_columns.get(index)?;
         let all_column_index = self
             .all_columns
@@ -172,7 +209,7 @@ impl TableMapEntry {
             c.iter().map(|c| c.to_string()).collect()
         });
         TableMapEntry {
-            sheet_id: SheetId::test(),
+            sheet_id: SheetId::TEST,
             table_name: table_name.to_string(),
             visible_columns,
             all_columns,
@@ -277,15 +314,15 @@ mod tests {
         );
 
         // visible index 0 (A) should return all_columns index 0
-        assert_eq!(table.get_column_index_from_visible_index(0), Some(0));
+        assert_eq!(table.get_column_index_from_display_index(0), Some(0));
 
         // visible index 1 (C) should return all_columns index 2
-        assert_eq!(table.get_column_index_from_visible_index(1), Some(2));
+        assert_eq!(table.get_column_index_from_display_index(1), Some(2));
 
         // visible index 2 (E) should return all_columns index 4
-        assert_eq!(table.get_column_index_from_visible_index(2), Some(4));
+        assert_eq!(table.get_column_index_from_display_index(2), Some(4));
 
         // out of bounds
-        assert_eq!(table.get_column_index_from_visible_index(3), None);
+        assert_eq!(table.get_column_index_from_display_index(3), None);
     }
 }

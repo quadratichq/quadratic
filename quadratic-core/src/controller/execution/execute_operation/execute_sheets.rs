@@ -3,9 +3,9 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    grid::{file::sheet_schema::export_sheet, Sheet, SheetId},
+    grid::{file::sheet_schema::export_sheet, js_types::JsSnackbarSeverity, Sheet, SheetId},
 };
-use anyhow::Result;
+use anyhow::{bail, Result};
 use lexicon_fractional_index::key_between;
 
 impl GridController {
@@ -22,7 +22,7 @@ impl GridController {
             }
             let sheet_id = self.grid.add_sheet(Some((*sheet).clone()));
 
-            self.send_add_sheet(sheet_id, transaction);
+            self.send_add_sheet(transaction, sheet_id);
 
             transaction
                 .forward_operations
@@ -62,7 +62,7 @@ impl GridController {
                     transaction.add_code_cell(sheet_id, *pos);
                 }
 
-                self.send_add_sheet(sheet_id, transaction);
+                self.send_add_sheet(transaction, sheet_id);
                 self.send_all_fills(sheet_id);
 
                 transaction
@@ -121,10 +121,10 @@ impl GridController {
                 });
 
                 // if that's the last sheet, then we created a new one and we have to let the workers know
-                self.send_add_sheet(new_first_sheet_id, transaction);
+                self.send_add_sheet(transaction, new_first_sheet_id);
             }
             // send the delete sheet information to the workers
-            self.send_delete_sheet(sheet_id, transaction);
+            self.send_delete_sheet(transaction, sheet_id);
         }
     }
 
@@ -164,12 +164,22 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         op: Operation,
-    ) {
+    ) -> Result<()> {
         if let Operation::SetSheetName { sheet_id, name } = op {
-            let Some(sheet) = self.try_sheet_mut(sheet_id) else {
-                // sheet may have been deleted
-                return;
-            };
+            if let Err(e) = Sheet::validate_sheet_name(&name, self.a1_context()) {
+                if cfg!(target_family = "wasm") || cfg!(test) {
+                    crate::wasm_bindings::js::jsClientMessage(
+                        e.to_owned(),
+                        JsSnackbarSeverity::Error.to_string(),
+                    );
+                }
+                // clear remaining operations
+                transaction.operations.clear();
+                bail!(e);
+            }
+
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+
             let old_name = sheet.name.clone();
             sheet.update_sheet_name(&old_name, &name);
 
@@ -185,6 +195,8 @@ impl GridController {
 
             transaction.sheet_info.insert(sheet_id);
         }
+
+        Ok(())
     }
 
     pub(crate) fn execute_set_sheet_color(
@@ -244,7 +256,7 @@ impl GridController {
             }
             self.grid.add_sheet(Some(new_sheet));
 
-            self.send_add_sheet(new_sheet_id, transaction);
+            self.send_add_sheet(transaction, new_sheet_id);
 
             transaction
                 .forward_operations

@@ -480,7 +480,7 @@ mod tests {
 
     #[test]
     fn test_adjust_column_row() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let a1_context = A1Context::default();
 
         let mut selection = A1Selection::test_a1("B3");

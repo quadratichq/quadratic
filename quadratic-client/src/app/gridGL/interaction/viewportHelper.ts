@@ -111,6 +111,11 @@ export function cellVisible(
   const sheet = sheets.sheet;
   const headingSize = headings.headingSize;
 
+  // check if the cell is part of a table header that is visible b/c it is
+  // hovering over the table
+  const tableName = sheet.cursor.getTableNameInNameOrColumn(sheets.sheet.id, coordinate.x, coordinate.y);
+  if (tableName) return true;
+
   const cell = sheet.getCellOffsets(coordinate.x, coordinate.y);
   let is_off_screen = false;
 

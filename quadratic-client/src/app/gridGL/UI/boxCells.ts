@@ -77,16 +77,19 @@ export class BoxCells extends Graphics {
     });
   }
 
-  update() {
-    if (this.dirty) {
-      if (!this.gridRectangle) {
-        this.reset();
-        return;
-      }
-      this.drawRectangle();
-      this.drawDeleteRectangles();
+  update = () => {
+    if (!this.dirty) {
+      return;
     }
-  }
+    this.dirty = false;
+
+    if (!this.gridRectangle) {
+      this.reset();
+      return;
+    }
+    this.drawRectangle();
+    this.drawDeleteRectangles();
+  };
 
   isShowing(): boolean {
     return !!this.gridRectangle;

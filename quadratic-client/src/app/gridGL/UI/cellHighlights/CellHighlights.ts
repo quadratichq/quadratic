@@ -41,17 +41,19 @@ export class CellHighlights extends Container {
   }
 
   setDirty = () => {
-    this.dirty = true;
+    if (this.cellsAccessed.length) {
+      this.dirty = true;
+    }
   };
 
-  clear() {
+  clear = () => {
     this.cellsAccessed = [];
     this.selectedCellIndex = undefined;
     this.highlights.clear();
     this.marchingHighlight.clear();
-    pixiApp.setViewportDirty();
     this.dirty = false;
-  }
+    pixiApp.setViewportDirty();
+  };
 
   private convertCellRefRangeToRefRangeBounds(cellRefRange: CellRefRange): RefRangeBounds | undefined {
     try {
@@ -66,7 +68,7 @@ export class CellHighlights extends Container {
     }
   }
 
-  private draw() {
+  private draw = () => {
     this.highlights.clear();
 
     if (!this.cellsAccessed.length) return;
@@ -91,8 +93,8 @@ export class CellHighlights extends Container {
         }
       });
 
-    pixiApp.setViewportDirty();
-  }
+    this.dirty = true;
+  };
 
   // Draws the marching highlights by using an offset dashed line to create the
   // marching effect.
@@ -125,11 +127,11 @@ export class CellHighlights extends Container {
     });
     this.march = (this.march + 1) % Math.floor(DASHED);
     if (render) {
-      pixiApp.setViewportDirty();
+      this.dirty = true;
     }
   }
 
-  update() {
+  update = () => {
     if (this.dirty) {
       this.dirty = false;
       this.draw();
@@ -141,23 +143,23 @@ export class CellHighlights extends Container {
     if (inlineEditorHandler.cursorIsMoving) {
       this.updateMarchingHighlight();
     }
-  }
+  };
 
-  isDirty() {
+  isDirty = () => {
     return this.dirty || inlineEditorHandler.cursorIsMoving;
-  }
+  };
 
-  fromCellsAccessed(cellsAccessed: JsCellsAccessed[] | null) {
+  fromCellsAccessed = (cellsAccessed: JsCellsAccessed[] | null) => {
     this.cellsAccessed = cellsAccessed ?? [];
-    pixiApp.cellHighlights.dirty = true;
-  }
+    this.dirty = true;
+  };
 
-  setSelectedCell(index: number) {
+  setSelectedCell = (index: number) => {
     this.selectedCellIndex = index;
-  }
+  };
 
-  clearSelectedCell() {
+  clearSelectedCell = () => {
     this.selectedCellIndex = undefined;
     this.marchingHighlight.clear();
-  }
+  };
 }

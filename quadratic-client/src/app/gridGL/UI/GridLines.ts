@@ -43,41 +43,43 @@ export class GridLines extends Graphics {
     this.dirty = true;
   };
 
-  update(bounds = pixiApp.viewport.getVisibleBounds(), scale = pixiApp.viewport.scale.x, forceRefresh = false) {
-    if (this.dirty || forceRefresh) {
-      this.dirty = false;
-      this.clear();
-
-      if (!pixiAppSettings.showGridLines) {
-        this.visible = false;
-        pixiApp.setViewportDirty();
-        return;
-      }
-
-      const gridAlpha = calculateAlphaForGridLines(scale);
-      if (gridAlpha === 0) {
-        this.visible = false;
-        this.currentLineStyle = { alpha: 0 };
-        return;
-      }
-
-      this.visible = true;
-
-      this.currentLineStyle = {
-        width: 1,
-        color: colors.gridLines,
-        alpha: 0.2 * gridAlpha,
-        alignment: 0.5,
-        native: true,
-      };
-      this.lineStyle(this.currentLineStyle);
-      this.gridLinesX = [];
-      this.gridLinesY = [];
-
-      const range = this.drawHorizontalLines(bounds); //, this.getColumns(bounds));
-      this.drawVerticalLines(bounds, range);
+  update = (bounds = pixiApp.viewport.getVisibleBounds(), scale = pixiApp.viewport.scale.x, forceRefresh = false) => {
+    if (!this.dirty && !forceRefresh) {
+      return;
     }
-  }
+
+    this.dirty = false;
+    this.clear();
+
+    if (!pixiAppSettings.showGridLines) {
+      this.visible = false;
+      pixiApp.setViewportDirty();
+      return;
+    }
+
+    const gridAlpha = calculateAlphaForGridLines(scale);
+    if (gridAlpha === 0) {
+      this.visible = false;
+      this.currentLineStyle = { alpha: 0 };
+      return;
+    }
+
+    this.visible = true;
+
+    this.currentLineStyle = {
+      width: 1,
+      color: colors.gridLines,
+      alpha: 0.2 * gridAlpha,
+      alignment: 0.5,
+      native: true,
+    };
+    this.lineStyle(this.currentLineStyle);
+    this.gridLinesX = [];
+    this.gridLinesY = [];
+
+    const range = this.drawHorizontalLines(bounds); //, this.getColumns(bounds));
+    this.drawVerticalLines(bounds, range);
+  };
 
   // private getColumns(bounds: Rectangle): [number, number] {
   //   const sheet = sheets.sheet;

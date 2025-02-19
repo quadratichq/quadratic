@@ -1,4 +1,5 @@
 import { Action } from '@/app/actions/actions';
+import { contextMenuAtom } from '@/app/atoms/contextMenuAtom';
 import { ContextMenuBase, ContextMenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/Base';
 import { CodeTableIcon } from '@/shared/components/Icons';
 import {
@@ -7,8 +8,27 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+import { useRecoilValue } from 'recoil';
 
 export function GridContextMenuCodeTable() {
+  const contextMenu = useRecoilValue(contextMenuAtom);
+  const hasSpillError = Boolean(contextMenu.table?.spill_error);
+
+  if (hasSpillError) {
+    return (
+      <ContextMenuBase>
+        <ContextMenuItemAction action={Action.Cut} />
+        <ContextMenuItemAction action={Action.Copy} />
+        <ContextMenuItemAction action={Action.Paste} />
+        <ContextMenuItemAction action={Action.PasteValuesOnly} />
+        <ContextMenuItemAction action={Action.PasteFormattingOnly} />
+        <DropdownMenuSeparator />
+        <ContextMenuItemAction action={Action.EditTableCode} />
+        <ContextMenuCodeTableItems />
+      </ContextMenuBase>
+    );
+  }
+
   return (
     <ContextMenuBase>
       <ContextMenuItemAction action={Action.Cut} />
@@ -50,7 +70,7 @@ export function ContextMenuCodeTableItems({ showUseFirstRowAsHeader }: { showUse
       <ContextMenuItemAction action={Action.SortTable} />
       <ContextMenuItemAction action={Action.ShowAllColumns} />
       <ContextMenuItemAction action={Action.FlattenTable} />
-      <ContextMenuItemAction action={Action.GridToDataTable} />
+      <ContextMenuItemAction action={Action.CodeToDataTable} />
       <DropdownMenuSeparator />
       <ContextMenuItemAction action={Action.ToggleFirstRowAsHeaderTable} />
       <ContextMenuItemAction action={Action.ToggleTableName} />

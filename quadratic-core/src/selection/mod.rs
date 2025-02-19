@@ -26,7 +26,7 @@ pub struct OldSelection {
 impl Default for OldSelection {
     fn default() -> Self {
         OldSelection {
-            sheet_id: SheetId::test(),
+            sheet_id: SheetId::TEST,
             x: 1,
             y: 1,
             rects: None,
@@ -515,7 +515,7 @@ mod test {
 
     #[test]
     fn test_largest_rect() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let selection = OldSelection {
             sheet_id,
             all: true,
@@ -550,7 +550,7 @@ mod test {
 
     #[test]
     fn test_pos_in_selection() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let selection = OldSelection {
             sheet_id,
             all: true,
@@ -589,7 +589,7 @@ mod test {
 
     #[test]
     fn test_origin() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let selection = OldSelection {
             sheet_id,
             x: 1,
@@ -608,7 +608,7 @@ mod test {
 
     #[test]
     fn test_translate() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let selection = OldSelection {
             sheet_id,
             x: 1,
@@ -637,7 +637,7 @@ mod test {
 
     #[test]
     fn test_count() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let selection = OldSelection {
             sheet_id,
             x: 1,
@@ -665,7 +665,7 @@ mod test {
 
     #[test]
     fn test_selection_columns() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let selection = OldSelection::columns(&[1, 2, 3], sheet_id);
         assert_eq!(
             selection,
@@ -679,7 +679,7 @@ mod test {
 
     #[test]
     fn test_selection_rows() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let selection = OldSelection::rows(&[1, 2, 3], sheet_id);
         assert_eq!(
             selection,
@@ -693,7 +693,7 @@ mod test {
 
     #[test]
     fn test_contains_column() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let selection = OldSelection::columns(&[1, 2, 3], sheet_id);
         assert!(selection.contains_column(1));
         assert!(!selection.contains_column(4));
@@ -701,7 +701,7 @@ mod test {
 
     #[test]
     fn test_contains_row() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let selection = OldSelection::rows(&[1, 2, 3], sheet_id);
         assert!(selection.contains_row(1));
         assert!(!selection.contains_row(4));
@@ -709,7 +709,7 @@ mod test {
 
     #[test]
     fn test_in_rect() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let selection = OldSelection {
             sheet_id,
             x: 0,
@@ -725,7 +725,7 @@ mod test {
 
     #[test]
     fn test_is_empty() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let selection = OldSelection {
             sheet_id,
             x: 0,
@@ -751,7 +751,7 @@ mod test {
 
     #[test]
     fn test_translate_in_place() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let mut selection = OldSelection {
             sheet_id,
             x: 1,
@@ -778,7 +778,7 @@ mod test {
 
     #[test]
     fn test_intersection() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let selection1 = OldSelection {
             sheet_id,
             x: 0,
@@ -826,7 +826,7 @@ mod test {
 
     #[test]
     fn test_count_parts() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let selection = OldSelection {
             sheet_id,
             x: 0,
@@ -877,7 +877,7 @@ mod test {
 
     #[test]
     fn test_inserted_column() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let mut selection = OldSelection {
             sheet_id,
             columns: Some(vec![1, 2, 3]),
@@ -899,7 +899,7 @@ mod test {
 
     #[test]
     fn test_inserted_row() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let mut selection = OldSelection {
             sheet_id,
             rows: Some(vec![1, 2, 3]),
@@ -920,7 +920,7 @@ mod test {
 
     #[test]
     fn test_removed_column() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let mut selection = OldSelection {
             sheet_id,
             columns: Some(vec![1, 2, 3]),
@@ -949,7 +949,7 @@ mod test {
 
     #[test]
     fn test_removed_row() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let mut selection = OldSelection {
             sheet_id,
             rows: Some(vec![1, 2, 3]),
@@ -979,7 +979,7 @@ mod test {
     #[test]
     fn test_rects_to_hashes() {
         let selection = OldSelection {
-            sheet_id: SheetId::test(),
+            sheet_id: SheetId::TEST,
             rects: Some(vec![Rect::new(1, 1, 3, 3), Rect::new(-3, -3, -1, -1)]),
             ..Default::default()
         };

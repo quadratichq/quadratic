@@ -124,11 +124,8 @@ impl DataTable {
             return Ok(self.name.as_ref());
         }
         if pos.y == (if self.show_name { 1 } else { 0 }) && self.show_ui && self.show_columns {
-            if let Some(columns) = &self.column_headers {
-                let display_columns = columns.iter().filter(|c| c.display).collect::<Vec<_>>();
-                if let Some(column) = display_columns.get(pos.x as usize) {
-                    return Ok(column.name.as_ref());
-                }
+            if let Some(header) = self.display_header_at(pos.x as u32) {
+                return Ok(header.name.as_ref());
             }
         }
 

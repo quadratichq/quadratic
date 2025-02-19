@@ -21,7 +21,7 @@ pub use table_map_entry::*;
 
 use super::{CellRefRange, RefRangeBounds};
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct A1Context {
     pub sheet_map: SheetMap,
     pub table_map: TableMap,
@@ -66,14 +66,14 @@ impl A1Context {
 
     /// Returns an iterator over all the tables in the context.
     pub fn tables(&self) -> impl Iterator<Item = &TableMapEntry> {
-        self.table_map.tables.iter()
+        self.table_map.tables.values()
     }
 
     /// Returns a list of all table names in the context.
     pub fn table_info(&self) -> Vec<JsTableInfo> {
         self.table_map
             .tables
-            .iter()
+            .values()
             .filter_map(|table| {
                 self.sheet_map
                     .try_sheet_id(table.sheet_id)
@@ -114,6 +114,10 @@ impl A1Context {
         }
     }
 
+    pub fn table_in_name_or_column(&self, sheet_id: SheetId, x: u32, y: u32) -> Option<String> {
+        self.table_map.table_in_name_or_column(sheet_id, x, y)
+    }
+
     /// Creates an A1Context for testing.
     ///
     /// sheets: Vec<(sheet_name: &str, sheet_id: SheetId)>
@@ -151,7 +155,7 @@ mod tests {
     #[test]
     fn test_table_operations() {
         let context = A1Context::test(
-            &[("Sheet1", SheetId::test())],
+            &[("Sheet1", SheetId::TEST)],
             &[
                 ("Table1", &["col1", "col2"], Rect::test_a1("A1:B3")),
                 ("Table2", &["col3", "col4"], Rect::test_a1("D1:E3")),
@@ -164,11 +168,13 @@ mod tests {
         assert!(context.try_table("NonexistentTable").is_none());
 
         // Test tables iterator
-        let table_names: Vec<_> = context.tables().map(|t| &t.table_name).collect();
+        let mut table_names: Vec<_> = context.tables().map(|t| &t.table_name).collect();
+        table_names.sort();
         assert_eq!(table_names, vec!["Table1", "Table2"]);
 
         // Test table_names
-        let info = context.table_info();
+        let mut info = context.table_info();
+        info.sort_by_key(|info| info.name.to_owned());
         assert_eq!(
             info[0],
             JsTableInfo {
@@ -214,7 +220,7 @@ mod tests {
 
     #[test]
     fn test_convert_table_ref_to_range() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let context = A1Context::test(
             &[("Sheet1", sheet_id)],
             &[("Table1", &["col1", "col2"], Rect::test_a1("A1:B3"))],

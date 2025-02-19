@@ -203,7 +203,7 @@ mod tests {
     #[test]
     fn test_formula_average() {
         let parse_ctx = A1Context::test(&[], &[]);
-        let pos = pos![A10].to_sheet_pos(SheetId::test());
+        let pos = pos![A10].to_sheet_pos(SheetId::TEST);
         let form = parse_formula("AVERAGE(3, A1:C3)", &parse_ctx, pos).unwrap();
 
         let mut g = Grid::new();

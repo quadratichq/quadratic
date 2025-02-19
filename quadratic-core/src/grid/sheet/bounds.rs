@@ -1355,10 +1355,10 @@ mod test {
         sheet.set_cell_values(
             Rect {
                 min: Pos { x: 6, y: 2 },
-                max: Pos { x: 15, y: 1001 },
+                max: Pos { x: 15, y: 101 },
             },
             &Array::from(
-                (2..=1001)
+                (2..=101)
                     .map(|row| {
                         (6..=15)
                             .map(|_| {
@@ -1377,10 +1377,10 @@ mod test {
         sheet.set_cell_values(
             Rect {
                 min: Pos { x: 31, y: 101 },
-                max: Pos { x: 35, y: 1203 },
+                max: Pos { x: 35, y: 303 },
             },
             &Array::from(
-                (101..=1203)
+                (101..=303)
                     .map(|row| {
                         (31..=35)
                             .map(|_| {
@@ -1397,12 +1397,12 @@ mod test {
         );
 
         let tabular_data_rects =
-            sheet.find_tabular_data_rects_in_selection_rects(vec![Rect::new(1, 1, 50, 1300)], None);
+            sheet.find_tabular_data_rects_in_selection_rects(vec![Rect::new(1, 1, 50, 400)], None);
         assert_eq!(tabular_data_rects.len(), 2);
 
         let expected_rects = vec![
-            Rect::from_numbers(6, 2, 10, 1000),
-            Rect::from_numbers(31, 101, 5, 1103),
+            Rect::from_numbers(6, 2, 10, 100),
+            Rect::from_numbers(31, 101, 5, 203),
         ];
         assert_eq!(tabular_data_rects, expected_rects);
     }

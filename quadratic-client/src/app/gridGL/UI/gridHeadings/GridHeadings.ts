@@ -325,15 +325,15 @@ export class GridHeadings extends Container {
     for (let y = topOffset; y <= bottomOffset; y += currentHeight) {
       currentHeight = offsets.getRowHeight(row);
       if (gridAlpha !== 0) {
-        this.gridHeadingsRows.headingsGraphics.lineStyle({
+        this.headingsGraphics.lineStyle({
           width: 1,
           color: colors.gridLines,
           alpha: colors.headerSelectedRowColumnBackgroundColorAlpha * gridAlpha,
           alignment: 0.5,
           native: true,
         });
-        this.gridHeadingsRows.headingsGraphics.moveTo(bounds.left, y);
-        this.gridHeadingsRows.headingsGraphics.lineTo(bounds.left + this.rowWidth, y);
+        this.headingsGraphics.moveTo(bounds.left, y);
+        this.headingsGraphics.lineTo(bounds.left + this.rowWidth, y);
         this.gridLinesRows.push({ row: row - 1, y, height: offsets.getRowHeight(row - 1) });
       }
 
@@ -368,7 +368,6 @@ export class GridHeadings extends Container {
           this.labels.add({ text, x: x + ROW_DIGIT_OFFSET.x, y: yPosition + ROW_DIGIT_OFFSET.y });
           lastLabel = { top, bottom, selected };
         }
-        // }
       }
       row++;
     }
@@ -413,7 +412,7 @@ export class GridHeadings extends Container {
     this.headingsGraphics.lineTo(bounds.right, bounds.top + cellHeight);
   }
 
-  update(viewportDirty: boolean) {
+  update = (viewportDirty: boolean) => {
     // update only if dirty or if viewport is dirty and there is a column or row
     // selection (which requires a redraw)
     if (
@@ -454,7 +453,7 @@ export class GridHeadings extends Container {
 
     this.headingSize = { width: this.rowWidth * pixiApp.viewport.scale.x, height: CELL_HEIGHT };
     events.emit('headingSize', this.headingSize.width, this.headingSize.height);
-  }
+  };
 
   // whether the point is in the heading
   intersectsHeadings(world: Point): IntersectsHeadings | undefined {

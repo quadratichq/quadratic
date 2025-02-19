@@ -86,7 +86,7 @@ mod tests {
 
     #[test]
     fn test_table_different_sheet() {
-        let sheet1_id = SheetId::test();
+        let sheet1_id = SheetId::TEST;
         let sheet2_id = SheetId::new();
         let context = A1Context::test(
             &[("Sheet1", sheet1_id), ("Sheet2", sheet2_id)],

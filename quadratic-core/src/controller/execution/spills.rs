@@ -50,6 +50,8 @@ impl GridController {
                         data_table.is_image(),
                         data_table.is_html(),
                     );
+
+                    self.send_code_cells(transaction);
                 }
             }
         }
@@ -59,8 +61,11 @@ impl GridController {
     fn check_spill(&self, sheet_id: SheetId, index: usize) -> Option<bool> {
         if let Some(sheet) = self.grid.try_sheet(sheet_id) {
             if let Some((pos, data_table)) = sheet.data_tables.get_index(index) {
-                // output sizes of 1x1 cannot spill
+                // we can short circuit the output if the size is now 1x1, which can never spill
                 if matches!(data_table.output_size(), ArraySize::_1X1) {
+                    if data_table.spill_error {
+                        return Some(false);
+                    }
                     return None;
                 }
 
@@ -74,8 +79,6 @@ impl GridController {
                 {
                     // if spill error has not been set, then set it and start the more expensive checks for all later code_cells.
                     //
-                    // TODO(ddimaria): swap out the conditionals if we decide to only spill on code output
-                    // if data_table.readonly && !data_table.spill_error {
                     if !data_table.spill_error {
                         return Some(true);
                     }

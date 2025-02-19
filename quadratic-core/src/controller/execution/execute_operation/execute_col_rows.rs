@@ -91,7 +91,7 @@ impl GridController {
                                     let pos = pos.to_sheet_pos(sheet.id);
                                     GridController::adjust_formula_column_row(
                                         code,
-                                        &self.grid.a1_context(),
+                                        self.a1_context(),
                                         pos,
                                         column,
                                         row,
@@ -100,9 +100,9 @@ impl GridController {
                                 }
                                 _ => {
                                     let mut new_code = code.clone();
-                                    let context = self.grid.a1_context();
+                                    let context = self.a1_context();
                                     new_code.adjust_code_cell_column_row(
-                                        column, row, delta, &sheet_id, &context,
+                                        column, row, delta, &sheet_id, context,
                                     );
                                     new_code.code
                                 }
@@ -135,6 +135,7 @@ impl GridController {
                 transaction.forward_operations.push(op);
 
                 sheet.recalculate_bounds();
+                self.send_code_cells(transaction);
             } else {
                 // nothing more can be done
                 return;
@@ -161,9 +162,7 @@ impl GridController {
                 }
             }
 
-            if !transaction.is_server() {
-                self.send_updated_bounds(sheet_id);
-            }
+            self.send_updated_bounds(transaction, sheet_id);
         }
     }
 
@@ -174,6 +173,7 @@ impl GridController {
                 transaction.forward_operations.push(op);
 
                 sheet.recalculate_bounds();
+                self.send_code_cells(transaction);
             } else {
                 // nothing more can be done
                 return;
@@ -200,9 +200,7 @@ impl GridController {
                 }
             }
 
-            if !transaction.is_server() {
-                self.send_updated_bounds(sheet_id);
-            }
+            self.send_updated_bounds(transaction, sheet_id);
         }
     }
 
@@ -218,6 +216,7 @@ impl GridController {
                 transaction.forward_operations.push(op);
 
                 sheet.recalculate_bounds();
+                self.send_code_cells(transaction);
             } else {
                 // nothing more can be done
                 return;
@@ -244,9 +243,7 @@ impl GridController {
                 }
             }
 
-            if !transaction.is_server() {
-                self.send_updated_bounds(sheet_id);
-            }
+            self.send_updated_bounds(transaction, sheet_id);
         }
     }
 
@@ -262,6 +259,7 @@ impl GridController {
                 transaction.forward_operations.push(op);
 
                 sheet.recalculate_bounds();
+                self.send_code_cells(transaction);
             } else {
                 // nothing more can be done
                 return;
@@ -288,9 +286,7 @@ impl GridController {
                 }
             }
 
-            if !transaction.is_server() {
-                self.send_updated_bounds(sheet_id);
-            }
+            self.send_updated_bounds(transaction, sheet_id);
         }
     }
 }

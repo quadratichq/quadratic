@@ -46,44 +46,48 @@ impl GridController {
         sheet_id: SheetId,
         validation: Validation,
     ) {
-        if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-            let mut warnings = vec![];
-            let context = sheet.a1_context();
-            if let Some(values) = sheet.selection_values(&validation.selection, None, false, true) {
-                values.iter().for_each(|(pos, _)| {
-                    if let Some(validation) = sheet.validations.validate(sheet, *pos, &context) {
-                        warnings.push((*pos, validation.id));
-                    }
-                });
-            }
-            let validation_warnings = transaction
-                .validations_warnings
-                .entry(sheet_id)
-                .or_default();
-
-            warnings.iter().for_each(|(pos, validation_id)| {
-                let sheet_pos = pos.to_sheet_pos(sheet_id);
-                let old = sheet
-                    .validations
-                    .set_warning(sheet_pos, Some(*validation_id));
-                transaction
-                    .forward_operations
-                    .push(Operation::SetValidationWarning {
-                        sheet_pos,
-                        validation_id: Some(*validation_id),
-                    });
-                transaction.reverse_operations.push(old);
-                validation_warnings.insert(
-                    *pos,
-                    JsValidationWarning {
-                        x: pos.x,
-                        y: pos.y,
-                        style: Some(validation.error.style.clone()),
-                        validation: Some(*validation_id),
-                    },
-                );
+        let Some(sheet) = self.try_sheet(sheet_id) else {
+            return;
+        };
+        let mut warnings = vec![];
+        let context = self.a1_context();
+        if let Some(values) = sheet.selection_values(&validation.selection, None, false, true) {
+            values.iter().for_each(|(pos, _)| {
+                if let Some(validation) = sheet.validations.validate(sheet, *pos, context) {
+                    warnings.push((*pos, validation.id));
+                }
             });
         }
+        let validation_warnings = transaction
+            .validations_warnings
+            .entry(sheet_id)
+            .or_default();
+
+        let Some(sheet) = self.try_sheet_mut(sheet_id) else {
+            return;
+        };
+        warnings.iter().for_each(|(pos, validation_id)| {
+            let sheet_pos = pos.to_sheet_pos(sheet_id);
+            let old = sheet
+                .validations
+                .set_warning(sheet_pos, Some(*validation_id));
+            transaction
+                .forward_operations
+                .push(Operation::SetValidationWarning {
+                    sheet_pos,
+                    validation_id: Some(*validation_id),
+                });
+            transaction.reverse_operations.push(old);
+            validation_warnings.insert(
+                *pos,
+                JsValidationWarning {
+                    x: pos.x,
+                    y: pos.y,
+                    style: Some(validation.error.style.clone()),
+                    validation: Some(*validation_id),
+                },
+            );
+        });
     }
 
     pub(crate) fn execute_set_validation(
@@ -94,27 +98,35 @@ impl GridController {
         if let Operation::SetValidation { validation } = op {
             let sheet_id = validation.selection.sheet_id;
             self.remove_validation_warnings(transaction, sheet_id, validation.id);
-            if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
-                transaction
-                    .forward_operations
-                    .push(Operation::SetValidation {
-                        validation: validation.clone(),
-                    });
-                transaction
-                    .reverse_operations
-                    .extend(sheet.validations.set(validation.clone()));
+            let Some(sheet) = self.grid.try_sheet_mut(sheet_id) else {
+                return;
+            };
 
-                transaction.validations.insert(sheet_id);
+            transaction
+                .forward_operations
+                .push(Operation::SetValidation {
+                    validation: validation.clone(),
+                });
+            transaction
+                .reverse_operations
+                .extend(sheet.validations.set(validation.clone()));
 
-                if !transaction.is_server() {
-                    transaction.add_dirty_hashes_from_selections(
-                        sheet,
-                        vec![validation.selection.clone()],
-                    );
-                    self.send_updated_bounds(sheet_id);
-                }
+            transaction.validations.insert(sheet_id);
+
+            self.apply_validation_warnings(transaction, sheet_id, validation.clone());
+
+            if transaction.is_server() {
+                return;
             }
-            self.apply_validation_warnings(transaction, sheet_id, validation);
+
+            self.send_updated_bounds(transaction, sheet_id);
+            if let Some(sheet) = self.grid.try_sheet(sheet_id) {
+                transaction.add_dirty_hashes_from_selections(
+                    sheet,
+                    self.a1_context(),
+                    vec![validation.selection],
+                );
+            }
         }
     }
 
@@ -129,32 +141,43 @@ impl GridController {
         } = op
         {
             self.remove_validation_warnings(transaction, sheet_id, validation_id);
-            if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
-                transaction
-                    .forward_operations
-                    .push(Operation::RemoveValidation {
-                        sheet_id,
-                        validation_id,
-                    });
 
-                let selection = sheet
-                    .validations
-                    .validation(validation_id)
-                    .map(|v| v.selection.clone());
-
-                transaction
-                    .reverse_operations
-                    .extend(sheet.validations.remove(validation_id));
-
-                transaction.validations.insert(sheet.id);
-
-                if !transaction.is_server() {
-                    if let Some(selection) = selection {
-                        transaction.add_dirty_hashes_from_selections(sheet, vec![selection]);
-                        self.send_updated_bounds(sheet_id);
-                    }
-                }
+            let Some(sheet) = self.grid.try_sheet_mut(sheet_id) else {
+                return;
             };
+
+            transaction
+                .forward_operations
+                .push(Operation::RemoveValidation {
+                    sheet_id,
+                    validation_id,
+                });
+
+            let selection = sheet
+                .validations
+                .validation(validation_id)
+                .map(|v| v.selection.clone());
+
+            transaction
+                .reverse_operations
+                .extend(sheet.validations.remove(validation_id));
+
+            transaction.validations.insert(sheet.id);
+
+            if transaction.is_server() {
+                return;
+            }
+
+            self.send_updated_bounds(transaction, sheet_id);
+            if let Some(selection) = selection {
+                if let Some(sheet) = self.grid.try_sheet(sheet_id) {
+                    transaction.add_dirty_hashes_from_selections(
+                        sheet,
+                        self.a1_context(),
+                        vec![selection],
+                    );
+                }
+            }
         }
     }
 
@@ -168,37 +191,42 @@ impl GridController {
             validation_id,
         } = op
         {
-            if let Some(sheet) = self.grid.try_sheet_mut(sheet_pos.sheet_id) {
-                transaction
-                    .forward_operations
-                    .push(Operation::SetValidationWarning {
-                        sheet_pos,
-                        validation_id,
-                    });
+            let Some(sheet) = self.grid.try_sheet_mut(sheet_pos.sheet_id) else {
+                return;
+            };
 
-                let old = sheet.validations.set_warning(sheet_pos, validation_id);
-                transaction.reverse_operations.push(old);
+            transaction
+                .forward_operations
+                .push(Operation::SetValidationWarning {
+                    sheet_pos,
+                    validation_id,
+                });
 
-                if !transaction.is_server() {
-                    if let Some(validation_id) = validation_id {
-                        if let Some(validation) = sheet.validations.validation(validation_id) {
-                            let warning = JsValidationWarning {
-                                x: sheet_pos.x,
-                                y: sheet_pos.y,
-                                validation: Some(validation_id),
-                                style: Some(validation.error.style.clone()),
-                            };
-                            transaction.validation_warning_added(sheet_pos.sheet_id, warning);
-                        } else {
-                            transaction
-                                .validation_warning_deleted(sheet_pos.sheet_id, sheet_pos.into());
-                        }
+            let old = sheet.validations.set_warning(sheet_pos, validation_id);
+            transaction.reverse_operations.push(old);
+
+            if transaction.is_server() {
+                return;
+            }
+
+            self.send_updated_bounds(transaction, sheet_pos.sheet_id);
+            if let Some(validation_id) = validation_id {
+                if let Some(sheet) = self.grid.try_sheet(sheet_pos.sheet_id) {
+                    if let Some(validation) = sheet.validations.validation(validation_id) {
+                        let warning = JsValidationWarning {
+                            x: sheet_pos.x,
+                            y: sheet_pos.y,
+                            validation: Some(validation_id),
+                            style: Some(validation.error.style.clone()),
+                        };
+                        transaction.validation_warning_added(sheet_pos.sheet_id, warning);
                     } else {
                         transaction
                             .validation_warning_deleted(sheet_pos.sheet_id, sheet_pos.into());
                     }
-                    self.send_updated_bounds(sheet_pos.sheet_id);
-                }
+                };
+            } else {
+                transaction.validation_warning_deleted(sheet_pos.sheet_id, sheet_pos.into());
             }
         }
     }

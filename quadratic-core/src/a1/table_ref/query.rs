@@ -217,14 +217,14 @@ impl TableRef {
         range.try_to_pos()
     }
 
-    /// Returns true if the column name is part of the selection
+    /// Returns the columns that are selected in the table.
     pub fn table_column_selection(
         &self,
         table_name: &str,
         context: &A1Context,
     ) -> Option<Vec<i64>> {
         let mut cols = vec![];
-        if table_name != self.table_name || !self.headers {
+        if table_name != self.table_name {
             return None;
         }
         let table = context.try_table(&self.table_name)?;
@@ -479,10 +479,22 @@ mod tests {
         };
         assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A2]);
 
-        context.table_map.tables.first_mut().unwrap().show_ui = false;
+        context
+            .table_map
+            .tables
+            .values_mut()
+            .next()
+            .unwrap()
+            .show_ui = false;
         assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A1]);
 
-        context.table_map.tables.first_mut().unwrap().show_ui = true;
+        context
+            .table_map
+            .tables
+            .values_mut()
+            .next()
+            .unwrap()
+            .show_ui = true;
         table_ref.headers = true;
         assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A1]);
     }
@@ -534,17 +546,6 @@ mod tests {
         };
         let cols = table_ref.table_column_selection("test_table", &context);
         assert_eq!(cols, Some(vec![1, 2]));
-
-        // Test with headers = false (should return empty vec)
-        let table_ref = TableRef {
-            table_name: "test_table".to_string(),
-            col_range: ColRange::All,
-            data: true,
-            headers: false,
-            totals: false,
-        };
-        let cols = table_ref.table_column_selection("test_table", &context);
-        assert_eq!(cols, None);
 
         // Test with different table name (should return empty vec)
         let table_ref = TableRef {

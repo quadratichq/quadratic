@@ -69,7 +69,7 @@ export class Sheet {
   getValidation = (x: number, y: number): Validation[] | undefined => {
     return this.validations.filter((v) => {
       const selection = stringToSelection(v.selection.toString(), this.id, this.sheets.a1Context);
-      return selection.contains(x, y, this.sheets.a1Context);
+      return selection.contains(x, y);
     });
   };
 

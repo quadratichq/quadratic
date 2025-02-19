@@ -71,43 +71,45 @@ export class UIMultiPlayerCursor extends Graphics {
       ? [...multiplayer.users].some(([_, player]) => player.parsedSelection?.isColumnRow())
       : false;
 
-    if (dirtySheet || this.dirty) {
-      this.dirty = false;
-      this.clear();
-      const sheetId = sheets.current;
-      multiplayer.users.forEach((player) => {
-        const color = player.color;
-        if (player.parsedSelection && player.sheet_id === sheetId) {
-          this.drawCursor({
-            color,
-            editing: player.cell_edit.active,
-            sessionId: player.session_id,
-            code: player.cell_edit.code_editor,
-            cursor: player.parsedSelection?.getCursor(),
-          });
-
-          const rangesStringified = player.parsedSelection.getFiniteRefRangeBounds(sheets.a1Context);
-          try {
-            const ranges = JSON.parse(rangesStringified);
-            drawFiniteSelection(this, color, FILL_ALPHA, ranges);
-          } catch (e) {
-            // it's possible for a table to no longer exist, so we don't want to
-            // throw a warning or error
-          }
-
-          try {
-            const infiniteRanges: RefRangeBounds[] = player.parsedSelection.getInfiniteRefRangeBounds();
-            drawInfiniteSelection({
-              g: this,
-              color,
-              alpha: FILL_ALPHA,
-              ranges: infiniteRanges,
-            });
-          } catch (e) {
-            console.warn(`Unable to draw infinite ranges for player ${player.session_id}, ${e}`);
-          }
-        }
-      });
+    if (!dirtySheet && !this.dirty) {
+      return;
     }
+
+    this.dirty = false;
+    this.clear();
+    const sheetId = sheets.current;
+    multiplayer.users.forEach((player) => {
+      const color = player.color;
+      if (player.parsedSelection && player.sheet_id === sheetId) {
+        this.drawCursor({
+          color,
+          editing: player.cell_edit.active,
+          sessionId: player.session_id,
+          code: player.cell_edit.code_editor,
+          cursor: player.parsedSelection?.getCursor(),
+        });
+
+        const rangesStringified = player.parsedSelection.getFiniteRefRangeBounds();
+        try {
+          const ranges = JSON.parse(rangesStringified);
+          drawFiniteSelection(this, color, FILL_ALPHA, ranges);
+        } catch (e) {
+          // it's possible for a table to no longer exist, so we don't want to
+          // throw a warning or error
+        }
+
+        try {
+          const infiniteRanges: RefRangeBounds[] = player.parsedSelection.getInfiniteRefRangeBounds();
+          drawInfiniteSelection({
+            g: this,
+            color,
+            alpha: FILL_ALPHA,
+            ranges: infiniteRanges,
+          });
+        } catch (e) {
+          console.warn(`Unable to draw infinite ranges for player ${player.session_id}, ${e}`);
+        }
+      }
+    });
   }
 }

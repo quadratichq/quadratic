@@ -25,7 +25,7 @@ impl GridController {
     ) -> Vec<Operation> {
         let mut ops = vec![];
 
-        let context = self.grid.a1_context();
+        let context = self.a1_context();
 
         let add_table_ops = |range: RefRangeBounds,
                              table: &TableMapEntry,
@@ -38,14 +38,14 @@ impl GridController {
 
             // map visible index to actual column index
             range.start.col.coord = table
-                .get_column_index_from_visible_index(range.start.col.coord as usize - 1)
+                .get_column_index_from_display_index(range.start.col.coord as usize - 1)
                 .unwrap_or(range.start.col.coord as usize - 1)
                 as i64
                 + 1;
 
             // map visible index to actual column index
             range.end.col.coord = table
-                .get_column_index_from_visible_index(range.end.col.coord as usize - 1)
+                .get_column_index_from_display_index(range.end.col.coord as usize - 1)
                 .unwrap_or(range.end.col.coord as usize - 1)
                 as i64
                 + 1;
@@ -75,7 +75,7 @@ impl GridController {
                 }
             }
 
-            if let Some(selection) = A1Selection::from_ranges(ranges, table.sheet_id, &context) {
+            if let Some(selection) = A1Selection::from_ranges(ranges, table.sheet_id, context) {
                 let formats = SheetFormatUpdates::from_selection(&selection, format_update.clone());
 
                 // add table operation
@@ -98,7 +98,7 @@ impl GridController {
 
         // find intersection of sheet selection with tables, apply updates to both sheet and respective table
         if let Some(mut sheet_selection) =
-            A1Selection::from_sheet_ranges(sheet_ranges.clone(), selection.sheet_id, &context)
+            A1Selection::from_sheet_ranges(sheet_ranges.clone(), selection.sheet_id, context)
         {
             for sheet_range in sheet_ranges {
                 let rect = sheet_range.to_rect_unbounded();
@@ -111,10 +111,10 @@ impl GridController {
                         sheet_selection.exclude_cells(
                             intersection.min,
                             Some(intersection.max),
-                            &context,
+                            context,
                         );
                         // residual single cursor selection, clear if it belongs to the table
-                        if let Some(pos) = sheet_selection.try_to_pos(&context) {
+                        if let Some(pos) = sheet_selection.try_to_pos(context) {
                             if table.bounds.contains(pos) {
                                 sheet_selection.ranges.clear();
                             }
@@ -141,7 +141,7 @@ impl GridController {
         for table_ref in table_ranges {
             if let Some(table) = context.try_table(&table_ref.table_name) {
                 if let Some(range) =
-                    table_ref.convert_to_ref_range_bounds(true, &context, false, true)
+                    table_ref.convert_to_ref_range_bounds(true, context, false, true)
                 {
                     add_table_ops(range, table, &mut ops);
                 }
@@ -876,14 +876,14 @@ mod test {
     fn test_apply_table_formats() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.test_set_data_table(pos!(E5), 3, 3, false, true);
+        gc.test_set_data_table(pos!(E5).to_sheet_pos(sheet_id), 3, 3, false, true);
+
         let format_update = FormatUpdate {
             bold: Some(Some(true)),
             ..Default::default()
         };
         let ops = gc.format_ops(
-            &A1Selection::test_a1_context("Table1", &gc.grid.a1_context()),
+            &A1Selection::test_a1_context("Table1", gc.a1_context()),
             format_update.clone(),
         );
         assert_eq!(ops.len(), 1);

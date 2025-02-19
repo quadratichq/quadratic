@@ -285,10 +285,10 @@ mod tests {
         sheet.set_cell_values(
             Rect {
                 min: Pos { x: 1, y: 1 },
-                max: Pos { x: 10, y: 1000 },
+                max: Pos { x: 10, y: 100 },
             },
             &Array::from(
-                (1..=1000)
+                (1..=100)
                     .map(|row| {
                         (1..=10)
                             .map(|_| {
@@ -307,10 +307,10 @@ mod tests {
         sheet.set_cell_values(
             Rect {
                 min: Pos { x: 31, y: 101 },
-                max: Pos { x: 40, y: 1100 },
+                max: Pos { x: 40, y: 200 },
             },
             &Array::from(
-                (1..=1000)
+                (1..=100)
                     .map(|row| {
                         (1..=10)
                             .map(|_| {
@@ -326,7 +326,7 @@ mod tests {
             ),
         );
 
-        let selection = A1Selection::from_rect(SheetRect::new(1, 1, 50, 1300, sheet.id));
+        let selection = A1Selection::from_rect(SheetRect::new(1, 1, 50, 300, sheet.id));
         let data_rects_in_selection = sheet.get_data_rects_in_selection(&selection, None);
 
         let max_rows = 3;
@@ -336,11 +336,11 @@ mod tests {
                 sheet_name: sheet.name.clone(),
                 rect_origin: Pos { x: 1, y: 1 }.a1_string(),
                 rect_width: 10,
-                rect_height: 1000,
+                rect_height: 100,
                 starting_rect_values: sheet.js_cell_value_pos_in_rect(
                     Rect {
                         min: Pos { x: 1, y: 1 },
-                        max: Pos { x: 10, y: 1000 },
+                        max: Pos { x: 10, y: 100 },
                     },
                     Some(max_rows),
                 ),
@@ -349,11 +349,11 @@ mod tests {
                 sheet_name: sheet.name.clone(),
                 rect_origin: Pos { x: 31, y: 101 }.a1_string(),
                 rect_width: 10,
-                rect_height: 1000,
+                rect_height: 100,
                 starting_rect_values: sheet.js_cell_value_pos_in_rect(
                     Rect {
                         min: Pos { x: 31, y: 101 },
-                        max: Pos { x: 40, y: 1100 },
+                        max: Pos { x: 40, y: 200 },
                     },
                     Some(max_rows),
                 ),

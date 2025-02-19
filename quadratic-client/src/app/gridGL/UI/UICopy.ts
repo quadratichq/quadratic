@@ -19,44 +19,52 @@ export class UICopy extends Graphics {
   private ranges?: RefRangeBounds[];
   private time = 0;
   private march = 0;
-  private dirty = false;
+  dirty = false;
 
   constructor() {
     super();
-    events.on('changeSheet', this.updateNextTick);
-    events.on('viewportChanged', this.updateNextTick);
+    events.on('changeSheet', this.setDirty);
+    events.on('viewportChanged', this.setDirty);
     events.on('transactionStart', this.clearCopyRanges);
   }
 
   destroy() {
-    events.off('changeSheet', this.updateNextTick);
-    events.off('viewportChanged', this.updateNextTick);
+    events.off('changeSheet', this.setDirty);
+    events.off('viewportChanged', this.setDirty);
     events.off('transactionStart', this.clearCopyRanges);
     super.destroy();
   }
 
-  isShowing(): boolean {
+  isShowing = (): boolean => {
     return !!this.ranges && this.sheetId === sheets.current;
-  }
-
-  private updateNextTick = () => (this.dirty = true);
-
-  clearCopyRanges = () => {
-    this.clear();
-    pixiApp.setViewportDirty();
-    this.ranges = undefined;
-    this.sheetId = undefined;
   };
 
-  changeCopyRanges() {
+  private setDirty = () => {
+    if (!!this.sheetId && !!this.ranges) {
+      this.dirty = true;
+    }
+  };
+
+  clearCopyRanges = () => {
+    if (!!this.sheetId && !!this.ranges) {
+      this.clear();
+      this.ranges = undefined;
+      this.sheetId = undefined;
+      this.dirty = true;
+      pixiApp.setViewportDirty();
+    }
+  };
+
+  changeCopyRanges = () => {
     const range = sheets.sheet.cursor.getFiniteRefRangeBounds();
+    this.sheetId = sheets.current;
     this.ranges = range;
     this.time = 0;
     this.march = 0;
-    this.sheetId = sheets.current;
-  }
+    this.dirty = true;
+  };
 
-  private draw() {
+  private draw = () => {
     if (!this.ranges) return;
     const bounds = pixiApp.viewport.getVisibleBounds();
     let render = false;
@@ -101,14 +109,17 @@ export class UICopy extends Graphics {
     if (render) {
       pixiApp.setViewportDirty();
     }
-  }
+  };
 
-  update() {
-    if (!this.ranges) return;
-    if (this.sheetId !== sheets.current) {
+  update = () => {
+    if (!this.dirty) return;
+
+    if (this.sheetId !== sheets.current || !this.ranges) {
       this.clear();
+      this.dirty = false;
       return;
     }
+
     const drawFrame = Date.now() - this.time > MARCH_TIME;
     if (drawFrame) {
       this.march = (this.march + 1) % Math.floor(DASHED);
@@ -117,7 +128,6 @@ export class UICopy extends Graphics {
     if (drawFrame || this.dirty) {
       this.clear();
       this.draw();
-      this.dirty = false;
     }
-  }
+  };
 }

@@ -106,9 +106,9 @@ impl DataTable {
 
     /// Get the display of a column header at the given index.
     pub fn header_display(&self, index: usize) -> bool {
-        self.column_headers.as_ref().map_or(true, |headers| {
-            headers.get(index).map_or(true, |header| header.display)
-        })
+        self.column_headers
+            .as_ref()
+            .is_none_or(|headers| headers.get(index).is_none_or(|header| header.display))
     }
 
     /// Adjust the index for the header.
@@ -185,6 +185,11 @@ impl DataTable {
         self.column_headers
             .as_ref()
             .map(|columns| columns.iter().map(|c| c.name.clone()).collect())
+    }
+
+    pub fn display_header_at(&self, display_x: u32) -> Option<&DataTableColumnHeader> {
+        let column_index = self.get_column_index_from_display_index(display_x);
+        self.get_column_header(column_index as usize)
     }
 }
 
@@ -315,6 +320,62 @@ pub mod test {
         );
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 4 }),
+            Some(CellValue::Text("second".into()))
+        );
+    }
+
+    #[test]
+    fn test_headers_x() {
+        let mut sheet = Sheet::test();
+        let array =
+            Array::from_str_vec(vec![vec!["first", "second"], vec!["third", "fourth"]], true)
+                .unwrap();
+        let pos = Pos { x: 1, y: 1 };
+        let mut t = DataTable {
+            kind: DataTableKind::Import(Import::new("test.csv".to_string())),
+            name: "Table 1".into(),
+            column_headers: None,
+            sort: None,
+            display_buffer: None,
+            value: Value::Array(array),
+            readonly: false,
+            spill_error: false,
+            last_modified: Utc::now(),
+            show_ui: true,
+            show_name: true,
+            show_columns: true,
+            header_is_first_row: false,
+            alternating_colors: true,
+            formats: Default::default(),
+            borders: Default::default(),
+            chart_output: None,
+            chart_pixel_output: None,
+        };
+        t.apply_default_header();
+        sheet.set_cell_value(
+            pos,
+            Some(CellValue::Import(Import::new("test.csv".to_string()))),
+        );
+        sheet.set_data_table(pos, Some(t.clone()));
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 2 }),
+            Some(CellValue::Text("Column 1".into()))
+        );
+
+        // make first row a header
+        let data_table = sheet.data_table_mut((1, 1).into()).unwrap();
+        data_table.toggle_first_row_as_header(true);
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 2 }),
+            Some(CellValue::Text("first".into()))
+        );
+
+        // hide first column
+        let data_table = sheet.data_table_mut((1, 1).into()).unwrap();
+        let column_headers = data_table.column_headers.as_mut().unwrap();
+        column_headers[0].display = false;
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Text("second".into()))
         );
     }

@@ -1,71 +1,65 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
     grid::{CodeCellLanguage, DataTable, SheetId},
+    util::case_fold,
     Pos, SheetPos,
 };
 
 use super::TableMapEntry;
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct TableMap {
-    pub tables: Vec<TableMapEntry>,
+    pub tables: HashMap<String, TableMapEntry>,
 }
 
 impl TableMap {
-    pub fn insert(
+    pub fn insert(&mut self, table_map_entry: TableMapEntry) {
+        let table_name_folded = case_fold(&table_map_entry.table_name);
+        self.tables.insert(table_name_folded, table_map_entry);
+    }
+
+    pub fn insert_table(
         &mut self,
         sheet_id: SheetId,
         pos: Pos,
         table: &DataTable,
         language: Option<CodeCellLanguage>,
     ) {
-        if table.spill_error || table.has_error() {
-            self.tables.push(TableMapEntry {
-                sheet_id,
-                table_name: table.name.to_display(),
-                visible_columns: table.columns_map(false),
-                all_columns: table.columns_map(true),
-                bounds: table.output_rect(pos, false),
-                show_ui: false,
-                show_name: false,
-                show_columns: false,
-                is_html_image: false,
-                header_is_first_row: false,
-                language,
-            });
-        } else {
-            self.tables.push(TableMapEntry {
-                sheet_id,
-                table_name: table.name.to_display(),
-                visible_columns: table.columns_map(false),
-                all_columns: table.columns_map(true),
-                bounds: table.output_rect(pos, false),
-                show_ui: table.show_ui,
-                show_name: table.show_name,
-                show_columns: table.show_columns,
-                is_html_image: table.is_html() || table.is_image(),
-                header_is_first_row: table.header_is_first_row,
-                language,
-            });
-        }
+        let table_name_folded = case_fold(&table.name.to_display());
+        let table_map_entry = TableMapEntry::from_table(sheet_id, pos, table, language);
+        self.tables.insert(table_name_folded, table_map_entry);
     }
 
     /// Finds a table by name.
     pub fn try_table(&self, table_name: &str) -> Option<&TableMapEntry> {
-        self.tables
-            .iter()
-            .find(|table| table.table_name.to_lowercase() == table_name.to_lowercase())
+        let table_name = case_fold(table_name);
+        self.tables.get(&table_name)
+    }
+
+    /// Returns true if the table has a column with the given name.
+    pub fn table_has_column(&self, table_name: &str, column_name: &str) -> bool {
+        let column_name_folded = case_fold(column_name);
+        self.try_table(table_name)
+            .map(|table| {
+                table
+                    .all_columns
+                    .iter()
+                    .any(|col| case_fold(col) == column_name_folded)
+            })
+            .unwrap_or(false)
     }
 
     /// Returns a list of all table names in the table map.
     pub fn table_names(&self) -> Vec<String> {
-        self.tables.iter().map(|t| t.table_name.clone()).collect()
+        self.tables.values().map(|t| t.table_name.clone()).collect()
     }
 
     /// Finds a table by position
     pub fn table_from_pos(&self, sheet_pos: SheetPos) -> Option<&TableMapEntry> {
-        self.tables.iter().find(|table| {
+        self.tables.values().find(|table| {
             table.sheet_id == sheet_pos.sheet_id && table.bounds.contains(sheet_pos.into())
         })
     }
@@ -81,19 +75,37 @@ impl TableMap {
         all_columns: Option<&[&str]>,
         bounds: crate::Rect,
     ) {
-        self.tables.push(TableMapEntry::test(
-            table_name,
-            visible_columns,
-            all_columns,
-            bounds,
-        ));
+        let table_name_folded = case_fold(table_name);
+        self.tables.insert(
+            table_name_folded,
+            TableMapEntry::test(table_name, visible_columns, all_columns, bounds),
+        );
+    }
+
+    /// Returns the table name if the given position is in the table's name or column headers.
+    pub fn table_in_name_or_column(&self, sheet_id: SheetId, x: u32, y: u32) -> Option<String> {
+        self.tables.values().find_map(|table| {
+            if table.sheet_id == sheet_id
+                && table.bounds.contains(Pos {
+                    x: x as i64,
+                    y: y as i64,
+                })
+                && table.show_ui
+                && y < (table.bounds.min.y as u32)
+                    + (if table.show_name { 1 } else { 0 } + if table.show_columns { 1 } else { 0 })
+                        as u32
+            {
+                return Some(table.table_name.clone());
+            }
+
+            None
+        })
     }
 
     #[cfg(test)]
     pub fn get_mut(&mut self, table_name: &str) -> Option<&mut TableMapEntry> {
-        self.tables
-            .iter_mut()
-            .find(|table| table.table_name.to_lowercase() == table_name.to_lowercase())
+        let table_name_folded = case_fold(table_name);
+        self.tables.get_mut(&table_name_folded)
     }
 }
 
@@ -268,5 +280,111 @@ mod tests {
         assert_eq!(table.col_name_from_index(0), Some("A".to_string()));
         assert_eq!(table.col_name_from_index(1), Some("B".to_string()));
         assert_eq!(table.col_name_from_index(2), Some("C".to_string()));
+    }
+
+    #[test]
+    fn test_table_in_name_or_column() {
+        let mut map = TableMap::default();
+
+        let sheet_id_1 = SheetId::new();
+        let sheet_id_2 = SheetId::new();
+
+        // Create a table with both name and columns shown
+        map.insert(TableMapEntry {
+            sheet_id: sheet_id_1,
+            table_name: "Test Table".to_string(),
+            visible_columns: vec!["Col1".to_string(), "Col2".to_string()],
+            all_columns: vec!["Col1".to_string(), "Col2".to_string()],
+            bounds: Rect::new(0, 0, 2, 3),
+            show_ui: true,
+            show_name: true,
+            show_columns: true,
+            is_html_image: false,
+            header_is_first_row: false,
+            language: None,
+        });
+
+        // Test position in table name row (y=0)
+        assert_eq!(
+            map.table_in_name_or_column(sheet_id_1, 0, 0),
+            Some("Test Table".to_string())
+        );
+
+        // Test position in column headers row (y=1)
+        assert_eq!(
+            map.table_in_name_or_column(sheet_id_1, 0, 1),
+            Some("Test Table".to_string())
+        );
+
+        // Test position in data area (y=2)
+        assert_eq!(map.table_in_name_or_column(sheet_id_1, 0, 2), None);
+
+        // Test position outside table
+        assert_eq!(map.table_in_name_or_column(sheet_id_1, 5, 0), None);
+
+        // Test with different sheet_id
+        assert_eq!(map.table_in_name_or_column(sheet_id_2, 0, 0), None);
+
+        // Create a table with only columns shown (no name)
+        map.insert(TableMapEntry {
+            sheet_id: sheet_id_1,
+            table_name: "Table 2".to_string(),
+            visible_columns: vec!["Col1".to_string(), "Col2".to_string()],
+            all_columns: vec!["Col1".to_string(), "Col2".to_string()],
+            bounds: Rect::new(5, 5, 7, 8),
+            show_ui: true,
+            show_name: false,
+            show_columns: true,
+            is_html_image: false,
+            header_is_first_row: false,
+            language: None,
+        });
+
+        // Test position in column headers row (y=5)
+        assert_eq!(
+            map.table_in_name_or_column(sheet_id_1, 5, 5),
+            Some("Table 2".to_string())
+        );
+
+        // Test position in data area (y=6)
+        assert_eq!(map.table_in_name_or_column(sheet_id_1, 5, 6), None);
+    }
+
+    #[test]
+    fn test_table_has_column() {
+        let mut map = TableMap::default();
+
+        // Create a table with visible and hidden columns
+        map.test_insert(
+            "test_table",
+            &["Visible1", "Visible2"],                  // visible columns
+            Some(&["Visible1", "Hidden1", "Visible2"]), // all columns
+            Rect::new(1, 1, 3, 5),
+        );
+
+        // Test existing visible column (exact match)
+        assert!(map.table_has_column("test_table", "Visible1"));
+        assert!(map.table_has_column("test_table", "Visible2"));
+
+        // Test existing hidden column
+        assert!(map.table_has_column("test_table", "Hidden1"));
+
+        // Test case insensitivity
+        assert!(map.table_has_column("TEST_TABLE", "visible1"));
+        assert!(map.table_has_column("test_table", "VISIBLE2"));
+        assert!(map.table_has_column("TEST_TABLE", "HIDDEN1"));
+
+        // Test non-existent column
+        assert!(!map.table_has_column("test_table", "NonExistent"));
+
+        // Test non-existent table
+        assert!(!map.table_has_column("non_existent_table", "Visible1"));
+
+        // Test empty column name
+        assert!(!map.table_has_column("test_table", ""));
+
+        // Create a table with empty column list
+        map.test_insert("empty_table", &[], None, Rect::new(1, 1, 3, 5));
+        assert!(!map.table_has_column("empty_table", "AnyColumn"));
     }
 }

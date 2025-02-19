@@ -58,7 +58,8 @@ impl TableRef {
                         return Err(A1Error::MultipleColumnDefinitions);
                     }
                     if let Some(index) = table.try_col_index(&name) {
-                        col_range = Some(ColRange::Col(table.all_columns[index as usize].clone()));
+                        col_range =
+                            Some(ColRange::Col(table.visible_columns[index as usize].clone()));
                     } else {
                         return Err(A1Error::InvalidColumn(name.clone()));
                     }
@@ -74,8 +75,8 @@ impl TableRef {
                         return Err(A1Error::InvalidColumn(end.clone()));
                     };
                     col_range = Some(ColRange::ColRange(
-                        table.all_columns[start as usize].clone(),
-                        table.all_columns[end as usize].clone(),
+                        table.visible_columns[start as usize].clone(),
+                        table.visible_columns[end as usize].clone(),
                     ));
                 }
                 Token::ColumnToEnd(name) => {
@@ -84,7 +85,7 @@ impl TableRef {
                     }
                     if let Some(index) = table.try_col_index(&name) {
                         col_range = Some(ColRange::ColToEnd(
-                            table.all_columns[index as usize].clone(),
+                            table.visible_columns[index as usize].clone(),
                         ));
                     } else {
                         return Err(A1Error::InvalidColumn(name.clone()));

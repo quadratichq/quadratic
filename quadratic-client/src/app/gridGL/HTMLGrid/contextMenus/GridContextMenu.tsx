@@ -1,4 +1,6 @@
+import { getTable } from '@/app/actions/dataTableSpec';
 import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { GridContextMenuCell } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuCell';
 import { GridContextMenuCodeTable } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuCodeTable';
 import { GridContextMenuCodeTableCell } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenuCodeTableCell';
@@ -23,6 +25,9 @@ import { useRecoilValue } from 'recoil';
  */
 export const GridContextMenu = () => {
   const contextMenu = useRecoilValue(contextMenuAtom);
+  let cursor = sheets.sheet.cursor;
+  const fullColumnSelection = cursor.getTableColumnSelection(getTable()?.name || '');
+
   if (contextMenu.type === ContextMenuType.Table && contextMenu.table) {
     if (contextMenu.table.language === 'Import') {
       return <GridContextMenuDataTable />;
@@ -40,7 +45,7 @@ export const GridContextMenu = () => {
   }
 
   // It's a table column selection
-  if (contextMenu.type === ContextMenuType.TableColumn && contextMenu.table) {
+  if ((contextMenu.type === ContextMenuType.TableColumn || fullColumnSelection) && contextMenu.table) {
     // Data table
     if (contextMenu.table.language === 'Import') {
       return <GridContextMenuDataTableColumn />;

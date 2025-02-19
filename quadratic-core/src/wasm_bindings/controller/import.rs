@@ -27,7 +27,7 @@ impl GridController {
         file: Vec<u8>,
         file_name: &str,
         delimiter: Option<u8>,
-        has_heading: Option<bool>,
+        header_is_first_row: Option<bool>,
     ) -> Result<GridController, JsValue> {
         let mut grid = Grid::new_blank();
         let sheet_id = grid.add_sheet(None);
@@ -42,7 +42,7 @@ impl GridController {
                 insert_at,
                 None,
                 delimiter,
-                has_heading,
+                header_is_first_row,
             )
             .map_err(|e| e.to_string())?;
 
@@ -62,7 +62,7 @@ impl GridController {
         insert_at: &str,
         cursor: Option<String>,
         delimiter: Option<u8>,
-        has_heading: Option<bool>,
+        header_is_first_row: Option<bool>,
     ) -> Result<(), JsValue> {
         let sheet_id = SheetId::from_str(sheet_id).map_err(|e| e.to_string())?;
         let insert_at = serde_json::from_str::<Pos>(insert_at).map_err(|e| e.to_string())?;
@@ -73,7 +73,7 @@ impl GridController {
             insert_at,
             cursor,
             delimiter,
-            has_heading,
+            header_is_first_row,
         )
         .map_err(|e| e.to_string())?;
 

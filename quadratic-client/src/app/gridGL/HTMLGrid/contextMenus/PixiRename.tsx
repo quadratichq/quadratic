@@ -132,12 +132,13 @@ export const PixiRename = (props: Props) => {
       ref={ref}
       className={cn('pointer-events-auto absolute rounded-none border-none outline-none', className)}
       style={{
-        left: position.x + (hasBorder ? hasBorder / 2 : 0),
-        top: position.y + (hasBorder ? hasBorder / 2 : 0),
-        width: position.width - (hasBorder ? hasBorder : 0),
-        height: position.height - (hasBorder ? hasBorder : 0),
+        left: position.x + (hasBorder ? hasBorder : 0),
+        top: position.y + (hasBorder ? hasBorder : 0),
+        width: position.width - (hasBorder ? hasBorder * 2 : 0),
+        height: position.height - (hasBorder ? hasBorder * 2 : 0),
         ...styles,
       }}
+      spellCheck={false}
       onKeyDown={onKeyDown}
       onChange={onChange}
       onInput={onInput}

@@ -50,7 +50,7 @@ class Result:
         self.cells = cells
         self.has_headers = has_headers
 
-def mock_getCellsA1(a1: str, first_row_header: bool = False):
+def mock_getCellsA1(a1: str, line_number: int, first_row_header: bool = False):
     out = []
     parts = a1.split(":")
     x1, y1 = a1_to_xy(parts[0])
@@ -197,6 +197,7 @@ class TestQuadraticApi(TestCase):
     def test_getCells_1d_array(self):
         q_new = q((0, 0))
         cells = q_new.cells("A1:A2", first_row_header=False)
+        print("CELLS", cells, )
         assert cells.equals(pd.DataFrame([["hello 0"], ["hello 0"]], columns=[0]))
 
     def test_getCells_1d_array_header(self):

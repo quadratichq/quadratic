@@ -17,15 +17,7 @@ frontend:
     files:
       - "**/*"
   cache:
-    paths:
-      - node_modules/**/*
-      - target/release/**/*
-      - target/debug/deps/**/*
-      - target/debug/build/**/*
-      - target/wasm32-unknown-unknown/**/*
-      - ~/.cargo/registry/cache/**/*
-      - ~/.cargo/registry/index/**/*
-      - ~/.cargo/git/db/**/*
+    paths: []
   customHeaders:
     - pattern: "**/*"
       headers:

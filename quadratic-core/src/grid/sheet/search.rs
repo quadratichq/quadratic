@@ -214,18 +214,19 @@ impl Sheet {
             };
 
             let row_index = pos.y - data_table_pos.y - data_table.y_adjustment(true);
-
-            for cell in column.iter().skip((row_index + 1) as usize) {
-                if text.len() >= MAX_NEIGHBOR_TEXT {
-                    break;
+            if let Ok(row_index) = usize::try_from(row_index) {
+                for cell in column.iter().skip(row_index + 1) {
+                    if text.len() >= MAX_NEIGHBOR_TEXT {
+                        break;
+                    }
+                    text.push(cell.to_string());
                 }
-                text.push(cell.to_string());
-            }
-            for cell in column.iter().take(row_index as usize).rev() {
-                if text.len() >= MAX_NEIGHBOR_TEXT {
-                    break;
+                for cell in column.iter().take(row_index).rev() {
+                    if text.len() >= MAX_NEIGHBOR_TEXT {
+                        break;
+                    }
+                    text.push(cell.to_string());
                 }
-                text.push(cell.to_string());
             }
         } else if let Some(column) = self.columns.get(&pos.x) {
             // walk forwards

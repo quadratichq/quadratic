@@ -221,9 +221,7 @@ impl From<Vec<Vec<CellValue>>> for CellValues {
         let mut columns = vec![BTreeMap::new(); w as usize];
         for (y, col) in values.into_iter().enumerate() {
             for (x, value) in col.into_iter().enumerate() {
-                if value != CellValue::Blank {
-                    columns[x].insert(y as u64, value);
-                }
+                columns[x].insert(y as u64, value);
             }
         }
         Self { columns, w, h }
@@ -254,9 +252,7 @@ impl From<Vec<Vec<&str>>> for CellValues {
 impl From<CellValue> for CellValues {
     fn from(value: CellValue) -> Self {
         let mut c = Self::new(1, 1);
-        if value != CellValue::Blank {
-            c.set(0, 0, value);
-        }
+        c.set(0, 0, value);
         c
     }
 }

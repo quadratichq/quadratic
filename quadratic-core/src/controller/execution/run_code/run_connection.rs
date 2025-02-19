@@ -30,7 +30,7 @@ impl GridController {
         let mut result = String::new();
         let mut last_match_end = 0;
 
-        let context = self.grid.a1_context();
+        let context = self.a1_context();
         for cap in HANDLEBARS_REGEX.captures_iter(code) {
             let Some(whole_match) = cap.get(0) else {
                 continue;
@@ -39,9 +39,9 @@ impl GridController {
             result.push_str(&code[last_match_end..whole_match.start()]);
 
             let content = cap.get(1).map(|m| m.as_str().trim()).unwrap_or("");
-            let selection = A1Selection::parse_a1(content, &default_sheet_id, &context)?;
+            let selection = A1Selection::parse_a1(content, &default_sheet_id, context)?;
 
-            let Some(pos) = selection.try_to_pos(&context) else {
+            let Some(pos) = selection.try_to_pos(context) else {
                 return Err(A1Error::WrongCellCount(
                     "Connections only supports one cell".to_string(),
                 ));
@@ -147,10 +147,9 @@ mod tests {
             .unwrap();
         assert_eq!(result, "test".to_string());
         assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
-        let context = gc.grid.a1_context();
         assert!(transaction
             .cells_accessed
-            .contains(SheetPos::new(sheet_id, 1, 2), &context));
+            .contains(SheetPos::new(sheet_id, 1, 2), gc.a1_context()));
 
         gc.add_sheet(None);
         let sheet_2_id = gc.sheet_ids()[1];
@@ -165,7 +164,7 @@ mod tests {
         assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
         assert!(transaction
             .cells_accessed
-            .contains(SheetPos::new(sheet_id, 1, 2), &context));
+            .contains(SheetPos::new(sheet_id, 1, 2), gc.a1_context()));
     }
 
     #[test]
@@ -190,10 +189,10 @@ mod tests {
             .unwrap();
         assert_eq!(result, "test".to_string());
         assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
-        let context = gc.grid.a1_context();
+        let context = gc.a1_context();
         assert!(transaction
             .cells_accessed
-            .contains(SheetPos::new(sheet_id, 1, 2), &context));
+            .contains(SheetPos::new(sheet_id, 1, 2), context));
 
         let code = r#"{{'Sheet1'!A2}}"#;
         let result = gc
@@ -203,7 +202,7 @@ mod tests {
         assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
         assert!(transaction
             .cells_accessed
-            .contains(SheetPos::new(sheet_id, 1, 2), &context));
+            .contains(SheetPos::new(sheet_id, 1, 2), context));
     }
 
     #[test]

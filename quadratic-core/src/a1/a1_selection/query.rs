@@ -787,7 +787,7 @@ mod tests {
     #[test]
     fn test_get_ref_range_bounds() {
         let context = A1Context::test(
-            &[("Sheet1", SheetId::test())],
+            &[("Sheet1", SheetId::TEST)],
             &[("Table1", &["A", "B", "C"], Rect::test_a1("A1:C4"))],
         );
         // note we do not return the D5: range as it is infinite
@@ -808,10 +808,16 @@ mod tests {
     fn test_is_on_html_image() {
         // Create a context with a table that has an HTML image
         let mut context = A1Context::test(
-            &[("Sheet1", SheetId::test()), ("Sheet2", SheetId::new())],
+            &[("Sheet1", SheetId::TEST), ("Sheet2", SheetId::new())],
             &[("Table1", &["A"], Rect::test_a1("B2:D4"))],
         );
-        context.table_map.tables.first_mut().unwrap().is_html_image = true;
+        context
+            .table_map
+            .tables
+            .values_mut()
+            .next()
+            .unwrap()
+            .is_html_image = true;
 
         // Test position inside the table
         assert!(A1Selection::test_a1("B2").cursor_is_on_html_image(&context));
@@ -963,5 +969,49 @@ mod tests {
         // Test non-table selection
         let selection = A1Selection::test_a1_context("A1:B2", &context);
         assert_eq!(selection.get_single_full_table_selection_name(), None);
+    }
+
+    #[test]
+    fn test_table_column_selection() {
+        let context = A1Context::test(
+            &[],
+            &[
+                ("Table1", &["A", "B", "C"], Rect::test_a1("A1:C3")),
+                ("Table2", &["D", "E"], Rect::test_a1("D1:E3")),
+            ],
+        );
+
+        // Test selecting specific columns from a table
+        let selection = A1Selection::test_a1_context("Table1[[A]:[C]]", &context);
+        assert_eq!(
+            selection.table_column_selection("Table1", &context),
+            Some(vec![0, 1, 2])
+        );
+
+        // Test selecting all columns from a table
+        let selection = A1Selection::test_a1_context("Table1", &context);
+        assert_eq!(
+            selection.table_column_selection("Table1", &context),
+            Some(vec![0, 1, 2])
+        );
+
+        // Test selecting from wrong table name
+        let selection = A1Selection::test_a1_context("Table1[[A]:[C]]", &context);
+        assert_eq!(selection.table_column_selection("Table2", &context), None);
+
+        // Test non-table selection
+        let selection = A1Selection::test_a1_context("A1:C3", &context);
+        assert_eq!(selection.table_column_selection("Table1", &context), None);
+
+        // Test multiple table selections
+        let selection = A1Selection::test_a1_context("Table1[A],Table2[D]", &context);
+        assert_eq!(
+            selection.table_column_selection("Table1", &context),
+            Some(vec![0])
+        );
+        assert_eq!(
+            selection.table_column_selection("Table2", &context),
+            Some(vec![0])
+        );
     }
 }

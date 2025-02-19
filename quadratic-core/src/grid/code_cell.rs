@@ -118,7 +118,7 @@ impl CodeCellValue {
 
             // create a copy of the a1_context so that we can send it to the to_string() function
             let mut new_a1_context = old_a1_context.clone();
-            new_a1_context.sheet_map.remove(old_name);
+            new_a1_context.sheet_map.remove_name(old_name);
 
             self.replace_q_cells_a1_selection(default_sheet_id, &old_a1_context, |a1_selection| {
                 a1_selection.to_string_force_sheet_name(
@@ -370,7 +370,7 @@ mod tests {
 
     #[test]
     fn test_replace_sheet_name_in_cell_references() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let a1_context = A1Context::test(
             &[("Sheet1", sheet_id)],
             &[("test.csv", &["city"], Rect::test_a1("A1:C3"))],
@@ -383,7 +383,7 @@ mod tests {
 
     #[test]
     fn test_replace_table_name_in_cell_references() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let a1_context = A1Context::test(
             &[("Sheet1", sheet_id)],
             &[("simple", &["city"], Rect::test_a1("A1:C3"))],
@@ -404,7 +404,7 @@ mod tests {
 
     #[test]
     fn test_replace_column_name_in_cell_references() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let a1_context = A1Context::test(
             &[("Sheet1", sheet_id)],
             &[("test.csv", &["city", "state"], Rect::test_a1("A1:C3"))],
