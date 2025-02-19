@@ -19,6 +19,12 @@ export function GridContextMenuCodeTable() {
       <ContextMenuBase>
         <ContextMenuItemAction action={Action.Cut} />
         <ContextMenuItemAction action={Action.Copy} />
+        <ContextMenuItemAction action={Action.Paste} />
+        <ContextMenuItemAction action={Action.PasteValuesOnly} />
+        <ContextMenuItemAction action={Action.PasteFormattingOnly} />
+        <DropdownMenuSeparator />
+        <ContextMenuItemAction action={Action.EditTableCode} />
+        <ContextMenuCodeTableItems />
       </ContextMenuBase>
     );
   }
