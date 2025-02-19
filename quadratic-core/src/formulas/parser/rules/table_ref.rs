@@ -188,3 +188,28 @@ impl SyntaxRule for TableReference {
         .with_span(Span::merge(start_span, end_span))
     }
 }
+
+/// Matches a table reference and includes the sheet ID in the output.
+#[derive(Debug, Copy, Clone)]
+pub struct SheetTableReference;
+impl_display!(for SheetTableReference, "table reference such as 'MyTable' or 'MyTable[ColumnName]'");
+impl SyntaxRule for SheetTableReference {
+    type Output = Spanned<SheetCellRefRange>;
+
+    fn prefix_matches(&self, p: Parser<'_>) -> bool {
+        TableReference.prefix_matches(p)
+    }
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
+        let spanned = p.parse(TableReference)?;
+        spanned.try_map(|table_ref| {
+            Ok(SheetCellRefRange {
+                sheet_id: p
+                    .ctx
+                    .try_table(&table_ref.table_name)
+                    .ok_or(RunErrorMsg::BadCellReference)?
+                    .sheet_id,
+                cells: CellRefRange::Table { range: table_ref },
+            })
+        })
+    }
+}
