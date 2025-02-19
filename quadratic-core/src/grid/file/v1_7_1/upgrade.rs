@@ -77,11 +77,10 @@ fn upgrade_code_runs(
                 v1_8::OutputValueSchema::Single(v1_8::CellValueSchema::Blank)
             };
 
-            let code =
-                column
-                    .1
-                    .iter()
-                    .find_map(|(y, value)| if *y == pos.y { Some(value) } else { None });
+            let code = column
+                .1
+                .iter()
+                .find_map(|(y, value)| if *y == pos.y { Some(value) } else { None });
 
             let data_table_name = if let Some(current::CellValueSchema::Code(code_cell)) = code {
                 match code_cell.language {
@@ -135,9 +134,9 @@ fn upgrade_code_runs(
                 kind: v1_8::DataTableKindSchema::CodeRun(new_code_run),
                 name: data_table_name,
                 header_is_first_row: false,
-                show_ui: chart_output.is_some(),
-                show_name: true,
-                show_columns: true,
+                show_ui: true,
+                show_name: chart_output.is_some(),
+                show_columns: chart_output.is_some(),
                 columns: None,
                 sort: None,
                 display_buffer: None,
@@ -145,7 +144,7 @@ fn upgrade_code_runs(
                 readonly: true,
                 spill_error: code_run.spill_error,
                 last_modified: code_run.last_modified,
-                alternating_colors: true,
+                alternating_colors: false,
                 formats: Default::default(),
                 borders: Default::default(),
                 chart_pixel_output,
