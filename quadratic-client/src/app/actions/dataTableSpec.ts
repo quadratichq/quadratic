@@ -539,7 +539,7 @@ export const dataTableSpec: DataTableSpec = {
     run: deleteDataTable,
   },
   [Action.CodeToDataTable]: {
-    label: 'Convert to Table (editable)',
+    label: 'Convert to table',
     Icon: TableIcon,
     run: codeToDataTable,
   },
@@ -597,7 +597,7 @@ export const dataTableSpec: DataTableSpec = {
   },
   [Action.HideTableColumn]: {
     label: 'Hide',
-    labelVerbose: 'Hide table column',
+    labelVerbose: 'Hide column',
     Icon: HideIcon,
     run: hideTableColumn,
     isAvailable: () => !isCodeCell('Formula') && !isCodeCell('Python'),

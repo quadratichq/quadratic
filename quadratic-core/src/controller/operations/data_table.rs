@@ -25,13 +25,11 @@ impl GridController {
         let kind = DataTableKind::Import(import.to_owned());
         let cell_value = CellValue::Import(import);
 
-        Ok(vec![
-            Operation::SwitchDataTableKind { sheet_pos, kind },
-            Operation::SetCellValues {
-                sheet_pos,
-                values: cell_value.into(),
-            },
-        ])
+        Ok(vec![Operation::SwitchDataTableKind {
+            sheet_pos,
+            kind,
+            value: cell_value,
+        }])
     }
 
     pub fn grid_to_data_table_operations(&self, sheet_rect: SheetRect) -> Vec<Operation> {

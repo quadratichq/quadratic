@@ -9,7 +9,7 @@ use crate::{
     grid::{
         formats::{FormatUpdate, SheetFormatUpdates},
         js_types::JsSnackbarSeverity,
-        DataTable, DataTableKind, SheetId,
+        DataTable, SheetId,
     },
     Array, ArraySize, CellValue, Pos, Rect, SheetPos, SheetRect,
 };
@@ -464,51 +464,37 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) -> Result<()> {
-        if let Operation::SwitchDataTableKind { sheet_pos, kind } = op.to_owned() {
+        if let Operation::SwitchDataTableKind {
+            sheet_pos,
+            kind,
+            value,
+        } = op.to_owned()
+        {
             let sheet_id = sheet_pos.sheet_id;
             let pos = Pos::from(sheet_pos);
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(pos)?;
+            let old_cell_value = sheet.cell_value_result(data_table_pos)?.to_owned();
             let data_table = sheet.data_table_mut(data_table_pos)?;
             let old_data_table_kind = data_table.kind.to_owned();
             let old_readonly = data_table.readonly;
             let sheet_rect = data_table.output_sheet_rect(sheet_pos, false);
 
-            data_table.kind = match old_data_table_kind {
-                DataTableKind::CodeRun(_) => match kind {
-                    DataTableKind::CodeRun(_) => kind,
-                    DataTableKind::Import(import) => DataTableKind::Import(import),
-                },
-                DataTableKind::Import(_) => match kind {
-                    DataTableKind::CodeRun(code_run) => DataTableKind::CodeRun(code_run),
-                    DataTableKind::Import(_) => kind,
-                },
-            };
+            data_table.kind = kind;
             data_table.readonly = !old_readonly;
+            sheet.set_cell_value(data_table_pos, value);
 
-            transaction.add_dirty_hashes_from_sheet_rect(sheet_rect); // todo(ayush): optimize this
             transaction.add_code_cell(sheet_id, data_table_pos);
             self.mark_data_table_dirty(transaction, sheet_id, sheet_rect.min)?;
             self.send_updated_bounds(transaction, sheet_id);
             self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
-            let reverse_operations = vec![
-                Operation::SwitchDataTableKind {
-                    sheet_pos,
-                    kind: old_data_table_kind,
-                },
-                Operation::DataTableMeta {
-                    sheet_pos,
-                    name: None,
-                    alternating_colors: None,
-                    columns: None,
-                    show_ui: None,
-                    show_name: None,
-                    show_columns: None,
-                    readonly: Some(old_readonly),
-                },
-            ];
+            let reverse_operations = vec![Operation::SwitchDataTableKind {
+                sheet_pos,
+                kind: old_data_table_kind,
+                value: old_cell_value,
+            }];
             self.data_table_operations(
                 transaction,
                 forward_operations,
@@ -1428,7 +1414,7 @@ mod tests {
         grid::{
             column_header::DataTableColumnHeader,
             data_table::sort::{DataTableSort, SortDirection},
-            CodeCellLanguage, CodeCellValue, CodeRun, SheetId,
+            CodeCellLanguage, CodeCellValue, CodeRun, DataTableKind, SheetId,
         },
         test_util::{
             assert_cell_value_row, assert_data_table_cell_value, assert_data_table_cell_value_row,
@@ -1662,6 +1648,7 @@ mod tests {
         let op = Operation::SwitchDataTableKind {
             sheet_pos,
             kind: kind.clone(),
+            value: CellValue::Import(import),
         };
         let mut transaction = PendingTransaction::default();
         gc.execute_code_data_table_to_data_table(&mut transaction, op)
