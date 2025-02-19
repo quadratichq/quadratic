@@ -172,7 +172,7 @@ impl GridController {
         selection: &A1Selection,
         clipboard: Clipboard,
         special: PasteSpecial,
-    ) -> Vec<Operation> {
+    ) -> Result<Vec<Operation>> {
         let mut ops = vec![];
 
         let mut start_pos = selection.cursor;
@@ -224,87 +224,84 @@ impl GridController {
                         // Determine if the paste is happening within a data table.
                         // If so, replace values in the data table with the
                         // intersection of the data table and the paste
-                        sheet.iter_code_output_intersects_rect(rect).for_each(
-                            |(output_rect, intersection_rect, data_table)| {
-                                let contains_source_cell =
-                                    intersection_rect.contains(output_rect.min);
-                                // there is no pasting on top of code cell output
-                                if !data_table.readonly && !contains_source_cell {
-                                    let adjusted_rect = Rect::from_numbers(
-                                        intersection_rect.min.x - start_pos.x,
-                                        intersection_rect.min.y - start_pos.y,
-                                        intersection_rect.width() as i64,
-                                        intersection_rect.height() as i64,
+                        for (output_rect, intersection_rect, data_table) in
+                            sheet.iter_code_output_intersects_rect(rect)
+                        {
+                            let contains_source_cell = intersection_rect.contains(output_rect.min);
+                            // there is no pasting on top of code cell output
+                            if !data_table.readonly && !contains_source_cell {
+                                let adjusted_rect = Rect::from_numbers(
+                                    intersection_rect.min.x - start_pos.x,
+                                    intersection_rect.min.y - start_pos.y,
+                                    intersection_rect.width() as i64,
+                                    intersection_rect.height() as i64,
+                                );
+
+                                // pull the values from `values`, replacing
+                                // the values in `values` with CellValue::Blank
+                                let cell_values = values.get_rect(adjusted_rect);
+
+                                let paste_code_cell_in_import = cell_values.iter().any(|col| {
+                                    col.iter().any(|cell_value| {
+                                        cell_value.is_code()
+                                            || cell_value.is_import()
+                                            || cell_value.is_image()
+                                            || cell_value.is_html()
+                                    })
+                                });
+                                if paste_code_cell_in_import {
+                                    crate::wasm_bindings::js::jsClientMessage(
+                                        "Error pasting values in table".to_string(),
+                                        JsSnackbarSeverity::Error.to_string(),
                                     );
+                                    return Err(Error::msg("Error pasting values in table"));
+                                }
 
-                                    // pull the values from `values`, replacing
-                                    // the values in `values` with CellValue::Blank
-                                    let cell_values = values.get_rect(adjusted_rect);
+                                let contains_header =
+                                    intersection_rect.y_range().contains(&output_rect.min.y);
+                                let headers = data_table.column_headers.to_owned();
 
-                                    let paste_code_cell_in_import = cell_values.iter().any(|col| {
-                                        col.iter().any(|cell_value| {
-                                            matches!(cell_value, CellValue::Code(_))
-                                        })
-                                    });
-                                    if paste_code_cell_in_import {
-                                        if cfg!(target_family = "wasm") || cfg!(test) {
-                                            crate::wasm_bindings::js::jsClientMessage(
-                                                "Cannot paste code cell in table".to_string(),
-                                                JsSnackbarSeverity::Error.to_string(),
-                                            );
+                                if let (Some(mut headers), true) = (headers, contains_header) {
+                                    let y = output_rect.min.y - start_pos.y;
+
+                                    for x in intersection_rect.x_range() {
+                                        let new_x = x - output_rect.min.x;
+
+                                        if let Some(header) = headers.get_mut(new_x as usize) {
+                                            let safe_x =
+                                                u32::try_from(x - start_pos.x).unwrap_or(0);
+                                            let safe_y = u32::try_from(y).unwrap_or(0);
+
+                                            let cell_value = values
+                                                .remove(safe_x, safe_y)
+                                                .unwrap_or(CellValue::Blank);
+
+                                            header.name = cell_value;
                                         }
-                                        return;
                                     }
 
-                                    let contains_header =
-                                        intersection_rect.y_range().contains(&output_rect.min.y);
-                                    let headers = data_table.column_headers.to_owned();
-
-                                    if let (Some(mut headers), true) = (headers, contains_header) {
-                                        let y = output_rect.min.y - start_pos.y;
-
-                                        for x in intersection_rect.x_range() {
-                                            let new_x = x - output_rect.min.x;
-
-                                            if let Some(header) = headers.get_mut(new_x as usize) {
-                                                let safe_x =
-                                                    u32::try_from(x - start_pos.x).unwrap_or(0);
-                                                let safe_y = u32::try_from(y).unwrap_or(0);
-
-                                                let cell_value = values
-                                                    .remove(safe_x, safe_y)
-                                                    .unwrap_or(CellValue::Blank);
-
-                                                header.name = cell_value;
-                                            }
-                                        }
-
-                                        let sheet_pos =
-                                            output_rect.min.to_sheet_pos(selection.sheet_id);
-                                        ops.push(Operation::DataTableMeta {
-                                            sheet_pos,
-                                            name: None,
-                                            alternating_colors: None,
-                                            columns: Some(headers.to_vec()),
-                                            show_ui: None,
-                                            show_name: None,
-                                            show_columns: None,
-                                            readonly: None,
-                                        });
-                                    }
-
-                                    let sheet_pos = SheetPos {
-                                        x: intersection_rect.min.x,
-                                        y: intersection_rect.min.y,
-                                        sheet_id: selection.sheet_id,
-                                    };
-                                    ops.push(Operation::SetDataTableAt {
+                                    let sheet_pos =
+                                        output_rect.min.to_sheet_pos(selection.sheet_id);
+                                    ops.push(Operation::DataTableMeta {
                                         sheet_pos,
-                                        values: CellValues::from(cell_values),
+                                        name: None,
+                                        alternating_colors: None,
+                                        columns: Some(headers.to_vec()),
+                                        show_ui: None,
+                                        show_name: None,
+                                        show_columns: None,
+                                        readonly: None,
                                     });
                                 }
-                            },
-                        );
+
+                                let sheet_pos =
+                                    intersection_rect.min.to_sheet_pos(selection.sheet_id);
+                                ops.push(Operation::SetDataTableAt {
+                                    sheet_pos,
+                                    values: CellValues::from(cell_values),
+                                });
+                            }
+                        }
                     }
 
                     ops.push(Operation::SetCellValues {
@@ -314,7 +311,7 @@ impl GridController {
                 }
 
                 if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-                    code.iter().for_each(|(x, y)| {
+                    for (x, y) in code.iter() {
                         let sheet_pos = SheetPos {
                             x: start_pos.x + *x as i64,
                             y: start_pos.y + *y as i64,
@@ -327,7 +324,11 @@ impl GridController {
                                 matches!(data_table.kind, DataTableKind::Import(_))
                             });
                         if paste_in_import {
-                            return;
+                            crate::wasm_bindings::js::jsClientMessage(
+                                "Error pasting values in table".to_string(),
+                                JsSnackbarSeverity::Error.to_string(),
+                            );
+                            return Err(Error::msg("Error pasting values in table"));
                         }
 
                         let source_pos = Pos {
@@ -357,7 +358,7 @@ impl GridController {
                         }
 
                         ops.push(Operation::ComputeCode { sheet_pos });
-                    });
+                    }
                 }
             }
             PasteSpecial::Values => {
@@ -407,7 +408,7 @@ impl GridController {
 
         ops.push(Operation::SetCursorA1 { selection: cursor });
 
-        ops
+        Ok(ops)
     }
 
     pub fn paste_plain_text_operations(
@@ -543,7 +544,7 @@ impl GridController {
                     }
                 }
 
-                Ok(self.set_clipboard_cells(selection, clipboard, special))
+                self.set_clipboard_cells(selection, clipboard, special)
             }
         }
     }
@@ -1002,18 +1003,18 @@ mod test {
             .copy_to_clipboard(&A1Selection::from_rect(rect), ClipboardOperation::Copy)
             .unwrap();
 
-        gc.paste_from_clipboard(
-            &A1Selection::test_a1_sheet_id("B2", &sheet_id),
-            None,
-            Some(html),
-            PasteSpecial::None,
-            None,
-        );
+        assert!(gc
+            .paste_html_operations(
+                &A1Selection::test_a1_sheet_id("B2", &sheet_id),
+                html,
+                PasteSpecial::None,
+            )
+            .is_ok());
 
         expect_js_call(
             "jsClientMessage",
             format!(
-                "Cannot paste code cell in table,{}",
+                "Error pasting values in table,{}",
                 JsSnackbarSeverity::Error
             ),
             true,

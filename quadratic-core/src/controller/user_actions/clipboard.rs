@@ -44,7 +44,7 @@ impl GridController {
 
     pub fn move_cells(&mut self, source: SheetRect, dest: SheetPos, cursor: Option<String>) {
         let ops = self.move_cells_operations(source, dest);
-        self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
+        self.start_user_transaction(ops, cursor, TransactionName::MoveCells);
     }
 
     pub fn move_code_cell_vertically(
@@ -85,7 +85,7 @@ impl GridController {
                 }
                 let dest_js_pos = dest.into();
                 let ops = self.move_cells_operations(source, dest);
-                self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
+                self.start_user_transaction(ops, cursor, TransactionName::MoveCells);
                 return dest_js_pos;
             }
         }
@@ -130,7 +130,7 @@ impl GridController {
                 }
                 let dest_js_pos = dest.into();
                 let ops = self.move_cells_operations(source, dest);
-                self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
+                self.start_user_transaction(ops, cursor, TransactionName::MoveCells);
                 return dest_js_pos;
             }
         }
