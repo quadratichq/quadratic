@@ -106,6 +106,17 @@ impl DataTable {
 
         Ok(())
     }
+
+    /// Get the index of a column given a display index.
+    pub fn column_index(&self, display_index: u32) -> Option<u32> {
+        let index = if let Some(headers) = &self.column_headers {
+            headers.get(display_index as usize)?.value_index
+        } else {
+            display_index
+        };
+
+        Some(index)
+    }
 }
 
 #[cfg(test)]
