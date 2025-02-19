@@ -239,9 +239,10 @@ impl GridController {
                             (rect.min.x..=rect.max.x)
                                 .map(|x| {
                                     // account for hidden columns
-                                    data_table.column_index((x - data_table_rect.min.x) as u32)
+                                    data_table.get_column_index_from_display_index(
+                                        (x - data_table_rect.min.x) as u32,
+                                    )
                                 })
-                                .flatten()
                                 .rev()
                                 .for_each(|index| {
                                     ops.push(Operation::DeleteDataTableColumn {
