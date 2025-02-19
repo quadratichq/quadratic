@@ -271,19 +271,16 @@ mod tests {
     use crate::grid::{CodeCellLanguage, ConnectionKind, GridBounds};
     use crate::{CellValue, Pos, Rect, SheetPos};
 
-    fn add_cell_value(sheet_pos: SheetPos, value: CellValue) -> Operation {
-        Operation::SetCellValues {
-            sheet_pos,
-            values: CellValues::from(value),
-        }
+    fn add_cell_value(sheet_pos: SheetPos, values: CellValues) -> Operation {
+        Operation::SetCellValues { sheet_pos, values }
     }
 
     fn get_operations(gc: &mut GridController) -> (Operation, Operation) {
         let sheet_id = gc.sheet_ids()[0];
         let sheet_pos = SheetPos::from((0, 0, sheet_id));
         let value = CellValue::Text("test".into());
-        let operation = add_cell_value(sheet_pos, value);
-        let operation_undo = add_cell_value(sheet_pos, CellValue::Blank);
+        let operation = add_cell_value(sheet_pos, value.into());
+        let operation_undo = add_cell_value(sheet_pos, CellValues::new(1, 1));
         (operation, operation_undo)
     }
 

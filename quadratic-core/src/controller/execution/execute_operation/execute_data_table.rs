@@ -9,7 +9,7 @@ use crate::{
     grid::{
         formats::{FormatUpdate, SheetFormatUpdates},
         js_types::JsSnackbarSeverity,
-        DataTable, SheetId,
+        DataTable, DataTableKind, SheetId,
     },
     Array, ArraySize, CellValue, Pos, Rect, SheetPos, SheetRect,
 };
@@ -308,6 +308,7 @@ impl GridController {
             // send the new value
             sheet.set_code_cell_values(pos, values);
 
+            // sort the data table and update the old values to match the new sorted data table
             let data_table = sheet.data_table_mut(data_table_pos)?;
             if data_table.display_buffer.is_some() {
                 data_table.sort_all()?;
@@ -477,16 +478,17 @@ impl GridController {
             let old_cell_value = sheet.cell_value_result(data_table_pos)?.to_owned();
             let data_table = sheet.data_table_mut(data_table_pos)?;
             let old_data_table_kind = data_table.kind.to_owned();
-            let old_readonly = data_table.readonly;
             let sheet_rect = data_table.output_sheet_rect(sheet_pos, false);
 
+            data_table.readonly = match &kind {
+                DataTableKind::Import(_) => false,
+                DataTableKind::CodeRun(_) => true,
+            };
             data_table.kind = kind;
-            data_table.readonly = !old_readonly;
+
             sheet.set_cell_value(data_table_pos, value);
 
             transaction.add_code_cell(sheet_id, data_table_pos);
-            self.mark_data_table_dirty(transaction, sheet_id, sheet_rect.min)?;
-            self.send_updated_bounds(transaction, sheet_id);
             self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
@@ -978,7 +980,7 @@ impl GridController {
                 drop(values);
                 reverse_operations.push(Operation::SetCellValues {
                     sheet_pos: values_rect.min.to_sheet_pos(sheet_id),
-                    values: CellValues::new_blank(values_rect.width(), values_rect.height()),
+                    values: CellValues::new(values_rect.width(), values_rect.height()),
                 });
 
                 if !format_update.is_default() {
@@ -1220,7 +1222,7 @@ impl GridController {
                 drop(values);
                 reverse_operations.push(Operation::SetCellValues {
                     sheet_pos: values_rect.min.to_sheet_pos(sheet_id),
-                    values: CellValues::new_blank(values_rect.width(), values_rect.height()),
+                    values: CellValues::new(values_rect.width(), values_rect.height()),
                 });
 
                 if !sheet_format_update.is_default() {

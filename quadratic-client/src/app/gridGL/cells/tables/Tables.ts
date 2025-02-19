@@ -119,14 +119,14 @@ export class Tables extends Container<Table> {
     return sheet;
   }
 
-  private updateCodeCell = (options: {
+  private updateCodeCell = (args: {
     sheetId: string;
     x: number;
     y: number;
     codeCell?: JsCodeCell;
     renderCodeCell?: JsRenderCodeCell;
   }) => {
-    const { sheetId, x, y, renderCodeCell } = options;
+    const { sheetId, x, y, renderCodeCell } = args;
     if (sheetId === this.cellsSheet.sheetId) {
       const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
       if (table) {
