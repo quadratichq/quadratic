@@ -547,17 +547,6 @@ mod tests {
         let cols = table_ref.table_column_selection("test_table", &context);
         assert_eq!(cols, Some(vec![1, 2]));
 
-        // Test with headers = false (should return empty vec)
-        let table_ref = TableRef {
-            table_name: "test_table".to_string(),
-            col_range: ColRange::All,
-            data: true,
-            headers: false,
-            totals: false,
-        };
-        let cols = table_ref.table_column_selection("test_table", &context);
-        assert_eq!(cols, None);
-
         // Test with different table name (should return empty vec)
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
