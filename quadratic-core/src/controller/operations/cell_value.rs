@@ -513,12 +513,12 @@ mod test {
             operations,
             vec![
                 Operation::SetCellValues {
-                    sheet_pos: SheetPos::new(sheet_id, 1, 2),
-                    values: CellValues::new(2, 1)
-                },
-                Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 2, 1),
                     values: CellValues::new(1, 2)
+                },
+                Operation::SetCellValues {
+                    sheet_pos: SheetPos::new(sheet_id, 1, 2),
+                    values: CellValues::new(2, 1)
                 },
             ]
         );

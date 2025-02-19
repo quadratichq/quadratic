@@ -61,7 +61,7 @@ pub fn find_cell_references(
         if let Some(Ok(sheet_cell_ref_range)) = p.try_parse(rules::CellRangeReference) {
             ret.push(sheet_cell_ref_range);
         } else if let Some(Ok(sheet_cell_ref_range)) = p.try_parse(rules::SheetTableReference) {
-            ret.push(sheet_cell_ref_range)
+            ret.push(sheet_cell_ref_range);
         } else {
             p.next();
         }
