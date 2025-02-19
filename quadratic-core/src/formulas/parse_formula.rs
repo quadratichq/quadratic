@@ -103,7 +103,7 @@ mod tests {
     use super::*;
     use crate::{
         a1::{CellRefCoord, CellRefRange},
-        Span,
+        Rect, Span,
     };
 
     /// Run this test with `--nocapture` to generate the example for the
@@ -138,5 +138,17 @@ mod tests {
         };
 
         println!("{}", serde_json::to_string_pretty(&example_result).unwrap());
+    }
+
+    #[test]
+    fn test_parse_formula_table() {
+        let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B10"))]);
+        let sheet_id = SheetId::TEST;
+
+        let result = parse_formula_results("Table1", context, sheet_id, 1, 1);
+
+        println!("{:?}", result);
+
+        // result.cells_accessed should include the TableRef
     }
 }
