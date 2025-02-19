@@ -119,7 +119,7 @@ export class CellLabel {
 
   private textWidth = 0;
   textHeight = 0;
-  unwrappedTextWidth = 0;
+  unwrappedTextWidth;
 
   // overflow values
   private overflowRight = 0;
@@ -217,6 +217,7 @@ export class CellLabel {
     this.strikeThrough = !!cell.strikeThrough;
     this.columnHeader = !!cell.columnHeader;
     this.updateCellLimits();
+    this.unwrappedTextWidth = this.getUnwrappedTextWidth(this.text);
   }
 
   private updateFontName = () => {
@@ -349,6 +350,7 @@ export class CellLabel {
 
   public updateText = (labelMeshes: LabelMeshes): void => {
     if (!this.visible) return;
+    if (this.columnHeader) return;
 
     let processedText = this.processText(labelMeshes, this.text);
     if (!processedText) return;
@@ -362,7 +364,7 @@ export class CellLabel {
 
     this.calculatePosition();
 
-    if (!this.columnHeader && this.checkNumberClip()) {
+    if (this.checkNumberClip()) {
       const clippedNumber = this.getClippedNumber(this.originalText, this.text, this.number);
       const processedText = this.processText(labelMeshes, clippedNumber);
       if (!processedText) return;
@@ -380,6 +382,7 @@ export class CellLabel {
   /** Calculates the text glyphs and positions */
   public processText = (labelMeshes: LabelMeshes, originalText: string) => {
     if (!this.visible) return;
+    if (this.columnHeader) return;
 
     const data = this.cellsLabels.bitmapFonts[this.fontName];
     if (!data) throw new Error(`Expected BitmapFont ${this.fontName} to be defined in CellLabel.processText`);
@@ -582,6 +585,7 @@ export class CellLabel {
   /** Adds the glyphs to the CellsLabels */
   updateLabelMesh = (labelMeshes: LabelMeshes): Bounds | undefined => {
     if (!this.visible) return;
+    if (this.columnHeader) return;
 
     const data = this.cellsLabels.bitmapFonts[this.fontName];
     if (!data) throw new Error('Expected BitmapFont to be defined in CellLabel.updateLabelMesh');
