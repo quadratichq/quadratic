@@ -62,8 +62,11 @@ impl GridController {
         if let Some(sheet) = self.grid.try_sheet(sheet_id) {
             if let Some((pos, data_table)) = sheet.data_tables.get_index(index) {
                 // we can short circuit the output if the size is now 1x1, which can never spill
-                if matches!(data_table.output_size(), ArraySize::_1X1) && data_table.spill_error {
-                    return Some(false);
+                if matches!(data_table.output_size(), ArraySize::_1X1) {
+                    if data_table.spill_error {
+                        return Some(true);
+                    }
+                    return None;
                 }
 
                 let output: Rect = data_table
