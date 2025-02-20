@@ -8,6 +8,7 @@ import { useRecoilValue } from 'recoil';
 export const GridContextMenuDataTableColumn = () => {
   const contextMenu = useRecoilValue(contextMenuAtom);
   const isShowingColumnNames = Boolean(contextMenu.table?.show_columns);
+
   return (
     <ContextMenuBase>
       <ContextMenuItemAction action={Action.Cut} />

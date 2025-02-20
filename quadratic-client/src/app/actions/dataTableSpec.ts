@@ -155,7 +155,7 @@ const isReadOnly = (): boolean => {
 
 const isWithinTable = (): boolean => {
   // getRow() returns zero if outside of the table
-  return !!getRow();
+  return !!getRow() || getColumn() !== undefined;
 };
 
 const isTableUIShowing = (): boolean => {
