@@ -131,7 +131,10 @@ export class PointerTable {
 
     if (event.button === 2 || (isMac && event.button === 0 && event.ctrlKey)) {
       const columnName = tableDown.column ? tableDown.table.columns[tableDown.column].name : undefined;
-      sheets.sheet.cursor.selectTable(tableDown.table.name, columnName, false, false);
+      const { column, row } = sheets.sheet.getColumnRowFromScreen(world.x, world.y);
+      if (!sheets.sheet.cursor.contains(column, row)) {
+        sheets.sheet.cursor.selectTable(tableDown.table.name, columnName, false, false);
+      }
       events.emit('contextMenu', {
         type: tableDown.type === 'column-name' ? ContextMenuType.TableColumn : ContextMenuType.Table,
         world,
