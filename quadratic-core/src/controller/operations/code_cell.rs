@@ -53,7 +53,7 @@ impl GridController {
         // strip whitespace
         let value = value.trim();
 
-        let (cell_value, format_update, ..) = self.string_to_cell_value(value, false);
+        let (cell_value, format_update) = self.string_to_cell_value(value, false);
 
         ops.push(Operation::SetDataTableAt {
             sheet_pos,
