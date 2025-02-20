@@ -341,7 +341,7 @@ export const FormatStrikethroughIcon: IconComponent = (props) => {
 };
 
 export const FormatNumberAutomaticIcon: IconComponent = (props) => {
-  return <Icon {...props}>award_star</Icon>;
+  return <Number123Icon {...props} />;
 };
 
 export const FormatTextClipIcon: IconComponent = (props) => {
