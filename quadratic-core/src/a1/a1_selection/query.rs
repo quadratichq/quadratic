@@ -290,24 +290,24 @@ impl A1Selection {
 
     /// Returns true if the selection is a single column or row range or
     /// one_cell is true and the selection is only a single cell.
-    pub fn has_one_column_row_selection(&self, one_cell: bool) -> bool {
+    pub fn has_one_column_row_selection(&self, one_cell: bool, context: &A1Context) -> bool {
         if self.ranges.len() != 1 {
             return false;
         }
         let Some(range) = self.ranges.first() else {
             return false;
         };
-        range.is_col_range() || range.is_row_range() || (one_cell && range.is_single_cell())
+        range.is_col_range() || range.is_row_range() || (one_cell && range.is_single_cell(context))
     }
 
     /// Returns true if the selection is a single cell.
-    pub fn is_single_selection(&self) -> bool {
+    pub fn is_single_selection(&self, context: &A1Context) -> bool {
         if self.ranges.len() != 1 {
             return false;
         }
 
         if let Some(range) = self.ranges.first() {
-            range.is_single_cell()
+            range.is_single_cell(context)
         } else {
             false
         }
@@ -633,26 +633,28 @@ mod tests {
 
     #[test]
     fn has_one_column_row_selection() {
-        assert!(A1Selection::test_a1("A").has_one_column_row_selection(false));
-        assert!(A1Selection::test_a1("1").has_one_column_row_selection(false));
-        assert!(!A1Selection::test_a1("A,B").has_one_column_row_selection(false));
-        assert!(!A1Selection::test_a1("A1").has_one_column_row_selection(false));
-        assert!(!A1Selection::test_a1("A1:B2").has_one_column_row_selection(false));
+        let context = A1Context::default();
+        assert!(A1Selection::test_a1("A").has_one_column_row_selection(false, &context));
+        assert!(A1Selection::test_a1("1").has_one_column_row_selection(false, &context));
+        assert!(!A1Selection::test_a1("A,B").has_one_column_row_selection(false, &context));
+        assert!(!A1Selection::test_a1("A1").has_one_column_row_selection(false, &context));
+        assert!(!A1Selection::test_a1("A1:B2").has_one_column_row_selection(false, &context));
 
-        assert!(A1Selection::test_a1("A").has_one_column_row_selection(true));
-        assert!(A1Selection::test_a1("1").has_one_column_row_selection(true));
-        assert!(A1Selection::test_a1("A1").has_one_column_row_selection(true));
-        assert!(!A1Selection::test_a1("A,B").has_one_column_row_selection(true));
-        assert!(!A1Selection::test_a1("A1:B2").has_one_column_row_selection(true));
+        assert!(A1Selection::test_a1("A").has_one_column_row_selection(true, &context));
+        assert!(A1Selection::test_a1("1").has_one_column_row_selection(true, &context));
+        assert!(A1Selection::test_a1("A1").has_one_column_row_selection(true, &context));
+        assert!(!A1Selection::test_a1("A,B").has_one_column_row_selection(true, &context));
+        assert!(!A1Selection::test_a1("A1:B2").has_one_column_row_selection(true, &context));
     }
 
     #[test]
     fn is_single_selection() {
-        assert!(A1Selection::test_a1("A1").is_single_selection());
-        assert!(!A1Selection::test_a1("A1:B4").is_single_selection());
-        assert!(!A1Selection::test_a1("A").is_single_selection());
-        assert!(!A1Selection::test_a1("3").is_single_selection());
-        assert!(!A1Selection::test_a1("A1,B2").is_single_selection());
+        let context = A1Context::default();
+        assert!(A1Selection::test_a1("A1").is_single_selection(&context));
+        assert!(!A1Selection::test_a1("A1:B4").is_single_selection(&context));
+        assert!(!A1Selection::test_a1("A").is_single_selection(&context));
+        assert!(!A1Selection::test_a1("3").is_single_selection(&context));
+        assert!(!A1Selection::test_a1("A1,B2").is_single_selection(&context));
     }
 
     #[test]

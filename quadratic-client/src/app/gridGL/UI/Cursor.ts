@@ -106,6 +106,21 @@ export class Cursor extends Container {
         ? Math.max(INDICATOR_SIZE / viewport.scale.x, INDICATOR_SIZE / 2)
         : 0;
 
+    console.log('!table || table?.isSingleValue()', !table || table?.isSingleValue());
+    console.log(
+      'pixiApp.cellsSheet().tables.isColumnHeaderCell(cell)',
+      pixiApp.cellsSheet().tables.isColumnHeaderCell(cell)
+    );
+    console.log('pixiApp.cellsSheet().tables.cursorOnDataTable()', pixiApp.cellsSheet().tables.cursorOnDataTable());
+    console.log('cursor.isSingleSelection()', cursor.isSingleSelection());
+    console.log('pixiAppSettings.codeEditorState.showCodeEditor', pixiAppSettings.codeEditorState.showCodeEditor);
+    console.log('cursor.position.x !== codeCell.pos.x', cursor.position.x !== codeCell.pos.x);
+    console.log('cursor.position.y !== codeCell.pos.y', cursor.position.y !== codeCell.pos.y);
+    console.log(
+      'hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions)',
+      hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions)
+    );
+
     this.indicator.width = this.indicator.height = indicatorSize;
     const indicatorPadding = Math.max(INDICATOR_PADDING / viewport.scale.x, 1);
     let indicatorOffset = 0;
