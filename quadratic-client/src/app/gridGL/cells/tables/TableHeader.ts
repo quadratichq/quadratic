@@ -131,6 +131,9 @@ export class TableHeader extends Container {
   }
 
   intersectsTableName(world: Point): TablePointerDownResult | undefined {
+    if (this.table.codeCell.state === 'SpillError' || this.table.codeCell.state === 'RunError') {
+      return undefined;
+    }
     if (this.table.codeCell.show_ui && this.table.codeCell.show_name) {
       return this.tableName.intersects(world);
     }

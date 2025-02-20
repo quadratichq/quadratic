@@ -211,6 +211,7 @@ export class Tables extends Container<Table> {
   pointerDown(world: Point): TablePointerDownResult | undefined {
     for (const table of this.children) {
       const result = table.intersectsTableName(world);
+      console.log(result);
       if (result) return result;
       const columnName = table.pointerDown(world);
       if (columnName && columnName.type !== 'table-name') {
