@@ -91,7 +91,7 @@ export class Cursor extends Container {
 
     pixiApp.hoverTableColumnsSelection.clear();
 
-    // todo: this hides the indicator within tables. When we want to re-enable
+    // todo: cursorOnDataTable hides the indicator within tables. When we want to re-enable
     // it so we can autocomplete within tables, then we should change this logic.
 
     // draw cursor but leave room for cursor indicator if needed
@@ -99,6 +99,7 @@ export class Cursor extends Container {
       hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions) &&
       (!table || table?.isSingleValue()) &&
       !pixiApp.cellsSheet().tables.isColumnHeaderCell(cell) &&
+      !pixiApp.cellsSheet().tables.cursorOnDataTable() &&
       (!pixiAppSettings.codeEditorState.showCodeEditor ||
         cursor.position.x !== codeCell.pos.x ||
         cursor.position.y !== codeCell.pos.y)
