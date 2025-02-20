@@ -117,7 +117,6 @@ export const Component = () => {
   const submit = useSubmit();
   const { addGlobalSnackbar } = useGlobalSnackbar();
   useEffect(() => {
-    console.log('searchParams', searchParams);
     const duplicate = searchParams.get(SEARCH_PARAMS.DUPLICATE.KEY);
     if (duplicate === SEARCH_PARAMS.DUPLICATE.VALUE) {
       duplicateFileAction.run({ fileRouteLoaderData, submit, addGlobalSnackbar });
