@@ -6,7 +6,7 @@ use crate::color::Rgba;
 use crate::controller::operations::clipboard::{Clipboard, ClipboardOperation, ClipboardOrigin};
 use crate::formulas::{replace_a1_notation, replace_internal_cell_references};
 use crate::grid::js_types::JsClipboard;
-use crate::grid::{CodeCellLanguage, Sheet};
+use crate::grid::{CodeCellLanguage, DataTableKind, Sheet};
 use crate::{CellValue, Pos, Rect};
 
 impl Sheet {
@@ -242,7 +242,7 @@ impl Sheet {
                     let include_in_cells = !bounds.contains(data_table_pos);
 
                     // if the source cell is included in the clipboard, add the data_table to the clipboard
-                    if !include_in_cells {
+                    if !include_in_cells && matches!(data_table.kind, DataTableKind::Import(_)) {
                         data_tables.insert(data_table_pos, data_table.clone());
                     }
 

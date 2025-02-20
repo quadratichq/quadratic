@@ -43,7 +43,13 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
-        controller::user_actions::import::tests::simple_csv, test_util::print_table, Rect, SheetPos,
+        cellvalue::Import,
+        controller::{
+            active_transactions::transaction_name::TransactionName,
+            user_actions::import::tests::{simple_csv, simple_csv_at},
+        },
+        test_util::print_table,
+        CellValue, Rect, SheetPos,
     };
 
     use super::*;
@@ -52,18 +58,50 @@ mod tests {
     fn test_move_cells() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
         let sheet_pos = SheetPos::from((pos, sheet_id));
-        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap().to_owned();
+        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
 
         print_table(&gc, sheet_id, Rect::new(1, 1, 4, 12));
 
         let dest_pos = pos![F1];
         let sheet_dest_pos = SheetPos::from((dest_pos, sheet_id));
-        let mut transaction = PendingTransaction::default();
-        let op = Operation::MoveCells {
+        let ops = vec![Operation::MoveCells {
             source: data_table.output_sheet_rect(sheet_pos, true),
             dest: sheet_dest_pos,
-        };
-        gc.execute_move_cells(&mut transaction, op);
+        }];
+        gc.start_user_transaction(ops, None, TransactionName::MoveCells);
         print_table(&gc, sheet_id, Rect::new(6, 1, 10, 12));
+    }
+
+    #[test]
+    fn test_move_data_table_within_its_current_output_rect() {
+        let (mut gc, sheet_id, pos, file_name) = simple_csv_at(pos![E2]);
+        let sheet_pos = SheetPos::from((pos, sheet_id));
+        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+
+        assert_eq!(
+            gc.sheet(sheet_id).cell_value(pos),
+            Some(CellValue::Import(Import::new(file_name.to_string())))
+        );
+
+        print_table(&gc, sheet_id, Rect::new(5, 2, 9, 13));
+
+        let dest_pos = pos![F4];
+        let sheet_dest_pos = SheetPos::from((dest_pos, sheet_id));
+
+        let ops = vec![Operation::MoveCells {
+            source: data_table.output_sheet_rect(sheet_pos, true),
+            dest: sheet_dest_pos,
+        }];
+        gc.start_user_transaction(ops, None, TransactionName::MoveCells);
+        print_table(&gc, sheet_id, Rect::new(5, 2, 9, 13));
+
+        assert_eq!(gc.sheet(sheet_id).cell_value(pos), None);
+        assert!(gc.sheet(sheet_id).data_table(pos).is_none());
+
+        assert_eq!(
+            gc.sheet(sheet_id).cell_value(dest_pos),
+            Some(CellValue::Import(Import::new(file_name.to_string())))
+        );
+        assert!(gc.sheet(sheet_id).data_table(dest_pos).is_some());
     }
 }

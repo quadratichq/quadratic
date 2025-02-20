@@ -149,6 +149,8 @@ impl GridController {
         &self,
         start_pos: SheetPos,
         mut values: CellValues,
+        clipboard_selection: Option<&A1Selection>,
+        clipboard_operation: Option<&ClipboardOperation>,
     ) -> Result<Vec<Operation>> {
         let mut ops = vec![];
 
@@ -163,8 +165,17 @@ impl GridController {
                 sheet.iter_code_output_intersects_rect(rect)
             {
                 let contains_source_cell = intersection_rect.contains(output_rect.min);
+
+                let is_table_being_deleted = match (clipboard_operation, clipboard_selection) {
+                    (Some(ClipboardOperation::Cut), Some(clipboard_selection)) => {
+                        start_pos.sheet_id == clipboard_selection.sheet_id
+                            && clipboard_selection.contains_pos(output_rect.min, self.a1_context())
+                    }
+                    _ => false,
+                };
+
                 // there is no pasting on top of code cell output
-                if !data_table.readonly && !contains_source_cell {
+                if !data_table.readonly && !contains_source_cell && !is_table_being_deleted {
                     let adjusted_rect = Rect::from_numbers(
                         intersection_rect.min.x - start_pos.x,
                         intersection_rect.min.y - start_pos.y,
@@ -176,20 +187,26 @@ impl GridController {
                     // the values in `values` with CellValue::Blank
                     let cell_values = values.get_rect(adjusted_rect);
 
-                    let paste_code_cell_in_import = cell_values.iter().any(|col| {
-                        col.iter().any(|cell_value| {
-                            cell_value.is_code()
-                                || cell_value.is_import()
-                                || cell_value.is_image()
-                                || cell_value.is_html()
-                        })
+                    let paste_table_in_import = cell_values.iter().flatten().find(|cell_value| {
+                        cell_value.is_code()
+                            || cell_value.is_import()
+                            || cell_value.is_image()
+                            || cell_value.is_html()
                     });
-                    if paste_code_cell_in_import {
+                    if let Some(paste_table_in_import) = paste_table_in_import {
+                        let cell_type = match paste_table_in_import {
+                            CellValue::Code(_) => "code",
+                            CellValue::Import(_) => "table",
+                            CellValue::Image(_) => "chart",
+                            CellValue::Html(_) => "chart",
+                            _ => "unknown",
+                        };
+                        let message = format!("Cannot place {} within a table", cell_type);
                         crate::wasm_bindings::js::jsClientMessage(
-                            "Error pasting values in table".to_string(),
+                            message.to_owned(),
                             JsSnackbarSeverity::Error.to_string(),
                         );
-                        return Err(Error::msg("Error pasting values in table"));
+                        return Err(Error::msg(message));
                     }
 
                     let contains_header = intersection_rect.y_range().contains(&output_rect.min.y);
@@ -242,40 +259,53 @@ impl GridController {
         Ok(ops)
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn clipboard_code_operations(
         &self,
         start_pos: SheetPos,
-        clipboard_origin: ClipboardOrigin,
+        tables: Vec<(u32, u32)>,
+        clipboard_origin: &ClipboardOrigin,
+        clipboard_selection: &A1Selection,
+        clipboard_operation: &ClipboardOperation,
         mut clipboard_data_tables: IndexMap<Pos, DataTable>,
-        clipboard_operation: ClipboardOperation,
-        code: Vec<(u32, u32)>,
         cursor: &mut A1Selection,
     ) -> Result<Vec<Operation>> {
         let mut ops = vec![];
 
         if let Some(sheet) = self.try_sheet(start_pos.sheet_id) {
-            for (x, y) in code.iter() {
-                let sheet_pos = SheetPos {
+            for (x, y) in tables.iter() {
+                let source_pos = Pos {
+                    x: clipboard_origin.x + *x as i64,
+                    y: clipboard_origin.y + *y as i64,
+                };
+
+                let target_pos = SheetPos {
                     x: start_pos.x + *x as i64,
                     y: start_pos.y + *y as i64,
                     sheet_id: start_pos.sheet_id,
                 };
 
                 let paste_in_import = sheet
-                    .iter_code_output_in_rect(Rect::single_pos(Pos::from(sheet_pos)))
-                    .any(|(_, data_table)| matches!(data_table.kind, DataTableKind::Import(_)));
+                    .iter_code_output_in_rect(Rect::single_pos(Pos::from(target_pos)))
+                    .any(|(output_rect, data_table)| {
+                        // this table is being moved in the same transaction
+                        if matches!(clipboard_operation, ClipboardOperation::Cut)
+                            && start_pos.sheet_id == clipboard_selection.sheet_id
+                            && clipboard_selection.contains_pos(output_rect.min, self.a1_context())
+                        {
+                            return false;
+                        }
+
+                        matches!(data_table.kind, DataTableKind::Import(_))
+                    });
                 if paste_in_import {
+                    let message = "Cannot place table within a table";
                     crate::wasm_bindings::js::jsClientMessage(
-                        "Error pasting values in table".to_string(),
+                        message.to_owned(),
                         JsSnackbarSeverity::Error.to_string(),
                     );
-                    return Err(Error::msg("Error pasting values in table"));
+                    return Err(Error::msg(message));
                 }
-
-                let source_pos = Pos {
-                    x: clipboard_origin.x + *x as i64,
-                    y: clipboard_origin.y + *y as i64,
-                };
 
                 if let Some(mut data_table) = clipboard_data_tables.shift_remove(&source_pos) {
                     if matches!(clipboard_operation, ClipboardOperation::Copy) {
@@ -289,13 +319,15 @@ impl GridController {
                     }
 
                     ops.push(Operation::SetDataTable {
-                        sheet_pos,
+                        sheet_pos: target_pos,
                         data_table: Some(data_table),
                         index: 0,
                     });
                 }
 
-                ops.push(Operation::ComputeCode { sheet_pos });
+                ops.push(Operation::ComputeCode {
+                    sheet_pos: target_pos,
+                });
             }
         }
 
@@ -426,7 +458,7 @@ impl GridController {
 
         match special {
             PasteSpecial::None => {
-                let (values, code) = GridController::cell_values_from_clipboard_cells(
+                let (values, tables) = GridController::cell_values_from_clipboard_cells(
                     clipboard.w,
                     clipboard.h,
                     clipboard.cells,
@@ -438,16 +470,19 @@ impl GridController {
                     let cell_value_ops = self.clipboard_cell_values_operations(
                         start_pos.to_sheet_pos(selection.sheet_id),
                         values,
+                        Some(&clipboard.selection),
+                        Some(&clipboard.operation),
                     )?;
                     ops.extend(cell_value_ops);
                 }
 
                 let code_ops = self.clipboard_code_operations(
                     start_pos.to_sheet_pos(selection.sheet_id),
-                    clipboard.origin,
+                    tables,
+                    &clipboard.origin,
+                    &clipboard.selection,
+                    &clipboard.operation,
                     clipboard.data_tables,
-                    clipboard.operation,
-                    code,
                     &mut cursor,
                 )?;
                 ops.extend(code_ops);
@@ -562,7 +597,8 @@ impl GridController {
             });
         });
 
-        let cell_value_ops = self.clipboard_cell_values_operations(start_pos, values)?;
+        let cell_value_ops =
+            self.clipboard_cell_values_operations(start_pos, values, None, None)?;
         ops.extend(cell_value_ops);
 
         if !sheet_format_updates.is_default() {
@@ -1118,7 +1154,7 @@ mod test {
         expect_js_call(
             "jsClientMessage",
             format!(
-                "Error pasting values in table,{}",
+                "Cannot place code within a table,{}",
                 JsSnackbarSeverity::Error
             ),
             true,
