@@ -157,10 +157,10 @@ impl CellRefRange {
         }
     }
 
-    pub fn is_single_cell(&self) -> bool {
+    pub fn is_single_cell(&self, context: &A1Context) -> bool {
         match self {
             Self::Sheet { range } => range.is_single_cell(),
-            Self::Table { .. } => false,
+            Self::Table { range } => range.is_single_cell(context),
         }
     }
 
@@ -432,10 +432,11 @@ mod tests {
 
     #[test]
     fn test_is_single_cell() {
-        assert!(CellRefRange::test_a1("A1").is_single_cell());
-        assert!(!CellRefRange::test_a1("A").is_single_cell());
-        assert!(!CellRefRange::test_a1("3").is_single_cell());
-        assert!(!CellRefRange::test_a1("A1:B2").is_single_cell());
+        let context = A1Context::default();
+        assert!(CellRefRange::test_a1("A1").is_single_cell(&context));
+        assert!(!CellRefRange::test_a1("A").is_single_cell(&context));
+        assert!(!CellRefRange::test_a1("3").is_single_cell(&context));
+        assert!(!CellRefRange::test_a1("A1:B2").is_single_cell(&context));
     }
 
     #[test]

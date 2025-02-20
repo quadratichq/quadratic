@@ -57,7 +57,9 @@ pub use range::*;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use super::A1Error;
+use crate::ArraySize;
+
+use super::{A1Context, A1Error};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -90,6 +92,13 @@ impl TableRef {
         if old_name != new_name {
             self.col_range.replace_column_name(old_name, new_name);
         }
+    }
+
+    /// Returns true if the table reference is a single cell.
+    pub fn is_single_cell(&self, context: &A1Context) -> bool {
+        context
+            .try_table(&self.table_name)
+            .map_or(false, |table| table.bounds.size() == ArraySize::_1X1)
     }
 }
 
