@@ -21,6 +21,7 @@ pub struct DataTableSort {
 }
 
 impl DataTable {
+    /// Sorts the data table by the given column index and direction.
     pub fn sort_column(
         &mut self,
         column_index: usize,
@@ -33,6 +34,7 @@ impl DataTable {
         Ok(old)
     }
 
+    /// Sorts the data table by all the sort rules (`self.sort`).
     pub fn sort_all(&mut self) -> Result<()> {
         self.display_buffer = None;
 
@@ -72,6 +74,7 @@ impl DataTable {
         Ok(())
     }
 
+    /// Prepends a sort rule to the sort rules (`self.sort`).
     pub fn prepend_sort(
         &mut self,
         column_index: usize,

@@ -15,6 +15,7 @@ impl DataTable {
         format
     }
 
+    /// Get the position of the format in the display buffer.
     pub(crate) fn get_format_pos_from_display_buffer(&self, mut pos: Pos) -> Pos {
         // adjust for hidden columns
         pos.x = self.get_column_index_from_display_index(pos.x as u32) as i64;
