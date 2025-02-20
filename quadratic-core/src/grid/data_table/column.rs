@@ -106,6 +106,41 @@ impl DataTable {
 
         Ok(())
     }
+    /// Returns the display column index from the column index in the values array.
+    pub fn get_display_index_from_column_index(
+        &self,
+        column_index: u32,
+        include_self: bool,
+    ) -> i64 {
+        let mut x_adjustment = 0;
+        let columns = self.column_headers.iter().flatten().collect::<Vec<_>>();
+        for (i, column) in columns.iter().enumerate() {
+            if i > column_index as usize || (!include_self && i == column_index as usize) {
+                break;
+            }
+            if !column.display {
+                x_adjustment += 1;
+            }
+        }
+        column_index as i64 - x_adjustment
+    }
+
+    /// Returns the column index from the display column index.
+    pub fn get_column_index_from_display_index(&self, display_index: u32) -> u32 {
+        let mut hidden_columns = 0;
+        let mut seen_display_index = -1;
+        for column in self.column_headers.iter().flatten() {
+            if column.display {
+                seen_display_index += 1;
+                if seen_display_index == display_index as i32 {
+                    break;
+                }
+            } else {
+                hidden_columns += 1;
+            }
+        }
+        display_index + hidden_columns
+    }
 }
 
 #[cfg(test)]

@@ -428,20 +428,11 @@ impl SyntaxRule for TableReferenceExpression {
     type Output = AstNode;
 
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
-        TableReference.prefix_matches(p)
+        SheetTableReference.prefix_matches(p)
     }
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
-        let spanned = p.parse(TableReference)?;
-        spanned.try_map(|table_ref| {
-            Ok(ast::AstNodeContents::RangeRef(SheetCellRefRange {
-                sheet_id: p
-                    .ctx
-                    .try_table(&table_ref.table_name)
-                    .ok_or(RunErrorMsg::BadCellReference)?
-                    .sheet_id,
-                cells: CellRefRange::Table { range: table_ref },
-            }))
-        })
+        Ok(p.parse(SheetTableReference)?
+            .map(ast::AstNodeContents::RangeRef))
     }
 }
 
