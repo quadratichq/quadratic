@@ -42,7 +42,7 @@ export class TableOutline extends Graphics {
       this.lineStyle({
         color: getCSSVariableTint(this.table.active ? 'primary' : 'muted-foreground'),
         width,
-        alignment: 0,
+        alignment: 0.5,
       });
       if (!this.table.active || !this.table.codeCell.spill_error) {
         const width = this.table.tableBounds.width;

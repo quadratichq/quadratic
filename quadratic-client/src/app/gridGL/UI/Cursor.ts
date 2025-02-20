@@ -99,7 +99,7 @@ export class Cursor extends Container {
       hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions) &&
       (!table || table?.isSingleValue()) &&
       !pixiApp.cellsSheet().tables.isColumnHeaderCell(cell) &&
-      !pixiApp.cellsSheet().tables.cursorOnDataTable() &&
+      (!pixiApp.cellsSheet().tables.cursorOnDataTable() || cursor.isSingleSelection()) &&
       (!pixiAppSettings.codeEditorState.showCodeEditor ||
         cursor.position.x !== codeCell.pos.x ||
         cursor.position.y !== codeCell.pos.y)
