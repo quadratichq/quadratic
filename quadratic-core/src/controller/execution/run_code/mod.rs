@@ -80,6 +80,12 @@ impl GridController {
             // for python dataframes, we don't want preserve the show_columns setting
             if !new_data_table.is_dataframe() {
                 new_data_table.show_columns = old_data_table.show_columns;
+
+                // since we don't automatically apply the first row as headers in JS,
+                // we need to do it manually here
+                if old_data_table.header_is_first_row {
+                    new_data_table.apply_first_row_as_header();
+                }
             }
 
             // if the old data table has headers, then the new data table should
