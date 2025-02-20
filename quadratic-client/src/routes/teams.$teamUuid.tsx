@@ -1,6 +1,6 @@
 import { Empty } from '@/dashboard/components/Empty';
+import { setActiveTeam } from '@/dashboard/shared/getActiveTeam';
 import { apiClient } from '@/shared/api/apiClient';
-import { ACTIVE_TEAM_UUID_KEY } from '@/shared/constants/appConstants';
 import { Button } from '@/shared/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
@@ -99,7 +99,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
       // If the user is deleting themselves, we need to clear the active team
       // and redirect to home
       if (res.redirect) {
-        localStorage.setItem(ACTIVE_TEAM_UUID_KEY, '');
+        setActiveTeam('');
         return redirectDocument('/');
       }
       return { ok: true };

@@ -38,8 +38,9 @@ const commands: CommandGroup = {
       Component: (props) => {
         const submit = useSubmit();
         const fileRouteLoaderData = useFileRouteLoaderData();
+        const { addGlobalSnackbar } = useGlobalSnackbar();
         const action = () => {
-          duplicateFileAction.run({ fileRouteLoaderData, submit });
+          duplicateFileAction.run({ fileRouteLoaderData, submit, addGlobalSnackbar });
         };
         return <CommandPaletteListItem {...props} action={action} icon={<FileCopyIcon />} />;
       },

@@ -1,20 +1,28 @@
 import { apiClient } from '@/shared/api/apiClient';
-import { ACTIVE_TEAM_UUID_KEY } from '@/shared/constants/appConstants';
 import * as Sentry from '@sentry/react';
 
-// TODO: probably rename this to `determineActiveTeam`
+const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
 
-// TODO: add a function in here called `getActiveTeamUuid` that will return the
-// active team UUID from localstorage with a note saying: YOU MUST RUN `determineActiveTeam`
-// BEFORE YOU EVER USE THIS FUNCTION
+/**
+ * Get the active team UUID from localstorage.
+ */
+export function getActiveTeam() {
+  return localStorage.getItem(ACTIVE_TEAM_UUID_KEY);
+}
 
-// TODO: add another called `setActiveTeamUuid` that can be used where we do that
-// this should do away with the need for doing localStorage.get/set ACTIVE_TEAM_UUID_KEY
+/**
+ * Set the active team UUID in localstorage.
+ */
+export function setActiveTeam(teamUuid: string) {
+  localStorage.setItem(ACTIVE_TEAM_UUID_KEY, teamUuid);
+}
 
-// When a user lands on the app, we don't necessarily know what their "active"
-// team is. It’s semi-implicit, but we can make a guess.
-// Only once we do a get of the team do we know for sure the user has access to it.
-export default async function getActiveTeam(
+/**
+ * When a user lands on the app, we don't necessarily know what their "active"
+ * team is. So we use this function to determine what the active team is, create
+ * one if necessary, and then save/store that information for use later.
+ */
+export async function determineAndSetActiveTeam(
   teams: Awaited<ReturnType<typeof apiClient.teams.list>>['teams'],
   teamUuidFromUrl: string | undefined
 ) {
@@ -24,7 +32,7 @@ export default async function getActiveTeam(
    * Determine what the active team is
    */
   let teamUuid = undefined;
-  const uuidFromLocalStorage = localStorage.getItem(ACTIVE_TEAM_UUID_KEY);
+  const uuidFromLocalStorage = getActiveTeam();
 
   // FYI: if you have a UUID in the URL or localstorage, it doesn’t mean you
   // have access to it (maybe you were removed from a team, so it’s a 404)
@@ -60,6 +68,13 @@ export default async function getActiveTeam(
       level: 'fatal',
     });
     throw new Error('No active team could be found or created.');
+  }
+
+  // If the active team is one they have access to (they may not, say for example
+  // they are visiting somebody else's team) store it in localstorage as the new
+  // active team.
+  if (teams.find((team) => team.team.uuid === teamUuid)) {
+    setActiveTeam(teamUuid);
   }
 
   return {

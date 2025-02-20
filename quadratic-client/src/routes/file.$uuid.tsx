@@ -1,3 +1,4 @@
+import { duplicateFileAction } from '@/app/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { debugShowFileIO, debugShowMultiplayer } from '@/app/debugFlags';
 import { loadAssets } from '@/app/gridGL/loadAssets';
@@ -9,17 +10,30 @@ import { QuadraticApp } from '@/app/ui/QuadraticApp';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { initWorkers } from '@/app/web-workers/workers';
 import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/auth';
+import { determineAndSetActiveTeam, getActiveTeam } from '@/dashboard/shared/getActiveTeam';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
-import { ROUTES } from '@/shared/constants/routes';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { useEffect } from 'react';
 import type { LoaderFunctionArgs } from 'react-router-dom';
-import { Link, Outlet, isRouteErrorResponse, redirect, useLoaderData, useRouteError } from 'react-router-dom';
+import {
+  Link,
+  Outlet,
+  isRouteErrorResponse,
+  redirect,
+  useLoaderData,
+  useRouteError,
+  useSearchParams,
+  useSubmit,
+} from 'react-router-dom';
 import type { MutableSnapshot } from 'recoil';
 import { RecoilRoot } from 'recoil';
 import { Empty } from '../dashboard/components/Empty';
@@ -45,6 +59,13 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     console.log(
       `[File API] Received information for file ${uuid} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`
     );
+
+  // If the user is logged in and we don't know what their currently active team
+  // is, figure it out and set it.
+  if (data.userMakingRequest.id && !getActiveTeam()) {
+    const { teams } = await apiClient.teams.list();
+    await determineAndSetActiveTeam(teams, undefined);
+  }
 
   // initialize all workers
   initWorkers();
@@ -90,6 +111,20 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 };
 
 export const Component = () => {
+  // If the search params has a `duplicate` flag in it, duplicate the file
+  const [searchParams] = useSearchParams();
+  const fileRouteLoaderData = useFileRouteLoaderData();
+  const submit = useSubmit();
+  const { addGlobalSnackbar } = useGlobalSnackbar();
+  useEffect(() => {
+    console.log('searchParams', searchParams);
+    const duplicate = searchParams.get(SEARCH_PARAMS.DUPLICATE.KEY);
+    if (duplicate === SEARCH_PARAMS.DUPLICATE.VALUE) {
+      duplicateFileAction.run({ fileRouteLoaderData, submit, addGlobalSnackbar });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Initialize recoil with the file's permission we get from the server
   const { loggedInUser } = useRootRouteLoaderData();
   const {

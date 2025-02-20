@@ -18,4 +18,3 @@ export const TYPE = {
   formError: 'text-[0.8rem] font-medium text-destructive',
 };
 export const VERSION = `Quadratic ${import.meta.env.VITE_VERSION?.slice(0, 7)} (BETA)`;
-export const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';

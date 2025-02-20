@@ -90,7 +90,7 @@ export const FileMenubarMenu = () => {
           </MenubarItem>
         )}
         {duplicateFileAction.isAvailable(isAvailableArgs) && (
-          <MenubarItem onClick={() => duplicateFileAction.run({ fileRouteLoaderData, submit })}>
+          <MenubarItem onClick={() => duplicateFileAction.run({ fileRouteLoaderData, submit, addGlobalSnackbar })}>
             <FileCopyIcon />
             Duplicate
           </MenubarItem>

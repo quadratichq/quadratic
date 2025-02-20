@@ -1,7 +1,7 @@
 import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import { getActiveTeam } from '@/dashboard/shared/getActiveTeam';
 import { getActionFileDelete, getActionFileDuplicate } from '@/routes/api.files.$uuid';
 import type { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { ACTIVE_TEAM_UUID_KEY } from '@/shared/constants/appConstants';
 import { ROUTES } from '@/shared/constants/routes';
 import { type FileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import type { ApiTypes, FilePermission, TeamPermission } from 'quadratic-shared/typesAndSchemas';
@@ -77,32 +77,44 @@ export const createNewFileAction = {
 
 export const duplicateFileAction = {
   label: 'Duplicate',
-  isAvailable: (args: IsAvailableArgs) => {
-    const loggedIn = isAvailableBecauseLoggedIn(args);
-    const activeTeamUuid = localStorage.getItem(ACTIVE_TEAM_UUID_KEY);
-    return loggedIn && Boolean(activeTeamUuid);
-  },
-  async run({ fileRouteLoaderData, submit }: { fileRouteLoaderData: FileRouteLoaderData; submit: SubmitFunction }) {
+  isAvailable: isAvailableBecauseLoggedIn,
+  async run({
+    fileRouteLoaderData,
+    submit,
+    addGlobalSnackbar,
+  }: {
+    fileRouteLoaderData: FileRouteLoaderData;
+    submit: SubmitFunction;
+    addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'];
+  }) {
     const {
       file: { uuid: fileUuid },
       team: { uuid: teamUuid },
       userMakingRequest: { teamPermissions },
     } = fileRouteLoaderData;
 
-    // By default, duplicate the file to the team where it currently is
+    // By default, duplicate the file to the user's currently active team
     // But if the user doesn't have permission to edit that team, duplicate it to
     // the team they _do_ have access to
     let teamUuidWhereWeDuplicateFileTo = teamUuid;
     if (!(teamPermissions && teamPermissions.includes('TEAM_EDIT'))) {
-      let teamUuidFromLocalStorage = localStorage.getItem(ACTIVE_TEAM_UUID_KEY);
+      let teamUuidFromLocalStorage = getActiveTeam();
       if (!teamUuidFromLocalStorage) {
         throw new Error('No team UUID found');
       }
       teamUuidWhereWeDuplicateFileTo = teamUuidFromLocalStorage;
     }
 
-    const data = getActionFileDuplicate({ redirect: true, isPrivate: true, teamUuid: teamUuidWhereWeDuplicateFileTo });
-    submit(data, { method: 'POST', action: ROUTES.API.FILE(fileUuid), encType: 'application/json' });
+    try {
+      const data = getActionFileDuplicate({
+        redirect: true,
+        isPrivate: true,
+        teamUuid: teamUuidWhereWeDuplicateFileTo,
+      });
+      submit(data, { method: 'POST', action: ROUTES.API.FILE(fileUuid), encType: 'application/json' });
+    } catch (e) {
+      addGlobalSnackbar('Failed to duplicate file. Try again.', { severity: 'error' });
+    }
   },
 };
 
