@@ -231,32 +231,11 @@ impl Sheet {
 
             // allow copying of code_run values (unless CellValue::Code is also in the clipboard)
             self.iter_code_output_in_rect(bounds)
-                .filter(|(_, data_table)| !data_table.spill_error)
                 .for_each(|(output_rect, data_table)| {
                     // only change the cells if the CellValue::Code is not in the selection box
                     let data_table_pos = Pos {
                         x: output_rect.min.x,
                         y: output_rect.min.y,
-                    };
-                    let x_start = if output_rect.min.x > bounds.min.x {
-                        output_rect.min.x
-                    } else {
-                        bounds.min.x
-                    };
-                    let y_start = if output_rect.min.y > bounds.min.y {
-                        output_rect.min.y
-                    } else {
-                        bounds.min.y
-                    };
-                    let x_end = if output_rect.max.x < bounds.max.x {
-                        output_rect.max.x
-                    } else {
-                        bounds.max.x
-                    };
-                    let y_end = if output_rect.max.y < bounds.max.y {
-                        output_rect.max.y
-                    } else {
-                        bounds.max.y
                     };
 
                     // add the CellValue to cells if the code is not included in the clipboard
@@ -266,6 +245,15 @@ impl Sheet {
                     if !include_in_cells {
                         data_tables.insert(data_table_pos, data_table.clone());
                     }
+
+                    if data_table.spill_error {
+                        return;
+                    }
+
+                    let x_start = std::cmp::max(output_rect.min.x, bounds.min.x);
+                    let y_start = std::cmp::max(output_rect.min.y, bounds.min.y);
+                    let x_end = std::cmp::min(output_rect.max.x, bounds.max.x);
+                    let y_end = std::cmp::min(output_rect.max.y, bounds.max.y);
 
                     // add the code_run output to clipboard.values
                     for y in y_start..=y_end {
