@@ -73,10 +73,15 @@ export async function doubleClickCell(options: {
 
         // check column header or table value
         else {
+          const isSpillOrError =
+            codeCell.spill_error || codeCell.state === 'RunError' || codeCell.state === 'SpillError';
+          const isTableName = codeCell.show_ui && codeCell.show_name && row === codeCell.y;
           const isColumnHeader =
             codeCell.show_ui && codeCell.show_columns && row === codeCell.y + (codeCell.show_name ? 1 : 0);
-          const isTableName = codeCell.show_ui && codeCell.show_name && row === codeCell.y;
-          if (isTableName) {
+
+          if (isSpillOrError) {
+            return;
+          } else if (isTableName) {
             events.emit('contextMenu', {
               type: ContextMenuType.Table,
               table: codeCell,

@@ -178,12 +178,15 @@ export class Table extends Container {
   }
 
   // Intersects a column/row rectangle
-  intersects(rectangle: Rectangle): boolean {
-    return intersects.rectangleRectangle(
-      new Rectangle(this.codeCell.x, this.codeCell.y, this.codeCell.w, this.codeCell.h),
-      rectangle
-    );
-  }
+  intersects = (rectangle: Rectangle): boolean => {
+    let width = this.codeCell.w;
+    let height = this.codeCell.h;
+    if (this.codeCell.spill_error || this.codeCell.state === 'RunError' || this.codeCell.state === 'SpillError') {
+      width = 1;
+      height = 1;
+    }
+    return intersects.rectangleRectangle(new Rectangle(this.codeCell.x, this.codeCell.y, width, height), rectangle);
+  };
 
   // Checks whether the cursor is on the table
   isCursorOnDataTable(): boolean {

@@ -144,6 +144,9 @@ export class TableHeader extends Container {
   }
 
   pointerDown(world: Point): TablePointerDownResult | undefined {
+    if (this.table.codeCell.state === 'SpillError' || this.table.codeCell.state === 'RunError') {
+      return undefined;
+    }
     if (this.table.codeCell.show_ui && this.table.codeCell.show_name) {
       const result = this.tableName.intersects(world);
       if (result?.type === 'table-name') {
