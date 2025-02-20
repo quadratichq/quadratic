@@ -259,6 +259,7 @@ impl GridController {
             }
         });
         self.reapply_unsaved_transactions(&mut results);
+        results.complete = true;
         self.finalize_transaction(results);
     }
 
