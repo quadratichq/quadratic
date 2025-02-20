@@ -11,6 +11,7 @@ use crate::cell_values::CellValues;
 use crate::controller::GridController;
 use crate::formulas::replace_a1_notation;
 use crate::grid::formats::Format;
+use crate::grid::formats::FormatUpdate;
 use crate::grid::formats::SheetFormatUpdates;
 use crate::grid::js_types::JsClipboard;
 use crate::grid::js_types::JsSnackbarSeverity;
@@ -19,6 +20,7 @@ use crate::grid::sheet::validations::validation::Validation;
 use crate::grid::CodeCellLanguage;
 use crate::grid::DataTable;
 use crate::grid::DataTableKind;
+use crate::grid::SheetId;
 use crate::{a1::A1Selection, CellValue, Pos, Rect, SheetPos, SheetRect};
 
 // todo: break up this file so tests are easier to write
@@ -143,8 +145,228 @@ impl GridController {
         }
     }
 
+    fn clipboard_cell_values_operations(
+        &self,
+        start_pos: SheetPos,
+        mut values: CellValues,
+    ) -> Result<Vec<Operation>> {
+        let mut ops = vec![];
+
+        if let Some(sheet) = self.try_sheet(start_pos.sheet_id) {
+            let rect =
+                Rect::from_numbers(start_pos.x, start_pos.y, values.w as i64, values.h as i64);
+
+            // Determine if the paste is happening within a data table.
+            // If so, replace values in the data table with the
+            // intersection of the data table and the paste
+            for (output_rect, intersection_rect, data_table) in
+                sheet.iter_code_output_intersects_rect(rect)
+            {
+                let contains_source_cell = intersection_rect.contains(output_rect.min);
+                // there is no pasting on top of code cell output
+                if !data_table.readonly && !contains_source_cell {
+                    let adjusted_rect = Rect::from_numbers(
+                        intersection_rect.min.x - start_pos.x,
+                        intersection_rect.min.y - start_pos.y,
+                        intersection_rect.width() as i64,
+                        intersection_rect.height() as i64,
+                    );
+
+                    // pull the values from `values`, replacing
+                    // the values in `values` with CellValue::Blank
+                    let cell_values = values.get_rect(adjusted_rect);
+
+                    let paste_code_cell_in_import = cell_values.iter().any(|col| {
+                        col.iter().any(|cell_value| {
+                            cell_value.is_code()
+                                || cell_value.is_import()
+                                || cell_value.is_image()
+                                || cell_value.is_html()
+                        })
+                    });
+                    if paste_code_cell_in_import {
+                        crate::wasm_bindings::js::jsClientMessage(
+                            "Error pasting values in table".to_string(),
+                            JsSnackbarSeverity::Error.to_string(),
+                        );
+                        return Err(Error::msg("Error pasting values in table"));
+                    }
+
+                    let contains_header = intersection_rect.y_range().contains(&output_rect.min.y);
+                    let headers = data_table.column_headers.to_owned();
+
+                    if let (Some(mut headers), true) = (headers, contains_header) {
+                        let y = output_rect.min.y - start_pos.y;
+
+                        for x in intersection_rect.x_range() {
+                            let new_x = x - output_rect.min.x;
+
+                            if let Some(header) = headers.get_mut(new_x as usize) {
+                                let safe_x = u32::try_from(x - start_pos.x).unwrap_or(0);
+                                let safe_y = u32::try_from(y).unwrap_or(0);
+
+                                let cell_value =
+                                    values.remove(safe_x, safe_y).unwrap_or(CellValue::Blank);
+
+                                header.name = cell_value;
+                            }
+                        }
+
+                        let sheet_pos = output_rect.min.to_sheet_pos(start_pos.sheet_id);
+                        ops.push(Operation::DataTableMeta {
+                            sheet_pos,
+                            name: None,
+                            alternating_colors: None,
+                            columns: Some(headers.to_vec()),
+                            show_ui: None,
+                            show_name: None,
+                            show_columns: None,
+                            readonly: None,
+                        });
+                    }
+
+                    let sheet_pos = intersection_rect.min.to_sheet_pos(start_pos.sheet_id);
+                    ops.push(Operation::SetDataTableAt {
+                        sheet_pos,
+                        values: CellValues::from(cell_values),
+                    });
+                }
+            }
+        }
+
+        ops.push(Operation::SetCellValues {
+            sheet_pos: start_pos,
+            values,
+        });
+
+        Ok(ops)
+    }
+
+    fn clipboard_code_operations(
+        &self,
+        start_pos: SheetPos,
+        clipboard_origin: ClipboardOrigin,
+        mut clipboard_data_tables: IndexMap<Pos, DataTable>,
+        clipboard_operation: ClipboardOperation,
+        code: Vec<(u32, u32)>,
+        cursor: &mut A1Selection,
+    ) -> Result<Vec<Operation>> {
+        let mut ops = vec![];
+
+        if let Some(sheet) = self.try_sheet(start_pos.sheet_id) {
+            for (x, y) in code.iter() {
+                let sheet_pos = SheetPos {
+                    x: start_pos.x + *x as i64,
+                    y: start_pos.y + *y as i64,
+                    sheet_id: start_pos.sheet_id,
+                };
+
+                let paste_in_import = sheet
+                    .iter_code_output_in_rect(Rect::single_pos(Pos::from(sheet_pos)))
+                    .any(|(_, data_table)| matches!(data_table.kind, DataTableKind::Import(_)));
+                if paste_in_import {
+                    crate::wasm_bindings::js::jsClientMessage(
+                        "Error pasting values in table".to_string(),
+                        JsSnackbarSeverity::Error.to_string(),
+                    );
+                    return Err(Error::msg("Error pasting values in table"));
+                }
+
+                let source_pos = Pos {
+                    x: clipboard_origin.x + *x as i64,
+                    y: clipboard_origin.y + *y as i64,
+                };
+
+                if let Some(mut data_table) = clipboard_data_tables.shift_remove(&source_pos) {
+                    if matches!(clipboard_operation, ClipboardOperation::Copy) {
+                        let old_name = data_table.name.to_display();
+                        let new_name = self.grid().unique_data_table_name(&old_name, false, None);
+
+                        // update table name in paste cursor selection
+                        cursor.replace_table_name(&old_name, &new_name);
+
+                        data_table.name = new_name.into();
+                    }
+
+                    ops.push(Operation::SetDataTable {
+                        sheet_pos,
+                        data_table: Some(data_table),
+                        index: 0,
+                    });
+                }
+
+                ops.push(Operation::ComputeCode { sheet_pos });
+            }
+        }
+
+        Ok(ops)
+    }
+
+    fn clipboard_formats_operations(
+        &self,
+        sheet_id: SheetId,
+        mut sheet_format_updates: SheetFormatUpdates,
+        formats_rect: Rect,
+    ) -> Vec<Operation> {
+        let mut ops = vec![];
+
+        if let Some(sheet) = self.try_sheet(sheet_id) {
+            for (output_rect, intersection_rect, data_table) in
+                sheet.iter_code_output_intersects_rect(formats_rect)
+            {
+                let mut table_format_updates = SheetFormatUpdates::default();
+
+                let data_table_pos = output_rect.min;
+
+                for x in intersection_rect.x_range() {
+                    for y in intersection_rect.y_range() {
+                        let mut pos = Pos { x, y };
+                        let update = sheet_format_updates.format_update(pos);
+                        sheet_format_updates.set_format_cell(pos, FormatUpdate::cleared());
+
+                        // handle show_variable, 0-based
+                        pos.translate_in_place(
+                            -data_table_pos.x,
+                            -data_table_pos.y - data_table.y_adjustment(true),
+                            -1,
+                            -1,
+                        );
+
+                        if pos.x < 0 || pos.y < 0 {
+                            continue;
+                        }
+                        // handle hide columns
+                        pos.x = data_table.get_column_index_from_display_index(pos.x as u32) as i64;
+
+                        // handle sort
+                        pos.y = data_table.transmute_index(pos.y as u64) as i64;
+
+                        // 1-based
+                        pos.translate_in_place(1, 1, 1, 1);
+
+                        table_format_updates.set_format_cell(pos, update);
+                    }
+                }
+
+                ops.push(Operation::DataTableFormats {
+                    sheet_pos: data_table_pos.to_sheet_pos(sheet_id),
+                    formats: table_format_updates,
+                });
+            }
+        }
+
+        if !sheet_format_updates.is_default() {
+            ops.push(Operation::SetCellFormatsA1 {
+                sheet_id,
+                formats: sheet_format_updates,
+            });
+        }
+
+        ops
+    }
+
     /// Gets operations to add validations from clipboard to sheet.
-    fn set_clipboard_validations(
+    fn clipboard_validations_operations(
         &self,
         validations: Option<ClipboardValidations>,
         start_pos: SheetPos,
@@ -212,154 +434,29 @@ impl GridController {
                     special,
                 );
 
-                if let Some(mut values) = values {
-                    if let Some(sheet) = self.try_sheet_mut(selection.sheet_id) {
-                        let rect = Rect::from_numbers(
-                            start_pos.x,
-                            start_pos.y,
-                            values.w as i64,
-                            values.h as i64,
-                        );
-
-                        // Determine if the paste is happening within a data table.
-                        // If so, replace values in the data table with the
-                        // intersection of the data table and the paste
-                        for (output_rect, intersection_rect, data_table) in
-                            sheet.iter_code_output_intersects_rect(rect)
-                        {
-                            let contains_source_cell = intersection_rect.contains(output_rect.min);
-                            // there is no pasting on top of code cell output
-                            if !data_table.readonly && !contains_source_cell {
-                                let adjusted_rect = Rect::from_numbers(
-                                    intersection_rect.min.x - start_pos.x,
-                                    intersection_rect.min.y - start_pos.y,
-                                    intersection_rect.width() as i64,
-                                    intersection_rect.height() as i64,
-                                );
-
-                                // pull the values from `values`, replacing
-                                // the values in `values` with CellValue::Blank
-                                let cell_values = values.get_rect(adjusted_rect);
-
-                                let paste_code_cell_in_import = cell_values.iter().any(|col| {
-                                    col.iter().any(|cell_value| {
-                                        cell_value.is_code()
-                                            || cell_value.is_import()
-                                            || cell_value.is_image()
-                                            || cell_value.is_html()
-                                    })
-                                });
-                                if paste_code_cell_in_import {
-                                    crate::wasm_bindings::js::jsClientMessage(
-                                        "Error pasting values in table".to_string(),
-                                        JsSnackbarSeverity::Error.to_string(),
-                                    );
-                                    return Err(Error::msg("Error pasting values in table"));
-                                }
-
-                                let contains_header =
-                                    intersection_rect.y_range().contains(&output_rect.min.y);
-                                let headers = data_table.column_headers.to_owned();
-
-                                if let (Some(mut headers), true) = (headers, contains_header) {
-                                    let y = output_rect.min.y - start_pos.y;
-
-                                    for x in intersection_rect.x_range() {
-                                        let new_x = x - output_rect.min.x;
-
-                                        if let Some(header) = headers.get_mut(new_x as usize) {
-                                            let safe_x =
-                                                u32::try_from(x - start_pos.x).unwrap_or(0);
-                                            let safe_y = u32::try_from(y).unwrap_or(0);
-
-                                            let cell_value = values
-                                                .remove(safe_x, safe_y)
-                                                .unwrap_or(CellValue::Blank);
-
-                                            header.name = cell_value;
-                                        }
-                                    }
-
-                                    let sheet_pos =
-                                        output_rect.min.to_sheet_pos(selection.sheet_id);
-                                    ops.push(Operation::DataTableMeta {
-                                        sheet_pos,
-                                        name: None,
-                                        alternating_colors: None,
-                                        columns: Some(headers.to_vec()),
-                                        show_ui: None,
-                                        show_name: None,
-                                        show_columns: None,
-                                        readonly: None,
-                                    });
-                                }
-
-                                let sheet_pos =
-                                    intersection_rect.min.to_sheet_pos(selection.sheet_id);
-                                ops.push(Operation::SetDataTableAt {
-                                    sheet_pos,
-                                    values: CellValues::from(cell_values),
-                                });
-                            }
-                        }
-                    }
-
-                    ops.push(Operation::SetCellValues {
-                        sheet_pos: start_pos.to_sheet_pos(selection.sheet_id),
+                if let Some(values) = values {
+                    let cell_value_ops = self.clipboard_cell_values_operations(
+                        start_pos.to_sheet_pos(selection.sheet_id),
                         values,
-                    });
+                    )?;
+                    ops.extend(cell_value_ops);
                 }
 
-                if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-                    for (x, y) in code.iter() {
-                        let sheet_pos = SheetPos {
-                            x: start_pos.x + *x as i64,
-                            y: start_pos.y + *y as i64,
-                            sheet_id: selection.sheet_id,
-                        };
+                let code_ops = self.clipboard_code_operations(
+                    start_pos.to_sheet_pos(selection.sheet_id),
+                    clipboard.origin,
+                    clipboard.data_tables,
+                    clipboard.operation,
+                    code,
+                    &mut cursor,
+                )?;
+                ops.extend(code_ops);
 
-                        let paste_in_import = sheet
-                            .iter_code_output_in_rect(Rect::single_pos(Pos::from(sheet_pos)))
-                            .any(|(_, data_table)| {
-                                matches!(data_table.kind, DataTableKind::Import(_))
-                            });
-                        if paste_in_import {
-                            crate::wasm_bindings::js::jsClientMessage(
-                                "Error pasting values in table".to_string(),
-                                JsSnackbarSeverity::Error.to_string(),
-                            );
-                            return Err(Error::msg("Error pasting values in table"));
-                        }
-
-                        let source_pos = Pos {
-                            x: clipboard.origin.x + *x as i64,
-                            y: clipboard.origin.y + *y as i64,
-                        };
-
-                        if let Some(data_table) = clipboard.data_tables.get(&source_pos) {
-                            let mut data_table = data_table.to_owned();
-
-                            if matches!(clipboard.operation, ClipboardOperation::Copy) {
-                                let old_name = data_table.name.to_display();
-                                let new_name =
-                                    self.grid().unique_data_table_name(&old_name, false, None);
-
-                                // update table name in paste cursor selection
-                                cursor.replace_table_name(&old_name, &new_name);
-
-                                data_table.name = new_name.into();
-                            }
-
-                            ops.push(Operation::SetDataTable {
-                                sheet_pos,
-                                data_table: Some(data_table),
-                                index: 0,
-                            });
-                        }
-
-                        ops.push(Operation::ComputeCode { sheet_pos });
-                    }
-                }
+                let validations_ops = self.clipboard_validations_operations(
+                    clipboard.validations,
+                    start_pos.to_sheet_pos(selection.sheet_id),
+                );
+                ops.extend(validations_ops);
             }
             PasteSpecial::Values => {
                 let (values, _) = GridController::cell_values_from_clipboard_cells(
@@ -379,17 +476,24 @@ impl GridController {
             _ => (),
         }
 
-        // paste formats and borders if not PasteSpecial::Values
-        if !matches!(special, PasteSpecial::Values) {
+        if matches!(special, PasteSpecial::None | PasteSpecial::Formats) {
+            // for formats and borders, we need to translate the clipboard to the start_pos
             let contiguous_2d_translate_x = start_pos.x - clipboard.origin.x;
             let contiguous_2d_translate_y = start_pos.y - clipboard.origin.y;
 
             if let Some(mut formats) = clipboard.formats {
                 formats.translate_in_place(contiguous_2d_translate_x, contiguous_2d_translate_y);
-                ops.push(Operation::SetCellFormatsA1 {
-                    sheet_id: selection.sheet_id,
+                let formats_ops = self.clipboard_formats_operations(
+                    selection.sheet_id,
                     formats,
-                });
+                    Rect::from_numbers(
+                        start_pos.x,
+                        start_pos.y,
+                        clipboard.w as i64,
+                        clipboard.h as i64,
+                    ),
+                );
+                ops.extend(formats_ops);
             }
 
             if let Some(mut borders) = clipboard.borders {
@@ -399,11 +503,6 @@ impl GridController {
                     borders,
                 });
             }
-
-            ops.extend(self.set_clipboard_validations(
-                clipboard.validations,
-                start_pos.to_sheet_pos(selection.sheet_id),
-            ));
         }
 
         ops.push(Operation::SetCursorA1 { selection: cursor });
@@ -414,14 +513,14 @@ impl GridController {
     pub fn paste_plain_text_operations(
         &mut self,
         start_pos: SheetPos,
-        clipboard: String,
+        plain_text: String,
         special: PasteSpecial,
-    ) -> Vec<Operation> {
+    ) -> Result<Vec<Operation>> {
         // nothing to paste from plain text for formats
         if matches!(special, PasteSpecial::Formats) {
-            return vec![];
+            return Ok(vec![]);
         }
-        let lines: Vec<&str> = clipboard.split('\n').collect();
+        let lines: Vec<&str> = plain_text.split('\n').collect();
 
         let mut ops = vec![];
         let mut compute_code_ops = vec![];
@@ -431,8 +530,11 @@ impl GridController {
             .first()
             .map(|line| line.split('\t').count())
             .unwrap_or(0);
-        let mut cell_values = CellValues::new(w as u32, lines.len() as u32);
+        let h = lines.len();
+
+        let mut values = CellValues::new(w as u32, h as u32);
         let mut sheet_format_updates = SheetFormatUpdates::default();
+
         lines.iter().enumerate().for_each(|(y, line)| {
             line.split('\t').enumerate().for_each(|(x, value)| {
                 let (cell_value, format_update) = self.string_to_cell_value(value, true);
@@ -440,7 +542,7 @@ impl GridController {
                 let is_code = matches!(cell_value, CellValue::Code(_));
 
                 if cell_value != CellValue::Blank {
-                    cell_values.set(x as u32, y as u32, cell_value);
+                    values.set(x as u32, y as u32, cell_value);
                 }
 
                 let pos = Pos {
@@ -460,21 +562,23 @@ impl GridController {
             });
         });
 
-        ops.push(Operation::SetCellValues {
-            sheet_pos: start_pos,
-            values: cell_values,
-        });
+        let cell_value_ops = self.clipboard_cell_values_operations(start_pos, values)?;
+        ops.extend(cell_value_ops);
 
         if !sheet_format_updates.is_default() {
-            ops.push(Operation::SetCellFormatsA1 {
-                sheet_id: start_pos.sheet_id,
-                formats: sheet_format_updates,
-            });
+            let formats_rect =
+                Rect::from_numbers(start_pos.x, start_pos.y, w as i64, lines.len() as i64);
+            let formats_ops = self.clipboard_formats_operations(
+                start_pos.sheet_id,
+                sheet_format_updates,
+                formats_rect,
+            );
+            ops.extend(formats_ops);
         }
 
         ops.extend(compute_code_ops);
 
-        ops
+        Ok(ops)
     }
 
     // todo: parse table structure to provide better pasting experience from other spreadsheets
@@ -564,7 +668,7 @@ mod test {
     use crate::controller::user_actions::import::tests::{simple_csv, simple_csv_at};
     use crate::grid::js_types::JsClipboard;
     use crate::grid::sheet::validations::validation_rules::ValidationRule;
-    use crate::grid::{CodeCellLanguage, SheetId};
+    use crate::grid::{CellWrap, CodeCellLanguage, SheetId};
     use crate::test_util::{
         assert_cell_value_row, assert_data_table_cell_value, print_data_table, print_table,
     };
@@ -699,7 +803,7 @@ mod test {
                 error: Default::default(),
             }],
         };
-        let operations = gc.set_clipboard_validations(
+        let operations = gc.clipboard_validations_operations(
             Some(validations),
             SheetPos {
                 x: 2,
@@ -1021,5 +1125,257 @@ mod test {
         );
 
         assert_data_table_cell_value(&gc, sheet_id, 2, 3, "MA");
+    }
+
+    #[test]
+    fn paste_plain_html_inside_data_table() {
+        let (mut gc, sheet_id, pos, _) = simple_csv_at(pos![E2]);
+
+        gc.set_cell_value(pos![B2].to_sheet_pos(sheet_id), "1".to_string(), None);
+        gc.set_cell_value(pos![C2].to_sheet_pos(sheet_id), "123,456".to_string(), None);
+        gc.set_cell_value(pos![B3].to_sheet_pos(sheet_id), "654,321".to_string(), None);
+        gc.set_cell_value(pos![C3].to_sheet_pos(sheet_id), "4".to_string(), None);
+
+        // hide the second column
+        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let mut column_headers = data_table.column_headers.to_owned().unwrap();
+        column_headers[1].display = false;
+        gc.test_data_table_update_meta(
+            pos.to_sheet_pos(sheet_id),
+            Some(column_headers),
+            None,
+            None,
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(pos![E13]).unwrap(),
+            CellValue::Text("Concord".to_string())
+        );
+        assert_eq!(
+            sheet.display_value(pos![F13]).unwrap(),
+            CellValue::Text("United States".to_string())
+        );
+        assert!(sheet.cell_format(pos![E13]).is_table_default());
+        assert!(sheet.cell_format(pos![F13]).is_table_default());
+        assert!(sheet.cell_format(pos![E14]).is_default());
+        assert!(sheet.cell_format(pos![F14]).is_default());
+
+        let JsClipboard { html, .. } = gc
+            .sheet(sheet_id)
+            .copy_to_clipboard(
+                &A1Selection::test_a1_sheet_id("B2:C3", &sheet_id),
+                ClipboardOperation::Copy,
+            )
+            .unwrap();
+
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1_sheet_id("E13", &sheet_id),
+            None,
+            Some(html),
+            PasteSpecial::None,
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(pos![E13]).unwrap(),
+            CellValue::Number(1.into())
+        );
+        assert_eq!(
+            sheet.display_value(pos![F13]).unwrap(),
+            CellValue::Number(123456.into())
+        );
+        assert_eq!(
+            sheet.display_value(pos![E14]).unwrap(),
+            CellValue::Number(654321.into())
+        );
+        assert_eq!(
+            sheet.display_value(pos![F14]).unwrap(),
+            CellValue::Number(4.into())
+        );
+        assert!(sheet.cell_format(pos![E13]).is_table_default());
+        assert_eq!(
+            sheet.cell_format(pos![F13]),
+            Format {
+                wrap: Some(CellWrap::Clip),
+                numeric_commas: Some(true),
+                ..Default::default()
+            }
+        );
+        assert_eq!(
+            sheet.cell_format(pos![E14]),
+            Format {
+                numeric_commas: Some(true),
+                ..Default::default()
+            }
+        );
+        assert!(sheet.cell_format(pos![F14]).is_default());
+
+        // show the second column
+        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let mut column_headers = data_table.column_headers.to_owned().unwrap();
+        column_headers[1].display = true;
+        gc.test_data_table_update_meta(
+            pos.to_sheet_pos(sheet_id),
+            Some(column_headers),
+            None,
+            None,
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(pos![E13]).unwrap(),
+            CellValue::Number(1.into())
+        );
+        assert_eq!(
+            sheet.display_value(pos![F13]).unwrap(),
+            CellValue::Text("NH".to_string())
+        );
+        assert_eq!(
+            sheet.display_value(pos![G13]).unwrap(),
+            CellValue::Number(123456.into())
+        );
+        assert_eq!(
+            sheet.display_value(pos![E14]).unwrap(),
+            CellValue::Number(654321.into())
+        );
+        assert_eq!(
+            sheet.display_value(pos![F14]).unwrap(),
+            CellValue::Number(4.into())
+        );
+        assert!(sheet.cell_format(pos![E13]).is_table_default());
+        assert!(sheet.cell_format(pos![F13]).is_table_default());
+        assert_eq!(
+            sheet.cell_format(pos![G13]),
+            Format {
+                wrap: Some(CellWrap::Clip),
+                numeric_commas: Some(true),
+                ..Default::default()
+            }
+        );
+        assert_eq!(
+            sheet.cell_format(pos![E14]),
+            Format {
+                numeric_commas: Some(true),
+                ..Default::default()
+            }
+        );
+        assert!(sheet.cell_format(pos![F14]).is_default());
+    }
+
+    #[test]
+    fn paste_plain_text_inside_data_table() {
+        let (mut gc, sheet_id, pos, _) = simple_csv_at(pos![E2]);
+
+        gc.set_cell_value(pos![B2].to_sheet_pos(sheet_id), "1".to_string(), None);
+        gc.set_cell_value(pos![C2].to_sheet_pos(sheet_id), "123,456".to_string(), None);
+        gc.set_cell_value(pos![B3].to_sheet_pos(sheet_id), "654,321".to_string(), None);
+        gc.set_cell_value(pos![C3].to_sheet_pos(sheet_id), "4".to_string(), None);
+
+        // hide the second column
+        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let mut column_headers = data_table.column_headers.to_owned().unwrap();
+        column_headers[1].display = false;
+        gc.test_data_table_update_meta(
+            pos.to_sheet_pos(sheet_id),
+            Some(column_headers),
+            None,
+            None,
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(pos![E13]).unwrap(),
+            CellValue::Text("Concord".to_string())
+        );
+        assert_eq!(
+            sheet.display_value(pos![F13]).unwrap(),
+            CellValue::Text("United States".to_string())
+        );
+        assert!(sheet.cell_format(pos![E13]).is_table_default());
+        assert!(sheet.cell_format(pos![F13]).is_table_default());
+        assert!(sheet.cell_format(pos![E14]).is_default());
+        assert!(sheet.cell_format(pos![F14]).is_default());
+
+        let JsClipboard { plain_text, .. } = gc
+            .sheet(sheet_id)
+            .copy_to_clipboard(
+                &A1Selection::test_a1_sheet_id("B2:C3", &sheet_id),
+                ClipboardOperation::Copy,
+            )
+            .unwrap();
+
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1_sheet_id("E13", &sheet_id),
+            Some(plain_text),
+            None,
+            PasteSpecial::None,
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(pos![E13]).unwrap(),
+            CellValue::Number(1.into())
+        );
+        assert_eq!(
+            sheet.display_value(pos![F13]).unwrap(),
+            CellValue::Number(123456.into())
+        );
+        assert_eq!(
+            sheet.display_value(pos![E14]).unwrap(),
+            CellValue::Number(654321.into())
+        );
+        assert_eq!(
+            sheet.display_value(pos![F14]).unwrap(),
+            CellValue::Number(4.into())
+        );
+        assert!(sheet.cell_format(pos![E13]).is_table_default());
+        assert!(sheet.cell_format(pos![F13]).is_table_default());
+        assert!(sheet.cell_format(pos![E14]).is_default());
+        assert!(sheet.cell_format(pos![F14]).is_default());
+
+        // show the second column
+        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let mut column_headers = data_table.column_headers.to_owned().unwrap();
+        column_headers[1].display = true;
+        gc.test_data_table_update_meta(
+            pos.to_sheet_pos(sheet_id),
+            Some(column_headers),
+            None,
+            None,
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(pos![E13]).unwrap(),
+            CellValue::Number(1.into())
+        );
+        assert_eq!(
+            sheet.display_value(pos![F13]).unwrap(),
+            CellValue::Text("NH".to_string())
+        );
+        assert_eq!(
+            sheet.display_value(pos![G13]).unwrap(),
+            CellValue::Number(123456.into())
+        );
+        assert_eq!(
+            sheet.display_value(pos![E14]).unwrap(),
+            CellValue::Number(654321.into())
+        );
+        assert_eq!(
+            sheet.display_value(pos![F14]).unwrap(),
+            CellValue::Number(4.into())
+        );
+        assert!(sheet.cell_format(pos![E13]).is_table_default());
+        assert!(sheet.cell_format(pos![F13]).is_table_default());
+        assert!(sheet.cell_format(pos![G13]).is_table_default());
+        assert!(sheet.cell_format(pos![E14]).is_default());
+        assert!(sheet.cell_format(pos![F14]).is_default());
     }
 }

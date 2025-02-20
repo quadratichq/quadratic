@@ -187,7 +187,7 @@ impl Sheet {
     }
 
     pub fn iter_code_output_intersects_rect(
-        &mut self,
+        &self,
         rect: Rect,
     ) -> impl Iterator<Item = (Rect, Rect, &DataTable)> {
         self.data_tables
