@@ -22,7 +22,7 @@ impl TableRef {
 
 #[cfg(test)]
 mod tests {
-    use crate::grid::SheetId;
+    use crate::grid::{CodeCellLanguage, SheetId};
 
     use super::*;
 
@@ -30,9 +30,13 @@ mod tests {
         let sheet_id = SheetId::TEST;
 
         let mut context = A1Context::default();
-        context
-            .table_map
-            .test_insert("test_table", &["A", "B", "C"], None, Rect::test_a1("A1:C3"));
+        context.table_map.test_insert(
+            "test_table",
+            &["A", "B", "C"],
+            None,
+            Rect::test_a1("A1:C3"),
+            CodeCellLanguage::Import,
+        );
 
         (context, sheet_id)
     }

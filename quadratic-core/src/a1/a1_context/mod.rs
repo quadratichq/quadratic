@@ -33,7 +33,7 @@ pub struct JsTableInfo {
     pub name: String,
     pub sheet_name: String,
     pub chart: bool,
-    pub language: Option<CodeCellLanguage>,
+    pub language: CodeCellLanguage,
 }
 
 #[cfg(test)]
@@ -131,7 +131,13 @@ impl A1Context {
 
         let mut table_map = TableMap::default();
         for (table_name, column_names, bounds) in tables {
-            table_map.test_insert(table_name, column_names, None, *bounds);
+            table_map.test_insert(
+                table_name,
+                column_names,
+                None,
+                *bounds,
+                CodeCellLanguage::Import,
+            );
         }
 
         Self {
@@ -181,7 +187,7 @@ mod tests {
                 name: "Table1".to_string(),
                 sheet_name: "Sheet1".to_string(),
                 chart: false,
-                language: None,
+                language: CodeCellLanguage::Import,
             }
         );
         assert_eq!(
@@ -190,7 +196,7 @@ mod tests {
                 name: "Table2".to_string(),
                 sheet_name: "Sheet1".to_string(),
                 chart: false,
-                language: None,
+                language: CodeCellLanguage::Import,
             }
         );
     }

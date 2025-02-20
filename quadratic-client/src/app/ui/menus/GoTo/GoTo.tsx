@@ -120,7 +120,7 @@ export const GoTo = ({ tableInfo }: { tableInfo: JsTableInfo[] }) => {
     () =>
       tableInfo
         ? tableInfo.filter(({ name, language }) => {
-            if (!language || language === 'Formula' || language === 'Import') {
+            if (language === 'Formula' || language === 'Import') {
               return false;
             }
             return value ? name.toLowerCase().includes(value.toLowerCase()) : true;

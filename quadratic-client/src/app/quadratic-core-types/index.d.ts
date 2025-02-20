@@ -58,7 +58,7 @@ export interface JsSelectionContext { sheet_name: string, data_rects: Array<JsCe
 export interface JsSheetFill { x: number, y: number, w: number | null, h: number | null, color: string, }
 export type JsSnackbarSeverity = "error" | "warning" | "success";
 export interface JsSummarizeSelectionResult { count: bigint, sum: number | null, average: number | null, }
-export interface JsTableInfo { name: string, sheet_name: string, chart: boolean, language: CodeCellLanguage | null, }
+export interface JsTableInfo { name: string, sheet_name: string, chart: boolean, language: CodeCellLanguage, }
 export interface JsTablesContext { sheet_name: string, data_tables: Array<JsDataTableContext>, code_tables: Array<JsCodeTableContext>, charts: Array<JsChartContext>, }
 export interface JsValidationWarning { x: bigint, y: bigint, validation: string | null, style: ValidationStyle | null, }
 export interface MinMax { min: number, max: number, }
