@@ -231,7 +231,13 @@ export class PointerCellMoving {
         const table = getTable();
         const rectangle = sheets.sheet.cursor.getLargestRectangle();
 
-        if (table && table.x === this.startCell.x && table.y === this.startCell.y) {
+        if (
+          table &&
+          table.state !== 'SpillError' &&
+          table.state !== 'RunError' &&
+          table.x === this.startCell.x &&
+          table.y === this.startCell.y
+        ) {
           rectangle.x = table.x;
           rectangle.y = table.y;
           rectangle.width = table.w;

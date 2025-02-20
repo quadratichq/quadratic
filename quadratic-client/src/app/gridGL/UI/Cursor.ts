@@ -181,7 +181,14 @@ export class Cursor extends Container {
     const tableName = sheets.sheet.cursor.getSingleFullTableSelectionName();
     if (!tableName) return;
     const table = pixiApp.cellsSheet().tables.getTableFromName(tableName);
-    if (!table || table.codeCell.is_html_image || table.codeCell.language !== 'Import') return;
+    if (
+      !table ||
+      table.codeCell.is_html_image ||
+      table.codeCell.language !== 'Import' ||
+      table.codeCell.state === 'SpillError' ||
+      table.codeCell.state === 'RunError'
+    )
+      return;
 
     const indicatorSize = Math.max(INDICATOR_SIZE / pixiApp.viewport.scaled, INDICATOR_SIZE);
     this.graphics.lineStyle({

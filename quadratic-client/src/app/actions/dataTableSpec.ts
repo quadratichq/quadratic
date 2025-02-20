@@ -306,7 +306,7 @@ export const sortTableColumnDescending = () => {
   sortTableColumn('Descending');
 };
 
-export const insertTableColumn = (increment: number = 0, selectTable = true) => {
+export const insertTableColumn = (increment: number = 0, selectTable = false) => {
   const table = getTable();
   const column = getColumn();
 
@@ -330,7 +330,7 @@ export const insertTableColumn = (increment: number = 0, selectTable = true) => 
 // TODO(ddimaria): remove this once ull column selection is working in order
 // to test removing a column from the full column selection context menu
 //
-// export const removeTableColumn = (selectTable = true) => {
+// export const removeTableColumn = (selectTable = false) => {
 //   const table = getTable();
 //   const column = getColumn();
 
@@ -351,7 +351,7 @@ export const insertTableColumn = (increment: number = 0, selectTable = true) => 
 //   }
 // };
 
-export const removeTableColumn = (selectTable = true) => {
+export const removeTableColumn = (selectTable = false) => {
   const table = getTable();
   const columns = getSelectedColumns();
 
@@ -395,10 +395,10 @@ export const showAllTableColumns = () => {
   }
 };
 
-export const insertTableRow = (increment: number = 0, selectTable = true) => {
+export const insertTableRow = (increment: number = 0, selectTable = false) => {
   const table = getTable();
   const row = getRow();
-
+  console.log(table, row);
   if (table && row !== undefined) {
     return quadraticCore.dataTableMutations({
       sheetId: sheets.current,
@@ -440,7 +440,7 @@ export const insertTableRow = (increment: number = 0, selectTable = true) => {
 //   }
 // };
 
-export const removeTableRow = (selectTable = true) => {
+export const removeTableRow = (selectTable = false) => {
   const table = getTable();
   const rows = getSelectedRows();
 
