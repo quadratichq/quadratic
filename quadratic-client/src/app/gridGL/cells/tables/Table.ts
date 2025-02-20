@@ -188,6 +188,9 @@ export class Table extends Container {
   // Checks whether the cursor is on the table
   isCursorOnDataTable(): boolean {
     const cursor = sheets.sheet.cursor.position;
+    if (this.codeCell.spill_error) {
+      return this.codeCell.x === cursor.x && this.codeCell.y === cursor.y;
+    }
     return intersects.rectanglePoint(
       new Rectangle(this.codeCell.x, this.codeCell.y, this.codeCell.w - 1, this.codeCell.h - 1),
       cursor
