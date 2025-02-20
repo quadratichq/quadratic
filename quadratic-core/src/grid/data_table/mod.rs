@@ -41,11 +41,11 @@ use super::sheet::borders::Borders;
 use super::{CodeRunOld, CodeRunResult, Grid, SheetFormatting, SheetId};
 
 impl Grid {
+    /// Returns the data table at the given position.
     pub fn data_table(&self, sheet_id: SheetId, pos: Pos) -> Result<&DataTable> {
         self.try_sheet_result(sheet_id)?.data_table_result(pos)
     }
 
-    /// Returns a unique name for the data table, taking into account its
     /// Returns a unique name for the data table, taking into account its
     /// position on the sheet (so it doesn't conflict with itself).
     pub fn unique_data_table_name(
@@ -77,7 +77,7 @@ impl Grid {
         // replace spaces with underscores
         name.replace(' ', "_")
     }
-
+    /// Updates the name of a data table and replaces the old name in all code cells that reference it.
     pub fn update_data_table_name(
         &mut self,
         sheet_pos: SheetPos,
@@ -112,6 +112,7 @@ impl Grid {
         }
     }
 
+    /// Replaces the column name in all code cells that reference the old name in all sheets in the grid.
     pub fn replace_data_table_column_name_in_code_cells(&mut self, old_name: &str, new_name: &str) {
         for sheet in self.sheets.iter_mut() {
             sheet.replace_data_table_column_name_in_code_cells(old_name, new_name);
@@ -267,7 +268,13 @@ impl DataTable {
         self.show_columns = show_columns;
         self
     }
-
+    /// Validates the table name.
+    ///
+    /// Table name must be between 1 and 255 characters
+    /// Table name cannot be a single 'R' or 'C'
+    /// Table name cannot be a cell reference
+    /// Table name cannot contain invalid characters
+    /// Table name must be unique
     pub fn validate_table_name(
         name: &str,
         context: &A1Context,
@@ -300,6 +307,11 @@ impl DataTable {
         std::result::Result::Ok(true)
     }
 
+    /// Validates the column name.
+    ///
+    /// Column name must be between 1 and 255 characters
+    /// Column name cannot contain invalid characters
+    /// Column name must be unique
     pub fn validate_column_name(
         column_name: &str,
         table_name: &str,
@@ -323,10 +335,12 @@ impl DataTable {
         std::result::Result::Ok(true)
     }
 
+    /// Updates the table name.
     pub fn update_table_name(&mut self, name: &str) {
         self.name = name.into();
     }
 
+    /// Returns a reference to the values in the data table.
     pub fn value_ref(&self) -> Result<Vec<&CellValue>> {
         match &self.value {
             Value::Single(value) => Ok(vec![value]),
@@ -335,6 +349,7 @@ impl DataTable {
         }
     }
 
+    /// Returns the width of the data table.
     pub fn width(&self) -> usize {
         match &self.value {
             Value::Single(_) => 1,
@@ -343,6 +358,7 @@ impl DataTable {
         }
     }
 
+    /// Returns the height of the data table.
     pub fn height(&self, force_table_bounds: bool) -> usize {
         match &self.value {
             Value::Single(_) => 1,
@@ -488,6 +504,7 @@ impl DataTable {
         }
     }
 
+    /// Returns true if the data table is an html.
     pub fn is_html(&self) -> bool {
         if let Value::Single(value) = &self.value {
             matches!(value, CellValue::Html(_))
@@ -496,6 +513,7 @@ impl DataTable {
         }
     }
 
+    /// Returns true if the data table is an image.
     pub fn is_image(&self) -> bool {
         if let Value::Single(value) = &self.value {
             matches!(value, CellValue::Image(_))
@@ -532,6 +550,7 @@ impl DataTable {
         }
     }
 
+    /// Returns the value as an array.
     pub fn value_as_array(&self) -> Result<&Array> {
         match &self.value {
             Value::Array(array) => Ok(array),

@@ -31,6 +31,7 @@ impl DataTableColumnHeader {
 }
 
 impl DataTable {
+    /// Returns the number of columns in the data table.
     pub fn column_headers_len(&self) -> u32 {
         self.column_headers
             .as_ref()
@@ -61,6 +62,7 @@ impl DataTable {
         self.normalize_column_header_names();
     }
 
+    /// Toggles whether the first row of the data table is used as the column headings.
     pub fn toggle_first_row_as_header(&mut self, first_row_as_header: bool) {
         self.header_is_first_row = first_row_as_header;
 
@@ -187,6 +189,7 @@ impl DataTable {
             .map(|columns| columns.iter().map(|c| c.name.clone()).collect())
     }
 
+    /// Get the column header at the given display index.
     pub fn display_header_at(&self, display_x: u32) -> Option<&DataTableColumnHeader> {
         let column_index = self.get_column_index_from_display_index(display_x);
         self.get_column_header(column_index as usize)
