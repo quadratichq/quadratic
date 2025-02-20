@@ -98,7 +98,7 @@ impl TableRef {
     pub fn is_single_cell(&self, context: &A1Context) -> bool {
         context
             .try_table(&self.table_name)
-            .map_or(false, |table| table.bounds.size() == ArraySize::_1X1)
+            .is_some_and(|table| table.bounds.size() == ArraySize::_1X1)
     }
 }
 
