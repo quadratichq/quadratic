@@ -266,15 +266,19 @@ impl TableRef {
 
 #[cfg(test)]
 mod tests {
-    use crate::a1::RefRangeBounds;
+    use crate::{a1::RefRangeBounds, grid::CodeCellLanguage};
 
     use super::*;
 
     fn setup_test_context() -> A1Context {
         let mut context = A1Context::default();
-        context
-            .table_map
-            .test_insert("test_table", &["A", "B", "C"], None, Rect::test_a1("A1:C3"));
+        context.table_map.test_insert(
+            "test_table",
+            &["A", "B", "C"],
+            None,
+            Rect::test_a1("A1:C3"),
+            CodeCellLanguage::Import,
+        );
         context
     }
 
@@ -285,6 +289,7 @@ mod tests {
             &["A", "C"],
             Some(&["A", "B", "C"]),
             Rect::test_a1("A1:C3"),
+            CodeCellLanguage::Import,
         );
 
         context
@@ -325,9 +330,13 @@ mod tests {
     fn test_is_multi_cursor() {
         let mut context = A1Context::default();
         // the context is A1:B2 because show_headers is true
-        context
-            .table_map
-            .test_insert("test_table", &["A", "B"], None, Rect::test_a1("A1:B3"));
+        context.table_map.test_insert(
+            "test_table",
+            &["A", "B"],
+            None,
+            Rect::test_a1("A1:B3"),
+            CodeCellLanguage::Import,
+        );
 
         // One column, one row--note, table has headers, but they're not selected
         let table_ref = TableRef {
@@ -339,9 +348,13 @@ mod tests {
         };
         assert!(!table_ref.is_multi_cursor(&context));
 
-        context
-            .table_map
-            .test_insert("test_table", &["A", "B"], None, Rect::test_a1("A1:B3"));
+        context.table_map.test_insert(
+            "test_table",
+            &["A", "B"],
+            None,
+            Rect::test_a1("A1:B3"),
+            CodeCellLanguage::Import,
+        );
 
         // Two columns, one row--note, table has headers, but they're not selected
         let table_ref = TableRef {
@@ -392,9 +405,13 @@ mod tests {
     #[test]
     fn test_convert_to_ref_range_bounds() {
         let mut context = A1Context::default();
-        context
-            .table_map
-            .test_insert("test_table", &["A", "B", "C"], None, Rect::test_a1("A1:C4"));
+        context.table_map.test_insert(
+            "test_table",
+            &["A", "B", "C"],
+            None,
+            Rect::test_a1("A1:C4"),
+            CodeCellLanguage::Import,
+        );
 
         // Single column with all rows
         let table_ref = TableRef {

@@ -26,7 +26,7 @@ impl TableMap {
         sheet_id: SheetId,
         pos: Pos,
         table: &DataTable,
-        language: Option<CodeCellLanguage>,
+        language: CodeCellLanguage,
     ) {
         let table_name_folded = case_fold(&table.name.to_display());
         let table_map_entry = TableMapEntry::from_table(sheet_id, pos, table, language);
@@ -74,11 +74,12 @@ impl TableMap {
         visible_columns: &[&str],
         all_columns: Option<&[&str]>,
         bounds: crate::Rect,
+        language: CodeCellLanguage,
     ) {
         let table_name_folded = case_fold(table_name);
         self.tables.insert(
             table_name_folded,
-            TableMapEntry::test(table_name, visible_columns, all_columns, bounds),
+            TableMapEntry::test(table_name, visible_columns, all_columns, bounds, language),
         );
     }
 
@@ -123,6 +124,7 @@ mod tests {
             &["Col1", "Col2", "Col3"],
             None,
             Rect::new(1, 1, 3, 5),
+            CodeCellLanguage::Import,
         );
 
         let table = map.try_table("test").unwrap();
@@ -150,6 +152,7 @@ mod tests {
             &["A", "C", "E"],                 // visible columns
             Some(&["A", "B", "C", "D", "E"]), // all columns
             Rect::new(1, 1, 3, 5),
+            CodeCellLanguage::Import,
         );
 
         let table = map.try_table("test").unwrap();
@@ -186,6 +189,7 @@ mod tests {
             &["A", "C", "E"],                 // visible columns
             Some(&["A", "B", "C", "D", "E"]), // all columns
             Rect::new(1, 1, 2, 4),
+            CodeCellLanguage::Import,
         );
 
         let table = map.try_table("test").unwrap();
@@ -215,6 +219,7 @@ mod tests {
             &["A", "C", "E"],                 // visible columns
             Some(&["A", "B", "C", "D", "E"]), // all columns
             Rect::new(1, 1, 2, 4),
+            CodeCellLanguage::Import,
         );
 
         let table = map.try_table("test").unwrap();
@@ -244,6 +249,7 @@ mod tests {
             &["A", "C", "E"],                 // visible columns
             Some(&["A", "B", "C", "D", "E"]), // all columns
             Rect::new(1, 1, 2, 4),
+            CodeCellLanguage::Import,
         );
 
         let table = map.try_table("test").unwrap();
@@ -267,7 +273,13 @@ mod tests {
     #[test]
     fn test_to_sheet_rows() {
         let mut map = TableMap::default();
-        map.test_insert("test", &["A"], None, Rect::test_a1("A1:C5"));
+        map.test_insert(
+            "test",
+            &["A"],
+            None,
+            Rect::test_a1("A1:C5"),
+            CodeCellLanguage::Import,
+        );
         let table = map.try_table("test").unwrap();
         assert_eq!(table.to_sheet_rows(), (1, 5));
     }
@@ -275,7 +287,13 @@ mod tests {
     #[test]
     fn test_col_name_from_index() {
         let mut map = TableMap::default();
-        map.test_insert("test", &["A", "B", "C"], None, Rect::test_a1("A1:C5"));
+        map.test_insert(
+            "test",
+            &["A", "B", "C"],
+            None,
+            Rect::test_a1("A1:C5"),
+            CodeCellLanguage::Import,
+        );
         let table = map.try_table("test").unwrap();
         assert_eq!(table.col_name_from_index(0), Some("A".to_string()));
         assert_eq!(table.col_name_from_index(1), Some("B".to_string()));
@@ -301,7 +319,7 @@ mod tests {
             show_columns: true,
             is_html_image: false,
             header_is_first_row: false,
-            language: None,
+            language: CodeCellLanguage::Import,
         });
 
         // Test position in table name row (y=0)
@@ -337,7 +355,7 @@ mod tests {
             show_columns: true,
             is_html_image: false,
             header_is_first_row: false,
-            language: None,
+            language: CodeCellLanguage::Import,
         });
 
         // Test position in column headers row (y=5)
@@ -360,6 +378,7 @@ mod tests {
             &["Visible1", "Visible2"],                  // visible columns
             Some(&["Visible1", "Hidden1", "Visible2"]), // all columns
             Rect::new(1, 1, 3, 5),
+            CodeCellLanguage::Import,
         );
 
         // Test existing visible column (exact match)
@@ -384,7 +403,13 @@ mod tests {
         assert!(!map.table_has_column("test_table", ""));
 
         // Create a table with empty column list
-        map.test_insert("empty_table", &[], None, Rect::new(1, 1, 3, 5));
+        map.test_insert(
+            "empty_table",
+            &[],
+            None,
+            Rect::new(1, 1, 3, 5),
+            CodeCellLanguage::Import,
+        );
         assert!(!map.table_has_column("empty_table", "AnyColumn"));
     }
 }

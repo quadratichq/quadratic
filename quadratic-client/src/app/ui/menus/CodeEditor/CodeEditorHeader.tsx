@@ -180,7 +180,10 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
       <div className="ml-auto flex flex-shrink-0 items-center gap-1 py-1">
         {isRunningComputation && (
           <TooltipPopover label={`${language} executing…`} side="bottom">
-            <SpinnerIcon className="mr-2 text-primary" />
+            {/* wrapper div is required to prevent react to throw a warning */}
+            <div>
+              <SpinnerIcon className="mr-2 text-primary" />
+            </div>
           </TooltipPopover>
         )}
 

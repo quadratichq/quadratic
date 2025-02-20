@@ -75,7 +75,6 @@ export function drawDashedRectangleMarching(options: {
   range: RefRangeBounds;
 }): boolean {
   const { g, color, march, noFill, alpha = 1, offset = 0, range } = options;
-
   const selectionRect = getRangeScreenRectangleFromCellRefRange(range);
   const bounds = pixiApp.viewport.getVisibleBounds();
   if (!intersects.rectangleRectangle(selectionRect, bounds)) {
@@ -95,10 +94,10 @@ export function drawDashedRectangleMarching(options: {
   }
 
   g.lineStyle({
-    alignment: 0,
+    alignment: 0.5,
   });
   if (!noFill) {
-    g.beginFill(color, FILL_SELECTION_ALPHA);
+    g.beginFill(color, alpha);
     g.drawRect(minX, minY, boundedRight - minX, boundedBottom - minY);
     g.endFill();
   }
@@ -107,8 +106,7 @@ export function drawDashedRectangleMarching(options: {
   g.lineStyle({
     width: CURSOR_THICKNESS,
     color,
-    alignment: 0,
-    alpha,
+    alignment: 0.5,
   });
 
   const clamp = (n: number, min: number, max: number): number => {

@@ -35,7 +35,7 @@ impl CellRefRange {
                 // We don't change to TableRef if the table is a formula. This
                 // is a hack since we don't show table UI for formulas. if this
                 // changes, we can remove this check.
-                if table.language == Some(CodeCellLanguage::Formula) {
+                if table.language == CodeCellLanguage::Formula {
                     return None;
                 }
                 let b = table.bounds;
