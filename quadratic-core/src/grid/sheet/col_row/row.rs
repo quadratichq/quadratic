@@ -141,16 +141,16 @@ impl Sheet {
         if transaction.is_user_undo_redo() {
             transaction
                 .reverse_operations
-                .extend(self.reverse_values_ops_for_row(row));
+                .extend(self.reverse_borders_ops_for_row(row));
             transaction
                 .reverse_operations
                 .extend(self.reverse_formats_ops_for_row(row));
             transaction
                 .reverse_operations
-                .extend(self.reverse_borders_ops_for_row(row));
+                .extend(self.reverse_code_runs_ops_for_row(row));
             transaction
                 .reverse_operations
-                .extend(self.reverse_code_runs_ops_for_row(row));
+                .extend(self.reverse_values_ops_for_row(row));
         }
 
         self.delete_row_offset(transaction, row);
