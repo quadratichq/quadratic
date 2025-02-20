@@ -37,15 +37,13 @@ impl GridController {
         sheet_id: SheetId,
         data_table_pos: Pos,
     ) -> Result<()> {
-        transaction.add_code_cell(sheet_id, data_table_pos);
+        let sheet = self.try_sheet_result(sheet_id)?;
+        let data_table = sheet.data_table_result(data_table_pos)?;
+        data_table.add_dirty_table(transaction, sheet, data_table_pos)?;
 
         if !(cfg!(target_family = "wasm") || cfg!(test)) || transaction.is_server() {
             return Ok(());
         }
-
-        let sheet = self.try_sheet_result(sheet_id)?;
-        let data_table = sheet.data_table_result(data_table_pos)?;
-        data_table.add_dirty_table(transaction, sheet, data_table_pos)?;
 
         let data_table_rect =
             data_table.output_sheet_rect(data_table_pos.to_sheet_pos(sheet_id), false);
