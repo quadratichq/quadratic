@@ -80,7 +80,7 @@ export const viewActionsSpec: ViewActionSpec = {
     },
   },
   [Action.ZoomReset]: {
-    label: 'Reset location',
+    label: 'Move to origin',
     run: () => zoomReset(),
   },
   [Action.GridPanMode]: {

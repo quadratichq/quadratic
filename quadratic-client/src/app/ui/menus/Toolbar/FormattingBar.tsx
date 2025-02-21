@@ -11,7 +11,6 @@ import {
   BorderAllIcon,
   FormatAlignLeftIcon,
   FormatTextWrapIcon,
-  Number123Icon,
   VerticalAlignTopIcon,
 } from '@/shared/components/Icons';
 import {
@@ -40,12 +39,7 @@ export const FormattingBar = () => {
       <FormatButton action={Action.FormatNumberDecimalIncrease} actionArgs={undefined} />
       <FormatButton action={Action.FormatNumberCurrency} actionArgs={undefined} />
       <FormatButton action={Action.FormatNumberPercent} actionArgs={undefined} />
-      <FormatButtonDropdown showDropdownArrow tooltipLabel="More number formats" Icon={Number123Icon}>
-        <FormatButtonDropdownActions
-          actions={[Action.FormatNumberAutomatic, Action.FormatNumberScientific]}
-          actionArgs={undefined}
-        />
-      </FormatButtonDropdown>
+      <FormatButton action={Action.FormatNumberAutomatic} actionArgs={undefined} />
 
       <Separator />
 
