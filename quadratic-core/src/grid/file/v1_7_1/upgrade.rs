@@ -40,7 +40,10 @@ fn upgrade_code_runs(
                 std_out: code_run.std_out,
                 std_err: code_run.std_err,
                 cells_accessed: code_run.cells_accessed,
-                error,
+                error: error.map(|spanned| v1_8::RunErrorSchema {
+                    span: spanned.span,
+                    msg: upgrade_error_msg(spanned.msg),
+                }),
                 return_type: code_run.return_type,
                 line_number: code_run.line_number,
                 output_type: code_run.output_type,
@@ -61,7 +64,7 @@ fn upgrade_code_runs(
                         ) {
                             is_chart_or_html = true;
                         }
-                        v1_8::OutputValueSchema::Single(cell_value)
+                        v1_8::OutputValueSchema::Single(cell_value.into())
                     }
                     current::OutputValueSchema::Array(array) => {
                         v1_8::OutputValueSchema::Array(v1_8::OutputArraySchema {
@@ -69,7 +72,7 @@ fn upgrade_code_runs(
                                 w: array.size.w,
                                 h: array.size.h,
                             },
-                            values: array.values,
+                            values: array.values.into_iter().map(|v| v.into()).collect(),
                         })
                     }
                 }
@@ -191,6 +194,11 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_8::SheetSchema {
     let data_tables =
         upgrade_code_runs(code_runs, &columns, render_size, &offsets).unwrap_or_default();
 
+    let upgraded_columns = columns.into_iter().map(|(i, column)| {
+        let new_column = column.into_iter().map(|(j, value)| (j, value.into()));
+        (i, new_column.collect())
+    });
+
     v1_8::SheetSchema {
         id,
         name,
@@ -202,7 +210,7 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_8::SheetSchema {
         borders,
         formats: upgraded_formats,
         data_tables,
-        columns,
+        columns: upgraded_columns.collect(),
     }
 }
 
@@ -212,4 +220,41 @@ pub fn upgrade(grid: current::GridSchema) -> Result<v1_8::GridSchema> {
         sheets: grid.sheets.into_iter().map(upgrade_sheet).collect(),
     };
     Ok(new_grid)
+}
+
+#[rustfmt::skip]
+fn upgrade_error_msg(e: super::RunErrorMsgSchema) -> v1_8::RunErrorMsgSchema {
+    match e {
+        super::RunErrorMsgSchema::CodeRunError(cow) => v1_8::RunErrorMsgSchema::CodeRunError(cow),
+        super::RunErrorMsgSchema::Spill => v1_8::RunErrorMsgSchema::Spill,
+        super::RunErrorMsgSchema::Unimplemented(cow) => v1_8::RunErrorMsgSchema::Unimplemented(cow),
+        super::RunErrorMsgSchema::UnknownError => v1_8::RunErrorMsgSchema::UnknownError,
+        super::RunErrorMsgSchema::InternalError(cow) => v1_8::RunErrorMsgSchema::InternalError(cow),
+        super::RunErrorMsgSchema::Unterminated(cow) => v1_8::RunErrorMsgSchema::Unterminated(cow),
+        super::RunErrorMsgSchema::Expected { expected, got } => v1_8::RunErrorMsgSchema::Expected { expected, got },
+        super::RunErrorMsgSchema::Unexpected(cow) => v1_8::RunErrorMsgSchema::Unexpected(cow),
+        super::RunErrorMsgSchema::TooManyArguments { func_name, max_arg_count } => v1_8::RunErrorMsgSchema::TooManyArguments { func_name, max_arg_count },
+        super::RunErrorMsgSchema::MissingRequiredArgument { func_name, arg_name } => v1_8::RunErrorMsgSchema::MissingRequiredArgument { func_name, arg_name },
+        super::RunErrorMsgSchema::BadFunctionName => v1_8::RunErrorMsgSchema::BadFunctionName,
+        super::RunErrorMsgSchema::BadCellReference => v1_8::RunErrorMsgSchema::BadCellReference,
+        super::RunErrorMsgSchema::BadNumber => v1_8::RunErrorMsgSchema::BadNumber,
+        super::RunErrorMsgSchema::BadOp { op, ty1, ty2, use_duration_instead } => v1_8::RunErrorMsgSchema::BadOp { op, ty1, ty2, use_duration_instead },
+        super::RunErrorMsgSchema::NaN => v1_8::RunErrorMsgSchema::NaN,
+        super::RunErrorMsgSchema::ExactArraySizeMismatch { expected, got } => v1_8::RunErrorMsgSchema::ExactArraySizeMismatch { expected, got },
+        super::RunErrorMsgSchema::ExactArrayAxisMismatch { axis, expected, got } => v1_8::RunErrorMsgSchema::ExactArrayAxisMismatch { axis, expected, got },
+        super::RunErrorMsgSchema::ArrayAxisMismatch { axis, expected, got } => v1_8::RunErrorMsgSchema::ArrayAxisMismatch { axis, expected, got },
+        super::RunErrorMsgSchema::EmptyArray => v1_8::RunErrorMsgSchema::EmptyArray,
+        super::RunErrorMsgSchema::NonRectangularArray => v1_8::RunErrorMsgSchema::NonRectangularArray,
+        super::RunErrorMsgSchema::NonLinearArray => v1_8::RunErrorMsgSchema::NonLinearArray,
+        super::RunErrorMsgSchema::ArrayTooBig => v1_8::RunErrorMsgSchema::ArrayTooBig,
+        super::RunErrorMsgSchema::CircularReference => v1_8::RunErrorMsgSchema::CircularReference,
+        super::RunErrorMsgSchema::Overflow => v1_8::RunErrorMsgSchema::Overflow,
+        super::RunErrorMsgSchema::DivideByZero => v1_8::RunErrorMsgSchema::DivideByZero,
+        super::RunErrorMsgSchema::NegativeExponent => v1_8::RunErrorMsgSchema::NegativeExponent,
+        super::RunErrorMsgSchema::NotANumber => v1_8::RunErrorMsgSchema::NotANumber,
+        super::RunErrorMsgSchema::Infinity => v1_8::RunErrorMsgSchema::Infinity,
+        super::RunErrorMsgSchema::IndexOutOfBounds => v1_8::RunErrorMsgSchema::IndexOutOfBounds,
+        super::RunErrorMsgSchema::NoMatch => v1_8::RunErrorMsgSchema::NoMatch,
+        super::RunErrorMsgSchema::InvalidArgument => v1_8::RunErrorMsgSchema::InvalidArgument,
+    }
 }

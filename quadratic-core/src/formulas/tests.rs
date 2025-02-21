@@ -320,9 +320,11 @@ fn test_find_cell_references() {
 
     let a = CellRefCoord::new_abs;
     let r = CellRefCoord::new_rel;
-    let new_ref = |sheet_id, x1, y1, x2, y2| SheetCellRefRange {
-        sheet_id,
-        cells: CellRefRange::new_sheet_ref(x1, y1, x2, y2),
+    let new_ref = |sheet_id, x1, y1, x2, y2| {
+        Ok(SheetCellRefRange {
+            sheet_id,
+            cells: CellRefRange::new_sheet_ref(x1, y1, x2, y2),
+        })
     };
 
     // Another test checks that `parse_a1()` is correct.
@@ -468,6 +470,25 @@ fn test_cell_range_op_errors() {
         assert_eq!(expected_err, eval_to_err(&g, formula_str).msg);
         assert_eq!(expected_err, check_syntax_to_err(&g, formula_str).msg);
     }
+}
+
+#[test]
+fn test_formula_error_literals() {
+    let g = Grid::new();
+
+    assert_eq!(RunErrorMsg::DivideByZero, eval_to_err(&g, "#DIV/0!").msg);
+    assert_eq!(RunErrorMsg::NotAvailable, eval_to_err(&g, "#N/A").msg);
+    assert_eq!(RunErrorMsg::Name, eval_to_err(&g, "#NAME?").msg);
+    assert_eq!(RunErrorMsg::Null, eval_to_err(&g, "#NULL!").msg);
+    assert_eq!(RunErrorMsg::Num, eval_to_err(&g, "#NUM!").msg);
+    assert_eq!(RunErrorMsg::BadCellReference, eval_to_err(&g, "#REF!").msg);
+    assert_eq!(RunErrorMsg::Value, eval_to_err(&g, "#VALUE!").msg);
+
+    assert_eq!(
+        RunErrorMsg::Value,
+        eval_to_err(&g, "IF(FALSE, 'meow', #VALUE!)").msg,
+    );
+    assert_eq!("meow", eval_to_string(&g, "IF(TRUE, 'meow', #VALUE!)"));
 }
 
 /// Regression test for quadratic#410

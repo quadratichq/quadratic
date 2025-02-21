@@ -8,7 +8,7 @@ use ts_rs::TS;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{ArraySize, Axis, Span, Spanned, Value};
+use crate::{a1::A1Error, ArraySize, Axis, Span, Spanned, Value};
 
 /// Result of a [`crate::RunError`].
 pub type CodeResult<T = Spanned<Value>> = Result<T, RunError>;
@@ -97,6 +97,13 @@ pub enum RunErrorMsg {
     NonRectangularArray,
     NonLinearArray,
     ArrayTooBig,
+
+    // Excel errors not otherwise covered
+    NotAvailable,
+    Name,
+    Null,
+    Num,
+    Value,
 
     // Runtime errors
     CircularReference,
@@ -239,33 +246,21 @@ impl fmt::Display for RunErrorMsg {
                 write!(f, "Array is too big")
             }
 
-            Self::CircularReference => {
-                write!(f, "Circular reference")
-            }
-            Self::Overflow => {
-                write!(f, "Numeric overflow")
-            }
-            Self::DivideByZero => {
-                write!(f, "Divide by zero")
-            }
-            Self::NegativeExponent => {
-                write!(f, "Negative exponent")
-            }
-            Self::IndexOutOfBounds => {
-                write!(f, "Index out of bounds")
-            }
-            Self::NoMatch => {
-                write!(f, "No match found")
-            }
-            Self::InvalidArgument => {
-                write!(f, "Invalid argument")
-            }
-            Self::NotANumber => {
-                write!(f, "Not a number")
-            }
-            Self::Infinity => {
-                write!(f, "Unexpected Infinity")
-            }
+            Self::NotAvailable => write!(f, "N/A"),
+            Self::Name => write!(f, "NAME error"),
+            Self::Null => write!(f, "NULL error"),
+            Self::Num => write!(f, "NUM error"),
+            Self::Value => write!(f, "VALUE error"),
+
+            Self::CircularReference => write!(f, "Circular reference"),
+            Self::Overflow => write!(f, "Numeric overflow"),
+            Self::DivideByZero => write!(f, "Divide by zero"),
+            Self::NegativeExponent => write!(f, "Negative exponent"),
+            Self::IndexOutOfBounds => write!(f, "Index out of bounds"),
+            Self::NoMatch => write!(f, "No match found"),
+            Self::InvalidArgument => write!(f, "Invalid argument"),
+            Self::NotANumber => write!(f, "Not a number"),
+            Self::Infinity => write!(f, "Unexpected Infinity"),
         }
     }
 }
@@ -348,3 +343,23 @@ macro_rules! internal_error {
         return Err(internal_error_value!($( $args ),+))
     };
 }
+
+/// Cell reference out-of-bounds error, similar to Excel.
+#[derive(Serialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, TS)]
+pub struct RefError;
+impl From<RefError> for RunErrorMsg {
+    fn from(RefError: RefError) -> Self {
+        RunErrorMsg::BadCellReference
+    }
+}
+impl From<RefError> for A1Error {
+    fn from(value: RefError) -> Self {
+        A1Error::OutOfBounds(value)
+    }
+}
+impl fmt::Display for RefError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "#REF!")
+    }
+}
+impl std::error::Error for RefError {}

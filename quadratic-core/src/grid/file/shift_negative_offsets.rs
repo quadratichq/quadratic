@@ -96,7 +96,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
                 // Translate all ranges and collect into new HashSet
                 *ranges = ranges
                     .iter()
-                    .map(|r| r.translate(x_shift, y_shift))
+                    .filter_map(|r| r.translate(x_shift, y_shift).ok())
                     .collect();
             }
         }

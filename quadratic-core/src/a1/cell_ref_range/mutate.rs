@@ -1,20 +1,32 @@
+use crate::RefError;
+
 use super::*;
 
 impl CellRefRange {
-    pub fn translate_in_place(&mut self, x: i64, y: i64) {
+    pub fn translate_in_place(&mut self, x: i64, y: i64) -> Result<(), RefError> {
         match self {
             Self::Sheet { range } => range.translate_in_place(x, y),
-            Self::Table { .. } => (),
+            Self::Table { .. } => Ok(()),
         }
     }
 
-    pub fn translate(&self, x: i64, y: i64) -> Self {
+    pub fn translate(&self, x: i64, y: i64) -> Result<Self, RefError> {
         if let Self::Sheet { range } = self {
-            Self::Sheet {
-                range: range.translate(x, y),
-            }
+            Ok(Self::Sheet {
+                range: range.translate(x, y)?,
+            })
         } else {
-            self.clone()
+            Ok(self.clone())
+        }
+    }
+
+    pub fn saturating_translate(&self, x: i64, y: i64) -> Option<Self> {
+        if let Self::Sheet { range } = self {
+            Some(Self::Sheet {
+                range: range.saturating_translate(x, y)?,
+            })
+        } else {
+            Some(self.clone())
         }
     }
 
@@ -29,6 +41,7 @@ impl CellRefRange {
         }
     }
 
+    #[must_use]
     pub fn adjust_column_row(&self, column: Option<i64>, row: Option<i64>, delta: i64) -> Self {
         if let Self::Sheet { range } = self {
             Self::Sheet {
@@ -66,61 +79,58 @@ mod tests {
     fn test_translate_in_place() {
         // Test single cell translation
         let mut cell = CellRefRange::test_a1("A1");
-        cell.translate_in_place(1, 2);
+        cell.translate_in_place(1, 2).unwrap();
         assert_eq!(cell.to_string(), "B3");
 
         // Test range translation
         let mut range = CellRefRange::test_a1("A1:B2");
-        range.translate_in_place(2, 1);
+        range.translate_in_place(2, 1).unwrap();
         assert_eq!(range.to_string(), "C2:D3");
 
         // Test column range translation
         let mut col_range = CellRefRange::test_a1("A:B");
-        col_range.translate_in_place(1, 0);
+        col_range.translate_in_place(1, 0).unwrap();
         assert_eq!(col_range.to_string(), "B:C");
 
         // Test row range translation
         let mut row_range = CellRefRange::test_a1("1:2");
-        row_range.translate_in_place(0, 2);
+        row_range.translate_in_place(0, 2).unwrap();
         assert_eq!(row_range.to_string(), "3:4");
 
         // Test negative translation capping
         let mut cell = CellRefRange::test_a1("A1");
-        cell.translate_in_place(-10, -10);
-        assert_eq!(cell.to_string(), "A1");
+        cell.translate_in_place(-10, -10).unwrap_err();
     }
 
     #[test]
     fn test_translate() {
         // Test single cell translation
         let cell = CellRefRange::test_a1("A1");
-        let translated = cell.translate(1, 2);
+        let translated = cell.translate(1, 2).unwrap();
         assert_eq!(translated.to_string(), "B3");
         assert_eq!(cell, CellRefRange::test_a1("A1"));
 
         // Test range translation
         let range = CellRefRange::test_a1("A1:B2");
-        let translated = range.translate(2, 1);
+        let translated = range.translate(2, 1).unwrap();
         assert_eq!(translated.to_string(), "C2:D3");
         assert_eq!(range, CellRefRange::test_a1("A1:B2"));
 
         // Test column range translation
         let col_range = CellRefRange::test_a1("A:B");
-        let translated = col_range.translate(1, 0);
+        let translated = col_range.translate(1, 0).unwrap();
         assert_eq!(translated.to_string(), "B:C");
         assert_eq!(col_range, CellRefRange::test_a1("A:B"));
 
         // Test row range translation
         let row_range = CellRefRange::test_a1("1:2");
-        let translated = row_range.translate(0, 2);
+        let translated = row_range.translate(0, 2).unwrap();
         assert_eq!(translated.to_string(), "3:4");
         assert_eq!(row_range, CellRefRange::test_a1("1:2"));
 
         // Test negative translation capping
         let cell = CellRefRange::test_a1("A1");
-        let translated = cell.translate(-10, -10);
-        assert_eq!(translated.to_string(), "A1");
-        assert_eq!(cell, CellRefRange::test_a1("A1"));
+        cell.translate(-10, -10).unwrap_err();
     }
 
     #[test]

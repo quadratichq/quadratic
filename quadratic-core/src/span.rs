@@ -138,3 +138,14 @@ impl<T> Spanned<T> {
         }
     }
 }
+impl<T, E> Spanned<Result<T, E>> {
+    /// Converts a `Spanned<Result<T, E>>` to a `Result<Spanned<T>, E>`, losing
+    /// the span information in the error case.
+    pub fn transpose(self) -> Result<Spanned<T>, E> {
+        let span = self.span;
+        match self.inner {
+            Ok(inner) => Ok(Spanned { span, inner }),
+            Err(e) => Err(e),
+        }
+    }
+}

@@ -21,7 +21,8 @@ impl Validations {
                     let mut v = validation.clone();
                     v.selection = intersection;
                     v.selection
-                        .translate_in_place(1 + -clipboard_origin.x, 1 + -clipboard_origin.y);
+                        .translate_in_place(1 + -clipboard_origin.x, 1 + -clipboard_origin.y)
+                        .ok()?;
                     Some(v)
                 } else {
                     None
@@ -88,7 +89,7 @@ mod tests {
         assert_eq!(clipboard_validations.validations.len(), 1);
         assert_eq!(
             clipboard_validations.validations[0].selection,
-            selection.translate(-1, -1)
+            selection.translate(-1, -1).unwrap(),
         );
     }
 }
