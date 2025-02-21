@@ -143,6 +143,19 @@ const UNQUOTED_SHEET_REFERENCE_PATTERN: &str = r"[A-Za-z_][A-Za-z0-9_\.]*\s*!";
 /// Unterminated string literal.
 const UNTERMINATED_STRING_LITERAL_PATTERN: &str = r#"["']"#;
 
+/// Error code that can appear as valid syntax in a formula.
+///
+/// The [official documentation]
+/// (https://support.microsoft.com/en-us/office/detect-formula-errors-in-excel-3a8acca5-1d61-4702-80e0-99a36a2822c1)
+/// lists all seven errors that are valid syntax in formulas.
+///
+/// [A different list on
+/// Exceljet](https://exceljet.net/articles/excel-formula-errors) also includes
+/// `#BLOCKED!`, `#CALC!`, and `#SPILL!` which do appear but are not allowed in
+/// formulas. `####` is its own beast which is more of a rendering fallback than
+/// an actual error.
+const ERROR_PATTERN: &str = r"#(DIV/0!|N/A|NAME\?|NULL!|NUM!|REF!|VALUE!)";
+
 lazy_static! {
     /// List of token patterns, arranged roughly from least to most general.
     static ref TOKEN_PATTERNS: &'static [&'static str] = vec![
@@ -170,6 +183,8 @@ lazy_static! {
         A1_CELL_REFERENCE_PATTERN,
         // Square brackets containing table reference.
         *TABLE_BRACKETS_PATTERN,
+        // Error code literal.
+        ERROR_PATTERN,
         // Comparison operators `==`, `!=`, `<=`, `>=` and `<>`.
         r#"[=!<>]=|<>"#,
         // Double and triple dot.
@@ -225,6 +240,9 @@ lazy_static! {
     /// Regex that matches an unterminated string literal.
     pub static ref UNTERMINATED_STRING_LITERAL_REGEX: Regex =
         new_fullmatch_regex(UNTERMINATED_STRING_LITERAL_PATTERN);
+
+    /// Regex that matches an error token.
+    pub static ref ERROR_REGEX: Regex = new_fullmatch_regex(ERROR_PATTERN);
 }
 
 #[derive(Debug, Display, Copy, Clone, PartialEq, Eq)]
@@ -318,6 +336,8 @@ pub enum Token {
     TableRefBracketsExpression,
     #[strum(to_string = "internal cell reference")]
     InternalCellRef,
+    #[strum(to_string = "error")]
+    Error,
     #[strum(to_string = "whitespace")]
     Whitespace,
     #[strum(to_string = "unknown symbol")]
@@ -407,6 +427,7 @@ impl Token {
             s if A1_CELL_REFERENCE_REGEX.is_match(s) => Self::CellOrTableRef,
             s if TABLE_NAME_REGEX.is_match(s) => Self::CellOrTableRef,
             s if TABLE_BRACKETS_REGEX.is_match(s) => Self::TableRefBracketsExpression,
+            s if ERROR_REGEX.is_match(s) => Self::Error,
             s if s.trim().is_empty() => Self::Whitespace,
 
             // Give up.
