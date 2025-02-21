@@ -160,7 +160,6 @@ impl GridController {
             // mark new data table as dirty
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
             self.send_updated_bounds(transaction, sheet_id);
-            self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
             let reverse_operations = vec![Operation::DeleteDataTable { sheet_pos }];
@@ -202,7 +201,6 @@ impl GridController {
             sheet.set_cell_value(data_table_pos, CellValue::Blank);
 
             self.send_updated_bounds(transaction, sheet_id);
-            self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
             let reverse_operations = vec![Operation::AddDataTable {
@@ -364,7 +362,6 @@ impl GridController {
             // mark new data table as dirty
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?; // todo(ayush): optimize this
             self.send_updated_bounds(transaction, sheet_id);
-            self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
             let reverse_operations = vec![Operation::SetDataTableAt {
@@ -431,10 +428,10 @@ impl GridController {
             let values_rect = Rect::from_numbers(
                 data_table_pos.x,
                 data_table_pos.y,
-                values.width() as i64,
-                values.height() as i64,
+                w.get() as i64,
+                h.get() as i64,
             );
-            let _ = sheet.set_cell_values(values_rect, &values);
+            sheet.set_cell_values(values_rect, &values);
             drop(values);
 
             let formats_rect = Rect::from_numbers(
@@ -461,13 +458,16 @@ impl GridController {
             transaction.add_dirty_hashes_from_sheet_rect(values_sheet_rect);
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
             self.send_updated_bounds(transaction, sheet_id);
-            self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
             reverse_operations.push(Operation::AddDataTable {
                 sheet_pos,
                 data_table,
                 cell_value,
+            });
+            reverse_operations.push(Operation::SetCellValues {
+                sheet_pos: data_table_pos.to_sheet_pos(sheet_id),
+                values: CellValues::new(w.get(), h.get()),
             });
             self.data_table_operations(
                 transaction,
@@ -512,7 +512,6 @@ impl GridController {
             sheet.set_cell_value(data_table_pos, value);
 
             transaction.add_code_cell(sheet_id, data_table_pos);
-            self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
             let reverse_operations = vec![Operation::SwitchDataTableKind {
@@ -587,7 +586,6 @@ impl GridController {
             // mark new data table as dirty
             self.mark_data_table_dirty(transaction, sheet_id, sheet_rect.min)?;
             self.send_updated_bounds(transaction, sheet_id);
-            self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
             let reverse_operations = vec![
@@ -768,9 +766,6 @@ impl GridController {
             {
                 self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
                 self.send_updated_bounds(transaction, sheet_id);
-                self.send_code_cells(transaction);
-            } else if name.is_some() {
-                self.send_code_cells(transaction);
             }
 
             let forward_operations = vec![op];
@@ -818,7 +813,6 @@ impl GridController {
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
             self.send_updated_bounds(transaction, sheet_id);
-            self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
             let reverse_operations = vec![Operation::SortDataTable {
@@ -932,7 +926,6 @@ impl GridController {
             }
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
             self.send_updated_bounds(transaction, sheet_id);
-            self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
             let reverse_operations = vec![Operation::DeleteDataTableColumn {
@@ -1066,7 +1059,6 @@ impl GridController {
                 Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
             }
             self.send_updated_bounds(transaction, sheet_id);
-            self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
             reverse_operations.push(Operation::InsertDataTableColumn {
@@ -1178,11 +1170,10 @@ impl GridController {
                 Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
             }
 
+            transaction.add_code_cell(sheet_id, data_table_pos);
             transaction.add_dirty_hashes_from_sheet_rect(values_rect.to_sheet_rect(sheet_id));
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
             self.send_updated_bounds(transaction, sheet_id);
-            transaction.add_code_cell(sheet_id, data_table_pos);
-            self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
             reverse_operations.push(Operation::DeleteDataTableRow {
@@ -1294,7 +1285,6 @@ impl GridController {
                 Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
             }
             self.send_updated_bounds(transaction, sheet_id);
-            self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
             reverse_operations.push(Operation::InsertDataTableRow {
@@ -1345,7 +1335,6 @@ impl GridController {
 
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
             self.send_updated_bounds(transaction, sheet_id);
-            self.send_code_cells(transaction);
 
             let forward_operations = vec![op];
             let reverse_operations = vec![Operation::DataTableFirstRowAsHeader {
@@ -1438,6 +1427,7 @@ mod tests {
 
     use crate::{
         controller::{
+            active_transactions::transaction_name::TransactionName,
             execution::execute_operation::{
                 execute_forward_operations, execute_reverse_operations,
             },
@@ -1463,25 +1453,19 @@ mod tests {
         sheet_id: SheetId,
         pos: Pos,
         file_name: &'a str,
-    ) -> PendingTransaction {
+    ) {
         let sheet_pos = SheetPos::from((pos, sheet_id));
         let op = Operation::FlattenDataTable { sheet_pos };
-        let mut transaction = PendingTransaction::default();
 
         assert_simple_csv(gc, sheet_id, pos, file_name);
 
-        gc.execute_flatten_data_table(&mut transaction, op).unwrap();
-
-        assert_eq!(transaction.forward_operations.len(), 1);
-        assert_eq!(transaction.reverse_operations.len(), 1);
+        gc.start_user_transaction(vec![op], None, TransactionName::FlattenDataTable);
 
         assert!(gc.sheet(sheet_id).first_data_table_within(pos).is_err());
 
         assert_flattened_simple_csv(gc, sheet_id, pos, file_name);
 
         print_table(gc, sheet_id, Rect::new(1, 1, 4, 12));
-
-        transaction
     }
 
     #[track_caller]
@@ -1621,16 +1605,16 @@ mod tests {
         assert_simple_csv(&gc, sheet_id, pos, file_name);
         print_table(&gc, sheet_id, Rect::new(1, 1, 3, 11));
 
-        let mut transaction = flatten_data_table(&mut gc, sheet_id, pos, file_name);
+        flatten_data_table(&mut gc, sheet_id, pos, file_name);
         assert_flattened_simple_csv(&gc, sheet_id, pos, file_name);
 
         // undo, the value should be a data table again
-        execute_reverse_operations(&mut gc, &transaction);
+        gc.undo(None);
         assert_simple_csv(&gc, sheet_id, pos, file_name);
         print_table(&gc, sheet_id, Rect::new(1, 1, 3, 11));
 
         // redo, the value should be on the grid
-        execute_forward_operations(&mut gc, &mut transaction);
+        gc.redo(None);
         assert_flattened_simple_csv(&gc, sheet_id, pos, file_name);
         print_table(&gc, sheet_id, Rect::new(1, 1, 3, 11));
     }
@@ -1788,33 +1772,29 @@ mod tests {
             show_columns: None,
             readonly: None,
         };
-        let mut transaction = PendingTransaction::default();
-        gc.execute_data_table_meta(&mut transaction, op.clone())
-            .unwrap();
+        gc.start_user_transaction(vec![op.to_owned()], None, TransactionName::DataTableMeta);
 
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
         assert_eq!(&data_table.name.to_display(), updated_name);
         println!("Updated data table name: {}", &data_table.name);
 
         // undo, the value should be the initial name
-        execute_reverse_operations(&mut gc, &transaction);
+        gc.undo(None);
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
         assert_eq!(&data_table.name.to_display(), "simple.csv");
         println!("Initial data table name: {}", &data_table.name);
 
         // redo, the value should be the updated name
         {
-            execute_forward_operations(&mut gc, &mut transaction);
+            gc.redo(None);
             let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
             assert_eq!(&data_table.name.to_display(), updated_name);
             println!("Updated data table name: {}", &data_table.name);
         }
 
         // ensure names are unique
-        let mut transaction = PendingTransaction::default();
-        gc.execute_data_table_meta(&mut transaction, op).unwrap();
+        gc.start_user_transaction(vec![op.to_owned()], None, TransactionName::DataTableMeta);
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        // todo: this was wrong. the same data table should not conflict with itself (it used to be "My Table1")
         assert_eq!(&data_table.name.to_display(), "My_Table");
 
         // ensure numbers aren't added for unique names
@@ -1828,8 +1808,7 @@ mod tests {
             show_columns: None,
             readonly: None,
         };
-        let mut transaction = PendingTransaction::default();
-        gc.execute_data_table_meta(&mut transaction, op).unwrap();
+        gc.start_user_transaction(vec![op.to_owned()], None, TransactionName::DataTableMeta);
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
         assert_eq!(&data_table.name.to_display(), "ABC");
     }
