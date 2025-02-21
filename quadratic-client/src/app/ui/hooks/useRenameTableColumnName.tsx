@@ -32,8 +32,9 @@ export function useRenameTableColumnName() {
         return;
       }
 
+      const cursor = sheets.getCursorPosition();
       sheets.updateColumnName(tableName, oldColumnName, newColumnName);
-      quadraticCore.dataTableMeta(sheetId, x, y, { columns }, sheets.getCursorPosition());
+      quadraticCore.dataTableMeta(sheetId, x, y, { columns }, cursor);
     },
     [addGlobalSnackbar]
   );
