@@ -204,7 +204,8 @@ impl SyntaxRule for ExpressionWithPrecedence {
                 | Token::UnterminatedStringLiteral
                 | Token::NumericLiteral
                 | Token::CellOrTableRef
-                | Token::InternalCellRef => true,
+                | Token::InternalCellRef
+                | Token::Error => true,
 
                 Token::TableRefBracketsExpression => false,
                 Token::Whitespace => false,
@@ -228,6 +229,7 @@ impl SyntaxRule for ExpressionWithPrecedence {
                     NumericLiteral.map(Some),
                     ArrayLiteral.map(Some),
                     BoolExpression.map(Some),
+                    ErrorExpression.map(Some),
                     ParenExpression.map(Some),
                 ],
             )

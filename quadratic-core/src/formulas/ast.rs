@@ -33,6 +33,7 @@ pub enum AstNodeContents {
     String(String),
     Number(f64),
     Bool(bool),
+    Error(RunErrorMsg),
 }
 impl AstNodeContents {
     fn type_string(&self) -> &'static str {
@@ -54,6 +55,7 @@ impl AstNodeContents {
             AstNodeContents::String(_) => "string literal",
             AstNodeContents::Number(_) => "numeric literal",
             AstNodeContents::Bool(_) => "boolean literal",
+            AstNodeContents::Error(_) => "error literal",
         }
     }
 }
@@ -150,6 +152,9 @@ impl AstNode {
             AstNodeContents::String(s) => Value::from(s.to_string()),
             AstNodeContents::Number(n) => Value::from(*n),
             AstNodeContents::Bool(b) => Value::from(*b),
+            AstNodeContents::Error(e) => {
+                Value::Single(CellValue::Error(Box::new(e.clone().with_span(self.span))))
+            }
         };
 
         Ok(Spanned {

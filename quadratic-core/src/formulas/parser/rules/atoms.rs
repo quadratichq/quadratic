@@ -184,3 +184,34 @@ impl SyntaxRule for BoolExpression {
         })
     }
 }
+
+#[derive(Debug, Copy, Clone)]
+pub struct ErrorExpression;
+impl_display!(for ErrorExpression, "error such as '#N/A' or '#REF!'");
+impl SyntaxRule for ErrorExpression {
+    type Output = AstNode;
+
+    fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
+        matches!(p.next(), Some(Token::Error))
+    }
+
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
+        let e = match p.next() {
+            Some(Token::Error) => match p.token_str() {
+                "#DIV/0!" => RunErrorMsg::DivideByZero,
+                "#N/A" => RunErrorMsg::NotAvailable,
+                "#NAME?" => RunErrorMsg::Name,
+                "#NULL!" => RunErrorMsg::Null,
+                "#NUM!" => RunErrorMsg::Num,
+                "#REF!" => RunErrorMsg::BadCellReference,
+                "#VALUE!" => RunErrorMsg::Value,
+                other => RunErrorMsg::InternalError(format!("unknown error {other}").into()),
+            },
+            _ => p.expected(self)?,
+        };
+        Ok(AstNode {
+            span: p.span(),
+            inner: ast::AstNodeContents::Error(e),
+        })
+    }
+}

@@ -98,6 +98,13 @@ pub enum RunErrorMsg {
     NonLinearArray,
     ArrayTooBig,
 
+    // Excel errors not otherwise covered
+    NotAvailable,
+    Name,
+    Null,
+    Num,
+    Value,
+
     // Runtime errors
     CircularReference,
     Overflow,
@@ -239,33 +246,21 @@ impl fmt::Display for RunErrorMsg {
                 write!(f, "Array is too big")
             }
 
-            Self::CircularReference => {
-                write!(f, "Circular reference")
-            }
-            Self::Overflow => {
-                write!(f, "Numeric overflow")
-            }
-            Self::DivideByZero => {
-                write!(f, "Divide by zero")
-            }
-            Self::NegativeExponent => {
-                write!(f, "Negative exponent")
-            }
-            Self::IndexOutOfBounds => {
-                write!(f, "Index out of bounds")
-            }
-            Self::NoMatch => {
-                write!(f, "No match found")
-            }
-            Self::InvalidArgument => {
-                write!(f, "Invalid argument")
-            }
-            Self::NotANumber => {
-                write!(f, "Not a number")
-            }
-            Self::Infinity => {
-                write!(f, "Unexpected Infinity")
-            }
+            Self::NotAvailable => write!(f, "N/A"),
+            Self::Name => write!(f, "NAME error"),
+            Self::Null => write!(f, "NULL error"),
+            Self::Num => write!(f, "NUM error"),
+            Self::Value => write!(f, "VALUE error"),
+
+            Self::CircularReference => write!(f, "Circular reference"),
+            Self::Overflow => write!(f, "Numeric overflow"),
+            Self::DivideByZero => write!(f, "Divide by zero"),
+            Self::NegativeExponent => write!(f, "Negative exponent"),
+            Self::IndexOutOfBounds => write!(f, "Index out of bounds"),
+            Self::NoMatch => write!(f, "No match found"),
+            Self::InvalidArgument => write!(f, "Invalid argument"),
+            Self::NotANumber => write!(f, "Not a number"),
+            Self::Infinity => write!(f, "Unexpected Infinity"),
         }
     }
 }

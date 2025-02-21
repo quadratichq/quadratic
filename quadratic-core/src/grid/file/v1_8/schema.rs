@@ -1,26 +1,20 @@
 use crate::grid::file::v1_7_1;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use super::SheetFormattingSchema;
+use super::{RunErrorSchema, SheetFormattingSchema};
 
 pub type IdSchema = v1_7_1::IdSchema;
 pub type PosSchema = v1_7_1::PosSchema;
 pub type RectSchema = v1_7_1::RectSchema;
 pub type SheetRectSchema = v1_7_1::SheetRectSchema;
 pub type OffsetsSchema = v1_7_1::OffsetsSchema;
-pub type RunErrorSchema = v1_7_1::RunErrorSchema;
 pub type ValidationsSchema = v1_7_1::ValidationsSchema;
 pub type ResizeSchema = v1_7_1::ResizeSchema;
 pub type CodeRunResultSchema = v1_7_1::CodeRunResultSchema;
-pub type OutputValueSchema = v1_7_1::OutputValueSchema;
-pub type OutputArraySchema = v1_7_1::OutputArraySchema;
 pub type OutputSizeSchema = v1_7_1::OutputSizeSchema;
-pub type OutputValueValueSchema = v1_7_1::OutputValueValueSchema;
-pub type ColumnSchema = v1_7_1::ColumnSchema;
 pub type NumericFormatKindSchema = v1_7_1::NumericFormatKindSchema;
 pub type NumericFormatSchema = v1_7_1::NumericFormatSchema;
-pub type CellValueSchema = v1_7_1::CellValueSchema;
 pub type CodeCellLanguageSchema = v1_7_1::CodeCellLanguageSchema;
 pub type ConnectionKindSchema = v1_7_1::ConnectionKindSchema;
 pub type CodeCellSchema = v1_7_1::CodeCellSchema;
@@ -30,7 +24,6 @@ pub type CellWrapSchema = v1_7_1::CellWrapSchema;
 pub type CellBorderSchema = v1_7_1::CellBorderSchema;
 pub type ColumnRepeatSchema<T> = v1_7_1::ColumnRepeatSchema<T>;
 pub type RenderSizeSchema = v1_7_1::RenderSizeSchema;
-pub type RunErrorMsgSchema = v1_7_1::RunErrorMsgSchema;
 pub type BordersSchema = v1_7_1::BordersSchema;
 pub type BorderStyleCellSchema = v1_7_1::BorderStyleCellSchema;
 pub type BorderStyleTimestampSchema = v1_7_1::BorderStyleTimestampSchema;
@@ -63,13 +56,16 @@ pub type BlockSchema<T> = v1_7_1::BlockSchema<T>;
 pub type BordersSideSchema = v1_7_1::BordersSideSchema;
 pub type DataTablesSchema = Vec<(PosSchema, DataTableSchema)>;
 pub type RowsResizesSchema = Vec<(i64, ResizeSchema)>;
-pub type ColumnsSchema = Vec<(i64, ColumnSchema)>;
 pub type AxisSchema = v1_7_1::AxisSchema;
 pub type SpanSchema = v1_7_1::SpanSchema;
 pub type RowsResizeSchema = v1_7_1::RowsResizeSchema;
 pub type CellRefRangeSchema = v1_7_1::CellRefRangeSchema;
 pub type TableRefSchema = v1_7_1::TableRefSchema;
 pub type ColRangeSchema = v1_7_1::ColRangeSchema;
+
+pub type ColumnSchema = Vec<(i64, CellValueSchema)>;
+
+pub type ColumnsSchema = Vec<(i64, ColumnSchema)>;
 
 #[derive(Default, Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub struct GridSchema {
@@ -207,4 +203,56 @@ impl From<AxisSchema> for i8 {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ImportSchema {
     pub file_name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum OutputValueSchema {
+    Single(CellValueSchema),
+    Array(OutputArraySchema),
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct OutputArraySchema {
+    pub size: OutputSizeSchema,
+    pub values: Vec<CellValueSchema>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum CellValueSchema {
+    Blank,
+    Text(String),
+    Number(String),
+    Html(String),
+    Code(CodeCellSchema),
+    Logical(bool),
+    Instant(String),
+    Date(NaiveDate),
+    Time(NaiveTime),
+    DateTime(NaiveDateTime),
+    Duration(String),
+    Error(RunErrorSchema),
+    Image(String),
+    Import(ImportSchema),
+}
+impl From<v1_7_1::CellValueSchema> for CellValueSchema {
+    fn from(value: v1_7_1::CellValueSchema) -> Self {
+        match value {
+            v1_7_1::CellValueSchema::Blank => Self::Blank,
+            v1_7_1::CellValueSchema::Text(s) => Self::Text(s),
+            v1_7_1::CellValueSchema::Number(n) => Self::Number(n),
+            v1_7_1::CellValueSchema::Html(h) => Self::Html(h),
+            v1_7_1::CellValueSchema::Code(code_cell) => Self::Code(code_cell),
+            v1_7_1::CellValueSchema::Logical(l) => Self::Logical(l),
+            v1_7_1::CellValueSchema::Instant(i) => Self::Instant(i),
+            v1_7_1::CellValueSchema::Date(naive_date) => Self::Date(naive_date),
+            v1_7_1::CellValueSchema::Time(naive_time) => Self::Time(naive_time),
+            v1_7_1::CellValueSchema::DateTime(naive_date_time) => Self::DateTime(naive_date_time),
+            v1_7_1::CellValueSchema::Duration(d) => Self::Duration(d),
+            v1_7_1::CellValueSchema::Error(run_error_schema) => {
+                Self::Error(run_error_schema.into())
+            }
+            v1_7_1::CellValueSchema::Image(i) => Self::Image(i),
+            v1_7_1::CellValueSchema::Import(import_schema) => Self::Import(import_schema),
+        }
+    }
 }
