@@ -50,17 +50,19 @@ export const TableColumnHeaderRename = () => {
 
           const column = columns.find((c) => c.valueIndex === contextMenu.selectedColumn);
           if (column) {
+            const oldColumnName = column.name;
             column.name = value;
-          }
 
-          renameTableColumnHeader({
-            sheetId: pixiApp.cellsSheets.current?.sheetId,
-            x: contextMenu.table.x,
-            y: contextMenu.table.y,
-            columnName: value,
-            tableName: contextMenu.table.name,
-            columns,
-          });
+            renameTableColumnHeader({
+              sheetId: pixiApp.cellsSheets.current?.sheetId,
+              x: contextMenu.table.x,
+              y: contextMenu.table.y,
+              tableName: contextMenu.table.name,
+              oldColumnName,
+              newColumnName: value,
+              columns,
+            });
+          }
         }
       }
     },

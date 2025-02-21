@@ -143,6 +143,7 @@ interface EventTypes {
   codeEditorCodeCell: (codeCell?: CodeCell) => void;
 
   a1Context: (context: string) => void;
+  a1ContextUpdated: () => void;
 
   aiAnalystInitialized: () => void;
   pixiAppSettingsInitialized: () => void;

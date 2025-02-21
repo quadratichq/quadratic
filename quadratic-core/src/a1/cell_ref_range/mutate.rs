@@ -48,11 +48,11 @@ impl CellRefRange {
         }
     }
 
-    pub fn replace_column_name(&mut self, old_name: &str, new_name: &str) {
+    pub fn replace_column_name(&mut self, table_name: &str, old_name: &str, new_name: &str) {
         match self {
             Self::Sheet { .. } => {}
             Self::Table { range } => {
-                range.replace_column_name(old_name, new_name);
+                range.replace_column_name(table_name, old_name, new_name);
             }
         }
     }

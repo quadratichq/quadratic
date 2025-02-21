@@ -88,8 +88,8 @@ impl TableRef {
         }
     }
 
-    pub fn replace_column_name(&mut self, old_name: &str, new_name: &str) {
-        if old_name != new_name {
+    pub fn replace_column_name(&mut self, table_name: &str, old_name: &str, new_name: &str) {
+        if self.table_name == table_name && old_name != new_name {
             self.col_range.replace_column_name(old_name, new_name);
         }
     }

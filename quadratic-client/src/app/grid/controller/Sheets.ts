@@ -359,6 +359,18 @@ export class Sheets {
     const visibleRect = this.getVisibleRect();
     return rectToRectangle(visibleRect);
   };
+
+  updateTableName = (oldName: string, newName: string) => {
+    this.sheets.forEach((sheet) => {
+      sheet.cursor.updateTableName(oldName, newName);
+    });
+  };
+
+  updateColumnName = (tableName: string, oldName: string, newName: string) => {
+    this.sheets.forEach((sheet) => {
+      sheet.cursor.updateColumnName(tableName, oldName, newName);
+    });
+  };
 }
 
 export const sheets = new Sheets();

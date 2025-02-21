@@ -8,17 +8,33 @@ export function useRenameTableName() {
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
   const renameTable = useCallback(
-    ({ sheetId, x, y, name }: { sheetId: string; x: number; y: number; name: string }) => {
-      name = name.trim();
+    ({
+      sheetId,
+      x,
+      y,
+      oldName,
+      newName,
+    }: {
+      sheetId: string;
+      x: number;
+      y: number;
+      oldName: string | undefined;
+      newName: string;
+    }) => {
+      newName = newName.trim();
 
       try {
-        validateTableName(name, sheets.a1Context);
+        validateTableName(newName, sheets.a1Context);
       } catch (error) {
         addGlobalSnackbar(error as string, { severity: 'error' });
         return;
       }
 
-      quadraticCore.dataTableMeta(sheetId, x, y, { name }, sheets.getCursorPosition());
+      if (oldName !== undefined) {
+        sheets.updateTableName(oldName, newName);
+      }
+
+      quadraticCore.dataTableMeta(sheetId, x, y, { name: newName }, sheets.getCursorPosition());
     },
     [addGlobalSnackbar]
   );

@@ -145,6 +145,7 @@ impl CodeCellValue {
     /// Replaces column names in the code cell references.
     pub fn replace_column_name_in_cell_references(
         &mut self,
+        table_name: &str,
         old_name: &str,
         new_name: &str,
         default_sheet_id: &SheetId,
@@ -152,7 +153,7 @@ impl CodeCellValue {
     ) {
         if old_name != new_name && self.is_code_cell() {
             self.replace_q_cells_a1_selection(default_sheet_id, a1_context, |a1_selection| {
-                a1_selection.replace_column_name(old_name, new_name);
+                a1_selection.replace_column_name(table_name, old_name, new_name);
                 a1_selection.to_string(Some(*default_sheet_id), a1_context)
             });
         }
@@ -413,17 +414,35 @@ mod tests {
 
         // ColRange::Col
         let mut code = CodeCellValue::new_python("q.cells('test.csv[city]')".to_string());
-        code.replace_column_name_in_cell_references("city", "city_new", &sheet_id, &a1_context);
+        code.replace_column_name_in_cell_references(
+            "test.csv",
+            "city",
+            "city_new",
+            &sheet_id,
+            &a1_context,
+        );
         assert_eq!(code.code, r#"q.cells("test.csv[city_new]")"#);
 
         // ColRange::ColRange
         let mut code = CodeCellValue::new_python("q.cells('test.csv[[city]:[state]]')".to_string());
-        code.replace_column_name_in_cell_references("state", "state_new", &sheet_id, &a1_context);
+        code.replace_column_name_in_cell_references(
+            "test.csv",
+            "state",
+            "state_new",
+            &sheet_id,
+            &a1_context,
+        );
         assert_eq!(code.code, r#"q.cells("test.csv[[city]:[state_new]]")"#);
 
         // ColRange::ColToEnd
         let mut code = CodeCellValue::new_python("q.cells('test.csv[[city]:]')".to_string());
-        code.replace_column_name_in_cell_references("city", "city_new", &sheet_id, &a1_context);
+        code.replace_column_name_in_cell_references(
+            "test.csv",
+            "city",
+            "city_new",
+            &sheet_id,
+            &a1_context,
+        );
         assert_eq!(code.code, r#"q.cells("test.csv[[city_new]:]")"#);
     }
 }

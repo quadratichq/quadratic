@@ -156,13 +156,15 @@ impl Sheet {
     /// Replaces the column name in all code cells that reference the old name.
     pub fn replace_table_column_name_in_code_cells(
         &mut self,
+        table_name: &str,
         old_name: &str,
         new_name: &str,
         context: &A1Context,
     ) {
         self.replace_in_code_cells(context, |code_cell_value, a1_context, id| {
-            code_cell_value
-                .replace_column_name_in_cell_references(old_name, new_name, id, a1_context);
+            code_cell_value.replace_column_name_in_cell_references(
+                table_name, old_name, new_name, id, a1_context,
+            );
         });
     }
 }

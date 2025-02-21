@@ -675,8 +675,8 @@ impl GridController {
                         if old_column.name != new_column.name {
                             // validate column name
                             if let Err(e) = DataTable::validate_column_name(
-                                &new_column.name.to_string(),
                                 &old_name,
+                                &new_column.name.to_string(),
                                 &context,
                             ) {
                                 if cfg!(target_family = "wasm") || cfg!(test) {
@@ -691,6 +691,7 @@ impl GridController {
                             }
 
                             self.grid.replace_table_column_name_in_code_cells(
+                                &old_name,
                                 &old_column.name.to_string(),
                                 &new_column.name.to_string(),
                                 &context,

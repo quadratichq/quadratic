@@ -126,9 +126,9 @@ impl A1Selection {
         });
     }
 
-    pub fn replace_column_name(&mut self, old_name: &str, new_name: &str) {
+    pub fn replace_column_name(&mut self, table_name: &str, old_name: &str, new_name: &str) {
         self.ranges.iter_mut().for_each(|range| {
-            range.replace_column_name(old_name, new_name);
+            range.replace_column_name(table_name, old_name, new_name);
         });
     }
 }

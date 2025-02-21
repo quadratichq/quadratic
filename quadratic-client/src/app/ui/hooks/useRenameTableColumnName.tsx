@@ -12,24 +12,27 @@ export function useRenameTableColumnName() {
       sheetId,
       x,
       y,
-      columnName,
       tableName,
+      oldColumnName,
+      newColumnName,
       columns,
     }: {
       sheetId: string;
       x: number;
       y: number;
-      columnName: string;
       tableName: string;
+      oldColumnName: string;
+      newColumnName: string;
       columns: { name: string; display: boolean; valueIndex: number }[];
     }) => {
       try {
-        validateColumnName(columnName, tableName, sheets.a1Context);
+        validateColumnName(tableName, newColumnName, sheets.a1Context);
       } catch (error) {
         addGlobalSnackbar(error as string, { severity: 'error' });
         return;
       }
 
+      sheets.updateColumnName(tableName, oldColumnName, newColumnName);
       quadraticCore.dataTableMeta(sheetId, x, y, { columns }, sheets.getCursorPosition());
     },
     [addGlobalSnackbar]

@@ -41,7 +41,8 @@ export const TableRename = () => {
           sheetId: pixiApp.cellsSheets.current.sheetId,
           x: contextMenu.table.x,
           y: contextMenu.table.y,
-          name: value,
+          oldName: contextMenu.table.name,
+          newName: value,
         });
       }
     },

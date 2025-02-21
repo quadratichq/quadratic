@@ -97,10 +97,16 @@ export function CodeEditorHeaderLabel() {
   const handleBlur = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {
       if (e.target instanceof HTMLInputElement) {
-        const name = e.target.value.trim();
+        const newName = e.target.value.trim();
         setIsRenaming(false);
-        if (name !== tableName) {
-          renameTable({ sheetId: codeCellState.sheetId, x: codeCellState.pos.x, y: codeCellState.pos.y, name });
+        if (newName !== tableName) {
+          renameTable({
+            sheetId: codeCellState.sheetId,
+            x: codeCellState.pos.x,
+            y: codeCellState.pos.y,
+            oldName: tableName,
+            newName,
+          });
         }
       }
     },
@@ -112,9 +118,15 @@ export function CodeEditorHeaderLabel() {
       if (e.target instanceof HTMLInputElement) {
         if (e.key === 'Enter') {
           setIsRenaming(false);
-          const name = e.target.value.trim();
-          if (name !== tableName) {
-            renameTable({ sheetId: codeCellState.sheetId, x: codeCellState.pos.x, y: codeCellState.pos.y, name });
+          const newName = e.target.value.trim();
+          if (newName !== tableName) {
+            renameTable({
+              sheetId: codeCellState.sheetId,
+              x: codeCellState.pos.x,
+              y: codeCellState.pos.y,
+              oldName: tableName,
+              newName,
+            });
           }
         } else if (e.key === 'Escape') {
           setIsRenaming(false);

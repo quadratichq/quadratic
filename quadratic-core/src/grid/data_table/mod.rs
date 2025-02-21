@@ -122,12 +122,13 @@ impl Grid {
     /// Replaces the column name in all code cells that reference the old name in all sheets in the grid.
     pub fn replace_table_column_name_in_code_cells(
         &mut self,
+        table_name: &str,
         old_name: &str,
         new_name: &str,
         context: &A1Context,
     ) {
         for sheet in self.sheets.iter_mut() {
-            sheet.replace_table_column_name_in_code_cells(old_name, new_name, context);
+            sheet.replace_table_column_name_in_code_cells(table_name, old_name, new_name, context);
         }
     }
 }
@@ -325,8 +326,8 @@ impl DataTable {
     /// Column name cannot contain invalid characters
     /// Column name must be unique
     pub fn validate_column_name(
-        column_name: &str,
         table_name: &str,
+        column_name: &str,
         context: &A1Context,
     ) -> std::result::Result<bool, String> {
         // Check length limit
@@ -1140,7 +1141,7 @@ pub mod test {
 
         for name in valid_names {
             assert!(
-                DataTable::validate_column_name(name, table_name, &context).is_ok(),
+                DataTable::validate_column_name(table_name, name, &context).is_ok(),
                 "Expected '{}' to be valid",
                 name
             );
@@ -1191,7 +1192,7 @@ pub mod test {
         ];
 
         for (name, expected_error) in test_cases {
-            let result = DataTable::validate_column_name(name, table_name, &context);
+            let result = DataTable::validate_column_name(table_name, name, &context);
             assert!(
                 result.is_err(),
                 "Expected '{}' to be invalid, but it was valid",
@@ -1206,7 +1207,7 @@ pub mod test {
         }
 
         // Test duplicate column name
-        let result = DataTable::validate_column_name("existing_col", table_name, &context);
+        let result = DataTable::validate_column_name(table_name, "existing_col", &context);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Column name must be unique");
     }

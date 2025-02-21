@@ -57,4 +57,15 @@ impl JsSelection {
             &self.context,
         );
     }
+
+    #[wasm_bindgen(js_name = "updateTableName")]
+    pub fn update_table_name(&mut self, old_name: String, new_name: String) {
+        self.selection.replace_table_name(&old_name, &new_name);
+    }
+
+    #[wasm_bindgen(js_name = "updateColumnName")]
+    pub fn update_column_name(&mut self, table_name: String, old_name: String, new_name: String) {
+        self.selection
+            .replace_column_name(&table_name, &old_name, &new_name);
+    }
 }
