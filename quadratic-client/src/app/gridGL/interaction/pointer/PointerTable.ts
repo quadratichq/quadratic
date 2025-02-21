@@ -4,6 +4,8 @@ import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
 import { DOUBLE_CLICK_TIME } from '@/app/gridGL/interaction/pointer/pointerUtils';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -20,13 +22,12 @@ export class PointerTable {
   private doubleClickTimeout: number | undefined;
   private tableNameDown: { column: number; row: number; point: Point; table: JsRenderCodeCell } | undefined;
 
-  private pointerDownTableName = (
+  private pointerDownTableName = async (
     world: Point,
     tableDown: TablePointerDownResult,
     shiftKey: boolean,
     ctrlKey: boolean
   ) => {
-    sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, shiftKey, ctrlKey);
     if (this.doubleClickTimeout) {
       const table = tableDown.table;
       if (table.language === 'Import') {
@@ -55,6 +56,12 @@ export class PointerTable {
       window.clearTimeout(this.doubleClickTimeout);
       this.doubleClickTimeout = undefined;
     } else {
+      if (await inlineEditorHandler.handleCellPointerDown()) {
+        sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, shiftKey, ctrlKey);
+      } else {
+        inlineEditorMonaco.focus();
+      }
+
       this.doubleClickTimeout = window.setTimeout(() => {
         this.doubleClickTimeout = undefined;
       }, DOUBLE_CLICK_TIME);
@@ -78,7 +85,7 @@ export class PointerTable {
     });
   };
 
-  private pointerDownColumnName = (
+  private pointerDownColumnName = async (
     world: Point,
     tableDown: TablePointerDownResult,
     shiftKey: boolean,
@@ -99,8 +106,12 @@ export class PointerTable {
       });
     } else {
       // move cursor to column header
-      const columnName = tableDown.table.columns[tableDown.column].name;
-      sheets.sheet.cursor.selectTable(tableDown.table.name, columnName, shiftKey, ctrlKey);
+      if (await inlineEditorHandler.handleCellPointerDown()) {
+        const columnName = tableDown.table.columns[tableDown.column].name;
+        sheets.sheet.cursor.selectTable(tableDown.table.name, columnName, shiftKey, ctrlKey);
+      } else {
+        inlineEditorMonaco.focus();
+      }
 
       if (!tableDown.table.language || tableDown.table.language === 'Import') {
         this.doubleClickTimeout = window.setTimeout(() => {
