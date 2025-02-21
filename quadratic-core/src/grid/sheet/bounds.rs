@@ -410,6 +410,7 @@ impl Sheet {
     /// finds the nearest column that can be used to place a rect
     /// if reverse is true it searches to the left of the start
     ///
+    /// todo: return None instead of negatives
     pub fn find_next_column_for_rect(
         &self,
         column_start: i64,
@@ -453,6 +454,7 @@ impl Sheet {
     /// finds the nearest column that can be used to place a rect
     /// if reverse is true it searches to the left of the start
     ///
+    /// todo: return None instead of negatives
     pub fn find_next_row_for_rect(
         &self,
         row_start: i64,

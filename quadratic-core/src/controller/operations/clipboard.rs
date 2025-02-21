@@ -407,13 +407,13 @@ impl GridController {
             validations
                 .validations
                 .into_iter()
-                .map(|mut validation| {
+                .filter_map(|mut validation| {
                     validation.id = Uuid::new_v4();
                     validation.selection.sheet_id = start_pos.sheet_id;
-                    validation
+                    validation.selection = validation
                         .selection
-                        .translate_in_place(start_pos.x - 1, start_pos.y - 1);
-                    Operation::SetValidation { validation }
+                        .saturating_translate(start_pos.x - 1, start_pos.y - 1)?;
+                    Some(Operation::SetValidation { validation })
                 })
                 .collect()
         } else {
@@ -453,7 +453,7 @@ impl GridController {
 
         let mut cursor = clipboard
             .selection
-            .translate(cursor_translate_x, cursor_translate_y);
+            .translate(cursor_translate_x, cursor_translate_y)?;
         cursor.sheet_id = selection.sheet_id;
 
         match special {

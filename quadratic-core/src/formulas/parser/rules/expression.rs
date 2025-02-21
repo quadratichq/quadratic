@@ -417,8 +417,10 @@ impl SyntaxRule for CellReferenceExpression {
         CellReference.prefix_matches(p)
     }
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
-        Ok(p.parse(CellReference)?
-            .map(|(sheet_id, range)| ast::AstNodeContents::CellRef(sheet_id, range)))
+        Ok(p.parse(CellReference)?.map(|result| match result {
+            Ok((sheet_id, range)) => ast::AstNodeContents::CellRef(sheet_id, range),
+            Err(e) => ast::AstNodeContents::Error(e.into()),
+        }))
     }
 }
 

@@ -6,7 +6,7 @@ use ts_rs::TS;
 use wasm_bindgen::prelude::*;
 
 use super::{A1Error, CellRefCoord, UNBOUNDED};
-use crate::{a1::column_name, Pos};
+use crate::{a1::column_name, Pos, RefError};
 
 /// The maximum value for a column or row number.
 const OUT_OF_BOUNDS: i64 = 1_000_000_000;
@@ -53,15 +53,31 @@ impl CellRefRangeEnd {
         Self::new_relative_xy(UNBOUNDED, y)
     }
 
-    pub fn translate_in_place(&mut self, delta_x: i64, delta_y: i64) {
-        self.col.translate_in_place(delta_x);
-        self.row.translate_in_place(delta_y);
+    pub fn translate_in_place(&mut self, delta_x: i64, delta_y: i64) -> Result<(), RefError> {
+        self.col.translate_in_place(delta_x)?;
+        self.row.translate_in_place(delta_y)?;
+        Ok(())
     }
 
-    pub fn translate(self, delta_x: i64, delta_y: i64) -> Self {
+    pub fn translate(self, delta_x: i64, delta_y: i64) -> Result<Self, RefError> {
+        Ok(CellRefRangeEnd {
+            col: self.col.translate(delta_x)?,
+            row: self.row.translate(delta_y)?,
+        })
+    }
+
+    pub fn saturating_translate(self, delta_x: i64, delta_y: i64) -> Self {
         CellRefRangeEnd {
-            col: self.col.translate(delta_x),
-            row: self.row.translate(delta_y),
+            col: self.col.saturating_translate(delta_x),
+            row: self.row.saturating_translate(delta_y),
+        }
+    }
+
+    // TODO: remove this function when switching to u64
+    pub fn translate_unchecked(self, delta_x: i64, delta_y: i64) -> Self {
+        CellRefRangeEnd {
+            col: self.col.translate_unchecked(delta_x),
+            row: self.row.translate_unchecked(delta_y),
         }
     }
 
@@ -212,12 +228,12 @@ impl CellRefRangeEnd {
         let col_is_absolute = absolute_col.is_some();
 
         let row = match relative_row {
-            Some(delta) => Some(delta?.saturating_add(base_pos.y)),
+            Some(delta) => Some(crate::util::offset_cell_coord(base_pos.y, delta?)?),
             None => absolute_row.transpose()?,
         };
 
         let col = match relative_col {
-            Some(delta) => Some(delta?.saturating_add(base_pos.x)),
+            Some(delta) => Some(crate::util::offset_cell_coord(base_pos.x, delta?)?),
             None => absolute_col.transpose()?,
         };
 
@@ -271,21 +287,21 @@ impl CellRefRangeEnd {
         delta: i64,
     ) {
         if let Some(column) = column {
-            if !self.col.is_unbounded() && self.col() >= column {
-                self.col.coord = self.col.coord.saturating_add(delta).max(1);
+            if self.col() >= column {
+                self.col = self.col.saturating_translate(delta);
             }
         }
         if let Some(row) = row {
-            if !self.row.is_unbounded() && self.row() >= row {
-                self.row.coord = self.row.coord.saturating_add(delta).max(1);
+            if self.row() >= row {
+                self.row = self.row.saturating_translate(delta);
             }
         }
     }
 
-    pub fn adjust_column_row(&self, column: Option<i64>, row: Option<i64>, delta: i64) -> Self {
-        let mut range = *self;
-        range.adjust_column_row_in_place(column, row, delta);
-        range
+    #[must_use]
+    pub fn adjust_column_row(mut self, column: Option<i64>, row: Option<i64>, delta: i64) -> Self {
+        self.adjust_column_row_in_place(column, row, delta);
+        self
     }
 
     /// Returns whether the range end is missing a row or column number.
@@ -490,11 +506,11 @@ mod tests {
     #[test]
     fn test_translate_in_place() {
         let mut ref_end = CellRefRangeEnd::new_relative_xy(1, 1);
-        ref_end.translate_in_place(1, 2);
+        ref_end.translate_in_place(1, 2).unwrap();
         assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(2, 3));
 
         let mut ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
-        ref_end.translate_in_place(-1, -1);
+        ref_end.translate_in_place(-1, -1).unwrap();
         assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(1, 2));
     }
 
@@ -503,12 +519,12 @@ mod tests {
         let ref_end = CellRefRangeEnd::new_relative_xy(1, 1);
         assert_eq!(
             ref_end.translate(1, 2),
-            CellRefRangeEnd::new_relative_xy(2, 3)
+            Ok(CellRefRangeEnd::new_relative_xy(2, 3))
         );
         let ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
         assert_eq!(
             ref_end.translate(-1, -1),
-            CellRefRangeEnd::new_relative_xy(1, 2)
+            Ok(CellRefRangeEnd::new_relative_xy(1, 2))
         );
     }
 

@@ -6,6 +6,9 @@ use itertools::Itertools;
 use lazy_static::lazy_static;
 use regex::Regex;
 
+use crate::a1::UNBOUNDED;
+use crate::RefError;
+
 lazy_static! {
     pub static ref MATCH_NUMBERS: Regex = Regex::new(r"\d+$").expect("regex should compile");
 }
@@ -222,6 +225,17 @@ pub fn maybe_reverse<I: DoubleEndedIterator>(
         itertools::Either::Left(iter)
     } else {
         itertools::Either::Right(iter.rev())
+    }
+}
+
+pub fn offset_cell_coord(initial: i64, delta: i64) -> Result<i64, RefError> {
+    if initial == UNBOUNDED {
+        Ok(UNBOUNDED)
+    } else {
+        match initial.saturating_add(delta) {
+            ..=0 => Err(RefError),
+            other => Ok(other),
+        }
     }
 }
 

@@ -23,16 +23,18 @@ impl GridController {
                 &code_cell.code,
                 parse_ctx,
                 code_cell_pos,
-                |sheet_id, cell_ref| CellRefRangeEnd {
-                    col: if sheet_id == code_cell_pos.sheet_id
-                        && cell_ref.col.coord >= column
-                        && cell_ref.col.coord < UNBOUNDED
-                    {
-                        cell_ref.col + delta
-                    } else {
-                        cell_ref.col
-                    },
-                    row: cell_ref.row,
+                |sheet_id, cell_ref| {
+                    Ok(CellRefRangeEnd {
+                        col: if sheet_id == code_cell_pos.sheet_id
+                            && cell_ref.col.coord >= column
+                            && cell_ref.col.coord < UNBOUNDED
+                        {
+                            cell_ref.col.translate(delta)?
+                        } else {
+                            cell_ref.col
+                        },
+                        row: cell_ref.row,
+                    })
                 },
             )
         } else if let Some(row) = row {
@@ -40,16 +42,18 @@ impl GridController {
                 &code_cell.code,
                 parse_ctx,
                 code_cell_pos,
-                |sheet_id, cell_ref| CellRefRangeEnd {
-                    col: cell_ref.col,
-                    row: if sheet_id == code_cell_pos.sheet_id
-                        && cell_ref.row.coord >= row
-                        && cell_ref.row.coord < UNBOUNDED
-                    {
-                        cell_ref.row + delta
-                    } else {
-                        cell_ref.row
-                    },
+                |sheet_id, cell_ref| {
+                    Ok(CellRefRangeEnd {
+                        col: cell_ref.col,
+                        row: if sheet_id == code_cell_pos.sheet_id
+                            && cell_ref.row.coord >= row
+                            && cell_ref.row.coord < UNBOUNDED
+                        {
+                            cell_ref.row.translate(delta)?
+                        } else {
+                            cell_ref.row
+                        },
+                    })
                 },
             )
         } else {
