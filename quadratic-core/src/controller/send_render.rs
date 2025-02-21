@@ -438,8 +438,6 @@ impl GridController {
                     w: 0,
                     h: 0,
                     html: None,
-                    pixel_width: None,
-                    pixel_height: None,
                     name: "".to_string(),
                     show_name: true,
                 });
@@ -625,8 +623,8 @@ mod test {
                 y: 1,
                 sheet_id,
             },
-            1.0,
-            2.0,
+            1,
+            2,
             None,
         );
 
@@ -637,10 +635,8 @@ mod test {
                 x: 1,
                 y: 1,
                 w: 1,
-                h: 2,
+                h: 3,
                 html: Some("<html></html>".to_string()),
-                pixel_width: Some(1.0),
-                pixel_height: Some(2.0),
                 show_name: true,
                 name: "Python1".to_string(),
             })

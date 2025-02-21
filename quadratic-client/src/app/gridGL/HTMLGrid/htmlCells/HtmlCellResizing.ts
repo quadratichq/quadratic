@@ -20,27 +20,20 @@ export class HtmlCellResizing {
   private originalWidth: number;
   private originalHeight: number;
 
-  // adjustment for pointer down position
-  private startX: number;
-  private startY: number;
+  private endX: number;
+  private endY: number;
 
-  constructor(
-    htmlCell: HtmlCell,
-    state: 'right' | 'bottom' | 'corner',
-    width: number,
-    height: number,
-    offsetX: number,
-    offsetY: number
-  ) {
+  constructor(htmlCell: HtmlCell, state: 'right' | 'bottom' | 'corner', width: number, height: number) {
     this.htmlCell = htmlCell;
 
     this.screenPos = sheets.sheet.getCellOffsets(this.htmlCell.x, this.htmlCell.y);
     this.state = state;
 
-    this.startX = offsetX;
-    this.startY = offsetY;
     this.originalWidth = this.width = width;
     this.originalHeight = this.height = height;
+
+    this.endX = htmlCell.htmlCell.x + htmlCell.htmlCell.w;
+    this.endY = htmlCell.htmlCell.y + htmlCell.htmlCell.h - 1;
   }
 
   pointerMove(world: Point) {
@@ -67,6 +60,7 @@ export class HtmlCellResizing {
     const placement = sheets.sheet.offsets.getXPlacement(x);
     this.width = placement.position + placement.size - this.screenPos.left;
     this.htmlCell.setWidth(this.width);
+    this.endX = placement.index + 1;
   }
 
   private changeHeight(y: number) {
@@ -74,16 +68,16 @@ export class HtmlCellResizing {
     const placement = sheets.sheet.offsets.getYPlacement(y);
     this.height = placement.position + placement.size - this.screenPos.top - top;
     this.htmlCell.setHeight(this.height);
+    this.endY = placement.index;
   }
 
   completeResizing() {
-    const topHeight = sheets.sheet.offsets.getRowHeight(this.htmlCell.y);
-    quadraticCore.setCellRenderResize(
+    quadraticCore.setChartSize(
       sheets.current,
       this.htmlCell.x,
       this.htmlCell.y,
-      this.width - 1,
-      this.height - topHeight
+      this.endX - this.htmlCell.x,
+      this.endY - this.htmlCell.y
     );
   }
 

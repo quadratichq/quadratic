@@ -917,7 +917,7 @@ class QuadraticCore {
 
   //#region Misc.
 
-  setCellRenderResize(sheetId: string, x: number, y: number, width: number, height: number) {
+  setChartSize(sheetId: string, x: number, y: number, width: number, height: number) {
     this.send({
       type: 'clientCoreSetCellRenderResize',
       sheetId,

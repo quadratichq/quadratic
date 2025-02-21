@@ -1,6 +1,9 @@
 //! Mutation methods that insert or delete columns and rows from a selection.
 
-use crate::a1::{A1Context, CellRefRange, RefRangeBounds, TableRef};
+use crate::{
+    a1::{A1Context, CellRefRange, RefRangeBounds, TableRef},
+    RefError,
+};
 
 use super::A1Selection;
 
@@ -82,17 +85,31 @@ impl A1Selection {
         changed
     }
 
-    pub fn translate_in_place(&mut self, x: i64, y: i64) {
+    pub fn translate_in_place(&mut self, x: i64, y: i64) -> Result<(), RefError> {
         self.cursor.translate_in_place(x, y, 1, 1);
-        self.ranges.iter_mut().for_each(|range| {
-            range.translate_in_place(x, y);
-        });
+        for range in &mut self.ranges {
+            range.translate_in_place(x, y)?;
+        }
+        Ok(())
     }
 
-    pub fn translate(&self, x: i64, y: i64) -> Self {
+    pub fn translate(&self, x: i64, y: i64) -> Result<Self, RefError> {
         let mut selection = self.clone();
-        selection.translate_in_place(x, y);
-        selection
+        selection.translate_in_place(x, y)?;
+        Ok(selection)
+    }
+
+    pub fn saturating_translate(&self, x: i64, y: i64) -> Option<Self> {
+        Some(Self {
+            sheet_id: self.sheet_id,
+            cursor: self.cursor.translate(x, y, 1, 1),
+            ranges: self
+                .ranges
+                .iter()
+                .filter_map(|range| range.saturating_translate(x, y))
+                .collect(),
+        })
+        .filter(|sel| !sel.ranges.is_empty())
     }
 
     pub fn adjust_column_row_in_place(
@@ -102,9 +119,9 @@ impl A1Selection {
         delta: i64,
     ) {
         self.cursor.adjust_column_row_in_place(column, row, delta);
-        self.ranges.iter_mut().for_each(|range| {
+        for range in &mut self.ranges {
             range.adjust_column_row_in_place(column, row, delta);
-        });
+        }
     }
 
     /// Returns (vector of TableRef, vector of CellRefRange) contained within the selection.
@@ -411,71 +428,69 @@ mod tests {
     fn test_translate_in_place() {
         // Test positive translation
         let mut selection = A1Selection::test_a1("A1:B2");
-        selection.translate_in_place(1, 1);
+        selection.translate_in_place(1, 1).unwrap();
         assert_eq!(selection, A1Selection::test_a1("B2:C3"));
 
         // Test negative translation
         let mut selection = A1Selection::test_a1("C3:D4");
-        selection.translate_in_place(-1, -1);
+        selection.translate_in_place(-1, -1).unwrap();
         assert_eq!(selection, A1Selection::test_a1("B2:C3"));
 
         // Test zero translation
         let mut selection = A1Selection::test_a1("A1:B2");
-        selection.translate_in_place(0, 0);
+        selection.translate_in_place(0, 0).unwrap();
         assert_eq!(selection, A1Selection::test_a1("A1:B2"));
 
         // Test x-only translation
         let mut selection = A1Selection::test_a1("A1:B2");
-        selection.translate_in_place(2, 0);
+        selection.translate_in_place(2, 0).unwrap();
         assert_eq!(selection, A1Selection::test_a1("C1:D2"));
 
         // Test y-only translation
         let mut selection = A1Selection::test_a1("A1:B2");
-        selection.translate_in_place(0, 2);
+        selection.translate_in_place(0, 2).unwrap();
         assert_eq!(selection, A1Selection::test_a1("A3:B4"));
 
         // Test single cell selection
         let mut selection = A1Selection::test_a1("A1");
-        selection.translate_in_place(1, 1);
+        selection.translate_in_place(1, 1).unwrap();
         assert_eq!(selection, A1Selection::test_a1("B2"));
 
         // Test negative translation capping
         let mut selection = A1Selection::test_a1("A1");
-        selection.translate_in_place(-10, -10);
-        assert_eq!(selection, A1Selection::test_a1("A1"));
+        let r = selection.translate_in_place(-10, -10);
+        r.unwrap_err();
     }
 
     #[test]
     fn test_translate() {
         // Test positive translation
         let selection = A1Selection::test_a1("A1:B2");
-        let translated = selection.translate(1, 1);
+        let translated = selection.translate(1, 1).unwrap();
         assert_eq!(translated, A1Selection::test_a1("B2:C3"));
         assert_eq!(selection, A1Selection::test_a1("A1:B2"));
 
         // Test negative translation
         let selection = A1Selection::test_a1("C3:D4");
-        let translated = selection.translate(-1, -1);
+        let translated = selection.translate(-1, -1).unwrap();
         assert_eq!(translated, A1Selection::test_a1("B2:C3"));
         assert_eq!(selection, A1Selection::test_a1("C3:D4"));
 
         // Test zero translation
         let selection = A1Selection::test_a1("A1:B2");
-        let translated = selection.translate(0, 0);
+        let translated = selection.translate(0, 0).unwrap();
         assert_eq!(translated, A1Selection::test_a1("A1:B2"));
         assert_eq!(selection, A1Selection::test_a1("A1:B2"));
 
         // Test single cell selection
         let selection = A1Selection::test_a1("A1");
-        let translated = selection.translate(1, 1);
+        let translated = selection.translate(1, 1).unwrap();
         assert_eq!(translated, A1Selection::test_a1("B2"));
         assert_eq!(selection, A1Selection::test_a1("A1"));
 
         // Test negative translation capping
         let selection = A1Selection::test_a1("A1");
-        let translated = selection.translate(-10, -10);
-        assert_eq!(translated, A1Selection::test_a1("A1"));
-        assert_eq!(selection, A1Selection::test_a1("A1"));
+        selection.translate(-10, -10).unwrap_err();
     }
 
     #[test]

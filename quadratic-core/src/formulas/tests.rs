@@ -320,9 +320,11 @@ fn test_find_cell_references() {
 
     let a = CellRefCoord::new_abs;
     let r = CellRefCoord::new_rel;
-    let new_ref = |sheet_id, x1, y1, x2, y2| SheetCellRefRange {
-        sheet_id,
-        cells: CellRefRange::new_sheet_ref(x1, y1, x2, y2),
+    let new_ref = |sheet_id, x1, y1, x2, y2| {
+        Ok(SheetCellRefRange {
+            sheet_id,
+            cells: CellRefRange::new_sheet_ref(x1, y1, x2, y2),
+        })
     };
 
     // Another test checks that `parse_a1()` is correct.

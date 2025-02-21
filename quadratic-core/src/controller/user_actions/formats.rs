@@ -30,8 +30,13 @@ impl GridController {
         let add_table_ops = |range: RefRangeBounds,
                              table: &TableMapEntry,
                              ops: &mut Vec<Operation>| {
-            // pos relative to table pos (top left pos), 1-based for formatting
-            let mut range = range.translate(
+            // pos relative to table pos (top left pos), 1-based for formatting.
+            // ensure coordinates are within bounds later.
+            //
+            // TODO: don't have any negative numbers here, even temporarily,
+            // because that'll break if we switch to `u64`. Just directly
+            // compute the coordinates we actually want.
+            let mut range = range.translate_unchecked(
                 -table.bounds.min.x + 1,
                 -table.bounds.min.y + 1 - table.y_adjustment(true),
             );
@@ -52,13 +57,21 @@ impl GridController {
 
             let mut ranges = vec![CellRefRange::Sheet { range }];
 
+            // Force the range to be within bounds.
+            // TODO: this should not be necessary
+            if range.saturating_translate(0, 0).is_none() {
+                return;
+            };
+
             if let Some(rect) = range.to_rect() {
                 let Some(sheet) = self.try_sheet(table.sheet_id) else {
+                    eprintln!("invalid sheet ID");
                     return;
                 };
 
                 let data_table_pos = table.bounds.min;
                 let Some(data_table) = sheet.data_table(data_table_pos) else {
+                    eprintln!("invalid data table ID");
                     return;
                 };
 

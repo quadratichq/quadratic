@@ -8,7 +8,7 @@ use ts_rs::TS;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{ArraySize, Axis, Span, Spanned, Value};
+use crate::{a1::A1Error, ArraySize, Axis, Span, Spanned, Value};
 
 /// Result of a [`crate::RunError`].
 pub type CodeResult<T = Spanned<Value>> = Result<T, RunError>;
@@ -343,3 +343,23 @@ macro_rules! internal_error {
         return Err(internal_error_value!($( $args ),+))
     };
 }
+
+/// Cell reference out-of-bounds error, similar to Excel.
+#[derive(Serialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, TS)]
+pub struct RefError;
+impl From<RefError> for RunErrorMsg {
+    fn from(RefError: RefError) -> Self {
+        RunErrorMsg::BadCellReference
+    }
+}
+impl From<RefError> for A1Error {
+    fn from(value: RefError) -> Self {
+        A1Error::OutOfBounds(value)
+    }
+}
+impl fmt::Display for RefError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "#REF!")
+    }
+}
+impl std::error::Error for RefError {}

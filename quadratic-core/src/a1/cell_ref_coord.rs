@@ -1,11 +1,10 @@
-use std::{
-    fmt,
-    ops::{Add, RangeInclusive},
-};
+use std::{fmt, ops::RangeInclusive};
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use wasm_bindgen::prelude::*;
+
+use crate::RefError;
 
 /// Unbounded coordinate on lower or upper end.
 pub const UNBOUNDED: i64 = i64::MAX;
@@ -118,29 +117,35 @@ impl CellRefCoord {
         Self { coord, is_absolute }
     }
 
-    pub fn translate_in_place(&mut self, delta: i64) {
+    pub fn translate_in_place(&mut self, delta: i64) -> Result<(), RefError> {
         if !self.is_absolute && !self.is_unbounded() {
-            self.coord = self.coord.saturating_add(delta).max(1);
+            self.coord = crate::util::offset_cell_coord(self.coord, delta)?;
         }
+        Ok(())
     }
 
-    pub fn translate(&self, delta: i64) -> Self {
-        let mut coord = *self;
-        coord.translate_in_place(delta);
-        coord
+    pub fn translate(mut self, delta: i64) -> Result<Self, RefError> {
+        self.translate_in_place(delta)?;
+        Ok(self)
+    }
+
+    pub fn saturating_translate(self, delta: i64) -> Self {
+        self.translate(delta).unwrap_or(Self {
+            coord: 1,
+            is_absolute: self.is_absolute,
+        })
+    }
+
+    // TODO: remove this function when switching to u64
+    pub fn translate_unchecked(mut self, delta: i64) -> Self {
+        if !self.is_absolute && !self.is_unbounded() {
+            self.coord = self.coord.saturating_add(delta);
+        }
+        self
     }
 
     pub fn is_unbounded(&self) -> bool {
         self.coord == UNBOUNDED
-    }
-}
-
-impl Add<i64> for CellRefCoord {
-    type Output = Self;
-
-    fn add(self, rhs: i64) -> Self::Output {
-        let coord = self.coord + rhs;
-        Self { coord, ..self }
     }
 }
 
@@ -163,26 +168,33 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_translate_in_place() {
-        let mut coord = CellRefCoord::new_rel(1);
-        coord.translate_in_place(-1);
-        assert_eq!(coord, CellRefCoord::new_rel(1));
-
-        let mut coord = CellRefCoord::new_rel(1);
-        coord.translate_in_place(1);
-        assert_eq!(coord, CellRefCoord::new_rel(2));
-    }
-
-    #[test]
     fn test_translate() {
-        assert_eq!(
-            CellRefCoord::new_rel(1).translate(-1),
-            CellRefCoord::new_rel(1)
-        );
-        assert_eq!(
-            CellRefCoord::new_rel(1).translate(1),
-            CellRefCoord::new_rel(2)
-        );
+        for (init, delta, expected) in [
+            (1, 0, Ok(1)),
+            (10, 0, Ok(10)),
+            (UNBOUNDED, 0, Ok(UNBOUNDED)),
+            (1, 1, Ok(2)),
+            (10, 1, Ok(11)),
+            (UNBOUNDED, 1, Ok(UNBOUNDED)),
+            (1, 3, Ok(4)),
+            (10, 3, Ok(13)),
+            (UNBOUNDED, 3, Ok(UNBOUNDED)),
+            (1, -1, Err(RefError)),
+            (10, -1, Ok(9)),
+            (UNBOUNDED, -1, Ok(UNBOUNDED)),
+            (1, -999, Err(RefError)),
+            (10, -999, Err(RefError)),
+            (UNBOUNDED, -999, Ok(UNBOUNDED)),
+        ] {
+            assert_eq!(
+                Ok(CellRefCoord::new_abs(init)),
+                CellRefCoord::new_abs(init).translate(delta),
+            );
+            assert_eq!(
+                expected.map(CellRefCoord::new_rel),
+                CellRefCoord::new_rel(init).translate(delta),
+            );
+        }
     }
 
     #[test]
