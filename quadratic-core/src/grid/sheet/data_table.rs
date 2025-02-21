@@ -1,12 +1,16 @@
 use super::Sheet;
 use crate::{
-    a1::A1Context,
+    a1::{A1Context, A1Selection},
+    cell_values::CellValues,
     grid::{data_table::DataTable, CodeCellValue, SheetId},
-    Pos,
+    Pos, Rect,
 };
 
 use anyhow::{anyhow, bail, Result};
-use indexmap::map::{Entry, OccupiedEntry};
+use indexmap::{
+    map::{Entry, OccupiedEntry},
+    IndexMap,
+};
 
 impl Sheet {
     /// Sets or deletes a data table.
@@ -166,6 +170,67 @@ impl Sheet {
                 table_name, old_name, new_name, id, a1_context,
             );
         });
+    }
+
+    pub fn data_tables_and_cell_values_in_rect(
+        &self,
+        rect: &Rect,
+        cells: &mut CellValues,
+        values: &mut CellValues,
+        context: &A1Context,
+        selection: &A1Selection,
+    ) -> IndexMap<Pos, DataTable> {
+        let mut data_tables = IndexMap::new();
+
+        self.iter_code_output_in_rect(rect.to_owned())
+            .for_each(|(output_rect, data_table)| {
+                // only change the cells if the CellValue::Code is not in the selection box
+                let data_table_pos = Pos {
+                    x: output_rect.min.x,
+                    y: output_rect.min.y,
+                };
+
+                // add the CellValue to cells if the code is not included in the clipboard
+                let include_in_cells = !rect.contains(data_table_pos);
+
+                // if the source cell is included in the clipboard, add the data_table to the clipboard
+                if !include_in_cells {
+                    data_tables.insert(data_table_pos, data_table.clone());
+                }
+
+                if data_table.spill_error {
+                    return;
+                }
+
+                let x_start = std::cmp::max(output_rect.min.x, rect.min.x);
+                let y_start = std::cmp::max(output_rect.min.y, rect.min.y);
+                let x_end = std::cmp::min(output_rect.max.x, rect.max.x);
+                let y_end = std::cmp::min(output_rect.max.y, rect.max.y);
+
+                // add the code_run output to clipboard.values
+                for y in y_start..=y_end {
+                    for x in x_start..=x_end {
+                        if let Some(value) = data_table.cell_value_at(
+                            (x - data_table_pos.x) as u32,
+                            (y - data_table_pos.y) as u32,
+                        ) {
+                            let pos = Pos {
+                                x: x - rect.min.x,
+                                y: y - rect.min.y,
+                            };
+                            if selection.might_contain_pos(Pos { x, y }, &context) {
+                                if include_in_cells {
+                                    cells.set(pos.x as u32, pos.y as u32, value.clone());
+                                }
+
+                                values.set(pos.x as u32, pos.y as u32, value);
+                            }
+                        }
+                    }
+                }
+            });
+
+        data_tables
     }
 }
 

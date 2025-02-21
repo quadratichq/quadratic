@@ -639,13 +639,32 @@ impl GridController {
             negative,
         });
 
-        // gather ComputeCode operations for any code cells
+        let mut values = CellValues::from_flat_array(
+            final_range.width(),
+            final_range.height(),
+            series.iter().map(|(v, _)| v.to_owned()).collect(),
+        );
+
+        let mut cells = CellValues::default();
         let context = self.a1_context();
+        let selection =
+            A1Selection::from_rect(SheetRect::new_from_rect(final_range.to_owned(), sheet_id));
+
+        let data_tables_in_rect = sheet.data_tables_and_cell_values_in_rect(
+            initial_range,
+            &mut cells,
+            &mut values,
+            &context,
+            &selection,
+        );
+
+        // gather ComputeCode operations for any code cells
         let compute_code_ops = final_range
             .iter()
             .enumerate()
             .filter_map(|(i, Pos { x, y })| {
                 if let Some((CellValue::Code(code_cell), original_pos)) = series.get_mut(i) {
+                    let mut data_table_ops = vec![];
                     if let Some(original_pos) = original_pos {
                         code_cell.translate_cell_references(
                             x - original_pos.x,
@@ -653,22 +672,38 @@ impl GridController {
                             &sheet_id,
                             context,
                         );
+
+                        let source_pos = original_pos.to_owned();
                         original_pos.x = x;
                         original_pos.y = y;
+
+                        // collecte SetDataTable operations for any data tables in the source_pos
+                        if let Some(data_table) = data_tables_in_rect.get(&source_pos) {
+                            let mut data_table = data_table.to_owned();
+                            let old_name = data_table.name.to_display();
+                            let new_name =
+                                self.grid().unique_data_table_name(&old_name, false, None);
+                            data_table.name = new_name.into();
+
+                            data_table_ops.push(Operation::SetDataTable {
+                                sheet_pos: original_pos.to_sheet_pos(sheet_id),
+                                data_table: Some(data_table),
+                                index: 0,
+                            });
+                        }
                     }
+
                     let sheet_pos = SheetPos::new(sheet_id, x, y);
-                    Some(Operation::ComputeCode { sheet_pos })
+                    data_table_ops.push(Operation::ComputeCode { sheet_pos });
+
+                    Some(data_table_ops)
                 } else {
                     None
                 }
             })
+            .flatten()
             .collect::<Vec<Operation>>();
 
-        let values = CellValues::from_flat_array(
-            final_range.width(),
-            final_range.height(),
-            series.iter().map(|(v, _)| v.to_owned()).collect(),
-        );
         let sheet_pos = final_range.min.to_sheet_pos(sheet_id);
         let mut ops = vec![Operation::SetCellValues { sheet_pos, values }];
 
