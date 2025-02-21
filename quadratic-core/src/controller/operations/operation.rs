@@ -40,10 +40,6 @@ pub enum Operation {
         sheet_pos: SheetPos,
         values: CellValues,
     },
-
-    /// **Deprecated** Nov 2024 in favor of `SetCodeRunVersion`.
-    ///
-    /// This works for < v1.7.
     SetDataTable {
         sheet_pos: SheetPos,
         data_table: Option<DataTable>,

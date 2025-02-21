@@ -19,9 +19,7 @@ export class CellsImage extends Container {
 
   pos: { x: number; y: number };
 
-  // original size of the image in pixels
-  originalWidth?: number;
-  originalHeight?: number;
+  private aspectRatio?: number;
 
   // corners of the image for pointer interactions
   viewRight: Rectangle;
@@ -82,22 +80,20 @@ export class CellsImage extends Container {
   }
 
   fitImage(width = this.table.tableBounds.width, height = this.table.tableBounds.height) {
-    if (this.originalWidth === undefined || this.originalHeight === undefined) {
+    if (this.aspectRatio === undefined) {
       return;
     }
-    const aspectRatio = this.originalWidth / this.originalHeight;
     const headerHeight = this.sheet.offsets.getRowHeight(this.pos.y);
 
     // Calculate maximum dimensions
-    const maxWidth = Math.min(width, this.originalWidth);
-    const maxHeight = Math.min(height - headerHeight, this.originalHeight);
-
-    if (maxWidth / maxHeight > aspectRatio) {
-      this.sprite.width = maxHeight * aspectRatio;
+    const maxWidth = width;
+    const maxHeight = height - headerHeight;
+    if (maxWidth / maxHeight > this.aspectRatio) {
+      this.sprite.width = maxHeight * this.aspectRatio;
       this.sprite.height = maxHeight;
     } else {
       this.sprite.width = maxWidth;
-      this.sprite.height = maxWidth / aspectRatio;
+      this.sprite.height = maxWidth / this.aspectRatio;
     }
 
     // center the image
@@ -119,8 +115,10 @@ export class CellsImage extends Container {
       return;
     }
 
-    this.originalWidth = this.sprite.width;
-    this.originalHeight = this.sprite.height;
+    // store original size once it's loaded
+    if (!this.aspectRatio) {
+      this.aspectRatio = this.sprite.width / this.sprite.height;
+    }
 
     const table = this.table;
     this.imageBounds = this.sheet.getScreenRectangle(
@@ -150,7 +148,6 @@ export class CellsImage extends Container {
 
     const end = sheets.sheet.getColumnRowFromScreen(tableBounds.right, tableBounds.bottom);
     this.sheet.gridOverflowLines.updateImageHtml(this.pos.x, this.pos.y, end.column - this.pos.x, end.row - this.pos.y);
-
     this.fitImage();
   };
 

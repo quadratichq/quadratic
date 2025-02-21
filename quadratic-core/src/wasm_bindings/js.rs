@@ -103,16 +103,7 @@ extern "C" {
         connection_id: String,
     );
 
-    pub fn jsSendImage(
-        sheet_id: String,
-        x: i32,
-        y: i32,
-        w: i32,
-        h: i32,
-        image: Option<String>,
-        pixel_width: Option<i32>,
-        pixel_height: Option<i32>,
-    );
+    pub fn jsSendImage(sheet_id: String, x: i32, y: i32, w: i32, h: i32, image: Option<String>);
 
     // rows: Vec<i64>
     pub fn jsRequestRowHeights(transaction_id: String, sheet_id: String, rows: String);
@@ -511,28 +502,17 @@ pub fn jsConnection(
 #[cfg(test)]
 #[allow(non_snake_case)]
 #[allow(clippy::too_many_arguments)]
-pub fn jsSendImage(
-    sheet_id: String,
-    x: i32,
-    y: i32,
-    w: i32,
-    h: i32,
-    image: Option<String>,
-    pixel_width: Option<i32>,
-    pixel_height: Option<i32>,
-) {
+pub fn jsSendImage(sheet_id: String, x: i32, y: i32, w: i32, h: i32, image: Option<String>) {
     js_call(
         "jsSendImage",
         format!(
-            "{},{},{},{:?},{:?},{:?},{:?},{:?}",
+            "{},{},{},{:?},{:?},{:?}",
             sheet_id,
             x,
             y,
             image.is_some(),
             w,
             h,
-            pixel_width,
-            pixel_height,
         ),
     );
 }

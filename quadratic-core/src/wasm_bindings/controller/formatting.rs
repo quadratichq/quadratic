@@ -199,13 +199,16 @@ impl GridController {
     pub fn js_set_chart_size(
         &mut self,
         sheet_pos: String,
-        pixel_width: f32,
-        pixel_height: f32,
+        columns: i32,
+        rows: i32,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
+        if columns <= 0 || rows <= 0 {
+            return Result::Err("Invalid chart size".into());
+        }
         let sheet_pos =
             serde_json::from_str::<SheetPos>(&sheet_pos).map_err(|_| "Invalid sheet pos")?;
-        self.set_chart_size(sheet_pos, pixel_width, pixel_height, cursor);
+        self.set_chart_size(sheet_pos, columns as u32, rows as u32, cursor);
         Ok(())
     }
 

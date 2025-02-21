@@ -242,11 +242,16 @@ impl Sheet {
                     let include_in_cells = !bounds.contains(data_table_pos);
 
                     // if the source cell is included in the clipboard, add the data_table to the clipboard
-                    if !include_in_cells && matches!(data_table.kind, DataTableKind::Import(_)) {
+                    if !include_in_cells
+                        && matches!(
+                            data_table.kind,
+                            DataTableKind::Import(_) | DataTableKind::CodeRun(_)
+                        )
+                    {
                         data_tables.insert(data_table_pos, data_table.clone());
                     }
 
-                    if data_table.spill_error {
+                    if data_table.spill_error || data_table.is_html_or_image() {
                         return;
                     }
 

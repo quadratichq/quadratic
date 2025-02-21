@@ -250,7 +250,7 @@ export class HtmlCell {
     this.resizing.pointerMove(world);
   }
 
-  startResizing(x: number, y: number) {
+  startResizing() {
     if (!this.hoverSide) {
       throw new Error('Expected hoverSide to be defined in HtmlCell.startResizing');
     }
@@ -259,9 +259,7 @@ export class HtmlCell {
       this,
       this.hoverSide,
       parseInt(this.iframe.width),
-      parseInt(this.iframe.height),
-      x,
-      y
+      parseInt(this.iframe.height)
     );
   }
 

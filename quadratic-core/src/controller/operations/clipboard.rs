@@ -318,11 +318,16 @@ impl GridController {
                         data_table.name = new_name.into();
                     }
 
-                    ops.push(Operation::SetDataTable {
-                        sheet_pos: target_pos,
-                        data_table: Some(data_table),
-                        index: 0,
-                    });
+                    // we need to ensure the data table is set before running
+                    // the ComputeCode from SetCellValues
+                    ops.insert(
+                        0,
+                        Operation::SetDataTable {
+                            sheet_pos: target_pos,
+                            data_table: Some(data_table),
+                            index: 0,
+                        },
+                    );
                 }
 
                 ops.push(Operation::ComputeCode {

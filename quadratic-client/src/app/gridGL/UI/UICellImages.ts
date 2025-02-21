@@ -1,6 +1,8 @@
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import type { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
 import { convertColorStringToTint } from '@/app/helpers/convertColor';
+import type { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { Container, Graphics } from 'pixi.js';
 
 // These should be consistent with ResizeControl.tsx
@@ -25,7 +27,19 @@ export class UICellImages extends Container {
     super();
     this.resizing = this.addChild(new Graphics());
     events.on('changeSheet', this.changeSheet);
+    events.on('updateImage', this.checkImageChange);
   }
+
+  private checkImageChange = (image: CoreClientImage) => {
+    if (
+      this.active &&
+      image.sheetId === sheets.current &&
+      image.x === this.active.pos.x &&
+      image.y === this.active.pos.y
+    ) {
+      this.dirtyResizing = true;
+    }
+  };
 
   setDirty() {
     this.dirtyResizing = true;

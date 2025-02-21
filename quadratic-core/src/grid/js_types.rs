@@ -307,8 +307,6 @@ pub struct JsRenderCodeCell {
     pub readonly: bool,
     pub is_html: bool,
     pub is_html_image: bool,
-    pub html_image_width: Option<f32>,
-    pub html_image_height: Option<f32>,
     pub show_ui: bool,
     pub show_name: bool,
     pub show_columns: bool,
@@ -322,8 +320,6 @@ pub struct JsHtmlOutput {
     pub w: i32,
     pub h: i32,
     pub html: Option<String>,
-    pub pixel_width: Option<f32>,
-    pub pixel_height: Option<f32>,
     pub name: String,
     pub show_name: bool,
 }
