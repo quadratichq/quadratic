@@ -258,8 +258,6 @@ export class Table extends Container {
   resize(width: number, height: number) {
     this.tableBounds.width = width;
     this.tableBounds.height = height;
-    this.codeCell.html_image_width = width;
-    this.codeCell.html_image_height = height;
     this.outline.update();
     this.header.update(false);
   }

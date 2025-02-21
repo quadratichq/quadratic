@@ -1175,7 +1175,6 @@ impl GridController {
             }
 
             if select_table {
-                println!("select_table");
                 Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
             }
 

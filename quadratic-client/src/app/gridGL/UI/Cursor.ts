@@ -125,25 +125,7 @@ export class Cursor extends Container {
       }
     }
 
-    if (table && tableName) {
-      // draw cursor
-      let g = this.graphics;
-      if (table.inOverHeadings) {
-        g = pixiApp.hoverTableColumnsSelection;
-      }
-      g.lineStyle({
-        width: 1,
-        color: 0xffffff,
-        alignment: 0,
-      });
-      const offset = 1;
-      g.moveTo(x + offset, y + offset);
-      g.lineTo(x + width - offset, y + offset);
-      g.lineTo(x + width - offset, y + height - offset);
-      g.moveTo(x + width - offset - 1, y + height - offset);
-      g.lineTo(x + offset, y + height - offset);
-      g.lineTo(x + offset, y + offset);
-    } else {
+    if (!table || !tableName) {
       let g = this.graphics;
       if (tableColumn) {
         g = pixiApp.hoverTableColumnsSelection;

@@ -174,7 +174,7 @@ export const TableSort = () => {
         e.stopPropagation();
       }}
     >
-      <div className="mb-4 text-lg font-semibold">Table sort</div>
+      <div className="mb-4 text-lg font-semibold">Sort</div>
       <div className="flex max-h-96 flex-col gap-2 overflow-y-auto">
         {sort.map((entry, index) => {
           const name = entry.column_index === -1 ? '' : contextMenu.table?.columns[entry.column_index]?.name ?? '';
@@ -196,11 +196,11 @@ export const TableSort = () => {
           );
         })}
       </div>
-      <div className="mt-5 flex w-full justify-end gap-2">
+      <div className="mt-4 flex w-full justify-end gap-2">
         <Button variant="secondary" onClick={handleClose}>
           Cancel
         </Button>
-        <Button onClick={handleSave}>Ok</Button>
+        <Button onClick={handleSave}>Apply</Button>
       </div>
     </div>
   );

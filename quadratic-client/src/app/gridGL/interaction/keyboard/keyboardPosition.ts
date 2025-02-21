@@ -65,7 +65,7 @@ async function jumpCursor(direction: Direction, jump: boolean, select: boolean) 
 function selectTo(deltaX: number, deltaY: number) {
   const cursor = sheets.sheet.cursor;
   const selectionEnd = cursor.selectionEnd;
-  cursor.selectTo(selectionEnd.x + deltaX, selectionEnd.y + deltaY, false);
+  cursor.selectTo(Math.max(1, selectionEnd.x + deltaX), Math.max(1, selectionEnd.y + deltaY), false);
 }
 
 export function keyboardPosition(event: KeyboardEvent): boolean {
