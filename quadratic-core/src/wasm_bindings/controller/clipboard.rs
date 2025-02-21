@@ -84,7 +84,9 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<Pos, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Invalid sheet id")?;
-        let pos = self.move_code_cell_vertically(sheet_id, x, y, sheet_end, reverse, cursor);
+        let pos = self
+            .move_code_cell_vertically(sheet_id, x, y, sheet_end, reverse, cursor)
+            .ok_or("Invalid code cell")?;
         Ok(pos)
     }
 
@@ -99,7 +101,9 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<Pos, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Invalid sheet id")?;
-        let pos = self.move_code_cell_horizontally(sheet_id, x, y, sheet_end, reverse, cursor);
+        let pos = self
+            .move_code_cell_horizontally(sheet_id, x, y, sheet_end, reverse, cursor)
+            .ok_or("Invalid code cell")?;
         Ok(pos)
     }
 }

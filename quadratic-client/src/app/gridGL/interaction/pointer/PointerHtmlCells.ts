@@ -73,7 +73,7 @@ export class PointerHtmlCells {
       // pointer down on chart edge, start resizing
       if (target === 'right' || target === 'bottom' || target === 'corner') {
         this.resizing = cell;
-        this.resizing.startResizing(e.data.global.x, e.data.global.y);
+        this.resizing.startResizing();
         this.cursor = target === 'corner' ? 'nwse-resize' : target === 'right' ? 'col-resize' : 'row-resize';
         htmlCellsHandler.movetoTop(cell);
         return true;

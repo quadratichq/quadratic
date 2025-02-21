@@ -87,7 +87,7 @@ pub fn parse_formula_results(
     let spans = parse_result.iter().map(|spanned| spanned.span).collect();
     let cells_accessed = parse_result
         .into_iter()
-        .map(|spanned| spanned.inner.into())
+        .filter_map(|spanned| spanned.inner.ok().map(|r| r.into()))
         .collect();
 
     JsFormulaParseResult {

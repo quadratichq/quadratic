@@ -1,7 +1,7 @@
 import type { SortDirection } from '@/app/quadratic-core-types';
 import { ValidationDropdown } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationUI';
 import {
-  DeleteIcon,
+  CloseIcon,
   DownArrowIcon,
   SortAscendingIcon,
   SortDescendingIcon,
@@ -52,7 +52,8 @@ export const TableSortEntry = (props: Props) => {
   );
 
   return (
-    <div className="flex h-fit w-full gap-2">
+    <div className="flex h-fit w-full items-center gap-2">
+      <span className="text-xs">{index + 1}.</span>
       <ValidationDropdown
         className="first-focus w-fit grow"
         style={{ paddingTop: 1, paddingBottom: 1, paddingLeft: 1 }}
@@ -86,17 +87,29 @@ export const TableSortEntry = (props: Props) => {
         ]}
         onChange={(direction) => updateValues(undefined, direction as SortDirection)}
       />
-      <div className={cn('flex gap-1 p-0', name === '' ? 'invisible' : '')}>
-        <Button variant="secondary" className="p-0" disabled={index === 0} onClick={() => onReorder(index, 'up')}>
+      <div className={cn('flex p-0', name === '' ? 'invisible' : '')}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn('w-7', index === 0 && '!opacity-20')}
+          disabled={index === 0}
+          onClick={() => onReorder(index, 'up')}
+        >
           <UpArrowIcon />
         </Button>
-        <Button variant="secondary" className="p-0" disabled={last} onClick={() => onReorder(index, 'down')}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn('w-7', last && '!opacity-20')}
+          disabled={last}
+          onClick={() => onReorder(index, 'down')}
+        >
           <DownArrowIcon />
         </Button>
+        <Button variant="ghost" size="icon" className={cn('w-7')} onClick={() => onDelete(index)}>
+          <CloseIcon />
+        </Button>
       </div>
-      <Button className={name === '' ? 'invisible' : ''} onClick={() => onDelete(index)}>
-        <DeleteIcon />
-      </Button>
     </div>
   );
 };

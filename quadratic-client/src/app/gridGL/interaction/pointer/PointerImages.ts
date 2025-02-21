@@ -20,6 +20,7 @@ interface Resizing {
   side: ResizeSide;
   originalWidth: number;
   originalHeight: number;
+  end: { column: number; row: number };
 }
 
 export class PointerImages {
@@ -59,11 +60,19 @@ export class PointerImages {
 
     if (this.resizing) {
       const image = this.resizing.image;
-      const end = sheets.sheet.getColumnRowFromScreen(point.x, point.y);
+      const end = { column: this.resizing.end.column, row: this.resizing.end.row };
 
-      // ensure we're not into negative space
-      end.column = Math.max(end.column, image.column);
-      end.row = Math.max(end.row, image.row + 1);
+      // ensure we're not into negative space; maintain original end column if
+      // not resizing that side
+      if (this.resizing.side === 'right' || this.resizing.side === 'both') {
+        const column = sheets.sheet.offsets.getColumnFromScreen(point.x);
+        end.column = Math.max(column, image.column);
+      }
+
+      if (this.resizing.side === 'bottom' || this.resizing.side === 'both') {
+        const row = sheets.sheet.offsets.getRowFromScreen(point.y);
+        end.row = Math.max(row, image.row + 1);
+      }
 
       const screenRectangle = sheets.sheet.getScreenRectangle(
         image.column,
@@ -81,6 +90,7 @@ export class PointerImages {
 
       this.resizing.image.temporaryResize(screenRectangle.width, screenRectangle.height);
       this.resizing.table.resize(screenRectangle.width, screenRectangle.height);
+      this.resizing.end = { column: end.column, row: end.row };
       pixiApp.cellImages.setDirty();
       pixiApp
         .cellsSheet()
@@ -127,6 +137,7 @@ export class PointerImages {
         table,
         originalWidth: table.tableBounds.width,
         originalHeight: table.tableBounds.height,
+        end: { column: table.codeCell.x + table.codeCell.w - 1, row: table.codeCell.y + table.codeCell.h - 1 },
       };
       pixiApp.cellImages.activate(search.image);
       return true;
@@ -136,14 +147,12 @@ export class PointerImages {
 
   pointerUp(): boolean {
     if (this.resizing) {
-      const tableBounds = this.resizing.table.tableBounds;
-      const top = sheets.sheet.offsets.getRowHeight(this.resizing.image.row);
-      quadraticCore.setCellRenderResize(
+      quadraticCore.setChartSize(
         this.resizing.image.sheetId,
         this.resizing.image.column,
         this.resizing.image.row,
-        tableBounds.right - tableBounds.left - 1,
-        tableBounds.bottom - tableBounds.top - top - 2
+        this.resizing.end.column - this.resizing.image.column + 1,
+        this.resizing.end.row - this.resizing.image.row
       );
       this.resizing = undefined;
       return true;

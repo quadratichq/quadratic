@@ -17,8 +17,15 @@ const DEFAULT_HTML_WIDTH: f32 = 600.0;
 const DEFAULT_HTML_HEIGHT: f32 = 460.0;
 
 impl GridController {
-    /// finalize changes to a data table
-    /// TODO(ddimaria): add documentation for this
+    /// Finalize changes to a data table.
+    ///
+    /// This function is called after a code run has completed and the data
+    /// table has been updated. It ensures that the data table is updated in the
+    /// grid, and that the necessary client updates are added to the
+    /// transaction.
+    ///
+    /// This also maintains any old values from the data table, such as the
+    /// user-defined chart size.
     pub(crate) fn finalize_data_table(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -56,11 +63,9 @@ impl GridController {
                 .unwrap_or(sheet.data_tables.len()),
         );
 
-        if new_data_table
-            .as_ref()
-            .is_some_and(|dt| dt.is_html_or_image())
-        {
-            if let Some(new_data_table) = new_data_table.as_mut() {
+        // calculate the chart_output if it is an image or html data table based on the pixel output
+        if let Some(new_data_table) = &mut new_data_table {
+            if new_data_table.is_html_or_image() && !new_data_table.chart_output.is_some() {
                 let (pixel_width, pixel_height) = new_data_table
                     .chart_pixel_output
                     .unwrap_or((DEFAULT_HTML_WIDTH, DEFAULT_HTML_HEIGHT));
@@ -108,6 +113,16 @@ impl GridController {
                     if let Err(e) = new_data_table.sort_all() {
                         dbgjs!(format!("Error sorting data table: {}", e));
                     }
+                }
+            }
+
+            // If there is an existing chart, then we keep its
+            // chart_output setting since it may have been set by the user.
+            // TODO (DF): we should be tracking whether a user set this, and
+            // if not, we should use the pixel output.
+            if new_data_table.is_html_or_image() {
+                if let Some(chart_output) = old_data_table.chart_output {
+                    new_data_table.chart_output = Some(chart_output);
                 }
             }
         }
@@ -269,7 +284,7 @@ impl GridController {
                         .iter()
                         .find(|(p, _)| **p == current_sheet_pos.into())
                     {
-                        new_data_table.chart_pixel_output = existing_data_table.chart_pixel_output;
+                        // new_data_table.chart_pixel_output = existing_data_table.chart_pixel_output;
                         new_data_table.name = existing_data_table.name.clone();
                         new_data_table.show_ui = existing_data_table.show_ui;
                     }
@@ -659,7 +674,7 @@ mod test {
             gc.calculation_complete(result).unwrap();
             let sheet = gc.try_sheet(sheet_id).unwrap();
             let dt = sheet.data_table(sheet_pos.into()).unwrap();
-            assert_eq!(dt.chart_pixel_output, Some((100.0, 100.0)));
+            assert_eq!(dt.chart_output, Some((2, 5)));
 
             // change the cell
             gc.set_code_cell(sheet_pos, language, "code".to_string(), None);
@@ -674,7 +689,7 @@ mod test {
             gc.calculation_complete(result).unwrap();
             let sheet = gc.try_sheet(sheet_id).unwrap();
             let dt = sheet.data_table(sheet_pos.into()).unwrap();
-            assert_eq!(dt.chart_pixel_output, Some((100.0, 100.0)));
+            assert_eq!(dt.chart_output, Some((2, 5)));
         }
     }
 }

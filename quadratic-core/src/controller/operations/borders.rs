@@ -388,7 +388,7 @@ impl GridController {
         let context = self.a1_context();
 
         let add_table_ops =
-            |table_range: RefRangeBounds,
+            |sheet_range: RefRangeBounds,
              table: &TableMapEntry,
              sheet_borders: &mut BordersUpdates,
              tables_borders: &mut HashMap<SheetPos, BordersUpdates>| {
@@ -396,23 +396,22 @@ impl GridController {
                 let table_borders = tables_borders.entry(table_sheet_pos).or_default();
 
                 // pos relative to table pos (top left pos), 1-based for formatting
-                let table_range = table_range.translate(
+                let Ok(relative_table_range) = sheet_range.translate(
                     -table.bounds.min.x + 1,
                     -table.bounds.min.y + 1 - table.y_adjustment(true),
-                );
+                ) else {
+                    // TODO: log an error
+                    eprintln!("error translating table selection for formatting");
+                    return;
+                };
 
                 self.a1_border_style_range(
                     border_selection,
                     style,
-                    &table_range,
+                    &relative_table_range,
                     table_borders,
                     clear_neighbors,
                     true,
-                );
-
-                let sheet_range = table_range.translate(
-                    table.bounds.min.x - 1,
-                    table.bounds.min.y - 1 + table.y_adjustment(true),
                 );
 
                 // clear sheet borders for the range

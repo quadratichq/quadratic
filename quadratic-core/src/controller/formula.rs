@@ -122,10 +122,10 @@ pub fn parse_formula(formula_string: &str, ctx: &A1Context, pos: SheetPos) -> Fo
         parse_error_msg: parse_error.as_ref().map(|e| e.msg.to_string()),
         parse_error_span: parse_error.and_then(|e| e.span),
 
-        // todo: cell_refs are returning Relative positions that are actually Absolute
         cell_refs: formulas::find_cell_references(formula_string, ctx, pos)
             .into_iter()
-            .map(|r| r.into())
+            .filter_map(|spanned_result| spanned_result.transpose().ok())
+            .map(|spanned| spanned.into())
             .collect(),
     };
     result

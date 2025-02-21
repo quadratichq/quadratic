@@ -1,4 +1,7 @@
-use crate::a1::SheetCellRefRange;
+use crate::{
+    a1::{A1Error, SheetCellRefRange},
+    RefError,
+};
 
 use super::*;
 
@@ -96,7 +99,7 @@ impl SyntaxRule for SheetRefPrefix {
 pub struct CellReference;
 impl_display!(for CellReference, "cell reference such as 'A6' or '$ZB$3'");
 impl SyntaxRule for CellReference {
-    type Output = Spanned<(Option<SheetId>, RefRangeBounds)>;
+    type Output = Spanned<Result<(Option<SheetId>, RefRangeBounds), RefError>>;
 
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         is_table_ref(p) == Some(false)
@@ -107,13 +110,15 @@ impl SyntaxRule for CellReference {
 
         p.next();
 
-        let ref_range_bounds = RefRangeBounds::from_str(p.token_str(), Some(p.pos.into()))
-            .map_err(|_| RunErrorMsg::BadCellReference.with_span(p.span()))?;
+        let span = Span::merge(start_span, p.span());
 
-        Ok(Spanned {
-            span: Span::merge(start_span, p.span()),
-            inner: (opt_sheet_id, ref_range_bounds),
-        })
+        let inner = match RefRangeBounds::from_str(p.token_str(), Some(p.pos.into())) {
+            Ok(ref_range_bounds) => Ok((opt_sheet_id, ref_range_bounds)),
+            Err(A1Error::OutOfBounds(ref_error)) => Err(ref_error),
+            Err(_) => return Err(RunErrorMsg::BadCellReference.with_span(span)),
+        };
+
+        Ok(Spanned { span, inner })
     }
 }
 
@@ -123,7 +128,7 @@ impl SyntaxRule for CellReference {
 pub struct CellRangeReference;
 impl_display!(for CellRangeReference, "cell range reference such as 'A6:D10' or '$ZB$3'");
 impl SyntaxRule for CellRangeReference {
-    type Output = Spanned<SheetCellRefRange>;
+    type Output = Spanned<Result<SheetCellRefRange, RefError>>;
 
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         CellReference.prefix_matches(p)
@@ -131,7 +136,15 @@ impl SyntaxRule for CellRangeReference {
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         let ref1 = p.parse(CellReference)?;
         ref1.span.of_str(p.source_str);
-        let (sheet1, range1) = ref1.inner;
+        let (sheet1, range1) = match ref1.inner {
+            Ok(x) => x,
+            Err(e) => {
+                return Ok(Spanned {
+                    span: ref1.span,
+                    inner: Err(e),
+                });
+            }
+        };
         let sheet_id = sheet1.unwrap_or(p.pos.sheet_id);
 
         // Check for a range reference.
@@ -139,7 +152,15 @@ impl SyntaxRule for CellRangeReference {
         let range;
         if p.try_parse(Token::CellRangeOp).is_some() {
             let ref2 = p.parse(CellReference)?;
-            let (sheet2, range2) = ref2.inner;
+            let (sheet2, range2) = match ref2.inner {
+                Ok(x) => x,
+                Err(e) => {
+                    return Ok(Spanned {
+                        span: ref2.span,
+                        inner: Err(e),
+                    });
+                }
+            };
             if sheet2.is_some() {
                 return Err(RunErrorMsg::BadCellReference.with_span(ref2.span));
             }
@@ -157,7 +178,7 @@ impl SyntaxRule for CellRangeReference {
         let cells = CellRefRange::Sheet { range };
         Ok(Spanned {
             span,
-            inner: SheetCellRefRange { sheet_id, cells },
+            inner: Ok(SheetCellRefRange { sheet_id, cells }),
         })
     }
 }
