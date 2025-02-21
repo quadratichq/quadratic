@@ -1188,8 +1188,8 @@ mod test {
 
         gc.paste_from_clipboard(
             &A1Selection::from_xy(2, 2, sheet_id),
-            Some(plain_text),
-            Some(html),
+            Some(plain_text.clone()),
+            Some(html.clone()),
             PasteSpecial::None,
             None,
         );
@@ -1198,6 +1198,19 @@ mod test {
         assert_code_cell_value(&gc, sheet_id, 2, 2, "A2");
         assert_code_cell_value(&gc, sheet_id, 3, 2, r#"q.cells("A2")"#);
         assert_code_cell_value(&gc, sheet_id, 4, 2, r#"return q.cells("A2");"#);
+
+        gc.paste_from_clipboard(
+            &A1Selection::from_xy(1, 1, sheet_id),
+            Some(plain_text),
+            Some(html),
+            PasteSpecial::None,
+            None,
+        );
+
+        assert_display_cell_value(&gc, sheet_id, 1, 1, "Bad cell reference");
+        assert_code_cell_value(&gc, sheet_id, 1, 1, "#REF!");
+        assert_code_cell_value(&gc, sheet_id, 2, 1, r##"q.cells("#REF!")"##);
+        assert_code_cell_value(&gc, sheet_id, 3, 1, r##"return q.cells("#REF!");"##);
     }
 
     #[test]
