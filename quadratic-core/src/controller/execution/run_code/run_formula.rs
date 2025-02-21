@@ -22,12 +22,11 @@ impl GridController {
             Ok(parsed) => {
                 let output = parsed.eval(&mut eval_ctx).into_non_tuple();
                 let errors = output.inner.errors();
-                transaction.cells_accessed = eval_ctx.cells_accessed;
                 let new_code_run = CodeRun {
                     std_out: None,
                     std_err: (!errors.is_empty())
                         .then(|| errors.into_iter().map(|e| e.to_string()).join("\n")),
-                    cells_accessed: transaction.cells_accessed.clone(),
+                    cells_accessed: eval_ctx.cells_accessed,
                     error: None,
                     return_type: None,
                     line_number: None,

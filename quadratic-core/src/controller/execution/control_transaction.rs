@@ -232,8 +232,6 @@ impl GridController {
             );
 
             self.finalize_data_table(&mut transaction, current_sheet_pos, Some(data_table), None);
-            transaction.cells_accessed.clear();
-            transaction.waiting_for_async = None;
             self.start_transaction(&mut transaction);
             self.finalize_transaction(transaction);
         }

@@ -26,6 +26,9 @@ impl GridController {
         mut new_data_table: Option<DataTable>,
         index: Option<usize>,
     ) {
+        transaction.cells_accessed.clear();
+        transaction.waiting_for_async = None;
+
         let sheet_id = sheet_pos.sheet_id;
 
         // enforce unique data table names
@@ -258,8 +261,6 @@ impl GridController {
                     language.clone(),
                 );
 
-                transaction.waiting_for_async = None;
-
                 // Keep chart_pixel_output and table name consistent if
                 // there already exists a data table at the same position.
                 if let Some(sheet) = self.try_sheet(current_sheet_pos.sheet_id) {
@@ -363,8 +364,7 @@ impl GridController {
             false,
             None,
         );
-        transaction.cells_accessed.clear();
-        transaction.waiting_for_async = None;
+
         self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None);
 
         Ok(())
