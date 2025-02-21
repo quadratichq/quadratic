@@ -121,11 +121,7 @@ impl CodeCellValue {
             new_a1_context.sheet_map.remove_name(old_name);
 
             self.replace_q_cells_a1_selection(default_sheet_id, &old_a1_context, |a1_selection| {
-                a1_selection.to_string_force_sheet_name(
-                    Some(*default_sheet_id),
-                    &new_a1_context,
-                    true,
-                )
+                a1_selection.to_string(Some(*default_sheet_id), &new_a1_context)
             });
         }
     }
@@ -377,7 +373,12 @@ mod tests {
         );
 
         let mut code = CodeCellValue::new_python("q.cells('Sheet1!A1:B2')".to_string());
-        code.replace_sheet_name_in_cell_references("Sheet1", "Sheet1_new", &sheet_id, &a1_context);
+        code.replace_sheet_name_in_cell_references(
+            "Sheet1",
+            "Sheet1_new",
+            &SheetId::new(),
+            &a1_context,
+        );
         assert_eq!(code.code, r#"q.cells("'Sheet1_new'!A1:B2")"#);
     }
 

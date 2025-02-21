@@ -639,6 +639,8 @@ impl GridController {
             let old_name = data_table.name.to_display();
             let old_columns = data_table.column_headers.to_owned();
 
+            let context = self.a1_context().to_owned();
+
             if let Some(name) = name.to_owned() {
                 if old_name != name {
                     // validate table name
@@ -658,6 +660,7 @@ impl GridController {
                         data_table_sheet_pos,
                         &old_name,
                         &name,
+                        &context,
                         false,
                     )?;
                     // mark code cells dirty to update meta data
@@ -674,7 +677,7 @@ impl GridController {
                             if let Err(e) = DataTable::validate_column_name(
                                 &new_column.name.to_string(),
                                 &old_name,
-                                self.a1_context(),
+                                &context,
                             ) {
                                 if cfg!(target_family = "wasm") || cfg!(test) {
                                     crate::wasm_bindings::js::jsClientMessage(
@@ -687,9 +690,10 @@ impl GridController {
                                 bail!(e);
                             }
 
-                            self.grid.replace_data_table_column_name_in_code_cells(
+                            self.grid.replace_table_column_name_in_code_cells(
                                 &old_column.name.to_string(),
                                 &new_column.name.to_string(),
+                                &context,
                             );
                         }
                     }

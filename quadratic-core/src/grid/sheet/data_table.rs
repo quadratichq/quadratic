@@ -125,32 +125,42 @@ impl Sheet {
 
     pub fn replace_in_code_cells(
         &mut self,
+        context: &A1Context,
         func: impl Fn(&mut CodeCellValue, &A1Context, &SheetId),
     ) {
-        let a1_context = self.a1_context();
         let positions = self.data_tables.keys().cloned().collect::<Vec<_>>();
         let sheet_id = self.id;
 
         for pos in positions {
             if let Some(cell_value) = self.cell_value_mut(pos) {
                 if let Some(code_cell_value) = cell_value.code_cell_value_mut() {
-                    func(code_cell_value, &a1_context, &sheet_id);
+                    func(code_cell_value, context, &sheet_id);
                 }
             }
         }
     }
 
     /// Replaces the table name in all code cells that reference the old name.
-    pub fn replace_table_name_in_code_cells(&mut self, old_name: &str, new_name: &str) {
-        self.replace_in_code_cells(|code_cell_value, a1_context, id| {
+    pub fn replace_table_name_in_code_cells(
+        &mut self,
+        old_name: &str,
+        new_name: &str,
+        context: &A1Context,
+    ) {
+        self.replace_in_code_cells(context, |code_cell_value, a1_context, id| {
             code_cell_value
                 .replace_table_name_in_cell_references(old_name, new_name, id, a1_context);
         });
     }
 
     /// Replaces the column name in all code cells that reference the old name.
-    pub fn replace_data_table_column_name_in_code_cells(&mut self, old_name: &str, new_name: &str) {
-        self.replace_in_code_cells(|code_cell_value, a1_context, id| {
+    pub fn replace_table_column_name_in_code_cells(
+        &mut self,
+        old_name: &str,
+        new_name: &str,
+        context: &A1Context,
+    ) {
+        self.replace_in_code_cells(context, |code_cell_value, a1_context, id| {
             code_cell_value
                 .replace_column_name_in_cell_references(old_name, new_name, id, a1_context);
         });

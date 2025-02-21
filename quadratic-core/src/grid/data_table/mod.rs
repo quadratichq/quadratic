@@ -77,17 +77,19 @@ impl Grid {
         // replace spaces with underscores
         name.replace(' ', "_")
     }
+
     /// Updates the name of a data table and replaces the old name in all code cells that reference it.
     pub fn update_data_table_name(
         &mut self,
         sheet_pos: SheetPos,
         old_name: &str,
         new_name: &str,
+        context: &A1Context,
         require_number: bool,
     ) -> Result<()> {
         let unique_name = self.unique_data_table_name(new_name, require_number, Some(sheet_pos));
 
-        self.replace_table_name_in_code_cells(old_name, &unique_name);
+        self.replace_table_name_in_code_cells(old_name, &unique_name, context);
 
         let sheet = self
             .try_sheet_mut(sheet_pos.sheet_id)
@@ -106,16 +108,26 @@ impl Grid {
     }
 
     /// Replaces the table name in all code cells that reference the old name in all sheets in the grid.
-    pub fn replace_table_name_in_code_cells(&mut self, old_name: &str, new_name: &str) {
+    pub fn replace_table_name_in_code_cells(
+        &mut self,
+        old_name: &str,
+        new_name: &str,
+        context: &A1Context,
+    ) {
         for sheet in self.sheets.iter_mut() {
-            sheet.replace_table_name_in_code_cells(old_name, new_name);
+            sheet.replace_table_name_in_code_cells(old_name, new_name, context);
         }
     }
 
     /// Replaces the column name in all code cells that reference the old name in all sheets in the grid.
-    pub fn replace_data_table_column_name_in_code_cells(&mut self, old_name: &str, new_name: &str) {
+    pub fn replace_table_column_name_in_code_cells(
+        &mut self,
+        old_name: &str,
+        new_name: &str,
+        context: &A1Context,
+    ) {
         for sheet in self.sheets.iter_mut() {
-            sheet.replace_data_table_column_name_in_code_cells(old_name, new_name);
+            sheet.replace_table_column_name_in_code_cells(old_name, new_name, context);
         }
     }
 }

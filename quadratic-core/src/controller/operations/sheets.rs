@@ -206,11 +206,13 @@ mod test {
         let duplicate_sheet_id = gc.grid.add_sheet(Some(duplicate_sheet));
         let data_tables = gc.sheet(duplicate_sheet_id).data_tables.clone();
 
+        let context = gc.a1_context().to_owned();
+
         for (pos, data_table) in data_tables.into_iter() {
             let name = data_table.name.to_string();
             let sheet_pos = pos.to_sheet_pos(duplicate_sheet_id);
             gc.grid
-                .update_data_table_name(sheet_pos, &name, &name, false)
+                .update_data_table_name(sheet_pos, &name, &name, &context, false)
                 .unwrap();
         }
 

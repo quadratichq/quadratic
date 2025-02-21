@@ -54,10 +54,12 @@ impl GridController {
                     .collect::<Vec<_>>();
                 self.grid.add_sheet(Some(sheet));
 
+                let context = self.a1_context().to_owned();
+
                 for (pos, name) in data_tables.iter() {
                     let sheet_pos = pos.to_sheet_pos(sheet_id);
                     self.grid
-                        .update_data_table_name(sheet_pos, name, name, false)?;
+                        .update_data_table_name(sheet_pos, name, name, &context, false)?;
                     // mark code cells dirty to update meta data
                     transaction.add_code_cell(sheet_id, *pos);
                 }
@@ -178,10 +180,12 @@ impl GridController {
                 bail!(e);
             }
 
-            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let context = self.a1_context().to_owned();
 
-            let old_name = sheet.name.clone();
-            sheet.update_sheet_name(&old_name, &name);
+            let sheet = self.try_sheet_result(sheet_id)?;
+            let old_name = sheet.name.to_owned();
+
+            self.grid.update_sheet_name(&old_name, &name, &context);
 
             transaction
                 .forward_operations
