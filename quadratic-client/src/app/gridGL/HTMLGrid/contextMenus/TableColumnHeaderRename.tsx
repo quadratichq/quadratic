@@ -106,6 +106,7 @@ export const TableColumnHeaderRename = () => {
     return contextMenu.table.columns[contextMenu.selectedColumn].name;
   }, [contextMenu.selectedColumn, contextMenu.table]);
 
+  console.log(1);
   if (
     contextMenu.type !== ContextMenuType.TableColumn ||
     !contextMenu.rename ||
