@@ -682,8 +682,9 @@ impl GridController {
                         if let Some(data_table) = data_tables_in_rect.get(&source_pos) {
                             let mut data_table = data_table.to_owned();
                             let old_name = data_table.name.to_display();
-                            let new_name =
-                                self.grid().unique_data_table_name(&old_name, false, None);
+                            let new_name = self
+                                .grid()
+                                .unique_data_table_name(&old_name, false, None, context);
                             data_table.name = new_name.into();
 
                             data_table_ops.push(Operation::SetDataTable {

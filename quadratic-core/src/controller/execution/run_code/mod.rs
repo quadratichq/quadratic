@@ -33,6 +33,7 @@ impl GridController {
         mut new_data_table: Option<DataTable>,
         index: Option<usize>,
     ) {
+        transaction.current_sheet_pos = None;
         transaction.cells_accessed.clear();
         transaction.waiting_for_async = None;
 
@@ -44,6 +45,7 @@ impl GridController {
                 &new_data_table.name.to_display(),
                 false,
                 Some(sheet_pos),
+                self.a1_context(),
             );
             new_data_table.update_table_name(&unique_name);
         }
@@ -237,9 +239,9 @@ impl GridController {
                 self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
                 self.check_all_spills(transaction, sheet_pos.sheet_id);
             }
-        }
 
-        transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
+            transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
+        }
     }
 
     /// continues the calculate cycle after an async call

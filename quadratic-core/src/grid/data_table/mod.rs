@@ -24,7 +24,6 @@ use crate::{
 use anyhow::{anyhow, bail, Ok, Result};
 use chrono::{DateTime, Utc};
 use column_header::DataTableColumnHeader;
-use itertools::Itertools;
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -53,26 +52,11 @@ impl Grid {
         name: &str,
         require_number: bool,
         sheet_pos: Option<SheetPos>,
+        context: &A1Context,
     ) -> String {
-        let all_names = &self
-            .sheets()
-            .iter()
-            .flat_map(|sheet| {
-                sheet.data_tables.iter().filter_map(|(pos, dt)| {
-                    if let Some(sheet_pos) = sheet_pos {
-                        if sheet.id != sheet_pos.sheet_id || pos != &sheet_pos.into() {
-                            Some(dt.name.to_display())
-                        } else {
-                            None
-                        }
-                    } else {
-                        Some(dt.name.to_display())
-                    }
-                })
-            })
-            .collect_vec();
+        let check_name = |name: &str| !context.table_map.contains_name(name, sheet_pos);
 
-        let name = unique_name(name, all_names, require_number);
+        let name = unique_name(name, require_number, check_name);
 
         // replace spaces with underscores
         name.replace(' ', "_")
@@ -87,7 +71,8 @@ impl Grid {
         context: &A1Context,
         require_number: bool,
     ) -> Result<()> {
-        let unique_name = self.unique_data_table_name(new_name, require_number, Some(sheet_pos));
+        let unique_name =
+            self.unique_data_table_name(new_name, require_number, Some(sheet_pos), context);
 
         self.replace_table_name_in_code_cells(old_name, &unique_name, context);
 
@@ -103,8 +88,8 @@ impl Grid {
     }
 
     /// Returns a unique name for a data table
-    pub fn next_data_table_name(&self) -> String {
-        self.unique_data_table_name("Table", true, None)
+    pub fn next_data_table_name(&self, context: &A1Context) -> String {
+        self.unique_data_table_name("Table", true, None, context)
     }
 
     /// Replaces the table name in all code cells that reference the old name in all sheets in the grid.
@@ -179,9 +164,9 @@ pub struct DataTable {
     pub chart_output: Option<(u32, u32)>,
 }
 
-impl From<(Import, Array, &Grid)> for DataTable {
-    fn from((import, cell_values, grid): (Import, Array, &Grid)) -> Self {
-        let name = grid.unique_data_table_name(&import.file_name, false, None);
+impl From<(Import, Array, &Grid, &A1Context)> for DataTable {
+    fn from((import, cell_values, grid, context): (Import, Array, &Grid, &A1Context)) -> Self {
+        let name = grid.unique_data_table_name(&import.file_name, false, None, context);
 
         DataTable::new(
             DataTableKind::Import(import),
@@ -747,7 +732,8 @@ pub mod test {
         let values = test_csv_values();
         let import = Import::new(file_name.into());
         let array = Array::from_str_vec(values, true).unwrap();
-        let data_table = DataTable::from((import.clone(), array, grid));
+        let context = gc.a1_context();
+        let data_table = DataTable::from((import.clone(), array, grid, context));
 
         (sheet, data_table)
     }

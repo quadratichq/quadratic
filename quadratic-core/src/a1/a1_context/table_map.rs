@@ -58,6 +58,10 @@ impl TableMap {
             .unwrap_or(false)
     }
 
+    pub fn iter_table_names(&self) -> impl Iterator<Item = &String> {
+        self.tables.keys()
+    }
+
     /// Returns a list of all table names in the table map.
     pub fn table_names(&self) -> Vec<String> {
         self.tables.values().map(|t| t.table_name.clone()).collect()
@@ -68,25 +72,6 @@ impl TableMap {
         self.tables.values().find(|table| {
             table.sheet_id == sheet_pos.sheet_id && table.bounds.contains(sheet_pos.into())
         })
-    }
-
-    /// Inserts a test table into the table map.
-    ///
-    /// if all_columns is None, then it uses visible_columns.
-    #[cfg(test)]
-    pub fn test_insert(
-        &mut self,
-        table_name: &str,
-        visible_columns: &[&str],
-        all_columns: Option<&[&str]>,
-        bounds: crate::Rect,
-        language: CodeCellLanguage,
-    ) {
-        let table_name_folded = case_fold(table_name);
-        self.tables.insert(
-            table_name_folded,
-            TableMapEntry::test(table_name, visible_columns, all_columns, bounds, language),
-        );
     }
 
     /// Returns the table name if the given position is in the table's name or column headers.
@@ -119,6 +104,38 @@ impl TableMap {
                 table.visible_columns.remove(index);
             }
         }
+    }
+
+    pub fn contains_name(&self, table_name: &str, sheet_pos: Option<SheetPos>) -> bool {
+        let table = self.try_table(table_name);
+        if let Some(table) = table {
+            if let Some(sheet_pos) = sheet_pos {
+                table.sheet_id != sheet_pos.sheet_id || table.bounds.min != sheet_pos.into()
+            } else {
+                true
+            }
+        } else {
+            false
+        }
+    }
+
+    /// Inserts a test table into the table map.
+    ///
+    /// if all_columns is None, then it uses visible_columns.
+    #[cfg(test)]
+    pub fn test_insert(
+        &mut self,
+        table_name: &str,
+        visible_columns: &[&str],
+        all_columns: Option<&[&str]>,
+        bounds: crate::Rect,
+        language: CodeCellLanguage,
+    ) {
+        let table_name_folded = case_fold(table_name);
+        self.tables.insert(
+            table_name_folded,
+            TableMapEntry::test(table_name, visible_columns, all_columns, bounds, language),
+        );
     }
 
     #[cfg(test)]

@@ -316,7 +316,12 @@ impl GridController {
                 if let Some(mut data_table) = clipboard_data_tables.shift_remove(&source_pos) {
                     if matches!(clipboard_operation, ClipboardOperation::Copy) {
                         let old_name = data_table.name.to_display();
-                        let new_name = self.grid().unique_data_table_name(&old_name, false, None);
+                        let new_name = self.grid().unique_data_table_name(
+                            &old_name,
+                            false,
+                            None,
+                            self.a1_context(),
+                        );
 
                         // update table name in paste cursor selection
                         cursor.replace_table_name(&old_name, &new_name);

@@ -207,9 +207,9 @@ impl GridController {
         }
 
         let import = Import::new(name.to_owned());
-        let name = self
-            .grid
-            .unique_data_table_name(&name, false, Some(sheet_pos));
+        let name =
+            self.grid
+                .unique_data_table_name(&name, false, Some(sheet_pos), self.a1_context());
         let mut data_table = DataTable::new(
             DataTableKind::Import(import.to_owned()),
             &name,

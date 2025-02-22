@@ -181,9 +181,14 @@ impl GridController {
             }
         }
 
+        let context = self.a1_context();
         let import = Import::new(file_name.into());
-        let mut data_table =
-            DataTable::from((import.to_owned(), Array::new_empty(array_size), &self.grid));
+        let mut data_table = DataTable::from((
+            import.to_owned(),
+            Array::new_empty(array_size),
+            &self.grid,
+            context,
+        ));
         data_table.name = CellValue::Text(file_name.to_string());
         data_table.value = cell_values.into();
         data_table.formats.apply_updates(&sheet_format_updates);
@@ -441,8 +446,9 @@ impl GridController {
             }
         }
 
+        let context = self.a1_context();
         let import = Import::new(file_name.into());
-        let mut data_table = DataTable::from((import.to_owned(), cell_values, &self.grid));
+        let mut data_table = DataTable::from((import.to_owned(), cell_values, &self.grid, context));
         data_table.apply_first_row_as_header();
 
         let ops = vec![Operation::AddDataTable {
@@ -564,9 +570,10 @@ mod test {
             vec!["city", "region", "country", "population"],
             vec!["Southborough", "MA", "United States", "a lot of people"],
         ];
+        let context = gc.a1_context();
         let import = Import::new(file_name.into());
         let cell_value = CellValue::Import(import.clone());
-        let mut expected_data_table = DataTable::from((import, values.into(), &gc.grid));
+        let mut expected_data_table = DataTable::from((import, values.into(), &gc.grid, context));
         assert_display_cell_value(&gc, sheet_id, 1, 1, &cell_value.to_string());
 
         let data_table = match ops[0].clone() {

@@ -149,7 +149,8 @@ impl DataTable {
                 .map(|c| c.name.to_string())
                 .collect::<Vec<_>>();
 
-            unique_name(name, &all_names, false)
+            let check_name = |name: &str| !all_names.contains(&name.to_string());
+            unique_name(name, false, check_name)
         } else {
             name.to_string()
         }
@@ -157,11 +158,12 @@ impl DataTable {
 
     /// Set the display of a column header at the given index.
     pub fn normalize_column_header_names(&mut self) {
-        let mut all_names = vec![];
+        let mut all_names: Vec<String> = vec![];
 
         if let Some(columns) = self.column_headers.as_mut() {
             columns.iter_mut().for_each(|column| {
-                let name = unique_name(&column.name.to_string(), &all_names, false);
+                let check_name = |name: &str| !all_names.contains(&name.to_string());
+                let name = unique_name(&column.name.to_string(), false, check_name);
                 column.name = CellValue::Text(name.to_owned());
                 all_names.push(name);
             });

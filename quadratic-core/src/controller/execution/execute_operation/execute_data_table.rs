@@ -545,9 +545,14 @@ impl GridController {
 
             let old_values = sheet.cell_values_in_rect(&rect, false)?;
 
-            let import = Import::new(self.grid.next_data_table_name());
-            let mut data_table =
-                DataTable::from((import.to_owned(), old_values.to_owned(), &self.grid));
+            let context = self.a1_context();
+            let import = Import::new(self.grid.next_data_table_name(context));
+            let mut data_table = DataTable::from((
+                import.to_owned(),
+                old_values.to_owned(),
+                &self.grid,
+                context,
+            ));
 
             // show_ui false is required for correct mapping of formats, values will shift when show_ui is true
             data_table.show_ui = false;

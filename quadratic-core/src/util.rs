@@ -185,13 +185,13 @@ pub fn unused_name(prefix: &str, already_used: &[&str]) -> String {
 /// Returns a unique name by appending numbers to the base name if the name is not unique.
 /// Starts at 1, and checks if the name is unique, then 2, etc.
 /// If `require_number` is true, the name will always have an appended number.
-pub fn unique_name(name: &str, all_names: &[String], require_number: bool) -> String {
+pub fn unique_name(name: &str, require_number: bool, check_name: impl Fn(&str) -> bool) -> String {
     let base = MATCH_NUMBERS.replace(name, "");
     let contains_number = base != name;
     let should_short_circuit = !require_number || contains_number;
 
     // short circuit if the name is unique
-    if should_short_circuit && !all_names.contains(&name.to_owned()) {
+    if should_short_circuit && check_name(name) {
         return name.to_string();
     }
 
@@ -204,10 +204,7 @@ pub fn unique_name(name: &str, all_names: &[String], require_number: bool) -> St
         let new_name_alt = format!("{} {}", base, num);
         let new_names = [new_name.as_str(), new_name_alt.as_str()];
 
-        if !all_names
-            .iter()
-            .any(|item| new_names.contains(&item.as_str()))
-        {
+        if new_names.iter().all(|name| check_name(*name)) {
             name = new_name;
         }
 
