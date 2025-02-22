@@ -230,53 +230,15 @@ impl Sheet {
             }
 
             // allow copying of code_run values (unless CellValue::Code is also in the clipboard)
-            self.iter_code_output_in_rect(bounds)
-                .for_each(|(output_rect, data_table)| {
-                    // only change the cells if the CellValue::Code is not in the selection box
-                    let data_table_pos = Pos {
-                        x: output_rect.min.x,
-                        y: output_rect.min.y,
-                    };
+            let data_tables_in_rect = self.data_tables_and_cell_values_in_rect(
+                &bounds,
+                &mut cells,
+                &mut values,
+                &context,
+                &selection,
+            );
 
-                    // add the CellValue to cells if the code is not included in the clipboard
-                    let include_in_cells = !bounds.contains(data_table_pos);
-
-                    // if the source cell is included in the clipboard, add the data_table to the clipboard
-                    if !include_in_cells {
-                        data_tables.insert(data_table_pos, data_table.clone());
-                    }
-
-                    if data_table.spill_error || data_table.is_html_or_image() {
-                        return;
-                    }
-
-                    let x_start = std::cmp::max(output_rect.min.x, bounds.min.x);
-                    let y_start = std::cmp::max(output_rect.min.y, bounds.min.y);
-                    let x_end = std::cmp::min(output_rect.max.x, bounds.max.x);
-                    let y_end = std::cmp::min(output_rect.max.y, bounds.max.y);
-
-                    // add the code_run output to clipboard.values
-                    for y in y_start..=y_end {
-                        for x in x_start..=x_end {
-                            if let Some(value) = data_table.cell_value_at(
-                                (x - data_table_pos.x) as u32,
-                                (y - data_table_pos.y) as u32,
-                            ) {
-                                let pos = Pos {
-                                    x: x - bounds.min.x,
-                                    y: y - bounds.min.y,
-                                };
-                                if selection.might_contain_pos(Pos { x, y }, &context) {
-                                    if include_in_cells {
-                                        cells.set(pos.x as u32, pos.y as u32, value.clone());
-                                    }
-
-                                    values.set(pos.x as u32, pos.y as u32, value);
-                                }
-                            }
-                        }
-                    }
-                });
+            data_tables.extend(data_tables_in_rect);
         }
 
         let formats = self.formats.to_clipboard(self, selection);
