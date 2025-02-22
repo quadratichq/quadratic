@@ -218,7 +218,7 @@ impl Sheet {
                                 x: x - rect.min.x,
                                 y: y - rect.min.y,
                             };
-                            if selection.might_contain_pos(Pos { x, y }, &context) {
+                            if selection.might_contain_pos(Pos { x, y }, context) {
                                 if include_in_cells {
                                     cells.set(pos.x as u32, pos.y as u32, value.clone());
                                 }

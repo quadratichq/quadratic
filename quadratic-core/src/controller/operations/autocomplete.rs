@@ -654,7 +654,7 @@ impl GridController {
             initial_range,
             &mut cells,
             &mut values,
-            &context,
+            context,
             &selection,
         );
 

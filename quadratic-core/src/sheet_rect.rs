@@ -47,8 +47,8 @@ impl SheetRect {
 
     pub fn new_from_rect(rect: Rect, sheet_id: SheetId) -> SheetRect {
         SheetRect {
-            min: rect.min.into(),
-            max: rect.max.into(),
+            min: rect.min,
+            max: rect.max,
             sheet_id,
         }
     }

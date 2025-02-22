@@ -235,7 +235,7 @@ impl Sheet {
                 &mut cells,
                 &mut values,
                 &context,
-                &selection,
+                selection,
             );
 
             data_tables.extend(data_tables_in_rect);
