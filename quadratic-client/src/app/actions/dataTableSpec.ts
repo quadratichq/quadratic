@@ -74,7 +74,7 @@ const getRow = (): number | undefined => {
   return row - table.y;
 };
 
-export const getSelectedRows = (): number[] | undefined => {
+const getSelectedRows = (): number[] | undefined => {
   const table = getTable();
   if (!table) return undefined;
 
@@ -102,20 +102,9 @@ const getColumn = (): number | undefined => {
     displayColumnX = sheets.sheet.cursor.position.x - table.x;
   }
 
-  const columnX = columns.filter((c) => c.display)[displayColumnX]?.valueIndex;
+  const columnX = columns.filter((c) => c.display).at(displayColumnX)?.valueIndex;
 
   return columnX;
-};
-
-const getDisplayColumn = (): number | undefined => {
-  const table = getTable();
-  const columns = table?.columns;
-  if (!columns) return undefined;
-
-  const columnX = getColumn();
-  if (columnX === undefined) return undefined;
-
-  return columns.filter((c) => c.display).findIndex((c) => c.valueIndex === columnX);
 };
 
 export const getColumns = (): JsDataTableColumnHeader[] | undefined => {
@@ -123,15 +112,22 @@ export const getColumns = (): JsDataTableColumnHeader[] | undefined => {
   return table?.columns.map((c) => ({ ...c }));
 };
 
-// return display index of selected table columns
-export const getSelectedColumns = (): number[] | undefined => {
+const getSelectedColumns = (): number[] | undefined => {
   const table = getTable();
-  if (!table) return undefined;
+  const displayColumns = getDisplayColumns();
+  if (!table || !displayColumns) return undefined;
 
-  return sheets.sheet.cursor
+  const displayIndexes = sheets.sheet.cursor
     .getSelectedColumns()
     .map((c) => c - table.x)
     .sort((a, b) => b - a);
+
+  const columnIndexes = displayIndexes.map((displayIndex) => displayColumns.at(displayIndex)?.valueIndex);
+  if (columnIndexes.includes(undefined)) {
+    console.error('[getSelectedColumns] columnIndexes includes undefined.');
+    return undefined;
+  }
+  return columnIndexes.filter((c) => c !== undefined);
 };
 
 export const getDisplayColumns = (): JsDataTableColumnHeader[] | undefined => {
@@ -214,7 +210,7 @@ export const toggleFirstRowAsHeader = () => {
   }
 };
 
-export const renameTable = () => {
+const renameTable = () => {
   const table = getTable();
   const contextMenu = pixiAppSettings.contextMenu;
   if (contextMenu) {
@@ -266,7 +262,7 @@ export const toggleTableAlternatingColors = () => {
   }
 };
 
-export const renameTableColumn = () => {
+const renameTableColumn = () => {
   const table = getTable();
   const column = getColumn();
 
@@ -276,7 +272,7 @@ export const renameTableColumn = () => {
   }
 };
 
-export const sortTableColumn = (direction: 'Ascending' | 'Descending') => {
+const sortTableColumn = (direction: 'Ascending' | 'Descending') => {
   const table = getTable();
   const column = getColumn();
 
@@ -301,7 +297,7 @@ export const sortTableColumnDescending = () => {
 
 export const insertTableColumn = (increment: number = 0, selectTable = false) => {
   const table = getTable();
-  const column = getDisplayColumn();
+  const column = getColumn();
 
   if (table && column !== undefined) {
     quadraticCore.dataTableMutations({
@@ -369,7 +365,7 @@ export const showAllTableColumns = () => {
 export const insertTableRow = (increment: number = 0, selectTable = false) => {
   const table = getTable();
   const row = getRow();
-  console.log(table, row);
+
   if (table && row !== undefined) {
     return quadraticCore.dataTableMutations({
       sheetId: sheets.current,
@@ -408,7 +404,7 @@ export const removeTableRow = (selectTable = false) => {
   }
 };
 
-export const editTableCode = () => {
+const editTableCode = () => {
   const table = getTable();
   if (table) {
     doubleClickCell({ column: table.x, row: table.y });

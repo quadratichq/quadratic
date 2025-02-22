@@ -854,10 +854,9 @@ impl GridController {
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
 
-            let column_index = data_table.get_column_index_from_display_index(index, false);
-
+            let display_index = data_table.get_display_index_from_column_index(index, true);
             let values_rect = Rect::from_numbers(
-                data_table_pos.x + index as i64,
+                data_table_pos.x + display_index as i64,
                 data_table_pos.y + data_table.y_adjustment(true),
                 1,
                 data_table_rect.height() as i64 - data_table.y_adjustment(true),
@@ -897,7 +896,7 @@ impl GridController {
                     data_table.transfer_formats_from_sheet(data_table_pos, sheet, values_rect)?;
 
                 // clear sheet values
-                let _ = sheet.delete_cell_values(values_rect);
+                sheet.delete_cell_values(values_rect);
                 // clear sheet formats
                 sheet
                     .formats
@@ -916,7 +915,7 @@ impl GridController {
                     }
                 }
             }
-            data_table.insert_column_sorted(column_index as usize, column_header, values)?;
+            data_table.insert_column_sorted(index as usize, column_header, values)?;
             if !format_update.is_default() {
                 data_table.formats.apply_updates(&format_update);
             }
@@ -967,15 +966,14 @@ impl GridController {
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
 
-            let column_index =
-                usize::try_from(data_table.get_column_index_from_display_index(index, true))?;
-
-            let old_values = data_table.get_column_sorted(column_index)?;
+            let old_values = data_table.get_column_sorted(index as usize)?;
             let old_column_header = data_table
-                .get_column_header(column_index)
+                .get_column_header(index as usize)
                 .map(|header| header.name.to_owned().to_string());
+
+            let display_index = data_table.get_display_index_from_column_index(index, true);
             let values_rect = Rect::from_numbers(
-                data_table_pos.x + index as i64,
+                data_table_pos.x + display_index as i64,
                 data_table_pos.y + data_table.y_adjustment(true),
                 1,
                 old_values.len() as i64,
@@ -1028,16 +1026,12 @@ impl GridController {
                     sort: Some(old_sort),
                 });
 
-                sort.retain(|sort| sort.column_index != column_index);
+                sort.retain(|sort| sort.column_index != index as usize);
                 data_table.sort_all()?;
             }
 
-            let formats_rect = Rect::from_numbers(
-                column_index as i64 + 1,
-                1,
-                1,
-                data_table.height(true) as i64,
-            );
+            let formats_rect =
+                Rect::from_numbers(index as i64 + 1, 1, 1, data_table.height(true) as i64);
             let data_table_reverse_format =
                 data_table
                     .formats
@@ -1052,8 +1046,8 @@ impl GridController {
                 });
             }
 
-            let old_values = data_table.get_column_sorted(column_index)?;
-            data_table.delete_column(column_index)?;
+            let old_values = data_table.get_column_sorted(index as usize)?;
+            data_table.delete_column(index as usize)?;
 
             if select_table {
                 Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
