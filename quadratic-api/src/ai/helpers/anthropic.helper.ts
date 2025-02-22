@@ -1,4 +1,5 @@
 import type Anthropic from '@anthropic-ai/sdk';
+import type { MessageParam, TextBlockParam, Tool, ToolChoice } from '@anthropic-ai/sdk/resources';
 import type { Stream } from '@anthropic-ai/sdk/streaming';
 import type { Response } from 'express';
 import { getSystemPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
@@ -8,23 +9,23 @@ import type {
   AIMessagePrompt,
   AIRequestBody,
   AnthropicModel,
-  AnthropicPromptMessage,
-  AnthropicRequestBody,
-  AnthropicTool,
-  AnthropicToolChoice,
   BedrockAnthropicModel,
+  XAIModel,
 } from 'quadratic-shared/typesAndSchemasAI';
 
-export function getAnthropicApiArgs(
-  args: Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'source' | 'model'>
-): Omit<AnthropicRequestBody, 'model'> {
+export function getAnthropicApiArgs(args: Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'source' | 'model'>): {
+  system: string | TextBlockParam[] | undefined;
+  messages: MessageParam[];
+  tools: Tool[] | undefined;
+  tool_choice: ToolChoice | undefined;
+} {
   const { messages: chatMessages, useTools, toolName } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
   const system = systemMessages.join('\n\n');
-  const messages: AnthropicPromptMessage[] = promptMessages.reduce<AnthropicPromptMessage[]>((acc, message) => {
+  const messages: MessageParam[] = promptMessages.reduce<MessageParam[]>((acc, message) => {
     if (message.role === 'assistant' && message.contextType === 'userPrompt' && message.toolCalls.length > 0) {
-      const anthropicMessages: AnthropicPromptMessage[] = [
+      const anthropicMessages: MessageParam[] = [
         ...acc,
         {
           role: message.role,
@@ -48,7 +49,7 @@ export function getAnthropicApiArgs(
       ];
       return anthropicMessages;
     } else if (message.role === 'user' && message.contextType === 'toolResult') {
-      const anthropicMessages: AnthropicPromptMessage[] = [
+      const anthropicMessages: MessageParam[] = [
         ...acc,
         {
           role: message.role,
@@ -67,7 +68,7 @@ export function getAnthropicApiArgs(
       ];
       return anthropicMessages;
     } else {
-      const anthropicMessages: AnthropicPromptMessage[] = [
+      const anthropicMessages: MessageParam[] = [
         ...acc,
         {
           role: message.role,
@@ -84,7 +85,7 @@ export function getAnthropicApiArgs(
   return { system, messages, tools, tool_choice };
 }
 
-function getAnthropicTools(useTools?: boolean, toolName?: AITool): AnthropicTool[] | undefined {
+function getAnthropicTools(useTools?: boolean, toolName?: AITool): Tool[] | undefined {
   if (!useTools) {
     return undefined;
   }
@@ -96,8 +97,8 @@ function getAnthropicTools(useTools?: boolean, toolName?: AITool): AnthropicTool
     return name === toolName;
   });
 
-  const anthropicTools: AnthropicTool[] = tools.map(
-    ([name, { description, parameters: input_schema }]): AnthropicTool => ({
+  const anthropicTools: Tool[] = tools.map(
+    ([name, { description, parameters: input_schema }]): Tool => ({
       name,
       description,
       input_schema,
@@ -107,19 +108,19 @@ function getAnthropicTools(useTools?: boolean, toolName?: AITool): AnthropicTool
   return anthropicTools;
 }
 
-function getAnthropicToolChoice(useTools?: boolean, name?: AITool): AnthropicToolChoice | undefined {
+function getAnthropicToolChoice(useTools?: boolean, name?: AITool): ToolChoice | undefined {
   if (!useTools) {
     return undefined;
   }
 
-  const toolChoice: AnthropicToolChoice = name === undefined ? { type: 'auto' } : { type: 'tool', name };
+  const toolChoice: ToolChoice = name === undefined ? { type: 'auto' } : { type: 'tool', name };
   return toolChoice;
 }
 
 export async function parseAnthropicStream(
   chunks: Stream<Anthropic.Messages.RawMessageStreamEvent>,
   response: Response,
-  model: AnthropicModel | BedrockAnthropicModel
+  model: BedrockAnthropicModel | AnthropicModel | XAIModel
 ) {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
@@ -183,6 +184,14 @@ export async function parseAnthropicStream(
     response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
   }
 
+  if (responseMessage.toolCalls.some((toolCall) => toolCall.loading)) {
+    responseMessage.toolCalls = responseMessage.toolCalls.map((toolCall) => ({
+      ...toolCall,
+      loading: false,
+    }));
+    response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+  }
+
   if (!response.writableEnded) {
     response.end();
   }
@@ -193,7 +202,7 @@ export async function parseAnthropicStream(
 export function parseAnthropicResponse(
   result: Anthropic.Messages.Message,
   response: Response,
-  model: AnthropicModel | BedrockAnthropicModel
+  model: BedrockAnthropicModel | AnthropicModel | XAIModel
 ): AIMessagePrompt {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',

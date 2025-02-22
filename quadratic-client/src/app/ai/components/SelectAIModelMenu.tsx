@@ -1,4 +1,5 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
+import { debug } from '@/app/debugFlags';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -22,6 +23,13 @@ export function SelectAIModelMenu({ loading, textAreaRef }: SelectAIModelMenuPro
 
   const enabledModels = useMemo(() => {
     const models = Object.keys(MODEL_OPTIONS) as (keyof typeof MODEL_OPTIONS)[];
+
+    // enable all models in debug mode
+    if (debug) {
+      return models;
+    }
+
+    // only show enabled models in production
     return models.filter((model) => MODEL_OPTIONS[model].enabled);
   }, []);
 

@@ -1,18 +1,20 @@
+import type AnthropicBedrock from '@anthropic-ai/bedrock-sdk';
 import Anthropic from '@anthropic-ai/sdk';
 import type { Response } from 'express';
 import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
-import type { AIMessagePrompt, AIRequestHelperArgs, AnthropicModel } from 'quadratic-shared/typesAndSchemasAI';
-import { ANTHROPIC_API_KEY } from '../../env-vars';
+import type {
+  AIMessagePrompt,
+  AIRequestHelperArgs,
+  AnthropicModel,
+  BedrockAnthropicModel,
+} from 'quadratic-shared/typesAndSchemasAI';
 import { getAnthropicApiArgs, parseAnthropicResponse, parseAnthropicStream } from '../helpers/anthropic.helper';
 
-const anthropic = new Anthropic({
-  apiKey: ANTHROPIC_API_KEY,
-});
-
 export const handleAnthropicRequest = async (
-  model: AnthropicModel,
+  model: BedrockAnthropicModel | AnthropicModel,
   args: AIRequestHelperArgs,
-  response: Response
+  response: Response,
+  anthropic: AnthropicBedrock | Anthropic
 ): Promise<AIMessagePrompt | undefined> => {
   const { system, messages, tools, tool_choice } = getAnthropicApiArgs(args);
   const { stream, temperature, max_tokens } = getModelOptions(model, args);
@@ -46,7 +48,6 @@ export const handleAnthropicRequest = async (
           console.log(error);
         }
       } else {
-        response.status(500).json('Error occurred after headers were sent');
         console.error('Error occurred after headers were sent:', error);
       }
     }

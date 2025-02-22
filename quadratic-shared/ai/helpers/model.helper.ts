@@ -6,6 +6,7 @@ import type {
   BedrockAnthropicModel,
   BedrockModel,
   OpenAIModel,
+  XAIModel,
 } from 'quadratic-shared/typesAndSchemasAI';
 
 export function isBedrockModel(model: AIModel): model is BedrockModel {
@@ -18,6 +19,10 @@ export function isBedrockAnthropicModel(model: AIModel): model is BedrockAnthrop
 
 export function isAnthropicModel(model: AIModel): model is AnthropicModel {
   return MODEL_OPTIONS[model].provider === 'anthropic';
+}
+
+export function isXAIModel(model: AIModel): model is XAIModel {
+  return MODEL_OPTIONS[model].provider === 'xai';
 }
 
 export function isOpenAIModel(model: AIModel): model is OpenAIModel {
