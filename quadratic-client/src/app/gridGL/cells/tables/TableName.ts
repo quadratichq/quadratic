@@ -130,13 +130,10 @@ export class TableName extends Container {
 
   intersects(world: Point): TablePointerDownResult | undefined {
     if (this.visible && intersects.rectanglePoint(this.tableNameBounds, world)) {
-      if (world.x <= this.tableNameBounds.x + this.text.x + this.text.width) {
+      if (world.x <= this.tableNameBounds.x + this.text.x + this.text.width + DROPDOWN_PADDING) {
         return { table: this.table.codeCell, type: 'table-name' };
       }
-      if (
-        world.x <=
-        this.tableNameBounds.x + this.text.x + this.text.width + this.dropdown.width + DROPDOWN_PADDING * 2
-      ) {
+      if (world.x <= this.tableNameBounds.x + this.text.x + this.text.width + this.dropdown.width + DROPDOWN_PADDING) {
         return { table: this.table.codeCell, type: 'dropdown' };
       }
       return { table: this.table.codeCell, type: 'table-name' };
