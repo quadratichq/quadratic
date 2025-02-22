@@ -204,7 +204,7 @@ pub fn unique_name(name: &str, require_number: bool, check_name: impl Fn(&str) -
         let new_name_alt = format!("{} {}", base, num);
         let new_names = [new_name.as_str(), new_name_alt.as_str()];
 
-        if new_names.iter().all(|name| check_name(*name)) {
+        if new_names.iter().all(|name| check_name(name)) {
             name = new_name;
         }
 
