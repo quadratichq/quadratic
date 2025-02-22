@@ -76,12 +76,21 @@ export class TableColumnHeader extends Container {
     columnY: number;
   }) {
     const { x, width, height, name, sort, columnY } = options;
-    this.columnHeaderBounds = new Rectangle(
-      this.table.tableBounds.x + x,
-      this.table.tableBounds.y + columnY,
-      width,
-      height
-    );
+
+    // need to maintain any adjusted y position
+    // todo: this fn is called too often (this is needed for rename column name)
+    if (this.columnHeaderBounds) {
+      this.columnHeaderBounds.x = this.table.tableBounds.x + x;
+      this.columnHeaderBounds.width = width;
+      this.columnHeaderBounds.height = height;
+    } else {
+      this.columnHeaderBounds = new Rectangle(
+        this.table.tableBounds.x + x,
+        this.table.tableBounds.y + columnY,
+        width,
+        height
+      );
+    }
     this.w = width;
     this.h = height;
     this.position.set(x, 0);
