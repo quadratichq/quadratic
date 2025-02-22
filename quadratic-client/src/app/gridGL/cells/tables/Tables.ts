@@ -293,9 +293,7 @@ export class Tables extends Container<Table> {
 
   getTableColumnHeaderPosition(x: number, y: number, index: number): Rectangle | undefined {
     const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
-    if (table) {
-      return table.getColumnHeaderBounds(index);
-    }
+    return table?.getColumnHeaderBounds(index);
   }
 
   getTableFromTableCell(x: number, y: number): Table | undefined {

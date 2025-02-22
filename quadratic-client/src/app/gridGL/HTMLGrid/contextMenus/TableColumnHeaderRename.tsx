@@ -18,7 +18,7 @@ export const TableColumnHeaderRename = () => {
     if (!tables) {
       throw new Error('Tables not found in TableColumnHeaderRename');
     }
-    if (!contextMenu.table || !contextMenu.selectedColumn) return 0;
+    if (!contextMenu.table || contextMenu.selectedColumn === undefined) return 0;
     const bounds = tables.getTableColumnHeaderPosition(
       contextMenu.table.x,
       contextMenu.table.y,
@@ -47,7 +47,6 @@ export const TableColumnHeaderRename = () => {
       );
       if (!bounds || !inputElement.current) return;
       inputElement.current.style.top = `${bounds.y - 1}px`;
-      console.log(bounds.y - 1, contextMenu.table.x, contextMenu.table.y, contextMenu.selectedColumn);
       inputElement.current.style.left = `${bounds.x + 1}px`;
       inputElement.current.style.height = `${bounds.height}px`;
     }
