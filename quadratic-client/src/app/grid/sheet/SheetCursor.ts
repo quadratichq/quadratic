@@ -402,4 +402,10 @@ export class SheetCursor {
   updateColumnName = (tableName: string, oldName: string, newName: string) => {
     this.jsSelection.updateColumnName(tableName, oldName, newName);
   };
+
+  hideColumn = (tableName: string, columnName: string) => {
+    this.jsSelection.hideColumn(tableName, columnName);
+    const { x, y } = this.position;
+    this.selectRect(x, y, x, y);
+  };
 }

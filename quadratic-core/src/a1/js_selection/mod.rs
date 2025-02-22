@@ -68,4 +68,9 @@ impl JsSelection {
         self.selection
             .replace_column_name(&table_name, &old_name, &new_name);
     }
+
+    #[wasm_bindgen(js_name = "hideColumn")]
+    pub fn hide_column(&mut self, table_name: String, column_name: String) {
+        self.context.hide_column(&table_name, &column_name);
+    }
 }

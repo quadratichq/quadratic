@@ -385,10 +385,10 @@ export class Tables extends Container<Table> {
       if (table.codeCell.show_ui && table.codeCell.show_columns && table.inOverHeadings) {
         if (
           cell.x >= table.codeCell.x &&
-          cell.x <= table.codeCell.x + table.codeCell.w - 1 &&
+          cell.x < table.codeCell.x + table.codeCell.w &&
           table.codeCell.y + (table.codeCell.show_name ? 1 : 0) === cell.y
         ) {
-          const index = table.codeCell.columns.findIndex((c) => c.valueIndex === cell.x - table.codeCell.x);
+          const index = table.codeCell.columns.filter((c) => c.display)[cell.x - table.codeCell.x]?.valueIndex ?? -1;
           if (index !== -1) {
             const bounds = table.header.getColumnHeaderBounds(index);
             return {

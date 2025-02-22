@@ -39,6 +39,12 @@ impl TableMap {
         self.tables.get(&table_name)
     }
 
+    /// Finds a table by name.
+    pub fn try_table_mut(&mut self, table_name: &str) -> Option<&mut TableMapEntry> {
+        let table_name = case_fold(table_name);
+        self.tables.get_mut(&table_name)
+    }
+
     /// Returns true if the table has a column with the given name.
     pub fn table_has_column(&self, table_name: &str, column_name: &str) -> bool {
         let column_name_folded = case_fold(column_name);
@@ -101,6 +107,18 @@ impl TableMap {
 
             None
         })
+    }
+
+    pub fn hide_column(&mut self, table_name: &str, column_name: &str) {
+        if let Some(table) = self.try_table_mut(table_name) {
+            if let Some(index) = table
+                .visible_columns
+                .iter()
+                .position(|col| col == column_name)
+            {
+                table.visible_columns.remove(index);
+            }
+        }
     }
 
     #[cfg(test)]

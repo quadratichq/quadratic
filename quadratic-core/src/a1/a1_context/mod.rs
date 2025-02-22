@@ -118,6 +118,10 @@ impl A1Context {
         self.table_map.table_in_name_or_column(sheet_id, x, y)
     }
 
+    pub fn hide_column(&mut self, table_name: &str, column_name: &str) {
+        self.table_map.hide_column(table_name, column_name);
+    }
+
     /// Creates an A1Context for testing.
     ///
     /// sheets: Vec<(sheet_name: &str, sheet_id: SheetId)>

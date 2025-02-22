@@ -103,21 +103,8 @@ export const getColumn = (): number | undefined => {
     displayColumnX = sheets.sheet.cursor.position.x - table.x;
   }
 
-  if (columns[displayColumnX] === undefined) {
-    return undefined;
-  }
+  const columnX = columns.filter((c) => c.display)[displayColumnX]?.valueIndex;
 
-  let seenDisplayColumns = -1;
-  let columnX = -1;
-  for (const column of columns) {
-    columnX++;
-    if (column.display) {
-      seenDisplayColumns++;
-      if (seenDisplayColumns === displayColumnX) {
-        break;
-      }
-    }
-  }
   return columnX;
 };
 
@@ -381,6 +368,8 @@ export const hideTableColumn = () => {
     columns[column].display = false;
 
     quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { columns }, sheets.getCursorPosition());
+
+    sheets.sheet.cursor.hideColumn(table.name, columns[column].name);
   }
 };
 
