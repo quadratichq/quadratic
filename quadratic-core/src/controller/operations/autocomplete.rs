@@ -656,6 +656,7 @@ impl GridController {
             &mut values,
             context,
             &selection,
+            false,
         );
 
         // gather ComputeCode operations for any code cells

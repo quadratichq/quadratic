@@ -19,7 +19,12 @@ impl GridController {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
         let sheet = self.try_sheet(selection.sheet_id).ok_or("No Sheet found")?;
-        let js_clipboard = sheet.copy_to_clipboard(&selection, ClipboardOperation::Copy)?;
+        let js_clipboard = sheet.copy_to_clipboard(
+            &selection,
+            self.a1_context(),
+            ClipboardOperation::Copy,
+            true,
+        )?;
         Ok(serde_wasm_bindgen::to_value(&js_clipboard).map_err(|e| e.to_string())?)
     }
 

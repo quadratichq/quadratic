@@ -60,7 +60,9 @@ fn criterion_benchmark(c: &mut Criterion) {
             let JsClipboard { plain_text, html } = sheet
                 .copy_to_clipboard(
                     &A1Selection::from_rect(sheet_rect),
+                    gc.a1_context(),
                     ClipboardOperation::Copy,
+                    true,
                 )
                 .unwrap();
 
@@ -89,7 +91,9 @@ fn criterion_benchmark(c: &mut Criterion) {
             let JsClipboard { plain_text, html } = sheet
                 .copy_to_clipboard(
                     &A1Selection::from_rect(sheet_rect),
+                    gc.a1_context(),
                     ClipboardOperation::Copy,
+                    true,
                 )
                 .unwrap();
 

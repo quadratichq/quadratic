@@ -101,7 +101,7 @@ impl GridController {
             .map(|t| &t.forward)
     }
 
-    pub(crate) fn a1_context(&self) -> &A1Context {
+    pub fn a1_context(&self) -> &A1Context {
         &self.a1_context
     }
 

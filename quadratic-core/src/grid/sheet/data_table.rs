@@ -179,6 +179,7 @@ impl Sheet {
         values: &mut CellValues,
         context: &A1Context,
         selection: &A1Selection,
+        include_data_table_values: bool,
     ) -> IndexMap<Pos, DataTable> {
         let mut data_tables = IndexMap::new();
 
@@ -195,7 +196,11 @@ impl Sheet {
 
                 // if the source cell is included in the clipboard, add the data_table to the clipboard
                 if !include_in_cells {
-                    data_tables.insert(data_table_pos, data_table.clone());
+                    if include_data_table_values {
+                        data_tables.insert(data_table_pos, data_table.clone());
+                    } else {
+                        data_tables.insert(data_table_pos, data_table.clone_without_values());
+                    }
                 }
 
                 if data_table.spill_error {
@@ -321,8 +326,8 @@ mod test {
             A1Selection::from_ref_range_bounds(sheet_id, RefRangeBounds::new_relative_pos(pos));
 
         let JsClipboard { html, .. } = gc
-            .sheet_mut(sheet_id)
-            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+            .sheet(sheet_id)
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, false)
             .unwrap();
 
         gc.paste_from_clipboard(

@@ -14,7 +14,7 @@ impl GridController {
         selection: &A1Selection,
         cursor: Option<String>,
     ) -> Result<JsClipboard, String> {
-        let (ops, js_clipboard) = self.cut_to_clipboard_operations(selection)?;
+        let (ops, js_clipboard) = self.cut_to_clipboard_operations(selection, true)?;
         self.start_user_transaction(ops, cursor, TransactionName::CutClipboard);
 
         Ok(js_clipboard)
@@ -220,13 +220,13 @@ mod test {
         let selection = A1Selection::from_rect(SheetRect::new(2, 2, 8, 5, sheet_id));
         let sheet = gc.sheet(sheet_id);
         let JsClipboard { plain_text, .. } = sheet
-            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
             .unwrap();
         assert_eq!(plain_text, String::from("2, 2\t\t\t\t\t\t\n\t\t12\t\t\t\t\n\t\t\t\tunderline\t\t\n\t\t\t\t\t\tstrike through"));
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 8, 6, sheet_id));
         let JsClipboard { plain_text, html } = sheet
-            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
             .unwrap();
 
         // paste using plain_text
@@ -363,7 +363,7 @@ mod test {
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 1, 1, sheet_id));
         let JsClipboard { html, .. } = sheet
-            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, false)
             .unwrap();
 
         // paste using html on a new grid controller
@@ -457,7 +457,7 @@ mod test {
         );
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 3, 1, sheet_id));
         let JsClipboard { html, .. } = sheet
-            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, false)
             .unwrap();
 
         // paste using html on a new grid controller
@@ -510,7 +510,7 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         let JsClipboard { html, .. } = sheet
-            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, false)
             .unwrap();
 
         gc.paste_from_clipboard(
@@ -578,7 +578,7 @@ mod test {
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 5, 5, sheet_id_1));
         let JsClipboard { html, .. } = sheet
-            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, false)
             .unwrap();
         gc.paste_from_clipboard(
             &A1Selection::from_xy(1, 11, sheet_id_2),
@@ -633,13 +633,13 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 3, 2, sheet_id));
         let JsClipboard { plain_text, .. } = sheet
-            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
             .unwrap();
         assert_eq!(plain_text, String::from("1, 1\t\t\n\t\t12"));
 
         let selection = A1Selection::from_rect(SheetRect::new(0, 0, 3, 2, sheet_id));
         let JsClipboard { html, .. } = sheet
-            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, false)
             .unwrap();
 
         gc.paste_from_clipboard(
@@ -677,7 +677,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         let selection = A1Selection::from_rect(SheetRect::single_pos(src_pos, sheet_id));
         let JsClipboard { html, .. } = sheet
-            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, false)
             .unwrap();
 
         let get_value = |gc: &GridController, x, y| {
@@ -736,7 +736,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 3, 1, sheet_id));
         let JsClipboard { plain_text, html } = sheet
-            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
             .unwrap();
 
         gc.paste_from_clipboard(
@@ -778,7 +778,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 3, 3, sheet_id));
         let JsClipboard { plain_text, html } = sheet
-            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
             .unwrap();
         assert_eq!(plain_text, String::from("\t\t\n\t1\t\n\t\t12"));
 
@@ -847,7 +847,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         let selection = A1Selection::from_rect(SheetRect::new(2, 1, 3, 2, sheet_id));
         let JsClipboard { plain_text, html } = sheet
-            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
             .unwrap();
 
         // paste using html on a new grid controller
@@ -927,8 +927,9 @@ mod test {
             .fill_color
             .set(Pos { x: 4, y: 5 }, Some("red".to_string()));
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 5, 6, sheet_id));
+        let sheet = gc.sheet(sheet_id);
         let JsClipboard { plain_text, html } = sheet
-            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
             .unwrap();
 
         let mut gc = GridController::test();
@@ -1136,10 +1137,10 @@ mod test {
             None,
         );
 
-        let sheet = gc.sheet_mut(sheet_id);
+        let sheet = gc.sheet(sheet_id);
         let selection = A1Selection::from_rect(SheetRect::new(2, 1, 4, 1, sheet_id));
         let JsClipboard { plain_text, html } = sheet
-            .copy_to_clipboard(&selection, ClipboardOperation::Cut)
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Cut, true)
             .unwrap();
 
         gc.paste_from_clipboard(
@@ -1180,10 +1181,10 @@ mod test {
             None,
         );
 
-        let sheet = gc.sheet_mut(sheet_id);
+        let sheet = gc.sheet(sheet_id);
         let selection = A1Selection::from_rect(SheetRect::new(2, 1, 4, 1, sheet_id));
         let JsClipboard { plain_text, html } = sheet
-            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
             .unwrap();
 
         gc.paste_from_clipboard(
@@ -1222,8 +1223,9 @@ mod test {
         sheet.set_cell_values(Rect::from_numbers(1, 1, 2, 2), &Array::from(values));
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 2, 2, sheet_id));
+        let sheet = gc.sheet(sheet_id);
         let JsClipboard { plain_text, html } = sheet
-            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
             .unwrap();
 
         gc.paste_from_clipboard(
@@ -1332,8 +1334,9 @@ mod test {
         sheet.set_cell_values(Rect::from_numbers(1, 1, 2, 2), &Array::from(values));
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 2, 2, sheet_id));
+        let sheet = gc.sheet(sheet_id);
         let JsClipboard { plain_text, html } = sheet
-            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
             .unwrap();
 
         gc.paste_from_clipboard(
@@ -1379,8 +1382,9 @@ mod test {
         sheet.set_cell_values(Rect::from_numbers(1, 1, 2, 2), &Array::from(values));
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 2, 2, sheet_id));
+        let sheet = gc.sheet(sheet_id);
         let JsClipboard { plain_text, html } = sheet
-            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
             .unwrap();
 
         gc.paste_from_clipboard(

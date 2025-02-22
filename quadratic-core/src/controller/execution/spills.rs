@@ -50,8 +50,6 @@ impl GridController {
                         data_table.is_image(),
                         data_table.is_html(),
                     );
-
-                    self.send_code_cells(transaction);
                 }
             }
         }

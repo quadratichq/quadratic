@@ -205,7 +205,6 @@ impl GridController {
         transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
 
         self.send_updated_bounds(transaction, sheet_id);
-        self.send_code_cells(transaction);
 
         if (cfg!(target_family = "wasm") || cfg!(test)) && transaction.is_user() {
             if let Some(sheet) = self.try_sheet(sheet_id) {

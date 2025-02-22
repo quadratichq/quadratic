@@ -22,7 +22,8 @@ impl GridController {
 
             let mut ops = vec![];
 
-            if let Ok((cut_ops, js_clipboard)) = self.cut_to_clipboard_operations(&selection) {
+            if let Ok((cut_ops, js_clipboard)) = self.cut_to_clipboard_operations(&selection, false)
+            {
                 ops.extend(cut_ops);
 
                 match self.paste_html_operations(

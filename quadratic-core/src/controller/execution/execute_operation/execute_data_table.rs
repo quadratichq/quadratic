@@ -856,7 +856,7 @@ impl GridController {
 
             let display_index = data_table.get_display_index_from_column_index(index, true);
             let values_rect = Rect::from_numbers(
-                data_table_pos.x + display_index as i64,
+                data_table_pos.x + display_index,
                 data_table_pos.y + data_table.y_adjustment(true),
                 1,
                 data_table_rect.height() as i64 - data_table.y_adjustment(true),
@@ -973,7 +973,7 @@ impl GridController {
 
             let display_index = data_table.get_display_index_from_column_index(index, true);
             let values_rect = Rect::from_numbers(
-                data_table_pos.x + display_index as i64,
+                data_table_pos.x + display_index,
                 data_table_pos.y + data_table.y_adjustment(true),
                 1,
                 old_values.len() as i64,

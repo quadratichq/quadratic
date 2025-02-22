@@ -44,8 +44,6 @@ impl GridController {
         self.process_remaining_dirty_hashes(transaction);
         self.send_validations(transaction);
         self.send_borders(transaction);
-        self.send_html_cells(transaction);
-        self.send_images(transaction);
 
         transaction.fill_cells.iter().for_each(|sheet_id| {
             self.send_all_fills(*sheet_id);
@@ -345,11 +343,15 @@ impl GridController {
         }
 
         transaction.code_cells.clear();
+
+        self.send_html_cells(transaction);
+        self.send_images(transaction);
     }
 
     /// Sends individual offsets that have been modified to the client
     pub(crate) fn send_offsets_modified(&self, transaction: &mut PendingTransaction) {
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+            transaction.offsets_modified.clear();
             return;
         }
 
@@ -381,6 +383,8 @@ impl GridController {
 
     fn send_validations(&self, transaction: &mut PendingTransaction) {
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+            transaction.validations.clear();
+            transaction.validations_warnings.clear();
             return;
         }
 
@@ -406,6 +410,7 @@ impl GridController {
 
     fn send_borders(&self, transaction: &mut PendingTransaction) {
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+            transaction.sheet_borders.clear();
             return;
         }
 
@@ -421,6 +426,7 @@ impl GridController {
 
     fn send_html_cells(&self, transaction: &mut PendingTransaction) {
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+            transaction.html_cells.clear();
             return;
         }
 
@@ -460,6 +466,7 @@ impl GridController {
 
     fn send_images(&self, transaction: &mut PendingTransaction) {
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+            transaction.image_cells.clear();
             return;
         }
 

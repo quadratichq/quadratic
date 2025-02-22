@@ -264,6 +264,31 @@ impl DataTable {
         data_table
     }
 
+    pub fn clone_without_values(&self) -> Self {
+        Self {
+            kind: self.kind.clone(),
+            name: self.name.clone(),
+            header_is_first_row: self.header_is_first_row,
+            column_headers: self.column_headers.clone(),
+            sort: self.sort.clone(),
+            display_buffer: self.display_buffer.clone(),
+            value: Value::Single(CellValue::Blank),
+            readonly: self.readonly,
+            spill_error: self.spill_error,
+            last_modified: self.last_modified,
+            alternating_colors: self.alternating_colors,
+            formats: self.formats.clone(),
+            borders: self.borders.clone(),
+
+            show_ui: self.show_ui,
+            show_name: self.show_name,
+            show_columns: self.show_columns,
+
+            chart_pixel_output: self.chart_pixel_output,
+            chart_output: self.chart_output,
+        }
+    }
+
     /// Apply a new last modified date to the DataTable.
     pub fn with_last_modified(mut self, last_modified: DateTime<Utc>) -> Self {
         self.last_modified = last_modified;
