@@ -368,7 +368,8 @@ impl GridController {
                             continue;
                         }
                         // handle hide columns
-                        pos.x = data_table.get_column_index_from_display_index(pos.x as u32) as i64;
+                        pos.x = data_table.get_column_index_from_display_index(pos.x as u32, true)
+                            as i64;
 
                         // handle sort
                         pos.y = data_table.transmute_index(pos.y as u64) as i64;

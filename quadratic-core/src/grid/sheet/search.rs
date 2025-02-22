@@ -207,7 +207,7 @@ impl Sheet {
 
             // handle hidden columns
             let actual_column_index =
-                data_table.get_column_index_from_display_index(display_column_index);
+                data_table.get_column_index_from_display_index(display_column_index, true);
 
             let Ok(column) = data_table.get_column_sorted(actual_column_index as usize) else {
                 return text;

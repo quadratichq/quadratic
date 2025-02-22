@@ -1012,9 +1012,9 @@ pub mod test {
             DataTableColumnHeader::new("D".to_string(), true, 3),  // visible
         ]);
 
-        assert_eq!(data_table.get_column_index_from_display_index(0), 1);
-        assert_eq!(data_table.get_column_index_from_display_index(1), 3);
-        assert_eq!(data_table.get_column_index_from_display_index(2), 4); // out of bounds
+        assert_eq!(data_table.get_column_index_from_display_index(0, true), 1);
+        assert_eq!(data_table.get_column_index_from_display_index(1, true), 3);
+        assert_eq!(data_table.get_column_index_from_display_index(2, true), 4); // out of bounds
     }
 
     #[test]

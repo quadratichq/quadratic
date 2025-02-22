@@ -55,7 +55,7 @@ impl DataTable {
             let table_width = self.width();
             let mut row_values = vec![CellValue::Blank; table_width];
             for (index, cell_value) in cell_values.into_iter().enumerate() {
-                let column_index = self.get_column_index_from_display_index(index as u32);
+                let column_index = self.get_column_index_from_display_index(index as u32, true);
                 row_values[usize::try_from(column_index)?] = cell_value;
             }
             values = Some(row_values);

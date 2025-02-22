@@ -91,7 +91,7 @@ impl DataTable {
         }
 
         // add x adjustment for hidden columns
-        x = self.get_column_index_from_display_index(x);
+        x = self.get_column_index_from_display_index(x, true);
 
         let cell_value = self.value.get(x, y)?;
 

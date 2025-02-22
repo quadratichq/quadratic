@@ -191,7 +191,7 @@ impl DataTable {
 
     /// Get the column header at the given display index.
     pub fn display_header_at(&self, display_x: u32) -> Option<&DataTableColumnHeader> {
-        let column_index = self.get_column_index_from_display_index(display_x);
+        let column_index = self.get_column_index_from_display_index(display_x, true);
         self.get_column_header(column_index as usize)
     }
 }

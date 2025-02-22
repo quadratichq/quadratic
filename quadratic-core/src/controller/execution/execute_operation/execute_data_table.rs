@@ -277,7 +277,7 @@ impl GridController {
                         }
 
                         // account for hidden columns
-                        let column_index = data_table.get_column_index_from_display_index(x);
+                        let column_index = data_table.get_column_index_from_display_index(x, true);
                         if let Ok(value) = data_table.value.get(column_index, y) {
                             old_values_unsorted.set(x, y, value.to_owned());
                         }
@@ -308,7 +308,7 @@ impl GridController {
                 for x in rect.x_range() {
                     let display_column = u32::try_from(x - data_table_pos.x)?;
                     let column_index =
-                        data_table.get_column_index_from_display_index(display_column);
+                        data_table.get_column_index_from_display_index(display_column, true);
 
                     for y in rect.y_range() {
                         let row_index = u32::try_from(y - data_table_pos.y)?;
@@ -854,7 +854,7 @@ impl GridController {
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
 
-            let column_index = data_table.get_column_index_from_display_index(index);
+            let column_index = data_table.get_column_index_from_display_index(index, false);
 
             let values_rect = Rect::from_numbers(
                 data_table_pos.x + index as i64,
@@ -968,7 +968,7 @@ impl GridController {
                 .to_sheet_rect(sheet_id);
 
             let column_index =
-                usize::try_from(data_table.get_column_index_from_display_index(index))?;
+                usize::try_from(data_table.get_column_index_from_display_index(index, true))?;
 
             let old_values = data_table.get_column_sorted(column_index)?;
             let old_column_header = data_table

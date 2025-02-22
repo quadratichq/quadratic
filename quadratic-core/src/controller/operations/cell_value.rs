@@ -241,6 +241,7 @@ impl GridController {
                                     // account for hidden columns
                                     data_table.get_column_index_from_display_index(
                                         (x - data_table_rect.min.x) as u32,
+                                        true,
                                     )
                                 })
                                 .rev()

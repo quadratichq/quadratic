@@ -64,7 +64,7 @@ export const getTable = (): JsRenderCodeCell | undefined => {
   return pixiAppSettings.contextMenu?.table ?? pixiApp.cellsSheet().cursorOnDataTable();
 };
 
-export const getRow = (): number | undefined => {
+const getRow = (): number | undefined => {
   const table = getTable();
 
   if (!table) return undefined;
@@ -76,7 +76,6 @@ export const getRow = (): number | undefined => {
 
 export const getSelectedRows = (): number[] | undefined => {
   const table = getTable();
-
   if (!table) return undefined;
 
   return sheets.sheet.cursor
@@ -86,7 +85,7 @@ export const getSelectedRows = (): number[] | undefined => {
 };
 
 // returns the column index of the selected column, starting from 0
-export const getColumn = (): number | undefined => {
+const getColumn = (): number | undefined => {
   if (pixiAppSettings.contextMenu?.selectedColumn !== undefined) {
     const selectedColumn = pixiAppSettings.contextMenu.selectedColumn;
     return selectedColumn;
@@ -108,15 +107,30 @@ export const getColumn = (): number | undefined => {
   return columnX;
 };
 
+const getDisplayColumn = (): number | undefined => {
+  const table = getTable();
+  const columns = table?.columns;
+  if (!columns) return undefined;
+
+  const columnX = getColumn();
+  if (columnX === undefined) return undefined;
+
+  return columns.filter((c) => c.display).findIndex((c) => c.valueIndex === columnX);
+};
+
 export const getColumns = (): JsDataTableColumnHeader[] | undefined => {
   const table = getTable();
   return table?.columns.map((c) => ({ ...c }));
 };
 
+// return display index of selected table columns
 export const getSelectedColumns = (): number[] | undefined => {
+  const table = getTable();
+  if (!table) return undefined;
+
   return sheets.sheet.cursor
     .getSelectedColumns()
-    .map((c) => c - 1)
+    .map((c) => c - table.x)
     .sort((a, b) => b - a);
 };
 
@@ -204,10 +218,8 @@ export const renameTable = () => {
   const table = getTable();
   const contextMenu = pixiAppSettings.contextMenu;
   if (contextMenu) {
-    setTimeout(() => {
-      const newContextMenu = { type: ContextMenuType.Table, rename: true, table };
-      events.emit('contextMenu', newContextMenu);
-    });
+    const newContextMenu = { type: ContextMenuType.Table, rename: true, table };
+    events.emit('contextMenu', newContextMenu);
   }
 };
 
@@ -236,10 +248,8 @@ export const codeToDataTable = () => {
 
 export const sortDataTable = () => {
   const table = getTable();
-  setTimeout(() => {
-    const contextMenu = { type: ContextMenuType.TableSort, table };
-    events.emit('contextMenu', contextMenu);
-  });
+  const contextMenu = { type: ContextMenuType.TableSort, table };
+  events.emit('contextMenu', contextMenu);
 };
 
 export const toggleTableAlternatingColors = () => {
@@ -261,12 +271,8 @@ export const renameTableColumn = () => {
   const column = getColumn();
 
   if (table && column !== undefined) {
-    setTimeout(() => {
-      setTimeout(() => {
-        const contextMenu = { type: ContextMenuType.TableColumn, rename: true, table, column };
-        events.emit('contextMenu', contextMenu);
-      });
-    });
+    const contextMenu = { type: ContextMenuType.TableColumn, rename: true, table, column };
+    events.emit('contextMenu', contextMenu);
   }
 };
 
@@ -295,7 +301,7 @@ export const sortTableColumnDescending = () => {
 
 export const insertTableColumn = (increment: number = 0, selectTable = false) => {
   const table = getTable();
-  const column = getColumn();
+  const column = getDisplayColumn();
 
   if (table && column !== undefined) {
     quadraticCore.dataTableMutations({
@@ -313,30 +319,6 @@ export const insertTableColumn = (increment: number = 0, selectTable = false) =>
     });
   }
 };
-
-// TODO(ddimaria): remove this once ull column selection is working in order
-// to test removing a column from the full column selection context menu
-//
-// export const removeTableColumn = (selectTable = false) => {
-//   const table = getTable();
-//   const column = getColumn();
-
-//   if (table && column !== undefined) {
-//     quadraticCore.dataTableMutations({
-//       sheetId: sheets.current,
-//       x: table.x,
-//       y: table.y,
-//       select_table: selectTable,
-//       columns_to_add: undefined,
-//       columns_to_remove: [column],
-//       rows_to_add: undefined,
-//       rows_to_remove: undefined,
-//       flatten_on_delete: undefined,
-//       swallow_on_insert: undefined,
-//       cursor: sheets.getCursorPosition(),
-//     });
-//   }
-// };
 
 export const removeTableColumn = (selectTable = false) => {
   const table = getTable();
@@ -404,30 +386,6 @@ export const insertTableRow = (increment: number = 0, selectTable = false) => {
     });
   }
 };
-
-// TODO(ddimaria): remove this once ull row selection is working in order
-// to test removing a row from the full row selection context menu
-//
-// export const removeTableRow = (selectTable = true) => {
-//   const table = getTable();
-//   const row = getRow();
-
-//   if (table && row !== undefined) {
-//     quadraticCore.dataTableMutations({
-//       sheetId: sheets.current,
-//       x: table.x,
-//       y: table.y,
-//       select_table: selectTable,
-//       columns_to_add: undefined,
-//       columns_to_remove: undefined,
-//       rows_to_add: undefined,
-//       rows_to_remove: [row],
-//       flatten_on_delete: undefined,
-//       swallow_on_insert: undefined,
-//       cursor: sheets.getCursorPosition(),
-//     });
-//   }
-// };
 
 export const removeTableRow = (selectTable = false) => {
   const table = getTable();
