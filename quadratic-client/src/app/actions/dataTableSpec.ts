@@ -264,10 +264,10 @@ export const toggleTableAlternatingColors = () => {
 
 const renameTableColumn = () => {
   const table = getTable();
-  const column = getColumn();
+  const selectedColumn = getColumn();
 
-  if (table && column !== undefined) {
-    const contextMenu = { type: ContextMenuType.TableColumn, rename: true, table, column };
+  if (table && selectedColumn !== undefined) {
+    const contextMenu = { type: ContextMenuType.TableColumn, rename: true, table, selectedColumn };
     events.emit('contextMenu', contextMenu);
   }
 };
