@@ -168,6 +168,7 @@ export class TableColumnHeader extends Container {
   };
 
   toHoverGrid(y: number) {
+    console.log(y);
     this.columnHeaderBounds.y = y;
   }
 }

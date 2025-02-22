@@ -4,14 +4,21 @@ import { TABLE_NAME_FONT_SIZE, TABLE_NAME_PADDING } from '@/app/gridGL/cells/tab
 import { PixiRename } from '@/app/gridGL/HTMLGrid/contextMenus/PixiRename';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { useRenameTableName } from '@/app/ui/hooks/useRenameTableName';
-import type { Rectangle } from 'pixi.js';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export const TableRename = () => {
   const contextMenu = useRecoilValue(contextMenuAtom);
 
-  const [position, setPosition] = useState<Rectangle | undefined>(undefined);
+  const [inputElement, setInputElement] = useState<HTMLInputElement | undefined>(undefined);
+  const getInputElement = useCallback(
+    (element: HTMLInputElement) => {
+      setInputElement(element);
+    },
+    [setInputElement]
+  );
+
+  const [width, setWidth] = useState<number | undefined>(undefined);
   useEffect(() => {
     const updatePosition = () => {
       if (
@@ -20,17 +27,26 @@ export const TableRename = () => {
         !contextMenu.table ||
         contextMenu.selectedColumn !== undefined
       ) {
-        setPosition(undefined);
+        return;
       } else {
-        setPosition(pixiApp.cellsSheets.current?.tables.getTableNamePosition(contextMenu.table.x, contextMenu.table.y));
+        const bounds = pixiApp.cellsSheets.current?.tables.getTableNamePosition(
+          contextMenu.table.x,
+          contextMenu.table.y
+        );
+        if (bounds && inputElement) {
+          setWidth(bounds.width);
+          inputElement.style.top = `${bounds.y}px`;
+          inputElement.style.left = `${bounds.x}px`;
+          inputElement.style.height = `${bounds.height}px`;
+        }
       }
     };
     updatePosition();
-    events.on('viewportChangedReady', updatePosition);
+    events.on('viewportChanged', updatePosition);
     return () => {
-      events.off('viewportChangedReady', updatePosition);
+      events.off('viewportChanged', updatePosition);
     };
-  }, [contextMenu]);
+  }, [contextMenu, inputElement]);
 
   const { renameTable } = useRenameTableName();
 
@@ -62,7 +78,7 @@ export const TableRename = () => {
   return (
     <PixiRename
       defaultValue={contextMenu.table.name}
-      position={position}
+      width={width}
       className="reverse-selection origin-bottom-left bg-primary px-3 text-sm font-bold text-primary-foreground"
       styles={{
         fontFamily: 'OpenSans-Bold, sans-serif',
@@ -71,8 +87,8 @@ export const TableRename = () => {
       }}
       onSave={handleSave}
       onClose={() => events.emit('contextMenu', {})}
-      noShrink
       onInput={handleInput}
+      getElement={getInputElement}
     />
   );
 };

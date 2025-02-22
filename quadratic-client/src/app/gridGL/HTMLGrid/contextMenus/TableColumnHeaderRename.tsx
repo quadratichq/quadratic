@@ -5,39 +5,69 @@ import { PixiRename } from '@/app/gridGL/HTMLGrid/contextMenus/PixiRename';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { useRenameTableColumnName } from '@/app/ui/hooks/useRenameTableColumnName';
 import { FONT_SIZE } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
-import type { Rectangle } from 'pixi.js';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export const TableColumnHeaderRename = () => {
   const contextMenu = useRecoilValue(contextMenuAtom);
 
-  const [position, setPosition] = useState<Rectangle | undefined>(undefined);
-  useEffect(() => {
-    const updatePosition = () => {
-      if (
-        contextMenu.type !== ContextMenuType.TableColumn ||
-        !contextMenu.rename ||
-        !contextMenu.table ||
-        contextMenu.selectedColumn === undefined
-      ) {
-        setPosition(undefined);
-      } else {
-        setPosition(
-          pixiApp.cellsSheets.current?.tables.getTableColumnHeaderPosition(
-            contextMenu.table.x,
-            contextMenu.table.y,
-            contextMenu.selectedColumn
-          )
-        );
+  const inputElement = useRef<HTMLInputElement | null>(null);
+
+  const width = useMemo(() => {
+    const tables = pixiApp.cellsSheets.current?.tables;
+    if (!tables) {
+      throw new Error('Tables not found in TableColumnHeaderRename');
+    }
+    if (!contextMenu.table || !contextMenu.selectedColumn) return 0;
+    const bounds = tables.getTableColumnHeaderPosition(
+      contextMenu.table.x,
+      contextMenu.table.y,
+      contextMenu.selectedColumn
+    );
+    return bounds?.width ?? 0;
+  }, [contextMenu.table, contextMenu.selectedColumn]);
+
+  const updatePosition = useCallback(() => {
+    if (
+      contextMenu.type !== ContextMenuType.TableColumn ||
+      !contextMenu.rename ||
+      !contextMenu.table ||
+      contextMenu.selectedColumn === undefined
+    ) {
+      return;
+    } else {
+      const tables = pixiApp.cellsSheets.current?.tables;
+      if (!tables) {
+        throw new Error('Tables not found in TableColumnHeaderRename');
       }
-    };
+      const bounds = tables.getTableColumnHeaderPosition(
+        contextMenu.table.x,
+        contextMenu.table.y,
+        contextMenu.selectedColumn
+      );
+      if (!bounds || !inputElement.current) return;
+      inputElement.current.style.top = `${bounds.y - 1}px`;
+      console.log(bounds.y - 1, contextMenu.table.x, contextMenu.table.y, contextMenu.selectedColumn);
+      inputElement.current.style.left = `${bounds.x + 1}px`;
+      inputElement.current.style.height = `${bounds.height}px`;
+    }
+  }, [contextMenu, inputElement]);
+
+  const getInputElement = useCallback(
+    (element: HTMLInputElement) => {
+      inputElement.current = element;
+      updatePosition();
+    },
+    [updatePosition]
+  );
+
+  useEffect(() => {
     updatePosition();
-    events.on('viewportChangedReady', updatePosition);
+    events.on('viewportChanged', updatePosition);
     return () => {
-      events.off('viewportChangedReady', updatePosition);
+      events.off('viewportChanged', updatePosition);
     };
-  }, [contextMenu]);
+  }, [updatePosition]);
 
   const { renameTableColumnHeader } = useRenameTableColumnName();
 
@@ -77,10 +107,6 @@ export const TableColumnHeaderRename = () => {
     return contextMenu.table.columns[contextMenu.selectedColumn].name;
   }, [contextMenu.selectedColumn, contextMenu.table]);
 
-  const selectOnFocus = useMemo(() => {
-    return contextMenu.initialValue === undefined;
-  }, [contextMenu.initialValue]);
-
   if (
     contextMenu.type !== ContextMenuType.TableColumn ||
     !contextMenu.rename ||
@@ -92,10 +118,9 @@ export const TableColumnHeaderRename = () => {
 
   return (
     <PixiRename
-      hasBorder={2}
       defaultValue={defaultValue}
       initialValue={contextMenu.initialValue}
-      position={position}
+      width={width}
       className="darker-selection origin-bottom-left border-none p-0 text-sm font-bold text-primary-foreground outline-none"
       styles={{
         fontFamily: 'OpenSans-Bold, sans-serif',
@@ -105,7 +130,7 @@ export const TableColumnHeaderRename = () => {
       }}
       onSave={handleSave}
       onClose={() => events.emit('contextMenu', {})}
-      selectOnFocus={selectOnFocus}
+      getElement={getInputElement}
     />
   );
 };

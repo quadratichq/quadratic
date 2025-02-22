@@ -4,7 +4,8 @@ import { TableColumnHeadersGridLines } from '@/app/gridGL/cells/tables/TableColu
 import { TableName } from '@/app/gridGL/cells/tables/TableName';
 import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
-import { Container, type Point, type Rectangle } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
+import { Container, type Point } from 'pixi.js';
 
 export class TableHeader extends Container {
   table: Table;
