@@ -268,7 +268,9 @@ const renameTableColumn = () => {
 
   if (table && selectedColumn !== undefined) {
     const contextMenu = { type: ContextMenuType.TableColumn, rename: true, table, selectedColumn };
-    events.emit('contextMenu', contextMenu);
+
+    // need the timeout to ensure the context menu doesn't immediately close (hack)
+    setTimeout(() => events.emit('contextMenu', contextMenu));
   }
 };
 
