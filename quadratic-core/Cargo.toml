@@ -43,8 +43,8 @@ anyhow = "1.0"
 async-trait = "0.1.63"
 futures = "0.3.25"
 itertools = "0.10.5"
-rand = "0.8.5"
-getrandom = { version = "0.2.15", features = ["js"] }
+rand = "0.9.0"
+getrandom = { version = "0.3.1", features = ["wasm_js"] }
 regex = "1.7"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -55,7 +55,7 @@ strum_macros = "0.26.3"
 tabled = { version = "0.14.0", features = ["color"] }
 pollster = "0.2.5"
 unicode-case-mapping = "0.5.0"
-uuid = { version = "1.4.0", features = ["v4", "serde"] }
+uuid = { version = "1.13.1", features = ["serde", "v4", "rng-rand"] }
 chrono = { version = "0.4", features = ["serde", "wasmbind"] }
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
