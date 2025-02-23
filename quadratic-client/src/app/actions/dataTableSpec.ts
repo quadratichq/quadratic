@@ -245,7 +245,7 @@ export const codeToDataTable = () => {
 export const sortDataTable = () => {
   const table = getTable();
   const contextMenu = { type: ContextMenuType.TableSort, table };
-  events.emit('contextMenu', contextMenu);
+  setTimeout(() => events.emit('contextMenu', contextMenu));
 };
 
 export const toggleTableAlternatingColors = () => {
