@@ -11,10 +11,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
 # Install rustup
 RUN echo 'Installing rustup...' && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
-ENV CARGO_TARGET_DIR=/quadratic/target
+ENV CARGO_TARGET_DIR=/quadratic/target/quadratic-core
 ENV CARGO_HOME=/quadratic/.cargo
 ENV CARGO_BUILD_JOBS=64
-ENV RUSTFLAGS='-C codegen-units=64'
 
 # Install wasm-pack
 RUN echo 'Installing wasm-pack...' && curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
@@ -52,10 +51,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
 # Install rustup
 RUN echo 'Installing rustup...' && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
-ENV CARGO_TARGET_DIR=/quadratic/target
+ENV CARGO_TARGET_DIR=/quadratic/target/quadratic-core-types
 ENV CARGO_HOME=/quadratic/.cargo
 ENV CARGO_BUILD_JOBS=64
-ENV RUSTFLAGS='-C codegen-units=64'
 
 # Install wasm-pack
 RUN echo 'Installing wasm-pack...' && curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
@@ -91,10 +89,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
 # Install rustup
 RUN echo 'Installing rustup...' && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
-ENV CARGO_TARGET_DIR=/quadratic/target
+ENV CARGO_TARGET_DIR=/quadratic/target/rust-client
 ENV CARGO_HOME=/quadratic/.cargo
 ENV CARGO_BUILD_JOBS=64
-ENV RUSTFLAGS='-C codegen-units=64'
 
 # Install wasm-pack
 RUN echo 'Installing wasm-pack...' && curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
