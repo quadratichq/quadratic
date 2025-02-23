@@ -246,6 +246,21 @@ impl Array {
     pub fn rows(&self) -> std::slice::Chunks<'_, CellValue> {
         self.values.chunks(self.width() as usize)
     }
+    pub fn into_rows(self) -> Vec<Vec<CellValue>> {
+        let width = self.width() as usize;
+        let mut rows = Vec::new();
+        let mut current_row = Vec::with_capacity(width);
+
+        for value in self.values {
+            current_row.push(value);
+            if current_row.len() == width {
+                rows.push(current_row);
+                current_row = Vec::with_capacity(width);
+            }
+        }
+
+        rows
+    }
     /// Returns an iterator over a single col of the array.
     pub fn col(&self, index: usize) -> StepBy<Skip<Iter<'_, CellValue>>> {
         self.values

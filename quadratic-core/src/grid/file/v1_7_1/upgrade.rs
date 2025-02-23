@@ -31,11 +31,38 @@ fn upgrade_code_runs(
         .into_iter()
         .enumerate()
         .map(|(i, (pos, code_run))| {
-            let error = if let current::CodeRunResultSchema::Err(error) = &code_run.result {
-                Some(error.to_owned())
-            } else {
-                None
+            let mut is_chart_or_html = false;
+            let (value, error) = match code_run.result {
+                current::CodeRunResultSchema::Err(error) => (
+                    v1_8::OutputValueSchema::Single(v1_8::CellValueSchema::Blank),
+                    Some(error),
+                ),
+                current::CodeRunResultSchema::Ok(value) => {
+                    let value = match value {
+                        current::OutputValueSchema::Single(cell_value) => {
+                            if matches!(
+                                cell_value,
+                                current::CellValueSchema::Html(_)
+                                    | current::CellValueSchema::Image(_)
+                            ) {
+                                is_chart_or_html = true;
+                            }
+                            v1_8::OutputValueSchema::Single(cell_value.into())
+                        }
+                        current::OutputValueSchema::Array(array) => {
+                            v1_8::OutputValueSchema::Array(v1_8::OutputArraySchema {
+                                size: v1_8::OutputSizeSchema {
+                                    w: array.size.w,
+                                    h: array.size.h,
+                                },
+                                values: array.values.into_iter().map(|v| v.into()).collect(),
+                            })
+                        }
+                    };
+                    (value, None)
+                }
             };
+
             let new_code_run = v1_8::CodeRunSchema {
                 std_out: code_run.std_out,
                 std_err: code_run.std_err,
@@ -53,32 +80,6 @@ fn upgrade_code_runs(
                 .iter()
                 .find(|(x, _)| *x == pos.x)
                 .ok_or_else(|| anyhow::anyhow!("Column {} not found", pos.x))?;
-
-            let mut is_chart_or_html = false;
-            let value = if let current::CodeRunResultSchema::Ok(value) = &code_run.result {
-                match value.to_owned() {
-                    current::OutputValueSchema::Single(cell_value) => {
-                        if matches!(
-                            cell_value,
-                            current::CellValueSchema::Html(_) | current::CellValueSchema::Image(_)
-                        ) {
-                            is_chart_or_html = true;
-                        }
-                        v1_8::OutputValueSchema::Single(cell_value.into())
-                    }
-                    current::OutputValueSchema::Array(array) => {
-                        v1_8::OutputValueSchema::Array(v1_8::OutputArraySchema {
-                            size: v1_8::OutputSizeSchema {
-                                w: array.size.w,
-                                h: array.size.h,
-                            },
-                            values: array.values.into_iter().map(|v| v.into()).collect(),
-                        })
-                    }
-                }
-            } else {
-                v1_8::OutputValueSchema::Single(v1_8::CellValueSchema::Blank)
-            };
 
             let code = column
                 .1

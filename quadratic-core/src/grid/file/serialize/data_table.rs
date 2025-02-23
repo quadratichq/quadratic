@@ -269,9 +269,7 @@ pub(crate) fn import_data_table_builder(
 
     for (pos, data_table) in data_tables.into_iter() {
         let value = match data_table.value {
-            current::OutputValueSchema::Single(value) => {
-                Value::Single(import_cell_value(value.to_owned()))
-            }
+            current::OutputValueSchema::Single(value) => Value::Single(import_cell_value(value)),
             current::OutputValueSchema::Array(current::OutputArraySchema { size, values }) => {
                 Value::Array(crate::Array::from(
                     values
@@ -477,9 +475,10 @@ pub(crate) fn export_data_tables(
                             h: array.height() as i64,
                         },
                         values: array
-                            .rows()
+                            .into_rows()
+                            .into_iter()
                             .flat_map(|row| {
-                                row.iter().map(|value| export_cell_value(value.to_owned()))
+                                row.into_iter().map(export_cell_value).collect::<Vec<_>>()
                             })
                             .collect(),
                     })

@@ -186,7 +186,7 @@ impl RunErrorSchema {
                 start: span.start,
                 end: span.end,
             }),
-            msg: match error.msg.clone() {
+            msg: match error.msg {
                 crate::RunErrorMsg::CodeRunError(str) => RunErrorMsgSchema::CodeRunError(str),
                 crate::RunErrorMsg::Spill => RunErrorMsgSchema::Spill,
                 crate::RunErrorMsg::Unimplemented(str) => RunErrorMsgSchema::Unimplemented(str),
