@@ -1,7 +1,7 @@
-import AnthropicBedrock from '@anthropic-ai/bedrock-sdk';
-import Anthropic from '@anthropic-ai/sdk';
+import { AnthropicBedrock } from '@anthropic-ai/bedrock-sdk';
+import { Anthropic } from '@anthropic-ai/sdk';
 import { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime';
-import OpenAI from 'openai';
+import { OpenAI } from 'openai';
 import {
   ANTHROPIC_API_KEY,
   AWS_S3_ACCESS_KEY_ID,
