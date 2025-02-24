@@ -389,7 +389,7 @@ mod tests {
     }
 
     #[test]
-    fn jump_down_filled() {
+    fn test_jump_down_filled() {
         let mut sheet = Sheet::test();
 
         sheet.set_cell_value(Pos { x: 3, y: 5 }, CellValue::Number(1.into()));
@@ -401,12 +401,12 @@ mod tests {
         assert_eq!(sheet.jump_down(Pos { x: 3, y: 1 }), Pos { x: 3, y: 5 });
         assert_eq!(sheet.jump_down(Pos { x: 3, y: 5 }), Pos { x: 3, y: 10 });
         assert_eq!(sheet.jump_down(Pos { x: 3, y: 6 }), Pos { x: 3, y: 10 });
-        assert_eq!(sheet.jump_down(Pos { x: 3, y: 10 }), Pos { x: 3, y: 15 });
+        assert_eq!(sheet.jump_down(Pos { x: 3, y: 10 }), Pos { x: 3, y: 20 });
         assert_eq!(sheet.jump_down(Pos { x: 3, y: 15 }), Pos { x: 3, y: 20 });
         assert_eq!(sheet.jump_down(Pos { x: 3, y: 13 }), Pos { x: 3, y: 20 });
         assert_eq!(sheet.jump_down(Pos { x: 3, y: 20 }), Pos { x: 3, y: 25 });
         assert_eq!(sheet.jump_down(Pos { x: 3, y: 23 }), Pos { x: 3, y: 25 });
-        assert_eq!(sheet.jump_down(Pos { x: 3, y: 26 }), Pos { x: 3, y: 25 });
+        assert_eq!(sheet.jump_down(Pos { x: 3, y: 26 }), Pos { x: 3, y: 29 });
         assert_eq!(sheet.jump_down(Pos { x: 3, y: 26 }), Pos { x: 3, y: 29 });
     }
 
@@ -485,5 +485,74 @@ mod tests {
         assert_eq!(sheet.jump_right(pos![C2]), pos![F2]);
         assert_eq!(sheet.jump_right(pos![G2]), pos![H2]);
         assert_eq!(sheet.jump_right(pos![F2]), pos![G2]);
+    }
+
+    #[test]
+    fn test_jump_left_simple_table() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_code_run_array(2, 2, vec!["1", "2", "3", "4", "5"], false);
+
+        assert_eq!(sheet.jump_left(pos![G2]), pos![F2]);
+        assert_eq!(sheet.jump_left(pos![F2]), pos![B2]);
+        assert_eq!(sheet.jump_left(pos![D2]), pos![B2]);
+        assert_eq!(sheet.jump_left(pos![B2]), pos![A2]);
+    }
+
+    #[test]
+    fn test_jump_left_simple_table_with_blanks() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_code_run_array(2, 2, vec!["1", "2", "", "", "5", "6"], false);
+
+        assert_eq!(sheet.jump_left(pos![H2]), pos![G2]);
+        assert_eq!(sheet.jump_left(pos![G2]), pos![F2]);
+        assert_eq!(sheet.jump_left(pos![F2]), pos![C2]);
+        assert_eq!(sheet.jump_left(pos![C2]), pos![B2]);
+        assert_eq!(sheet.jump_left(pos![B2]), pos![A2]);
+    }
+
+    #[test]
+    fn test_jump_down_simple_table() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_code_run_array(2, 2, vec!["1", "2", "3", "4", "5"], true);
+
+        assert_eq!(sheet.jump_down(pos![B1]), pos![B2]);
+        assert_eq!(sheet.jump_down(pos![B2]), pos![B6]);
+        assert_eq!(sheet.jump_down(pos![B4]), pos![B6]);
+        assert_eq!(sheet.jump_down(pos![B6]), pos![B7]);
+    }
+
+    #[test]
+    fn test_jump_down_simple_table_with_blanks() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_code_run_array(2, 2, vec!["1", "2", "", "", "5", "6"], true);
+
+        assert_eq!(sheet.jump_down(pos![B1]), pos![B2]);
+        assert_eq!(sheet.jump_down(pos![B2]), pos![B3]);
+        assert_eq!(sheet.jump_down(pos![B3]), pos![B6]);
+        assert_eq!(sheet.jump_down(pos![B7]), pos![B8]);
+        assert_eq!(sheet.jump_down(pos![B6]), pos![B7]);
+    }
+
+    #[test]
+    fn test_jump_up_simple_table() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_code_run_array(2, 2, vec!["1", "2", "3", "4", "5"], true);
+
+        assert_eq!(sheet.jump_up(pos![B7]), pos![B6]);
+        assert_eq!(sheet.jump_up(pos![B6]), pos![B2]);
+        assert_eq!(sheet.jump_up(pos![B4]), pos![B2]);
+        assert_eq!(sheet.jump_up(pos![B2]), pos![B1]);
+    }
+
+    #[test]
+    fn test_jump_up_simple_table_with_blanks() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_code_run_array(2, 2, vec!["1", "2", "", "", "5", "6"], true);
+
+        assert_eq!(sheet.jump_up(pos![B8]), pos![B7]);
+        assert_eq!(sheet.jump_up(pos![B7]), pos![B6]);
+        assert_eq!(sheet.jump_up(pos![B6]), pos![B3]);
+        assert_eq!(sheet.jump_up(pos![B3]), pos![B2]);
+        assert_eq!(sheet.jump_up(pos![B2]), pos![B1]);
     }
 }

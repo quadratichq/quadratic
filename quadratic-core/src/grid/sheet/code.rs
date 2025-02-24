@@ -105,7 +105,9 @@ impl Sheet {
                     .is_some_and(|cell_value| {
                         !cell_value.is_blank_or_empty_string() && cell_value != &CellValue::Blank
                     })
-                    || data_table.is_html_or_image())
+                    || data_table.is_html_or_image()
+                    // also check if its the table name (the entire width of the table is valid for content)
+                    || (data_table.show_ui && data_table.show_name && pos.y == code_cell_pos.y))
         })
     }
 

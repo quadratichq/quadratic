@@ -371,6 +371,6 @@ export const defaultShortcuts: ActionShortcut = {
   },
   [Action.GridToDataTable]: {
     mac: [[MacModifiers.Ctrl, Keys.T]],
-    windows: [[WindowsModifiers.Ctrl, Keys.T]],
+    windows: [[WindowsModifiers.Ctrl, WindowsModifiers.Alt, Keys.T]],
   },
 };

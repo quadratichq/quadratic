@@ -76,7 +76,7 @@ impl TableRef {
         Self {
             table_name: table_name.to_string(),
             data: true,
-            headers: true,
+            headers: false,
             totals: false,
             col_range: ColRange::All,
         }

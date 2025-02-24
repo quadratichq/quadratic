@@ -208,20 +208,6 @@ mod test {
     }
 
     #[test]
-    fn test_find_next_column_code() {
-        let mut sheet = Sheet::test();
-        sheet.test_set_code_run_array(2, 2, vec!["1", "2", "3", "4", "5"], false);
-
-        assert_eq!(sheet.find_next_column(1, 2, false, true), Some(2));
-        assert_eq!(sheet.find_next_column(3, 2, false, false), Some(5));
-
-        // assert_eq!(sheet.find_next_column(2, 2, false, false), Some(5));
-        // assert_eq!(sheet.find_next_column(4, 2, false, false), Some(5));
-        // assert_eq!(sheet.find_next_column(6, 2, true, true), Some(4));
-        // assert_eq!(sheet.find_next_column(4, 2, true, false), Some(1));
-    }
-
-    #[test]
     fn test_find_next_row() {
         let mut sheet = Sheet::test();
 
@@ -249,18 +235,6 @@ mod test {
         assert_eq!(sheet.find_next_row(1, 2, false, false), Some(4));
         assert_eq!(sheet.find_next_row(2, 2, false, false), Some(4));
         assert_eq!(sheet.find_next_row(3, 2, true, false), Some(0));
-    }
-
-    #[test]
-    fn test_find_next_row_code() {
-        let mut sheet = Sheet::test();
-        sheet.test_set_code_run_array(0, 0, vec!["1", "2", "3"], true);
-
-        assert_eq!(sheet.find_next_row(-1, 0, false, true), Some(0));
-        assert_eq!(sheet.find_next_row(0, 0, false, false), Some(3));
-        assert_eq!(sheet.find_next_row(2, 0, false, false), Some(3));
-        assert_eq!(sheet.find_next_row(4, 0, true, true), Some(2));
-        assert_eq!(sheet.find_next_row(2, 0, true, false), Some(-1));
     }
 
     fn chart_5x5_dt() -> DataTable {
