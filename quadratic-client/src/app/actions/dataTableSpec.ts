@@ -477,6 +477,10 @@ export const dataTableSpec: DataTableSpec = {
   [Action.RenameTable]: {
     label: 'Rename',
     Icon: FileRenameIcon,
+    isAvailable: () => {
+      const table = getTable();
+      return !!table?.show_ui && !!table?.show_name;
+    },
     run: renameTable,
   },
   [Action.DeleteDataTable]: {
