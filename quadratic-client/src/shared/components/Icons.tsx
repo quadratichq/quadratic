@@ -1,10 +1,11 @@
 /**
  * This is where we map all the icons we use to the ones from [Google's Material Symbols](https://fonts.google.com/icons)
- * We use Google’s recommended implementation strategy, which is loading the font
+ * We use Google's recommended implementation strategy, which is loading the font
  * FWIW: the font is loaded via the root `index.html`
  * We import 20 dp icons, as those are the only ones we use at the moment.
  */
 import { cn } from '@/shared/shadcn/utils';
+import { forwardRef } from 'react';
 import './icons.css';
 
 // const sizes = {
@@ -24,16 +25,20 @@ interface BaseIconProps extends React.HTMLAttributes<HTMLSpanElement> {
   // size?: keyof typeof sizes;
 }
 
-const Icon = (props: BaseIconProps) => {
+const Icon = forwardRef<HTMLSpanElement, BaseIconProps>((props, ref) => {
   const { children, className, ...rest } = props;
   const _size = '20'; // size ? sizes[size] : sizes['sm'];
 
   return (
-    <span className={`material-symbols-outlined material-symbols-${_size} ${className ? className : ''}`} {...rest}>
+    <span
+      ref={ref}
+      className={`material-symbols-outlined material-symbols-${_size} ${className ? className : ''}`}
+      {...rest}
+    >
       {children}
     </span>
   );
-};
+});
 
 /**
  * Individual icons from Material Symbols font.
