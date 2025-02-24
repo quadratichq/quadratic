@@ -1,11 +1,10 @@
-use anyhow::Result;
-
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::operation::Operation;
 use crate::controller::GridController;
 use crate::grid::column_header::DataTableColumnHeader;
 use crate::Pos;
 use crate::{a1::A1Selection, CellValue, SheetPos};
+use anyhow::Result;
 
 impl GridController {
     // Using sheet_pos, either set a cell value or a data table value

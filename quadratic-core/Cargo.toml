@@ -45,6 +45,7 @@ js = [
 show-operations = []
 multiplayer = []
 files = []
+function-timer = []
 
 [dependencies]
 anyhow = "1.0"
@@ -107,6 +108,7 @@ serde_with = "3.8.1"
 dateparser = "0.2.1"
 fancy-regex = "0.14.0"
 csv-sniffer = "0.3.1"
+function-timer = { path = "../quadratic-rust-shared/proc_macros/function-timer" }
 
 [dev-dependencies]
 criterion = { version = "0.4", default-features = false }

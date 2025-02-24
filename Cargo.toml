@@ -8,7 +8,9 @@ members = [
     "quadratic-multiplayer",
     "quadratic-rust-client",
     "quadratic-rust-shared",
+    "quadratic-rust-shared/proc_macros/function-timer",
 ]
+
 
 [workspace.package]
 authors = ["Quadratic"]
