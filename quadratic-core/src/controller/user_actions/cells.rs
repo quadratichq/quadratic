@@ -45,7 +45,7 @@ impl GridController {
                 if let Ok(data_table_left) = data_table_left {
                     if let Some(data_table) =
                         sheet.data_table(data_table_left).filter(|data_table| {
-                            if data_table.readonly {
+                            if data_table.readonly || value.is_empty() {
                                 return false;
                             }
                             // check if next column is blank
@@ -111,7 +111,7 @@ impl GridController {
                 if let Ok(data_table_above) = data_table_above {
                     if let Some(data_table) =
                         sheet.data_table(data_table_above).filter(|data_table| {
-                            if data_table.readonly {
+                            if data_table.readonly || value.is_empty() {
                                 return false;
                             }
                             // check if next row is blank
