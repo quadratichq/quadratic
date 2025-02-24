@@ -1,4 +1,5 @@
 import { events } from '@/app/events/events';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import type { JsRenderCodeCell } from '@/app/quadratic-core-types';
 import type { Point } from 'pixi.js';
 import { atom } from 'recoil';
@@ -52,13 +53,13 @@ export const contextMenuAtom = atom({
     ({ setSelf }) => {
       const clear = () => {
         setSelf(() => ({}));
-        events.emit('contextMenuClose');
+        focusGrid();
       };
 
       const set = (options: ContextMenuOptions) => {
         setSelf(() => options);
         if (!options.type) {
-          events.emit('contextMenuClose');
+          clear();
         }
       };
 

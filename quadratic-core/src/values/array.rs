@@ -12,7 +12,7 @@ use rand::Rng;
 use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
-use super::{ArraySize, Axis, CellValue, Spanned, Value};
+use super::{cell_values::CellValues, ArraySize, Axis, CellValue, Spanned, Value};
 use crate::{
     controller::operations::operation::Operation, grid::Sheet, CodeResult, Pos, RunError,
     RunErrorMsg, Span,
@@ -121,6 +121,20 @@ impl From<Vec<Vec<CellValue>>> for Array {
         Array {
             size: ArraySize::new(w as u32, h as u32).unwrap(),
             values: v.into_iter().flatten().collect(),
+        }
+    }
+}
+
+impl From<CellValues> for Array {
+    fn from(cell_values: CellValues) -> Self {
+        Array {
+            size: ArraySize::new(cell_values.w, cell_values.h).unwrap(),
+            values: cell_values
+                .into_owned_vec()
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>()
+                .into(),
         }
     }
 }

@@ -7,7 +7,7 @@ import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { FILL_SELECTION_ALPHA } from '@/app/gridGL/UI/Cursor';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
-import type { JsCoordinate, JsDataTableColumnHeader, SortDirection } from '@/app/quadratic-core-types';
+import type { DataTableSort, JsCoordinate, JsDataTableColumnHeader, SortDirection } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { sharedEvents } from '@/shared/sharedEvents';
 import type { Point } from 'pixi.js';
@@ -90,27 +90,36 @@ export class TableColumnHeaders extends Container {
   };
 
   private onSortPressed = (column: JsDataTableColumnHeader) => {
-    const sortOrder: SortDirection | undefined = this.table.codeCell.sort?.find(
-      (s) => s.column_index === column.valueIndex
-    )?.direction;
-    let newOrder: SortDirection;
-    switch (sortOrder) {
-      case undefined:
-      case 'None':
-        newOrder = 'Ascending';
-        break;
-      case 'Ascending':
-        newOrder = 'Descending';
-        break;
-      case 'Descending':
-        newOrder = 'None';
-        break;
-    }
-    if (!newOrder) {
-      throw new Error('Unknown sort order in onSortPressed');
-    }
     const table = this.table.codeCell;
-    const sort = newOrder === 'None' ? [] : [{ column_index: column.valueIndex, direction: newOrder }];
+
+    let sort: DataTableSort[] | undefined;
+
+    if (table.sort_dirty) {
+      sort = table.sort ?? undefined;
+    } else {
+      const sortOrder: SortDirection | undefined = this.table.codeCell.sort?.find(
+        (s) => s.column_index === column.valueIndex
+      )?.direction;
+      let newOrder: SortDirection;
+      switch (sortOrder) {
+        case undefined:
+        case 'None':
+          newOrder = 'Ascending';
+          break;
+        case 'Ascending':
+          newOrder = 'Descending';
+          break;
+        case 'Descending':
+          newOrder = 'None';
+          break;
+      }
+      if (!newOrder) {
+        throw new Error('Unknown sort order in onSortPressed');
+      }
+
+      sort = newOrder === 'None' ? [] : [{ column_index: column.valueIndex, direction: newOrder }];
+    }
+
     quadraticCore.sortDataTable(sheets.current, table.x, table.y, sort, sheets.getCursorPosition());
   };
 
@@ -146,6 +155,7 @@ export class TableColumnHeaders extends Container {
           height: this.headerHeight,
           name: column.name,
           sort: codeCell.sort?.find((s) => s.column_index === column.valueIndex),
+          dirtySort: codeCell.sort_dirty,
           columnY: this.table.codeCell.show_ui && this.table.codeCell.show_name ? this.headerHeight : 0,
         });
       } else {
@@ -159,6 +169,7 @@ export class TableColumnHeaders extends Container {
             height: this.headerHeight,
             name: column.name,
             sort: codeCell.sort?.find((s) => s.column_index === column.valueIndex),
+            dirtySort: codeCell.sort_dirty,
             onSortPressed: () => this.onSortPressed(column),
             columnY: this.table.codeCell.show_ui && this.table.codeCell.show_name ? this.headerHeight : 0,
           })
@@ -186,7 +197,7 @@ export class TableColumnHeaders extends Container {
     this.columns.children.forEach((column) => {
       if (column !== current) {
         if (column.sortButton?.visible) {
-          column.sortButton.visible = false;
+          column.updateSortButtonVisibility(false);
           pixiApp.setViewportDirty();
         }
       }

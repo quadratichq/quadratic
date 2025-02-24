@@ -2,10 +2,7 @@ use super::operation::Operation;
 use crate::{
     a1::A1Selection,
     controller::GridController,
-    grid::{
-        formats::{FormatUpdate, SheetFormatUpdates},
-        sheet::borders::BorderSelection,
-    },
+    grid::{formats::FormatUpdate, sheet::borders::BorderSelection},
 };
 
 impl GridController {
@@ -13,11 +10,9 @@ impl GridController {
         &self,
         selection: &A1Selection,
     ) -> Vec<Operation> {
-        let sheet_id = selection.sheet_id;
-        let mut ops = vec![Operation::SetCellFormatsA1 {
-            sheet_id,
-            formats: SheetFormatUpdates::from_selection(selection, FormatUpdate::cleared()),
-        }];
+        let mut ops = vec![];
+        let format_ops = self.format_ops(selection, FormatUpdate::cleared());
+        ops.extend(format_ops);
         if let Some(border_ops) = self.set_borders_a1_selection_operations(
             selection.clone(),
             BorderSelection::All,
@@ -32,7 +27,7 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use crate::grid::{sheet::borders::BorderStyle, SheetId};
+    use crate::grid::{formats::SheetFormatUpdates, sheet::borders::BorderStyle, SheetId};
 
     use super::*;
 

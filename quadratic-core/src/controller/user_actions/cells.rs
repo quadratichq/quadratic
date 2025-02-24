@@ -97,11 +97,9 @@ impl GridController {
                         else {
                             // insert column with swallow
                             let column_index = data_table.width();
-                            data_table_ops.push(Operation::InsertDataTableColumn {
+                            data_table_ops.push(Operation::InsertDataTableColumns {
                                 sheet_pos: (data_table_left, sheet_pos.sheet_id).into(),
-                                index: column_index as u32,
-                                column_header: None,
-                                values: None,
+                                columns: vec![(column_index as u32, None, None)],
                                 swallow: true,
                                 select_table: false,
                             });
@@ -129,10 +127,9 @@ impl GridController {
                         })
                     {
                         // insert row with swallow
-                        data_table_ops.push(Operation::InsertDataTableRow {
+                        data_table_ops.push(Operation::InsertDataTableRows {
                             sheet_pos: (data_table_above, sheet_pos.sheet_id).into(),
-                            index: data_table.height(false) as u32,
-                            values: None,
+                            rows: vec![(data_table.height(false) as u32, None)],
                             swallow: true,
                             select_table: false,
                         });

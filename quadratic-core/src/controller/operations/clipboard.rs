@@ -385,7 +385,7 @@ impl GridController {
                             as i64;
 
                         // handle sort
-                        pos.y = data_table.transmute_index(pos.y as u64) as i64;
+                        pos.y = data_table.get_row_index_from_display_index(pos.y as u64) as i64;
 
                         // 1-based
                         pos.translate_in_place(1, 1, 1, 1);

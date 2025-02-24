@@ -11,7 +11,7 @@ use crate::{
         js_types::JsSnackbarSeverity,
         DataTable, DataTableKind, SheetId,
     },
-    Array, ArraySize, CellValue, Pos, Rect, SheetPos, SheetRect,
+    ArraySize, CellValue, Pos, Rect, SheetPos, SheetRect,
 };
 
 use anyhow::{bail, Result};
@@ -40,6 +40,7 @@ impl GridController {
         let sheet = self.try_sheet_result(sheet_id)?;
         let data_table = sheet.data_table_result(data_table_pos)?;
         data_table.add_dirty_table(transaction, sheet, data_table_pos)?;
+        data_table.add_dirty_fills_and_borders(transaction, sheet_id);
 
         if !(cfg!(target_family = "wasm") || cfg!(test)) || transaction.is_server() {
             return Ok(());
@@ -151,9 +152,6 @@ impl GridController {
             // select the entire data table
             Self::select_full_data_table(transaction, sheet_id, data_table_pos, &data_table);
 
-            // mark table fills and borders as dirty
-            data_table.add_dirty_fills_and_borders(transaction, sheet_id);
-
             sheet.set_cell_value(data_table_pos, cell_value);
             sheet.data_tables.insert_sorted(data_table_pos, data_table);
 
@@ -163,7 +161,6 @@ impl GridController {
 
             let forward_operations = vec![op];
             let reverse_operations = vec![Operation::DeleteDataTable { sheet_pos }];
-
             self.data_table_operations(
                 transaction,
                 forward_operations,
@@ -208,7 +205,6 @@ impl GridController {
                 data_table,
                 cell_value: old_cell_value,
             }];
-
             self.data_table_operations(
                 transaction,
                 forward_operations,
@@ -249,20 +245,24 @@ impl GridController {
             let rect = Rect::from_numbers(pos.x, pos.y, values.w as i64, values.h as i64);
             let mut old_values = sheet.get_code_cell_values(rect);
 
+            transaction.add_code_cell(sheet_id, data_table_pos);
+            transaction.add_dirty_hashes_from_sheet_rect(rect.to_sheet_rect(sheet_id));
+
             pos.y -= data_table.y_adjustment(true);
 
             // if there is a display buffer, use it to find the row index for all the values
             // this is used when the data table has sorted columns, maps input to actual coordinates
             if data_table.display_buffer.is_some() {
-                let rect = Rect::from_numbers(pos.x, pos.y, values.w as i64, values.h as i64);
-
                 // rebuild CellValues with unsorted coordinates
                 let mut values_unsorted = CellValues::new(0, 0);
                 let mut old_values_unsorted = CellValues::new(0, 0);
 
+                let rect = Rect::from_numbers(pos.x, pos.y, values.w as i64, values.h as i64);
                 for y in rect.y_range() {
                     let display_row = y - data_table_pos.y;
-                    let actual_row = data_table.transmute_index(u64::try_from(display_row)?) as i64;
+                    let actual_row = data_table
+                        .get_row_index_from_display_index(u64::try_from(display_row)?)
+                        as i64;
 
                     for x in rect.x_range() {
                         let display_column = x - data_table_pos.x;
@@ -300,11 +300,10 @@ impl GridController {
                 .as_ref()
                 .is_some_and(|headers| headers.iter().any(|header| !header.display))
             {
-                let rect = Rect::from_numbers(pos.x, pos.y, values.w as i64, values.h as i64);
-
                 // rebuild CellValues with actual coordinates, mapped from display coordinates due to hidden columns
                 let mut actual_values = CellValues::new(0, 0);
 
+                let rect = Rect::from_numbers(pos.x, pos.y, values.w as i64, values.h as i64);
                 for x in rect.x_range() {
                     let display_column = u32::try_from(x - data_table_pos.x)?;
                     let column_index =
@@ -326,41 +325,33 @@ impl GridController {
                 values = actual_values;
             }
 
-            // send the new value
+            // set the new value
             sheet.set_code_cell_values(pos, values);
 
             // sort the data table and update the old values to match the new sorted data table
             let data_table = sheet.data_table_mut(data_table_pos)?;
             if data_table.display_buffer.is_some() {
-                data_table.sort_all()?;
+                data_table.check_sort()?;
 
-                if let Some(display_buffer) = data_table.display_buffer.as_ref() {
-                    let rect = Rect::from_numbers(0, 0, old_values.w as i64, old_values.h as i64);
+                let mut old_sorted_values = CellValues::new(0, 0);
 
-                    let mut old_sorted_values = CellValues::new(0, 0);
+                let rect = Rect::from_numbers(0, 0, old_values.w as i64, old_values.h as i64);
+                for x in rect.x_range() {
+                    for y in rect.y_range() {
+                        let value_x = u32::try_from(x)?;
+                        let value_y = u32::try_from(y)?;
 
-                    for x in rect.x_range() {
-                        for y in rect.y_range() {
-                            let value_x = u32::try_from(x)?;
-                            let value_y = u32::try_from(y)?;
+                        let display_y = data_table.get_display_index_from_row_index(value_y as u64);
 
-                            let display_y = display_buffer
-                                .iter()
-                                .position(|&y| y == value_y as u64)
-                                .unwrap_or(value_y as usize);
-
-                            if let Some(value) = old_values.remove(value_x, value_y) {
-                                old_sorted_values.set(value_x, display_y as u32, value);
-                            }
+                        if let Some(value) = old_values.remove(value_x, value_y) {
+                            old_sorted_values.set(value_x, display_y as u32, value);
                         }
                     }
-
-                    old_values = old_sorted_values;
                 }
+
+                old_values = old_sorted_values;
             }
 
-            // mark new data table as dirty
-            self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?; // todo(ayush): optimize this
             self.send_updated_bounds(transaction, sheet_id);
 
             let forward_operations = vec![op];
@@ -428,22 +419,26 @@ impl GridController {
             let values_rect = Rect::from_numbers(
                 data_table_pos.x,
                 data_table_pos.y,
-                w.get() as i64,
-                h.get() as i64,
+                values.width() as i64,
+                values.height() as i64,
             );
             sheet.set_cell_values(values_rect, &values);
             drop(values);
 
+            let mut sheet_format_updates = SheetFormatUpdates::default();
             let formats_rect = Rect::from_numbers(
                 data_table_pos.x,
                 data_table_pos.y + data_table.y_adjustment(true),
                 w.get() as i64,
                 h.get() as i64,
             );
-            let format_update =
-                data_table.transfer_formats_to_sheet(data_table_pos, formats_rect)?;
-            if !format_update.is_default() {
-                sheet.formats.apply_updates(&format_update);
+            data_table.transfer_formats_to_sheet(
+                data_table_pos,
+                formats_rect,
+                &mut sheet_format_updates,
+            )?;
+            if !sheet_format_updates.is_default() {
+                sheet.formats.apply_updates(&sheet_format_updates);
                 reverse_operations.push(Operation::SetCellFormatsA1 {
                     sheet_id,
                     formats: SheetFormatUpdates::from_selection(
@@ -456,7 +451,6 @@ impl GridController {
             let values_sheet_rect = values_rect.to_sheet_rect(sheet_id);
 
             transaction.add_dirty_hashes_from_sheet_rect(values_sheet_rect);
-            data_table.add_dirty_fills_and_borders(transaction, sheet_id);
             self.send_updated_bounds(transaction, sheet_id);
 
             let forward_operations = vec![op];
@@ -802,7 +796,12 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) -> Result<()> {
-        if let Operation::SortDataTable { sheet_pos, sort } = op.to_owned() {
+        if let Operation::SortDataTable {
+            sheet_pos,
+            sort,
+            display_buffer,
+        } = op.to_owned()
+        {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
@@ -811,18 +810,24 @@ impl GridController {
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
 
-            let old_value = data_table.sort.to_owned();
+            let old_sort = data_table.sort.to_owned();
+            let old_display_buffer = data_table.display_buffer.to_owned();
             data_table.sort = sort.and_then(|sort| if sort.is_empty() { None } else { Some(sort) });
-            data_table.sort_all()?;
+            if let Some(display_buffer) = display_buffer {
+                data_table.display_buffer = display_buffer;
+                data_table.check_sort()?;
+            } else {
+                data_table.sort_all()?;
+            }
 
-            data_table.add_dirty_fills_and_borders(transaction, sheet_id);
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
             self.send_updated_bounds(transaction, sheet_id);
 
             let forward_operations = vec![op];
             let reverse_operations = vec![Operation::SortDataTable {
                 sheet_pos,
-                sort: old_value,
+                sort: old_sort,
+                display_buffer: Some(old_display_buffer),
             }];
             self.data_table_operations(
                 transaction,
@@ -842,99 +847,122 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) -> Result<()> {
-        if let Operation::InsertDataTableColumn {
+        if let Operation::InsertDataTableColumns {
             sheet_pos,
-            index,
-            mut column_header,
-            mut values,
+            mut columns,
             swallow,
             select_table,
         } = op.to_owned()
         {
+            if columns.is_empty() {
+                return Ok(());
+            }
+
+            columns.sort_by(|a, b| a.0.cmp(&b.0));
+
+            let reverse_columns = columns
+                .iter()
+                .map(|(index, _, _)| *index)
+                .collect::<Vec<_>>();
+
             let sheet_id = sheet_pos.sheet_id;
-            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let sheet = self.try_sheet_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
-            let data_table = sheet.data_table_result(data_table_pos)?;
+
+            for (index, mut column_header, mut values) in columns {
+                let sheet = self.try_sheet_mut_result(sheet_id)?;
+                let data_table = sheet.data_table_result(data_table_pos)?;
+                let data_table_rect = data_table
+                    .output_rect(data_table_pos, true)
+                    .to_sheet_rect(sheet_id);
+
+                let display_index = data_table.get_display_index_from_column_index(index, true);
+                let values_rect = Rect::from_numbers(
+                    data_table_pos.x + display_index,
+                    data_table_pos.y + data_table.y_adjustment(true),
+                    1,
+                    data_table_rect.height() as i64 - data_table.y_adjustment(true),
+                );
+
+                let mut format_update = SheetFormatUpdates::default();
+
+                if swallow && values.is_none() {
+                    let sheet_values_array = sheet.cell_values_in_rect(&values_rect, true)?;
+                    let cell_values = sheet_values_array.into_cell_values_vec().into_vec();
+                    let has_code_cell = cell_values.iter().any(|cell_value| {
+                        cell_value.is_code()
+                            || cell_value.is_import()
+                            || cell_value.is_image()
+                            || cell_value.is_html()
+                    });
+                    if has_code_cell {
+                        if cfg!(target_family = "wasm") || cfg!(test) {
+                            crate::wasm_bindings::js::jsClientMessage(
+                                "Cannot add code cell to table".to_string(),
+                                JsSnackbarSeverity::Error.to_string(),
+                            );
+                        }
+                        // clear remaining operations
+                        transaction.operations.clear();
+                        bail!("Cannot add code cell to table");
+                    } else {
+                        values = Some(cell_values);
+                    }
+
+                    // swallow sheet formatting
+                    format_update = data_table.transfer_formats_from_sheet(
+                        data_table_pos,
+                        sheet,
+                        values_rect,
+                    )?;
+
+                    // clear sheet values
+                    sheet.delete_cell_values(values_rect);
+                    // clear sheet formats
+                    sheet
+                        .formats
+                        .apply_updates(&SheetFormatUpdates::from_selection(
+                            &A1Selection::from_rect(values_rect.to_sheet_rect(sheet_id)),
+                            FormatUpdate::cleared(),
+                        ));
+                }
+
+                let data_table = sheet.data_table_mut(data_table_pos)?;
+                if data_table.header_is_first_row && column_header.is_none() {
+                    if let Some(values) = &values {
+                        let first_value = values[0].to_owned();
+                        if !matches!(first_value, CellValue::Blank) {
+                            column_header = Some(first_value.to_string());
+                        }
+                    }
+                }
+                data_table.insert_column_sorted(index as usize, column_header, values)?;
+
+                if !format_update.is_default() {
+                    data_table.formats.apply_updates(&format_update);
+                }
+            }
+
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let data_table = sheet.data_table_mut(data_table_pos)?;
+            data_table.check_sort()?;
             let data_table_rect = data_table
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
 
-            let display_index = data_table.get_display_index_from_column_index(index, true);
-            let values_rect = Rect::from_numbers(
-                data_table_pos.x + display_index,
-                data_table_pos.y + data_table.y_adjustment(true),
-                1,
-                data_table_rect.height() as i64 - data_table.y_adjustment(true),
-            );
-
-            transaction.add_code_cell(sheet_id, data_table_pos);
-            transaction.add_dirty_hashes_from_sheet_rect(values_rect.to_sheet_rect(sheet_id));
-
-            let mut format_update = SheetFormatUpdates::default();
-
-            if swallow && values.is_none() {
-                // check for code cells in neighboring cells
-                let sheet_values_array = sheet.cell_values_in_rect(&values_rect, true)?;
-                let cell_values = sheet_values_array.into_cell_values_vec().into_vec();
-                let has_code_cell = cell_values.iter().any(|cell_value| {
-                    cell_value.is_code()
-                        || cell_value.is_import()
-                        || cell_value.is_image()
-                        || cell_value.is_html()
-                });
-                if has_code_cell {
-                    if cfg!(target_family = "wasm") || cfg!(test) {
-                        crate::wasm_bindings::js::jsClientMessage(
-                            "Cannot add code cell to table".to_string(),
-                            JsSnackbarSeverity::Error.to_string(),
-                        );
-                    }
-                    // clear remaining operations
-                    transaction.operations.clear();
-                    bail!("Cannot add code cell to table");
-                } else {
-                    values = Some(cell_values);
-                }
-
-                // swallow sheet formatting
-                format_update =
-                    data_table.transfer_formats_from_sheet(data_table_pos, sheet, values_rect)?;
-
-                // clear sheet values
-                sheet.delete_cell_values(values_rect);
-                // clear sheet formats
-                sheet
-                    .formats
-                    .apply_updates(&SheetFormatUpdates::from_selection(
-                        &A1Selection::from_rect(values_rect.to_sheet_rect(sheet_id)),
-                        FormatUpdate::cleared(),
-                    ));
-            }
-
-            let data_table = sheet.data_table_mut(data_table_pos)?;
-            if data_table.header_is_first_row && column_header.is_none() {
-                if let Some(values) = &values {
-                    let first_value = values[0].to_owned();
-                    if !matches!(first_value, CellValue::Blank) {
-                        column_header = Some(first_value.to_string());
-                    }
-                }
-            }
-            data_table.insert_column_sorted(index as usize, column_header, values)?;
-            if !format_update.is_default() {
-                data_table.formats.apply_updates(&format_update);
-            }
-
             if select_table {
                 Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
             }
+
+            transaction.add_code_cell(sheet_id, data_table_pos);
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
+            self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
             self.send_updated_bounds(transaction, sheet_id);
 
             let forward_operations = vec![op];
-            let reverse_operations = vec![Operation::DeleteDataTableColumn {
+            let reverse_operations = vec![Operation::DeleteDataTableColumns {
                 sheet_pos,
-                index,
+                columns: reverse_columns,
                 flatten: swallow,
                 select_table,
             }];
@@ -948,7 +976,7 @@ impl GridController {
             return Ok(());
         };
 
-        bail!("Expected Operation::InsertDataTableColumn in execute_insert_data_table_column");
+        bail!("Expected Operation::InsertDataTableColumns in execute_insert_data_table_column");
     }
 
     pub(super) fn execute_delete_data_table_column(
@@ -956,118 +984,167 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) -> Result<()> {
-        if let Operation::DeleteDataTableColumn {
+        if let Operation::DeleteDataTableColumns {
             sheet_pos,
-            index,
+            mut columns,
             flatten,
             select_table,
         } = op.to_owned()
         {
+            if columns.is_empty() {
+                return Ok(());
+            }
+
+            let mut reverse_columns = vec![];
+            let mut reverse_operations: Vec<Operation> = vec![];
+
+            columns.sort_by(|a, b| b.cmp(a));
+
             let sheet_id = sheet_pos.sheet_id;
-            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let sheet = self.try_sheet_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_result(data_table_pos)?;
             let data_table_rect = data_table
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
 
-            let old_values = data_table.get_column_sorted(index as usize)?;
-            let old_column_header = data_table
-                .get_column_header(index as usize)
-                .map(|header| header.name.to_owned().to_string());
+            self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
 
-            let display_index = data_table.get_display_index_from_column_index(index, true);
-            let values_rect = Rect::from_numbers(
-                data_table_pos.x + display_index,
-                data_table_pos.y + data_table.y_adjustment(true),
-                1,
-                old_values.len() as i64,
-            );
+            let old_sort = data_table.sort.to_owned();
+            let old_display_buffer = data_table.display_buffer.to_owned();
 
-            transaction.add_code_cell(sheet_id, data_table_pos);
-            transaction.add_dirty_hashes_from_sheet_rect(values_rect.to_sheet_rect(sheet_id));
-            data_table.add_dirty_fills_and_borders(transaction, sheet_id);
+            // for flattening
+            let mut old_data_table_rect = data_table.output_rect(data_table_pos, true);
+            old_data_table_rect.min.x += 1; //cannot flatten the first column
+            old_data_table_rect.min.y += data_table.y_adjustment(true);
+            let mut sheet_cell_values =
+                CellValues::new(old_data_table_rect.width(), old_data_table_rect.height());
+            let mut sheet_format_updates = SheetFormatUpdates::default();
+            let mut data_table_formats_rects = vec![];
 
-            let mut reverse_operations = vec![];
+            for &index in columns.iter() {
+                let sheet = self.try_sheet_result(sheet_id)?;
+                let data_table = sheet.data_table_result(data_table_pos)?;
 
-            if flatten && !old_values.is_empty() {
-                // flatten the values
-                let values = Array::from(
-                    old_values
-                        .into_iter()
-                        .map(|v| vec![v])
-                        .collect::<Vec<Vec<_>>>(),
+                let display_index = data_table.get_display_index_from_column_index(index, true);
+                let values_rect = Rect::from_numbers(
+                    data_table_pos.x + display_index,
+                    data_table_pos.y + data_table.y_adjustment(true),
+                    1,
+                    data_table.height(false) as i64,
                 );
 
-                // flatten the formats
-                let format_update =
-                    data_table.transfer_formats_to_sheet(data_table_pos, values_rect)?;
+                let old_values = data_table.get_column_sorted(index as usize)?;
 
-                let _ = sheet.set_cell_values(values_rect, &values);
-                drop(values);
-                reverse_operations.push(Operation::SetCellValues {
-                    sheet_pos: values_rect.min.to_sheet_pos(sheet_id),
-                    values: CellValues::new(values_rect.width(), values_rect.height()),
-                });
+                if flatten {
+                    // collect values to flatten
+                    let old_values = old_values.to_owned();
+                    for (y, old_value) in old_values.into_iter().enumerate() {
+                        if y == 0
+                            && data_table.header_is_first_row
+                            && (!data_table.show_ui || !data_table.show_columns)
+                        {
+                            continue;
+                        }
 
-                if !format_update.is_default() {
-                    sheet.formats.apply_updates(&format_update);
-                    reverse_operations.push(Operation::SetCellFormatsA1 {
-                        sheet_id,
-                        formats: SheetFormatUpdates::from_selection(
-                            &A1Selection::from_rect(values_rect.to_sheet_rect(sheet_id)),
+                        if let (Ok(value_x), Ok(value_y)) =
+                            (u32::try_from(display_index - 1), u32::try_from(y))
+                        {
+                            sheet_cell_values.set(value_x, value_y, old_value);
+                        }
+                    }
+
+                    // collect formats to flatten
+                    data_table.transfer_formats_to_sheet(
+                        data_table_pos,
+                        values_rect,
+                        &mut sheet_format_updates,
+                    )?;
+                }
+
+                let formats_rect =
+                    Rect::from_numbers(index as i64 + 1, 1, 1, data_table.height(true) as i64);
+                data_table_formats_rects.push(formats_rect);
+
+                let old_column_header = data_table
+                    .get_column_header(index as usize)
+                    .map(|header| header.name.to_owned().to_string());
+                let old_values = data_table.get_column_sorted(index as usize)?;
+                reverse_columns.push((index, old_column_header, Some(old_values)));
+            }
+
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let data_table = sheet.data_table_mut(data_table_pos)?;
+            data_table.add_dirty_fills_and_borders(transaction, sheet_id);
+
+            // delete table formats
+            if let Some(formats_selection) =
+                A1Selection::from_rects(data_table_formats_rects, sheet_id)
+            {
+                let data_table_reverse_format =
+                    data_table
+                        .formats
+                        .apply_updates(&SheetFormatUpdates::from_selection(
+                            &formats_selection,
                             FormatUpdate::cleared(),
-                        ),
+                        ));
+                if !data_table_reverse_format.is_default() {
+                    reverse_operations.push(Operation::DataTableFormats {
+                        sheet_pos,
+                        formats: data_table_reverse_format,
                     });
                 }
             }
 
-            let data_table = sheet.data_table_mut(data_table_pos)?;
+            // delete columns
+            for index in columns.iter() {
+                data_table.delete_column_sorted(*index as usize)?;
+            }
 
-            if let Some(sort) = data_table.sort.as_mut() {
-                let old_sort = sort.to_owned();
+            if old_sort.is_some() || old_display_buffer.is_some() {
                 reverse_operations.push(Operation::SortDataTable {
                     sheet_pos,
-                    sort: Some(old_sort),
+                    sort: old_sort,
+                    display_buffer: Some(old_display_buffer),
                 });
-
-                sort.retain(|sort| sort.column_index != index as usize);
-                data_table.sort_all()?;
+                data_table.check_sort()?;
             }
 
-            let formats_rect =
-                Rect::from_numbers(index as i64 + 1, 1, 1, data_table.height(true) as i64);
-            let data_table_reverse_format =
-                data_table
-                    .formats
-                    .apply_updates(&SheetFormatUpdates::from_selection(
-                        &A1Selection::from_rect(formats_rect.to_sheet_rect(sheet_id)),
-                        FormatUpdate::cleared(),
-                    ));
-            if !data_table_reverse_format.is_default() {
-                reverse_operations.push(Operation::DataTableFormats {
-                    sheet_pos,
-                    formats: data_table_reverse_format,
-                });
-            }
-
-            let old_values = data_table.get_column_sorted(index as usize)?;
-            data_table.delete_column(index as usize)?;
-
-            if select_table {
-                Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
-            }
-            self.send_updated_bounds(transaction, sheet_id);
-
-            let forward_operations = vec![op];
-            reverse_operations.push(Operation::InsertDataTableColumn {
+            reverse_operations.push(Operation::InsertDataTableColumns {
                 sheet_pos,
-                index,
-                column_header: old_column_header,
-                values: Some(old_values),
+                columns: reverse_columns,
                 swallow: false,
                 select_table,
             });
+
+            if flatten {
+                if !sheet_cell_values.is_empty() {
+                    let reverse_sheet_values =
+                        sheet.set_cell_values(old_data_table_rect, &sheet_cell_values.into());
+                    reverse_operations.push(Operation::SetCellValues {
+                        sheet_pos: old_data_table_rect.min.to_sheet_pos(sheet_id),
+                        values: reverse_sheet_values.into(),
+                    });
+                }
+
+                if !sheet_format_updates.is_default() {
+                    let reverse_sheet_formats = sheet.formats.apply_updates(&sheet_format_updates);
+                    reverse_operations.push(Operation::SetCellFormatsA1 {
+                        sheet_id,
+                        formats: reverse_sheet_formats,
+                    });
+                }
+            }
+
+            let sheet = self.try_sheet_result(sheet_id)?;
+            let data_table = sheet.data_table_result(data_table_pos)?;
+            if select_table {
+                Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
+            }
+            transaction.add_code_cell(sheet_id, data_table_pos);
+            self.send_updated_bounds(transaction, sheet_id);
+
+            let forward_operations = vec![op];
             self.data_table_operations(
                 transaction,
                 forward_operations,
@@ -1078,7 +1155,7 @@ impl GridController {
             return Ok(());
         };
 
-        bail!("Expected Operation::DeleteDataTableColumn in execute_delete_data_table_column");
+        bail!("Expected Operation::DeleteDataTableColumns in execute_delete_data_table_column");
     }
 
     pub(super) fn execute_insert_data_table_row(
@@ -1086,101 +1163,118 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) -> Result<()> {
-        if let Operation::InsertDataTableRow {
+        if let Operation::InsertDataTableRows {
             sheet_pos,
-            index,
-            mut values,
+            mut rows,
             swallow,
             select_table,
         } = op.to_owned()
         {
+            if rows.is_empty() {
+                return Ok(());
+            }
+
+            rows.sort_by(|a, b| a.0.cmp(&b.0));
+
+            let reverse_rows = rows.iter().map(|(index, _)| *index).collect::<Vec<_>>();
+
             let sheet_id = sheet_pos.sheet_id;
-            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let sheet = self.try_sheet_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
-            let data_table = sheet.data_table_result(data_table_pos)?;
-            let data_table_rect = data_table
-                .output_rect(data_table_pos, true)
-                .to_sheet_rect(sheet_id);
 
-            let values_rect = Rect::from_numbers(
-                data_table_pos.x,
-                data_table_rect.max.y + 1,
-                data_table_rect.width() as i64,
-                1,
-            );
+            for (index, mut values) in rows {
+                let sheet = self.try_sheet_mut_result(sheet_id)?;
+                let data_table = sheet.data_table_result(data_table_pos)?;
+                let data_table_rect = data_table
+                    .output_rect(data_table_pos, true)
+                    .to_sheet_rect(sheet_id);
 
-            let mut reverse_operations = vec![];
+                let values_rect = Rect::from_numbers(
+                    data_table_pos.x,
+                    data_table_pos.y + index as i64,
+                    data_table_rect.width() as i64,
+                    1,
+                );
 
-            let mut format_update = SheetFormatUpdates::default();
+                let mut format_update = SheetFormatUpdates::default();
 
-            if swallow && values.is_none() {
-                // check for code cells in neighboring cells
-                let sheet_values_array = sheet.cell_values_in_rect(&values_rect, true)?;
-                let cell_values = sheet_values_array.into_cell_values_vec().into_vec();
-                let has_code_cell = cell_values.iter().any(|value| {
-                    value.is_code() || value.is_import() || value.is_image() || value.is_html()
-                });
-                if has_code_cell {
-                    if cfg!(target_family = "wasm") || cfg!(test) {
-                        crate::wasm_bindings::js::jsClientMessage(
-                            "Cannot add code cell to table".to_string(),
-                            JsSnackbarSeverity::Error.to_string(),
-                        );
+                if swallow && values.is_none() {
+                    // check for code cells in neighboring cells
+                    let sheet_values_array = sheet.cell_values_in_rect(&values_rect, true)?;
+                    let cell_values = sheet_values_array.into_cell_values_vec().into_vec();
+                    let has_code_cell = cell_values.iter().any(|value| {
+                        value.is_code() || value.is_import() || value.is_image() || value.is_html()
+                    });
+                    if has_code_cell {
+                        if cfg!(target_family = "wasm") || cfg!(test) {
+                            crate::wasm_bindings::js::jsClientMessage(
+                                "Cannot add code cell to table".to_string(),
+                                JsSnackbarSeverity::Error.to_string(),
+                            );
+                        }
+                        // clear remaining operations
+                        transaction.operations.clear();
+                        bail!("Cannot add code cell to table");
+                    } else {
+                        // account for hidden columns
+                        let mut row_values = vec![CellValue::Blank; data_table.width()];
+                        for (index, cell_value) in cell_values.into_iter().enumerate() {
+                            let column_index =
+                                data_table.get_column_index_from_display_index(index as u32, true);
+                            row_values[usize::try_from(column_index)?] = cell_value;
+                        }
+                        values = Some(row_values);
                     }
-                    // clear remaining operations
-                    transaction.operations.clear();
-                    bail!("Cannot add code cell to table");
-                } else {
-                    values = Some(cell_values);
-                }
 
-                // swallow sheet formatting
-                format_update =
-                    data_table.transfer_formats_from_sheet(data_table_pos, sheet, values_rect)?;
+                    // swallow sheet formatting
+                    format_update = data_table.transfer_formats_from_sheet(
+                        data_table_pos,
+                        sheet,
+                        values_rect,
+                    )?;
 
-                // clear sheet values
-                let old_values = sheet.delete_cell_values(values_rect);
-                reverse_operations.push(Operation::SetCellValues {
-                    sheet_pos: values_rect.min.to_sheet_pos(sheet_id),
-                    values: old_values.into(),
-                });
-                // clear sheet formats
-                let reverse_formats =
+                    // clear sheet values
+                    sheet.delete_cell_values(values_rect);
+                    // clear sheet formats
                     sheet
                         .formats
                         .apply_updates(&SheetFormatUpdates::from_selection(
                             &A1Selection::from_rect(values_rect.to_sheet_rect(sheet_id)),
                             FormatUpdate::cleared(),
                         ));
-                reverse_operations.push(Operation::SetCellFormatsA1 {
-                    sheet_id,
-                    formats: reverse_formats,
-                });
+                }
+
+                let data_table = sheet.data_table_mut(data_table_pos)?;
+                data_table.insert_row(index as usize, values)?;
+
+                if !format_update.is_default() {
+                    data_table.formats.apply_updates(&format_update);
+                }
             }
 
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
-            let reverse_row_index = data_table.insert_row_sorted_hidden(index as usize, values)?;
-
-            if !format_update.is_default() {
-                data_table.formats.apply_updates(&format_update);
-            }
+            data_table.check_sort()?;
+            let data_table_rect = data_table
+                .output_rect(data_table_pos, true)
+                .to_sheet_rect(sheet_id);
 
             if select_table {
                 Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
             }
 
             transaction.add_code_cell(sheet_id, data_table_pos);
-            transaction.add_dirty_hashes_from_sheet_rect(values_rect.to_sheet_rect(sheet_id));
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
+            self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
             self.send_updated_bounds(transaction, sheet_id);
 
             let forward_operations = vec![op];
-            reverse_operations.push(Operation::DeleteDataTableRow {
+            let reverse_operations = vec![Operation::DeleteDataTableRows {
                 sheet_pos,
-                index: reverse_row_index,
-                flatten: false,
+                rows: reverse_rows,
+                flatten: swallow,
                 select_table,
-            });
+            }];
             self.data_table_operations(
                 transaction,
                 forward_operations,
@@ -1191,7 +1285,7 @@ impl GridController {
             return Ok(());
         };
 
-        bail!("Expected Operation::InsertDataTableRow in execute_insert_data_table_row");
+        bail!("Expected Operation::InsertDataTableRows in execute_insert_data_table_row");
     }
 
     pub(super) fn execute_delete_data_table_row(
@@ -1199,100 +1293,170 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) -> Result<()> {
-        if let Operation::DeleteDataTableRow {
+        if let Operation::DeleteDataTableRows {
             sheet_pos,
-            index,
+            mut rows,
             flatten,
             select_table,
         } = op.to_owned()
         {
+            if rows.is_empty() {
+                return Ok(());
+            }
+
+            rows.sort_by(|a, b| b.cmp(a));
+
+            let mut reverse_rows = vec![];
+            let mut reverse_operations: Vec<Operation> = vec![];
+
             let sheet_id = sheet_pos.sheet_id;
-            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let sheet = self.try_sheet_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_result(data_table_pos)?;
             let data_table_rect = data_table
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
 
-            let old_values = data_table.get_row_sorted(index as usize)?;
-            let columns_to_show = data_table.columns_to_show();
-            let display_values = data_table.display_columns(&columns_to_show, &old_values);
-            let values_rect = Rect::from_numbers(
-                data_table_pos.x,
-                data_table_pos.y + index as i64,
-                display_values.len() as i64,
-                1,
-            );
+            self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
 
-            transaction.add_code_cell(sheet_id, data_table_pos);
-            transaction.add_dirty_hashes_from_sheet_rect(values_rect.to_sheet_rect(sheet_id));
+            let get_unsorted_row_index = |data_table: &DataTable, index: u32| {
+                let data_index = index as i64 - data_table.y_adjustment(true);
+                data_table.get_row_index_from_display_index(data_index as u64) as i64
+            };
+
+            // for flattening
+            let mut old_data_table_rect = data_table.output_rect(data_table_pos, true);
+            old_data_table_rect.min.y += data_table.y_adjustment(true);
+            old_data_table_rect.min.y += 1; //cannot flatten the first row
+            let mut sheet_cell_values =
+                CellValues::new(old_data_table_rect.width(), old_data_table_rect.height());
+            let mut sheet_format_updates = SheetFormatUpdates::default();
+            let mut data_table_formats_rects = vec![];
+
+            for &index in rows.iter() {
+                let sheet = self.try_sheet_result(sheet_id)?;
+                let data_table = sheet.data_table_result(data_table_pos)?;
+
+                let values_rect = Rect::from_numbers(
+                    data_table_pos.x,
+                    data_table_pos.y + index as i64,
+                    data_table_rect.width() as i64,
+                    1,
+                );
+
+                if flatten {
+                    // collect values to flatten
+                    let mut old_values = data_table.get_row_sorted(index as usize)?;
+                    // handle hidden columns
+                    if let Some(column_headers) = &data_table.column_headers {
+                        let display_old_values = old_values
+                            .into_iter()
+                            .enumerate()
+                            .filter(|(x, _)| {
+                                column_headers.get(*x).is_some_and(|header| header.display)
+                            })
+                            .map(|(_, value)| value)
+                            .collect::<Vec<_>>();
+                        old_values = display_old_values;
+                    }
+                    for (x, old_value) in old_values.into_iter().enumerate() {
+                        if let (Ok(value_x), Ok(value_y)) = (
+                            u32::try_from(x),
+                            u32::try_from(index as i64 - 1 - data_table.y_adjustment(true)),
+                        ) {
+                            sheet_cell_values.set(value_x, value_y, old_value);
+                        }
+                    }
+
+                    // collect formats to flatten
+                    data_table.transfer_formats_to_sheet(
+                        data_table_pos,
+                        values_rect,
+                        &mut sheet_format_updates,
+                    )?;
+                }
+
+                let actual_row_index = get_unsorted_row_index(data_table, index);
+                let formats_rect =
+                    Rect::from_numbers(1, actual_row_index + 1, data_table.width() as i64, 1);
+                data_table_formats_rects.push(formats_rect);
+            }
+
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let data_table = sheet.data_table_mut(data_table_pos)?;
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
 
-            let mut reverse_operations = vec![];
-
-            if flatten && !old_values.is_empty() {
-                // flatten the values
-                let values = Array::from(vec![display_values]);
-
-                // flatten the formats
-                let sheet_format_update =
-                    data_table.transfer_formats_to_sheet(data_table_pos, values_rect)?;
-
-                let _ = sheet.set_cell_values(values_rect, &values);
-                drop(values);
-                reverse_operations.push(Operation::SetCellValues {
-                    sheet_pos: values_rect.min.to_sheet_pos(sheet_id),
-                    values: CellValues::new(values_rect.width(), values_rect.height()),
-                });
-
-                if !sheet_format_update.is_default() {
-                    sheet.formats.apply_updates(&sheet_format_update);
-                    reverse_operations.push(Operation::SetCellFormatsA1 {
-                        sheet_id,
-                        formats: SheetFormatUpdates::from_selection(
-                            &A1Selection::from_rect(values_rect.to_sheet_rect(sheet_id)),
+            // delete table formats
+            if let Some(formats_selection) =
+                A1Selection::from_rects(data_table_formats_rects, sheet_id)
+            {
+                let data_table_reverse_format =
+                    data_table
+                        .formats
+                        .apply_updates(&SheetFormatUpdates::from_selection(
+                            &formats_selection,
                             FormatUpdate::cleared(),
-                        ),
+                        ));
+                if !data_table_reverse_format.is_default() {
+                    reverse_operations.push(Operation::DataTableFormats {
+                        sheet_pos,
+                        formats: data_table_reverse_format,
                     });
                 }
             }
 
-            let data_table = sheet.data_table_mut(data_table_pos)?;
-
-            let row_index = index as i64 - data_table.y_adjustment(true);
-            let actual_row_index = data_table.transmute_index(u64::try_from(row_index)?);
-
-            let formats_rect =
-                Rect::from_numbers(1, actual_row_index as i64 + 1, data_table.width() as i64, 1);
-            let data_table_reverse_format =
-                data_table
-                    .formats
-                    .apply_updates(&SheetFormatUpdates::from_selection(
-                        &A1Selection::from_rect(formats_rect.to_sheet_rect(sheet_id)),
-                        FormatUpdate::cleared(),
-                    ));
-            if !data_table_reverse_format.is_default() {
-                reverse_operations.push(Operation::DataTableFormats {
+            // sort and display buffer
+            if data_table.display_buffer.is_some() {
+                reverse_operations.push(Operation::SortDataTable {
                     sheet_pos,
-                    formats: data_table_reverse_format,
+                    sort: data_table.sort.to_owned(),
+                    display_buffer: Some(data_table.display_buffer.to_owned()),
                 });
             }
 
-            let reverse_row_index = data_table.delete_row_sorted(index as usize)?;
-
-            if select_table {
-                Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
+            // delete columns
+            for index in rows.into_iter() {
+                let reverse_row = data_table.delete_row_sorted(index as usize)?;
+                reverse_rows.push(reverse_row);
             }
-            self.send_updated_bounds(transaction, sheet_id);
+            reverse_rows.reverse();
+            data_table.check_sort()?;
 
-            let forward_operations = vec![op];
-            reverse_operations.push(Operation::InsertDataTableRow {
+            reverse_operations.push(Operation::InsertDataTableRows {
                 sheet_pos,
-                index: reverse_row_index,
-                values: Some(old_values),
+                rows: reverse_rows,
                 swallow: false,
                 select_table,
             });
+
+            if flatten {
+                if !sheet_cell_values.is_empty() {
+                    let reverse_sheet_values =
+                        sheet.set_cell_values(old_data_table_rect, &sheet_cell_values.into());
+                    reverse_operations.push(Operation::SetCellValues {
+                        sheet_pos: old_data_table_rect.min.to_sheet_pos(sheet_id),
+                        values: reverse_sheet_values.into(),
+                    });
+                }
+
+                if !sheet_format_updates.is_default() {
+                    let reverse_sheet_formats = sheet.formats.apply_updates(&sheet_format_updates);
+                    reverse_operations.push(Operation::SetCellFormatsA1 {
+                        sheet_id,
+                        formats: reverse_sheet_formats,
+                    });
+                }
+            }
+
+            let sheet = self.try_sheet_result(sheet_id)?;
+            let data_table = sheet.data_table_result(data_table_pos)?;
+            if select_table {
+                Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
+            }
+            transaction.add_code_cell(sheet_id, data_table_pos);
+            self.send_updated_bounds(transaction, sheet_id);
+
+            let forward_operations = vec![op];
             self.data_table_operations(
                 transaction,
                 forward_operations,
@@ -1303,7 +1467,7 @@ impl GridController {
             return Ok(());
         };
 
-        bail!("Expected Operation::DeleteDataTableRow in execute_delete_data_table_row");
+        bail!("Expected Operation::DeleteDataTableRows in execute_delete_data_table_row");
     }
 
     pub(super) fn execute_data_table_first_row_as_header(
@@ -1326,7 +1490,6 @@ impl GridController {
             }
 
             data_table.toggle_first_row_as_header(first_row_is_header);
-            data_table.add_dirty_fills_and_borders(transaction, sheet_id);
 
             let data_table_rect = data_table
                 .output_rect(data_table_pos, true)
@@ -1589,6 +1752,7 @@ mod tests {
         let sort_op = Operation::SortDataTable {
             sheet_pos,
             sort: Some(sort),
+            display_buffer: None,
         };
         gc.execute_sort_data_table(&mut transaction, sort_op)
             .unwrap();
@@ -1733,6 +1897,7 @@ mod tests {
         let op = Operation::SortDataTable {
             sheet_pos,
             sort: Some(sort),
+            display_buffer: None,
         };
         let mut transaction = PendingTransaction::default();
         gc.execute_sort_data_table(&mut transaction, op).unwrap();
@@ -1820,11 +1985,9 @@ mod tests {
 
         let sheet_pos = SheetPos::from((pos, sheet_id));
         let index = 0;
-        let op = Operation::InsertDataTableColumn {
+        let op = Operation::InsertDataTableColumns {
             sheet_pos,
-            index,
-            column_header: None,
-            values: None,
+            columns: vec![(index, None, None)],
             swallow: false,
             select_table: true,
         };
@@ -1866,9 +2029,9 @@ mod tests {
 
         let sheet_pos = SheetPos::from((pos, sheet_id));
         let index = 0;
-        let op = Operation::DeleteDataTableColumn {
+        let op = Operation::DeleteDataTableColumns {
             sheet_pos,
-            index,
+            columns: vec![index],
             flatten: false,
             select_table: true,
         };
@@ -1910,10 +2073,9 @@ mod tests {
 
         let sheet_pos = SheetPos::from((pos, sheet_id));
         let index = 2;
-        let op = Operation::InsertDataTableRow {
+        let op = Operation::InsertDataTableRows {
             sheet_pos,
-            index,
-            values: None,
+            rows: vec![(index, None)],
             swallow: false,
             select_table: true,
         };
@@ -1948,9 +2110,9 @@ mod tests {
         let index = 2;
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
         let values = data_table.get_row(index as usize + 1).unwrap();
-        let op = Operation::DeleteDataTableRow {
+        let op = Operation::DeleteDataTableRows {
             sheet_pos,
-            index,
+            rows: vec![index],
             flatten: true,
             select_table: true,
         };
@@ -1992,11 +2154,9 @@ mod tests {
         );
 
         let mut transaction = PendingTransaction::default();
-        let insert_column_op = Operation::InsertDataTableColumn {
+        let insert_column_op = Operation::InsertDataTableColumns {
             sheet_pos: pos.to_sheet_pos(sheet_id),
-            index: 4,
-            column_header: None,
-            values: None,
+            columns: vec![(4, None, None)],
             swallow: true,
             select_table: true,
         };
@@ -2013,10 +2173,9 @@ mod tests {
         );
 
         let mut transaction = PendingTransaction::default();
-        let insert_row_op = Operation::InsertDataTableRow {
+        let insert_row_op = Operation::InsertDataTableRows {
             sheet_pos: pos.to_sheet_pos(sheet_id),
-            index: 12,
-            values: None,
+            rows: vec![(12, None)],
             swallow: true,
             select_table: true,
         };
@@ -2055,11 +2214,9 @@ mod tests {
         );
 
         let mut transaction = PendingTransaction::default();
-        let insert_column_op = Operation::InsertDataTableColumn {
+        let insert_column_op = Operation::InsertDataTableColumns {
             sheet_pos: pos.to_sheet_pos(sheet_id),
-            index: 4,
-            column_header: None,
-            values: None,
+            columns: vec![(4, None, None)],
             swallow: true,
             select_table: true,
         };
@@ -2076,10 +2233,9 @@ mod tests {
         );
 
         let mut transaction = PendingTransaction::default();
-        let insert_row_op = Operation::InsertDataTableRow {
+        let insert_row_op = Operation::InsertDataTableRows {
             sheet_pos: pos.to_sheet_pos(sheet_id),
-            index: 12,
-            values: None,
+            rows: vec![(12, None)],
             swallow: true,
             select_table: true,
         };

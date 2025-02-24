@@ -6,12 +6,14 @@ import type {
   CellVerticalAlign,
   CellWrap,
   CodeCellLanguage,
+  DataTableSort,
   Direction,
   Format,
   JsBordersSheet,
   JsCellValue,
   JsCodeCell,
   JsCoordinate,
+  JsDataTableColumnHeader,
   JsHtmlOutput,
   JsOffset,
   JsRenderCell,
@@ -1141,11 +1143,7 @@ export interface ClientCoreDataTableMeta {
   y: number;
   name?: string;
   alternatingColors?: boolean;
-  columns?: {
-    name: string;
-    display: boolean;
-    valueIndex: number;
-  }[];
+  columns?: JsDataTableColumnHeader[];
   showName?: boolean;
   showColumns?: boolean;
   showUI?: boolean;
@@ -1178,7 +1176,7 @@ export interface ClientCoreSortDataTable {
   sheetId: string;
   x: number;
   y: number;
-  sort: { column_index: number; direction: string }[];
+  sort?: DataTableSort[];
   cursor: string;
 }
 

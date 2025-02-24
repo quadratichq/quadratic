@@ -15,6 +15,7 @@ import type {
   CellVerticalAlign,
   CellWrap,
   CodeCellLanguage,
+  DataTableSort,
   Direction,
   Format,
   JsCellValue,
@@ -22,6 +23,7 @@ import type {
   JsCodeCell,
   JsCodeResult,
   JsCoordinate,
+  JsDataTableColumnHeader,
   JsRenderCell,
   JsSelectionContext,
   JsSummarizeSelectionResult,
@@ -1193,7 +1195,7 @@ class Core {
     y: number,
     name?: string,
     alternatingColors?: boolean,
-    columns?: { name: string; display: boolean; valueIndex: number }[],
+    columns?: JsDataTableColumnHeader[],
     showUI?: boolean,
     showName?: boolean,
     showColumns?: boolean,
@@ -1241,13 +1243,7 @@ class Core {
     );
   }
 
-  sortDataTable(
-    sheetId: string,
-    x: number,
-    y: number,
-    sort: { column_index: number; direction: string }[],
-    cursor: string
-  ) {
+  sortDataTable(sheetId: string, x: number, y: number, sort: DataTableSort[] | undefined, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.sortDataTable(sheetId, posToPos(x, y), JSON.stringify(sort), cursor);
   }

@@ -42,11 +42,6 @@ export const TableSortEntry = (props: Props) => {
         column === undefined ? newColumn ?? undefined : column,
         (direction as SortDirection) ?? newDirection
       );
-      console.log(
-        index,
-        column === undefined ? newColumn ?? '' : column,
-        (direction as SortDirection) ?? newDirection!
-      );
     },
     [index, onChange, newColumn, newDirection]
   );
