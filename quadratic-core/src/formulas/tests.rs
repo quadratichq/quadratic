@@ -26,7 +26,7 @@ pub(crate) fn eval_at(grid: &Grid, pos: SheetPos, s: &str) -> Value {
     println!("Evaluating formula {s:?}");
     let mut ctx = Ctx::new(grid, pos);
     match parse_formula(s, &grid.a1_context(), grid.origin_in_first_sheet()) {
-        Ok(formula) => formula.eval(&mut ctx).inner,
+        Ok(formula) => dbg!(formula).eval(&mut ctx).inner,
         Err(e) => e.into(),
     }
 }
@@ -97,20 +97,20 @@ pub(crate) fn datetime(s: &str) -> CellValue {
 
 #[test]
 fn test_formula_cell_ref() {
-    let form = simple_parse_formula("SUM(A1:A5)").unwrap();
-
     let mut g = Grid::new();
     let sheet = &mut g.sheets_mut()[0];
-    let _ = sheet.set_cell_value(pos![A1], 1);
-    let _ = sheet.set_cell_value(pos![A2], 10);
-    let _ = sheet.set_cell_value(pos![A3], 100);
-    let _ = sheet.set_cell_value(pos![A4], 1000);
-    let _ = sheet.set_cell_value(pos![A5], 10000);
-    let sheet_id = sheet.id;
+    sheet.set_cell_value(pos![B1], 1);
+    sheet.set_cell_value(pos![B2], 10);
+    sheet.set_cell_value(pos![B3], 100);
+    sheet.set_cell_value(pos![B4], 1000);
+    sheet.set_cell_value(pos![B5], 10000);
 
-    // Evaluate at ORIGIN
-    let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(sheet_id));
-    assert_eq!("11111".to_string(), form.eval(&mut ctx).to_string(),);
+    assert_eq!("11111".to_string(), eval_to_string(&g, "SUM(B1:B5)"));
+    assert_eq!("11111".to_string(), eval_to_string(&g, "SUM(B:B)"));
+    assert_eq!(
+        "{1; 10; 100; 1000; 10000}".to_string(),
+        eval_to_string(&g, "B:B"),
+    );
 }
 
 #[test]

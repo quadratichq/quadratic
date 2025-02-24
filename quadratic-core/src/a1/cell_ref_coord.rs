@@ -9,7 +9,7 @@ use crate::RefError;
 /// Unbounded coordinate on lower or upper end.
 pub const UNBOUNDED: i64 = i64::MAX;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct CellRefCoord {
@@ -257,5 +257,19 @@ mod tests {
         let coord = CellRefCoord::UNBOUNDED;
         let serialized = serde_json::to_string(&coord).unwrap();
         assert_eq!(coord, serde_json::from_str(&serialized).unwrap());
+    }
+
+    #[test]
+    fn test_cell_ref_coord_ordering() {
+        // sort primarily by number; abs vs. rel doesn't actually matter
+        let sorted = vec![
+            CellRefCoord::new_rel(1),
+            CellRefCoord::new_abs(1),
+            CellRefCoord::new_rel(2),
+            CellRefCoord::new_abs(2),
+            CellRefCoord::new_rel(3),
+            CellRefCoord::new_abs(3),
+        ];
+        assert!(sorted.is_sorted())
     }
 }

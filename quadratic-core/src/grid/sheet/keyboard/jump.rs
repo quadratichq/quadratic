@@ -6,7 +6,7 @@
 //! - if on a filled cell but the next cell is empty then select to the first
 //!   cell with a value
 //! - if there are no more cells then select the next cell over (excel selects
-//!   to the end of the sheet; we don’t have an end (yet) so right now I select
+//!   to the end of the sheet; we don't have an end (yet) so right now I select
 //!   one cell over)
 //!
 //! The above checks are always made relative to the original cursor position
@@ -15,6 +15,10 @@
 use crate::{grid::Sheet, Pos};
 
 use super::Direction;
+
+// todo: ideally, this should be part of rust-client and not core--right now we
+// rely on has_content, which is a sheet fn. We should port the TS
+// CellsTextHashContent to rust and use that as part of the A1Context instead.
 
 // todo: this should not return a Pos but should directly change the
 // A1Selection--ie, it should handle the entire keyboard movement logic
@@ -38,14 +42,14 @@ impl Sheet {
         let prev_y: i64;
 
         // handle case of cell with content
-        if self.has_content(Pos { x, y }) {
+        if self.has_content_ignore_blank_table(Pos { x, y }) {
             // if previous cell is empty, find the next cell with content
             if y - 1 == 0 {
                 return Pos { x, y: 1 };
             }
 
             // if prev cell is empty, find the next cell with content
-            if !self.has_content(Pos { x, y: y - 1 }) {
+            if !self.has_content_ignore_blank_table(Pos { x, y: y - 1 }) {
                 if let Some(prev) = self.find_next_row(y - 2, x, true, true) {
                     prev_y = prev;
                 } else {
@@ -87,9 +91,9 @@ impl Sheet {
         let mut next_y: Option<i64> = None;
 
         // handle case of cell with content
-        if self.has_content(Pos { x, y }) {
+        if self.has_content_ignore_blank_table(Pos { x, y }) {
             // if next cell is empty, find the next cell with content
-            if !self.has_content(Pos { x, y: y + 1 }) {
+            if !self.has_content_ignore_blank_table(Pos { x, y: y + 1 }) {
                 if let Some(next) = self.find_next_row(y + 2, x, false, true) {
                     next_y = Some(next);
                 }
@@ -133,12 +137,12 @@ impl Sheet {
         let prev_x;
 
         // handle case of cell with content
-        if self.has_content(Pos { x, y }) {
+        if self.has_content_ignore_blank_table(Pos { x, y }) {
             // if previous cell is empty, find the next cell with content
             if x - 1 == 0 {
                 return Pos { x: 1, y };
             }
-            if !self.has_content(Pos { x: x - 1, y }) {
+            if !self.has_content_ignore_blank_table(Pos { x: x - 1, y }) {
                 if x - 2 == 0 {
                     return Pos { x: 1, y };
                 }
@@ -181,9 +185,9 @@ impl Sheet {
 
         // handle case of cell with content
         let mut next_x: Option<i64> = None;
-        if self.has_content(Pos { x, y }) {
+        if self.has_content_ignore_blank_table(Pos { x, y }) {
             // if next cell is empty, find the next cell with content
-            if !self.has_content(Pos { x: x + 1, y }) {
+            if !self.has_content_ignore_blank_table(Pos { x: x + 1, y }) {
                 if let Some(next) = self.find_next_column(x + 2, y, false, true) {
                     next_x = Some(next);
                 }
@@ -209,7 +213,7 @@ impl Sheet {
         Pos { x, y }
     }
 
-    /// Returns the Pos after a jump (ctrl/cmd + arrow key)
+    /// Returns the SheetPos after a jump (ctrl/cmd + arrow key)
     pub fn jump_cursor(&self, current: Pos, direction: Direction) -> Pos {
         match direction {
             Direction::Up => self.jump_up(current),
@@ -256,10 +260,12 @@ mod tests {
     fn jump_right_empty() {
         let sheet = Sheet::test();
 
-        let pos = Pos { x: 1, y: 1 };
-        let new_pos = sheet.jump_right(pos);
+        let current = Pos { x: 1, y: 1 };
+        let new_pos = sheet.jump_right(current);
         assert_eq!(new_pos, Pos { x: 2, y: 1 });
-        let new_pos = sheet.jump_right(Pos { x: 2, y: 2 });
+
+        let current = Pos { x: 2, y: 2 };
+        let new_pos = sheet.jump_right(current);
         assert_eq!(new_pos, Pos { x: 3, y: 2 });
     }
 
@@ -277,12 +283,9 @@ mod tests {
         assert_eq!(sheet.jump_right(Pos { x: 0, y: 1 }), Pos { x: 1, y: 1 });
         assert_eq!(sheet.jump_right(Pos { x: 1, y: 1 }), Pos { x: 5, y: 1 });
         assert_eq!(sheet.jump_right(Pos { x: 5, y: 1 }), Pos { x: 10, y: 1 });
-
-        // jump to the first cell in the first chart
         assert_eq!(sheet.jump_right(Pos { x: 10, y: 1 }), Pos { x: 20, y: 1 });
-
-        // jump to the first cell in the second chart
         assert_eq!(sheet.jump_right(Pos { x: 20, y: 1 }), Pos { x: 25, y: 1 });
+        assert_eq!(sheet.jump_right(Pos { x: 21, y: 1 }), Pos { x: 25, y: 1 });
         assert_eq!(sheet.jump_right(Pos { x: 21, y: 1 }), Pos { x: 25, y: 1 });
     }
 
@@ -290,10 +293,12 @@ mod tests {
     fn jump_left_empty() {
         let sheet = Sheet::test();
 
-        let pos = Pos { x: 2, y: 1 };
-        let new_pos = sheet.jump_left(pos);
+        let current = Pos { x: 2, y: 1 };
+        let new_pos = sheet.jump_left(current);
         assert_eq!(new_pos, Pos { x: 1, y: 1 });
-        let new_pos = sheet.jump_left(Pos { x: 5, y: 3 });
+
+        let current = Pos { x: 5, y: 3 };
+        let new_pos = sheet.jump_left(current);
         assert_eq!(new_pos, Pos { x: 1, y: 3 });
     }
 
@@ -312,15 +317,8 @@ mod tests {
         assert_eq!(sheet.jump_left(Pos { x: 10, y: 1 }), Pos { x: 5, y: 1 });
         assert_eq!(sheet.jump_left(Pos { x: 5, y: 1 }), Pos { x: 2, y: 1 });
         assert_eq!(sheet.jump_left(Pos { x: 2, y: 1 }), Pos { x: 1, y: 1 });
-        assert_eq!(sheet.jump_left(Pos { x: 1, y: 1 }), Pos { x: 1, y: 1 });
-
-        // jump to the last cell in the second chart
         assert_eq!(sheet.jump_left(Pos { x: 28, y: 1 }), Pos { x: 27, y: 1 });
-
-        // jump to the first cell in the second chart
         assert_eq!(sheet.jump_left(Pos { x: 25, y: 1 }), Pos { x: 22, y: 1 });
-
-        // Add more edge case tests
         assert_eq!(sheet.jump_left(Pos { x: 2, y: 1 }), Pos { x: 1, y: 1 });
         assert_eq!(sheet.jump_left(Pos { x: 1, y: 1 }), Pos { x: 1, y: 1 });
     }
@@ -338,10 +336,12 @@ mod tests {
     fn jump_up_empty() {
         let sheet = Sheet::test();
 
-        let pos = Pos { x: 1, y: 2 };
-        let new_pos = sheet.jump_up(pos);
+        let current = Pos { x: 1, y: 2 };
+        let new_pos = sheet.jump_up(current);
         assert_eq!(new_pos, Pos { x: 1, y: 1 });
-        let new_pos = sheet.jump_up(Pos { x: 1, y: 5 });
+
+        let current = Pos { x: 1, y: 5 };
+        let new_pos = sheet.jump_up(current);
         assert_eq!(new_pos, Pos { x: 1, y: 1 });
     }
 
@@ -355,23 +355,15 @@ mod tests {
         create_3x3_chart(&mut sheet, Pos { x: 3, y: 20 });
         create_3x3_chart(&mut sheet, Pos { x: 3, y: 25 });
 
-        // jump to the last cell in the second chart
         assert_eq!(sheet.jump_up(Pos { x: 3, y: 30 }), Pos { x: 3, y: 28 });
-
-        // jump to the last cell in the first chart
         assert_eq!(sheet.jump_up(Pos { x: 3, y: 28 }), Pos { x: 3, y: 23 });
         assert_eq!(sheet.jump_up(Pos { x: 3, y: 24 }), Pos { x: 3, y: 23 });
-
         assert_eq!(sheet.jump_up(Pos { x: 3, y: 22 }), Pos { x: 3, y: 10 });
         assert_eq!(sheet.jump_up(Pos { x: 3, y: 12 }), Pos { x: 3, y: 10 });
         assert_eq!(sheet.jump_up(Pos { x: 3, y: 10 }), Pos { x: 3, y: 5 });
         assert_eq!(sheet.jump_up(Pos { x: 3, y: 9 }), Pos { x: 3, y: 5 });
-        assert_eq!(sheet.jump_up(Pos { x: 3, y: 5 }), Pos { x: 3, y: 1 });
         assert_eq!(sheet.jump_up(Pos { x: 3, y: 3 }), Pos { x: 3, y: 1 });
-
-        // Add edge case tests
         assert_eq!(sheet.jump_up(Pos { x: 3, y: 2 }), Pos { x: 3, y: 1 });
-        assert_eq!(sheet.jump_up(Pos { x: 3, y: 1 }), Pos { x: 3, y: 1 });
     }
 
     #[test]
@@ -387,15 +379,17 @@ mod tests {
     fn jump_down_empty() {
         let sheet = Sheet::test();
 
-        let pos = Pos { x: 1, y: 1 };
-        let new_pos = sheet.jump_down(pos);
+        let current = Pos { x: 1, y: 1 };
+        let new_pos = sheet.jump_down(current);
         assert_eq!(new_pos, Pos { x: 1, y: 2 });
-        let new_pos = sheet.jump_down(Pos { x: 1, y: 5 });
+
+        let current = Pos { x: 1, y: 5 };
+        let new_pos = sheet.jump_down(current);
         assert_eq!(new_pos, Pos { x: 1, y: 6 });
     }
 
     #[test]
-    fn jump_down_filled() {
+    fn test_jump_down_filled() {
         let mut sheet = Sheet::test();
 
         sheet.set_cell_value(Pos { x: 3, y: 5 }, CellValue::Number(1.into()));
@@ -407,15 +401,12 @@ mod tests {
         assert_eq!(sheet.jump_down(Pos { x: 3, y: 1 }), Pos { x: 3, y: 5 });
         assert_eq!(sheet.jump_down(Pos { x: 3, y: 5 }), Pos { x: 3, y: 10 });
         assert_eq!(sheet.jump_down(Pos { x: 3, y: 6 }), Pos { x: 3, y: 10 });
-
-        // jump to the first cell in the first chart
         assert_eq!(sheet.jump_down(Pos { x: 3, y: 10 }), Pos { x: 3, y: 20 });
+        assert_eq!(sheet.jump_down(Pos { x: 3, y: 15 }), Pos { x: 3, y: 20 });
         assert_eq!(sheet.jump_down(Pos { x: 3, y: 13 }), Pos { x: 3, y: 20 });
-
-        // jump to the first cell in the second chart
         assert_eq!(sheet.jump_down(Pos { x: 3, y: 20 }), Pos { x: 3, y: 25 });
         assert_eq!(sheet.jump_down(Pos { x: 3, y: 23 }), Pos { x: 3, y: 25 });
-
+        assert_eq!(sheet.jump_down(Pos { x: 3, y: 26 }), Pos { x: 3, y: 29 });
         assert_eq!(sheet.jump_down(Pos { x: 3, y: 26 }), Pos { x: 3, y: 29 });
     }
 
@@ -429,10 +420,14 @@ mod tests {
         sheet.set_cell_value(Pos { x: 1, y: 3 }, CellValue::Number(3.into()));
 
         // Test jumping down through consecutive filled cells
-        assert_eq!(sheet.jump_down(Pos { x: 1, y: 1 }), Pos { x: 1, y: 3 });
+        let current = Pos { x: 1, y: 1 };
+        let new_pos = sheet.jump_down(current);
+        assert_eq!(new_pos, Pos { x: 1, y: 3 });
 
         // Test jumping up through consecutive filled cells
-        assert_eq!(sheet.jump_up(Pos { x: 1, y: 3 }), Pos { x: 1, y: 1 });
+        let current = Pos { x: 1, y: 3 };
+        let new_pos = sheet.jump_up(current);
+        assert_eq!(new_pos, Pos { x: 1, y: 1 });
 
         // Create horizontal sequence of filled cells
         sheet.set_cell_value(Pos { x: 5, y: 5 }, CellValue::Number(1.into()));
@@ -440,10 +435,14 @@ mod tests {
         sheet.set_cell_value(Pos { x: 7, y: 5 }, CellValue::Number(3.into()));
 
         // Test jumping right through consecutive filled cells
-        assert_eq!(sheet.jump_right(Pos { x: 5, y: 5 }), Pos { x: 7, y: 5 });
+        let current = Pos { x: 5, y: 5 };
+        let new_pos = sheet.jump_right(current);
+        assert_eq!(new_pos, Pos { x: 7, y: 5 });
 
         // Test jumping left through consecutive filled cells
-        assert_eq!(sheet.jump_left(Pos { x: 7, y: 5 }), Pos { x: 5, y: 5 });
+        let current = Pos { x: 7, y: 5 };
+        let new_pos = sheet.jump_left(current);
+        assert_eq!(new_pos, Pos { x: 5, y: 5 });
     }
 
     #[test]
@@ -454,18 +453,106 @@ mod tests {
 
         assert_eq!(sheet.jump_left(Pos { x: 5, y: 1 }), Pos { x: 3, y: 1 });
         assert_eq!(sheet.jump_left(Pos { x: 2, y: 1 }), Pos { x: 1, y: 1 });
-
         assert_eq!(sheet.jump_right(Pos { x: 1, y: 1 }), Pos { x: 4, y: 1 });
         assert_eq!(sheet.jump_right(Pos { x: 2, y: 1 }), Pos { x: 4, y: 1 });
         assert_eq!(sheet.jump_right(Pos { x: 3, y: 1 }), Pos { x: 4, y: 1 });
-
         assert_eq!(sheet.jump_up(Pos { x: 1, y: 5 }), Pos { x: 1, y: 4 });
         assert_eq!(sheet.jump_up(Pos { x: 2, y: 5 }), Pos { x: 2, y: 4 });
         assert_eq!(sheet.jump_up(Pos { x: 3, y: 4 }), Pos { x: 3, y: 1 });
-
         assert_eq!(sheet.jump_down(Pos { x: 1, y: 1 }), Pos { x: 1, y: 5 });
         assert_eq!(sheet.jump_down(Pos { x: 2, y: 2 }), Pos { x: 2, y: 5 });
-
         assert_eq!(sheet.jump_down(Pos { x: 3, y: 4 }), Pos { x: 3, y: 5 });
+    }
+
+    #[test]
+    fn test_jump_right_simple_table() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_code_run_array(2, 2, vec!["1", "2", "3", "4", "5"], false);
+
+        assert_eq!(sheet.jump_right(pos![A2]), pos![B2]);
+        assert_eq!(sheet.jump_right(pos![B2]), pos![F2]);
+        assert_eq!(sheet.jump_right(pos![C2]), pos![F2]);
+        assert_eq!(sheet.jump_right(pos![F2]), pos![G2]);
+    }
+
+    #[test]
+    fn test_jump_right_simple_table_with_blanks() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_code_run_array(2, 2, vec!["1", "2", "", "", "5", "6"], false);
+
+        assert_eq!(sheet.jump_right(pos![A2]), pos![B2]);
+        assert_eq!(sheet.jump_right(pos![B2]), pos![C2]);
+        assert_eq!(sheet.jump_right(pos![C2]), pos![F2]);
+        assert_eq!(sheet.jump_right(pos![G2]), pos![H2]);
+        assert_eq!(sheet.jump_right(pos![F2]), pos![G2]);
+    }
+
+    #[test]
+    fn test_jump_left_simple_table() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_code_run_array(2, 2, vec!["1", "2", "3", "4", "5"], false);
+
+        assert_eq!(sheet.jump_left(pos![G2]), pos![F2]);
+        assert_eq!(sheet.jump_left(pos![F2]), pos![B2]);
+        assert_eq!(sheet.jump_left(pos![D2]), pos![B2]);
+        assert_eq!(sheet.jump_left(pos![B2]), pos![A2]);
+    }
+
+    #[test]
+    fn test_jump_left_simple_table_with_blanks() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_code_run_array(2, 2, vec!["1", "2", "", "", "5", "6"], false);
+
+        assert_eq!(sheet.jump_left(pos![H2]), pos![G2]);
+        assert_eq!(sheet.jump_left(pos![G2]), pos![F2]);
+        assert_eq!(sheet.jump_left(pos![F2]), pos![C2]);
+        assert_eq!(sheet.jump_left(pos![C2]), pos![B2]);
+        assert_eq!(sheet.jump_left(pos![B2]), pos![A2]);
+    }
+
+    #[test]
+    fn test_jump_down_simple_table() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_code_run_array(2, 2, vec!["1", "2", "3", "4", "5"], true);
+
+        assert_eq!(sheet.jump_down(pos![B1]), pos![B2]);
+        assert_eq!(sheet.jump_down(pos![B2]), pos![B6]);
+        assert_eq!(sheet.jump_down(pos![B4]), pos![B6]);
+        assert_eq!(sheet.jump_down(pos![B6]), pos![B7]);
+    }
+
+    #[test]
+    fn test_jump_down_simple_table_with_blanks() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_code_run_array(2, 2, vec!["1", "2", "", "", "5", "6"], true);
+
+        assert_eq!(sheet.jump_down(pos![B1]), pos![B2]);
+        assert_eq!(sheet.jump_down(pos![B2]), pos![B3]);
+        assert_eq!(sheet.jump_down(pos![B3]), pos![B6]);
+        assert_eq!(sheet.jump_down(pos![B7]), pos![B8]);
+        assert_eq!(sheet.jump_down(pos![B6]), pos![B7]);
+    }
+
+    #[test]
+    fn test_jump_up_simple_table() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_code_run_array(2, 2, vec!["1", "2", "3", "4", "5"], true);
+
+        assert_eq!(sheet.jump_up(pos![B7]), pos![B6]);
+        assert_eq!(sheet.jump_up(pos![B6]), pos![B2]);
+        assert_eq!(sheet.jump_up(pos![B4]), pos![B2]);
+        assert_eq!(sheet.jump_up(pos![B2]), pos![B1]);
+    }
+
+    #[test]
+    fn test_jump_up_simple_table_with_blanks() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_code_run_array(2, 2, vec!["1", "2", "", "", "5", "6"], true);
+
+        assert_eq!(sheet.jump_up(pos![B8]), pos![B7]);
+        assert_eq!(sheet.jump_up(pos![B7]), pos![B6]);
+        assert_eq!(sheet.jump_up(pos![B6]), pos![B3]);
+        assert_eq!(sheet.jump_up(pos![B3]), pos![B2]);
+        assert_eq!(sheet.jump_up(pos![B2]), pos![B1]);
     }
 }
