@@ -18,8 +18,8 @@ impl GridController {
     }
 
     /// Separately apply sheet and table formats.
-    fn format_ops(
-        &mut self,
+    pub(crate) fn format_ops(
+        &self,
         selection: &A1Selection,
         format_update: FormatUpdate,
     ) -> Vec<Operation> {
@@ -42,18 +42,22 @@ impl GridController {
             );
 
             // map visible index to actual column index
-            range.start.col.coord = table
-                .get_column_index_from_display_index(range.start.col.coord as usize - 1)
-                .unwrap_or(range.start.col.coord as usize - 1)
-                as i64
-                + 1;
+            if !range.start.col.is_unbounded() {
+                range.start.col.coord = table
+                    .get_column_index_from_display_index(range.start.col.coord as usize - 1)
+                    .unwrap_or(range.start.col.coord as usize - 1)
+                    as i64
+                    + 1;
+            }
 
-            // map visible index to actual column index
-            range.end.col.coord = table
-                .get_column_index_from_display_index(range.end.col.coord as usize - 1)
-                .unwrap_or(range.end.col.coord as usize - 1)
-                as i64
-                + 1;
+            if !range.end.col.is_unbounded() {
+                // map visible index to actual column index
+                range.end.col.coord = table
+                    .get_column_index_from_display_index(range.end.col.coord as usize - 1)
+                    .unwrap_or(range.end.col.coord as usize - 1)
+                    as i64
+                    + 1;
+            }
 
             let mut ranges = vec![CellRefRange::Sheet { range }];
 
@@ -462,6 +466,7 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
+    use crate::controller::active_transactions::transaction_name::TransactionName;
     use crate::controller::operations::operation::Operation;
     use crate::controller::GridController;
     use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
@@ -916,5 +921,11 @@ mod test {
                 formats,
             }
         );
+
+        gc.start_user_transaction(ops, None, TransactionName::SetFormats);
+
+        let sheet = gc.sheet(sheet_id);
+        let format = sheet.cell_format(pos![F7]);
+        assert_eq!(format.bold, Some(true));
     }
 }

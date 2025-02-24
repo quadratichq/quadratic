@@ -443,11 +443,7 @@ mod tests {
             None,
         )
         .unwrap();
-        dbgjs!(format!("gc.a1_context {:?}", gc.a1_context()));
-        dbgjs!(format!(
-            "{:?}",
-            A1Selection::test_a1_context(&format!("{}[country]", file_name), gc.a1_context())
-        ));
+
         gc.set_fill_color(
             &A1Selection::test_a1_context(&format!("{}[country]", file_name), gc.a1_context()),
             Some("yellow".to_string()),
@@ -457,7 +453,6 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
         let fills = sheet.get_all_render_fills();
-        dbgjs!(format!("fills {:?}", fills));
         assert_fill_eq(&fills[0], 8, 10, 1, 1, "green");
         assert_fill_eq(&fills[1], 9, 4, 1, 1, "red");
         assert_fill_eq(&fills[2], 9, 10, 1, 1, "green");
