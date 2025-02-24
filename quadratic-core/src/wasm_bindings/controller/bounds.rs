@@ -163,7 +163,9 @@ impl GridController {
         let sheet = self
             .try_sheet(selection.sheet_id)
             .ok_or(JsValue::UNDEFINED)?;
-        let selection = sheet.finitize_selection(&selection);
+
+        // we want `true` for both `force_columns` and `force_table_bounds` to capture the table bounds
+        let selection = sheet.finitize_selection(&selection, true, true);
         serde_wasm_bindgen::to_value(&selection.ranges[0].to_rect(&sheet.a1_context()))
             .map_err(|_| JsValue::UNDEFINED)
     }

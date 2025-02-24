@@ -249,7 +249,12 @@ impl Sheet {
 
     /// Converts unbounded regions in a selection to finite rectangular regions.
     /// Bounded regions are unmodified.
-    pub fn finitize_selection(&self, selection: &A1Selection) -> A1Selection {
+    pub fn finitize_selection(
+        &self,
+        selection: &A1Selection,
+        force_columns: bool,
+        force_table_bounds: bool,
+    ) -> A1Selection {
         A1Selection {
             sheet_id: selection.sheet_id,
             cursor: selection.cursor,
@@ -261,7 +266,7 @@ impl Sheet {
                         self.ref_range_bounds_to_rect(range),
                     )),
                     CellRefRange::Table { range } => self
-                        .table_ref_to_rect(range, false, false)
+                        .table_ref_to_rect(range, force_columns, force_table_bounds)
                         .map(CellRefRange::new_relative_rect),
                 })
                 .collect(),
@@ -340,7 +345,7 @@ mod tests {
         sheet.recalculate_bounds();
 
         let selection = A1Selection::test_a1("A1:C3,E5:");
-        let finite_selection = sheet.finitize_selection(&selection);
+        let finite_selection = sheet.finitize_selection(&selection, false, false);
         assert_eq!(
             finite_selection.ranges,
             vec![
@@ -351,7 +356,7 @@ mod tests {
 
         // Test select all
         let selection = A1Selection::test_a1("*");
-        let finite_selection = sheet.finitize_selection(&selection);
+        let finite_selection = sheet.finitize_selection(&selection, false, false);
         assert_eq!(
             finite_selection.ranges,
             vec![CellRefRange::test_a1("A1:J10")]
