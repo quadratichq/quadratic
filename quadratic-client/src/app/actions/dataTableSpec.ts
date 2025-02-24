@@ -176,6 +176,8 @@ const isCodeCell = (language: CodeCellLanguage) => {
 };
 
 export const gridToDataTable = () => {
+  pixiAppSettings.setContextMenu?.({});
+
   const rectangle = sheets.sheet.cursor.getSingleRectangle();
   if (rectangle) {
     const sheetRect: SheetRect = {
@@ -184,19 +186,21 @@ export const gridToDataTable = () => {
       max: { x: BigInt(rectangle.x + rectangle.width - 1), y: BigInt(rectangle.y + rectangle.height - 1) },
     };
     quadraticCore.gridToDataTable(JSON.stringify(sheetRect, bigIntReplacer), sheets.getCursorPosition());
-    pixiAppSettings.setContextMenu?.({});
   }
 };
 
 export const flattenDataTable = () => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   if (table) {
     quadraticCore.flattenDataTable(sheets.sheet.id, table.x, table.y, sheets.getCursorPosition());
-    pixiAppSettings.setContextMenu?.({});
   }
 };
 
 export const toggleFirstRowAsHeader = () => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   if (table) {
     quadraticCore.dataTableFirstRowAsHeader(
@@ -206,7 +210,6 @@ export const toggleFirstRowAsHeader = () => {
       !isFirstRowHeader(),
       sheets.getCursorPosition()
     );
-    pixiAppSettings.setContextMenu?.({});
   }
 };
 
@@ -220,6 +223,8 @@ const renameTable = () => {
 };
 
 export const deleteDataTable = () => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   if (table) {
     const selection = newRectSelection(
@@ -230,15 +235,15 @@ export const deleteDataTable = () => {
       BigInt(table.y + table.h - 1)
     );
     quadraticCore.deleteCellValues(selection, sheets.getCursorPosition());
-    pixiAppSettings.setContextMenu?.({});
   }
 };
 
 export const codeToDataTable = () => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   if (table) {
     quadraticCore.codeDataTableToDataTable(sheets.current, table.x, table.y, sheets.getCursorPosition());
-    pixiAppSettings.setContextMenu?.({});
   }
 };
 
@@ -249,6 +254,8 @@ export const sortDataTable = () => {
 };
 
 export const toggleTableAlternatingColors = () => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   if (table) {
     quadraticCore.dataTableMeta(
@@ -258,7 +265,6 @@ export const toggleTableAlternatingColors = () => {
       { alternatingColors: !isAlternatingColorsShowing() },
       sheets.getCursorPosition()
     );
-    pixiAppSettings.setContextMenu?.({});
   }
 };
 
@@ -273,6 +279,8 @@ const renameTableColumn = () => {
 };
 
 const sortTableColumn = (direction: 'Ascending' | 'Descending') => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   const column = getColumn();
 
@@ -296,6 +304,8 @@ export const sortTableColumnDescending = () => {
 };
 
 export const insertTableColumn = (increment: number = 0, selectTable = false) => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   const column = getColumn();
 
@@ -313,11 +323,12 @@ export const insertTableColumn = (increment: number = 0, selectTable = false) =>
       swallow_on_insert: undefined,
       cursor: sheets.getCursorPosition(),
     });
-    pixiAppSettings.setContextMenu?.({});
   }
 };
 
 export const removeTableColumn = (selectTable = false) => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   const columns = getSelectedColumns();
 
@@ -335,11 +346,12 @@ export const removeTableColumn = (selectTable = false) => {
       swallow_on_insert: undefined,
       cursor: sheets.getCursorPosition(),
     });
-    pixiAppSettings.setContextMenu?.({});
   }
 };
 
 export const hideTableColumn = () => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   const column = getColumn();
   const columns = getColumns();
@@ -347,28 +359,29 @@ export const hideTableColumn = () => {
   if (table && columns && column !== undefined && columns[column]) {
     columns[column].display = false;
     quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { columns }, sheets.getCursorPosition());
-    pixiAppSettings.setContextMenu?.({});
     sheets.sheet.cursor.hideColumn(table.name, columns[column].name);
   }
 };
 
 export const showAllTableColumns = () => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   const columns = getColumns();
 
   if (table && columns) {
     columns.forEach((column) => (column.display = true));
     quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { columns }, sheets.getCursorPosition());
-    pixiAppSettings.setContextMenu?.({});
   }
 };
 
 export const insertTableRow = (increment: number = 0, selectTable = false) => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   const row = getRow();
 
   if (table && row !== undefined) {
-    pixiAppSettings.setContextMenu?.({});
     return quadraticCore.dataTableMutations({
       sheetId: sheets.current,
       x: table.x,
@@ -386,6 +399,8 @@ export const insertTableRow = (increment: number = 0, selectTable = false) => {
 };
 
 export const removeTableRow = (selectTable = false) => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   const rows = getSelectedRows();
 
@@ -403,19 +418,21 @@ export const removeTableRow = (selectTable = false) => {
       swallow_on_insert: undefined,
       cursor: sheets.getCursorPosition(),
     });
-    pixiAppSettings.setContextMenu?.({});
   }
 };
 
 const editTableCode = () => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   if (table) {
     doubleClickCell({ column: table.x, row: table.y });
-    pixiAppSettings.setContextMenu?.({});
   }
 };
 
 export const toggleTableUI = () => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   if (table) {
     quadraticCore.dataTableMeta(
@@ -425,11 +442,12 @@ export const toggleTableUI = () => {
       { showUI: !table.show_ui },
       sheets.getCursorPosition()
     );
-    pixiAppSettings.setContextMenu?.({});
   }
 };
 
 export const toggleTableColumns = () => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   if (table) {
     quadraticCore.dataTableMeta(
@@ -439,11 +457,12 @@ export const toggleTableColumns = () => {
       { showColumns: !table.show_columns },
       sheets.getCursorPosition()
     );
-    pixiAppSettings.setContextMenu?.({});
   }
 };
 
 export const toggleTableName = () => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   if (table) {
     quadraticCore.dataTableMeta(
@@ -453,7 +472,6 @@ export const toggleTableName = () => {
       { showName: !table.show_name },
       sheets.getCursorPosition()
     );
-    pixiAppSettings.setContextMenu?.({});
   }
 };
 

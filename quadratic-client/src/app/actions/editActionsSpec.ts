@@ -76,6 +76,7 @@ export const editActionsSpec: EditActionSpec = {
     Icon: CutIcon,
     isAvailable: isAvailableBecauseCanEditFile,
     run: () => {
+      pixiAppSettings.setContextMenu?.({});
       cutToClipboard();
     },
   },
@@ -83,6 +84,7 @@ export const editActionsSpec: EditActionSpec = {
     label: 'Copy',
     Icon: CopyIcon,
     run: () => {
+      pixiAppSettings.setContextMenu?.({});
       copyToClipboard();
     },
   },
@@ -91,6 +93,7 @@ export const editActionsSpec: EditActionSpec = {
     Icon: PasteIcon,
     isAvailable: isAvailableBecauseCanEditFile,
     run: () => {
+      pixiAppSettings.setContextMenu?.({});
       pasteFromClipboard();
     },
   },
@@ -99,6 +102,7 @@ export const editActionsSpec: EditActionSpec = {
     Icon: PasteIcon,
     isAvailable: isAvailableBecauseCanEditFile,
     run: () => {
+      pixiAppSettings.setContextMenu?.({});
       pasteFromClipboard('Values');
     },
   },
@@ -107,6 +111,7 @@ export const editActionsSpec: EditActionSpec = {
     Icon: PasteIcon,
     isAvailable: isAvailableBecauseCanEditFile,
     run: () => {
+      pixiAppSettings.setContextMenu?.({});
       pasteFromClipboard('Formats');
     },
   },
@@ -133,6 +138,7 @@ export const editActionsSpec: EditActionSpec = {
     labelVerbose: 'Copy selection as PNG',
     Icon: CopyAsPng,
     run: () => {
+      pixiAppSettings.setContextMenu?.({});
       if (!pixiAppSettings.addGlobalSnackbar) return;
       copySelectionToPNG(pixiAppSettings.addGlobalSnackbar);
     },
@@ -142,6 +148,7 @@ export const editActionsSpec: EditActionSpec = {
     labelVerbose: 'Download selection as CSV',
     Icon: CsvIcon,
     run: async () => {
+      pixiAppSettings.setContextMenu?.({});
       // use table name if available, otherwise use timestamp
       let fileName = sheets.sheet.cursor.getSingleTableSelection();
 
