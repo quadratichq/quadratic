@@ -328,6 +328,7 @@ pub(crate) fn import_data_table_builder(
                     })
                     .collect()
             }),
+            sort_dirty: data_table.sort_dirty,
             display_buffer: data_table.display_buffer,
             alternating_colors: data_table.alternating_colors,
             formats: import_formats(data_table.formats),
@@ -533,6 +534,7 @@ pub(crate) fn export_data_tables(
                 show_columns: data_table.show_columns,
                 columns,
                 sort,
+                sort_dirty: data_table.sort_dirty,
                 display_buffer: data_table.display_buffer,
                 readonly: data_table.readonly,
                 last_modified: Some(data_table.last_modified),

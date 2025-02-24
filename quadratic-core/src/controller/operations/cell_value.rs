@@ -236,7 +236,7 @@ impl GridController {
                             });
                         } else if can_delete_column {
                             // adjust for hidden columns, reverse the order to delete from right to left
-                            (rect.min.x..=rect.max.x)
+                            let columns = (rect.min.x..=rect.max.x)
                                 .map(|x| {
                                     // account for hidden columns
                                     data_table.get_column_index_from_display_index(
@@ -245,14 +245,13 @@ impl GridController {
                                     )
                                 })
                                 .rev()
-                                .for_each(|index| {
-                                    ops.push(Operation::DeleteDataTableColumn {
-                                        sheet_pos: data_table_pos.to_sheet_pos(sheet_pos.sheet_id),
-                                        index,
-                                        flatten: false,
-                                        select_table: false,
-                                    });
-                                });
+                                .collect();
+                            ops.push(Operation::DeleteDataTableColumns {
+                                sheet_pos: data_table_pos.to_sheet_pos(sheet_pos.sheet_id),
+                                columns,
+                                flatten: false,
+                                select_table: false,
+                            });
                         } else {
                             ops.push(Operation::SetDataTableAt {
                                 sheet_pos,

@@ -143,6 +143,7 @@ fn upgrade_code_runs(
                 show_columns: chart_output.is_some(),
                 columns: None,
                 sort: None,
+                sort_dirty: false,
                 display_buffer: None,
                 value,
                 readonly: true,

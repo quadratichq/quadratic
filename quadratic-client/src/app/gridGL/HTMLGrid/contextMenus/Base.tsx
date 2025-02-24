@@ -1,9 +1,7 @@
 import type { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { contextMenuAtom } from '@/app/atoms/contextMenuAtom';
-import { events } from '@/app/events/events';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { CheckIcon } from '@/shared/components/Icons';
@@ -29,8 +27,6 @@ export const ContextMenuBase = ({ children }: { children: React.ReactNode }) => 
     if (contextMenu.rename) return;
 
     setContextMenu({});
-    events.emit('contextMenuClose');
-    focusGrid();
   }, [contextMenu.rename, setContextMenu]);
 
   useEffect(() => {
@@ -86,7 +82,6 @@ export const ContextMenuBase = ({ children }: { children: React.ReactNode }) => 
         hideWhenDetached={false}
         avoidCollisions={true}
         updatePositionStrategy="always"
-        onClick={onClose}
       >
         {children}
       </DropdownMenuContent>

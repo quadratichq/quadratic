@@ -245,7 +245,7 @@ export const codeToDataTable = () => {
 export const sortDataTable = () => {
   const table = getTable();
   const contextMenu = { type: ContextMenuType.TableSort, table };
-  setTimeout(() => events.emit('contextMenu', contextMenu));
+  events.emit('contextMenu', contextMenu);
 };
 
 export const toggleTableAlternatingColors = () => {
@@ -268,9 +268,7 @@ const renameTableColumn = () => {
 
   if (table && selectedColumn !== undefined) {
     const contextMenu = { type: ContextMenuType.TableColumn, rename: true, table, selectedColumn };
-
-    // need the timeout to ensure the context menu doesn't immediately close (hack)
-    setTimeout(() => events.emit('contextMenu', contextMenu));
+    events.emit('contextMenu', contextMenu);
   }
 };
 
@@ -315,6 +313,7 @@ export const insertTableColumn = (increment: number = 0, selectTable = false) =>
       swallow_on_insert: undefined,
       cursor: sheets.getCursorPosition(),
     });
+    pixiAppSettings.setContextMenu?.({});
   }
 };
 
@@ -336,6 +335,7 @@ export const removeTableColumn = (selectTable = false) => {
       swallow_on_insert: undefined,
       cursor: sheets.getCursorPosition(),
     });
+    pixiAppSettings.setContextMenu?.({});
   }
 };
 
@@ -346,9 +346,8 @@ export const hideTableColumn = () => {
 
   if (table && columns && column !== undefined && columns[column]) {
     columns[column].display = false;
-
     quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { columns }, sheets.getCursorPosition());
-
+    pixiAppSettings.setContextMenu?.({});
     sheets.sheet.cursor.hideColumn(table.name, columns[column].name);
   }
 };
@@ -359,8 +358,8 @@ export const showAllTableColumns = () => {
 
   if (table && columns) {
     columns.forEach((column) => (column.display = true));
-
     quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { columns }, sheets.getCursorPosition());
+    pixiAppSettings.setContextMenu?.({});
   }
 };
 
@@ -369,6 +368,7 @@ export const insertTableRow = (increment: number = 0, selectTable = false) => {
   const row = getRow();
 
   if (table && row !== undefined) {
+    pixiAppSettings.setContextMenu?.({});
     return quadraticCore.dataTableMutations({
       sheetId: sheets.current,
       x: table.x,
@@ -403,6 +403,7 @@ export const removeTableRow = (selectTable = false) => {
       swallow_on_insert: undefined,
       cursor: sheets.getCursorPosition(),
     });
+    pixiAppSettings.setContextMenu?.({});
   }
 };
 

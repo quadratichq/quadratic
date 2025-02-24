@@ -1,6 +1,6 @@
 use crate::{
     a1::{A1Context, ColRange, RefRangeBounds, TableRef},
-    OldSelection, SheetPos, SheetRect,
+    OldSelection, Rect, SheetPos, SheetRect,
 };
 
 use super::*;
@@ -129,6 +129,15 @@ impl A1Selection {
             sheet_rect.sheet_id,
             RefRangeBounds::new_relative_rect(sheet_rect.into()),
         )
+    }
+
+    /// Constructs a selection from a list of rectangles.
+    pub fn from_rects(rects: Vec<Rect>, sheet_id: SheetId) -> Option<Self> {
+        let ranges = rects
+            .into_iter()
+            .map(RefRangeBounds::new_relative_rect)
+            .collect::<Vec<_>>();
+        Self::from_sheet_ranges(ranges, sheet_id, &A1Context::default())
     }
 
     /// Constructs a selection containing a single cell.

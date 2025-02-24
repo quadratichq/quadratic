@@ -100,16 +100,15 @@ pub enum Operation {
     SortDataTable {
         sheet_pos: SheetPos,
         sort: Option<Vec<DataTableSort>>,
+        display_buffer: Option<Option<Vec<u64>>>,
     },
     DataTableFirstRowAsHeader {
         sheet_pos: SheetPos,
         first_row_is_header: bool,
     },
-    InsertDataTableColumn {
+    InsertDataTableColumns {
         sheet_pos: SheetPos,
-        index: u32,
-        column_header: Option<String>,
-        values: Option<Vec<CellValue>>,
+        columns: Vec<(u32, Option<String>, Option<Vec<CellValue>>)>,
 
         /// swallow neighboring cells
         swallow: bool,
@@ -117,9 +116,9 @@ pub enum Operation {
         /// select the table after the operation
         select_table: bool,
     },
-    DeleteDataTableColumn {
+    DeleteDataTableColumns {
         sheet_pos: SheetPos,
-        index: u32,
+        columns: Vec<u32>,
 
         /// Inserts the removed column into sheet at the same position.
         flatten: bool,
@@ -127,10 +126,9 @@ pub enum Operation {
         /// select the table after the operation
         select_table: bool,
     },
-    InsertDataTableRow {
+    InsertDataTableRows {
         sheet_pos: SheetPos,
-        index: u32,
-        values: Option<Vec<CellValue>>,
+        rows: Vec<(u32, Option<Vec<CellValue>>)>,
 
         /// swallow neighboring cells
         swallow: bool,
@@ -138,9 +136,9 @@ pub enum Operation {
         /// select the table after the operation
         select_table: bool,
     },
-    DeleteDataTableRow {
+    DeleteDataTableRows {
         sheet_pos: SheetPos,
-        index: u32,
+        rows: Vec<u32>,
 
         /// Inserts the removed row into sheet at the same position.
         flatten: bool,
@@ -412,11 +410,15 @@ impl fmt::Display for Operation {
                     sheet_pos, borders
                 )
             }
-            Operation::SortDataTable { sheet_pos, sort } => {
+            Operation::SortDataTable {
+                sheet_pos,
+                sort,
+                display_buffer,
+            } => {
                 write!(
                     fmt,
-                    "SortDataTable {{ sheet_pos: {}, sort: {:?} }}",
-                    sheet_pos, sort
+                    "SortDataTable {{ sheet_pos: {}, sort: {:?} display_buffer: {:?} }}",
+                    sheet_pos, sort, display_buffer
                 )
             }
             Operation::DataTableFirstRowAsHeader {
@@ -429,55 +431,52 @@ impl fmt::Display for Operation {
                     sheet_pos, first_row_is_header
                 )
             }
-            Operation::InsertDataTableColumn {
+            Operation::InsertDataTableColumns {
                 sheet_pos,
-                index,
-                column_header: name,
-                values,
+                columns,
                 swallow,
                 select_table,
             } => {
                 write!(
                     fmt,
-                    "InsertDataTableColumn {{ sheet_pos: {}, index: {}, name: {:?}, values: {:?}, swallow: {}, select_table: {} }}",
-                    sheet_pos, index, name, values, swallow, select_table
+                    "InsertDataTableColumns {{ sheet_pos: {}, columns: {:?}, swallow: {}, select_table: {} }}",
+                    sheet_pos, columns, swallow, select_table
                 )
             }
-            Operation::DeleteDataTableColumn {
+            Operation::DeleteDataTableColumns {
                 sheet_pos,
-                index,
+                columns,
                 flatten,
                 select_table,
             } => {
                 write!(
                     fmt,
-                    "DeleteDataTableColumn {{ sheet_pos: {}, index: {}, flatten: {}, select_table: {} }}",
-                    sheet_pos, index, flatten, select_table
+                    "DeleteDataTableColumns {{ sheet_pos: {}, columns: {:?}, flatten: {}, select_table: {} }}",
+                    sheet_pos, columns, flatten, select_table
                 )
             }
-            Operation::InsertDataTableRow {
+            Operation::InsertDataTableRows {
                 sheet_pos,
-                index,
-                values,
+                rows,
                 swallow,
                 select_table,
             } => {
                 write!(
                     fmt,
-                    "InsertDataTableRow {{ sheet_pos: {}, index: {}, values: {:?}, swallow: {}, select_table: {} }}",
-                    sheet_pos, index, values, swallow, select_table
+                    "InsertDataTableRows {{ sheet_pos: {}, rows: {:?}, swallow: {}, select_table: {} }}",
+                    sheet_pos, rows, swallow, select_table
                 )
             }
-            Operation::DeleteDataTableRow {
+            Operation::DeleteDataTableRows {
                 sheet_pos,
-                index,
+                rows,
                 flatten,
                 select_table,
             } => {
                 write!(
                     fmt,
-                    "DeleteDataTableRow {{ sheet_pos: {}, index: {}, flatten: {}, select_table: {} }}",
-                    sheet_pos, index, flatten, select_table
+                    "DeleteDataTableRows {{ sheet_pos: {}, rows: {:?}, flatten: {}, select_table: {} }}",
+                    sheet_pos, rows, flatten, select_table
                 )
             }
             Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats - deprecated",),

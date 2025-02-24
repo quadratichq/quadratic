@@ -303,6 +303,7 @@ pub struct JsRenderCodeCell {
     pub columns: Vec<JsDataTableColumnHeader>,
     pub first_row_header: bool,
     pub sort: Option<Vec<DataTableSort>>,
+    pub sort_dirty: bool,
     pub alternating_colors: bool,
     pub readonly: bool,
     pub is_html: bool,

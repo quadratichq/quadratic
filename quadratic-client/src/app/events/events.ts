@@ -128,7 +128,6 @@ interface EventTypes {
 
   // trigger a context menu
   contextMenu: (options: ContextMenuOptions) => void;
-  contextMenuClose: () => void;
 
   suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;
 

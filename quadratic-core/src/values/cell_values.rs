@@ -184,6 +184,16 @@ impl CellValues {
         self.get_rect(Rect::new(0, 0, width, height))
     }
 
+    pub fn into_owned_vec(self) -> Vec<Vec<CellValue>> {
+        let mut vec = vec![vec![CellValue::Blank; self.w as usize]; self.h as usize];
+        for (x, col) in self.columns.into_iter().enumerate() {
+            for (y, value) in col.into_iter() {
+                vec[y as usize][x] = value;
+            }
+        }
+        vec
+    }
+
     #[cfg(test)]
     /// Creates a CellValues from a CellValue, including CellValue::Blank (which is ignored in into)
     pub fn from_cell_value(value: CellValue) -> Self {

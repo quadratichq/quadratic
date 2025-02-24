@@ -8,11 +8,11 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { DataTableSort, SortDirection } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
 export const TableSort = () => {
-  const ref = useRef<HTMLDivElement>(null);
+  const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const [contextMenu, setContextMenu] = useRecoilState(contextMenuAtom);
 
   const handleClose = useCallback(() => {
@@ -21,12 +21,10 @@ export const TableSort = () => {
 
   // focus on the first input when the dialog is opened
   useEffect(() => {
-    if (contextMenu.type === ContextMenuType.TableSort) {
-      setTimeout(() => {
-        (ref.current?.querySelector('.first-focus')?.children[0] as HTMLElement)?.focus();
-      });
+    if (div && contextMenu.type === ContextMenuType.TableSort) {
+      (div.querySelector('.first-focus')?.children[0] as HTMLElement)?.focus();
     }
-  }, [contextMenu]);
+  }, [contextMenu, div]);
 
   const [sort, setSort] = useState<DataTableSort[]>([]);
   useEffect(() => {
@@ -59,39 +57,39 @@ export const TableSort = () => {
   }, [contextMenu.table, sort, handleClose]);
 
   const [display, setDisplay] = useState('none');
-  useEffect(() => {
+  useLayoutEffect(() => {
     const changePosition = () => {
-      if (!ref.current) {
-        if (contextMenu.table) {
-          setTimeout(changePosition, 0);
-        }
+      if (!div) {
         return;
       }
+
       if (contextMenu.table) {
         const position = pixiApp.cellsSheet().tables.getSortDialogPosition(contextMenu.table);
         if (position) {
-          ref.current.style.left = `${position.x}px`;
-          ref.current.style.top = `${position.y}px`;
-          ref.current.style.display = 'block';
+          div.style.left = `${position.x}px`;
+          div.style.top = `${position.y}px`;
+          div.style.display = 'block';
           setDisplay('block');
         }
       } else {
         setDisplay('none');
       }
     };
+
     const viewportChanged = () => {
-      if (ref.current) {
-        ref.current.style.transform = `scale(${1 / pixiApp.viewport.scaled})`;
+      if (div) {
+        div.style.transform = `scale(${1 / pixiApp.viewport.scaled})`;
       }
       changePosition();
     };
 
     changePosition();
+
     events.on('viewportChanged', viewportChanged);
     return () => {
       events.off('viewportChanged', viewportChanged);
     };
-  }, [contextMenu.table]);
+  }, [contextMenu.table, div]);
 
   const columnNames = useMemo(() => contextMenu.table?.columns ?? [], [contextMenu.table]);
 
@@ -151,6 +149,10 @@ export const TableSort = () => {
       sort.splice(index + (direction === 'up' ? -1 : 1), 0, prev[index]);
       return sort;
     });
+  }, []);
+
+  const ref = useCallback((node: HTMLDivElement | null) => {
+    setDiv(node);
   }, []);
 
   if (contextMenu.type !== ContextMenuType.TableSort) return null;

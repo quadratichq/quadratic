@@ -57,7 +57,6 @@ export class Tables extends Container<Table> {
     events.on('sheetOffsets', this.sheetOffsets);
 
     events.on('contextMenu', this.contextMenu);
-    events.on('contextMenuClose', this.contextMenu);
 
     events.on('htmlOutput', this.htmlOutput);
     events.on('htmlUpdate', this.htmlUpdate);
@@ -72,7 +71,6 @@ export class Tables extends Container<Table> {
     events.off('sheetOffsets', this.sheetOffsets);
 
     events.off('contextMenu', this.contextMenu);
-    events.off('contextMenuClose', this.contextMenu);
 
     events.off('htmlOutput', this.htmlOutput);
     events.off('htmlUpdate', this.htmlUpdate);

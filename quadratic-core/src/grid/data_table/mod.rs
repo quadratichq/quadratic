@@ -146,6 +146,7 @@ pub struct DataTable {
     pub header_is_first_row: bool,
     pub column_headers: Option<Vec<DataTableColumnHeader>>,
     pub sort: Option<Vec<DataTableSort>>,
+    pub sort_dirty: bool,
     pub display_buffer: Option<Vec<u64>>,
     pub value: Value,
     pub readonly: bool,
@@ -234,9 +235,12 @@ impl DataTable {
 
             column_headers: None,
             sort: None,
+            sort_dirty: false,
+            display_buffer: None,
+
             formats: Default::default(),
             borders: Default::default(),
-            display_buffer: None,
+
             chart_output: None,
         };
 
@@ -256,6 +260,7 @@ impl DataTable {
             header_is_first_row: self.header_is_first_row,
             column_headers: self.column_headers.clone(),
             sort: self.sort.clone(),
+            sort_dirty: self.sort_dirty,
             display_buffer: self.display_buffer.clone(),
             value: Value::Single(CellValue::Blank),
             readonly: self.readonly,

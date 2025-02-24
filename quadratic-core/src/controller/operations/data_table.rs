@@ -74,12 +74,13 @@ impl GridController {
         let mut ops = vec![];
 
         if let Some(columns_to_add) = columns_to_add {
-            for index in columns_to_add {
-                ops.push(Operation::InsertDataTableColumn {
+            if !columns_to_add.is_empty() {
+                ops.push(Operation::InsertDataTableColumns {
                     sheet_pos,
-                    index,
-                    column_header: None,
-                    values: None,
+                    columns: columns_to_add
+                        .into_iter()
+                        .map(|index| (index, None, None))
+                        .collect(),
                     swallow: swallow_on_insert.unwrap_or(false),
                     select_table,
                 });
@@ -87,10 +88,10 @@ impl GridController {
         }
 
         if let Some(columns_to_remove) = columns_to_remove {
-            for index in columns_to_remove {
-                ops.push(Operation::DeleteDataTableColumn {
+            if !columns_to_remove.is_empty() {
+                ops.push(Operation::DeleteDataTableColumns {
                     sheet_pos,
-                    index,
+                    columns: columns_to_remove,
                     flatten: flatten_on_delete.unwrap_or(false),
                     select_table,
                 });
@@ -98,11 +99,10 @@ impl GridController {
         }
 
         if let Some(rows_to_add) = rows_to_add {
-            for index in rows_to_add {
-                ops.push(Operation::InsertDataTableRow {
+            if !rows_to_add.is_empty() {
+                ops.push(Operation::InsertDataTableRows {
                     sheet_pos,
-                    index,
-                    values: None,
+                    rows: rows_to_add.into_iter().map(|index| (index, None)).collect(),
                     swallow: swallow_on_insert.unwrap_or(false),
                     select_table,
                 });
@@ -110,10 +110,10 @@ impl GridController {
         }
 
         if let Some(rows_to_remove) = rows_to_remove {
-            for index in rows_to_remove {
-                ops.push(Operation::DeleteDataTableRow {
+            if !rows_to_remove.is_empty() {
+                ops.push(Operation::DeleteDataTableRows {
                     sheet_pos,
-                    index,
+                    rows: rows_to_remove,
                     flatten: flatten_on_delete.unwrap_or(false),
                     select_table,
                 });
@@ -128,7 +128,11 @@ impl GridController {
         sheet_pos: SheetPos,
         sort: Option<Vec<DataTableSort>>,
     ) -> Vec<Operation> {
-        vec![Operation::SortDataTable { sheet_pos, sort }]
+        vec![Operation::SortDataTable {
+            sheet_pos,
+            sort,
+            display_buffer: None,
+        }]
     }
 
     pub fn data_table_first_row_as_header_operations(

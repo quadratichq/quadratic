@@ -80,7 +80,8 @@ impl GridController {
                     // y is 1-based
                     for y in rect.y_range() {
                         // get actual row index and convert to 1-based
-                        let actual_row = data_table.transmute_index(y as u64 - 1) + 1;
+                        let actual_row =
+                            data_table.get_row_index_from_display_index(y as u64 - 1) + 1;
                         for x in rect.x_range() {
                             ranges.push(CellRefRange::new_relative_xy(x, actual_row as i64));
                         }
