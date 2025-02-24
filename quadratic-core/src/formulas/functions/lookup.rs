@@ -758,7 +758,8 @@ mod tests {
                     for (i, elem) in row.iter().enumerate() {
                         let col = i + 1;
                         let formula = format!("VLOOKUP({needle}, A1:C8, {col} {is_sorted})");
-                        println!("Testing formula {formula:?}");
+                        assert_eq!(elem.to_string(), eval_to_string(&g, &formula));
+                        let formula = format!("VLOOKUP({needle}, A:C, {col} {is_sorted})"); // column selection
                         assert_eq!(elem.to_string(), eval_to_string(&g, &formula));
                     }
                 }
@@ -775,7 +776,8 @@ mod tests {
                 for (i, elem) in row.iter().enumerate() {
                     let col = i + 1;
                     let formula = format!("VLOOKUP({needle}, A1:C4, {col}, TRUE)");
-                    println!("Testing formula {formula:?}");
+                    assert_eq!(elem.to_string(), eval_to_string(&g, &formula));
+                    let formula = format!("VLOOKUP({needle}, A:C, {col}, TRUE)"); // column selection
                     assert_eq!(elem.to_string(), eval_to_string(&g, &formula));
                 }
             }
@@ -853,7 +855,6 @@ mod tests {
                     for (i, elem) in col.iter().enumerate() {
                         let col = i + 1;
                         let formula = format!("HLOOKUP({needle}, A1:H3, {col} {is_sorted})");
-                        println!("Testing formula {formula:?}");
                         assert_eq!(elem.to_string(), eval_to_string(&g, &formula));
                     }
                 }
@@ -871,7 +872,6 @@ mod tests {
                 for (i, elem) in col.iter().enumerate() {
                     let col = i + 1;
                     let formula = format!("HLOOKUP({needle}, A1:D3, {col}, TRUE)");
-                    println!("Testing formula {formula:?}");
                     assert_eq!(elem.to_string(), eval_to_string(&g, &formula));
                 }
             }
@@ -1003,7 +1003,6 @@ mod tests {
 
                         // Test vertical lookup
                         let formula = format!("XLOOKUP({needle}, {v_params})");
-                        println!("Testing formula {formula:?}");
                         expect_val(expected.clone(), &grid_vlookup, &formula);
 
                         // Test horizontal lookup

@@ -111,6 +111,20 @@ impl RefRangeBounds {
         }
     }
 
+    /// Returns the smallest range that includes both `a` and `b`.
+    pub fn combined_bounding_box(a: Self, b: Self) -> Self {
+        Self {
+            start: CellRefRangeEnd {
+                col: std::cmp::min(a.start.col, b.start.col),
+                row: std::cmp::min(a.start.row, b.start.row),
+            },
+            end: CellRefRangeEnd {
+                col: std::cmp::max(a.end.col, b.end.col),
+                row: std::cmp::max(a.end.row, b.end.row),
+            },
+        }
+    }
+
     /// Returns an R[1]C[1]-style reference relative to the given position.
     pub fn to_rc_string(&self, base_pos: Pos) -> String {
         let start_col = self.start.col.to_rc_string(base_pos.x);
