@@ -65,18 +65,17 @@ function loadGoogleAnalytics(user: User) {
               'event': 'Pageview',
               'userData': {
                 'email': email
-              }
+              },
+              ${utmData.utm_source ? `'utmSource': '${utmData.utm_source}',` : ''}
+              ${utmData.utm_medium ? `'utmMedium': '${utmData.utm_medium}',` : ''}
+              ${utmData.utm_campaign ? `'utmCampaign': '${utmData.utm_campaign}',` : ''}
+              ${utmData.utm_content ? `'utmContent': '${utmData.utm_content}',` : ''}
+              ${utmData.utm_term ? `'utmTerm': '${utmData.utm_term}',` : ''}
             });
           }
         }
         gtag('js', new Date());
-        gtag('config', '${import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG}', {
-          ${utmData.utm_source ? `'campaign_source': '${utmData.utm_source}',` : ''}
-          ${utmData.utm_medium ? `'campaign_medium': '${utmData.utm_medium}',` : ''}
-          ${utmData.utm_campaign ? `'campaign_name': '${utmData.utm_campaign}',` : ''}
-          ${utmData.utm_content ? `'campaign_content': '${utmData.utm_content}',` : ''}
-          ${utmData.utm_term ? `'campaign_term': '${utmData.utm_term}'` : ''}
-        });
+        gtag('config', '${import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG}');
       `;
 
   // add google analytics scripts to document
