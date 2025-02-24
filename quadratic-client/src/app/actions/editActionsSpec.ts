@@ -144,12 +144,14 @@ export const editActionsSpec: EditActionSpec = {
     run: async () => {
       // use table name if available, otherwise use timestamp
       let fileName = sheets.sheet.cursor.getSingleTableSelection();
+
       if (!fileName) {
         // Convert ISO timestamp to a string without colons or dots
         // (since those aren't valid in filenames on some OSes)
         const timestamp = new Date().toISOString().replace(/:|\./g, '-');
         fileName = `quadratic-csv-export-${timestamp}`;
       }
+
       downloadFile(fileName, await quadraticCore.exportCsvSelection(sheets.getRustSelection()), 'text/plain', 'csv');
     },
   },
