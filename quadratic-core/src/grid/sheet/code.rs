@@ -91,6 +91,24 @@ impl Sheet {
         })
     }
 
+    /// Returns true if the tables contain any cell at Pos (ie, not blank). Uses
+    /// the DataTable's output_rect for the check to ensure that charts are
+    /// included. Ignores Blanks.
+    pub fn has_table_content_ignore_blanks(&self, pos: Pos) -> bool {
+        self.data_tables.iter().any(|(code_cell_pos, data_table)| {
+            data_table.output_rect(*code_cell_pos, false).contains(pos)
+                && (data_table
+                    .cell_value_ref_at(
+                        (pos.x - code_cell_pos.x) as u32,
+                        (pos.y - code_cell_pos.y) as u32,
+                    )
+                    .is_some_and(|cell_value| {
+                        !cell_value.is_blank_or_empty_string() && cell_value != &CellValue::Blank
+                    })
+                    || data_table.is_html_or_image())
+        })
+    }
+
     /// Returns the CellValue for a CodeRun (if it exists) at the Pos.
     ///
     /// Note: spill error will return a CellValue::Blank to ensure calculations can continue.
