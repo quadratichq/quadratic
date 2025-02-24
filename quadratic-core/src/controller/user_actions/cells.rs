@@ -1,7 +1,6 @@
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::operation::Operation;
 use crate::controller::GridController;
-use crate::grid::column_header::DataTableColumnHeader;
 use crate::Pos;
 use crate::{a1::A1Selection, CellValue, SheetPos};
 use anyhow::Result;
@@ -58,50 +57,13 @@ impl GridController {
                             true
                         })
                     {
-                        let y = pos.y - data_table_left.y;
-                        let header_y = if data_table.show_ui && data_table.show_columns {
-                            if data_table.show_name {
-                                Some(1)
-                            } else {
-                                Some(0)
-                            }
-                        } else {
-                            None
-                        };
-
-                        // header row, add column header
-                        if header_y == Some(y) {
-                            let value_index = data_table.column_headers_len();
-                            let column_header =
-                                DataTableColumnHeader::new(value.to_owned(), true, value_index);
-                            let columns =
-                                data_table.column_headers.to_owned().map(|mut headers| {
-                                    headers.push(column_header);
-                                    headers
-                                });
-
-                            data_table_ops.push(Operation::DataTableMeta {
-                                sheet_pos: (data_table_left, sheet_pos.sheet_id).into(),
-                                name: None,
-                                alternating_colors: None,
-                                columns,
-                                show_ui: None,
-                                show_name: None,
-                                show_columns: None,
-                                readonly: None,
-                            });
-                        }
-                        // data row, add column
-                        else {
-                            // insert column with swallow
-                            let column_index = data_table.width();
-                            data_table_ops.push(Operation::InsertDataTableColumns {
-                                sheet_pos: (data_table_left, sheet_pos.sheet_id).into(),
-                                columns: vec![(column_index as u32, None, None)],
-                                swallow: true,
-                                select_table: false,
-                            });
-                        }
+                        let column_index = data_table.width();
+                        data_table_ops.push(Operation::InsertDataTableColumns {
+                            sheet_pos: (data_table_left, sheet_pos.sheet_id).into(),
+                            columns: vec![(column_index as u32, None, None)],
+                            swallow: true,
+                            select_table: false,
+                        });
                     }
                 }
             }
