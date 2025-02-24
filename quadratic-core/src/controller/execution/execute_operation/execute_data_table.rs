@@ -1009,6 +1009,9 @@ impl GridController {
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
 
+            let old_sort = data_table.sort.to_owned();
+            let old_display_buffer = data_table.display_buffer.to_owned();
+
             // for flattening
             let mut old_data_table_rect = data_table.output_rect(data_table_pos, true);
             old_data_table_rect.min.x += 1; //cannot flatten the first column
@@ -1096,21 +1099,15 @@ impl GridController {
 
             // delete columns
             for index in columns.iter() {
-                data_table.delete_column(*index as usize)?;
+                data_table.delete_column_sorted(*index as usize)?;
             }
 
-            // delete sort on deleted columns
-            if let Some(sort) = data_table.sort.as_mut() {
-                let old_sort = sort.to_owned();
-                let old_display_buffer = data_table.display_buffer.to_owned();
-                sort.retain(|sort| !columns.contains(&(sort.column_index as u32)));
-                if &old_sort != sort {
-                    reverse_operations.push(Operation::SortDataTable {
-                        sheet_pos,
-                        sort: Some(old_sort),
-                        display_buffer: Some(old_display_buffer),
-                    });
-                }
+            if old_sort.is_some() || old_display_buffer.is_some() {
+                reverse_operations.push(Operation::SortDataTable {
+                    sheet_pos,
+                    sort: old_sort,
+                    display_buffer: Some(old_display_buffer),
+                });
                 data_table.check_sort()?;
             }
 

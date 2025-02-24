@@ -73,6 +73,14 @@ impl DataTable {
         column_header: Option<String>,
         mut values: Option<Vec<CellValue>>,
     ) -> Result<()> {
+        if let Some(sort) = &mut self.sort {
+            for sort in sort.iter_mut() {
+                if sort.column_index >= column_index {
+                    sort.column_index += 1;
+                }
+            }
+        }
+
         if self.display_buffer.is_some() {
             if let Some(cell_values) = values {
                 let mut sorted_cell_values = vec![CellValue::Blank; cell_values.len()];
@@ -83,7 +91,9 @@ impl DataTable {
                 values = Some(sorted_cell_values);
             }
         }
+
         self.insert_column(column_index, column_header, values)?;
+
         Ok(())
     }
 
@@ -106,6 +116,23 @@ impl DataTable {
 
         Ok(())
     }
+
+    /// Remove a column at the given index and update the sort.
+    pub fn delete_column_sorted(&mut self, column_index: usize) -> Result<()> {
+        self.delete_column(column_index)?;
+
+        if let Some(sort) = &mut self.sort {
+            for sort in sort.iter_mut() {
+                if sort.column_index > column_index {
+                    sort.column_index -= 1;
+                }
+            }
+            sort.retain(|sort| sort.column_index != column_index);
+        }
+
+        Ok(())
+    }
+
     /// Returns the display column index from the column index in the values array.
     pub fn get_display_index_from_column_index(
         &self,
