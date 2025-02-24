@@ -5,11 +5,9 @@ use crate::grid::column_header::DataTableColumnHeader;
 use crate::Pos;
 use crate::{a1::A1Selection, CellValue, SheetPos};
 use anyhow::Result;
-use function_timer::function_timer;
 
 impl GridController {
     // Using sheet_pos, either set a cell value or a data table value
-    #[function_timer]
     pub fn set_value(
         &mut self,
         sheet_pos: SheetPos,
