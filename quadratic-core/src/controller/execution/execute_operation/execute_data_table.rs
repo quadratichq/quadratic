@@ -884,8 +884,6 @@ impl GridController {
                     data_table_rect.height() as i64 - data_table.y_adjustment(true),
                 );
 
-                transaction.add_dirty_hashes_from_sheet_rect(values_rect.to_sheet_rect(sheet_id));
-
                 let mut format_update = SheetFormatUpdates::default();
 
                 if swallow && values.is_none() {
@@ -958,6 +956,7 @@ impl GridController {
 
             transaction.add_code_cell(sheet_id, data_table_pos);
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
+            self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
             self.send_updated_bounds(transaction, sheet_id);
 
             let forward_operations = vec![op];
@@ -1009,6 +1008,8 @@ impl GridController {
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
 
+            self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
+
             let old_sort = data_table.sort.to_owned();
             let old_display_buffer = data_table.display_buffer.to_owned();
 
@@ -1032,8 +1033,6 @@ impl GridController {
                     1,
                     data_table.height(false) as i64,
                 );
-
-                transaction.add_dirty_hashes_from_sheet_rect(values_rect.to_sheet_rect(sheet_id));
 
                 let old_values = data_table.get_column_sorted(index as usize)?;
 
@@ -1197,8 +1196,6 @@ impl GridController {
                     1,
                 );
 
-                transaction.add_dirty_hashes_from_sheet_rect(values_rect.to_sheet_rect(sheet_id));
-
                 let mut format_update = SheetFormatUpdates::default();
 
                 if swallow && values.is_none() {
@@ -1268,6 +1265,7 @@ impl GridController {
 
             transaction.add_code_cell(sheet_id, data_table_pos);
             data_table.add_dirty_fills_and_borders(transaction, sheet_id);
+            self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
             self.send_updated_bounds(transaction, sheet_id);
 
             let forward_operations = vec![op];
@@ -1319,6 +1317,8 @@ impl GridController {
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
 
+            self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
+
             let get_unsorted_row_index = |data_table: &DataTable, index: u32| {
                 let data_index = index as i64 - data_table.y_adjustment(true);
                 data_table.get_row_index_from_display_index(data_index as u64) as i64
@@ -1343,8 +1343,6 @@ impl GridController {
                     data_table_rect.width() as i64,
                     1,
                 );
-
-                transaction.add_dirty_hashes_from_sheet_rect(values_rect.to_sheet_rect(sheet_id));
 
                 if flatten {
                     // collect values to flatten
