@@ -109,8 +109,8 @@ impl CellRefRange {
                         range: TableRef {
                             table_name: table.table_name.clone(),
                             col_range,
-                            data: false,
-                            headers: true,
+                            data: true,
+                            headers: false,
                             totals: false,
                         },
                     });
