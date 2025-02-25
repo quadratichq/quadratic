@@ -355,6 +355,7 @@ export class Tables extends Container<Table> {
     );
   }
 
+  /// Returns true if the cell is inside a table's UI (column, table name, or html/image).
   getTableFromCell(cell: JsCoordinate): Table | undefined {
     return this.children.find((table) => {
       const code = table.codeCell;
@@ -372,6 +373,26 @@ export class Tables extends Container<Table> {
       }
       if (!code.show_ui) return false;
       return cell.x >= code.x && cell.x <= code.x + code.w - 1 && cell.y === code.y;
+    });
+  }
+
+  // Returns true if the cell is inside a table.
+  getInTable(cell: JsCoordinate): Table | undefined {
+    return this.children.find((table) => {
+      const code = table.codeCell;
+      if (code.state === 'SpillError' || code.state === 'RunError') {
+        return false;
+      }
+      if (
+        code.is_html_image &&
+        cell.x >= code.x &&
+        cell.x <= code.x + code.w - 1 &&
+        cell.y >= code.y &&
+        cell.y <= code.y + code.h - 1
+      ) {
+        return true;
+      }
+      return cell.x >= code.x && cell.x <= code.x + code.w - 1 && cell.y >= code.y && cell.y <= code.y + code.h - 1;
     });
   }
 
