@@ -114,7 +114,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    enabled: true,
     provider: 'bedrock-anthropic',
   },
   'bedrock-anthropic:us.anthropic.claude-3-5-haiku-20241022-v1:0': {
