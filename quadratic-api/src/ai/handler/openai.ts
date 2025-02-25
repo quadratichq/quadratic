@@ -1,7 +1,6 @@
 import { type Response } from 'express';
 import OpenAI from 'openai';
-import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
-import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
+import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import type {
   AIMessagePrompt,
   AIRequestHelperArgs,
@@ -16,13 +15,14 @@ export const handleOpenAIRequest = async (
   response: Response,
   openai: OpenAI
 ): Promise<AIMessagePrompt | undefined> => {
+  const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
   const { messages, tools, tool_choice } = getOpenAIApiArgs(args, options.strickParams);
 
   if (options.stream) {
     try {
       const completion = await openai.chat.completions.create({
-        model: MODELS_CONFIGURATION[modelKey].model,
+        model,
         messages,
         temperature: options.temperature,
         stream: options.stream,
@@ -52,7 +52,7 @@ export const handleOpenAIRequest = async (
   } else {
     try {
       const result = await openai.chat.completions.create({
-        model: MODELS_CONFIGURATION[modelKey].model,
+        model,
         messages,
         temperature: options.temperature,
         stream: options.stream,

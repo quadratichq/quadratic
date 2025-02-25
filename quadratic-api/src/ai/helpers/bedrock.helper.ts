@@ -8,7 +8,7 @@ import {
 } from '@aws-sdk/client-bedrock-runtime';
 import type { Response } from 'express';
 import { getSystemPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
-import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
+import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIMessagePrompt, AIRequestHelperArgs, BedrockModelKey } from 'quadratic-shared/typesAndSchemasAI';
@@ -128,7 +128,7 @@ export async function parseBedrockStream(
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model: MODELS_CONFIGURATION[modelKey].model,
+    model: getModelFromModelKey(modelKey),
   };
 
   for await (const chunk of chunks) {
@@ -215,7 +215,7 @@ export function parseBedrockResponse(
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model: MODELS_CONFIGURATION[modelKey].model,
+    model: getModelFromModelKey(modelKey),
   };
 
   result?.message?.content?.forEach((contentBlock) => {

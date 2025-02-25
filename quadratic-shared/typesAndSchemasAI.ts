@@ -34,6 +34,7 @@ const AIModelSchema = z.union([
   OpenAIModelSchema,
   XAIModelSchema,
 ]);
+export type AIModel = z.infer<typeof AIModelSchema>;
 
 const BedrockModelKeySchema = z.enum([
   'bedrock:us.meta.llama3-2-90b-instruct-v1:0',

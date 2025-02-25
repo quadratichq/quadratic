@@ -1,13 +1,13 @@
 import type { Response } from 'express';
 import { getLastUserPromptMessageIndex } from 'quadratic-shared/ai/helpers/message.helper';
 import {
+  getModelFromModelKey,
   isAnthropicModel,
   isBedrockAnthropicModel,
   isBedrockModel,
   isOpenAIModel,
   isXAIModel,
 } from 'quadratic-shared/ai/helpers/model.helper';
-import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import { type AIMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
@@ -92,6 +92,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     const contents = Buffer.from(JSON.stringify(args)).toString('base64');
     const response = await uploadFile(key, contents, jwt, S3Bucket.ANALYTICS);
 
+    const model = getModelFromModelKey(modelKey);
+
     await dbClient.analyticsAIChat.upsert({
       where: {
         chatId,
@@ -103,7 +105,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
         source,
         messages: {
           create: {
-            model: MODELS_CONFIGURATION[modelKey].model,
+            model,
             messageIndex,
             s3Key: response.key,
           },
@@ -112,7 +114,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
       update: {
         messages: {
           create: {
-            model: MODELS_CONFIGURATION[modelKey].model,
+            model,
             messageIndex,
             s3Key: response.key,
           },

@@ -3,7 +3,7 @@ import type OpenAI from 'openai';
 import type { ChatCompletionMessageParam, ChatCompletionTool, ChatCompletionToolChoiceOption } from 'openai/resources';
 import type { Stream } from 'openai/streaming';
 import { getSystemPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
-import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
+import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
@@ -124,7 +124,7 @@ export async function parseOpenAIStream(
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model: MODELS_CONFIGURATION[modelKey].model,
+    model: getModelFromModelKey(modelKey),
   };
 
   for await (const chunk of chunks) {
@@ -229,7 +229,7 @@ export function parseOpenAIResponse(
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model: MODELS_CONFIGURATION[modelKey].model,
+    model: getModelFromModelKey(modelKey),
   };
 
   const message = result.choices[0].message;

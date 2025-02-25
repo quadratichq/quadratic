@@ -3,7 +3,7 @@ import type { MessageParam, TextBlockParam, Tool, ToolChoice } from '@anthropic-
 import type { Stream } from '@anthropic-ai/sdk/streaming';
 import type { Response } from 'express';
 import { getSystemPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
-import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
+import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
@@ -149,7 +149,7 @@ export async function parseAnthropicStream(
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model: MODELS_CONFIGURATION[modelKey].model,
+    model: getModelFromModelKey(modelKey),
   };
 
   for await (const chunk of chunks) {
@@ -177,20 +177,32 @@ export async function parseAnthropicStream(
             text: chunk.content_block.thinking ?? '',
             signature: chunk.content_block.signature ?? '',
           });
+
+          responseMessage.toolCalls.forEach((toolCall) => {
+            toolCall.loading = false;
+          });
         } else if (chunk.content_block.type === 'redacted_thinking') {
           responseMessage.content.push({
             type: 'redacted_thinking',
             text: chunk.content_block.data ?? '',
           });
+
+          responseMessage.toolCalls.forEach((toolCall) => {
+            toolCall.loading = false;
+          });
         }
       } else if (chunk.type === 'content_block_delta') {
         if (chunk.delta.type === 'text_delta') {
-          const currentContent = {
-            ...(responseMessage.content.pop() ?? {
+          let currentContent = responseMessage.content.pop();
+          if (currentContent?.type !== 'text') {
+            if (currentContent?.text) {
+              responseMessage.content.push(currentContent);
+            }
+            currentContent = {
               type: 'text',
               text: '',
-            }),
-          };
+            };
+          }
           currentContent.text += chunk.delta.text ?? '';
           responseMessage.content.push(currentContent);
         } else if (chunk.delta.type === 'input_json_delta') {
@@ -205,23 +217,31 @@ export async function parseAnthropicStream(
           toolCall.arguments += chunk.delta.partial_json;
           responseMessage.toolCalls.push(toolCall);
         } else if (chunk.delta.type === 'thinking_delta') {
-          const currentContent = {
-            ...(responseMessage.content.pop() ?? {
+          let currentContent = responseMessage.content.pop();
+          if (currentContent?.type !== 'thinking') {
+            if (currentContent?.text) {
+              responseMessage.content.push(currentContent);
+            }
+            currentContent = {
               type: 'thinking',
               text: '',
               signature: '',
-            }),
-          };
+            };
+          }
           currentContent.text += chunk.delta.thinking ?? '';
           responseMessage.content.push(currentContent);
         } else if (chunk.delta.type === 'signature_delta') {
-          const currentContent = {
-            ...(responseMessage.content.pop() ?? {
+          let currentContent = responseMessage.content.pop();
+          if (currentContent?.type !== 'thinking') {
+            if (currentContent?.text) {
+              responseMessage.content.push(currentContent);
+            }
+            currentContent = {
               type: 'thinking',
               text: '',
               signature: '',
-            }),
-          };
+            };
+          }
           if (currentContent.type === 'thinking') {
             currentContent.signature += chunk.delta.signature ?? '';
           }
@@ -239,6 +259,8 @@ export async function parseAnthropicStream(
       break;
     }
   }
+
+  responseMessage.content = responseMessage.content.filter((content) => content.text !== '');
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
     responseMessage.content.push({
@@ -272,7 +294,7 @@ export function parseAnthropicResponse(
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model: MODELS_CONFIGURATION[modelKey].model,
+    model: getModelFromModelKey(modelKey),
   };
 
   result.content?.forEach((message) => {

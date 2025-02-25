@@ -1,5 +1,6 @@
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type {
+  AIModel,
   AIRequestBody,
   AnthropicModelKey,
   BedrockAnthropicModelKey,
@@ -28,6 +29,10 @@ export function isXAIModel(modelKey: ModelKey): modelKey is XAIModelKey {
 export function isOpenAIModel(modelKey: ModelKey): modelKey is OpenAIModelKey {
   return MODELS_CONFIGURATION[modelKey].provider === 'openai';
 }
+
+export const getModelFromModelKey = (modelKey: ModelKey): AIModel => {
+  return MODELS_CONFIGURATION[modelKey].model;
+};
 
 export const getModelOptions = (
   modelKey: ModelKey,

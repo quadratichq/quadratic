@@ -6,8 +6,7 @@ import type {
   ThinkingConfigParam,
 } from '@anthropic-ai/sdk/resources';
 import type { Response } from 'express';
-import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
-import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
+import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import type {
   AIMessagePrompt,
   AIRequestHelperArgs,
@@ -22,6 +21,7 @@ export const handleAnthropicRequest = async (
   response: Response,
   anthropic: AnthropicBedrock | Anthropic
 ): Promise<AIMessagePrompt | undefined> => {
+  const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
   const { system, messages, tools, tool_choice } = getAnthropicApiArgs(args, options.thinking);
 
@@ -37,7 +37,7 @@ export const handleAnthropicRequest = async (
   if (options.stream) {
     try {
       let apiArgs: MessageCreateParamsStreaming = {
-        model: MODELS_CONFIGURATION[modelKey].model,
+        model,
         system,
         messages,
         temperature: options.temperature,
@@ -77,7 +77,7 @@ export const handleAnthropicRequest = async (
   } else {
     try {
       let apiArgs: MessageCreateParamsNonStreaming = {
-        model: MODELS_CONFIGURATION[modelKey].model,
+        model,
         system,
         messages,
         temperature: options.temperature,

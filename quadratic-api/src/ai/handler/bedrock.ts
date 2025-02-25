@@ -1,8 +1,7 @@
 import type { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime';
 import { ConverseCommand, ConverseStreamCommand } from '@aws-sdk/client-bedrock-runtime';
 import { type Response } from 'express';
-import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
-import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
+import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AIMessagePrompt, AIRequestHelperArgs, BedrockModelKey } from 'quadratic-shared/typesAndSchemasAI';
 import { getBedrockApiArgs, parseBedrockResponse, parseBedrockStream } from '../helpers/bedrock.helper';
 
@@ -12,13 +11,14 @@ export const handleBedrockRequest = async (
   response: Response,
   bedrock: BedrockRuntimeClient
 ): Promise<AIMessagePrompt | undefined> => {
+  const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
   const { system, messages, tools, tool_choice } = getBedrockApiArgs(args);
 
   if (options.stream) {
     try {
       const command = new ConverseStreamCommand({
-        modelId: MODELS_CONFIGURATION[modelKey].model,
+        modelId: model,
         system,
         messages,
         inferenceConfig: { maxTokens: options.max_tokens, temperature: options.temperature },
@@ -53,7 +53,7 @@ export const handleBedrockRequest = async (
   } else {
     try {
       const command = new ConverseCommand({
-        modelId: MODELS_CONFIGURATION[modelKey].model,
+        modelId: model,
         system,
         messages,
         inferenceConfig: { maxTokens: options.max_tokens, temperature: options.temperature },

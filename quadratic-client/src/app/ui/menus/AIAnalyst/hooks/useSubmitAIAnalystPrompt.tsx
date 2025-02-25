@@ -15,7 +15,7 @@ import {
 } from '@/app/atoms/aiAnalystAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
-import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
+import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import {
   AIMessage,
@@ -207,7 +207,7 @@ export function useSubmitAIAnalystPrompt() {
               content: [{ type: 'text', text: 'Looks like there was a problem. Please try again.' }],
               contextType: 'userPrompt',
               toolCalls: [],
-              model: MODELS_CONFIGURATION[modelKey].model,
+              model: getModelFromModelKey(modelKey),
             };
 
             const lastMessage = prevMessages.at(-1);
