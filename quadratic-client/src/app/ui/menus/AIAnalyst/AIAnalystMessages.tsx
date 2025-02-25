@@ -137,7 +137,7 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
               <>
                 {message.content && Array.isArray(message.content) ? (
                   message.content
-                    // Filter out redacted thinking, these are hash values not human readable
+                    // Filter out redacted thinking, show thinking messages only if model supports it
                     .filter(({ type }) => type === 'text' || (type === 'anthropic_thinking' && !!config.thinking))
                     .map(({ type, text }) => (
                       <div
