@@ -96,12 +96,12 @@ impl GridController {
                 if old_data_table.header_is_first_row {
                     new_data_table.apply_first_row_as_header();
                 }
-            }
 
-            // if the old data table has headers, then the new data table should
-            // have headers; if the data table already has headers (eg, via data
-            // frames), then leave them in.
-            new_data_table.header_is_first_row |= old_data_table.header_is_first_row;
+                // if the old data table has headers, then the new data table should
+                // have headers; if the data table already has headers (eg, via data
+                // frames), then leave them in.
+                new_data_table.header_is_first_row |= old_data_table.header_is_first_row;
+            }
 
             // if the width of the old and new data tables are the same,
             // then we can preserve other user-selected properties
