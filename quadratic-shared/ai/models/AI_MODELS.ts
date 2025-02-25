@@ -50,7 +50,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 16000,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    enabled: false,
     provider: 'anthropic',
     thinking: true,
     thinkingTemperature: 1,
@@ -62,7 +62,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 16000,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    enabled: false,
     provider: 'anthropic',
   },
   'anthropic:claude-3-5-sonnet-20241022': {
