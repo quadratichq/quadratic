@@ -95,17 +95,22 @@ export function useSubmitAIAnalystPrompt() {
             const lastMessage = prevMessages.at(-1);
             if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
               const newLastMessage = { ...lastMessage };
-              newLastMessage.content += '\n\nRequest aborted by the user.';
-              newLastMessage.content = newLastMessage.content.trim();
+              let currentContent = { ...(newLastMessage.content.at(-1) ?? { type: 'text', text: '' }) };
+              if (currentContent?.type !== 'text') {
+                currentContent = { type: 'text', text: '' };
+              }
+              currentContent.text += '\n\nRequest aborted by the user.';
+              currentContent.text = currentContent.text.trim();
               newLastMessage.toolCalls = [];
+              newLastMessage.content = [...newLastMessage.content.slice(0, -1), currentContent];
               return [...prevMessages.slice(0, -1), newLastMessage];
             } else if (lastMessage?.role === 'user') {
               const newLastMessage: AIMessage = {
                 role: 'assistant',
-                content: 'Request aborted by the user.',
+                content: [{ type: 'text', text: 'Request aborted by the user.' }],
                 contextType: 'userPrompt',
                 toolCalls: [],
-                model,
+                model: getModelFromModelKey(modelKey),
               };
               return [...prevMessages, newLastMessage];
             }
@@ -233,9 +238,14 @@ export function useSubmitAIAnalystPrompt() {
             const lastMessage = prevMessages.at(-1);
             if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
               const newLastMessage = { ...lastMessage };
-              newLastMessage.content += '\n\nLooks like there was a problem. Please try again.';
-              newLastMessage.content = newLastMessage.content.trim();
+              let currentContent = { ...(newLastMessage.content.at(-1) ?? { type: 'text', text: '' }) };
+              if (currentContent?.type !== 'text') {
+                currentContent = { type: 'text', text: '' };
+              }
+              currentContent.text += '\n\nLooks like there was a problem. Please try again.';
+              currentContent.text = currentContent.text.trim();
               newLastMessage.toolCalls = [];
+              newLastMessage.content = [...newLastMessage.content.slice(0, -1), currentContent];
               return [...prevMessages.slice(0, -1), newLastMessage];
             } else if (lastMessage?.role === 'user') {
               const newLastMessage: AIMessage = {
