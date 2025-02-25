@@ -131,7 +131,6 @@ export const TableSort = () => {
 
   const handleDelete = useCallback(
     (columnIndex: number) => {
-      console.log(columnIndex);
       setSort((prev) => {
         const sort = prev.filter((entry) => entry.column_index !== columnIndex);
         if (
@@ -141,7 +140,6 @@ export const TableSort = () => {
         ) {
           sort.push({ column_index: -1, direction: 'Ascending' });
         }
-        console.log(sort);
         return sort;
       });
     },
