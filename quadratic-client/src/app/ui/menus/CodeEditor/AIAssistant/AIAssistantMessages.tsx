@@ -122,7 +122,7 @@ export function AIAssistantMessages({ textareaRef }: AIAssistantMessagesProps) {
               ))
             ) : Array.isArray(message.content) ? (
               message.content
-                .filter(({ type }) => type !== 'anthropic_redacted_thinking')
+                .filter(({ type }) => type === 'text')
                 .map(({ text }) => <AICodeBlockParser key={text} input={text} />)
             ) : (
               <AICodeBlockParser input={message.content} />
