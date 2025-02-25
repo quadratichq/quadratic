@@ -134,7 +134,9 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
             ) : (
               <>
                 {message.content && Array.isArray(message.content) ? (
-                  message.content.map(({ text }) => <Markdown key={text}>{text}</Markdown>)
+                  message.content
+                    .filter(({ type }) => type === 'redacted_thinking')
+                    .map(({ text }) => <Markdown key={text}>{text}</Markdown>)
                 ) : (
                   <Markdown key={message.content}>{message.content}</Markdown>
                 )}

@@ -121,7 +121,9 @@ export function AIAssistantMessages({ textareaRef }: AIAssistantMessagesProps) {
                 <AICodeBlockParser key={messageContent.content} input={messageContent.content} />
               ))
             ) : Array.isArray(message.content) ? (
-              message.content.map(({ text }) => <AICodeBlockParser key={text} input={text} />)
+              message.content
+                .filter(({ type }) => type === 'redacted_thinking')
+                .map(({ text }) => <AICodeBlockParser key={text} input={text} />)
             ) : (
               <AICodeBlockParser input={message.content} />
             )}
