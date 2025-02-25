@@ -9,7 +9,7 @@ import {
 import { cn } from '@/shared/shadcn/utils';
 import { CaretDownIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
-import { MODEL_OPTIONS } from 'quadratic-shared/ai/models/AI_MODELS';
+import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import { useMemo } from 'react';
 
 interface SelectAIModelMenuProps {
@@ -18,19 +18,18 @@ interface SelectAIModelMenuProps {
 }
 
 export function SelectAIModelMenu({ loading, textAreaRef }: SelectAIModelMenuProps) {
-  const [selectedMode, setSelectedModel] = useAIModel();
-  const { displayName: selectedModelDisplayName } = useMemo(() => MODEL_OPTIONS[selectedMode], [selectedMode]);
+  const [selectedModel, setSelectedModel, selectedModelConfig] = useAIModel();
 
-  const enabledModels = useMemo(() => {
-    const models = Object.keys(MODEL_OPTIONS) as (keyof typeof MODEL_OPTIONS)[];
+  const modelConfigs = useMemo(() => {
+    const configs = Object.values(MODELS_CONFIGURATION);
 
     // enable all models in debug mode
     if (debug) {
-      return models;
+      return configs;
     }
 
     // only show enabled models in production
-    return models.filter((model) => MODEL_OPTIONS[model].enabled);
+    return configs.filter((config) => config.enabled);
   }, []);
 
   return (
@@ -39,7 +38,7 @@ export function SelectAIModelMenu({ loading, textAreaRef }: SelectAIModelMenuPro
         disabled={loading}
         className={cn(`flex items-center text-xs text-muted-foreground`, !loading && 'hover:text-foreground')}
       >
-        {selectedMode && <>{selectedModelDisplayName}</>}
+        {selectedModelConfig.displayName}
         <CaretDownIcon />
       </DropdownMenuTrigger>
 
@@ -51,20 +50,20 @@ export function SelectAIModelMenu({ loading, textAreaRef }: SelectAIModelMenuPro
           textAreaRef.current?.focus();
         }}
       >
-        {enabledModels.map((enabledModel) => {
-          const displayName = MODEL_OPTIONS[enabledModel].displayName;
+        {modelConfigs.map((modelConfig) => {
+          const { model, displayName, provider } = modelConfig;
 
           return (
             <DropdownMenuCheckboxItem
-              key={enabledModel}
-              checked={selectedMode === enabledModel}
+              key={model}
+              checked={selectedModel === model}
               onCheckedChange={() => {
-                mixpanel.track('[AI].model.change', { model: enabledModel });
-                setSelectedModel(enabledModel);
+                mixpanel.track('[AI].model.change', { model: MODELS_CONFIGURATION[model].model });
+                setSelectedModel(model);
               }}
             >
               <div className="flex w-full items-center justify-between text-xs">
-                <span className="pr-4">{displayName}</span>
+                <span className="pr-4">{(debug ? `${provider} - ` : '') + displayName}</span>
               </div>
             </DropdownMenuCheckboxItem>
           );

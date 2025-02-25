@@ -22,18 +22,16 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
   const system: SystemContentBlock[] = systemMessages.map((message) => ({ text: message }));
-  const messages: Message[] = promptMessages.map<Message>((message) => {
-    if (message.role === 'assistant' && message.contextType === 'userPrompt' && message.toolCalls.length > 0) {
+  const messages: Message[] = promptMessages.reduce<Message[]>((acc, message) => {
+    if (message.role === 'assistant' && message.contextType === 'userPrompt') {
       const bedrockMessage: Message = {
         role: message.role,
         content: [
-          ...(message.content
-            ? [
-                {
-                  text: message.content,
-                },
-              ]
-            : []),
+          ...message.content
+            .filter((content) => content.text && content.type === 'text')
+            .map((content) => ({
+              text: content.text,
+            })),
           ...message.toolCalls.map((toolCall) => ({
             toolUse: {
               toolUseId: toolCall.id,
@@ -43,7 +41,7 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
           })),
         ],
       };
-      return bedrockMessage;
+      return [...acc, bedrockMessage];
     } else if (message.role === 'user' && message.contextType === 'toolResult') {
       const bedrockMessage: Message = {
         role: message.role,
@@ -61,8 +59,8 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
           })),
         ],
       };
-      return bedrockMessage;
-    } else {
+      return [...acc, bedrockMessage];
+    } else if (message.content) {
       const bedrockMessage: Message = {
         role: message.role,
         content: [
@@ -71,9 +69,11 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
           },
         ],
       };
-      return bedrockMessage;
+      return [...acc, bedrockMessage];
+    } else {
+      return acc;
     }
-  });
+  }, []);
 
   const tools = getBedrockTools(useTools, toolName);
   const tool_choice = getBedrockToolChoice(useTools, toolName);
@@ -124,7 +124,7 @@ export async function parseBedrockStream(
 ) {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
-    content: '',
+    content: [],
     contextType: 'userPrompt',
     toolCalls: [],
     model,
@@ -133,35 +133,37 @@ export async function parseBedrockStream(
   for await (const chunk of chunks) {
     if (!response.writableEnded) {
       if (chunk.contentBlockStart && chunk.contentBlockStart.start && chunk.contentBlockStart.start.toolUse) {
-        const toolCalls = [...responseMessage.toolCalls];
         const toolCall = {
           id: chunk.contentBlockStart.start.toolUse.toolUseId ?? '',
           name: chunk.contentBlockStart.start.toolUse.name ?? '',
           arguments: '',
           loading: true,
         };
-        toolCalls.push(toolCall);
-        responseMessage.toolCalls = toolCalls;
+        responseMessage.toolCalls.push(toolCall);
       }
       // tool use stop
       else if (chunk.contentBlockStop) {
-        const toolCalls = [...responseMessage.toolCalls];
-        let toolCall = toolCalls.pop();
+        let toolCall = responseMessage.toolCalls.pop();
         if (toolCall) {
           toolCall = { ...toolCall, loading: false };
-          toolCalls.push(toolCall);
-          responseMessage.toolCalls = toolCalls;
+          responseMessage.toolCalls.push(toolCall);
         }
       } else if (chunk.contentBlockDelta && chunk.contentBlockDelta.delta) {
         // text delta
         if ('text' in chunk.contentBlockDelta.delta) {
-          responseMessage.content += chunk.contentBlockDelta.delta.text;
+          const currentContent = {
+            ...(responseMessage.content.pop() ?? {
+              type: 'text',
+              text: '',
+            }),
+          };
+          currentContent.text += chunk.contentBlockDelta.delta.text ?? '';
+          responseMessage.content.push(currentContent);
         }
         // tool use delta
         if ('toolUse' in chunk.contentBlockDelta.delta) {
-          const toolCalls = [...responseMessage.toolCalls];
           const toolCall = {
-            ...(toolCalls.pop() ?? {
+            ...(responseMessage.toolCalls.pop() ?? {
               id: '',
               name: '',
               arguments: '',
@@ -169,8 +171,7 @@ export async function parseBedrockStream(
             }),
           };
           toolCall.arguments += chunk.contentBlockDelta.delta.toolUse?.input ?? '';
-          toolCalls.push(toolCall);
-          responseMessage.toolCalls = toolCalls;
+          responseMessage.toolCalls.push(toolCall);
         }
       }
 
@@ -180,10 +181,11 @@ export async function parseBedrockStream(
     }
   }
 
-  if (!responseMessage.content) {
-    responseMessage.content =
-      responseMessage.toolCalls.length > 0 ? '' : "I'm sorry, I don't have a response for that.";
-    response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+  if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
+    responseMessage.content.push({
+      type: 'text',
+      text: "I'm sorry, I don't have a response for that.",
+    });
   }
 
   if (responseMessage.toolCalls.some((toolCall) => toolCall.loading)) {
@@ -191,8 +193,9 @@ export async function parseBedrockStream(
       ...toolCall,
       loading: false,
     }));
-    response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
   }
+
+  response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
 
   if (!response.writableEnded) {
     response.end();
@@ -208,7 +211,7 @@ export function parseBedrockResponse(
 ): AIMessagePrompt {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
-    content: '',
+    content: [],
     contextType: 'userPrompt',
     toolCalls: [],
     model,
@@ -216,19 +219,19 @@ export function parseBedrockResponse(
 
   result?.message?.content?.forEach((contentBlock) => {
     if ('text' in contentBlock) {
-      responseMessage.content += contentBlock.text;
+      responseMessage.content.push({
+        type: 'text',
+        text: contentBlock.text ?? '',
+      });
     }
 
     if ('toolUse' in contentBlock) {
-      responseMessage.toolCalls = [
-        ...responseMessage.toolCalls,
-        {
-          id: contentBlock.toolUse?.toolUseId ?? '',
-          name: contentBlock.toolUse?.name ?? '',
-          arguments: JSON.stringify(contentBlock.toolUse?.input ?? ''),
-          loading: false,
-        },
-      ];
+      responseMessage.toolCalls.push({
+        id: contentBlock.toolUse?.toolUseId ?? '',
+        name: contentBlock.toolUse?.name ?? '',
+        arguments: JSON.stringify(contentBlock.toolUse?.input ?? ''),
+        loading: false,
+      });
     }
 
     if (!('text' in contentBlock) && !('toolUse' in contentBlock)) {
@@ -236,9 +239,11 @@ export function parseBedrockResponse(
     }
   });
 
-  if (!responseMessage.content) {
-    responseMessage.content =
-      responseMessage.toolCalls.length > 0 ? '' : "I'm sorry, I don't have a response for that.";
+  if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
+    responseMessage.content.push({
+      type: 'text',
+      text: "I'm sorry, I don't have a response for that.",
+    });
   }
 
   response.json(responseMessage);

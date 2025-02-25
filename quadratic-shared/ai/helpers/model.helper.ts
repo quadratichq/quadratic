@@ -1,4 +1,4 @@
-import { MODEL_OPTIONS } from 'quadratic-shared/ai/models/AI_MODELS';
+import { DEFAULT_MODEL, MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type {
   AIModel,
   AIRequestBody,
@@ -10,34 +10,42 @@ import type {
 } from 'quadratic-shared/typesAndSchemasAI';
 
 export function isBedrockModel(model: AIModel): model is BedrockModel {
-  return MODEL_OPTIONS[model].provider === 'bedrock';
+  return Object.values(MODELS_CONFIGURATION).find((config) => config.model === model)?.provider === 'bedrock';
 }
 
 export function isBedrockAnthropicModel(model: AIModel): model is BedrockAnthropicModel {
-  return MODEL_OPTIONS[model].provider === 'bedrock-anthropic';
+  return Object.values(MODELS_CONFIGURATION).find((config) => config.model === model)?.provider === 'bedrock-anthropic';
 }
 
 export function isAnthropicModel(model: AIModel): model is AnthropicModel {
-  return MODEL_OPTIONS[model].provider === 'anthropic';
+  return Object.values(MODELS_CONFIGURATION).find((config) => config.model === model)?.provider === 'anthropic';
 }
 
 export function isXAIModel(model: AIModel): model is XAIModel {
-  return MODEL_OPTIONS[model].provider === 'xai';
+  return Object.values(MODELS_CONFIGURATION).find((config) => config.model === model)?.provider === 'xai';
 }
 
 export function isOpenAIModel(model: AIModel): model is OpenAIModel {
-  return MODEL_OPTIONS[model].provider === 'openai';
+  return Object.values(MODELS_CONFIGURATION).find((config) => config.model === model)?.provider === 'openai';
 }
 
 export const getModelOptions = (
   model: AIModel,
-  args: Pick<AIRequestBody, 'useTools' | 'useStream'>
+  args: Pick<AIRequestBody, 'useTools' | 'useStream' | 'thinking'>
 ): {
   stream: boolean;
   temperature: number;
   max_tokens: number;
+  thinking?: boolean;
+  strickParams: boolean;
 } => {
-  const { canStream, canStreamWithToolCalls, temperature, max_tokens } = MODEL_OPTIONS[model];
+  const config =
+    Object.values(MODELS_CONFIGURATION).find((config) => config.model === model) ?? MODELS_CONFIGURATION[DEFAULT_MODEL];
+  if (!config) {
+    throw new Error(`Model ${model} not found`);
+  }
+
+  const { canStream, canStreamWithToolCalls, max_tokens } = config;
 
   const { useTools, useStream } = args;
   const stream = canStream
@@ -46,5 +54,11 @@ export const getModelOptions = (
       : useStream ?? canStream
     : false;
 
-  return { stream, temperature, max_tokens };
+  const thinking = config.thinking && args.thinking;
+
+  const temperature = thinking ? config.thinkingTemperature ?? config.temperature : config.temperature;
+
+  const strickParams = !!config.strickParams;
+
+  return { stream, temperature, max_tokens, thinking, strickParams };
 };

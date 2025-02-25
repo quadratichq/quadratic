@@ -1,5 +1,10 @@
 import type AnthropicBedrock from '@anthropic-ai/bedrock-sdk';
 import Anthropic from '@anthropic-ai/sdk';
+import type {
+  MessageCreateParamsNonStreaming,
+  MessageCreateParamsStreaming,
+  ThinkingConfigParam,
+} from '@anthropic-ai/sdk/resources';
 import type { Response } from 'express';
 import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import type {
@@ -16,21 +21,38 @@ export const handleAnthropicRequest = async (
   response: Response,
   anthropic: AnthropicBedrock | Anthropic
 ): Promise<AIMessagePrompt | undefined> => {
-  const { system, messages, tools, tool_choice } = getAnthropicApiArgs(args);
-  const { stream, temperature, max_tokens } = getModelOptions(model, args);
+  const options = getModelOptions(model, args);
+  const { system, messages, tools, tool_choice } = getAnthropicApiArgs(args, options.thinking);
 
-  if (stream) {
+  const thinking: ThinkingConfigParam = options.thinking
+    ? {
+        type: 'enabled',
+        budget_tokens: options.max_tokens * 0.75,
+      }
+    : {
+        type: 'disabled',
+      };
+
+  if (options.stream) {
     try {
-      const chunks = await anthropic.messages.create({
+      let apiArgs: MessageCreateParamsStreaming = {
         model,
         system,
         messages,
-        temperature,
-        max_tokens,
-        stream: true,
+        temperature: options.temperature,
+        max_tokens: options.max_tokens,
+        stream: options.stream,
         tools,
         tool_choice,
-      });
+      };
+      if (options.thinking !== undefined) {
+        apiArgs = {
+          ...apiArgs,
+          thinking,
+        };
+      }
+
+      const chunks = await anthropic.messages.create(apiArgs);
 
       response.setHeader('Content-Type', 'text/event-stream');
       response.setHeader('Cache-Control', 'no-cache');
@@ -53,15 +75,25 @@ export const handleAnthropicRequest = async (
     }
   } else {
     try {
-      const result = await anthropic.messages.create({
+      let apiArgs: MessageCreateParamsNonStreaming = {
         model,
         system,
         messages,
-        temperature,
-        max_tokens,
+        temperature: options.temperature,
+        max_tokens: options.max_tokens,
+        stream: options.stream,
         tools,
         tool_choice,
-      });
+      };
+      if (options.thinking !== undefined) {
+        apiArgs = {
+          ...apiArgs,
+          thinking,
+        };
+      }
+
+      const result = await anthropic.messages.create(apiArgs);
+
       const responseMessage = parseAnthropicResponse(result, response, model);
       return responseMessage;
     } catch (error: any) {

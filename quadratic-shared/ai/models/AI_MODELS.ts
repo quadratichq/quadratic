@@ -1,52 +1,73 @@
-import type { AIModel, AIProviders } from 'quadratic-shared/typesAndSchemasAI';
+import type { ModelConfig } from 'quadratic-shared/typesAndSchemasAI';
 
-export const DEFAULT_MODEL: AIModel = 'anthropic.claude-3-5-sonnet-20241022-v2:0';
+export const DEFAULT_MODEL: keyof typeof MODELS_CONFIGURATION =
+  'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0';
 
-export const DEFAULT_GET_CHAT_NAME_MODEL: AIModel = 'anthropic.claude-3-5-haiku-20241022-v1:0';
+export const DEFAULT_GET_CHAT_NAME_MODEL: keyof typeof MODELS_CONFIGURATION =
+  'bedrock-anthropic:us.anthropic.claude-3-5-haiku-20241022-v1:0';
 
 // updating this will force the model to be reset to the default model in local storage
-export const DEFAULT_MODEL_VERSION = 2;
+export const DEFAULT_MODEL_VERSION = 3;
 
-export const MODEL_OPTIONS: {
-  [key in AIModel]: {
-    displayName: string;
-    temperature: number;
-    max_tokens: number;
-    canStream: boolean;
-    canStreamWithToolCalls: boolean;
-    enabled: boolean;
-    provider: AIProviders;
-  };
-} = {
-  'gpt-4o-2024-11-20': {
-    displayName: 'OpenAI: GPT-4o',
+export const MODELS_CONFIGURATION: Record<string, ModelConfig> = {
+  'openai:gpt-4o-2024-11-20': {
+    model: 'gpt-4o-2024-11-20',
+    displayName: 'gpt-4o',
     temperature: 0,
     max_tokens: 4096, // not used for openai
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: true,
     provider: 'openai',
+    strickParams: true,
   },
-  'o1-2024-12-17': {
-    displayName: 'OpenAI: o1',
+  'openai:o1-2024-12-17': {
+    model: 'o1-2024-12-17',
+    displayName: 'o1',
     temperature: 1, // only temperature 1 is supported for o1
     max_tokens: 4096, // not used for openai
     canStream: false, // stream is not supported for o1
     canStreamWithToolCalls: false,
     enabled: false,
     provider: 'openai',
+    strickParams: true,
   },
-  'o3-mini-2025-01-31': {
-    displayName: 'OpenAI: o3-mini',
+  'openai:o3-mini-2025-01-31': {
+    model: 'o3-mini-2025-01-31',
+    displayName: 'o3-mini',
     temperature: 1, // only temperature 1 is supported for o1
     max_tokens: 4096, // not used for openai
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: true,
     provider: 'openai',
+    strickParams: true,
   },
-  'claude-3-5-sonnet-20241022': {
-    displayName: 'Anthropic: Claude 3.5 Sonnet',
+  'anthropic:claude-3-7-sonnet-20250219:thinking': {
+    model: 'claude-3-7-sonnet-20250219',
+    displayName: 'claude 3.7 sonnet (thinking)',
+    temperature: 0,
+    max_tokens: 16000,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: true,
+    provider: 'anthropic',
+    thinking: true,
+    thinkingTemperature: 1,
+  },
+  'anthropic:claude-3-7-sonnet-20250219': {
+    model: 'claude-3-7-sonnet-20250219',
+    displayName: 'claude 3.7 sonnet',
+    temperature: 0,
+    max_tokens: 16000,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: true,
+    provider: 'anthropic',
+  },
+  'anthropic:claude-3-5-sonnet-20241022': {
+    model: 'claude-3-5-sonnet-20241022',
+    displayName: 'claude 3.5 sonnet',
     temperature: 0,
     max_tokens: 8192,
     canStream: true,
@@ -54,8 +75,9 @@ export const MODEL_OPTIONS: {
     enabled: false,
     provider: 'anthropic',
   },
-  'claude-3-5-haiku-20241022': {
-    displayName: 'Anthropic: Claude 3.5 Haiku',
+  'anthropic:claude-3-5-haiku-20241022': {
+    model: 'claude-3-5-haiku-20241022',
+    displayName: 'claude 3.5 haiku',
     temperature: 0,
     max_tokens: 8192,
     canStream: true,
@@ -63,8 +85,31 @@ export const MODEL_OPTIONS: {
     enabled: false,
     provider: 'anthropic',
   },
-  'anthropic.claude-3-5-sonnet-20241022-v2:0': {
-    displayName: `Bedrock: Claude 3.5 Sonnet`,
+  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking': {
+    model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
+    displayName: `claude 3.7 sonnet (thinking)`,
+    temperature: 0,
+    max_tokens: 16000,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: true,
+    provider: 'bedrock-anthropic',
+    thinking: true,
+    thinkingTemperature: 1,
+  },
+  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0': {
+    model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
+    displayName: `claude 3.7 sonnet`,
+    temperature: 0,
+    max_tokens: 16000,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: true,
+    provider: 'bedrock-anthropic',
+  },
+  'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0': {
+    model: 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+    displayName: `claude 3.5 sonnet`,
     temperature: 0,
     max_tokens: 8192,
     canStream: true,
@@ -72,8 +117,9 @@ export const MODEL_OPTIONS: {
     enabled: true,
     provider: 'bedrock-anthropic',
   },
-  'anthropic.claude-3-5-haiku-20241022-v1:0': {
-    displayName: 'Bedrock: Claude 3.5 Haiku',
+  'bedrock-anthropic:us.anthropic.claude-3-5-haiku-20241022-v1:0': {
+    model: 'us.anthropic.claude-3-5-haiku-20241022-v1:0',
+    displayName: 'claude 3.5 haiku',
     temperature: 0,
     max_tokens: 8192,
     canStream: true,
@@ -81,26 +127,31 @@ export const MODEL_OPTIONS: {
     enabled: false,
     provider: 'bedrock-anthropic',
   },
-  'grok-2-1212': {
-    displayName: `xAI: Grok 2`,
+  'xai:grok-2-1212': {
+    model: 'grok-2-1212',
+    displayName: `grok 2`,
     temperature: 0,
     max_tokens: 4096,
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: false,
     provider: 'xai',
+    strickParams: false,
   },
-  'grok-beta': {
-    displayName: `xAI: Grok Beta`,
+  'xai:grok-beta': {
+    model: 'grok-beta',
+    displayName: `grok beta`,
     temperature: 0,
     max_tokens: 4096,
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: false,
     provider: 'xai',
+    strickParams: false,
   },
-  'us.meta.llama3-2-90b-instruct-v1:0': {
-    displayName: 'Bedrock: Llama 3.2 90B Instruct',
+  'bedrock:us.meta.llama3-2-90b-instruct-v1:0': {
+    model: 'us.meta.llama3-2-90b-instruct-v1:0',
+    displayName: 'llama 3.2 90b instruct',
     temperature: 0,
     max_tokens: 2048,
     canStream: true,
@@ -108,8 +159,9 @@ export const MODEL_OPTIONS: {
     enabled: false,
     provider: 'bedrock',
   },
-  'mistral.mistral-large-2407-v1:0': {
-    displayName: 'Bedrock: Mistral Large 2 (24.07)',
+  'bedrock:mistral.mistral-large-2407-v1:0': {
+    model: 'mistral.mistral-large-2407-v1:0',
+    displayName: 'mistral large 2 (24.07)',
     temperature: 0,
     max_tokens: 8192,
     canStream: true,

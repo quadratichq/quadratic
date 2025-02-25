@@ -10,16 +10,16 @@ export const handleOpenAIRequest = async (
   response: Response,
   openai: OpenAI
 ): Promise<AIMessagePrompt | undefined> => {
-  const { messages, tools, tool_choice } = getOpenAIApiArgs(args);
-  const { stream, temperature } = getModelOptions(model, args);
+  const options = getModelOptions(model, args);
+  const { messages, tools, tool_choice } = getOpenAIApiArgs(args, options.strickParams);
 
-  if (stream) {
+  if (options.stream) {
     try {
       const completion = await openai.chat.completions.create({
         model,
         messages,
-        temperature,
-        stream: true,
+        temperature: options.temperature,
+        stream: options.stream,
         tools,
         tool_choice,
       });
@@ -48,7 +48,8 @@ export const handleOpenAIRequest = async (
       const result = await openai.chat.completions.create({
         model,
         messages,
-        temperature,
+        temperature: options.temperature,
+        stream: options.stream,
         tools,
         tool_choice,
       });

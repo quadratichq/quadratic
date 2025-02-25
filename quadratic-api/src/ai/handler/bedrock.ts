@@ -11,16 +11,16 @@ export const handleBedrockRequest = async (
   response: Response,
   bedrock: BedrockRuntimeClient
 ): Promise<AIMessagePrompt | undefined> => {
+  const options = getModelOptions(model, args);
   const { system, messages, tools, tool_choice } = getBedrockApiArgs(args);
-  const { stream, temperature, max_tokens } = getModelOptions(model, args);
 
-  if (stream) {
+  if (options.stream) {
     try {
       const command = new ConverseStreamCommand({
         modelId: model,
         system,
         messages,
-        inferenceConfig: { maxTokens: max_tokens, temperature },
+        inferenceConfig: { maxTokens: options.max_tokens, temperature: options.temperature },
         toolConfig: tools &&
           tool_choice && {
             tools,
@@ -55,7 +55,7 @@ export const handleBedrockRequest = async (
         modelId: model,
         system,
         messages,
-        inferenceConfig: { maxTokens: max_tokens, temperature },
+        inferenceConfig: { maxTokens: options.max_tokens, temperature: options.temperature },
         toolConfig: tools &&
           tool_choice && {
             tools,

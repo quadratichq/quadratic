@@ -47,10 +47,10 @@ describe('aiAnalystOfflineChats', () => {
           { role: 'user', content: 'test2', contextType: 'userPrompt', context: defaultAIAnalystContext },
           {
             role: 'assistant',
-            content: 'response2',
+            content: [{ type: 'text', text: 'response2' }],
             contextType: 'userPrompt',
             toolCalls: [],
-            model: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
+            model: 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
           },
         ],
       },

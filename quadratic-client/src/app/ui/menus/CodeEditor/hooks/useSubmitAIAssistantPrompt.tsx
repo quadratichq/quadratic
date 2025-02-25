@@ -16,6 +16,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
@@ -107,12 +108,15 @@ export function useSubmitAIAssistantPrompt() {
           await handleAIRequestToAPI({
             chatId,
             source: 'AIAssistant',
-            model,
+            model: MODELS_CONFIGURATION[model].model,
             messages: updatedMessages,
+            useStream: true,
+            useTools: false,
             language: getLanguage(codeCell.language),
             useQuadraticContext: true,
             setMessages: (updater) => set(aiAssistantMessagesAtom, updater),
             signal: abortController.signal,
+            thinking: true,
           });
         } catch (error) {
           console.error(error);

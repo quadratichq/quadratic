@@ -15,6 +15,7 @@ import {
 } from '@/app/atoms/aiAnalystAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import {
   AIMessage,
@@ -135,7 +136,7 @@ export function useSubmitAIAnalystPrompt() {
           const response = await handleAIRequestToAPI({
             chatId,
             source: 'AIAnalyst',
-            model,
+            model: MODELS_CONFIGURATION[model].model,
             messages: updatedMessages,
             useStream: true,
             useTools: true,
@@ -144,6 +145,7 @@ export function useSubmitAIAnalystPrompt() {
             useQuadraticContext: true,
             setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
             signal: abortController.signal,
+            thinking: true,
           });
           let toolCalls: AIMessagePrompt['toolCalls'] = response.toolCalls;
 
@@ -185,7 +187,7 @@ export function useSubmitAIAnalystPrompt() {
             const response = await handleAIRequestToAPI({
               chatId,
               source: 'AIAnalyst',
-              model,
+              model: MODELS_CONFIGURATION[model].model,
               messages: updatedMessages,
               useStream: true,
               useTools: true,
@@ -194,6 +196,7 @@ export function useSubmitAIAnalystPrompt() {
               useQuadraticContext: true,
               setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
               signal: abortController.signal,
+              thinking: true,
             });
             toolCalls = response.toolCalls;
           }
@@ -201,10 +204,10 @@ export function useSubmitAIAnalystPrompt() {
           set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {
             const aiMessage: AIMessage = {
               role: 'assistant',
-              content: 'Looks like there was a problem. Please try again.',
+              content: [{ type: 'text', text: 'Looks like there was a problem. Please try again.' }],
               contextType: 'userPrompt',
               toolCalls: [],
-              model,
+              model: MODELS_CONFIGURATION[model].model,
             };
 
             const lastMessage = prevMessages.at(-1);

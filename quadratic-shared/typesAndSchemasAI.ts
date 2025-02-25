@@ -4,25 +4,29 @@ import { z } from 'zod';
 const AIProvidersSchema = z
   .enum(['bedrock', 'bedrock-anthropic', 'anthropic', 'openai', 'xai'])
   .default('bedrock-anthropic');
-export type AIProviders = z.infer<typeof AIProvidersSchema>;
 
 const BedrockModelSchema = z
   .enum([
-    'anthropic.claude-3-5-sonnet-20241022-v2:0',
-    'anthropic.claude-3-5-haiku-20241022-v1:0',
+    'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
+    'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+    'us.anthropic.claude-3-5-haiku-20241022-v1:0',
     'us.meta.llama3-2-90b-instruct-v1:0',
     'mistral.mistral-large-2407-v1:0',
   ])
-  .default('anthropic.claude-3-5-sonnet-20241022-v2:0');
+  .default('us.anthropic.claude-3-5-sonnet-20241022-v2:0');
 export type BedrockModel = z.infer<typeof BedrockModelSchema>;
 
 const BedrockAnthropicModelSchema = z
-  .enum(['anthropic.claude-3-5-sonnet-20241022-v2:0', 'anthropic.claude-3-5-haiku-20241022-v1:0'])
-  .default('anthropic.claude-3-5-sonnet-20241022-v2:0');
+  .enum([
+    'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
+    'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+    'us.anthropic.claude-3-5-haiku-20241022-v1:0',
+  ])
+  .default('us.anthropic.claude-3-5-sonnet-20241022-v2:0');
 export type BedrockAnthropicModel = z.infer<typeof BedrockAnthropicModelSchema>;
 
 const AnthropicModelSchema = z
-  .enum(['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022'])
+  .enum(['claude-3-7-sonnet-20250219', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022'])
   .default('claude-3-5-sonnet-20241022');
 export type AnthropicModel = z.infer<typeof AnthropicModelSchema>;
 
@@ -43,6 +47,21 @@ const AIModelSchema = z.union([
 ]);
 export type AIModel = z.infer<typeof AIModelSchema>;
 
+const ModelConfigSchema = z.object({
+  model: AIModelSchema,
+  displayName: z.string(),
+  temperature: z.number(),
+  max_tokens: z.number(),
+  canStream: z.boolean(),
+  canStreamWithToolCalls: z.boolean(),
+  enabled: z.boolean(),
+  provider: AIProvidersSchema,
+  strickParams: z.boolean().optional(),
+  thinking: z.boolean().optional(),
+  thinkingTemperature: z.number().optional(),
+});
+export type ModelConfig = z.infer<typeof ModelConfigSchema>;
+
 const InternalContextTypeSchema = z.enum([
   'quadraticDocs',
   'currentFile',
@@ -57,12 +76,6 @@ const InternalContextTypeSchema = z.enum([
 ]);
 const ToolResultContextTypeSchema = z.literal('toolResult');
 const UserPromptContextTypeSchema = z.literal('userPrompt');
-const ContextTypeSchema = z.union([
-  InternalContextTypeSchema,
-  ToolResultContextTypeSchema,
-  UserPromptContextTypeSchema,
-]);
-export type ContextType = z.infer<typeof ContextTypeSchema>;
 
 const ContextSchema = z.object({
   sheets: z.array(z.string()),
@@ -106,11 +119,45 @@ const AIMessageInternalSchema = z.object({
   content: z.string(),
   contextType: InternalContextTypeSchema,
 });
-export type AIMessageInternal = z.infer<typeof AIMessageInternalSchema>;
+
+const ContentSchema = z.preprocess(
+  (val) => {
+    // convert single string to array with text object
+    if (typeof val === 'string') {
+      return val
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => !!line)
+        .map((line) => ({ type: 'text', text: line }));
+    }
+
+    return val;
+  },
+  z.array(
+    z
+      .object({
+        type: z.literal('text'),
+        text: z.string(),
+      })
+      .or(
+        z.object({
+          type: z.literal('thinking'),
+          text: z.string(),
+          signature: z.string(),
+        })
+      )
+      .or(
+        z.object({
+          type: z.literal('redacted_thinking'),
+          text: z.string(),
+        })
+      )
+  )
+);
 
 export const AIMessagePromptSchema = z.object({
   role: z.literal('assistant'),
-  content: z.string(),
+  content: ContentSchema,
   contextType: UserPromptContextTypeSchema,
   toolCalls: z.array(
     z.object({
@@ -175,12 +222,13 @@ export const AIRequestBodySchema = z.object({
   source: z.enum(['AIAssistant', 'AIAnalyst', 'AIResearcher', 'GetChatName', 'GetFileName']),
   model: AIModelSchema,
   messages: z.array(ChatMessageSchema),
-  useStream: z.boolean().optional(),
-  useTools: z.boolean().optional(),
+  useStream: z.boolean(),
+  useTools: z.boolean(),
   toolName: AIToolSchema.optional(),
   useToolsPrompt: z.boolean().optional(),
   language: CodeCellTypeSchema.optional(),
   useQuadraticContext: z.boolean().optional(),
+  thinking: z.boolean(),
 });
 export type AIRequestBody = z.infer<typeof AIRequestBodySchema>;
 export type AIRequestHelperArgs = Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'source' | 'model'>;
