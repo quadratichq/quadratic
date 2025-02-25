@@ -221,8 +221,8 @@ mod tests {
                 range: TableRef {
                     table_name: "Table1".to_string(),
                     col_range: ColRange::All,
-                    data: false,
-                    headers: true,
+                    data: true,
+                    headers: false,
                     totals: false,
                 },
             })
@@ -239,8 +239,8 @@ mod tests {
                 range: TableRef {
                     table_name: "Table1".to_string(),
                     col_range: ColRange::Col("col2".to_string()),
-                    data: false,
-                    headers: true,
+                    data: true,
+                    headers: false,
                     totals: false,
                 },
             })
