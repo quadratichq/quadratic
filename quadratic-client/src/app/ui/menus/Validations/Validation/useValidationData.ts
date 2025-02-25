@@ -117,7 +117,6 @@ export const useValidationData = (): ValidationData => {
   const changeRule = useCallback(
     (type: ValidationRuleSimple) => {
       let rule: ValidationRule;
-      console.log(type);
       switch (type) {
         case 'none':
           rule = 'None';

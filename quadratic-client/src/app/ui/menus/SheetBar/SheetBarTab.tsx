@@ -257,6 +257,7 @@ function TabName({
         const div = event.currentTarget;
         if (!(div instanceof HTMLInputElement)) return false;
         const value = div.innerText.trim();
+        if (!div) return false;
         if (!isRenaming) return;
         setIsRenaming((isRenaming) => {
           if (!isRenaming) return false;

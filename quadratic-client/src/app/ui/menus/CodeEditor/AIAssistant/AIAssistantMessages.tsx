@@ -116,10 +116,14 @@ export function AIAssistantMessages({ textareaRef }: AIAssistantMessagesProps) {
                 messageIndex={index}
                 textareaRef={textareaRef}
               />
-            ) : Array.isArray(message.content) ? (
+            ) : message.role === 'user' && message.contextType === 'toolResult' ? (
               message.content.map((messageContent) => (
                 <AICodeBlockParser key={messageContent.content} input={messageContent.content} />
               ))
+            ) : Array.isArray(message.content) ? (
+              message.content
+                .filter(({ type }) => type === 'text')
+                .map(({ text }) => <AICodeBlockParser key={text} input={text} />)
             ) : (
               <AICodeBlockParser input={message.content} />
             )}

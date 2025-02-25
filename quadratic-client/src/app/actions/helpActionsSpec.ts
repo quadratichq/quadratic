@@ -45,7 +45,7 @@ export const helpActionsSpec: HelpActionSpec = {
     labelVerbose: 'Visit Community',
     Icon: ExternalLinkIcon,
     run: () => {
-      openLink('https://community.quadratichq.com');
+      openLink('https://community.quadratichq.com/');
     },
   },
   [Action.HelpChangelog]: {
