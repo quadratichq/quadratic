@@ -137,6 +137,7 @@ Resources:
           # ai api keys
           OPENAI_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/OPENAI_API_KEY" --with-decryption --query "Parameter.Value" --output text)
           ANTHROPIC_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/ANTHROPIC_API_KEY" --with-decryption --query "Parameter.Value" --output text)
+          XAI_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/XAI_API_KEY" --with-decryption --query "Parameter.Value" --output text)
           EXA_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/EXA_API_KEY" --with-decryption --query "Parameter.Value" --output text)
 
           # aws ecr

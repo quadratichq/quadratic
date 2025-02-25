@@ -28,9 +28,6 @@ def process_output_value(output_value):
         else:
             output_value = ""
 
-    if isinstance(output_value, pd.Series):
-        output_size = (1, len(output_value))
-
     # Convert DF to array_output
     if isinstance(output_value, pd.DataFrame):
         # flip the dataframe shape
@@ -62,7 +59,16 @@ def process_output_value(output_value):
 
     # Convert Pandas.Series to array_output
     if isinstance(output_value, pd.Series):
-        array_output = output_value.to_numpy().tolist()
+        if output_value.name is not None:
+            has_headers = True
+
+            # Return index names and values
+            array_output = [output_value.name] + output_value.to_numpy().tolist()
+
+        else:
+            array_output = output_value.to_numpy().tolist()
+
+        output_size = (1, len(array_output))
 
     typed_array_output = None
 

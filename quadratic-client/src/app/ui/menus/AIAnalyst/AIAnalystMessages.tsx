@@ -1,3 +1,4 @@
+import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import {
   aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
@@ -25,6 +26,7 @@ type AIAnalystMessagesProps = {
 };
 
 export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
+  const [, , config] = useAIModel();
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
@@ -132,7 +134,25 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
               )
             ) : (
               <>
-                {message.content && <Markdown key={message.content}>{message.content}</Markdown>}
+                {message.content && Array.isArray(message.content) ? (
+                  message.content
+                    // Filter out redacted thinking, show thinking messages only if model supports it
+                    .filter(({ type }) => type === 'text' || (type === 'anthropic_thinking' && !!config.thinking))
+                    .map(({ type, text }) => (
+                      <div
+                        key={text}
+                        // For distinguishing between thinking and chat content
+                        className={`${type === 'anthropic_thinking' ? 'rounded-md bg-accent p-2' : ''}`}
+                      >
+                        {type === 'anthropic_thinking' && (
+                          <span className="text-xs text-muted-foreground">Thinking...</span>
+                        )}
+                        <Markdown>{text}</Markdown>
+                      </div>
+                    ))
+                ) : (
+                  <Markdown key={message.content}>{message.content}</Markdown>
+                )}
 
                 {message.contextType === 'userPrompt' &&
                   message.toolCalls.map((toolCall) => (

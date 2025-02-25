@@ -3,8 +3,6 @@ name: Preview
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    branches-ignore:
-      - "main"
 
 concurrency:
   group: pr-${{ github.event.pull_request.number }}-build-images

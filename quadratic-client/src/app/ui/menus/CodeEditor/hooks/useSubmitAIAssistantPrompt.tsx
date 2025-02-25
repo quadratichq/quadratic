@@ -16,6 +16,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import type { CodeCell } from '@/app/gridGL/types/codeCell';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AIMessage, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
@@ -25,7 +26,7 @@ export function useSubmitAIAssistantPrompt() {
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
   const { getCodeCellContext } = useCodeCellContextMessages();
-  const [model] = useAIModel();
+  const [modelKey] = useAIModel();
 
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
@@ -52,17 +53,22 @@ export function useSubmitAIAssistantPrompt() {
             const lastMessage = prevMessages.at(-1);
             if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
               const newLastMessage = { ...lastMessage };
-              newLastMessage.content += '\n\nRequest aborted by the user.';
-              newLastMessage.content = newLastMessage.content.trim();
+              let currentContent = { ...(newLastMessage.content.at(-1) ?? { type: 'text', text: '' }) };
+              if (currentContent?.type !== 'text') {
+                currentContent = { type: 'text', text: '' };
+              }
+              currentContent.text += '\n\nRequest aborted by the user.';
+              currentContent.text = currentContent.text.trim();
               newLastMessage.toolCalls = [];
+              newLastMessage.content = [...newLastMessage.content.slice(0, -1), currentContent];
               return [...prevMessages.slice(0, -1), newLastMessage];
             } else if (lastMessage?.role === 'user') {
               const newLastMessage: AIMessage = {
                 role: 'assistant',
-                content: 'Request aborted by the user.',
+                content: [{ type: 'text', text: 'Request aborted by the user.' }],
                 contextType: 'userPrompt',
                 toolCalls: [],
-                model,
+                model: getModelFromModelKey(modelKey),
               };
               return [...prevMessages, newLastMessage];
             }
@@ -129,29 +135,37 @@ export function useSubmitAIAssistantPrompt() {
           await handleAIRequestToAPI({
             chatId,
             source: 'AIAssistant',
-            model,
+            modelKey,
             messages: updatedMessages,
+            useStream: true,
+            useTools: false,
             language: getLanguage(codeCell.language),
             useQuadraticContext: true,
             setMessages: (updater) => set(aiAssistantMessagesAtom, updater),
             signal: abortController.signal,
+            thinking: true,
           });
         } catch (error) {
           set(aiAssistantMessagesAtom, (prevMessages) => {
             const lastMessage = prevMessages.at(-1);
             if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
               const newLastMessage = { ...lastMessage };
-              newLastMessage.content += '\n\nLooks like there was a problem. Please try again.';
-              newLastMessage.content = newLastMessage.content.trim();
+              let currentContent = { ...(newLastMessage.content.at(-1) ?? { type: 'text', text: '' }) };
+              if (currentContent?.type !== 'text') {
+                currentContent = { type: 'text', text: '' };
+              }
+              currentContent.text += '\n\nLooks like there was a problem. Please try again.';
+              currentContent.text = currentContent.text.trim();
               newLastMessage.toolCalls = [];
+              newLastMessage.content = [...newLastMessage.content.slice(0, -1), currentContent];
               return [...prevMessages.slice(0, -1), newLastMessage];
             } else if (lastMessage?.role === 'user') {
               const newLastMessage: AIMessage = {
                 role: 'assistant',
-                content: 'Looks like there was a problem. Please try again.',
+                content: [{ type: 'text', text: 'Looks like there was a problem. Please try again.' }],
                 contextType: 'userPrompt',
                 toolCalls: [],
-                model,
+                model: getModelFromModelKey(modelKey),
               };
               return [...prevMessages, newLastMessage];
             }
@@ -164,7 +178,7 @@ export function useSubmitAIAssistantPrompt() {
         set(aiAssistantAbortControllerAtom, undefined);
         set(aiAssistantLoadingAtom, false);
       },
-    [handleAIRequestToAPI, getCurrentSheetContext, getVisibleContext, getCodeCellContext, model]
+    [handleAIRequestToAPI, getCurrentSheetContext, getVisibleContext, getCodeCellContext, modelKey]
   );
 
   return { submitPrompt };

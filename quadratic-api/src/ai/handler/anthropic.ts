@@ -1,40 +1,65 @@
+import type AnthropicBedrock from '@anthropic-ai/bedrock-sdk';
 import Anthropic from '@anthropic-ai/sdk';
+import type {
+  MessageCreateParamsNonStreaming,
+  MessageCreateParamsStreaming,
+  ThinkingConfigParam,
+} from '@anthropic-ai/sdk/resources';
 import type { Response } from 'express';
-import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
-import type { AIMessagePrompt, AIRequestHelperArgs, AnthropicModel } from 'quadratic-shared/typesAndSchemasAI';
-import { ANTHROPIC_API_KEY } from '../../env-vars';
+import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
+import type {
+  AIMessagePrompt,
+  AIRequestHelperArgs,
+  AnthropicModelKey,
+  BedrockAnthropicModelKey,
+} from 'quadratic-shared/typesAndSchemasAI';
 import { getAnthropicApiArgs, parseAnthropicResponse, parseAnthropicStream } from '../helpers/anthropic.helper';
 
-const anthropic = new Anthropic({
-  apiKey: ANTHROPIC_API_KEY,
-});
-
 export const handleAnthropicRequest = async (
-  model: AnthropicModel,
+  modelKey: BedrockAnthropicModelKey | AnthropicModelKey,
   args: AIRequestHelperArgs,
-  response: Response
+  response: Response,
+  anthropic: AnthropicBedrock | Anthropic
 ): Promise<AIMessagePrompt | undefined> => {
-  const { system, messages, tools, tool_choice } = getAnthropicApiArgs(args);
-  const { stream, temperature, max_tokens } = getModelOptions(model, args);
+  const model = getModelFromModelKey(modelKey);
+  const options = getModelOptions(modelKey, args);
+  const { system, messages, tools, tool_choice } = getAnthropicApiArgs(args, options.thinking);
 
-  if (stream) {
+  const thinking: ThinkingConfigParam = options.thinking
+    ? {
+        type: 'enabled',
+        budget_tokens: options.max_tokens * 0.75,
+      }
+    : {
+        type: 'disabled',
+      };
+
+  if (options.stream) {
     try {
-      const chunks = await anthropic.messages.create({
+      let apiArgs: MessageCreateParamsStreaming = {
         model,
         system,
         messages,
-        temperature,
-        max_tokens,
-        stream: true,
+        temperature: options.temperature,
+        max_tokens: options.max_tokens,
+        stream: options.stream,
         tools,
         tool_choice,
-      });
+      };
+      if (options.thinking !== undefined) {
+        apiArgs = {
+          ...apiArgs,
+          thinking,
+        };
+      }
+
+      const chunks = await anthropic.messages.create(apiArgs);
 
       response.setHeader('Content-Type', 'text/event-stream');
       response.setHeader('Cache-Control', 'no-cache');
       response.setHeader('Connection', 'keep-alive');
 
-      const responseMessage = await parseAnthropicStream(chunks, response, model);
+      const responseMessage = await parseAnthropicStream(chunks, response, modelKey);
       return responseMessage;
     } catch (error: any) {
       if (!response.headersSent) {
@@ -46,23 +71,31 @@ export const handleAnthropicRequest = async (
           console.log(error);
         }
       } else {
-        response.status(500).json('Error occurred after headers were sent');
         console.error('Error occurred after headers were sent:', error);
       }
     }
   } else {
     try {
-      const result = await anthropic.messages.create({
+      let apiArgs: MessageCreateParamsNonStreaming = {
         model,
         system,
         messages,
-        temperature,
-        max_tokens,
+        temperature: options.temperature,
+        max_tokens: options.max_tokens,
+        stream: options.stream,
         tools,
         tool_choice,
-      });
+      };
+      if (options.thinking !== undefined) {
+        apiArgs = {
+          ...apiArgs,
+          thinking,
+        };
+      }
 
-      const responseMessage = parseAnthropicResponse(result, response, model);
+      const result = await anthropic.messages.create(apiArgs);
+
+      const responseMessage = parseAnthropicResponse(result, response, modelKey);
       return responseMessage;
     } catch (error: any) {
       if (error instanceof Anthropic.APIError) {
