@@ -72,6 +72,10 @@ export class TableHeader extends Container {
     }
   }
 
+  updateSelection() {
+    this.columnHeaders.drawBackground();
+  }
+
   update(onlyGridLines: boolean) {
     if (this.table.codeCell.state === 'SpillError' || this.table.codeCell.state === 'RunError') {
       this.visible = false;

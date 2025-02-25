@@ -176,6 +176,7 @@ export class Tables extends Container<Table> {
       } else {
         table.hideActive();
       }
+      table.header.updateSelection();
     });
   };
 
