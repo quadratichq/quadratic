@@ -44,7 +44,7 @@ impl<T: Eq + Clone> RunLengthEncoding<T> {
     }
     pub fn iter_values(&self) -> impl Iterator<Item = &T> {
         self.iter_runs()
-            .flat_map(|(value, len)| std::iter::repeat(value).take(len))
+            .flat_map(|(value, len)| std::iter::repeat_n(value, len))
     }
     pub fn get_at(&self, i: usize) -> Option<&T> {
         self.iter_values().nth(i)
@@ -67,8 +67,9 @@ impl<T: Eq + Clone> FromIterator<T> for RunLengthEncoding<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use serial_test::parallel;
+
+    use super::*;
 
     #[test]
     #[parallel]

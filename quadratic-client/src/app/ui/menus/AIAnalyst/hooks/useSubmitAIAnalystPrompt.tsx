@@ -15,6 +15,7 @@ import {
 } from '@/app/atoms/aiAnalystAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import {
   AIMessage,
@@ -41,7 +42,7 @@ export function useSubmitAIAnalystPrompt() {
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
   const { getSelectionContext } = useSelectionContextMessages();
-  const [model] = useAIModel();
+  const [modelKey] = useAIModel();
 
   const updateInternalContext = useRecoilCallback(
     ({ set }) =>
@@ -135,7 +136,7 @@ export function useSubmitAIAnalystPrompt() {
           const response = await handleAIRequestToAPI({
             chatId,
             source: 'AIAnalyst',
-            model,
+            modelKey,
             messages: updatedMessages,
             useStream: true,
             useTools: true,
@@ -144,6 +145,7 @@ export function useSubmitAIAnalystPrompt() {
             useQuadraticContext: true,
             setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
             signal: abortController.signal,
+            thinking: true,
           });
           let toolCalls: AIMessagePrompt['toolCalls'] = response.toolCalls;
 
@@ -185,7 +187,7 @@ export function useSubmitAIAnalystPrompt() {
             const response = await handleAIRequestToAPI({
               chatId,
               source: 'AIAnalyst',
-              model,
+              modelKey,
               messages: updatedMessages,
               useStream: true,
               useTools: true,
@@ -194,6 +196,7 @@ export function useSubmitAIAnalystPrompt() {
               useQuadraticContext: true,
               setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
               signal: abortController.signal,
+              thinking: true,
             });
             toolCalls = response.toolCalls;
           }
@@ -201,10 +204,10 @@ export function useSubmitAIAnalystPrompt() {
           set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {
             const aiMessage: AIMessage = {
               role: 'assistant',
-              content: 'Looks like there was a problem. Please try again.',
+              content: [{ type: 'text', text: 'Looks like there was a problem. Please try again.' }],
               contextType: 'userPrompt',
               toolCalls: [],
-              model,
+              model: getModelFromModelKey(modelKey),
             };
 
             const lastMessage = prevMessages.at(-1);
@@ -220,7 +223,7 @@ export function useSubmitAIAnalystPrompt() {
         set(aiAnalystAbortControllerAtom, undefined);
         set(aiAnalystLoadingAtom, false);
       },
-    [handleAIRequestToAPI, model]
+    [handleAIRequestToAPI, modelKey]
   );
 
   return { submitPrompt };

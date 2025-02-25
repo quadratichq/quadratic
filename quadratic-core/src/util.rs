@@ -163,7 +163,7 @@ pub fn unused_name(prefix: &str, already_used: &[&str]) -> String {
         .iter()
         .filter_map(|s| s.strip_prefix(prefix)?.trim().parse().ok())
         .sorted()
-        .last();
+        .next_back();
 
     // Find the last number
     let i = match last_number {
@@ -246,8 +246,9 @@ pub(crate) fn assert_f64_approx_eq(expected: f64, actual: f64, message: &str) {
 }
 #[cfg(test)]
 mod tests {
-    use super::*;
     use serial_test::parallel;
+
+    use super::*;
 
     #[test]
     #[parallel]

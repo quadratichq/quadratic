@@ -1,4 +1,5 @@
-use std::{fmt, num::NonZeroU32};
+use std::fmt;
+use std::num::NonZeroU32;
 
 use anyhow::Result;
 use bigdecimal::BigDecimal;
@@ -8,10 +9,9 @@ use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
 use super::{ArraySize, Axis, CellValue, Spanned, Value};
-use crate::{
-    controller::operations::operation::Operation, grid::Sheet, CodeResult, Pos, RunError,
-    RunErrorMsg, Span,
-};
+use crate::controller::operations::operation::Operation;
+use crate::grid::Sheet;
+use crate::{CodeResult, Pos, RunError, RunErrorMsg, Span};
 
 #[macro_export]
 macro_rules! array {
@@ -132,10 +132,10 @@ impl Array {
     }
     /// Constructs an array of random float values.
     pub fn from_random_floats(size: ArraySize) -> Self {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let values = std::iter::from_fn(|| {
             Some(CellValue::Number(BigDecimal::from(
-                &rng.gen_range(-100..=100),
+                &rng.random_range(-100..=100),
             )))
         })
         .take(size.len())

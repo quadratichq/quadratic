@@ -1,29 +1,31 @@
 import { type Response } from 'express';
 import OpenAI from 'openai';
-import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
-import type { AIMessagePrompt, AIRequestHelperArgs, OpenAIModel } from 'quadratic-shared/typesAndSchemasAI';
-import { OPENAI_API_KEY } from '../../env-vars';
+import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
+import type {
+  AIMessagePrompt,
+  AIRequestHelperArgs,
+  OpenAIModelKey,
+  XAIModelKey,
+} from 'quadratic-shared/typesAndSchemasAI';
 import { getOpenAIApiArgs, parseOpenAIResponse, parseOpenAIStream } from '../helpers/openai.helper';
 
-const openai = new OpenAI({
-  apiKey: OPENAI_API_KEY || '',
-});
-
 export const handleOpenAIRequest = async (
-  model: OpenAIModel,
+  modelKey: OpenAIModelKey | XAIModelKey,
   args: AIRequestHelperArgs,
-  response: Response
+  response: Response,
+  openai: OpenAI
 ): Promise<AIMessagePrompt | undefined> => {
-  const { messages, tools, tool_choice } = getOpenAIApiArgs(args);
-  const { stream, temperature } = getModelOptions(model, args);
+  const model = getModelFromModelKey(modelKey);
+  const options = getModelOptions(modelKey, args);
+  const { messages, tools, tool_choice } = getOpenAIApiArgs(args, options.strickParams);
 
-  if (stream) {
+  if (options.stream) {
     try {
       const completion = await openai.chat.completions.create({
         model,
         messages,
-        temperature,
-        stream: true,
+        temperature: options.temperature,
+        stream: options.stream,
         tools,
         tool_choice,
       });
@@ -32,7 +34,7 @@ export const handleOpenAIRequest = async (
       response.setHeader('Cache-Control', 'no-cache');
       response.setHeader('Connection', 'keep-alive');
 
-      const responseMessage = await parseOpenAIStream(completion, response, model);
+      const responseMessage = await parseOpenAIStream(completion, response, modelKey);
       return responseMessage;
     } catch (error: any) {
       if (!response.headersSent) {
@@ -52,11 +54,12 @@ export const handleOpenAIRequest = async (
       const result = await openai.chat.completions.create({
         model,
         messages,
-        temperature,
+        temperature: options.temperature,
+        stream: options.stream,
         tools,
         tool_choice,
       });
-      const responseMessage = parseOpenAIResponse(result, response, model);
+      const responseMessage = parseOpenAIResponse(result, response, modelKey);
       return responseMessage;
     } catch (error: any) {
       if (error instanceof OpenAI.APIError) {

@@ -37,7 +37,9 @@ export const CodeEditor = () => {
 
       {showCodeEditor && (
         <div className="relative flex h-full flex-col">
-          <CodeEditorHeader editorInst={editorInst} />
+          {/* hack required for correct height calculation */}
+          {codeEditorPanelData.panelPosition === 'left' && <CodeEditorHeader editorInst={editorInst} />}
+
           <div
             ref={codeEditorRef}
             className={cn(
@@ -73,6 +75,9 @@ export const CodeEditor = () => {
                 multiplayer.sendMouseMove();
               }}
             >
+              {/* hack required for correct height calculation */}
+              {codeEditorPanelData.panelPosition !== 'left' && <CodeEditorHeader editorInst={editorInst} />}
+
               <SaveChangesAlert editorInst={editorInst} />
               <CodeEditorDiffButtons />
               <CodeEditorBody editorInst={editorInst} setEditorInst={setEditorInst} />

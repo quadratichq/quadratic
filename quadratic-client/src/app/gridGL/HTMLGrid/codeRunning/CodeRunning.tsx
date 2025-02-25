@@ -138,6 +138,7 @@ export const CodeRunning = () => {
         .map((code, index) => {
           return (
             <span
+              key={`${code.sheetId}-${code.left}-${code.top}-${index}`}
               className="-translate-x-[2px] -translate-y-[4px] scale-75"
               style={{ position: 'absolute', left: code.left, top: code.top }}
             >
