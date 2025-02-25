@@ -1,3 +1,4 @@
+import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import {
   aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
@@ -5,7 +6,7 @@ import {
   aiAnalystLoadingAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateSettingsAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { debug, debugShowAIInternalContext } from '@/app/debugFlags';
+import { debugShowAIInternalContext } from '@/app/debugFlags';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
 import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
@@ -25,6 +26,7 @@ type AIAnalystMessagesProps = {
 };
 
 export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
+  const [, , config] = useAIModel();
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
@@ -136,13 +138,16 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
                 {message.content && Array.isArray(message.content) ? (
                   message.content
                     // Filter out redacted thinking, these are hash values not human readable
-                    .filter(({ type }) => type !== 'anthropic_redacted_thinking')
+                    .filter(({ type }) => type === 'text' || (type === 'anthropic_thinking' && !!config.thinking))
                     .map(({ type, text }) => (
                       <div
                         key={text}
-                        // For distinguishing between thinking and actual content in debug mode
-                        className={`${debug && type === 'anthropic_thinking' ? 'rounded-md bg-gray-100 p-2' : ''}`}
+                        // For distinguishing between thinking and chat content
+                        className={`${type === 'anthropic_thinking' ? 'rounded-md bg-accent p-2' : ''}`}
                       >
+                        {type === 'anthropic_thinking' && (
+                          <span className="text-xs text-muted-foreground">Thinking...</span>
+                        )}
                         <Markdown>{text}</Markdown>
                       </div>
                     ))
