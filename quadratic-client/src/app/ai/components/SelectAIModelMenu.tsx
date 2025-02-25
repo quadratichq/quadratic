@@ -21,7 +21,7 @@ export function SelectAIModelMenu({ loading, textAreaRef }: SelectAIModelMenuPro
   const [selectedModel, setSelectedModel, selectedModelConfig] = useAIModel();
 
   const modelConfigs = useMemo(() => {
-    const configs = Object.values(MODELS_CONFIGURATION);
+    const configs = Object.entries(MODELS_CONFIGURATION);
 
     // enable all models in debug mode
     if (debug) {
@@ -29,7 +29,7 @@ export function SelectAIModelMenu({ loading, textAreaRef }: SelectAIModelMenuPro
     }
 
     // only show enabled models in production
-    return configs.filter((config) => config.enabled);
+    return configs.filter(([_, config]) => config.enabled);
   }, []);
 
   return (
@@ -50,16 +50,16 @@ export function SelectAIModelMenu({ loading, textAreaRef }: SelectAIModelMenuPro
           textAreaRef.current?.focus();
         }}
       >
-        {modelConfigs.map((modelConfig) => {
+        {modelConfigs.map(([key, modelConfig]) => {
           const { model, displayName, provider } = modelConfig;
 
           return (
             <DropdownMenuCheckboxItem
-              key={model}
-              checked={selectedModel === model}
+              key={key}
+              checked={selectedModel === key}
               onCheckedChange={() => {
-                mixpanel.track('[AI].model.change', { model: MODELS_CONFIGURATION[model].model });
-                setSelectedModel(model);
+                mixpanel.track('[AI].model.change', { model });
+                setSelectedModel(key);
               }}
             >
               <div className="flex w-full items-center justify-between text-xs">
