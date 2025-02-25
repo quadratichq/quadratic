@@ -290,17 +290,19 @@ export class q {
         });
       });
 
+      // always return a single cell as a single value--even in cases where the
+      // selection may change.
+      if (cells.length === 1 && cells[0].length === 1) {
+        return cells[0][0];
+      }
+
       // Convert to two dimensional if a single row or column and not
       // two-dimensional set. Two dimensional is set when there is an unbounded
       // range that may result in more than two columns or rows--eg, "B:" even
       // where there is only content in the B-column.
       if (!results.two_dimensional) {
-        if (cells.length === 1 && cells[0].length === 1) {
-          return cells[0][0];
-        }
-
         // one column result
-        else if (cells.every((row) => row.length === 1)) {
+        if (cells.every((row) => row.length === 1)) {
           return cells.map((row) => row[0]);
         }
 
