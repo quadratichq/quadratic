@@ -80,14 +80,18 @@ export const PixiRename = (props: Props) => {
   useEffect(() => {
     return () => {
       if (!skipSaveRef.current) {
-        if (inputEl && inputEl.value !== defaultValue && validate(inputEl.value)) {
-          onSave(inputEl.value);
+        if (inputEl) {
+          if (inputEl.value !== defaultValue && validate(inputEl.value)) {
+            onSave(inputEl.value);
+          } else {
+            close();
+          }
         }
       } else {
         skipSaveRef.current = false;
       }
     };
-  }, [defaultValue, inputEl, onSave, validate]);
+  }, [close, defaultValue, inputEl, onSave, validate]);
 
   return (
     <Input
