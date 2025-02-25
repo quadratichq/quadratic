@@ -5,7 +5,7 @@ import {
   aiAnalystLoadingAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateSettingsAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { debugShowAIInternalContext } from '@/app/debugFlags';
+import { debug, debugShowAIInternalContext } from '@/app/debugFlags';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
 import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
@@ -135,8 +135,17 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
               <>
                 {message.content && Array.isArray(message.content) ? (
                   message.content
-                    .filter(({ type }) => type !== 'redacted_thinking')
-                    .map(({ text }) => <Markdown key={text}>{text}</Markdown>)
+                    // Filter out redacted thinking, these are hash values not human readable
+                    .filter(({ type }) => type !== 'anthropic_redacted_thinking')
+                    .map(({ type, text }) => (
+                      <div
+                        key={text}
+                        // For distinguishing between thinking and actual content in debug mode
+                        className={`${debug && type === 'anthropic_thinking' ? 'rounded-md bg-gray-100 p-2' : ''}`}
+                      >
+                        <Markdown>{text}</Markdown>
+                      </div>
+                    ))
                 ) : (
                   <Markdown key={message.content}>{message.content}</Markdown>
                 )}

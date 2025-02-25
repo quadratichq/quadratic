@@ -196,6 +196,8 @@ export async function parseOpenAIStream(
     }
   }
 
+  responseMessage.content = responseMessage.content.filter((content) => content.text !== '');
+
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
     responseMessage.content.push({
       type: 'text',

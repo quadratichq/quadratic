@@ -148,7 +148,7 @@ const AIMessageInternalSchema = z.object({
 
 const ContentSchema = z.preprocess(
   (val) => {
-    // convert single string to array with text object
+    // old chat messages are single strings, being migrated to array of text objects
     if (typeof val === 'string') {
       return val
         .split('\n')
@@ -167,14 +167,14 @@ const ContentSchema = z.preprocess(
       })
       .or(
         z.object({
-          type: z.literal('thinking'),
+          type: z.literal('anthropic_thinking'),
           text: z.string(),
           signature: z.string(),
         })
       )
       .or(
         z.object({
-          type: z.literal('redacted_thinking'),
+          type: z.literal('anthropic_redacted_thinking'),
           text: z.string(),
         })
       )

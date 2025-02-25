@@ -47,13 +47,13 @@ export function getAnthropicApiArgs(
           ...message.content
             .filter((content) => content.text && (!!thinking || content.type === 'text'))
             .map((content) => {
-              if (content.type === 'thinking') {
+              if (content.type === 'anthropic_thinking') {
                 return {
                   type: 'thinking' as const,
                   thinking: content.text,
                   signature: content.signature,
                 };
-              } else if (content.type === 'redacted_thinking') {
+              } else if (content.type === 'anthropic_redacted_thinking') {
                 return {
                   type: 'redacted_thinking' as const,
                   data: content.text,
@@ -173,7 +173,7 @@ export async function parseAnthropicStream(
           });
         } else if (chunk.content_block.type === 'thinking') {
           responseMessage.content.push({
-            type: 'thinking',
+            type: 'anthropic_thinking',
             text: chunk.content_block.thinking ?? '',
             signature: chunk.content_block.signature ?? '',
           });
@@ -183,7 +183,7 @@ export async function parseAnthropicStream(
           });
         } else if (chunk.content_block.type === 'redacted_thinking') {
           responseMessage.content.push({
-            type: 'redacted_thinking',
+            type: 'anthropic_redacted_thinking',
             text: chunk.content_block.data ?? '',
           });
 
@@ -218,12 +218,12 @@ export async function parseAnthropicStream(
           responseMessage.toolCalls.push(toolCall);
         } else if (chunk.delta.type === 'thinking_delta') {
           let currentContent = responseMessage.content.pop();
-          if (currentContent?.type !== 'thinking') {
+          if (currentContent?.type !== 'anthropic_thinking') {
             if (currentContent?.text) {
               responseMessage.content.push(currentContent);
             }
             currentContent = {
-              type: 'thinking',
+              type: 'anthropic_thinking',
               text: '',
               signature: '',
             };
@@ -232,17 +232,17 @@ export async function parseAnthropicStream(
           responseMessage.content.push(currentContent);
         } else if (chunk.delta.type === 'signature_delta') {
           let currentContent = responseMessage.content.pop();
-          if (currentContent?.type !== 'thinking') {
+          if (currentContent?.type !== 'anthropic_thinking') {
             if (currentContent?.text) {
               responseMessage.content.push(currentContent);
             }
             currentContent = {
-              type: 'thinking',
+              type: 'anthropic_thinking',
               text: '',
               signature: '',
             };
           }
-          if (currentContent.type === 'thinking') {
+          if (currentContent.type === 'anthropic_thinking') {
             currentContent.signature += chunk.delta.signature ?? '';
           }
           responseMessage.content.push(currentContent);
@@ -315,14 +315,14 @@ export function parseAnthropicResponse(
         break;
       case 'thinking':
         responseMessage.content.push({
-          type: 'thinking',
+          type: 'anthropic_thinking',
           text: message.thinking ?? '',
           signature: message.signature ?? '',
         });
         break;
       case 'redacted_thinking':
         responseMessage.content.push({
-          type: 'redacted_thinking',
+          type: 'anthropic_redacted_thinking',
           text: message.data ?? '',
         });
         break;
