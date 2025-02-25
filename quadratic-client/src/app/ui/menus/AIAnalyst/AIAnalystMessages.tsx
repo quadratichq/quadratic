@@ -133,7 +133,11 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
               )
             ) : (
               <>
-                {message.content && <Markdown key={message.content}>{message.content}</Markdown>}
+                {message.content && Array.isArray(message.content) ? (
+                  message.content.map(({ text }) => <Markdown key={text}>{text}</Markdown>)
+                ) : (
+                  <Markdown key={message.content}>{message.content}</Markdown>
+                )}
 
                 {message.contextType === 'userPrompt' &&
                   message.toolCalls.map((toolCall) => (

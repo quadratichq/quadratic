@@ -47,10 +47,10 @@ describe('aiAnalystOfflineChats', () => {
           { role: 'user', content: 'test2', contextType: 'userPrompt', context: defaultAIAnalystContext },
           {
             role: 'assistant',
-            content: 'response2',
+            content: [{ type: 'text', text: 'response2' }],
             contextType: 'userPrompt',
             toolCalls: [],
-            model: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
+            model: 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
           },
         ],
       },
@@ -68,7 +68,7 @@ describe('aiAnalystOfflineChats', () => {
     expect(testChat1?.messages.length).toBe(0); // Only userPrompt messages are stored
     expect(testChat2?.name).toBe('Chat 2');
     expect(testChat2?.messages[0].content).toBe('test2');
-    expect(testChat2?.messages[1].content).toBe('response2');
+    expect(testChat2?.messages[1].content).toEqual([{ type: 'text', text: 'response2' }]);
   });
 
   it('deletes chats', async () => {
