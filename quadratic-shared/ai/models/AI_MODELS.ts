@@ -45,7 +45,7 @@ export const MODELS_CONFIGURATION: {
   },
   'anthropic:claude-3-7-sonnet-20250219:thinking': {
     model: 'claude-3-7-sonnet-20250219',
-    displayName: 'claude 3.7 sonnet (thinking)',
+    displayName: 'claude 3.7 sonnet thinking',
     temperature: 0,
     max_tokens: 16000,
     canStream: true,
@@ -87,7 +87,7 @@ export const MODELS_CONFIGURATION: {
   },
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking': {
     model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-    displayName: `claude 3.7 sonnet (thinking)`,
+    displayName: `claude 3.7 sonnet thinking`,
     temperature: 0,
     max_tokens: 16000,
     canStream: true,
