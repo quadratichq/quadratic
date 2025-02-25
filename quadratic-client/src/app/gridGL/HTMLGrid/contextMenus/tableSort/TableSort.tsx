@@ -107,8 +107,12 @@ export const TableSort = () => {
         const newSort = [...prev.filter((item) => item.column_index !== -1)];
 
         if (columnIndex === -1) {
-          newSort.splice(index, 1);
+          // If no column selected, remove the entry at the specified index
+          if (index >= 0 && index < newSort.length) {
+            newSort.splice(index, 1);
+          }
         } else {
+          // Add new entry at the end if index is -1, otherwise update existing
           if (index === -1) {
             newSort.push({ column_index: columnIndex, direction });
           } else {
@@ -126,9 +130,9 @@ export const TableSort = () => {
   );
 
   const handleDelete = useCallback(
-    (index: number) => {
+    (columnIndex: number) => {
       setSort((prev) => {
-        const sort = prev.filter((_, i) => i !== index);
+        const sort = prev.filter((entry) => entry.column_index !== columnIndex);
         if (
           sort.length !== contextMenu.table?.columns.length &&
           sort.length &&
@@ -142,9 +146,11 @@ export const TableSort = () => {
     [contextMenu.table?.columns.length]
   );
 
-  const handleReorder = useCallback((index: number, direction: 'up' | 'down') => {
+  const handleReorder = useCallback((columnIndex: number, direction: 'up' | 'down') => {
     setSort((prev) => {
-      const sort = [...prev];
+      const index = prev.findIndex((entry) => entry.column_index === columnIndex);
+      if (index === -1) return prev;
+      let sort = [...prev];
       sort.splice(index, 1);
       sort.splice(index + (direction === 'up' ? -1 : 1), 0, prev[index]);
       return sort;
@@ -184,6 +190,7 @@ export const TableSort = () => {
           return (
             <TableSortEntry
               index={index}
+              columnIndex={entry.column_index}
               key={name}
               direction={entry.direction}
               name={name}

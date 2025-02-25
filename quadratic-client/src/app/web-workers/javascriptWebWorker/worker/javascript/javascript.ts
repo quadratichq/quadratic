@@ -153,7 +153,8 @@ export class Javascript {
             const int32View = new Int32Array(sharedBuffer, 0, 3);
             if (results) {
               const cellsString = JSON.stringify(results);
-              const length = cellsString.length;
+              const encoder = new TextEncoder();
+              const length = encoder.encode(cellsString).length;
               Atomics.store(int32View, 1, length);
               const id = this.id++;
               this.getCellsResponses[id] = cellsString;

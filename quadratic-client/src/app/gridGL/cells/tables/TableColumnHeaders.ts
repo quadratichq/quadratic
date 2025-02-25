@@ -63,21 +63,19 @@ export class TableColumnHeaders extends Container {
       this.background.moveTo(this.table.tableBounds.width, 0);
       this.background.lineTo(this.table.tableBounds.width, this.headerHeight);
     }
-    if (this.table.inOverHeadings) {
-      const columnsSelected = this.table.sheet.cursor.getTableColumnSelection(this.table.codeCell.name);
-      if (columnsSelected) {
-        const startX = this.table.sheet.offsets.getColumnPlacement(
-          this.table.codeCell.x + columnsSelected[0]
-        )?.position;
-        const end = this.table.sheet.offsets.getColumnPlacement(
-          this.table.codeCell.x + columnsSelected[columnsSelected.length - 1]
-        );
-        const endX = end.position + end.size;
-        this.background.lineStyle();
-        this.background.beginFill(pixiApp.accentColor, FILL_SELECTION_ALPHA);
-        this.background.drawRect(startX, 0, endX - startX, this.headerHeight);
-        this.background.endFill();
-      }
+
+    // draws selection background
+    const columnsSelected = this.table.sheet.cursor.getTableColumnSelection(this.table.codeCell.name);
+    if (columnsSelected) {
+      const startX = this.table.sheet.offsets.getColumnPlacement(this.table.codeCell.x + columnsSelected[0])?.position;
+      const end = this.table.sheet.offsets.getColumnPlacement(
+        this.table.codeCell.x + columnsSelected[columnsSelected.length - 1]
+      );
+      const endX = end.position + end.size;
+      this.background.lineStyle();
+      this.background.beginFill(pixiApp.accentColor, FILL_SELECTION_ALPHA);
+      this.background.drawRect(startX - this.table.tableBounds.x, 0, endX - startX, this.headerHeight);
+      this.background.endFill();
     }
 
     this.background.lineStyle({

@@ -262,7 +262,7 @@ mod tests {
     #[test]
     fn test_cell_ref_coord_ordering() {
         // sort primarily by number; abs vs. rel doesn't actually matter
-        let sorted = vec![
+        let sorted = [
             CellRefCoord::new_rel(1),
             CellRefCoord::new_abs(1),
             CellRefCoord::new_rel(2),
@@ -270,6 +270,6 @@ mod tests {
             CellRefCoord::new_rel(3),
             CellRefCoord::new_abs(3),
         ];
-        assert!(sorted.is_sorted())
+        assert!(sorted.is_sorted());
     }
 }

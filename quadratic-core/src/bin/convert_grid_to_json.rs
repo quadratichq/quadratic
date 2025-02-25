@@ -8,7 +8,6 @@ use quadratic_core::grid::file::{export_json, import};
 /// Usage: `convert_grid_to_json <path_to_grid_file>`
 ///
 /// This will read the grid file at `<path_to_grid_file>`, convert it to JSON, and write the JSON to `<path_to_grid_file>.json`
-
 fn main() {
     let args: Vec<String> = env::args().collect();
     let path = args.get(1).expect("missing path");

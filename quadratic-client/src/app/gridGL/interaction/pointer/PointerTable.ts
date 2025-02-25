@@ -95,15 +95,31 @@ export class PointerTable {
       throw new Error('Expected column to be defined in pointerTable');
     }
     if (this.doubleClickTimeout) {
-      events.emit('contextMenu', {
-        type: ContextMenuType.TableColumn,
-        world,
-        column: tableDown.table.x,
-        row: tableDown.table.y,
-        table: tableDown.table,
-        rename: true,
-        selectedColumn: tableDown.column,
-      });
+      if (tableDown.table.language === 'Import') {
+        events.emit('contextMenu', {
+          type: ContextMenuType.TableColumn,
+          world,
+          column: tableDown.table.x,
+          row: tableDown.table.y,
+          table: tableDown.table,
+          rename: true,
+          selectedColumn: tableDown.column,
+        });
+      } else {
+        pixiAppSettings.setCodeEditorState?.((prev) => ({
+          ...prev,
+          diffEditorContent: undefined,
+          waitingForEditorClose: {
+            codeCell: {
+              sheetId: sheets.current,
+              pos: { x: tableDown.table.x, y: tableDown.table.y },
+              language: tableDown.table.language,
+            },
+            showCellTypeMenu: false,
+            initialCode: '',
+          },
+        }));
+      }
     } else {
       // move cursor to column header
       if (await inlineEditorHandler.handleCellPointerDown()) {
@@ -113,11 +129,9 @@ export class PointerTable {
         inlineEditorMonaco.focus();
       }
 
-      if (!tableDown.table.language || tableDown.table.language === 'Import') {
-        this.doubleClickTimeout = window.setTimeout(() => {
-          this.doubleClickTimeout = undefined;
-        }, DOUBLE_CLICK_TIME);
-      }
+      this.doubleClickTimeout = window.setTimeout(() => {
+        this.doubleClickTimeout = undefined;
+      }, DOUBLE_CLICK_TIME);
     }
   };
 

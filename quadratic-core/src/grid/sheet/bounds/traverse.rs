@@ -56,12 +56,10 @@ impl Sheet {
                 return Some(
                     x + if with_content {
                         0
+                    } else if reverse {
+                        -1
                     } else {
-                        if reverse {
-                            -1
-                        } else {
-                            1
-                        }
+                        1
                     },
                 );
             }
@@ -137,12 +135,10 @@ impl Sheet {
                 return Some(
                     y + if with_content {
                         0
+                    } else if reverse {
+                        -1
                     } else {
-                        if reverse {
-                            -1
-                        } else {
-                            1
-                        }
+                        1
                     },
                 );
             }
