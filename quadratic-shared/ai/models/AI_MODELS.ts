@@ -1,11 +1,11 @@
 import type { ModelConfig, ModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
-export const DEFAULT_MODEL: ModelKey = 'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0';
+export const DEFAULT_MODEL: ModelKey = 'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0';
 
 export const DEFAULT_GET_CHAT_NAME_MODEL: ModelKey = 'bedrock-anthropic:us.anthropic.claude-3-5-haiku-20241022-v1:0';
 
 // updating this will force the model to be reset to the default model in local storage
-export const DEFAULT_MODEL_VERSION = 3;
+export const DEFAULT_MODEL_VERSION = 4;
 
 export const MODELS_CONFIGURATION: {
   [key in ModelKey]: ModelConfig;
