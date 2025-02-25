@@ -1,36 +1,36 @@
-import { DEFAULT_MODEL, MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
+import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type {
-  AIModel,
   AIRequestBody,
-  AnthropicModel,
-  BedrockAnthropicModel,
-  BedrockModel,
-  OpenAIModel,
-  XAIModel,
+  AnthropicModelKey,
+  BedrockAnthropicModelKey,
+  BedrockModelKey,
+  ModelKey,
+  OpenAIModelKey,
+  XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 
-export function isBedrockModel(model: AIModel): model is BedrockModel {
-  return Object.values(MODELS_CONFIGURATION).find((config) => config.model === model)?.provider === 'bedrock';
+export function isBedrockModel(modelKey: ModelKey): modelKey is BedrockModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'bedrock';
 }
 
-export function isBedrockAnthropicModel(model: AIModel): model is BedrockAnthropicModel {
-  return Object.values(MODELS_CONFIGURATION).find((config) => config.model === model)?.provider === 'bedrock-anthropic';
+export function isBedrockAnthropicModel(modelKey: ModelKey): modelKey is BedrockAnthropicModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'bedrock-anthropic';
 }
 
-export function isAnthropicModel(model: AIModel): model is AnthropicModel {
-  return Object.values(MODELS_CONFIGURATION).find((config) => config.model === model)?.provider === 'anthropic';
+export function isAnthropicModel(modelKey: ModelKey): modelKey is AnthropicModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'anthropic';
 }
 
-export function isXAIModel(model: AIModel): model is XAIModel {
-  return Object.values(MODELS_CONFIGURATION).find((config) => config.model === model)?.provider === 'xai';
+export function isXAIModel(modelKey: ModelKey): modelKey is XAIModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'xai';
 }
 
-export function isOpenAIModel(model: AIModel): model is OpenAIModel {
-  return Object.values(MODELS_CONFIGURATION).find((config) => config.model === model)?.provider === 'openai';
+export function isOpenAIModel(modelKey: ModelKey): modelKey is OpenAIModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'openai';
 }
 
 export const getModelOptions = (
-  model: AIModel,
+  modelKey: ModelKey,
   args: Pick<AIRequestBody, 'useTools' | 'useStream' | 'thinking'>
 ): {
   stream: boolean;
@@ -39,12 +39,7 @@ export const getModelOptions = (
   thinking?: boolean;
   strickParams: boolean;
 } => {
-  const config =
-    Object.values(MODELS_CONFIGURATION).find((config) => config.model === model) ?? MODELS_CONFIGURATION[DEFAULT_MODEL];
-  if (!config) {
-    throw new Error(`Model ${model} not found`);
-  }
-
+  const config = MODELS_CONFIGURATION[modelKey];
   const { canStream, canStreamWithToolCalls, max_tokens } = config;
 
   const { useTools, useStream } = args;

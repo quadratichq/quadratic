@@ -2,22 +2,23 @@ import type { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime';
 import { ConverseCommand, ConverseStreamCommand } from '@aws-sdk/client-bedrock-runtime';
 import { type Response } from 'express';
 import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
-import type { AIMessagePrompt, AIRequestBody, BedrockModel } from 'quadratic-shared/typesAndSchemasAI';
+import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
+import type { AIMessagePrompt, AIRequestHelperArgs, BedrockModelKey } from 'quadratic-shared/typesAndSchemasAI';
 import { getBedrockApiArgs, parseBedrockResponse, parseBedrockStream } from '../helpers/bedrock.helper';
 
 export const handleBedrockRequest = async (
-  model: BedrockModel,
-  args: Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'source' | 'model'>,
+  modelKey: BedrockModelKey,
+  args: AIRequestHelperArgs,
   response: Response,
   bedrock: BedrockRuntimeClient
 ): Promise<AIMessagePrompt | undefined> => {
-  const options = getModelOptions(model, args);
+  const options = getModelOptions(modelKey, args);
   const { system, messages, tools, tool_choice } = getBedrockApiArgs(args);
 
   if (options.stream) {
     try {
       const command = new ConverseStreamCommand({
-        modelId: model,
+        modelId: MODELS_CONFIGURATION[modelKey].model,
         system,
         messages,
         inferenceConfig: { maxTokens: options.max_tokens, temperature: options.temperature },
@@ -34,7 +35,7 @@ export const handleBedrockRequest = async (
       response.setHeader('Cache-Control', 'no-cache');
       response.setHeader('Connection', 'keep-alive');
 
-      const responseMessage = await parseBedrockStream(chunks, response, model);
+      const responseMessage = await parseBedrockStream(chunks, response, modelKey);
       return responseMessage;
     } catch (error: any) {
       if (!response.headersSent) {
@@ -52,7 +53,7 @@ export const handleBedrockRequest = async (
   } else {
     try {
       const command = new ConverseCommand({
-        modelId: model,
+        modelId: MODELS_CONFIGURATION[modelKey].model,
         system,
         messages,
         inferenceConfig: { maxTokens: options.max_tokens, temperature: options.temperature },
@@ -64,7 +65,7 @@ export const handleBedrockRequest = async (
       });
 
       const result = await bedrock.send(command);
-      const responseMessage = parseBedrockResponse(result.output, response, model);
+      const responseMessage = parseBedrockResponse(result.output, response, modelKey);
       return responseMessage;
     } catch (error: any) {
       if (error.response) {

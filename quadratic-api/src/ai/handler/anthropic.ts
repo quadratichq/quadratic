@@ -7,21 +7,22 @@ import type {
 } from '@anthropic-ai/sdk/resources';
 import type { Response } from 'express';
 import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
+import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type {
   AIMessagePrompt,
   AIRequestHelperArgs,
-  AnthropicModel,
-  BedrockAnthropicModel,
+  AnthropicModelKey,
+  BedrockAnthropicModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { getAnthropicApiArgs, parseAnthropicResponse, parseAnthropicStream } from '../helpers/anthropic.helper';
 
 export const handleAnthropicRequest = async (
-  model: BedrockAnthropicModel | AnthropicModel,
+  modelKey: BedrockAnthropicModelKey | AnthropicModelKey,
   args: AIRequestHelperArgs,
   response: Response,
   anthropic: AnthropicBedrock | Anthropic
 ): Promise<AIMessagePrompt | undefined> => {
-  const options = getModelOptions(model, args);
+  const options = getModelOptions(modelKey, args);
   const { system, messages, tools, tool_choice } = getAnthropicApiArgs(args, options.thinking);
 
   const thinking: ThinkingConfigParam = options.thinking
@@ -36,7 +37,7 @@ export const handleAnthropicRequest = async (
   if (options.stream) {
     try {
       let apiArgs: MessageCreateParamsStreaming = {
-        model,
+        model: MODELS_CONFIGURATION[modelKey].model,
         system,
         messages,
         temperature: options.temperature,
@@ -58,7 +59,7 @@ export const handleAnthropicRequest = async (
       response.setHeader('Cache-Control', 'no-cache');
       response.setHeader('Connection', 'keep-alive');
 
-      const responseMessage = await parseAnthropicStream(chunks, response, model);
+      const responseMessage = await parseAnthropicStream(chunks, response, modelKey);
       return responseMessage;
     } catch (error: any) {
       if (!response.headersSent) {
@@ -76,7 +77,7 @@ export const handleAnthropicRequest = async (
   } else {
     try {
       let apiArgs: MessageCreateParamsNonStreaming = {
-        model,
+        model: MODELS_CONFIGURATION[modelKey].model,
         system,
         messages,
         temperature: options.temperature,
@@ -94,7 +95,7 @@ export const handleAnthropicRequest = async (
 
       const result = await anthropic.messages.create(apiArgs);
 
-      const responseMessage = parseAnthropicResponse(result, response, model);
+      const responseMessage = parseAnthropicResponse(result, response, modelKey);
       return responseMessage;
     } catch (error: any) {
       if (error instanceof Anthropic.APIError) {

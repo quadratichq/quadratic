@@ -8,9 +8,10 @@ import {
 } from '@aws-sdk/client-bedrock-runtime';
 import type { Response } from 'express';
 import { getSystemPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { AIMessagePrompt, AIRequestHelperArgs, BedrockModel } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIMessagePrompt, AIRequestHelperArgs, BedrockModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
 export function getBedrockApiArgs(args: AIRequestHelperArgs): {
   system: SystemContentBlock[] | undefined;
@@ -120,14 +121,14 @@ function getBedrockToolChoice(useTools?: boolean, name?: AITool): ToolChoice | u
 export async function parseBedrockStream(
   chunks: AsyncIterable<ConverseStreamOutput> | never[],
   response: Response,
-  model: BedrockModel
+  modelKey: BedrockModelKey
 ) {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model,
+    model: MODELS_CONFIGURATION[modelKey].model,
   };
 
   for await (const chunk of chunks) {
@@ -207,14 +208,14 @@ export async function parseBedrockStream(
 export function parseBedrockResponse(
   result: ConverseOutput | undefined,
   response: Response,
-  model: BedrockModel
+  modelKey: BedrockModelKey
 ): AIMessagePrompt {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model,
+    model: MODELS_CONFIGURATION[modelKey].model,
   };
 
   result?.message?.content?.forEach((contentBlock) => {

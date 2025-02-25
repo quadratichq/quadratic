@@ -3,18 +3,18 @@ import type { MessageParam, TextBlockParam, Tool, ToolChoice } from '@anthropic-
 import type { Stream } from '@anthropic-ai/sdk/streaming';
 import type { Response } from 'express';
 import { getSystemPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
   AIMessagePrompt,
-  AIRequestBody,
-  AnthropicModel,
-  BedrockAnthropicModel,
-  XAIModel,
+  AIRequestHelperArgs,
+  AnthropicModelKey,
+  BedrockAnthropicModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 
 export function getAnthropicApiArgs(
-  args: Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'source' | 'model'>,
+  args: AIRequestHelperArgs,
   thinking: boolean | undefined
 ): {
   system: TextBlockParam[] | undefined;
@@ -142,14 +142,14 @@ function getAnthropicToolChoice(useTools?: boolean, name?: AITool): ToolChoice |
 export async function parseAnthropicStream(
   chunks: Stream<Anthropic.Messages.RawMessageStreamEvent>,
   response: Response,
-  model: BedrockAnthropicModel | AnthropicModel | XAIModel
+  modelKey: BedrockAnthropicModelKey | AnthropicModelKey
 ) {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model,
+    model: MODELS_CONFIGURATION[modelKey].model,
   };
 
   for await (const chunk of chunks) {
@@ -265,14 +265,14 @@ export async function parseAnthropicStream(
 export function parseAnthropicResponse(
   result: Anthropic.Messages.Message,
   response: Response,
-  model: BedrockAnthropicModel | AnthropicModel | XAIModel
+  modelKey: BedrockAnthropicModelKey | AnthropicModelKey
 ): AIMessagePrompt {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model,
+    model: MODELS_CONFIGURATION[modelKey].model,
   };
 
   result.content?.forEach((message) => {

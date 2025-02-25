@@ -10,6 +10,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { CaretDownIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
+import type { ModelConfig, ModelKey } from 'quadratic-shared/typesAndSchemasAI';
 import { useMemo } from 'react';
 
 interface SelectAIModelMenuProps {
@@ -21,7 +22,7 @@ export function SelectAIModelMenu({ loading, textAreaRef }: SelectAIModelMenuPro
   const [selectedModel, setSelectedModel, selectedModelConfig] = useAIModel();
 
   const modelConfigs = useMemo(() => {
-    const configs = Object.entries(MODELS_CONFIGURATION);
+    const configs = Object.entries(MODELS_CONFIGURATION) as [ModelKey, ModelConfig][];
 
     // enable all models in debug mode
     if (debug) {

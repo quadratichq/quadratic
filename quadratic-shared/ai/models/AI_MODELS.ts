@@ -1,15 +1,15 @@
-import type { ModelConfig } from 'quadratic-shared/typesAndSchemasAI';
+import type { ModelConfig, ModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
-export const DEFAULT_MODEL: keyof typeof MODELS_CONFIGURATION =
-  'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0';
+export const DEFAULT_MODEL: ModelKey = 'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0';
 
-export const DEFAULT_GET_CHAT_NAME_MODEL: keyof typeof MODELS_CONFIGURATION =
-  'bedrock-anthropic:us.anthropic.claude-3-5-haiku-20241022-v1:0';
+export const DEFAULT_GET_CHAT_NAME_MODEL: ModelKey = 'bedrock-anthropic:us.anthropic.claude-3-5-haiku-20241022-v1:0';
 
 // updating this will force the model to be reset to the default model in local storage
 export const DEFAULT_MODEL_VERSION = 3;
 
-export const MODELS_CONFIGURATION: Record<string, ModelConfig> = {
+export const MODELS_CONFIGURATION: {
+  [key in ModelKey]: ModelConfig;
+} = {
   'openai:gpt-4o-2024-11-20': {
     model: 'gpt-4o-2024-11-20',
     displayName: 'gpt-4o',

@@ -3,9 +3,15 @@ import type OpenAI from 'openai';
 import type { ChatCompletionMessageParam, ChatCompletionTool, ChatCompletionToolChoiceOption } from 'openai/resources';
 import type { Stream } from 'openai/streaming';
 import { getSystemPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { AIMessagePrompt, AIRequestHelperArgs, OpenAIModel, XAIModel } from 'quadratic-shared/typesAndSchemasAI';
+import type {
+  AIMessagePrompt,
+  AIRequestHelperArgs,
+  OpenAIModelKey,
+  XAIModelKey,
+} from 'quadratic-shared/typesAndSchemasAI';
 
 export function getOpenAIApiArgs(
   args: AIRequestHelperArgs,
@@ -111,14 +117,14 @@ function getOpenAIToolChoice(useTools?: boolean, name?: AITool): ChatCompletionT
 export async function parseOpenAIStream(
   chunks: Stream<OpenAI.Chat.Completions.ChatCompletionChunk>,
   response: Response,
-  model: OpenAIModel | XAIModel
+  modelKey: OpenAIModelKey | XAIModelKey
 ) {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model,
+    model: MODELS_CONFIGURATION[modelKey].model,
   };
 
   for await (const chunk of chunks) {
@@ -216,14 +222,14 @@ export async function parseOpenAIStream(
 export function parseOpenAIResponse(
   result: OpenAI.Chat.Completions.ChatCompletion,
   response: Response,
-  model: OpenAIModel | XAIModel
+  modelKey: OpenAIModelKey | XAIModelKey
 ): AIMessagePrompt {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model,
+    model: MODELS_CONFIGURATION[modelKey].model,
   };
 
   const message = result.choices[0].message;

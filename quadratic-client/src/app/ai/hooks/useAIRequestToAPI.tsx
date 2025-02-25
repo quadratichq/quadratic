@@ -2,6 +2,7 @@ import { editorInteractionStateFileUuidAtom } from '@/app/atoms/editorInteractio
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
+import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import {
   AIMessagePromptSchema,
   type AIMessagePrompt,
@@ -33,14 +34,14 @@ export function useAIRequestToAPI() {
           content: [],
           contextType: 'userPrompt',
           toolCalls: [],
-          model: args.model,
+          model: MODELS_CONFIGURATION[args.modelKey].model,
         };
         setMessages?.((prev) => [...prev, { ...responseMessage, content: [] }]);
-        const { model, useStream, useTools, thinking } = args;
+        const { modelKey, useStream, useTools, thinking } = args;
         const fileUuid = await snapshot.getPromise(editorInteractionStateFileUuidAtom);
 
         try {
-          const { stream } = getModelOptions(model, { useTools, useStream, thinking });
+          const { stream } = getModelOptions(modelKey, { useTools, useStream, thinking });
 
           const endpoint = `${apiClient.getApiUrl()}/v0/ai/chat`;
           const token = await authClient.getTokenOrRedirect();
@@ -63,7 +64,7 @@ export function useAIRequestToAPI() {
                 role: 'assistant',
                 content: [{ type: 'text', text: error }],
                 contextType: 'userPrompt',
-                model,
+                model: MODELS_CONFIGURATION[args.modelKey].model,
                 toolCalls: [],
               },
             ]);

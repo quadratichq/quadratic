@@ -6,15 +6,8 @@ const AIProvidersSchema = z
   .default('bedrock-anthropic');
 
 const BedrockModelSchema = z
-  .enum([
-    'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-    'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
-    'us.anthropic.claude-3-5-haiku-20241022-v1:0',
-    'us.meta.llama3-2-90b-instruct-v1:0',
-    'mistral.mistral-large-2407-v1:0',
-  ])
-  .default('us.anthropic.claude-3-5-sonnet-20241022-v2:0');
-export type BedrockModel = z.infer<typeof BedrockModelSchema>;
+  .enum(['us.meta.llama3-2-90b-instruct-v1:0', 'mistral.mistral-large-2407-v1:0'])
+  .default('us.meta.llama3-2-90b-instruct-v1:0');
 
 const BedrockAnthropicModelSchema = z
   .enum([
@@ -23,20 +16,16 @@ const BedrockAnthropicModelSchema = z
     'us.anthropic.claude-3-5-haiku-20241022-v1:0',
   ])
   .default('us.anthropic.claude-3-5-sonnet-20241022-v2:0');
-export type BedrockAnthropicModel = z.infer<typeof BedrockAnthropicModelSchema>;
 
 const AnthropicModelSchema = z
   .enum(['claude-3-7-sonnet-20250219', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022'])
   .default('claude-3-5-sonnet-20241022');
-export type AnthropicModel = z.infer<typeof AnthropicModelSchema>;
 
 const OpenAIModelSchema = z
   .enum(['gpt-4o-2024-11-20', 'o1-2024-12-17', 'o3-mini-2025-01-31'])
   .default('gpt-4o-2024-11-20');
-export type OpenAIModel = z.infer<typeof OpenAIModelSchema>;
 
 const XAIModelSchema = z.enum(['grok-2-1212', 'grok-beta']).default('grok-2-1212');
-export type XAIModel = z.infer<typeof XAIModelSchema>;
 
 const AIModelSchema = z.union([
   BedrockModelSchema,
@@ -45,7 +34,43 @@ const AIModelSchema = z.union([
   OpenAIModelSchema,
   XAIModelSchema,
 ]);
-export type AIModel = z.infer<typeof AIModelSchema>;
+
+const BedrockModelKeySchema = z.enum([
+  'bedrock:us.meta.llama3-2-90b-instruct-v1:0',
+  'bedrock:mistral.mistral-large-2407-v1:0',
+]);
+export type BedrockModelKey = z.infer<typeof BedrockModelKeySchema>;
+
+const BedrockAnthropicModelKeySchema = z.enum([
+  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking',
+  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0',
+  'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+  'bedrock-anthropic:us.anthropic.claude-3-5-haiku-20241022-v1:0',
+]);
+export type BedrockAnthropicModelKey = z.infer<typeof BedrockAnthropicModelKeySchema>;
+
+const AnthropicModelKeySchema = z.enum([
+  'anthropic:claude-3-7-sonnet-20250219:thinking',
+  'anthropic:claude-3-7-sonnet-20250219',
+  'anthropic:claude-3-5-sonnet-20241022',
+  'anthropic:claude-3-5-haiku-20241022',
+]);
+export type AnthropicModelKey = z.infer<typeof AnthropicModelKeySchema>;
+
+const OpenAIModelKeySchema = z.enum(['openai:gpt-4o-2024-11-20', 'openai:o1-2024-12-17', 'openai:o3-mini-2025-01-31']);
+export type OpenAIModelKey = z.infer<typeof OpenAIModelKeySchema>;
+
+const XAIModelKeySchema = z.enum(['xai:grok-2-1212', 'xai:grok-beta']);
+export type XAIModelKey = z.infer<typeof XAIModelKeySchema>;
+
+const ModelKeySchema = z.union([
+  BedrockModelKeySchema,
+  BedrockAnthropicModelKeySchema,
+  AnthropicModelKeySchema,
+  OpenAIModelKeySchema,
+  XAIModelKeySchema,
+]);
+export type ModelKey = z.infer<typeof ModelKeySchema>;
 
 const ModelConfigSchema = z.object({
   model: AIModelSchema,
@@ -220,7 +245,7 @@ export const AIRequestBodySchema = z.object({
   chatId: z.string().uuid(),
   fileUuid: z.string().uuid(),
   source: z.enum(['AIAssistant', 'AIAnalyst', 'AIResearcher', 'GetChatName', 'GetFileName']),
-  model: AIModelSchema,
+  modelKey: ModelKeySchema,
   messages: z.array(ChatMessageSchema),
   useStream: z.boolean(),
   useTools: z.boolean(),
@@ -231,4 +256,4 @@ export const AIRequestBodySchema = z.object({
   thinking: z.boolean(),
 });
 export type AIRequestBody = z.infer<typeof AIRequestBodySchema>;
-export type AIRequestHelperArgs = Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'source' | 'model'>;
+export type AIRequestHelperArgs = Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'source' | 'modelKey'>;

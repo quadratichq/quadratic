@@ -42,7 +42,7 @@ export function useSubmitAIAnalystPrompt() {
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
   const { getSelectionContext } = useSelectionContextMessages();
-  const [model] = useAIModel();
+  const [modelKey] = useAIModel();
 
   const updateInternalContext = useRecoilCallback(
     ({ set }) =>
@@ -136,7 +136,7 @@ export function useSubmitAIAnalystPrompt() {
           const response = await handleAIRequestToAPI({
             chatId,
             source: 'AIAnalyst',
-            model: MODELS_CONFIGURATION[model].model,
+            modelKey,
             messages: updatedMessages,
             useStream: true,
             useTools: true,
@@ -187,7 +187,7 @@ export function useSubmitAIAnalystPrompt() {
             const response = await handleAIRequestToAPI({
               chatId,
               source: 'AIAnalyst',
-              model: MODELS_CONFIGURATION[model].model,
+              modelKey,
               messages: updatedMessages,
               useStream: true,
               useTools: true,
@@ -207,7 +207,7 @@ export function useSubmitAIAnalystPrompt() {
               content: [{ type: 'text', text: 'Looks like there was a problem. Please try again.' }],
               contextType: 'userPrompt',
               toolCalls: [],
-              model: MODELS_CONFIGURATION[model].model,
+              model: MODELS_CONFIGURATION[modelKey].model,
             };
 
             const lastMessage = prevMessages.at(-1);
@@ -223,7 +223,7 @@ export function useSubmitAIAnalystPrompt() {
         set(aiAnalystAbortControllerAtom, undefined);
         set(aiAnalystLoadingAtom, false);
       },
-    [handleAIRequestToAPI, model]
+    [handleAIRequestToAPI, modelKey]
   );
 
   return { submitPrompt };

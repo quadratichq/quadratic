@@ -16,7 +16,6 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
-import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
@@ -26,7 +25,7 @@ export function useSubmitAIAssistantPrompt() {
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
   const { getCodeCellContext } = useCodeCellContextMessages();
-  const [model] = useAIModel();
+  const [modelKey] = useAIModel();
 
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
@@ -108,7 +107,7 @@ export function useSubmitAIAssistantPrompt() {
           await handleAIRequestToAPI({
             chatId,
             source: 'AIAssistant',
-            model: MODELS_CONFIGURATION[model].model,
+            modelKey,
             messages: updatedMessages,
             useStream: true,
             useTools: false,
@@ -125,7 +124,7 @@ export function useSubmitAIAssistantPrompt() {
         set(aiAssistantAbortControllerAtom, undefined);
         set(aiAssistantLoadingAtom, false);
       },
-    [handleAIRequestToAPI, getCurrentSheetContext, getVisibleContext, getCodeCellContext, model]
+    [handleAIRequestToAPI, getCurrentSheetContext, getVisibleContext, getCodeCellContext, modelKey]
   );
 
   return { submitPrompt };

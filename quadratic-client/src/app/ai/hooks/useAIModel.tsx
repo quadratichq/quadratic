@@ -2,15 +2,11 @@ import { debug } from '@/app/debugFlags';
 import type { SetValue } from '@/shared/hooks/useLocalStorage';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { DEFAULT_MODEL, DEFAULT_MODEL_VERSION, MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
-import type { ModelConfig } from 'quadratic-shared/typesAndSchemasAI';
+import type { ModelConfig, ModelKey } from 'quadratic-shared/typesAndSchemasAI';
 import { useEffect, useMemo } from 'react';
 
-export function useAIModel(): [
-  keyof typeof MODELS_CONFIGURATION,
-  SetValue<keyof typeof MODELS_CONFIGURATION>,
-  ModelConfig
-] {
-  const [model, setModel] = useLocalStorage<keyof typeof MODELS_CONFIGURATION>('aiModel', DEFAULT_MODEL);
+export function useAIModel(): [ModelKey, SetValue<ModelKey>, ModelConfig] {
+  const [model, setModel] = useLocalStorage<ModelKey>('aiModel', DEFAULT_MODEL);
   const [version, setVersion] = useLocalStorage<number>('aiModelVersion', 0);
 
   const config = useMemo(() => {
