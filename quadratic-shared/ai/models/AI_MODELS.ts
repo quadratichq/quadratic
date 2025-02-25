@@ -10,38 +10,57 @@ export const DEFAULT_MODEL_VERSION = 4;
 export const MODELS_CONFIGURATION: {
   [key in ModelKey]: ModelConfig;
 } = {
-  'openai:gpt-4o-2024-11-20': {
-    model: 'gpt-4o-2024-11-20',
-    displayName: 'gpt-4o',
+  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0': {
+    model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
+    displayName: `claude 3.7 sonnet`,
     temperature: 0,
-    max_tokens: 4096, // not used for openai
+    max_tokens: 16000,
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: true,
-    provider: 'openai',
-    strickParams: true,
+    provider: 'bedrock-anthropic',
   },
-  'openai:o1-2024-12-17': {
-    model: 'o1-2024-12-17',
-    displayName: 'o1',
-    temperature: 1, // only temperature 1 is supported for o1
-    max_tokens: 4096, // not used for openai
-    canStream: false, // stream is not supported for o1
-    canStreamWithToolCalls: false,
+  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking': {
+    model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
+    displayName: `claude 3.7 sonnet thinking`,
+    temperature: 0,
+    max_tokens: 16000,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: true,
+    provider: 'bedrock-anthropic',
+    thinking: true,
+    thinkingTemperature: 1,
+  },
+  'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0': {
+    model: 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+    displayName: `claude 3.5 sonnet`,
+    temperature: 0,
+    max_tokens: 8192,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: true,
+    provider: 'bedrock-anthropic',
+  },
+  'bedrock-anthropic:us.anthropic.claude-3-5-haiku-20241022-v1:0': {
+    model: 'us.anthropic.claude-3-5-haiku-20241022-v1:0',
+    displayName: 'claude 3.5 haiku',
+    temperature: 0,
+    max_tokens: 8192,
+    canStream: true,
+    canStreamWithToolCalls: true,
     enabled: false,
-    provider: 'openai',
-    strickParams: true,
+    provider: 'bedrock-anthropic',
   },
-  'openai:o3-mini-2025-01-31': {
-    model: 'o3-mini-2025-01-31',
-    displayName: 'o3-mini',
-    temperature: 1, // only temperature 1 is supported for o1
-    max_tokens: 4096, // not used for openai
+  'anthropic:claude-3-7-sonnet-20250219': {
+    model: 'claude-3-7-sonnet-20250219',
+    displayName: 'claude 3.7 sonnet',
+    temperature: 0,
+    max_tokens: 16000,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
-    provider: 'openai',
-    strickParams: true,
+    enabled: false,
+    provider: 'anthropic',
   },
   'anthropic:claude-3-7-sonnet-20250219:thinking': {
     model: 'claude-3-7-sonnet-20250219',
@@ -54,16 +73,6 @@ export const MODELS_CONFIGURATION: {
     provider: 'anthropic',
     thinking: true,
     thinkingTemperature: 1,
-  },
-  'anthropic:claude-3-7-sonnet-20250219': {
-    model: 'claude-3-7-sonnet-20250219',
-    displayName: 'claude 3.7 sonnet',
-    temperature: 0,
-    max_tokens: 16000,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: false,
-    provider: 'anthropic',
   },
   'anthropic:claude-3-5-sonnet-20241022': {
     model: 'claude-3-5-sonnet-20241022',
@@ -85,47 +94,38 @@ export const MODELS_CONFIGURATION: {
     enabled: false,
     provider: 'anthropic',
   },
-  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking': {
-    model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-    displayName: `claude 3.7 sonnet thinking`,
+  'openai:gpt-4o-2024-11-20': {
+    model: 'gpt-4o-2024-11-20',
+    displayName: 'gpt 4o',
     temperature: 0,
-    max_tokens: 16000,
+    max_tokens: 4096, // not used for openai
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: true,
-    provider: 'bedrock-anthropic',
-    thinking: true,
-    thinkingTemperature: 1,
+    provider: 'openai',
+    strickParams: true,
   },
-  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0': {
-    model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-    displayName: `claude 3.7 sonnet`,
-    temperature: 0,
-    max_tokens: 16000,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: true,
-    provider: 'bedrock-anthropic',
-  },
-  'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0': {
-    model: 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
-    displayName: `claude 3.5 sonnet`,
-    temperature: 0,
-    max_tokens: 8192,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: true,
-    provider: 'bedrock-anthropic',
-  },
-  'bedrock-anthropic:us.anthropic.claude-3-5-haiku-20241022-v1:0': {
-    model: 'us.anthropic.claude-3-5-haiku-20241022-v1:0',
-    displayName: 'claude 3.5 haiku',
-    temperature: 0,
-    max_tokens: 8192,
-    canStream: true,
-    canStreamWithToolCalls: true,
+  'openai:o1-2024-12-17': {
+    model: 'o1-2024-12-17',
+    displayName: 'o1',
+    temperature: 1, // only temperature 1 is supported for o1
+    max_tokens: 4096, // not used for openai
+    canStream: false, // stream is not supported for o1
+    canStreamWithToolCalls: false,
     enabled: false,
-    provider: 'bedrock-anthropic',
+    provider: 'openai',
+    strickParams: true,
+  },
+  'openai:o3-mini-2025-01-31': {
+    model: 'o3-mini-2025-01-31',
+    displayName: 'o3 mini',
+    temperature: 1, // only temperature 1 is supported for o1
+    max_tokens: 4096, // not used for openai
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: true,
+    provider: 'openai',
+    strickParams: true,
   },
   'xai:grok-2-1212': {
     model: 'grok-2-1212',
