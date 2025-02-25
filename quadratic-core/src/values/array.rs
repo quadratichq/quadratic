@@ -1,9 +1,8 @@
-use std::{
-    fmt,
-    iter::{Skip, StepBy},
-    num::NonZeroU32,
-    slice::Iter,
-};
+use std::fmt;
+use std::iter::Skip;
+use std::iter::StepBy;
+use std::num::NonZeroU32;
+use std::slice::Iter;
 
 use anyhow::{bail, Result};
 use bigdecimal::BigDecimal;
@@ -12,11 +11,11 @@ use rand::Rng;
 use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
-use super::{cell_values::CellValues, ArraySize, Axis, CellValue, Spanned, Value};
-use crate::{
-    controller::operations::operation::Operation, grid::Sheet, CodeResult, Pos, RunError,
-    RunErrorMsg, Span,
-};
+use super::cell_values::CellValues;
+use super::{ArraySize, Axis, CellValue, Spanned, Value};
+use crate::controller::operations::operation::Operation;
+use crate::grid::Sheet;
+use crate::{CodeResult, Pos, RunError, RunErrorMsg, Span};
 
 #[macro_export]
 macro_rules! array {

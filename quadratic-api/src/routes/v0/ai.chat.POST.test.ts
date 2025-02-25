@@ -1,3 +1,6 @@
+import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
+import { DEFAULT_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
+import type { AIRequestBody } from 'quadratic-shared/typesAndSchemasAI';
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
@@ -6,11 +9,11 @@ import { clearDb, createFile, createTeam, createUser } from '../../tests/testDat
 
 const auth0Id = 'user';
 
-const payload = {
+const payload: AIRequestBody = {
   chatId: '00000000-0000-0000-0000-000000000000',
   fileUuid: '11111111-1111-1111-1111-111111111111',
   source: 'AIAnalyst',
-  model: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
+  modelKey: DEFAULT_MODEL,
   messages: [],
   useStream: false,
   useTools: false,
@@ -18,6 +21,7 @@ const payload = {
   useToolsPrompt: false,
   language: undefined,
   useQuadraticContext: false,
+  thinking: false,
 };
 
 jest.mock('@anthropic-ai/bedrock-sdk', () => ({
@@ -76,7 +80,12 @@ describe('POST /v0/ai/chat', () => {
         .expect(({ body }) => {
           expect(body).toEqual({
             role: 'assistant',
-            content: 'This is a mocked response from Claude',
+            content: [
+              {
+                type: 'text',
+                text: 'This is a mocked response from Claude',
+              },
+            ],
             contextType: 'userPrompt',
             toolCalls: [
               {
@@ -86,7 +95,7 @@ describe('POST /v0/ai/chat', () => {
                 loading: false,
               },
             ],
-            model: payload.model,
+            model: getModelFromModelKey(payload.modelKey),
           });
         });
 
@@ -134,7 +143,12 @@ describe('POST /v0/ai/chat', () => {
         .expect(({ body }) => {
           expect(body).toEqual({
             role: 'assistant',
-            content: 'This is a mocked response from Claude',
+            content: [
+              {
+                type: 'text',
+                text: 'This is a mocked response from Claude',
+              },
+            ],
             contextType: 'userPrompt',
             toolCalls: [
               {
@@ -144,7 +158,7 @@ describe('POST /v0/ai/chat', () => {
                 loading: false,
               },
             ],
-            model: payload.model,
+            model: getModelFromModelKey(payload.modelKey),
           });
         });
 
@@ -196,7 +210,12 @@ describe('POST /v0/ai/chat', () => {
         .expect(({ body }) => {
           expect(body).toEqual({
             role: 'assistant',
-            content: 'This is a mocked response from Claude',
+            content: [
+              {
+                type: 'text',
+                text: 'This is a mocked response from Claude',
+              },
+            ],
             contextType: 'userPrompt',
             toolCalls: [
               {
@@ -206,7 +225,7 @@ describe('POST /v0/ai/chat', () => {
                 loading: false,
               },
             ],
-            model: payload.model,
+            model: getModelFromModelKey(payload.modelKey),
           });
         });
 

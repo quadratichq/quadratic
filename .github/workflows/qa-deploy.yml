@@ -67,7 +67,7 @@ jobs:
           PR_ID: ${{ github.event.pull_request.number }}
 
   build_preview_images:
-    name: Build ${{ matrix.service }}
+    name: Build Images
     runs-on: blacksmith-4vcpu-ubuntu-2204
     if: github.head_ref == 'qa' && github.base_ref == 'main'
     strategy:

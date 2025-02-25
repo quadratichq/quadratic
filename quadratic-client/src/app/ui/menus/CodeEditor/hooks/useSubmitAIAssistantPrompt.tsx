@@ -25,7 +25,7 @@ export function useSubmitAIAssistantPrompt() {
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
   const { getCodeCellContext } = useCodeCellContextMessages();
-  const [model] = useAIModel();
+  const [modelKey] = useAIModel();
 
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
@@ -129,12 +129,15 @@ export function useSubmitAIAssistantPrompt() {
           await handleAIRequestToAPI({
             chatId,
             source: 'AIAssistant',
-            model,
+            modelKey,
             messages: updatedMessages,
+            useStream: true,
+            useTools: false,
             language: getLanguage(codeCell.language),
             useQuadraticContext: true,
             setMessages: (updater) => set(aiAssistantMessagesAtom, updater),
             signal: abortController.signal,
+            thinking: true,
           });
         } catch (error) {
           set(aiAssistantMessagesAtom, (prevMessages) => {
@@ -164,7 +167,7 @@ export function useSubmitAIAssistantPrompt() {
         set(aiAssistantAbortControllerAtom, undefined);
         set(aiAssistantLoadingAtom, false);
       },
-    [handleAIRequestToAPI, getCurrentSheetContext, getVisibleContext, getCodeCellContext, model]
+    [handleAIRequestToAPI, getCurrentSheetContext, getVisibleContext, getCodeCellContext, modelKey]
   );
 
   return { submitPrompt };
