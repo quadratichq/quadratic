@@ -1,0 +1,35 @@
+{
+  "name": "quadratic-ai-eval",
+  "version": "1.0.0",
+  "description": "Playwright test suite for Quadratic with Auth0 authentication",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:dev": "playwright test --headed --debug-brk --timeout=0",
+    "test:basic": "playwright test -g 'Testing basic prompt'",
+    "test:complex": "playwright test -g 'Testing complex data prompt'",
+    "test:parallel": "playwright test --workers=4",
+    "test:prompt": "playwright test prompt-evaluation.spec.ts",
+    "report": "playwright show-report"
+  },
+  "keywords": [
+    "quadratic",
+    "testing",
+    "playwright",
+    "automation",
+    "auth0"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "dotenv": "^16.4.7"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.37.0",
+    "zod": "^3.24.2"
+  }
+}
