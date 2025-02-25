@@ -1,4 +1,5 @@
-import { DEFAULT_MODEL, MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
+import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
+import { DEFAULT_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AIRequestBody } from 'quadratic-shared/typesAndSchemasAI';
 import request from 'supertest';
 import { app } from '../../app';
@@ -94,7 +95,7 @@ describe('POST /v0/ai/chat', () => {
                 loading: false,
               },
             ],
-            model: MODELS_CONFIGURATION[payload.modelKey].model,
+            model: getModelFromModelKey(payload.modelKey),
           });
         });
 
@@ -157,7 +158,7 @@ describe('POST /v0/ai/chat', () => {
                 loading: false,
               },
             ],
-            model: MODELS_CONFIGURATION[payload.modelKey].model,
+            model: getModelFromModelKey(payload.modelKey),
           });
         });
 
@@ -224,7 +225,7 @@ describe('POST /v0/ai/chat', () => {
                 loading: false,
               },
             ],
-            model: MODELS_CONFIGURATION[payload.modelKey].model,
+            model: getModelFromModelKey(payload.modelKey),
           });
         });
 

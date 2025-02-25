@@ -1,8 +1,7 @@
 import { editorInteractionStateFileUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
-import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
-import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
+import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import {
   AIMessagePromptSchema,
   type AIMessagePrompt,
@@ -34,7 +33,7 @@ export function useAIRequestToAPI() {
           content: [],
           contextType: 'userPrompt',
           toolCalls: [],
-          model: MODELS_CONFIGURATION[args.modelKey].model,
+          model: getModelFromModelKey(args.modelKey),
         };
         setMessages?.((prev) => [...prev, { ...responseMessage, content: [] }]);
         const { modelKey, useStream, useTools, thinking } = args;
@@ -64,7 +63,7 @@ export function useAIRequestToAPI() {
                 role: 'assistant',
                 content: [{ type: 'text', text: error }],
                 contextType: 'userPrompt',
-                model: MODELS_CONFIGURATION[args.modelKey].model,
+                model: getModelFromModelKey(args.modelKey),
                 toolCalls: [],
               },
             ]);
