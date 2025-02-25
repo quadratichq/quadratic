@@ -5,7 +5,7 @@ use crate::{
     controller::GridController,
     formulas::replace_a1_notation,
     grid::{formats::SheetFormatUpdates, CodeCellLanguage, CodeCellValue, DataTable, SheetId},
-    CellValue, SheetPos,
+    CellValue, Pos, SheetPos,
 };
 
 impl GridController {
@@ -37,12 +37,13 @@ impl GridController {
         value: String,
     ) -> Vec<Operation> {
         let mut ops = vec![];
+        let pos = Pos::from(sheet_pos);
 
         let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) else {
             return ops;
         };
 
-        let Ok(data_table_pos) = sheet.first_data_table_within(sheet_pos.into()) else {
+        let Ok(data_table_pos) = sheet.first_data_table_within(pos) else {
             return ops;
         };
 
@@ -52,8 +53,20 @@ impl GridController {
 
         // strip whitespace
         let value = value.trim();
-
         let (cell_value, format_update) = self.string_to_cell_value(value, false);
+        let is_formula_cell = sheet
+            .get_table_language(pos, data_table)
+            .is_some_and(|lang| lang == CodeCellLanguage::Formula);
+        let is_source_cell = pos == data_table_pos;
+
+        // if the cell is a formula cell and the source cell, set the cell value (which will remove the data table)
+        if is_formula_cell && is_source_cell {
+            ops.push(Operation::SetCellValues {
+                sheet_pos,
+                values: CellValues::from(cell_value),
+            });
+            return ops;
+        }
 
         ops.push(Operation::SetDataTableAt {
             sheet_pos,
