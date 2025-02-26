@@ -103,6 +103,7 @@ export const SuggestionDropDown = () => {
     inlineEditorEvents.emit('replaceText', value, 0);
     inlineEditorHandler.close(0, 1, false);
     inlineEditorMonaco.autocompleteShowingList = false;
+    setIndex(-1);
   }, []);
 
   // handle keyboard events when list is open
@@ -113,21 +114,26 @@ export const SuggestionDropDown = () => {
 
       if (key === 'ArrowDown' || key === 'ArrowUp') {
         setIndex((index) => {
-          const i =
-            key === 'ArrowDown'
-              ? (index + 1) % filteredList.length
-              : (index - 1 + filteredList.length) % filteredList.length;
-          return i;
+          return key === 'ArrowDown'
+            ? (index + 1) % filteredList.length
+            : (index - 1 + filteredList.length) % filteredList.length;
         });
       } else if (key === 'Enter') {
         if (index >= 0) {
           changeValue(filteredList[index]);
+        } else {
+          changeValue(inlineEditorMonaco.get());
         }
       } else if (key === 'Escape') {
+        setIndex(-1);
         inlineEditorMonaco.autocompleteShowingList = false;
         setFilteredList(undefined);
       } else if (key === 'Tab') {
-        inlineEditorMonaco.autocompleteSuggestionShowing = false;
+        if (index >= 0) {
+          changeValue(filteredList[index]);
+        } else {
+          changeValue(inlineEditorMonaco.get());
+        }
       }
     };
 
