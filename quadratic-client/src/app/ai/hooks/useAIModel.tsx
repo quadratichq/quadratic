@@ -9,18 +9,6 @@ export function useAIModel(): [ModelKey, SetValue<ModelKey>, ModelConfig] {
   const [modelKey, setModelKey] = useLocalStorage<ModelKey>('aiModel', DEFAULT_MODEL);
   const [version, setVersion] = useLocalStorage<number>('aiModelVersion', 0);
 
-  const config = useMemo(() => {
-    return MODELS_CONFIGURATION[modelKey];
-  }, [modelKey]);
-
-  const defaultConfig = useMemo(() => {
-    return MODELS_CONFIGURATION[DEFAULT_MODEL];
-  }, []);
-
-  if (!defaultConfig) {
-    throw new Error(`Default model ${DEFAULT_MODEL} not found`);
-  }
-
   // This is to force update model stored in local storage to the current default model
   useEffect(() => {
     if (version !== DEFAULT_MODEL_VERSION) {
@@ -31,10 +19,23 @@ export function useAIModel(): [ModelKey, SetValue<ModelKey>, ModelConfig] {
 
   // If the model is removed from the MODELS object or is not enabled, set the model to the current default model
   useEffect(() => {
+    const config = MODELS_CONFIGURATION[modelKey];
     if (!config || (!debug && !config.enabled)) {
       setModelKey(DEFAULT_MODEL);
+      setVersion(DEFAULT_MODEL_VERSION);
     }
-  }, [config, setModelKey]);
+  }, [modelKey, setModelKey, setVersion]);
+
+  const config = useMemo(() => {
+    return MODELS_CONFIGURATION[modelKey];
+  }, [modelKey]);
+
+  const defaultConfig = useMemo(() => {
+    return MODELS_CONFIGURATION[DEFAULT_MODEL];
+  }, []);
+  if (!defaultConfig) {
+    throw new Error(`Default model ${DEFAULT_MODEL} not found`);
+  }
 
   if (!config) {
     return [DEFAULT_MODEL, setModelKey, defaultConfig];
