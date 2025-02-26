@@ -121,7 +121,7 @@ impl Grid {
 const A1_REGEX: &str = r#"\b\$?[a-zA-Z]+\$\d+\b"#;
 const R1C1_REGEX: &str = r#"\bR\d+C\d+\b"#;
 const TABLE_NAME_VALID_CHARS: &str = r#"^[a-zA-Z_\\][a-zA-Z0-9_.]*$"#;
-const COLUMN_NAME_VALID_CHARS: &str = r#"^[a-zA-Z_\-(][a-zA-Z0-9_\- .()\p{Pd}]*[a-zA-Z0-9_\-)]$"#;
+const COLUMN_NAME_VALID_CHARS: &str = r#"^[a-zA-Z_\-]([a-zA-Z0-9_\- .()\p{Pd}]*[a-zA-Z0-9_\-)])?$"#;
 lazy_static! {
     static ref A1_REGEX_COMPILED: Regex = Regex::new(A1_REGEX).expect("Failed to compile A1_REGEX");
     static ref R1C1_REGEX_COMPILED: Regex =
@@ -1086,6 +1086,7 @@ pub mod test {
             "_hidden",
             "\\special",
             longest_name.as_str(),
+            "a",
         ];
 
         for name in valid_names {
@@ -1152,6 +1153,7 @@ pub mod test {
             "Column.With.Dots",
             "Column(With)Parentheses",
             "_hidden_column",
+            "a",
             "Column-with–en—dash", // Testing various dash characters
             longest_name.as_str(),
         ];
