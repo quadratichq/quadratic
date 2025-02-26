@@ -48,6 +48,14 @@ impl GridController {
                                 if data_table.readonly {
                                     return false;
                                 }
+
+                                if data_table.show_ui
+                                    && data_table.show_name
+                                    && data_table_left.y == pos.y
+                                {
+                                    return false;
+                                }
+
                                 // check if next column is blank
                                 for y in 0..data_table.height(false) {
                                     let pos = Pos::new(pos.x, data_table_left.y + y as i64);

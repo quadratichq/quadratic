@@ -879,19 +879,23 @@ impl GridController {
                     .output_rect(data_table_pos, true)
                     .to_sheet_rect(sheet_id);
 
-                let display_index = data_table.get_display_index_from_column_index(index, true);
-                let values_rect = Rect::from_numbers(
-                    data_table_pos.x + display_index,
-                    data_table_pos.y + data_table.y_adjustment(true),
-                    1,
-                    data_table_rect.height() as i64 - data_table.y_adjustment(true),
-                );
-
                 let mut format_update = SheetFormatUpdates::default();
 
-                if swallow && values.is_none() {
+                if swallow && column_header.is_none() && values.is_none() {
+                    let display_index = data_table.get_display_index_from_column_index(index, true);
+                    let y_adjustment = if data_table.show_ui && data_table.show_name {
+                        1
+                    } else {
+                        0
+                    };
+                    let values_rect = Rect::from_numbers(
+                        data_table_pos.x + display_index,
+                        data_table_pos.y + y_adjustment,
+                        1,
+                        data_table_rect.height() as i64 - y_adjustment,
+                    );
                     let sheet_values_array = sheet.cell_values_in_rect(&values_rect, true)?;
-                    let cell_values = sheet_values_array.into_cell_values_vec().into_vec();
+                    let mut cell_values = sheet_values_array.into_cell_values_vec().into_vec();
                     let has_code_cell = cell_values.iter().any(|cell_value| {
                         cell_value.is_code()
                             || cell_value.is_import()
@@ -909,14 +913,28 @@ impl GridController {
                         transaction.operations.clear();
                         bail!("Cannot add code cell to table");
                     } else {
+                        if data_table.show_ui && data_table.show_columns {
+                            if data_table.header_is_first_row {
+                                column_header = Some(cell_values[0].to_string());
+                            } else {
+                                column_header = Some(cell_values.remove(0).to_string());
+                            }
+                        }
+
                         values = Some(cell_values);
                     }
 
                     // swallow sheet formatting
+                    let formats_rect = Rect::from_numbers(
+                        data_table_pos.x + display_index,
+                        data_table_pos.y + data_table.y_adjustment(true),
+                        1,
+                        data_table_rect.height() as i64 - data_table.y_adjustment(true),
+                    );
                     format_update = data_table.transfer_formats_from_sheet(
                         data_table_pos,
                         sheet,
-                        values_rect,
+                        formats_rect,
                     )?;
 
                     // clear sheet values
@@ -1019,29 +1037,39 @@ impl GridController {
             // for flattening
             let mut old_data_table_rect = data_table.output_rect(data_table_pos, true);
             old_data_table_rect.min.x += 1; //cannot flatten the first column
-            old_data_table_rect.min.y += data_table.y_adjustment(true);
+            let y_adjustment = if data_table.show_ui && data_table.show_name {
+                1
+            } else {
+                0
+            };
+            old_data_table_rect.min.y += y_adjustment;
             let mut sheet_cell_values =
                 CellValues::new(old_data_table_rect.width(), old_data_table_rect.height());
             let mut sheet_format_updates = SheetFormatUpdates::default();
             let mut data_table_formats_rects = vec![];
 
             for &index in columns.iter() {
+                let display_index = data_table.get_display_index_from_column_index(index, true);
+
                 let sheet = self.try_sheet_result(sheet_id)?;
                 let data_table = sheet.data_table_result(data_table_pos)?;
 
-                let display_index = data_table.get_display_index_from_column_index(index, true);
-                let values_rect = Rect::from_numbers(
-                    data_table_pos.x + display_index,
-                    data_table_pos.y + data_table.y_adjustment(true),
-                    1,
-                    data_table.height(false) as i64,
-                );
-
                 let old_values = data_table.get_column_sorted(index as usize)?;
+                let old_column_header = data_table
+                    .get_column_header(index as usize)
+                    .map(|header| header.name.to_owned().to_string());
 
                 if flatten {
                     // collect values to flatten
                     let old_values = old_values.to_owned();
+                    let y_adjustment = if data_table.show_ui
+                        && data_table.show_columns
+                        && !data_table.header_is_first_row
+                    {
+                        1
+                    } else {
+                        0
+                    };
                     for (y, old_value) in old_values.into_iter().enumerate() {
                         if y == 0
                             && data_table.header_is_first_row
@@ -1050,17 +1078,38 @@ impl GridController {
                             continue;
                         }
 
-                        if let (Ok(value_x), Ok(value_y)) =
-                            (u32::try_from(display_index - 1), u32::try_from(y))
-                        {
+                        if let (Ok(value_x), Ok(value_y)) = (
+                            u32::try_from(display_index - 1),
+                            u32::try_from(y + y_adjustment),
+                        ) {
                             sheet_cell_values.set(value_x, value_y, old_value);
                         }
                     }
 
+                    if data_table.show_ui && data_table.show_columns {
+                        if let Some(column_header) = &old_column_header {
+                            if let (Ok(value_x), Ok(value_y)) =
+                                (u32::try_from(display_index - 1), u32::try_from(0))
+                            {
+                                sheet_cell_values.set(
+                                    value_x,
+                                    value_y,
+                                    column_header.to_owned().into(),
+                                );
+                            }
+                        }
+                    }
+
                     // collect formats to flatten
+                    let formats_rect = Rect::from_numbers(
+                        data_table_pos.x + display_index,
+                        data_table_pos.y + data_table.y_adjustment(true),
+                        1,
+                        data_table.height(false) as i64,
+                    );
                     data_table.transfer_formats_to_sheet(
                         data_table_pos,
-                        values_rect,
+                        formats_rect,
                         &mut sheet_format_updates,
                     )?;
                 }
@@ -1069,9 +1118,6 @@ impl GridController {
                     Rect::from_numbers(index as i64 + 1, 1, 1, data_table.height(true) as i64);
                 data_table_formats_rects.push(formats_rect);
 
-                let old_column_header = data_table
-                    .get_column_header(index as usize)
-                    .map(|header| header.name.to_owned().to_string());
                 let old_values = data_table.get_column_sorted(index as usize)?;
                 reverse_columns.push((index, old_column_header, Some(old_values)));
             }
