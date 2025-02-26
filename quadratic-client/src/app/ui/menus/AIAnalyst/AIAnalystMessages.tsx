@@ -11,6 +11,8 @@ import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
 import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
+import type { MessageContentItem } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
+import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
 import { apiClient } from '@/shared/api/apiClient';
 import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -26,10 +28,14 @@ type AIAnalystMessagesProps = {
 };
 
 export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
-  const [, , config] = useAIModel();
+  const [, ,] = useAIModel();
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
+
+  // We don't need these anymore since each ThinkingBlock manages its own state
+  // const [expandedThinking, setExpandedThinking] = useState<Record<number, boolean>>({});
+  // const [loadedMessageIndices, setLoadedMessageIndices] = useState<number[]>([]);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((div: HTMLDivElement | null) => {
@@ -83,6 +89,11 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  // This is simplified to just handle scrolling
+  const handleThinkingToggle = useCallback(() => {
+    setTimeout(() => scrollToBottom(), 50);
+  }, [scrollToBottom]);
+
   if (messagesCount === 0) {
     return <AIAnalystExamplePrompts />;
   }
@@ -108,6 +119,14 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
         if (!debugShowAIInternalContext && message.contextType !== 'userPrompt') {
           return null;
         }
+
+        const hasThinking =
+          message.role === 'assistant' &&
+          message.content &&
+          Array.isArray(message.content) &&
+          message.content.some((item) => item.type === 'anthropic_thinking');
+
+        const isCurrentMessage = index === messages.length - 1;
 
         return (
           <div
@@ -135,21 +154,27 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
             ) : (
               <>
                 {message.content && Array.isArray(message.content) ? (
-                  message.content
-                    // Filter out redacted thinking, show thinking messages only if model supports it
-                    .filter(({ type }) => type === 'text' || (type === 'anthropic_thinking' && !!config.thinking))
-                    .map(({ type, text }) => (
-                      <div
-                        key={text}
-                        // For distinguishing between thinking and chat content
-                        className={`${type === 'anthropic_thinking' ? 'rounded-md bg-accent p-2' : ''}`}
-                      >
-                        {type === 'anthropic_thinking' && (
-                          <span className="text-xs text-muted-foreground">Thinking...</span>
-                        )}
-                        <Markdown>{text}</Markdown>
-                      </div>
-                    ))
+                  <>
+                    {message.content
+                      .filter((item) => item.type === 'text')
+                      .map((item) => (
+                        <div key={item.text}>
+                          <Markdown>{item.text}</Markdown>
+                        </div>
+                      ))}
+
+                    {hasThinking && (
+                      <ThinkingBlock
+                        messageIndex={index}
+                        isCurrentMessage={isCurrentMessage}
+                        isLoading={loading}
+                        thinkingContent={
+                          message.content.filter((item) => item.type === 'anthropic_thinking') as MessageContentItem[]
+                        }
+                        onToggle={handleThinkingToggle}
+                      />
+                    )}
+                  </>
                 ) : (
                   <Markdown key={message.content}>{message.content}</Markdown>
                 )}
@@ -171,7 +196,7 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
 
       {messages.length > 0 && !loading && <FeedbackButtons />}
 
-      <div className={cn('flex flex-row gap-1 px-2 transition-opacity', !loading && 'opacity-0')}>
+      <div className={cn('flex flex-row gap-1 p-2 transition-opacity', !loading && 'opacity-0')}>
         <span className="h-2 w-2 animate-bounce bg-primary" />
         <span className="h-2 w-2 animate-bounce bg-primary/60 delay-100" />
         <span className="h-2 w-2 animate-bounce bg-primary/20 delay-200" />
