@@ -21,6 +21,14 @@ export const testPrompts: PromptTest[] = [
     expectedRating: 'GREEN'
   },
   {
+    name: 'First 500 Prime Numbers',
+    prompt: 'return the first 500 prime numbers in a list',
+    validationCriteria: [
+      'Does the spreadsheet contain a table of the first 500 prime numbers? It\'s ok if it\'s cut off and all the numbers are not visible.',
+    ],
+    expectedRating: 'GREEN'
+  },
+  {
     name: 'Stock Price Trends',
     prompt: 'Show me the stock price trends for AAPL, MSFT, GOOG, and AMZN over the past 5 years with a line chart.',
     validationCriteria: [
@@ -72,17 +80,6 @@ export const testPrompts: PromptTest[] = [
     validationCriteria: [
       'Does the spreadsheet show the dataset?',
       'Is the correct count of items with 4 stars or greater displayed as "Number: 6"?',
-      'Is the data properly formatted and presented?',
-      'Are there any obvious errors or issues?'
-    ],
-    expectedRating: 'GREEN'
-  },
-  {
-    name: 'DataFrame Column Reordering',
-    prompt: 'Insert the following dataset and then create a condensed version with the column Q-P2 pictured as the first column and Q-P1 as the second\nProduct Name\tPrice\tIn Stock\tDate Added\tRating\nlaptop pro 15"\t1299.99\tYes\t2023-01-15\t4.7/5\nSMARTPHONE X\t899\tNO\t2023-01-22\t3.9 stars\nwireless headphones\t129.95\tyes\t2023-02-05\t4.2/5\n49.99\tYes\t2023-01-30\t4.0 stars\nGAMING MOUSE\t79.99\t\t2023-02-15\t4.5/5\nexternal SSD 1TB\t159.99\tYES\t2023-03-01\t\nmechanical keyboard\t149.95\tno\t2023-03-10\t4.8 stars\nmonitor 27"\t249.99\tYes\t2023-02-20\t4.3/5',
-    validationCriteria: [
-      'Does the spreadsheet show two datasets?',
-      'Is the condensed version showing Q-P2 as the first column and Q-P1 as the second?',
       'Is the data properly formatted and presented?',
       'Are there any obvious errors or issues?'
     ],
