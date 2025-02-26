@@ -154,23 +154,6 @@ pub fn replace_cell_references_with(
     })
 }
 
-fn replace_table_references(
-    source: &str,
-    ctx: &A1Context,
-    pos: SheetPos,
-    replace_fn: impl Fn(TableRef) -> Result<TableRef, RefError>,
-) -> String {
-    replace_cell_range_references(source, ctx, pos, |range_ref| {
-        Ok(match range_ref.cells {
-            CellRefRange::Table { range } => CellRefRange::Table {
-                range: replace_fn(range)?,
-            },
-            other @ CellRefRange::Sheet { .. } => other,
-        }
-        .to_string())
-    })
-}
-
 fn replace_cell_range_references(
     source: &str,
     ctx: &A1Context,
