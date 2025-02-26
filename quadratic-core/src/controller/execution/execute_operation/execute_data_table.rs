@@ -867,6 +867,7 @@ impl GridController {
                 .iter()
                 .map(|(index, _, _)| *index)
                 .collect::<Vec<_>>();
+            let mut reverse_operations: Vec<Operation> = vec![];
 
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_result(sheet_id)?;
@@ -914,10 +915,15 @@ impl GridController {
                         bail!("Cannot add code cell to table");
                     } else {
                         if data_table.show_ui && data_table.show_columns {
-                            if data_table.header_is_first_row {
-                                column_header = Some(cell_values[0].to_string());
+                            let header = if data_table.header_is_first_row {
+                                cell_values[0].to_string()
                             } else {
-                                column_header = Some(cell_values.remove(0).to_string());
+                                cell_values.remove(0).to_string()
+                            };
+                            column_header = if header.is_empty() {
+                                None
+                            } else {
+                                Some(header)
                             }
                         }
 
@@ -937,15 +943,25 @@ impl GridController {
                         formats_rect,
                     )?;
 
-                    // clear sheet values
-                    sheet.delete_cell_values(values_rect);
                     // clear sheet formats
-                    sheet
-                        .formats
-                        .apply_updates(&SheetFormatUpdates::from_selection(
-                            &A1Selection::from_rect(values_rect.to_sheet_rect(sheet_id)),
-                            FormatUpdate::cleared(),
-                        ));
+                    let old_sheet_formats =
+                        sheet
+                            .formats
+                            .apply_updates(&SheetFormatUpdates::from_selection(
+                                &A1Selection::from_rect(values_rect.to_sheet_rect(sheet_id)),
+                                FormatUpdate::cleared(),
+                            ));
+                    reverse_operations.push(Operation::SetCellFormatsA1 {
+                        sheet_id,
+                        formats: old_sheet_formats,
+                    });
+
+                    // clear sheet values
+                    let old_sheet_values = sheet.delete_cell_values(values_rect);
+                    reverse_operations.push(Operation::SetCellValues {
+                        sheet_pos: values_rect.min.to_sheet_pos(sheet_id),
+                        values: old_sheet_values.into(),
+                    });
                 }
 
                 let data_table = sheet.data_table_mut(data_table_pos)?;
@@ -981,12 +997,12 @@ impl GridController {
             self.send_updated_bounds(transaction, sheet_id);
 
             let forward_operations = vec![op];
-            let reverse_operations = vec![Operation::DeleteDataTableColumns {
+            reverse_operations.push(Operation::DeleteDataTableColumns {
                 sheet_pos,
                 columns: reverse_columns,
-                flatten: swallow,
+                flatten: false,
                 select_table,
-            }];
+            });
             self.data_table_operations(
                 transaction,
                 forward_operations,
