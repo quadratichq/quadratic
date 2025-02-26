@@ -4,7 +4,7 @@ use crate::a1::{A1Context, A1Selection};
 use crate::cell_values::CellValues;
 use crate::color::Rgba;
 use crate::controller::operations::clipboard::{Clipboard, ClipboardOperation, ClipboardOrigin};
-use crate::formulas::{replace_a1_notation, replace_internal_cell_references};
+use crate::formulas::{convert_a1_to_rc, convert_rc_to_a1};
 use crate::grid::js_types::JsClipboard;
 use crate::grid::{CodeCellLanguage, Sheet};
 use crate::{CellValue, Pos, Rect};
@@ -72,14 +72,14 @@ impl Sheet {
                                     let sheet_pos = pos.to_sheet_pos(self.id);
                                     match clipboard_operation {
                                         ClipboardOperation::Cut => {
-                                            code_cell.code = replace_internal_cell_references(
+                                            code_cell.code = convert_rc_to_a1(
                                                 &code_cell.code,
                                                 context,
                                                 sheet_pos,
                                             );
                                         }
                                         ClipboardOperation::Copy => {
-                                            code_cell.code = replace_a1_notation(
+                                            code_cell.code = convert_a1_to_rc(
                                                 &code_cell.code,
                                                 context,
                                                 sheet_pos,

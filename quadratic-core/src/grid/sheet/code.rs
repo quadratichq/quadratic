@@ -3,7 +3,7 @@ use std::ops::Range;
 use super::Sheet;
 use crate::{
     cell_values::CellValues,
-    formulas::replace_internal_cell_references,
+    formulas::convert_rc_to_a1,
     grid::{
         data_table::DataTable,
         js_types::{JsCodeCell, JsReturnInfo},
@@ -264,7 +264,7 @@ impl Sheet {
                 if matches!(code_cell_value.language, CodeCellLanguage::Formula) {
                     // `self.a1_context()` is unaware of other sheets, which might cause issues?
                     let parse_ctx = self.a1_context();
-                    let replaced = replace_internal_cell_references(
+                    let replaced = convert_rc_to_a1(
                         &code_cell_value.code,
                         &parse_ctx,
                         code_pos.to_sheet_pos(self.id),

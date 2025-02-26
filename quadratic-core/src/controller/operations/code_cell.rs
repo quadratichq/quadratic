@@ -3,7 +3,7 @@ use crate::{
     a1::A1Selection,
     cell_values::CellValues,
     controller::GridController,
-    formulas::replace_a1_notation,
+    formulas::convert_a1_to_rc,
     grid::{formats::SheetFormatUpdates, CodeCellLanguage, CodeCellValue, DataTable, SheetId},
     CellValue, Pos, SheetPos,
 };
@@ -18,7 +18,7 @@ impl GridController {
     ) -> Vec<Operation> {
         let parse_ctx = self.a1_context();
         let code = match language {
-            CodeCellLanguage::Formula => replace_a1_notation(&code, parse_ctx, sheet_pos),
+            CodeCellLanguage::Formula => convert_a1_to_rc(&code, parse_ctx, sheet_pos),
             _ => code,
         };
 

@@ -9,7 +9,7 @@ use uuid::Uuid;
 use super::operation::Operation;
 use crate::cell_values::CellValues;
 use crate::controller::GridController;
-use crate::formulas::replace_a1_notation;
+use crate::formulas::convert_a1_to_rc;
 use crate::grid::formats::Format;
 use crate::grid::formats::FormatUpdate;
 use crate::grid::formats::SheetFormatUpdates;
@@ -672,7 +672,7 @@ impl GridController {
                         match cell {
                             CellValue::Code(code_cell) => match code_cell.language {
                                 CodeCellLanguage::Formula => {
-                                    code_cell.code = replace_a1_notation(
+                                    code_cell.code = convert_a1_to_rc(
                                         &code_cell.code,
                                         context,
                                         Pos {
