@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { cn } from '@/shared/shadcn/utils';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useRecoilState } from 'recoil';
 
 /**
@@ -44,18 +44,26 @@ export const ContextMenuBase = ({ children }: { children: React.ReactNode }) => 
       }
     };
 
+    const handleMouseDown = (event: MouseEvent) => {
+      if (event.target instanceof HTMLElement && !event.target.closest('.context-menu-base, .pixi_canvas')) {
+        setContextMenu({});
+      }
+    };
+
     pixiApp.viewport.on('moved', handleMoved);
     pixiApp.viewport.on('zoomed', onClose);
     window.addEventListener('keydown', handleKeydown);
+    window.addEventListener('mousedown', handleMouseDown);
 
     return () => {
       pixiApp.viewport.off('moved', handleMoved);
       pixiApp.viewport.off('zoomed', onClose);
       window.removeEventListener('keydown', handleKeydown);
+      window.removeEventListener('mousedown', handleMouseDown);
     };
-  }, [onClose]);
+  }, [onClose, setContextMenu]);
 
-  const open = !contextMenu.rename && Boolean(children);
+  const open = useMemo(() => !contextMenu.rename && Boolean(children), [contextMenu.rename, children]);
   if (!open) {
     return null;
   }
@@ -71,6 +79,7 @@ export const ContextMenuBase = ({ children }: { children: React.ReactNode }) => 
         className="pointer-events-auto absolute h-0 w-0 opacity-0"
       ></DropdownMenuTrigger>
       <DropdownMenuContent
+        className="context-menu-base"
         animate={false}
         side={left < bounds.x + bounds.width / 2 ? 'right' : 'left'}
         sideOffset={4}
