@@ -133,6 +133,11 @@ impl Sheet {
         if let Some((chart_pos, _)) = self.chart_at(Pos { x, y }) {
             x = chart_pos.x;
         }
+        // adjust the jump position if it is inside a table header to the left-most
+        // edge of the table header
+        if let Some((_, dt_rect)) = self.table_header_at(Pos { x, y }) {
+            x = dt_rect.min.x;
+        }
 
         let prev_x;
 
@@ -554,5 +559,15 @@ mod tests {
         assert_eq!(sheet.jump_up(pos![B6]), pos![B3]);
         assert_eq!(sheet.jump_up(pos![B3]), pos![B2]);
         assert_eq!(sheet.jump_up(pos![B2]), pos![B1]);
+    }
+
+    #[test]
+    fn test_jump_left_table_from_name() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_code_run_array(2, 2, vec!["1", "2", "3"], false);
+        sheet.data_table_mut(pos![B2]).unwrap().show_ui = true;
+        sheet.data_table_mut(pos![B2]).unwrap().show_name = true;
+
+        assert_eq!(sheet.jump_left(pos![D2]), pos![A2]);
     }
 }
