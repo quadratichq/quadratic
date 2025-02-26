@@ -285,8 +285,12 @@ impl Sheet {
             if bounds.min.y == pos.y {
                 // table name, or column header if no table name, or top of data if no column header or table name
                 return true;
-            } else if bounds.min.y + (if dt.show_ui && dt.show_name { 1 } else { 0 }) == pos.y {
-                // column header or first line of data if no column header
+            } else if bounds.min.y
+                + (if dt.show_ui && dt.show_name { 1 } else { 0 })
+                + (if dt.show_ui && dt.show_columns { 1 } else { 0 })
+                == pos.y
+            {
+                // ignore column header--just go to first line of data or table name
                 return true;
             } else if bounds.max.y == pos.y {
                 return true;
@@ -1352,8 +1356,8 @@ mod test {
 
         // Test row edges
         assert!(sheet.is_at_table_edge_row(pos![B2])); // Table name
-        assert!(sheet.is_at_table_edge_row(pos![B3])); // Column header
-        assert!(!sheet.is_at_table_edge_row(pos![B4])); // first line of data
+        assert!(!sheet.is_at_table_edge_row(pos![B3])); // Column header
+        assert!(sheet.is_at_table_edge_row(pos![B4])); // first line of data
         assert!(sheet.is_at_table_edge_row(pos![C7])); // Bottom edge
         assert!(!sheet.is_at_table_edge_row(pos![C5])); // Middle row
 

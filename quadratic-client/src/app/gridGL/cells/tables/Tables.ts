@@ -376,7 +376,7 @@ export class Tables extends Container<Table> {
     });
   }
 
-  // Returns true if the cell is inside a table.
+  // Returns Table if the cell is inside a table.
   getInTable(cell: JsCoordinate): Table | undefined {
     return this.children.find((table) => {
       const code = table.codeCell;
