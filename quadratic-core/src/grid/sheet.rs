@@ -234,7 +234,7 @@ impl Sheet {
     }
 
     /// Returns true if the cell at Pos has content (ie, not blank). Also checks
-    /// tables. Ignores Blanks.
+    /// tables. Ignores Blanks except in tables.
     pub fn has_content(&self, pos: Pos) -> bool {
         if self
             .get_column(pos.x)
@@ -244,6 +244,59 @@ impl Sheet {
             return true;
         }
         self.has_table_content(pos)
+    }
+
+    /// Returns true if the cell at Pos has content (ie, not blank). Ignores
+    /// Blanks in tables.
+    pub fn has_content_ignore_blank_table(&self, pos: Pos) -> bool {
+        if self
+            .get_column(pos.x)
+            .and_then(|column| column.values.get(&pos.y))
+            .is_some_and(|cell_value| !cell_value.is_blank_or_empty_string())
+        {
+            return true;
+        }
+        self.has_table_content_ignore_blanks(pos)
+    }
+
+    /// Returns true if the cell at Pos is at a vertical edge of a table.
+    pub fn is_at_table_edge_col(&self, pos: Pos) -> bool {
+        if let Some((dt_pos, dt)) = self.data_table_at(pos) {
+            // we handle charts separately in find_next_*
+            if dt.is_html_or_image() {
+                return false;
+            }
+            let bounds = dt.output_rect(dt_pos, false);
+            if bounds.min.x == pos.x || bounds.max.x == pos.x {
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Returns true if the cell at Pos is at a horizontal edge of a table.
+    pub fn is_at_table_edge_row(&self, pos: Pos) -> bool {
+        if let Some((dt_pos, dt)) = self.data_table_at(pos) {
+            // we handle charts separately in find_next_*
+            if dt.is_html_or_image() {
+                return false;
+            }
+            let bounds = dt.output_rect(dt_pos, false);
+            if bounds.min.y == pos.y {
+                // table name, or column header if no table name, or top of data if no column header or table name
+                return true;
+            } else if bounds.min.y
+                + (if dt.show_ui && dt.show_name { 1 } else { 0 })
+                + (if dt.show_ui && dt.show_columns { 1 } else { 0 })
+                == pos.y
+            {
+                // ignore column header--just go to first line of data or table name
+                return true;
+            } else if bounds.max.y == pos.y {
+                return true;
+            }
+        }
+        false
     }
 
     /// Returns the cell_value at a Pos using both column.values and data_tables (i.e., what would be returned if code asked
@@ -1277,5 +1330,120 @@ mod test {
         let result = Sheet::validate_sheet_name("ExistingSheet", &context);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Sheet name must be unique");
+    }
+
+    #[test]
+    fn test_is_at_table_edge() {
+        let mut sheet = Sheet::test();
+        let anchor_pos = pos![B2];
+
+        // Create a test data table with 3x3 dimensions
+        let dt = DataTable::new(
+            DataTableKind::CodeRun(CodeRun::default()),
+            "test",
+            Value::Array(Array::from(vec![
+                vec!["a", "b", "c"],
+                vec!["d", "e", "f"],
+                vec!["g", "h", "i"],
+                vec!["j", "k", "l"],
+            ])),
+            false,
+            false,
+            true,
+            None,
+        );
+        sheet.data_tables.insert(anchor_pos, dt);
+
+        // Test row edges
+        assert!(sheet.is_at_table_edge_row(pos![B2])); // Table name
+        assert!(!sheet.is_at_table_edge_row(pos![B3])); // Column header
+        assert!(sheet.is_at_table_edge_row(pos![B4])); // first line of data
+        assert!(sheet.is_at_table_edge_row(pos![C7])); // Bottom edge
+        assert!(!sheet.is_at_table_edge_row(pos![C5])); // Middle row
+
+        // Test column edges
+        assert!(sheet.is_at_table_edge_col(pos![B5])); // Left edge
+        assert!(sheet.is_at_table_edge_col(pos![D5])); // Right edge
+        assert!(!sheet.is_at_table_edge_col(pos![C5])); // Middle column
+
+        // Test position outside table
+        assert!(!sheet.is_at_table_edge_row(pos![E5]));
+        assert!(!sheet.is_at_table_edge_col(pos![E5]));
+
+        // Test with show_ui = false
+        let mut dt_no_ui = DataTable::new(
+            DataTableKind::CodeRun(CodeRun::default()),
+            "test",
+            Value::Array(Array::from(vec![vec!["a", "b"], vec!["c", "d"]])),
+            false,
+            false,
+            false,
+            None,
+        );
+        dt_no_ui.show_name = false;
+        sheet.data_tables.insert(pos![E5], dt_no_ui);
+
+        // Test edges without UI
+        assert!(sheet.is_at_table_edge_row(pos![E5])); // Top edge
+        assert!(sheet.is_at_table_edge_row(pos![E6])); // Bottom edge
+        assert!(sheet.is_at_table_edge_col(pos![E5])); // Left edge
+        assert!(sheet.is_at_table_edge_col(pos![F5])); // Right edge
+    }
+
+    #[test]
+    fn test_has_content_ignore_blank_table() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        let pos = pos![A1];
+
+        // Empty cell should have no content
+        assert!(!sheet.has_content_ignore_blank_table(pos));
+
+        // Text content
+        sheet.set_cell_value(pos, "test");
+        assert!(sheet.has_content_ignore_blank_table(pos));
+
+        // Blank value should count as no content
+        sheet.set_cell_value(pos, CellValue::Blank);
+        assert!(!sheet.has_content_ignore_blank_table(pos));
+
+        // Empty string should count as no content
+        sheet.set_cell_value(pos, "");
+        assert!(!sheet.has_content_ignore_blank_table(pos));
+
+        // Table with non-blank content
+        let dt = DataTable::new(
+            DataTableKind::CodeRun(CodeRun::default()),
+            "test",
+            Value::Array(Array::from(vec![vec!["test", "test"]])),
+            false,
+            false,
+            true,
+            None,
+        );
+        sheet.data_tables.insert(pos, dt.clone());
+        assert!(sheet.has_content_ignore_blank_table(pos));
+        assert!(sheet.has_content_ignore_blank_table(Pos { x: 2, y: 2 }));
+        assert!(!sheet.has_content_ignore_blank_table(Pos { x: 3, y: 2 }));
+
+        // Table with blank content should be ignored
+        sheet.test_set_code_run_array(10, 10, vec!["1", "", "", "4"], false);
+        sheet.recalculate_bounds();
+
+        assert!(sheet.has_content_ignore_blank_table(Pos { x: 10, y: 10 }));
+        assert!(!sheet.has_content_ignore_blank_table(Pos { x: 11, y: 10 }));
+        assert!(sheet.has_content_ignore_blank_table(Pos { x: 13, y: 10 }));
+
+        // Chart output should still count as content
+        let mut dt_chart = dt.clone();
+        dt_chart.chart_output = Some((5, 5));
+        let pos3 = Pos { x: 20, y: 20 };
+        sheet.data_tables.insert(pos3, dt_chart);
+        sheet.recalculate_bounds();
+
+        assert!(sheet.has_content_ignore_blank_table(pos3));
+        assert!(sheet.has_content_ignore_blank_table(Pos { x: 24, y: 20 }));
+        assert!(!sheet.has_content_ignore_blank_table(Pos { x: 25, y: 20 }));
     }
 }

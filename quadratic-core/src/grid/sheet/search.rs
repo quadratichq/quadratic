@@ -120,6 +120,7 @@ impl Sheet {
         let mut results = vec![];
         self.data_tables
             .iter()
+            .filter(|(_, data_table)| !data_table.spill_error && !data_table.has_error())
             .for_each(|(pos, data_table)| match &data_table.value {
                 Value::Single(v) => {
                     if self.compare_cell_value(
@@ -148,11 +149,14 @@ impl Sheet {
                                 whole_cell,
                                 false, // data_tables can never have code within them (although that would be cool if they did ;)
                             ) {
-                                results.push(SheetPos {
-                                    x: pos.x + x as i64,
-                                    y: pos.y + y as i64,
-                                    sheet_id: self.id,
-                                });
+                                let y = pos.y + data_table.y_adjustment(true) + y as i64;
+                                if y >= pos.y {
+                                    results.push(SheetPos {
+                                        x: pos.x + x as i64,
+                                        y,
+                                        sheet_id: self.id,
+                                    });
+                                }
                             }
                         }
                     }
@@ -722,5 +726,22 @@ mod test {
 
         let neighbors = sheet.neighbor_text(pos![E12]);
         assert_eq!(neighbors, vec!["MA", "MO", "NH", "NJ", "OH", "region"]);
+    }
+
+    #[test]
+    fn search_data_tables() {
+        let (gc, sheet_id, _, _) = simple_csv_at(pos!(E2));
+
+        let sheet = gc.sheet(sheet_id);
+
+        let results = sheet.search(
+            &"MO".into(),
+            &SearchOptions {
+                search_code: Some(true),
+                ..Default::default()
+            },
+        );
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0], SheetPos::new(sheet_id, 6, 9));
     }
 }

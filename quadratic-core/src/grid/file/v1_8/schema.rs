@@ -169,7 +169,10 @@ pub struct DataTableSchema {
     pub show_columns: bool,
     pub columns: Option<Vec<DataTableColumnSchema>>,
     pub sort: Option<Vec<DataTableSortOrderSchema>>,
+
+    #[serde(default)]
     pub sort_dirty: bool,
+
     pub display_buffer: Option<Vec<u64>>,
     pub value: OutputValueSchema,
     pub readonly: bool,

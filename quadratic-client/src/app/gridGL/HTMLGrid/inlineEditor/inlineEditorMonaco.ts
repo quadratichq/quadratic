@@ -449,7 +449,10 @@ class InlineEditorMonaco {
     monaco.languages.registerCompletionItemProvider('inline-editor', {
       provideCompletionItems: (model, position) => {
         const lowerCase = this.get().toLowerCase();
-        if (!this.autocompleteList?.find((t) => t.toLowerCase().startsWith(lowerCase) && t.length > lowerCase.length)) {
+        const filteredList = this.autocompleteList?.filter(
+          (t) => t.toLowerCase().startsWith(lowerCase) && t.length > lowerCase.length
+        );
+        if (!this.autocompleteList || filteredList?.length !== 1) {
           this.autocompleteSuggestionShowing = false;
           return;
         }

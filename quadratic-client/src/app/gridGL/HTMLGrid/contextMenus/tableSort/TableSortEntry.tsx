@@ -26,24 +26,19 @@ export const TableSortEntry = (props: Props) => {
   const { index, availableColumns, direction, name, onChange, onDelete, onReorder, last } = props;
 
   const [newColumn, setNewColumn] = useState<string | undefined>(name);
-  const [newDirection, setNewDirection] = useState<SortDirection>(direction ?? 'Ascending');
+  const [newDirection, setNewDirection] = useState<SortDirection>(direction);
 
   const updateValues = useCallback(
-    (column?: string, direction?: string) => {
+    (column?: string, direction?: SortDirection) => {
       if (column === 'blank') {
         column = '';
       }
       if (column !== undefined) setNewColumn(column);
-      if (direction !== undefined) setNewDirection(direction as SortDirection);
+      if (direction !== undefined) setNewDirection(direction);
 
-      // only update if the new column and direction are valid
-      onChange(
-        index,
-        column === undefined ? newColumn ?? undefined : column,
-        (direction as SortDirection) ?? newDirection
-      );
+      onChange(index, column === undefined ? newColumn : column, direction ?? newDirection);
     },
-    [index, onChange, newColumn, newDirection]
+    [onChange, index, newColumn, newDirection]
   );
 
   return (
@@ -52,7 +47,7 @@ export const TableSortEntry = (props: Props) => {
       <ValidationDropdown
         className="first-focus w-fit grow"
         style={{ paddingTop: 1, paddingBottom: 1, paddingLeft: 1 }}
-        value={newColumn ?? ''}
+        value={name}
         options={availableColumns}
         onChange={(column) => updateValues(column)}
         includeBlank

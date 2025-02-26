@@ -174,6 +174,7 @@ export class HtmlCell {
     this.iframe.height = this.height.toString();
     this.border.style.width = `${this.width}px`;
     this.border.style.height = `${this.height}px`;
+    this.gridBounds = new Rectangle(this.x, this.y, this.htmlCell.w - 1, this.htmlCell.h - 1);
     this.recalculateBounds();
   }
 

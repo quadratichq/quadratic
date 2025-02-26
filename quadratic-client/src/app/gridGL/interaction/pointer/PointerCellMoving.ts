@@ -23,7 +23,6 @@ interface MoveCells {
   toColumn: number;
   toRow: number;
   offset: { x: number; y: number };
-  table?: { offsetX: number; offsetY: number };
   original?: Rectangle;
 }
 
@@ -54,7 +53,7 @@ export class PointerCellMoving {
   tableMove = (column: number, row: number, point: Point, width: number, height: number) => {
     if (this.state) return false;
     this.startCell = new Point(column, row);
-    const offset = sheets.sheet.getCellOffsets(column, row);
+    const offset = sheets.sheet.getColumnRowFromScreen(point.x, point.y);
     this.movingCells = {
       column,
       row,
@@ -62,8 +61,7 @@ export class PointerCellMoving {
       height,
       toColumn: column,
       toRow: row,
-      offset: { x: 0, y: 0 },
-      table: { offsetX: point.x - offset.x, offsetY: point.y - offset.y },
+      offset: { x: column - offset.column, y: row - offset.row },
       original: new Rectangle(column, row, width, height),
     };
     this.startMove();
@@ -98,13 +96,9 @@ export class PointerCellMoving {
     }
     pixiApp.viewport.enableMouseEdges();
     const sheet = sheets.sheet;
-    const moving = this.movingCells;
-    const position = sheet.getColumnRowFromScreen(
-      world.x - (moving.table ? moving.table.offsetX : 0),
-      world.y - (moving.table ? moving.table.offsetY : 0)
-    );
-    this.movingCells.toColumn = position.column + this.movingCells.offset.x;
-    this.movingCells.toRow = position.row + this.movingCells.offset.y;
+    const position = sheet.getColumnRowFromScreen(world.x, world.y);
+    this.movingCells.toColumn = Math.max(1, position.column + this.movingCells.offset.x);
+    this.movingCells.toRow = Math.max(1, position.row + this.movingCells.offset.y);
     pixiApp.cellMoving.dirty = true;
   };
 

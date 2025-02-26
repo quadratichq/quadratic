@@ -1,0 +1,21 @@
+[package]
+name = "function-timer"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+chrono = { version = "0.4", features = ["serde", "wasmbind"] }
+proc-macro2 = "*"
+quote = "*"
+syn = { version = "*", features = ["full"] }
+wasm-bindgen = { version = "0.2.100" }
+
+[dev-dependencies]
+trybuild = "*"
+
+[features]
+default = []
+function-timer = []

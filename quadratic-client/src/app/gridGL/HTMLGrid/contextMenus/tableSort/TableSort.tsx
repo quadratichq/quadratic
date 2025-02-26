@@ -107,9 +107,13 @@ export const TableSort = () => {
         const newSort = [...prev.filter((item) => item.column_index !== -1)];
 
         if (columnIndex === -1) {
-          newSort.splice(index, 1);
+          // If no column selected, remove the entry at the specified index
+          if (index >= 0 && index < newSort.length) {
+            newSort.splice(index, 1);
+          }
         } else {
-          if (index === -1) {
+          // Update or add entry at the specified index
+          if (index >= newSort.length) {
             newSort.push({ column_index: columnIndex, direction });
           } else {
             newSort[index] = { column_index: columnIndex, direction };
@@ -144,7 +148,8 @@ export const TableSort = () => {
 
   const handleReorder = useCallback((index: number, direction: 'up' | 'down') => {
     setSort((prev) => {
-      const sort = [...prev];
+      if (index === -1) return prev;
+      let sort = [...prev];
       sort.splice(index, 1);
       sort.splice(index + (direction === 'up' ? -1 : 1), 0, prev[index]);
       return sort;

@@ -369,4 +369,8 @@ export const defaultShortcuts: ActionShortcut = {
     mac: [[MacModifiers.Shift, Keys.PageUp]],
     windows: [[WindowsModifiers.Shift, Keys.PageUp]],
   },
+  [Action.GridToDataTable]: {
+    mac: [[MacModifiers.Ctrl, Keys.T]],
+    windows: [[WindowsModifiers.Ctrl, WindowsModifiers.Alt, Keys.T]],
+  },
 };

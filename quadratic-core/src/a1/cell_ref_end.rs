@@ -96,6 +96,24 @@ impl CellRefRangeEnd {
         self.row.coord
     }
 
+    /// Returns a new range end with the column and row bounded to the given
+    /// position at the start of the range.
+    pub fn to_bounded_start(self, pos: Pos) -> Self {
+        CellRefRangeEnd {
+            col: self.col.to_bounded_start(pos.x),
+            row: self.row.to_bounded_start(pos.y),
+        }
+    }
+
+    /// Returns a new range end with the column and row bounded to the given
+    /// position at the end of the range.
+    pub fn to_bounded_end(self, pos: Pos) -> Self {
+        CellRefRangeEnd {
+            col: self.col.to_bounded_end(pos.x),
+            row: self.row.to_bounded_end(pos.y),
+        }
+    }
+
     /// Parses the components of a CellRefRangeEnd and returns a tuple:
     /// `(x, is_x_absolute, y, is_y_absolute)`
     ///

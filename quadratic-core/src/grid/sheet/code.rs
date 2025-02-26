@@ -3,7 +3,7 @@ use std::ops::Range;
 use super::Sheet;
 use crate::{
     cell_values::CellValues,
-    formulas::replace_internal_cell_references,
+    formulas::convert_rc_to_a1,
     grid::{
         data_table::DataTable,
         js_types::{JsCodeCell, JsReturnInfo},
@@ -88,6 +88,26 @@ impl Sheet {
     pub fn has_table_content(&self, pos: Pos) -> bool {
         self.data_tables.iter().any(|(code_cell_pos, data_table)| {
             data_table.output_rect(*code_cell_pos, false).contains(pos)
+        })
+    }
+
+    /// Returns true if the tables contain any cell at Pos (ie, not blank). Uses
+    /// the DataTable's output_rect for the check to ensure that charts are
+    /// included. Ignores Blanks.
+    pub fn has_table_content_ignore_blanks(&self, pos: Pos) -> bool {
+        self.data_tables.iter().any(|(code_cell_pos, data_table)| {
+            data_table.output_rect(*code_cell_pos, false).contains(pos)
+                && (data_table
+                    .cell_value_ref_at(
+                        (pos.x - code_cell_pos.x) as u32,
+                        (pos.y - code_cell_pos.y) as u32,
+                    )
+                    .is_some_and(|cell_value| {
+                        !cell_value.is_blank_or_empty_string() && cell_value != &CellValue::Blank
+                    })
+                    || data_table.is_html_or_image()
+                    // also check if its the table name (the entire width of the table is valid for content)
+                    || (data_table.show_ui && data_table.show_name && pos.y == code_cell_pos.y))
         })
     }
 
@@ -244,7 +264,7 @@ impl Sheet {
                 if matches!(code_cell_value.language, CodeCellLanguage::Formula) {
                     // `self.a1_context()` is unaware of other sheets, which might cause issues?
                     let parse_ctx = self.a1_context();
-                    let replaced = replace_internal_cell_references(
+                    let replaced = convert_rc_to_a1(
                         &code_cell_value.code,
                         &parse_ctx,
                         code_pos.to_sheet_pos(self.id),

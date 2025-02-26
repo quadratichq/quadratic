@@ -5,7 +5,7 @@ use regex::Regex;
 
 use crate::{
     a1::CellRefRange,
-    formulas::replace_a1_notation,
+    formulas::convert_a1_to_rc,
     grid::{CodeCellLanguage, CodeCellValue, Grid, GridBounds},
     CellValue, Pos, Rect,
 };
@@ -59,7 +59,7 @@ pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
                     for y in bounds.y_range() {
                         if let Some(CellValue::Code(code_cell)) = column.values.get_mut(&y) {
                             if code_cell.language == CodeCellLanguage::Formula {
-                                code_cell.code = replace_a1_notation(
+                                code_cell.code = convert_a1_to_rc(
                                     &code_cell.code,
                                     &parse_ctx,
                                     crate::SheetPos::new(sheet_id, x + 1, y),

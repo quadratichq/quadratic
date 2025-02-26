@@ -86,7 +86,7 @@ macro_rules! see_docs_for_more_about_wildcards {
 /// - `#[name = "..."]` - overrides the function name
 /// - `#[examples("EXAMPLE()", "EXAMPLE(A, B)")]` - example usages
 /// - `#[zip_map]` - if certain arguments are arrays, **zip** them together
-///                  and **map** a **pure** function over them.
+///   and **map** a **pure** function over them.
 ///
 /// # Parameter syntax
 ///
@@ -108,13 +108,13 @@ macro_rules! see_docs_for_more_about_wildcards {
 /// - `arg: Iter< ... >` - repeating argument (type is `impl Iterator<Item= ... >`)
 /// - `arg: Spanned< ... >` - include span information (type is `Spanned< ... >`)
 /// - `arg: Spanned<Option< ... >>` - optional argument with span information
-///                                   (type is `Option<Spanned< ... >>`)
+///   (type is `Option<Spanned< ... >>`)
 ///
 /// Special types:
 /// - `Ctx` - context (type is `Ctx<'_>`)
 /// - `Span` - span of the function call (type is `Span`)
 /// - `FormulaFnArgs` (must be last parameter) - all subsequent arguments
-///                                              (type is `FormulaFnArgs`)
+///   (type is `FormulaFnArgs`)
 ///
 /// Additionally, if the parameter name is surrounded by square brackets (such
 /// as `[arg]: f64`) then if the argument is an array then the function will be

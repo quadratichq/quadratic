@@ -2,7 +2,7 @@ use super::Sheet;
 use crate::{
     a1::{A1Context, A1Selection},
     cell_values::CellValues,
-    grid::{data_table::DataTable, CodeCellValue, SheetId},
+    grid::{data_table::DataTable, CodeCellValue, DataTableKind, SheetId},
     Pos, Rect,
 };
 
@@ -94,9 +94,21 @@ impl Sheet {
         }
     }
 
-    /// Checks whether a table intersects a position. We ignore the table if it
+    /// Returns the (Pos, DataTable) that intersects a position
+    pub fn data_table_at(&self, pos: Pos) -> Option<(Pos, &DataTable)> {
+        self.data_tables
+            .iter()
+            .find_map(|(data_table_pos, data_table)| {
+                data_table
+                    .output_rect(*data_table_pos, false)
+                    .contains(pos)
+                    .then_some((*data_table_pos, data_table))
+            })
+    }
+
+    /// Checks whether a chart intersects a position. We ignore the chart if it
     /// includes either exclude_x or exclude_y.
-    pub fn table_intersects(
+    pub fn chart_intersects(
         &self,
         x: i64,
         y: i64,
@@ -179,7 +191,7 @@ impl Sheet {
         values: &mut CellValues,
         context: &A1Context,
         selection: &A1Selection,
-        include_data_table_values: bool,
+        include_code_table_values: bool,
     ) -> IndexMap<Pos, DataTable> {
         let mut data_tables = IndexMap::new();
 
@@ -196,7 +208,9 @@ impl Sheet {
 
                 // if the source cell is included in the clipboard, add the data_table to the clipboard
                 if !include_in_cells {
-                    if include_data_table_values {
+                    if matches!(data_table.kind, DataTableKind::Import(_))
+                        || include_code_table_values
+                    {
                         data_tables.insert(data_table_pos, data_table.clone());
                     } else {
                         data_tables.insert(data_table_pos, data_table.clone_without_values());
@@ -346,5 +360,45 @@ mod test {
                 .chart_pixel_output
         );
         // assert_eq!(clipboard.html, data_table.html());
+    }
+
+    #[test]
+    fn test_data_table_at() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+
+        let code_run = CodeRun {
+            std_err: None,
+            std_out: None,
+            cells_accessed: Default::default(),
+            error: None,
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
+        };
+
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "Table 1",
+            Value::Single(CellValue::Number(BigDecimal::from(2))),
+            false,
+            false,
+            false,
+            None,
+        );
+
+        // Insert data table at A1
+        sheet.set_data_table(pos![A1], Some(data_table.clone()));
+
+        // Test position within the data table
+        let result = sheet.data_table_at(pos![A1]);
+        assert!(result.is_some());
+        let (pos, dt) = result.unwrap();
+        assert_eq!(pos, pos![A1]);
+        assert_eq!(dt.name.to_display(), "Table 1");
+
+        // Test position outside the data table
+        assert!(sheet.data_table_at(pos![D4]).is_none());
     }
 }

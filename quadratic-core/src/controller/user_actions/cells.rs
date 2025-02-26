@@ -1,11 +1,9 @@
-use anyhow::Result;
-
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::operation::Operation;
 use crate::controller::GridController;
-use crate::grid::column_header::DataTableColumnHeader;
 use crate::Pos;
 use crate::{a1::A1Selection, CellValue, SheetPos};
+use anyhow::Result;
 
 impl GridController {
     // Using sheet_pos, either set a cell value or a data table value
@@ -40,61 +38,34 @@ impl GridController {
         let mut data_table_ops = vec![];
         let pos = Pos::from(sheet_pos);
 
-        if let Ok(sheet) = self.try_sheet_mut_result(sheet_pos.sheet_id) {
-            if pos.x > 1 {
-                let data_table_left = sheet.first_data_table_within(Pos::new(pos.x - 1, pos.y));
-                if let Ok(data_table_left) = data_table_left {
-                    if let Some(data_table) =
-                        sheet.data_table(data_table_left).filter(|data_table| {
-                            if data_table.readonly {
-                                return false;
-                            }
-                            // check if next column is blank
-                            for y in 0..data_table.height(false) {
-                                let pos = Pos::new(pos.x, data_table_left.y + y as i64);
-                                if sheet.has_content(pos) {
+        if !value.is_empty() {
+            if let Ok(sheet) = self.try_sheet_mut_result(sheet_pos.sheet_id) {
+                if pos.x > 1 {
+                    let data_table_left = sheet.first_data_table_within(Pos::new(pos.x - 1, pos.y));
+                    if let Ok(data_table_left) = data_table_left {
+                        if let Some(data_table) =
+                            sheet.data_table(data_table_left).filter(|data_table| {
+                                if data_table.readonly {
                                     return false;
                                 }
-                            }
-                            true
-                        })
-                    {
-                        let y = pos.y - data_table_left.y;
-                        let header_y = if data_table.show_ui && data_table.show_columns {
-                            if data_table.show_name {
-                                Some(1)
-                            } else {
-                                Some(0)
-                            }
-                        } else {
-                            None
-                        };
 
-                        // header row, add column header
-                        if header_y == Some(y) {
-                            let value_index = data_table.column_headers_len();
-                            let column_header =
-                                DataTableColumnHeader::new(value.to_owned(), true, value_index);
-                            let columns =
-                                data_table.column_headers.to_owned().map(|mut headers| {
-                                    headers.push(column_header);
-                                    headers
-                                });
+                                if data_table.show_ui
+                                    && data_table.show_name
+                                    && data_table_left.y == pos.y
+                                {
+                                    return false;
+                                }
 
-                            data_table_ops.push(Operation::DataTableMeta {
-                                sheet_pos: (data_table_left, sheet_pos.sheet_id).into(),
-                                name: None,
-                                alternating_colors: None,
-                                columns,
-                                show_ui: None,
-                                show_name: None,
-                                show_columns: None,
-                                readonly: None,
-                            });
-                        }
-                        // data row, add column
-                        else {
-                            // insert column with swallow
+                                // check if next column is blank
+                                for y in 0..data_table.height(false) {
+                                    let pos = Pos::new(pos.x, data_table_left.y + y as i64);
+                                    if sheet.has_content(pos) {
+                                        return false;
+                                    }
+                                }
+                                true
+                            })
+                        {
                             let column_index = data_table.width();
                             data_table_ops.push(Operation::InsertDataTableColumns {
                                 sheet_pos: (data_table_left, sheet_pos.sheet_id).into(),
@@ -105,33 +76,34 @@ impl GridController {
                         }
                     }
                 }
-            }
 
-            if pos.y > 1 {
-                let data_table_above = sheet.first_data_table_within(Pos::new(pos.x, pos.y - 1));
-                if let Ok(data_table_above) = data_table_above {
-                    if let Some(data_table) =
-                        sheet.data_table(data_table_above).filter(|data_table| {
-                            if data_table.readonly {
-                                return false;
-                            }
-                            // check if next row is blank
-                            for x in 0..data_table.width() {
-                                let pos = Pos::new(data_table_above.x + x as i64, pos.y);
-                                if sheet.has_content(pos) {
+                if pos.y > 1 {
+                    let data_table_above =
+                        sheet.first_data_table_within(Pos::new(pos.x, pos.y - 1));
+                    if let Ok(data_table_above) = data_table_above {
+                        if let Some(data_table) =
+                            sheet.data_table(data_table_above).filter(|data_table| {
+                                if data_table.readonly {
                                     return false;
                                 }
-                            }
-                            true
-                        })
-                    {
-                        // insert row with swallow
-                        data_table_ops.push(Operation::InsertDataTableRows {
-                            sheet_pos: (data_table_above, sheet_pos.sheet_id).into(),
-                            rows: vec![(data_table.height(false) as u32, None)],
-                            swallow: true,
-                            select_table: false,
-                        });
+                                // check if next row is blank
+                                for x in 0..data_table.width() {
+                                    let pos = Pos::new(data_table_above.x + x as i64, pos.y);
+                                    if sheet.has_content(pos) {
+                                        return false;
+                                    }
+                                }
+                                true
+                            })
+                        {
+                            // insert row with swallow
+                            data_table_ops.push(Operation::InsertDataTableRows {
+                                sheet_pos: (data_table_above, sheet_pos.sheet_id).into(),
+                                rows: vec![(data_table.height(false) as u32, None)],
+                                swallow: true,
+                                select_table: false,
+                            });
+                        }
                     }
                 }
             }

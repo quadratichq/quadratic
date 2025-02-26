@@ -639,12 +639,7 @@ impl GridController {
             negative,
         });
 
-        let mut values = CellValues::from_flat_array(
-            final_range.width(),
-            final_range.height(),
-            series.iter().map(|(v, _)| v.to_owned()).collect(),
-        );
-
+        let mut values = CellValues::new(final_range.width(), final_range.height());
         let mut cells = CellValues::default();
         let context = self.a1_context();
         let selection =
@@ -667,12 +662,9 @@ impl GridController {
                 if let Some((CellValue::Code(code_cell), original_pos)) = series.get_mut(i) {
                     let mut data_table_ops = vec![];
                     if let Some(original_pos) = original_pos {
-                        code_cell.translate_cell_references(
-                            x - original_pos.x,
-                            y - original_pos.y,
-                            &sheet_id,
-                            context,
-                        );
+                        let new_x = x - original_pos.x;
+                        let new_y = y - original_pos.y;
+                        code_cell.translate_cell_references(new_x, new_y, &sheet_id, context);
 
                         let source_pos = original_pos.to_owned();
                         original_pos.x = x;
@@ -706,6 +698,11 @@ impl GridController {
             .flatten()
             .collect::<Vec<Operation>>();
 
+        let values = CellValues::from_flat_array(
+            final_range.width(),
+            final_range.height(),
+            series.iter().map(|(v, _)| v.to_owned()).collect(),
+        );
         let sheet_pos = final_range.min.to_sheet_pos(sheet_id);
         let mut ops = vec![Operation::SetCellValues { sheet_pos, values }];
 

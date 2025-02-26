@@ -97,14 +97,14 @@ fn simple_parse_and_check_formula(formula_string: &str) -> bool {
 /// # Example
 ///
 /// ```rust
-/// use quadratic_core::{Pos, a1::A1Context, formulas::replace_internal_cell_references, grid::{Grid, SheetId}};
+/// use quadratic_core::{Pos, a1::A1Context, formulas::convert_rc_to_a1, grid::{Grid, SheetId}};
 ///
 /// let g = Grid::new();
 /// let pos = Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id);
-/// let replaced = replace_internal_cell_references("SUM(R{3}C[1])", &g.a1_context(), pos);
+/// let replaced = convert_rc_to_a1("SUM(R{3}C[1])", &g.a1_context(), pos);
 /// assert_eq!(replaced, "SUM(B$3)");
 /// ```
-pub fn replace_internal_cell_references(source: &str, ctx: &A1Context, pos: SheetPos) -> String {
+pub fn convert_rc_to_a1(source: &str, ctx: &A1Context, pos: SheetPos) -> String {
     let replace_fn = |range_ref: SheetCellRefRange| Ok(range_ref.to_a1_string(None, ctx, false));
     replace_cell_range_references(source, ctx, pos, replace_fn)
 }
@@ -115,14 +115,14 @@ pub fn replace_internal_cell_references(source: &str, ctx: &A1Context, pos: Shee
 /// # Example
 ///
 /// ```rust
-/// use quadratic_core::{Pos, a1::A1Context, formulas::replace_a1_notation, grid::{Grid, SheetId}};
+/// use quadratic_core::{Pos, a1::A1Context, formulas::convert_a1_to_rc, grid::{Grid, SheetId}};
 ///
 /// let g = Grid::new();
 /// let pos = Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id);
-/// let replaced = replace_a1_notation("SUM(B$3)", &g.a1_context(), pos);
+/// let replaced = convert_a1_to_rc("SUM(B$3)", &g.a1_context(), pos);
 /// assert_eq!(replaced, "SUM(R{3}C[1])");
 /// ```
-pub fn replace_a1_notation(source: &str, ctx: &A1Context, pos: SheetPos) -> String {
+pub fn convert_a1_to_rc(source: &str, ctx: &A1Context, pos: SheetPos) -> String {
     let replace_fn = |range_ref: SheetCellRefRange| {
         Ok(range_ref.to_rc_string(Some(pos.sheet_id), ctx, false, pos.into()))
     };
@@ -148,7 +148,7 @@ pub fn replace_cell_references_with(
                     end: replace_xy_fn(range_ref.sheet_id, end)?,
                 },
             },
-            other @ CellRefRange::Table { .. } => other,
+            other @ CellRefRange::Table { .. } => other, // leave table refs unchanged
         }
         .to_string())
     })
@@ -366,7 +366,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_replace_internal_cell_references() {
+    fn test_convert_rc_to_a1() {
         let ctx = A1Context::test(&[], &[]);
         let pos = SheetPos::test();
         let src = "SUM(R[1]C[2])
@@ -374,12 +374,12 @@ mod tests {
         let expected = "SUM(C2)
         + SUM(E3)";
 
-        let replaced = replace_internal_cell_references(src, &ctx, pos);
+        let replaced = convert_rc_to_a1(src, &ctx, pos);
         assert_eq!(replaced, expected);
     }
 
     #[test]
-    fn test_replace_a1_notation() {
+    fn test_convert_a1_to_rc() {
         let ctx = A1Context::test(&[], &[]);
         let pos = SheetPos::test();
         let src = "SUM(A$1)
@@ -387,7 +387,7 @@ mod tests {
         let expected = "SUM(R{1}C[0])
         + SUM(R[2]C{2})";
 
-        let replaced = replace_a1_notation(src, &ctx, pos);
+        let replaced = convert_a1_to_rc(src, &ctx, pos);
         assert_eq!(expected, replaced);
     }
 
@@ -417,7 +417,7 @@ mod tests {
             })
         });
 
-        let replaced_a1 = replace_internal_cell_references(&replaced, &ctx, pos);
+        let replaced_a1 = convert_rc_to_a1(&replaced, &ctx, pos);
         assert_eq!(replaced_a1, expected);
     }
 
