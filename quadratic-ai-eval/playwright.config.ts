@@ -43,7 +43,7 @@ export default defineConfig({
     trace: 'on-first-retry',
     
     /* Capture screenshot on failure */
-    screenshot: 'only-on-failure',
+    screenshot: 'off',
     
     /* Slow down execution for better visibility during debugging */
     launchOptions: {

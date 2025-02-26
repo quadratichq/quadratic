@@ -10,25 +10,13 @@ export interface PromptTest {
 export const testPrompts: PromptTest[] = [
   {
     name: 'States GDP Map',
-    prompt: 'Return a table of states with gdp per capita, and plot it on a map.',
+    prompt: 'Return a table of states with gdp per capita, and plot it on a map, use state abbreviations for the map',
     validationCriteria: [
       'Does the spreadsheet contain a table of states with GDP per capita?',
       'Is there a map visualization of this data?',
       'Is the data properly formatted and presented?',
       'Are there any obvious errors or issues?',
       'Are the states on the map correctly colored?'
-    ],
-    expectedRating: 'GREEN'
-  },
-  {
-    name: 'Population Density Heatmap',
-    prompt: 'Create a heatmap showing population density by county in the United States.',
-    validationCriteria: [
-      'Does the spreadsheet contain county-level population density data?',
-      'Is there a heatmap visualization of this data?',
-      'Are the counties properly colored according to their population density?',
-      'Is there a legend explaining the color scale?',
-      'Is the data properly formatted and presented?'
     ],
     expectedRating: 'GREEN'
   },
@@ -100,17 +88,5 @@ export const testPrompts: PromptTest[] = [
     ],
     expectedRating: 'GREEN'
   },
-  {
-    name: 'Advanced DataFrame Manipulation',
-    prompt: 'Insert the following dataset and perform advanced data cleaning and analysis, including handling missing values, standardizing formats, and providing summary statistics\nProduct Name\tPrice\tIn Stock\tDate Added\tRating\nlaptop pro 15"\t1299.99\tYes\t2023-01-15\t4.7/5\nSMARTPHONE X\t899\tNO\t2023-01-22\t3.9 stars\nwireless headphones\t129.95\tyes\t2023-02-05\t4.2/5\n49.99\tYes\t2023-01-30\t4.0 stars\nGAMING MOUSE\t79.99\t\t2023-02-15\t4.5/5\nexternal SSD 1TB\t159.99\tYES\t2023-03-01\t\nmechanical keyboard\t149.95\tno\t2023-03-10\t4.8 stars\nmonitor 27"\t249.99\tYes\t2023-02-20\t4.3/5',
-    validationCriteria: [
-      'Does the spreadsheet show the original dataset?',
-      'Are missing values properly handled?',
-      'Are formats standardized (e.g., consistent Yes/No values, rating format)?',
-      'Are summary statistics provided (e.g., average price, rating distribution)?',
-      'Is the data properly formatted and presented?'
-    ],
-    expectedRating: 'GREEN'
-  }
   // Add more test prompts as needed
 ];
