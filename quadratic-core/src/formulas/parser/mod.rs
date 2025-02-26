@@ -154,8 +154,6 @@ pub fn replace_cell_references_with(
     })
 }
 
-pub fn replace_table_name(source: &str, ctx: &A1Context, pos: SheetPos)
-
 fn replace_table_references(
     source: &str,
     ctx: &A1Context,
