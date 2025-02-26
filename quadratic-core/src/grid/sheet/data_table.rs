@@ -2,7 +2,7 @@ use super::Sheet;
 use crate::{
     a1::{A1Context, A1Selection},
     cell_values::CellValues,
-    grid::{data_table::DataTable, CodeCellValue, SheetId},
+    grid::{data_table::DataTable, CodeCellValue, DataTableKind, SheetId},
     Pos, Rect,
 };
 
@@ -191,7 +191,7 @@ impl Sheet {
         values: &mut CellValues,
         context: &A1Context,
         selection: &A1Selection,
-        include_data_table_values: bool,
+        include_code_table_values: bool,
     ) -> IndexMap<Pos, DataTable> {
         let mut data_tables = IndexMap::new();
 
@@ -208,7 +208,9 @@ impl Sheet {
 
                 // if the source cell is included in the clipboard, add the data_table to the clipboard
                 if !include_in_cells {
-                    if include_data_table_values {
+                    if matches!(data_table.kind, DataTableKind::Import(_))
+                        || include_code_table_values
+                    {
                         data_tables.insert(data_table_pos, data_table.clone());
                     } else {
                         data_tables.insert(data_table_pos, data_table.clone_without_values());

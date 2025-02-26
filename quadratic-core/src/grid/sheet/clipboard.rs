@@ -236,14 +236,14 @@ impl Sheet {
                 }
             }
 
-            let include_data_table_values = matches!(clipboard_operation, ClipboardOperation::Cut);
+            let include_code_table_values = matches!(clipboard_operation, ClipboardOperation::Cut);
             let data_tables_in_rect = self.data_tables_and_cell_values_in_rect(
                 &bounds,
                 &mut cells,
                 &mut values,
                 context,
                 selection,
-                include_data_table_values,
+                include_code_table_values,
             );
 
             data_tables.extend(data_tables_in_rect);
