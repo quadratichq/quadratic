@@ -461,7 +461,10 @@ impl GridController {
             });
             reverse_operations.push(Operation::SetCellValues {
                 sheet_pos: data_table_pos.to_sheet_pos(sheet_id),
-                values: CellValues::new(w.get(), h.get()),
+                values: CellValues::new(
+                    data_table_rect.width() as u32,
+                    data_table_rect.height() as u32,
+                ),
             });
             self.data_table_operations(
                 transaction,
@@ -523,7 +526,7 @@ impl GridController {
             return Ok(());
         };
 
-        bail!("Expected Operation::FlattenDataTable in execute_flatten_data_table");
+        bail!("Expected Operation::SwitchDataTableKind in execute_flatten_data_table");
     }
 
     pub(super) fn execute_grid_to_data_table(
@@ -1610,6 +1613,7 @@ mod tests {
 
     use super::*;
 
+    #[track_caller]
     pub(crate) fn flatten_data_table<'a>(
         gc: &'a mut GridController,
         sheet_id: SheetId,
@@ -1780,6 +1784,27 @@ mod tests {
         gc.redo(None);
         assert_flattened_simple_csv(&gc, sheet_id, pos, file_name);
         print_table(&gc, sheet_id, Rect::new(1, 1, 3, 11));
+    }
+
+    #[test]
+    fn test_execute_flatten_data_table_with_first_row_as_header() {
+        let (mut gc, sheet_id, pos, file_name) = simple_csv();
+        assert_simple_csv(&gc, sheet_id, pos, file_name);
+        print_table(&gc, sheet_id, Rect::new(1, 1, 3, 11));
+
+        let sheet_pos = pos.to_sheet_pos(sheet_id);
+        gc.test_data_table_first_row_as_header(sheet_pos, false);
+
+        let op = Operation::FlattenDataTable { sheet_pos };
+        gc.start_user_transaction(vec![op], None, TransactionName::FlattenDataTable);
+
+        gc.undo(None);
+
+        gc.test_data_table_first_row_as_header(sheet_pos, true);
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(pos![A5]),
+            Some(CellValue::Text("Westborough".into()))
+        );
     }
 
     #[test]
