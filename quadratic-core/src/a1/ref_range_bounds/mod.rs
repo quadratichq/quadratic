@@ -125,6 +125,14 @@ impl RefRangeBounds {
         }
     }
 
+    /// Returns a new range bounded by the given rect.
+    pub fn to_bounded(&self, rect: &Rect) -> Self {
+        Self {
+            start: self.start.to_bounded_start(rect.min),
+            end: self.end.to_bounded_end(rect.max),
+        }
+    }
+
     /// Returns an R[1]C[1]-style reference relative to the given position.
     pub fn to_rc_string(&self, base_pos: Pos) -> String {
         let start_col = self.start.col.to_rc_string(base_pos.x);

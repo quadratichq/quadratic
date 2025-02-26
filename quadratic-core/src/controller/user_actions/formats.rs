@@ -30,6 +30,12 @@ impl GridController {
         let add_table_ops = |range: RefRangeBounds,
                              table: &TableMapEntry,
                              ops: &mut Vec<Operation>| {
+            // for sheet operation
+            let bounded_range = range.to_bounded(&table.bounds);
+            let bounded_ranges = vec![CellRefRange::Sheet {
+                range: bounded_range,
+            }];
+
             // pos relative to table pos (top left pos), 1-based for formatting.
             // ensure coordinates are within bounds later.
             //
@@ -37,12 +43,12 @@ impl GridController {
             // because that'll break if we switch to `u64`. Just directly
             // compute the coordinates we actually want.
             let mut range = range.translate_unchecked(
-                -table.bounds.min.x + 1,
-                -table.bounds.min.y + 1 - table.y_adjustment(true),
+                1 - table.bounds.min.x,
+                1 - table.bounds.min.y - table.y_adjustment(true),
             );
 
-            // map visible index to actual column index
             if !range.start.col.is_unbounded() {
+                // map visible index to actual column index
                 range.start.col.coord = table
                     .get_column_index_from_display_index(range.start.col.coord as usize - 1)
                     .unwrap_or(range.start.col.coord as usize - 1)
@@ -69,13 +75,19 @@ impl GridController {
 
             if let Some(rect) = range.to_rect() {
                 let Some(sheet) = self.try_sheet(table.sheet_id) else {
-                    eprintln!("invalid sheet ID");
+                    dbgjs!(format!(
+                        "[format_ops] invalid sheet ID: {:?}",
+                        table.sheet_id
+                    ));
                     return;
                 };
 
                 let data_table_pos = table.bounds.min;
                 let Some(data_table) = sheet.data_table(data_table_pos) else {
-                    eprintln!("invalid data table ID");
+                    dbgjs!(format!(
+                        "[format_ops] invalid data table ID: {:?}",
+                        data_table_pos
+                    ));
                     return;
                 };
 
@@ -93,20 +105,23 @@ impl GridController {
                 }
             }
 
+            // add table operation
             if let Some(selection) = A1Selection::from_ranges(ranges, table.sheet_id, context) {
                 let formats = SheetFormatUpdates::from_selection(&selection, format_update.clone());
-
-                // add table operation
                 ops.push(Operation::DataTableFormats {
                     sheet_pos: table.bounds.min.to_sheet_pos(table.sheet_id),
                     formats,
                 });
+            }
 
-                // clear sheet formatting if needed
+            // clear sheet formatting if needed
+            if let Some(bounded_selection) =
+                A1Selection::from_ranges(bounded_ranges, table.sheet_id, context)
+            {
                 if let Some(cleared) = format_update.only_cleared() {
                     ops.push(Operation::SetCellFormatsA1 {
                         sheet_id: table.sheet_id,
-                        formats: SheetFormatUpdates::from_selection(&selection, cleared),
+                        formats: SheetFormatUpdates::from_selection(&bounded_selection, cleared),
                     });
                 }
             }

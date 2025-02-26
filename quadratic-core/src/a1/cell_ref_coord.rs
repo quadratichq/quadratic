@@ -147,6 +147,24 @@ impl CellRefCoord {
     pub fn is_unbounded(&self) -> bool {
         self.coord == UNBOUNDED
     }
+
+    /// Returns a new coordinate with the value bounded to the given position
+    /// at the start of the range.
+    pub fn to_bounded_start(self, coord: i64) -> Self {
+        Self {
+            coord: self.coord.max(coord),
+            is_absolute: self.is_absolute,
+        }
+    }
+
+    /// Returns a new coordinate with the value bounded to the given position
+    /// at the end of the range.
+    pub fn to_bounded_end(self, coord: i64) -> Self {
+        Self {
+            coord: self.coord.min(coord),
+            is_absolute: self.is_absolute,
+        }
+    }
 }
 
 /// Returns whether `range` might intersect the region from `start` to `end`.
