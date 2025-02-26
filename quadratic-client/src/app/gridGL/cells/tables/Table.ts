@@ -51,6 +51,7 @@ export class Table extends Container {
     if (cellsMarkers) {
       cellsMarkers.remove(this.codeCell.x, this.codeCell.y);
     }
+    this.sheet.gridOverflowLines.updateImageHtml(this.codeCell.x, this.codeCell.y);
 
     super.destroy();
   }
@@ -106,6 +107,16 @@ export class Table extends Container {
       cellsMarkers.add(box, this.codeCell);
     } else {
       cellsMarkers.remove(this.codeCell.x, this.codeCell.y);
+    }
+    if (
+      !this.codeCell.spill_error &&
+      !this.codeCell.is_html_image &&
+      this.codeCell.show_ui &&
+      this.codeCell.show_name
+    ) {
+      this.sheet.gridOverflowLines.updateImageHtml(this.codeCell.x, this.codeCell.y, this.codeCell.w, 1);
+    } else {
+      this.sheet.gridOverflowLines.updateImageHtml(this.codeCell.x, this.codeCell.y);
     }
   };
 

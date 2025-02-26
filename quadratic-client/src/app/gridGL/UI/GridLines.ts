@@ -81,11 +81,6 @@ export class GridLines extends Graphics {
     this.drawVerticalLines(bounds, range);
   };
 
-  // private getColumns(bounds: Rectangle): [number, number] {
-  //   const sheet = sheets.sheet;
-  //   return [sheet.offsets.getXPlacement(bounds.left).index, sheet.offsets.getXPlacement(bounds.right).index];
-  // }
-
   private drawVerticalLines(bounds: Rectangle, range: [number, number]) {
     const sheet = sheets.sheet;
     const offsets = sheet.offsets;
