@@ -4,6 +4,7 @@ import { editorInteractionStateShowSearchAtom } from '@/app/atoms/editorInteract
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { focusGrid } from '@/app/helpers/focusGrid';
+import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
 import type { SearchOptions, SheetPos } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -37,6 +38,14 @@ export function Search() {
 
   const placeholder = !searchOptions.sheet_id ? findInSheetsActionSpec.label : findInSheetActionSpec.label;
 
+  const moveCursor = useCallback((pos: SheetPos) => {
+    if (sheets.current !== pos.sheet_id.id) {
+      sheets.current = pos.sheet_id.id;
+    }
+    sheets.sheet.cursor.moveTo(Number(pos.x), Number(pos.y));
+    inputRef.current?.focus();
+  }, []);
+
   const onChange = useCallback(
     async (search: string, updatedSearchOptions = searchOptions) => {
       if (search.length > 0) {
@@ -55,59 +64,58 @@ export function Search() {
       setResults([]);
       events.emit('search');
     },
-    [searchOptions]
+    [moveCursor, searchOptions]
   );
 
-  const moveCursor = (pos: SheetPos) => {
-    if (sheets.current !== pos.sheet_id.id) {
-      sheets.current = pos.sheet_id.id;
-    }
-    sheets.sheet.cursor.moveTo(Number(pos.x), Number(pos.y));
-  };
+  const navigate = useCallback(
+    (delta: 1 | -1) => {
+      setCurrent((current) => {
+        let next = (current + delta) % results.length;
+        if (next < 0) next = results.length - 1;
+        events.emit(
+          'search',
+          results.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id.id }), next)
+        );
+        const result = results[next];
+        moveCursor(result);
+        return next;
+      });
+    },
+    [moveCursor, results]
+  );
 
-  const navigate = (delta: 1 | -1) => {
-    setCurrent((current) => {
-      let next = (current + delta) % results.length;
-      if (next < 0) next = results.length - 1;
-      events.emit(
-        'search',
-        results.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id.id }), next)
-      );
-      const result = results[next];
-      moveCursor(result);
-      return next;
-    });
-  };
-
-  const changeOptions = (option: 'case_sensitive' | 'whole_cell' | 'search_code' | 'sheet') => {
-    let updatedSearchOptions: SearchOptions;
-    if (option === 'sheet') {
-      if (searchOptions.sheet_id) {
-        setSearchOptions((prev) => {
-          updatedSearchOptions = { ...prev, sheet_id: undefined };
-          return updatedSearchOptions;
-        });
+  const changeOptions = useCallback(
+    (option: 'case_sensitive' | 'whole_cell' | 'search_code' | 'sheet') => {
+      let updatedSearchOptions: SearchOptions;
+      if (option === 'sheet') {
+        if (searchOptions.sheet_id) {
+          setSearchOptions((prev) => {
+            updatedSearchOptions = { ...prev, sheet_id: undefined };
+            return updatedSearchOptions;
+          });
+        } else {
+          setSearchOptions((prev) => {
+            updatedSearchOptions = { ...prev, sheet_id: sheets.current };
+            return updatedSearchOptions;
+          });
+        }
       } else {
         setSearchOptions((prev) => {
-          updatedSearchOptions = { ...prev, sheet_id: sheets.current };
+          updatedSearchOptions = { ...prev, [option]: !prev[option] };
           return updatedSearchOptions;
         });
       }
-    } else {
-      setSearchOptions((prev) => {
-        updatedSearchOptions = { ...prev, [option]: !prev[option] };
-        return updatedSearchOptions;
-      });
-    }
 
-    const search = (inputRef.current as HTMLInputElement).value;
-    onChange(search, updatedSearchOptions!);
-  };
+      const search = (inputRef.current as HTMLInputElement).value;
+      onChange(search, updatedSearchOptions!);
+    },
+    [onChange, searchOptions.sheet_id]
+  );
 
-  const closeSearch = () => {
+  const closeSearch = useCallback(() => {
     events.emit('search');
     focusGrid();
-  };
+  }, []);
 
   useEffect(() => {
     const changeSheet = () => {
@@ -144,7 +152,7 @@ export function Search() {
         setSearchOptions(showSearch);
       }
     }
-  }, [showSearch]);
+  }, [closeSearch, showSearch]);
 
   return (
     <Popover open={!!showSearch}>
@@ -159,7 +167,7 @@ export function Search() {
           if (e.key === 'Escape') {
             setShowSearch(false);
           }
-          if (e.key === 'f' && (e.ctrlKey || e.metaKey)) {
+          if (matchShortcut(Action.FindInCurrentSheet, e)) {
             e.preventDefault();
             inputRef.current?.focus();
             inputRef.current?.select();
