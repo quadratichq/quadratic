@@ -3,6 +3,7 @@ import { showCodePeekAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { usePositionCellMessage } from '@/app/gridGL/HTMLGrid/usePositionCellMessage';
 import { HtmlValidationMessage } from '@/app/gridGL/HTMLGrid/validations/HtmlValidationMessage';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -142,6 +143,14 @@ export function HoverCell() {
 
   useEffect(() => {
     const addCell = (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => {
+      // don't show hover cell if the inline editor is showing at the same location
+      if (cell && inlineEditorHandler.getShowing(cell.x, cell.y)) {
+        removePointerEvents();
+        setHovering(false);
+        hoveringRef.current = false;
+        return;
+      }
+
       setCell(cell);
       if (cell && !hoveringRef.current) {
         setOffsets(sheets.sheet.getCellOffsets(cell.x, cell.y));
