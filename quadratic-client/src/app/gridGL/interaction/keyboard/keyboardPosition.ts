@@ -59,6 +59,7 @@ async function jumpCursor(direction: Direction, jump: boolean, select: boolean) 
     // todo: hack so we can select the table if in the table anchor (this entire
     // fn should be moved to rust-client)
     cursor.moveTo(jumpCol, jumpRow);
+    ensureVisible({ x: jumpCol, y: jumpRow });
   }
 }
 
