@@ -15,7 +15,7 @@ use super::*;
 use crate::{
     a1::{A1Context, CellRefRange, CellRefRangeEnd, RefRangeBounds, SheetCellRefRange},
     grid::{Grid, SheetId},
-    CodeResult, CoerceInto, RefError, RunError, RunErrorMsg, SheetPos, Span, Spanned, TableRef,
+    CodeResult, CoerceInto, RefError, RunError, RunErrorMsg, SheetPos, Span, Spanned,
 };
 
 /// Parses a formula.
