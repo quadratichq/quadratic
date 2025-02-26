@@ -13,7 +13,6 @@ import { useCallback, useState } from 'react';
 
 interface Props {
   index: number;
-  columnIndex: number;
   availableColumns: string[];
   name: string;
   direction: SortDirection;
@@ -24,7 +23,7 @@ interface Props {
 }
 
 export const TableSortEntry = (props: Props) => {
-  const { index, columnIndex, availableColumns, direction, name, onChange, onDelete, onReorder, last } = props;
+  const { index, availableColumns, direction, name, onChange, onDelete, onReorder, last } = props;
 
   const [newColumn, setNewColumn] = useState<string | undefined>(name);
   const [newDirection, setNewDirection] = useState<SortDirection>(direction);
@@ -37,9 +36,9 @@ export const TableSortEntry = (props: Props) => {
       if (column !== undefined) setNewColumn(column);
       if (direction !== undefined) setNewDirection(direction);
 
-      onChange(columnIndex, column === undefined ? newColumn : column, direction ?? newDirection);
+      onChange(index, column === undefined ? newColumn : column, direction ?? newDirection);
     },
-    [onChange, columnIndex, newColumn, newDirection]
+    [onChange, index, newColumn, newDirection]
   );
 
   return (
@@ -84,7 +83,7 @@ export const TableSortEntry = (props: Props) => {
           size="icon"
           className={cn('w-7', index === 0 && '!opacity-20')}
           disabled={index === 0}
-          onClick={() => onReorder(columnIndex, 'up')}
+          onClick={() => onReorder(index, 'up')}
         >
           <UpArrowIcon />
         </Button>
@@ -93,18 +92,11 @@ export const TableSortEntry = (props: Props) => {
           size="icon"
           className={cn('w-7', last && '!opacity-20')}
           disabled={last}
-          onClick={() => onReorder(columnIndex, 'down')}
+          onClick={() => onReorder(index, 'down')}
         >
           <DownArrowIcon />
         </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn('w-7')}
-          onClick={() => {
-            onDelete(columnIndex);
-          }}
-        >
+        <Button variant="ghost" size="icon" className={cn('w-7')} onClick={() => onDelete(index)}>
           <CloseIcon />
         </Button>
       </div>
