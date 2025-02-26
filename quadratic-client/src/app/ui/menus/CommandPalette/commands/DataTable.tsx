@@ -40,8 +40,10 @@ import {
   toggleTableName,
   toggleTableUI,
 } from '@/app/actions/dataTableSpec';
+import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import { isMac } from '@/shared/utils/isMac';
 
 const dataTableCommandGroup: CommandGroup = {
   heading: 'Data Table',
@@ -50,7 +52,14 @@ const dataTableCommandGroup: CommandGroup = {
       label: gridToDataTableAction.label,
       isAvailable: gridToDataTableAction.isAvailable,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} action={gridToDataTable} />;
+        return (
+          <CommandPaletteListItem
+            {...props}
+            action={gridToDataTable}
+            shortcutModifiers={isMac ? [KeyboardSymbols.Control] : [KeyboardSymbols.Alt, KeyboardSymbols.Control]}
+            shortcut="T"
+          />
+        );
       },
     },
     {
