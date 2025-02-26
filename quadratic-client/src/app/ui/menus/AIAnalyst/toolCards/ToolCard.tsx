@@ -21,7 +21,7 @@ export const ToolCard = ({
   return (
     <div
       className={cn(
-        'flex h-12 min-w-0 items-center justify-between gap-2 rounded border border-border bg-background p-2 text-sm shadow',
+        'flex h-12 min-w-0 items-center justify-between gap-2 rounded border border-border bg-background p-2 text-sm shadow-sm',
         className
       )}
     >
