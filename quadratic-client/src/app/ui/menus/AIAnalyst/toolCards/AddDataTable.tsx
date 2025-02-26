@@ -28,7 +28,7 @@ export const AddDataTable = ({ args, loading }: AddDataTableProps) => {
     }
   }, [args, loading]);
 
-  const icon = <TableIcon />;
+  const icon = <TableIcon className="text-primary" />;
   const label = 'Data Table';
 
   if (loading) {
