@@ -143,7 +143,7 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
           autoComplete="off"
           placeholder="Ask a question..."
           autoHeight={true}
-          maxHeight="120px"
+          maxHeight="250px"
         />
       ) : (
         <div className="pointer-events-none whitespace-pre-wrap p-2 text-sm">{prompt}</div>
