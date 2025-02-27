@@ -34,7 +34,7 @@ export const GridContextMenu = () => {
     }
 
     // Chart
-    if (contextMenu.table.is_html) {
+    if (contextMenu.table.is_html || contextMenu.table.is_html_image) {
       return <GridContextMenuCodeTableChart />;
     }
 
