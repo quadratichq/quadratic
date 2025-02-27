@@ -86,13 +86,19 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
 
   useEffect(() => {
     if (loading) {
-      shouldAutoScroll.current = true;
-      scrollToBottom(true);
+      // Don't force shouldAutoScroll to true - respect current value
+      // Only force initial scroll if already at bottom
+      if (shouldAutoScroll.current) {
+        scrollToBottom(true);
+      }
 
       // Only observe mutations while loading
       if (div) {
         const observer = new MutationObserver(() => {
-          scrollToBottom(true);
+          // Only scroll if user was already at bottom
+          if (shouldAutoScroll.current) {
+            scrollToBottom(true);
+          }
         });
 
         observer.observe(div, {
@@ -112,12 +118,12 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
     }
   }, [messagesCount]);
 
-  // Only scroll on message changes if we're loading
+  // Only scroll on message changes if we're loading and user was already at bottom
   useEffect(() => {
-    if (loading) {
+    if (loading && shouldAutoScroll.current) {
       scrollToBottom();
     }
-  }, [messages, scrollToBottom, loading]);
+  }, [messages, scrollToBottom, loading, shouldAutoScroll]);
 
   // Don't auto-scroll when thinking blocks are expanded
   const handleThinkingToggle = useCallback(() => {
