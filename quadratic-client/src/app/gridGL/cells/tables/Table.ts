@@ -110,7 +110,7 @@ export class Table extends Container {
     }
     if (
       !this.codeCell.spill_error &&
-      !this.codeCell.is_html_image &&
+      // !this.codeCell.is_html_image &&
       this.codeCell.show_ui &&
       this.codeCell.show_name
     ) {
