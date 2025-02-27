@@ -47,25 +47,37 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
   }, []);
 
   const shouldAutoScroll = useRef(true);
-  const handleScrollEnd = useCallback((e: Event) => {
+  const handleScroll = useCallback((e: Event) => {
     const div = e.target as HTMLDivElement;
-    const isScrolledToBottom = div.scrollHeight - div.scrollTop <= div.clientHeight;
+    // Add a small buffer (5px) to account for rounding errors and tiny scroll differences
+    const isScrolledToBottom = div.scrollHeight - div.scrollTop - div.clientHeight < 5;
     shouldAutoScroll.current = isScrolledToBottom;
   }, []);
 
   useEffect(() => {
-    div?.addEventListener('scrollend', handleScrollEnd);
+    // Use both scroll and scrollend events for better cross-browser support
+    div?.addEventListener('scroll', handleScroll);
+    div?.addEventListener('scrollend', handleScroll);
     return () => {
-      div?.removeEventListener('scrollend', handleScrollEnd);
+      div?.removeEventListener('scroll', handleScroll);
+      div?.removeEventListener('scrollend', handleScroll);
     };
-  }, [div, handleScrollEnd]);
+  }, [div, handleScroll]);
 
   const scrollToBottom = useCallback(
     (force = false) => {
       if (force || shouldAutoScroll.current) {
-        div?.scrollTo({
-          top: div.scrollHeight,
-          behavior: 'smooth',
+        // Use requestAnimationFrame to ensure scrolling happens in the next frame
+        // This helps prevent race conditions with React re-renders
+        requestAnimationFrame(() => {
+          if (div) {
+            div.scrollTo({
+              top: div.scrollHeight,
+              // Use auto for rapid text updates to avoid falling behind
+              // Smooth scrolling can't keep up with fast text generation
+              behavior: force ? 'auto' : 'smooth',
+            });
+          }
         });
       }
     },
@@ -76,8 +88,23 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
     if (loading) {
       shouldAutoScroll.current = true;
       scrollToBottom(true);
+
+      // Only observe mutations while loading
+      if (div) {
+        const observer = new MutationObserver(() => {
+          scrollToBottom(true);
+        });
+
+        observer.observe(div, {
+          childList: true,
+          subtree: true,
+          characterData: true,
+        });
+
+        return () => observer.disconnect();
+      }
     }
-  }, [loading, scrollToBottom]);
+  }, [loading, scrollToBottom, div]);
 
   useEffect(() => {
     if (messagesCount === 0) {
@@ -85,14 +112,18 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
     }
   }, [messagesCount]);
 
+  // Only scroll on message changes if we're loading
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
+    if (loading) {
+      scrollToBottom();
+    }
+  }, [messages, scrollToBottom, loading]);
 
-  // This is simplified to just handle scrolling
+  // Don't auto-scroll when thinking blocks are expanded
   const handleThinkingToggle = useCallback(() => {
-    setTimeout(() => scrollToBottom(), 50);
-  }, [scrollToBottom]);
+    // Removed auto-scrolling behavior
+    // User can manually scroll if needed
+  }, []);
 
   if (messagesCount === 0) {
     return <AIAnalystExamplePrompts />;
