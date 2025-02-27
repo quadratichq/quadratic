@@ -157,7 +157,7 @@ export class Table extends Container {
     }
     if (
       this.codeCell.show_ui &&
-      this.codeCell.show_name &&
+      (this.codeCell.show_name || this.codeCell.show_columns) &&
       this.codeCell.state !== 'RunError' &&
       this.codeCell.state !== 'SpillError'
     ) {
