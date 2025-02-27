@@ -101,7 +101,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 4096, // not used for openai
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    enabled: false,
     provider: 'openai',
     strickParams: true,
   },
