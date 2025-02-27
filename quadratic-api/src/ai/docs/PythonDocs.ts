@@ -139,6 +139,8 @@ Return the data from your Python code to the spreadsheet.
 
 By default, the last line of code is output to the spreadsheet. Primarily return results to the spreadsheet rather than using print statements; print statements do not get returned to the sheet.
 
+Only one value or variable (single value, single list, single dataframe, single series, single chart, etc) can be returned per code cell. If you need to return multiple things, such as numerical results of an analysis and a chart, you should use multiple code cells, outputting the analysis in one cell and the chart in another.
+
 All code outputs by default are given names that can be referenced, regardless of their return type. 
 
 You can expect to primarily use DataFrames as Quadratic is heavily built around Pandas DataFrames.
