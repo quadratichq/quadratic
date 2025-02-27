@@ -1,5 +1,5 @@
 import { debugWebWorkers } from '@/app/debugFlags';
-import type { JsCellA1Response } from '@/app/quadratic-core-types';
+import type { JsCellsA1Response } from '@/app/quadratic-core-types';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import type { CorePythonRun } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
@@ -36,7 +36,7 @@ class Python {
     this.init();
   }
 
-  private getCellsA1 = (a1: string): JsCellA1Response => {
+  private getCellsA1 = (a1: string): JsCellsA1Response => {
     if (!this.transactionId) {
       throw new Error('No transactionId in getCellsA1');
     }

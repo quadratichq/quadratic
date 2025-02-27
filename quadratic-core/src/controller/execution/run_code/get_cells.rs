@@ -8,14 +8,14 @@ use crate::{
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
-pub struct JsCellA1Response {
-    pub values: Option<JsCellA1Values>,
-    pub error: Option<CellA1Error>,
+pub struct JsCellsA1Response {
+    pub values: Option<JsCellsA1Values>,
+    pub error: Option<JsCellsA1Error>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
-pub struct JsCellA1Values {
-    pub cells: Vec<JsCellA1Value>,
+pub struct JsCellsA1Values {
+    pub cells: Vec<JsCellsA1Value>,
     pub x: i32,
     pub y: i32,
     pub w: i32,
@@ -26,7 +26,7 @@ pub struct JsCellA1Values {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
-pub struct JsCellA1Value {
+pub struct JsCellsA1Value {
     pub x: i32,
     pub y: i32,
     pub value: String,
@@ -34,7 +34,7 @@ pub struct JsCellA1Value {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
-pub struct CellA1Error {
+pub struct JsCellsA1Error {
     pub core_error: String,
 }
 
@@ -44,10 +44,10 @@ impl GridController {
         &mut self,
         transaction_id: String,
         a1: String,
-    ) -> JsCellA1Response {
-        let map_error = |e: CoreError| JsCellA1Response {
+    ) -> JsCellsA1Response {
+        let map_error = |e: CoreError| JsCellsA1Response {
             values: None,
-            error: Some(CellA1Error {
+            error: Some(JsCellsA1Error {
                 core_error: e.to_string(),
             }),
         };
@@ -152,7 +152,7 @@ impl GridController {
             let cells = selection_sheet.get_cells_response(*rect);
             let is_python = matches!(code.language, CodeCellLanguage::Python);
 
-            JsCellA1Values {
+            JsCellsA1Values {
                 cells,
                 x: rect.min.x as i32,
                 y: rect.min.y as i32,
@@ -163,7 +163,7 @@ impl GridController {
                 has_headers: selection.has_table_headers(context, is_python),
             }
         } else {
-            JsCellA1Values {
+            JsCellsA1Values {
                 cells: vec![],
                 x: 1,
                 y: 1,
@@ -175,7 +175,7 @@ impl GridController {
             }
         };
 
-        JsCellA1Response {
+        JsCellsA1Response {
             values: Some(values),
             error: None,
         }
@@ -344,9 +344,9 @@ mod test {
         let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
         assert_eq!(
             result,
-            JsCellA1Response {
-                values: Some(JsCellA1Values {
-                    cells: vec![JsCellA1Value {
+            JsCellsA1Response {
+                values: Some(JsCellsA1Values {
+                    cells: vec![JsCellsA1Value {
                         x: 1,
                         y: 1,
                         value: "test".into(),
@@ -423,34 +423,34 @@ mod test {
         let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1:A".to_string());
         assert_eq!(
             result,
-            JsCellA1Response {
-                values: Some(JsCellA1Values {
+            JsCellsA1Response {
+                values: Some(JsCellsA1Values {
                     cells: vec![
-                        JsCellA1Value {
+                        JsCellsA1Value {
                             x: 1,
                             y: 1,
                             value: "test1".into(),
                             type_name: "text".into()
                         },
-                        JsCellA1Value {
+                        JsCellsA1Value {
                             x: 1,
                             y: 2,
                             value: "test2".into(),
                             type_name: "text".into()
                         },
-                        JsCellA1Value {
+                        JsCellsA1Value {
                             x: 1,
                             y: 3,
                             value: "test3".into(),
                             type_name: "text".into()
                         },
-                        JsCellA1Value {
+                        JsCellsA1Value {
                             x: 1,
                             y: 4,
                             value: "".into(),
                             type_name: "blank".into()
                         },
-                        JsCellA1Value {
+                        JsCellsA1Value {
                             x: 1,
                             y: 5,
                             value: "test4".into(),
@@ -495,9 +495,9 @@ mod test {
         let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
         assert_eq!(
             result,
-            JsCellA1Response {
-                values: Some(JsCellA1Values {
-                    cells: vec![JsCellA1Value {
+            JsCellsA1Response {
+                values: Some(JsCellsA1Values {
+                    cells: vec![JsCellsA1Value {
                         x: 1,
                         y: 1,
                         value: "test".into(),
@@ -587,16 +587,16 @@ mod test {
             .calculation_get_cells_a1(transaction_id.to_string(), "Table1[[#HEADERS]]".to_string());
         assert_eq!(
             result,
-            JsCellA1Response {
-                values: Some(JsCellA1Values {
+            JsCellsA1Response {
+                values: Some(JsCellsA1Values {
                     cells: vec![
-                        JsCellA1Value {
+                        JsCellsA1Value {
                             x: 1,
                             y: 2,
                             value: "Column 1".into(),
                             type_name: "text".into()
                         },
-                        JsCellA1Value {
+                        JsCellsA1Value {
                             x: 2,
                             y: 2,
                             value: "Column 2".into(),
@@ -646,28 +646,28 @@ mod test {
             gc.calculation_get_cells_a1(transaction_id.to_string(), "Table1[[#ALL]]".to_string());
         assert_eq!(
             result,
-            JsCellA1Response {
-                values: Some(JsCellA1Values {
+            JsCellsA1Response {
+                values: Some(JsCellsA1Values {
                     cells: vec![
-                        JsCellA1Value {
+                        JsCellsA1Value {
                             x: 1,
                             y: 2,
                             value: "Column 1".into(),
                             type_name: "text".into()
                         },
-                        JsCellA1Value {
+                        JsCellsA1Value {
                             x: 2,
                             y: 2,
                             value: "Column 2".into(),
                             type_name: "text".into()
                         },
-                        JsCellA1Value {
+                        JsCellsA1Value {
                             x: 1,
                             y: 3,
                             value: "1".into(),
                             type_name: "number".into()
                         },
-                        JsCellA1Value {
+                        JsCellsA1Value {
                             x: 2,
                             y: 3,
                             value: "2".into(),

@@ -1,5 +1,5 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import type { JsCellA1Response } from '@/app/quadratic-core-types';
+import type { JsCellsA1Response } from '@/app/quadratic-core-types';
 import type { CorePythonMessage, PythonCoreMessage } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
 import type { PythonRun } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { python } from '@/app/web-workers/pythonWebWorker/worker/python';
@@ -37,7 +37,7 @@ export class PythonCore {
     });
   }
 
-  sendGetCellsA1 = (transactionId: string, a1: string): JsCellA1Response => {
+  sendGetCellsA1 = (transactionId: string, a1: string): JsCellsA1Response => {
     try {
       // This is a shared buffer that will be used to communicate with core
       // The first 4 bytes are used to signal the python core that the data is ready
@@ -77,7 +77,7 @@ export class PythonCore {
 
       const decoder = new TextDecoder();
       const cellsStringified = decoder.decode(nonSharedView);
-      const response = JSON.parse(cellsStringified) as JsCellA1Response;
+      const response = JSON.parse(cellsStringified) as JsCellsA1Response;
       return response;
     } catch (e) {
       console.warn('[pythonCore] getCellsA1 error', e);

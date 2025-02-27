@@ -1,5 +1,5 @@
 import { debugWebWorkers } from '@/app/debugFlags';
-import type { JsCellA1Response } from '@/app/quadratic-core-types';
+import type { JsCellsA1Response } from '@/app/quadratic-core-types';
 import type {
   CoreJavascriptMessage,
   JavascriptCoreMessage,
@@ -55,7 +55,7 @@ class CoreJavascript {
     try {
       responseString = core.getCellsA1(transactionId, a1);
     } catch (e: any) {
-      const cellA1Response: JsCellA1Response = {
+      const cellA1Response: JsCellsA1Response = {
         values: null,
         error: {
           core_error: e,

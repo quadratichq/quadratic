@@ -32,7 +32,7 @@ mod tests {
     use super::*;
     use crate::{
         controller::{
-            execution::run_code::get_cells::{JsCellA1Response, JsCellA1Value, JsCellA1Values},
+            execution::run_code::get_cells::{JsCellsA1Response, JsCellsA1Value, JsCellsA1Values},
             transaction_types::JsCodeResult,
         },
         grid::js_types::JsRenderCell,
@@ -138,9 +138,9 @@ mod tests {
         let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
         assert_eq!(
             cells,
-            JsCellA1Response {
-                values: Some(JsCellA1Values {
-                    cells: vec![JsCellA1Value {
+            JsCellsA1Response {
+                values: Some(JsCellsA1Values {
+                    cells: vec![JsCellsA1Value {
                         x: 1,
                         y: 1,
                         value: "9".into(),
@@ -219,9 +219,9 @@ mod tests {
         let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
         assert_eq!(
             cells,
-            JsCellA1Response {
-                values: Some(JsCellA1Values {
-                    cells: vec![JsCellA1Value {
+            JsCellsA1Response {
+                values: Some(JsCellsA1Values {
+                    cells: vec![JsCellsA1Value {
                         x: 1,
                         y: 1,
                         value: "10".into(),
@@ -467,7 +467,7 @@ mod tests {
         assert_eq!(result.values.as_ref().unwrap().cells.len(), 1);
         assert_eq!(
             result.values.unwrap().cells[0],
-            JsCellA1Value {
+            JsCellsA1Value {
                 x: 1,
                 y: 1,
                 value: "1".into(),
@@ -496,7 +496,7 @@ mod tests {
         assert_eq!(result.values.as_ref().unwrap().cells.len(), 1);
         assert_eq!(
             result.values.unwrap().cells[0],
-            JsCellA1Value {
+            JsCellsA1Value {
                 x: 2,
                 y: 2,
                 value: "2".into(),

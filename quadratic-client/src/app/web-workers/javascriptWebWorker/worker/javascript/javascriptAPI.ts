@@ -3,7 +3,7 @@
 // (x,y) position with the code, so `pos()` and `relCell()` can be calculated
 // within the worker using getCells.
 
-import type { JsCellA1Response, JsCellA1Value } from '@/app/quadratic-core-types';
+import type { JsCellsA1Response, JsCellsA1Value } from '@/app/quadratic-core-types';
 import type { Javascript } from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascript';
 import { javascriptCore } from '@/app/web-workers/javascriptWebWorker/worker/javascriptCore';
 
@@ -16,7 +16,7 @@ export class JavascriptAPI {
     this.javascript = javascript;
   }
 
-  private convertType(entry: JsCellA1Value): CellType | undefined {
+  private convertType(entry: JsCellsA1Value): CellType | undefined {
     if (entry.type_name === 'blank') return undefined;
     if (entry.type_name === 'date time' || entry.type_name === 'date')
       return `___date___${new Date(entry.value).getTime()}`;
@@ -36,7 +36,7 @@ export class JavascriptAPI {
 
     const results = await javascriptCore.sendGetCellsA1(this.javascript.transactionId, a1);
 
-    let response: JsCellA1Response | undefined;
+    let response: JsCellsA1Response | undefined;
     try {
       response = JSON.parse(results);
     } catch (error) {

@@ -1,5 +1,5 @@
 import { debugWebWorkers } from '@/app/debugFlags';
-import type { JsCellA1Response, JsCodeResult } from '@/app/quadratic-core-types';
+import type { JsCellsA1Response, JsCodeResult } from '@/app/quadratic-core-types';
 import type { CorePythonMessage, PythonCoreMessage } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
 import { core } from '@/app/web-workers/quadraticCore/worker/core';
 
@@ -89,7 +89,7 @@ class CorePython {
     try {
       responseString = core.getCellsA1(transactionId, a1);
     } catch (e: any) {
-      const cellA1Response: JsCellA1Response = {
+      const cellA1Response: JsCellsA1Response = {
         values: null,
         error: {
           core_error: e,

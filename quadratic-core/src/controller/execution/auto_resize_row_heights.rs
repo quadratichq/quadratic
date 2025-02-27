@@ -74,9 +74,9 @@ mod tests {
     use bigdecimal::BigDecimal;
 
     use crate::controller::active_transactions::pending_transaction::PendingTransaction;
-    use crate::controller::execution::run_code::get_cells::JsCellA1Response;
-    use crate::controller::execution::run_code::get_cells::JsCellA1Value;
-    use crate::controller::execution::run_code::get_cells::JsCellA1Values;
+    use crate::controller::execution::run_code::get_cells::JsCellsA1Response;
+    use crate::controller::execution::run_code::get_cells::JsCellsA1Value;
+    use crate::controller::execution::run_code::get_cells::JsCellsA1Values;
     use crate::controller::operations::operation::Operation;
     use crate::controller::transaction_types::JsCodeResult;
     use crate::controller::GridController;
@@ -495,9 +495,9 @@ mod tests {
         let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
         assert_eq!(
             cells,
-            JsCellA1Response {
-                values: Some(JsCellA1Values {
-                    cells: vec![JsCellA1Value {
+            JsCellsA1Response {
+                values: Some(JsCellsA1Values {
+                    cells: vec![JsCellsA1Value {
                         x: 1,
                         y: 1,
                         value: "9".into(),

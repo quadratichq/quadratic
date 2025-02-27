@@ -18,7 +18,7 @@ export interface JavascriptCoreResults {
 export interface CoreJavascriptGetCellsA1 {
   type: 'coreJavascriptGetCellsA1';
   id: number;
-  // stringified JsCellA1Response
+  // stringified JsCellsA1Response
   response: string;
 }
 
