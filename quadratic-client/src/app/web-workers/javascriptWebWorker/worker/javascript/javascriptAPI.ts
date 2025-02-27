@@ -29,7 +29,7 @@ export class JavascriptAPI {
   getCellsA1 = async (
     a1: string,
     lineNumber?: number
-  ): Promise<{ cells: CellType[][] | CellType; two_dimensional: boolean } | undefined> => {
+  ): Promise<{ cells: CellType[][] | CellType; one_dimensional: boolean; two_dimensional: boolean } | undefined> => {
     if (!this.javascript.transactionId) {
       throw new Error('No transactionId in getCellsA1');
     }
@@ -58,6 +58,10 @@ export class JavascriptAPI {
       cells.push(row);
     }
 
-    return { cells, two_dimensional: results.two_dimensional };
+    return {
+      cells,
+      one_dimensional: results.one_dimensional,
+      two_dimensional: results.two_dimensional,
+    };
   };
 }

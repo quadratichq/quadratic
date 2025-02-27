@@ -150,6 +150,7 @@ mod tests {
                 y: 1,
                 w: 1,
                 h: 1,
+                one_dimensional: false,
                 two_dimensional: false,
                 has_headers: false,
             })
@@ -226,6 +227,7 @@ mod tests {
                 y: 1,
                 w: 1,
                 h: 1,
+                one_dimensional: false,
                 two_dimensional: false,
                 has_headers: false,
             })

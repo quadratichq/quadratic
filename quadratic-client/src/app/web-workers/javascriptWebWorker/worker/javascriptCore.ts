@@ -67,7 +67,16 @@ class JavascriptCore {
     a1: string,
     lineNumber?: number
   ): Promise<
-    { cells: JsGetCellResponse[]; x: number; y: number; w: number; h: number; two_dimensional: boolean } | undefined
+    | {
+        cells: JsGetCellResponse[];
+        x: number;
+        y: number;
+        w: number;
+        h: number;
+        one_dimensional: boolean;
+        two_dimensional: boolean;
+      }
+    | undefined
   > {
     return new Promise((resolve) => {
       const id = this.id++;
@@ -85,6 +94,7 @@ class JavascriptCore {
             y: message.y,
             w: message.w,
             h: message.h,
+            one_dimensional: message.one_dimensional ?? false,
             two_dimensional: message.two_dimensional ?? false,
           });
         } else {

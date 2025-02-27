@@ -24,6 +24,7 @@ export interface CoreJavascriptGetCellsA1 {
   y?: number;
   w?: number;
   h?: number;
+  one_dimensional?: boolean;
   two_dimensional?: boolean;
 }
 

@@ -68,6 +68,7 @@ class CoreJavascript {
       y: cells ? Number(cells.y) : undefined,
       w: cells ? Number(cells.w) : undefined,
       h: cells ? Number(cells.h) : undefined,
+      one_dimensional: cells ? cells.one_dimensional : false,
       two_dimensional: cells ? cells.two_dimensional : false,
     });
   };
