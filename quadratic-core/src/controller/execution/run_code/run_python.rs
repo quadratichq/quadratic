@@ -32,7 +32,7 @@ mod tests {
     use super::*;
     use crate::{
         controller::{
-            execution::run_code::get_cells::{CellA1Response, JsGetCellResponse},
+            execution::run_code::get_cells::{JsCellsA1Response, JsCellsA1Value, JsCellsA1Values},
             transaction_types::JsCodeResult,
         },
         grid::js_types::JsRenderCell,
@@ -135,25 +135,27 @@ mod tests {
         let transaction_id = gc.async_transactions()[0].id;
 
         // mock the get_cells request from python
-        let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None);
-        assert!(cells.is_ok());
+        let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
         assert_eq!(
             cells,
-            Ok(CellA1Response {
-                cells: vec![JsGetCellResponse {
+            JsCellsA1Response {
+                values: Some(JsCellsA1Values {
+                    cells: vec![JsCellsA1Value {
+                        x: 1,
+                        y: 1,
+                        value: "9".into(),
+                        type_name: "number".into(),
+                    }],
                     x: 1,
                     y: 1,
-                    value: "9".into(),
-                    type_name: "number".into(),
-                }],
-                x: 1,
-                y: 1,
-                w: 1,
-                h: 1,
-                one_dimensional: false,
-                two_dimensional: false,
-                has_headers: false,
-            })
+                    w: 1,
+                    h: 1,
+                    one_dimensional: false,
+                    two_dimensional: false,
+                    has_headers: false,
+                }),
+                error: None,
+            }
         );
 
         // mock the python calculation returning the result
@@ -198,14 +200,15 @@ mod tests {
         let transaction_id = gc.async_transactions()[0].id;
 
         // mock the get_cells to populate dependencies
-        let _ = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None);
+        gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
         // mock the calculation_complete
-        let _ = gc.calculation_complete(JsCodeResult {
+        gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
             output_value: Some(vec!["10".into(), "number".into()]),
             ..Default::default()
-        });
+        })
+        .unwrap();
 
         // replace the value in A1 to trigger the python calculation
         gc.set_cell_value(pos![A1].to_sheet_pos(sheet_id), "10".into(), None);
@@ -213,24 +216,27 @@ mod tests {
 
         let transaction_id = gc.async_transactions()[0].id;
 
-        let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None);
+        let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
         assert_eq!(
             cells,
-            Ok(CellA1Response {
-                cells: vec![JsGetCellResponse {
+            JsCellsA1Response {
+                values: Some(JsCellsA1Values {
+                    cells: vec![JsCellsA1Value {
+                        x: 1,
+                        y: 1,
+                        value: "10".into(),
+                        type_name: "number".into(),
+                    }],
                     x: 1,
                     y: 1,
-                    value: "10".into(),
-                    type_name: "number".into(),
-                }],
-                x: 1,
-                y: 1,
-                w: 1,
-                h: 1,
-                one_dimensional: false,
-                two_dimensional: false,
-                has_headers: false,
-            })
+                    w: 1,
+                    h: 1,
+                    one_dimensional: false,
+                    two_dimensional: false,
+                    has_headers: false,
+                }),
+                error: None,
+            }
         );
         assert!(gc
             .calculation_complete(JsCodeResult {
@@ -457,14 +463,11 @@ mod tests {
         );
         let transaction_id = gc.last_transaction().unwrap().id;
 
-        let result = gc
-            .calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None)
-            .ok()
-            .unwrap();
-        assert_eq!(result.cells.len(), 1);
+        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
+        assert_eq!(result.values.as_ref().unwrap().cells.len(), 1);
         assert_eq!(
-            result.cells[0],
-            JsGetCellResponse {
+            result.values.unwrap().cells[0],
+            JsCellsA1Value {
                 x: 1,
                 y: 1,
                 value: "1".into(),
@@ -489,14 +492,11 @@ mod tests {
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
-        let result = gc
-            .calculation_get_cells_a1(transaction_id.to_string(), "B2".to_string(), None)
-            .ok()
-            .unwrap();
-        assert_eq!(result.cells.len(), 1);
+        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "B2".to_string());
+        assert_eq!(result.values.as_ref().unwrap().cells.len(), 1);
         assert_eq!(
-            result.cells[0],
-            JsGetCellResponse {
+            result.values.unwrap().cells[0],
+            JsCellsA1Value {
                 x: 2,
                 y: 2,
                 value: "2".into(),

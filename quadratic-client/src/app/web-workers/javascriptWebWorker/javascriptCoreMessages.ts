@@ -1,4 +1,4 @@
-import type { JsCodeResult, JsGetCellResponse } from '@/app/quadratic-core-types';
+import type { JsCodeResult } from '@/app/quadratic-core-types';
 
 export interface CoreJavascriptRun {
   type: 'coreJavascriptRun';
@@ -18,14 +18,8 @@ export interface JavascriptCoreResults {
 export interface CoreJavascriptGetCellsA1 {
   type: 'coreJavascriptGetCellsA1';
   id: number;
-  cells?: JsGetCellResponse[];
-  // returned by GetCellsA1
-  x?: number;
-  y?: number;
-  w?: number;
-  h?: number;
-  one_dimensional?: boolean;
-  two_dimensional?: boolean;
+  // stringified JsCellsA1Response
+  response: string;
 }
 
 export interface JavascriptCoreGetCellsA1 {
@@ -33,7 +27,6 @@ export interface JavascriptCoreGetCellsA1 {
   id: number;
   transactionId: string;
   a1: string;
-  lineNumber?: number;
 }
 
 export type CoreJavascriptMessage = CoreJavascriptRun | CoreJavascriptGetCellsA1;

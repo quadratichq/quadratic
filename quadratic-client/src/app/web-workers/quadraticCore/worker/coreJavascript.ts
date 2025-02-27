@@ -1,5 +1,5 @@
 import { debugWebWorkers } from '@/app/debugFlags';
-import type { CellA1Response } from '@/app/quadratic-core-types';
+import type { JsCellsA1Response } from '@/app/quadratic-core-types';
 import type {
   CoreJavascriptMessage,
   JavascriptCoreMessage,
@@ -34,7 +34,7 @@ class CoreJavascript {
         break;
 
       case 'javascriptCoreGetCellsA1':
-        this.handleGetCellsA1Response(e.data.id, e.data.transactionId, e.data.a1, e.data.lineNumber);
+        this.handleGetCellsA1Response(e.data.id, e.data.transactionId, e.data.a1);
         break;
 
       default:
@@ -50,30 +50,27 @@ class CoreJavascript {
     this.coreJavascriptPort.postMessage(message);
   }
 
-  private handleGetCellsA1Response = (id: number, transactionId: string, a1: string, lineNumber?: number) => {
-    let cells: CellA1Response | undefined;
+  private handleGetCellsA1Response = (id: number, transactionId: string, a1: string) => {
+    let responseString: string | undefined;
     try {
-      const cellsString = core.getCellsA1(transactionId, a1, lineNumber);
-      if (cellsString) {
-        cells = JSON.parse(cellsString) as CellA1Response;
-      }
-    } catch (_e) {
-      // core threw and handled the error
+      responseString = core.getCellsA1(transactionId, a1);
+    } catch (e: any) {
+      const cellA1Response: JsCellsA1Response = {
+        values: null,
+        error: {
+          core_error: e,
+        },
+      };
+      responseString = JSON.stringify(cellA1Response);
     }
     this.send({
       type: 'coreJavascriptGetCellsA1',
       id,
-      cells: cells?.cells,
-      x: cells ? Number(cells.x) : undefined,
-      y: cells ? Number(cells.y) : undefined,
-      w: cells ? Number(cells.w) : undefined,
-      h: cells ? Number(cells.h) : undefined,
-      one_dimensional: cells ? cells.one_dimensional : false,
-      two_dimensional: cells ? cells.two_dimensional : false,
+      response: responseString,
     });
   };
 
-  sendRunJavascript = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
+  private sendRunJavascript = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
     this.lastTransactionId = transactionId;
     this.send({
       type: 'coreJavascriptRun',
