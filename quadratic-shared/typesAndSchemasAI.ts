@@ -180,6 +180,7 @@ const ContentSchema = z.preprocess(
       )
   )
 );
+export type Content = z.infer<typeof ContentSchema>;
 
 export const AIMessagePromptSchema = z.object({
   role: z.literal('assistant'),

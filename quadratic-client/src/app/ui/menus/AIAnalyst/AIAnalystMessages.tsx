@@ -1,4 +1,3 @@
-import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import {
   aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
@@ -11,7 +10,6 @@ import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
 import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
-import type { MessageContentItem } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
 import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
 import { apiClient } from '@/shared/api/apiClient';
 import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
@@ -28,14 +26,9 @@ type AIAnalystMessagesProps = {
 };
 
 export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
-  const [, ,] = useAIModel();
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
-
-  // We don't need these anymore since each ThinkingBlock manages its own state
-  // const [expandedThinking, setExpandedThinking] = useState<Record<number, boolean>>({});
-  // const [loadedMessageIndices, setLoadedMessageIndices] = useState<number[]>([]);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((div: HTMLDivElement | null) => {
@@ -157,12 +150,6 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
           return null;
         }
 
-        const hasThinking =
-          message.role === 'assistant' &&
-          message.content &&
-          Array.isArray(message.content) &&
-          message.content.some((item) => item.type === 'anthropic_thinking');
-
         const isCurrentMessage = index === messages.length - 1;
 
         return (
@@ -192,24 +179,18 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
               <>
                 {message.content && Array.isArray(message.content) ? (
                   <>
-                    {message.content
-                      .filter((item) => item.type === 'text')
-                      .map((item) => (
-                        <div key={item.text}>
-                          <Markdown>{item.text}</Markdown>
-                        </div>
-                      ))}
-
-                    {hasThinking && (
-                      <ThinkingBlock
-                        messageIndex={index}
-                        isCurrentMessage={isCurrentMessage}
-                        isLoading={loading}
-                        thinkingContent={
-                          message.content.filter((item) => item.type === 'anthropic_thinking') as MessageContentItem[]
-                        }
-                        onToggle={handleThinkingToggle}
-                      />
+                    {message.content.map((item, contentIndex) =>
+                      item.type === 'anthropic_thinking' ? (
+                        <ThinkingBlock
+                          key={item.text}
+                          isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
+                          isLoading={loading}
+                          thinkingContent={item}
+                          onToggle={handleThinkingToggle}
+                        />
+                      ) : item.type === 'text' ? (
+                        <Markdown key={item.text}>{item.text}</Markdown>
+                      ) : null
                     )}
                   </>
                 ) : (

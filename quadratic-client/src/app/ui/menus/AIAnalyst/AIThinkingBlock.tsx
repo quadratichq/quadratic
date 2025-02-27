@@ -1,30 +1,18 @@
 import { Markdown } from '@/app/ui/components/Markdown';
 import { cn } from '@/shared/shadcn/utils';
 import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons';
+import type { Content } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-// Type for the message content items
-export type MessageContentItem = {
-  type: string;
-  text: string;
-};
-
 // Props for the thinking block
-export type ThinkingBlockProps = {
-  messageIndex: number;
+interface ThinkingBlockProps {
   isCurrentMessage: boolean;
   isLoading: boolean;
-  thinkingContent: MessageContentItem[];
+  thinkingContent: Content[number];
   onToggle: () => void;
-};
+}
 
-export function ThinkingBlock({
-  messageIndex,
-  isCurrentMessage,
-  isLoading,
-  thinkingContent,
-  onToggle,
-}: ThinkingBlockProps) {
+export function ThinkingBlock({ isCurrentMessage, isLoading, thinkingContent, onToggle }: ThinkingBlockProps) {
   // Each thinking block tracks its own expanded state
   const [isExpanded, setIsExpanded] = useState(isLoading && isCurrentMessage);
   // Track whether this is the first load completion
@@ -66,11 +54,7 @@ export function ThinkingBlock({
 
       {isExpanded && (
         <div className="mt-1 border-l-2 border-muted-foreground/40 pl-4 italic text-muted-foreground">
-          {thinkingContent.map((item) => (
-            <div key={item.text}>
-              <Markdown>{item.text}</Markdown>
-            </div>
-          ))}
+          <Markdown>{thinkingContent.text}</Markdown>
         </div>
       )}
     </div>
