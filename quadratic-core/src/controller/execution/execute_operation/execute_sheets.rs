@@ -3,7 +3,11 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    grid::{file::sheet_schema::export_sheet, js_types::JsSnackbarSeverity, Sheet, SheetId},
+    grid::{
+        file::sheet_schema::export_sheet, js_types::JsSnackbarSeverity, unique_data_table_name,
+        Sheet, SheetId,
+    },
+    util::case_fold,
 };
 use anyhow::{bail, Result};
 use lexicon_fractional_index::key_between;
@@ -46,26 +50,53 @@ impl GridController {
                     // sheet already exists (unlikely but possible if this operation is run twice)
                     return Ok(());
                 }
-                let sheet_id = sheet.id;
-                let data_tables = sheet
-                    .data_tables
-                    .iter()
-                    .map(|(pos, data_table)| (pos.to_owned(), data_table.name.to_string()))
-                    .collect::<Vec<_>>();
-                self.grid.add_sheet(Some(sheet));
 
-                let context = self.a1_context().to_owned();
+                let mut context = self.a1_context().to_owned();
 
-                for (pos, name) in data_tables.iter() {
-                    let sheet_pos = pos.to_sheet_pos(sheet_id);
-                    self.grid
-                        .update_data_table_name(sheet_pos, name, name, &context, false)?;
-                    // mark code cells dirty to update meta data
+                let sheet_id = self.grid.add_sheet(Some(sheet));
+                self.send_add_sheet(transaction, sheet_id);
+
+                let mut data_tables_pos = vec![];
+                let mut table_names_to_update_in_cell_ref = vec![];
+
+                // update table names in data tables in the new sheet
+                let sheet = self.try_sheet_mut_result(sheet_id)?;
+                for (pos, data_table) in sheet.data_tables.iter_mut() {
+                    let old_name = data_table.name.to_string();
+                    let unique_name = unique_data_table_name(&old_name, false, None, &context);
+                    data_table.name = unique_name.to_owned().into();
+
+                    // update table context for replacing table names in code cells
+                    if let Some(mut table_map_entry) =
+                        context.table_map.tables.remove(&case_fold(&old_name))
+                    {
+                        table_map_entry.sheet_id = sheet_id;
+                        context.table_map.insert(table_map_entry);
+                    }
+
+                    data_tables_pos.push(*pos);
+                    table_names_to_update_in_cell_ref.push((old_name, unique_name));
+
                     transaction.add_code_cell(sheet_id, *pos);
                 }
 
-                self.send_add_sheet(transaction, sheet_id);
-                self.send_all_fills(sheet_id);
+                // update table names references in code cells in the new sheet
+                let sheet = self.try_sheet_mut_result(sheet_id)?;
+                for pos in data_tables_pos {
+                    if let Some(code_cell_value) = sheet
+                        .cell_value_mut(pos)
+                        .and_then(|cv| cv.code_cell_value_mut())
+                    {
+                        for (old_name, unique_name) in table_names_to_update_in_cell_ref.iter() {
+                            code_cell_value.replace_table_name_in_cell_references(
+                                old_name,
+                                unique_name,
+                                &sheet_id,
+                                &context,
+                            );
+                        }
+                    }
+                }
 
                 transaction
                     .forward_operations
@@ -74,6 +105,7 @@ impl GridController {
                     .reverse_operations
                     .push(Operation::DeleteSheet { sheet_id });
 
+                transaction.add_fill_cells(sheet_id);
                 transaction.sheet_borders.insert(sheet_id);
             }
         }
