@@ -1,9 +1,9 @@
 from typing import Tuple
 
 import getCellsA1
-from pandas import DataFrame, Series
+from pandas import DataFrame
 
-from ..utils import result_to_value, stack_line_number, to_python_type_df
+from ..utils import result_to_value, to_python_type_df
 
 results = None
 
@@ -59,7 +59,7 @@ def getCells(
     a1_1 = q.to_a1(p1[0], p1[1], absolute=False)
     old = f"cells({p0[0]},{ p0[1]}, {p1[0]}, {p1[1]})"
     new = f'q.cells("{a1_0}:{a1_1}")'
-    q.conversion_error(old, new)
+    q._conversion_error(old, new)
 
 
 def cells(
@@ -142,7 +142,12 @@ class q:
         Typical usage example:
             c = q.cells("A1:B5")
         """
-        result = getCellsA1(a1, int(stack_line_number()))
+        response = getCellsA1(a1)
+
+        if response.error != None:
+            raise Exception(response.error.core_error)
+
+        result = response.values
 
         if result == None:
             return None

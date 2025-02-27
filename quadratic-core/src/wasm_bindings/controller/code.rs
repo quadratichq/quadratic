@@ -17,17 +17,20 @@ impl GridController {
         &mut self,
         transaction_id: String,
         a1: String,
-        line_number: Option<u32>,
-    ) -> Result<String, JsValue> {
-        match self.calculation_get_cells_a1(transaction_id, a1, line_number) {
-            Ok(response) => match serde_json::to_string(&response) {
-                Ok(json) => Ok(json),
-                Err(_) => {
-                    dbgjs!("calculationGetCellsA1: Failed to serialize calculation result");
-                    Err(JsValue::UNDEFINED)
-                }
-            },
-            Err(_) => Err(JsValue::UNDEFINED),
+    ) -> Result<String, String> {
+        let response = self.calculation_get_cells_a1(transaction_id, a1);
+        match serde_json::to_string(&response) {
+            Ok(json) => Ok(json),
+            Err(e) => {
+                dbgjs!(format!(
+                    "calculationGetCellsA1: Failed to serialize get cells a1 response: {:?}",
+                    e
+                ));
+                Err(format!(
+                    "Failed to serialize get cells a1 response: {:?}",
+                    e
+                ))
+            }
         }
     }
 
