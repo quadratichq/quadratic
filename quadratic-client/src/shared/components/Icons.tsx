@@ -535,6 +535,10 @@ export const TableIcon: IconComponent = (props) => {
   return <Icon {...props}>table</Icon>;
 };
 
+export const TableRowsIcon: IconComponent = (props) => {
+  return <Icon {...props}>table_rows</Icon>;
+};
+
 export const ThemeIcon: IconComponent = (props) => {
   return <Icon {...props}>contrast</Icon>;
 };
