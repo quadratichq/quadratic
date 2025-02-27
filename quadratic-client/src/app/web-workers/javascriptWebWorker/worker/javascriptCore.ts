@@ -62,13 +62,12 @@ class JavascriptCore {
     );
   }
 
-  sendGetCellsA1(
+  sendGetCellsA1 = (
     transactionId: string,
-    a1: string,
-    lineNumber?: number
+    a1: string
   ): Promise<
     { cells: JsGetCellResponse[]; x: number; y: number; w: number; h: number; two_dimensional: boolean } | undefined
-  > {
+  > => {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: CoreJavascriptGetCellsA1) => {
@@ -91,9 +90,9 @@ class JavascriptCore {
           resolve(undefined);
         }
       };
-      this.send({ type: 'javascriptCoreGetCellsA1', transactionId, id, a1, lineNumber });
+      this.send({ type: 'javascriptCoreGetCellsA1', transactionId, id, a1 });
     });
-  }
+  };
 }
 
 export const javascriptCore = new JavascriptCore();

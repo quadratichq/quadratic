@@ -37,11 +37,10 @@ export class PythonCore {
     });
   }
 
-  sendGetCellsA1(
+  sendGetCellsA1 = (
     transactionId: string,
-    a1: string,
-    lineNumber?: number
-  ): { cells: JsGetCellResponse[]; x: number; y: number; w: number; h: number; has_headers: boolean } | undefined {
+    a1: string
+  ): { cells: JsGetCellResponse[]; x: number; y: number; w: number; h: number; has_headers: boolean } | undefined => {
     try {
       // This is a shared buffer that will be used to communicate with core
       // The first 4 bytes are used to signal the python core that the data is ready
@@ -52,7 +51,7 @@ export class PythonCore {
       let int32View: Int32Array | undefined = new Int32Array(sharedBuffer, 0, 3);
       Atomics.store(int32View, 0, 0);
 
-      this.send({ type: 'pythonCoreGetCellsA1Length', sharedBuffer, transactionId, a1, lineNumber });
+      this.send({ type: 'pythonCoreGetCellsA1Length', sharedBuffer, transactionId, a1 });
       let result = Atomics.wait(int32View, 0, 0);
       const length = int32View[1];
       if (result !== 'ok' || length === 0) return undefined;
@@ -93,7 +92,7 @@ export class PythonCore {
       console.warn('[pythonCore] getCellsA1 error', e);
     }
     return undefined;
-  }
+  };
 }
 
 export const pythonCore = new PythonCore();

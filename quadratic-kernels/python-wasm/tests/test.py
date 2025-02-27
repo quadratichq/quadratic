@@ -50,7 +50,7 @@ class Result:
         self.cells = cells
         self.has_headers = has_headers
 
-def mock_getCellsA1(a1: str, line_number: int, first_row_header: bool = False):
+def mock_getCellsA1(a1: str, first_row_header: bool = False):
     out = []
     parts = a1.split(":")
     x1, y1 = a1_to_xy(parts[0])

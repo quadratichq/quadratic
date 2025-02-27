@@ -897,7 +897,7 @@ mod tests {
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
-        gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None)
+        gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string())
             .ok()
             .unwrap();
 
@@ -924,7 +924,7 @@ mod tests {
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         let _ = gc
-            .calculation_get_cells_a1(transaction_id.to_string(), "B1".to_string(), None)
+            .calculation_get_cells_a1(transaction_id.to_string(), "B1".to_string())
             .ok()
             .unwrap();
 

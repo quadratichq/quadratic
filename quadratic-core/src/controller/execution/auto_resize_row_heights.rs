@@ -14,7 +14,7 @@ impl GridController {
         sheet_id: SheetId,
         rows: Vec<i64>,
     ) -> bool {
-        if (!cfg!(target_family = "wasm") && !cfg!(test))
+        if !(cfg!(target_family = "wasm") || cfg!(test))
             || !transaction.is_user()
             || rows.is_empty()
         {
@@ -491,7 +491,7 @@ mod tests {
         assert_eq!(transaction.has_async, 1);
         let transaction_id = transaction.id;
 
-        let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None);
+        let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
         assert!(cells.is_ok());
         assert_eq!(
             cells,

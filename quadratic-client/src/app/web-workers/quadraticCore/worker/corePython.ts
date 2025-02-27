@@ -62,7 +62,7 @@ class CorePython {
         break;
 
       case 'pythonCoreGetCellsA1Length':
-        this.sendGetCellsA1Length(e.data.sharedBuffer, e.data.transactionId, e.data.a1, e.data.lineNumber);
+        this.sendGetCellsA1Length(e.data.sharedBuffer, e.data.transactionId, e.data.a1);
         break;
 
       case 'pythonCoreGetCellsA1Data':
@@ -82,15 +82,10 @@ class CorePython {
     this.corePythonPort.postMessage(message);
   }
 
-  private sendGetCellsA1Length(
-    sharedBuffer: SharedArrayBuffer,
-    transactionId: string,
-    a1: string,
-    lineNumber?: number
-  ) {
+  private sendGetCellsA1Length = (sharedBuffer: SharedArrayBuffer, transactionId: string, a1: string) => {
     const int32View = new Int32Array(sharedBuffer, 0, 3);
     try {
-      const cellsString = core.getCellsA1(transactionId, a1, lineNumber);
+      const cellsString = core.getCellsA1(transactionId, a1);
 
       // need to get the bytes of the string (which covers unicode characters)
       const length = new Blob([cellsString]).size;
@@ -106,9 +101,9 @@ class CorePython {
       // core threw and handled the error
     }
     Atomics.notify(int32View, 0, 1);
-  }
+  };
 
-  private sendGetCellsA1Data(id: number, sharedBuffer: SharedArrayBuffer) {
+  private sendGetCellsA1Data = (id: number, sharedBuffer: SharedArrayBuffer) => {
     const cellsString = this.getCellsResponses[id];
     delete this.getCellsResponses[id];
     const int32View = new Int32Array(sharedBuffer, 0, 1);
@@ -122,9 +117,9 @@ class CorePython {
     }
     Atomics.store(int32View, 0, 1);
     Atomics.notify(int32View, 0, 1);
-  }
+  };
 
-  sendRunPython = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
+  private sendRunPython = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
     this.lastTransactionId = transactionId;
     this.send({
       type: 'corePythonRun',

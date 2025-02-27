@@ -3,7 +3,7 @@ from typing import Tuple
 import getCellsA1
 from pandas import DataFrame, Series
 
-from ..utils import result_to_value, stack_line_number, to_python_type_df
+from ..utils import result_to_value, to_python_type_df
 
 results = None
 
@@ -142,7 +142,7 @@ class q:
         Typical usage example:
             c = q.cells("A1:B5")
         """
-        result = getCellsA1(a1, int(stack_line_number()))
+        result = getCellsA1(a1)
 
         if result == None:
             return None

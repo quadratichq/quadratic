@@ -135,7 +135,7 @@ mod tests {
         let transaction_id = gc.async_transactions()[0].id;
 
         // mock the get_cells request from python
-        let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None);
+        let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
         assert!(cells.is_ok());
         assert_eq!(
             cells,
@@ -197,14 +197,16 @@ mod tests {
         let transaction_id = gc.async_transactions()[0].id;
 
         // mock the get_cells to populate dependencies
-        let _ = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None);
+        gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string())
+            .unwrap();
         // mock the calculation_complete
-        let _ = gc.calculation_complete(JsCodeResult {
+        gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
             output_value: Some(vec!["10".into(), "number".into()]),
             ..Default::default()
-        });
+        })
+        .unwrap();
 
         // replace the value in A1 to trigger the python calculation
         gc.set_cell_value(pos![A1].to_sheet_pos(sheet_id), "10".into(), None);
@@ -212,7 +214,7 @@ mod tests {
 
         let transaction_id = gc.async_transactions()[0].id;
 
-        let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None);
+        let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
         assert_eq!(
             cells,
             Ok(CellA1Response {
@@ -456,7 +458,7 @@ mod tests {
         let transaction_id = gc.last_transaction().unwrap().id;
 
         let result = gc
-            .calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None)
+            .calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string())
             .ok()
             .unwrap();
         assert_eq!(result.cells.len(), 1);
@@ -488,7 +490,7 @@ mod tests {
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         let result = gc
-            .calculation_get_cells_a1(transaction_id.to_string(), "B2".to_string(), None)
+            .calculation_get_cells_a1(transaction_id.to_string(), "B2".to_string())
             .ok()
             .unwrap();
         assert_eq!(result.cells.len(), 1);

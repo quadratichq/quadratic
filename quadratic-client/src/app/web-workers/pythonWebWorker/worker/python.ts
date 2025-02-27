@@ -37,13 +37,12 @@ class Python {
   }
 
   private getCellsA1 = (
-    a1: string,
-    lineNumber?: number
+    a1: string
   ): { cells: JsGetCellResponse[]; x: number; y: number; w: number; h: number; has_headers: boolean } | undefined => {
     if (!this.transactionId) {
       throw new Error('No transactionId in getCellsA1');
     }
-    return pythonCore.sendGetCellsA1(this.transactionId, a1, lineNumber);
+    return pythonCore.sendGetCellsA1(this.transactionId, a1);
   };
 
   private init = async () => {
@@ -182,7 +181,7 @@ class Python {
     }
   };
 
-  private async inspectPython(pythonCode: string): Promise<InspectPython | undefined> {
+  private inspectPython = async (pythonCode: string): Promise<InspectPython | undefined> => {
     if (!this.pyodide) {
       console.warn('Python not loaded');
     } else {
@@ -194,9 +193,9 @@ class Python {
 
       return Object.fromEntries(output.toJs()) as InspectPython;
     }
-  }
+  };
 
-  async runPython(message: CorePythonRun) {
+  runPython = async (message: CorePythonRun) => {
     if (!this.pyodide || this.state !== 'ready') {
       this.awaitingExecution.push(this.corePythonRunToCodeRun(message));
       return;
@@ -279,7 +278,7 @@ class Python {
     pythonClient.sendPythonState('ready', { current: undefined });
     this.state = 'ready';
     setTimeout(this.next, 0);
-  }
+  };
 }
 
 export const python = new Python();

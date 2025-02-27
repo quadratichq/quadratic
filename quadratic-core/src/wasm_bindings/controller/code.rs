@@ -17,9 +17,8 @@ impl GridController {
         &mut self,
         transaction_id: String,
         a1: String,
-        line_number: Option<u32>,
     ) -> Result<String, JsValue> {
-        match self.calculation_get_cells_a1(transaction_id, a1, line_number) {
+        match self.calculation_get_cells_a1(transaction_id, a1) {
             Ok(response) => match serde_json::to_string(&response) {
                 Ok(json) => Ok(json),
                 Err(_) => {

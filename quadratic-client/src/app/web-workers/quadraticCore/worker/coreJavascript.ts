@@ -34,7 +34,7 @@ class CoreJavascript {
         break;
 
       case 'javascriptCoreGetCellsA1':
-        this.handleGetCellsA1Response(e.data.id, e.data.transactionId, e.data.a1, e.data.lineNumber);
+        this.handleGetCellsA1Response(e.data.id, e.data.transactionId, e.data.a1);
         break;
 
       default:
@@ -50,10 +50,10 @@ class CoreJavascript {
     this.coreJavascriptPort.postMessage(message);
   }
 
-  private handleGetCellsA1Response = (id: number, transactionId: string, a1: string, lineNumber?: number) => {
+  private handleGetCellsA1Response = (id: number, transactionId: string, a1: string) => {
     let cells: CellA1Response | undefined;
     try {
-      const cellsString = core.getCellsA1(transactionId, a1, lineNumber);
+      const cellsString = core.getCellsA1(transactionId, a1);
       if (cellsString) {
         cells = JSON.parse(cellsString) as CellA1Response;
       }
@@ -72,7 +72,7 @@ class CoreJavascript {
     });
   };
 
-  sendRunJavascript = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
+  private sendRunJavascript = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
     this.lastTransactionId = transactionId;
     this.send({
       type: 'coreJavascriptRun',

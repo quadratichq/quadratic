@@ -32,7 +32,6 @@ export interface JavascriptCoreGetCellsA1 {
   id: number;
   transactionId: string;
   a1: string;
-  lineNumber?: number;
 }
 
 export type CoreJavascriptMessage = CoreJavascriptRun | CoreJavascriptGetCellsA1;
