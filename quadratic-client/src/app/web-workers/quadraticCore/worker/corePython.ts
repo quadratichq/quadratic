@@ -1,5 +1,5 @@
 import { debugWebWorkers } from '@/app/debugFlags';
-import type { JsCodeResult } from '@/app/quadratic-core-types';
+import type { JsCellA1Response, JsCodeResult } from '@/app/quadratic-core-types';
 import type { CorePythonMessage, PythonCoreMessage } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
 import { core } from '@/app/web-workers/quadraticCore/worker/core';
 
@@ -84,22 +84,30 @@ class CorePython {
 
   private sendGetCellsA1Length = (sharedBuffer: SharedArrayBuffer, transactionId: string, a1: string) => {
     const int32View = new Int32Array(sharedBuffer, 0, 3);
+
+    let responseString: string | undefined;
     try {
-      const cellsString = core.getCellsA1(transactionId, a1);
-
-      // need to get the bytes of the string (which covers unicode characters)
-      const length = new Blob([cellsString]).size;
-
-      Atomics.store(int32View, 1, length);
-      if (length !== 0) {
-        const id = this.id++;
-        this.getCellsResponses[id] = cellsString;
-        Atomics.store(int32View, 2, id);
-      }
-      Atomics.store(int32View, 0, 1);
-    } catch (_e) {
-      // core threw and handled the error
+      responseString = core.getCellsA1(transactionId, a1);
+    } catch (e: any) {
+      const cellA1Response: JsCellA1Response = {
+        values: null,
+        error: {
+          core_error: e,
+        },
+      };
+      responseString = JSON.stringify(cellA1Response);
     }
+
+    // need to get the bytes of the string (which covers unicode characters)
+    const length = new Blob([responseString]).size;
+
+    Atomics.store(int32View, 1, length);
+    if (length !== 0) {
+      const id = this.id++;
+      this.getCellsResponses[id] = responseString;
+      Atomics.store(int32View, 2, id);
+    }
+    Atomics.store(int32View, 0, 1);
     Atomics.notify(int32View, 0, 1);
   };
 

@@ -1,5 +1,5 @@
 import { debugWebWorkers } from '@/app/debugFlags';
-import type { CellA1Response } from '@/app/quadratic-core-types';
+import type { JsCellA1Response } from '@/app/quadratic-core-types';
 import type {
   CoreJavascriptMessage,
   JavascriptCoreMessage,
@@ -51,24 +51,22 @@ class CoreJavascript {
   }
 
   private handleGetCellsA1Response = (id: number, transactionId: string, a1: string) => {
-    let cells: CellA1Response | undefined;
+    let responseString: string | undefined;
     try {
-      const cellsString = core.getCellsA1(transactionId, a1);
-      if (cellsString) {
-        cells = JSON.parse(cellsString) as CellA1Response;
-      }
-    } catch (_e) {
-      // core threw and handled the error
+      responseString = core.getCellsA1(transactionId, a1);
+    } catch (e: any) {
+      const cellA1Response: JsCellA1Response = {
+        values: null,
+        error: {
+          core_error: e,
+        },
+      };
+      responseString = JSON.stringify(cellA1Response);
     }
     this.send({
       type: 'coreJavascriptGetCellsA1',
       id,
-      cells: cells?.cells,
-      x: cells ? Number(cells.x) : undefined,
-      y: cells ? Number(cells.y) : undefined,
-      w: cells ? Number(cells.w) : undefined,
-      h: cells ? Number(cells.h) : undefined,
-      two_dimensional: cells ? cells.two_dimensional : false,
+      response: responseString,
     });
   };
 

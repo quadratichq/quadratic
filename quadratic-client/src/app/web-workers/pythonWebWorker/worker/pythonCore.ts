@@ -1,5 +1,5 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import type { CellA1Response, JsGetCellResponse } from '@/app/quadratic-core-types';
+import type { JsCellA1Response } from '@/app/quadratic-core-types';
 import type { CorePythonMessage, PythonCoreMessage } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
 import type { PythonRun } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { python } from '@/app/web-workers/pythonWebWorker/worker/python';
@@ -37,10 +37,7 @@ export class PythonCore {
     });
   }
 
-  sendGetCellsA1 = (
-    transactionId: string,
-    a1: string
-  ): { cells: JsGetCellResponse[]; x: number; y: number; w: number; h: number; has_headers: boolean } | undefined => {
+  sendGetCellsA1 = (transactionId: string, a1: string): JsCellA1Response => {
     try {
       // This is a shared buffer that will be used to communicate with core
       // The first 4 bytes are used to signal the python core that the data is ready
@@ -54,7 +51,8 @@ export class PythonCore {
       this.send({ type: 'pythonCoreGetCellsA1Length', sharedBuffer, transactionId, a1 });
       let result = Atomics.wait(int32View, 0, 0);
       const length = int32View[1];
-      if (result !== 'ok' || length === 0) return undefined;
+      if (result !== 'ok' || length === 0)
+        return { values: null, error: { core_error: 'Error in get cells a1 length' } };
 
       const id = int32View[2];
 
@@ -65,7 +63,7 @@ export class PythonCore {
 
       this.send({ type: 'pythonCoreGetCellsA1Data', id, sharedBuffer });
       result = Atomics.wait(int32View, 0, 0);
-      if (result !== 'ok') return undefined;
+      if (result !== 'ok') return { values: null, error: { core_error: 'Error in get cells a1 data' } };
 
       let uint8View: Uint8Array | undefined = new Uint8Array(sharedBuffer, 4, length);
 
@@ -79,19 +77,12 @@ export class PythonCore {
 
       const decoder = new TextDecoder();
       const cellsStringified = decoder.decode(nonSharedView);
-      const cells = JSON.parse(cellsStringified) as CellA1Response;
-      return {
-        cells: cells.cells,
-        x: Number(cells.x),
-        y: Number(cells.y),
-        w: Number(cells.w),
-        h: Number(cells.h),
-        has_headers: cells.has_headers,
-      };
+      const response = JSON.parse(cellsStringified) as JsCellA1Response;
+      return response;
     } catch (e) {
       console.warn('[pythonCore] getCellsA1 error', e);
     }
-    return undefined;
+    return { values: null, error: { core_error: 'Error parsing getCellsA1 response' } };
   };
 }
 

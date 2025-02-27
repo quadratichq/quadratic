@@ -8,22 +8,33 @@ use crate::{
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
-pub struct CellA1Response {
-    pub cells: Vec<JsGetCellResponse>,
-    pub x: i64,
-    pub y: i64,
-    pub w: i64,
-    pub h: i64,
+pub struct JsCellA1Response {
+    pub values: Option<JsCellA1Values>,
+    pub error: Option<CellA1Error>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+pub struct JsCellA1Values {
+    pub cells: Vec<JsCellA1Value>,
+    pub x: i32,
+    pub y: i32,
+    pub w: i32,
+    pub h: i32,
     pub two_dimensional: bool,
     pub has_headers: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
-pub struct JsGetCellResponse {
-    pub x: i64,
-    pub y: i64,
+pub struct JsCellA1Value {
+    pub x: i32,
+    pub y: i32,
     pub value: String,
     pub type_name: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+pub struct CellA1Error {
+    pub core_error: String,
 }
 
 impl GridController {
@@ -32,33 +43,43 @@ impl GridController {
         &mut self,
         transaction_id: String,
         a1: String,
-    ) -> Result<CellA1Response, CoreError> {
-        let transaction_id = Uuid::parse_str(&transaction_id)
-            .map_err(|_| CoreError::TransactionNotFound("Transaction Id is invalid".into()))?;
+    ) -> JsCellA1Response {
+        let map_error = |e: CoreError| JsCellA1Response {
+            values: None,
+            error: Some(CellA1Error {
+                core_error: e.to_string(),
+            }),
+        };
 
-        let mut transaction = self
-            .transactions
-            .get_async_transaction(transaction_id)
-            .map_err(|_| CoreError::TransactionNotFound("Transaction Id not found".into()))?;
+        let Ok(transaction_id) = Uuid::parse_str(&transaction_id) else {
+            return map_error(CoreError::TransactionNotFound(
+                "Transaction Id is invalid".into(),
+            ));
+        };
+
+        let Ok(mut transaction) = self.transactions.get_async_transaction(transaction_id) else {
+            return map_error(CoreError::TransactionNotFound(
+                "Transaction Id not found".into(),
+            ));
+        };
 
         if !transaction.is_user_undo_redo() {
-            return Err(CoreError::TransactionNotFound(
+            return map_error(CoreError::TransactionNotFound(
                 "getCells can only be called for user / undo-redo transaction".to_string(),
             ));
         }
 
-        let code_sheet_pos =
-            transaction
-                .current_sheet_pos
-                .ok_or(CoreError::TransactionNotFound(
-                    "Transaction's position not found".into(),
-                ))?;
+        let Some(code_sheet_pos) = transaction.current_sheet_pos else {
+            return map_error(CoreError::TransactionNotFound(
+                "Transaction's position not found".into(),
+            ));
+        };
 
         let selection = match self.a1_selection_from_string(&a1, &code_sheet_pos.sheet_id) {
             Ok(selection) => selection,
             Err(e) => {
                 // unable to parse A1 string
-                return Err(CoreError::A1Error(e.to_string()));
+                return map_error(CoreError::A1Error(e.to_string()));
             }
         };
 
@@ -68,25 +89,19 @@ impl GridController {
         if selection.sheet_id == code_sheet_pos.sheet_id
             && selection.might_contain_pos(code_sheet_pos.into(), context)
         {
-            return Err(CoreError::A1Error("Self reference not allowed".to_string()));
+            return map_error(CoreError::A1Error("Self reference not allowed".to_string()));
         }
 
-        let selection_sheet = match self.try_sheet(selection.sheet_id) {
-            Some(sheet) => sheet,
-            None => {
-                return Err(CoreError::CodeCellSheetError("Sheet not found".to_string()));
-            }
+        let Some(selection_sheet) = self.try_sheet(selection.sheet_id) else {
+            return map_error(CoreError::CodeCellSheetError("Sheet not found".to_string()));
         };
-        let code_sheet = match self.try_sheet(code_sheet_pos.sheet_id) {
-            Some(sheet) => sheet,
-            None => {
-                return Err(CoreError::CodeCellSheetError("Sheet not found".to_string()));
-            }
+        let Some(code_sheet) = self.try_sheet(code_sheet_pos.sheet_id) else {
+            return map_error(CoreError::CodeCellSheetError("Sheet not found".to_string()));
         };
 
         // get the original code cell
         let Some(CellValue::Code(code)) = code_sheet.cell_value(code_sheet_pos.into()) else {
-            return Err(CoreError::CodeCellSheetError(
+            return map_error(CoreError::CodeCellSheetError(
                 "Code cell not found".to_string(),
             ));
         };
@@ -97,7 +112,7 @@ impl GridController {
         );
         let rects = selection_sheet.selection_to_rects(&selection, force_columns, false);
         if rects.len() > 1 {
-            return Err(CoreError::A1Error(
+            return map_error(CoreError::A1Error(
                 "Multiple rects not supported".to_string(),
             ));
         }
@@ -110,14 +125,11 @@ impl GridController {
         self.transactions.update_async_transaction(&transaction);
 
         let context = self.a1_context();
-        let selection_sheet = match self.try_sheet(selection.sheet_id) {
-            Some(sheet) => sheet,
-            None => {
-                return Err(CoreError::CodeCellSheetError("Sheet not found".to_string()));
-            }
+        let Some(selection_sheet) = self.try_sheet(selection.sheet_id) else {
+            return map_error(CoreError::CodeCellSheetError("Sheet not found".to_string()));
         };
 
-        let response = if let Some(rect) = rects.first() {
+        let values = if let Some(rect) = rects.first() {
             // Tracks whether to force the get_cells call to return a 2D array.
             // The use case is where the rect is currently one-dimensional, but
             // the selection may change to two-dimensional based on data bounds.
@@ -138,17 +150,17 @@ impl GridController {
             let cells = selection_sheet.get_cells_response(*rect);
             let is_python = matches!(code.language, CodeCellLanguage::Python);
 
-            CellA1Response {
+            JsCellA1Values {
                 cells,
-                x: rect.min.x,
-                y: rect.min.y,
-                w: rect.width() as i64,
-                h: rect.height() as i64,
+                x: rect.min.x as i32,
+                y: rect.min.y as i32,
+                w: rect.width() as i32,
+                h: rect.height() as i32,
                 two_dimensional,
                 has_headers: selection.has_table_headers(context, is_python),
             }
         } else {
-            CellA1Response {
+            JsCellA1Values {
                 cells: vec![],
                 x: 1,
                 y: 1,
@@ -159,7 +171,10 @@ impl GridController {
             }
         };
 
-        Ok(response)
+        JsCellA1Response {
+            values: Some(values),
+            error: None,
+        }
     }
 }
 
@@ -176,7 +191,7 @@ mod test {
 
         let result =
             gc.calculation_get_cells_a1("bad transaction id".to_string(), "A1".to_string());
-        assert!(result.is_err());
+        assert!(result.error.is_some());
     }
 
     #[test]
@@ -184,7 +199,7 @@ mod test {
         let mut gc = GridController::test();
 
         let result = gc.calculation_get_cells_a1(Uuid::new_v4().to_string(), "A1".to_string());
-        assert!(result.is_err());
+        assert!(result.error.is_some());
     }
 
     #[test]
@@ -206,7 +221,7 @@ mod test {
         transactions[0].current_sheet_pos = None;
         let transaction_id = transactions[0].id.to_string();
         let result = gc.calculation_get_cells_a1(transaction_id, "A1".to_string());
-        assert!(result.is_err());
+        assert!(result.error.is_some());
     }
 
     #[test]
@@ -229,7 +244,7 @@ mod test {
             transaction_id.to_string(),
             "'bad sheet name'!A1".to_string(),
         );
-        assert!(result.is_err());
+        assert!(result.error.is_some());
         gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: false,
@@ -279,7 +294,7 @@ mod test {
         let transaction_id = gc.last_transaction().unwrap().id;
 
         let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
-        assert!(result.is_ok());
+        assert!(result.error.is_none());
 
         let sheet = gc.sheet(sheet_id);
         let code = sheet.get_render_cells(Rect::from_numbers(2, 1, 1, 1));
@@ -325,20 +340,23 @@ mod test {
         let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
         assert_eq!(
             result,
-            Ok(CellA1Response {
-                cells: vec![JsGetCellResponse {
+            JsCellA1Response {
+                values: Some(JsCellA1Values {
+                    cells: vec![JsCellA1Value {
+                        x: 1,
+                        y: 1,
+                        value: "test".into(),
+                        type_name: "text".into()
+                    }],
                     x: 1,
                     y: 1,
-                    value: "test".into(),
-                    type_name: "text".into()
-                }],
-                x: 1,
-                y: 1,
-                w: 1,
-                h: 1,
-                two_dimensional: false,
-                has_headers: false,
-            })
+                    w: 1,
+                    h: 1,
+                    two_dimensional: false,
+                    has_headers: false,
+                }),
+                error: None,
+            }
         );
     }
 
@@ -400,46 +418,49 @@ mod test {
         let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1:A".to_string());
         assert_eq!(
             result,
-            Ok(CellA1Response {
-                cells: vec![
-                    JsGetCellResponse {
-                        x: 1,
-                        y: 1,
-                        value: "test1".into(),
-                        type_name: "text".into()
-                    },
-                    JsGetCellResponse {
-                        x: 1,
-                        y: 2,
-                        value: "test2".into(),
-                        type_name: "text".into()
-                    },
-                    JsGetCellResponse {
-                        x: 1,
-                        y: 3,
-                        value: "test3".into(),
-                        type_name: "text".into()
-                    },
-                    JsGetCellResponse {
-                        x: 1,
-                        y: 4,
-                        value: "".into(),
-                        type_name: "blank".into()
-                    },
-                    JsGetCellResponse {
-                        x: 1,
-                        y: 5,
-                        value: "test4".into(),
-                        type_name: "text".into()
-                    }
-                ],
-                x: 1,
-                y: 1,
-                w: 1,
-                h: 5,
-                two_dimensional: false,
-                has_headers: false,
-            })
+            JsCellA1Response {
+                values: Some(JsCellA1Values {
+                    cells: vec![
+                        JsCellA1Value {
+                            x: 1,
+                            y: 1,
+                            value: "test1".into(),
+                            type_name: "text".into()
+                        },
+                        JsCellA1Value {
+                            x: 1,
+                            y: 2,
+                            value: "test2".into(),
+                            type_name: "text".into()
+                        },
+                        JsCellA1Value {
+                            x: 1,
+                            y: 3,
+                            value: "test3".into(),
+                            type_name: "text".into()
+                        },
+                        JsCellA1Value {
+                            x: 1,
+                            y: 4,
+                            value: "".into(),
+                            type_name: "blank".into()
+                        },
+                        JsCellA1Value {
+                            x: 1,
+                            y: 5,
+                            value: "test4".into(),
+                            type_name: "text".into()
+                        }
+                    ],
+                    x: 1,
+                    y: 1,
+                    w: 1,
+                    h: 5,
+                    two_dimensional: false,
+                    has_headers: false,
+                }),
+                error: None,
+            }
         );
     }
 
@@ -468,20 +489,23 @@ mod test {
         let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
         assert_eq!(
             result,
-            Ok(CellA1Response {
-                cells: vec![JsGetCellResponse {
+            JsCellA1Response {
+                values: Some(JsCellA1Values {
+                    cells: vec![JsCellA1Value {
+                        x: 1,
+                        y: 1,
+                        value: "test".into(),
+                        type_name: "text".into()
+                    }],
                     x: 1,
                     y: 1,
-                    value: "test".into(),
-                    type_name: "text".into()
-                }],
-                x: 1,
-                y: 1,
-                w: 1,
-                h: 1,
-                two_dimensional: false,
-                has_headers: false,
-            })
+                    w: 1,
+                    h: 1,
+                    two_dimensional: false,
+                    has_headers: false,
+                }),
+                error: None,
+            }
         );
     }
 
@@ -507,35 +531,23 @@ mod test {
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
-        let result = gc
-            .calculation_get_cells_a1(transaction_id.to_string(), "B:".to_string())
-            .unwrap();
-        assert!(result.two_dimensional);
+        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "B:".to_string());
+        assert!(result.values.unwrap().two_dimensional);
 
-        let result = gc
-            .calculation_get_cells_a1(transaction_id.to_string(), "B".to_string())
-            .unwrap();
-        assert!(!result.two_dimensional);
+        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "B".to_string());
+        assert!(!result.values.unwrap().two_dimensional);
 
-        let result = gc
-            .calculation_get_cells_a1(transaction_id.to_string(), "2:".to_string())
-            .unwrap();
-        assert!(result.two_dimensional);
+        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "2:".to_string());
+        assert!(result.values.unwrap().two_dimensional);
 
-        let result = gc
-            .calculation_get_cells_a1(transaction_id.to_string(), "2".to_string())
-            .unwrap();
-        assert!(!result.two_dimensional);
+        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "2".to_string());
+        assert!(!result.values.unwrap().two_dimensional);
 
-        let result = gc
-            .calculation_get_cells_a1(transaction_id.to_string(), "D5:E5".to_string())
-            .unwrap();
-        assert!(!result.two_dimensional);
+        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "D5:E5".to_string());
+        assert!(!result.values.unwrap().two_dimensional);
 
-        let result = gc
-            .calculation_get_cells_a1(transaction_id.to_string(), "D5:".to_string())
-            .unwrap();
-        assert!(result.two_dimensional);
+        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "D5:".to_string());
+        assert!(result.values.unwrap().two_dimensional);
     }
 
     #[test]
@@ -568,28 +580,31 @@ mod test {
             .calculation_get_cells_a1(transaction_id.to_string(), "Table1[[#HEADERS]]".to_string());
         assert_eq!(
             result,
-            Ok(CellA1Response {
-                cells: vec![
-                    JsGetCellResponse {
-                        x: 1,
-                        y: 2,
-                        value: "Column 1".into(),
-                        type_name: "text".into()
-                    },
-                    JsGetCellResponse {
-                        x: 2,
-                        y: 2,
-                        value: "Column 2".into(),
-                        type_name: "text".into()
-                    }
-                ],
-                x: 1,
-                y: 2,
-                w: 2,
-                h: 1,
-                two_dimensional: true,
-                has_headers: true,
-            })
+            JsCellA1Response {
+                values: Some(JsCellA1Values {
+                    cells: vec![
+                        JsCellA1Value {
+                            x: 1,
+                            y: 2,
+                            value: "Column 1".into(),
+                            type_name: "text".into()
+                        },
+                        JsCellA1Value {
+                            x: 2,
+                            y: 2,
+                            value: "Column 2".into(),
+                            type_name: "text".into()
+                        }
+                    ],
+                    x: 1,
+                    y: 2,
+                    w: 2,
+                    h: 1,
+                    two_dimensional: true,
+                    has_headers: true,
+                }),
+                error: None,
+            }
         );
     }
 
@@ -623,40 +638,43 @@ mod test {
             gc.calculation_get_cells_a1(transaction_id.to_string(), "Table1[[#ALL]]".to_string());
         assert_eq!(
             result,
-            Ok(CellA1Response {
-                cells: vec![
-                    JsGetCellResponse {
-                        x: 1,
-                        y: 2,
-                        value: "Column 1".into(),
-                        type_name: "text".into()
-                    },
-                    JsGetCellResponse {
-                        x: 2,
-                        y: 2,
-                        value: "Column 2".into(),
-                        type_name: "text".into()
-                    },
-                    JsGetCellResponse {
-                        x: 1,
-                        y: 3,
-                        value: "1".into(),
-                        type_name: "number".into()
-                    },
-                    JsGetCellResponse {
-                        x: 2,
-                        y: 3,
-                        value: "2".into(),
-                        type_name: "number".into()
-                    }
-                ],
-                x: 1,
-                y: 2,
-                w: 2,
-                h: 2,
-                two_dimensional: true,
-                has_headers: true,
-            })
+            JsCellA1Response {
+                values: Some(JsCellA1Values {
+                    cells: vec![
+                        JsCellA1Value {
+                            x: 1,
+                            y: 2,
+                            value: "Column 1".into(),
+                            type_name: "text".into()
+                        },
+                        JsCellA1Value {
+                            x: 2,
+                            y: 2,
+                            value: "Column 2".into(),
+                            type_name: "text".into()
+                        },
+                        JsCellA1Value {
+                            x: 1,
+                            y: 3,
+                            value: "1".into(),
+                            type_name: "number".into()
+                        },
+                        JsCellA1Value {
+                            x: 2,
+                            y: 3,
+                            value: "2".into(),
+                            type_name: "number".into()
+                        }
+                    ],
+                    x: 1,
+                    y: 2,
+                    w: 2,
+                    h: 2,
+                    two_dimensional: true,
+                    has_headers: true,
+                }),
+                error: None,
+            }
         );
     }
 
@@ -675,7 +693,7 @@ mod test {
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "Table1".to_string());
-        assert!(result.is_ok());
+        assert!(result.values.is_some());
     }
 
     #[test]
@@ -700,6 +718,6 @@ mod test {
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "Table1".to_string());
-        assert!(result.is_ok());
+        assert!(result.values.is_some());
     }
 }

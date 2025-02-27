@@ -74,8 +74,9 @@ mod tests {
     use bigdecimal::BigDecimal;
 
     use crate::controller::active_transactions::pending_transaction::PendingTransaction;
-    use crate::controller::execution::run_code::get_cells::CellA1Response;
-    use crate::controller::execution::run_code::get_cells::JsGetCellResponse;
+    use crate::controller::execution::run_code::get_cells::JsCellA1Response;
+    use crate::controller::execution::run_code::get_cells::JsCellA1Value;
+    use crate::controller::execution::run_code::get_cells::JsCellA1Values;
     use crate::controller::operations::operation::Operation;
     use crate::controller::transaction_types::JsCodeResult;
     use crate::controller::GridController;
@@ -492,23 +493,25 @@ mod tests {
         let transaction_id = transaction.id;
 
         let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
-        assert!(cells.is_ok());
         assert_eq!(
             cells,
-            Ok(CellA1Response {
-                cells: vec![JsGetCellResponse {
+            JsCellA1Response {
+                values: Some(JsCellA1Values {
+                    cells: vec![JsCellA1Value {
+                        x: 1,
+                        y: 1,
+                        value: "9".into(),
+                        type_name: "number".into(),
+                    }],
                     x: 1,
                     y: 1,
-                    value: "9".into(),
-                    type_name: "number".into(),
-                }],
-                x: 1,
-                y: 1,
-                w: 1,
-                h: 1,
-                two_dimensional: false,
-                has_headers: false,
-            })
+                    w: 1,
+                    h: 1,
+                    two_dimensional: false,
+                    has_headers: false,
+                }),
+                error: None,
+            }
         );
         // pending cal
         let transaction = gc.async_transactions().first().unwrap();

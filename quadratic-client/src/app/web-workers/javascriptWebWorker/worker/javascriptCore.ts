@@ -1,5 +1,5 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import type { JsCodeResult, JsGetCellResponse } from '@/app/quadratic-core-types';
+import type { JsCodeResult } from '@/app/quadratic-core-types';
 import type {
   CoreJavascriptGetCellsA1,
   CoreJavascriptMessage,
@@ -62,33 +62,11 @@ class JavascriptCore {
     );
   }
 
-  sendGetCellsA1 = (
-    transactionId: string,
-    a1: string
-  ): Promise<
-    { cells: JsGetCellResponse[]; x: number; y: number; w: number; h: number; two_dimensional: boolean } | undefined
-  > => {
+  sendGetCellsA1 = (transactionId: string, a1: string): Promise<string> => {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: CoreJavascriptGetCellsA1) => {
-        if (
-          message.cells !== undefined &&
-          message.x !== undefined &&
-          message.y !== undefined &&
-          message.w !== undefined &&
-          message.h !== undefined
-        ) {
-          resolve({
-            cells: message.cells,
-            x: message.x,
-            y: message.y,
-            w: message.w,
-            h: message.h,
-            two_dimensional: message.two_dimensional ?? false,
-          });
-        } else {
-          resolve(undefined);
-        }
+        resolve(message.response);
       };
       this.send({ type: 'javascriptCoreGetCellsA1', transactionId, id, a1 });
     });
