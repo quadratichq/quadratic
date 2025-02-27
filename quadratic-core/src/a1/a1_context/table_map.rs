@@ -21,6 +21,11 @@ impl TableMap {
         self.tables.insert(table_name_folded, table_map_entry);
     }
 
+    pub fn remove(&mut self, table_name: &str) -> Option<TableMapEntry> {
+        let table_name_folded = case_fold(table_name);
+        self.tables.remove(&table_name_folded)
+    }
+
     pub fn insert_table(
         &mut self,
         sheet_id: SheetId,

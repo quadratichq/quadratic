@@ -7,7 +7,6 @@ use crate::{
         file::sheet_schema::export_sheet, js_types::JsSnackbarSeverity, unique_data_table_name,
         Sheet, SheetId,
     },
-    util::case_fold,
 };
 use anyhow::{bail, Result};
 use lexicon_fractional_index::key_between;
@@ -51,10 +50,10 @@ impl GridController {
                     return Ok(());
                 }
 
-                let mut context = self.a1_context().to_owned();
-
                 let sheet_id = self.grid.add_sheet(Some(sheet));
                 self.send_add_sheet(transaction, sheet_id);
+
+                let mut context = self.a1_context().to_owned();
 
                 let mut data_tables_pos = vec![];
                 let mut table_names_to_update_in_cell_ref = vec![];
@@ -67,9 +66,7 @@ impl GridController {
                     data_table.name = unique_name.to_owned().into();
 
                     // update table context for replacing table names in code cells
-                    if let Some(mut table_map_entry) =
-                        context.table_map.tables.remove(&case_fold(&old_name))
-                    {
+                    if let Some(mut table_map_entry) = context.table_map.remove(&old_name) {
                         table_map_entry.sheet_id = sheet_id;
                         context.table_map.insert(table_map_entry);
                     }
@@ -98,15 +95,16 @@ impl GridController {
                     }
                 }
 
+                transaction.sheet_info.insert(sheet_id);
+                transaction.add_fill_cells(sheet_id);
+                transaction.sheet_borders.insert(sheet_id);
+
                 transaction
                     .forward_operations
                     .push(Operation::AddSheetSchema { schema });
                 transaction
                     .reverse_operations
                     .push(Operation::DeleteSheet { sheet_id });
-
-                transaction.add_fill_cells(sheet_id);
-                transaction.sheet_borders.insert(sheet_id);
             }
         }
         Ok(())
@@ -312,9 +310,10 @@ mod tests {
     use crate::{
         controller::{
             active_transactions::transaction_name::TransactionName,
-            operations::operation::Operation, GridController,
+            operations::operation::Operation, user_actions::import::tests::simple_csv_at,
+            GridController,
         },
-        grid::{CodeCellLanguage, SheetId},
+        grid::{CodeCellLanguage, CodeCellValue, SheetId},
         wasm_bindings::{
             controller::sheet_info::SheetInfo,
             js::{clear_js_calls, expect_js_call},
@@ -627,6 +626,37 @@ mod tests {
             "jsAddSheet",
             format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
             true,
+        );
+    }
+
+    #[test]
+    fn test_duplicate_sheet_with_data_table() {
+        let (mut gc, sheet_id, pos, file_name) = simple_csv_at(pos![E2]);
+
+        gc.test_set_code_run_array_2d(sheet_id, 10, 10, 2, 2, vec!["1", "2", "3", "4"]);
+        gc.set_code_cell(
+            SheetPos {
+                sheet_id,
+                x: 10,
+                y: 10,
+            },
+            CodeCellLanguage::Python,
+            format!("q.cells('{}')", file_name),
+            None,
+        );
+
+        let ops = gc.duplicate_sheet_operations(sheet_id);
+        gc.start_user_transaction(ops, None, TransactionName::DuplicateSheet);
+
+        let duplicated_sheet_id = gc.sheet_ids()[1];
+        let data_table = gc.sheet(duplicated_sheet_id).data_table(pos).unwrap();
+        assert_eq!(data_table.name.to_string(), format!("{}1", file_name));
+        assert_eq!(
+            gc.sheet(duplicated_sheet_id).cell_value(pos![J10]).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Python,
+                code: format!("q.cells(\"{}1\")", file_name),
+            })
         );
     }
 }
