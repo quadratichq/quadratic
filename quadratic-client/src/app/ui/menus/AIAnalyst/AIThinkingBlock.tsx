@@ -1,7 +1,7 @@
 import { Markdown } from '@/app/ui/components/Markdown';
 import { cn } from '@/shared/shadcn/utils';
 import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 // Type for the message content items
 export type MessageContentItem = {
@@ -27,14 +27,16 @@ export function ThinkingBlock({
 }: ThinkingBlockProps) {
   // Each thinking block tracks its own expanded state
   const [isExpanded, setIsExpanded] = useState(isLoading && isCurrentMessage);
+  // Track whether this is the first load completion
+  const firstLoadCompletedRef = useRef(false);
 
   // Update expanded state when loading changes
   useEffect(() => {
     if (isLoading && isCurrentMessage) {
       // Always show thinking while loading the current message
       setIsExpanded(true);
-    } else if (!isLoading && isCurrentMessage) {
-      // Auto-collapse when loading completes
+    } else if (!isLoading && !firstLoadCompletedRef.current) {
+      firstLoadCompletedRef.current = true;
       setIsExpanded(false);
       // Notify parent that the thinking block was collapsed
       onToggle();
