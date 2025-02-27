@@ -164,8 +164,8 @@ pub struct DataTable {
     pub chart_output: Option<(u32, u32)>,
 }
 
-impl From<(Import, Array, &Grid, &A1Context)> for DataTable {
-    fn from((import, cell_values, _grid, context): (Import, Array, &Grid, &A1Context)) -> Self {
+impl From<(Import, Array, &A1Context)> for DataTable {
+    fn from((import, cell_values, context): (Import, Array, &A1Context)) -> Self {
         let name = unique_data_table_name(&import.file_name, false, None, context);
 
         DataTable::new(
@@ -738,7 +738,7 @@ pub mod test {
         let import = Import::new(file_name.into());
         let array = Array::from_str_vec(values, true).unwrap();
         let context = gc.a1_context();
-        let data_table = DataTable::from((import.clone(), array, grid, context));
+        let data_table = DataTable::from((import.clone(), array, context));
 
         (sheet, data_table)
     }
