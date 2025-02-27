@@ -30,7 +30,7 @@ export function AIAnalystHeader({ textareaRef }: AIAnalystHeaderProps) {
     <div className="flex items-center justify-between px-4 py-2">
       <span className="flex items-center text-sm font-bold">
         {viewActionsSpec[Action.ToggleAIAnalyst].label}
-        {showChatHistory ? ' history' : null}
+        {showChatHistory && ' history'}
       </span>
 
       <div className="flex items-center gap-2">
