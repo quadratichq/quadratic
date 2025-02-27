@@ -46,7 +46,9 @@ export function ThinkingBlock({ isCurrentMessage, isLoading, thinkingContent, ex
         onClick={toggleExpanded}
       >
         {isExpanded ? <ChevronDownIcon className="h-3 w-3" /> : <ChevronRightIcon className="h-3 w-3" />}
-        <span>{isLoading && isCurrentMessage ? 'Thinking...' : isExpanded ? 'Hide thinking' : 'Show thinking'}</span>
+        <span className="select-none">
+          {isLoading && isCurrentMessage ? 'Thinking...' : isExpanded ? 'Hide thinking' : 'Show thinking'}
+        </span>
       </div>
 
       {isExpanded && (
