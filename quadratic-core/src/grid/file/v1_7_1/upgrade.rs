@@ -84,7 +84,7 @@ fn upgrade_code_runs(
                                         .take(array.size.w as usize)
                                         .enumerate()
                                         .map(|(i, name)| v1_8::DataTableColumnSchema {
-                                            name: name.clone().into(),
+                                            name: name.clone(),
                                             display: true,
                                             value_index: i as u32,
                                         })
