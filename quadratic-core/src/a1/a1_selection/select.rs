@@ -376,27 +376,33 @@ impl A1Selection {
                 .push(CellRefRange::new_relative_pos(self.cursor));
         };
         if let Some(last) = self.ranges.last_mut() {
-            let mut range = match last {
+            match last {
                 CellRefRange::Table { range } => {
-                    if let Some(range) =
+                    if let Some(mut range) =
                         range.convert_to_ref_range_bounds(false, context, false, false)
                     {
-                        range
+                        // if cursor is at the end of the table, then reverse the selection
+                        if self.cursor.x == range.end.col() && self.cursor.y == range.end.row() {
+                            range.start = range.end;
+                        }
+                        range.end = CellRefRangeEnd::new_relative_xy(column, row);
+                        *last = CellRefRange::Sheet { range };
                     } else {
                         dbgjs!("Could not convert table range to ref range bounds in A1Selection::select_to");
                         return;
                     }
                 }
-                CellRefRange::Sheet { range } => *range,
+                CellRefRange::Sheet { range } => {
+                    if range.start.row.is_unbounded() {
+                        self.cursor.y = row;
+                    }
+                    if range.start.col.is_unbounded() {
+                        self.cursor.x = column;
+                    }
+                    range.end = CellRefRangeEnd::new_relative_xy(column, row);
+                    *last = CellRefRange::Sheet { range: *range };
+                }
             };
-            if range.start.row.is_unbounded() {
-                self.cursor.y = row;
-            }
-            if range.start.col.is_unbounded() {
-                self.cursor.x = column;
-            }
-            range.end = CellRefRangeEnd::new_relative_xy(column, row);
-            *last = CellRefRange::Sheet { range };
         }
         if !append {
             self.ranges = self.ranges.split_off(self.ranges.len().saturating_sub(1));

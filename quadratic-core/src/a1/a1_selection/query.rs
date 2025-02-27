@@ -151,8 +151,9 @@ impl A1Selection {
         }
     }
 
-    /// Returns the last selection's end. It defaults to the cursor if it's
-    /// a non-finite range.
+    /// Returns the last selection's end. It defaults to the cursor if it's a
+    /// non-finite range. Note, for tables, we need to use the end of the
+    /// selection if the cursor is at the end of the table.
     pub fn last_selection_end(&self, context: &A1Context) -> Pos {
         if let Some(range) = self.ranges.last() {
             match range {
@@ -167,12 +168,31 @@ impl A1Selection {
                     }
                 }
                 CellRefRange::Table { range } => {
+                    let name = range.table_name.clone();
                     if let Some(range) =
                         range.convert_to_ref_range_bounds(false, context, false, false)
                     {
-                        Pos {
-                            x: range.end.col(),
-                            y: range.end.row(),
+                        if self.cursor.x == range.end.col() && self.cursor.y == range.end.row() {
+                            // we adjust the y to step over the table name so we
+                            // don't end up with the same selection
+                            let adjust_y = if let Some(table) = context.try_table(&name) {
+                                if table.show_ui && table.show_name {
+                                    -1
+                                } else {
+                                    0
+                                }
+                            } else {
+                                0
+                            };
+                            Pos {
+                                x: range.start.col(),
+                                y: range.start.row() + adjust_y,
+                            }
+                        } else {
+                            Pos {
+                                x: range.end.col(),
+                                y: range.end.row(),
+                            }
                         }
                     } else {
                         self.cursor
