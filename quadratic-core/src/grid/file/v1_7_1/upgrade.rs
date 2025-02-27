@@ -32,6 +32,8 @@ fn upgrade_code_runs(
         .enumerate()
         .map(|(i, (pos, code_run))| {
             let mut is_chart_or_html = false;
+            let mut column_headers = None;
+
             let (value, error) = match code_run.result {
                 current::CodeRunResultSchema::Err(error) => (
                     v1_8::OutputValueSchema::Single(v1_8::CellValueSchema::Blank),
@@ -50,12 +52,30 @@ fn upgrade_code_runs(
                             v1_8::OutputValueSchema::Single(cell_value.into())
                         }
                         current::OutputValueSchema::Array(array) => {
+                            let values = array
+                                .values
+                                .into_iter()
+                                .map(|v| v.into())
+                                .collect::<Vec<v1_8::CellValueSchema>>();
+                            column_headers = Some(
+                                values
+                                    .iter()
+                                    .take(array.size.w as usize)
+                                    .enumerate()
+                                    .map(|(i, name)| v1_8::DataTableColumnSchema {
+                                        name: name.clone().into(),
+                                        display: true,
+                                        value_index: i as u32,
+                                    })
+                                    .collect::<Vec<_>>(),
+                            );
+
                             v1_8::OutputValueSchema::Array(v1_8::OutputArraySchema {
                                 size: v1_8::OutputSizeSchema {
                                     w: array.size.w,
                                     h: array.size.h,
                                 },
-                                values: array.values.into_iter().map(|v| v.into()).collect(),
+                                values,
                             })
                         }
                     };
@@ -134,14 +154,24 @@ fn upgrade_code_runs(
             } else {
                 None
             };
+            let is_connection = if let Some(current::CellValueSchema::Code(code_cell)) = code {
+                matches!(
+                    code_cell.language,
+                    current::CodeCellLanguageSchema::Connection { .. }
+                )
+            } else {
+                false
+            };
+
+            let header_is_first_row = is_connection;
             let new_data_table = v1_8::DataTableSchema {
                 kind: v1_8::DataTableKindSchema::CodeRun(new_code_run),
                 name: data_table_name,
-                header_is_first_row: false,
+                header_is_first_row,
                 show_ui: true,
                 show_name: chart_output.is_some(),
-                show_columns: chart_output.is_some(),
-                columns: None,
+                show_columns: chart_output.is_some() || header_is_first_row,
+                columns: column_headers,
                 sort: None,
                 sort_dirty: false,
                 display_buffer: None,
