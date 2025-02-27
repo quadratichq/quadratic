@@ -15,7 +15,7 @@ export const Component = () => {
   return (
     <>
       <div className="max-w-xl">
-        <DashboardHeader title="My account & preferences" />
+        <DashboardHeader title="Profile & preferences" />
 
         <Row>
           <Type variant="body2" className="font-bold">
