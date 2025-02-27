@@ -277,6 +277,7 @@ export class q {
     const results = JSON.parse(resultsStringified) as {
       values: {
         cells: (number | string | boolean | Date | null)[][];
+        one_dimensional: boolean;
         two_dimensional: boolean;
       };
       error: string | null;
@@ -284,8 +285,10 @@ export class q {
     if (results.error) {
       throw new Error(results.error);
     }
+
     const cells = convertNullToUndefined(results.values.cells);
 
+    // parse dates
     cells.forEach((row) => {
       row.forEach((cell, i) => {
         if (typeof cell === 'string' && cell.startsWith('___date___')) {
@@ -296,7 +299,7 @@ export class q {
 
     // always return a single cell as a single value--even in cases where the
     // selection may change.
-    if (cells.length === 1 && cells[0].length === 1) {
+    if (cells.length === 1 && cells[0].length === 1 && !results.values.one_dimensional) {
       return cells[0][0];
     }
 

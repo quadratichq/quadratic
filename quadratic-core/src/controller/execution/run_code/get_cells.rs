@@ -20,6 +20,7 @@ pub struct JsCellA1Values {
     pub y: i32,
     pub w: i32,
     pub h: i32,
+    pub one_dimensional: bool,
     pub two_dimensional: bool,
     pub has_headers: bool,
 }
@@ -110,6 +111,7 @@ impl GridController {
             code.language,
             CodeCellLanguage::Python | CodeCellLanguage::Javascript
         );
+
         let rects = selection_sheet.selection_to_rects(&selection, force_columns, false);
         if rects.len() > 1 {
             return map_error(CoreError::A1Error(
@@ -156,6 +158,7 @@ impl GridController {
                 y: rect.min.y as i32,
                 w: rect.width() as i32,
                 h: rect.height() as i32,
+                one_dimensional: selection.is_col_range(),
                 two_dimensional,
                 has_headers: selection.has_table_headers(context, is_python),
             }
@@ -166,6 +169,7 @@ impl GridController {
                 y: 1,
                 w: 0,
                 h: 0,
+                one_dimensional: false,
                 two_dimensional: false,
                 has_headers: false,
             }
@@ -352,6 +356,7 @@ mod test {
                     y: 1,
                     w: 1,
                     h: 1,
+                    one_dimensional: false,
                     two_dimensional: false,
                     has_headers: false,
                 }),
@@ -456,6 +461,7 @@ mod test {
                     y: 1,
                     w: 1,
                     h: 5,
+                    one_dimensional: true,
                     two_dimensional: false,
                     has_headers: false,
                 }),
@@ -501,6 +507,7 @@ mod test {
                     y: 1,
                     w: 1,
                     h: 1,
+                    one_dimensional: false,
                     two_dimensional: false,
                     has_headers: false,
                 }),
@@ -600,6 +607,7 @@ mod test {
                     y: 2,
                     w: 2,
                     h: 1,
+                    one_dimensional: false,
                     two_dimensional: true,
                     has_headers: true,
                 }),
@@ -670,6 +678,7 @@ mod test {
                     y: 2,
                     w: 2,
                     h: 2,
+                    one_dimensional: false,
                     two_dimensional: true,
                     has_headers: true,
                 }),
