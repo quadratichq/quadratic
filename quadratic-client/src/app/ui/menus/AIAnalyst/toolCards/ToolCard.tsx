@@ -26,7 +26,7 @@ export const ToolCard = ({
       )}
     >
       <div className="flex min-w-0 items-center gap-2">
-        <div className="flex h-6 w-6 items-center justify-center">
+        <div className="flex h-6 w-6 select-none items-center justify-center">
           {icon ? icon : isLoading ? <Skeleton className="h-6 w-6 bg-accent" /> : null}
         </div>
 
