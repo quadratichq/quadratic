@@ -118,12 +118,6 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
     }
   }, [messages, scrollToBottom, loading, shouldAutoScroll]);
 
-  // Don't auto-scroll when thinking blocks are expanded
-  const handleThinkingToggle = useCallback(() => {
-    // Removed auto-scrolling behavior
-    // User can manually scroll if needed
-  }, []);
-
   if (messagesCount === 0) {
     return <AIAnalystExamplePrompts />;
   }
@@ -186,7 +180,7 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
                           isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
                           isLoading={loading}
                           thinkingContent={item}
-                          onToggle={handleThinkingToggle}
+                          expandedDefault={true}
                         />
                       ) : item.type === 'text' ? (
                         <Markdown key={item.text}>{item.text}</Markdown>

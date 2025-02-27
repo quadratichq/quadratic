@@ -9,35 +9,32 @@ interface ThinkingBlockProps {
   isCurrentMessage: boolean;
   isLoading: boolean;
   thinkingContent: Content[number];
-  onToggle: () => void;
+  expandedDefault: boolean;
 }
 
-export function ThinkingBlock({ isCurrentMessage, isLoading, thinkingContent, onToggle }: ThinkingBlockProps) {
+export function ThinkingBlock({ isCurrentMessage, isLoading, thinkingContent, expandedDefault }: ThinkingBlockProps) {
   // Each thinking block tracks its own expanded state
-  const [isExpanded, setIsExpanded] = useState(isLoading && isCurrentMessage);
+  const [isExpanded, setIsExpanded] = useState(isLoading && isCurrentMessage && expandedDefault);
   // Track whether this is the first load completion
   const firstLoadCompletedRef = useRef(false);
 
   // Update expanded state when loading changes
   useEffect(() => {
-    if (isLoading && isCurrentMessage) {
+    if (isLoading && isCurrentMessage && expandedDefault) {
       // Always show thinking while loading the current message
       setIsExpanded(true);
     } else if (!isLoading && !firstLoadCompletedRef.current) {
       firstLoadCompletedRef.current = true;
       setIsExpanded(false);
-      // Notify parent that the thinking block was collapsed
-      onToggle();
     }
-  }, [isLoading, isCurrentMessage, onToggle]);
+  }, [isLoading, isCurrentMessage, expandedDefault]);
 
   const toggleExpanded = useCallback(() => {
     // Only allow toggling if not loading or not the current message
     if (!(isLoading && isCurrentMessage)) {
       setIsExpanded((prev) => !prev);
-      onToggle();
     }
-  }, [isLoading, isCurrentMessage, onToggle]);
+  }, [isLoading, isCurrentMessage]);
 
   return (
     <div className="flex flex-col">
