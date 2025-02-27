@@ -209,7 +209,7 @@ export class SheetCursor {
 
   selectTo = (x: number, y: number, append: boolean, ensureVisible = true) => {
     this.jsSelection.selectTo(x, y, append);
-    this.updatePosition(ensureVisible);
+    this.updatePosition(ensureVisible ? { x, y } : false);
   };
 
   // Selects columns that have a current selection (used by cmd+space)

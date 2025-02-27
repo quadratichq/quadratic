@@ -142,7 +142,7 @@ export function cellVisible(
   const cell = sheet.getCellOffsets(coordinate.x, coordinate.y);
   let is_off_screen = false;
 
-  if (cell.x + headingSize.width < viewport.left) {
+  if (cell.x - headingSize.width / viewport.scale.x < viewport.left) {
     viewport.left = cell.x - headingSize.width / viewport.scale.x;
     is_off_screen = true;
   } else if (cell.x + cell.width > viewport.right) {
