@@ -137,7 +137,7 @@ q.cells('A1:B$20')
 
 Return the data from your Python code to the spreadsheet.
 
-By default, the last line of code is output to the spreadsheet.
+By default, the last line of code is output to the spreadsheet. Primarily return results to the spreadsheet rather than using print statements; print statements do not get returned to the sheet.
 
 All code outputs by default are given names that can be referenced, regardless of their return type. 
 
@@ -439,4 +439,8 @@ fig.update_layout(
 
 fig.show()
 \`\`\`
+
+# Correlations
+
+Do not attempt to build a correlation analysis unless the user asks for it. 
 `;
