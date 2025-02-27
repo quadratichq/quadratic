@@ -11,7 +11,7 @@ export const ToolCard = ({
   isLoading,
 }: {
   icon?: React.ReactNode;
-  label?: string;
+  label?: string | React.ReactNode;
   description?: string | React.ReactNode;
   hasError?: boolean;
   className?: string;
