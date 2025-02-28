@@ -125,6 +125,7 @@ export class PointerTable {
       if (await inlineEditorHandler.handleCellPointerDown()) {
         const columnName = tableDown.table.columns[tableDown.column].name;
         sheets.sheet.cursor.selectTable(tableDown.table.name, columnName, shiftKey, ctrlKey);
+        pixiApp.pointer.pointerDown.pointerDownColumnName(tableDown.table.x, tableDown.table.y);
       } else {
         inlineEditorMonaco.focus();
       }

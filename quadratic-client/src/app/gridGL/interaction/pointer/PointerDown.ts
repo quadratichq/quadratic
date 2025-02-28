@@ -139,7 +139,7 @@ export class PointerDown {
     this.active = true;
   }
 
-  pointerMove(world: Point, event: PointerEvent): void {
+  pointerMove(world: Point, event: PointerEvent) {
     if (pixiAppSettings.panMode !== PanMode.Disabled) return;
 
     const { viewport } = pixiApp;
@@ -192,7 +192,7 @@ export class PointerDown {
     }
   }
 
-  pointerUp(event?: PointerEvent): void {
+  pointerUp(event?: PointerEvent) {
     const isMiddleClick = event && event.button === 1;
     // to prevent default paste behavior on middle click, in Linux
     if (isLinux && isMiddleClick) {
@@ -221,14 +221,21 @@ export class PointerDown {
     }
   }
 
-  private clearDoubleClick(): void {
+  private clearDoubleClick() {
     if (this.doubleClickTimeout) {
       window.clearTimeout(this.doubleClickTimeout);
       this.doubleClickTimeout = undefined;
     }
   }
 
-  destroy(): void {
+  destroy() {
     this.clearDoubleClick();
+  }
+
+  pointerDownColumnName(column: number, row: number) {
+    this.previousPosition = new Point(column, row);
+    this.pointerMoved = false;
+    this.position = new Point(column, row);
+    this.active = true;
   }
 }
