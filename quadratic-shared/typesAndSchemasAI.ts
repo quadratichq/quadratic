@@ -106,7 +106,9 @@ const InternalContextTypeSchema = z.enum([
   'tables',
 ]);
 const ToolResultContextTypeSchema = z.literal('toolResult');
+export type ToolResultContextType = z.infer<typeof ToolResultContextTypeSchema>;
 const UserPromptContextTypeSchema = z.literal('userPrompt');
+export type UserPromptContextType = z.infer<typeof UserPromptContextTypeSchema>;
 
 const ContextSchema = z.object({
   sheets: z.array(z.string()),
@@ -264,3 +266,17 @@ export const AIRequestBodySchema = z.object({
 });
 export type AIRequestBody = z.infer<typeof AIRequestBodySchema>;
 export type AIRequestHelperArgs = Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'source' | 'modelKey'>;
+
+const AIUsageSchema = z.object({
+  inputTokens: z.number(),
+  outputTokens: z.number(),
+  cacheReadTokens: z.number(),
+  cacheWriteTokens: z.number(),
+});
+export type AIUsage = z.infer<typeof AIUsageSchema>;
+
+const parsedAIResponseSchema = z.object({
+  responseMessage: AIMessagePromptSchema,
+  usage: AIUsageSchema,
+});
+export type ParsedAIResponse = z.infer<typeof parsedAIResponseSchema>;

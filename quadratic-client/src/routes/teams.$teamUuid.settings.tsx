@@ -26,8 +26,6 @@ export const Component = () => {
       userMakingRequest: { teamPermissions },
       billing,
       users,
-      files,
-      filesPrivate,
     },
   } = useDashboardRouteLoaderData();
 
@@ -93,7 +91,7 @@ export const Component = () => {
     <>
       <DashboardHeader title="Team settings" />
       <div className={`mt-6 flex flex-col gap-8`}>
-        <Row>
+        <SettingsRow className="sm:max-w-xl">
           <Type variant="body2" className="font-bold">
             Name
           </Type>
@@ -103,11 +101,11 @@ export const Component = () => {
               Save
             </Button>
           </form>
-        </Row>
+        </SettingsRow>
 
         {teamPermissions.includes('TEAM_MANAGE') && (
           <>
-            <Row>
+            <SettingsRow>
               <Type variant="body2" className="font-bold">
                 Billing
               </Type>
@@ -116,54 +114,46 @@ export const Component = () => {
                 <div className="grid grid-cols-2 gap-4">
                   {/* Free Plan */}
                   <div className="rounded-lg border border-border p-4">
-                    <h3 className="mb-3 text-lg font-semibold">Free Plan</h3>
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Free Plan</h3>
+                      {billing.status === undefined && (
+                        <span className="rounded-full bg-muted px-2 py-1 text-xs">Current Plan</span>
+                      )}
+                    </div>
                     <div className="space-y-3">
                       <div className="flex justify-between">
                         <span className="text-sm">AI Messages / User / Month</span>
                         <span className="text-sm font-medium">50</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm">Connection Runs / Month</span>
-                        <span className="text-sm font-medium">∞</span>
-                      </div>
-                      <div className="flex justify-between">
                         <span className="text-sm">Team Members</span>
                         <span className="text-sm font-medium">∞</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Files</span>
-                        <span className="text-sm font-medium">∞</span>
-                      </div>
                     </div>
-                    {billing.status === undefined && (
-                      <Button disabled variant="secondary" className="mt-4 w-full">
-                        Current Plan
-                      </Button>
-                    )}
                   </div>
 
                   {/* Team AI Plan */}
-                  <div className="rounded-lg border border-border  p-4">
-                    <h3 className="mb-3 text-lg font-semibold">Team Plan</h3>
+                  <div className="rounded-lg border border-border p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Pro Plan</h3>
+                      {billing.status === 'ACTIVE' && (
+                        <span className="rounded-full bg-muted px-2 py-1 text-xs">Current Plan</span>
+                      )}
+                    </div>
                     <div className="space-y-3">
                       <div className="flex justify-between">
                         <span className="text-sm">AI Messages / User / Month</span>
                         <span className="text-sm font-medium">∞</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Connection Runs / Month</span>
-                        <span className="text-sm font-medium">∞</span>
-                      </div>
-                      <div className="flex justify-between">
+                      <div className="flex items-center justify-between">
                         <span className="text-sm">Team Members</span>
-                        <span className="text-sm font-medium">∞</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Files</span>
-                        <span className="text-sm font-medium">∞</span>
+                        <span className="text-right text-sm font-medium">
+                          $20<br></br>
+                          <span className="text-xs text-muted-foreground">/ User / Month</span>
+                        </span>
                       </div>
                     </div>
-                    {billing.status === undefined && (
+                    {billing.status === undefined ? (
                       <Button
                         onClick={() => {
                           apiClient.teams.billing.getCheckoutSessionUrl(team.uuid).then((data) => {
@@ -172,8 +162,22 @@ export const Component = () => {
                         }}
                         className="mt-4 w-full"
                       >
-                        Upgrade Team
+                        Upgrade to Pro
                       </Button>
+                    ) : (
+                      billing.status === 'ACTIVE' && (
+                        <Button
+                          variant="secondary"
+                          className="mt-4 w-full"
+                          onClick={() => {
+                            apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
+                              window.location.href = data.url;
+                            });
+                          }}
+                        >
+                          Manage Billing
+                        </Button>
+                      )
                     )}
                   </div>
                 </div>
@@ -193,6 +197,10 @@ export const Component = () => {
                             <DialogHeader>
                               <DialogTitle>Usage History</DialogTitle>
                             </DialogHeader>
+                            <p className="mb-4 text-sm text-muted-foreground">
+                              Users receive 50 free AI messages per month across all teams. If a user belongs to a paid
+                              team, they'll use that team's unlimited messages instead.
+                            </p>
                             <div className="space-y-3">
                               {billing.usage.map((usage) => (
                                 <div key={usage.month} className="flex justify-between">
@@ -212,44 +220,17 @@ export const Component = () => {
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">Connection Runs / Month</span>
-                      <div className="flex items-start gap-2">
-                        <span className="w-4 text-right font-medium">-</span>
-                        <span className="w-8 translate-y-[5px] text-xs text-muted-foreground">/ ∞</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
                       <span className="text-sm">Team Members</span>
                       <div className="flex items-start gap-2">
                         <span className="w-4 text-right font-medium">{users.length}</span>
                         <span className="w-8 translate-y-[5px] text-xs text-muted-foreground">/ ∞</span>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Files</span>
-                      <div className="flex items-start gap-2">
-                        <span className="w-4 text-right font-medium">{files.length + filesPrivate.length}</span>
-                        <span className="w-8 translate-y-[5px] text-xs text-muted-foreground">/ ∞</span>
-                      </div>
-                    </div>
                   </div>
                 </div>
-
-                {billing.status !== undefined && (
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
-                        window.location.href = data.url;
-                      });
-                    }}
-                  >
-                    Manage Billing
-                  </Button>
-                )}
               </div>
-            </Row>
-            <Row>
+            </SettingsRow>
+            <SettingsRow>
               <Type variant="body2" className="font-bold">
                 Privacy
               </Type>
@@ -283,7 +264,7 @@ export const Component = () => {
                   ))}
                 </ul>
               </div>
-            </Row>
+            </SettingsRow>
           </>
         )}
       </div>
@@ -291,13 +272,13 @@ export const Component = () => {
   );
 };
 
-function Row(props: { children: ReactNode[]; className?: string }) {
+function SettingsRow(props: { children: ReactNode[]; className?: string }) {
   if (props.children.length !== 2) {
     throw new Error('Row must have exactly two children');
   }
 
   return (
-    <div className={cn(`flex grid-cols-[160px_1fr] flex-col gap-2 sm:grid sm:max-w-2xl`, props.className)}>
+    <div className={cn(`flex grid-cols-[160px_1fr] flex-col gap-2 sm:grid sm:max-w-3xl`, props.className)}>
       <div className="pt-2">{props.children[0]}</div>
       <div className="">{props.children[1]}</div>
     </div>

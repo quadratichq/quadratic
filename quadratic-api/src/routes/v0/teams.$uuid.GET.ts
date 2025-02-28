@@ -10,10 +10,12 @@ import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import { getPresignedFileUrl } from '../../storage/storage';
+import { updateBillingIfNecessary } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
 import type { ResponseError } from '../../types/Response';
 import { ApiError } from '../../utils/ApiError';
 import { getFilePermissions } from '../../utils/permissions';
+
 export default [validateAccessToken, userMiddleware, handler];
 
 const schema = z.object({
@@ -30,6 +32,9 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
     user: { id: userMakingRequestId },
   } = req as RequestWithUser;
   const { team, userMakingRequest } = await getTeam({ uuid, userId: userMakingRequestId });
+
+  // Update billing info if necessary
+  await updateBillingIfNecessary(team);
 
   // Get data associated with the file
   const dbTeam = await dbClient.team.findUnique({

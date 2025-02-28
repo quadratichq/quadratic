@@ -18,6 +18,7 @@ import { handleOpenAIRequest } from '../../ai/handler/openai';
 import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { anthropic, bedrock, bedrock_anthropic, openai, xai } from '../../ai/providers';
+import { getAIMessageUsageForUser, userExceededUsageLimit } from '../../ai/usage';
 import dbClient from '../../dbClient';
 import { STORAGE_TYPE } from '../../env-vars';
 import { getFile } from '../../middleware/getFile';
