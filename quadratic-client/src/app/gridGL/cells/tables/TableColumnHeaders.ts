@@ -185,9 +185,7 @@ export class TableColumnHeaders extends Container {
     const codeCell = this.table.codeCell;
     if (codeCell.show_ui && codeCell.show_columns && !codeCell.spill_error) {
       this.visible = true;
-      if (codeCell.show_ui && codeCell.show_name) {
-        this.columnsHeight = this.table.sheet.offsets.getRowHeight(codeCell.y + (codeCell.show_name ? 1 : 0));
-      }
+      this.columnsHeight = this.table.sheet.offsets.getRowHeight(codeCell.y + (codeCell.show_name ? 1 : 0));
       this.drawBackground();
       this.createColumnHeaders();
     } else {
