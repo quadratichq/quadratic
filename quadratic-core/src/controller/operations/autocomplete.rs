@@ -662,9 +662,15 @@ impl GridController {
                 if let Some((CellValue::Code(code_cell), original_pos)) = series.get_mut(i) {
                     let mut data_table_ops = vec![];
                     if let Some(original_pos) = original_pos {
-                        let new_x = x - original_pos.x;
-                        let new_y = y - original_pos.y;
-                        code_cell.translate_cell_references(new_x, new_y, &sheet_id, context);
+                        let delta_x = x - original_pos.x;
+                        let delta_y = y - original_pos.y;
+                        code_cell.translate_cell_references(
+                            context,
+                            original_pos.to_sheet_pos(sheet_id),
+                            sheet_id,
+                            delta_x,
+                            delta_y,
+                        );
 
                         let source_pos = original_pos.to_owned();
                         original_pos.x = x;
