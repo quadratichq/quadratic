@@ -13,9 +13,10 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { Context } from 'quadratic-shared/typesAndSchemasAI';
+import type { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { SetterOrUpdater, useRecoilValue } from 'recoil';
+import type { SetterOrUpdater } from 'recoil';
+import { useRecoilValue } from 'recoil';
 
 export type AIUserMessageFormWrapperProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
@@ -30,6 +31,7 @@ type Props = Omit<AIUserMessageFormWrapperProps, 'messageIndex'> & {
   setLoading: SetterOrUpdater<boolean>;
   submitPrompt: (prompt: string) => void;
   formOnKeyDown?: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  maxHeight?: string;
   ctx?: {
     context: Context;
     setContext: React.Dispatch<React.SetStateAction<Context>>;
@@ -48,6 +50,7 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
     setLoading,
     submitPrompt,
     formOnKeyDown,
+    maxHeight = '120px',
   } = props;
 
   const [editing, setEditing] = useState(!initialPrompt);
@@ -142,7 +145,7 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
           autoComplete="off"
           placeholder="Ask a question..."
           autoHeight={true}
-          maxHeight="120px"
+          maxHeight={maxHeight}
         />
       ) : (
         <div className="pointer-events-none whitespace-pre-wrap p-2 text-sm">{prompt}</div>

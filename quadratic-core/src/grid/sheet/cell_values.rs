@@ -42,6 +42,8 @@ impl Sheet {
             }
         }
 
+        let context = self.a1_context();
+
         // check the validations for the new cells; note: IndexMap is necessary
         // so the tests pass (ie, the order of the cells is deterministic)
         let mut validation_warnings = IndexMap::new();
@@ -54,7 +56,7 @@ impl Sheet {
                     y: grid_y,
                 };
                 let sheet_pos = pos.to_sheet_pos(self.id);
-                if let Some(validation) = self.validations.validate(self, pos) {
+                if let Some(validation) = self.validations.validate(self, pos, &context) {
                     validation_warnings.insert(pos, validation.id);
                     transaction
                         .forward_operations
@@ -128,21 +130,20 @@ mod test {
     use std::str::FromStr;
 
     use crate::{
+        a1::A1Selection,
         grid::{
             sheet::validations::{validation::Validation, validation_rules::ValidationRule},
             NumericFormat,
         },
         wasm_bindings::js::expect_js_call,
-        A1Selection, CellValue,
+        CellValue,
     };
 
     use super::*;
     use bigdecimal::BigDecimal;
-    use serial_test::{parallel, serial};
     use uuid::Uuid;
 
     #[test]
-    #[parallel]
     fn merge_cell_values() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: -1, y: -2 }, "old-a");
@@ -208,7 +209,6 @@ mod test {
     }
 
     #[test]
-    #[serial]
     fn merge_cell_values_validations() {
         let mut sheet = Sheet::test();
 

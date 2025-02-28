@@ -7,7 +7,7 @@ export class CLI {
     core: boolean;
     multiplayer: boolean;
     files: boolean;
-    connector: boolean;
+    connection: boolean;
     python: boolean;
     rustClient: boolean;
     skipTypes: boolean;
@@ -38,10 +38,9 @@ export class CLI {
       .option("-r, --react", "Do NOT watch quadratic-client (React)")
       .option("-c, --core", "Watch the quadratic-core directory")
       .option("-m, --multiplayer", "Watch the quadratic-multiplayer directory")
-      .option("-e, --rust-client", "Watch the quadratic-rust-client directory")
+      .option("-e, --rustClient", "Watch the quadratic-rust-client directory")
       .option("-f, --files", "Watch the quadratic-files directory")
       .option("-n, --connection", "Watch the quadratic-connection directory")
-      .option("-o, --rustClient", "Watch the quadratic-rust-client directory")
       .option(
         "-y, --python",
         "Watch the quadratic-kernels/python-wasm directory"
@@ -75,7 +74,7 @@ export class CLI {
       this.options.core = true;
       this.options.multiplayer = true;
       this.options.files = true;
-      this.options.connector = true;
+      this.options.connection = true;
       this.options.rustClient = true;
       this.options.python = true;
     }

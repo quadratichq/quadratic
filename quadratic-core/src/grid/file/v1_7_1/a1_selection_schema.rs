@@ -14,6 +14,7 @@ pub struct A1SelectionSchema {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum CellRefRangeSchema {
     Sheet(RefRangeBoundsSchema),
+    Table(TableRefSchema),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -39,4 +40,21 @@ impl CellRefCoordSchema {
         coord: i64::MAX,
         is_absolute: false,
     };
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ColRangeSchema {
+    All,
+    Col(String),
+    ColRange(String, String),
+    ColumnToEnd(String),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TableRefSchema {
+    pub table_name: String,
+    pub data: bool,
+    pub headers: bool,
+    pub totals: bool,
+    pub col_range: ColRangeSchema,
 }

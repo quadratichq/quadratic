@@ -1,5 +1,5 @@
-import { Action } from '@/app/actions/actions';
-import { ActionArgs } from '@/app/actions/actionsSpec';
+import type { Action } from '@/app/actions/actions';
+import type { ActionArgs } from '@/app/actions/actionsSpec';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';

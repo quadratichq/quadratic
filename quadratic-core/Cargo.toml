@@ -24,6 +24,14 @@ path = "src/bin/export_types.rs"
 name = "generate_blank_current_file"
 path = "src/bin/generate_blank_current_file.rs"
 
+[[bin]]
+name = "convert_grid_to_json"
+path = "src/bin/convert_grid_to_json.rs"
+
+[[bin]]
+name = "upgrade_file"
+path = "src/bin/upgrade_file.rs"
+
 [features]
 default = ["console_error_panic_hook", "js"]
 # "js" feature is disabled for testing (particularly WASI benchmarks)
@@ -37,6 +45,7 @@ js = [
 show-operations = []
 multiplayer = []
 files = []
+function-timer = []
 
 [dependencies]
 anyhow = "1.0"
@@ -76,7 +85,7 @@ wasm-bindgen-futures = { version = "0.4.33", optional = true }
 lexicon_fractional_index = "0.0.3"
 htmlescape = "0.3.1"
 bigdecimal = { version = "0.4.7", features = ["serde"] }
-csv = "1.2.2"
+csv = "1.3.0"
 indexmap = { version = "2.0.2", features = ["serde"] }
 thiserror = "1.0.52"
 lazy_static = "1.4.0"
@@ -85,7 +94,6 @@ parquet = { version = "51.0.0", default-features = false, features = [
   "arrow-array",
   "flate2",
   "snap",
-  "zstd",
 ] }
 bytes = "1.5.0"
 arrow-array = "51.0.0"
@@ -99,11 +107,13 @@ flate2 = "1.0.30"
 serde_with = "3.8.1"
 dateparser = "0.2.1"
 fancy-regex = "0.14.0"
+csv-sniffer = "0.3.1"
+function-timer = { path = "../quadratic-rust-shared/proc_macros/function-timer" }
 
 [dev-dependencies]
 criterion = { version = "0.4", default-features = false }
 tokio-test = "0.4.3"
-serial_test = "3.0.0"
+memory-stats = "1.2.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 proptest = "1.2.0"
@@ -127,7 +137,7 @@ wasm-opt = false
 [package.metadata.wasm-pack.profile.dev.wasm-bindgen]
 debug-js-glue = true
 demangle-name-section = true
-dwarf-debug-info = true
+dwarf-debug-info = false
 
 [package.metadata.wasm-pack.profile.profiling]
 wasm-opt = ['-O0', '-g']

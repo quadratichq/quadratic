@@ -118,10 +118,8 @@ fn get_functions() -> Vec<FormulaFunction> {
 #[cfg(test)]
 mod tests {
     use crate::formulas::tests::*;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_formula_comparison_ops() {
         fn assert_all_compare_ops_work(lesser: &str, greater: &str) {
             let g = Grid::new();
@@ -174,7 +172,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     #[allow(clippy::identity_op)]
     fn test_formula_math_operators__() {
         let g = Grid::new();
@@ -190,7 +187,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_formula_math_operators_on_empty_string() {
         // Empty string should coerce to zero
 
@@ -217,7 +213,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_formula_datetime_add() {
         let mut g = Grid::new();
 
@@ -274,7 +269,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_formula_datetime_subtract() {
         let mut g = Grid::new();
 
@@ -360,7 +354,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_formula_datetime_multiply() {
         let mut g = Grid::new();
 
@@ -404,7 +397,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_formula_datetime_divide() {
         let mut g = Grid::new();
 

@@ -1,6 +1,6 @@
 use crate::{
+    a1::{A1Context, A1Selection},
     controller::operations::clipboard::{ClipboardOrigin, ClipboardValidations},
-    A1Selection,
 };
 
 use super::Validations;
@@ -11,16 +11,18 @@ impl Validations {
         &self,
         selection: &A1Selection,
         clipboard_origin: &ClipboardOrigin,
+        context: &A1Context,
     ) -> Option<ClipboardValidations> {
         let validations = self
             .validations
             .iter()
             .filter_map(|validation| {
-                if let Some(intersection) = selection.intersection(&validation.selection) {
+                if let Some(intersection) = selection.intersection(&validation.selection, context) {
                     let mut v = validation.clone();
                     v.selection = intersection;
                     v.selection
-                        .translate_in_place(1 + -clipboard_origin.x, 1 + -clipboard_origin.y);
+                        .translate_in_place(1 + -clipboard_origin.x, 1 + -clipboard_origin.y)
+                        .ok()?;
                     Some(v)
                 } else {
                     None
@@ -37,11 +39,11 @@ impl Validations {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use uuid::Uuid;
 
     use crate::{
+        a1::{A1Context, A1Selection},
         controller::operations::clipboard::ClipboardOrigin,
         grid::{
             sheet::validations::{
@@ -49,12 +51,12 @@ mod tests {
             },
             SheetId,
         },
-        A1Selection, SheetRect,
+        SheetRect,
     };
 
     #[test]
     fn test_to_clipboard() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let mut validations = Validations::default();
 
         let validation_outside_selection = Validation {
@@ -82,12 +84,12 @@ mod tests {
             ..Default::default()
         };
         let clipboard_validations = validations
-            .to_clipboard(&selection, &clipboard_origin)
+            .to_clipboard(&selection, &clipboard_origin, &A1Context::default())
             .unwrap();
         assert_eq!(clipboard_validations.validations.len(), 1);
         assert_eq!(
             clipboard_validations.validations[0].selection,
-            selection.translate(-1, -1)
+            selection.translate(-1, -1).unwrap(),
         );
     }
 }

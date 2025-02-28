@@ -1,11 +1,14 @@
+import { bigIntReplacer } from '@/app/bigint';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { DASHED } from '@/app/gridGL/generateTextures';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { drawDashedRectangle, drawDashedRectangleMarching } from '@/app/gridGL/UI/cellHighlights/cellHighlightsDraw';
+import { FILL_SELECTION_ALPHA } from '@/app/gridGL/UI/Cursor';
 import { convertColorStringToTint } from '@/app/helpers/convertColor';
-import type { JsCellsAccessed } from '@/app/quadratic-core-types';
+import type { CellRefRange, JsCellsAccessed, RefRangeBounds } from '@/app/quadratic-core-types';
+import { cellRefRangeToRefRangeBounds } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { colors } from '@/app/theme/colors';
 import { Container, Graphics } from 'pixi.js';
 
@@ -28,27 +31,44 @@ export class CellHighlights extends Container {
     this.highlights = this.addChild(new Graphics());
     this.marchingHighlight = this.addChild(new Graphics());
     events.on('changeSheet', this.setDirty);
+    events.on('sheetOffsets', this.setDirty);
   }
 
   destroy() {
     events.off('changeSheet', this.setDirty);
+    events.off('sheetOffsets', this.setDirty);
     super.destroy();
   }
 
   setDirty = () => {
-    this.dirty = true;
+    if (this.cellsAccessed.length) {
+      this.dirty = true;
+    }
   };
 
-  clear() {
+  clear = () => {
     this.cellsAccessed = [];
     this.selectedCellIndex = undefined;
     this.highlights.clear();
     this.marchingHighlight.clear();
-    pixiApp.setViewportDirty();
     this.dirty = false;
+    pixiApp.setViewportDirty();
+  };
+
+  private convertCellRefRangeToRefRangeBounds(cellRefRange: CellRefRange): RefRangeBounds | undefined {
+    try {
+      const refRangeBoundsStringified = cellRefRangeToRefRangeBounds(
+        JSON.stringify(cellRefRange, bigIntReplacer),
+        sheets.a1Context
+      );
+      const refRangeBounds = JSON.parse(refRangeBoundsStringified);
+      return refRangeBounds;
+    } catch (e) {
+      console.log(`Error converting CellRefRange to RefRangeBounds: ${e}`);
+    }
   }
 
-  private draw() {
+  private draw = () => {
     this.highlights.clear();
 
     if (!this.cellsAccessed.length) return;
@@ -61,17 +81,20 @@ export class CellHighlights extends Container {
       .flatMap(({ ranges }) => ranges)
       .forEach((range, index) => {
         if (selectedCellIndex === undefined || selectedCellIndex !== index || !inlineEditorHandler.cursorIsMoving) {
-          drawDashedRectangle({
-            g: this.highlights,
-            color: convertColorStringToTint(colors.cellHighlightColor[index % NUM_OF_CELL_REF_COLORS]),
-            isSelected: selectedCellIndex === index,
-            range,
-          });
+          const refRangeBounds = this.convertCellRefRangeToRefRangeBounds(range);
+          if (refRangeBounds) {
+            drawDashedRectangle({
+              g: this.highlights,
+              color: convertColorStringToTint(colors.cellHighlightColor[index % NUM_OF_CELL_REF_COLORS]),
+              isSelected: selectedCellIndex === index,
+              range: refRangeBounds,
+            });
+          }
         }
       });
 
-    pixiApp.setViewportDirty();
-  }
+    this.dirty = true;
+  };
 
   // Draws the marching highlights by using an offset dashed line to create the
   // marching effect.
@@ -93,19 +116,22 @@ export class CellHighlights extends Container {
     const accessedCell = this.cellsAccessed[selectedCellIndex];
     if (!accessedCell) return;
     const colorNumber = convertColorStringToTint(colors.cellHighlightColor[selectedCellIndex % NUM_OF_CELL_REF_COLORS]);
+    const refRangeBounds = this.convertCellRefRangeToRefRangeBounds(accessedCell.ranges[0]);
+    if (!refRangeBounds) return;
     const render = drawDashedRectangleMarching({
       g: this.marchingHighlight,
       color: colorNumber,
       march: this.march,
-      range: accessedCell.ranges[0],
+      range: refRangeBounds,
+      alpha: FILL_SELECTION_ALPHA,
     });
     this.march = (this.march + 1) % Math.floor(DASHED);
     if (render) {
-      pixiApp.setViewportDirty();
+      this.dirty = true;
     }
   }
 
-  update() {
+  update = () => {
     if (this.dirty) {
       this.dirty = false;
       this.draw();
@@ -117,30 +143,23 @@ export class CellHighlights extends Container {
     if (inlineEditorHandler.cursorIsMoving) {
       this.updateMarchingHighlight();
     }
-  }
+  };
 
-  isDirty() {
+  isDirty = () => {
     return this.dirty || inlineEditorHandler.cursorIsMoving;
-  }
+  };
 
-  evalCoord(cell: { type: 'Relative' | 'Absolute'; coord: number }, origin: number) {
-    const isRelative = cell.type === 'Relative';
-    const getOrigin = isRelative ? origin : 0;
-
-    return getOrigin + cell.coord;
-  }
-
-  fromCellsAccessed(cellsAccessed: JsCellsAccessed[] | null) {
+  fromCellsAccessed = (cellsAccessed: JsCellsAccessed[] | null) => {
     this.cellsAccessed = cellsAccessed ?? [];
-    pixiApp.cellHighlights.dirty = true;
-  }
+    this.dirty = true;
+  };
 
-  setSelectedCell(index: number) {
+  setSelectedCell = (index: number) => {
     this.selectedCellIndex = index;
-  }
+  };
 
-  clearSelectedCell() {
+  clearSelectedCell = () => {
     this.selectedCellIndex = undefined;
     this.marchingHighlight.clear();
-  }
+  };
 }

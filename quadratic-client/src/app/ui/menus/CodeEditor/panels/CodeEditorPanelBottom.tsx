@@ -10,7 +10,8 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { cn } from '@/shared/shadcn/utils';
 import { ChevronRightIcon } from '@radix-ui/react-icons';
-import { ReactNode, useMemo } from 'react';
+import type { ReactNode } from 'react';
+import { useMemo } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 export type PanelTab = 'console' | 'ai-assistant' | 'data-browser';
@@ -74,7 +75,7 @@ export function CodeEditorPanelBottom({ schemaBrowser, showAIAssistant }: CodeEd
       )}
 
       {showAIAssistant && (
-        <TabsContent value="ai-assistant" className="m-0 grow overflow-hidden">
+        <TabsContent value="ai-assistant" className="relative m-0 grow overflow-hidden">
           {!bottomHidden && <AIAssistant />}
         </TabsContent>
       )}

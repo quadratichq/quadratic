@@ -67,12 +67,9 @@ impl<T: Eq + Clone> FromIterator<T> for RunLengthEncoding<T> {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::parallel;
-
     use super::*;
 
     #[test]
-    #[parallel]
     fn push_n() {
         let mut rle = RunLengthEncoding::new();
         rle.push_n(1, 0);
@@ -88,7 +85,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn size() {
         let mut rle = RunLengthEncoding::new();
         assert_eq!(rle.size(), 0);
@@ -105,7 +101,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn is_empty() {
         let mut rle = RunLengthEncoding::new();
         assert!(rle.is_empty());

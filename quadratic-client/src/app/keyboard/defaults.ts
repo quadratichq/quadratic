@@ -1,6 +1,6 @@
 import { Action } from '@/app/actions/actions';
 import { Keys, MacModifiers, WindowsModifiers } from '@/app/keyboard/keys';
-import { ActionShortcut } from '@/app/keyboard/shortcut';
+import type { ActionShortcut } from '@/app/keyboard/shortcut';
 
 export const defaultShortcuts: ActionShortcut = {
   [Action.CmdClick]: {
@@ -360,5 +360,17 @@ export const defaultShortcuts: ActionShortcut = {
   [Action.ToggleAIAnalyst]: {
     mac: [[MacModifiers.Cmd, Keys.K]],
     windows: [[WindowsModifiers.Ctrl, Keys.K]],
+  },
+  [Action.SelectPageDown]: {
+    mac: [[MacModifiers.Shift, Keys.PageDown]],
+    windows: [[WindowsModifiers.Shift, Keys.PageDown]],
+  },
+  [Action.SelectPageUp]: {
+    mac: [[MacModifiers.Shift, Keys.PageUp]],
+    windows: [[WindowsModifiers.Shift, Keys.PageUp]],
+  },
+  [Action.GridToDataTable]: {
+    mac: [[MacModifiers.Ctrl, Keys.T]],
+    windows: [[WindowsModifiers.Ctrl, WindowsModifiers.Alt, Keys.T]],
   },
 };

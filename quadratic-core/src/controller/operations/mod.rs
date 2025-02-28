@@ -5,10 +5,11 @@
 pub mod autocomplete;
 pub mod borders;
 pub mod cell_value;
+mod charts;
 pub mod clipboard;
 pub mod code_cell;
+pub mod data_table;
 pub mod formats;
-pub mod formatting;
 pub mod import;
 pub mod operation;
 pub mod sheets;

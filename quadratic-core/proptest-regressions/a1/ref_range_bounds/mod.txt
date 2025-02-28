@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc cf6ee9a49a9bf15cfd506847ba86e406fd5627a069397229ca7d100df8011f4e # shrinks to ref_range_bounds = RefRangeBounds(A1)

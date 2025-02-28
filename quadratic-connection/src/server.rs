@@ -137,11 +137,6 @@ pub(crate) fn app(state: State) -> Result<Router> {
         // unprotected routes without state
         .route("/health", get(healthcheck))
         //
-        // don't show authorization header in logs
-        .layer(SetSensitiveHeadersLayer::new(
-            sensitive_headers.iter().cloned(),
-        ))
-        //
         // cache control - disable client side caching
         .layer(map_response(|mut response: Response| async move {
             let headers = response.headers_mut();
@@ -160,7 +155,12 @@ pub(crate) fn app(state: State) -> Result<Router> {
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(DefaultMakeSpan::default().include_headers(true)),
-        );
+        )
+        //
+        // don't show authorization header in logs
+        .layer(SetSensitiveHeadersLayer::new(
+            sensitive_headers.iter().cloned(),
+        ));
 
     Ok(app)
 }

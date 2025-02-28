@@ -2,7 +2,7 @@ import { hasPermissionToEditFile } from '@/app/actions';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Sheet } from '@/app/grid/sheet/Sheet';
+import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { SheetBarButton } from '@/app/ui/menus/SheetBar/SheetBarButton';
 import { SheetBarTab } from '@/app/ui/menus/SheetBar/SheetBarTab';
@@ -39,7 +39,7 @@ export const SheetBar = (): JSX.Element => {
     const updateSheet = () => {
       setActiveSheet(sheets.current);
       setTrigger((trigger) => trigger + 1);
-      setActiveSheetId(sheets.sheet.order === 'a0' ? null : sheets.sheet.id);
+      setActiveSheetId(sheets.sheet.order === 'a0' ? null : sheets.current);
     };
 
     events.on('changeSheet', updateSheet);

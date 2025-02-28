@@ -99,9 +99,12 @@ impl SyntaxRule for TupleExpression {
     }
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         let mut tmp_p = *p;
-        if tmp_p.next() == Some(Token::LParen) { // (
-            if tmp_p.parse(TupleExpression).is_ok() { // expression
-                if tmp_p.next() == Some(Token::ArgSep) { // ,
+        if tmp_p.next() == Some(Token::LParen) {
+            // (
+            if tmp_p.parse(TupleExpression).is_ok() {
+                // expression
+                if tmp_p.next() == Some(Token::ArgSep) {
+                    // ,
                     return p.parse(
                         List {
                             // In Excel, tuples can only contain cell ranges and tuples.
@@ -200,9 +203,11 @@ impl SyntaxRule for ExpressionWithPrecedence {
                 | Token::StringLiteral
                 | Token::UnterminatedStringLiteral
                 | Token::NumericLiteral
-                | Token::CellRef
-                | Token::InternalCellRef => true,
+                | Token::CellOrTableRef
+                | Token::InternalCellRef
+                | Token::Error => true,
 
+                Token::TableRefBracketsExpression => false,
                 Token::Whitespace => false,
                 Token::Unknown => false,
             }
@@ -219,10 +224,12 @@ impl SyntaxRule for ExpressionWithPrecedence {
                 [
                     FunctionCall.map(Some),
                     CellReferenceExpression.map(Some),
+                    TableReferenceExpression.map(Some),
                     StringLiteralExpression.map(Some),
                     NumericLiteral.map(Some),
                     ArrayLiteral.map(Some),
                     BoolExpression.map(Some),
+                    ErrorExpression.map(Some),
                     ParenExpression.map(Some),
                 ],
             )
@@ -410,7 +417,26 @@ impl SyntaxRule for CellReferenceExpression {
         CellReference.prefix_matches(p)
     }
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
-        Ok(p.parse(CellReference)?.map(ast::AstNodeContents::CellRef))
+        Ok(p.parse(CellReference)?.map(|result| match result {
+            Ok((sheet_id, range)) => ast::AstNodeContents::CellRef(sheet_id, range),
+            Err(e) => ast::AstNodeContents::Error(e.into()),
+        }))
+    }
+}
+
+/// Matches a table reference.
+#[derive(Debug, Copy, Clone)]
+pub struct TableReferenceExpression;
+impl_display!(for TableReferenceExpression, "table reference such as 'MyTable' or 'MyTable[ColumnName]'");
+impl SyntaxRule for TableReferenceExpression {
+    type Output = AstNode;
+
+    fn prefix_matches(&self, p: Parser<'_>) -> bool {
+        SheetTableReference.prefix_matches(p)
+    }
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
+        Ok(p.parse(SheetTableReference)?
+            .map(ast::AstNodeContents::RangeRef))
     }
 }
 

@@ -1,4 +1,5 @@
-import { PaletteMode, ThemeProvider, createTheme, useMediaQuery } from '@mui/material';
+import type { PaletteMode } from '@mui/material';
+import { ThemeProvider, createTheme, useMediaQuery } from '@mui/material';
 import { createContext, useContext, useMemo, useState } from 'react';
 
 type ColorModePreference = PaletteMode | 'system';

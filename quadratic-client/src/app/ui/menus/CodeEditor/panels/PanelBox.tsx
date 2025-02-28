@@ -1,7 +1,7 @@
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { ChevronRightIcon } from '@radix-ui/react-icons';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 interface Props {
   id: string;

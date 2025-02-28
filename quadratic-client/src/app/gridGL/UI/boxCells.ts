@@ -1,9 +1,10 @@
 //! Used to draw autocomplete box.
 
-import { Graphics, Rectangle } from 'pixi.js';
-import { sheets } from '../../grid/controller/Sheets';
-import { colors } from '../../theme/colors';
-import { pixiApp } from '../pixiApp/PixiApp';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { colors } from '@/app/theme/colors';
+import type { Rectangle } from 'pixi.js';
+import { Graphics } from 'pixi.js';
 
 const thickness = 3;
 
@@ -76,16 +77,19 @@ export class BoxCells extends Graphics {
     });
   }
 
-  update() {
-    if (this.dirty) {
-      if (!this.gridRectangle) {
-        this.reset();
-        return;
-      }
-      this.drawRectangle();
-      this.drawDeleteRectangles();
+  update = () => {
+    if (!this.dirty) {
+      return;
     }
-  }
+    this.dirty = false;
+
+    if (!this.gridRectangle) {
+      this.reset();
+      return;
+    }
+    this.drawRectangle();
+    this.drawDeleteRectangles();
+  };
 
   isShowing(): boolean {
     return !!this.gridRectangle;

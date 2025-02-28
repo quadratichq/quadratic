@@ -1,5 +1,5 @@
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Validation } from '@/app/quadratic-core-types';
+import type { Validation } from '@/app/quadratic-core-types';
 import { numberToDate, numberToTime } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { joinWithOr } from '@/shared/utils/text';
 

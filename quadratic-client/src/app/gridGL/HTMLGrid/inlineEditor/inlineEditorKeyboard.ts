@@ -22,7 +22,6 @@ export enum CursorMode {
 }
 
 class InlineEditorKeyboard {
-  escapeBackspacePressed = false;
   cursorMode: CursorMode = CursorMode.Enter;
 
   private handleArrowHorizontal = async (isRight: boolean, e: KeyboardEvent) => {
@@ -145,12 +144,6 @@ class InlineEditorKeyboard {
       events.emit('suggestionDropdownKeyboard', e.key as 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab');
       e.preventDefault();
       return;
-    }
-
-    if (inlineEditorHandler.cursorIsMoving) {
-      this.escapeBackspacePressed = ['Escape', 'Backspace'].includes(e.code);
-    } else {
-      this.escapeBackspacePressed = false;
     }
 
     const position = inlineEditorMonaco.getPosition();
@@ -405,7 +398,7 @@ class InlineEditorKeyboard {
       if (!['Meta', 'Control'].includes(e.key) && inlineEditorHandler.cursorIsMoving) {
         inlineEditorFormula.endInsertingCells();
         this.resetKeyboardPosition();
-        if (sheets.sheet.id !== inlineEditorHandler.location?.sheetId) {
+        if (sheets.current !== inlineEditorHandler.location?.sheetId) {
           inlineEditorMonaco.sendKeyboardEvent(e);
           inlineEditorHandler.sendMultiplayerUpdate();
         }
@@ -425,7 +418,7 @@ class InlineEditorKeyboard {
       throw new Error('Expected editingSheet to be defined in resetKeyboardPosition');
     }
     editingSheet.cursor.moveTo(location.x, location.y);
-    if (sheets.sheet.id !== location.sheetId) {
+    if (sheets.current !== location.sheetId) {
       sheets.current = location.sheetId;
 
       if (!skipFocus) {

@@ -3,7 +3,7 @@ import { usePositionCellMessage } from '@/app/gridGL/HTMLGrid/usePositionCellMes
 import { translateValidationError } from '@/app/gridGL/HTMLGrid/validations/translateValidationError';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { Validation } from '@/app/quadratic-core-types';
+import type { Validation } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { validationText } from '@/app/ui/menus/Validations/Validations/ValidationEntry';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -12,7 +12,7 @@ import ErrorIcon from '@mui/icons-material/Error';
 import InfoIcon from '@mui/icons-material/Info';
 import WarningIcon from '@mui/icons-material/Warning';
 import { IconButton, Tooltip } from '@mui/material';
-import { Rectangle } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
 

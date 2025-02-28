@@ -1,6 +1,6 @@
 import { Dialog, DialogContent } from '@/shared/shadcn/ui/dialog';
 import { cn } from '@/shared/shadcn/utils';
-import { DialogOverlay, type DialogProps } from '@radix-ui/react-dialog';
+import type { DialogOverlay, DialogProps } from '@radix-ui/react-dialog';
 import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { Command as CommandPrimitive } from 'cmdk';
 import * as React from 'react';

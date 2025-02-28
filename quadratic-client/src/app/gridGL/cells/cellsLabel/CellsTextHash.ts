@@ -13,18 +13,19 @@
 
 import { Bounds } from '@/app/grid/sheet/Bounds';
 import { CellsDrawRects } from '@/app/gridGL/cells/cellsLabel/CellsDrawRects';
+import { CellsTextHashSpecial } from '@/app/gridGL/cells/cellsLabel/CellsTextHashSpecial';
+import { CellsTextHashValidations } from '@/app/gridGL/cells/cellsLabel/CellsTextHashValidations';
+import { LabelMeshEntry } from '@/app/gridGL/cells/cellsLabel/LabelMeshEntry';
+import type { ErrorMarker, ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
+import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
-import { Link } from '@/app/gridGL/types/links';
-import { DrawRects } from '@/app/gridGL/types/size';
-import { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
+import type { Link } from '@/app/gridGL/types/links';
+import type { DrawRects } from '@/app/gridGL/types/size';
+import type { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import { CellsTextHashContent } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashContent';
 import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
-import { BitmapText, Container, Graphics, Point, Rectangle, Renderer } from 'pixi.js';
-import { ErrorMarker, ErrorValidation } from '../CellsSheet';
-import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
-import { CellsTextHashSpecial } from './CellsTextHashSpecial';
-import { CellsTextHashValidations } from './CellsTextHashValidations';
-import { LabelMeshEntry } from './LabelMeshEntry';
+import type { Graphics, Point, Renderer } from 'pixi.js';
+import { BitmapText, Container, Rectangle } from 'pixi.js';
 
 // Draw hashed regions of cell glyphs (the text + text formatting)
 export class CellsTextHash extends Container {

@@ -1,7 +1,7 @@
 import { borderMenuAtom } from '@/app/atoms/borderMenuAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { convertColorStringToTint, convertTintToArray } from '@/app/helpers/convertColor';
-import { BorderSelection, BorderStyle, CellBorderLine } from '@/app/quadratic-core-types';
+import type { BorderSelection, BorderStyle, CellBorderLine } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useCallback } from 'react';
 import { useSetRecoilState } from 'recoil';

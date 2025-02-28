@@ -133,6 +133,7 @@ impl<'a> TryFrom<&'a CellValue> for String {
             CellValue::Html(s) => Ok(s.clone()),
             CellValue::Code(_) => Ok(String::new()),
             CellValue::Image(_) => Ok(String::new()),
+            CellValue::Import(_) => Ok(String::new()),
         }
     }
 }
@@ -176,6 +177,7 @@ impl<'a> TryFrom<&'a CellValue> for f64 {
             CellValue::Html(_) => Ok(0.0),
             CellValue::Code(_) => Ok(0.0),
             CellValue::Image(_) => Ok(0.0),
+            CellValue::Import(_) => Ok(0.0),
         }
     }
 }
@@ -411,10 +413,8 @@ impl CoerceInto for Spanned<Value> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_convert_from_str_to_cell_value() {
         assert_eq!(CellValue::from("$1.22"), CellValue::Text("$1.22".into()));
 
@@ -422,7 +422,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_datetime_conversions() {
         let time = NaiveTime::from_hms_opt(3, 15, 6).unwrap();
         let date = NaiveDate::from_ymd_opt(2010, 4, 1).unwrap();

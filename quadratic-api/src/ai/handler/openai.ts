@@ -59,6 +59,7 @@ export const handleOpenAIRequest = async (
         tools,
         tool_choice,
       });
+
       const responseMessage = parseOpenAIResponse(result, response, modelKey);
       return responseMessage;
     } catch (error: any) {

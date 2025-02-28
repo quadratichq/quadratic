@@ -132,7 +132,7 @@ impl GridController {
     pub fn execute_resize_rows(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::ResizeRows {
             sheet_id,
-            row_heights,
+            mut row_heights,
         } = op
         {
             if row_heights.is_empty() {
@@ -143,7 +143,9 @@ impl GridController {
                 return;
             };
 
-            let old_row_heights: Vec<JsRowHeight> = row_heights
+            row_heights.sort_by_key(|JsRowHeight { row, .. }| *row);
+
+            let mut old_row_heights: Vec<JsRowHeight> = row_heights
                 .iter()
                 .map(|JsRowHeight { row, height }| {
                     let old_size = sheet.offsets.set_row_height(*row, *height);
@@ -153,6 +155,8 @@ impl GridController {
                     }
                 })
                 .collect();
+
+            old_row_heights.sort_by_key(|JsRowHeight { row, .. }| *row);
 
             if old_row_heights == row_heights {
                 return;
@@ -196,12 +200,10 @@ mod tests {
         controller::GridController,
         wasm_bindings::js::{clear_js_calls, expect_js_offsets},
     };
-    use serial_test::serial;
 
     // also see tests in sheet_offsets.rs
 
     #[test]
-    #[serial]
     fn test_execute_operation_resize_column() {
         clear_js_calls();
 
@@ -224,7 +226,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_execute_operation_resize_row() {
         clear_js_calls();
 

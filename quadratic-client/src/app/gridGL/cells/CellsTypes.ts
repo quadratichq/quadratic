@@ -1,5 +1,5 @@
-import { Rectangle } from 'pixi.js';
-import { CellsTextHash } from './cellsLabel/CellsTextHash';
+import type { CellsTextHash } from '@/app/gridGL/cells/cellsLabel/CellsTextHash';
+import type { Rectangle } from 'pixi.js';
 
 export interface CellsHashBounds {
   xStart: number;

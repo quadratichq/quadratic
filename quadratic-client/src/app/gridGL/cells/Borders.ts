@@ -15,12 +15,13 @@
 
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { JsBorderHorizontal, JsBordersSheet, JsBorderVertical } from '@/app/quadratic-core-types';
+import type { Sheet } from '@/app/grid/sheet/Sheet';
+import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
+import type { BorderCull } from '@/app/gridGL/cells/drawBorders';
+import { drawCellBorder } from '@/app/gridGL/cells/drawBorders';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import type { JsBorderHorizontal, JsBordersSheet, JsBorderVertical } from '@/app/quadratic-core-types';
 import { Container, Rectangle, Sprite, Texture, TilingSprite } from 'pixi.js';
-import { Sheet } from '../../grid/sheet/Sheet';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { CellsSheet } from './CellsSheet';
-import { BorderCull, drawCellBorder } from './drawBorders';
 
 // this sets when to fade the sheet borders when (for performance reasons)
 const SCALE_TO_SHOW_SHEET_BORDERS = 0.15;
@@ -46,15 +47,19 @@ export class Borders extends Container {
 
     events.on('bordersSheet', this.drawSheetCells);
     events.on('sheetOffsets', this.sheetOffsetsChanged);
+    events.on('resizeHeadingColumn', this.sheetOffsetsChanged);
+    events.on('resizeHeadingRow', this.sheetOffsetsChanged);
   }
 
   destroy() {
     events.off('bordersSheet', this.drawSheetCells);
     events.off('sheetOffsets', this.sheetOffsetsChanged);
+    events.off('resizeHeadingColumn', this.sheetOffsetsChanged);
+    events.off('resizeHeadingRow', this.sheetOffsetsChanged);
     super.destroy();
   }
 
-  sheetOffsetsChanged = (sheetId: string) => {
+  private sheetOffsetsChanged = (sheetId: string) => {
     if (sheetId === this.cellsSheet.sheetId) {
       this.draw();
       this.dirty = true;
@@ -68,7 +73,7 @@ export class Borders extends Container {
   }
 
   // Draws horizontal border and returns the y offset of the current border
-  private drawHorizontal(border: JsBorderHorizontal, bounds: Rectangle): number {
+  private drawHorizontal = (border: JsBorderHorizontal, bounds: Rectangle): number => {
     if (border.width !== null) {
       const start = this.sheet.getCellOffsets(Number(border.x), Number(border.y));
       const end = this.sheet.getCellOffsets(Number(border.x + border.width), Number(border.y));
@@ -94,10 +99,10 @@ export class Borders extends Container {
       });
       return yStart;
     }
-  }
+  };
 
   // Draws vertical border and returns the x offset of the current border
-  private drawVertical(border: JsBorderVertical, bounds: Rectangle): number {
+  private drawVertical = (border: JsBorderVertical, bounds: Rectangle): number => {
     if (border.height !== null) {
       const start = this.sheet.getCellOffsets(Number(border.x), Number(border.y));
       const end = this.sheet.getCellOffsets(Number(border.x), Number(border.y + border.height));
@@ -122,9 +127,9 @@ export class Borders extends Container {
       });
       return xStart;
     }
-  }
+  };
 
-  drawSheetCells = (sheetId: string, borders?: JsBordersSheet): void => {
+  private drawSheetCells = (sheetId: string, borders?: JsBordersSheet): void => {
     if (sheetId === this.cellsSheet.sheetId) {
       if (borders) {
         this.bordersFinite = {
@@ -141,21 +146,21 @@ export class Borders extends Container {
     }
   };
 
-  private draw() {
+  private draw = () => {
     this.cellLines.removeChildren();
     const bounds = pixiApp.viewport.getVisibleBounds();
     this.bordersFinite?.horizontal?.forEach((border) => this.drawHorizontal(border, bounds));
     this.bordersFinite?.vertical?.forEach((border) => this.drawVertical(border, bounds));
-  }
+  };
 
-  private cull() {
+  private cull = () => {
     const bounds = pixiApp.viewport.getVisibleBounds();
     this.spriteLines.forEach((sprite) => {
       sprite.sprite.visible = sprite.rectangle.intersects(bounds);
     });
-  }
+  };
 
-  update() {
+  update = () => {
     const viewportDirty = pixiApp.viewport.dirty;
     if (!this.dirty && !viewportDirty) return;
     if (pixiApp.viewport.scale.x < SCALE_TO_SHOW_SHEET_BORDERS) {
@@ -197,7 +202,7 @@ export class Borders extends Container {
     }
     this.dirty = false;
     this.cull();
-  }
+  };
 
   private getSpriteSheet = (tiling?: boolean): Sprite | TilingSprite => {
     if (tiling) {

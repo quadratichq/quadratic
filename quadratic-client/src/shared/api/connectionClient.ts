@@ -1,5 +1,5 @@
 import { authClient } from '@/auth/auth';
-import { ConnectionType, ConnectionTypeDetails } from 'quadratic-shared/typesAndSchemasConnections';
+import type { ConnectionType, ConnectionTypeDetails } from 'quadratic-shared/typesAndSchemasConnections';
 import z from 'zod';
 const API_URL = import.meta.env.VITE_QUADRATIC_CONNECTION_URL;
 

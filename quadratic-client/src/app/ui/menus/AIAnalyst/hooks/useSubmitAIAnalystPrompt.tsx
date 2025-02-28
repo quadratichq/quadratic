@@ -3,6 +3,7 @@ import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
 import { useSelectionContextMessages } from '@/app/ai/hooks/useSelectionContextMessages';
+import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
 import {
@@ -17,7 +18,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import {
+import type {
   AIMessage,
   AIMessagePrompt,
   ChatMessage,
@@ -39,6 +40,7 @@ export type SubmitAIAnalystPromptArgs = {
 export function useSubmitAIAnalystPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
   const { getOtherSheetsContext } = useOtherSheetsContextMessages();
+  const { getTablesContext } = useTablesContextMessages();
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
   const { getSelectionContext } = useSelectionContextMessages();
@@ -47,10 +49,14 @@ export function useSubmitAIAnalystPrompt() {
   const updateInternalContext = useRecoilCallback(
     ({ set }) =>
       async ({ context }: { context: Context }): Promise<ChatMessage[]> => {
-        const otherSheetsContext = await getOtherSheetsContext({ sheetNames: context.sheets });
-        const currentSheetContext = await getCurrentSheetContext({ currentSheetName: context.currentSheet });
-        const visibleContext = await getVisibleContext();
-        const selectionContext = await getSelectionContext({ selection: context.selection });
+        const [otherSheetsContext, tablesContext, currentSheetContext, visibleContext, selectionContext] =
+          await Promise.all([
+            getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
+            getTablesContext(),
+            getCurrentSheetContext({ currentSheetName: context.currentSheet }),
+            getVisibleContext(),
+            getSelectionContext({ selection: context.selection }),
+          ]);
 
         let updatedMessages: ChatMessage[] = [];
         set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {
@@ -58,6 +64,7 @@ export function useSubmitAIAnalystPrompt() {
 
           updatedMessages = [
             ...otherSheetsContext,
+            ...tablesContext,
             ...currentSheetContext,
             ...visibleContext,
             ...selectionContext,
@@ -69,7 +76,7 @@ export function useSubmitAIAnalystPrompt() {
 
         return updatedMessages;
       },
-    [getOtherSheetsContext, getCurrentSheetContext, getVisibleContext, getSelectionContext]
+    [getOtherSheetsContext, getTablesContext, getCurrentSheetContext, getVisibleContext, getSelectionContext]
   );
 
   const submitPrompt = useRecoilCallback(
@@ -83,6 +90,33 @@ export function useSubmitAIAnalystPrompt() {
         set(aiAnalystLoadingAtom, true);
 
         const abortController = new AbortController();
+        abortController.signal.addEventListener('abort', () => {
+          set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {
+            const lastMessage = prevMessages.at(-1);
+            if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
+              const newLastMessage = { ...lastMessage };
+              let currentContent = { ...(newLastMessage.content.at(-1) ?? { type: 'text', text: '' }) };
+              if (currentContent?.type !== 'text') {
+                currentContent = { type: 'text', text: '' };
+              }
+              currentContent.text += '\n\nRequest aborted by the user.';
+              currentContent.text = currentContent.text.trim();
+              newLastMessage.toolCalls = [];
+              newLastMessage.content = [...newLastMessage.content.slice(0, -1), currentContent];
+              return [...prevMessages.slice(0, -1), newLastMessage];
+            } else if (lastMessage?.role === 'user') {
+              const newLastMessage: AIMessage = {
+                role: 'assistant',
+                content: [{ type: 'text', text: 'Request aborted by the user.' }],
+                contextType: 'userPrompt',
+                toolCalls: [],
+                model: getModelFromModelKey(modelKey),
+              };
+              return [...prevMessages, newLastMessage];
+            }
+            return prevMessages;
+          });
+        });
         set(aiAnalystAbortControllerAtom, abortController);
 
         if (clearMessages) {
@@ -113,8 +147,7 @@ export function useSubmitAIAnalystPrompt() {
             content: userPrompt,
             contextType: 'userPrompt' as const,
             context: {
-              sheets: context.currentSheet ? [context.currentSheet, ...context.sheets] : context.sheets,
-              currentSheet: '',
+              ...context,
               selection: context.selection ?? sheets.sheet.cursor.save(),
             },
           },
@@ -202,19 +235,29 @@ export function useSubmitAIAnalystPrompt() {
           }
         } catch (error) {
           set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {
-            const aiMessage: AIMessage = {
-              role: 'assistant',
-              content: [{ type: 'text', text: 'Looks like there was a problem. Please try again.' }],
-              contextType: 'userPrompt',
-              toolCalls: [],
-              model: getModelFromModelKey(modelKey),
-            };
-
             const lastMessage = prevMessages.at(-1);
-            if (lastMessage?.role === 'assistant') {
-              return [...prevMessages.slice(0, -1), aiMessage];
+            if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
+              const newLastMessage = { ...lastMessage };
+              let currentContent = { ...(newLastMessage.content.at(-1) ?? { type: 'text', text: '' }) };
+              if (currentContent?.type !== 'text') {
+                currentContent = { type: 'text', text: '' };
+              }
+              currentContent.text += '\n\nLooks like there was a problem. Please try again.';
+              currentContent.text = currentContent.text.trim();
+              newLastMessage.toolCalls = [];
+              newLastMessage.content = [...newLastMessage.content.slice(0, -1), currentContent];
+              return [...prevMessages.slice(0, -1), newLastMessage];
+            } else if (lastMessage?.role === 'user') {
+              const newLastMessage: AIMessage = {
+                role: 'assistant',
+                content: [{ type: 'text', text: 'Looks like there was a problem. Please try again.' }],
+                contextType: 'userPrompt',
+                toolCalls: [],
+                model: getModelFromModelKey(modelKey),
+              };
+              return [...prevMessages, newLastMessage];
             }
-            return [...prevMessages, aiMessage];
+            return prevMessages;
           });
 
           console.error(error);

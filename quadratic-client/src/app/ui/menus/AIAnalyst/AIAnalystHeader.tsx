@@ -9,7 +9,6 @@ import {
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { AddIcon, CloseIcon, HistoryIcon } from '@/shared/components/Icons';
-import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
@@ -31,13 +30,7 @@ export function AIAnalystHeader({ textareaRef }: AIAnalystHeaderProps) {
     <div className="flex items-center justify-between px-4 py-2">
       <span className="flex items-center text-sm font-bold">
         {viewActionsSpec[Action.ToggleAIAnalyst].label}
-        {showChatHistory ? (
-          ' history'
-        ) : (
-          <Badge variant="secondary" className="ml-2">
-            Experimental
-          </Badge>
-        )}
+        {showChatHistory && ' history'}
       </span>
 
       <div className="flex items-center gap-2">

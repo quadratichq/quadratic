@@ -3,6 +3,8 @@ mod borders_a1_schema;
 mod cells_accessed_schema;
 mod contiguous_2d_schema;
 mod sheet_formatting_schema;
+mod sheet_offsets;
+mod upgrade;
 mod validations_schema;
 
 pub use a1_selection_schema::*;
@@ -10,6 +12,7 @@ pub use borders_a1_schema::*;
 pub use cells_accessed_schema::*;
 pub use contiguous_2d_schema::*;
 pub use sheet_formatting_schema::*;
+pub use upgrade::*;
 pub use validations_schema::*;
 
 use crate::grid::file::v1_7::schema as v1_7;
@@ -25,9 +28,7 @@ pub type RunErrorSchema = v1_7::RunErrorSchema;
 pub type ResizeSchema = v1_7::ResizeSchema;
 pub type CodeRunResultSchema = v1_7::CodeRunResultSchema;
 pub type OutputValueSchema = v1_7::OutputValueSchema;
-pub type OutputArraySchema = v1_7::OutputArraySchema;
 pub type OutputSizeSchema = v1_7::OutputSizeSchema;
-pub type OutputValueValueSchema = v1_7::OutputValueValueSchema;
 pub type NumericFormatKindSchema = v1_7::NumericFormatKindSchema;
 pub type NumericFormatSchema = v1_7::NumericFormatSchema;
 pub type CellValueSchema = v1_7::CellValueSchema;
@@ -56,6 +57,8 @@ pub type RgbaSchema = v1_7::RgbaSchema;
 pub type CellBorderLineSchema = v1_7::CellBorderLineSchema;
 pub type BorderStyleTimestampSchema = v1_7::BorderStyleTimestampSchema;
 pub type BorderStyleCellSchema = v1_7::BorderStyleCellSchema;
+pub type AxisSchema = v1_7::AxisSchema;
+pub type SpanSchema = v1_7::SpanSchema;
 
 pub type RowsResizeSchema = Vec<(i64, ResizeSchema)>;
 

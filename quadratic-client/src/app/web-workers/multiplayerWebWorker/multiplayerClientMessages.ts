@@ -1,5 +1,5 @@
-import { User } from '@/auth/auth';
-import { CellEdit, ReceiveRoom, UserUpdate } from './multiplayerTypes';
+import type { CellEdit, ReceiveRoom, UserUpdate } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import type { User } from '@/auth/auth';
 
 export type MultiplayerState =
   | 'startup'

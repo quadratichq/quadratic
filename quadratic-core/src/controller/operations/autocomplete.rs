@@ -1,14 +1,15 @@
 use crate::{
+    a1::A1Selection,
     cell_values::CellValues,
     controller::GridController,
     grid::{
         formats::SheetFormatUpdates,
         series::{find_auto_complete, SeriesOptions},
         sheet::borders::BordersUpdates,
-        SheetId,
+        unique_data_table_name, SheetId,
     },
     util::maybe_reverse,
-    A1Selection, CellValue, Pos, Rect, SheetPos, SheetRect,
+    CellValue, Pos, Rect, SheetPos, SheetRect,
 };
 use anyhow::{Error, Result};
 use itertools::Itertools;
@@ -159,7 +160,7 @@ impl GridController {
         let mut ops = vec![];
 
         let selection = A1Selection::from_rect(delete_rect);
-        ops.extend(self.delete_cells_operations(&selection));
+        ops.extend(self.delete_cells_operations(&selection, false));
         ops.extend(self.clear_format_borders_operations(&selection));
         ops
     }
@@ -638,29 +639,61 @@ impl GridController {
             negative,
         });
 
+        let mut values = CellValues::new(final_range.width(), final_range.height());
+        let mut cells = CellValues::default();
+        let context = self.a1_context();
+        let selection =
+            A1Selection::from_rect(SheetRect::new_from_rect(final_range.to_owned(), sheet_id));
+
+        let data_tables_in_rect = sheet.data_tables_and_cell_values_in_rect(
+            initial_range,
+            &mut cells,
+            &mut values,
+            context,
+            &selection,
+            false,
+        );
+
         // gather ComputeCode operations for any code cells
         let compute_code_ops = final_range
             .iter()
             .enumerate()
             .filter_map(|(i, Pos { x, y })| {
                 if let Some((CellValue::Code(code_cell), original_pos)) = series.get_mut(i) {
+                    let mut data_table_ops = vec![];
                     if let Some(original_pos) = original_pos {
-                        let sheet_map = self.grid.sheet_name_id_map();
-                        code_cell.update_cell_references(
-                            x - original_pos.x,
-                            y - original_pos.y,
-                            &sheet_id,
-                            &sheet_map,
-                        );
+                        let new_x = x - original_pos.x;
+                        let new_y = y - original_pos.y;
+                        code_cell.translate_cell_references(new_x, new_y, &sheet_id, context);
+
+                        let source_pos = original_pos.to_owned();
                         original_pos.x = x;
                         original_pos.y = y;
+
+                        // collecte SetDataTable operations for any data tables in the source_pos
+                        if let Some(data_table) = data_tables_in_rect.get(&source_pos) {
+                            let mut data_table = data_table.to_owned();
+                            let old_name = data_table.name.to_display();
+                            let new_name = unique_data_table_name(&old_name, false, None, context);
+                            data_table.name = new_name.into();
+
+                            data_table_ops.push(Operation::SetDataTable {
+                                sheet_pos: original_pos.to_sheet_pos(sheet_id),
+                                data_table: Some(data_table),
+                                index: 0,
+                            });
+                        }
                     }
+
                     let sheet_pos = SheetPos::new(sheet_id, x, y);
-                    Some(Operation::ComputeCode { sheet_pos })
+                    data_table_ops.push(Operation::ComputeCode { sheet_pos });
+
+                    Some(data_table_ops)
                 } else {
                     None
                 }
             })
+            .flatten()
             .collect::<Vec<Operation>>();
 
         let values = CellValues::from_flat_array(

@@ -45,7 +45,12 @@ export function getAnthropicApiArgs(
         role: message.role,
         content: [
           ...message.content
-            .filter((content) => content.text && (!!thinking || content.type === 'text'))
+            .filter(
+              (content) =>
+                content.text &&
+                (content.type !== 'anthropic_thinking' || !!content.signature) &&
+                (!!thinking || content.type === 'text')
+            )
             .map((content) => {
               if (content.type === 'anthropic_thinking') {
                 return {
@@ -260,7 +265,9 @@ export async function parseAnthropicStream(
     }
   }
 
-  responseMessage.content = responseMessage.content.filter((content) => content.text !== '');
+  responseMessage.content = responseMessage.content.filter(
+    (content) => !!content.text && (content.type !== 'anthropic_thinking' || !!content.signature)
+  );
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
     responseMessage.content.push({

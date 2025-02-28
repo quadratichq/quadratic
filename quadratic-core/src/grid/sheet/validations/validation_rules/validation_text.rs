@@ -123,12 +123,10 @@ impl ValidationText {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::parallel;
 
     use super::*;
 
     #[test]
-    #[parallel]
     fn validate_exactly() {
         let v = ValidationText {
             ignore_blank: true,
@@ -165,7 +163,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn validate_contains() {
         let v = ValidationText {
             ignore_blank: true,
@@ -206,7 +203,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn validate_not_contains() {
         let v = ValidationText {
             ignore_blank: true,
@@ -247,7 +243,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn validate_contains_not_contains() {
         let v = ValidationText {
             ignore_blank: true,
@@ -290,7 +285,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn validate_text_length() {
         let v = ValidationText {
             ignore_blank: true,

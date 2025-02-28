@@ -111,7 +111,6 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::parallel;
 
     use crate::{
         grid::{sheet::borders::borders_old::BorderStyleCellUpdate, SheetId},
@@ -122,10 +121,9 @@ mod tests {
     use super::*;
 
     #[test]
-    #[parallel]
     fn serialize_and_compress_borders_selection() {
         let operations = vec![Operation::SetBordersSelection {
-            selection: OldSelection::new_sheet_pos(1, 1, SheetId::test()),
+            selection: OldSelection::new_sheet_pos(1, 1, SheetId::TEST),
             borders: RunLengthEncoding::repeat(BorderStyleCellUpdate::clear(false), 1),
         }];
 
