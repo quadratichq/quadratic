@@ -136,8 +136,8 @@ const SINGLE_QUOTE_STRING_LITERAL_PATTERN: &str = r"'([^'\\]|\\[\s\S])*'";
 /// Double-quoted string. Note that like Rust strings, this can span multiple
 /// lines.
 const DOUBLE_QUOTE_STRING_LITERAL_PATTERN: &str = r#""([^"\\]|\\[\s\S])*""#;
-/// Unquoted sheet reference, such as `Sheet1!`. A quoted sheet reference such
-/// as `'Sheet1'!` is parsed as a string followed by a sheet reference operator
+/// Unquoted sheet reference, such as `Sheet 1!`. A quoted sheet reference such
+/// as `'Sheet 1'!` is parsed as a string followed by a sheet reference operator
 /// `!`.
 const UNQUOTED_SHEET_REFERENCE_PATTERN: &str = r"[A-Za-z_][A-Za-z0-9_\.]*\s*!";
 /// Unterminated string literal.
@@ -206,7 +206,7 @@ lazy_static! {
     pub static ref FUNCTION_CALL_REGEX: Regex =
         new_fullmatch_regex(FUNCTION_CALL_PATTERN);
 
-    /// Regex that matches an unquoted sheet reference, such as `Sheet1!`.
+    /// Regex that matches an unquoted sheet reference, such as `Sheet 1!`.
     pub static ref UNQUOTED_SHEET_REFERENCE: Regex =
         new_fullmatch_regex(UNQUOTED_SHEET_REFERENCE_PATTERN);
 
