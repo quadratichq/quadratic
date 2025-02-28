@@ -378,18 +378,26 @@ impl A1Selection {
         if let Some(last) = self.ranges.last_mut() {
             match last {
                 CellRefRange::Table { range } => {
-                    if let Some(mut range) =
-                        range.convert_to_ref_range_bounds(false, context, false, false)
+                    if let Some(mut range_converted) = range
+                        .clone()
+                        .convert_to_ref_range_bounds(false, context, false, false)
                     {
                         // if cursor is at the end of the table, then reverse the selection
-                        if self.cursor.x == range.end.col() && self.cursor.y == range.end.row() {
-                            range.start = range.end;
+                        if self.cursor.x == range_converted.end.col()
+                            && self.cursor.y == range_converted.end.row()
+                        {
+                            range_converted.start = range_converted.end;
                         }
-                        range.end = CellRefRangeEnd::new_relative_xy(column, row);
-                        *last = CellRefRange::Sheet { range };
+                        range_converted.end = CellRefRangeEnd::new_relative_xy(column, row);
+                        *last = CellRefRange::Sheet {
+                            range: range_converted,
+                        };
                     } else {
                         dbgjs!("Could not convert table range to ref range bounds in A1Selection::select_to");
                         return;
+                    }
+                    if !append {
+                        self.ranges = self.ranges.split_off(self.ranges.len().saturating_sub(1));
                     }
                 }
                 CellRefRange::Sheet { range } => {
@@ -401,13 +409,13 @@ impl A1Selection {
                     }
                     range.end = CellRefRangeEnd::new_relative_xy(column, row);
                     *last = CellRefRange::Sheet { range: *range };
+                    if !append {
+                        self.ranges = self.ranges.split_off(self.ranges.len().saturating_sub(1));
+                    }
+                    self.check_for_table_ref(context);
                 }
             };
         }
-        if !append {
-            self.ranges = self.ranges.split_off(self.ranges.len().saturating_sub(1));
-        }
-        self.check_for_table_ref(context);
     }
 
     /// Changes the selection to select all columns that have a selection (used by cmd+space). It only
