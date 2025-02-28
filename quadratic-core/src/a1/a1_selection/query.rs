@@ -32,6 +32,13 @@ impl A1Selection {
             .any(|range| range.is_col_range() || range.is_row_range())
     }
 
+    /// Returns whether the first range is a column range.
+    pub fn is_col_range(&self) -> bool {
+        self.ranges
+            .first()
+            .is_some_and(|range| range.col_range() > 0)
+    }
+
     /// Returns whether the selection contains the given position.
     pub fn might_contain_xy(&self, x: i64, y: i64, context: &A1Context) -> bool {
         self.ranges

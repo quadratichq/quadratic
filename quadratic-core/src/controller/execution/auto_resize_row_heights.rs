@@ -14,7 +14,7 @@ impl GridController {
         sheet_id: SheetId,
         rows: Vec<i64>,
     ) -> bool {
-        if (!cfg!(target_family = "wasm") && !cfg!(test))
+        if !(cfg!(target_family = "wasm") || cfg!(test))
             || !transaction.is_user()
             || rows.is_empty()
         {
@@ -74,8 +74,9 @@ mod tests {
     use bigdecimal::BigDecimal;
 
     use crate::controller::active_transactions::pending_transaction::PendingTransaction;
-    use crate::controller::execution::run_code::get_cells::CellA1Response;
-    use crate::controller::execution::run_code::get_cells::JsGetCellResponse;
+    use crate::controller::execution::run_code::get_cells::JsCellsA1Response;
+    use crate::controller::execution::run_code::get_cells::JsCellsA1Value;
+    use crate::controller::execution::run_code::get_cells::JsCellsA1Values;
     use crate::controller::operations::operation::Operation;
     use crate::controller::transaction_types::JsCodeResult;
     use crate::controller::GridController;
@@ -491,24 +492,27 @@ mod tests {
         assert_eq!(transaction.has_async, 1);
         let transaction_id = transaction.id;
 
-        let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None);
-        assert!(cells.is_ok());
+        let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
         assert_eq!(
             cells,
-            Ok(CellA1Response {
-                cells: vec![JsGetCellResponse {
+            JsCellsA1Response {
+                values: Some(JsCellsA1Values {
+                    cells: vec![JsCellsA1Value {
+                        x: 1,
+                        y: 1,
+                        value: "9".into(),
+                        type_name: "number".into(),
+                    }],
                     x: 1,
                     y: 1,
-                    value: "9".into(),
-                    type_name: "number".into(),
-                }],
-                x: 1,
-                y: 1,
-                w: 1,
-                h: 1,
-                two_dimensional: false,
-                has_headers: false,
-            })
+                    w: 1,
+                    h: 1,
+                    one_dimensional: false,
+                    two_dimensional: false,
+                    has_headers: false,
+                }),
+                error: None,
+            }
         );
         // pending cal
         let transaction = gc.async_transactions().first().unwrap();

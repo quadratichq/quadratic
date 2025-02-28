@@ -94,6 +94,17 @@ export const MODELS_CONFIGURATION: {
     enabled: false,
     provider: 'anthropic',
   },
+  'openai:gpt-4.5-preview-2025-02-27': {
+    model: 'gpt-4.5-preview-2025-02-27',
+    displayName: 'gpt 4.5 preview',
+    temperature: 0,
+    max_tokens: 4096, // not used for openai
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: false,
+    provider: 'openai',
+    strickParams: true,
+  },
   'openai:gpt-4o-2024-11-20': {
     model: 'gpt-4o-2024-11-20',
     displayName: 'gpt 4o',

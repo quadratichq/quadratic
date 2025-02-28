@@ -8,6 +8,11 @@ impl RefRangeBounds {
         self.start.row() == 1 && self.end.row() == UNBOUNDED
     }
 
+    /// Returns the number of columns in the range.
+    pub fn col_range(&self) -> i64 {
+        self.end.row() - self.start.row()
+    }
+
     /// Returns whether `self` is a multi-cursor.
     pub fn is_multi_cursor(&self) -> bool {
         self.start != self.end

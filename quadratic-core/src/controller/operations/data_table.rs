@@ -5,7 +5,7 @@ use crate::{
     grid::{
         data_table::{column_header::DataTableColumnHeader, sort::DataTableSort},
         formats::SheetFormatUpdates,
-        DataTable, DataTableKind,
+        unique_data_table_name, DataTable, DataTableKind,
     },
     Array, ArraySize, CellValue, Pos, SheetPos, SheetRect,
 };
@@ -211,9 +211,7 @@ impl GridController {
         }
 
         let import = Import::new(name.to_owned());
-        let name =
-            self.grid
-                .unique_data_table_name(&name, false, Some(sheet_pos), self.a1_context());
+        let name = unique_data_table_name(&name, false, Some(sheet_pos), self.a1_context());
         let mut data_table = DataTable::new(
             DataTableKind::Import(import.to_owned()),
             &name,
