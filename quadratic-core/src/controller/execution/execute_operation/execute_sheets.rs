@@ -86,10 +86,10 @@ impl GridController {
                     {
                         for (old_name, unique_name) in table_names_to_update_in_cell_ref.iter() {
                             code_cell_value.replace_table_name_in_cell_references(
+                                &context,
+                                pos.to_sheet_pos(sheet_id),
                                 old_name,
                                 unique_name,
-                                &sheet_id,
-                                &context,
                             );
                         }
                     }
