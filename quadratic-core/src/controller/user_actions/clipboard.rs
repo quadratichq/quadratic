@@ -1229,7 +1229,7 @@ mod test {
             .unwrap();
 
         gc.paste_from_clipboard(
-            &A1Selection::test_a1_sheet_id("F5", &sheet_id),
+            &A1Selection::test_a1_sheet_id("F5", sheet_id),
             Some(plain_text.clone()),
             Some(html.clone()),
             PasteSpecial::None,
@@ -1260,7 +1260,7 @@ mod test {
         data_table.header_is_first_row = false;
 
         gc.paste_from_clipboard(
-            &A1Selection::test_a1_sheet_id("G10", &sheet_id),
+            &A1Selection::test_a1_sheet_id("G10", sheet_id),
             Some(plain_text.clone()),
             Some(html.clone()),
             PasteSpecial::None,
@@ -1291,7 +1291,7 @@ mod test {
         data_table.show_ui = false;
 
         gc.paste_from_clipboard(
-            &A1Selection::test_a1_sheet_id("E11", &sheet_id),
+            &A1Selection::test_a1_sheet_id("E11", sheet_id),
             Some(plain_text),
             Some(html),
             PasteSpecial::None,
@@ -1340,7 +1340,7 @@ mod test {
             .unwrap();
 
         gc.paste_from_clipboard(
-            &A1Selection::test_a1_sheet_id("F5", &sheet_id),
+            &A1Selection::test_a1_sheet_id("F5", sheet_id),
             Some(plain_text),
             Some(html),
             PasteSpecial::None,
@@ -1388,7 +1388,7 @@ mod test {
             .unwrap();
 
         gc.paste_from_clipboard(
-            &A1Selection::test_a1_sheet_id("F5", &sheet_id),
+            &A1Selection::test_a1_sheet_id("F5", sheet_id),
             Some(plain_text),
             Some(html),
             PasteSpecial::None,

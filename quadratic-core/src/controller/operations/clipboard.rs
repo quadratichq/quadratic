@@ -1166,7 +1166,7 @@ mod test {
 
         assert!(gc
             .paste_html_operations(
-                &A1Selection::test_a1_sheet_id("B2", &sheet_id),
+                &A1Selection::test_a1_sheet_id("B2", sheet_id),
                 html,
                 PasteSpecial::None,
             )
@@ -1222,7 +1222,7 @@ mod test {
         let JsClipboard { html, .. } = gc
             .sheet(sheet_id)
             .copy_to_clipboard(
-                &A1Selection::test_a1_sheet_id("B2:C3", &sheet_id),
+                &A1Selection::test_a1_sheet_id("B2:C3", sheet_id),
                 gc.a1_context(),
                 ClipboardOperation::Copy,
                 false,
@@ -1230,7 +1230,7 @@ mod test {
             .unwrap();
 
         gc.paste_from_clipboard(
-            &A1Selection::test_a1_sheet_id("E13", &sheet_id),
+            &A1Selection::test_a1_sheet_id("E13", sheet_id),
             None,
             Some(html),
             PasteSpecial::None,
@@ -1363,7 +1363,7 @@ mod test {
         let JsClipboard { plain_text, .. } = gc
             .sheet(sheet_id)
             .copy_to_clipboard(
-                &A1Selection::test_a1_sheet_id("B2:C3", &sheet_id),
+                &A1Selection::test_a1_sheet_id("B2:C3", sheet_id),
                 gc.a1_context(),
                 ClipboardOperation::Copy,
                 true,
@@ -1371,7 +1371,7 @@ mod test {
             .unwrap();
 
         gc.paste_from_clipboard(
-            &A1Selection::test_a1_sheet_id("E13", &sheet_id),
+            &A1Selection::test_a1_sheet_id("E13", sheet_id),
             Some(plain_text),
             None,
             PasteSpecial::None,

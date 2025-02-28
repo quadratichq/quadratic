@@ -67,7 +67,7 @@ impl GridController {
                 msg: RunErrorMsg::CodeRunError(msg.into()),
             }
         };
-        let selection = match self.a1_selection_from_string(&a1, &code_sheet_pos.sheet_id) {
+        let selection = match self.a1_selection_from_string(&a1, code_sheet_pos.sheet_id) {
             Ok(selection) => selection,
             Err(e) => {
                 // unable to parse A1 string
