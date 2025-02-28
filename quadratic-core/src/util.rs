@@ -238,12 +238,12 @@ pub fn offset_cell_coord(initial: i64, delta: i64) -> Result<i64, RefError> {
 
 /// For debugging both in tests and in the JS console
 #[track_caller]
-pub fn dbgjs(val: impl fmt::Debug) {
-    if cfg!(target_family = "wasm") {
-        crate::wasm_bindings::js::log(&(format!("{:?}", val)));
-    } else {
-        dbg!(val);
-    }
+pub fn dbgjs(_val: impl fmt::Debug) {
+    #[cfg(all(target_family = "wasm", feature = "dbgjs"))]
+    crate::wasm_bindings::js::log(&(format!("{:?}", _val)));
+
+    #[cfg(all(not(target_family = "wasm"), feature = "dbgjs"))]
+    dbg!(_val);
 }
 
 #[allow(unused_macros)]
