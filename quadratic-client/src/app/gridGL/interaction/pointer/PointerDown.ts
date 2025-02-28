@@ -18,7 +18,7 @@ import { isMobile } from 'react-device-detect';
 const MINIMUM_MOVE_POSITION = 5;
 
 // number of milliseconds to wait before updating the selection again
-const MINIMUM_SELECTION_TIME = 250;
+const MINIMUM_SELECTION_TIME = 50;
 
 export class PointerDown {
   active = false;
