@@ -7,11 +7,11 @@ impl A1Selection {
     /// Checks if the last range is a table reference and converts it to a table
     /// reference.
     pub(crate) fn check_for_table_ref(&mut self, context: &A1Context) {
-        if let Some(last) = self.ranges.last_mut() {
-            if let Some(table_ref) = last.check_for_table_ref(self.sheet_id, context) {
-                *last = table_ref;
-            }
-        }
+        // if let Some(last) = self.ranges.last_mut() {
+        //     if let Some(table_ref) = last.check_for_table_ref(self.sheet_id, context) {
+        //         *last = table_ref;
+        //     }
+        // }
     }
 
     /// Selects the entire sheet.
