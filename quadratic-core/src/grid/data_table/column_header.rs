@@ -31,6 +31,7 @@ impl DataTableColumnHeader {
 }
 
 impl DataTable {
+    /// Returns the number of columns in the data table.
     pub fn column_headers_len(&self) -> u32 {
         self.column_headers
             .as_ref()
@@ -42,21 +43,26 @@ impl DataTable {
     pub fn apply_first_row_as_header(&mut self) {
         self.header_is_first_row = true;
 
-        self.column_headers = match self.value {
-            // Value::Array(ref mut array) => array.shift().ok().map(|array| {
-            Value::Array(ref mut array) => array.get_row(0).ok().map(|array| {
-                array
-                    .iter()
-                    .enumerate()
-                    .map(|(i, value)| DataTableColumnHeader::new(value.to_string(), true, i as u32))
-                    .collect::<Vec<DataTableColumnHeader>>()
-            }),
+        let first_row = match &self.value {
+            Value::Array(array) => array.get_row(0).ok(),
             _ => None,
         };
+
+        self.column_headers = first_row.map(|array| {
+            array
+                .iter()
+                .enumerate()
+                .map(|(i, value)| {
+                    let display = self.header_display(i);
+                    DataTableColumnHeader::new(value.to_string(), display, i as u32)
+                })
+                .collect()
+        });
 
         self.normalize_column_header_names();
     }
 
+    /// Toggles whether the first row of the data table is used as the column headings.
     pub fn toggle_first_row_as_header(&mut self, first_row_as_header: bool) {
         self.header_is_first_row = first_row_as_header;
 
@@ -85,7 +91,10 @@ impl DataTable {
 
         match self.value {
             Value::Array(_) => (1..=width)
-                .map(|i| DataTableColumnHeader::new(func(i), true, i - 1))
+                .map(|i| {
+                    let display = self.header_display(i as usize);
+                    DataTableColumnHeader::new(func(i), display, i - 1)
+                })
                 .collect::<Vec<DataTableColumnHeader>>(),
             _ => vec![],
         }
@@ -97,6 +106,14 @@ impl DataTable {
         self.column_headers = Some(self.default_header(None));
     }
 
+    /// Get the display of a column header at the given index.
+    pub fn header_display(&self, index: usize) -> bool {
+        self.column_headers
+            .as_ref()
+            .is_none_or(|headers| headers.get(index).is_none_or(|header| header.display))
+    }
+
+    /// Adjust the index for the header.
     pub fn adjust_for_header(&self, index: usize) -> usize {
         if self.header_is_first_row {
             index + 1
@@ -121,6 +138,7 @@ impl DataTable {
             .collect()
     }
 
+    /// Create a unique column header name.
     pub fn unique_column_header_name(&self, name: Option<&str>, index: usize) -> String {
         let default_name = format!("Column {index}");
         let name = name.unwrap_or(&default_name);
@@ -131,7 +149,8 @@ impl DataTable {
                 .map(|c| c.name.to_string())
                 .collect::<Vec<_>>();
 
-            unique_name(name, &all_names, false)
+            let check_name = |name: &str| !all_names.contains(&name.to_string());
+            unique_name(name, false, check_name)
         } else {
             name.to_string()
         }
@@ -139,11 +158,12 @@ impl DataTable {
 
     /// Set the display of a column header at the given index.
     pub fn normalize_column_header_names(&mut self) {
-        let mut all_names = vec![];
+        let mut all_names: Vec<String> = vec![];
 
         if let Some(columns) = self.column_headers.as_mut() {
             columns.iter_mut().for_each(|column| {
-                let name = unique_name(&column.name.to_string(), &all_names, false);
+                let check_name = |name: &str| !all_names.contains(&name.to_string());
+                let name = unique_name(&column.name.to_string(), false, check_name);
                 column.name = CellValue::Text(name.to_owned());
                 all_names.push(name);
             });
@@ -170,10 +190,15 @@ impl DataTable {
             .as_ref()
             .map(|columns| columns.iter().map(|c| c.name.clone()).collect())
     }
+
+    /// Get the column header at the given display index.
+    pub fn display_header_at(&self, display_x: u32) -> Option<&DataTableColumnHeader> {
+        let column_index = self.get_column_index_from_display_index(display_x, true);
+        self.get_column_header(column_index as usize)
+    }
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 pub mod test {
 
     use super::*;
@@ -263,6 +288,7 @@ pub mod test {
             name: "Table 1".into(),
             column_headers: None,
             sort: None,
+            sort_dirty: false,
             display_buffer: None,
             value: Value::Array(array),
             readonly: false,
@@ -300,6 +326,63 @@ pub mod test {
         );
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 4 }),
+            Some(CellValue::Text("second".into()))
+        );
+    }
+
+    #[test]
+    fn test_headers_x() {
+        let mut sheet = Sheet::test();
+        let array =
+            Array::from_str_vec(vec![vec!["first", "second"], vec!["third", "fourth"]], true)
+                .unwrap();
+        let pos = Pos { x: 1, y: 1 };
+        let mut t = DataTable {
+            kind: DataTableKind::Import(Import::new("test.csv".to_string())),
+            name: "Table 1".into(),
+            column_headers: None,
+            sort: None,
+            sort_dirty: false,
+            display_buffer: None,
+            value: Value::Array(array),
+            readonly: false,
+            spill_error: false,
+            last_modified: Utc::now(),
+            show_ui: true,
+            show_name: true,
+            show_columns: true,
+            header_is_first_row: false,
+            alternating_colors: true,
+            formats: Default::default(),
+            borders: Default::default(),
+            chart_output: None,
+            chart_pixel_output: None,
+        };
+        t.apply_default_header();
+        sheet.set_cell_value(
+            pos,
+            Some(CellValue::Import(Import::new("test.csv".to_string()))),
+        );
+        sheet.set_data_table(pos, Some(t.clone()));
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 2 }),
+            Some(CellValue::Text("Column 1".into()))
+        );
+
+        // make first row a header
+        let data_table = sheet.data_table_mut((1, 1).into()).unwrap();
+        data_table.toggle_first_row_as_header(true);
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 2 }),
+            Some(CellValue::Text("first".into()))
+        );
+
+        // hide first column
+        let data_table = sheet.data_table_mut((1, 1).into()).unwrap();
+        let column_headers = data_table.column_headers.as_mut().unwrap();
+        column_headers[0].display = false;
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Text("second".into()))
         );
     }

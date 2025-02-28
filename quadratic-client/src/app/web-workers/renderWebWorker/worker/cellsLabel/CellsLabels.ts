@@ -29,7 +29,7 @@ import { Rectangle } from 'pixi.js';
 // 500 MB maximum memory per sheet before we start unloading hashes (right now
 // this is on a per-sheet basis--we will want to change this to a global limit)
 const MAX_RENDERING_MEMORY = 1024 * 1024 * 500;
-const NEIGHBORS = 10;
+const NEIGHBORS = 4;
 
 export class CellsLabels {
   sheetId: string;
@@ -277,7 +277,7 @@ export class CellsLabels {
     );
   }
 
-  getCornerHashesInBound = (screenRect: Rectangle): number[] => {
+  getNeighborCornerHashesInBound = (screenRect: Rectangle): number[] => {
     const topLeftCell: ColumnRow = JSON.parse(this.sheetOffsets.getColumnRowFromScreen(screenRect.x, screenRect.y));
     const { x: topLeftHashX, y: topLeftHashY } = CellsLabels.getHash(topLeftCell.column, topLeftCell.row);
 
@@ -289,7 +289,15 @@ export class CellsLabels {
       bottomRightCell.row
     );
 
-    return [topLeftHashX, topLeftHashY, bottomRightHashX, bottomRightHashY];
+    const width = bottomRightHashX - topLeftHashX + 1;
+    const height = bottomRightHashY - topLeftHashY + 1;
+
+    return [
+      topLeftHashX - width * NEIGHBORS,
+      topLeftHashY - height * NEIGHBORS * 4,
+      bottomRightHashX + width * NEIGHBORS,
+      bottomRightHashY + height * NEIGHBORS * 4,
+    ];
   };
 
   // distance from viewport center to hash center

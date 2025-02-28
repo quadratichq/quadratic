@@ -9,17 +9,14 @@ use super::*;
 /// Returns `Some(true)` if this matches the start of a table reference,
 /// `Some(false)` if this matches the start of a cell reference, or `None` if it
 /// matches neither.
+///
+/// This includes the sheet prefix, if present.
 pub(super) fn is_table_ref(mut p: Parser<'_>) -> Option<bool> {
     match p.next()? {
-        Token::CellOrTableRef | Token::InternalCellRef => Some(p.ctx.has_table(p.token_str())),
-        Token::UnquotedSheetReference => {
-            p.next();
-            Some(p.ctx.has_table(p.token_str()))
-        }
-        Token::StringLiteral if p.next()? == Token::SheetRefOp => {
-            p.next();
-            Some(p.ctx.has_table(p.token_str()))
-        }
+        Token::CellOrTableRef => Some(p.ctx.has_table(p.token_str())),
+        Token::InternalCellRef => Some(false),
+        Token::UnquotedSheetReference => is_table_ref(p),
+        Token::StringLiteral if p.next()? == Token::SheetRefOp => is_table_ref(p),
         _ => None,
     }
 }
@@ -140,7 +137,7 @@ impl SyntaxRule for TableReference {
                                             _ => col_range = Some(ColRange::ColToEnd(start_col)),
                                         }
                                     } else {
-                                        col_range = Some(ColRange::Col(start_col))
+                                        col_range = Some(ColRange::Col(start_col));
                                     }
                                 }
                                 TableRefToken::Special(s) => special_segments.push(s),
@@ -189,5 +186,30 @@ impl SyntaxRule for TableReference {
             }
         }
         .with_span(Span::merge(start_span, end_span))
+    }
+}
+
+/// Matches a table reference and includes the sheet ID in the output.
+#[derive(Debug, Copy, Clone)]
+pub struct SheetTableReference;
+impl_display!(for SheetTableReference, "table reference such as 'MyTable' or 'MyTable[ColumnName]'");
+impl SyntaxRule for SheetTableReference {
+    type Output = Spanned<SheetCellRefRange>;
+
+    fn prefix_matches(&self, p: Parser<'_>) -> bool {
+        TableReference.prefix_matches(p)
+    }
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
+        let spanned = p.parse(TableReference)?;
+        spanned.try_map(|table_ref| {
+            Ok(SheetCellRefRange {
+                sheet_id: p
+                    .ctx
+                    .try_table(&table_ref.table_name)
+                    .ok_or(RunErrorMsg::BadCellReference)?
+                    .sheet_id,
+                cells: CellRefRange::Table { range: table_ref },
+            })
+        })
     }
 }

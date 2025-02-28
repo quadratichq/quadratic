@@ -1,6 +1,6 @@
 use crate::{
     a1::{A1Context, ColRange, RefRangeBounds, TableRef},
-    OldSelection, SheetPos, SheetRect,
+    OldSelection, Rect, SheetPos, SheetRect,
 };
 
 use super::*;
@@ -131,6 +131,15 @@ impl A1Selection {
         )
     }
 
+    /// Constructs a selection from a list of rectangles.
+    pub fn from_rects(rects: Vec<Rect>, sheet_id: SheetId) -> Option<Self> {
+        let ranges = rects
+            .into_iter()
+            .map(RefRangeBounds::new_relative_rect)
+            .collect::<Vec<_>>();
+        Self::from_sheet_ranges(ranges, sheet_id, &A1Context::default())
+    }
+
     /// Constructs a selection containing a single cell.
     pub fn from_xy(x: i64, y: i64, sheet: SheetId) -> Self {
         let sheet_id = sheet;
@@ -147,20 +156,20 @@ impl A1Selection {
         Self::from_single_cell(pos![A1].to_sheet_pos(sheet))
     }
 
-    /// Returns a test selection from the A1-string with SheetId::test().
+    /// Returns a test selection from the A1-string with SheetId::TEST.
     #[cfg(test)]
     pub fn test_a1(a1: &str) -> Self {
-        Self::parse(a1, &SheetId::TEST, &A1Context::default()).unwrap()
+        Self::parse(a1, &SheetId::TEST, &A1Context::default(), None).unwrap()
     }
 
     /// Returns a test selection from the A1-string with the given sheet ID.
     #[cfg(test)]
     pub fn test_a1_sheet_id(a1: &str, sheet_id: &SheetId) -> Self {
-        Self::parse(a1, sheet_id, &A1Context::default()).unwrap()
+        Self::parse(a1, sheet_id, &A1Context::default(), None).unwrap()
     }
 
     #[cfg(test)]
     pub fn test_a1_context(a1: &str, context: &A1Context) -> Self {
-        Self::parse(a1, &SheetId::TEST, context).unwrap()
+        Self::parse(a1, &SheetId::TEST, context, None).unwrap()
     }
 }

@@ -1,9 +1,8 @@
-use std::{
-    fmt,
-    iter::{Skip, StepBy},
-    num::NonZeroU32,
-    slice::Iter,
-};
+use std::fmt;
+use std::iter::Skip;
+use std::iter::StepBy;
+use std::num::NonZeroU32;
+use std::slice::Iter;
 
 use anyhow::{bail, Result};
 use bigdecimal::BigDecimal;
@@ -12,11 +11,11 @@ use rand::Rng;
 use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
+use super::cell_values::CellValues;
 use super::{ArraySize, Axis, CellValue, Spanned, Value};
-use crate::{
-    controller::operations::operation::Operation, grid::Sheet, CodeResult, Pos, RunError,
-    RunErrorMsg, Span,
-};
+use crate::controller::operations::operation::Operation;
+use crate::grid::Sheet;
+use crate::{CodeResult, Pos, RunError, RunErrorMsg, Span};
 
 #[macro_export]
 macro_rules! array {
@@ -88,30 +87,24 @@ impl TryFrom<Value> for Vec<Array> {
     }
 }
 
-// TODO(ddimaria): this function makes a copy of the data, consider consuming the vec
 impl From<Vec<Vec<String>>> for Array {
     fn from(v: Vec<Vec<String>>) -> Self {
         let w = v[0].len();
         let h = v.len();
         Array {
             size: ArraySize::new(w as u32, h as u32).unwrap(),
-            values: v
-                .iter()
-                .flatten()
-                .map(|s| CellValue::from(s.as_ref()))
-                .collect(),
+            values: v.into_iter().flatten().map(CellValue::from).collect(),
         }
     }
 }
 
-// TODO(ddimaria): this function makes a copy of the data, consider consuming the vec
 impl From<Vec<Vec<&str>>> for Array {
     fn from(v: Vec<Vec<&str>>) -> Self {
         let w = v[0].len();
         let h = v.len();
         Array {
             size: ArraySize::new(w as u32, h as u32).unwrap(),
-            values: v.iter().flatten().map(|s| (*s).into()).collect(),
+            values: v.into_iter().flatten().map(CellValue::from).collect(),
         }
     }
 }
@@ -127,6 +120,20 @@ impl From<Vec<Vec<CellValue>>> for Array {
         Array {
             size: ArraySize::new(w as u32, h as u32).unwrap(),
             values: v.into_iter().flatten().collect(),
+        }
+    }
+}
+
+impl From<CellValues> for Array {
+    fn from(cell_values: CellValues) -> Self {
+        Array {
+            size: ArraySize::new(cell_values.w, cell_values.h).unwrap(),
+            values: cell_values
+                .into_owned_vec()
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>()
+                .into(),
         }
     }
 }
@@ -251,6 +258,21 @@ impl Array {
     /// Returns an iterator over the rows of the array.
     pub fn rows(&self) -> std::slice::Chunks<'_, CellValue> {
         self.values.chunks(self.width() as usize)
+    }
+    pub fn into_rows(self) -> Vec<Vec<CellValue>> {
+        let width = self.width() as usize;
+        let mut rows = Vec::new();
+        let mut current_row = Vec::with_capacity(width);
+
+        for value in self.values {
+            current_row.push(value);
+            if current_row.len() == width {
+                rows.push(current_row);
+                current_row = Vec::with_capacity(width);
+            }
+        }
+
+        rows
     }
     /// Returns an iterator over a single col of the array.
     pub fn col(&self, index: usize) -> StepBy<Skip<Iter<'_, CellValue>>> {

@@ -99,11 +99,11 @@ export class GridHeadings extends Container {
 
     this.headingsGraphics.lineStyle(0);
     this.headingsGraphics.beginFill(colors.headerBackgroundColor);
-    const left = Math.max(bounds.left, clamp.left);
-    this.columnRect = new Rectangle(left, bounds.top, bounds.width, cellHeight);
+    this.columnRect = new Rectangle(bounds.left, bounds.top, bounds.width, cellHeight);
     this.headingsGraphics.drawShape(this.columnRect);
     this.headingsGraphics.endFill();
 
+    const left = Math.max(bounds.left, clamp.left);
     const leftColumn = sheet.getColumnFromScreen(left);
     const rightColumn = sheet.getColumnFromScreen(left + bounds.width);
     this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
@@ -254,12 +254,14 @@ export class GridHeadings extends Container {
     // draw background of vertical bar
     this.headingsGraphics.lineStyle(0);
     this.headingsGraphics.beginFill(colors.headerBackgroundColor);
-    const top = Math.max(bounds.top, clamp.top);
-    this.columnRect = new Rectangle(bounds.left, top, this.rowWidth, bounds.height);
-    this.headingsGraphics.drawShape(this.columnRect);
-    this.headingsGraphics.endFill();
+    // Always start from the topmost part of the viewport (bounds.top) to ensure
+    // it extends to the corner, regardless of clamp
     this.rowRect = new Rectangle(bounds.left, bounds.top, this.rowWidth, bounds.height);
+    this.headingsGraphics.drawShape(this.rowRect);
+    this.headingsGraphics.endFill();
 
+    // For selection highlighting, we use clamped top
+    const top = Math.max(bounds.top, clamp.top);
     const topRow = sheet.getRowFromScreen(top);
     const bottomRow = sheet.getRowFromScreen(top + bounds.height);
     this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
@@ -325,15 +327,15 @@ export class GridHeadings extends Container {
     for (let y = topOffset; y <= bottomOffset; y += currentHeight) {
       currentHeight = offsets.getRowHeight(row);
       if (gridAlpha !== 0) {
-        this.gridHeadingsRows.headingsGraphics.lineStyle(
-          1,
-          colors.gridLines,
-          colors.headerSelectedRowColumnBackgroundColorAlpha * gridAlpha,
-          0.5,
-          true
-        );
-        this.gridHeadingsRows.headingsGraphics.moveTo(bounds.left, y);
-        this.gridHeadingsRows.headingsGraphics.lineTo(bounds.left + this.rowWidth, y);
+        this.headingsGraphics.lineStyle({
+          width: 1,
+          color: colors.gridLines,
+          alpha: colors.headerSelectedRowColumnBackgroundColorAlpha * gridAlpha,
+          alignment: 0.5,
+          native: true,
+        });
+        this.headingsGraphics.moveTo(bounds.left, y);
+        this.headingsGraphics.lineTo(bounds.left + this.rowWidth, y);
         this.gridLinesRows.push({ row: row - 1, y, height: offsets.getRowHeight(row - 1) });
       }
 
@@ -368,7 +370,6 @@ export class GridHeadings extends Container {
           this.labels.add({ text, x: x + ROW_DIGIT_OFFSET.x, y: yPosition + ROW_DIGIT_OFFSET.y });
           lastLabel = { top, bottom, selected };
         }
-        // }
       }
       row++;
     }
@@ -385,6 +386,7 @@ export class GridHeadings extends Container {
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     this.corner.clear();
     this.corner.beginFill(colors.headerCornerBackgroundColor);
+    // Always position at the top-left of viewport bounds to ensure connection with headers
     this.cornerRect = new Rectangle(bounds.left, bounds.top, this.rowWidth, cellHeight);
     this.corner.drawShape(this.cornerRect);
     this.corner.endFill();
@@ -399,21 +401,20 @@ export class GridHeadings extends Container {
     const { viewport } = pixiApp;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const bounds = viewport.getVisibleBounds();
-    const clamp = sheets.sheet.clamp;
     this.headingsGraphics.lineStyle(1, colors.gridLines, colors.headerSelectedRowColumnBackgroundColorAlpha, 0.5, true);
 
     // draw the left line to the right of the headings
-    const top = Math.max(bounds.top, clamp.top);
-    this.headingsGraphics.moveTo(bounds.left + this.rowWidth, top);
+    // Start from bounds.top to ensure it connects with the corner
+    this.headingsGraphics.moveTo(bounds.left + this.rowWidth, bounds.top);
     this.headingsGraphics.lineTo(bounds.left + this.rowWidth, viewport.bottom);
 
     // draw the top line under the headings
-    const left = Math.max(bounds.left, clamp.left);
-    this.headingsGraphics.moveTo(left, bounds.top + cellHeight);
+    // Start from bounds.left to ensure it connects with the corner
+    this.headingsGraphics.moveTo(bounds.left, bounds.top + cellHeight);
     this.headingsGraphics.lineTo(bounds.right, bounds.top + cellHeight);
   }
 
-  update(viewportDirty: boolean) {
+  update = (viewportDirty: boolean) => {
     // update only if dirty or if viewport is dirty and there is a column or row
     // selection (which requires a redraw)
     if (
@@ -454,7 +455,7 @@ export class GridHeadings extends Container {
 
     this.headingSize = { width: this.rowWidth * pixiApp.viewport.scale.x, height: CELL_HEIGHT };
     events.emit('headingSize', this.headingSize.width, this.headingSize.height);
-  }
+  };
 
   // whether the point is in the heading
   intersectsHeadings(world: Point): IntersectsHeadings | undefined {

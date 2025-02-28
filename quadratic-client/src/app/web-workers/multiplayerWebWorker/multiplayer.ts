@@ -66,10 +66,17 @@ export class Multiplayer {
     window.addEventListener('offline', () => this.sendOffline());
     events.on('changeSheet', this.sendChangeSheet);
     events.on('pythonState', this.pythonState);
+    events.on('a1Context', this.updateA1Context);
     events.on('multiplayerState', (state: MultiplayerState) => {
       this.state = state;
     });
   }
+
+  private updateA1Context = (context: string) => {
+    this.users.forEach((user) => {
+      user.parsedSelection?.updateContext(context);
+    });
+  };
 
   initWorker() {
     this.worker = new Worker(new URL('./worker/multiplayer.worker.ts', import.meta.url), { type: 'module' });
@@ -325,7 +332,7 @@ export class Multiplayer {
 
     if (update.selection) {
       player.selection = update.selection;
-      player.parsedSelection = new JsSelection(player.sheet_id);
+      player.parsedSelection = new JsSelection(player.sheet_id, sheets.a1Context);
       if (player.selection) {
         player.parsedSelection.load(player.selection);
       }
@@ -382,7 +389,7 @@ export class Multiplayer {
         this.colorString = MULTIPLAYER_COLORS[user.index % MULTIPLAYER_COLORS.length];
       } else {
         let player = this.users.get(user.session_id);
-        const parsedSelection = new JsSelection(user.sheet_id);
+        const parsedSelection = new JsSelection(user.sheet_id, sheets.a1Context);
         if (user.selection) {
           parsedSelection.load(user.selection);
         }

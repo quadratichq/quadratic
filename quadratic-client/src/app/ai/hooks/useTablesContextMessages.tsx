@@ -1,4 +1,5 @@
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
+import { DEFAULT_HTML_CELL_HEIGHT, DEFAULT_HTML_CELL_WIDTH } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCell';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
@@ -22,6 +23,10 @@ export function useTablesContextMessages() {
       return [];
     }
 
+    const dataTables = tablesContext.flatMap((tx) => tx.data_tables);
+    const codeTables = tablesContext.flatMap((tx) => tx.code_tables);
+    const charts = tablesContext.flatMap((tx) => tx.charts);
+
     return [
       {
         role: 'user',
@@ -34,11 +39,14 @@ Quadratic has following tables and chart support:\n
 
 All table and charts have a root cell which is the top left cell of the table or chart. Overwriting this remove the table or chart. Any error or spill in the table or chart is displayed at the root cell.\n
 All these tables and charts have first row as table or chart name, respectively. This takes up 1 row of table height and can be hidden in the UI. When hidden, this does not take up any space in the sheet grid.\n
-Data tables and code tables have column names after the table name (if visible). These take up the next row of table height. These can also be hidden in the UI. When hidden, this does not take up any space in the sheet grid.\n
-The actual data starts after the table name and column names. This is a grid of cells with values for data table and code cells for code table. This a interactive chart for charts.\n
-If there is any data present in the sheet where the table or chart is suppose to take place, it result into spill and the table or chart is displayed as spill error at the root cell of the table or chart.\n\n
-
+Data tables and code tables have column headers after the table name (if visible). These take up the next row of table height. These can also be hidden in the UI. When hidden, this does not take up any space in the sheet grid.\n
+The actual data starts after the table name and column headers. This is a grid of cells with values for data table and code cells for code table. This a interactive chart for charts.\n
+If there is any data present in the sheet where the table or chart is suppose to take place, it result into spill and the table or chart is displayed as spill error at the root cell of the table or chart.\n
 \n\n
+
+${
+  dataTables.length > 0
+    ? `
 I am sharing data tables in the currently open file for reference as an array of objects described below:\n
 Each data table has following properties:\n
 - sheet_name: This is the name of the sheet.\n
@@ -46,28 +54,36 @@ Each data table has following properties:\n
 - all_columns: This is an array of all columns in the data table.\n
 - visible_columns: This is an array of visible columns in the data table.\n
 - first_row_visible_values: This is an array of visible values in the first row of the data table.\n
-- bounds: This is the bounds of the data table in A1 notation, this includes the table name and column names if they are visible.\n
+- last_row_visible_values: This is an array of visible values in the last row of the data table.\n
+- bounds: This is the bounds (top left cell and bottom right cell, both inclusive) of the data table in A1 notation, this includes the table name and column headers if they are visible.\n
 - show_name: This is a boolean value representing if the table name is visible.\n
-- show_columns: This is a boolean value representing if the column names are visible.\n\n
+- show_columns: This is a boolean value representing if the column headers are visible.\n\n
 
 first_row_visible_values is an array of objects with following properties:\n
 - value: This is the value of the cell.\n
 - kind: This is the kind of the value.\n
-- pos: This is the position of the cell in A1 notation.\n\n
+- pos: This is the position of the cell in A1 notation.\n
 
 There are following data tables in the currently open file:\n
-${tablesContext.map((tx) => {
-  if (tx.data_tables.length === 0) {
-    return 'There are no data tables in the currently open file.';
-  }
-  return `
-\`\`\`json
-${JSON.stringify(tx.data_tables)}
-\`\`\`
-`;
-})}
 
+\`\`\`json
+${JSON.stringify(dataTables)}
+\`\`\`
+
+Always avoid table bounds when adding values, code or charts to the sheet. Reference table values where ever required.\n
+
+Data tables are editable and can values can be modified by using set_cell_values tool.\n
+- Add values directly at the cells where values will be displayed on the sheet, within the bounds of the table to add or modify values in table.\n
+- Adding values in the row just below the table bounds will add a row with the new values to the table.\n
+- Adding values in the column just right of the table bounds will add a column with the new values to the table. If there is value in the column header row, adjacent to the table, this is added as new column header.\n
 \n\n
+`
+    : 'There are no data tables in the currently open file.\n\n'
+}
+
+${
+  codeTables.length > 0
+    ? `
 I am sharing code tables in the currently open file for reference as an array of objects described below:\n
 Each code table has following properties:\n
 - sheet_name: This is the name of the sheet.\n
@@ -75,9 +91,10 @@ Each code table has following properties:\n
 - all_columns: This is an array of all columns in the code table.\n
 - visible_columns: This is an array of visible columns in the code table.\n
 - first_row_visible_values: This is an array of visible values in the first row of the data table.\n
-- bounds: This is the bounds of the data table in A1 notation, this includes the table name and column names if they are visible.\n
+- last_row_visible_values: This is an array of visible values in the last row of the data table.\n
+- bounds: This is the bounds (top left cell and bottom right cell, both inclusive) of the data table in A1 notation, this includes the table name and column headers if they are visible.\n
 - show_name: This is a boolean value representing if the table name is visible.\n
-- show_columns: This is a boolean value representing if the column names are visible.\n
+- show_columns: This is a boolean value representing if the column headers are visible.\n
 - language: This is the language of the code code which outputs the table.\n
 - code_string: This is the code in the code cell which outputs the table.\n
 - std_err: This is the standard error of the after running the code, this is an optional property only if the code has an error.\n
@@ -90,45 +107,56 @@ first_row_visible_values is an array of objects with following properties:\n
 - pos: This is the position of the cell in A1 notation.\n\n
 
 There are following code tables in the currently open file:\n
-${tablesContext.map((tx) => {
-  if (tx.code_tables.length === 0) {
-    return 'There are no code tables in the currently open file.';
-  }
-  return `
-\`\`\`json
-${JSON.stringify(tx.code_tables)}
-\`\`\`
-`;
-})}
 
+\`\`\`json
+${JSON.stringify(codeTables)}
+\`\`\`
+
+Always avoid table bounds when adding values, code or charts to the sheet. Reference table values where ever required.\n
 \n\n
+`
+    : 'There are no code tables in the currently open file.\n\n'
+}
+
+${
+  charts.length > 0
+    ? `
 I am sharing charts in the currently open file for reference as an array of objects described below:\n
 Each chart has following properties:\n
 - sheet_name: This is the name of the sheet.\n
 - chart_name: This is the name of the chart.\n
-- bounds: This is the bounds of the chart in A1 notation.\n
+- bounds: This is the bounds (top left cell and bottom right cell, both inclusive) of the chart in A1 notation. This includes the first row of the chart which is the chart name and always visible.\n
+- language: This is the language of the code cell which outputs the chart.\n
+- code_string: This is the code in the code cell which outputs the chart.\n
 - spill: This is a boolean value representing if the chart has a spill.\n\n
 
 There are following charts in the currently open file:\n
-${tablesContext.map((tx) => {
-  if (tx.charts.length === 0) {
-    return 'There are no charts in the currently open file.';
-  }
-  return `
 \`\`\`json
-${JSON.stringify(tx.charts)}
+${JSON.stringify(charts)}
 \`\`\`
-`;
-})}
 
-Note: All this data is only for your reference to the tables and charts on the sheet. This data cannot be used directly in code. Use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells in code. Always use sheet name in a1 notation to reference cells. Sheet name is always enclosed in single quotes. In Python and Javascript, the complete a1 notation selection string is enclosed in double quotes. Example: \`q.cells("'Sheet 1'!A1:B2")\`. In formula, string quotes are not to be used. Example: \`=SUM('Sheet 1'!A1:B2)\`
-    `,
-        contextType: 'otherSheets',
+Always avoid chart bounds when adding values, code or charts to the sheet. Reference chart values where ever required.
+
+Charts take up space on the sheet grid and spill if there is any data present in the sheet where the chart is suppose to take place.\n
+Default size of a new chart is ${DEFAULT_HTML_CELL_WIDTH}x${DEFAULT_HTML_CELL_HEIGHT} cells.\n
+\n\n
+`
+    : 'There are no charts in the currently open file.\n\n'
+}
+
+Note: All this data is only for your reference to data on the sheet. This data cannot be used directly in code, always reference data from the sheet.
+- In formula, cell reference are done using A1 notation directly, without quotes. Example: \`=SUM(Table_Name[#DATA])\` or \`=SUM(Table_Name[#HEADERS])\` or \`=SUM(Table_Name[#ALL])\` or \`=SUM(Table_Name[Column_Name])\`.\n
+- In Python and Javascript use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells. Always use sheet name in a1 notation to reference cells from different sheets. Sheet name is always enclosed in single quotes. In Python and Javascript, the complete a1 notation selection string is enclosed in double quotes. Example: \`q.cells("'Sheet 1'!A1:B2")\`.\n
+- Tables can be referenced using \`q.cells("Table_Name")\` to reference the entire table.\n
+- Use \`q.cells("Table_Name[#ALL]")\` to reference the entire table including the header.\n
+- Use \`q.cells("Table_Name[#HEADERS]")\` to reference the header of the table.\n
+- Use \`q.cells("Table_Name[#DATA]")\` to reference the data of the table.\n`,
+        contextType: 'tables',
       },
       {
         role: 'assistant',
         content: `I understand the other sheets data, I will reference it to answer following messages. How can I help you?`,
-        contextType: 'otherSheets',
+        contextType: 'tables',
       },
     ];
   }, []);

@@ -190,7 +190,6 @@ impl A1Selection {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod test {
     use crate::a1::{CellRefRange, CellRefRangeEnd, UNBOUNDED};
 

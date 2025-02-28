@@ -12,6 +12,30 @@ export function googleAnalyticsAvailable(): boolean {
   return import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG && import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG !== 'none';
 }
 
+function getUtmDataFromCookie(): {
+  utm_source: string | undefined;
+  utm_medium: string | undefined;
+  utm_campaign: string | undefined;
+  utm_content: string | undefined;
+  utm_term: string | undefined;
+} {
+  let utmData = {
+    utm_source: undefined,
+    utm_medium: undefined,
+    utm_campaign: undefined,
+    utm_content: undefined,
+    utm_term: undefined,
+  };
+
+  // get utm data from cookie
+  const utmCookie = document.cookie.split('; ').find((row) => row.startsWith('quadratic_utm='));
+  if (utmCookie) {
+    utmData = JSON.parse(decodeURIComponent(utmCookie.split('=')[1]));
+  }
+
+  return utmData;
+}
+
 // This runs in the root loader, so analytics calls can run inside loaders.
 export function initializeAnalytics(user: User) {
   loadGoogleAnalytics(user);
@@ -23,6 +47,7 @@ export function initializeAnalytics(user: User) {
 function loadGoogleAnalytics(user: User) {
   if (!googleAnalyticsAvailable()) return;
   const email = user?.email || '';
+  const utmData = getUtmDataFromCookie();
 
   // set up Google Analytics
   const script_1 = document.createElement('script');
@@ -40,7 +65,12 @@ function loadGoogleAnalytics(user: User) {
               'event': 'Pageview',
               'userData': {
                 'email': email
-              }
+              },
+              ${utmData.utm_source ? `'utmSource': '${utmData.utm_source}',` : ''}
+              ${utmData.utm_medium ? `'utmMedium': '${utmData.utm_medium}',` : ''}
+              ${utmData.utm_campaign ? `'utmCampaign': '${utmData.utm_campaign}',` : ''}
+              ${utmData.utm_content ? `'utmContent': '${utmData.utm_content}',` : ''}
+              ${utmData.utm_term ? `'utmTerm': '${utmData.utm_term}',` : ''}
             });
           }
         }
@@ -53,7 +83,7 @@ function loadGoogleAnalytics(user: User) {
     document.head.appendChild(script_1);
     document.head.appendChild(script_2);
 
-    if (debugShow) console.log('[Analytics] Google activated');
+    if (debugShow) console.log('[Analytics] Google activated with UTM data:', utmData);
   }
 }
 
@@ -81,6 +111,8 @@ export function initMixpanelAnalytics(user: User) {
     return;
   }
 
+  const utmData = getUtmDataFromCookie();
+
   mixpanel.init(import.meta.env.VITE_MIXPANEL_ANALYTICS_KEY, {
     api_host: 'https://mixpanel-proxy.quadratichq.com',
     cross_subdomain_cookie: true,
@@ -90,6 +122,7 @@ export function initMixpanelAnalytics(user: User) {
   mixpanel.register({
     email: user?.email,
     distinct_id: user?.sub,
+    ...utmData,
   });
 
   mixpanel.identify(user?.sub);
@@ -99,6 +132,7 @@ export function initMixpanelAnalytics(user: User) {
     $email: user?.email,
     $name: user?.name,
     $avatar: user?.picture,
+    ...utmData,
   });
 
   console.log('[Analytics] Mixpanel activated');

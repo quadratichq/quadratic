@@ -206,8 +206,41 @@ impl Sheet {
             pos,
             Some(DataTable::new(
                 DataTableKind::CodeRun(code_run),
-                "Chart 1",
+                &format!("Chart {}", self.data_tables.len() + 1),
                 Value::Single(CellValue::Image("chart".to_string())),
+                false,
+                false,
+                true,
+                Some((1.0, 1.0)),
+            )),
+        );
+        self.data_tables.get_mut(&pos).unwrap().chart_output = Some((w, h));
+    }
+
+    /// Sets a JS chart at the given position with the given width and height (in cells).
+    pub fn test_set_chart_html(&mut self, pos: Pos, w: u32, h: u32) {
+        self.set_cell_value(
+            pos,
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Python,
+                code: "code".to_string(),
+            }),
+        );
+        let code_run = CodeRun {
+            std_out: None,
+            std_err: None,
+            cells_accessed: Default::default(),
+            error: None,
+            return_type: None,
+            line_number: None,
+            output_type: None,
+        };
+        self.set_data_table(
+            pos,
+            Some(DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                &format!("Chart {}", self.data_tables.len() + 1),
+                Value::Single(CellValue::Html("chart".to_string())),
                 false,
                 false,
                 true,
@@ -251,7 +284,6 @@ impl Sheet {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use std::str::FromStr;
 
@@ -400,16 +432,6 @@ mod tests {
         assert_eq!(
             sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Number(BigDecimal::from(4)))
-        );
-    }
-
-    #[test]
-    fn test_set_data_table() {
-        let mut sheet = Sheet::test();
-        sheet.test_set_data_table(pos!(E5), 3, 3, false, true);
-        assert_eq!(
-            sheet.data_tables.get(&pos!(E5)).unwrap().name.to_display(),
-            "Table1"
         );
     }
 }

@@ -84,11 +84,9 @@ impl Sheet {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use super::*;
 
-    use serial_test::serial;
     use uuid::Uuid;
 
     use crate::{
@@ -123,7 +121,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn send_all_validations() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -148,7 +145,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn send_all_validation_warnings() {
         let mut sheet = Sheet::test();
         let validation_id = Uuid::new_v4();

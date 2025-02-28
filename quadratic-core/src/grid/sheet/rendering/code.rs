@@ -14,16 +14,18 @@ impl Sheet {
         if !dt.is_html() {
             return None;
         }
-        let size = dt.chart_pixel_output;
         let output = dt.cell_value_at(0, 0)?;
 
         Some(JsHtmlOutput {
             sheet_id: self.id.to_string(),
-            x: pos.x,
-            y: pos.y,
+            x: pos.x as i32,
+            y: pos.y as i32,
+            w: dt.chart_output.map(|(w, _)| w as i32).unwrap_or_default(),
+            h: dt
+                .chart_output
+                .map(|(_, h)| h as i32 + 1)
+                .unwrap_or_default(),
             html: Some(output.to_display()),
-            w: size.map(|(w, _)| w),
-            h: size.map(|(_, h)| h),
             name: dt.name.to_display(),
             show_name: dt.show_name,
         })
@@ -37,14 +39,16 @@ impl Sheet {
                 if !matches!(output, CellValue::Html(_)) {
                     return None;
                 }
-                let size = dt.chart_pixel_output;
                 Some(JsHtmlOutput {
                     sheet_id: self.id.to_string(),
-                    x: pos.x,
-                    y: pos.y,
+                    x: pos.x as i32,
+                    y: pos.y as i32,
+                    w: dt.chart_output.map(|(w, _)| w as i32).unwrap_or_default(),
+                    h: dt
+                        .chart_output
+                        .map(|(_, h)| h as i32 + 1)
+                        .unwrap_or_default(),
                     html: Some(output.to_display()),
-                    w: size.map(|(w, _)| w),
-                    h: size.map(|(_, h)| h),
                     name: dt.name.to_display(),
                     show_name: dt.show_name,
                 })
@@ -104,20 +108,11 @@ impl Sheet {
             show_name: data_table.show_name,
             show_columns: !data_table.is_html_or_image() && data_table.show_columns,
             sort: data_table.sort.clone(),
+            sort_dirty: data_table.sort_dirty,
             alternating_colors,
             readonly: data_table.readonly,
             is_html: data_table.is_html(),
             is_html_image: data_table.is_html() || data_table.is_image(),
-            html_image_width: if data_table.is_html_or_image() {
-                data_table.chart_pixel_output.map(|(w, _)| w)
-            } else {
-                None
-            },
-            html_image_height: if data_table.is_html_or_image() {
-                data_table.chart_pixel_output.map(|(_, h)| h)
-            } else {
-                None
-            },
         })
     }
 
@@ -146,15 +141,14 @@ impl Sheet {
 
         self.data_tables.iter().for_each(|(pos, data_table)| {
             if let Some(CellValue::Image(image)) = data_table.cell_value_at(0, 0) {
-                let size = data_table.chart_pixel_output;
-
+                let cell_size = data_table.chart_output;
                 crate::wasm_bindings::js::jsSendImage(
                     self.id.to_string(),
                     pos.x as i32,
                     pos.y as i32,
+                    cell_size.map(|(w, _)| w as i32).unwrap_or(0),
+                    cell_size.map(|(_, h)| h as i32 + 1).unwrap_or(0),
                     Some(image),
-                    size.map(|(w, _)| w),
-                    size.map(|(_, h)| h),
                 );
             }
         });
@@ -202,14 +196,14 @@ impl Sheet {
         let mut sent = false;
         if let Some(table) = self.data_table(pos) {
             if let Some(CellValue::Image(image)) = table.cell_value_at(0, 0) {
-                let chart_size = table.chart_pixel_output;
+                let output_size = table.chart_output;
                 crate::wasm_bindings::js::jsSendImage(
                     self.id.to_string(),
                     pos.x as i32,
                     pos.y as i32,
+                    output_size.map(|(w, _)| w as i32).unwrap_or(0),
+                    output_size.map(|(_, h)| h as i32 + 1).unwrap_or(0),
                     Some(image),
-                    chart_size.map(|(w, _)| w),
-                    chart_size.map(|(_, h)| h),
                 );
                 sent = true;
             }
@@ -219,8 +213,8 @@ impl Sheet {
                 self.id.to_string(),
                 pos.x as i32,
                 pos.y as i32,
-                None,
-                None,
+                0,
+                0,
                 None,
             );
         }
@@ -228,7 +222,6 @@ impl Sheet {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::{
         controller::{transaction_types::JsCodeResult, GridController},
@@ -236,8 +229,6 @@ mod tests {
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
         Rect, SheetPos,
     };
-
-    use serial_test::serial;
 
     use super::*;
 
@@ -272,9 +263,9 @@ mod tests {
                 sheet_id: sheet.id.to_string(),
                 x: 1,
                 y: 2,
+                w: 7,
+                h: 23,
                 html: Some("<html></html>".to_string()),
-                w: None,
-                h: None,
                 show_name: true,
                 name: "Python1".to_string(),
             }
@@ -285,8 +276,8 @@ mod tests {
                 y: 2,
                 sheet_id,
             },
-            1.0,
-            2.0,
+            1,
+            2,
             None,
         );
         let sheet = gc.sheet(sheet_id);
@@ -298,9 +289,9 @@ mod tests {
                 sheet_id: sheet.id.to_string(),
                 x: 1,
                 y: 2,
+                w: 1,
+                h: 3,
                 html: Some("<html></html>".to_string()),
-                w: Some(1.0),
-                h: Some(2.0),
                 show_name: true,
                 name: "Python1".to_string(),
             }
@@ -458,18 +449,16 @@ mod tests {
                 show_name: true,
                 show_columns: true,
                 sort: None,
+                sort_dirty: false,
                 alternating_colors: true,
                 readonly: true,
                 is_html: false,
                 is_html_image: false,
-                html_image_width: None,
-                html_image_height: None,
             })
         );
     }
 
     #[test]
-    #[serial]
     fn test_render_images() {
         clear_js_calls();
         let mut gc = GridController::test();
@@ -509,15 +498,14 @@ mod tests {
         expect_js_call(
             "jsSendImage",
             format!(
-                "{},{},{},{:?},{:?},{:?}",
-                sheet_id, pos.x as u32, pos.y as u32, true, None::<String>, None::<String>
+                "{},{},{},{:?},{},{}",
+                sheet_id, pos.x as u32, pos.y as u32, true, 0, 0
             ),
             true,
         );
     }
 
     #[test]
-    #[serial]
     fn test_send_image() {
         let mut sheet = Sheet::test();
         let sheet_id = sheet.id;
@@ -547,8 +535,8 @@ mod tests {
         expect_js_call(
             "jsSendImage",
             format!(
-                "{},{},{},{:?},{:?},{:?}",
-                sheet_id, pos.x as u32, pos.y as u32, true, None::<f32>, None::<f32>
+                "{},{},{},{},{},{:?}",
+                sheet_id, pos.x as u32, pos.y as u32, true, 0, 0
             ),
             true,
         );

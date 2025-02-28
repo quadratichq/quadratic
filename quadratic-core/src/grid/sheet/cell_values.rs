@@ -141,11 +141,9 @@ mod test {
 
     use super::*;
     use bigdecimal::BigDecimal;
-    use serial_test::{parallel, serial};
     use uuid::Uuid;
 
     #[test]
-    #[parallel]
     fn merge_cell_values() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: -1, y: -2 }, "old-a");
@@ -211,7 +209,6 @@ mod test {
     }
 
     #[test]
-    #[serial]
     fn merge_cell_values_validations() {
         let mut sheet = Sheet::test();
 

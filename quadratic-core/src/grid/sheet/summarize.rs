@@ -46,7 +46,6 @@ impl Sheet {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::grid::sheet::summarize::MAX_SUMMARIZE_SELECTION_SIZE;
     use crate::grid::Sheet;

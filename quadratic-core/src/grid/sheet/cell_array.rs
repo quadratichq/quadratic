@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use anyhow::{anyhow, Result};
 
 use crate::{
-    controller::execution::run_code::get_cells::JsGetCellResponse, Array, CellValue, Pos, Rect,
+    controller::execution::run_code::get_cells::JsCellsA1Value, Array, CellValue, Pos, Rect,
 };
 
 use super::Sheet;
@@ -32,21 +32,21 @@ impl Sheet {
         old_values
     }
 
-    pub fn get_cells_response(&self, rect: Rect) -> Vec<JsGetCellResponse> {
+    pub fn get_cells_response(&self, rect: Rect) -> Vec<JsCellsA1Value> {
         let mut response = vec![];
         for y in rect.y_range() {
             for x in rect.x_range() {
                 if let Some(cell) = self.display_value(Pos { x, y }) {
-                    response.push(JsGetCellResponse {
-                        x,
-                        y,
+                    response.push(JsCellsA1Value {
+                        x: x as i32,
+                        y: y as i32,
                         value: cell.to_get_cells(),
                         type_name: cell.type_name().into(),
                     });
                 } else {
-                    response.push(JsGetCellResponse {
-                        x,
-                        y,
+                    response.push(JsCellsA1Value {
+                        x: x as i32,
+                        y: y as i32,
                         value: "".into(),
                         type_name: "blank".into(),
                     });
@@ -185,10 +185,8 @@ mod tests {
         CellValue, Pos, Rect, SheetPos,
     };
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_has_cell_values_in_rect() {
         let mut sheet = Sheet::test();
         let rect = Rect::from_numbers(0, 0, 10, 10);
@@ -199,7 +197,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn get_cells_response() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
@@ -222,55 +219,55 @@ mod tests {
         );
         let response = sheet.get_cells_response(Rect::new(0, 0, 3, 3));
         assert_eq!(response.len(), 16);
-        assert!(response.contains(&JsGetCellResponse {
+        assert!(response.contains(&JsCellsA1Value {
             x: 0,
             y: 0,
             value: "1".into(),
             type_name: "number".into(),
         }));
-        assert!(response.contains(&JsGetCellResponse {
+        assert!(response.contains(&JsCellsA1Value {
             x: 1,
             y: 0,
             value: "2".into(),
             type_name: "number".into(),
         }));
-        assert!(response.contains(&JsGetCellResponse {
+        assert!(response.contains(&JsCellsA1Value {
             x: 0,
             y: 1,
             value: "3".into(),
             type_name: "number".into(),
         }));
-        assert!(response.contains(&JsGetCellResponse {
+        assert!(response.contains(&JsCellsA1Value {
             x: 1,
             y: 1,
             value: "4".into(),
             type_name: "number".into(),
         }));
-        assert!(response.contains(&JsGetCellResponse {
+        assert!(response.contains(&JsCellsA1Value {
             x: 2,
             y: 0,
             value: "test".into(),
             type_name: "text".into(),
         }));
-        assert!(response.contains(&JsGetCellResponse {
+        assert!(response.contains(&JsCellsA1Value {
             x: 3,
             y: 1,
             value: "2024-08-15T01:20:00.000".into(),
             type_name: "date time".into(),
         }));
-        assert!(response.contains(&JsGetCellResponse {
+        assert!(response.contains(&JsCellsA1Value {
             x: 2,
             y: 1,
             value: "true".into(),
             type_name: "logical".into(),
         }));
-        assert!(response.contains(&JsGetCellResponse {
+        assert!(response.contains(&JsCellsA1Value {
             x: 2,
             y: 2,
             value: "2024-08-15".into(),
             type_name: "date".into(),
         }));
-        assert!(response.contains(&JsGetCellResponse {
+        assert!(response.contains(&JsCellsA1Value {
             x: 3,
             y: 0,
             value: "01:20:00.000".into(),
@@ -279,7 +276,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_find_spill_error_reasons() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -325,7 +321,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn set_cell_values() {
         let mut sheet = Sheet::test();
         let rect = Rect::from_numbers(0, 0, 2, 2);

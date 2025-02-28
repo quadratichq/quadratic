@@ -20,16 +20,16 @@ impl DataTable {
         sheet: &Sheet,
         data_table_pos: Pos,
     ) -> Result<()> {
+        transaction.add_from_code_run(sheet.id, data_table_pos, self.is_image(), self.is_html());
+
         if !(cfg!(target_family = "wasm") || cfg!(test)) || transaction.is_server() {
             return Ok(());
         }
 
         let data_table_sheet_pos = data_table_pos.to_sheet_pos(sheet.id);
-
         let data_table_rect = self.output_sheet_rect(data_table_sheet_pos, false);
 
         transaction.add_dirty_hashes_from_sheet_rect(data_table_rect);
-        transaction.add_code_cell(data_table_sheet_pos.sheet_id, data_table_pos);
 
         if transaction.is_user() {
             let sheet_rows = sheet.get_rows_with_wrap_in_rect(&data_table_rect.into(), true);
@@ -251,8 +251,6 @@ impl DataTable {
         }
 
         if !transaction.is_server() {
-            // self.send_updated_bounds(sheet_id);
-
             if !dirty_hashes.is_empty() {
                 let dirty_hashes_transaction =
                     transaction.dirty_hashes.entry(sheet_id).or_default();

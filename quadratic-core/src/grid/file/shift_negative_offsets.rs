@@ -96,7 +96,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
                 // Translate all ranges and collect into new HashSet
                 *ranges = ranges
                     .iter()
-                    .map(|r| r.translate(x_shift, y_shift))
+                    .filter_map(|r| r.translate(x_shift, y_shift).ok())
                     .collect();
             }
         }
@@ -125,7 +125,6 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
 
 #[cfg(test)]
 mod test {
-    use serial_test::parallel;
 
     use crate::{
         a1::UNBOUNDED,
@@ -135,7 +134,6 @@ mod test {
     };
 
     #[test]
-    #[parallel]
     fn test_negative_offsets() {
         let file = include_bytes!("../../../test-files/v1.7_negative_offsets.grid");
         let imported = import(file.to_vec()).unwrap();

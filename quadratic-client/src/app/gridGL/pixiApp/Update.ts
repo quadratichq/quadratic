@@ -60,7 +60,8 @@ export class Update {
       pixiApp.cellImages.dirty ||
       pixiApp.cellHighlights.isDirty() ||
       pixiApp.cellMoving.dirty ||
-      pixiApp.validations.dirty;
+      pixiApp.validations.dirty ||
+      pixiApp.copy.dirty;
 
     if (rendererDirty && debugShowWhyRendering) {
       console.log(
@@ -75,6 +76,7 @@ export class Update {
           pixiApp.cellHighlights.isDirty() && 'cellHighlights',
           pixiApp.cellMoving.dirty && 'cellMoving',
           pixiApp.validations.dirty && 'validations',
+          pixiApp.copy.dirty && 'copy',
         ]
           .filter(Boolean)
           .join(', ')}`
@@ -95,16 +97,17 @@ export class Update {
     pixiApp.multiplayerCursor.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] multiplayerCursor');
     pixiApp.cellImages.update();
-    debugTimeCheck('[Update] uiImageResize');
+    debugTimeCheck('[Update] cellImages');
     pixiApp.cellMoving.update();
     debugTimeCheck('[Update] cellMoving');
     pixiApp.cellsSheets.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] cellsSheets');
     pixiApp.validations.update(pixiApp.viewport.dirty);
-    debugTimeCheck('[Update] backgrounds');
+    debugTimeCheck('[Update] validations');
     pixiApp.background.update(pixiApp.viewport.dirty);
-    debugTimeCheck('[Update] copy');
+    debugTimeCheck('[Update] backgrounds');
     pixiApp.copy.update();
+    debugTimeCheck('[Update] copy');
 
     if (pixiApp.viewport.dirty || rendererDirty) {
       debugTimeReset();

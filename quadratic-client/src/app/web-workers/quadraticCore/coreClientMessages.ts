@@ -6,18 +6,20 @@ import type {
   CellVerticalAlign,
   CellWrap,
   CodeCellLanguage,
+  DataTableSort,
   Direction,
   Format,
   JsBordersSheet,
   JsCellValue,
-  JsCellValuePosAIContext,
   JsCodeCell,
   JsCoordinate,
+  JsDataTableColumnHeader,
   JsHtmlOutput,
   JsOffset,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
+  JsSelectionContext,
   JsSheetFill,
   JsSnackbarSeverity,
   JsSummarizeSelectionResult,
@@ -934,9 +936,11 @@ export interface CoreClientImage {
   sheetId: string;
   x: number;
   y: number;
+  w: number;
+  h: number;
   image?: string;
-  w?: string;
-  h?: string;
+  pixel_width?: number;
+  pixel_height?: number;
 }
 
 export interface ClientCoreGetValidations {
@@ -1039,29 +1043,20 @@ export interface CoreClientGetCellValue {
   value: JsCellValue | undefined;
 }
 
-export interface ClientCoreGetAIContextRectsInSelections {
-  type: 'clientCoreGetAIContextRectsInSelections';
+export interface ClientCoreGetAISelectionContexts {
+  type: 'clientCoreGetAISelectionContexts';
   id: number;
   selections: string[];
   maxRects: number | undefined;
+  includeErroredCodeCells: boolean;
+  includeTablesSummary: boolean;
+  includeChartsSummary: boolean;
 }
 
-export interface CoreClientGetAIContextRectsInSelections {
-  type: 'coreClientGetAIContextRectsInSelections';
+export interface CoreClientGetAISelectionContexts {
+  type: 'coreClientGetAISelectionContexts';
   id: number;
-  value: JsCellValuePosAIContext[][] | undefined;
-}
-
-export interface ClientCoreGetErroredCodeCellsInSelections {
-  type: 'clientCoreGetErroredCodeCellsInSelections';
-  id: number;
-  selections: string[];
-}
-
-export interface CoreClientGetErroredCodeCellsInSelections {
-  type: 'coreClientGetErroredCodeCellsInSelections';
-  id: number;
-  value: JsCodeCell[][] | undefined;
+  selectionContexts: JsSelectionContext[] | undefined;
 }
 
 export interface ClientCoreGetAITablesContext {
@@ -1072,7 +1067,7 @@ export interface ClientCoreGetAITablesContext {
 export interface CoreClientGetAITablesContext {
   type: 'coreClientGetAITablesContext';
   id: number;
-  value: JsTablesContext[] | undefined;
+  tablesContext: JsTablesContext[] | undefined;
 }
 
 export interface ClientCoreNeighborText {
@@ -1148,11 +1143,7 @@ export interface ClientCoreDataTableMeta {
   y: number;
   name?: string;
   alternatingColors?: boolean;
-  columns?: {
-    name: string;
-    display: boolean;
-    valueIndex: number;
-  }[];
+  columns?: JsDataTableColumnHeader[];
   showName?: boolean;
   showColumns?: boolean;
   showUI?: boolean;
@@ -1161,9 +1152,11 @@ export interface ClientCoreDataTableMeta {
 
 export interface ClientCoreDataTableMutations {
   type: 'clientCoreDataTableMutations';
+  id: number;
   sheetId: string;
   x: number;
   y: number;
+  select_table: boolean;
   columns_to_add?: number[];
   columns_to_remove?: number[];
   rows_to_add?: number[];
@@ -1173,12 +1166,17 @@ export interface ClientCoreDataTableMutations {
   cursor?: string;
 }
 
+export interface CoreClientDataTableMutations {
+  type: 'coreClientDataTableMutations';
+  id: number;
+}
+
 export interface ClientCoreSortDataTable {
   type: 'clientCoreSortDataTable';
   sheetId: string;
   x: number;
   y: number;
-  sort: { column_index: number; direction: string }[];
+  sort?: DataTableSort[];
   cursor: string;
 }
 
@@ -1316,8 +1314,7 @@ export type ClientCoreMessage =
   | ClientCoreSortDataTable
   | ClientCoreDataTableFirstRowAsHeader
   | ClientCoreGetCellValue
-  | ClientCoreGetAIContextRectsInSelections
-  | ClientCoreGetErroredCodeCellsInSelections
+  | ClientCoreGetAISelectionContexts
   | ClientCoreGetAITablesContext
   | ClientCoreFindNextColumnForRect
   | ClientCoreFindNextRowForRect
@@ -1385,8 +1382,7 @@ export type CoreClientMessage =
   | CoreClientBordersSheet
   | CoreClientGetCellValue
   | CoreClientClientMessage
-  | CoreClientGetAIContextRectsInSelections
-  | CoreClientGetErroredCodeCellsInSelections
+  | CoreClientGetAISelectionContexts
   | CoreClientGetAITablesContext
   | CoreClientFindNextColumnForRect
   | CoreClientFindNextRowForRect
@@ -1398,4 +1394,5 @@ export type CoreClientMessage =
   | CoreClientAddDataTable
   | CoreClientSetCellValues
   | CoreClientMoveCells
-  | CoreClientDeleteCellValues;
+  | CoreClientDeleteCellValues
+  | CoreClientDataTableMutations;

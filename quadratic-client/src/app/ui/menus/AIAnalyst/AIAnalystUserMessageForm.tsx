@@ -49,6 +49,7 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((
         setContext,
         initialContext,
       }}
+      maxHeight="275px"
     />
   );
 });

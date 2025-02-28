@@ -51,12 +51,17 @@ export class Table extends Container {
     if (cellsMarkers) {
       cellsMarkers.remove(this.codeCell.x, this.codeCell.y);
     }
+    this.sheet.gridOverflowLines.updateImageHtml(this.codeCell.x, this.codeCell.y);
 
     super.destroy();
   }
 
-  get hoverTableHeaders() {
-    return pixiApp.cellsSheets.getById(this.sheet.id)?.tables.hoverTableHeaders;
+  get hoverTableHeaders(): Container {
+    const cellsSheet = pixiApp.cellsSheets.getById(this.sheet.id);
+    if (!cellsSheet) {
+      throw new Error('Expected cellsSheet to be defined in Table.ts');
+    }
+    return cellsSheet.tables.hoverTableHeaders;
   }
 
   activate = (active: boolean) => {
@@ -103,17 +108,31 @@ export class Table extends Container {
     } else {
       cellsMarkers.remove(this.codeCell.x, this.codeCell.y);
     }
+    if (
+      !this.codeCell.spill_error &&
+      // !this.codeCell.is_html_image &&
+      this.codeCell.show_ui &&
+      this.codeCell.show_name
+    ) {
+      this.sheet.gridOverflowLines.updateImageHtml(this.codeCell.x, this.codeCell.y, this.codeCell.w, 1);
+    } else {
+      this.sheet.gridOverflowLines.updateImageHtml(this.codeCell.x, this.codeCell.y);
+    }
   };
 
   private headingPosition = (bounds: Rectangle, gridHeading: number) => {
-    if (this.visible) {
-      if (!this.codeCell.is_html && this.tableBounds.top < bounds.top + gridHeading) {
-        this.header.toHover(bounds, gridHeading);
-        this.inOverHeadings = true;
-      } else {
-        this.header.toGrid();
-        this.inOverHeadings = false;
-      }
+    const codeCell = this.codeCell;
+    if (
+      !codeCell.is_html &&
+      codeCell.show_ui &&
+      (codeCell.show_name || codeCell.show_columns) &&
+      this.tableBounds.top < bounds.top + gridHeading
+    ) {
+      this.header.toHover(bounds, gridHeading);
+      this.inOverHeadings = true;
+    } else {
+      this.header.toGrid();
+      this.inOverHeadings = false;
     }
   };
 
@@ -131,10 +150,22 @@ export class Table extends Container {
   };
 
   update(bounds: Rectangle, gridHeading: number) {
-    this.headingPosition(bounds, gridHeading);
-    if (this.visible && this.inOverHeadings) {
-      this.header.update(true);
+    if (!intersects.rectangleRectangle(this.tableBounds, bounds)) {
+      this.visible = false;
+      this.header.visible = false;
+      return;
     }
+    if (
+      this.codeCell.show_ui &&
+      (this.codeCell.show_name || this.codeCell.show_columns) &&
+      this.codeCell.state !== 'RunError' &&
+      this.codeCell.state !== 'SpillError'
+    ) {
+      this.header.visible = true;
+    }
+    this.visible = true;
+    this.headingPosition(bounds, gridHeading);
+    if (this.inOverHeadings) this.header.update(true);
   }
 
   hideActive() {
@@ -158,23 +189,32 @@ export class Table extends Container {
   }
 
   // Intersects a column/row rectangle
-  intersects(rectangle: Rectangle): boolean {
-    return intersects.rectangleRectangle(
-      new Rectangle(this.codeCell.x, this.codeCell.y, this.codeCell.w, this.codeCell.h),
-      rectangle
-    );
-  }
+  intersects = (rectangle: Rectangle): boolean => {
+    let width = this.codeCell.w;
+    let height = this.codeCell.h;
+    if (this.codeCell.spill_error || this.codeCell.state === 'RunError' || this.codeCell.state === 'SpillError') {
+      width = 1;
+      height = 1;
+    }
+    return intersects.rectangleRectangle(new Rectangle(this.codeCell.x, this.codeCell.y, width, height), rectangle);
+  };
 
   // Checks whether the cursor is on the table
   isCursorOnDataTable(): boolean {
     const cursor = sheets.sheet.cursor.position;
+    if (this.codeCell.spill_error) {
+      return this.codeCell.x === cursor.x && this.codeCell.y === cursor.y;
+    }
     return intersects.rectanglePoint(
       new Rectangle(this.codeCell.x, this.codeCell.y, this.codeCell.w - 1, this.codeCell.h - 1),
       cursor
     );
   }
 
-  getTableNameBounds(ignoreOverHeadings = false): Rectangle {
+  getTableNameBounds(ignoreOverHeadings = false): Rectangle | undefined {
+    if (!this.codeCell.show_ui || !this.codeCell.show_name) {
+      return;
+    }
     const bounds = this.header.getTableNameBounds().clone();
     if (!ignoreOverHeadings && this.inOverHeadings) {
       const bounds = pixiApp.viewport.getVisibleBounds();
@@ -229,8 +269,6 @@ export class Table extends Container {
   resize(width: number, height: number) {
     this.tableBounds.width = width;
     this.tableBounds.height = height;
-    this.codeCell.html_image_width = width;
-    this.codeCell.html_image_height = height;
     this.outline.update();
     this.header.update(false);
   }

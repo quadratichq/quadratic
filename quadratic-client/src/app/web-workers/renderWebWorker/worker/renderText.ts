@@ -125,10 +125,10 @@ class RenderText {
     const cellsLabels = this.cellsLabels.get(sheetId);
     if (!cellsLabels) return;
 
-    const neighborRect = cellsLabels.getViewportNeighborBounds();
-    if (!neighborRect) return;
+    const viewport = this.viewport;
+    if (!viewport) return;
 
-    const cornerHashes = cellsLabels.getCornerHashesInBound(neighborRect);
+    const cornerHashes = cellsLabels.getNeighborCornerHashesInBound(viewport);
     if (cornerHashes.length !== 4) return;
 
     // Update the viewport in the SharedArrayBuffer

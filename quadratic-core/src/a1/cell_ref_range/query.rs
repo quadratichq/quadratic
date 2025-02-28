@@ -108,6 +108,14 @@ impl CellRefRange {
         }
     }
 
+    /// Returns the number of columns in the range.
+    pub fn col_range(&self) -> i64 {
+        match self {
+            Self::Sheet { range } => range.col_range(),
+            Self::Table { .. } => 0,
+        }
+    }
+
     pub fn is_finite(&self) -> bool {
         match self {
             Self::Sheet { range } => range.is_finite(),
@@ -157,10 +165,10 @@ impl CellRefRange {
         }
     }
 
-    pub fn is_single_cell(&self) -> bool {
+    pub fn is_single_cell(&self, context: &A1Context) -> bool {
         match self {
             Self::Sheet { range } => range.is_single_cell(),
-            Self::Table { .. } => false,
+            Self::Table { range } => range.is_single_cell(context),
         }
     }
 
@@ -178,7 +186,6 @@ impl CellRefRange {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use super::*;
 
@@ -433,10 +440,11 @@ mod tests {
 
     #[test]
     fn test_is_single_cell() {
-        assert!(CellRefRange::test_a1("A1").is_single_cell());
-        assert!(!CellRefRange::test_a1("A").is_single_cell());
-        assert!(!CellRefRange::test_a1("3").is_single_cell());
-        assert!(!CellRefRange::test_a1("A1:B2").is_single_cell());
+        let context = A1Context::default();
+        assert!(CellRefRange::test_a1("A1").is_single_cell(&context));
+        assert!(!CellRefRange::test_a1("A").is_single_cell(&context));
+        assert!(!CellRefRange::test_a1("3").is_single_cell(&context));
+        assert!(!CellRefRange::test_a1("A1:B2").is_single_cell(&context));
     }
 
     #[test]

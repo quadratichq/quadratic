@@ -942,17 +942,14 @@ pub enum CellValueHash {
 #[cfg(test)]
 mod test {
     use super::*;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_cell_value_to_display_text() {
         let cv = CellValue::Text(String::from("hello"));
         assert_eq!(cv.to_display(), String::from("hello"));
     }
 
     #[test]
-    #[parallel]
     fn test_cell_value_to_display_number() {
         let cv = CellValue::Number(BigDecimal::from_str("123123.1233").unwrap());
         assert_eq!(cv.to_display(), String::from("123123.1233"));
@@ -968,7 +965,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_cell_value_to_display_currency() {
         let cv = CellValue::Number(BigDecimal::from_str("123123.1233").unwrap());
         assert_eq!(
@@ -1054,7 +1050,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_cell_value_to_display_percentage() {
         let cv = CellValue::Number(BigDecimal::from_str("0.015").unwrap());
         assert_eq!(
@@ -1096,7 +1091,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn to_number_display_scientific() {
         let cv = CellValue::Number(BigDecimal::from_str("12345678").unwrap());
         assert_eq!(
@@ -1151,7 +1145,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_unpack_percentage() {
         let value = String::from("1238.12232%");
         assert_eq!(
@@ -1161,7 +1154,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_unpack_currency() {
         let value = String::from("$123.123");
         assert_eq!(
@@ -1180,14 +1172,12 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_exponential_display() {
         let value = CellValue::Number(BigDecimal::from_str("98172937192739718923.12312").unwrap());
         assert_eq!(value.to_display(), "98172937192739718923.12312");
     }
 
     #[test]
-    #[parallel]
     fn test_is_html() {
         let value = CellValue::Html("test".to_string());
         assert!(value.is_html());
@@ -1200,7 +1190,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_is_image() {
         let value = CellValue::Image("test".to_string());
         assert!(!value.is_html());
@@ -1213,7 +1202,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_is_code() {
         let value = CellValue::Code(CodeCellValue::new(
             CodeCellLanguage::Python,
@@ -1229,7 +1217,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_is_import() {
         let value = CellValue::Import(Import::new("test".to_string()));
         assert!(!value.is_html());
@@ -1242,7 +1229,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn to_get_cells() {
         let value = CellValue::Number(BigDecimal::from_str("123123.1233").unwrap());
         assert_eq!(value.to_get_cells(), "123123.1233");
@@ -1267,7 +1253,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_cell_value_equality() {
         for ([l, r], expected) in [
             // Reflexivity

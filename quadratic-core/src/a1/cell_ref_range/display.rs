@@ -3,8 +3,12 @@ use super::*;
 impl fmt::Debug for CellRefRange {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            CellRefRange::Sheet { range } => write!(f, "CellRefRange::Sheet({})", range),
-            CellRefRange::Table { range } => write!(f, "CellRefRange::Table({})", range),
+            CellRefRange::Sheet { range } => {
+                f.debug_tuple("CellRefRange::Sheet").field(range).finish()
+            }
+            CellRefRange::Table { range } => {
+                f.debug_tuple("CellRefRange::Table").field(range).finish()
+            }
         }
     }
 }

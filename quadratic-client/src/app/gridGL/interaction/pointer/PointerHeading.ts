@@ -125,14 +125,12 @@ export class PointerHeading {
         cursor.selectRow(intersects.row, event.ctrlKey || event.metaKey, event.shiftKey, isRightClick, left);
       }
       if (isRightClick) {
-        setTimeout(() =>
-          events.emit('contextMenu', {
-            world,
-            column: intersects.column ?? undefined,
-            row: intersects.row ?? undefined,
-            type: ContextMenuType.Grid,
-          })
-        );
+        events.emit('contextMenu', {
+          world,
+          column: intersects.column ?? undefined,
+          row: intersects.row ?? undefined,
+          type: ContextMenuType.Grid,
+        });
       }
     }
 

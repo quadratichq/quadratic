@@ -1,4 +1,4 @@
-use std::{fmt, str::FromStr};
+use std::fmt;
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -34,10 +34,8 @@ impl CellRefRange {
 impl CellRefRange {
     #[cfg(test)]
     pub fn test_a1(a1: &str) -> Self {
-        use std::str::FromStr;
-
         Self::Sheet {
-            range: RefRangeBounds::from_str(a1).unwrap(),
+            range: RefRangeBounds::from_str(a1, None).unwrap(),
         }
     }
 

@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    grid::{CodeCellLanguage, SheetId},
-    Rect, SheetPos,
+    grid::{CodeCellLanguage, DataTable, SheetId},
+    Pos, Rect, SheetPos,
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct TableMapEntry {
     pub sheet_id: SheetId,
     pub table_name: String,
@@ -17,10 +17,47 @@ pub struct TableMapEntry {
     pub show_columns: bool,
     pub is_html_image: bool,
     pub header_is_first_row: bool,
-    pub language: Option<CodeCellLanguage>,
+    pub language: CodeCellLanguage,
 }
 
 impl TableMapEntry {
+    pub fn from_table(
+        sheet_id: SheetId,
+        pos: Pos,
+        table: &DataTable,
+        language: CodeCellLanguage,
+    ) -> Self {
+        if table.spill_error || table.has_error() {
+            Self {
+                sheet_id,
+                table_name: table.name.to_display(),
+                visible_columns: table.columns_map(false),
+                all_columns: table.columns_map(true),
+                bounds: table.output_rect(pos, false),
+                show_ui: false,
+                show_name: false,
+                show_columns: false,
+                is_html_image: false,
+                header_is_first_row: false,
+                language,
+            }
+        } else {
+            Self {
+                sheet_id,
+                table_name: table.name.to_display(),
+                visible_columns: table.columns_map(false),
+                all_columns: table.columns_map(true),
+                bounds: table.output_rect(pos, false),
+                show_ui: table.show_ui,
+                show_name: table.show_name,
+                show_columns: table.show_columns,
+                is_html_image: table.is_html() || table.is_image(),
+                header_is_first_row: table.header_is_first_row,
+                language,
+            }
+        }
+    }
+
     /// Returns the start and end of the table in row coordinates relative to
     /// the sheet.
     pub fn to_sheet_rows(&self) -> (i64, i64) {
@@ -131,7 +168,7 @@ impl TableMapEntry {
 
     /// Returns the index of the column in the all_columns vector from the
     /// index of the column in the visible_columns vector.
-    pub fn get_column_index_from_visible_index(&self, index: usize) -> Option<usize> {
+    pub fn get_column_index_from_display_index(&self, index: usize) -> Option<usize> {
         let visible_column_name = self.visible_columns.get(index)?;
         let all_column_index = self
             .all_columns
@@ -166,13 +203,14 @@ impl TableMapEntry {
         visible_columns: &[&str],
         all_columns: Option<&[&str]>,
         bounds: Rect,
+        language: CodeCellLanguage,
     ) -> Self {
         let visible_columns: Vec<String> = visible_columns.iter().map(|c| c.to_string()).collect();
         let all_columns: Vec<String> = all_columns.map_or(visible_columns.clone(), |c| {
             c.iter().map(|c| c.to_string()).collect()
         });
         TableMapEntry {
-            sheet_id: SheetId::test(),
+            sheet_id: SheetId::TEST,
             table_name: table_name.to_string(),
             visible_columns,
             all_columns,
@@ -182,13 +220,12 @@ impl TableMapEntry {
             show_columns: true,
             is_html_image: false,
             header_is_first_row: false,
-            language: None,
+            language,
         }
     }
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use super::*;
 
@@ -199,6 +236,7 @@ mod tests {
             &["Col1", "Col2", "Col3"],
             None,
             Rect::test_a1("A1:D4"),
+            CodeCellLanguage::Import,
         );
 
         assert_eq!(entry.try_col_index("Col1"), Some(0));
@@ -215,6 +253,7 @@ mod tests {
             &["Col1", "Col3", "Col5"],
             Some(&["Col1", "Col2", "Col3", "Col4", "Col5"]),
             Rect::test_a1("A1:D4"),
+            CodeCellLanguage::Import,
         );
 
         // Test visible columns
@@ -235,6 +274,7 @@ mod tests {
             &["Col1", "Col3", "Col5"],
             Some(&["Col1", "Col2", "Col3", "Col4", "Col5"]),
             Rect::test_a1("A1:D4"),
+            CodeCellLanguage::Import,
         );
 
         assert_eq!(entry.try_col_range("Col1", "Col5"), Some((0, 2)));
@@ -244,7 +284,13 @@ mod tests {
 
     #[test]
     fn test_y_adjustment() {
-        let mut entry = TableMapEntry::test("test_table", &["Col1"], None, Rect::test_a1("A1:D4"));
+        let mut entry = TableMapEntry::test(
+            "test_table",
+            &["Col1"],
+            None,
+            Rect::test_a1("A1:D4"),
+            CodeCellLanguage::Import,
+        );
 
         // Default settings (show_ui = true, show_name = true, show_columns = true)
         assert_eq!(entry.y_adjustment(false), 2);
@@ -261,7 +307,13 @@ mod tests {
 
     #[test]
     fn test_contains() {
-        let entry = TableMapEntry::test("test_table", &["Col1"], None, Rect::test_a1("A1:C4"));
+        let entry = TableMapEntry::test(
+            "test_table",
+            &["Col1"],
+            None,
+            Rect::test_a1("A1:C4"),
+            CodeCellLanguage::Import,
+        );
 
         assert!(entry.contains(SheetPos::new(entry.sheet_id, 2, 2)));
         assert!(!entry.contains(SheetPos::new(entry.sheet_id, 0, 0)));
@@ -275,18 +327,19 @@ mod tests {
             &["A", "C", "E"],
             Some(&["A", "B", "C", "D", "E"]),
             Rect::test_a1("A1:E5"),
+            CodeCellLanguage::Import,
         );
 
         // visible index 0 (A) should return all_columns index 0
-        assert_eq!(table.get_column_index_from_visible_index(0), Some(0));
+        assert_eq!(table.get_column_index_from_display_index(0), Some(0));
 
         // visible index 1 (C) should return all_columns index 2
-        assert_eq!(table.get_column_index_from_visible_index(1), Some(2));
+        assert_eq!(table.get_column_index_from_display_index(1), Some(2));
 
         // visible index 2 (E) should return all_columns index 4
-        assert_eq!(table.get_column_index_from_visible_index(2), Some(4));
+        assert_eq!(table.get_column_index_from_display_index(2), Some(4));
 
         // out of bounds
-        assert_eq!(table.get_column_index_from_visible_index(3), None);
+        assert_eq!(table.get_column_index_from_display_index(3), None);
     }
 }

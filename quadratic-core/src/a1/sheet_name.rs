@@ -61,7 +61,6 @@ fn sheet_name_must_be_quoted(sheet_name: &str) -> bool {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::grid::Sheet;
 

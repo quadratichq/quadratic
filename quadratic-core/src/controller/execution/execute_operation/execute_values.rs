@@ -65,9 +65,8 @@ impl GridController {
 
                     transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
 
+                    self.send_updated_bounds(transaction, sheet_rect.sheet_id);
                     if !transaction.is_server() {
-                        self.send_updated_bounds(sheet_rect.sheet_id);
-
                         transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
 
                         if transaction.is_user() {
@@ -93,14 +92,12 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use bigdecimal::BigDecimal;
-    use serial_test::parallel;
 
     use crate::controller::GridController;
     use crate::grid::SheetId;
     use crate::{CellValue, Pos, SheetPos};
 
     #[test]
-    #[parallel]
     fn test_set_cell_value() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -138,7 +135,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_set_cell_values_no_sheet() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -173,14 +169,12 @@ mod tests {
 #[cfg(test)]
 mod test {
     use bigdecimal::BigDecimal;
-    use serial_test::parallel;
 
     use super::*;
     use crate::grid::CodeCellLanguage;
     use crate::{CellValue, SheetPos};
 
     #[test]
-    #[parallel]
     fn test_set_cell_values_code_cell_remove() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -205,7 +199,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_set_cell_values_undo() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -224,7 +217,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn dependencies_properly_trigger_on_set_cell_values() {
         let mut gc = GridController::test();
         gc.set_cell_value(

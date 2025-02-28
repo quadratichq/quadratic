@@ -102,7 +102,7 @@ export function getCSSVariableTint(cssVariableName: string, options?: { luminosi
  * Given the name of a CSS variable that maps to an HSL string, return the tint
  * we can use in pixi.
  * @param cssVariableName - CSS var without the `--` prefix
- * @param luminosity - If provided, will mulitply the luminosity by this number
+ * @param luminosity - If provided, will multiply the luminosity by this number
  */
 export function cssVariableWithLuminosity(cssVariableName: string, luminosity: number): string {
   if (cssVariableName.startsWith('--')) {

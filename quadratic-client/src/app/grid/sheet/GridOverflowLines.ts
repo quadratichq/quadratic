@@ -40,9 +40,7 @@ export class GridOverflowLines {
     if (width === undefined || height === undefined) {
       this.overflowImageHtml.delete(`${column},${row}`);
     } else {
-      const start = this.sheet.offsets.getCellOffsets(column, row);
-      const end = this.sheet.getColumnRow(start.x + width, start.y + height);
-      this.overflowImageHtml.set(`${column},${row}`, new Rectangle(column, row, end.x - column, end.y - row));
+      this.overflowImageHtml.set(`${column},${row}`, new Rectangle(column, row, width - 1, height - 1));
     }
     events.emit('gridLinesDirty');
   }

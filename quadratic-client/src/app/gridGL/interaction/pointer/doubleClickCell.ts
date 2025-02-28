@@ -38,7 +38,6 @@ export async function doubleClickCell(options: {
   if (language) {
     const formula = language === 'Formula';
     const file_import = language === 'Import';
-
     if (pixiAppSettings.codeEditorState.showCodeEditor && !file_import) {
       pixiAppSettings.setCodeEditorState({
         ...pixiAppSettings.codeEditorState,
@@ -60,8 +59,8 @@ export async function doubleClickCell(options: {
         const cursor = sheets.sheet.cursor.position;
 
         // ensure we're in the right cell (which may change if we double clicked on a CodeRun)
-        if (cursor.x !== column || cursor.y !== row) {
-          sheets.sheet.cursor.moveTo(column, row);
+        if (codeCell && (cursor.x !== codeCell.x || cursor.y !== codeCell.y)) {
+          sheets.sheet.cursor.moveTo(codeCell.x, codeCell.y);
         }
         pixiAppSettings.changeInput(true, cell, cursorMode);
       }
@@ -74,10 +73,15 @@ export async function doubleClickCell(options: {
 
         // check column header or table value
         else {
+          const isSpillOrError =
+            codeCell.spill_error || codeCell.state === 'RunError' || codeCell.state === 'SpillError';
+          const isTableName = codeCell.show_ui && codeCell.show_name && row === codeCell.y;
           const isColumnHeader =
             codeCell.show_ui && codeCell.show_columns && row === codeCell.y + (codeCell.show_name ? 1 : 0);
-          const isTableName = codeCell.show_ui && codeCell.show_name && row === codeCell.y;
-          if (isTableName) {
+
+          if (isSpillOrError) {
+            return;
+          } else if (isTableName) {
             events.emit('contextMenu', {
               type: ContextMenuType.Table,
               table: codeCell,

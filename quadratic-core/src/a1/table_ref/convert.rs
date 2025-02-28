@@ -32,6 +32,7 @@ impl TableRef {
             return None;
         };
         let (mut y_start, y_end) = table.to_sheet_rows();
+
         if !force_table_bounds {
             y_start += if !self.headers && !force_columns {
                 table.y_adjustment(false)
@@ -40,6 +41,10 @@ impl TableRef {
             } else {
                 0
             };
+        }
+        // this is for the clipboard, we don't want to copy the table name when it's a full column
+        else if let ColRange::Col(_) = &self.col_range {
+            y_start += table.y_adjustment(true);
         }
         let y_end = if !self.data { y_start } else { y_end };
 
@@ -98,7 +103,6 @@ impl TableRef {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::Rect;
 
@@ -142,7 +146,13 @@ mod tests {
     #[test]
     fn test_convert_all_columns_without_header() {
         let mut context = create_test_context(Rect::test_a1("A1:C3"));
-        context.table_map.tables.first_mut().unwrap().show_ui = false;
+        context
+            .table_map
+            .tables
+            .values_mut()
+            .next()
+            .unwrap()
+            .show_ui = false;
 
         let table_ref = TableRef {
             table_name: "test_table".to_string(),

@@ -62,9 +62,6 @@ impl GridController {
                     let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
                     resize_rows.extend(rows);
                 }
-                transaction
-                    .operations
-                    .extend(self.check_chart_size_column_change(sheet_id, column));
             }
 
             if !transaction.is_server() {
@@ -122,14 +119,6 @@ impl GridController {
                     .insert((None, Some(row)), new_size);
             }
 
-            if transaction.is_user() {
-                let changes = self.check_chart_size_row_change(sheet_id, row);
-                if !changes.is_empty() {
-                    transaction.operations.extend(changes);
-                    self.check_all_spills(transaction, sheet_id);
-                }
-            }
-
             if !transaction.is_server() {
                 transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
                     x: 0,
@@ -143,7 +132,7 @@ impl GridController {
     pub fn execute_resize_rows(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::ResizeRows {
             sheet_id,
-            row_heights,
+            mut row_heights,
         } = op
         {
             if row_heights.is_empty() {
@@ -154,7 +143,9 @@ impl GridController {
                 return;
             };
 
-            let old_row_heights: Vec<JsRowHeight> = row_heights
+            row_heights.sort_by_key(|JsRowHeight { row, .. }| *row);
+
+            let mut old_row_heights: Vec<JsRowHeight> = row_heights
                 .iter()
                 .map(|JsRowHeight { row, height }| {
                     let old_size = sheet.offsets.set_row_height(*row, *height);
@@ -164,6 +155,8 @@ impl GridController {
                     }
                 })
                 .collect();
+
+            old_row_heights.sort_by_key(|JsRowHeight { row, .. }| *row);
 
             if old_row_heights == row_heights {
                 return;
@@ -183,17 +176,6 @@ impl GridController {
                 row_heights.iter().for_each(|&JsRowHeight { row, height }| {
                     transaction.offsets_modified(sheet_id, None, Some(row), Some(height));
                 });
-            }
-
-            if transaction.is_user() {
-                let mut changes = vec![];
-                row_heights.iter().for_each(|&JsRowHeight { row, .. }| {
-                    changes.extend(self.check_chart_size_row_change(sheet_id, row));
-                });
-                if !changes.is_empty() {
-                    transaction.operations.extend(changes);
-                    self.check_all_spills(transaction, sheet_id);
-                }
             }
 
             if !transaction.is_server() {
@@ -218,12 +200,10 @@ mod tests {
         controller::GridController,
         wasm_bindings::js::{clear_js_calls, expect_js_offsets},
     };
-    use serial_test::serial;
 
     // also see tests in sheet_offsets.rs
 
     #[test]
-    #[serial]
     fn test_execute_operation_resize_column() {
         clear_js_calls();
 
@@ -246,7 +226,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_execute_operation_resize_row() {
         clear_js_calls();
 

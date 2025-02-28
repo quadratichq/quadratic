@@ -9,7 +9,7 @@ use crate::{
     a1::{A1Selection, CellRefRange, RefRangeBounds, TableMapEntry, UNBOUNDED},
     controller::GridController,
     grid::sheet::borders::{BorderSelection, BorderStyle, BordersUpdates},
-    ClearOption, SheetPos,
+    ClearOption, Pos,
 };
 
 use super::operation::Operation;
@@ -381,133 +381,65 @@ impl GridController {
         border_selection: BorderSelection,
         style: Option<BorderStyle>,
         clear_neighbors: bool,
-    ) -> (BordersUpdates, HashMap<SheetPos, BordersUpdates>) {
+    ) -> (BordersUpdates, HashMap<Pos, BordersUpdates>) {
         let mut sheet_borders = BordersUpdates::default();
         let mut tables_borders = HashMap::default();
 
-        let context = self.grid().a1_context();
+        let context = self.a1_context();
 
         let add_table_ops =
-            |table_range: RefRangeBounds,
+            |range: RefRangeBounds,
              table: &TableMapEntry,
              sheet_borders: &mut BordersUpdates,
-             tables_borders: &mut HashMap<SheetPos, BordersUpdates>| {
-                let table_sheet_pos = table.bounds.min.to_sheet_pos(table.sheet_id);
-                let table_borders = tables_borders.entry(table_sheet_pos).or_default();
+             tables_borders: &mut HashMap<Pos, BordersUpdates>| {
+                let data_table_pos = table.bounds.min;
+                let table_borders = tables_borders.entry(data_table_pos).or_default();
 
-                // pos relative to table pos (top left pos), 1-based for formatting
-                let table_range = table_range.translate(
-                    -table.bounds.min.x + 1,
-                    -table.bounds.min.y + 1 - table.y_adjustment(true),
+                // clear sheet borders for the range
+                let bounded_range = range.to_bounded(&table.bounds);
+                self.a1_border_style_range(
+                    BorderSelection::Clear,
+                    None,
+                    &bounded_range,
+                    sheet_borders,
+                    clear_neighbors,
+                    false,
                 );
 
-                let mut table_ranges = vec![table_range];
+                let range = range.translate_unchecked(
+                    1 - table.bounds.min.x,
+                    1 - table.bounds.min.y - table.y_adjustment(true),
+                );
+                self.a1_border_style_range(
+                    border_selection,
+                    style,
+                    &range,
+                    table_borders,
+                    clear_neighbors,
+                    true,
+                );
+            };
 
-                if let Some(rect) = table_range.to_rect() {
-                    let Some(sheet) = self.try_sheet(table.sheet_id) else {
-                        return;
-                    };
-
-                    let data_table_pos = table.bounds.min;
-                    let Some(data_table) = sheet.data_table(data_table_pos) else {
-                        return;
-                    };
-
-                    if data_table.display_buffer.is_some() {
-                        table_ranges.clear();
-                        // y is 1-based
-                        for y in rect.y_range() {
-                            // get actual row index and convert to 1-based
-                            let actual_row = data_table.transmute_index(y as u64 - 1) + 1;
-                            for x in rect.x_range() {
-                                table_ranges
-                                    .push(RefRangeBounds::new_relative_xy(x, actual_row as i64));
-                            }
-                        }
-                    }
-                }
-
-                for table_range in table_ranges {
+        for range in selection.ranges.iter() {
+            match range {
+                CellRefRange::Sheet { range } => {
                     self.a1_border_style_range(
                         border_selection,
                         style,
-                        &table_range,
-                        table_borders,
-                        clear_neighbors,
-                        true,
-                    );
-
-                    let sheet_range = table_range.translate(
-                        table.bounds.min.x - 1,
-                        table.bounds.min.y - 1 + table.y_adjustment(true),
-                    );
-
-                    // clear sheet borders for the range
-                    self.a1_border_style_range(
-                        BorderSelection::Clear,
-                        None,
-                        &sheet_range,
-                        sheet_borders,
+                        range,
+                        &mut sheet_borders,
                         clear_neighbors,
                         false,
                     );
                 }
-            };
-
-        let (sheet_ranges, table_ranges) = selection.separate_table_ranges();
-
-        if let Some(mut sheet_selection) =
-            A1Selection::from_sheet_ranges(sheet_ranges.clone(), selection.sheet_id, &context)
-        {
-            for sheet_range in sheet_ranges {
-                let rect = sheet_range.to_rect_unbounded();
-                for table in context
-                    .tables()
-                    .filter(|t| t.sheet_id == selection.sheet_id)
-                {
-                    if let Some(intersection) = table.bounds.intersection(&rect) {
-                        // remove table intersection from the sheet selection
-                        sheet_selection.exclude_cells(
-                            intersection.min,
-                            Some(intersection.max),
-                            &context,
-                        );
-                        // residual single cursor selection, clear if it belongs to the table
-                        if let Some(pos) = sheet_selection.try_to_pos(&context) {
-                            if table.bounds.contains(pos) {
-                                sheet_selection.ranges.clear();
-                            }
+                CellRefRange::Table { range } => {
+                    if let Some(table) = context.try_table(&range.table_name) {
+                        if let Some(range) =
+                            range.convert_to_ref_range_bounds(true, context, false, false)
+                        {
+                            add_table_ops(range, table, &mut sheet_borders, &mut tables_borders);
                         }
-                        let range = RefRangeBounds::new_relative_rect(intersection);
-                        add_table_ops(range, table, &mut sheet_borders, &mut tables_borders);
                     }
-                }
-            }
-
-            for range in sheet_selection.ranges.iter() {
-                match range {
-                    CellRefRange::Sheet { range } => {
-                        self.a1_border_style_range(
-                            border_selection,
-                            style,
-                            range,
-                            &mut sheet_borders,
-                            clear_neighbors,
-                            false,
-                        );
-                    }
-                    CellRefRange::Table { .. } => (),
-                }
-            }
-        }
-
-        // set table formats
-        for table_ref in table_ranges {
-            if let Some(table) = context.try_table(&table_ref.table_name) {
-                if let Some(range) =
-                    table_ref.convert_to_ref_range_bounds(true, &context, false, true)
-                {
-                    add_table_ops(range, table, &mut sheet_borders, &mut tables_borders);
                 }
             }
         }
@@ -538,7 +470,7 @@ impl GridController {
             }
 
             for (table_sheet_pos, table_borders) in tables_borders {
-                let Some(data_table) = sheet.data_table(table_sheet_pos.into()) else {
+                let Some(data_table) = sheet.data_table(table_sheet_pos) else {
                     return false;
                 };
 
@@ -564,7 +496,7 @@ impl GridController {
         for (table_sheet_pos, table_borders) in tables_borders {
             if !table_borders.is_empty() {
                 ops.push(Operation::DataTableBorders {
-                    sheet_pos: table_sheet_pos,
+                    sheet_pos: table_sheet_pos.to_sheet_pos(selection.sheet_id),
                     borders: table_borders,
                 });
             }
@@ -586,7 +518,6 @@ impl GridController {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
 
     use crate::{grid::SheetId, Pos};

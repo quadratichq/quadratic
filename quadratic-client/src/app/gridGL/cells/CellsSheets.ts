@@ -200,7 +200,7 @@ export class CellsSheets extends Container<CellsSheet> {
     return cellsSheet.tables.isTable(cursor.x, cursor.y);
   }
 
-  update(dirtyViewport: boolean) {
+  update = (dirtyViewport: boolean) => {
     this.current?.update(dirtyViewport);
-  }
+  };
 }

@@ -65,7 +65,6 @@ export const useHtmlValidations = (): HtmlValidationsData => {
     events.on('resizeHeadingColumn', updateCursor);
     events.on('resizeHeadingRow', updateCursor);
     events.on('setCursor', updateCursor);
-    events.on('sheetValidations', updateCursor);
     events.on('renderValidationWarnings', updateCursor);
 
     return () => {
@@ -76,7 +75,6 @@ export const useHtmlValidations = (): HtmlValidationsData => {
       events.off('resizeHeadingColumn', updateCursor);
       events.off('resizeHeadingRow', updateCursor);
       events.off('setCursor', updateCursor);
-      events.off('sheetValidations', updateCursor);
       events.off('renderValidationWarnings', updateCursor);
     };
   }, []);

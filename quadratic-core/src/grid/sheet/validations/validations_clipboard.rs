@@ -21,7 +21,8 @@ impl Validations {
                     let mut v = validation.clone();
                     v.selection = intersection;
                     v.selection
-                        .translate_in_place(1 + -clipboard_origin.x, 1 + -clipboard_origin.y);
+                        .translate_in_place(1 + -clipboard_origin.x, 1 + -clipboard_origin.y)
+                        .ok()?;
                     Some(v)
                 } else {
                     None
@@ -38,7 +39,6 @@ impl Validations {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use uuid::Uuid;
 
@@ -56,7 +56,7 @@ mod tests {
 
     #[test]
     fn test_to_clipboard() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let mut validations = Validations::default();
 
         let validation_outside_selection = Validation {
@@ -89,7 +89,7 @@ mod tests {
         assert_eq!(clipboard_validations.validations.len(), 1);
         assert_eq!(
             clipboard_validations.validations[0].selection,
-            selection.translate(-1, -1)
+            selection.translate(-1, -1).unwrap(),
         );
     }
 }

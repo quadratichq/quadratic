@@ -15,19 +15,18 @@ impl GridController {
         code: String,
     ) {
         let mut eval_ctx = Ctx::new(self.grid(), sheet_pos);
-        let parse_ctx = self.grid.a1_context();
+        let parse_ctx = self.a1_context();
         transaction.current_sheet_pos = Some(sheet_pos);
 
-        match parse_formula(&code, &parse_ctx, sheet_pos) {
+        match parse_formula(&code, parse_ctx, sheet_pos) {
             Ok(parsed) => {
                 let output = parsed.eval(&mut eval_ctx).into_non_tuple();
                 let errors = output.inner.errors();
-                transaction.cells_accessed = eval_ctx.cells_accessed;
                 let new_code_run = CodeRun {
                     std_out: None,
                     std_err: (!errors.is_empty())
                         .then(|| errors.into_iter().map(|e| e.to_string()).join("\n")),
-                    cells_accessed: transaction.cells_accessed.clone(),
+                    cells_accessed: eval_ctx.cells_accessed,
                     error: None,
                     return_type: None,
                     line_number: None,
@@ -52,7 +51,6 @@ impl GridController {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod test {
     use std::str::FromStr;
 
@@ -296,23 +294,29 @@ mod test {
         };
 
         let sheet_pos = SheetPos {
-            x: 0,
-            y: 0,
+            x: 1,
+            y: 1,
             sheet_id,
         };
         let mut array = Array::new_empty(ArraySize::new(2, 2).unwrap());
-        let _ = array.set(
-            0,
-            0,
-            CellValue::Number(BigDecimal::from_str("1.1").unwrap()),
-        );
-        let _ = array.set(
-            1,
-            0,
-            CellValue::Number(BigDecimal::from_str("0.2").unwrap()),
-        );
-        let _ = array.set(0, 1, CellValue::Number(BigDecimal::from_str("3").unwrap()));
-        let _ = array.set(1, 1, CellValue::Text("Hello".into()));
+        array
+            .set(
+                0,
+                0,
+                CellValue::Number(BigDecimal::from_str("1.1").unwrap()),
+            )
+            .unwrap();
+        array
+            .set(
+                1,
+                0,
+                CellValue::Number(BigDecimal::from_str("0.2").unwrap()),
+            )
+            .unwrap();
+        array
+            .set(0, 1, CellValue::Number(BigDecimal::from_str("3").unwrap()))
+            .unwrap();
+        array.set(1, 1, CellValue::Text("Hello".into())).unwrap();
 
         let result = gc.js_code_result_to_code_cell_value(
             &mut transaction,
@@ -326,7 +330,7 @@ mod test {
             ..Default::default()
         };
 
-        let mut data_table = DataTable::new(
+        let mut expected_result = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "JavaScript1",
             Value::Array(array),
@@ -334,15 +338,18 @@ mod test {
             false,
             true,
             None,
-        );
-        let column_headers = data_table.default_header_with_name(|i| format!("{}", i - 1), None);
-        data_table = data_table
+        )
+        .with_show_columns(false);
+        let column_headers =
+            expected_result.default_header_with_name(|i| format!("{}", i - 1), None);
+        expected_result = expected_result
             .with_column_headers(column_headers)
             .with_last_modified(result.last_modified);
 
-        crate::grid::data_table::test::pretty_print_data_table(&data_table, None, None);
+        crate::grid::data_table::test::pretty_print_data_table(&result, None, None);
+        crate::grid::data_table::test::pretty_print_data_table(&expected_result, None, None);
 
-        assert_eq!(result, data_table);
+        assert_eq!(result, expected_result);
     }
 
     #[test]
@@ -355,7 +362,7 @@ mod test {
                 y: 1,
                 sheet_id,
             },
-            vec![vec!["1", "2", "3"]],
+            vec![vec!["1".into(), "2".into(), "3".into()]],
             None,
         );
 

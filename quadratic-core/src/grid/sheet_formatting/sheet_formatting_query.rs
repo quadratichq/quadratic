@@ -250,7 +250,6 @@ impl SheetFormatting {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use super::*;
 

@@ -23,7 +23,6 @@ pub type FormatSchema = v1_6::Format;
 pub type ValidationsSchema = v1_6_validation::Validations;
 pub type ResizeSchema = v1_6::Resize;
 pub type OutputSizeSchema = v1_6::OutputSize;
-pub type OutputValueValueSchema = v1_6::OutputValueValue;
 pub type NumericFormatKindSchema = v1_6::NumericFormatKind;
 pub type NumericFormatSchema = v1_6::NumericFormat;
 pub type ConnectionKindSchema = v1_6::ConnectionKind;

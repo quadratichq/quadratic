@@ -1,6 +1,6 @@
 use crate::{
     controller::GridController,
-    formulas::replace_internal_cell_references,
+    formulas::convert_rc_to_a1,
     grid::{CodeCellLanguage, GridBounds, Sheet, SheetId},
     CellValue, Pos, Rect,
 };
@@ -315,7 +315,7 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
 
             let cell_value = match cell_value {
                 Some(CellValue::Code(code_cell)) => match code_cell.language {
-                    CodeCellLanguage::Formula => replace_internal_cell_references(
+                    CodeCellLanguage::Formula => convert_rc_to_a1(
                         &code_cell.code.to_string(),
                         &parse_ctx,
                         pos.to_sheet_pos(sheet.id),
@@ -408,7 +408,6 @@ pub fn print_table_sheet_formats(sheet: &Sheet, rect: Rect) {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod test {
     use super::*;
 

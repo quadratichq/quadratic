@@ -287,6 +287,7 @@ export class PointerTableResize {
             sheetId: sheet.id,
             x: this.tableBounds.column,
             y: this.tableBounds.row,
+            select_table: true,
             columns_to_add: toArray(columnsToAdd, width, (i, base) => base + i),
             columns_to_remove: toArray(columnsToRemove, width, (i, base) => base - i - 1),
             rows_to_add: toArray(rowsToAdd, height, (i, base) => base + i),

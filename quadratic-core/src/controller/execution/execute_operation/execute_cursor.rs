@@ -46,7 +46,6 @@ impl GridController {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod test {
     use super::*;
     use crate::{a1::A1Selection, controller::GridController};

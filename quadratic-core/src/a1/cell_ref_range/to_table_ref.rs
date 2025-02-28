@@ -1,4 +1,8 @@
-use crate::{a1::ColRange, grid::SheetId, SheetPos};
+use crate::{
+    a1::ColRange,
+    grid::{CodeCellLanguage, SheetId},
+    SheetPos,
+};
 
 use super::*;
 
@@ -28,6 +32,12 @@ impl CellRefRange {
             };
 
             if let Some(table) = context.table_from_pos(start) {
+                // We don't change to TableRef if the table is a formula. This
+                // is a hack since we don't show table UI for formulas. if this
+                // changes, we can remove this check.
+                if table.language == CodeCellLanguage::Formula {
+                    return None;
+                }
                 let b = table.bounds;
                 let adjust_for_name = if table.show_ui && table.show_name {
                     1
@@ -99,8 +109,8 @@ impl CellRefRange {
                         range: TableRef {
                             table_name: table.table_name.clone(),
                             col_range,
-                            data: false,
-                            headers: true,
+                            data: true,
+                            headers: false,
                             totals: false,
                         },
                     });
@@ -141,20 +151,19 @@ impl CellRefRange {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use super::*;
 
     #[test]
     fn test_check_for_table_ref_full_table() {
         let context = A1Context::test(
-            &[("Sheet1", SheetId::test())],
+            &[("Sheet1", SheetId::TEST)],
             &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C4"))],
         );
         let cell_ref_range = CellRefRange::Sheet {
             range: RefRangeBounds::test_a1("A2:C4"),
         };
-        let table_ref = cell_ref_range.check_for_table_ref(SheetId::test(), &context);
+        let table_ref = cell_ref_range.check_for_table_ref(SheetId::TEST, &context);
 
         assert_eq!(
             table_ref,
@@ -173,13 +182,13 @@ mod tests {
     #[test]
     fn test_check_for_table_ref_data() {
         let context = A1Context::test(
-            &[("Sheet1", SheetId::test())],
+            &[("Sheet1", SheetId::TEST)],
             &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C3"))],
         );
         let cell_ref_range = CellRefRange::Sheet {
             range: RefRangeBounds::test_a1("A3:C3"),
         };
-        let table_ref = cell_ref_range.check_for_table_ref(SheetId::test(), &context);
+        let table_ref = cell_ref_range.check_for_table_ref(SheetId::TEST, &context);
 
         assert_eq!(
             table_ref,
@@ -198,13 +207,13 @@ mod tests {
     #[test]
     fn test_check_for_table_ref_headers() {
         let context = A1Context::test(
-            &[("Sheet1", SheetId::test())],
+            &[("Sheet1", SheetId::TEST)],
             &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C3"))],
         );
         let cell_ref_range = CellRefRange::Sheet {
             range: RefRangeBounds::test_a1("A2:C2"),
         };
-        let table_ref = cell_ref_range.check_for_table_ref(SheetId::test(), &context);
+        let table_ref = cell_ref_range.check_for_table_ref(SheetId::TEST, &context);
 
         assert_eq!(
             table_ref,
@@ -212,8 +221,8 @@ mod tests {
                 range: TableRef {
                     table_name: "Table1".to_string(),
                     col_range: ColRange::All,
-                    data: false,
-                    headers: true,
+                    data: true,
+                    headers: false,
                     totals: false,
                 },
             })
@@ -222,7 +231,7 @@ mod tests {
         let cell_ref_range = CellRefRange::Sheet {
             range: RefRangeBounds::test_a1("B2"),
         };
-        let table_ref = cell_ref_range.check_for_table_ref(SheetId::test(), &context);
+        let table_ref = cell_ref_range.check_for_table_ref(SheetId::TEST, &context);
 
         assert_eq!(
             table_ref,
@@ -230,8 +239,8 @@ mod tests {
                 range: TableRef {
                     table_name: "Table1".to_string(),
                     col_range: ColRange::Col("col2".to_string()),
-                    data: false,
-                    headers: true,
+                    data: true,
+                    headers: false,
                     totals: false,
                 },
             })
@@ -241,13 +250,13 @@ mod tests {
     #[test]
     fn test_check_for_table_ref_col_range() {
         let context = A1Context::test(
-            &[("Sheet1", SheetId::test())],
+            &[("Sheet1", SheetId::TEST)],
             &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C3"))],
         );
         let cell_ref_range = CellRefRange::Sheet {
             range: RefRangeBounds::test_a1("A3:B3"),
         };
-        let table_ref = cell_ref_range.check_for_table_ref(SheetId::test(), &context);
+        let table_ref = cell_ref_range.check_for_table_ref(SheetId::TEST, &context);
 
         assert_eq!(
             table_ref,
@@ -266,13 +275,13 @@ mod tests {
     #[test]
     fn test_check_for_table_ref_col() {
         let context = A1Context::test(
-            &[("Sheet1", SheetId::test())],
+            &[("Sheet1", SheetId::TEST)],
             &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("D5:F10"))],
         );
         let cell_ref_range = CellRefRange::Sheet {
             range: RefRangeBounds::test_a1("E10:E7"),
         };
-        let table_ref = cell_ref_range.check_for_table_ref(SheetId::test(), &context);
+        let table_ref = cell_ref_range.check_for_table_ref(SheetId::TEST, &context);
 
         assert_eq!(
             table_ref,
@@ -291,7 +300,7 @@ mod tests {
     #[test]
     fn test_check_for_table_ref_hidden_ui() {
         let mut context = A1Context::test(
-            &[("Sheet1", SheetId::test())],
+            &[("Sheet1", SheetId::TEST)],
             &[("Table1", &["col1", "col2"], Rect::test_a1("A1:B3"))],
         );
 
@@ -305,21 +314,21 @@ mod tests {
         let cell_ref_range = CellRefRange::Sheet {
             range: RefRangeBounds::test_a1("A2:B3"),
         };
-        let table_ref = cell_ref_range.check_for_table_ref(SheetId::test(), &context);
+        let table_ref = cell_ref_range.check_for_table_ref(SheetId::TEST, &context);
         assert_eq!(table_ref, None);
 
         // Try to get headers only - should return None since columns are hidden
         let cell_ref_range = CellRefRange::Sheet {
             range: RefRangeBounds::test_a1("A1:B1"),
         };
-        let table_ref = cell_ref_range.check_for_table_ref(SheetId::test(), &context);
+        let table_ref = cell_ref_range.check_for_table_ref(SheetId::TEST, &context);
         assert_eq!(table_ref, None);
     }
 
     #[test]
     fn test_check_for_table_ref_hidden_columns() {
         let mut context = A1Context::test(
-            &[("Sheet1", SheetId::test())],
+            &[("Sheet1", SheetId::TEST)],
             &[("Table1", &["col1", "col2"], Rect::test_a1("A1:B3"))],
         );
 
@@ -333,7 +342,7 @@ mod tests {
         let cell_ref_range = CellRefRange::Sheet {
             range: RefRangeBounds::test_a1("A1:B1"),
         };
-        let table_ref = cell_ref_range.check_for_table_ref(SheetId::test(), &context);
+        let table_ref = cell_ref_range.check_for_table_ref(SheetId::TEST, &context);
         assert_eq!(table_ref, None);
     }
 }

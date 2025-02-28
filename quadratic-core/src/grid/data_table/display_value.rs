@@ -91,7 +91,7 @@ impl DataTable {
         }
 
         // add x adjustment for hidden columns
-        x = self.get_column_index_from_display_index(x);
+        x = self.get_column_index_from_display_index(x, true);
 
         let cell_value = self.value.get(x, y)?;
 
@@ -124,11 +124,8 @@ impl DataTable {
             return Ok(self.name.as_ref());
         }
         if pos.y == (if self.show_name { 1 } else { 0 }) && self.show_ui && self.show_columns {
-            if let Some(columns) = &self.column_headers {
-                let display_columns = columns.iter().filter(|c| c.display).collect::<Vec<_>>();
-                if let Some(column) = display_columns.get(pos.x as usize) {
-                    return Ok(column.name.as_ref());
-                }
+            if let Some(header) = self.display_header_at(pos.x as u32) {
+                return Ok(header.name.as_ref());
             }
         }
 
@@ -175,8 +172,20 @@ impl DataTable {
             .collect::<Vec<CellValue>>()
     }
 
+    /// Get the display index from the row index.
+    pub fn get_display_index_from_row_index(&self, index: u64) -> u64 {
+        match self.display_buffer {
+            Some(ref display_buffer) => display_buffer
+                .iter()
+                .position(|&i| i == index)
+                .map(|i| i as u64)
+                .unwrap_or(index),
+            None => index,
+        }
+    }
+
     /// Transmute an index from the display buffer to the source index.
-    pub fn transmute_index(&self, index: u64) -> u64 {
+    pub fn get_row_index_from_display_index(&self, index: u64) -> u64 {
         match self.display_buffer {
             Some(ref display_buffer) => *display_buffer.get(index as usize).unwrap_or(&index),
             None => index,
@@ -185,7 +194,6 @@ impl DataTable {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 pub mod test {
     use crate::{
         controller::{transaction_types::JsCodeResult, GridController},
@@ -221,7 +229,7 @@ pub mod test {
             ..Default::default()
         })
         .unwrap();
-        gc.set_chart_size(sheet_pos, 100.0, 100.0, None);
+        gc.set_chart_size(sheet_pos, 10, 10, None);
 
         let sheet = gc.sheet(sheet_id);
 

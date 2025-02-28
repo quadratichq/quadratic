@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::a1::{A1Context, A1Selection};
 use crate::grid::CodeCellLanguage;
+use crate::RefError;
 
 use super::SheetId;
 
@@ -40,16 +41,16 @@ impl CodeCellValue {
         &mut self,
         default_sheet_id: &SheetId,
         a1_context: &A1Context,
-        mut func: impl FnMut(&mut A1Selection) -> String,
+        mut func: impl FnMut(A1Selection) -> Result<String, RefError>,
     ) {
         self.code = Q_CELLS_A1_REGEX_COMPILED
             .replace_all(&self.code, |caps: &fancy_regex::Captures<'_>| {
                 let full_match = &caps[0]; // Capture the entire match
                 let a1_str = &caps[2]; // Capture the first argument which is inside quotes
 
-                match A1Selection::parse(a1_str, default_sheet_id, a1_context) {
-                    Ok(mut a1_selection) => {
-                        let a1_str = func(&mut a1_selection);
+                match A1Selection::parse_a1(a1_str, default_sheet_id, a1_context) {
+                    Ok(a1_selection) => {
+                        let a1_str = func(a1_selection).unwrap_or_else(|e: RefError| e.to_string());
 
                         // let a1_str = a1_selection.to_string(Some(*default_sheet_id), a1_context);
 
@@ -76,9 +77,9 @@ impl CodeCellValue {
             return;
         }
 
-        self.replace_q_cells_a1_selection(default_sheet_id, a1_context, |a1_selection| {
-            a1_selection.translate_in_place(delta_x, delta_y);
-            a1_selection.to_string(Some(*default_sheet_id), a1_context)
+        self.replace_q_cells_a1_selection(default_sheet_id, a1_context, |mut a1_selection| {
+            a1_selection.translate_in_place(delta_x, delta_y)?;
+            Ok(a1_selection.to_string(Some(*default_sheet_id), a1_context))
         });
     }
 
@@ -94,9 +95,9 @@ impl CodeCellValue {
         a1_context: &A1Context,
     ) {
         if delta != 0 && self.is_code_cell() {
-            self.replace_q_cells_a1_selection(default_sheet_id, a1_context, |a1_selection| {
+            self.replace_q_cells_a1_selection(default_sheet_id, a1_context, |mut a1_selection| {
                 a1_selection.adjust_column_row_in_place(column, row, delta);
-                a1_selection.to_string(Some(*default_sheet_id), a1_context)
+                Ok(a1_selection.to_string(Some(*default_sheet_id), a1_context))
             });
         }
     }
@@ -118,14 +119,10 @@ impl CodeCellValue {
 
             // create a copy of the a1_context so that we can send it to the to_string() function
             let mut new_a1_context = old_a1_context.clone();
-            new_a1_context.sheet_map.remove(old_name);
+            new_a1_context.sheet_map.remove_name(old_name);
 
             self.replace_q_cells_a1_selection(default_sheet_id, &old_a1_context, |a1_selection| {
-                a1_selection.to_string_force_sheet_name(
-                    Some(*default_sheet_id),
-                    &new_a1_context,
-                    true,
-                )
+                Ok(a1_selection.to_string(Some(*default_sheet_id), &new_a1_context))
             });
         }
     }
@@ -139,9 +136,9 @@ impl CodeCellValue {
         a1_context: &A1Context,
     ) {
         if old_name != new_name && self.is_code_cell() {
-            self.replace_q_cells_a1_selection(default_sheet_id, a1_context, |a1_selection| {
+            self.replace_q_cells_a1_selection(default_sheet_id, a1_context, |mut a1_selection| {
                 a1_selection.replace_table_name(old_name, new_name);
-                a1_selection.to_string(Some(*default_sheet_id), a1_context)
+                Ok(a1_selection.to_string(Some(*default_sheet_id), a1_context))
             });
         }
     }
@@ -149,22 +146,22 @@ impl CodeCellValue {
     /// Replaces column names in the code cell references.
     pub fn replace_column_name_in_cell_references(
         &mut self,
+        table_name: &str,
         old_name: &str,
         new_name: &str,
         default_sheet_id: &SheetId,
         a1_context: &A1Context,
     ) {
         if old_name != new_name && self.is_code_cell() {
-            self.replace_q_cells_a1_selection(default_sheet_id, a1_context, |a1_selection| {
-                a1_selection.replace_column_name(old_name, new_name);
-                a1_selection.to_string(Some(*default_sheet_id), a1_context)
+            self.replace_q_cells_a1_selection(default_sheet_id, a1_context, |mut a1_selection| {
+                a1_selection.replace_column_name(table_name, old_name, new_name);
+                Ok(a1_selection.to_string(Some(*default_sheet_id), a1_context))
             });
         }
     }
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::Rect;
 
@@ -371,20 +368,25 @@ mod tests {
 
     #[test]
     fn test_replace_sheet_name_in_cell_references() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let a1_context = A1Context::test(
             &[("Sheet1", sheet_id)],
             &[("test.csv", &["city"], Rect::test_a1("A1:C3"))],
         );
 
         let mut code = CodeCellValue::new_python("q.cells('Sheet1!A1:B2')".to_string());
-        code.replace_sheet_name_in_cell_references("Sheet1", "Sheet1_new", &sheet_id, &a1_context);
+        code.replace_sheet_name_in_cell_references(
+            "Sheet1",
+            "Sheet1_new",
+            &SheetId::new(),
+            &a1_context,
+        );
         assert_eq!(code.code, r#"q.cells("'Sheet1_new'!A1:B2")"#);
     }
 
     #[test]
     fn test_replace_table_name_in_cell_references() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let a1_context = A1Context::test(
             &[("Sheet1", sheet_id)],
             &[("simple", &["city"], Rect::test_a1("A1:C3"))],
@@ -405,7 +407,7 @@ mod tests {
 
     #[test]
     fn test_replace_column_name_in_cell_references() {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
         let a1_context = A1Context::test(
             &[("Sheet1", sheet_id)],
             &[("test.csv", &["city", "state"], Rect::test_a1("A1:C3"))],
@@ -413,17 +415,35 @@ mod tests {
 
         // ColRange::Col
         let mut code = CodeCellValue::new_python("q.cells('test.csv[city]')".to_string());
-        code.replace_column_name_in_cell_references("city", "city_new", &sheet_id, &a1_context);
+        code.replace_column_name_in_cell_references(
+            "test.csv",
+            "city",
+            "city_new",
+            &sheet_id,
+            &a1_context,
+        );
         assert_eq!(code.code, r#"q.cells("test.csv[city_new]")"#);
 
         // ColRange::ColRange
         let mut code = CodeCellValue::new_python("q.cells('test.csv[[city]:[state]]')".to_string());
-        code.replace_column_name_in_cell_references("state", "state_new", &sheet_id, &a1_context);
+        code.replace_column_name_in_cell_references(
+            "test.csv",
+            "state",
+            "state_new",
+            &sheet_id,
+            &a1_context,
+        );
         assert_eq!(code.code, r#"q.cells("test.csv[[city]:[state_new]]")"#);
 
         // ColRange::ColToEnd
         let mut code = CodeCellValue::new_python("q.cells('test.csv[[city]:]')".to_string());
-        code.replace_column_name_in_cell_references("city", "city_new", &sheet_id, &a1_context);
+        code.replace_column_name_in_cell_references(
+            "test.csv",
+            "city",
+            "city_new",
+            &sheet_id,
+            &a1_context,
+        );
         assert_eq!(code.code, r#"q.cells("test.csv[[city_new]:]")"#);
     }
 }

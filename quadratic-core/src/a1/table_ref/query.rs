@@ -217,14 +217,14 @@ impl TableRef {
         range.try_to_pos()
     }
 
-    /// Returns true if the column name is part of the selection
+    /// Returns the columns that are selected in the table.
     pub fn table_column_selection(
         &self,
         table_name: &str,
         context: &A1Context,
     ) -> Option<Vec<i64>> {
         let mut cols = vec![];
-        if table_name != self.table_name || !self.headers {
+        if table_name != self.table_name {
             return None;
         }
         let table = context.try_table(&self.table_name)?;
@@ -265,17 +265,20 @@ impl TableRef {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
-    use crate::a1::RefRangeBounds;
+    use crate::{a1::RefRangeBounds, grid::CodeCellLanguage};
 
     use super::*;
 
     fn setup_test_context() -> A1Context {
         let mut context = A1Context::default();
-        context
-            .table_map
-            .test_insert("test_table", &["A", "B", "C"], None, Rect::test_a1("A1:C3"));
+        context.table_map.test_insert(
+            "test_table",
+            &["A", "B", "C"],
+            None,
+            Rect::test_a1("A1:C3"),
+            CodeCellLanguage::Import,
+        );
         context
     }
 
@@ -286,6 +289,7 @@ mod tests {
             &["A", "C"],
             Some(&["A", "B", "C"]),
             Rect::test_a1("A1:C3"),
+            CodeCellLanguage::Import,
         );
 
         context
@@ -326,9 +330,13 @@ mod tests {
     fn test_is_multi_cursor() {
         let mut context = A1Context::default();
         // the context is A1:B2 because show_headers is true
-        context
-            .table_map
-            .test_insert("test_table", &["A", "B"], None, Rect::test_a1("A1:B3"));
+        context.table_map.test_insert(
+            "test_table",
+            &["A", "B"],
+            None,
+            Rect::test_a1("A1:B3"),
+            CodeCellLanguage::Import,
+        );
 
         // One column, one row--note, table has headers, but they're not selected
         let table_ref = TableRef {
@@ -340,9 +348,13 @@ mod tests {
         };
         assert!(!table_ref.is_multi_cursor(&context));
 
-        context
-            .table_map
-            .test_insert("test_table", &["A", "B"], None, Rect::test_a1("A1:B3"));
+        context.table_map.test_insert(
+            "test_table",
+            &["A", "B"],
+            None,
+            Rect::test_a1("A1:B3"),
+            CodeCellLanguage::Import,
+        );
 
         // Two columns, one row--note, table has headers, but they're not selected
         let table_ref = TableRef {
@@ -393,9 +405,13 @@ mod tests {
     #[test]
     fn test_convert_to_ref_range_bounds() {
         let mut context = A1Context::default();
-        context
-            .table_map
-            .test_insert("test_table", &["A", "B", "C"], None, Rect::test_a1("A1:C4"));
+        context.table_map.test_insert(
+            "test_table",
+            &["A", "B", "C"],
+            None,
+            Rect::test_a1("A1:C4"),
+            CodeCellLanguage::Import,
+        );
 
         // Single column with all rows
         let table_ref = TableRef {
@@ -480,10 +496,22 @@ mod tests {
         };
         assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A2]);
 
-        context.table_map.tables.first_mut().unwrap().show_ui = false;
+        context
+            .table_map
+            .tables
+            .values_mut()
+            .next()
+            .unwrap()
+            .show_ui = false;
         assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A1]);
 
-        context.table_map.tables.first_mut().unwrap().show_ui = true;
+        context
+            .table_map
+            .tables
+            .values_mut()
+            .next()
+            .unwrap()
+            .show_ui = true;
         table_ref.headers = true;
         assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A1]);
     }
@@ -535,17 +563,6 @@ mod tests {
         };
         let cols = table_ref.table_column_selection("test_table", &context);
         assert_eq!(cols, Some(vec![1, 2]));
-
-        // Test with headers = false (should return empty vec)
-        let table_ref = TableRef {
-            table_name: "test_table".to_string(),
-            col_range: ColRange::All,
-            data: true,
-            headers: false,
-            totals: false,
-        };
-        let cols = table_ref.table_column_selection("test_table", &context);
-        assert_eq!(cols, None);
 
         // Test with different table name (should return empty vec)
         let table_ref = TableRef {

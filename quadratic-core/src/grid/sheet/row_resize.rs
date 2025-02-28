@@ -40,10 +40,8 @@ mod tests {
         controller::GridController, grid::resize::Resize,
         sheet_offsets::resize_transient::TransientResize, Pos, Rect,
     };
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_get_row_resize_default() {
         let sheet = Sheet::test();
         assert_eq!(sheet.get_row_resize(0), Resize::Auto);
@@ -52,7 +50,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_get_row_resize_custom() {
         let mut sheet = Sheet::test();
         sheet.set_row_resize(5, Resize::Manual);
@@ -63,7 +60,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_get_row_resize_multiple() {
         let mut sheet = Sheet::test();
         sheet.set_row_resize(3, Resize::Manual);
@@ -75,7 +71,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_set_row_resize() {
         let mut sheet = Sheet::test();
 
@@ -105,7 +100,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_set_row_resize_interaction_with_other_methods() {
         let mut sheet = Sheet::test();
 
@@ -129,7 +123,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_set_and_reset_row_resize() {
         let mut sheet = Sheet::test();
 
@@ -143,7 +136,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_iter_row_resize_empty() {
         let sheet = Sheet::test();
         let resizes: Vec<(i64, Resize)> = sheet.iter_row_resize().collect();
@@ -151,7 +143,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_iter_row_resize_multiple() {
         let mut sheet = Sheet::test();
         sheet.set_row_resize(3, Resize::Manual);
@@ -163,7 +154,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_update_row_resize() {
         let mut sheet = Sheet::test();
         let row = 1;
@@ -184,7 +174,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_get_auto_resize_rows() {
         let mut sheet = Sheet::test();
         let view_rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 4 });
@@ -217,7 +206,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_convert_to_manual_resize_on_commit_offsets_resize() {
         let mut gc = GridController::test();
         let sheet_id = gc.grid().sheets()[0].id;
@@ -252,7 +240,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_convert_to_auto_resize_on_commit_single_resize() {
         let mut gc = GridController::test();
         let sheet_id = gc.grid().sheets()[0].id;

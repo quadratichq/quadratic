@@ -22,6 +22,9 @@ export interface TablePointerDownResult {
   column?: number;
 }
 
+// todo: tables needs to have a hash of table headers, so we can batch the
+// drawing of the table headers
+
 export class Tables extends Container<Table> {
   private cellsSheet: CellsSheet;
 
@@ -54,7 +57,6 @@ export class Tables extends Container<Table> {
     events.on('sheetOffsets', this.sheetOffsets);
 
     events.on('contextMenu', this.contextMenu);
-    events.on('contextMenuClose', this.contextMenu);
 
     events.on('htmlOutput', this.htmlOutput);
     events.on('htmlUpdate', this.htmlUpdate);
@@ -69,7 +71,6 @@ export class Tables extends Container<Table> {
     events.off('sheetOffsets', this.sheetOffsets);
 
     events.off('contextMenu', this.contextMenu);
-    events.off('contextMenuClose', this.contextMenu);
 
     events.off('htmlOutput', this.htmlOutput);
     events.off('htmlUpdate', this.htmlUpdate);
@@ -116,21 +117,20 @@ export class Tables extends Container<Table> {
     return sheet;
   }
 
-  private updateCodeCell = (options: {
+  private updateCodeCell = (args: {
     sheetId: string;
     x: number;
     y: number;
     codeCell?: JsCodeCell;
     renderCodeCell?: JsRenderCodeCell;
   }) => {
-    const { sheetId, x, y, renderCodeCell } = options;
+    const { sheetId, x, y, renderCodeCell } = args;
     if (sheetId === this.cellsSheet.sheetId) {
       const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
       if (table) {
         if (!renderCodeCell) {
           pixiApp.cellsSheet().cellsFills.updateAlternatingColors(x, y);
           this.removeChild(table);
-          sheets.getById(this.cellsSheet.sheetId)?.gridOverflowLines.updateImageHtml(x, y);
           table.destroy();
         } else {
           table.updateCodeCell(renderCodeCell);
@@ -158,9 +158,7 @@ export class Tables extends Container<Table> {
     if (dirtyViewport) {
       const bounds = pixiApp.viewport.getVisibleBounds();
       const gridHeading = pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
-      this.children.forEach((heading) => {
-        heading.update(bounds, gridHeading);
-      });
+      this.children.forEach((table) => table.update(bounds, gridHeading));
     }
   }
 
@@ -178,6 +176,7 @@ export class Tables extends Container<Table> {
       } else {
         table.hideActive();
       }
+      table.header.updateSelection();
     });
   };
 
@@ -293,9 +292,7 @@ export class Tables extends Container<Table> {
 
   getTableColumnHeaderPosition(x: number, y: number, index: number): Rectangle | undefined {
     const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
-    if (table) {
-      return table.getColumnHeaderBounds(index);
-    }
+    return table?.getColumnHeaderBounds(index);
   }
 
   getTableFromTableCell(x: number, y: number): Table | undefined {
@@ -343,7 +340,6 @@ export class Tables extends Container<Table> {
     const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
     if (table) {
       table.resize(width, height);
-      sheets.getById(this.cellsSheet.sheetId)?.gridOverflowLines.updateImageHtml(x, y, width, height);
       pixiApp.gridLines.dirty = true;
     } else {
       throw new Error(`Table ${x},${y} not found in Tables.ts`);
@@ -359,6 +355,7 @@ export class Tables extends Container<Table> {
     );
   }
 
+  /// Returns true if the cell is inside a table's UI (column, table name, or html/image).
   getTableFromCell(cell: JsCoordinate): Table | undefined {
     return this.children.find((table) => {
       const code = table.codeCell;
@@ -377,6 +374,52 @@ export class Tables extends Container<Table> {
       if (!code.show_ui) return false;
       return cell.x >= code.x && cell.x <= code.x + code.w - 1 && cell.y === code.y;
     });
+  }
+
+  // Returns Table if the cell is inside a table.
+  getInTable(cell: JsCoordinate): Table | undefined {
+    return this.children.find((table) => {
+      const code = table.codeCell;
+      if (code.state === 'SpillError' || code.state === 'RunError') {
+        return false;
+      }
+      if (
+        code.is_html_image &&
+        cell.x >= code.x &&
+        cell.x <= code.x + code.w - 1 &&
+        cell.y >= code.y &&
+        cell.y <= code.y + code.h - 1
+      ) {
+        return true;
+      }
+      return cell.x >= code.x && cell.x <= code.x + code.w - 1 && cell.y >= code.y && cell.y <= code.y + code.h - 1;
+    });
+  }
+
+  getColumnHeaderCell(
+    cell: JsCoordinate
+  ): { table: Table; x: number; y: number; width: number; height: number } | undefined {
+    for (const table of this.children) {
+      if (table.codeCell.show_ui && table.codeCell.show_columns && table.inOverHeadings) {
+        if (
+          cell.x >= table.codeCell.x &&
+          cell.x < table.codeCell.x + table.codeCell.w &&
+          table.codeCell.y + (table.codeCell.show_name ? 1 : 0) === cell.y
+        ) {
+          const index = table.codeCell.columns.filter((c) => c.display)[cell.x - table.codeCell.x]?.valueIndex ?? -1;
+          if (index !== -1) {
+            const bounds = table.header.getColumnHeaderBounds(index);
+            return {
+              table,
+              x: bounds.x,
+              y: bounds.y,
+              width: bounds.width,
+              height: bounds.height,
+            };
+          }
+        }
+      }
+    }
   }
 
   /// Returns true if the cell is a column header cell in a table

@@ -71,6 +71,7 @@ impl GridController {
                     }
                     grid.sheet_ids().iter().for_each(|sheet_id| {
                         grid.send_all_fills(*sheet_id);
+
                         if let Some(sheet) = grid.try_sheet(*sheet_id) {
                             let code = sheet.get_all_render_code_cells();
                             if !code.is_empty() {
@@ -92,7 +93,7 @@ impl GridController {
                             sheet.send_all_validation_warnings();
 
                             // sends all borders to the client
-                            sheet.send_sheet_borders(*sheet_id);
+                            sheet.send_sheet_borders();
                         }
                     });
                 }

@@ -26,7 +26,6 @@ impl Borders {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::parallel;
 
     use super::*;
     use crate::{
@@ -37,7 +36,6 @@ mod tests {
     };
 
     #[test]
-    #[parallel]
     fn to_clipboard() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -147,7 +145,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn simple_clipboard() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

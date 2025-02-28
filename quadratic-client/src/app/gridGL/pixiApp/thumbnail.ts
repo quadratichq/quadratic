@@ -46,7 +46,7 @@ class Thumbnail {
           debugTimeReset();
           this.generate().then((blob) => {
             if (blob) {
-              debugTimeCheck('thumbnail');
+              debugTimeCheck('thumbnail', 20);
               apiClient.files.thumbnail.update(uuid, blob).then(() => {
                 if (debugShowFileIO) {
                   console.log(`[Thumbnail] uploaded file (${Math.round(blob!.size / 1000)}kb).`);

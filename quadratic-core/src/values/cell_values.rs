@@ -184,6 +184,16 @@ impl CellValues {
         self.get_rect(Rect::new(0, 0, width, height))
     }
 
+    pub fn into_owned_vec(self) -> Vec<Vec<CellValue>> {
+        let mut vec = vec![vec![CellValue::Blank; self.w as usize]; self.h as usize];
+        for (x, col) in self.columns.into_iter().enumerate() {
+            for (y, value) in col.into_iter() {
+                vec[y as usize][x] = value;
+            }
+        }
+        vec
+    }
+
     #[cfg(test)]
     /// Creates a CellValues from a CellValue, including CellValue::Blank (which is ignored in into)
     pub fn from_cell_value(value: CellValue) -> Self {
@@ -221,9 +231,7 @@ impl From<Vec<Vec<CellValue>>> for CellValues {
         let mut columns = vec![BTreeMap::new(); w as usize];
         for (y, col) in values.into_iter().enumerate() {
             for (x, value) in col.into_iter().enumerate() {
-                if value != CellValue::Blank {
-                    columns[x].insert(y as u64, value);
-                }
+                columns[x].insert(y as u64, value);
             }
         }
         Self { columns, w, h }
@@ -254,9 +262,7 @@ impl From<Vec<Vec<&str>>> for CellValues {
 impl From<CellValue> for CellValues {
     fn from(value: CellValue) -> Self {
         let mut c = Self::new(1, 1);
-        if value != CellValue::Blank {
-            c.set(0, 0, value);
-        }
+        c.set(0, 0, value);
         c
     }
 }
@@ -279,12 +285,10 @@ impl From<CellValues> for Vec<Vec<CellValue>> {
 #[cfg(test)]
 mod test {
     use crate::wasm_bindings::js::clear_js_calls;
-    use serial_test::{parallel, serial};
 
     use super::*;
 
     #[test]
-    #[parallel]
     fn new() {
         let cell_values = CellValues::new(2, 3);
         assert_eq!(cell_values.w, 2);
@@ -295,7 +299,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn new_blank() {
         let cell_values = CellValues::new_blank(2, 3);
         assert_eq!(cell_values.w, 2);
@@ -312,7 +315,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn get_set_remove() {
         let mut cell_values = CellValues::new(2, 3);
         cell_values.set(0, 0, CellValue::from("a"));
@@ -325,7 +327,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn get_except_blank() {
         let mut cell_values = CellValues::new(2, 3);
         cell_values.set(0, 0, CellValue::from("a"));
@@ -338,7 +339,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn from_str() {
         let cell_values = CellValues::from(vec![vec!["a", "b"], vec!["c", "d"]]);
         assert_eq!(cell_values.w, 2);
@@ -348,14 +348,12 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn size() {
         let cell_values = CellValues::new(2, 3);
         assert_eq!(cell_values.size(), 6);
     }
 
     #[test]
-    #[parallel]
     fn from_cell_value() {
         let cell_values =
             CellValues::from(vec![vec![CellValue::from("a")], vec![CellValue::from("b")]]);
@@ -366,7 +364,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn from_cell_value_single() {
         let cell_values = CellValues::from(CellValue::from("a"));
         assert_eq!(cell_values.w, 1);
@@ -375,7 +372,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn from_flat_array() {
         let cell_values = CellValues::from_flat_array(2, 3, vec![CellValue::from("a"); 6]);
         assert_eq!(cell_values.w, 2);
@@ -385,7 +381,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn into_iter() {
         let cell_values = CellValues::from(vec![vec!["a", "b"], vec!["c", "d"]]);
         let mut iter = cell_values.into_iter();
@@ -397,7 +392,6 @@ mod test {
     }
 
     #[test]
-    #[serial]
     fn cell_values_serialize_large() {
         let w = 100;
         let h = 10000;
@@ -413,7 +407,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn cell_values_w_grows() {
         let mut cell_values = CellValues::new(1, 1);
         cell_values.set(1, 0, CellValue::from("a"));

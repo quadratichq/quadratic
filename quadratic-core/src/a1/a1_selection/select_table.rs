@@ -9,7 +9,7 @@ impl A1Selection {
         table_name: &str,
         col: Option<String>,
         context: &A1Context,
-        screen_row_top: i64,
+        screen_col_left: i64,
         shift_key: bool,
         ctrl_key: bool,
     ) {
@@ -148,7 +148,12 @@ impl A1Selection {
                 return;
             }
         } else {
-            (ColRange::All, table.bounds.min.x)
+            (
+                ColRange::All,
+                screen_col_left
+                    .max(table.bounds.min.x)
+                    .min(table.bounds.max.x),
+            )
         };
 
         let mut headers = false;
@@ -189,30 +194,27 @@ impl A1Selection {
         let table_ref = CellRefRange::Table { range: table_ref };
 
         // toggle selection with ctrl/meta key
-        if ctrl_key && self.ranges.last().is_some_and(|last| last == &table_ref) {
-            self.ranges.pop();
-            if self.ranges.is_empty() {
-                self.ranges
-                    .push(CellRefRange::new_relative_pos(self.cursor));
+        if ctrl_key {
+            if let Some(last) = self.ranges.last() {
+                if last == &table_ref {
+                    self.ranges.pop();
+                    if self.ranges.is_empty() {
+                        self.ranges
+                            .push(CellRefRange::new_relative_pos(self.cursor));
+                    }
+                    self.update_cursor(context);
+                    return;
+                }
             }
-            self.update_cursor(context);
-            return;
         }
+
         self.ranges.push(table_ref);
-        self.cursor = Pos {
-            x,
-            y: if y < screen_row_top {
-                screen_row_top
-            } else {
-                y
-            },
-        };
+        self.cursor = Pos { x, y };
         self.sheet_id = table.sheet_id;
     }
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::{a1::RefRangeBounds, Rect};
 
@@ -261,7 +263,7 @@ mod tests {
         );
         assert_eq!(selection.cursor, pos!(A1));
         assert_eq!(
-            selection.to_string(Some(SheetId::test()), &context),
+            selection.to_string(Some(SheetId::TEST), &context),
             "Table1[Col1]"
         );
     }
@@ -287,7 +289,7 @@ mod tests {
         );
         assert_eq!(selection.cursor, pos!(A1));
         assert_eq!(
-            selection.to_string(Some(SheetId::test()), &context),
+            selection.to_string(Some(SheetId::TEST), &context),
             "A1,Table1"
         );
     }
@@ -310,11 +312,11 @@ mod tests {
         );
         assert_eq!(selection.ranges.len(), 1);
         assert_eq!(
-            selection.to_string(Some(SheetId::test()), &context),
+            selection.to_string(Some(SheetId::TEST), &context),
             "Table1[Col1]"
         );
 
-        assert_eq!(selection.cursor, pos!(A1));
+        assert_eq!(selection.cursor, pos!(A2));
         let mut selection = A1Selection::test_a1("A1");
         selection.select_table("Table1", None, &context, 1, true, false);
         assert_eq!(selection.ranges.len(), 2);
@@ -332,26 +334,23 @@ mod tests {
         );
         assert_eq!(selection.cursor, pos!(A1));
         assert_eq!(
-            selection.to_string(Some(SheetId::test()), &context),
+            selection.to_string(Some(SheetId::TEST), &context),
             "A1,Table1"
         );
     }
 
     #[test]
     fn test_select_table_screen_row_bounds() {
-        let context = A1Context::test(&[], &[("Table1", &["Col1"], Rect::test_a1("A5:B100"))]);
+        let context = A1Context::test(&[], &[("Table1", &["Col1"], Rect::test_a1("A5:D100"))]);
         let mut selection = A1Selection::test_a1("A1");
-        selection.select_table("Table1", None, &context, 10, false, false);
-        assert_eq!(selection.cursor, pos!(A10));
+        selection.select_table("Table1", None, &context, 3, false, false);
+        assert_eq!(selection.cursor, pos!(C5));
 
         // clear the table selection so we don't select twice and toggle headers
         selection.move_to(1, 1, false, &context);
 
-        selection.select_table("Table1", None, &context, 3, false, false);
-        assert_eq!(selection.cursor, pos!(A5));
-        assert_eq!(
-            selection.to_string(Some(SheetId::test()), &context),
-            "Table1"
-        );
+        selection.select_table("Table1", None, &context, 2, false, false);
+        assert_eq!(selection.cursor, pos!(B5));
+        assert_eq!(selection.to_string(Some(SheetId::TEST), &context), "Table1");
     }
 }

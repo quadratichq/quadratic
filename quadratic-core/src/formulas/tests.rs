@@ -2,10 +2,9 @@ use std::str::FromStr;
 
 use bigdecimal::ToPrimitive;
 use itertools::Itertools;
-use serial_test::parallel;
 
 pub(crate) use super::*;
-use crate::a1::{A1Context, CellRefCoord, CellRefRange, SheetCellRefRange};
+use crate::a1::{CellRefCoord, CellRefRange, SheetCellRefRange};
 pub(crate) use crate::grid::Grid;
 use crate::grid::{Sheet, SheetId};
 pub(crate) use crate::values::*;
@@ -27,7 +26,7 @@ pub(crate) fn eval_at(grid: &Grid, pos: SheetPos, s: &str) -> Value {
     println!("Evaluating formula {s:?}");
     let mut ctx = Ctx::new(grid, pos);
     match parse_formula(s, &grid.a1_context(), grid.origin_in_first_sheet()) {
-        Ok(formula) => formula.eval(&mut ctx).inner,
+        Ok(formula) => dbg!(formula).eval(&mut ctx).inner,
         Err(e) => e.into(),
     }
 }
@@ -97,35 +96,30 @@ pub(crate) fn datetime(s: &str) -> CellValue {
 }
 
 #[test]
-#[parallel]
-// TODO(ddimaria): @HactarCE fix broken test
 fn test_formula_cell_ref() {
-    let form = simple_parse_formula("SUM(A1:A5)").unwrap();
-
     let mut g = Grid::new();
     let sheet = &mut g.sheets_mut()[0];
-    let _ = sheet.set_cell_value(pos![A1], 1);
-    let _ = sheet.set_cell_value(pos![A2], 10);
-    let _ = sheet.set_cell_value(pos![A3], 100);
-    let _ = sheet.set_cell_value(pos![A4], 1000);
-    let _ = sheet.set_cell_value(pos![A5], 10000);
-    let sheet_id = sheet.id;
+    sheet.set_cell_value(pos![B1], 1);
+    sheet.set_cell_value(pos![B2], 10);
+    sheet.set_cell_value(pos![B3], 100);
+    sheet.set_cell_value(pos![B4], 1000);
+    sheet.set_cell_value(pos![B5], 10000);
 
-    // Evaluate at ORIGIN
-    let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(sheet_id));
-    assert_eq!("11111".to_string(), form.eval(&mut ctx).to_string(),);
+    assert_eq!("11111".to_string(), eval_to_string(&g, "SUM(B1:B5)"));
+    assert_eq!("11111".to_string(), eval_to_string(&g, "SUM(B:B)"));
+    assert_eq!(
+        "{1; 10; 100; 1000; 10000}".to_string(),
+        eval_to_string(&g, "B:B"),
+    );
 }
 
 #[test]
-#[parallel]
 fn test_formula_circular_array_ref() {
     let g = Grid::new();
     let sheet_id = g.sheets()[0].id;
-    let ctx = g.a1_context();
-    let form = parse_formula("$B$1:$C$4", &ctx, pos![A1].to_sheet_pos(sheet_id)).unwrap();
-
-    let g = Grid::new();
-    let mut ctx = Ctx::new(&g, pos![B2].to_sheet_pos(sheet_id));
+    let pos = pos![B3].to_sheet_pos(sheet_id);
+    let form = parse_formula("$B$1:$C$4", &g.a1_context(), pos).unwrap();
+    let mut ctx = Ctx::new(&g, pos);
     assert_eq!(
         RunErrorMsg::CircularReference,
         form.eval(&mut ctx).inner.cell_values_slice().unwrap()[4]
@@ -136,7 +130,6 @@ fn test_formula_circular_array_ref() {
 }
 
 #[test]
-#[parallel]
 fn test_formula_range_operator() {
     let expected = "{1; 2; 3; 4; 5}";
     let all_a = ["1", "1.0", ".9"];
@@ -154,7 +147,6 @@ fn test_formula_range_operator() {
 }
 
 #[test]
-#[parallel]
 fn test_formula_blank_array_parsing() {
     let g = Grid::new();
     const B: CellValue = CellValue::Blank;
@@ -169,7 +161,6 @@ fn test_formula_blank_array_parsing() {
 }
 
 #[test]
-#[parallel]
 fn test_formula_array_op() {
     let mut g = Grid::new();
     let sheet = &mut g.sheets_mut()[0];
@@ -222,7 +213,6 @@ fn test_formula_array_op() {
 }
 
 #[test]
-#[parallel]
 fn test_array_parsing() {
     let g = Grid::new();
 
@@ -262,7 +252,6 @@ fn test_array_parsing() {
 }
 
 #[test]
-#[parallel]
 fn test_bool_parsing() {
     let g = Grid::new();
 
@@ -273,7 +262,6 @@ fn test_bool_parsing() {
 }
 
 #[test]
-#[parallel]
 fn test_leading_equals() {
     let g = Grid::new();
     assert_eq!("7", eval_to_string(&g, "=3+4"));
@@ -282,7 +270,6 @@ fn test_leading_equals() {
 
 /// Regression test for quadratic#253
 #[test]
-#[parallel]
 fn test_hyphen_after_cell_ref() {
     let mut g = Grid::new();
     let _ = g.sheets_mut()[0].set_cell_value(pos![Z1], 30);
@@ -291,7 +278,6 @@ fn test_hyphen_after_cell_ref() {
 }
 
 #[test]
-#[parallel]
 fn test_formula_omit_required_argument() {
     let g = Grid::new();
     assert!(eval_to_string(&g, "ATAN2(,1)").starts_with("1.57"));
@@ -314,14 +300,12 @@ fn test_formula_omit_required_argument() {
 }
 
 #[test]
-#[parallel]
 fn test_formula_blank_to_string() {
     let g = Grid::new();
     assert_eq!("", eval_to_string(&g, "IF(1=1,,)"));
 }
 
 #[test]
-#[parallel]
 fn test_find_cell_references() {
     let mut g = Grid::new();
     let sheet1 = g.sheets()[0].id;
@@ -336,9 +320,11 @@ fn test_find_cell_references() {
 
     let a = CellRefCoord::new_abs;
     let r = CellRefCoord::new_rel;
-    let new_ref = |sheet_id, x1, y1, x2, y2| SheetCellRefRange {
-        sheet_id,
-        cells: CellRefRange::new_sheet_ref(x1, y1, x2, y2),
+    let new_ref = |sheet_id, x1, y1, x2, y2| {
+        Ok(SheetCellRefRange {
+            sheet_id,
+            cells: CellRefRange::new_sheet_ref(x1, y1, x2, y2),
+        })
     };
 
     // Another test checks that `parse_a1()` is correct.
@@ -352,7 +338,7 @@ fn test_find_cell_references() {
         // Unquoted sheet reference
         ("apple!A$1", new_ref(apple, r(1), a(1), r(1), a(1))),
         // Unquoted sheet reference range with spaces
-        ("orange ! A2: $Q9", new_ref(orange, r(1), r(2), a(16), r(9))),
+        ("orange ! A2: $Q9", new_ref(orange, r(1), r(2), a(17), r(9))),
         // Quoted sheet reference range
         (
             "'banana'!$A1:QQ$222",
@@ -362,20 +348,19 @@ fn test_find_cell_references() {
         ("\"plum\" ! $A1", new_ref(plum, a(1), r(1), a(1), r(1))),
     ];
     let formula_string = test_cases.iter().map(|(string, _)| string).join(" + ");
-    let ctx = A1Context::test(&[], &[]);
-    let cell_references_found = find_cell_references(&formula_string, &ctx, SheetPos::test())
+    let pos = Pos::ORIGIN.to_sheet_pos(sheet1);
+    let cell_references_found = find_cell_references(&formula_string, &g.a1_context(), pos)
         .into_iter()
         .map(|Spanned { span, inner }| (span.of_str(&formula_string), inner))
         .collect_vec();
     // Assert each individual one for better error messages on test failure.
     for i in 0..test_cases.len() {
-        assert_eq!(&cell_references_found[i], &test_cases[i]);
+        assert_eq!(&test_cases[i], &cell_references_found[i]);
     }
-    assert_eq!(cell_references_found.len(), test_cases.len());
+    assert_eq!(test_cases.len(), cell_references_found.len());
 }
 
 #[test]
-#[parallel]
 fn test_sheet_references() {
     let mut g = Grid::new();
 
@@ -413,7 +398,6 @@ fn test_sheet_references() {
 }
 
 #[test]
-#[parallel]
 fn test_table_references() {
     let (gc, _sheet_id, _pos, _file_name) =
         crate::controller::user_actions::import::tests::simple_csv();
@@ -442,7 +426,7 @@ fn test_table_references() {
             "{Southborough, MA, United States; Northbridge, MA, United States; Westborough, MA, United States; Marlborough, MA, United States; Springfield, MA, United States; Springfield, MO, United States; Springfield, NJ, United States; Springfield, OH, United States; Springfield, OR, United States; Concord, NH, United States}",
         ),
         (
-            "simple.csv[[#headers], [[city]:[country]]]",
+            "simple.csv[[#headers], [city]:[country]]",
             "{city, region, country}",
         ),
         (
@@ -488,9 +472,27 @@ fn test_cell_range_op_errors() {
     }
 }
 
+#[test]
+fn test_formula_error_literals() {
+    let g = Grid::new();
+
+    assert_eq!(RunErrorMsg::DivideByZero, eval_to_err(&g, "#DIV/0!").msg);
+    assert_eq!(RunErrorMsg::NotAvailable, eval_to_err(&g, "#N/A").msg);
+    assert_eq!(RunErrorMsg::Name, eval_to_err(&g, "#NAME?").msg);
+    assert_eq!(RunErrorMsg::Null, eval_to_err(&g, "#NULL!").msg);
+    assert_eq!(RunErrorMsg::Num, eval_to_err(&g, "#NUM!").msg);
+    assert_eq!(RunErrorMsg::BadCellReference, eval_to_err(&g, "#REF!").msg);
+    assert_eq!(RunErrorMsg::Value, eval_to_err(&g, "#VALUE!").msg);
+
+    assert_eq!(
+        RunErrorMsg::Value,
+        eval_to_err(&g, "IF(FALSE, 'meow', #VALUE!)").msg,
+    );
+    assert_eq!("meow", eval_to_string(&g, "IF(TRUE, 'meow', #VALUE!)"));
+}
+
 /// Regression test for quadratic#410
 #[test]
-#[parallel]
 fn test_currency_string() {
     let g = Grid::new();
     assert_eq!("30", eval_to_string(&g, "\"$10\" + 20"));

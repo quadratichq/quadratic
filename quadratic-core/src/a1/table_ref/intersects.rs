@@ -21,19 +21,22 @@ impl TableRef {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
-    use crate::grid::SheetId;
+    use crate::grid::{CodeCellLanguage, SheetId};
 
     use super::*;
 
     fn setup_test_context() -> (A1Context, SheetId) {
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::TEST;
 
         let mut context = A1Context::default();
-        context
-            .table_map
-            .test_insert("test_table", &["A", "B", "C"], None, Rect::test_a1("A1:C3"));
+        context.table_map.test_insert(
+            "test_table",
+            &["A", "B", "C"],
+            None,
+            Rect::test_a1("A1:C3"),
+            CodeCellLanguage::Import,
+        );
 
         (context, sheet_id)
     }

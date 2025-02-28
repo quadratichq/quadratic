@@ -7,10 +7,10 @@ Let's get everything setup to develop on Quadratic!
 First, install base dependencies:
 
 1. [NVM](https://github.com/nvm-sh/nvm)
-1. [rustup](https://www.rust-lang.org/tools/install)
-1. [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
-1. [Docker Desktop](https://docs.docker.com/desktop/)
-1. [Python3] (should be preinstalled on mac)
+2. [rustup](https://www.rust-lang.org/tools/install)
+3. [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
+4. [Docker Desktop](https://docs.docker.com/desktop/)
+5. [Python3] (should be preinstalled on mac)
 
 Start the Docker Desktop by opening Docker.
 
@@ -50,9 +50,9 @@ Auth0 creds need to be updated in: API, Client, Multiplayer, and Connections.
 ## Start Docker
 
 Keep this running in a tab
-`docker compose --profile base up`  
+`npm run docker:base`  
 or
-`docker compose --profile base up -d` 
+`npm run docker:base -- -d`
 to run as a daemon
 
 ## Start Quadratic Dev
@@ -61,7 +61,7 @@ In a new terminal tab
 `npm start`
 
 Now that dependencies are installed, all you need to do is run `npm start` which runs `node dev` to
-bring up the all services.  Invoke `node run --help` for information on how
+bring up the all services. Invoke `node run --help` for information on how
 to use this script, as you can use it to watch individual (or groups of)
 services during development. See the [Using node dev](Using-node-dev) section
 for more more information.
@@ -73,7 +73,7 @@ for more more information.
 #### Docker Compose
 
 Docker Compose is a utility that's built into Docker Desktop and is a compact
-infrastructure-as-code framework.  Services (e.g. running Docker containers) are
+infrastructure-as-code framework. Services (e.g. running Docker containers) are
 defined, along with configuration information, in the `docker compose.yml` file.
 Services can talk to each other and can communicate with services in the user's host
 network.
@@ -85,7 +85,7 @@ npm run docker:up
 ```
 
 Along with the dependent services, scripts are executed that create S3 buckets and
-migrate the database.  Docker is run in the background in this script.
+migrate the database. Docker is run in the background in this script.
 
 #### Building Images Manually
 
@@ -101,7 +101,7 @@ docker compose build quadratic-multiplayer
 
 You can also develop Quadratic without using docker
 
-* Set up .env in quadratic-client, quadratic-api, quadratic-multiplayer, and quadratic-files.
+- Set up .env in quadratic-client, quadratic-api, quadratic-multiplayer, and quadratic-files.
 
 ```shell
 cp .env.example .env.local
@@ -120,8 +120,8 @@ cp quadratic-files/.env.example quadratic-files/.env
 
 ##### Create Database
 
-* Create a database for use with postgres
-* Add database to quadratic-api/.env
+- Create a database for use with postgres
+- Add database to quadratic-api/.env
 
 #### Installing Redis
 
@@ -221,7 +221,6 @@ In CI, coverage is automatically collected and sent to CodeCov.
 
 For local coverage information, you'll need to install some dependencies first:
 
-
 ```shell
 cargo install grcov
 rustup component add llvm-tools-preview
@@ -253,13 +252,13 @@ Alternatively, to run all rust test, simply enter `cargo clippy --all-targets --
 
 ## Load Testing
 
-Local load testing is performed by [JMeter](https://jmeter.apache.org/).  First, install JMeter by either [downloading it it](https://jmeter.apache.org/download_jmeter.cgi) or installing via your favorite package manager (e.g. brew):
+Local load testing is performed by [JMeter](https://jmeter.apache.org/). First, install JMeter by either [downloading it it](https://jmeter.apache.org/download_jmeter.cgi) or installing via your favorite package manager (e.g. brew):
 
 ```shell
 brew install jmeter
 ```
 
-Load tests are located in the `/tests/load` directory.  Run run jmeter:
+Load tests are located in the `/tests/load` directory. Run run jmeter:
 
 ```shell
 bash jmeter
@@ -268,7 +267,7 @@ bash jmeter
 bash /opt/homebrew/Cellar/jmeter/5.6.3/bin/jmeter
 ```
 
-Select `file -> open` and navigate to the `/tests/load` directory and pick a load test file to edit.  See the [user manual](https://jmeter.apache.org/usermanual/index.html) for more information.
+Select `file -> open` and navigate to the `/tests/load` directory and pick a load test file to edit. See the [user manual](https://jmeter.apache.org/usermanual/index.html) for more information.
 
 To run a jmter test, bring up all relevant services and invoke:
 
@@ -286,13 +285,13 @@ Output will be located in the terminal.
 The current version numbers are stored in `updateAlertVersion.json`. This JSON is ready by both the client and the multiplayer server. When the client has a lower version number then the multiplayer (the version is sent by the multiplayer server with the EnterFileRoom message), then the user is prompted to refresh with slightly different experience based on required vs. recommended changes.
 
 ## Install Pyodide
-* Delete the quadratic-client/public/pyodide directory
-* npm i pyodide@latest
-* mkdir quadratic-client/public/pyodide
-* cp -rf node_modules/pyodide quadratic-client/public/
-* download the latest pyodide packages (the largest file available in https://github.com/pyodide/pyodide/releases)
-* unpack the file and copy its contents to quadratic-client/public/
 
+- Delete the quadratic-client/public/pyodide directory
+- npm i pyodide@latest
+- mkdir quadratic-client/public/pyodide
+- cp -rf node_modules/pyodide quadratic-client/public/
+- download the latest pyodide packages (the largest file available in <https://github.com/pyodide/pyodide/releases>)
+- unpack the file and copy its contents to quadratic-client/public/
 
 ### Configure Auth0 account (Optional)
 

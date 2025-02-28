@@ -198,10 +198,8 @@ mod tests {
     };
     use chrono::Utc;
     use indexmap::IndexMap;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_export_cells_accessed() {
         let cells_accessed = CellsAccessed::default();
         let exported = export_cells_accessed(cells_accessed);
@@ -209,7 +207,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_import_code_cell_builder_empty() {
         let code_runs = vec![];
         let result = import_code_cell_builder(code_runs).unwrap();
@@ -217,7 +214,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_import_code_cell_builder_single_cell() {
         let code_runs = vec![(
             current::PosSchema { x: 0, y: 0 },
@@ -242,7 +238,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_import_code_cell_builder_multiple_cells() {
         let code_runs = vec![
             (
@@ -286,7 +281,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_export_rows_code_runs_empty() {
         let code_runs = IndexMap::new();
         let result = export_rows_code_runs(code_runs);
@@ -294,7 +288,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_export_rows_code_runs_single_cell() {
         let mut code_runs = IndexMap::new();
         code_runs.insert(
@@ -319,7 +312,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_export_rows_code_runs_multiple_cells() {
         let mut code_runs = IndexMap::new();
         code_runs.insert(
@@ -362,7 +354,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_import_export_roundtrip() {
         let original_code_runs = vec![(
             current::PosSchema { x: 0, y: 0 },

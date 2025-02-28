@@ -63,10 +63,8 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{controller::GridController, grid::SheetId};
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_sheet_ids() {
         let mut gc = super::GridController::test();
         let sheet_ids = gc.sheet_ids();
@@ -82,7 +80,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_try_sheet_from_id() {
         let mut gc = super::GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -97,7 +94,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_try_sheet_mut_from_id() {
         let mut gc = super::GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -115,7 +111,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_try_sheet_from_name() {
         let mut gc = super::GridController::test();
         assert_eq!(
@@ -133,7 +128,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_try_sheet_mut_from_name() {
         let mut gc = GridController::test();
         gc.add_sheet(None);
@@ -152,7 +146,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_try_sheet_from_string_id() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

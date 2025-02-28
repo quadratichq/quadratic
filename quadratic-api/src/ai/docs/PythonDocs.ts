@@ -137,7 +137,9 @@ q.cells('A1:B$20')
 
 Return the data from your Python code to the spreadsheet.
 
-By default, the last line of code is output to the spreadsheet.
+By default, the last line of code is output to the spreadsheet. Primarily return results to the spreadsheet rather than using print statements; print statements do not get returned to the sheet.
+
+Only one value or variable (single value, single list, single dataframe, single series, single chart, etc) can be returned per code cell. If you need to return multiple things, such as numerical results of an analysis and a chart, you should use multiple code cells, outputting the analysis in one cell and the chart in another.
 
 All code outputs by default are given names that can be referenced, regardless of their return type. 
 
@@ -212,7 +214,7 @@ fig.show()
 
 5. Function outputs
 
-You can not use the \`return\` keyword to return data to the sheet, as that keyword only works inside of Python functions.
+You can not use the \`return\` keyword to return data to the sheet, as that keyword only works inside of Python functions. The last line of code is what gets returned to the sheet, even if it's a function call.
 Here is an example of using a Python function to return data to the sheet. 
 
 \`\`\`python
@@ -222,6 +224,27 @@ def do_some_math(x):
 # returns the result of do_some_math(), which in this case is 6 
 do_some_math(5)
 \`\`\`
+
+Note that conditionals will not return the value to the sheet if the last line is a conditional. The following is an example that will return nothing to the sheet:
+\'\'\'python
+x = 3
+y = 0 
+if x == 3: 
+    y = True
+else: 
+    y = False
+\'\'\'
+
+The following is how you would return the result of that conditional to the sheet.
+\'\'\'python
+x = 3
+y = 0 
+if x == 3: 
+    y = True
+else: 
+    y = False
+y
+\'\'\'
 
 # Packages
 
@@ -313,7 +336,7 @@ df = q.cells('A:B'), first_row_header=True)
 
 # Charts/visualizations
 
-Plotly is the only charting library supported in Quadratic. Don't try to use other libraries. 
+Plotly is the only charting library supported in Quadratic. Do not try to use other libraries like Seaborn or Matplotlib. 
 
 To return a chart to the sheet, put fig.show() as the last line of code. 
 
@@ -439,4 +462,8 @@ fig.update_layout(
 
 fig.show()
 \`\`\`
+
+# Correlations
+
+Do not attempt to build a correlation analysis unless the user asks for it. 
 `;

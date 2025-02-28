@@ -18,7 +18,7 @@ impl GridController {
         insert_at: Pos,
         cursor: Option<String>,
         delimiter: Option<u8>,
-        has_heading: Option<bool>,
+        header_is_first_row: Option<bool>,
     ) -> Result<()> {
         let ops = self.import_csv_operations(
             sheet_id,
@@ -26,7 +26,7 @@ impl GridController {
             file_name,
             insert_at,
             delimiter,
-            has_heading,
+            header_is_first_row,
         )?;
         if cursor.is_some() {
             self.start_user_transaction(ops, cursor, TransactionName::Import);
@@ -98,7 +98,6 @@ pub(crate) mod tests {
 
     use bigdecimal::BigDecimal;
     use chrono::{NaiveDate, NaiveDateTime};
-    use serial_test::{parallel, serial};
 
     use crate::wasm_bindings::js::expect_js_call_count;
 
@@ -135,14 +134,9 @@ pub(crate) mod tests {
             pos,
             None,
             Some(b','),
-            Some(false),
+            Some(true),
         )
         .unwrap();
-
-        let sheet = gc.sheet_mut(sheet_id);
-        let data_table_pos = sheet.first_data_table_within(pos).unwrap();
-        let data_table = sheet.data_table_mut(data_table_pos).unwrap();
-        data_table.apply_first_row_as_header();
 
         (gc, sheet_id, pos, file_name)
     }
@@ -170,7 +164,6 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[parallel]
     fn imports_a_simple_csv() {
         let (gc, sheet_id, pos, file_name) = simple_csv();
 
@@ -178,7 +171,6 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[parallel]
     fn errors_on_an_empty_csv() {
         let mut grid_controller = GridController::test();
         let sheet_id = grid_controller.grid.sheets()[0].id;
@@ -197,7 +189,6 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[serial]
     fn import_large_csv() {
         clear_js_calls();
 
@@ -226,7 +217,6 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[parallel]
     fn import_problematic_line() {
         let mut gc = GridController::test();
         let csv = "980E92207901934";
@@ -245,7 +235,6 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[parallel]
     fn imports_a_simple_excel_file() {
         let mut gc = GridController::new_blank();
         let file: Vec<u8> = std::fs::read(EXCEL_FILE).expect("Failed to read file");
@@ -341,7 +330,6 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[parallel]
     fn import_all_excel_functions() {
         let mut grid_controller = GridController::new_blank();
         let pos = pos![A1];
@@ -382,7 +370,6 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[parallel]
     fn imports_a_simple_parquet() {
         let mut grid_controller = GridController::test();
         let sheet_id = grid_controller.grid.sheets()[0].id;
@@ -481,7 +468,6 @@ pub(crate) mod tests {
     // }
 
     #[test]
-    #[parallel]
     fn should_import_with_title_header_only() {
         let file_name = "title_row.csv";
         let csv_file = read_test_csv_file(file_name);
@@ -510,7 +496,6 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[parallel]
     fn should_import_with_title_header_and_empty_first_row() {
         let file_name = "title_row_empty_first.csv";
         let csv_file = read_test_csv_file(file_name);
@@ -544,7 +529,6 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[parallel]
     fn should_import_utf16_with_invalid_characters() {
         let file_name = "encoding_issue.csv";
         let csv_file = read_test_csv_file(file_name);

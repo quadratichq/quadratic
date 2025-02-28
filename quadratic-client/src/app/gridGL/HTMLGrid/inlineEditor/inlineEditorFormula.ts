@@ -4,7 +4,6 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { SheetPosTS } from '@/app/gridGL/types/size';
@@ -111,10 +110,6 @@ class InlineEditorFormula {
       if (!location) {
         throw new Error('Expected inlineEditorHandler.location to be defined in cursorMoved');
       }
-
-      // We start the cursorIsMoving unless we've returned to the home cell from
-      // a Backspace or Escape key.
-      if (inlineEditorKeyboard.escapeBackspacePressed) return;
 
       inlineEditorHandler.cursorIsMoving = true;
       inlineEditorMonaco.removeSelection();

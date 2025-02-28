@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-core"
-version = "0.6.1"
+version = "0.6.3"
 authors = ["Andrew Farkas <andrew.farkas@quadratic.to>"]
 edition = "2021"
 description = "Infinite data grid with Python, JavaScript, and SQL built-in"
@@ -45,6 +45,7 @@ js = [
 show-operations = []
 multiplayer = []
 files = []
+function-timer = []
 
 [dependencies]
 anyhow = "1.0"
@@ -107,11 +108,11 @@ serde_with = "3.8.1"
 dateparser = "0.2.1"
 fancy-regex = "0.14.0"
 csv-sniffer = "0.3.1"
+function-timer = { path = "../quadratic-rust-shared/proc_macros/function-timer" }
 
 [dev-dependencies]
 criterion = { version = "0.4", default-features = false }
 tokio-test = "0.4.3"
-serial_test = "3.0.0"
 memory-stats = "1.2.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]

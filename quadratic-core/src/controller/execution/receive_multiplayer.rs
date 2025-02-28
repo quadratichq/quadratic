@@ -259,6 +259,7 @@ impl GridController {
             }
         });
         self.reapply_unsaved_transactions(&mut results);
+        results.complete = true;
         self.finalize_transaction(results);
     }
 
@@ -301,10 +302,8 @@ impl GridController {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use bigdecimal::BigDecimal;
-    use serial_test::serial;
     use uuid::Uuid;
 
     use super::*;
@@ -643,7 +642,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_send_request_transactions() {
         let mut client = GridController::test();
         let sheet_id = client.sheet_ids()[0];
@@ -899,9 +897,8 @@ mod tests {
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
-        gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None)
-            .ok()
-            .unwrap();
+        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
+        assert!(result.values.is_some());
 
         let result = gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
@@ -925,10 +922,8 @@ mod tests {
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
-        let _ = gc
-            .calculation_get_cells_a1(transaction_id.to_string(), "B1".to_string(), None)
-            .ok()
-            .unwrap();
+        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "B1".to_string());
+        assert!(result.values.is_some());
 
         let result = gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),

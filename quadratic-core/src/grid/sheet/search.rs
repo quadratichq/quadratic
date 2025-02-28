@@ -120,6 +120,7 @@ impl Sheet {
         let mut results = vec![];
         self.data_tables
             .iter()
+            .filter(|(_, data_table)| !data_table.spill_error && !data_table.has_error())
             .for_each(|(pos, data_table)| match &data_table.value {
                 Value::Single(v) => {
                     if self.compare_cell_value(
@@ -148,11 +149,14 @@ impl Sheet {
                                 whole_cell,
                                 false, // data_tables can never have code within them (although that would be cool if they did ;)
                             ) {
-                                results.push(SheetPos {
-                                    x: pos.x + x as i64,
-                                    y: pos.y + y as i64,
-                                    sheet_id: self.id,
-                                });
+                                let y = pos.y + data_table.y_adjustment(true) + y as i64;
+                                if y >= pos.y {
+                                    results.push(SheetPos {
+                                        x: pos.x + x as i64,
+                                        y,
+                                        sheet_id: self.id,
+                                    });
+                                }
                             }
                         }
                     }
@@ -196,11 +200,43 @@ impl Sheet {
     /// current input value.
     pub fn neighbor_text(&self, pos: Pos) -> Vec<String> {
         let mut text = vec![];
-        if let Some(column) = self.columns.get(&pos.x) {
+        if let Ok(data_table_pos) = self.first_data_table_within(pos) {
+            let Some(data_table) = self.data_tables.get(&data_table_pos) else {
+                return text;
+            };
+
+            let Ok(display_column_index) = u32::try_from(pos.x - data_table_pos.x) else {
+                return text;
+            };
+
+            // handle hidden columns
+            let actual_column_index =
+                data_table.get_column_index_from_display_index(display_column_index, true);
+
+            let Ok(column) = data_table.get_column_sorted(actual_column_index as usize) else {
+                return text;
+            };
+
+            let row_index = pos.y - data_table_pos.y - data_table.y_adjustment(true);
+            if let Ok(row_index) = usize::try_from(row_index) {
+                for cell in column.iter().skip(row_index + 1) {
+                    if text.len() >= MAX_NEIGHBOR_TEXT {
+                        break;
+                    }
+                    text.push(cell.to_string());
+                }
+                for cell in column.iter().take(row_index).rev() {
+                    if text.len() >= MAX_NEIGHBOR_TEXT {
+                        break;
+                    }
+                    text.push(cell.to_string());
+                }
+            }
+        } else if let Some(column) = self.columns.get(&pos.x) {
             // walk forwards
             let mut y = pos.y + 1;
             while let Some(CellValue::Text(t)) = column.values.get(&y) {
-                if text.len() + 1 > MAX_NEIGHBOR_TEXT {
+                if text.len() >= MAX_NEIGHBOR_TEXT {
                     break;
                 }
                 text.push(t.clone());
@@ -209,9 +245,9 @@ impl Sheet {
 
             // walk backwards
             let mut y = pos.y - 1;
-            while y >= 0 {
+            while y >= 1 {
                 if let Some(CellValue::Text(t)) = column.values.get(&y) {
-                    if text.len() + 1 > MAX_NEIGHBOR_TEXT {
+                    if text.len() >= MAX_NEIGHBOR_TEXT {
                         break;
                     }
                     text.push(t.clone());
@@ -231,14 +267,12 @@ impl Sheet {
 mod test {
     use super::*;
     use crate::{
-        controller::GridController,
+        controller::{user_actions::import::tests::simple_csv_at, GridController},
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
         Array,
     };
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn simple_search() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
@@ -253,7 +287,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn case_sensitive_search() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
@@ -285,7 +318,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn whole_cell_search() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
@@ -335,7 +367,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn whole_cell_search_case_sensitive() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Text("hello world".into()));
@@ -386,7 +417,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn search_numbers() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Number(123.into()));
@@ -410,7 +440,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn search_display_numbers() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -485,7 +514,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn search_code_runs() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(
@@ -537,7 +565,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn search_within_code_runs() {
         let mut sheet = Sheet::test();
         let code_run = CodeRun {
@@ -595,7 +622,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn neighbor_text_single_column() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
@@ -607,7 +633,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn neighbor_text_with_gaps() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
@@ -620,7 +645,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn neighbor_text_no_neighbors() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
@@ -630,7 +654,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn neighbor_text_deduplication() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 1, y: 0 }, CellValue::Text("B".into()));
@@ -643,7 +666,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn neighbor_text_multiple_columns() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
@@ -656,7 +678,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn neighbor_text_empty_column() {
         let sheet = Sheet::test();
         let neighbors = sheet.neighbor_text(Pos { x: 1, y: 1 });
@@ -664,7 +685,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn max_neighbor_text() {
         let mut sheet = Sheet::test();
         for y in 0..MAX_NEIGHBOR_TEXT + 10 {
@@ -675,5 +695,53 @@ mod test {
             y: MAX_NEIGHBOR_TEXT as i64 / 2,
         });
         assert_eq!(neighbors.len(), MAX_NEIGHBOR_TEXT);
+    }
+
+    #[test]
+    fn neighbor_text_table() {
+        let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
+
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.set_cell_value(pos![E15], CellValue::Text("hello".into()));
+
+        let neighbors = sheet.neighbor_text(pos![E12]);
+        assert_eq!(
+            neighbors,
+            vec![
+                "Concord",
+                "Marlborough",
+                "Northbridge",
+                "Southborough",
+                "Springfield",
+                "Westborough",
+                "city"
+            ]
+        );
+        assert!(!neighbors.contains(&"hello".to_string()));
+
+        // hide first column
+        let data_table = sheet.data_table_mut(pos).unwrap();
+        let column_headers = data_table.column_headers.as_mut().unwrap();
+        column_headers[0].display = false;
+
+        let neighbors = sheet.neighbor_text(pos![E12]);
+        assert_eq!(neighbors, vec!["MA", "MO", "NH", "NJ", "OH", "region"]);
+    }
+
+    #[test]
+    fn search_data_tables() {
+        let (gc, sheet_id, _, _) = simple_csv_at(pos!(E2));
+
+        let sheet = gc.sheet(sheet_id);
+
+        let results = sheet.search(
+            &"MO".into(),
+            &SearchOptions {
+                search_code: Some(true),
+                ..Default::default()
+            },
+        );
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0], SheetPos::new(sheet_id, 6, 9));
     }
 }

@@ -47,7 +47,7 @@ export default defineConfig(() => {
     },
     build: {
       outDir: '../build',
-      sourcemap: process.env.VERCEL_ENV !== 'preview' || process.env.VITEST !== 'true', // Source map generation must be turned on
+      sourcemap: process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_AUTH_TOKEN !== 'none',
     },
     publicDir: './public',
     assetsInclude: ['**/*.py'],
@@ -62,7 +62,7 @@ export default defineConfig(() => {
       // },
     },
     resolve: {
-      preserveSymlinks: process.env.VERCEL_ENV !== 'preview' || process.env.VITEST !== 'true',
+      preserveSymlinks: true,
       alias: {
         '@': path.resolve(__dirname, './src'),
       },

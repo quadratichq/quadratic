@@ -1,6 +1,8 @@
 use serde::Serialize;
 use ts_rs::TS;
 
+use crate::RefError;
+
 #[derive(Serialize, Debug, Clone, PartialEq, Eq, TS)]
 #[serde(tag = "type", content = "error")]
 pub enum A1Error {
@@ -26,6 +28,8 @@ pub enum A1Error {
     MultipleRowDefinitions,
     UnexpectedRowNumber,
     InvalidRowRange(String),
+
+    OutOfBounds(RefError),
 }
 
 impl From<A1Error> for String {
@@ -68,6 +72,8 @@ impl std::fmt::Display for A1Error {
                 "Row numbers in tables must be defined with # (e.g., [#12,15-12])"
             ),
             A1Error::InvalidRowRange(msg) => write!(f, "Invalid row range: {msg}"),
+
+            A1Error::OutOfBounds(RefError) => write!(f, "Out Of Bounds"),
         }
     }
 }

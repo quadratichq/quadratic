@@ -3,7 +3,7 @@ import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
-import { Point } from 'pixi.js';
+import { Point, type Rectangle } from 'pixi.js';
 
 export function getVisibleTopRow(): number {
   const viewport = pixiApp.viewport.getVisibleBounds();
@@ -99,6 +99,29 @@ export function ensureRectVisible(min: JsCoordinate, max: JsCoordinate) {
   }
 }
 
+function ensureCellIsNotUnderTableHeader(coordinate: JsCoordinate, cell: Rectangle): boolean {
+  const table = pixiApp.cellsSheet().tables.getInTable(coordinate);
+  if (!table) return false;
+  const code = table.codeCell;
+  if (code.state === 'SpillError' || code.state === 'RunError' || code.is_html_image) {
+    return false;
+  }
+  if (table.header.onGrid) return false;
+
+  // we need to manually update the table to ensure it is in the correct position
+  // this usually happens during the update loop, but that's too late for our needs
+  const bounds = pixiApp.viewport.getVisibleBounds();
+  const gridHeading = pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
+  table.update(bounds, gridHeading);
+
+  const tableHeaderBounds = table.header.getTableHeaderBounds();
+  if (intersects.rectangleRectangle(tableHeaderBounds, cell)) {
+    pixiApp.viewport.top -= tableHeaderBounds.bottom - cell.top;
+    return true;
+  }
+  return false;
+}
+
 // Makes a cell visible in the viewport
 export function cellVisible(
   coordinate: JsCoordinate = {
@@ -111,10 +134,15 @@ export function cellVisible(
   const sheet = sheets.sheet;
   const headingSize = headings.headingSize;
 
+  // check if the cell is part of a table header that is visible b/c it is
+  // hovering over the table
+  const tableName = sheet.cursor.getTableNameInNameOrColumn(sheets.sheet.id, coordinate.x, coordinate.y);
+  if (tableName) return true;
+
   const cell = sheet.getCellOffsets(coordinate.x, coordinate.y);
   let is_off_screen = false;
 
-  if (cell.x + headingSize.width < viewport.left) {
+  if (cell.x - headingSize.width / viewport.scale.x < viewport.left) {
     viewport.left = cell.x - headingSize.width / viewport.scale.x;
     is_off_screen = true;
   } else if (cell.x + cell.width > viewport.right) {
@@ -127,6 +155,10 @@ export function cellVisible(
     is_off_screen = true;
   } else if (cell.y + cell.height > viewport.bottom) {
     viewport.bottom = cell.y + cell.height;
+    is_off_screen = true;
+  }
+
+  if (ensureCellIsNotUnderTableHeader(coordinate, cell)) {
     is_off_screen = true;
   }
 

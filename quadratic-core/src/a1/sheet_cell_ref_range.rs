@@ -17,13 +17,17 @@ impl SheetCellRefRange {
     /// Parses a selection from a comma-separated list of ranges.
     ///
     /// Ranges without an explicit sheet use `default_sheet_id`.
+    ///
+    /// If `base_pos` is `None`, then only A1 notation is accepted. If it is
+    /// `Some`, then A1 and RC notation are both accepted.
     pub fn parse(
         a1: &str,
         default_sheet_id: SheetId,
         context: &A1Context,
+        base_pos: Option<Pos>,
     ) -> Result<Self, A1Error> {
         let (sheet, cells_str) = parse_optional_sheet_name_to_id(a1, &default_sheet_id, context)?;
-        let (cells, table_sheet_id) = CellRefRange::parse(cells_str, context)?;
+        let (cells, table_sheet_id) = CellRefRange::parse(cells_str, context, base_pos)?;
         Ok(Self {
             sheet_id: table_sheet_id.unwrap_or(sheet),
             cells,
@@ -70,12 +74,11 @@ impl SheetCellRefRange {
                 );
             }
         }
-        format!("{}", self.cells)
+        self.cells.to_rc_string(base_pos)
     }
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::Rect;
 
@@ -83,7 +86,7 @@ mod tests {
 
     #[test]
     fn test_table_different_sheet() {
-        let sheet1_id = SheetId::test();
+        let sheet1_id = SheetId::TEST;
         let sheet2_id = SheetId::new();
         let context = A1Context::test(
             &[("Sheet1", sheet1_id), ("Sheet2", sheet2_id)],
@@ -91,7 +94,7 @@ mod tests {
         );
 
         // Create a table reference in Sheet2
-        let range = SheetCellRefRange::parse("Table1", sheet2_id, &context).unwrap();
+        let range = SheetCellRefRange::parse("Table1", sheet2_id, &context, None).unwrap();
 
         // Verify the sheet ID matches Sheet2
         assert_eq!(range.sheet_id, sheet1_id);

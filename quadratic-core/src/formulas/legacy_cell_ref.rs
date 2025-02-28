@@ -338,12 +338,10 @@ impl CellRefCoord {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::parallel;
 
     use super::*;
 
     #[test]
-    #[parallel]
     fn test_a1_parsing() {
         // Resolve from some random base position.
         let base_pos = pos![E8];
@@ -366,7 +364,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_a1_sheet_parsing() {
         let pos = CellRef::parse_a1("'Sheet2'!A1", pos![A1]);
         assert_eq!(
@@ -389,7 +386,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_a1_column_parsing() {
         let pos = CellRef::parse_a1("A", pos![A0]);
 
@@ -404,7 +400,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_a1_row_parsing() {
         let pos = CellRef::parse_a1("2", pos![A0]);
 
@@ -419,7 +414,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_a1_case_insensitive_parsing() {
         let parse = |s: &str| CellRef::parse_a1(s, pos![A1]);
 

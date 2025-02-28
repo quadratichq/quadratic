@@ -59,8 +59,11 @@ impl GridController {
     fn check_spill(&self, sheet_id: SheetId, index: usize) -> Option<bool> {
         if let Some(sheet) = self.grid.try_sheet(sheet_id) {
             if let Some((pos, data_table)) = sheet.data_tables.get_index(index) {
-                // output sizes of 1x1 cannot spill
+                // we can short circuit the output if the size is now 1x1, which can never spill
                 if matches!(data_table.output_size(), ArraySize::_1X1) {
+                    if data_table.spill_error {
+                        return Some(false);
+                    }
                     return None;
                 }
 
@@ -74,8 +77,6 @@ impl GridController {
                 {
                     // if spill error has not been set, then set it and start the more expensive checks for all later code_cells.
                     //
-                    // TODO(ddimaria): swap out the conditionals if we decide to only spill on code output
-                    // if data_table.readonly && !data_table.spill_error {
                     if !data_table.spill_error {
                         return Some(true);
                     }
@@ -101,9 +102,7 @@ impl GridController {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
-    use serial_test::serial;
 
     use crate::controller::active_transactions::pending_transaction::PendingTransaction;
     use crate::controller::transaction_types::JsCodeResult;
@@ -178,7 +177,6 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_check_all_spills() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -253,7 +251,7 @@ mod tests {
                 y: 1,
                 sheet_id,
             },
-            vec![vec!["1"], vec!["2"], vec!["3"]],
+            vec![vec!["1".into()], vec!["2".into()], vec!["3".into()]],
             None,
         );
 
@@ -320,7 +318,7 @@ mod tests {
                 y: 1,
                 sheet_id,
             },
-            vec![vec!["1"], vec!["2"], vec!["3"]],
+            vec![vec!["1".into()], vec!["2".into()], vec!["3".into()]],
             None,
         );
 
@@ -375,9 +373,9 @@ mod tests {
                 sheet_id,
             },
             vec![
-                vec!["1", "2", "3"],
-                vec!["4", "5", "6"],
-                vec!["7", "8", "9"],
+                vec!["1".into(), "2".into(), "3".into()],
+                vec!["4".into(), "5".into(), "6".into()],
+                vec!["7".into(), "8".into(), "9".into()],
             ],
             None,
         );

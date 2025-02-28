@@ -180,10 +180,7 @@ fn handle_negative_offsets(grid: &mut Result<Grid>, check_for_negative_offsets: 
 }
 
 fn import_json(file_contents: String) -> Result<Grid> {
-    let json = serde_json::from_str::<GridFile>(&file_contents).map_err(|e| {
-        dbg!(&e);
-        anyhow!(e)
-    })?;
+    let json = serde_json::from_str::<GridFile>(&file_contents).map_err(|e| anyhow!(e))?;
     drop(file_contents);
 
     let check_for_negative_offsets = matches!(
@@ -228,7 +225,6 @@ pub fn export_json(grid: Grid) -> Result<Vec<u8>> {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use super::*;
     use crate::{
@@ -307,11 +303,13 @@ mod tests {
             .data_tables
             .get(&Pos { x: 1, y: 3 })
             .is_some());
-        let cell_value = imported.sheets[0].cell_value(Pos { x: 1, y: 3 }).unwrap();
+        let code_cell = imported.sheets[0]
+            .edit_code_value(Pos { x: 1, y: 3 })
+            .unwrap();
 
-        match cell_value {
-            crate::grid::CellValue::Code(formula) => {
-                assert_eq!(formula.code, "SUM(R[-2]C[0]:R[-1]C[0])");
+        match code_cell.language {
+            CodeCellLanguage::Formula => {
+                assert_eq!(code_cell.code_string, "SUM(A1:A2)");
             }
             _ => panic!("Expected a formula"),
         };

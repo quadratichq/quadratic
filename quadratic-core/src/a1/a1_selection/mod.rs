@@ -24,7 +24,7 @@ pub struct A1Selection {
     /// Current sheet.
     ///
     /// Selections can only span a single sheet.
-    #[cfg_attr(test, proptest(value = "SheetId::test()"))]
+    #[cfg_attr(test, proptest(value = "SheetId::TEST"))]
     pub sheet_id: SheetId,
     /// Cursor position, which is moved using the arrow keys (while not holding
     /// shift).

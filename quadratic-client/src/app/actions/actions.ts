@@ -95,6 +95,8 @@ export enum Action {
   SelectAll = 'select_all',
   SelectColumn = 'select_column',
   SelectRow = 'select_row',
+  SelectPageDown = 'select_page_down',
+  SelectPageUp = 'select_page_up',
   ExecuteCode = 'execute_code',
   RerunSheetCode = 'rerun_sheet_code',
   RerunAllCode = 'rerun_all_code',

@@ -38,17 +38,16 @@ impl GridController {
     pub fn set_chart_size(
         &mut self,
         sheet_pos: SheetPos,
-        width: f32,
-        height: f32,
+        columns: u32,
+        rows: u32,
         cursor: Option<String>,
     ) {
-        let ops = self.set_chart_size_operations(sheet_pos, width, height);
+        let ops = self.set_chart_size_operations(sheet_pos, columns, rows);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
     }
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use super::*;
 

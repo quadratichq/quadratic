@@ -28,6 +28,8 @@
     "CRPXNLSKVLJFHH",
     "Cyphertext",
     "dashmap",
+    "dataframe",
+    "dataframes",
     "dbgjs",
     "dcell",
     "ddimaria",
@@ -162,8 +164,12 @@
   "rust-analyzer.checkOnSave": true,
   "rust-analyzer.cargo.unsetTest": true,
   // "rust-analyzer.checkOnSave.command": "clippy",
-  "rust-analyzer.server.extraEnv": { "CARGO_TARGET_DIR": "target/rust-analyzer" },
-  "rust-analyzer.runnables.extraEnv": { "CARGO_TARGET_DIR": "target/rust-analyzer" },
+  "rust-analyzer.server.extraEnv": {
+    "CARGO_TARGET_DIR": "target/rust-analyzer"
+  },
+  "rust-analyzer.runnables.extraEnv": {
+    "CARGO_TARGET_DIR": "target/rust-analyzer"
+  },
   "files.associations": {
     "*.grid": "json"
   },
@@ -201,7 +207,7 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[markdown]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
   },
   "C_Cpp.errorSquiggles": "enabled"
 }

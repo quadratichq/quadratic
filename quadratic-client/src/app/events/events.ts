@@ -128,7 +128,6 @@ interface EventTypes {
 
   // trigger a context menu
   contextMenu: (options: ContextMenuOptions) => void;
-  contextMenuClose: () => void;
 
   suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;
 
@@ -143,6 +142,7 @@ interface EventTypes {
   codeEditorCodeCell: (codeCell?: CodeCell) => void;
 
   a1Context: (context: string) => void;
+  a1ContextUpdated: () => void;
 
   aiAnalystInitialized: () => void;
   pixiAppSettingsInitialized: () => void;

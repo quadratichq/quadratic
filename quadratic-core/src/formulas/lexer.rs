@@ -33,53 +33,91 @@ const FUNCTION_CALL_PATTERN: &str = r"[A-Za-z_](\.?[A-Za-z_\d])*\(";
 ///
 /// TODO(ajf): remove `n` from this (was for parsing negative references)
 ///
+/// ```ignored
 /// \$?n?[a-zA-Z]+\$?n?\d+
 /// \$?        \$?            optional `$`s
 ///    n?         n?          optional `n`s
 ///      [a-zA-Z]+            letters
 ///                 \d+       digits
+/// ```
 // const A1_CELL_REFERENCE_PATTERN: &str = r"\$?n?[A-Z]+\$?n?\d+";
 const A1_CELL_REFERENCE_PATTERN: &str = r"\$?n?([a-zA-Z]+\$?n?\d*|\d+)";
-const INTERNAL_CELL_REFERENCE_PATTERN: &str = r"R([\[|\{]-?\d+[\]|\}])C([\[|\{]-?\d+[\]|\}])";
+/// RC-style cell reference
+///
+/// ```ignored
+///                                  |                   either of ...
+/// R[\[{]-?\d+[]}](C[\[{]-?\d+[]}])?                      row reference + optional column reference
+/// R[\[{]-?\d+[]}]                                          row reference
+/// R                                                          literal R
+///  [\[{]     []}]                                            surrounding `[]` or `{}` (allows mismatched but it's fine)
+///       -?\d+                                                positive or negative integer
+///                (               )?                        optional ...
+///                 C[\[{]-?\d+[]}]                            column reference
+///                 C                                            literal C
+///                  [\[{]     []}]                              surrounding `[]` or `{}` (allows mismatched but it's fine)
+///                       -?\d+                                  positive or negative integer
+///                                   C[\[{]-?\d+[]}]      just a column reference
+/// ```
+const INTERNAL_CELL_REFERENCE_PATTERN: &str = r"R[\[{]-?\d+[]}](C[\[{]-?\d+[]}])?|C[\[{]-?\d+[]}]";
 
-/// Table name.
+/// A1-style cell reference or table name.
+///
+/// This regex is carefully written so that it does not terminate the match
+/// early. For example, matching `A$1` naively as a table name will only match
+/// `A` and matching `MY.table` naively as a cell reference will only match
+/// `MY`. It's ok if we match strings that are invalid as cell references and
+/// invalid as table names, as long as they aren't valid as some other token.
+///
+/// Numeric literals are matched by an earlier regex, so it's ok to match those
+/// here too.
 ///
 /// This may be ambiguous between a table reference and a cell reference. For
-/// example, a table named `ALL` is ambiguous with the column named `ALL`.
-const TABLE_NAME_PATTERN: &str = r"[\\_a-zA-Z][\\_a-zA-Z\d\.]*";
+/// example, a table named `ABC` is ambiguous with the column named `ABC`.
+///
+/// This regex matches any sequence of letters, digits, periods, underscores,
+/// dollar signs, and backslashes (which are allowed in table names for some
+/// reason?) as long as it starts with a letter, underscore, or dollar sign.
+const A1_CELL_REFERENCE_OR_TABLE_NAME_PATTERN: &str = r"[\p{Letter}\$_][\p{Letter}\d\$\._\\]*";
 
 /// Contents of the inner square brackets of a table reference.
 ///
+/// ```ignored
 ///           |                  either of ...
 /// #[a-zA-Z]*                     #header, #data, #all, #totals, etc.
 ///            ('.|[^'\[\]])*      any number of times ...
 ///               |                  either of ...
 ///             '.                     a character escaped using '.
 ///                [^'\[\]]            any character other than a single quote or square bracket
+/// ```
 const TABLE_BRACKETS_SEGMENT_CONTENTS_PATTERN: &str = r"#[a-zA-Z]*|('.|[^'\[\]])*";
 
 lazy_static! {
     /// Inner square brackets of a table reference.
     ///
+    /// ```ignored
     /// \[    \]    square brackets containing ...
     ///   ({})        contents of inner square brackets
+    /// ```
     static ref TABLE_BRACKETS_SEGMENT_PATTERN: &'static str =
         format!(r"\[({})\]", TABLE_BRACKETS_SEGMENT_CONTENTS_PATTERN).leak();
 
     /// Outermost square brackets of a table reference.
     ///
+    /// ```ignored
     /// \[                      \]    square brackets containing ...
     ///   (    |               )        either of ...
     ///    ({})                           contents of inner square brackets
     ///         (    |       )*           any of number of times, either of ...
     ///          ({})                       inner square brackets
     ///               [^\[\]]               any non-square-bracket symbol
+    /// ```
     static ref TABLE_BRACKETS_PATTERN: &'static str =
         format!(r"\[(({})|(({})|[^\[\]])*)\]", TABLE_BRACKETS_SEGMENT_CONTENTS_PATTERN, *TABLE_BRACKETS_SEGMENT_PATTERN).leak();
 }
 
 /// Floating-point or integer number, without leading sign.
 ///
+/// ```ignored
 /// (\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?
 /// (           |     )                   EITHER
 ///  \d+                                    integer part
@@ -89,6 +127,7 @@ lazy_static! {
 ///                    ([eE]        )?    optional exponent
 ///                         [+-]?           with an optional sign
 ///                              \d+        followed by some digits
+/// ```
 const NUMERIC_LITERAL_PATTERN: &str = r"(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?";
 
 /// Single-quoted string. Note that like Rust strings, this can span multiple
@@ -103,6 +142,19 @@ const DOUBLE_QUOTE_STRING_LITERAL_PATTERN: &str = r#""([^"\\]|\\[\s\S])*""#;
 const UNQUOTED_SHEET_REFERENCE_PATTERN: &str = r"[A-Za-z_][A-Za-z0-9_\.]*\s*!";
 /// Unterminated string literal.
 const UNTERMINATED_STRING_LITERAL_PATTERN: &str = r#"["']"#;
+
+/// Error code that can appear as valid syntax in a formula.
+///
+/// The [official documentation]
+/// (https://support.microsoft.com/en-us/office/detect-formula-errors-in-excel-3a8acca5-1d61-4702-80e0-99a36a2822c1)
+/// lists all seven errors that are valid syntax in formulas.
+///
+/// [A different list on
+/// Exceljet](https://exceljet.net/articles/excel-formula-errors) also includes
+/// `#BLOCKED!`, `#CALC!`, and `#SPILL!` which do appear but are not allowed in
+/// formulas. `####` is its own beast which is more of a rendering fallback than
+/// an actual error.
+const ERROR_PATTERN: &str = r"#(DIV/0!|N/A|NAME\?|NULL!|NUM!|REF!|VALUE!)";
 
 lazy_static! {
     /// List of token patterns, arranged roughly from least to most general.
@@ -125,12 +177,14 @@ lazy_static! {
         r#"false|true"#,
         // Internal cell reference.
         INTERNAL_CELL_REFERENCE_PATTERN,
+        // Reference to a table.
+        A1_CELL_REFERENCE_OR_TABLE_NAME_PATTERN,
         // Reference to a cell.
         A1_CELL_REFERENCE_PATTERN,
-        // Reference to a table.
-        TABLE_NAME_PATTERN,
         // Square brackets containing table reference.
-        dbg!(*TABLE_BRACKETS_PATTERN),
+        *TABLE_BRACKETS_PATTERN,
+        // Error code literal.
+        ERROR_PATTERN,
         // Comparison operators `==`, `!=`, `<=`, `>=` and `<>`.
         r#"[=!<>]=|<>"#,
         // Double and triple dot.
@@ -162,7 +216,7 @@ lazy_static! {
 
     /// Regex that matches a valid table name.
     pub static ref TABLE_NAME_REGEX: Regex =
-        new_fullmatch_regex(TABLE_NAME_PATTERN);
+        new_fullmatch_regex(A1_CELL_REFERENCE_OR_TABLE_NAME_PATTERN);
 
     /// Regex that matches a valid table reference, excluding the name.
     pub static ref TABLE_BRACKETS_REGEX: Regex =
@@ -186,6 +240,9 @@ lazy_static! {
     /// Regex that matches an unterminated string literal.
     pub static ref UNTERMINATED_STRING_LITERAL_REGEX: Regex =
         new_fullmatch_regex(UNTERMINATED_STRING_LITERAL_PATTERN);
+
+    /// Regex that matches an error token.
+    pub static ref ERROR_REGEX: Regex = new_fullmatch_regex(ERROR_PATTERN);
 }
 
 #[derive(Debug, Display, Copy, Clone, PartialEq, Eq)]
@@ -279,6 +336,8 @@ pub enum Token {
     TableRefBracketsExpression,
     #[strum(to_string = "internal cell reference")]
     InternalCellRef,
+    #[strum(to_string = "error")]
+    Error,
     #[strum(to_string = "whitespace")]
     Whitespace,
     #[strum(to_string = "unknown symbol")]
@@ -368,6 +427,7 @@ impl Token {
             s if A1_CELL_REFERENCE_REGEX.is_match(s) => Self::CellOrTableRef,
             s if TABLE_NAME_REGEX.is_match(s) => Self::CellOrTableRef,
             s if TABLE_BRACKETS_REGEX.is_match(s) => Self::TableRefBracketsExpression,
+            s if ERROR_REGEX.is_match(s) => Self::Error,
             s if s.trim().is_empty() => Self::Whitespace,
 
             // Give up.
@@ -400,10 +460,8 @@ mod tests {
     use itertools::Itertools;
 
     use super::*;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_lex_block_comment() {
         test_block_comment(true, "/* basic */");
         test_block_comment(true, "/* line1 \n line2 */");

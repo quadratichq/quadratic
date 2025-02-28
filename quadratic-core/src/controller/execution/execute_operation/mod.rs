@@ -56,11 +56,12 @@ impl GridController {
             match op {
                 Operation::SetCellValues { .. } => self.execute_set_cell_values(transaction, op),
                 Operation::SetCodeRun { .. } => self.execute_set_code_run(transaction, op),
-                Operation::SetChartSize { .. } => {
-                    Self::handle_execution_operation_result(
-                        self.execute_set_chart_size(transaction, op),
-                    );
-                }
+                Operation::SetChartSize { .. } => Self::handle_execution_operation_result(
+                    self.execute_set_chart_size(transaction, op),
+                ),
+                Operation::SetChartCellSize { .. } => Self::handle_execution_operation_result(
+                    self.execute_set_chart_cell_size(transaction, op),
+                ),
                 Operation::AddDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_add_data_table(transaction, op),
                 ),
@@ -85,16 +86,20 @@ impl GridController {
                 Operation::SortDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_sort_data_table(transaction, op),
                 ),
-                Operation::InsertDataTableColumn { .. } => Self::handle_execution_operation_result(
-                    self.execute_insert_data_table_column(transaction, op),
-                ),
-                Operation::DeleteDataTableColumn { .. } => Self::handle_execution_operation_result(
-                    self.execute_delete_data_table_column(transaction, op),
-                ),
-                Operation::InsertDataTableRow { .. } => Self::handle_execution_operation_result(
+                Operation::InsertDataTableColumns { .. } => {
+                    Self::handle_execution_operation_result(
+                        self.execute_insert_data_table_column(transaction, op),
+                    );
+                }
+                Operation::DeleteDataTableColumns { .. } => {
+                    Self::handle_execution_operation_result(
+                        self.execute_delete_data_table_column(transaction, op),
+                    );
+                }
+                Operation::InsertDataTableRows { .. } => Self::handle_execution_operation_result(
                     self.execute_insert_data_table_row(transaction, op),
                 ),
-                Operation::DeleteDataTableRow { .. } => Self::handle_execution_operation_result(
+                Operation::DeleteDataTableRows { .. } => Self::handle_execution_operation_result(
                     self.execute_delete_data_table_row(transaction, op),
                 ),
                 Operation::DataTableFirstRowAsHeader { .. } => {
@@ -135,11 +140,17 @@ impl GridController {
                 Operation::MoveCells { .. } => self.execute_move_cells(transaction, op),
 
                 Operation::AddSheet { .. } => self.execute_add_sheet(transaction, op),
-                Operation::AddSheetSchema { .. } => self.execute_add_sheet_schema(transaction, op),
+                Operation::AddSheetSchema { .. } => Self::handle_execution_operation_result(
+                    self.execute_add_sheet_schema(transaction, op),
+                ),
 
                 Operation::DeleteSheet { .. } => self.execute_delete_sheet(transaction, op),
                 Operation::ReorderSheet { .. } => self.execute_reorder_sheet(transaction, op),
-                Operation::SetSheetName { .. } => self.execute_set_sheet_name(transaction, op),
+                Operation::SetSheetName { .. } => {
+                    Self::handle_execution_operation_result(
+                        self.execute_set_sheet_name(transaction, op),
+                    );
+                }
                 Operation::SetSheetColor { .. } => self.execute_set_sheet_color(transaction, op),
                 Operation::DuplicateSheet { .. } => self.execute_duplicate_sheet(transaction, op),
 

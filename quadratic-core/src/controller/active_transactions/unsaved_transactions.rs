@@ -117,10 +117,8 @@ impl DerefMut for UnsavedTransactions {
 mod test {
     use super::*;
     use crate::{controller::operations::operation::Operation, grid::SheetId};
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_unsaved_transactions() {
         let mut unsaved_transactions = UnsavedTransactions::default();
         let transaction = Transaction::default();
@@ -155,7 +153,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn from_str() {
         // this is a real example of a transaction that was failing to parse; it
         // can be deleted if it ever causes problems

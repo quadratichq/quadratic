@@ -22,9 +22,9 @@ impl GridController {
             return;
         }
 
-        if !transaction.is_server() {
-            self.send_updated_bounds(sheet_id);
+        self.send_updated_bounds(transaction, sheet_id);
 
+        if !transaction.is_server() {
             if !hashes.is_empty() {
                 let dirty_hashes = transaction.dirty_hashes.entry(sheet_id).or_default();
                 dirty_hashes.extend(hashes);

@@ -22,7 +22,6 @@ export enum CursorMode {
 }
 
 class InlineEditorKeyboard {
-  escapeBackspacePressed = false;
   cursorMode: CursorMode = CursorMode.Enter;
 
   private handleArrowHorizontal = async (isRight: boolean, e: KeyboardEvent) => {
@@ -145,12 +144,6 @@ class InlineEditorKeyboard {
       events.emit('suggestionDropdownKeyboard', e.key as 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab');
       e.preventDefault();
       return;
-    }
-
-    if (inlineEditorHandler.cursorIsMoving) {
-      this.escapeBackspacePressed = ['Escape', 'Backspace'].includes(e.code);
-    } else {
-      this.escapeBackspacePressed = false;
     }
 
     const position = inlineEditorMonaco.getPosition();

@@ -103,14 +103,7 @@ extern "C" {
         connection_id: String,
     );
 
-    pub fn jsSendImage(
-        sheet_id: String,
-        x: i32,
-        y: i32,
-        image: Option<String>,
-        w: Option<f32>,
-        h: Option<f32>,
-    );
+    pub fn jsSendImage(sheet_id: String, x: i32, y: i32, w: i32, h: i32, image: Option<String>);
 
     // rows: Vec<i64>
     pub fn jsRequestRowHeights(transaction_id: String, sheet_id: String, rows: String);
@@ -143,50 +136,63 @@ extern "C" {
 use std::sync::Mutex;
 
 #[cfg(test)]
-use lazy_static::lazy_static;
+thread_local! {
+    /// Mock for JS calls used in tests.
+    ///
+    /// This must be cleared at the beginning of each test by using
+    /// [`clear_js_calls()`].
+    static JS_CALLS: Mutex<Vec<TestFunction>> = const { Mutex::new(vec![]) };
+}
 
 #[cfg(test)]
-lazy_static! {
-    static ref TEST_ARRAY: Mutex<Vec<TestFunction>> = Mutex::new(vec![]);
+fn js_call(s: &str, args: String) {
+    let test_function = TestFunction::new(s, args);
+    JS_CALLS.with(|js_calls| js_calls.lock().unwrap().push(test_function));
 }
 
 #[cfg(test)]
 #[track_caller]
 pub fn expect_js_call(name: &str, args: String, clear: bool) {
-    let result = TestFunction {
-        name: name.to_string(),
-        args,
-    };
-    let index = TEST_ARRAY.lock().unwrap().iter().position(|x| *x == result);
-    match index {
-        Some(index) => {
-            TEST_ARRAY.lock().unwrap().remove(index);
+    JS_CALLS.with(|js_calls| {
+        let mut js_calls = js_calls.lock().unwrap();
+        let result = TestFunction {
+            name: name.to_string(),
+            args,
+        };
+        let index = js_calls.iter().position(|x| *x == result);
+        match index {
+            Some(index) => {
+                js_calls.remove(index);
+            }
+            None => {
+                dbg!(&js_calls);
+                panic!("Expected to find in TEST_ARRAY: {:?}", result)
+            }
         }
-        None => {
-            dbg!(&TEST_ARRAY.lock().unwrap());
-            panic!("Expected to find in TEST_ARRAY: {:?}", result)
+        if clear {
+            js_calls.clear();
         }
-    }
-    if clear {
-        TEST_ARRAY.lock().unwrap().clear();
-    }
+    });
 }
 
 #[cfg(test)]
 #[track_caller]
 pub fn expect_js_call_count(name: &str, count: usize, clear: bool) {
-    let mut found = 0;
-    TEST_ARRAY.lock().unwrap().retain(|x| {
-        if x.name == name {
-            found += 1;
-            return false;
+    JS_CALLS.with(|js_calls| {
+        let mut js_calls = js_calls.lock().unwrap();
+        let mut found = 0;
+        js_calls.retain(|x| {
+            if x.name == name {
+                found += 1;
+                return false;
+            }
+            true
+        });
+        assert_eq!(found, count);
+        if clear {
+            js_calls.clear();
         }
-        true
     });
-    assert_eq!(found, count);
-    if clear {
-        TEST_ARRAY.lock().unwrap().clear();
-    }
 }
 
 #[cfg(test)]
@@ -224,7 +230,7 @@ pub fn expect_js_offsets(
 
 #[cfg(test)]
 pub fn clear_js_calls() {
-    TEST_ARRAY.lock().unwrap().clear();
+    JS_CALLS.with(|js_calls| js_calls.lock().unwrap().clear());
 }
 
 #[cfg(test)]
@@ -247,19 +253,13 @@ impl TestFunction {
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsTime(name: String) {
-    TEST_ARRAY
-        .lock()
-        .unwrap()
-        .push(TestFunction::new("jsTime", name));
+    js_call("jsTime", name);
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsTimeEnd(name: String) {
-    TEST_ARRAY
-        .lock()
-        .unwrap()
-        .push(TestFunction::new("jsTimeEnd", name));
+    js_call("jsTimeEnd", name);
 }
 
 #[cfg(test)]
@@ -271,10 +271,10 @@ pub fn jsRunPython(
     sheet_id: String,
     code: String,
 ) -> JsValue {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+    js_call(
         "jsRunPython",
         format!("{},{},{},{},{}", transactionId, x, y, sheet_id, code),
-    ));
+    );
     JsValue::NULL
 }
 
@@ -287,10 +287,10 @@ pub fn jsRunJavascript(
     sheet_id: String,
     code: String,
 ) -> JsValue {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+    js_call(
         "jsRunJavascript",
         format!("{},{},{},{},{}", transactionId, x, y, sheet_id, code),
-    ));
+    );
     JsValue::NULL
 }
 
@@ -311,73 +311,52 @@ pub fn jsRenderCellSheets(
     cells: String, /*Vec<JsRenderCell>*/
 ) {
     // we use a hash of cells to avoid storing too large test data
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+    js_call(
         "jsRenderCellSheets",
         format!("{},{},{},{}", sheet_id, hash_x, hash_y, hash_test(&cells)),
-    ));
+    );
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsSheetInfo(sheets: String /* Vec<JsSheetInfo> */) {
-    TEST_ARRAY
-        .lock()
-        .unwrap()
-        .push(TestFunction::new("jsSheetInfo", sheets));
+    js_call("jsSheetInfo", sheets);
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsSheetInfoUpdate(sheet: String /* JsSheetInfo */) {
-    TEST_ARRAY
-        .lock()
-        .unwrap()
-        .push(TestFunction::new("jsSheetInfoUpdate", sheet));
+    js_call("jsSheetInfoUpdate", sheet);
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsSheetFills(sheet_id: String, fills: String /* JsRenderFill */) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
-        "jsSheetFills",
-        format!("{},{}", sheet_id, fills),
-    ));
+    js_call("jsSheetFills", format!("{},{}", sheet_id, fills));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsSheetMetaFills(sheet_id: String, fills: String /* JsSheetFill */) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
-        "jsSheetMetaFills",
-        format!("{},{}", sheet_id, fills),
-    ));
+    js_call("jsSheetMetaFills", format!("{},{}", sheet_id, fills));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsAddSheet(sheetInfo: String /*SheetInfo*/, user: bool) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
-        "jsAddSheet",
-        format!("{},{}", sheetInfo, user),
-    ));
+    js_call("jsAddSheet", format!("{},{}", sheetInfo, user));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsDeleteSheet(sheetId: String, user: bool) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
-        "jsDeleteSheet",
-        format!("{},{}", sheetId, user),
-    ));
+    js_call("jsDeleteSheet", format!("{},{}", sheetId, user));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsRequestTransactions(sequence_num: u64) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
-        "jsRequestTransactions",
-        sequence_num.to_string(),
-    ));
+    js_call("jsRequestTransactions", sequence_num.to_string());
 }
 
 #[cfg(test)]
@@ -389,115 +368,91 @@ pub fn jsUpdateCodeCell(
     code_cell: Option<String>,        /*JsCodeCell*/
     render_code_cell: Option<String>, /*JsRenderCodeCell*/
 ) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+    js_call(
         "jsUpdateCodeCell",
         format!(
             "{},{},{},{:?},{:?}",
             sheet_id, x, y, code_cell, render_code_cell
         ),
-    ));
+    );
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsOffsetsModified(sheet_id: String, offsets: String /*Vec<JsOffset>*/) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
-        "jsOffsetsModified",
-        format!("{},{}", sheet_id, offsets),
-    ));
+    js_call("jsOffsetsModified", format!("{},{}", sheet_id, offsets));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsSetCursor(cursor: String) {
-    TEST_ARRAY
-        .lock()
-        .unwrap()
-        .push(TestFunction::new("jsSetCursor", cursor));
+    js_call("jsSetCursor", cursor);
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsUpdateHtml(html: String /*JsHtmlOutput*/) {
-    TEST_ARRAY
-        .lock()
-        .unwrap()
-        .push(TestFunction::new("jsUpdateHtml", html));
+    js_call("jsUpdateHtml", html);
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsHtmlOutput(html: String /*Vec<JsHtmlOutput>*/) {
-    TEST_ARRAY
-        .lock()
-        .unwrap()
-        .push(TestFunction::new("jsHtmlOutput", html));
+    js_call("jsHtmlOutput", html);
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsGenerateThumbnail() {
-    TEST_ARRAY
-        .lock()
-        .unwrap()
-        .push(TestFunction::new("jsGenerateThumbnail", "".to_string()));
+    js_call("jsGenerateThumbnail", "".to_string());
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsBordersSheet(sheet_id: String, borders: String /* JsBordersSheet */) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
-        "jsBordersSheet",
-        format!("{},{}", sheet_id, borders),
-    ));
+    js_call("jsBordersSheet", format!("{},{}", sheet_id, borders));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsSheetCodeCell(sheet_id: String, code_cells: String) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
-        "jsSheetCodeCell",
-        format!("{},{}", sheet_id, code_cells),
-    ));
+    js_call("jsSheetCodeCell", format!("{},{}", sheet_id, code_cells));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsSheetBoundsUpdate(bounds: String) {
-    TEST_ARRAY
-        .lock()
-        .unwrap()
-        .push(TestFunction::new("jsSheetBoundsUpdate", bounds));
+    js_call("jsSheetBoundsUpdate", bounds);
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsImportProgress(file_name: &str, current: u32, total: u32, x: i64, y: i64, w: u32, h: u32) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+    js_call(
         "jsImportProgress",
         format!(
             "{},{},{},{},{},{},{}",
             file_name, current, total, x, y, w, h
         ),
-    ));
+    );
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsTransactionStart(transaction_id: String, name: String) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+    js_call(
         "jsTransactionStart",
         format!("{},{}", transaction_id, name,),
-    ));
+    );
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn addUnsentTransaction(transaction_id: String, transaction: String, operations: u32) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+    js_call(
         "addUnsentTransaction",
         format!("{},{},{}", transaction_id, transaction, operations),
-    ));
+    );
 }
 
 #[cfg(test)]
@@ -505,28 +460,22 @@ pub fn addUnsentTransaction(transaction_id: String, transaction: String, operati
 pub fn jsSendTransaction(transaction_id: String, _transaction: Vec<u8>) {
     // We do not include the actual transaction as we don't want to save that in
     // the TEST_ARRAY because of its potential size.
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
-        "jsSendTransaction",
-        transaction_id.to_string(),
-    ));
+    js_call("jsSendTransaction", transaction_id.to_string());
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsTransactionProgress(transaction_id: String, remaining_operations: i32) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+    js_call(
         "jsTransactionProgress",
         format!("{},{}", transaction_id, remaining_operations),
-    ));
+    );
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsUndoRedo(undo: bool, redo: bool) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
-        "jsUndoRedo",
-        format!("{},{}", undo, redo),
-    ));
+    js_call("jsUndoRedo", format!("{},{}", undo, redo));
 }
 
 #[cfg(test)]
@@ -540,27 +489,21 @@ pub fn jsConnection(
     connector_type: ConnectionKind,
     connection_id: String,
 ) -> JsValue {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+    js_call(
         "jsConnection",
         format!(
             "{},{},{},{},{},{},{}",
             transactionId, x, y, sheet_id, query, connector_type, connection_id
         ),
-    ));
+    );
     JsValue::NULL
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSendImage(
-    sheet_id: String,
-    x: i32,
-    y: i32,
-    image: Option<String>,
-    w: Option<f32>,
-    h: Option<f32>,
-) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+#[allow(clippy::too_many_arguments)]
+pub fn jsSendImage(sheet_id: String, x: i32, y: i32, w: i32, h: i32, image: Option<String>) {
+    js_call(
         "jsSendImage",
         format!(
             "{},{},{},{:?},{:?},{:?}",
@@ -571,16 +514,16 @@ pub fn jsSendImage(
             w,
             h,
         ),
-    ));
+    );
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsSheetValidations(sheet_id: String, validations: String /* JsValidation */) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+    js_call(
         "jsSheetValidations",
         format!("{},{}", sheet_id, validations),
-    ));
+    );
 }
 
 #[cfg(test)]
@@ -590,10 +533,10 @@ pub fn jsRequestRowHeights(
     sheet_id: String,
     rows: String, /*Vec<i64>*/
 ) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+    js_call(
         "jsRequestRowHeights",
         format!("{},{},{}", transaction_id, sheet_id, rows),
-    ));
+    );
 }
 
 #[cfg(test)]
@@ -602,10 +545,10 @@ pub fn jsValidationWarning(
     sheet_id: String,
     validations: String, /* Vec<(x, y, validation_id, failed) */
 ) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+    js_call(
         "jsValidationWarning",
         format!("{},{}", sheet_id, validations),
-    ));
+    );
 }
 
 #[cfg(test)]
@@ -616,7 +559,7 @@ pub fn jsRenderValidationWarnings(
     hash_y: i64,
     validations: String, /* Vec(x, y, id) */
 ) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+    js_call(
         "jsRenderValidationWarnings",
         format!(
             "{},{},{},{}",
@@ -625,50 +568,35 @@ pub fn jsRenderValidationWarnings(
             hash_y,
             hash_test(&validations)
         ),
-    ));
+    );
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsMultiplayerSynced() {
-    TEST_ARRAY
-        .lock()
-        .unwrap()
-        .push(TestFunction::new("jsMultiplayerSynced", "".into()));
+    js_call("jsMultiplayerSynced", "".into());
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsHashesDirty(sheet_id: String, hashes: String /*Vec<Pos>*/) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
-        "jsHashesDirty",
-        format!("{},{}", sheet_id, hashes),
-    ));
+    js_call("jsHashesDirty", format!("{},{}", sheet_id, hashes));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsSendViewportBuffer(buffer: [u8; 112]) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
-        "jsSendViewportBuffer",
-        format!("{:?}", buffer),
-    ));
+    js_call("jsSendViewportBuffer", format!("{:?}", buffer));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsClientMessage(message: String, error: String) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
-        "jsClientMessage",
-        format!("{},{}", message, error),
-    ));
+    js_call("jsClientMessage", format!("{},{}", message, error));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsA1Context(context: String) {
-    TEST_ARRAY
-        .lock()
-        .unwrap()
-        .push(TestFunction::new("jsA1Context", context));
+    js_call("jsA1Context", context);
 }

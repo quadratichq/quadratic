@@ -59,9 +59,9 @@ export class CellsFills extends Container {
     events.off('sheetOffsets', this.drawSheetCells);
     events.off('cursorPosition', this.setDirty);
     events.off('resizeHeadingColumn', this.drawCells);
+    events.off('resizeHeadingColumn', this.drawSheetCells);
     events.off('resizeHeadingRow', this.drawCells);
     events.off('resizeHeadingRow', this.drawSheetCells);
-    events.off('resizeHeadingColumn', this.drawSheetCells);
     events.off('viewportChanged', this.setDirty);
     super.destroy();
   }
@@ -212,11 +212,7 @@ export class CellsFills extends Container {
       let yOffset = bounds.y;
       for (let y = 0; y < table.h; y++) {
         let height = this.sheet.offsets.getRowHeight(y + table.y);
-        // TODO: (jimniels) fix this so 1st row _of data_ is always white
-        if (!(table.show_ui || table.show_name !== table.show_columns ? 1 : 0)) {
-          break;
-        }
-        if (y % 2 === 0) {
+        if (y % 2 !== (table.show_ui && table.show_name !== table.show_columns ? 1 : 0)) {
           this.alternatingColorsGraphics.beginFill(ALTERNATING_BG_COLOR, ALTERNATING_BG_OPACITY);
           this.alternatingColorsGraphics.drawRect(bounds.x, yOffset, bounds.width, height);
           this.alternatingColorsGraphics.endFill();

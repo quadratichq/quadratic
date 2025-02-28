@@ -31,6 +31,7 @@ type Props = Omit<AIUserMessageFormWrapperProps, 'messageIndex'> & {
   setLoading: SetterOrUpdater<boolean>;
   submitPrompt: (prompt: string) => void;
   formOnKeyDown?: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  maxHeight?: string;
   ctx?: {
     context: Context;
     setContext: React.Dispatch<React.SetStateAction<Context>>;
@@ -49,6 +50,7 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
     setLoading,
     submitPrompt,
     formOnKeyDown,
+    maxHeight = '120px',
   } = props;
 
   const [editing, setEditing] = useState(!initialPrompt);
@@ -143,7 +145,7 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
           autoComplete="off"
           placeholder="Ask a question..."
           autoHeight={true}
-          maxHeight="120px"
+          maxHeight={maxHeight}
         />
       ) : (
         <div className="pointer-events-none whitespace-pre-wrap p-2 text-sm">{prompt}</div>

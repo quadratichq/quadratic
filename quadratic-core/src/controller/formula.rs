@@ -122,10 +122,10 @@ pub fn parse_formula(formula_string: &str, ctx: &A1Context, pos: SheetPos) -> Fo
         parse_error_msg: parse_error.as_ref().map(|e| e.msg.to_string()),
         parse_error_span: parse_error.and_then(|e| e.span),
 
-        // todo: cell_refs are returning Relative positions that are actually Absolute
         cell_refs: formulas::find_cell_references(formula_string, ctx, pos)
             .into_iter()
-            .map(|r| r.into())
+            .filter_map(|spanned_result| spanned_result.transpose().ok())
+            .map(|spanned| spanned.into())
             .collect(),
     };
     result
@@ -135,10 +135,8 @@ pub fn parse_formula(formula_string: &str, ctx: &A1Context, pos: SheetPos) -> Fo
 mod tests {
     use super::{parse_formula, CellRefSpan, FormulaParseResult};
     use crate::a1::{CellRefCoord, CellRefRange, SheetCellRefRange};
-    use crate::grid::{Grid, SheetId};
-    use crate::Pos;
-    use crate::{a1::UNBOUNDED, Span};
-    use serial_test::parallel;
+    use crate::grid::{Grid, Sheet, SheetId};
+    use crate::{Pos, Span};
 
     fn parse(grid: &Grid, s: &str) -> FormulaParseResult {
         println!("Parsing {s}");
@@ -149,7 +147,6 @@ mod tests {
     /// Run this test with `--nocapture` to generate the example for the
     /// `parse_formula()` docs.
     #[test]
-    #[parallel]
     fn example_parse_formula_output() {
         let sheet_id = SheetId::new();
         let example_result = FormulaParseResult {
@@ -187,10 +184,14 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_parse_formula_output() {
-        let g = Grid::new();
-        let result = parse(&g, "'Sheet2'!A0");
+        let mut g = Grid::new();
+        g.add_sheet(Some(Sheet::new(
+            SheetId::new(),
+            "Sheet2".to_string(),
+            String::new(),
+        )));
+        let result = parse(&g, "'Sheet2'!A1");
         assert_eq!(result.parse_error_msg, None);
         assert_eq!(result.parse_error_span, None);
         assert_eq!(result.cell_refs.len(), 1);
@@ -198,7 +199,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_parse_formula_case_insensitive() {
         let g = Grid::new();
         assert_eq!(parse(&g, "A1:A2"), parse(&g, "a1:a2"));
@@ -206,7 +206,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_parse_formula_column() {
         let g = Grid::new();
         let sheet_id = g.sheets()[0].id;
@@ -222,7 +221,7 @@ mod tests {
                         CellRefCoord::new_rel(1),
                         CellRefCoord::new_rel(1),
                         CellRefCoord::new_rel(1),
-                        CellRefCoord::new_abs(UNBOUNDED),
+                        CellRefCoord::UNBOUNDED,
                     ),
                 },
             }]
@@ -230,7 +229,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_parse_formula_row() {
         let g = Grid::new();
         let sheet_id = g.sheets()[0].id;
@@ -243,9 +241,9 @@ mod tests {
                 cell_ref: SheetCellRefRange {
                     sheet_id,
                     cells: CellRefRange::new_sheet_ref(
-                        CellRefCoord::new_rel(UNBOUNDED),
+                        CellRefCoord::START,
                         CellRefCoord::new_rel(2),
-                        CellRefCoord::new_rel(UNBOUNDED),
+                        CellRefCoord::UNBOUNDED,
                         CellRefCoord::new_rel(3),
                     )
                 }

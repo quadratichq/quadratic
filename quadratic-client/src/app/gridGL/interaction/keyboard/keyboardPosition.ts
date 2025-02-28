@@ -59,13 +59,14 @@ async function jumpCursor(direction: Direction, jump: boolean, select: boolean) 
     // todo: hack so we can select the table if in the table anchor (this entire
     // fn should be moved to rust-client)
     cursor.moveTo(jumpCol, jumpRow);
+    ensureVisible({ x: jumpCol, y: jumpRow });
   }
 }
 
 function selectTo(deltaX: number, deltaY: number) {
   const cursor = sheets.sheet.cursor;
   const selectionEnd = cursor.selectionEnd;
-  cursor.selectTo(selectionEnd.x + deltaX, selectionEnd.y + deltaY, false);
+  cursor.selectTo(Math.max(1, selectionEnd.x + deltaX), Math.max(1, selectionEnd.y + deltaY), false);
 }
 
 export function keyboardPosition(event: KeyboardEvent): boolean {

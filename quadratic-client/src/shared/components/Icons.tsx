@@ -1,6 +1,6 @@
 /**
  * This is where we map all the icons we use to the ones from [Google's Material Symbols](https://fonts.google.com/icons)
- * We use Google’s recommended implementation strategy, which is loading the font
+ * We use Google's recommended implementation strategy, which is loading the font
  * FWIW: the font is loaded via the root `index.html`
  * We import 20 dp icons, as those are the only ones we use at the moment.
  */
@@ -188,6 +188,10 @@ export const CodeIcon: IconComponent = (props) => {
   return <Icon {...props}>code</Icon>;
 };
 
+export const CodeTableIcon: IconComponent = (props) => {
+  return <Icon {...props}>code_blocks</Icon>;
+};
+
 export const CopyIcon: IconComponent = (props) => {
   return <Icon {...props}>content_copy</Icon>;
 };
@@ -337,7 +341,7 @@ export const FormatStrikethroughIcon: IconComponent = (props) => {
 };
 
 export const FormatNumberAutomaticIcon: IconComponent = (props) => {
-  return <Icon {...props}>award_star</Icon>;
+  return <Number123Icon {...props} />;
 };
 
 export const FormatTextClipIcon: IconComponent = (props) => {
@@ -529,6 +533,10 @@ export const StopCircleIcon: IconComponent = (props) => {
 
 export const TableIcon: IconComponent = (props) => {
   return <Icon {...props}>table</Icon>;
+};
+
+export const TableRowsIcon: IconComponent = (props) => {
+  return <Icon {...props}>table_rows</Icon>;
 };
 
 export const ThemeIcon: IconComponent = (props) => {

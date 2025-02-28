@@ -15,15 +15,17 @@ import type {
   CellVerticalAlign,
   CellWrap,
   CodeCellLanguage,
+  DataTableSort,
   Direction,
   Format,
   JsCellValue,
-  JsCellValuePosAIContext,
   JsClipboard,
   JsCodeCell,
   JsCodeResult,
   JsCoordinate,
+  JsDataTableColumnHeader,
   JsRenderCell,
+  JsSelectionContext,
   JsSummarizeSelectionResult,
   JsTablesContext,
   MinMax,
@@ -1077,12 +1079,10 @@ class Core {
     return validation;
   }
 
-  receiveRowHeights(transactionId: string, sheetId: string, rowHeights: string) {
-    this.renderQueue.push(() => {
-      if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.receiveRowHeights(transactionId, sheetId, rowHeights);
-    });
-  }
+  receiveRowHeights = (transactionId: string, sheetId: string, rowHeights: string) => {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.receiveRowHeights(transactionId, sheetId, rowHeights);
+  };
 
   setDateTimeFormat(selection: string, format: string, cursor: string) {
     this.clientQueue.push(() => {
@@ -1114,26 +1114,28 @@ class Core {
     return cellValue;
   }
 
-  getAIContextRectsInSelection(selections: string[], maxRects?: number): JsCellValuePosAIContext[][] | undefined {
+  getAISelectionContexts(args: {
+    selections: string[];
+    maxRects?: number;
+    includeErroredCodeCells: boolean;
+    includeTablesSummary: boolean;
+    includeChartsSummary: boolean;
+  }): JsSelectionContext[] | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const aiContextRects: JsCellValuePosAIContext[][] | undefined = this.gridController.getAIContextRectsInSelections(
-      selections,
-      maxRects
+    const aiSelectionContexts: JsSelectionContext[] | undefined = this.gridController.getAISelectionContexts(
+      args.selections,
+      args.maxRects,
+      args.includeErroredCodeCells,
+      args.includeTablesSummary,
+      args.includeChartsSummary
     );
-    return aiContextRects;
-  }
-
-  getErroredCodeCellsInSelection(selections: string[]): JsCodeCell[][] | undefined {
-    if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const erroredCodeCells: JsCodeCell[][] | undefined =
-      this.gridController.getErroredCodeCellsInSelections(selections);
-    return erroredCodeCells;
+    return aiSelectionContexts;
   }
 
   getAITablesContext(): JsTablesContext[] | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const tablesContext: JsTablesContext[] | undefined = this.gridController.getAITablesContext();
-    return tablesContext;
+    const aiTablesContext: JsTablesContext[] | undefined = this.gridController.getAITablesContext();
+    return aiTablesContext;
   }
 
   neighborText(sheetId: string, x: number, y: number): string[] {
@@ -1191,7 +1193,7 @@ class Core {
     y: number,
     name?: string,
     alternatingColors?: boolean,
-    columns?: { name: string; display: boolean; valueIndex: number }[],
+    columns?: JsDataTableColumnHeader[],
     showUI?: boolean,
     showName?: boolean,
     showColumns?: boolean,
@@ -1215,6 +1217,7 @@ class Core {
     sheetId: string;
     x: number;
     y: number;
+    select_table: boolean;
     columns_to_add?: number[];
     columns_to_remove?: number[];
     rows_to_add?: number[];
@@ -1227,6 +1230,7 @@ class Core {
     this.gridController.dataTableMutations(
       args.sheetId,
       posToPos(args.x, args.y),
+      args.select_table,
       args.columns_to_add ? new Uint32Array(args.columns_to_add) : undefined,
       args.columns_to_remove ? new Uint32Array(args.columns_to_remove) : undefined,
       args.rows_to_add ? new Uint32Array(args.rows_to_add) : undefined,
@@ -1237,13 +1241,7 @@ class Core {
     );
   }
 
-  sortDataTable(
-    sheetId: string,
-    x: number,
-    y: number,
-    sort: { column_index: number; direction: string }[],
-    cursor: string
-  ) {
+  sortDataTable(sheetId: string, x: number, y: number, sort: DataTableSort[] | undefined, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.sortDataTable(sheetId, posToPos(x, y), JSON.stringify(sort), cursor);
   }
@@ -1265,9 +1263,9 @@ class Core {
     );
   }
 
-  getCellsA1(transactionId: string, a1: string, lineNumber?: number): string {
+  getCellsA1(transactionId: string, a1: string): string {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    return this.gridController.calculationGetCellsA1(transactionId, a1, lineNumber);
+    return this.gridController.calculationGetCellsA1(transactionId, a1);
   }
 
   finiteRectFromSelection(selection: string): Rectangle | undefined {

@@ -1,11 +1,9 @@
-use anyhow::Result;
-
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::operation::Operation;
 use crate::controller::GridController;
-use crate::grid::column_header::DataTableColumnHeader;
 use crate::Pos;
 use crate::{a1::A1Selection, CellValue, SheetPos};
+use anyhow::Result;
 
 impl GridController {
     // Using sheet_pos, either set a cell value or a data table value
@@ -40,95 +38,72 @@ impl GridController {
         let mut data_table_ops = vec![];
         let pos = Pos::from(sheet_pos);
 
-        if let Ok(sheet) = self.try_sheet_mut_result(sheet_pos.sheet_id) {
-            if pos.x > 1 && pos.y > 1 {
-                let data_table_left = sheet.first_data_table_within(Pos::new(pos.x - 1, pos.y));
-                if let Ok(data_table_left) = data_table_left {
-                    if let Some(data_table) =
-                        sheet.data_table(data_table_left).filter(|data_table| {
-                            if data_table.readonly {
-                                return false;
-                            }
-                            // check if next column is blank
-                            for y in 0..data_table.height(false) {
-                                let pos = Pos::new(pos.x, data_table_left.y + y as i64);
-                                if sheet.has_content(pos) {
+        if !value.is_empty() {
+            if let Ok(sheet) = self.try_sheet_mut_result(sheet_pos.sheet_id) {
+                if pos.x > 1 {
+                    let data_table_left = sheet.first_data_table_within(Pos::new(pos.x - 1, pos.y));
+                    if let Ok(data_table_left) = data_table_left {
+                        if let Some(data_table) =
+                            sheet.data_table(data_table_left).filter(|data_table| {
+                                if data_table.readonly {
                                     return false;
                                 }
-                            }
-                            true
-                        })
-                    {
-                        let y = pos.y - data_table_left.y;
-                        let header_y = if data_table.show_ui && data_table.show_columns {
-                            if data_table.show_name {
-                                Some(1)
-                            } else {
-                                Some(0)
-                            }
-                        } else {
-                            None
-                        };
 
-                        // header row, add column header
-                        if header_y == Some(y) {
-                            let value_index = data_table.column_headers_len();
-                            let column_header =
-                                DataTableColumnHeader::new(value.to_owned(), true, value_index);
-                            let columns =
-                                data_table.column_headers.to_owned().map(|mut headers| {
-                                    headers.push(column_header);
-                                    headers
-                                });
+                                if data_table.show_ui
+                                    && data_table.show_name
+                                    && data_table_left.y == pos.y
+                                {
+                                    return false;
+                                }
 
-                            data_table_ops.push(Operation::DataTableMeta {
+                                // check if next column is blank
+                                for y in 0..data_table.height(false) {
+                                    let pos = Pos::new(pos.x, data_table_left.y + y as i64);
+                                    if sheet.has_content(pos) {
+                                        return false;
+                                    }
+                                }
+                                true
+                            })
+                        {
+                            let column_index = data_table.width();
+                            data_table_ops.push(Operation::InsertDataTableColumns {
                                 sheet_pos: (data_table_left, sheet_pos.sheet_id).into(),
-                                name: None,
-                                alternating_colors: None,
-                                columns,
-                                show_ui: None,
-                                show_name: None,
-                                show_columns: None,
-                            });
-                        }
-                        // data row, add column
-                        else {
-                            // insert column with swallow
-                            data_table_ops.push(Operation::InsertDataTableColumn {
-                                sheet_pos: (data_table_left, sheet_pos.sheet_id).into(),
-                                index: (data_table.width()) as u32,
-                                column_header: None,
-                                values: None,
+                                columns: vec![(column_index as u32, None, None)],
                                 swallow: true,
+                                select_table: false,
                             });
                         }
                     }
                 }
 
-                let data_table_above = sheet.first_data_table_within(Pos::new(pos.x, pos.y - 1));
-                if let Ok(data_table_above) = data_table_above {
-                    if let Some(data_table) =
-                        sheet.data_table(data_table_above).filter(|data_table| {
-                            if data_table.readonly {
-                                return false;
-                            }
-                            // check if next row is blank
-                            for x in 0..data_table.width() {
-                                let pos = Pos::new(data_table_above.x + x as i64, pos.y);
-                                if sheet.has_content(pos) {
+                if pos.y > 1 {
+                    let data_table_above =
+                        sheet.first_data_table_within(Pos::new(pos.x, pos.y - 1));
+                    if let Ok(data_table_above) = data_table_above {
+                        if let Some(data_table) =
+                            sheet.data_table(data_table_above).filter(|data_table| {
+                                if data_table.readonly {
                                     return false;
                                 }
-                            }
-                            true
-                        })
-                    {
-                        // insert row with swallow
-                        data_table_ops.push(Operation::InsertDataTableRow {
-                            sheet_pos: (data_table_above, sheet_pos.sheet_id).into(),
-                            index: data_table.height(false) as u32,
-                            values: None,
-                            swallow: true,
-                        });
+                                // check if next row is blank
+                                for x in 0..data_table.width() {
+                                    let pos = Pos::new(data_table_above.x + x as i64, pos.y);
+                                    if sheet.has_content(pos) {
+                                        return false;
+                                    }
+                                }
+                                true
+                            })
+                        {
+                            // insert row with swallow
+                            data_table_ops.push(Operation::InsertDataTableRows {
+                                sheet_pos: (data_table_above, sheet_pos.sheet_id).into(),
+                                rows: vec![(data_table.height(false) as u32, None)],
+                                swallow: true,
+                                select_table: false,
+                            });
+                        }
                     }
                 }
             }
@@ -148,22 +123,10 @@ impl GridController {
     pub fn set_cell_values(
         &mut self,
         sheet_pos: SheetPos,
-        values: Vec<Vec<&str>>,
+        values: Vec<Vec<String>>,
         cursor: Option<String>,
     ) {
-        let mut ops = vec![];
-        let mut x = sheet_pos.x;
-        let mut y = sheet_pos.y;
-
-        for row in values {
-            for value in row {
-                let op_sheet_pos = SheetPos::new(sheet_pos.sheet_id, x, y);
-                ops.extend(self.set_cell_value_operations(op_sheet_pos, value.to_string()));
-                x += 1;
-            }
-            x = sheet_pos.x;
-            y += 1;
-        }
+        let ops = self.set_cell_values_operations(sheet_pos, values);
         self.start_user_transaction(ops, cursor, TransactionName::SetCells);
     }
 
@@ -201,10 +164,8 @@ mod test {
     use std::str::FromStr;
 
     use bigdecimal::BigDecimal;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_set_cell_value_undo_redo() {
         let mut g = GridController::test();
         let sheet_id = g.grid.sheets()[0].id;
@@ -264,7 +225,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_unpack_currency() {
         let value = String::from("$123.123");
         assert_eq!(
@@ -283,7 +243,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_set_cell_value() {
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
@@ -365,7 +324,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn clear_formatting() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -390,7 +348,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn delete_values_and_formatting() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -414,7 +371,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_set_value_data_table() {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
@@ -463,7 +419,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_set_value_data_table_first_row_header_and_show_ui() {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
@@ -608,7 +563,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_set_value_data_table_first_with_hidden_column() {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
@@ -668,7 +622,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_set_value_data_table_first_with_sort() {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
@@ -734,7 +687,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_expand_data_table_column_row_on_setting_value() {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
@@ -742,14 +694,19 @@ mod test {
         let data_table = sheet.data_table(pos).unwrap();
         assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 8, 13));
 
-        gc.set_cell_value(SheetPos::from((9, 4, sheet_id)), "test1".into(), None);
+        // hide first column
+        let sheet = gc.sheet_mut(sheet_id);
+        let data_table = sheet.data_table_mut(pos).unwrap();
+        let column_headers = data_table.column_headers.as_mut().unwrap();
+        column_headers[0].display = false;
+
+        gc.set_cell_value(SheetPos::from((8, 4, sheet_id)), "test1".into(), None);
 
         // column expand
-        let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
-        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 9, 13));
+        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 8, 13));
         assert_eq!(
-            data_table.cell_value_at(4, 2),
+            data_table.cell_value_at(3, 2),
             Some(CellValue::Text("test1".into()))
         );
 
@@ -757,19 +714,19 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table(pos).unwrap();
-        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 8, 13));
+        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 7, 13));
         assert_eq!(
-            sheet.cell_value(pos![I4]),
+            sheet.cell_value(pos![H4]),
             Some(CellValue::Text("test1".into()))
         );
 
-        gc.set_cell_value(SheetPos::from((9, 6, sheet_id)), "test2".into(), None);
+        gc.set_cell_value(SheetPos::from((8, 6, sheet_id)), "test2".into(), None);
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table(pos).unwrap();
-        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 8, 13));
+        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 7, 13));
         assert_eq!(
-            sheet.cell_value(pos![I6]),
+            sheet.cell_value(pos![H6]),
             Some(CellValue::Text("test2".into()))
         );
 
@@ -778,7 +735,7 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table(pos).unwrap();
-        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 8, 14));
+        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 7, 14));
         assert_eq!(
             data_table.cell_value_at(1, 12),
             Some(CellValue::Text("test3".into()))
@@ -788,7 +745,7 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table(pos).unwrap();
-        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 8, 13));
+        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 7, 13));
         assert_eq!(
             sheet.cell_value(pos![F14]),
             Some(CellValue::Text("test3".into()))
@@ -798,7 +755,7 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table(pos).unwrap();
-        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 8, 13));
+        assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 7, 13));
         assert_eq!(
             sheet.cell_value(pos![H14]),
             Some(CellValue::Text("test4".into()))

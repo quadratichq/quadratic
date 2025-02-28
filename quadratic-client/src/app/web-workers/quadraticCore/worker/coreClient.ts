@@ -81,7 +81,16 @@ declare var self: WorkerGlobalScope &
       renderCodeCell?: JsRenderCodeCell
     ) => void;
     sendUndoRedo: (undo: boolean, redo: boolean) => void;
-    sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
+    sendImage: (
+      sheetId: string,
+      x: number,
+      y: number,
+      w: number,
+      h: number,
+      image?: string,
+      pixel_width?: number,
+      pixel_height?: number
+    ) => void;
     sendSheetValidations: (sheetId: string, validations: Validation[]) => void;
     sendRenderValidationWarnings: (
       sheetId: string,
@@ -603,19 +612,11 @@ class CoreClient {
         });
         return;
 
-      case 'clientCoreGetAIContextRectsInSelections':
+      case 'clientCoreGetAISelectionContexts':
         this.send({
-          type: 'coreClientGetAIContextRectsInSelections',
+          type: 'coreClientGetAISelectionContexts',
           id: e.data.id,
-          value: core.getAIContextRectsInSelection(e.data.selections, e.data.maxRects),
-        });
-        return;
-
-      case 'clientCoreGetErroredCodeCellsInSelections':
-        this.send({
-          type: 'coreClientGetErroredCodeCellsInSelections',
-          id: e.data.id,
-          value: core.getErroredCodeCellsInSelection(e.data.selections),
+          selectionContexts: core.getAISelectionContexts(e.data),
         });
         return;
 
@@ -623,7 +624,7 @@ class CoreClient {
         this.send({
           type: 'coreClientGetAITablesContext',
           id: e.data.id,
-          value: core.getAITablesContext(),
+          tablesContext: core.getAITablesContext(),
         });
         return;
 
@@ -675,6 +676,7 @@ class CoreClient {
           sheetId: e.data.sheetId,
           x: e.data.x,
           y: e.data.y,
+          select_table: e.data.select_table,
           columns_to_add: e.data.columns_to_add,
           columns_to_remove: e.data.columns_to_remove,
           rows_to_add: e.data.rows_to_add,
@@ -682,6 +684,10 @@ class CoreClient {
           flatten_on_delete: e.data.flatten_on_delete,
           swallow_on_insert: e.data.swallow_on_insert,
           cursor: e.data.cursor,
+        });
+        this.send({
+          type: 'coreClientDataTableMutations',
+          id: e.data.id,
         });
         return;
 
@@ -851,8 +857,18 @@ class CoreClient {
       this.send({ type: 'coreClientGetJwt', id });
     });
   }
-  sendImage = (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => {
-    this.send({ type: 'coreClientImage', sheetId, x, y, image, w, h });
+
+  sendImage = (
+    sheetId: string,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    image?: string,
+    pixel_width?: number,
+    pixel_height?: number
+  ) => {
+    this.send({ type: 'coreClientImage', sheetId, x, y, image, w, h, pixel_width, pixel_height });
   };
 
   sendSheetValidations = (sheetId: string, validations: Validation[]) => {

@@ -42,10 +42,8 @@ pub fn export_sheet(sheet: Sheet) -> SheetSchema {
 #[cfg(test)]
 mod test {
     use super::*;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_export_sheet() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value((0, 0).into(), "Hello, world!".to_string());

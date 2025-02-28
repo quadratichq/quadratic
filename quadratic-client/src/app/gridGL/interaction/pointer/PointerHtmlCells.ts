@@ -5,7 +5,7 @@ import type { HtmlCell } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCell';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { DOUBLE_CLICK_TIME } from '@/app/gridGL/interaction/pointer/pointerUtils.js';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { InteractionEvent } from 'pixi.js';
+import type { InteractionEvent, Point } from 'pixi.js';
 
 export class PointerHtmlCells {
   private resizing: HtmlCell | undefined; // cell that is being resized
@@ -16,11 +16,11 @@ export class PointerHtmlCells {
 
   cursor: string | undefined;
 
-  pointerMove(e: InteractionEvent): boolean {
+  pointerMove(e: InteractionEvent, world: Point): boolean {
     if (!hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions)) return false;
 
     if (this.resizing) {
-      this.resizing.pointerMove(e);
+      this.resizing.pointerMove(world);
       return true;
     }
 
@@ -73,7 +73,7 @@ export class PointerHtmlCells {
       // pointer down on chart edge, start resizing
       if (target === 'right' || target === 'bottom' || target === 'corner') {
         this.resizing = cell;
-        this.resizing.startResizing(e.data.global.x, e.data.global.y);
+        this.resizing.startResizing();
         this.cursor = target === 'corner' ? 'nwse-resize' : target === 'right' ? 'col-resize' : 'row-resize';
         htmlCellsHandler.movetoTop(cell);
         return true;
@@ -93,13 +93,13 @@ export class PointerHtmlCells {
         // click with meta / ctrl key
         // select cell and add to selection
         else if (event.metaKey || event.ctrlKey) {
-          cursor.selectTable(cell.htmlCell.name, undefined, 0, false, true);
+          cursor.selectTable(cell.htmlCell.name, undefined, false, true);
         }
         // click without meta / ctrl key
         // select cell and clear selection
         else {
           this.active = cell;
-          cursor.selectTable(cell.htmlCell.name, undefined, 0, false, false);
+          cursor.selectTable(cell.htmlCell.name, undefined, false, false);
         }
         // move chart to top, useful in case of overlapping charts
         htmlCellsHandler.movetoTop(cell);

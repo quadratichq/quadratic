@@ -6,7 +6,7 @@ use ts_rs::TS;
 use wasm_bindgen::prelude::*;
 
 use super::{A1Error, CellRefCoord, UNBOUNDED};
-use crate::{a1::column_name, Pos};
+use crate::{a1::column_name, Pos, RefError};
 
 /// The maximum value for a column or row number.
 const OUT_OF_BOUNDS: i64 = 1_000_000_000;
@@ -53,15 +53,31 @@ impl CellRefRangeEnd {
         Self::new_relative_xy(UNBOUNDED, y)
     }
 
-    pub fn translate_in_place(&mut self, delta_x: i64, delta_y: i64) {
-        self.col.translate_in_place(delta_x);
-        self.row.translate_in_place(delta_y);
+    pub fn translate_in_place(&mut self, delta_x: i64, delta_y: i64) -> Result<(), RefError> {
+        self.col.translate_in_place(delta_x)?;
+        self.row.translate_in_place(delta_y)?;
+        Ok(())
     }
 
-    pub fn translate(self, delta_x: i64, delta_y: i64) -> Self {
+    pub fn translate(self, delta_x: i64, delta_y: i64) -> Result<Self, RefError> {
+        Ok(CellRefRangeEnd {
+            col: self.col.translate(delta_x)?,
+            row: self.row.translate(delta_y)?,
+        })
+    }
+
+    pub fn saturating_translate(self, delta_x: i64, delta_y: i64) -> Self {
         CellRefRangeEnd {
-            col: self.col.translate(delta_x),
-            row: self.row.translate(delta_y),
+            col: self.col.saturating_translate(delta_x),
+            row: self.row.saturating_translate(delta_y),
+        }
+    }
+
+    // TODO: remove this function when switching to u64
+    pub fn translate_unchecked(self, delta_x: i64, delta_y: i64) -> Self {
+        CellRefRangeEnd {
+            col: self.col.translate_unchecked(delta_x),
+            row: self.row.translate_unchecked(delta_y),
         }
     }
 
@@ -80,11 +96,54 @@ impl CellRefRangeEnd {
         self.row.coord
     }
 
-    /// Parses the components of a CellRefRangeEnd.
-    fn parse_components(s: &str) -> Result<(Option<i64>, bool, Option<i64>, bool), A1Error> {
+    /// Returns a new range end with the column and row bounded to the given
+    /// position at the start of the range.
+    pub fn to_bounded_start(self, pos: Pos) -> Self {
+        CellRefRangeEnd {
+            col: self.col.to_bounded_start(pos.x),
+            row: self.row.to_bounded_start(pos.y),
+        }
+    }
+
+    /// Returns a new range end with the column and row bounded to the given
+    /// position at the end of the range.
+    pub fn to_bounded_end(self, pos: Pos) -> Self {
+        CellRefRangeEnd {
+            col: self.col.to_bounded_end(pos.x),
+            row: self.row.to_bounded_end(pos.y),
+        }
+    }
+
+    /// Parses the components of a CellRefRangeEnd and returns a tuple:
+    /// `(x, is_x_absolute, y, is_y_absolute)`
+    ///
+    /// If `base_pos` is `None`, then only A1 notation is accepted. If it is
+    /// `Some`, then A1 and RC notation are both accepted.
+    fn parse_components(
+        s: &str,
+        base_pos: Option<Pos>,
+    ) -> Result<(Option<i64>, bool, Option<i64>, bool), A1Error> {
+        let a1_result = Self::parse_a1_components(s);
+        match (base_pos, a1_result) {
+            (Some(base_pos), Err(A1Error::InvalidCellReference(_))) => {
+                Self::parse_rc_components(s, base_pos)
+            }
+            (_, other) => other,
+        }
+    }
+
+    fn parse_a1_components(s: &str) -> Result<(Option<i64>, bool, Option<i64>, bool), A1Error> {
         lazy_static! {
+            /// ^(\$?)([A-Za-z]*)(\$?)(\d*)$
+            /// ^                          $    match whole string
+            ///  (\$?)                          group 1: optional `$`
+            ///       ([A-Za-z]*)               group 2: optional column name
+            ///                  (\$?)          group 3: optional `$`
+            ///                       (\d*)     group 4: optional row name
+            ///
+            /// All groups will be present, but some may be empty.
             static ref A1_REGEX: Regex =
-                Regex::new(r#"(\$?)([A-Za-z]*)(\$?)(\d*)"#).expect("bad regex");
+                Regex::new(r#"^(\$?)([A-Za-z]*)(\$?)(\d*)$"#).expect("bad regex");
         }
 
         let captures = A1_REGEX
@@ -115,7 +174,6 @@ impl CellRefRangeEnd {
                 row_str
                     .parse()
                     .ok()
-                    .filter(|&y| y > 0)
                     .ok_or_else(|| A1Error::InvalidRow(row_str.to_owned()))?,
             ),
         };
@@ -136,9 +194,76 @@ impl CellRefRangeEnd {
         Ok((col, col_is_absolute, row, row_is_absolute))
     }
 
+    fn parse_rc_components(
+        s: &str,
+        base_pos: Pos,
+    ) -> Result<(Option<i64>, bool, Option<i64>, bool), A1Error> {
+        lazy_static! {
+            /// ^(R(\[(-?\d+)\]|\{(\d+)\}))?(C(\[(-?\d+)\]|\{(\d+)\}))?$
+            /// ^                                                      $    match whole string
+            ///  (                        )?                                group 1: optional row
+            ///   R                                                           literal R
+            ///    (           |         )                                    group 2: either of ...
+            ///     \[       \]                                                 square brackets containing ...
+            ///       (-?\d+)                                                     group 3: positive or negative integer
+            ///                 \{     \}                                       curly braces containing ...
+            ///                   (\d+)                                           group 4: positive integer
+            ///                             (                        )?     group 5: optional column (same as row)
+            ///                              C                                literal C
+            ///                               (           |         )         group 6: either of ...
+            ///                                \[(-?\d+)\]                      group 7: `[]` with positive or negative integer
+            ///                                            \{(\d+)\}            group 8: `{}` with positive integer
+            static ref RC_REGEX: Regex =
+                Regex::new(r#"^(R(\[(-?\d+)\]|\{(\d+)\}))?(C(\[(-?\d+)\]|\{(\d+)\}))?$"#)
+                    .expect("bad regex");
+        }
+
+        let captures = RC_REGEX
+            .captures(s)
+            .ok_or_else(|| A1Error::InvalidCellReference(s.to_string()))?;
+
+        // These MUST be i64
+        let relative_row: Option<Result<i64, _>> = captures.get(3).map(|g| {
+            let s = g.as_str();
+            s.parse().map_err(|_| A1Error::InvalidRow(s.to_string()))
+        });
+        let absolute_row: Option<Result<i64, _>> = captures.get(4).map(|g| {
+            let s = g.as_str();
+            s.parse().map_err(|_| A1Error::InvalidRow(s.to_string()))
+        });
+
+        // These MAY be u64
+        let relative_col: Option<Result<i64, _>> = captures.get(7).map(|g| {
+            let s = g.as_str();
+            s.parse().map_err(|_| A1Error::InvalidRow(s.to_string()))
+        });
+        let absolute_col: Option<Result<i64, _>> = captures.get(8).map(|g| {
+            let s = g.as_str();
+            s.parse().map_err(|_| A1Error::InvalidRow(s.to_string()))
+        });
+
+        let row_is_absolute = absolute_row.is_some();
+        let col_is_absolute = absolute_col.is_some();
+
+        let row = match relative_row {
+            Some(delta) => Some(crate::util::offset_cell_coord(base_pos.y, delta?)?),
+            None => absolute_row.transpose()?,
+        };
+
+        let col = match relative_col {
+            Some(delta) => Some(crate::util::offset_cell_coord(base_pos.x, delta?)?),
+            None => absolute_col.transpose()?,
+        };
+
+        Ok((col, col_is_absolute, row, row_is_absolute))
+    }
+
     /// Parses the components of a CellRefRangeEnd.
-    pub fn parse_start(s: &str) -> Result<CellRefRangeEnd, A1Error> {
-        let (col, col_is_absolute, row, row_is_absolute) = Self::parse_components(s)?;
+    ///
+    /// If `base_pos` is `None`, then only A1 notation is accepted. If it is
+    /// `Some`, then A1 and RC notation are both accepted.
+    pub fn parse_start(s: &str, base_pos: Option<Pos>) -> Result<CellRefRangeEnd, A1Error> {
+        let (col, col_is_absolute, row, row_is_absolute) = Self::parse_components(s, base_pos)?;
         Ok(CellRefRangeEnd {
             col: CellRefCoord {
                 coord: col.unwrap_or(1),
@@ -152,8 +277,11 @@ impl CellRefRangeEnd {
     }
 
     /// Parses the components of a CellRefRangeEnd.
-    pub fn parse_end(s: &str) -> Result<CellRefRangeEnd, A1Error> {
-        let (col, col_is_absolute, row, row_is_absolute) = Self::parse_components(s)?;
+    ///
+    /// If `base_pos` is `None`, then only A1 notation is accepted. If it is
+    /// `Some`, then A1 and RC notation are both accepted.
+    pub fn parse_end(s: &str, base_pos: Option<Pos>) -> Result<CellRefRangeEnd, A1Error> {
+        let (col, col_is_absolute, row, row_is_absolute) = Self::parse_components(s, base_pos)?;
         Ok(CellRefRangeEnd {
             col: CellRefCoord {
                 coord: col.unwrap_or(UNBOUNDED),
@@ -177,21 +305,21 @@ impl CellRefRangeEnd {
         delta: i64,
     ) {
         if let Some(column) = column {
-            if !self.col.is_unbounded() && self.col() >= column {
-                self.col.coord = self.col.coord.saturating_add(delta).max(1);
+            if self.col() >= column {
+                self.col = self.col.saturating_translate(delta);
             }
         }
         if let Some(row) = row {
-            if !self.row.is_unbounded() && self.row() >= row {
-                self.row.coord = self.row.coord.saturating_add(delta).max(1);
+            if self.row() >= row {
+                self.row = self.row.saturating_translate(delta);
             }
         }
     }
 
-    pub fn adjust_column_row(&self, column: Option<i64>, row: Option<i64>, delta: i64) -> Self {
-        let mut range = *self;
-        range.adjust_column_row_in_place(column, row, delta);
-        range
+    #[must_use]
+    pub fn adjust_column_row(mut self, column: Option<i64>, row: Option<i64>, delta: i64) -> Self {
+        self.adjust_column_row_in_place(column, row, delta);
+        self
     }
 
     /// Returns whether the range end is missing a row or column number.
@@ -201,7 +329,6 @@ impl CellRefRangeEnd {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use super::*;
 
@@ -215,35 +342,35 @@ mod tests {
     #[test]
     fn test_parse_cell_ref_range_end_start() {
         assert_eq!(
-            CellRefRangeEnd::parse_start("A1").unwrap(),
-            CellRefRangeEnd::new_relative_xy(1, 1)
+            CellRefRangeEnd::parse_start("C5", None).unwrap(),
+            CellRefRangeEnd::new_relative_xy(3, 5),
         );
         assert_eq!(
-            CellRefRangeEnd::parse_start("$A$1").unwrap(),
+            CellRefRangeEnd::parse_start("$C$5", None).unwrap(),
             CellRefRangeEnd {
-                col: CellRefCoord::new_abs(1),
-                row: CellRefCoord::new_abs(1)
+                col: CellRefCoord::new_abs(3),
+                row: CellRefCoord::new_abs(5),
             }
         );
         assert_eq!(
-            CellRefRangeEnd::parse_start("A").unwrap(),
+            CellRefRangeEnd::parse_start("C", None).unwrap(),
             CellRefRangeEnd {
-                col: CellRefCoord::new_rel(1),
+                col: CellRefCoord::new_rel(3),
                 row: CellRefCoord::START,
             }
         );
         assert_eq!(
-            CellRefRangeEnd::parse_start("1").unwrap(),
+            CellRefRangeEnd::parse_start("5", None).unwrap(),
             CellRefRangeEnd {
-                col: CellRefCoord::new_rel(1),
-                row: CellRefCoord::new_rel(1)
+                col: CellRefCoord::START,
+                row: CellRefCoord::new_rel(5),
             }
         );
         assert_eq!(
-            CellRefRangeEnd::parse_start("$1").unwrap(),
+            CellRefRangeEnd::parse_start("$5", None).unwrap(),
             CellRefRangeEnd {
-                col: CellRefCoord::new_rel(1),
-                row: CellRefCoord::new_abs(1)
+                col: CellRefCoord::START,
+                row: CellRefCoord::new_abs(5),
             }
         );
     }
@@ -251,55 +378,123 @@ mod tests {
     #[test]
     fn test_parse_cell_ref_range_end_end() {
         assert_eq!(
-            CellRefRangeEnd::parse_end("A1").unwrap(),
-            CellRefRangeEnd::new_relative_xy(1, 1)
+            CellRefRangeEnd::parse_end("C5", None).unwrap(),
+            CellRefRangeEnd::new_relative_xy(3, 5),
         );
         assert_eq!(
-            CellRefRangeEnd::parse_end("$A$1").unwrap(),
+            CellRefRangeEnd::parse_end("$C$5", None).unwrap(),
             CellRefRangeEnd {
-                col: CellRefCoord::new_abs(1),
-                row: CellRefCoord::new_abs(1)
+                col: CellRefCoord::new_abs(3),
+                row: CellRefCoord::new_abs(5),
             }
         );
         assert_eq!(
-            CellRefRangeEnd::parse_end("1").unwrap(),
+            CellRefRangeEnd::parse_end("C", None).unwrap(),
             CellRefRangeEnd {
-                col: CellRefCoord::new_rel(UNBOUNDED),
+                col: CellRefCoord::new_rel(3),
+                row: CellRefCoord::UNBOUNDED,
+            }
+        );
+        assert_eq!(
+            CellRefRangeEnd::parse_end("5", None).unwrap(),
+            CellRefRangeEnd {
+                col: CellRefCoord::UNBOUNDED,
+                row: CellRefCoord::new_rel(5),
+            }
+        );
+        assert_eq!(
+            CellRefRangeEnd::parse_end("$5", None).unwrap(),
+            CellRefRangeEnd {
+                col: CellRefCoord::UNBOUNDED,
+                row: CellRefCoord::new_abs(5),
+            }
+        );
+    }
+
+    #[test]
+    fn test_parse_cell_ref_range_end_start_rc() {
+        assert_eq!(
+            CellRefRangeEnd::parse_start("R[-3]C[-2]", Some(Pos::new(5, 8))).unwrap(),
+            CellRefRangeEnd::new_relative_xy(3, 5),
+        );
+        assert_eq!(
+            CellRefRangeEnd::parse_start("R{5}C{3}", Some(Pos::new(5, 8))).unwrap(),
+            CellRefRangeEnd {
+                col: CellRefCoord::new_abs(3),
+                row: CellRefCoord::new_abs(5),
+            }
+        );
+        assert_eq!(
+            CellRefRangeEnd::parse_start("C[-2]", Some(Pos::new(5, 8))).unwrap(),
+            CellRefRangeEnd {
+                col: CellRefCoord::new_rel(3),
                 row: CellRefCoord::START,
             }
         );
         assert_eq!(
-            CellRefRangeEnd::parse_end("1").unwrap(),
+            CellRefRangeEnd::parse_start("R[-3]", Some(Pos::new(5, 8))).unwrap(),
             CellRefRangeEnd {
-                col: CellRefCoord::UNBOUNDED,
-                row: CellRefCoord::new_rel(1)
+                col: CellRefCoord::START,
+                row: CellRefCoord::new_rel(5),
             }
         );
         assert_eq!(
-            CellRefRangeEnd::parse_end("$1").unwrap(),
+            CellRefRangeEnd::parse_start("R{5}", Some(Pos::new(5, 8))).unwrap(),
             CellRefRangeEnd {
-                col: CellRefCoord::new_rel(UNBOUNDED),
-                row: CellRefCoord::new_abs(1)
+                col: CellRefCoord::START,
+                row: CellRefCoord::new_abs(5),
+            }
+        );
+    }
+
+    #[test]
+    fn test_parse_cell_ref_range_end_end_rc() {
+        assert_eq!(
+            CellRefRangeEnd::parse_end("R[-3]C[-2]", Some(Pos::new(5, 8))).unwrap(),
+            CellRefRangeEnd::new_relative_xy(3, 5),
+        );
+        assert_eq!(
+            CellRefRangeEnd::parse_end("R{5}C{3}", Some(Pos::new(5, 8))).unwrap(),
+            CellRefRangeEnd {
+                col: CellRefCoord::new_abs(3),
+                row: CellRefCoord::new_abs(5),
+            }
+        );
+        assert_eq!(
+            CellRefRangeEnd::parse_end("C[-2]", Some(Pos::new(5, 8))).unwrap(),
+            CellRefRangeEnd {
+                col: CellRefCoord::new_rel(3),
+                row: CellRefCoord::UNBOUNDED,
+            }
+        );
+        assert_eq!(
+            CellRefRangeEnd::parse_end("R[-3]", Some(Pos::new(5, 8))).unwrap(),
+            CellRefRangeEnd {
+                col: CellRefCoord::UNBOUNDED,
+                row: CellRefCoord::new_rel(5),
+            }
+        );
+        assert_eq!(
+            CellRefRangeEnd::parse_end("R{5}", Some(Pos::new(5, 8))).unwrap(),
+            CellRefRangeEnd {
+                col: CellRefCoord::UNBOUNDED,
+                row: CellRefCoord::new_abs(5),
             }
         );
     }
 
     #[test]
     fn test_parse_invalid_cell_ref_range_end_start() {
-        assert!(CellRefRangeEnd::parse_start("$").is_err());
-        assert!(CellRefRangeEnd::parse_start("A0").is_err());
-        assert!(CellRefRangeEnd::parse_start("0").is_err());
-        assert!(CellRefRangeEnd::parse_start("$A$").is_err());
-        assert!(CellRefRangeEnd::parse_start("").is_ok());
+        assert!(CellRefRangeEnd::parse_start("$", None).is_err());
+        assert!(CellRefRangeEnd::parse_start("$A$", None).is_err());
+        assert!(CellRefRangeEnd::parse_start("", None).is_ok());
     }
 
     #[test]
     fn test_parse_invalid_cell_ref_range_end_end() {
-        assert!(CellRefRangeEnd::parse_end("$").is_err());
-        assert!(CellRefRangeEnd::parse_end("A0").is_err());
-        assert!(CellRefRangeEnd::parse_end("0").is_err());
-        assert!(CellRefRangeEnd::parse_end("$A$").is_err());
-        assert!(CellRefRangeEnd::parse_end("").is_ok());
+        assert!(CellRefRangeEnd::parse_end("$", None).is_err());
+        assert!(CellRefRangeEnd::parse_end("$A$", None).is_err());
+        assert!(CellRefRangeEnd::parse_end("", None).is_ok());
     }
 
     #[test]
@@ -329,11 +524,11 @@ mod tests {
     #[test]
     fn test_translate_in_place() {
         let mut ref_end = CellRefRangeEnd::new_relative_xy(1, 1);
-        ref_end.translate_in_place(1, 2);
+        ref_end.translate_in_place(1, 2).unwrap();
         assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(2, 3));
 
         let mut ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
-        ref_end.translate_in_place(-1, -1);
+        ref_end.translate_in_place(-1, -1).unwrap();
         assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(1, 2));
     }
 
@@ -342,12 +537,12 @@ mod tests {
         let ref_end = CellRefRangeEnd::new_relative_xy(1, 1);
         assert_eq!(
             ref_end.translate(1, 2),
-            CellRefRangeEnd::new_relative_xy(2, 3)
+            Ok(CellRefRangeEnd::new_relative_xy(2, 3))
         );
         let ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
         assert_eq!(
             ref_end.translate(-1, -1),
-            CellRefRangeEnd::new_relative_xy(1, 2)
+            Ok(CellRefRangeEnd::new_relative_xy(1, 2))
         );
     }
 

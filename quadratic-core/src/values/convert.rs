@@ -413,10 +413,8 @@ impl CoerceInto for Spanned<Value> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_convert_from_str_to_cell_value() {
         assert_eq!(CellValue::from("$1.22"), CellValue::Text("$1.22".into()));
 
@@ -424,7 +422,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_datetime_conversions() {
         let time = NaiveTime::from_hms_opt(3, 15, 6).unwrap();
         let date = NaiveDate::from_ymd_opt(2010, 4, 1).unwrap();

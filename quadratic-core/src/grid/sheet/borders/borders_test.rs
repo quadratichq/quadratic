@@ -83,7 +83,6 @@ impl Borders {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use super::*;
     use crate::{a1::A1Selection, controller::GridController, grid::SheetId};

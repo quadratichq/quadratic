@@ -32,6 +32,13 @@ impl A1Selection {
             .any(|range| range.is_col_range() || range.is_row_range())
     }
 
+    /// Returns whether the first range is a column range.
+    pub fn is_col_range(&self) -> bool {
+        self.ranges
+            .first()
+            .is_some_and(|range| range.col_range() > 0)
+    }
+
     /// Returns whether the selection contains the given position.
     pub fn might_contain_xy(&self, x: i64, y: i64, context: &A1Context) -> bool {
         self.ranges
@@ -109,7 +116,7 @@ impl A1Selection {
     // Converts to a set of quadrant positions.
     pub fn rects_to_hashes(&self, sheet: &Sheet, context: &A1Context) -> HashSet<Pos> {
         let mut hashes = HashSet::new();
-        let finite_selection = sheet.finitize_selection(self);
+        let finite_selection = sheet.finitize_selection(self, false, false);
         finite_selection.ranges.iter().for_each(|range| {
             // handle finite ranges
             if let Some(rect) = range.to_rect(context) {
@@ -290,24 +297,24 @@ impl A1Selection {
 
     /// Returns true if the selection is a single column or row range or
     /// one_cell is true and the selection is only a single cell.
-    pub fn has_one_column_row_selection(&self, one_cell: bool) -> bool {
+    pub fn has_one_column_row_selection(&self, one_cell: bool, context: &A1Context) -> bool {
         if self.ranges.len() != 1 {
             return false;
         }
         let Some(range) = self.ranges.first() else {
             return false;
         };
-        range.is_col_range() || range.is_row_range() || (one_cell && range.is_single_cell())
+        range.is_col_range() || range.is_row_range() || (one_cell && range.is_single_cell(context))
     }
 
     /// Returns true if the selection is a single cell.
-    pub fn is_single_selection(&self) -> bool {
+    pub fn is_single_selection(&self, context: &A1Context) -> bool {
         if self.ranges.len() != 1 {
             return false;
         }
 
         if let Some(range) = self.ranges.first() {
-            range.is_single_cell()
+            range.is_single_cell(context)
         } else {
             false
         }
@@ -371,11 +378,19 @@ impl A1Selection {
     /// Used to trigger Python get_cells call to return a DataFrame with the
     /// appropriate column headers. This is true if the selection is a table and
     /// data is included.
-    pub fn has_table_headers(&self) -> bool {
+    pub fn has_table_headers(&self, context: &A1Context, is_python: bool) -> bool {
         if self.ranges.len() != 1 {
             return false;
         }
+
         if let Some(CellRefRange::Table { range }) = self.ranges.first() {
+            if is_python {
+                let show_columns = context
+                    .try_table(&range.table_name)
+                    .is_some_and(|table| table.show_columns);
+                return show_columns || range.headers;
+            }
+
             range.data || range.headers
         } else {
             false
@@ -460,7 +475,6 @@ impl A1Selection {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::grid::SheetId;
 
@@ -626,26 +640,28 @@ mod tests {
 
     #[test]
     fn has_one_column_row_selection() {
-        assert!(A1Selection::test_a1("A").has_one_column_row_selection(false));
-        assert!(A1Selection::test_a1("1").has_one_column_row_selection(false));
-        assert!(!A1Selection::test_a1("A,B").has_one_column_row_selection(false));
-        assert!(!A1Selection::test_a1("A1").has_one_column_row_selection(false));
-        assert!(!A1Selection::test_a1("A1:B2").has_one_column_row_selection(false));
+        let context = A1Context::default();
+        assert!(A1Selection::test_a1("A").has_one_column_row_selection(false, &context));
+        assert!(A1Selection::test_a1("1").has_one_column_row_selection(false, &context));
+        assert!(!A1Selection::test_a1("A,B").has_one_column_row_selection(false, &context));
+        assert!(!A1Selection::test_a1("A1").has_one_column_row_selection(false, &context));
+        assert!(!A1Selection::test_a1("A1:B2").has_one_column_row_selection(false, &context));
 
-        assert!(A1Selection::test_a1("A").has_one_column_row_selection(true));
-        assert!(A1Selection::test_a1("1").has_one_column_row_selection(true));
-        assert!(A1Selection::test_a1("A1").has_one_column_row_selection(true));
-        assert!(!A1Selection::test_a1("A,B").has_one_column_row_selection(true));
-        assert!(!A1Selection::test_a1("A1:B2").has_one_column_row_selection(true));
+        assert!(A1Selection::test_a1("A").has_one_column_row_selection(true, &context));
+        assert!(A1Selection::test_a1("1").has_one_column_row_selection(true, &context));
+        assert!(A1Selection::test_a1("A1").has_one_column_row_selection(true, &context));
+        assert!(!A1Selection::test_a1("A,B").has_one_column_row_selection(true, &context));
+        assert!(!A1Selection::test_a1("A1:B2").has_one_column_row_selection(true, &context));
     }
 
     #[test]
     fn is_single_selection() {
-        assert!(A1Selection::test_a1("A1").is_single_selection());
-        assert!(!A1Selection::test_a1("A1:B4").is_single_selection());
-        assert!(!A1Selection::test_a1("A").is_single_selection());
-        assert!(!A1Selection::test_a1("3").is_single_selection());
-        assert!(!A1Selection::test_a1("A1,B2").is_single_selection());
+        let context = A1Context::default();
+        assert!(A1Selection::test_a1("A1").is_single_selection(&context));
+        assert!(!A1Selection::test_a1("A1:B4").is_single_selection(&context));
+        assert!(!A1Selection::test_a1("A").is_single_selection(&context));
+        assert!(!A1Selection::test_a1("3").is_single_selection(&context));
+        assert!(!A1Selection::test_a1("A1,B2").is_single_selection(&context));
     }
 
     #[test]
@@ -780,7 +796,7 @@ mod tests {
     #[test]
     fn test_get_ref_range_bounds() {
         let context = A1Context::test(
-            &[("Sheet1", SheetId::test())],
+            &[("Sheet1", SheetId::TEST)],
             &[("Table1", &["A", "B", "C"], Rect::test_a1("A1:C4"))],
         );
         // note we do not return the D5: range as it is infinite
@@ -801,10 +817,16 @@ mod tests {
     fn test_is_on_html_image() {
         // Create a context with a table that has an HTML image
         let mut context = A1Context::test(
-            &[("Sheet1", SheetId::test()), ("Sheet2", SheetId::new())],
+            &[("Sheet1", SheetId::TEST), ("Sheet2", SheetId::new())],
             &[("Table1", &["A"], Rect::test_a1("B2:D4"))],
         );
-        context.table_map.tables.first_mut().unwrap().is_html_image = true;
+        context
+            .table_map
+            .tables
+            .values_mut()
+            .next()
+            .unwrap()
+            .is_html_image = true;
 
         // Test position inside the table
         assert!(A1Selection::test_a1("B2").cursor_is_on_html_image(&context));
@@ -825,10 +847,13 @@ mod tests {
     #[test]
     fn test_has_table_headers() {
         let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
-        assert!(A1Selection::test_a1_context("Table1", &context).has_table_headers());
-        assert!(A1Selection::test_a1_context("Table1[#ALL]", &context).has_table_headers());
-        assert!(A1Selection::test_a1_context("Table1[#headers]", &context).has_table_headers());
-        assert!(A1Selection::test_a1_context("Table1[#all]", &context).has_table_headers());
+        assert!(A1Selection::test_a1_context("Table1", &context).has_table_headers(&context, false));
+        assert!(A1Selection::test_a1_context("Table1[#ALL]", &context)
+            .has_table_headers(&context, false));
+        assert!(A1Selection::test_a1_context("Table1[#headers]", &context)
+            .has_table_headers(&context, false));
+        assert!(A1Selection::test_a1_context("Table1[#all]", &context)
+            .has_table_headers(&context, false));
     }
 
     #[test]
@@ -953,5 +978,49 @@ mod tests {
         // Test non-table selection
         let selection = A1Selection::test_a1_context("A1:B2", &context);
         assert_eq!(selection.get_single_full_table_selection_name(), None);
+    }
+
+    #[test]
+    fn test_table_column_selection() {
+        let context = A1Context::test(
+            &[],
+            &[
+                ("Table1", &["A", "B", "C"], Rect::test_a1("A1:C3")),
+                ("Table2", &["D", "E"], Rect::test_a1("D1:E3")),
+            ],
+        );
+
+        // Test selecting specific columns from a table
+        let selection = A1Selection::test_a1_context("Table1[[A]:[C]]", &context);
+        assert_eq!(
+            selection.table_column_selection("Table1", &context),
+            Some(vec![0, 1, 2])
+        );
+
+        // Test selecting all columns from a table
+        let selection = A1Selection::test_a1_context("Table1", &context);
+        assert_eq!(
+            selection.table_column_selection("Table1", &context),
+            Some(vec![0, 1, 2])
+        );
+
+        // Test selecting from wrong table name
+        let selection = A1Selection::test_a1_context("Table1[[A]:[C]]", &context);
+        assert_eq!(selection.table_column_selection("Table2", &context), None);
+
+        // Test non-table selection
+        let selection = A1Selection::test_a1_context("A1:C3", &context);
+        assert_eq!(selection.table_column_selection("Table1", &context), None);
+
+        // Test multiple table selections
+        let selection = A1Selection::test_a1_context("Table1[A],Table2[D]", &context);
+        assert_eq!(
+            selection.table_column_selection("Table1", &context),
+            Some(vec![0])
+        );
+        assert_eq!(
+            selection.table_column_selection("Table2", &context),
+            Some(vec![0])
+        );
     }
 }

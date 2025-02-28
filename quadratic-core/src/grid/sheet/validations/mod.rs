@@ -190,7 +190,7 @@ mod tests {
     fn create_validation_rect(x0: i64, y0: i64, x1: i64, y1: i64) -> Validation {
         Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::from_rect(SheetRect::new(x0, y0, x1, y1, SheetId::test())),
+            selection: A1Selection::from_rect(SheetRect::new(x0, y0, x1, y1, SheetId::TEST)),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,

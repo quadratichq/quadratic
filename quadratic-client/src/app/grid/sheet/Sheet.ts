@@ -11,9 +11,9 @@ import type {
   Validation,
 } from '@/app/quadratic-core-types';
 import {
+  A1SelectionToJsSelection,
   type SheetOffsets,
   SheetOffsetsWasm,
-  stringToSelection,
 } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
@@ -68,8 +68,8 @@ export class Sheet {
   // Returns all validations that intersect with the given point.
   getValidation = (x: number, y: number): Validation[] | undefined => {
     return this.validations.filter((v) => {
-      const selection = stringToSelection(v.selection.toString(), this.id, this.sheets.a1Context);
-      return selection.contains(x, y, this.sheets.a1Context);
+      const selection = A1SelectionToJsSelection(v.selection, this.sheets.a1Context);
+      return selection.contains(x, y);
     });
   };
 

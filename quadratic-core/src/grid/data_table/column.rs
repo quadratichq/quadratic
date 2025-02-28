@@ -73,17 +73,27 @@ impl DataTable {
         column_header: Option<String>,
         mut values: Option<Vec<CellValue>>,
     ) -> Result<()> {
+        if let Some(sort) = &mut self.sort {
+            for sort in sort.iter_mut() {
+                if sort.column_index >= column_index {
+                    sort.column_index += 1;
+                }
+            }
+        }
+
         if self.display_buffer.is_some() {
             if let Some(cell_values) = values {
                 let mut sorted_cell_values = vec![CellValue::Blank; cell_values.len()];
                 for (index, cell_value) in cell_values.into_iter().enumerate() {
-                    let actual_index = self.transmute_index(index as u64);
+                    let actual_index = self.get_row_index_from_display_index(index as u64);
                     sorted_cell_values[actual_index as usize] = cell_value;
                 }
                 values = Some(sorted_cell_values);
             }
         }
+
         self.insert_column(column_index, column_header, values)?;
+
         Ok(())
     }
 
@@ -106,10 +116,65 @@ impl DataTable {
 
         Ok(())
     }
+
+    /// Remove a column at the given index and update the sort.
+    pub fn delete_column_sorted(&mut self, column_index: usize) -> Result<()> {
+        self.delete_column(column_index)?;
+
+        if let Some(sort) = &mut self.sort {
+            for sort in sort.iter_mut() {
+                if sort.column_index > column_index {
+                    sort.column_index -= 1;
+                }
+            }
+            sort.retain(|sort| sort.column_index != column_index);
+        }
+
+        Ok(())
+    }
+
+    /// Returns the display column index from the column index in the values array.
+    pub fn get_display_index_from_column_index(
+        &self,
+        column_index: u32,
+        include_self: bool,
+    ) -> i64 {
+        let mut x_adjustment = 0;
+        let columns = self.column_headers.iter().flatten().collect::<Vec<_>>();
+        for (i, column) in columns.iter().enumerate() {
+            if i > column_index as usize || (!include_self && i == column_index as usize) {
+                break;
+            }
+            if !column.display {
+                x_adjustment += 1;
+            }
+        }
+        column_index as i64 - x_adjustment
+    }
+
+    /// Returns the column index from the display column index.
+    pub fn get_column_index_from_display_index(
+        &self,
+        display_index: u32,
+        include_self: bool,
+    ) -> u32 {
+        let mut hidden_columns = 0;
+        let mut seen_display_index = -1;
+        for (i, column) in self.column_headers.iter().flatten().enumerate() {
+            if column.display {
+                seen_display_index += 1;
+                if seen_display_index == display_index as i32 {
+                    break;
+                }
+            } else if include_self || i as u32 - hidden_columns != display_index {
+                hidden_columns += 1;
+            }
+        }
+        display_index + hidden_columns
+    }
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 pub mod test {
     use crate::{
         grid::test::{new_data_table, pretty_print_data_table},

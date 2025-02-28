@@ -7,13 +7,14 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import type { DataTableSort } from '@/app/quadratic-core-types';
 import { FONT_SIZE, OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
+import { SORT_BUTTON_PADDING, SORT_BUTTON_RADIUS } from '@/shared/constants/gridConstants';
 import type { Point } from 'pixi.js';
 import { BitmapText, Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
 
 const SORT_BACKGROUND_ALPHA = 0.1;
-const SORT_BUTTON_RADIUS = 7;
 const SORT_ICON_SIZE = 12;
-const SORT_BUTTON_PADDING = 3;
+const SORT_BUTTON_TINT = 0x000000;
+const SORT_BUTTON_DIRTY_TINT = 0xff0000;
 
 export class TableColumnHeader extends Container {
   private table: Table;
@@ -29,6 +30,8 @@ export class TableColumnHeader extends Container {
   w: number;
   h: number;
 
+  private dirtySort: boolean;
+
   private onSortPressed: Function;
 
   tableCursor: string | undefined;
@@ -41,17 +44,19 @@ export class TableColumnHeader extends Container {
     height: number;
     name: string;
     sort?: DataTableSort;
+    dirtySort: boolean;
     onSortPressed: Function;
     columnY: number;
   }) {
     super();
-    const { table, index, x, width, height, name, sort, onSortPressed, columnY } = options;
+    const { table, index, x, width, height, name, sort, dirtySort, onSortPressed, columnY } = options;
     this.table = table;
     this.index = index;
     this.onSortPressed = onSortPressed;
     this.columnHeaderBounds = new Rectangle(table.tableBounds.x + x, table.tableBounds.y + columnY, width, height);
     this.w = width;
     this.h = height;
+    this.dirtySort = dirtySort;
     this.position.set(x, 0);
 
     const tint = getCSSVariableTint('foreground');
@@ -68,46 +73,57 @@ export class TableColumnHeader extends Container {
   }
 
   // Called when the CodeCell is updated
-  updateHeader(options: {
+  updateHeader = (options: {
     x: number;
     width: number;
     height: number;
     name: string;
     sort?: DataTableSort;
+    dirtySort: boolean;
     columnY: number;
-  }) {
-    const { x, width, height, name, sort, columnY } = options;
-    this.columnHeaderBounds = new Rectangle(
-      this.table.tableBounds.x + x,
-      this.table.tableBounds.y + columnY,
-      width,
-      height
-    );
+  }) => {
+    const { x, width, height, name, sort, dirtySort, columnY } = options;
+
+    // need to maintain any adjusted y position
+    // todo: this fn is called too often (this is needed for rename column name)
+    if (this.columnHeaderBounds) {
+      this.columnHeaderBounds.x = this.table.tableBounds.x + x;
+      this.columnHeaderBounds.width = width;
+      this.columnHeaderBounds.height = height;
+    } else {
+      this.columnHeaderBounds = new Rectangle(
+        this.table.tableBounds.x + x,
+        this.table.tableBounds.y + columnY,
+        width,
+        height
+      );
+    }
     this.w = width;
     this.h = height;
+    this.dirtySort = dirtySort;
     this.position.set(x, 0);
     this.columnName.text = name;
     this.clipName(name, width);
     this.updateSortButton(width, height, sort);
-  }
+  };
 
   // tests the width of the text and clips it if it is too wide
-  private clipName(name: string, width: number) {
+  private clipName = (name: string, width: number) => {
     let clippedName = name;
     while (clippedName.length > 0 && this.columnName.width + SORT_BUTTON_RADIUS * 2 + SORT_BUTTON_PADDING > width) {
       clippedName = clippedName.slice(0, -1);
       this.columnName.text = clippedName + '…';
     }
-  }
+  };
 
-  private drawSortButton(width: number, height: number, sort?: DataTableSort) {
+  private drawSortButton = (width: number, height: number, sort?: DataTableSort) => {
     this.sortButtonStart = this.columnHeaderBounds.right - SORT_BUTTON_RADIUS * 2 - SORT_BUTTON_PADDING * 2;
     this.sortButton = this.addChild(new Graphics());
-    this.sortButton.beginFill(0, SORT_BACKGROUND_ALPHA);
+    this.sortButton.beginFill(0xffffff, SORT_BACKGROUND_ALPHA);
     this.sortButton.drawCircle(0, 0, SORT_BUTTON_RADIUS);
     this.sortButton.endFill();
     this.sortButton.position.set(width - SORT_BUTTON_RADIUS - SORT_BUTTON_PADDING, height / 2);
-    this.sortButton.visible = false;
+    this.updateSortButtonVisibility(false);
 
     const texture = sort
       ? Texture.from(sort.direction === 'Descending' ? 'sort-descending' : 'sort-ascending')
@@ -117,14 +133,16 @@ export class TableColumnHeader extends Container {
     this.sortIcon.position = this.sortButton.position;
     this.sortIcon.width = SORT_ICON_SIZE;
     this.sortIcon.scale.y = this.sortIcon.scale.x;
-  }
+  };
 
-  private updateSortButton(width: number, height: number, sort?: DataTableSort) {
+  private updateSortButton = (width: number, height: number, sort: DataTableSort | undefined) => {
     this.sortButtonStart = this.columnHeaderBounds.right - SORT_BUTTON_RADIUS * 2 - SORT_BUTTON_PADDING * 2;
     if (!this.sortButton) {
       throw new Error('Expected sortButton to be defined in updateSortButton');
     }
     this.sortButton.position.set(width - SORT_BUTTON_RADIUS - SORT_BUTTON_PADDING, height / 2);
+    this.updateSortButtonVisibility(this.sortButton.visible);
+
     if (!this.sortIcon) {
       throw new Error('Expected sortIcon to be defined in updateSortButton');
     }
@@ -134,21 +152,30 @@ export class TableColumnHeader extends Container {
       : Texture.EMPTY;
     this.sortIcon.width = SORT_ICON_SIZE;
     this.sortIcon.scale.y = this.sortIcon.scale.x;
-  }
+  };
+
+  updateSortButtonVisibility = (visible: boolean) => {
+    if (!this.sortButton) {
+      return;
+    }
+
+    this.sortButton.visible = visible || this.dirtySort;
+    this.sortButton.tint = visible ? SORT_BUTTON_TINT : this.dirtySort ? SORT_BUTTON_DIRTY_TINT : SORT_BUTTON_TINT;
+  };
 
   pointerMove = (world: Point): boolean => {
     if (!this.sortButton) return false;
 
     if (intersects.rectanglePoint(this.columnHeaderBounds, world)) {
-      if (!this.sortButton.visible) {
-        this.sortButton.visible = true;
+      if (!this.sortButton.visible || this.sortButton.tint !== SORT_BUTTON_TINT) {
+        this.updateSortButtonVisibility(true);
         pixiApp.setViewportDirty();
       }
       this.tableCursor = world.x > this.sortButtonStart ? 'pointer' : undefined;
       return true;
     }
     if (this.sortButton.visible) {
-      this.sortButton.visible = false;
+      this.updateSortButtonVisibility(false);
       this.tableCursor = undefined;
       pixiApp.setViewportDirty();
     }
@@ -168,7 +195,7 @@ export class TableColumnHeader extends Container {
     }
   };
 
-  toHoverGrid(y: number) {
+  toHoverGrid = (y: number) => {
     this.columnHeaderBounds.y = y;
-  }
+  };
 }

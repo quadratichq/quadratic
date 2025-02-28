@@ -112,7 +112,6 @@ impl CellRefRange {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use super::*;
 

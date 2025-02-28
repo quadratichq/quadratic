@@ -243,77 +243,83 @@ export class q {
       );
     }
 
-    try {
-      let sharedBuffer: SharedArrayBuffer | undefined = new SharedArrayBuffer(4 + 4 + 4);
-      let int32View: Int32Array | undefined = new Int32Array(sharedBuffer, 0, 3);
-      Atomics.store(int32View, 0, 0);
+    let sharedBuffer: SharedArrayBuffer | undefined = new SharedArrayBuffer(4 + 4 + 4);
+    let int32View: Int32Array | undefined = new Int32Array(sharedBuffer, 0, 3);
+    Atomics.store(int32View, 0, 0);
 
-      self.postMessage({ type: 'getCellsA1Length', sharedBuffer, a1 });
-      let result = Atomics.wait(int32View, 0, 0);
-      const length = int32View[1];
-      if (result !== 'ok' || length === 0) return [];
+    self.postMessage({ type: 'getCellsA1Length', sharedBuffer, a1 });
+    let result = Atomics.wait(int32View, 0, 0);
+    const length = int32View[1];
+    if (result !== 'ok' || length === 0) return [];
 
-      const id = int32View[2];
+    const id = int32View[2];
 
-      // New shared buffer, which is sized to hold the cells string
-      sharedBuffer = new SharedArrayBuffer(4 + length);
-      int32View = new Int32Array(sharedBuffer, 0, 1);
-      Atomics.store(int32View, 0, 0);
+    // New shared buffer, which is sized to hold the cells string
+    sharedBuffer = new SharedArrayBuffer(4 + length);
+    int32View = new Int32Array(sharedBuffer, 0, 1);
+    Atomics.store(int32View, 0, 0);
 
-      self.postMessage({ type: 'getCellsData', id, sharedBuffer });
-      result = Atomics.wait(int32View, 0, 0);
-      if (result !== 'ok') return [];
+    self.postMessage({ type: 'getCellsData', id, sharedBuffer });
+    result = Atomics.wait(int32View, 0, 0);
+    if (result !== 'ok') return [];
 
-      let uint8View: Uint8Array | undefined = new Uint8Array(sharedBuffer, 4, length);
+    let uint8View: Uint8Array | undefined = new Uint8Array(sharedBuffer, 4, length);
 
-      // Copy the data to a non-shared buffer, for decoding
-      const nonSharedBuffer = new ArrayBuffer(uint8View.byteLength);
-      const nonSharedView = new Uint8Array(nonSharedBuffer);
-      nonSharedView.set(uint8View);
-      sharedBuffer = undefined;
-      int32View = undefined;
-      uint8View = undefined;
+    // Copy the data to a non-shared buffer, for decoding
+    const nonSharedBuffer = new ArrayBuffer(uint8View.byteLength);
+    const nonSharedView = new Uint8Array(nonSharedBuffer);
+    nonSharedView.set(uint8View);
+    sharedBuffer = undefined;
+    int32View = undefined;
+    uint8View = undefined;
 
-      const decoder = new TextDecoder();
-      const resultsStringified = decoder.decode(nonSharedView);
-      const results = JSON.parse(resultsStringified) as {
+    const decoder = new TextDecoder();
+    const resultsStringified = decoder.decode(nonSharedView);
+    const results = JSON.parse(resultsStringified) as {
+      values: {
         cells: (number | string | boolean | Date | null)[][];
+        one_dimensional: boolean;
         two_dimensional: boolean;
       };
-      const cells = convertNullToUndefined(results.cells);
-
-      cells.forEach((row) => {
-        row.forEach((cell, i) => {
-          if (typeof cell === 'string' && cell.startsWith('___date___')) {
-            row[i] = new Date(parseInt(cell.substring('___date___'.length)));
-          }
-        });
-      });
-
-      // Convert to two dimensional if a single row or column and not
-      // two-dimensional set. Two dimensional is set when there is an unbounded
-      // range that may result in more than two columns or rows--eg, "B:" even
-      // where there is only content in the B-column.
-      if (!results.two_dimensional) {
-        if (cells.length === 1 && cells[0].length === 1) {
-          return cells[0][0];
-        }
-
-        // one column result
-        else if (cells.every((row) => row.length === 1)) {
-          return cells.map((row) => row[0]);
-        }
-
-        // one row result
-        else if (cells.length === 1) {
-          return cells[0];
-        }
-      }
-      return cells;
-    } catch (e) {
-      console.warn('[javascriptLibrary] q error', e);
+      error: string | null;
+    };
+    if (results.error) {
+      throw new Error(results.error);
     }
-    return [];
+
+    const cells = convertNullToUndefined(results.values.cells);
+
+    // parse dates
+    cells.forEach((row) => {
+      row.forEach((cell, i) => {
+        if (typeof cell === 'string' && cell.startsWith('___date___')) {
+          row[i] = new Date(parseInt(cell.substring('___date___'.length)));
+        }
+      });
+    });
+
+    // always return a single cell as a single value--even in cases where the
+    // selection may change.
+    if (cells.length === 1 && cells[0].length === 1 && !results.values.one_dimensional) {
+      return cells[0][0];
+    }
+
+    // Convert to two dimensional if a single row or column and not
+    // two-dimensional set. Two dimensional is set when there is an unbounded
+    // range that may result in more than two columns or rows--eg, "B:" even
+    // where there is only content in the B-column.
+    if (!results.values.two_dimensional) {
+      // one column result
+      if (cells.every((row) => row.length === 1)) {
+        return cells.map((row) => row[0]);
+      }
+
+      // one row result
+      else if (cells.length === 1) {
+        return cells[0];
+      }
+    }
+    return cells;
   }
 
   /**

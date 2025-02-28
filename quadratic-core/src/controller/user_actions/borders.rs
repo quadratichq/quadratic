@@ -21,16 +21,12 @@ impl GridController {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::grid::sheet::borders::{BorderSelection, BorderStyle};
 
     use super::*;
 
-    use serial_test::serial;
-
     #[test]
-    #[serial]
     fn set_borders() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

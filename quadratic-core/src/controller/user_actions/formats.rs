@@ -18,47 +18,76 @@ impl GridController {
     }
 
     /// Separately apply sheet and table formats.
-    fn format_ops(
-        &mut self,
+    pub(crate) fn format_ops(
+        &self,
         selection: &A1Selection,
         format_update: FormatUpdate,
     ) -> Vec<Operation> {
         let mut ops = vec![];
 
-        let context = self.grid.a1_context();
+        let context = self.a1_context();
 
         let add_table_ops = |range: RefRangeBounds,
                              table: &TableMapEntry,
                              ops: &mut Vec<Operation>| {
-            // pos relative to table pos (top left pos), 1-based for formatting
-            let mut range = range.translate(
-                -table.bounds.min.x + 1,
-                -table.bounds.min.y + 1 - table.y_adjustment(true),
+            // for sheet operation
+            let bounded_range = range.to_bounded(&table.bounds);
+            let bounded_ranges = vec![CellRefRange::Sheet {
+                range: bounded_range,
+            }];
+
+            // pos relative to table pos (top left pos), 1-based for formatting.
+            // ensure coordinates are within bounds later.
+            //
+            // TODO: don't have any negative numbers here, even temporarily,
+            // because that'll break if we switch to `u64`. Just directly
+            // compute the coordinates we actually want.
+            let mut range = range.translate_unchecked(
+                1 - table.bounds.min.x,
+                1 - table.bounds.min.y - table.y_adjustment(true),
             );
 
-            // map visible index to actual column index
-            range.start.col.coord = table
-                .get_column_index_from_visible_index(range.start.col.coord as usize - 1)
-                .unwrap_or(range.start.col.coord as usize - 1)
-                as i64
-                + 1;
+            if !range.start.col.is_unbounded() {
+                // map visible index to actual column index
+                range.start.col.coord = table
+                    .get_column_index_from_display_index(range.start.col.coord as usize - 1)
+                    .unwrap_or(range.start.col.coord as usize - 1)
+                    as i64
+                    + 1;
+            }
 
-            // map visible index to actual column index
-            range.end.col.coord = table
-                .get_column_index_from_visible_index(range.end.col.coord as usize - 1)
-                .unwrap_or(range.end.col.coord as usize - 1)
-                as i64
-                + 1;
+            if !range.end.col.is_unbounded() {
+                // map visible index to actual column index
+                range.end.col.coord = table
+                    .get_column_index_from_display_index(range.end.col.coord as usize - 1)
+                    .unwrap_or(range.end.col.coord as usize - 1)
+                    as i64
+                    + 1;
+            }
 
             let mut ranges = vec![CellRefRange::Sheet { range }];
 
+            // Force the range to be within bounds.
+            // TODO: this should not be necessary
+            if range.saturating_translate(0, 0).is_none() {
+                return;
+            };
+
             if let Some(rect) = range.to_rect() {
                 let Some(sheet) = self.try_sheet(table.sheet_id) else {
+                    dbgjs!(format!(
+                        "[format_ops] invalid sheet ID: {:?}",
+                        table.sheet_id
+                    ));
                     return;
                 };
 
                 let data_table_pos = table.bounds.min;
                 let Some(data_table) = sheet.data_table(data_table_pos) else {
+                    dbgjs!(format!(
+                        "[format_ops] invalid data table ID: {:?}",
+                        data_table_pos
+                    ));
                     return;
                 };
 
@@ -67,7 +96,8 @@ impl GridController {
                     // y is 1-based
                     for y in rect.y_range() {
                         // get actual row index and convert to 1-based
-                        let actual_row = data_table.transmute_index(y as u64 - 1) + 1;
+                        let actual_row =
+                            data_table.get_row_index_from_display_index(y as u64 - 1) + 1;
                         for x in rect.x_range() {
                             ranges.push(CellRefRange::new_relative_xy(x, actual_row as i64));
                         }
@@ -75,20 +105,23 @@ impl GridController {
                 }
             }
 
-            if let Some(selection) = A1Selection::from_ranges(ranges, table.sheet_id, &context) {
+            // add table operation
+            if let Some(selection) = A1Selection::from_ranges(ranges, table.sheet_id, context) {
                 let formats = SheetFormatUpdates::from_selection(&selection, format_update.clone());
-
-                // add table operation
                 ops.push(Operation::DataTableFormats {
                     sheet_pos: table.bounds.min.to_sheet_pos(table.sheet_id),
                     formats,
                 });
+            }
 
-                // clear sheet formatting if needed
+            // clear sheet formatting if needed
+            if let Some(bounded_selection) =
+                A1Selection::from_ranges(bounded_ranges, table.sheet_id, context)
+            {
                 if let Some(cleared) = format_update.only_cleared() {
                     ops.push(Operation::SetCellFormatsA1 {
                         sheet_id: table.sheet_id,
-                        formats: SheetFormatUpdates::from_selection(&selection, cleared),
+                        formats: SheetFormatUpdates::from_selection(&bounded_selection, cleared),
                     });
                 }
             }
@@ -98,7 +131,7 @@ impl GridController {
 
         // find intersection of sheet selection with tables, apply updates to both sheet and respective table
         if let Some(mut sheet_selection) =
-            A1Selection::from_sheet_ranges(sheet_ranges.clone(), selection.sheet_id, &context)
+            A1Selection::from_sheet_ranges(sheet_ranges.clone(), selection.sheet_id, context)
         {
             for sheet_range in sheet_ranges {
                 let rect = sheet_range.to_rect_unbounded();
@@ -111,10 +144,10 @@ impl GridController {
                         sheet_selection.exclude_cells(
                             intersection.min,
                             Some(intersection.max),
-                            &context,
+                            context,
                         );
                         // residual single cursor selection, clear if it belongs to the table
-                        if let Some(pos) = sheet_selection.try_to_pos(&context) {
+                        if let Some(pos) = sheet_selection.try_to_pos(context) {
                             if table.bounds.contains(pos) {
                                 sheet_selection.ranges.clear();
                             }
@@ -141,7 +174,7 @@ impl GridController {
         for table_ref in table_ranges {
             if let Some(table) = context.try_table(&table_ref.table_name) {
                 if let Some(range) =
-                    table_ref.convert_to_ref_range_bounds(true, &context, false, true)
+                    table_ref.convert_to_ref_range_bounds(true, context, false, true)
                 {
                     add_table_ops(range, table, &mut ops);
                 }
@@ -447,8 +480,8 @@ impl GridController {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod test {
+    use crate::controller::active_transactions::transaction_name::TransactionName;
     use crate::controller::operations::operation::Operation;
     use crate::controller::GridController;
     use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
@@ -877,14 +910,14 @@ mod test {
     fn test_apply_table_formats() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.test_set_data_table(pos!(E5), 3, 3, false, true);
+        gc.test_set_data_table(pos!(E5).to_sheet_pos(sheet_id), 3, 3, false, true);
+
         let format_update = FormatUpdate {
             bold: Some(Some(true)),
             ..Default::default()
         };
         let ops = gc.format_ops(
-            &A1Selection::test_a1_context("Table1", &gc.grid.a1_context()),
+            &A1Selection::test_a1_context("Table1", gc.a1_context()),
             format_update.clone(),
         );
         assert_eq!(ops.len(), 1);
@@ -903,5 +936,11 @@ mod test {
                 formats,
             }
         );
+
+        gc.start_user_transaction(ops, None, TransactionName::SetFormats);
+
+        let sheet = gc.sheet(sheet_id);
+        let format = sheet.cell_format(pos![F7]);
+        assert_eq!(format.bold, Some(true));
     }
 }

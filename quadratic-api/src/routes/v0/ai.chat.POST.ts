@@ -1,20 +1,23 @@
 import type { Response } from 'express';
-import { getLastUserPromptMessageIndex } from 'quadratic-shared/ai/helpers/message.helper';
+import { getLastPromptMessageType, getLastUserPromptMessageIndex } from 'quadratic-shared/ai/helpers/message.helper';
 import {
+  getModelFromModelKey,
   isAnthropicModel,
   isBedrockAnthropicModel,
   isBedrockModel,
   isOpenAIModel,
+  isXAIModel,
 } from 'quadratic-shared/ai/helpers/model.helper';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
-import { type AIMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
+import { type ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 import { handleAnthropicRequest } from '../../ai/handler/anthropic';
 import { handleBedrockRequest } from '../../ai/handler/bedrock';
 import { handleOpenAIRequest } from '../../ai/handler/openai';
 import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
+import { anthropic, bedrock, bedrock_anthropic, openai, xai } from '../../ai/providers';
 import dbClient from '../../dbClient';
 import { STORAGE_TYPE } from '../../env-vars';
 import { getFile } from '../../middleware/getFile';
@@ -36,8 +39,16 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     user: { id: userId },
   } = req;
 
+  const usage = await getAIMessageUsageForUser(userId);
+  const exceededUsageLimit = await userExceededUsageLimit(usage);
+
+  if (exceededUsageLimit) {
+    //@ts-expect-error
+    return res.status(402).json({ error: 'Usage limit exceeded' });
+  }
+
   const { body } = parseRequest(req, schema);
-  const { chatId, fileUuid, source, model, ...args } = body;
+  const { chatId, fileUuid, source, modelKey, ...args } = body;
 
   if (args.useToolsPrompt) {
     const toolUseContext = getToolUseContext();
@@ -49,25 +60,30 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     args.messages.unshift(...quadraticContext);
   }
 
-  let responseMessage: AIMessagePrompt | undefined;
-  if (isBedrockAnthropicModel(model) || isBedrockModel(model)) {
-    responseMessage = await handleBedrockRequest(model, args, res);
-  } else if (isAnthropicModel(model)) {
-    responseMessage = await handleAnthropicRequest(model, args, res);
-  } else if (isOpenAIModel(model)) {
-    responseMessage = await handleOpenAIRequest(model, args, res);
+  let parsedResponse: ParsedAIResponse | undefined;
+  if (isBedrockModel(modelKey)) {
+    parsedResponse = await handleBedrockRequest(modelKey, args, res, bedrock);
+  } else if (isBedrockAnthropicModel(modelKey)) {
+    parsedResponse = await handleAnthropicRequest(modelKey, args, res, bedrock_anthropic);
+  } else if (isAnthropicModel(modelKey)) {
+    parsedResponse = await handleAnthropicRequest(modelKey, args, res, anthropic);
+  } else if (isOpenAIModel(modelKey)) {
+    parsedResponse = await handleOpenAIRequest(modelKey, args, res, openai);
+  } else if (isXAIModel(modelKey)) {
+    parsedResponse = await handleOpenAIRequest(modelKey, args, res, xai);
   } else {
-    throw new Error(`Model not supported: ${model}`);
+    throw new Error(`Model not supported: ${modelKey}`);
   }
-
-  if (responseMessage) {
-    args.messages.push(responseMessage);
+  if (parsedResponse) {
+    args.messages.push(parsedResponse.responseMessage);
   }
 
   const {
     file: { id: fileId, ownerTeam },
   } = await getFile({ uuid: fileUuid, userId });
 
+  const model = getModelFromModelKey(modelKey);
+  const messageType = getLastPromptMessageType(args.messages);
   const messageIndex = getLastUserPromptMessageIndex(args.messages);
 
   const chat = await dbClient.analyticsAIChat.upsert({
@@ -83,6 +99,11 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
         create: {
           model,
           messageIndex,
+          messageType,
+          inputTokens: parsedResponse?.usage?.inputTokens,
+          outputTokens: parsedResponse?.usage?.outputTokens,
+          cacheReadTokens: parsedResponse?.usage?.cacheReadTokens,
+          cacheWriteTokens: parsedResponse?.usage?.cacheWriteTokens,
         },
       },
     },
@@ -91,6 +112,11 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
         create: {
           model,
           messageIndex,
+          messageType,
+          inputTokens: parsedResponse?.usage?.inputTokens,
+          outputTokens: parsedResponse?.usage?.outputTokens,
+          cacheReadTokens: parsedResponse?.usage?.cacheReadTokens,
+          cacheWriteTokens: parsedResponse?.usage?.cacheWriteTokens,
         },
       },
       updatedDate: new Date(),

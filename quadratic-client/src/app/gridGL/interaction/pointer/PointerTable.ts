@@ -4,6 +4,8 @@ import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
 import { DOUBLE_CLICK_TIME } from '@/app/gridGL/interaction/pointer/pointerUtils';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -20,13 +22,12 @@ export class PointerTable {
   private doubleClickTimeout: number | undefined;
   private tableNameDown: { column: number; row: number; point: Point; table: JsRenderCodeCell } | undefined;
 
-  private pointerDownTableName = (
+  private pointerDownTableName = async (
     world: Point,
     tableDown: TablePointerDownResult,
     shiftKey: boolean,
     ctrlKey: boolean
   ) => {
-    sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, tableDown.table.y, shiftKey, ctrlKey);
     if (this.doubleClickTimeout) {
       const table = tableDown.table;
       if (table.language === 'Import') {
@@ -55,6 +56,12 @@ export class PointerTable {
       window.clearTimeout(this.doubleClickTimeout);
       this.doubleClickTimeout = undefined;
     } else {
+      if (await inlineEditorHandler.handleCellPointerDown()) {
+        sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, shiftKey, ctrlKey);
+      } else {
+        inlineEditorMonaco.focus();
+      }
+
       this.doubleClickTimeout = window.setTimeout(() => {
         this.doubleClickTimeout = undefined;
       }, DOUBLE_CLICK_TIME);
@@ -68,6 +75,7 @@ export class PointerTable {
   };
 
   private pointerDownDropdown = (world: Point, tableDown: TablePointerDownResult) => {
+    sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, false, false);
     events.emit('contextMenu', {
       type: ContextMenuType.Table,
       world,
@@ -77,7 +85,7 @@ export class PointerTable {
     });
   };
 
-  private pointerDownColumnName = (
+  private pointerDownColumnName = async (
     world: Point,
     tableDown: TablePointerDownResult,
     shiftKey: boolean,
@@ -87,25 +95,43 @@ export class PointerTable {
       throw new Error('Expected column to be defined in pointerTable');
     }
     if (this.doubleClickTimeout) {
-      events.emit('contextMenu', {
-        type: ContextMenuType.TableColumn,
-        world,
-        column: tableDown.table.x,
-        row: tableDown.table.y,
-        table: tableDown.table,
-        rename: true,
-        selectedColumn: tableDown.column,
-      });
+      if (tableDown.table.language === 'Import') {
+        events.emit('contextMenu', {
+          type: ContextMenuType.TableColumn,
+          world,
+          column: tableDown.table.x,
+          row: tableDown.table.y,
+          table: tableDown.table,
+          rename: true,
+          selectedColumn: tableDown.column,
+        });
+      } else {
+        pixiAppSettings.setCodeEditorState?.((prev) => ({
+          ...prev,
+          diffEditorContent: undefined,
+          waitingForEditorClose: {
+            codeCell: {
+              sheetId: sheets.current,
+              pos: { x: tableDown.table.x, y: tableDown.table.y },
+              language: tableDown.table.language,
+            },
+            showCellTypeMenu: false,
+            initialCode: '',
+          },
+        }));
+      }
     } else {
       // move cursor to column header
-      const columnName = tableDown.table.columns[tableDown.column].name;
-      sheets.sheet.cursor.selectTable(tableDown.table.name, columnName, tableDown.table.y, shiftKey, ctrlKey);
-
-      if (!tableDown.table.language || tableDown.table.language === 'Import') {
-        this.doubleClickTimeout = window.setTimeout(() => {
-          this.doubleClickTimeout = undefined;
-        }, DOUBLE_CLICK_TIME);
+      if (await inlineEditorHandler.handleCellPointerDown()) {
+        const columnName = tableDown.table.columns[tableDown.column].name;
+        sheets.sheet.cursor.selectTable(tableDown.table.name, columnName, shiftKey, ctrlKey);
+      } else {
+        inlineEditorMonaco.focus();
       }
+
+      this.doubleClickTimeout = window.setTimeout(() => {
+        this.doubleClickTimeout = undefined;
+      }, DOUBLE_CLICK_TIME);
     }
   };
 
@@ -120,7 +146,7 @@ export class PointerTable {
         doubleClickCell({ column: tableDown.table.x, row: tableDown.table.y });
         return true;
       } else {
-        sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, 0, false, false);
+        sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, false, false);
         this.doubleClickTimeout = window.setTimeout(() => {
           this.doubleClickTimeout = undefined;
         }, DOUBLE_CLICK_TIME);
@@ -129,7 +155,11 @@ export class PointerTable {
     }
 
     if (event.button === 2 || (isMac && event.button === 0 && event.ctrlKey)) {
-      sheets.sheet.cursor.selectTable(tableDown.table.name, undefined, 0, false, false);
+      const columnName = tableDown.column ? tableDown.table.columns[tableDown.column].name : undefined;
+      const { column, row } = sheets.sheet.getColumnRowFromScreen(world.x, world.y);
+      if (!sheets.sheet.cursor.contains(column, row)) {
+        sheets.sheet.cursor.selectTable(tableDown.table.name, columnName, false, false);
+      }
       events.emit('contextMenu', {
         type: tableDown.type === 'column-name' ? ContextMenuType.TableColumn : ContextMenuType.Table,
         world,

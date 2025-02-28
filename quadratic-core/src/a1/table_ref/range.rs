@@ -83,9 +83,8 @@ impl fmt::Display for ColRange {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
-    use crate::Rect;
+    use crate::{grid::CodeCellLanguage, Rect};
 
     use super::*;
 
@@ -109,8 +108,13 @@ mod tests {
 
     #[test]
     fn test_has_col() {
-        let table =
-            TableMapEntry::test("test", &["A", "B", "C", "D"], None, Rect::test_a1("A1:E5"));
+        let table = TableMapEntry::test(
+            "test",
+            &["A", "B", "C", "D"],
+            None,
+            Rect::test_a1("A1:E5"),
+            CodeCellLanguage::Import,
+        );
 
         // Test ColRange::All
         assert!(ColRange::All.has_col(0, &table));

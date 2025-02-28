@@ -66,20 +66,13 @@ impl Sheet {
 
                         let fills_min_y = (pos.y + dt.y_adjustment(false)).max(pos.y);
 
-                        if let Some(display_buffer) = &dt.display_buffer {
+                        if dt.display_buffer.is_some() {
                             for y in y0..=y1 {
                                 let x = rect.min.x + x0;
                                 let x1 = rect.min.x + x1;
 
                                 // formats is 1 based, display_buffer is 0 based
-                                let mut y = y;
-                                if y >= 0 && y < display_buffer.len() as i64 {
-                                    y = display_buffer
-                                        .iter()
-                                        .position(|&display_y| y == display_y as i64)
-                                        .unwrap_or(y as usize)
-                                        as i64;
-                                }
+                                let mut y = dt.get_display_index_from_row_index(y as u64) as i64;
                                 y += rect.min.y;
 
                                 // check if the fill is within the table bounds and size is non zero
@@ -140,7 +133,6 @@ impl Sheet {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::{
         a1::A1Selection,
@@ -218,19 +210,17 @@ mod tests {
     fn test_get_all_render_fills_table() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
 
         // set a data table at E2 that's 3x3 and show_header is true
-        sheet.test_set_data_table(pos!(E2), 3, 3, false, true);
-        let context = gc.grid().a1_context();
+        gc.test_set_data_table(pos!(E2).to_sheet_pos(sheet_id), 3, 3, false, true);
         gc.set_fill_color(
-            &A1Selection::test_a1_context("Table1[Column 2]", &context),
+            &A1Selection::test_a1_context("Table1[Column 2]", gc.a1_context()),
             Some("red".to_string()),
             None,
         )
         .unwrap();
         gc.set_fill_color(
-            &A1Selection::test_a1_context("Table1[Column 3]", &context),
+            &A1Selection::test_a1_context("Table1[Column 3]", gc.a1_context()),
             Some("blue".to_string()),
             None,
         )
@@ -247,18 +237,18 @@ mod tests {
     fn test_table_has_fills() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.test_set_code_run_array_2d(
+        gc.test_set_code_run_array_2d(
+            sheet_id,
             5,
             2,
             3,
             3,
             vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
         );
-        assert!(!sheet.table_has_fills(Pos { x: 5, y: 2 }));
-        let context = gc.grid().a1_context();
+
+        assert!(!gc.sheet(sheet_id).table_has_fills(Pos { x: 5, y: 2 }));
         gc.set_fill_color(
-            &A1Selection::test_a1_context("Table1[Column 2]", &context),
+            &A1Selection::test_a1_context("Table1[Column 2]", gc.a1_context()),
             Some("red".to_string()),
             None,
         )
@@ -271,11 +261,9 @@ mod tests {
     fn test_get_all_render_fills_table_show_ui_options_first_row_header() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
 
         // set a data table at E2 that's 3x3 and show_header is true
-        sheet.test_set_data_table(pos!(E2), 3, 3, false, true);
-        let context = gc.grid().a1_context();
+        gc.test_set_data_table(pos!(E2).to_sheet_pos(sheet_id), 3, 3, false, true);
         gc.set_fill_color(
             &A1Selection::test_a1_sheet_id("E5:I5", &sheet_id),
             Some("red".to_string()),
@@ -283,7 +271,7 @@ mod tests {
         )
         .unwrap();
         gc.set_fill_color(
-            &A1Selection::test_a1_context("Table1[Column 2]", &context),
+            &A1Selection::test_a1_context("Table1[Column 2]", gc.a1_context()),
             Some("blue".to_string()),
             None,
         )
@@ -350,7 +338,6 @@ mod tests {
     #[test]
     fn test_get_all_render_fills_table_with_sort() {
         let (mut gc, sheet_id, pos, file_name) = simple_csv_at(pos!(E2));
-        let context = gc.grid().a1_context();
         gc.set_fill_color(
             &A1Selection::test_a1_sheet_id("E4:I4", &sheet_id),
             Some("red".to_string()),
@@ -358,7 +345,7 @@ mod tests {
         )
         .unwrap();
         gc.set_fill_color(
-            &A1Selection::test_a1_context(&format!("{}[region]", file_name), &context),
+            &A1Selection::test_a1_context(&format!("{}[region]", file_name), gc.a1_context()),
             Some("blue".to_string()),
             None,
         )
@@ -403,8 +390,6 @@ mod tests {
     fn test_get_all_render_fills_table_with_hidden_columns() {
         let (mut gc, sheet_id, pos, file_name) = simple_csv_at(pos!(E2));
 
-        let context = gc.grid().a1_context();
-
         gc.set_fill_color(
             &A1Selection::test_a1_sheet_id("E4:I4", &sheet_id),
             Some("red".to_string()),
@@ -412,7 +397,7 @@ mod tests {
         )
         .unwrap();
         gc.set_fill_color(
-            &A1Selection::test_a1_context(&format!("{}[region]", file_name), &context),
+            &A1Selection::test_a1_context(&format!("{}[region]", file_name), gc.a1_context()),
             Some("blue".to_string()),
             None,
         )
@@ -430,9 +415,16 @@ mod tests {
         assert_fill_eq(&fills[2], 6, 4, 1, 10, "blue");
         assert_fill_eq(&fills[3], 7, 4, 2, 1, "red");
 
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        let column_headers = data_table.column_headers.as_mut().unwrap();
+        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[0].display = false;
+        gc.test_data_table_update_meta(
+            pos.to_sheet_pos(sheet_id),
+            Some(column_headers),
+            None,
+            None,
+            None,
+        );
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table(pos).unwrap();
@@ -451,8 +443,9 @@ mod tests {
             None,
         )
         .unwrap();
+
         gc.set_fill_color(
-            &A1Selection::test_a1_context(&format!("{}[country]", file_name), &context),
+            &A1Selection::test_a1_context(&format!("{}[country]", file_name), gc.a1_context()),
             Some("yellow".to_string()),
             None,
         )
@@ -470,9 +463,16 @@ mod tests {
         assert_fill_eq(&fills[7], 7, 4, 1, 1, "red");
         assert_fill_eq(&fills[8], 7, 10, 1, 1, "green");
 
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        let column_headers = data_table.column_headers.as_mut().unwrap();
+        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[0].display = true;
+        gc.test_data_table_update_meta(
+            pos.to_sheet_pos(sheet_id),
+            Some(column_headers),
+            None,
+            None,
+            None,
+        );
 
         let sheet = gc.sheet(sheet_id);
         let fills = sheet.get_all_render_fills();

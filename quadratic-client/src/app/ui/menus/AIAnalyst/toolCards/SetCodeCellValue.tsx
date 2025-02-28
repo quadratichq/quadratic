@@ -98,7 +98,7 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
       const { code_cell_language: language, code_cell_position: position } = partialJson;
       return (
         <ToolCard
-          icon={<LanguageIcon language={language} />}
+          icon={<LanguageIcon language={language} className="text-primary" />}
           label={language}
           description={
             `${estimatedNumberOfLines} line` +

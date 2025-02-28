@@ -314,7 +314,6 @@ pub fn export_validations(validations: Validations) -> current::ValidationsSchem
 mod tests {
     use std::collections::HashMap;
 
-    use serial_test::parallel;
     use uuid::Uuid;
 
     use crate::a1::A1Selection;
@@ -322,7 +321,6 @@ mod tests {
     use super::*;
 
     #[test]
-    #[parallel]
     fn import_export_validations() {
         let validation_id = Uuid::new_v4();
         let mut warnings = HashMap::new();
@@ -356,7 +354,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn import_export_validation_numbers() {
         let validation_id = Uuid::new_v4();
         let mut warnings = HashMap::new();
@@ -392,7 +389,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn import_export_validation_text() {
         let validation_id = Uuid::new_v4();
         let mut warnings = HashMap::new();
@@ -442,7 +438,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn import_export_validation_date_time() {
         let validation_id = Uuid::new_v4();
         let mut warnings = HashMap::new();

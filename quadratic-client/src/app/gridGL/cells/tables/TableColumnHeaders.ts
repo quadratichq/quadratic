@@ -7,7 +7,7 @@ import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { FILL_SELECTION_ALPHA } from '@/app/gridGL/UI/Cursor';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
-import type { JsCoordinate, JsDataTableColumnHeader, SortDirection } from '@/app/quadratic-core-types';
+import type { DataTableSort, JsCoordinate, JsDataTableColumnHeader, SortDirection } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { sharedEvents } from '@/shared/sharedEvents';
 import type { Point } from 'pixi.js';
@@ -63,21 +63,19 @@ export class TableColumnHeaders extends Container {
       this.background.moveTo(this.table.tableBounds.width, 0);
       this.background.lineTo(this.table.tableBounds.width, this.headerHeight);
     }
-    if (this.table.inOverHeadings) {
-      const columnsSelected = this.table.sheet.cursor.getTableColumnSelection(this.table.codeCell.name);
-      if (columnsSelected) {
-        const startX = this.table.sheet.offsets.getColumnPlacement(
-          this.table.codeCell.x + columnsSelected[0]
-        )?.position;
-        const end = this.table.sheet.offsets.getColumnPlacement(
-          this.table.codeCell.x + columnsSelected[columnsSelected.length - 1]
-        );
-        const endX = end.position + end.size;
-        this.background.lineStyle();
-        this.background.beginFill(pixiApp.accentColor, FILL_SELECTION_ALPHA);
-        this.background.drawRect(startX, 0, endX - startX, this.headerHeight);
-        this.background.endFill();
-      }
+
+    // draws selection background
+    const columnsSelected = this.table.sheet.cursor.getTableColumnSelection(this.table.codeCell.name);
+    if (columnsSelected) {
+      const startX = this.table.sheet.offsets.getColumnPlacement(this.table.codeCell.x + columnsSelected[0])?.position;
+      const end = this.table.sheet.offsets.getColumnPlacement(
+        this.table.codeCell.x + columnsSelected[columnsSelected.length - 1]
+      );
+      const endX = end.position + end.size;
+      this.background.lineStyle();
+      this.background.beginFill(pixiApp.accentColor, FILL_SELECTION_ALPHA);
+      this.background.drawRect(startX - this.table.tableBounds.x, 0, endX - startX, this.headerHeight);
+      this.background.endFill();
     }
 
     this.background.lineStyle({
@@ -90,27 +88,36 @@ export class TableColumnHeaders extends Container {
   };
 
   private onSortPressed = (column: JsDataTableColumnHeader) => {
-    const sortOrder: SortDirection | undefined = this.table.codeCell.sort?.find(
-      (s) => s.column_index === column.valueIndex
-    )?.direction;
-    let newOrder: SortDirection;
-    switch (sortOrder) {
-      case undefined:
-      case 'None':
-        newOrder = 'Ascending';
-        break;
-      case 'Ascending':
-        newOrder = 'Descending';
-        break;
-      case 'Descending':
-        newOrder = 'None';
-        break;
-    }
-    if (!newOrder) {
-      throw new Error('Unknown sort order in onSortPressed');
-    }
     const table = this.table.codeCell;
-    const sort = newOrder === 'None' ? [] : [{ column_index: column.valueIndex, direction: newOrder }];
+
+    let sort: DataTableSort[] | undefined;
+
+    if (table.sort_dirty) {
+      sort = table.sort ?? undefined;
+    } else {
+      const sortOrder: SortDirection | undefined = this.table.codeCell.sort?.find(
+        (s) => s.column_index === column.valueIndex
+      )?.direction;
+      let newOrder: SortDirection;
+      switch (sortOrder) {
+        case undefined:
+        case 'None':
+          newOrder = 'Ascending';
+          break;
+        case 'Ascending':
+          newOrder = 'Descending';
+          break;
+        case 'Descending':
+          newOrder = 'None';
+          break;
+      }
+      if (!newOrder) {
+        throw new Error('Unknown sort order in onSortPressed');
+      }
+
+      sort = newOrder === 'None' ? [] : [{ column_index: column.valueIndex, direction: newOrder }];
+    }
+
     quadraticCore.sortDataTable(sheets.current, table.x, table.y, sort, sheets.getCursorPosition());
   };
 
@@ -146,6 +153,7 @@ export class TableColumnHeaders extends Container {
           height: this.headerHeight,
           name: column.name,
           sort: codeCell.sort?.find((s) => s.column_index === column.valueIndex),
+          dirtySort: codeCell.sort_dirty,
           columnY: this.table.codeCell.show_ui && this.table.codeCell.show_name ? this.headerHeight : 0,
         });
       } else {
@@ -159,6 +167,7 @@ export class TableColumnHeaders extends Container {
             height: this.headerHeight,
             name: column.name,
             sort: codeCell.sort?.find((s) => s.column_index === column.valueIndex),
+            dirtySort: codeCell.sort_dirty,
             onSortPressed: () => this.onSortPressed(column),
             columnY: this.table.codeCell.show_ui && this.table.codeCell.show_name ? this.headerHeight : 0,
           })
@@ -186,7 +195,7 @@ export class TableColumnHeaders extends Container {
     this.columns.children.forEach((column) => {
       if (column !== current) {
         if (column.sortButton?.visible) {
-          column.sortButton.visible = false;
+          column.updateSortButtonVisibility(false);
           pixiApp.setViewportDirty();
         }
       }

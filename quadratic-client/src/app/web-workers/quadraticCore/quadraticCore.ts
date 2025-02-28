@@ -16,14 +16,16 @@ import type {
   CellVerticalAlign,
   CellWrap,
   CodeCellLanguage,
+  DataTableSort,
   Direction,
   Format,
   JsCellValue,
-  JsCellValuePosAIContext,
   JsClipboard,
   JsCodeCell,
   JsCoordinate,
+  JsDataTableColumnHeader,
   JsRenderCell,
+  JsSelectionContext,
   JsSummarizeSelectionResult,
   JsTablesContext,
   MinMax,
@@ -391,34 +393,35 @@ class QuadraticCore {
     });
   }
 
-  getAIContextRectsInSelections(
-    selections: string[],
-    maxRects?: number
-  ): Promise<JsCellValuePosAIContext[][] | undefined> {
+  getAISelectionContexts(args: {
+    selections: string[];
+    maxRects?: number;
+    includeErroredCodeCells: boolean;
+    includeTablesSummary: boolean;
+    includeChartsSummary: boolean;
+  }): Promise<JsSelectionContext[] | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { value: JsCellValuePosAIContext[][] | undefined }) => {
-        resolve(message.value);
+      this.waitingForResponse[id] = (message: { selectionContexts: JsSelectionContext[] | undefined }) => {
+        resolve(message.selectionContexts);
       };
-      this.send({ type: 'clientCoreGetAIContextRectsInSelections', selections, maxRects, id });
-    });
-  }
-
-  getErroredCodeCellsInSelections(selections: string[]): Promise<JsCodeCell[][] | undefined> {
-    const id = this.id++;
-    return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { value: JsCodeCell[][] | undefined }) => {
-        resolve(message.value);
-      };
-      this.send({ type: 'clientCoreGetErroredCodeCellsInSelections', selections, id });
+      this.send({
+        type: 'clientCoreGetAISelectionContexts',
+        id,
+        selections: args.selections,
+        maxRects: args.maxRects,
+        includeErroredCodeCells: args.includeErroredCodeCells,
+        includeTablesSummary: args.includeTablesSummary,
+        includeChartsSummary: args.includeChartsSummary,
+      });
     });
   }
 
   getAITablesContext(): Promise<JsTablesContext[] | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { value: JsTablesContext[] | undefined }) => {
-        resolve(message.value);
+      this.waitingForResponse[id] = (message: { tablesContext: JsTablesContext[] | undefined }) => {
+        resolve(message.tablesContext);
       };
       this.send({ type: 'clientCoreGetAITablesContext', id });
     });
@@ -916,7 +919,7 @@ class QuadraticCore {
 
   //#region Misc.
 
-  setCellRenderResize(sheetId: string, x: number, y: number, width: number, height: number) {
+  setChartSize(sheetId: string, x: number, y: number, width: number, height: number) {
     this.send({
       type: 'clientCoreSetCellRenderResize',
       sheetId,
@@ -1385,7 +1388,7 @@ class QuadraticCore {
     options: {
       name?: string;
       alternatingColors?: boolean;
-      columns?: { name: string; display: boolean; valueIndex: number }[];
+      columns?: JsDataTableColumnHeader[];
       showColumns?: boolean;
       showName?: boolean;
       showUI?: boolean;
@@ -1411,6 +1414,7 @@ class QuadraticCore {
     sheetId: string;
     x: number;
     y: number;
+    select_table: boolean;
     columns_to_add?: number[];
     columns_to_remove?: number[];
     rows_to_add?: number[];
@@ -1419,28 +1423,30 @@ class QuadraticCore {
     swallow_on_insert?: boolean;
     cursor?: string;
   }) {
-    this.send({
-      type: 'clientCoreDataTableMutations',
-      sheetId: args.sheetId,
-      x: args.x,
-      y: args.y,
-      columns_to_add: args.columns_to_add,
-      columns_to_remove: args.columns_to_remove,
-      rows_to_add: args.rows_to_add,
-      rows_to_remove: args.rows_to_remove,
-      flatten_on_delete: args.flatten_on_delete,
-      swallow_on_insert: args.swallow_on_insert,
-      cursor: args.cursor,
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = () => {
+        resolve(undefined);
+      };
+      this.send({
+        type: 'clientCoreDataTableMutations',
+        id,
+        sheetId: args.sheetId,
+        x: args.x,
+        y: args.y,
+        select_table: args.select_table,
+        columns_to_add: args.columns_to_add,
+        columns_to_remove: args.columns_to_remove,
+        rows_to_add: args.rows_to_add,
+        rows_to_remove: args.rows_to_remove,
+        flatten_on_delete: args.flatten_on_delete,
+        swallow_on_insert: args.swallow_on_insert,
+        cursor: args.cursor,
+      });
     });
   }
 
-  sortDataTable(
-    sheetId: string,
-    x: number,
-    y: number,
-    sort: { column_index: number; direction: string }[],
-    cursor: string
-  ) {
+  sortDataTable(sheetId: string, x: number, y: number, sort: DataTableSort[] | undefined, cursor: string) {
     this.send({
       type: 'clientCoreSortDataTable',
       sheetId,

@@ -7,7 +7,6 @@ use crate::controller::operations::operation::Operation;
 use crate::controller::transaction::Transaction;
 use crate::controller::transaction_types::JsCodeResult;
 use crate::error_core::{CoreError, Result};
-use crate::grid::js_types::JsHtmlOutput;
 use crate::grid::{CodeCellLanguage, CodeRun, ConnectionKind, DataTable, DataTableKind};
 use crate::parquet::parquet_to_vec;
 use crate::renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
@@ -33,40 +32,34 @@ impl GridController {
 
             self.execute_operation(transaction);
             self.send_transaction_progress(transaction);
+            self.send_sheet_info(transaction);
+            self.send_code_cells(transaction);
             self.process_visible_dirty_hashes(transaction);
 
             if transaction.has_async > 0 {
                 self.transactions.update_async_transaction(transaction);
                 break;
-            } else if let Some((sheet_id, rows)) = transaction
-                .resize_rows
-                .iter()
-                .next()
-                .map(|(&k, v)| (k, v.clone()))
-            {
-                // TODO(ayush): consolidate these calls, when viewport buffer PR is merged
-                transaction.sheet_info.iter().for_each(|sheet_id| {
-                    self.send_sheet_info(*sheet_id);
-                });
-                transaction.sheet_info.clear();
+            }
 
-                transaction
-                    .offsets_modified
+            if transaction.operations.is_empty() {
+                if let Some((sheet_id, rows)) = transaction
+                    .resize_rows
                     .iter()
-                    .for_each(|(sheet_id, offsets)| {
-                        self.send_offsets_modified(*sheet_id, offsets);
-                    });
-                transaction.offsets_modified.clear();
+                    .next()
+                    .map(|(&k, v)| (k, v.clone()))
+                {
+                    transaction.resize_rows.remove(&sheet_id);
 
-                transaction.resize_rows.remove(&sheet_id);
-                let resizing = self.start_auto_resize_row_heights(
-                    transaction,
-                    sheet_id,
-                    rows.into_iter().collect(),
-                );
-                // break only if async resize operation is being executed
-                if resizing {
-                    break;
+                    self.send_offsets_modified(transaction);
+                    let resizing = self.start_auto_resize_row_heights(
+                        transaction,
+                        sheet_id,
+                        rows.into_iter().collect(),
+                    );
+                    // break only if async resize operation is being executed
+                    if resizing {
+                        break;
+                    }
                 }
             }
         }
@@ -82,153 +75,46 @@ impl GridController {
             return;
         }
 
-        if transaction.complete {
-            match transaction.source {
-                TransactionSource::User => {
-                    let undo = transaction.to_undo_transaction();
-                    self.undo_stack.push(undo);
-                    self.redo_stack.clear();
-                    self.transactions
-                        .unsaved_transactions
-                        .insert_or_replace(&transaction, true);
-                }
-                TransactionSource::Unsaved => {
-                    let undo = transaction.to_undo_transaction();
-                    self.undo_stack.push(undo);
-                    self.redo_stack.clear();
-                }
-                TransactionSource::Undo => {
-                    let undo = transaction.to_undo_transaction();
-                    self.redo_stack.push(undo);
-                    self.transactions
-                        .unsaved_transactions
-                        .insert_or_replace(&transaction, true);
-                }
-                TransactionSource::Redo => {
-                    let undo = transaction.to_undo_transaction();
-                    self.undo_stack.push(undo);
-                    self.transactions
-                        .unsaved_transactions
-                        .insert_or_replace(&transaction, true);
-                }
-                TransactionSource::Multiplayer => (),
-                TransactionSource::Server => (),
-                TransactionSource::Unset => panic!("Expected a transaction type"),
-            }
+        if !transaction.complete {
+            return;
         }
+
+        match transaction.source {
+            TransactionSource::User => {
+                let undo = transaction.to_undo_transaction();
+                self.undo_stack.push(undo);
+                self.redo_stack.clear();
+                self.transactions
+                    .unsaved_transactions
+                    .insert_or_replace(&transaction, true);
+            }
+            TransactionSource::Unsaved => {
+                let undo = transaction.to_undo_transaction();
+                self.undo_stack.push(undo);
+                self.redo_stack.clear();
+            }
+            TransactionSource::Undo => {
+                let undo = transaction.to_undo_transaction();
+                self.redo_stack.push(undo);
+                self.transactions
+                    .unsaved_transactions
+                    .insert_or_replace(&transaction, true);
+            }
+            TransactionSource::Redo => {
+                let undo = transaction.to_undo_transaction();
+                self.undo_stack.push(undo);
+                self.transactions
+                    .unsaved_transactions
+                    .insert_or_replace(&transaction, true);
+            }
+            TransactionSource::Multiplayer => (),
+            TransactionSource::Server => (),
+            TransactionSource::Unset => panic!("Expected a transaction type"),
+        }
+
+        self.send_transaction_client_updates(&mut transaction);
 
         transaction.send_transaction();
-
-        // TODO(ayush): consolidate these calls, when viewport buffer PR is merged
-        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-            crate::wasm_bindings::js::jsUndoRedo(
-                !self.undo_stack.is_empty(),
-                !self.redo_stack.is_empty(),
-            );
-
-            transaction.sheet_info.iter().for_each(|sheet_id| {
-                self.send_sheet_info(*sheet_id);
-            });
-
-            transaction
-                .offsets_modified
-                .iter()
-                .for_each(|(sheet_id, offsets)| {
-                    self.send_offsets_modified(*sheet_id, offsets);
-                });
-
-            // todo: this can be sent in less calls
-            transaction
-                .code_cells
-                .iter()
-                .for_each(|(sheet_id, positions)| {
-                    if let Some(sheet) = self.try_sheet(*sheet_id) {
-                        positions.iter().for_each(|pos| {
-                            sheet.send_code_cell(*pos);
-                        });
-                    }
-                });
-
-            self.process_visible_dirty_hashes(&mut transaction);
-            self.process_remaining_dirty_hashes(&mut transaction);
-
-            transaction.validations.iter().for_each(|sheet_id| {
-                if let Some(sheet) = self.try_sheet(*sheet_id) {
-                    sheet.send_all_validations();
-                }
-            });
-
-            transaction
-                .validations_warnings
-                .iter()
-                .for_each(|(sheet_id, warnings)| {
-                    let warnings = warnings.values().cloned().collect::<Vec<_>>();
-                    if let Some(sheet) = self.try_sheet(*sheet_id) {
-                        sheet.send_validation_warnings(warnings);
-                    }
-                });
-
-            transaction.sheet_borders.iter().for_each(|sheet_id| {
-                if let Some(sheet) = self.try_sheet(*sheet_id) {
-                    sheet.send_sheet_borders(*sheet_id);
-                }
-            });
-
-            // todo: this can be sent in less calls
-            transaction
-                .html_cells
-                .iter()
-                .for_each(|(sheet_id, positions)| {
-                    if let Some(sheet) = self.try_sheet(*sheet_id) {
-                        positions.iter().for_each(|pos| {
-                            // prepare the html for the client, or fallback to an empty html cell
-                            let html = sheet.get_single_html_output(*pos).unwrap_or(JsHtmlOutput {
-                                sheet_id: sheet_id.to_string(),
-                                x: pos.x,
-                                y: pos.y,
-                                html: None,
-                                w: None,
-                                h: None,
-                                name: "".to_string(),
-                                show_name: true,
-                            });
-                            if let Ok(html) = serde_json::to_string(&html) {
-                                crate::wasm_bindings::js::jsUpdateHtml(html);
-                            } else {
-                                dbgjs!(format!(
-                                    "Error serializing html in finalize_transaction for {:?}",
-                                    pos
-                                ));
-                            }
-                        });
-                    }
-                });
-
-            // todo: this can be sent in less calls
-            transaction
-                .image_cells
-                .iter()
-                .for_each(|(sheet_id, positions)| {
-                    positions.iter().for_each(|pos| {
-                        self.send_image(pos.to_sheet_pos(*sheet_id));
-                    });
-                });
-
-            transaction.fill_cells.iter().for_each(|sheet_id| {
-                if let Some(sheet) = self.try_sheet(*sheet_id) {
-                    sheet.resend_fills();
-                }
-            });
-
-            if let Some(selection) = transaction.update_selection {
-                crate::wasm_bindings::js::jsSetCursor(selection);
-            }
-
-            // send updated SheetMap and TableMap to client
-            if !transaction.code_cells.is_empty() || !transaction.sheet_info.is_empty() {
-                self.send_a1_context();
-            }
-        }
     }
 
     pub fn start_user_transaction(
@@ -349,8 +235,6 @@ impl GridController {
             );
 
             self.finalize_data_table(&mut transaction, current_sheet_pos, Some(data_table), None);
-            transaction.cells_accessed.clear();
-            transaction.waiting_for_async = None;
             self.start_transaction(&mut transaction);
             self.finalize_transaction(transaction);
         }
@@ -382,31 +266,26 @@ impl From<Pos> for CellHash {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::parallel;
 
     use super::*;
     use crate::cell_values::CellValues;
     use crate::grid::{CodeCellLanguage, ConnectionKind, GridBounds};
     use crate::{CellValue, Pos, Rect, SheetPos};
 
-    fn add_cell_value(sheet_pos: SheetPos, value: CellValue) -> Operation {
-        Operation::SetCellValues {
-            sheet_pos,
-            values: CellValues::from(value),
-        }
+    fn add_cell_value(sheet_pos: SheetPos, values: CellValues) -> Operation {
+        Operation::SetCellValues { sheet_pos, values }
     }
 
     fn get_operations(gc: &mut GridController) -> (Operation, Operation) {
         let sheet_id = gc.sheet_ids()[0];
         let sheet_pos = SheetPos::from((0, 0, sheet_id));
         let value = CellValue::Text("test".into());
-        let operation = add_cell_value(sheet_pos, value);
-        let operation_undo = add_cell_value(sheet_pos, CellValue::Blank);
+        let operation = add_cell_value(sheet_pos, value.into());
+        let operation_undo = add_cell_value(sheet_pos, CellValues::new(1, 1));
         (operation, operation_undo)
     }
 
     #[test]
-    #[parallel]
     fn test_transactions_finalize_transaction() {
         let mut gc = GridController::test();
         let (operation, operation_undo) = get_operations(&mut gc);
@@ -454,7 +333,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_transactions_undo_redo() {
         let mut gc = GridController::test();
         let (operation, operation_undo) = get_operations(&mut gc);
@@ -479,7 +357,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_transactions_updated_bounds_in_transaction() {
         let mut gc = GridController::test();
         let (operation, _) = get_operations(&mut gc);
@@ -498,7 +375,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_transactions_cell_hash() {
         let hash = "test".to_string();
         let cell_hash = CellHash(hash.clone());
@@ -510,7 +386,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_js_calculation_complete() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -537,7 +412,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_connection_complete() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

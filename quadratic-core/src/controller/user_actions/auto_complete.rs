@@ -25,12 +25,12 @@ impl GridController {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use super::*;
     use crate::{
         a1::A1Selection,
         array,
+        formulas::convert_a1_to_rc,
         grid::{
             sheet::borders::{BorderSelection, BorderStyle},
             CodeCellLanguage, CodeCellValue,
@@ -103,10 +103,23 @@ mod tests {
                 }
 
                 if let Some(code_cell) = code_cells.get(count) {
+                    let code_cell = match code_cell.language {
+                        CodeCellLanguage::Formula => {
+                            let mut code_cell = code_cell.to_owned();
+                            code_cell.code = convert_a1_to_rc(
+                                &code_cell.code,
+                                grid_controller.a1_context(),
+                                sheet_pos,
+                            );
+                            code_cell
+                        }
+                        _ => code_cell.to_owned(),
+                    };
+
                     grid_controller.set_code_cell(
                         sheet_pos,
-                        code_cell.language.clone(),
-                        code_cell.code.clone(),
+                        code_cell.language,
+                        code_cell.code,
                         None,
                     );
                 }
@@ -134,26 +147,26 @@ mod tests {
 
     #[test]
     fn test_expand_code_cell() {
-        let selected: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 1 });
-        let range: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 10, y: 10 });
+        let selected: Rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 2 });
+        let range: Rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 10, y: 10 });
         let code_1 = CodeCellValue {
             language: CodeCellLanguage::Formula,
-            code: "SUM(A0)".into(),
+            code: "SUM(A1)".into(),
         };
         let code_2 = CodeCellValue {
             language: CodeCellLanguage::Formula,
-            code: "ABS(A1)".into(),
+            code: "ABS(A2)".into(),
         };
         let (mut grid, sheet_id) =
             test_setup(&selected, &[], &[], &[], &[code_1.clone(), code_2.clone()]);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
-        assert_code_cell_value(&grid, sheet_id, 0, 0, "SUM(A0)");
-        assert_code_cell_value(&grid, sheet_id, 10, 0, "SUM(K0)");
-        assert_code_cell_value(&grid, sheet_id, 0, 10, "SUM(A10)");
-        assert_code_cell_value(&grid, sheet_id, 0, 1, "ABS(A1)");
-        assert_code_cell_value(&grid, sheet_id, 10, 1, "ABS(K1)");
-        assert_code_cell_value(&grid, sheet_id, 1, 9, "ABS(B9)");
+        assert_code_cell_value(&grid, sheet_id, 1, 1, "SUM(A1)");
+        assert_code_cell_value(&grid, sheet_id, 10, 1, "SUM(J1)");
+        assert_code_cell_value(&grid, sheet_id, 1, 9, "SUM(A9)");
+        assert_code_cell_value(&grid, sheet_id, 1, 2, "ABS(A2)");
+        assert_code_cell_value(&grid, sheet_id, 10, 2, "ABS(J2)");
+        assert_code_cell_value(&grid, sheet_id, 2, 10, "ABS(B10)");
     }
 
     #[test]

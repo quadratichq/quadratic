@@ -5,7 +5,9 @@ use anyhow::{anyhow, Result};
 use bigdecimal::{BigDecimal, RoundingMode};
 use borders::Borders;
 use indexmap::IndexMap;
+use lazy_static::lazy_static;
 use rand::Rng;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use validations::Validations;
 
@@ -16,7 +18,7 @@ use super::ids::SheetId;
 use super::js_types::{CellFormatSummary, CellType, JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;
 use super::{CellWrap, CodeRun, Format, NumericFormatKind, SheetFormatting};
-use crate::a1::{A1Selection, CellRefRange};
+use crate::a1::{A1Context, A1Selection, CellRefRange};
 use crate::sheet_offsets::SheetOffsets;
 use crate::{Array, CellValue, Pos, Rect};
 
@@ -27,6 +29,7 @@ pub mod borders;
 pub mod bounds;
 pub mod cell_array;
 pub mod cell_values;
+mod chart;
 pub mod clipboard;
 pub mod code;
 pub mod col_row;
@@ -37,11 +40,16 @@ pub mod rendering;
 pub mod rendering_date_time;
 pub mod row_resize;
 pub mod search;
-pub mod send_render;
 #[cfg(test)]
 pub mod sheet_test;
 pub mod summarize;
 pub mod validations;
+
+const SHEET_NAME_VALID_CHARS: &str = r#"^[a-zA-Z0-9_\-(][a-zA-Z0-9_\- .()\p{Pd}]*[a-zA-Z0-9_\-)]$"#;
+lazy_static! {
+    static ref SHEET_NAME_VALID_CHARS_COMPILED: Regex =
+        Regex::new(SHEET_NAME_VALID_CHARS).expect("Failed to compile SHEET_NAME_VALID_CHARS");
+}
 
 /// Sheet in a file.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -100,13 +108,36 @@ impl Sheet {
         Sheet::new(SheetId::TEST, String::from("Sheet1"), String::from("a0"))
     }
 
-    pub fn update_sheet_name(&mut self, old_name: &str, new_name: &str) {
-        self.replace_in_code_cells(|code_cell_value, a1_context, id| {
+    pub fn validate_sheet_name(name: &str, context: &A1Context) -> Result<bool, String> {
+        // Check length limit
+        if name.is_empty() || name.len() > 31 {
+            return Err("Sheet name must be between 1 and 31 characters".to_string());
+        }
+
+        // Validate characters using regex pattern
+        if !SHEET_NAME_VALID_CHARS_COMPILED.is_match(name) {
+            return Err("Sheet name contains invalid characters".to_string());
+        }
+
+        // Check if sheet name already exists
+
+        if context.sheet_map.try_sheet_name(name).is_some() {
+            return Err("Sheet name must be unique".to_string());
+        }
+
+        Ok(true)
+    }
+
+    pub fn replace_sheet_name_in_code_cells(
+        &mut self,
+        old_name: &str,
+        new_name: &str,
+        context: &A1Context,
+    ) {
+        self.replace_in_code_cells(context, |code_cell_value, a1_context, id| {
             code_cell_value
                 .replace_sheet_name_in_cell_references(old_name, new_name, id, a1_context);
         });
-
-        self.name = new_name.to_string();
     }
 
     /// Populates the current sheet with random values
@@ -203,7 +234,7 @@ impl Sheet {
     }
 
     /// Returns true if the cell at Pos has content (ie, not blank). Also checks
-    /// tables. Ignores Blanks.
+    /// tables. Ignores Blanks except in tables.
     pub fn has_content(&self, pos: Pos) -> bool {
         if self
             .get_column(pos.x)
@@ -213,6 +244,59 @@ impl Sheet {
             return true;
         }
         self.has_table_content(pos)
+    }
+
+    /// Returns true if the cell at Pos has content (ie, not blank). Ignores
+    /// Blanks in tables.
+    pub fn has_content_ignore_blank_table(&self, pos: Pos) -> bool {
+        if self
+            .get_column(pos.x)
+            .and_then(|column| column.values.get(&pos.y))
+            .is_some_and(|cell_value| !cell_value.is_blank_or_empty_string())
+        {
+            return true;
+        }
+        self.has_table_content_ignore_blanks(pos)
+    }
+
+    /// Returns true if the cell at Pos is at a vertical edge of a table.
+    pub fn is_at_table_edge_col(&self, pos: Pos) -> bool {
+        if let Some((dt_pos, dt)) = self.data_table_at(pos) {
+            // we handle charts separately in find_next_*
+            if dt.is_html_or_image() {
+                return false;
+            }
+            let bounds = dt.output_rect(dt_pos, false);
+            if bounds.min.x == pos.x || bounds.max.x == pos.x {
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Returns true if the cell at Pos is at a horizontal edge of a table.
+    pub fn is_at_table_edge_row(&self, pos: Pos) -> bool {
+        if let Some((dt_pos, dt)) = self.data_table_at(pos) {
+            // we handle charts separately in find_next_*
+            if dt.is_html_or_image() {
+                return false;
+            }
+            let bounds = dt.output_rect(dt_pos, false);
+            if bounds.min.y == pos.y {
+                // table name, or column header if no table name, or top of data if no column header or table name
+                return true;
+            } else if bounds.min.y
+                + (if dt.show_ui && dt.show_name { 1 } else { 0 })
+                + (if dt.show_ui && dt.show_columns { 1 } else { 0 })
+                == pos.y
+            {
+                // ignore column header--just go to first line of data or table name
+                return true;
+            } else if bounds.max.y == pos.y {
+                return true;
+            }
+        }
+        false
     }
 
     /// Returns the cell_value at a Pos using both column.values and data_tables (i.e., what would be returned if code asked
@@ -339,20 +423,16 @@ impl Sheet {
 
     /// Returns the format of a cell taking into account the sheet and data_tables formatting.
     pub fn cell_format(&self, pos: Pos) -> Format {
-        let mut sheet_format = self.formats.try_format(pos).unwrap_or_default();
+        let sheet_format = self.formats.try_format(pos).unwrap_or_default();
 
         if let Ok(data_table_pos) = self.first_data_table_within(pos) {
-            if let Ok(data_table) = self.data_table_result(data_table_pos) {
+            if let Some(data_table) = self.data_table(data_table_pos) {
                 if !data_table.spill_error && !data_table.has_error() {
                     // pos relative to data table pos (top left pos)
-                    let pos = pos.translate(-data_table_pos.x, -data_table_pos.y, 0, 0);
-                    if let Some(mut table_format) = data_table.try_format(pos) {
-                        table_format.wrap = table_format.wrap.or(Some(CellWrap::Clip));
-                        let combined_format = table_format.combine(&sheet_format);
-                        return combined_format;
-                    } else {
-                        sheet_format.wrap = sheet_format.wrap.or(Some(CellWrap::Clip));
-                    }
+                    let format_pos = pos.translate(-data_table_pos.x, -data_table_pos.y, 0, 0);
+                    let table_format = data_table.get_format(format_pos);
+                    let combined_format = table_format.combine(&sheet_format);
+                    return combined_format;
                 }
             }
         }
@@ -425,7 +505,7 @@ impl Sheet {
     /// get or calculate decimal places for a cell
     pub fn calculate_decimal_places(&self, pos: Pos, kind: NumericFormatKind) -> Option<i16> {
         // first check if numeric_decimals already exists for this cell
-        if let Some(decimals) = self.formats.numeric_decimals.get(pos) {
+        if let Some(decimals) = self.cell_format(pos).numeric_decimals {
             return Some(decimals);
         }
 
@@ -535,7 +615,6 @@ impl Sheet {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod test {
     use std::str::FromStr;
 
@@ -1154,5 +1233,217 @@ mod test {
             js_cell_value_pos_in_rect,
             expected_js_cell_value_pos_in_rect
         );
+    }
+
+    #[test]
+    fn test_validate_sheet_name() {
+        // Setup test context with an existing sheet
+        let context = A1Context::test(&[("ExistingSheet", SheetId::TEST)], &[]);
+
+        // Test valid sheet names
+        let longest_name = "a".repeat(31);
+        let valid_names = vec![
+            "Sheet1",
+            "MySheet",
+            "Test_Sheet",
+            "Sheet-1",
+            "Sheet (1)",
+            "Sheet.1",
+            "1Sheet",
+            "Sheet_with_underscore",
+            "Sheet-with-dashes",
+            "Sheet With Spaces",
+            "Sheet.With.Dots",
+            "Sheet(With)Parentheses",
+            "_hidden_sheet",
+            "Sheet-with–en—dash", // Testing various dash characters
+            longest_name.as_str(),
+        ];
+
+        for name in valid_names {
+            assert!(
+                Sheet::validate_sheet_name(name, &context).is_ok(),
+                "Expected '{}' to be valid",
+                name
+            );
+        }
+
+        // Test invalid sheet names
+        let long_name = "a".repeat(32);
+        let test_cases = vec![
+            ("", "Sheet name must be between 1 and 31 characters"),
+            (
+                long_name.as_str(),
+                "Sheet name must be between 1 and 31 characters",
+            ),
+            ("#Invalid", "Sheet name contains invalid characters"),
+            ("@Sheet", "Sheet name contains invalid characters"),
+            ("Sheet!", "Sheet name contains invalid characters"),
+            ("Sheet?", "Sheet name contains invalid characters"),
+            ("Sheet*", "Sheet name contains invalid characters"),
+            ("Sheet/", "Sheet name contains invalid characters"),
+            ("Sheet\\", "Sheet name contains invalid characters"),
+            ("Sheet$", "Sheet name contains invalid characters"),
+            ("Sheet%", "Sheet name contains invalid characters"),
+            ("Sheet^", "Sheet name contains invalid characters"),
+            ("Sheet&", "Sheet name contains invalid characters"),
+            ("Sheet+", "Sheet name contains invalid characters"),
+            ("Sheet=", "Sheet name contains invalid characters"),
+            ("Sheet;", "Sheet name contains invalid characters"),
+            ("Sheet,", "Sheet name contains invalid characters"),
+            ("Sheet<", "Sheet name contains invalid characters"),
+            ("Sheet>", "Sheet name contains invalid characters"),
+            ("Sheet[", "Sheet name contains invalid characters"),
+            ("Sheet]", "Sheet name contains invalid characters"),
+            ("Sheet{", "Sheet name contains invalid characters"),
+            ("Sheet}", "Sheet name contains invalid characters"),
+            ("Sheet|", "Sheet name contains invalid characters"),
+            ("Sheet`", "Sheet name contains invalid characters"),
+            ("Sheet~", "Sheet name contains invalid characters"),
+            ("Sheet'", "Sheet name contains invalid characters"),
+            ("Sheet\"", "Sheet name contains invalid characters"),
+            // Test names with leading/trailing spaces
+            (" Sheet", "Sheet name contains invalid characters"),
+            ("Sheet ", "Sheet name contains invalid characters"),
+            // Test names with other invalid patterns
+            ("\tSheet", "Sheet name contains invalid characters"),
+            ("\nSheet", "Sheet name contains invalid characters"),
+            ("Sheet\r", "Sheet name contains invalid characters"),
+        ];
+
+        for (name, expected_error) in test_cases {
+            let result = Sheet::validate_sheet_name(name, &context);
+            assert!(
+                result.is_err(),
+                "Expected '{}' to be invalid, but it was valid",
+                name
+            );
+            assert_eq!(
+                result.unwrap_err(),
+                expected_error,
+                "Unexpected error message for '{}'",
+                name
+            );
+        }
+
+        // Test duplicate sheet name
+        let result = Sheet::validate_sheet_name("ExistingSheet", &context);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Sheet name must be unique");
+    }
+
+    #[test]
+    fn test_is_at_table_edge() {
+        let mut sheet = Sheet::test();
+        let anchor_pos = pos![B2];
+
+        // Create a test data table with 3x3 dimensions
+        let dt = DataTable::new(
+            DataTableKind::CodeRun(CodeRun::default()),
+            "test",
+            Value::Array(Array::from(vec![
+                vec!["a", "b", "c"],
+                vec!["d", "e", "f"],
+                vec!["g", "h", "i"],
+                vec!["j", "k", "l"],
+            ])),
+            false,
+            false,
+            true,
+            None,
+        );
+        sheet.data_tables.insert(anchor_pos, dt);
+
+        // Test row edges
+        assert!(sheet.is_at_table_edge_row(pos![B2])); // Table name
+        assert!(!sheet.is_at_table_edge_row(pos![B3])); // Column header
+        assert!(sheet.is_at_table_edge_row(pos![B4])); // first line of data
+        assert!(sheet.is_at_table_edge_row(pos![C7])); // Bottom edge
+        assert!(!sheet.is_at_table_edge_row(pos![C5])); // Middle row
+
+        // Test column edges
+        assert!(sheet.is_at_table_edge_col(pos![B5])); // Left edge
+        assert!(sheet.is_at_table_edge_col(pos![D5])); // Right edge
+        assert!(!sheet.is_at_table_edge_col(pos![C5])); // Middle column
+
+        // Test position outside table
+        assert!(!sheet.is_at_table_edge_row(pos![E5]));
+        assert!(!sheet.is_at_table_edge_col(pos![E5]));
+
+        // Test with show_ui = false
+        let mut dt_no_ui = DataTable::new(
+            DataTableKind::CodeRun(CodeRun::default()),
+            "test",
+            Value::Array(Array::from(vec![vec!["a", "b"], vec!["c", "d"]])),
+            false,
+            false,
+            false,
+            None,
+        );
+        dt_no_ui.show_name = false;
+        sheet.data_tables.insert(pos![E5], dt_no_ui);
+
+        // Test edges without UI
+        assert!(sheet.is_at_table_edge_row(pos![E5])); // Top edge
+        assert!(sheet.is_at_table_edge_row(pos![E6])); // Bottom edge
+        assert!(sheet.is_at_table_edge_col(pos![E5])); // Left edge
+        assert!(sheet.is_at_table_edge_col(pos![F5])); // Right edge
+    }
+
+    #[test]
+    fn test_has_content_ignore_blank_table() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        let pos = pos![A1];
+
+        // Empty cell should have no content
+        assert!(!sheet.has_content_ignore_blank_table(pos));
+
+        // Text content
+        sheet.set_cell_value(pos, "test");
+        assert!(sheet.has_content_ignore_blank_table(pos));
+
+        // Blank value should count as no content
+        sheet.set_cell_value(pos, CellValue::Blank);
+        assert!(!sheet.has_content_ignore_blank_table(pos));
+
+        // Empty string should count as no content
+        sheet.set_cell_value(pos, "");
+        assert!(!sheet.has_content_ignore_blank_table(pos));
+
+        // Table with non-blank content
+        let dt = DataTable::new(
+            DataTableKind::CodeRun(CodeRun::default()),
+            "test",
+            Value::Array(Array::from(vec![vec!["test", "test"]])),
+            false,
+            false,
+            true,
+            None,
+        );
+        sheet.data_tables.insert(pos, dt.clone());
+        assert!(sheet.has_content_ignore_blank_table(pos));
+        assert!(sheet.has_content_ignore_blank_table(Pos { x: 2, y: 2 }));
+        assert!(!sheet.has_content_ignore_blank_table(Pos { x: 3, y: 2 }));
+
+        // Table with blank content should be ignored
+        sheet.test_set_code_run_array(10, 10, vec!["1", "", "", "4"], false);
+        sheet.recalculate_bounds();
+
+        assert!(sheet.has_content_ignore_blank_table(Pos { x: 10, y: 10 }));
+        assert!(!sheet.has_content_ignore_blank_table(Pos { x: 11, y: 10 }));
+        assert!(sheet.has_content_ignore_blank_table(Pos { x: 13, y: 10 }));
+
+        // Chart output should still count as content
+        let mut dt_chart = dt.clone();
+        dt_chart.chart_output = Some((5, 5));
+        let pos3 = Pos { x: 20, y: 20 };
+        sheet.data_tables.insert(pos3, dt_chart);
+        sheet.recalculate_bounds();
+
+        assert!(sheet.has_content_ignore_blank_table(pos3));
+        assert!(sheet.has_content_ignore_blank_table(Pos { x: 24, y: 20 }));
+        assert!(!sheet.has_content_ignore_blank_table(Pos { x: 25, y: 20 }));
     }
 }

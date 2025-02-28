@@ -1,6 +1,7 @@
 use serde::Serialize;
+use ts_rs::TS;
 
-#[derive(Debug, Serialize, ts_rs::TS, Clone, PartialEq)]
+#[derive(Debug, Serialize, Clone, PartialEq, TS)]
 pub enum TransactionName {
     Unknown,
     ResizeColumn,

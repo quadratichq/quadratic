@@ -48,8 +48,8 @@ export const ValidationEntry = (props: Props) => {
   const title = useMemo(() => validationText(validation), [validation]);
 
   const selection = useMemo(() => {
-    const selection = A1SelectionToJsSelection(validation.selection);
-    return selection.toA1String(sheets.current, sheets.a1Context);
+    const selection = A1SelectionToJsSelection(validation.selection, sheets.a1Context);
+    return selection.toA1String(sheets.current);
   }, [validation.selection]);
 
   const selectValidation = useCallback(() => {

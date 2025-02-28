@@ -36,22 +36,22 @@ export const CodeEditor = () => {
       <CodeEditorEscapeEffect editorInst={editorInst} />
 
       {showCodeEditor && (
-        <div
-          className="relative flex h-full flex-col"
-          style={{
-            width: `${
-              codeEditorPanelData.editorWidth +
-              (codeEditorPanelData.panelPosition === 'left' ? codeEditorPanelData.panelWidth : 0)
-            }px`,
-          }}
-        >
-          <CodeEditorHeader editorInst={editorInst} />
+        <div className="relative flex h-full flex-col">
+          {/* hack required for correct height calculation */}
+          {codeEditorPanelData.panelPosition === 'left' && <CodeEditorHeader editorInst={editorInst} />}
+
           <div
             ref={codeEditorRef}
             className={cn(
               'relative -mt-[1px] flex h-full flex-col overflow-visible border-t border-transparent bg-background',
               codeEditorPanelData.panelPosition === 'left' ? 'flex-row border-t border-border' : 'flex-col'
             )}
+            style={{
+              width: `${
+                codeEditorPanelData.editorWidth +
+                (codeEditorPanelData.panelPosition === 'left' ? codeEditorPanelData.panelWidth : 0)
+              }px`,
+            }}
             onCopy={(e) => e.stopPropagation()}
             onCut={(e) => e.stopPropagation()}
             onPaste={(e) => e.stopPropagation()}
@@ -75,6 +75,9 @@ export const CodeEditor = () => {
                 multiplayer.sendMouseMove();
               }}
             >
+              {/* hack required for correct height calculation */}
+              {codeEditorPanelData.panelPosition !== 'left' && <CodeEditorHeader editorInst={editorInst} />}
+
               <SaveChangesAlert editorInst={editorInst} />
               <CodeEditorDiffButtons />
               <CodeEditorBody editorInst={editorInst} setEditorInst={setEditorInst} />

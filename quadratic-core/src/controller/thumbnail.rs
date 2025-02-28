@@ -41,8 +41,8 @@ impl GridController {
         let thumbnail_a1 =
             A1Selection::from_rect(sheet.offsets.thumbnail().to_sheet_rect(sheet.id));
 
-        let context = self.grid().a1_context();
-        selection.overlaps_a1_selection(&thumbnail_a1, &context)
+        let context = self.a1_context();
+        selection.overlaps_a1_selection(&thumbnail_a1, context)
     }
 
     /// Returns whether the thumbnail contains any intersection with
@@ -84,10 +84,8 @@ mod test {
         },
         Pos, Rect, SheetPos, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH,
     };
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_thumbnail_dirty_pos() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -114,7 +112,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_thumbnail_dirty_a1() {
         let gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
@@ -128,7 +125,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_thumbnail_dirty_formats() {
         let gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
@@ -177,7 +173,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_thumbnail_dirty_borders() {
         let gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
