@@ -181,7 +181,7 @@ export class PointerDown {
     const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
 
     if (column !== this.previousPosition.x || row !== this.previousPosition.y) {
-      pixiApp.viewport.enableMouseEdges();
+      pixiApp.viewport.enableMouseEdges(world);
 
       sheet.cursor.selectTo(column, row, event.ctrlKey || event.metaKey);
       this.previousPosition = new Point(column, row);
