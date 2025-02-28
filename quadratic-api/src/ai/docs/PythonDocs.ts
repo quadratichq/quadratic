@@ -24,10 +24,10 @@ You can reference tables, individual cells, and ranges of cells using Python.
 Much of Quadratic's data is formatted in Data Tables for ease of use. To perform any reference type you can use \`q.cells\`. For table references this places the table in a DataFrame.
 
 \`\`\`python
-# References entire table, including headers 
+# References entire table, including headers, places into DataFrame 
 df = q.cells("Table1")
 
-# Retrieves the column data and its header
+# Retrieves the column data and its header, places into single column DataFrame
 df_column = q.cells("Table1[column_name]")
 
 # Creates an empty DataFrame with just the DataFrame's headers as table's column names
