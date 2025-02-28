@@ -796,7 +796,7 @@ mod tests {
     #[test]
     fn test_get_ref_range_bounds() {
         let context = A1Context::test(
-            &[("Sheet1", SheetId::TEST)],
+            &[("Sheet 1", SheetId::TEST)],
             &[("Table1", &["A", "B", "C"], Rect::test_a1("A1:C4"))],
         );
         // note we do not return the D5: range as it is infinite
@@ -817,7 +817,7 @@ mod tests {
     fn test_is_on_html_image() {
         // Create a context with a table that has an HTML image
         let mut context = A1Context::test(
-            &[("Sheet1", SheetId::TEST), ("Sheet2", SheetId::new())],
+            &[("Sheet 1", SheetId::TEST), ("Sheet 2", SheetId::new())],
             &[("Table1", &["A"], Rect::test_a1("B2:D4"))],
         );
         context
@@ -839,9 +839,8 @@ mod tests {
         assert!(!A1Selection::test_a1("E3").cursor_is_on_html_image(&context));
 
         // Test with wrong sheet_id
-        assert!(
-            !A1Selection::test_a1_context("Sheet2!B2", &context).cursor_is_on_html_image(&context)
-        );
+        assert!(!A1Selection::test_a1_context("'Sheet 2'!B2", &context)
+            .cursor_is_on_html_image(&context));
     }
 
     #[test]
