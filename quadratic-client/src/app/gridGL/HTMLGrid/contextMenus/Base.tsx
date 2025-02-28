@@ -45,6 +45,7 @@ export const ContextMenuBase = ({ children }: { children: React.ReactNode }) => 
     };
 
     const handleMouseDown = (event: MouseEvent) => {
+      if (event.target instanceof HTMLInputElement) return;
       if (event.target instanceof HTMLElement && !event.target.closest('.context-menu-base, .pixi_canvas')) {
         setContextMenu({});
       }

@@ -31,6 +31,7 @@ COPY updateAlertVersion.json .
 COPY package.json .
 COPY ./quadratic-core/. ./quadratic-core/
 COPY ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
+COPY ./quadratic-rust-shared/. ./quadratic-rust-shared/
 
 # Build core
 RUN if [ "$CLIENT_DEV" = "true" ]; then \
@@ -71,6 +72,7 @@ COPY updateAlertVersion.json .
 COPY package.json .
 COPY ./quadratic-core/. ./quadratic-core/
 COPY ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
+COPY ./quadratic-rust-shared/. ./quadratic-rust-shared/
 
 # Build TS/Rust types
 RUN echo 'Building TS/Rust types...' && npm run export_types --workspace=quadratic-core
@@ -107,9 +109,10 @@ COPY updateAlertVersion.json .
 
 # Copy required files for building rust client
 COPY package.json .
+COPY ./quadratic-rust-client/. ./quadratic-rust-client/
 COPY ./quadratic-core/. ./quadratic-core/
 COPY ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
-COPY ./quadratic-rust-client/. ./quadratic-rust-client/
+COPY ./quadratic-rust-shared/. ./quadratic-rust-shared/
 
 # Build the rust-client
 ARG GIT_COMMIT

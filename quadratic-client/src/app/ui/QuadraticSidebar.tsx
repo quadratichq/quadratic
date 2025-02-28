@@ -8,22 +8,13 @@ import {
   editorInteractionStateShowConnectionsMenuAtom,
   editorInteractionStateShowIsRunningAsyncActionAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
-import { showCellTypeOutlinesAtom } from '@/app/atoms/gridSettingsAtom';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import {
-  AIIcon,
-  CodeCellOutlineOff,
-  CodeCellOutlineOn,
-  DatabaseIcon,
-  ManageSearch,
-  MemoryIcon,
-  SpinnerIcon,
-} from '@/shared/components/Icons';
+import { AIIcon, DatabaseIcon, ManageSearch, MemoryIcon, SpinnerIcon } from '@/shared/components/Icons';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { ShowAfter } from '@/shared/components/ShowAfter';
 import { Toggle } from '@/shared/shadcn/ui/toggle';
@@ -41,7 +32,6 @@ export const QuadraticSidebar = () => {
   const isRunningAsyncAction = useRecoilValue(editorInteractionStateShowIsRunningAsyncActionAtom);
   const [showAIAnalyst, setShowAIAnalyst] = useRecoilState(showAIAnalystAtom);
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
-  const [showCellTypeOutlines, setShowCellTypeOutlines] = useRecoilState(showCellTypeOutlinesAtom);
   const [showConnectionsMenu, setShowConnectionsMenu] = useRecoilState(editorInteractionStateShowConnectionsMenuAtom);
   const [showCommandPalette, setShowCommandPalette] = useRecoilState(editorInteractionStateShowCommandPaletteAtom);
 
@@ -104,15 +94,6 @@ export const QuadraticSidebar = () => {
           </SidebarTooltip>
         )}
 
-        <SidebarTooltip label={'Code cell outlines'}>
-          <SidebarToggle
-            pressed={showCellTypeOutlines}
-            onPressedChange={() => setShowCellTypeOutlines((prev) => !prev)}
-          >
-            {showCellTypeOutlines ? <CodeCellOutlineOn /> : <CodeCellOutlineOff />}
-          </SidebarToggle>
-        </SidebarTooltip>
-
         {canDoTeamsStuff && (
           <SidebarTooltip label="Connections">
             <SidebarToggle
@@ -123,6 +104,8 @@ export const QuadraticSidebar = () => {
             </SidebarToggle>
           </SidebarTooltip>
         )}
+
+        <div className="h-px w-full bg-border" />
 
         {canEditFile && <KernelMenu triggerIcon={<MemoryIcon />} />}
 

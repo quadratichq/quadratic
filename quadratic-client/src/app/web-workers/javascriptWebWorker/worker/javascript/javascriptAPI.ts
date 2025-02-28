@@ -3,13 +3,11 @@
 // (x,y) position with the code, so `pos()` and `relCell()` can be calculated
 // within the worker using getCells.
 
-import type { JsGetCellResponse } from '@/app/quadratic-core-types';
+import type { JsCellsA1Response, JsCellsA1Value } from '@/app/quadratic-core-types';
 import type { Javascript } from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascript';
-import { javascriptClient } from '@/app/web-workers/javascriptWebWorker/worker/javascriptClient';
 import { javascriptCore } from '@/app/web-workers/javascriptWebWorker/worker/javascriptCore';
 
 export type CellType = number | string | boolean | Date | undefined;
-export type CellPos = { x: number; y: number };
 
 export class JavascriptAPI {
   javascript: Javascript;
@@ -18,7 +16,7 @@ export class JavascriptAPI {
     this.javascript = javascript;
   }
 
-  private convertType(entry: JsGetCellResponse): CellType | undefined {
+  private convertType(entry: JsCellsA1Value): CellType | undefined {
     if (entry.type_name === 'blank') return undefined;
     if (entry.type_name === 'date time' || entry.type_name === 'date')
       return `___date___${new Date(entry.value).getTime()}`;
@@ -27,30 +25,41 @@ export class JavascriptAPI {
   }
 
   getCellsA1 = async (
-    a1: string,
-    lineNumber?: number
-  ): Promise<{ cells: CellType[][] | CellType; two_dimensional: boolean } | undefined> => {
+    a1: string
+  ): Promise<{
+    values: { cells: CellType[][] | CellType; one_dimensional: boolean; two_dimensional: boolean } | null;
+    error: string | null;
+  }> => {
     if (!this.javascript.transactionId) {
       throw new Error('No transactionId in getCellsA1');
     }
 
-    const results = await javascriptCore.sendGetCellsA1(this.javascript.transactionId, a1, lineNumber);
+    const results = await javascriptCore.sendGetCellsA1(this.javascript.transactionId, a1);
 
-    // error was thrown while getting cells
-    if (!results) {
-      javascriptClient.sendState('ready');
-      return undefined;
+    let response: JsCellsA1Response | undefined;
+    try {
+      response = JSON.parse(results);
+    } catch (error) {
+      response = {
+        values: null,
+        error: {
+          core_error: `Failed to parse getCellsA1 response: ${error}`,
+        },
+      };
+    }
+    if (!response || !response.values || response.error) {
+      return { values: null, error: response?.error?.core_error ?? 'Failed to get cells' };
     }
 
     const cells: CellType[][] = [];
-    const height = results.y + results.h;
-    const width = results.x + results.w;
+    const height = response.values.y + response.values.h;
+    const width = response.values.x + response.values.w;
 
-    for (let y = results.y; y < height; y++) {
+    for (let y = response.values.y; y < height; y++) {
       const row: CellType[] = [];
 
-      for (let x = results.x; x < width; x++) {
-        const entry = results.cells?.find((r) => Number(r.x) === x && Number(r.y) === y);
+      for (let x = response.values.x; x < width; x++) {
+        const entry = response.values.cells?.find((r) => Number(r.x) === x && Number(r.y) === y);
         const typed = entry ? this.convertType(entry) : undefined;
         row.push(typed);
       }
@@ -58,6 +67,13 @@ export class JavascriptAPI {
       cells.push(row);
     }
 
-    return { cells, two_dimensional: results.two_dimensional };
+    return {
+      values: {
+        cells,
+        one_dimensional: response.values.one_dimensional,
+        two_dimensional: response.values.two_dimensional,
+      },
+      error: null,
+    };
   };
 }

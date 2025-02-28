@@ -16,6 +16,7 @@ use crate::grid::js_types::JsClipboard;
 use crate::grid::js_types::JsSnackbarSeverity;
 use crate::grid::sheet::borders::BordersUpdates;
 use crate::grid::sheet::validations::validation::Validation;
+use crate::grid::unique_data_table_name;
 use crate::grid::DataTable;
 use crate::grid::DataTableKind;
 use crate::grid::SheetId;
@@ -315,12 +316,8 @@ impl GridController {
                 if let Some(mut data_table) = clipboard_data_tables.shift_remove(&source_pos) {
                     if matches!(clipboard_operation, ClipboardOperation::Copy) {
                         let old_name = data_table.name.to_display();
-                        let new_name = self.grid().unique_data_table_name(
-                            &old_name,
-                            false,
-                            None,
-                            self.a1_context(),
-                        );
+                        let new_name =
+                            unique_data_table_name(&old_name, false, None, self.a1_context());
 
                         // update table name in paste cursor selection
                         cursor.replace_table_name(&old_name, &new_name);

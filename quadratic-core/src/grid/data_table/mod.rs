@@ -39,27 +39,26 @@ use tabled::{
 use super::sheet::borders::Borders;
 use super::{CodeRunOld, CodeRunResult, Grid, SheetFormatting, SheetId};
 
+/// Returns a unique name for the data table, taking into account its
+/// position on the sheet (so it doesn't conflict with itself).
+pub fn unique_data_table_name(
+    name: &str,
+    require_number: bool,
+    sheet_pos: Option<SheetPos>,
+    context: &A1Context,
+) -> String {
+    let check_name = |name: &str| !context.table_map.contains_name(name, sheet_pos);
+
+    let name = unique_name(name, require_number, check_name);
+
+    // replace spaces with underscores
+    name.replace(' ', "_")
+}
+
 impl Grid {
     /// Returns the data table at the given position.
     pub fn data_table(&self, sheet_id: SheetId, pos: Pos) -> Result<&DataTable> {
         self.try_sheet_result(sheet_id)?.data_table_result(pos)
-    }
-
-    /// Returns a unique name for the data table, taking into account its
-    /// position on the sheet (so it doesn't conflict with itself).
-    pub fn unique_data_table_name(
-        &self,
-        name: &str,
-        require_number: bool,
-        sheet_pos: Option<SheetPos>,
-        context: &A1Context,
-    ) -> String {
-        let check_name = |name: &str| !context.table_map.contains_name(name, sheet_pos);
-
-        let name = unique_name(name, require_number, check_name);
-
-        // replace spaces with underscores
-        name.replace(' ', "_")
     }
 
     /// Updates the name of a data table and replaces the old name in all code cells that reference it.
@@ -72,7 +71,7 @@ impl Grid {
         require_number: bool,
     ) -> Result<()> {
         let unique_name =
-            self.unique_data_table_name(new_name, require_number, Some(sheet_pos), context);
+            unique_data_table_name(new_name, require_number, Some(sheet_pos), context);
 
         self.replace_table_name_in_code_cells(old_name, &unique_name, context);
 
@@ -89,7 +88,7 @@ impl Grid {
 
     /// Returns a unique name for a data table
     pub fn next_data_table_name(&self, context: &A1Context) -> String {
-        self.unique_data_table_name("Table", true, None, context)
+        unique_data_table_name("Table", true, None, context)
     }
 
     /// Replaces the table name in all code cells that reference the old name in all sheets in the grid.
@@ -121,7 +120,7 @@ impl Grid {
 const A1_REGEX: &str = r#"\b\$?[a-zA-Z]+\$\d+\b"#;
 const R1C1_REGEX: &str = r#"\bR\d+C\d+\b"#;
 const TABLE_NAME_VALID_CHARS: &str = r#"^[a-zA-Z_\\][a-zA-Z0-9_.]*$"#;
-const COLUMN_NAME_VALID_CHARS: &str = r#"^[a-zA-Z_\-(][a-zA-Z0-9_\- .()\p{Pd}]*[a-zA-Z0-9_\-)]$"#;
+const COLUMN_NAME_VALID_CHARS: &str = r#"^[a-zA-Z_\-]([a-zA-Z0-9_\- .()\p{Pd}]*[a-zA-Z0-9_\-)])?$"#;
 lazy_static! {
     static ref A1_REGEX_COMPILED: Regex = Regex::new(A1_REGEX).expect("Failed to compile A1_REGEX");
     static ref R1C1_REGEX_COMPILED: Regex =
@@ -165,9 +164,9 @@ pub struct DataTable {
     pub chart_output: Option<(u32, u32)>,
 }
 
-impl From<(Import, Array, &Grid, &A1Context)> for DataTable {
-    fn from((import, cell_values, grid, context): (Import, Array, &Grid, &A1Context)) -> Self {
-        let name = grid.unique_data_table_name(&import.file_name, false, None, context);
+impl From<(Import, Array, &A1Context)> for DataTable {
+    fn from((import, cell_values, context): (Import, Array, &A1Context)) -> Self {
+        let name = unique_data_table_name(&import.file_name, false, None, context);
 
         DataTable::new(
             DataTableKind::Import(import),
@@ -739,7 +738,7 @@ pub mod test {
         let import = Import::new(file_name.into());
         let array = Array::from_str_vec(values, true).unwrap();
         let context = gc.a1_context();
-        let data_table = DataTable::from((import.clone(), array, grid, context));
+        let data_table = DataTable::from((import.clone(), array, context));
 
         (sheet, data_table)
     }
@@ -1086,6 +1085,7 @@ pub mod test {
             "_hidden",
             "\\special",
             longest_name.as_str(),
+            "a",
         ];
 
         for name in valid_names {
@@ -1152,6 +1152,7 @@ pub mod test {
             "Column.With.Dots",
             "Column(With)Parentheses",
             "_hidden_column",
+            "a",
             "Column-with–en—dash", // Testing various dash characters
             longest_name.as_str(),
         ];

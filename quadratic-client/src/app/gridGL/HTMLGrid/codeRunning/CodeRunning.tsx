@@ -1,5 +1,6 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import type { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
@@ -28,7 +29,14 @@ export const CodeRunning = () => {
     const updateRunningState = (_state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
       const code: Code[] = [];
       if (current) {
-        const rectangle = sheets.sheet.getCellOffsets(current.sheetPos.x, current.sheetPos.y);
+        // we move the code run indicator to the start of the data if table ui is showing
+        // todo: in case of the table, we should replace the code language indicator with this indicator
+        const table = pixiApp.cellsSheets.getById(current.sheetPos.sheetId)?.tables.getTableFromCell(current.sheetPos);
+        let y = current.sheetPos.y;
+        if (table && table.codeCell.show_ui && table.codeCell.show_name) {
+          y = table.codeCell.y + (table.codeCell.show_columns ? 2 : 1);
+        }
+        const rectangle = sheets.sheet.getCellOffsets(current.sheetPos.x, y);
         code.push({
           sheetId: current.sheetPos.sheetId,
           left: `${rectangle.x + rectangle.width / 2 - CIRCULAR_PROGRESS_SIZE / 2}px`,

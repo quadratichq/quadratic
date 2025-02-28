@@ -108,6 +108,14 @@ impl CellRefRange {
         }
     }
 
+    /// Returns the number of columns in the range.
+    pub fn col_range(&self) -> i64 {
+        match self {
+            Self::Sheet { range } => range.col_range(),
+            Self::Table { .. } => 0,
+        }
+    }
+
     pub fn is_finite(&self) -> bool {
         match self {
             Self::Sheet { range } => range.is_finite(),

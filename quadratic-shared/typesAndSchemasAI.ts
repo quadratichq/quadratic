@@ -22,7 +22,7 @@ const AnthropicModelSchema = z
   .default('claude-3-5-sonnet-20241022');
 
 const OpenAIModelSchema = z
-  .enum(['gpt-4o-2024-11-20', 'o1-2024-12-17', 'o3-mini-2025-01-31'])
+  .enum(['gpt-4.5-preview-2025-02-27', 'gpt-4o-2024-11-20', 'o1-2024-12-17', 'o3-mini-2025-01-31'])
   .default('gpt-4o-2024-11-20');
 
 const XAIModelSchema = z.enum(['grok-2-1212', 'grok-beta']).default('grok-2-1212');
@@ -58,7 +58,12 @@ const AnthropicModelKeySchema = z.enum([
 ]);
 export type AnthropicModelKey = z.infer<typeof AnthropicModelKeySchema>;
 
-const OpenAIModelKeySchema = z.enum(['openai:gpt-4o-2024-11-20', 'openai:o1-2024-12-17', 'openai:o3-mini-2025-01-31']);
+const OpenAIModelKeySchema = z.enum([
+  'openai:gpt-4.5-preview-2025-02-27',
+  'openai:gpt-4o-2024-11-20',
+  'openai:o1-2024-12-17',
+  'openai:o3-mini-2025-01-31',
+]);
 export type OpenAIModelKey = z.infer<typeof OpenAIModelKeySchema>;
 
 const XAIModelKeySchema = z.enum(['xai:grok-2-1212', 'xai:grok-beta']);
@@ -180,6 +185,7 @@ const ContentSchema = z.preprocess(
       )
   )
 );
+export type Content = z.infer<typeof ContentSchema>;
 
 export const AIMessagePromptSchema = z.object({
   role: z.literal('assistant'),

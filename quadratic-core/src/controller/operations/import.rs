@@ -82,6 +82,7 @@ impl GridController {
         header_is_first_row: Option<bool>,
     ) -> Result<Vec<Operation>> {
         let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
+        let sheet_pos = SheetPos::from((insert_at, sheet_id));
 
         let file: &[u8] = match String::from_utf8_lossy(&file) {
             Cow::Borrowed(_) => &file,
@@ -138,7 +139,6 @@ impl GridController {
         let array_size = ArraySize::new_or_err(width, height).map_err(|e| error(e.to_string()))?;
         let mut cell_values = Array::new_empty(array_size);
         let mut sheet_format_updates = SheetFormatUpdates::default();
-
         let mut y: u32 = 0;
 
         for entry in reader(true).records() {
@@ -183,22 +183,20 @@ impl GridController {
 
         let context = self.a1_context();
         let import = Import::new(file_name.into());
-        let mut data_table = DataTable::from((
-            import.to_owned(),
-            Array::new_empty(array_size),
-            &self.grid,
-            context,
-        ));
-        data_table.name = CellValue::Text(file_name.to_string());
+        let mut data_table =
+            DataTable::from((import.to_owned(), Array::new_empty(array_size), context));
+
         data_table.value = cell_values.into();
         data_table.formats.apply_updates(&sheet_format_updates);
+
         drop(sheet_format_updates);
+
         if Some(true) == header_is_first_row {
             data_table.apply_first_row_as_header();
         }
 
         let ops = vec![Operation::AddDataTable {
-            sheet_pos: SheetPos::from((insert_at, sheet_id)),
+            sheet_pos,
             data_table,
             cell_value: CellValue::Import(import),
         }];
@@ -448,7 +446,7 @@ impl GridController {
 
         let context = self.a1_context();
         let import = Import::new(file_name.into());
-        let mut data_table = DataTable::from((import.to_owned(), cell_values, &self.grid, context));
+        let mut data_table = DataTable::from((import.to_owned(), cell_values, context));
         data_table.apply_first_row_as_header();
 
         let ops = vec![Operation::AddDataTable {
@@ -573,7 +571,7 @@ mod test {
         let context = gc.a1_context();
         let import = Import::new(file_name.into());
         let cell_value = CellValue::Import(import.clone());
-        let mut expected_data_table = DataTable::from((import, values.into(), &gc.grid, context));
+        let mut expected_data_table = DataTable::from((import, values.into(), context));
         assert_display_cell_value(&gc, sheet_id, 1, 1, &cell_value.to_string());
 
         let data_table = match ops[0].clone() {

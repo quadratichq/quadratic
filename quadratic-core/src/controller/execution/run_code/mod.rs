@@ -3,7 +3,7 @@ use crate::controller::operations::operation::Operation;
 use crate::controller::transaction_types::JsCodeResult;
 use crate::controller::GridController;
 use crate::error_core::{CoreError, Result};
-use crate::grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind};
+use crate::grid::{unique_data_table_name, CodeCellLanguage, CodeRun, DataTable, DataTableKind};
 use crate::{Array, CellValue, Pos, RunError, RunErrorMsg, SheetPos, SheetRect, Span, Value};
 
 pub mod get_cells;
@@ -41,7 +41,7 @@ impl GridController {
 
         // enforce unique data table names
         if let Some(new_data_table) = &mut new_data_table {
-            let unique_name = self.grid().unique_data_table_name(
+            let unique_name = unique_data_table_name(
                 &new_data_table.name.to_display(),
                 false,
                 Some(sheet_pos),

@@ -1079,12 +1079,10 @@ class Core {
     return validation;
   }
 
-  receiveRowHeights(transactionId: string, sheetId: string, rowHeights: string) {
-    this.renderQueue.push(() => {
-      if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.receiveRowHeights(transactionId, sheetId, rowHeights);
-    });
-  }
+  receiveRowHeights = (transactionId: string, sheetId: string, rowHeights: string) => {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.receiveRowHeights(transactionId, sheetId, rowHeights);
+  };
 
   setDateTimeFormat(selection: string, format: string, cursor: string) {
     this.clientQueue.push(() => {
@@ -1265,9 +1263,9 @@ class Core {
     );
   }
 
-  getCellsA1(transactionId: string, a1: string, lineNumber?: number): string {
+  getCellsA1(transactionId: string, a1: string): string {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    return this.gridController.calculationGetCellsA1(transactionId, a1, lineNumber);
+    return this.gridController.calculationGetCellsA1(transactionId, a1);
   }
 
   finiteRectFromSelection(selection: string): Rectangle | undefined {
