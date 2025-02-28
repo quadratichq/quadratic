@@ -2,7 +2,7 @@ import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { getCSSVariableAsHexColor } from '@/shared/utils/colors';
 import { useEffect } from 'react';
 
-const DEFAULT_APPEARANCE_MODE = 'system';
+const DEFAULT_APPEARANCE_MODE = 'light';
 type AppearanceMode = 'light' | 'dark' | 'system';
 export const appearanceModes: AppearanceMode[] = ['light', 'dark', 'system'];
 
