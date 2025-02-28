@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-files"
-version = "0.6.1"
+version = "0.6.3"
 edition = "2021"
 authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 
@@ -8,7 +8,7 @@ authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 axum = { version = "0.7.1", features = ["macros"] }
 axum-extra = { version = "0.9.0", features = ["typed-header"] }
 bytes = "1.6.1"
-chrono = { version = "0.4.31", features = ["serde"] }
+chrono = { version = "=0.4.39", features = ["serde"] }
 dotenv = "0.15.0"
 envy = "0.4.2"
 futures = "0.3.29"
@@ -19,7 +19,7 @@ futures-util = { version = "0.3.29", default-features = false, features = [
 headers = "0.4.0"
 jsonwebtoken = "9.2.0"
 openssl = { version = "0.10.66", features = ["vendored"] }
-quadratic-core = { path = "../quadratic-core", features = ["multiplayer"] }
+quadratic-core = { path = "../quadratic-core", default-features = false, features = ["console_error_panic_hook", "js"] }
 quadratic-rust-shared = { path = "../quadratic-rust-shared" }
 rayon = "1.8.0"
 reqwest = { version = "0.11.22", features = ["json", "serde_json"] }
@@ -31,7 +31,12 @@ thiserror = "1.0.50"
 tokio = { version = "1.34.0", features = ["full"] }
 tokio-util = "0.7.11"
 tower = { version = "0.4.13", features = ["util"] }
-tower-http = { version = "0.5.0", features = ["cors", "fs", "trace", "validate-request"] }
+tower-http = { version = "0.5.0", features = [
+    "cors",
+    "fs",
+    "trace",
+    "validate-request",
+] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 uuid = { version = "1.6.1", features = ["serde", "v4"] }

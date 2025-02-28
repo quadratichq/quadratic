@@ -215,10 +215,8 @@ mod tests {
     use crate::grid::series::{cell_value_text, find_auto_complete};
 
     use super::*;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn find_a_text_series_lowercase_letters() {
         let options = SeriesOptions {
             series: cell_value_text(vec!["a", "b", "c"]),
@@ -230,7 +228,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn find_a_text_series_uppercase_letters() {
         let options = SeriesOptions {
             series: cell_value_text(vec!["A", "B", "C"]),
@@ -242,7 +239,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn find_a_text_series_uppercase_letters_with_wrap() {
         let options = SeriesOptions {
             series: cell_value_text(vec!["X", "Y", "Z"]),
@@ -254,7 +250,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn find_a_text_series_uppercase_letters_with_wrap_negative() {
         let options = SeriesOptions {
             series: cell_value_text(vec!["A", "B", "C"]),
@@ -266,7 +261,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn find_a_text_series_short_month() {
         let options = SeriesOptions {
             series: cell_value_text(vec!["Jan", "Feb", "Mar"]),
@@ -278,7 +272,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn find_a_text_series_uppercase_short_month_negative() {
         let options = SeriesOptions {
             series: cell_value_text(vec!["JAN", "FEB", "MAR"]),
@@ -290,7 +283,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn find_a_text_series_full_month() {
         let options = SeriesOptions {
             series: cell_value_text(vec!["January", "February"]),
@@ -302,7 +294,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn find_a_text_series_uppercase_full_month_negative_wrap() {
         let options = SeriesOptions {
             series: cell_value_text(vec!["FEBRUARY", "MARCH"]),

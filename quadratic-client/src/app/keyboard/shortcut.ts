@@ -1,5 +1,5 @@
-import { Action } from '@/app/actions/actions';
-import { Keys, MacModifiers, WindowsModifiers } from '@/app/keyboard/keys';
+import type { Action } from '@/app/actions/actions';
+import type { Keys, MacModifiers, WindowsModifiers } from '@/app/keyboard/keys';
 
 type MacShortcut = (MacModifiers | Keys)[];
 type WindowsShortcut = (WindowsModifiers | Keys)[];

@@ -1,4 +1,4 @@
-import { GetConnections } from '@/routes/api.connections';
+import type { GetConnections } from '@/routes/api.connections';
 import { useFetcher } from 'react-router-dom';
 
 /**

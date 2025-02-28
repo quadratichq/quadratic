@@ -64,17 +64,14 @@ impl SmallTimestamp {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn new() {
         let ts = SmallTimestamp::now();
         assert!(ts.value() < u32::MAX);
     }
 
     #[test]
-    #[parallel]
     fn ensure_ordering() {
         let ts1 = SmallTimestamp::now();
         std::thread::sleep(std::time::Duration::from_secs(1));
@@ -83,7 +80,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn ensure_different() {
         let ts1 = SmallTimestamp::set(
             DateTime::parse_from_rfc3339("2024-05-14T00:00:00Z")
@@ -100,7 +96,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_range() {
         let start = SmallTimestamp::set(*BASE_DATE);
         assert_eq!(start.value(), 0);

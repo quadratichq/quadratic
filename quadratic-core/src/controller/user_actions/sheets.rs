@@ -51,6 +51,7 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
+        a1::A1Selection,
         controller::GridController,
         grid::{
             sheet::borders::{BorderSelection, BorderStyle},
@@ -60,13 +61,11 @@ mod test {
             controller::sheet_info::SheetInfo,
             js::{clear_js_calls, expect_js_call},
         },
-        A1Selection, CellValue, SheetPos,
+        CellValue, SheetPos,
     };
     use bigdecimal::BigDecimal;
-    use serial_test::{parallel, serial};
 
     #[test]
-    #[parallel]
     fn test_set_sheet_name() {
         let mut g = GridController::test();
         let old_sheet_ids = g.sheet_ids();
@@ -90,7 +89,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_set_sheet_color() {
         let mut g = GridController::test();
         let old_sheet_ids = g.sheet_ids();
@@ -126,7 +124,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_delete_sheet() {
         let mut g = GridController::test();
         let old_sheet_ids = g.sheet_ids();
@@ -149,7 +146,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_move_sheet_sheet_does_not_exist() {
         let mut g = GridController::test();
         g.add_sheet(None);
@@ -157,7 +153,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_add_delete_reorder_sheets() {
         let mut g = GridController::test();
         g.add_sheet(None);
@@ -208,7 +203,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_delete_last_sheet() {
         let mut g = GridController::test();
         let sheet_ids = g.sheet_ids();
@@ -229,7 +223,6 @@ mod test {
     }
 
     #[test]
-    #[serial]
     fn duplicate_sheet() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -278,11 +271,7 @@ mod test {
             false,
         );
         // should send borders for the duplicated sheet
-        let borders = gc
-            .sheet(duplicated_sheet_id)
-            .borders
-            .borders_in_sheet()
-            .unwrap();
+        let borders = gc.sheet(duplicated_sheet_id).borders_in_sheet().unwrap();
         let borders_str = serde_json::to_string(&borders).unwrap();
         expect_js_call(
             "jsBordersSheet",
@@ -367,7 +356,6 @@ mod test {
     }
 
     #[test]
-    #[serial]
     fn test_duplicate_sheet_code_rerun() {
         clear_js_calls();
 

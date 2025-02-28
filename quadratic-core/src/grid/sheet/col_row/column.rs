@@ -70,16 +70,15 @@ impl Sheet {
     fn reverse_code_runs_ops_for_column(&self, column: i64) -> Vec<Operation> {
         let mut reverse_operations = Vec::new();
 
-        self.code_runs
+        self.data_tables
             .iter()
             .enumerate()
-            .for_each(|(index, (pos, code_run))| {
+            .for_each(|(index, (pos, data_table))| {
                 if pos.x == column {
-                    reverse_operations.push(Operation::SetCodeRunVersion {
+                    reverse_operations.push(Operation::SetDataTable {
                         sheet_pos: SheetPos::new(self.id, pos.x, pos.y),
-                        code_run: Some(code_run.clone()),
+                        data_table: Some(data_table.clone()),
                         index,
-                        version: 1,
                     });
                 }
             });
@@ -113,16 +112,16 @@ impl Sheet {
         if transaction.is_user_undo_redo() {
             transaction
                 .reverse_operations
-                .extend(self.reverse_values_ops_for_column(column));
+                .extend(self.reverse_borders_ops_for_column(column));
             transaction
                 .reverse_operations
                 .extend(self.reverse_formats_ops_for_column(column));
             transaction
                 .reverse_operations
-                .extend(self.reverse_borders_ops_for_column(column));
+                .extend(self.reverse_code_runs_ops_for_column(column));
             transaction
                 .reverse_operations
-                .extend(self.reverse_code_runs_ops_for_column(column));
+                .extend(self.reverse_values_ops_for_column(column));
         }
 
         self.delete_column_offset(transaction, column);
@@ -132,7 +131,7 @@ impl Sheet {
 
         // remove the column's data from the sheet
         self.formats.remove_column(column);
-        transaction.fill_cells.insert(self.id);
+        transaction.add_fill_cells(self.id);
 
         // remove the column's borders from the sheet
         self.borders.remove_column(column);
@@ -141,16 +140,14 @@ impl Sheet {
         self.columns.remove(&column);
 
         // remove the column's code runs from the sheet
-        self.code_runs.retain(|pos, code_run| {
+        self.data_tables.retain(|pos, code_run| {
             if pos.x == column {
-                transaction.add_code_cell(self.id, *pos);
-
-                // signal that html and image cells are removed
-                if code_run.is_html() {
-                    transaction.add_html_cell(self.id, *pos);
-                } else if code_run.is_image() {
-                    transaction.add_image_cell(self.id, *pos);
-                }
+                transaction.add_from_code_run(
+                    self.id,
+                    *pos,
+                    code_run.is_image(),
+                    code_run.is_html(),
+                );
                 false
             } else {
                 true
@@ -174,7 +171,7 @@ impl Sheet {
 
         // update the indices of all code_runs impacted by the deletion
         let mut code_runs_to_move = Vec::new();
-        for (pos, _) in self.code_runs.iter() {
+        for (pos, _) in self.data_tables.iter() {
             if pos.x > column {
                 code_runs_to_move.push(*pos);
             }
@@ -185,7 +182,7 @@ impl Sheet {
                 x: old_pos.x - 1,
                 y: old_pos.y,
             };
-            if let Some(code_run) = self.code_runs.shift_remove(&old_pos) {
+            if let Some(code_run) = self.data_tables.shift_remove(&old_pos) {
                 // signal html and image cells to update
                 if code_run.is_html() {
                     transaction.add_html_cell(self.id, old_pos);
@@ -195,7 +192,7 @@ impl Sheet {
                     transaction.add_image_cell(self.id, new_pos);
                 }
 
-                self.code_runs.insert_sorted(new_pos, code_run);
+                self.data_tables.insert_sorted(new_pos, code_run);
 
                 // signal client to update the code runs
                 transaction.add_code_cell(self.id, old_pos);
@@ -206,8 +203,10 @@ impl Sheet {
         // mark hashes of new columns dirty
         transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
 
-        let changed_selections = self.validations.remove_column(transaction, self.id, column);
-        transaction.add_dirty_hashes_from_selections(self, changed_selections);
+        let changed_selections =
+            self.validations
+                .remove_column(transaction, self.id, column, &self.a1_context());
+        transaction.add_dirty_hashes_from_selections(self, &self.a1_context(), changed_selections);
 
         if transaction.is_user_undo_redo() {
             // reverse operation to create the column (this will also shift all impacted columns)
@@ -250,7 +249,7 @@ impl Sheet {
 
         // update the indices of all code_runs impacted by the insertion
         let mut code_runs_to_move = Vec::new();
-        for (pos, _) in self.code_runs.iter() {
+        for (pos, _) in self.data_tables.iter() {
             if pos.x >= column {
                 code_runs_to_move.push(*pos);
             }
@@ -261,7 +260,7 @@ impl Sheet {
                 x: old_pos.x + 1,
                 y: old_pos.y,
             };
-            if let Some(code_run) = self.code_runs.shift_remove(&old_pos) {
+            if let Some(code_run) = self.data_tables.shift_remove(&old_pos) {
                 // signal html and image cells to update
                 if send_client {
                     if code_run.is_html() {
@@ -273,20 +272,18 @@ impl Sheet {
                     }
                 }
 
-                self.code_runs.insert_sorted(new_pos, code_run);
+                self.data_tables.insert_sorted(new_pos, code_run);
 
                 // signal the client to updates to the code cells (to draw the code arrays)
-                if send_client {
-                    transaction.add_code_cell(self.id, old_pos);
-                    transaction.add_code_cell(self.id, new_pos);
-                }
+                transaction.add_code_cell(self.id, old_pos);
+                transaction.add_code_cell(self.id, new_pos);
             }
         }
 
         // update formatting
         self.formats.insert_column(column, copy_formats);
         if send_client {
-            transaction.fill_cells.insert(self.id);
+            transaction.add_fill_cells(self.id);
         }
 
         // signal client ot update the borders for changed columns
@@ -300,9 +297,15 @@ impl Sheet {
             transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
         }
 
-        let changed_selections = self.validations.insert_column(transaction, self.id, column);
+        let changed_selections =
+            self.validations
+                .insert_column(transaction, self.id, column, &self.a1_context());
         if send_client {
-            transaction.add_dirty_hashes_from_selections(self, changed_selections);
+            transaction.add_dirty_hashes_from_selections(
+                self,
+                &self.a1_context(),
+                changed_selections,
+            );
         }
 
         let changes = self.offsets.insert_column(column);
@@ -326,7 +329,6 @@ impl Sheet {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use crate::{
         controller::execution::TransactionSource,
@@ -388,7 +390,7 @@ mod tests {
             sheet.formats.fill_color.get(Pos { x: 3, y: 4 }),
             Some("blue".to_string())
         );
-        assert!(sheet.code_runs.get(&Pos { x: 1, y: 5 }).is_some());
+        assert!(sheet.data_tables.get(&Pos { x: 1, y: 5 }).is_some());
     }
 
     #[test]

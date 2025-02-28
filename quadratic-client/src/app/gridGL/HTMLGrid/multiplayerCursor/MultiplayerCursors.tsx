@@ -49,7 +49,7 @@ export const MultiplayerCursors = (props: Props) => {
 
         const color = player.colorString;
         const bounds = pixiApp.viewport.getVisibleBounds();
-        if (visible && x !== undefined && y !== undefined && sheet_id === sheets.sheet.id) {
+        if (visible && x !== undefined && y !== undefined && sheet_id === sheets.current) {
           let offscreen = false;
           if (x > bounds.right) {
             offscreen = true;

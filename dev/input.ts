@@ -55,9 +55,9 @@ export class Input {
         }
         this.control.restartFiles();
         break;
-      case "n": // toggle connector
-        if (this.control.status.connector === "killed") {
-          this.control.status.connector = false;
+      case "n": // toggle connection
+        if (this.control.status.connection === "killed") {
+          this.control.status.connection = false;
         }
         this.control.restartConnection();
         break;
@@ -93,8 +93,8 @@ export class Input {
           this.cli.options.files = true;
           this.control.restartFiles();
         }
-        if (this.cli.options.connector != true) {
-          this.cli.options.connector = true;
+        if (this.cli.options.connection != true) {
+          this.cli.options.connection = true;
           this.control.restartConnection();
         }
         if (this.cli.options.python != true) {

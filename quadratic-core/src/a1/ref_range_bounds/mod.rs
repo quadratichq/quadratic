@@ -1,16 +1,16 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use std::str::FromStr;
 use ts_rs::TS;
 
 use super::{range_might_intersect, A1Error, CellRefRangeEnd};
 use crate::{Pos, Rect};
 
-pub mod ref_range_bounds_contains;
-pub mod ref_range_bounds_create;
-pub mod ref_range_bounds_intersection;
-pub mod ref_range_bounds_query;
-pub mod ref_range_bounds_translate;
+mod contains;
+mod create;
+mod intersects;
+mod normalize;
+mod query;
+mod translate;
 
 #[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -21,10 +21,10 @@ pub struct RefRangeBounds {
 
 impl fmt::Debug for RefRangeBounds {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "RefRangeBounds(")?;
-        fmt::Display::fmt(self, f)?;
-        write!(f, ")")?;
-        Ok(())
+        f.debug_tuple("RefRangeBounds")
+            .field(&self.start)
+            .field(&self.end)
+            .finish()
     }
 }
 
@@ -32,7 +32,7 @@ impl fmt::Display for RefRangeBounds {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if *self == Self::ALL {
             write!(f, "*")?;
-        } else if self.is_column_range() {
+        } else if self.is_col_range() {
             if self.start.col() == self.end.col() {
                 self.start.col.fmt_as_column(f)?;
             } else {
@@ -49,11 +49,6 @@ impl fmt::Display for RefRangeBounds {
                 write!(f, "A")?;
                 self.start.row.fmt_as_row(f)?;
                 write!(f, ":")?;
-            } else if self.start.row() == self.end.row() {
-                write!(f, "A")?;
-                self.start.row.fmt_as_row(f)?;
-                write!(f, ":")?;
-                self.start.row.fmt_as_row(f)?;
             } else {
                 self.start.row.fmt_as_row(f)?;
                 write!(f, ":")?;
@@ -115,10 +110,62 @@ impl RefRangeBounds {
             end: CellRefRangeEnd::new_infinite_col_end(end_col),
         }
     }
+
+    /// Returns the smallest range that includes both `a` and `b`.
+    pub fn combined_bounding_box(a: Self, b: Self) -> Self {
+        Self {
+            start: CellRefRangeEnd {
+                col: std::cmp::min(a.start.col, b.start.col),
+                row: std::cmp::min(a.start.row, b.start.row),
+            },
+            end: CellRefRangeEnd {
+                col: std::cmp::max(a.end.col, b.end.col),
+                row: std::cmp::max(a.end.row, b.end.row),
+            },
+        }
+    }
+
+    /// Returns a new range bounded by the given rect.
+    pub fn to_bounded(&self, rect: &Rect) -> Self {
+        Self {
+            start: self.start.to_bounded_start(rect.min),
+            end: self.end.to_bounded_end(rect.max),
+        }
+    }
+
+    /// Returns an R[1]C[1]-style reference relative to the given position.
+    pub fn to_rc_string(&self, base_pos: Pos) -> String {
+        let start_col = self.start.col.to_rc_string(base_pos.x);
+        let start_row = self.start.row.to_rc_string(base_pos.y);
+        let end_col = self.end.col.to_rc_string(base_pos.x);
+        let end_row = self.end.row.to_rc_string(base_pos.y);
+        if *self == Self::ALL {
+            "*".to_string()
+        } else if self.is_col_range() {
+            if self.start.col == self.end.col {
+                format!("C{start_col}")
+            } else {
+                format!("C{start_col}:C{end_col}")
+            }
+        } else if self.is_row_range() {
+            // handle special case of An: (show as An: instead of n:)
+            if self.end.col.is_unbounded()
+                && self.end.row.is_unbounded()
+                && self.start.col.coord == 1
+            {
+                format!("R{start_row}:")
+            } else {
+                format!("R{start_row}:R{end_row}")
+            }
+        } else if self.start == self.end {
+            format!("R{start_row}C{start_col}")
+        } else {
+            format!("R{start_row}C{start_col}:R{end_row}C{end_col}")
+        }
+    }
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use super::*;
 
@@ -127,10 +174,15 @@ mod tests {
     proptest! {
         #[test]
         fn proptest_cell_ref_range_parsing(ref_range_bounds: RefRangeBounds) {
+            let base_pos = Pos::new(10, 15);
+
             // We skip tests where start = end since we remove the end when parsing
             if ref_range_bounds.end != ref_range_bounds.start {
-                assert_eq!(ref_range_bounds, ref_range_bounds.to_string().parse().unwrap());
+                assert_eq!(ref_range_bounds, RefRangeBounds::from_str(&ref_range_bounds.to_string(), None).unwrap());
+                assert_eq!(ref_range_bounds, RefRangeBounds::from_str(&ref_range_bounds.to_string(), Some(base_pos)).unwrap());
             }
+
+            assert_eq!(ref_range_bounds, RefRangeBounds::from_str(&ref_range_bounds.to_rc_string(base_pos), Some(base_pos)).unwrap());
         }
     }
 
@@ -182,7 +234,7 @@ mod tests {
     #[test]
     fn test_display_row_range() {
         let range = RefRangeBounds::new_infinite_row(1);
-        assert_eq!(range.to_string(), "A1:1");
+        assert_eq!(range.to_string(), "1:1");
 
         let range = RefRangeBounds::new_infinite_rows(1, 2);
         assert_eq!(range.to_string(), "1:2");

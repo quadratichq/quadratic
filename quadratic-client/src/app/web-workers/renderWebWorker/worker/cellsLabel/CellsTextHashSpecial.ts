@@ -3,7 +3,7 @@
 
 import { Bounds } from '@/app/grid/sheet/Bounds';
 import { checkboxRectangle, dropdownRectangle } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
-import { Rectangle } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
 
 export interface RenderSpecial {
   checkboxes: RenderCheckbox[];

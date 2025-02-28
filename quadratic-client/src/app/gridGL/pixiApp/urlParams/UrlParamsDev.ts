@@ -3,9 +3,9 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { IViewportTransformState } from 'pixi-viewport';
+import type { IViewportTransformState } from 'pixi-viewport';
 
 const URL_STATE_PARAM = 'state';
 const WAIT_FOR_SET_EDITOR_INTERACTION_STATE_TIMEOUT_MS = 100;

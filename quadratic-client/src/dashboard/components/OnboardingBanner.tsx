@@ -2,7 +2,7 @@ import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import Logo from '@/dashboard/components/quadratic-logo.svg';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
-import { TeamAction } from '@/routes/teams.$teamUuid';
+import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
@@ -32,7 +32,8 @@ import {
 import * as Tabs from '@radix-ui/react-tabs';
 import mixpanel from 'mixpanel-browser';
 import { UserTeamRoleSchema } from 'quadratic-shared/typesAndSchemas';
-import { FormEvent, useEffect, useRef, useState } from 'react';
+import type { FormEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useSubmit } from 'react-router-dom';
 import { z } from 'zod';
 

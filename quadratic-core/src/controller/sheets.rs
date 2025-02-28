@@ -2,6 +2,8 @@ use super::GridController;
 use crate::grid::Sheet;
 use crate::grid::SheetId;
 
+use anyhow::{anyhow, Result};
+
 impl GridController {
     pub fn sheet_ids(&self) -> Vec<SheetId> {
         self.grid.sheets().iter().map(|sheet| sheet.id).collect()
@@ -11,8 +13,19 @@ impl GridController {
         self.grid.try_sheet(sheet_id)
     }
 
+    pub fn try_sheet_result(&self, sheet_id: SheetId) -> Result<&Sheet> {
+        self.grid
+            .try_sheet(sheet_id)
+            .ok_or_else(|| anyhow!("Sheet with id {:?} not found", sheet_id))
+    }
+
     pub fn try_sheet_mut(&mut self, sheet_id: SheetId) -> Option<&mut Sheet> {
         self.grid.try_sheet_mut(sheet_id)
+    }
+
+    pub fn try_sheet_mut_result(&mut self, sheet_id: SheetId) -> Result<&mut Sheet> {
+        self.try_sheet_mut(sheet_id)
+            .ok_or_else(|| anyhow!("Sheet with id {:?} not found", sheet_id))
     }
 
     pub fn try_sheet_from_name(&mut self, name: String) -> Option<&Sheet> {
@@ -50,10 +63,8 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{controller::GridController, grid::SheetId};
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_sheet_ids() {
         let mut gc = super::GridController::test();
         let sheet_ids = gc.sheet_ids();
@@ -69,7 +80,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_try_sheet_from_id() {
         let mut gc = super::GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -84,7 +94,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_try_sheet_mut_from_id() {
         let mut gc = super::GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -102,7 +111,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_try_sheet_from_name() {
         let mut gc = super::GridController::test();
         assert_eq!(
@@ -120,7 +128,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_try_sheet_mut_from_name() {
         let mut gc = GridController::test();
         gc.add_sheet(None);
@@ -139,7 +146,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_try_sheet_from_string_id() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

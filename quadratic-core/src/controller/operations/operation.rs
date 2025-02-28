@@ -3,8 +3,10 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
+    a1::A1Selection,
     cell_values::CellValues,
     grid::{
+        data_table::{column_header::DataTableColumnHeader, sort::DataTableSort},
         file::sheet_schema::SheetSchema,
         formats::{Formats, SheetFormatUpdates},
         formatting::CellFmtArray,
@@ -16,10 +18,10 @@ use crate::{
             },
             validations::validation::Validation,
         },
-        CodeRun, CodeRunOld, Sheet, SheetId,
+        CodeRunOld, DataTable, DataTableKind, Sheet, SheetId,
     },
     selection::OldSelection,
-    A1Selection, CopyFormats, SheetPos, SheetRect,
+    CellValue, CopyFormats, SheetPos, SheetRect,
 };
 
 /// Description of changes to make to a file.
@@ -38,10 +40,112 @@ pub enum Operation {
         sheet_pos: SheetPos,
         values: CellValues,
     },
+    SetDataTable {
+        sheet_pos: SheetPos,
+        data_table: Option<DataTable>,
+        index: usize,
+    },
+    AddDataTable {
+        sheet_pos: SheetPos,
+        data_table: DataTable,
+        cell_value: CellValue,
+    },
+    DeleteDataTable {
+        sheet_pos: SheetPos,
+    },
+    // **Deprecated** and replaced with SetChartCellSize
+    SetChartSize {
+        sheet_pos: SheetPos,
+        pixel_width: f32,
+        pixel_height: f32,
+    },
+    SetChartCellSize {
+        sheet_pos: SheetPos,
+        w: u32,
+        h: u32,
+    },
+    SetDataTableAt {
+        sheet_pos: SheetPos,
+        values: CellValues,
+    },
+    FlattenDataTable {
+        sheet_pos: SheetPos,
+    },
+    SwitchDataTableKind {
+        sheet_pos: SheetPos,
+        kind: DataTableKind,
+        value: CellValue,
+    },
+    GridToDataTable {
+        sheet_rect: SheetRect,
+    },
+    DataTableMeta {
+        sheet_pos: SheetPos,
+        name: Option<String>,
+        alternating_colors: Option<bool>,
+        columns: Option<Vec<DataTableColumnHeader>>,
+        show_ui: Option<bool>,
+        show_name: Option<bool>,
+        show_columns: Option<bool>,
+        readonly: Option<bool>,
+    },
+    DataTableFormats {
+        sheet_pos: SheetPos,
+        formats: SheetFormatUpdates,
+    },
+    DataTableBorders {
+        sheet_pos: SheetPos,
+        borders: BordersUpdates,
+    },
+    SortDataTable {
+        sheet_pos: SheetPos,
+        sort: Option<Vec<DataTableSort>>,
+        display_buffer: Option<Option<Vec<u64>>>,
+    },
+    DataTableFirstRowAsHeader {
+        sheet_pos: SheetPos,
+        first_row_is_header: bool,
+    },
+    InsertDataTableColumns {
+        sheet_pos: SheetPos,
+        columns: Vec<(u32, Option<String>, Option<Vec<CellValue>>)>,
 
-    /// **Deprecated** Nov 2024 in favor of `SetCodeRunVersion`.
-    ///
-    /// This works for < v1.7.
+        /// swallow neighboring cells
+        swallow: bool,
+
+        /// select the table after the operation
+        select_table: bool,
+    },
+    DeleteDataTableColumns {
+        sheet_pos: SheetPos,
+        columns: Vec<u32>,
+
+        /// Inserts the removed column into sheet at the same position.
+        flatten: bool,
+
+        /// select the table after the operation
+        select_table: bool,
+    },
+    InsertDataTableRows {
+        sheet_pos: SheetPos,
+        rows: Vec<(u32, Option<Vec<CellValue>>)>,
+
+        /// swallow neighboring cells
+        swallow: bool,
+
+        /// select the table after the operation
+        select_table: bool,
+    },
+    DeleteDataTableRows {
+        sheet_pos: SheetPos,
+        rows: Vec<u32>,
+
+        /// Inserts the removed row into sheet at the same position.
+        flatten: bool,
+
+        /// select the table after the operation
+        select_table: bool,
+    },
     SetCodeRun {
         sheet_pos: SheetPos,
         code_run: Option<CodeRunOld>,
@@ -50,14 +154,16 @@ pub enum Operation {
     /// Sets a code run.
     SetCodeRunVersion {
         sheet_pos: SheetPos,
-        code_run: Option<CodeRun>,
+        code_run: Option<CodeRunOld>,
         index: usize,
 
         /// Simple version for tracking breaking changes to [`CodeRun`].
         version: u16,
     },
     /// Runs the code cell at a specific position.
-    ComputeCode { sheet_pos: SheetPos },
+    ComputeCode {
+        sheet_pos: SheetPos,
+    },
 
     /// **Deprecated** Nov 2024 in favor of `SetCellFormatsA1`.
     SetCellFormats {
@@ -92,25 +198,37 @@ pub enum Operation {
     },
 
     /// **Deprecated** Nov 2024 in favor of `AddSheetSchema`.
-    AddSheet { sheet: Box<Sheet> }, // very big!
+    AddSheet {
+        sheet: Box<Sheet>,
+    }, // very big!
     /// Adds a sheet.
-    AddSheetSchema { schema: Box<SheetSchema> }, // very big!
+    AddSheetSchema {
+        schema: Box<SheetSchema>,
+    }, // very big!
     /// Duplicates an existing sheet.
     DuplicateSheet {
         sheet_id: SheetId,
         new_sheet_id: SheetId,
     },
     /// Deletes an existing sheet.
-    DeleteSheet { sheet_id: SheetId },
+    DeleteSheet {
+        sheet_id: SheetId,
+    },
     /// Sets a sheet's name.
-    SetSheetName { sheet_id: SheetId, name: String },
+    SetSheetName {
+        sheet_id: SheetId,
+        name: String,
+    },
     /// Sets a sheet's color.
     SetSheetColor {
         sheet_id: SheetId,
         color: Option<String>,
     },
     /// Reorders a sheet.
-    ReorderSheet { target: SheetId, order: String },
+    ReorderSheet {
+        target: SheetId,
+        order: String,
+    },
 
     /// Resizes a single column.
     ResizeColumn {
@@ -142,17 +260,28 @@ pub enum Operation {
     },
 
     /// **Deprecated** Nov 2024 in favor of `SetCursorA1`.
-    SetCursor { sheet_rect: SheetRect },
+    SetCursor {
+        sheet_rect: SheetRect,
+    },
     /// **Deprecated** Nov 2024 in favor of `SetCursorA1`.
-    SetCursorSelection { selection: OldSelection },
+    SetCursorSelection {
+        selection: OldSelection,
+    },
     /// Sets the cursor selection. This is used when pasting data.
-    SetCursorA1 { selection: A1Selection },
+    SetCursorA1 {
+        selection: A1Selection,
+    },
 
     /// Moves all cells in a rectangle.
-    MoveCells { source: SheetRect, dest: SheetPos },
+    MoveCells {
+        source: SheetRect,
+        dest: SheetPos,
+    },
 
     /// Creates or updates a data validation rule.
-    SetValidation { validation: Validation },
+    SetValidation {
+        validation: Validation,
+    },
     /// Deletes a data validation rule.
     RemoveValidation {
         sheet_id: SheetId,
@@ -165,9 +294,15 @@ pub enum Operation {
     },
 
     /// Deletes a column.
-    DeleteColumn { sheet_id: SheetId, column: i64 },
+    DeleteColumn {
+        sheet_id: SheetId,
+        column: i64,
+    },
     /// Deletes a row.
-    DeleteRow { sheet_id: SheetId, row: i64 },
+    DeleteRow {
+        sheet_id: SheetId,
+        row: i64,
+    },
     /// Inserts a column.
     InsertColumn {
         sheet_id: SheetId,
@@ -193,6 +328,27 @@ impl fmt::Display for Operation {
             Operation::ComputeCode { sheet_pos } => {
                 write!(fmt, "ComputeCode {{ sheet_pos: {} }}", sheet_pos)
             }
+            Operation::SetDataTable {
+                sheet_pos,
+                data_table: run,
+                index,
+            } => write!(
+                fmt,
+                "SetDataTable {{ sheet_pos: {} data_table: {:?}, index: {} }}",
+                sheet_pos, run, index
+            ),
+            Operation::AddDataTable {
+                sheet_pos,
+                data_table,
+                cell_value,
+            } => write!(
+                fmt,
+                "AddDataTable {{ sheet_pos: {} data_table: {:?} cell_value: {:?} }}",
+                sheet_pos, data_table, cell_value
+            ),
+            Operation::DeleteDataTable { sheet_pos } => {
+                write!(fmt, "DeleteDataTable {{ sheet_pos: {} }}", sheet_pos)
+            }
             Operation::SetCodeRun {
                 sheet_pos,
                 code_run: run,
@@ -202,6 +358,128 @@ impl fmt::Display for Operation {
                 "SetCellRun {{ sheet_pos: {} code_cell_value: {:?}, index: {} }}",
                 sheet_pos, run, index
             ),
+            Operation::SetDataTableAt { sheet_pos, values } => write!(
+                fmt,
+                "SetDataTableAt {{ sheet_pos: {} values: {:?} }}",
+                sheet_pos, values
+            ),
+            Operation::FlattenDataTable { sheet_pos } => {
+                write!(fmt, "FlattenDataTable {{ sheet_pos: {} }}", sheet_pos)
+            }
+            Operation::SwitchDataTableKind {
+                sheet_pos,
+                kind,
+                value,
+            } => {
+                write!(
+                    fmt,
+                    "SwitchDataTableKind {{ sheet_pos: {}, kind: {}, value: {:?} }}",
+                    sheet_pos, kind, value
+                )
+            }
+            Operation::GridToDataTable { sheet_rect } => {
+                write!(fmt, "GridToDataTable {{ sheet_rect: {} }}", sheet_rect)
+            }
+            Operation::DataTableMeta {
+                sheet_pos,
+                name,
+                alternating_colors,
+                columns,
+                show_ui,
+                show_name,
+                show_columns,
+                readonly,
+            } => {
+                write!(
+                    fmt,
+                    "DataTableMeta {{ sheet_pos: {} name: {:?} alternating_colors: {:?} columns: {:?} show_ui: {:?} show_name: {:?} show_columns: {:?} readonly: {:?} }}",
+                    sheet_pos, name, alternating_colors, columns, show_ui, show_name, show_columns, readonly
+                )
+            }
+            Operation::DataTableFormats { sheet_pos, formats } => {
+                write!(
+                    fmt,
+                    "DataTableFormat {{ sheet_pos: {}, formats: {:?} }}",
+                    sheet_pos, formats
+                )
+            }
+            Operation::DataTableBorders { sheet_pos, borders } => {
+                write!(
+                    fmt,
+                    "DataTableBorders {{ sheet_pos: {}, borders: {:?} }}",
+                    sheet_pos, borders
+                )
+            }
+            Operation::SortDataTable {
+                sheet_pos,
+                sort,
+                display_buffer,
+            } => {
+                write!(
+                    fmt,
+                    "SortDataTable {{ sheet_pos: {}, sort: {:?} display_buffer: {:?} }}",
+                    sheet_pos, sort, display_buffer
+                )
+            }
+            Operation::DataTableFirstRowAsHeader {
+                sheet_pos,
+                first_row_is_header,
+            } => {
+                write!(
+                    fmt,
+                    "DataTableFirstRowAsHeader {{ sheet_pos: {}, first_row_is_header {} }}",
+                    sheet_pos, first_row_is_header
+                )
+            }
+            Operation::InsertDataTableColumns {
+                sheet_pos,
+                columns,
+                swallow,
+                select_table,
+            } => {
+                write!(
+                    fmt,
+                    "InsertDataTableColumns {{ sheet_pos: {}, columns: {:?}, swallow: {}, select_table: {} }}",
+                    sheet_pos, columns, swallow, select_table
+                )
+            }
+            Operation::DeleteDataTableColumns {
+                sheet_pos,
+                columns,
+                flatten,
+                select_table,
+            } => {
+                write!(
+                    fmt,
+                    "DeleteDataTableColumns {{ sheet_pos: {}, columns: {:?}, flatten: {}, select_table: {} }}",
+                    sheet_pos, columns, flatten, select_table
+                )
+            }
+            Operation::InsertDataTableRows {
+                sheet_pos,
+                rows,
+                swallow,
+                select_table,
+            } => {
+                write!(
+                    fmt,
+                    "InsertDataTableRows {{ sheet_pos: {}, rows: {:?}, swallow: {}, select_table: {} }}",
+                    sheet_pos, rows, swallow, select_table
+                )
+            }
+            Operation::DeleteDataTableRows {
+                sheet_pos,
+                rows,
+                flatten,
+                select_table,
+            } => {
+                write!(
+                    fmt,
+                    "DeleteDataTableRows {{ sheet_pos: {}, rows: {:?}, flatten: {}, select_table: {} }}",
+                    sheet_pos, rows, flatten, select_table
+                )
+            }
+            Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats - deprecated",),
             Operation::SetCodeRunVersion {
                 sheet_pos,
                 code_run: run,
@@ -212,7 +490,6 @@ impl fmt::Display for Operation {
                 "SetCellRun {{ sheet_pos: {} code_cell_value: {:?}, index: {} version: {} }}",
                 sheet_pos, run, index, version
             ),
-            Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats {{ [deprecated] }}",),
             Operation::SetCellFormatsSelection { selection, formats } => {
                 write!(
                     fmt,
@@ -363,6 +640,22 @@ impl fmt::Display for Operation {
                 write!(
                     fmt,
                     "InsertRow {{ sheet_id: {sheet_id}, row: {row}, copy_formats: {copy_formats:?} }}"
+                )
+            }
+            Operation::SetChartSize {
+                sheet_pos,
+                pixel_width,
+                pixel_height,
+            } => write!(
+                fmt,
+                "SetChartSize {{ sheet_pos: {}, pixel_width: {}, pixel_height: {} }}",
+                sheet_pos, pixel_width, pixel_height
+            ),
+            Operation::SetChartCellSize { sheet_pos, w, h } => {
+                write!(
+                    fmt,
+                    "SetChartCellSize {{ sheet_pos: {}, w: {}, h: {} }}",
+                    sheet_pos, w, h
                 )
             }
         }

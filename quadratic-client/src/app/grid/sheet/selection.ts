@@ -1,4 +1,4 @@
-import { Rect } from '@/app/quadratic-core-types';
+import type { Rect } from '@/app/quadratic-core-types';
 import {
   newAllSelection,
   newRectSelection,
@@ -7,8 +7,7 @@ import {
 
 export const getSingleSelection = (sheetId: string, x: number, y: number): string => {
   try {
-    const selection = newSingleSelection(sheetId, x, y);
-    return selection.save();
+    return newSingleSelection(sheetId, x, y).save();
   } catch (e) {
     console.error('Failed to get single selection', e);
     throw new Error(`Failed to get single selection`);
@@ -17,8 +16,7 @@ export const getSingleSelection = (sheetId: string, x: number, y: number): strin
 
 export const getRectSelection = (sheetId: string, rect: Rect): string => {
   try {
-    const selection = newRectSelection(sheetId, rect.min.x, rect.min.y, rect.max.x, rect.max.y);
-    return selection.save();
+    return newRectSelection(sheetId, rect.min.x, rect.min.y, rect.max.x, rect.max.y);
   } catch (e) {
     console.error('Failed to get rect selection', e);
     throw new Error(`Failed to get rect selection`);
@@ -27,8 +25,7 @@ export const getRectSelection = (sheetId: string, rect: Rect): string => {
 
 export const getAllSelection = (sheetId: string): string => {
   try {
-    const selection = newAllSelection(sheetId);
-    return selection.save();
+    return newAllSelection(sheetId);
   } catch (e) {
     console.error('Failed to get all selections', e);
     throw new Error(`Failed to get all selections`);

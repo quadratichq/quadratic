@@ -11,10 +11,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
 # Install rustup
 RUN echo 'Installing rustup...' && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
-ENV CARGO_TARGET_DIR=/quadratic/target
+ENV CARGO_TARGET_DIR=/quadratic/target/quadratic-core
 ENV CARGO_HOME=/quadratic/.cargo
 ENV CARGO_BUILD_JOBS=64
-ENV RUSTFLAGS='-C codegen-units=64'
 
 # Install wasm-pack
 RUN echo 'Installing wasm-pack...' && curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
@@ -32,6 +31,7 @@ COPY updateAlertVersion.json .
 COPY package.json .
 COPY ./quadratic-core/. ./quadratic-core/
 COPY ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
+COPY ./quadratic-rust-shared/. ./quadratic-rust-shared/
 
 # Build core
 RUN if [ "$CLIENT_DEV" = "true" ]; then \
@@ -52,10 +52,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
 # Install rustup
 RUN echo 'Installing rustup...' && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
-ENV CARGO_TARGET_DIR=/quadratic/target
+ENV CARGO_TARGET_DIR=/quadratic/target/quadratic-core-types
 ENV CARGO_HOME=/quadratic/.cargo
 ENV CARGO_BUILD_JOBS=64
-ENV RUSTFLAGS='-C codegen-units=64'
 
 # Install wasm-pack
 RUN echo 'Installing wasm-pack...' && curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
@@ -73,6 +72,7 @@ COPY updateAlertVersion.json .
 COPY package.json .
 COPY ./quadratic-core/. ./quadratic-core/
 COPY ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
+COPY ./quadratic-rust-shared/. ./quadratic-rust-shared/
 
 # Build TS/Rust types
 RUN echo 'Building TS/Rust types...' && npm run export_types --workspace=quadratic-core
@@ -91,10 +91,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
 # Install rustup
 RUN echo 'Installing rustup...' && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
-ENV CARGO_TARGET_DIR=/quadratic/target
+ENV CARGO_TARGET_DIR=/quadratic/target/rust-client
 ENV CARGO_HOME=/quadratic/.cargo
 ENV CARGO_BUILD_JOBS=64
-ENV RUSTFLAGS='-C codegen-units=64'
 
 # Install wasm-pack
 RUN echo 'Installing wasm-pack...' && curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
@@ -110,9 +109,10 @@ COPY updateAlertVersion.json .
 
 # Copy required files for building rust client
 COPY package.json .
+COPY ./quadratic-rust-client/. ./quadratic-rust-client/
 COPY ./quadratic-core/. ./quadratic-core/
 COPY ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
-COPY ./quadratic-rust-client/. ./quadratic-rust-client/
+COPY ./quadratic-rust-shared/. ./quadratic-rust-shared/
 
 # Build the rust-client
 ARG GIT_COMMIT

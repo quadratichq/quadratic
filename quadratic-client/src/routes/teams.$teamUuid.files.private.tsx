@@ -1,5 +1,4 @@
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
-import { Box, useTheme } from '@mui/material';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { useRouteError } from 'react-router-dom';
 import { debugShowUILogs } from '../app/debugFlags';
@@ -47,18 +46,17 @@ export const Component = () => {
 
 export const ErrorBoundary = () => {
   const error = useRouteError();
-  const theme = useTheme();
 
   if (debugShowUILogs) console.error('[<MineRoute>.<ErrorBoundary>]', error);
 
   return (
-    <Box sx={{ maxWidth: '60ch', mx: 'auto', py: theme.spacing(2) }}>
+    <div className="mx-auto max-w-prose py-4">
       <Empty
         title="Unexpected error"
         description="An unexpected error occurred while retrieving your files. Try reloading the page. If the issue continues, contact us."
         Icon={ExclamationTriangleIcon}
         severity="error"
       />
-    </Box>
+    </div>
   );
 };

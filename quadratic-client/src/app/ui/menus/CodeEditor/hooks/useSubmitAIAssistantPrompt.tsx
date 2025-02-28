@@ -13,10 +13,11 @@ import {
   showAIAssistantAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { CodeCell } from '@/app/gridGL/types/codeCell';
+import type { CodeCell } from '@/app/gridGL/types/codeCell';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
-import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
+import type { AIMessage, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 
@@ -25,7 +26,7 @@ export function useSubmitAIAssistantPrompt() {
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
   const { getCodeCellContext } = useCodeCellContextMessages();
-  const [model] = useAIModel();
+  const [modelKey] = useAIModel();
 
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
@@ -47,6 +48,33 @@ export function useSubmitAIAssistantPrompt() {
         set(aiAssistantLoadingAtom, true);
 
         const abortController = new AbortController();
+        abortController.signal.addEventListener('abort', () => {
+          set(aiAssistantMessagesAtom, (prevMessages) => {
+            const lastMessage = prevMessages.at(-1);
+            if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
+              const newLastMessage = { ...lastMessage };
+              let currentContent = { ...(newLastMessage.content.at(-1) ?? { type: 'text', text: '' }) };
+              if (currentContent?.type !== 'text') {
+                currentContent = { type: 'text', text: '' };
+              }
+              currentContent.text += '\n\nRequest aborted by the user.';
+              currentContent.text = currentContent.text.trim();
+              newLastMessage.toolCalls = [];
+              newLastMessage.content = [...newLastMessage.content.slice(0, -1), currentContent];
+              return [...prevMessages.slice(0, -1), newLastMessage];
+            } else if (lastMessage?.role === 'user') {
+              const newLastMessage: AIMessage = {
+                role: 'assistant',
+                content: [{ type: 'text', text: 'Request aborted by the user.' }],
+                contextType: 'userPrompt',
+                toolCalls: [],
+                model: getModelFromModelKey(modelKey),
+              };
+              return [...prevMessages, newLastMessage];
+            }
+            return prevMessages;
+          });
+        });
         set(aiAssistantAbortControllerAtom, abortController);
 
         if (clearMessages) {
@@ -107,21 +135,50 @@ export function useSubmitAIAssistantPrompt() {
           await handleAIRequestToAPI({
             chatId,
             source: 'AIAssistant',
-            model,
+            modelKey,
             messages: updatedMessages,
+            useStream: true,
+            useTools: false,
             language: getLanguage(codeCell.language),
             useQuadraticContext: true,
             setMessages: (updater) => set(aiAssistantMessagesAtom, updater),
             signal: abortController.signal,
+            thinking: true,
           });
         } catch (error) {
+          set(aiAssistantMessagesAtom, (prevMessages) => {
+            const lastMessage = prevMessages.at(-1);
+            if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
+              const newLastMessage = { ...lastMessage };
+              let currentContent = { ...(newLastMessage.content.at(-1) ?? { type: 'text', text: '' }) };
+              if (currentContent?.type !== 'text') {
+                currentContent = { type: 'text', text: '' };
+              }
+              currentContent.text += '\n\nLooks like there was a problem. Please try again.';
+              currentContent.text = currentContent.text.trim();
+              newLastMessage.toolCalls = [];
+              newLastMessage.content = [...newLastMessage.content.slice(0, -1), currentContent];
+              return [...prevMessages.slice(0, -1), newLastMessage];
+            } else if (lastMessage?.role === 'user') {
+              const newLastMessage: AIMessage = {
+                role: 'assistant',
+                content: [{ type: 'text', text: 'Looks like there was a problem. Please try again.' }],
+                contextType: 'userPrompt',
+                toolCalls: [],
+                model: getModelFromModelKey(modelKey),
+              };
+              return [...prevMessages, newLastMessage];
+            }
+            return prevMessages;
+          });
+
           console.error(error);
         }
 
         set(aiAssistantAbortControllerAtom, undefined);
         set(aiAssistantLoadingAtom, false);
       },
-    [handleAIRequestToAPI, getCurrentSheetContext, getVisibleContext, getCodeCellContext, model]
+    [handleAIRequestToAPI, getCurrentSheetContext, getVisibleContext, getCodeCellContext, modelKey]
   );
 
   return { submitPrompt };

@@ -116,11 +116,11 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
+    use crate::controller::user_actions::import::tests::simple_csv;
+
     use super::*;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_move_sheet_operation() {
         let mut gc = GridController::test();
         gc.add_sheet(None);
@@ -167,7 +167,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn get_sheet_next_name() {
         // Sheet 1
         let mut gc = GridController::test();
@@ -187,11 +186,36 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn sheet_names() {
         let mut gc = GridController::test();
         gc.add_sheet(None);
         gc.add_sheet(None);
         assert_eq!(gc.sheet_names(), vec!["Sheet 1", "Sheet 2", "Sheet 3"]);
+    }
+
+    #[test]
+    fn test_duplidate_sheet_with_data_table() {
+        let (mut gc, sheet_id, pos, _) = simple_csv();
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap().clone();
+
+        // let sheet = gc.sheet_mut(sheet_id);
+        gc.sheet_mut(sheet_id)
+            .set_data_table((1, 1).into(), Some(data_table));
+
+        let duplicate_sheet = gc.sheet_mut(sheet_id).clone();
+        let duplicate_sheet_id = gc.grid.add_sheet(Some(duplicate_sheet));
+        let data_tables = gc.sheet(duplicate_sheet_id).data_tables.clone();
+
+        let context = gc.a1_context().to_owned();
+
+        for (pos, data_table) in data_tables.into_iter() {
+            let name = data_table.name.to_string();
+            let sheet_pos = pos.to_sheet_pos(duplicate_sheet_id);
+            gc.grid
+                .update_data_table_name(sheet_pos, &name, &name, &context, false)
+                .unwrap();
+        }
+
+        println!("duplicate: {:?}", gc.sheet(duplicate_sheet_id).data_tables);
     }
 }

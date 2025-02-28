@@ -1,5 +1,5 @@
 import { events } from '@/app/events/events';
-import { LanguageState } from '@/app/web-workers/languageTypes';
+import type { LanguageState } from '@/app/web-workers/languageTypes';
 import { useEffect, useState } from 'react';
 
 export const useConnectionState = (): LanguageState => {

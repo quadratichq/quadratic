@@ -2,7 +2,7 @@ import { hasPermissionToEditFile } from '@/app/actions';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Validation } from '@/app/quadratic-core-types';
+import type { Validation } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -18,13 +18,13 @@ export const useValidationsData = (): ValidationsData => {
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const readOnly = !hasPermissionToEditFile(permissions);
 
-  const [sheetId, setSheetId] = useState(sheets.sheet.id);
+  const [sheetId, setSheetId] = useState(sheets.current);
   useEffect(() => {
     const updateSheet = () => {
       setSheetId((current: string) => {
-        if (current !== sheets.sheet.id) {
+        if (current !== sheets.current) {
           setValidations([...sheets.sheet.validations]);
-          return sheets.sheet.id;
+          return sheets.current;
         }
         return current;
       });

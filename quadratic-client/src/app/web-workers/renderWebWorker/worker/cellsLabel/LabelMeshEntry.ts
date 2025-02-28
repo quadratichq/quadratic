@@ -8,9 +8,9 @@
  */
 
 import { debugShowCellHashesInfo } from '@/app/debugFlags';
-import { RenderClientLabelMeshEntry } from '../../renderClientMessages';
-import { renderClient } from '../renderClient';
-import { LabelMesh } from './LabelMesh';
+import type { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
+import type { LabelMesh } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/LabelMesh';
+import { renderClient } from '@/app/web-workers/renderWebWorker/worker/renderClient';
 
 export class LabelMeshEntry {
   private labelMesh: LabelMesh;

@@ -1,11 +1,12 @@
 //! This is an abstraction of the Monaco Editor for use with the inline editor.
 
+import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
-import { CellAlign, CellVerticalAlign, CellWrap } from '@/app/quadratic-core-types';
+import type { CellAlign, CellVerticalAlign, CellWrap } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
 import { FONT_SIZE, LINE_HEIGHT } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
@@ -14,7 +15,6 @@ import { editor } from 'monaco-editor';
 import DefaultEditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import JsonEditorWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
 import TsEditorWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
-import { inlineEditorEvents } from './inlineEditorEvents';
 
 // This is where we globally define worker types for Monaco. See
 // https://github.com/microsoft/monaco-editor/blob/main/docs/integrate-esm.md
@@ -449,7 +449,10 @@ class InlineEditorMonaco {
     monaco.languages.registerCompletionItemProvider('inline-editor', {
       provideCompletionItems: (model, position) => {
         const lowerCase = this.get().toLowerCase();
-        if (!this.autocompleteList?.find((t) => t.toLowerCase().startsWith(lowerCase) && t.length > lowerCase.length)) {
+        const filteredList = this.autocompleteList?.filter(
+          (t) => t.toLowerCase().startsWith(lowerCase) && t.length > lowerCase.length
+        );
+        if (!this.autocompleteList || filteredList?.length !== 1) {
           this.autocompleteSuggestionShowing = false;
           return;
         }

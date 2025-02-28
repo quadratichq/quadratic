@@ -17,7 +17,7 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import '@szhsin/react-menu/dist/index.css';
 import mixpanel from 'mixpanel-browser';
-import { ColorResult } from 'react-color';
+import type { ColorResult } from 'react-color';
 
 interface Props {
   handleClose: () => void;
@@ -51,7 +51,7 @@ export const SheetBarTabDropdownMenu = (props: Props): JSX.Element => {
             onClick={() => {
               if (window.confirm(`Are you sure you want to delete ${sheets.sheet.name}?`)) {
                 mixpanel.track('[Sheets].delete');
-                sheets.userDeleteSheet(sheets.sheet.id);
+                sheets.userDeleteSheet(sheets.current);
               }
               setTimeout(focusGrid);
             }}
@@ -75,13 +75,13 @@ export const SheetBarTabDropdownMenu = (props: Props): JSX.Element => {
               onChangeComplete={(change: ColorResult) => {
                 const color = convertReactColorToString(change);
                 sheets.sheet.color = color;
-                quadraticCore.setSheetColor(sheets.sheet.id, color, sheets.getCursorPosition());
+                quadraticCore.setSheetColor(sheets.current, color, sheets.getCursorPosition());
                 handleClose();
                 focusGrid();
               }}
               onClear={() => {
                 sheets.sheet.color = undefined;
-                quadraticCore.setSheetColor(sheets.sheet.id, undefined, sheets.getCursorPosition());
+                quadraticCore.setSheetColor(sheets.current, undefined, sheets.getCursorPosition());
                 handleClose();
                 focusGrid();
               }}
@@ -103,18 +103,18 @@ export const SheetBarTabDropdownMenu = (props: Props): JSX.Element => {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          disabled={sheets.getFirst().id === sheets.sheet.id}
+          disabled={sheets.getFirst().id === sheets.current}
           onClick={() => {
-            sheets.moveSheet({ id: sheets.sheet.id, delta: -1 });
+            sheets.moveSheet({ id: sheets.current, delta: -1 });
             focusGrid();
           }}
         >
           Move left
         </DropdownMenuItem>
         <DropdownMenuItem
-          disabled={sheets.getLast().id === sheets.sheet.id}
+          disabled={sheets.getLast().id === sheets.current}
           onClick={() => {
-            sheets.moveSheet({ id: sheets.sheet.id, delta: 1 });
+            sheets.moveSheet({ id: sheets.current, delta: 1 });
             focusGrid();
           }}
         >

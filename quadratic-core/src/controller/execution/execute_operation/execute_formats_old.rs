@@ -93,15 +93,6 @@ impl GridController {
                     Some(fill_color.clone().into()),
                 );
             }
-            if let Some(render_size) = &format.render_size {
-                formats_a1.render_size.get_or_insert_default().set_rect(
-                    x1,
-                    y1,
-                    x2,
-                    y2,
-                    Some(render_size.clone().into()),
-                );
-            }
             if let Some(date_time) = &format.date_time {
                 formats_a1.date_time.get_or_insert_default().set_rect(
                     x1,

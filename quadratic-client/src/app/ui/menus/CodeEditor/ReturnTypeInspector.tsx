@@ -11,14 +11,15 @@ import {
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { FixSpillError } from '@/app/ui/components/FixSpillError';
 import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/CodeEditor/hooks/useSubmitAIAssistantPrompt';
+import { codeEditorBaseStyles } from '@/app/ui/menus/CodeEditor/styles';
 import { DOCUMENTATION_JAVASCRIPT_RETURN_DATA, DOCUMENTATION_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { useTheme } from '@mui/material';
-import { ReactNode, useMemo } from 'react';
+import type { ReactNode } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-import { codeEditorBaseStyles } from './styles';
 
 export function ReturnTypeInspector() {
   const theme = useTheme();

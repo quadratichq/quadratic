@@ -53,10 +53,8 @@ impl DerefMut for Formats {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn repeat() {
         let update = FormatUpdate::default();
         let formats = Formats::repeat(update.clone(), 3);

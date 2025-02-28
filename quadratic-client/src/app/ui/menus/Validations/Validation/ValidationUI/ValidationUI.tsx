@@ -1,11 +1,12 @@
+import type { ValidationData } from '@/app/ui/menus/Validations/Validation/useValidationData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Checkbox } from '@/shared/shadcn/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/shadcn/ui/select';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Close } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
-import { FocusEvent, useCallback, useEffect, useRef } from 'react';
-import { ValidationData } from '../useValidationData';
+import type { FocusEvent } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 interface CheckboxProps {
   className?: string;
@@ -114,18 +115,20 @@ interface DropdownProps {
   options: (string | { value: string; label: string | JSX.Element })[];
   disabled?: boolean;
   readOnly?: boolean;
+  style?: React.CSSProperties;
 
   // first entry is blank
   includeBlank?: boolean;
+  tabIndex?: number;
 }
 
 export const ValidationDropdown = (props: DropdownProps) => {
-  const { label, value, className, onChange, options, disabled, readOnly, includeBlank } = props;
+  const { label, value, className, onChange, options, disabled, readOnly, includeBlank, style, tabIndex } = props;
 
   const optionsBlank = includeBlank ? [{ value: 'blank', label: '' }, ...options] : options;
 
   return (
-    <div className={className}>
+    <div className={className} style={style}>
       {label && <div className={disabled ? 'opacity-50' : ''}>{label}</div>}
       <Select value={value} onValueChange={onChange} disabled={disabled || readOnly}>
         <SelectTrigger
@@ -134,6 +137,7 @@ export const ValidationDropdown = (props: DropdownProps) => {
             // this is needed to avoid selecting text when clicking the dropdown
             e.preventDefault();
           }}
+          tabIndex={tabIndex}
         >
           <SelectValue />
         </SelectTrigger>

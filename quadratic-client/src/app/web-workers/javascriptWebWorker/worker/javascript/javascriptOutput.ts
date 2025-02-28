@@ -9,7 +9,7 @@ export function javascriptConvertOutputType(
   row: number,
   x?: number,
   y?: number
-): { output: [string, string]; displayType: string } | null {
+): { output: [string, string]; displayType: string; chartPixelOutput?: [number, number] } | null {
   if (Array.isArray(value) && value.flat().length !== 0) {
     return null;
   }
@@ -84,8 +84,9 @@ export function javascriptConvertOutputArray(
   message: string[],
   value: any,
   column: number,
-  row: number
-): { output: [string, string][][]; displayType: string } | null {
+  row: number,
+  chartPixelOutput?: [number, number]
+): { output: [string, string][][]; displayType: string; chartPixelOutput?: [number, number] } | null {
   if (!Array.isArray(value) || value.length === 0 || value.flat().length === 0) {
     return null;
   }

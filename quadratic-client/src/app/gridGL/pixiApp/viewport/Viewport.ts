@@ -1,12 +1,14 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { MOUSE_EDGES_DISTANCE, MOUSE_EDGES_SPEED } from '@/app/gridGL/interaction/pointer/pointerUtils';
+import type { PixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Decelerate } from '@/app/gridGL/pixiApp/viewport/Decelerate';
 import { Drag } from '@/app/gridGL/pixiApp/viewport/Drag';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '@/app/gridGL/pixiApp/viewport/Wheel';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { Viewport as PixiViewport } from 'pixi-viewport';
-import { Point, Rectangle } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
+import { Point } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 
 const MULTIPLAYER_VIEWPORT_EASE_TIME = 100;
@@ -20,6 +22,8 @@ const SNAPPING_TIME = 150;
 type SnapState = 'waiting' | 'snapping' | undefined;
 
 export class Viewport extends PixiViewport {
+  private pixiApp: PixiApp;
+
   private lastViewportPosition: Point = new Point();
 
   // setting this to 0 ensures that on initial render, the viewport is properly scaled and updated
@@ -35,8 +39,9 @@ export class Viewport extends PixiViewport {
   private snapState?: SnapState;
   private snapTimeout?: number;
 
-  constructor() {
+  constructor(pixiApp: PixiApp) {
     super();
+    this.pixiApp = pixiApp;
     this.plugins.add(
       'drag',
       new Drag(this, {
@@ -74,6 +79,7 @@ export class Viewport extends PixiViewport {
     this.off('pointerout');
 
     this.on('moved', this.viewportChanged);
+    this.on('moved', this.handleMoved);
     this.on('zoomed', this.viewportChanged);
     this.on('wait-for-zoom-end', this.handleWaitForZoomEnd);
     this.on('zoom-end', this.handleZoomEnd);
@@ -88,6 +94,7 @@ export class Viewport extends PixiViewport {
 
   destroy() {
     this.off('moved', this.viewportChanged);
+    this.off('moved', this.handleMoved);
     this.off('zoomed', this.viewportChanged);
     this.off('wait-for-zoom-end', this.handleWaitForZoomEnd);
     this.off('zoom-end', this.handleZoomEnd);
@@ -132,20 +139,34 @@ export class Viewport extends PixiViewport {
   }
 
   // resets the viewport to start
-  reset() {
-    const headings = pixiApp.headings.headingSize;
+  reset = () => {
+    const headings = this.pixiApp.headings.headingSize;
     this.position.set(headings.width, headings.height);
     this.dirty = true;
-  }
+  };
+
+  enableMouseEdges = () => {
+    const mouseEdges = this.plugins.get('mouse-edges');
+    if (mouseEdges && !mouseEdges.paused) return;
+    this.mouseEdges({
+      distance: MOUSE_EDGES_DISTANCE,
+      allowButtons: true,
+      speed: MOUSE_EDGES_SPEED / this.scale.x,
+    });
+  };
+
+  disableMouseEdges = () => {
+    this.plugins.remove('mouse-edges');
+  };
 
   sendRenderViewport() {
     const bounds = this.getVisibleBounds();
     const scale = this.scale.x;
-    renderWebWorker.updateViewport(sheets.sheet.id, bounds, scale);
+    renderWebWorker.updateViewport(sheets.current, bounds, scale);
   }
 
   private startSnap = () => {
-    const headings = pixiApp.headings.headingSize;
+    const headings = this.pixiApp.headings.headingSize;
     let x: number;
     let y: number;
     let snap = false;
@@ -167,7 +188,8 @@ export class Viewport extends PixiViewport {
         time: SNAPPING_TIME,
         ease: 'easeOutSine',
         removeOnComplete: true,
-        interrupt: true,
+        removeOnInterrupt: true,
+        interrupt: false,
       });
       this.snapState = 'snapping';
     } else {
@@ -175,7 +197,22 @@ export class Viewport extends PixiViewport {
     }
   };
 
-  updateViewport(): void {
+  private handleMoved = (event: { viewport: Viewport; type: string }) => {
+    if (event.type === 'mouse-edges') {
+      const headings = this.pixiApp.headings.headingSize;
+      if (this.x > headings.width || this.y > headings.height) {
+        this.disableMouseEdges();
+
+        let nextX = this.x > headings.width ? headings.width : this.x;
+        let nextY = this.y > headings.height ? headings.height : this.y;
+        this.position.set(nextX, nextY);
+
+        this.dirty = true;
+      }
+    }
+  };
+
+  updateViewport = () => {
     let dirty = false;
     if (this.lastViewportScale !== this.scale.x) {
       this.lastViewportScale = this.scale.x;
@@ -194,12 +231,12 @@ export class Viewport extends PixiViewport {
       this.lastScreenHeight = this.screenHeight;
       dirty = true;
     }
-    if (this.lastSheetId !== sheets.sheet.id) {
-      this.lastSheetId = sheets.sheet.id;
+    if (this.lastSheetId !== sheets.current) {
+      this.lastSheetId = sheets.current;
       dirty = true;
     }
     if (dirty) {
-      pixiApp.viewportChanged();
+      this.pixiApp.viewportChanged();
       this.sendRenderViewport();
 
       // signals to react that the viewport has changed (so it can update any
@@ -211,9 +248,9 @@ export class Viewport extends PixiViewport {
       this.snapState = undefined;
     } else if (!this.waitForZoomEnd) {
       if (!this.snapState) {
-        const headings = pixiApp.headings.headingSize;
+        const headings = this.pixiApp.headings.headingSize;
         if (this.x > headings.width || this.y > headings.height) {
-          if (pixiApp.momentumDetector.hasMomentumScroll()) {
+          if (this.pixiApp.momentumDetector.hasMomentumScroll()) {
             this.startSnap();
           } else {
             this.snapTimeout = Date.now();
@@ -226,7 +263,7 @@ export class Viewport extends PixiViewport {
         }
       }
     }
-  }
+  };
 
   private handleWaitForZoomEnd = () => {
     this.waitForZoomEnd = true;

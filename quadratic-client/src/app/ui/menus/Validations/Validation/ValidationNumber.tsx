@@ -1,4 +1,11 @@
-import { NumberRange } from '@/app/quadratic-core-types';
+import type { NumberRange } from '@/app/quadratic-core-types';
+import type { ValidationData } from '@/app/ui/menus/Validations/Validation/useValidationData';
+import type { ValidationUndefined } from '@/app/ui/menus/Validations/Validation/validationType';
+import { ValidationInput } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationInput';
+import {
+  ValidationMoreOptions,
+  ValidationUICheckbox,
+} from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationUI';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/shared/shadcn/ui/accordion';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
@@ -6,10 +13,6 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { Tooltip } from '@mui/material';
 import { InfoCircledIcon } from '@radix-ui/react-icons';
 import { useCallback, useMemo, useState } from 'react';
-import { ValidationData } from './useValidationData';
-import { ValidationUndefined } from './validationType';
-import { ValidationInput } from './ValidationUI/ValidationInput';
-import { ValidationMoreOptions, ValidationUICheckbox } from './ValidationUI/ValidationUI';
 
 interface Props {
   validationData: ValidationData;

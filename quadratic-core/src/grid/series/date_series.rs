@@ -143,7 +143,6 @@ mod tests {
 
     use super::*;
     use chrono::NaiveDate;
-    use serial_test::parallel;
 
     fn naked_date(year: i32, month: u32, day: u32) -> NaiveDate {
         NaiveDate::from_ymd_opt(year, month, day).unwrap()
@@ -154,7 +153,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn find_date_series_months() {
         let options = SeriesOptions {
             series: vec![date(2021, 1, 1), date(2021, 2, 1), date(2021, 3, 1)],
@@ -188,7 +186,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn find_date_series_months_by_2() {
         let options = SeriesOptions {
             series: vec![date(2021, 1, 1), date(2021, 3, 1), date(2021, 5, 1)],
@@ -222,7 +219,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn find_date_series_years() {
         let options = SeriesOptions {
             series: vec![date(2021, 1, 1), date(2022, 1, 1), date(2023, 1, 1)],
@@ -256,7 +252,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn find_date_series_years_by_2() {
         let options = SeriesOptions {
             series: vec![date(2021, 1, 1), date(2023, 1, 1), date(2025, 1, 1)],
@@ -290,7 +285,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn find_date_series_day() {
         let options = SeriesOptions {
             series: vec![date(2021, 1, 1), date(2021, 1, 2), date(2021, 1, 3)],
@@ -324,7 +318,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn find_date_series_day_by_2() {
         let options = SeriesOptions {
             series: vec![date(2021, 1, 1), date(2021, 1, 3), date(2021, 1, 5)],
@@ -358,7 +351,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn find_date_series_one() {
         let options = SeriesOptions {
             series: vec![date(2021, 1, 1)],

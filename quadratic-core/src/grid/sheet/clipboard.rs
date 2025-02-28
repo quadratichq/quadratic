@@ -1,31 +1,43 @@
+use indexmap::IndexMap;
+
+use crate::a1::{A1Context, A1Selection};
 use crate::cell_values::CellValues;
 use crate::color::Rgba;
-use crate::controller::operations::clipboard::{Clipboard, ClipboardOrigin};
-use crate::formulas::replace_a1_notation;
+use crate::controller::operations::clipboard::{Clipboard, ClipboardOperation, ClipboardOrigin};
+use crate::formulas::{convert_a1_to_rc, convert_rc_to_a1};
 use crate::grid::js_types::JsClipboard;
 use crate::grid::{CodeCellLanguage, Sheet};
-use crate::{A1Selection, CellValue, Pos, Rect};
+use crate::{CellValue, Pos, Rect};
 
 impl Sheet {
     /// Copies the selection to the clipboard.
     ///
     /// Returns the copied SheetRect, plain text, and html.
-    pub fn copy_to_clipboard(&self, selection: &A1Selection) -> Result<JsClipboard, String> {
+    pub fn copy_to_clipboard(
+        &self,
+        selection: &A1Selection,
+        context: &A1Context,
+        clipboard_operation: ClipboardOperation,
+        include_plain_text: bool,
+    ) -> Result<JsClipboard, String> {
         let mut clipboard_origin = ClipboardOrigin::default();
         let mut plain_text = String::new();
         let mut html_body = String::from("<tbody>");
         let mut cells = CellValues::default();
         let mut values = CellValues::default();
+        let mut data_tables = IndexMap::new();
         let mut sheet_bounds: Option<Rect> = None;
 
-        if let Some(bounds) = self.selection_bounds(selection) {
+        if let Some(bounds) = self.selection_bounds(selection, true) {
             clipboard_origin.x = bounds.min.x;
             clipboard_origin.y = bounds.min.y;
             sheet_bounds = Some(bounds);
 
             for y in bounds.y_range() {
                 if y != bounds.min.y {
-                    plain_text.push('\n');
+                    if include_plain_text {
+                        plain_text.push('\n');
+                    }
                     html_body.push_str("</tr>");
                 }
 
@@ -33,13 +45,15 @@ impl Sheet {
 
                 for x in bounds.x_range() {
                     if x != bounds.min.x {
-                        plain_text.push('\t');
+                        if include_plain_text {
+                            plain_text.push('\t');
+                        }
                         html_body.push_str("</td>");
                     }
 
                     let pos = Pos { x, y };
 
-                    if !selection.might_contain_pos(pos) {
+                    if !selection.might_contain_pos(pos, context) {
                         continue;
                     }
 
@@ -55,7 +69,23 @@ impl Sheet {
                         match &mut real_value {
                             CellValue::Code(code_cell) => {
                                 if matches!(code_cell.language, CodeCellLanguage::Formula) {
-                                    code_cell.code = replace_a1_notation(&code_cell.code, pos);
+                                    let sheet_pos = pos.to_sheet_pos(self.id);
+                                    match clipboard_operation {
+                                        ClipboardOperation::Cut => {
+                                            code_cell.code = convert_rc_to_a1(
+                                                &code_cell.code,
+                                                context,
+                                                sheet_pos,
+                                            );
+                                        }
+                                        ClipboardOperation::Copy => {
+                                            code_cell.code = convert_a1_to_rc(
+                                                &code_cell.code,
+                                                context,
+                                                sheet_pos,
+                                            );
+                                        }
+                                    }
                                 }
                             }
                             _ => { /* noop */ }
@@ -198,72 +228,32 @@ impl Sheet {
                     html_body.push_str(format!("<td {}>", style).as_str());
 
                     if let Some(value) = &simple_value {
-                        plain_text.push_str(&value.to_string());
+                        if include_plain_text {
+                            plain_text.push_str(&value.to_string());
+                        }
                         html_body.push_str(&value.to_string());
                     }
                 }
             }
 
-            // allow copying of code_run values (unless CellValue::Code is also in the clipboard)
-            self.iter_code_output_in_rect(bounds)
-                .filter(|(_, code_cell)| !code_cell.spill_error)
-                .for_each(|(output_rect, code_cell)| {
-                    // only change the cells if the CellValue::Code is not in the selection box
-                    let code_pos = Pos {
-                        x: output_rect.min.x,
-                        y: output_rect.min.y,
-                    };
-                    let x_start = if output_rect.min.x > bounds.min.x {
-                        output_rect.min.x
-                    } else {
-                        bounds.min.x
-                    };
-                    let y_start = if output_rect.min.y > bounds.min.y {
-                        output_rect.min.y
-                    } else {
-                        bounds.min.y
-                    };
-                    let x_end = if output_rect.max.x < bounds.max.x {
-                        output_rect.max.x
-                    } else {
-                        bounds.max.x
-                    };
-                    let y_end = if output_rect.max.y < bounds.max.y {
-                        output_rect.max.y
-                    } else {
-                        bounds.max.y
-                    };
+            let include_code_table_values = matches!(clipboard_operation, ClipboardOperation::Cut);
+            let data_tables_in_rect = self.data_tables_and_cell_values_in_rect(
+                &bounds,
+                &mut cells,
+                &mut values,
+                context,
+                selection,
+                include_code_table_values,
+            );
 
-                    // add the CellValue to cells if the code is not included in the clipboard
-                    let include_in_cells = !bounds.contains(code_pos);
-
-                    // add the code_run output to clipboard.values
-                    for y in y_start..=y_end {
-                        for x in x_start..=x_end {
-                            if let Some(value) = code_cell
-                                .cell_value_at((x - code_pos.x) as u32, (y - code_pos.y) as u32)
-                            {
-                                let pos = Pos {
-                                    x: x - bounds.min.x,
-                                    y: y - bounds.min.y,
-                                };
-                                if selection.might_contain_pos(Pos { x, y }) {
-                                    if include_in_cells {
-                                        cells.set(pos.x as u32, pos.y as u32, value.clone());
-                                    }
-                                    values.set(pos.x as u32, pos.y as u32, value);
-                                }
-                            }
-                        }
-                    }
-                });
+            data_tables.extend(data_tables_in_rect);
         }
 
         let formats = self.formats.to_clipboard(self, selection);
-
         let borders = self.borders.to_clipboard(self, selection);
-
-        let validations = self.validations.to_clipboard(selection, &clipboard_origin);
+        let validations = self
+            .validations
+            .to_clipboard(selection, &clipboard_origin, context);
 
         let clipboard = Clipboard {
             cells,
@@ -275,11 +265,13 @@ impl Sheet {
             origin: clipboard_origin,
             selection: selection.clone(),
             validations,
+            data_tables,
+            operation: clipboard_operation,
         };
 
         html_body.push_str("</td></tr></tbody></table>");
         let mut html = String::from("<table data-quadratic=\"");
-        let data = serde_json::to_string(&clipboard).unwrap();
+        let data = serde_json::to_string(&clipboard).unwrap_or_default();
         let encoded = htmlescape::encode_attribute(&data);
         html.push_str(&encoded);
         html.push_str(&String::from("\">"));
@@ -290,16 +282,14 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::parallel;
-
+    use super::*;
     use crate::controller::operations::clipboard::PasteSpecial;
     use crate::controller::GridController;
     use crate::grid::js_types::JsClipboard;
     use crate::grid::sheet::borders::{BorderSelection, BorderStyle, CellBorderLine};
-    use crate::{A1Selection, Pos, Rect};
+    use crate::Pos;
 
     #[test]
-    #[parallel]
     fn copy_to_clipboard_exclude() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -307,14 +297,11 @@ mod tests {
         let sheet = gc.sheet_mut(sheet_id);
         sheet.test_set_values(0, 0, 4, 1, vec!["1", "2", "3", "4"]);
 
-        let selection = A1Selection::from_rects(
-            &[
-                Rect::single_pos(Pos { x: 0, y: 0 }),
-                Rect::from_numbers(2, 0, 2, 1),
-            ],
-            sheet_id,
-        );
-        let JsClipboard { html, .. } = sheet.copy_to_clipboard(&selection).unwrap();
+        let selection = A1Selection::test_a1("A1,C1:C2");
+        let sheet = gc.sheet(sheet_id);
+        let JsClipboard { html, .. } = sheet
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, false)
+            .unwrap();
 
         gc.paste_from_clipboard(
             &A1Selection::from_xy(0, 5, sheet_id),
@@ -329,7 +316,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn clipboard_borders() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -343,7 +329,12 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
         let JsClipboard { html, .. } = sheet
-            .copy_to_clipboard(&A1Selection::test_a1("A1"))
+            .copy_to_clipboard(
+                &A1Selection::test_a1("A1"),
+                gc.a1_context(),
+                ClipboardOperation::Copy,
+                false,
+            )
             .unwrap();
 
         gc.paste_from_clipboard(

@@ -1,5 +1,6 @@
 import { aiAssistantAbortControllerAtom, aiAssistantLoadingAtom } from '@/app/atoms/codeEditorAtom';
-import { AIUserMessageForm, AIUserMessageFormWrapperProps } from '@/app/ui/components/AIUserMessageForm';
+import type { AIUserMessageFormWrapperProps } from '@/app/ui/components/AIUserMessageForm';
+import { AIUserMessageForm } from '@/app/ui/components/AIUserMessageForm';
 import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/CodeEditor/hooks/useSubmitAIAssistantPrompt';
 import mixpanel from 'mixpanel-browser';
 import { forwardRef } from 'react';

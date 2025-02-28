@@ -25,11 +25,12 @@ impl GridController {
 }
 
 #[cfg(test)]
-#[serial_test::parallel]
 mod tests {
     use super::*;
     use crate::{
+        a1::A1Selection,
         array,
+        formulas::convert_a1_to_rc,
         grid::{
             sheet::borders::{BorderSelection, BorderStyle},
             CodeCellLanguage, CodeCellValue,
@@ -38,7 +39,7 @@ mod tests {
             assert_cell_format_bold_row, assert_cell_format_cell_fill_color_row,
             assert_cell_value_row, assert_code_cell_value, assert_display_cell_value, print_table,
         },
-        A1Selection, CellValue, Pos, SheetPos, SheetRect,
+        CellValue, Pos, SheetPos, SheetRect,
     };
 
     fn test_setup_rect(selection: &Rect) -> (GridController, SheetId) {
@@ -86,7 +87,7 @@ mod tests {
                 if let Some(is_bold) = bolds.get(count) {
                     if *is_bold {
                         grid_controller
-                            .set_bold(&A1Selection::from_single_cell(sheet_pos), true, None)
+                            .set_bold(&A1Selection::from_single_cell(sheet_pos), Some(true), None)
                             .unwrap();
                     }
                 }
@@ -102,10 +103,23 @@ mod tests {
                 }
 
                 if let Some(code_cell) = code_cells.get(count) {
+                    let code_cell = match code_cell.language {
+                        CodeCellLanguage::Formula => {
+                            let mut code_cell = code_cell.to_owned();
+                            code_cell.code = convert_a1_to_rc(
+                                &code_cell.code,
+                                grid_controller.a1_context(),
+                                sheet_pos,
+                            );
+                            code_cell
+                        }
+                        _ => code_cell.to_owned(),
+                    };
+
                     grid_controller.set_code_cell(
                         sheet_pos,
-                        code_cell.language.clone(),
-                        code_cell.code.clone(),
+                        code_cell.language,
+                        code_cell.code,
                         None,
                     );
                 }
@@ -133,26 +147,26 @@ mod tests {
 
     #[test]
     fn test_expand_code_cell() {
-        let selected: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 1 });
-        let range: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 10, y: 10 });
+        let selected: Rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 2 });
+        let range: Rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 10, y: 10 });
         let code_1 = CodeCellValue {
             language: CodeCellLanguage::Formula,
-            code: "SUM(A0)".into(),
+            code: "SUM(A1)".into(),
         };
         let code_2 = CodeCellValue {
             language: CodeCellLanguage::Formula,
-            code: "ABS(A1)".into(),
+            code: "ABS(A2)".into(),
         };
         let (mut grid, sheet_id) =
             test_setup(&selected, &[], &[], &[], &[code_1.clone(), code_2.clone()]);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
-        assert_code_cell_value(&grid, sheet_id, 0, 0, "SUM(A0)");
-        assert_code_cell_value(&grid, sheet_id, 10, 0, "SUM(K0)");
-        assert_code_cell_value(&grid, sheet_id, 0, 10, "SUM(A10)");
-        assert_code_cell_value(&grid, sheet_id, 0, 1, "ABS(A1)");
-        assert_code_cell_value(&grid, sheet_id, 10, 1, "ABS(K1)");
-        assert_code_cell_value(&grid, sheet_id, 1, 9, "ABS(B9)");
+        assert_code_cell_value(&grid, sheet_id, 1, 1, "SUM(A1)");
+        assert_code_cell_value(&grid, sheet_id, 10, 1, "SUM(J1)");
+        assert_code_cell_value(&grid, sheet_id, 1, 9, "SUM(A9)");
+        assert_code_cell_value(&grid, sheet_id, 1, 2, "ABS(A2)");
+        assert_code_cell_value(&grid, sheet_id, 10, 2, "ABS(J2)");
+        assert_code_cell_value(&grid, sheet_id, 2, 10, "ABS(B10)");
     }
 
     #[test]
@@ -439,29 +453,29 @@ mod tests {
     #[test]
     fn test_expand_horizontal_series_up_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 6, y: 15 }, Pos { x: 9, y: 19 });
-        let range: Rect = Rect::new_span(Pos { x: 6, y: 12 }, Pos { x: 15, y: 19 });
+        let range: Rect = Rect::new_span(Pos { x: 6, y: 12 }, Pos { x: 13, y: 19 });
         let (mut grid, sheet_id) = test_setup_rect_horiz_series(&selected);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
         print_table(&grid, sheet_id, range);
 
         let expected = vec!["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun", "Mon"];
-        assert_cell_value_row(&grid, sheet_id, 6, 15, 12, expected.clone());
-        assert_cell_value_row(&grid, sheet_id, 6, 15, 17, expected);
+        assert_cell_value_row(&grid, sheet_id, 6, 13, 12, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 6, 13, 17, expected);
 
         let expected = vec!["May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        assert_cell_value_row(&grid, sheet_id, 6, 15, 13, expected.clone());
-        assert_cell_value_row(&grid, sheet_id, 6, 15, 18, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 6, 13, 13, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 6, 13, 18, expected.clone());
 
         let expected = vec!["32", "64", "128", "256", "512", "1024", "2048", "4096"];
-        assert_cell_value_row(&grid, sheet_id, 6, 15, 14, expected.clone());
-        assert_cell_value_row(&grid, sheet_id, 6, 15, 19, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 6, 13, 14, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 6, 13, 19, expected.clone());
 
         let expected = vec!["8", "9", "10", "11", "12", "13", "14", "15"];
-        assert_cell_value_row(&grid, sheet_id, 6, 15, 15, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 6, 13, 15, expected.clone());
 
         let expected = vec!["10", "9", "8", "7", "6", "5", "4", "3"];
-        assert_cell_value_row(&grid, sheet_id, 6, 15, 16, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 6, 13, 16, expected.clone());
     }
 
     #[test]

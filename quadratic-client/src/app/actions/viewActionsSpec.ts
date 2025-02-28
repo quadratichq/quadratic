@@ -1,5 +1,5 @@
 import { Action } from '@/app/actions/actions';
-import { ActionSpecRecord } from '@/app/actions/actionsSpec';
+import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { zoomIn, zoomInOut, zoomOut, zoomReset, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
@@ -80,7 +80,7 @@ export const viewActionsSpec: ViewActionSpec = {
     },
   },
   [Action.ZoomReset]: {
-    label: 'Reset location',
+    label: 'Move to origin',
     run: () => zoomReset(),
   },
   [Action.GridPanMode]: {

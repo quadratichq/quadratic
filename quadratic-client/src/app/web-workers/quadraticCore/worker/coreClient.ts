@@ -7,7 +7,7 @@
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
-import {
+import type {
   JsBordersSheet,
   JsCodeCell,
   JsHtmlOutput,
@@ -16,20 +16,25 @@ import {
   JsRenderCodeCell,
   JsRenderFill,
   JsSheetFill,
+  JsSnackbarSeverity,
   JsValidationWarning,
   SheetBounds,
   SheetInfo,
   TransactionName,
   Validation,
 } from '@/app/quadratic-core-types';
+import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
+import type {
+  ClientCoreGetJwt,
+  ClientCoreMessage,
+  CoreClientMessage,
+} from '@/app/web-workers/quadraticCore/coreClientMessages';
+import { core } from '@/app/web-workers/quadraticCore/worker/core';
 import { coreConnection } from '@/app/web-workers/quadraticCore/worker/coreConnection';
-import { MultiplayerState } from '../../multiplayerWebWorker/multiplayerClientMessages';
-import { ClientCoreGetJwt, ClientCoreMessage, CoreClientMessage } from '../coreClientMessages';
-import { core } from './core';
-import { coreJavascript } from './coreJavascript';
-import { coreMultiplayer } from './coreMultiplayer';
-import { corePython } from './corePython';
-import { offline } from './offline';
+import { coreJavascript } from '@/app/web-workers/quadraticCore/worker/coreJavascript';
+import { coreMultiplayer } from '@/app/web-workers/quadraticCore/worker/coreMultiplayer';
+import { corePython } from '@/app/web-workers/quadraticCore/worker/corePython';
+import { offline } from '@/app/web-workers/quadraticCore/worker/offline';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
@@ -46,10 +51,10 @@ declare var self: WorkerGlobalScope &
     sendDeleteSheetClient: (sheetId: string, user: boolean) => void;
     sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
     sendSheetInfoClient: (sheetInfo: SheetInfo[]) => void;
+    sendA1Context: (tableMap: string) => void;
     sendSheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
     sendSheetMetaFills: (sheetId: string, fills: JsSheetFill[]) => void;
     sendSetCursor: (cursor: string) => void;
-    sendSetCursorSelection: (selection: string) => void;
     sendSheetOffsetsClient: (sheetId: string, offsets: JsOffset[]) => void;
     sendSheetHtml: (html: JsHtmlOutput[]) => void;
     sendUpdateHtml: (html: JsHtmlOutput) => void;
@@ -76,7 +81,16 @@ declare var self: WorkerGlobalScope &
       renderCodeCell?: JsRenderCodeCell
     ) => void;
     sendUndoRedo: (undo: boolean, redo: boolean) => void;
-    sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
+    sendImage: (
+      sheetId: string,
+      x: number,
+      y: number,
+      w: number,
+      h: number,
+      image?: string,
+      pixel_width?: number,
+      pixel_height?: number
+    ) => void;
     sendSheetValidations: (sheetId: string, validations: Validation[]) => void;
     sendRenderValidationWarnings: (
       sheetId: string,
@@ -85,7 +99,7 @@ declare var self: WorkerGlobalScope &
       validationWarnings: JsValidationWarning[]
     ) => void;
     sendMultiplayerSynced: () => void;
-    sendClientMessage: (message: string, error: boolean) => void;
+    sendClientMessage: (message: string, severity: JsSnackbarSeverity) => void;
   };
 
 class CoreClient {
@@ -102,8 +116,8 @@ class CoreClient {
     self.sendSheetFills = coreClient.sendSheetFills;
     self.sendSheetMetaFills = coreClient.sendSheetMetaFills;
     self.sheetInfoUpdate = coreClient.sendSheetInfoUpdate;
+    self.sendA1Context = coreClient.sendA1Context;
     self.sendSetCursor = coreClient.sendSetCursor;
-    self.sendSetCursorSelection = coreClient.sendSetCursorSelection;
     self.sendSheetOffsetsClient = coreClient.sendSheetOffsets;
     self.sendSheetHtml = coreClient.sendSheetHtml;
     self.sendUpdateHtml = coreClient.sendUpdateHtml;
@@ -178,6 +192,10 @@ class CoreClient {
 
       case 'clientCoreSetCellValues':
         await core.setCellValues(e.data.sheetId, e.data.x, e.data.y, e.data.values, e.data.cursor);
+        this.send({
+          type: 'coreClientSetCellValues',
+          id: e.data.id,
+        });
         return;
 
       case 'clientCoreGetEditCell':
@@ -262,8 +280,17 @@ class CoreClient {
         this.send({ type: 'coreClientImportFile', id: e.data.id, ...fileResult }, fileResult.contents);
         return;
 
+      case 'clientCoreGetCsvPreview':
+        const preview = await core.getCsvPreview(e.data);
+        this.send({ type: 'coreClientGetCsvPreview', id: e.data.id, preview });
+        return;
+
       case 'clientCoreDeleteCellValues':
         await core.deleteCellValues(e.data.selection, e.data.cursor);
+        this.send({
+          type: 'coreClientDeleteCellValues',
+          id: e.data.id,
+        });
         return;
 
       case 'clientCoreSetCodeCellValue':
@@ -377,7 +404,7 @@ class CoreClient {
         return;
 
       case 'clientCoreSetCellRenderResize':
-        await core.setCellRenderSize(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        await core.setChartSize(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
         return;
 
       case 'clientCoreAutocomplete':
@@ -420,23 +447,7 @@ class CoreClient {
         this.send({
           type: 'coreClientJumpCursor',
           id: e.data.id,
-          coordinate: await core.jumpCursor(e.data.sheetId, e.data.current, e.data.direction),
-        });
-        return;
-
-      case 'clientCoreFindNextColumn':
-        this.send({
-          type: 'coreClientFindNextColumn',
-          id: e.data.id,
-          column: await core.findNextColumn(e.data),
-        });
-        return;
-
-      case 'clientCoreFindNextRow':
-        this.send({
-          type: 'coreClientFindNextRow',
-          id: e.data.id,
-          row: await core.findNextRow(e.data),
+          coordinate: await core.jumpCursor(e.data.sheetId, e.data.current, e.data.jump, e.data.direction),
         });
         return;
 
@@ -515,6 +526,10 @@ class CoreClient {
 
       case 'clientCoreMoveCells':
         core.moveCells(e.data);
+        this.send({
+          type: 'coreClientMoveCells',
+          id: e.data.id,
+        });
         return;
 
       case 'clientCoreMoveCodeCellVertically':
@@ -597,19 +612,19 @@ class CoreClient {
         });
         return;
 
-      case 'clientCoreGetAIContextRectsInSelections':
+      case 'clientCoreGetAISelectionContexts':
         this.send({
-          type: 'coreClientGetAIContextRectsInSelections',
+          type: 'coreClientGetAISelectionContexts',
           id: e.data.id,
-          value: core.getAIContextRectsInSelection(e.data.selections, e.data.maxRects),
+          selectionContexts: core.getAISelectionContexts(e.data),
         });
         return;
 
-      case 'clientCoreGetErroredCodeCellsInSelections':
+      case 'clientCoreGetAITablesContext':
         this.send({
-          type: 'coreClientGetErroredCodeCellsInSelections',
+          type: 'coreClientGetAITablesContext',
           id: e.data.id,
-          value: core.getErroredCodeCellsInSelection(e.data.selections),
+          tablesContext: core.getAITablesContext(),
         });
         return;
 
@@ -627,6 +642,69 @@ class CoreClient {
 
       case 'clientCoreInsertRow':
         core.insertRow(e.data.sheetId, e.data.row, e.data.below, e.data.cursor);
+        return;
+
+      case 'clientCoreFlattenDataTable':
+        core.flattenDataTable(e.data.sheetId, e.data.x, e.data.y, e.data.cursor);
+        return;
+
+      case 'clientCoreCodeDataTableToDataTable':
+        core.codeDataTableToDataTable(e.data.sheetId, e.data.x, e.data.y, e.data.cursor);
+        return;
+
+      case 'clientCoreGridToDataTable':
+        core.gridToDataTable(e.data.sheetRect, e.data.cursor);
+        return;
+
+      case 'clientCoreDataTableMeta':
+        core.dataTableMeta(
+          e.data.sheetId,
+          e.data.x,
+          e.data.y,
+          e.data.name,
+          e.data.alternatingColors,
+          e.data.columns,
+          e.data.showUI,
+          e.data.showName,
+          e.data.showColumns,
+          e.data.cursor
+        );
+        return;
+
+      case 'clientCoreDataTableMutations':
+        core.dataTableMutations({
+          sheetId: e.data.sheetId,
+          x: e.data.x,
+          y: e.data.y,
+          select_table: e.data.select_table,
+          columns_to_add: e.data.columns_to_add,
+          columns_to_remove: e.data.columns_to_remove,
+          rows_to_add: e.data.rows_to_add,
+          rows_to_remove: e.data.rows_to_remove,
+          flatten_on_delete: e.data.flatten_on_delete,
+          swallow_on_insert: e.data.swallow_on_insert,
+          cursor: e.data.cursor,
+        });
+        this.send({
+          type: 'coreClientDataTableMutations',
+          id: e.data.id,
+        });
+        return;
+
+      case 'clientCoreSortDataTable':
+        core.sortDataTable(e.data.sheetId, e.data.x, e.data.y, e.data.sort, e.data.cursor);
+        return;
+
+      case 'clientCoreDataTableFirstRowAsHeader':
+        core.dataTableFirstRowAsHeader(e.data.sheetId, e.data.x, e.data.y, e.data.firstRowAsHeader, e.data.cursor);
+        return;
+
+      case 'clientCoreAddDataTable':
+        core.addDataTable(e.data);
+        this.send({
+          type: 'coreClientAddDataTable',
+          id: e.data.id,
+        });
         return;
 
       case 'clientCoreFiniteRectFromSelection':
@@ -690,10 +768,6 @@ class CoreClient {
 
   sendSetCursor = (cursor: string) => {
     this.send({ type: 'coreClientSetCursor', cursor });
-  };
-
-  sendSetCursorSelection = (selection: string) => {
-    this.send({ type: 'coreClientSetCursorSelection', selection });
   };
 
   sendSheetOffsets = (sheetId: string, offsets: JsOffset[]) => {
@@ -783,8 +857,18 @@ class CoreClient {
       this.send({ type: 'coreClientGetJwt', id });
     });
   }
-  sendImage = (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => {
-    this.send({ type: 'coreClientImage', sheetId, x, y, image, w, h });
+
+  sendImage = (
+    sheetId: string,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    image?: string,
+    pixel_width?: number,
+    pixel_height?: number
+  ) => {
+    this.send({ type: 'coreClientImage', sheetId, x, y, image, w, h, pixel_width, pixel_height });
   };
 
   sendSheetValidations = (sheetId: string, validations: Validation[]) => {
@@ -804,8 +888,12 @@ class CoreClient {
     this.send({ type: 'coreClientMultiplayerSynced' });
   };
 
-  sendClientMessage = (message: string, error: boolean) => {
-    this.send({ type: 'coreClientClientMessage', message, error });
+  sendClientMessage = (message: string, severity: JsSnackbarSeverity) => {
+    this.send({ type: 'coreClientClientMessage', message, severity });
+  };
+
+  sendA1Context = (context: string) => {
+    this.send({ type: 'coreClientA1Context', context });
   };
 }
 

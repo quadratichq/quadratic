@@ -1,6 +1,6 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { drawFiniteSelection, drawInfiniteSelection } from '@/app/gridGL/UI/drawCursor';
-import { CellRefRange, JsCoordinate } from '@/app/quadratic-core-types';
+import type { JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { Graphics } from 'pixi.js';
 
@@ -19,7 +19,6 @@ export class UIMultiPlayerCursor extends Graphics {
     this.alpha = ALPHA;
   }
 
-  // todo: handle multiple people in the same cell
   private drawCursor({
     color,
     cursor,
@@ -71,37 +70,44 @@ export class UIMultiPlayerCursor extends Graphics {
       ? [...multiplayer.users].some(([_, player]) => player.parsedSelection?.isColumnRow())
       : false;
 
-    if (dirtySheet || this.dirty) {
-      this.dirty = false;
-      this.clear();
-      const sheetId = sheets.sheet.id;
-      multiplayer.users.forEach((player) => {
-        const color = player.color;
-        if (player.parsedSelection && player.sheet_id === sheetId) {
-          this.drawCursor({
-            color,
-            editing: player.cell_edit.active,
-            sessionId: player.session_id,
-            code: player.cell_edit.code_editor,
-            cursor: player.parsedSelection?.getCursor(),
-          });
+    if (!dirtySheet && !this.dirty) {
+      return;
+    }
 
-          const rangesStringified = player.parsedSelection.getRanges();
-          let ranges: CellRefRange[] = [];
-          try {
-            ranges = JSON.parse(rangesStringified);
-          } catch (e) {
-            console.error(e);
-          }
+    this.dirty = false;
+    this.clear();
+    const sheetId = sheets.current;
+    multiplayer.users.forEach((player) => {
+      const color = player.color;
+      if (player.parsedSelection && player.sheet_id === sheetId) {
+        this.drawCursor({
+          color,
+          editing: player.cell_edit.active,
+          sessionId: player.session_id,
+          code: player.cell_edit.code_editor,
+          cursor: player.parsedSelection?.getCursor(),
+        });
+
+        try {
+          const ranges = player.parsedSelection.getFiniteRefRangeBounds();
           drawFiniteSelection(this, color, FILL_ALPHA, ranges);
+        } catch (e) {
+          // it's possible for a table to no longer exist, so we don't want to
+          // throw a warning or error
+        }
+
+        try {
+          const infiniteRanges: RefRangeBounds[] = player.parsedSelection.getInfiniteRefRangeBounds();
           drawInfiniteSelection({
             g: this,
             color,
             alpha: FILL_ALPHA,
-            ranges,
+            ranges: infiniteRanges,
           });
+        } catch (e) {
+          console.warn(`Unable to draw infinite ranges for player ${player.session_id}, ${e}`);
         }
-      });
-    }
+      }
+    });
   }
 }

@@ -1,75 +1,83 @@
 import type { Response } from 'express';
 import type OpenAI from 'openai';
+import type { ChatCompletionMessageParam, ChatCompletionTool, ChatCompletionToolChoiceOption } from 'openai/resources';
 import type { Stream } from 'openai/streaming';
 import { getSystemPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
   AIMessagePrompt,
   AIRequestHelperArgs,
-  OpenAIModel,
-  OpenAIPromptMessage,
-  OpenAIRequestBody,
-  OpenAITool,
-  OpenAIToolChoice,
+  OpenAIModelKey,
+  XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 
-export function getOpenAIApiArgs(args: AIRequestHelperArgs): Omit<OpenAIRequestBody, 'model'> {
+export function getOpenAIApiArgs(
+  args: AIRequestHelperArgs,
+  strickParams: boolean
+): {
+  messages: ChatCompletionMessageParam[];
+  tools: ChatCompletionTool[] | undefined;
+  tool_choice: ChatCompletionToolChoiceOption | undefined;
+} {
   const { messages: chatMessages, useTools, toolName } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
-  const messages: OpenAIPromptMessage[] = promptMessages.reduce<OpenAIPromptMessage[]>((acc, message) => {
-    if (message.role === 'assistant' && message.contextType === 'userPrompt' && message.toolCalls.length > 0) {
-      const openaiMessages: OpenAIPromptMessage[] = [
-        ...acc,
-        {
-          role: message.role,
-          content: message.content,
-          tool_calls: message.toolCalls.map((toolCall) => ({
-            id: toolCall.id,
-            type: 'function' as const,
-            function: {
-              name: toolCall.name,
-              arguments: toolCall.arguments,
-            },
+  const messages: ChatCompletionMessageParam[] = promptMessages.reduce<ChatCompletionMessageParam[]>((acc, message) => {
+    if (message.role === 'assistant' && message.contextType === 'userPrompt') {
+      const openaiMessage: ChatCompletionMessageParam = {
+        role: message.role,
+        content: message.content
+          .filter((content) => content.text && content.type === 'text')
+          .map((content) => ({
+            type: 'text',
+            text: content.text,
           })),
-        },
-      ];
-      return openaiMessages;
-    } else if (message.role === 'user' && message.contextType === 'toolResult') {
-      const openaiMessages: OpenAIPromptMessage[] = [
-        ...acc,
-        ...message.content.map((toolResult) => ({
-          role: 'tool' as const,
-          tool_call_id: toolResult.id,
-          content: toolResult.content,
+        tool_calls: message.toolCalls.map((toolCall) => ({
+          id: toolCall.id,
+          type: 'function' as const,
+          function: {
+            name: toolCall.name,
+            arguments: toolCall.arguments,
+          },
         })),
-      ];
-      return openaiMessages;
+      };
+      return [...acc, openaiMessage];
+    } else if (message.role === 'user' && message.contextType === 'toolResult') {
+      const openaiMessages: ChatCompletionMessageParam[] = message.content.map((toolResult) => ({
+        role: 'tool' as const,
+        tool_call_id: toolResult.id,
+        content: toolResult.content,
+      }));
+      return [...acc, ...openaiMessages];
+    } else if (message.content) {
+      const openaiMessage: ChatCompletionMessageParam = {
+        role: message.role,
+        content: message.content,
+      };
+      return [...acc, openaiMessage];
     } else {
-      const openaiMessages: OpenAIPromptMessage[] = [
-        ...acc,
-        {
-          role: message.role,
-          content: message.content,
-        },
-      ];
-      return openaiMessages;
+      return acc;
     }
   }, []);
 
-  const openaiMessages: OpenAIPromptMessage[] = [
+  const openaiMessages: ChatCompletionMessageParam[] = [
     { role: 'system', content: systemMessages.map((message) => ({ type: 'text', text: message })) },
     ...messages,
   ];
 
-  const tools = getOpenAITools(useTools, toolName);
+  const tools = getOpenAITools(useTools, toolName, strickParams);
   const tool_choice = getOpenAIToolChoice(useTools, toolName);
 
   return { messages: openaiMessages, tools, tool_choice };
 }
 
-function getOpenAITools(useTools?: boolean, toolName?: AITool): OpenAITool[] | undefined {
+function getOpenAITools(
+  useTools: boolean | undefined,
+  toolName: AITool | undefined,
+  strickParams: boolean
+): ChatCompletionTool[] | undefined {
   if (!useTools) {
     return undefined;
   }
@@ -81,14 +89,14 @@ function getOpenAITools(useTools?: boolean, toolName?: AITool): OpenAITool[] | u
     return name === toolName;
   });
 
-  const openaiTools: OpenAITool[] = tools.map(
-    ([name, { description, parameters }]): OpenAITool => ({
+  const openaiTools: ChatCompletionTool[] = tools.map(
+    ([name, { description, parameters }]): ChatCompletionTool => ({
       type: 'function' as const,
       function: {
         name,
         description,
         parameters,
-        strict: true,
+        strict: strickParams,
       },
     })
   );
@@ -96,26 +104,27 @@ function getOpenAITools(useTools?: boolean, toolName?: AITool): OpenAITool[] | u
   return openaiTools;
 }
 
-function getOpenAIToolChoice(useTools?: boolean, name?: AITool): OpenAIToolChoice | undefined {
+function getOpenAIToolChoice(useTools?: boolean, name?: AITool): ChatCompletionToolChoiceOption | undefined {
   if (!useTools) {
     return undefined;
   }
 
-  const toolChoice: OpenAIToolChoice = name === undefined ? 'auto' : { type: 'function', function: { name } };
+  const toolChoice: ChatCompletionToolChoiceOption =
+    name === undefined ? 'auto' : { type: 'function', function: { name } };
   return toolChoice;
 }
 
 export async function parseOpenAIStream(
   chunks: Stream<OpenAI.Chat.Completions.ChatCompletionChunk>,
   response: Response,
-  model: OpenAIModel
+  modelKey: OpenAIModelKey | XAIModelKey
 ) {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
-    content: '',
+    content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model,
+    model: getModelFromModelKey(modelKey),
   };
 
   for await (const chunk of chunks) {
@@ -123,23 +132,33 @@ export async function parseOpenAIStream(
       if (chunk.choices && chunk.choices[0] && chunk.choices[0].delta) {
         // text delta
         if (chunk.choices[0].delta.content) {
-          responseMessage.content += chunk.choices[0].delta.content;
+          const currentContent = {
+            ...(responseMessage.content.pop() ?? {
+              type: 'text',
+              text: '',
+            }),
+          };
+          currentContent.text += chunk.choices[0].delta.content ?? '';
+          responseMessage.content.push(currentContent);
+
+          responseMessage.toolCalls = responseMessage.toolCalls.map((toolCall) => ({
+            ...toolCall,
+            loading: false,
+          }));
         }
         // tool use delta
         else if (chunk.choices[0].delta.tool_calls) {
           chunk.choices[0].delta.tool_calls.forEach((tool_call) => {
-            const toolCalls = [...responseMessage.toolCalls];
-            let toolCall = toolCalls.pop();
+            const toolCall = responseMessage.toolCalls.pop();
             if (toolCall) {
-              toolCall = {
+              responseMessage.toolCalls.push({
                 ...toolCall,
                 loading: true,
-              };
-              toolCalls.push(toolCall);
+              });
             }
             if (tool_call.function?.name) {
               // New tool call
-              toolCalls.push({
+              responseMessage.toolCalls.push({
                 id: tool_call.id ?? '',
                 name: tool_call.function.name,
                 arguments: tool_call.function.arguments ?? '',
@@ -147,27 +166,25 @@ export async function parseOpenAIStream(
               });
             } else {
               // Append to existing tool call
-              const currentToolCall = toolCalls.pop() ?? {
+              const currentToolCall = responseMessage.toolCalls.pop() ?? {
                 id: '',
                 name: '',
                 arguments: '',
                 loading: true,
               };
 
-              toolCalls.push({
+              responseMessage.toolCalls.push({
                 ...currentToolCall,
                 arguments: currentToolCall.arguments + (tool_call.function?.arguments ?? ''),
               });
             }
-            responseMessage.toolCalls = toolCalls;
           });
         }
         // tool use stop
         else if (chunk.choices[0].finish_reason === 'tool_calls') {
-          responseMessage.toolCalls = responseMessage.toolCalls.map((toolCall) => ({
-            ...toolCall,
-            loading: false,
-          }));
+          responseMessage.toolCalls.forEach((toolCall) => {
+            toolCall.loading = false;
+          });
         } else if (chunk.choices[0].delta.refusal) {
           console.warn('Invalid AI response: ', chunk.choices[0].delta.refusal);
         }
@@ -179,11 +196,23 @@ export async function parseOpenAIStream(
     }
   }
 
-  if (!responseMessage.content) {
-    responseMessage.content =
-      responseMessage.toolCalls.length > 0 ? '' : "I'm sorry, I don't have a response for that.";
-    response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+  responseMessage.content = responseMessage.content.filter((content) => content.text !== '');
+
+  if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
+    responseMessage.content.push({
+      type: 'text',
+      text: "I'm sorry, I don't have a response for that.",
+    });
   }
+
+  if (responseMessage.toolCalls.some((toolCall) => toolCall.loading)) {
+    responseMessage.toolCalls = responseMessage.toolCalls.map((toolCall) => ({
+      ...toolCall,
+      loading: false,
+    }));
+  }
+
+  response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
 
   if (!response.writableEnded) {
     response.end();
@@ -195,45 +224,51 @@ export async function parseOpenAIStream(
 export function parseOpenAIResponse(
   result: OpenAI.Chat.Completions.ChatCompletion,
   response: Response,
-  model: OpenAIModel
+  modelKey: OpenAIModelKey | XAIModelKey
 ): AIMessagePrompt {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
-    content: '',
+    content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model,
+    model: getModelFromModelKey(modelKey),
   };
 
   const message = result.choices[0].message;
 
+  if (message.refusal) {
+    throw new Error(`Invalid AI response: ${message.refusal}`);
+  }
+
   if (message.content) {
-    responseMessage.content += message.content;
-  } else if (message.tool_calls) {
+    responseMessage.content.push({
+      type: 'text',
+      text: message.content ?? '',
+    });
+  }
+
+  if (message.tool_calls) {
     message.tool_calls.forEach((toolCall) => {
       switch (toolCall.type) {
         case 'function':
-          responseMessage.toolCalls = [
-            ...responseMessage.toolCalls,
-            {
-              id: toolCall.id,
-              name: toolCall.function.name,
-              arguments: toolCall.function.arguments,
-              loading: false,
-            },
-          ];
+          responseMessage.toolCalls.push({
+            id: toolCall.id,
+            name: toolCall.function.name,
+            arguments: toolCall.function.arguments,
+            loading: false,
+          });
           break;
         default:
           throw new Error(`Invalid AI response: ${toolCall}`);
       }
     });
-  } else if (message.refusal) {
-    throw new Error(`Invalid AI response: ${message.refusal}`);
   }
 
-  if (!responseMessage.content) {
-    responseMessage.content =
-      responseMessage.toolCalls.length > 0 ? '' : "I'm sorry, I don't have a response for that.";
+  if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
+    responseMessage.content.push({
+      type: 'text',
+      text: "I'm sorry, I don't have a response for that.",
+    });
   }
 
   response.json(responseMessage);

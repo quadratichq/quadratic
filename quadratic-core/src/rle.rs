@@ -44,7 +44,7 @@ impl<T: Eq + Clone> RunLengthEncoding<T> {
     }
     pub fn iter_values(&self) -> impl Iterator<Item = &T> {
         self.iter_runs()
-            .flat_map(|(value, len)| std::iter::repeat(value).take(len))
+            .flat_map(|(value, len)| std::iter::repeat_n(value, len))
     }
     pub fn get_at(&self, i: usize) -> Option<&T> {
         self.iter_values().nth(i)
@@ -68,10 +68,8 @@ impl<T: Eq + Clone> FromIterator<T> for RunLengthEncoding<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn push_n() {
         let mut rle = RunLengthEncoding::new();
         rle.push_n(1, 0);
@@ -87,7 +85,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn size() {
         let mut rle = RunLengthEncoding::new();
         assert_eq!(rle.size(), 0);
@@ -104,7 +101,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn is_empty() {
         let mut rle = RunLengthEncoding::new();
         assert!(rle.is_empty());

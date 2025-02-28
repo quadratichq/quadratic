@@ -5,7 +5,7 @@ import {
 } from '@/app/atoms/codeEditorAtom';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import * as monaco from 'monaco-editor';
+import type * as monaco from 'monaco-editor';
 import { useRecoilCallback } from 'recoil';
 
 export const useCloseCodeEditor = ({ editorInst }: { editorInst: monaco.editor.IStandaloneCodeEditor | null }) => {
