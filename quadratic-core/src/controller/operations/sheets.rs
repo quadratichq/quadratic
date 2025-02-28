@@ -87,7 +87,11 @@ impl GridController {
         let mut new_sheet = sheet.clone();
         let new_sheet_id = SheetId::new();
         new_sheet.id = new_sheet_id;
-        new_sheet.name = format!("{} Copy", sheet.name);
+
+        let new_name = format!("{} Copy", sheet.name);
+        new_sheet.replace_sheet_name_in_code_cells(&sheet.name, &new_name, self.a1_context());
+        new_sheet.name = new_name;
+
         let right_order = self
             .grid
             .next_sheet(sheet_id)
