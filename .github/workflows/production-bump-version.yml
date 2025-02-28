@@ -41,4 +41,4 @@ jobs:
           git add .
           git commit -m 'Bump version' || exit 0
           git pull --rebase
-          git push
+          git push --force
