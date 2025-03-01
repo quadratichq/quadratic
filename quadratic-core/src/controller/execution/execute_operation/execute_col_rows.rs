@@ -1,66 +1,14 @@
 use crate::{
-    a1::{A1Context, CellRefRange, CellRefRangeEnd, UNBOUNDED},
+    a1::{CellRefRange, UNBOUNDED},
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    formulas::replace_cell_references_with,
-    grid::{CodeCellLanguage, CodeCellValue, GridBounds, SheetId},
-    CellValue, SheetPos,
+    grid::{GridBounds, SheetId},
+    CellValue,
 };
 
 impl GridController {
-    pub fn adjust_formula_column_row(
-        code_cell: &CodeCellValue,
-        parse_ctx: &A1Context,
-        code_cell_pos: SheetPos,
-        column: Option<i64>,
-        row: Option<i64>,
-        delta: i64,
-    ) -> String {
-        if let Some(column) = column {
-            replace_cell_references_with(
-                &code_cell.code,
-                parse_ctx,
-                code_cell_pos,
-                |sheet_id, cell_ref| {
-                    Ok(CellRefRangeEnd {
-                        col: if sheet_id == code_cell_pos.sheet_id
-                            && cell_ref.col.coord >= column
-                            && cell_ref.col.coord < UNBOUNDED
-                        {
-                            cell_ref.col.translate(delta)?
-                        } else {
-                            cell_ref.col
-                        },
-                        row: cell_ref.row,
-                    })
-                },
-            )
-        } else if let Some(row) = row {
-            replace_cell_references_with(
-                &code_cell.code,
-                parse_ctx,
-                code_cell_pos,
-                |sheet_id, cell_ref| {
-                    Ok(CellRefRangeEnd {
-                        col: cell_ref.col,
-                        row: if sheet_id == code_cell_pos.sheet_id
-                            && cell_ref.row.coord >= row
-                            && cell_ref.row.coord < UNBOUNDED
-                        {
-                            cell_ref.row.translate(delta)?
-                        } else {
-                            cell_ref.row
-                        },
-                    })
-                },
-            )
-        } else {
-            code_cell.code.clone()
-        }
-    }
-
     fn adjust_code_cells_column_row(
         &self,
         transaction: &mut PendingTransaction,
@@ -90,32 +38,17 @@ impl GridController {
                         }
 
                         if let Some(CellValue::Code(code)) = sheet.cell_value_ref(pos) {
-                            let new_code = match code.language {
-                                CodeCellLanguage::Formula => {
-                                    let pos = pos.to_sheet_pos(sheet.id);
-                                    GridController::adjust_formula_column_row(
-                                        code,
-                                        self.a1_context(),
-                                        pos,
-                                        column,
-                                        row,
-                                        delta,
-                                    )
-                                }
-                                _ => {
-                                    let mut new_code = code.clone();
-                                    let context = self.a1_context();
-                                    new_code.adjust_code_cell_column_row(
-                                        column, row, delta, &sheet_id, context,
-                                    );
-                                    new_code.code
-                                }
-                            };
-                            if new_code != code.code {
-                                let code_cell_value = CellValue::Code(CodeCellValue {
-                                    code: new_code,
-                                    ..code.clone()
-                                });
+                            let context = self.a1_context();
+                            let mut new_code = code.clone();
+                            new_code.adjust_code_cell_column_row(
+                                context,
+                                pos.to_sheet_pos(sheet_id),
+                                column,
+                                row,
+                                delta,
+                            );
+                            if new_code != *code {
+                                let code_cell_value = CellValue::Code(new_code);
                                 let sheet_pos = pos.to_sheet_pos(sheet.id);
                                 transaction.operations.push_back(Operation::SetCellValues {
                                     sheet_pos,

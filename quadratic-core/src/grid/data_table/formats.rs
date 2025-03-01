@@ -117,7 +117,7 @@ pub mod test {
         gc.test_data_table_first_row_as_header(pos.to_sheet_pos(sheet_id), false);
 
         gc.set_bold(
-            &A1Selection::test_a1_sheet_id("E4,G5:J5", &sheet_id),
+            &A1Selection::test_a1_sheet_id("E4,G5:J5", sheet_id),
             Some(true),
             None,
         )
@@ -148,7 +148,7 @@ pub mod test {
         gc.test_data_table_first_row_as_header(pos.to_sheet_pos(sheet_id), false);
 
         gc.set_bold(
-            &A1Selection::test_a1_sheet_id("E4,G5:J5", &sheet_id),
+            &A1Selection::test_a1_sheet_id("E4,G5:J5", sheet_id),
             Some(true),
             None,
         )
@@ -244,7 +244,7 @@ pub mod test {
         gc.test_data_table_first_row_as_header(pos.to_sheet_pos(sheet_id), false);
 
         gc.set_bold(
-            &A1Selection::test_a1_sheet_id("E4,G5:J5", &sheet_id),
+            &A1Selection::test_a1_sheet_id("E4,G5:J5", sheet_id),
             Some(true),
             None,
         )
@@ -287,7 +287,7 @@ pub mod test {
         // add new bold formats with first column hidden
         gc.test_data_table_first_row_as_header(pos.to_sheet_pos(sheet_id), false);
         gc.set_bold(
-            &A1Selection::test_a1_sheet_id("F10,G12:J12", &sheet_id),
+            &A1Selection::test_a1_sheet_id("F10,G12:J12", sheet_id),
             Some(true),
             None,
         )
@@ -355,7 +355,7 @@ pub mod test {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
         gc.set_bold(
-            &A1Selection::test_a1_sheet_id("E4,G5:J5", &sheet_id),
+            &A1Selection::test_a1_sheet_id("E4,G5:J5", sheet_id),
             Some(true),
             None,
         )
@@ -408,7 +408,7 @@ pub mod test {
 
         // add new bold formats with sort
         gc.set_bold(
-            &A1Selection::test_a1_sheet_id("E4,G5:J5", &sheet_id),
+            &A1Selection::test_a1_sheet_id("E4,G5:J5", sheet_id),
             Some(true),
             None,
         )

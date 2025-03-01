@@ -9,7 +9,6 @@ use uuid::Uuid;
 use super::operation::Operation;
 use crate::cell_values::CellValues;
 use crate::controller::GridController;
-use crate::formulas::convert_a1_to_rc;
 use crate::grid::formats::Format;
 use crate::grid::formats::FormatUpdate;
 use crate::grid::formats::SheetFormatUpdates;
@@ -18,7 +17,6 @@ use crate::grid::js_types::JsSnackbarSeverity;
 use crate::grid::sheet::borders::BordersUpdates;
 use crate::grid::sheet::validations::validation::Validation;
 use crate::grid::unique_data_table_name;
-use crate::grid::CodeCellLanguage;
 use crate::grid::DataTable;
 use crate::grid::DataTableKind;
 use crate::grid::SheetId;
@@ -43,6 +41,7 @@ pub enum PasteSpecial {
 pub struct ClipboardOrigin {
     pub x: i64,
     pub y: i64,
+    pub sheet_id: SheetId,
     pub column: Option<i64>,
     pub row: Option<i64>,
     pub all: Option<(i64, i64)>,
@@ -665,33 +664,23 @@ impl GridController {
 
                 // loop through the clipboard and replace cell references in formulas, translate cell references in other languages
                 for (x, col) in clipboard.cells.columns.iter_mut().enumerate() {
-                    for (&y, cell) in col.iter_mut() {
-                        match cell {
-                            CellValue::Code(code_cell) => match code_cell.language {
-                                CodeCellLanguage::Formula => {
-                                    code_cell.code = convert_a1_to_rc(
-                                        &code_cell.code,
-                                        context,
-                                        Pos {
-                                            x: insert_at.x + x as i64,
-                                            y: insert_at.y + y as i64,
-                                        }
-                                        .to_sheet_pos(selection.sheet_id),
-                                    );
-                                }
-                                _ => {
-                                    if clipboard.operation == ClipboardOperation::Copy {
-                                        code_cell.translate_cell_references(
-                                            delta_x,
-                                            delta_y,
-                                            &selection.sheet_id,
-                                            context,
-                                        );
-                                    }
-                                }
-                            },
-                            _ => { /* noop */ }
-                        };
+                    for (&y, cell) in col {
+                        if let CellValue::Code(code_cell) = cell {
+                            let original_pos = SheetPos {
+                                x: clipboard.origin.x + x as i64,
+                                y: clipboard.origin.y + y as i64,
+                                sheet_id: clipboard.origin.sheet_id,
+                            };
+                            if clipboard.operation == ClipboardOperation::Copy {
+                                code_cell.translate_cell_references(
+                                    context,
+                                    original_pos,
+                                    selection.sheet_id,
+                                    delta_x,
+                                    delta_y,
+                                );
+                            }
+                        }
                     }
                 }
 
@@ -1163,7 +1152,7 @@ mod test {
 
         assert!(gc
             .paste_html_operations(
-                &A1Selection::test_a1_sheet_id("B2", &sheet_id),
+                &A1Selection::test_a1_sheet_id("B2", sheet_id),
                 html,
                 PasteSpecial::None,
             )
@@ -1219,7 +1208,7 @@ mod test {
         let JsClipboard { html, .. } = gc
             .sheet(sheet_id)
             .copy_to_clipboard(
-                &A1Selection::test_a1_sheet_id("B2:C3", &sheet_id),
+                &A1Selection::test_a1_sheet_id("B2:C3", sheet_id),
                 gc.a1_context(),
                 ClipboardOperation::Copy,
                 false,
@@ -1227,7 +1216,7 @@ mod test {
             .unwrap();
 
         gc.paste_from_clipboard(
-            &A1Selection::test_a1_sheet_id("E13", &sheet_id),
+            &A1Selection::test_a1_sheet_id("E13", sheet_id),
             None,
             Some(html),
             PasteSpecial::None,
@@ -1360,7 +1349,7 @@ mod test {
         let JsClipboard { plain_text, .. } = gc
             .sheet(sheet_id)
             .copy_to_clipboard(
-                &A1Selection::test_a1_sheet_id("B2:C3", &sheet_id),
+                &A1Selection::test_a1_sheet_id("B2:C3", sheet_id),
                 gc.a1_context(),
                 ClipboardOperation::Copy,
                 true,
@@ -1368,7 +1357,7 @@ mod test {
             .unwrap();
 
         gc.paste_from_clipboard(
-            &A1Selection::test_a1_sheet_id("E13", &sheet_id),
+            &A1Selection::test_a1_sheet_id("E13", sheet_id),
             Some(plain_text),
             None,
             PasteSpecial::None,

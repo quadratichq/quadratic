@@ -86,10 +86,10 @@ impl GridController {
                     {
                         for (old_name, unique_name) in table_names_to_update_in_cell_ref.iter() {
                             code_cell_value.replace_table_name_in_cell_references(
+                                &context,
+                                pos.to_sheet_pos(sheet_id),
                                 old_name,
                                 unique_name,
-                                &sheet_id,
-                                &context,
                             );
                         }
                     }
@@ -210,12 +210,7 @@ impl GridController {
                 bail!(e);
             }
 
-            let context = self.a1_context().to_owned();
-
-            let sheet = self.try_sheet_result(sheet_id)?;
-            let old_name = sheet.name.to_owned();
-
-            self.grid.update_sheet_name(&old_name, &name, &context);
+            let old_name = self.grid.update_sheet_name(sheet_id, name.clone())?;
 
             transaction
                 .forward_operations

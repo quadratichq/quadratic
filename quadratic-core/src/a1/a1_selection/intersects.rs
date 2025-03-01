@@ -142,8 +142,8 @@ mod tests {
     fn test_intersection() {
         let context = A1Context::default();
         // Test different sheets return None
-        let sel1 = A1Selection::test_a1_sheet_id("A1:B2", &SheetId::new());
-        let sel2 = A1Selection::test_a1_sheet_id("B2:C3", &SheetId::new());
+        let sel1 = A1Selection::test_a1_sheet_id("A1:B2", SheetId::new());
+        let sel2 = A1Selection::test_a1_sheet_id("B2:C3", SheetId::new());
         assert_eq!(
             sel1.intersection(&sel2, &context),
             None,
@@ -272,8 +272,8 @@ mod tests {
     fn test_overlaps_a1_selection() {
         let context = A1Context::test(&[], &[]);
         // Different sheets don't overlap
-        let sel1 = A1Selection::test_a1_sheet_id("A1:B2", &SheetId::new());
-        let sel2 = A1Selection::test_a1_sheet_id("B2:C3", &SheetId::new());
+        let sel1 = A1Selection::test_a1_sheet_id("A1:B2", SheetId::new());
+        let sel2 = A1Selection::test_a1_sheet_id("B2:C3", SheetId::new());
         assert!(
             !sel1.overlaps_a1_selection(&sel2, &context),
             "Different sheets should not overlap"

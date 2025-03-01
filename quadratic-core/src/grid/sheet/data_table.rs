@@ -2,8 +2,8 @@ use super::Sheet;
 use crate::{
     a1::{A1Context, A1Selection},
     cell_values::CellValues,
-    grid::{data_table::DataTable, CodeCellValue, DataTableKind, SheetId},
-    Pos, Rect,
+    grid::{data_table::DataTable, CodeCellValue, DataTableKind},
+    Pos, Rect, SheetPos,
 };
 
 use anyhow::{anyhow, bail, Result};
@@ -139,18 +139,15 @@ impl Sheet {
         })
     }
 
-    pub fn replace_in_code_cells(
-        &mut self,
-        context: &A1Context,
-        func: impl Fn(&mut CodeCellValue, &A1Context, &SheetId),
-    ) {
+    /// Calls a function to mutate all code cells.
+    pub fn update_code_cells(&mut self, func: impl Fn(&mut CodeCellValue, SheetPos)) {
         let positions = self.data_tables.keys().cloned().collect::<Vec<_>>();
         let sheet_id = self.id;
 
         for pos in positions {
             if let Some(cell_value) = self.cell_value_mut(pos) {
                 if let Some(code_cell_value) = cell_value.code_cell_value_mut() {
-                    func(code_cell_value, context, &sheet_id);
+                    func(code_cell_value, pos.to_sheet_pos(sheet_id));
                 }
             }
         }
@@ -161,11 +158,11 @@ impl Sheet {
         &mut self,
         old_name: &str,
         new_name: &str,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) {
-        self.replace_in_code_cells(context, |code_cell_value, a1_context, id| {
+        self.update_code_cells(|code_cell_value, pos| {
             code_cell_value
-                .replace_table_name_in_cell_references(old_name, new_name, id, a1_context);
+                .replace_table_name_in_cell_references(a1_context, pos, old_name, new_name);
         });
     }
 
@@ -175,11 +172,11 @@ impl Sheet {
         table_name: &str,
         old_name: &str,
         new_name: &str,
-        context: &A1Context,
+        a1_context: &A1Context,
     ) {
-        self.replace_in_code_cells(context, |code_cell_value, a1_context, id| {
+        self.update_code_cells(|code_cell_value, pos| {
             code_cell_value.replace_column_name_in_cell_references(
-                table_name, old_name, new_name, id, a1_context,
+                a1_context, pos, table_name, old_name, new_name,
             );
         });
     }

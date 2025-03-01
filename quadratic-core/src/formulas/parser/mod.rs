@@ -15,7 +15,7 @@ use super::*;
 use crate::{
     a1::{A1Context, CellRefRange, CellRefRangeEnd, RefRangeBounds, SheetCellRefRange},
     grid::{Grid, SheetId},
-    CodeResult, CoerceInto, RefError, RunError, RunErrorMsg, SheetPos, Span, Spanned,
+    CodeResult, CoerceInto, RefError, RunError, RunErrorMsg, SheetPos, Span, Spanned, TableRef,
 };
 
 /// Parses a formula.
@@ -104,6 +104,7 @@ fn simple_parse_and_check_formula(formula_string: &str) -> bool {
 /// let replaced = convert_rc_to_a1("SUM(R{3}C[1])", &g.a1_context(), pos);
 /// assert_eq!(replaced, "SUM(B$3)");
 /// ```
+#[must_use]
 pub fn convert_rc_to_a1(source: &str, ctx: &A1Context, pos: SheetPos) -> String {
     let replace_fn = |range_ref: SheetCellRefRange| Ok(range_ref.to_a1_string(None, ctx, false));
     replace_cell_range_references(source, ctx, pos, replace_fn)
@@ -122,6 +123,7 @@ pub fn convert_rc_to_a1(source: &str, ctx: &A1Context, pos: SheetPos) -> String 
 /// let replaced = convert_a1_to_rc("SUM(B$3)", &g.a1_context(), pos);
 /// assert_eq!(replaced, "SUM(R{3}C[1])");
 /// ```
+#[must_use]
 pub fn convert_a1_to_rc(source: &str, ctx: &A1Context, pos: SheetPos) -> String {
     let replace_fn = |range_ref: SheetCellRefRange| {
         Ok(range_ref.to_rc_string(Some(pos.sheet_id), ctx, false, pos.into()))
@@ -129,9 +131,57 @@ pub fn convert_a1_to_rc(source: &str, ctx: &A1Context, pos: SheetPos) -> String 
     replace_cell_range_references(source, ctx, pos, replace_fn)
 }
 
-/// Replace all cell references with internal cell references (RC notation) by
-/// applying the function `replace_x_fn` to X coordinates and `replace_y_fn` to
-/// Y coordinates.
+/// Translates all relative cell references that are within the same sheet as
+/// the formula by `(delta_x, delta_y)`.
+#[must_use]
+pub fn translate_cell_references_within_sheet(
+    source: &str,
+    ctx: &A1Context,
+    pos: SheetPos,
+    delta_x: i64,
+    delta_y: i64,
+) -> String {
+    replace_cell_references_with(source, ctx, pos, |sheet_id, mut cell_ref_range_end| {
+        if sheet_id == pos.sheet_id {
+            cell_ref_range_end.col.translate_in_place(delta_x)?;
+            cell_ref_range_end.row.translate_in_place(delta_y)?;
+        }
+        Ok(cell_ref_range_end)
+    })
+}
+
+/// Translates all relative cell references that are within the same sheet as
+/// the formula _and_ past the given column or row.
+///
+/// - If a column is supplied, then all X coordinates greater than or equal to
+///   it are adjusted by `delta`.
+/// - If a row is supplied, then all Y coordinates greater than or equal to it
+///   are adjusted by `delta`.
+#[must_use]
+pub fn adjust_cell_references_within_sheet(
+    source: &str,
+    ctx: &A1Context,
+    pos: SheetPos,
+    column: Option<i64>,
+    row: Option<i64>,
+    delta: i64,
+) -> String {
+    replace_cell_references_with(source, ctx, pos, |sheet_id, mut cell_ref_range_end| {
+        if sheet_id == pos.sheet_id {
+            if column.is_some_and(|c| c <= cell_ref_range_end.col.coord) {
+                cell_ref_range_end.col.translate_in_place(delta)?;
+            }
+            if row.is_some_and(|r| r <= cell_ref_range_end.row.coord) {
+                cell_ref_range_end.row.translate_in_place(delta)?;
+            }
+        }
+        Ok(cell_ref_range_end)
+    })
+}
+
+/// Replace all cell references by applying the function `replace_xy_fn` to each
+/// end of the range.
+#[must_use]
 pub fn replace_cell_references_with(
     source: &str,
     ctx: &A1Context,
@@ -154,6 +204,70 @@ pub fn replace_cell_references_with(
     })
 }
 
+#[must_use]
+pub fn replace_table_name(
+    source: &str,
+    ctx: &A1Context,
+    pos: SheetPos,
+    old_name: &str,
+    new_name: &str,
+) -> String {
+    replace_table_references(source, ctx, pos, |mut table_ref| {
+        if table_ref.table_name.eq_ignore_ascii_case(old_name) {
+            table_ref.table_name = new_name.to_string();
+        }
+        Ok(table_ref)
+    })
+}
+
+#[must_use]
+pub fn replace_column_name(
+    source: &str,
+    ctx: &A1Context,
+    pos: SheetPos,
+    table_name: &str,
+    old_name: &str,
+    new_name: &str,
+) -> String {
+    replace_table_references(source, ctx, pos, |mut table_ref| {
+        if table_ref.table_name.eq_ignore_ascii_case(table_name) {
+            table_ref.col_range.replace_column_name(old_name, new_name);
+        }
+        Ok(table_ref)
+    })
+}
+
+#[must_use]
+fn replace_table_references(
+    source: &str,
+    ctx: &A1Context,
+    pos: SheetPos,
+    replace_fn: impl Fn(TableRef) -> Result<TableRef, RefError>,
+) -> String {
+    replace_cell_range_references(source, ctx, pos, |range_ref| {
+        Ok(match range_ref.cells {
+            CellRefRange::Table { range } => CellRefRange::Table {
+                range: replace_fn(range)?,
+            },
+            other @ CellRefRange::Sheet { .. } => other,
+        }
+        .to_string())
+    })
+}
+
+#[must_use]
+pub fn replace_sheet_name(
+    source: &str,
+    pos: SheetPos,
+    old_ctx: &A1Context,
+    new_ctx: &A1Context,
+) -> String {
+    replace_cell_range_references(source, old_ctx, pos, |sheet_cell_ref_range| {
+        Ok(sheet_cell_ref_range.to_a1_string(Some(pos.sheet_id), new_ctx, false))
+    })
+}
+
+#[must_use]
 fn replace_cell_range_references(
     source: &str,
     ctx: &A1Context,
