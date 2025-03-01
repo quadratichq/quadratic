@@ -39,6 +39,9 @@ export class Viewport extends PixiViewport {
   private snapState?: SnapState;
   private snapTimeout?: number;
 
+  // the last pointer position where the mouse edges were enabled
+  private lastMouse?: Point;
+
   constructor(pixiApp: PixiApp) {
     super();
     this.pixiApp = pixiApp;
@@ -145,7 +148,8 @@ export class Viewport extends PixiViewport {
     this.dirty = true;
   };
 
-  enableMouseEdges = () => {
+  enableMouseEdges = (world?: Point) => {
+    this.lastMouse = world;
     const mouseEdges = this.plugins.get('mouse-edges');
     if (mouseEdges && !mouseEdges.paused) return;
     this.mouseEdges({
@@ -153,10 +157,12 @@ export class Viewport extends PixiViewport {
       allowButtons: true,
       speed: MOUSE_EDGES_SPEED / this.scale.x,
     });
+    this.lastMouse = world;
   };
 
   disableMouseEdges = () => {
     this.plugins.remove('mouse-edges');
+    this.lastMouse = undefined;
   };
 
   sendRenderViewport() {
@@ -261,6 +267,43 @@ export class Viewport extends PixiViewport {
         if (Date.now() - this.snapTimeout > WAIT_TO_SNAP_TIME) {
           this.startSnap();
         }
+      }
+    }
+
+    this.checkForMouseEdges();
+  };
+
+  // select cells as we are edge scrolling
+  private checkForMouseEdges = () => {
+    if (!this.lastMouse) return;
+
+    const mouseEdges = this.plugins.get('mouse-edges');
+    const vertical = mouseEdges?.['vertical'];
+    if (vertical) {
+      const bounds = this.getVisibleBounds();
+      if (vertical > 0) {
+        // use the second-to-last row of the screen for selection
+        const cell = sheets.sheet.getColumnRowFromScreen(this.lastMouse.x, bounds.bottom);
+        sheets.sheet.cursor.selectTo(cell.column, cell.row - 1, true, false);
+      } else if (vertical < 0) {
+        const headings = this.pixiApp.headings.headingSize;
+
+        // use the second row of the screen for selection
+        const cell = sheets.sheet.getColumnRowFromScreen(this.lastMouse.x, bounds.top + headings.height / this.scaled);
+        sheets.sheet.cursor.selectTo(cell.column, cell.row + 1, true, false);
+      }
+    }
+    const horizontal = mouseEdges?.['horizontal'];
+    if (horizontal) {
+      const bounds = this.getVisibleBounds();
+      if (horizontal > 0) {
+        // use the second-to-last column of the screen for selection
+        const cell = sheets.sheet.getColumnRowFromScreen(bounds.right, this.lastMouse.y);
+        sheets.sheet.cursor.selectTo(cell.column - 1, cell.row, true, false);
+      } else if (horizontal < 0) {
+        // use the second column of the screen for selection
+        const cell = sheets.sheet.getColumnRowFromScreen(bounds.left, this.lastMouse.y);
+        sheets.sheet.cursor.selectTo(cell.column + 1, cell.row, true, false);
       }
     }
   };
