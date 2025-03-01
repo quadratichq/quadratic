@@ -254,6 +254,7 @@ export class PixiApp {
     if (!this.canvas) return;
 
     this.parent = parent;
+    this.canvas.classList.add('dark-mode-hack');
     parent.appendChild(this.canvas);
     this.resize();
     this.update.start();
