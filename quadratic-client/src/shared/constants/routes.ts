@@ -5,6 +5,9 @@ import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections
 export const ROUTES = {
   LOGOUT: '/logout',
   LOGIN: '/login',
+  LOGIN_WITH_REDIRECT_TO_DUPLICATE: () =>
+    '/login?from=' +
+    encodeURIComponent(window.location.pathname + `?${SEARCH_PARAMS.DUPLICATE.KEY}=${SEARCH_PARAMS.DUPLICATE.VALUE}`),
   LOGIN_WITH_REDIRECT: () => '/login?from=' + encodeURIComponent(window.location.pathname),
   SIGNUP_WITH_REDIRECT: () => '/login?signup&from=' + encodeURIComponent(window.location.pathname),
   LOGIN_RESULT: '/login-result',
@@ -69,4 +72,5 @@ export const SEARCH_PARAMS = {
   DIALOG: { KEY: 'dialog', VALUES: { EDUCATION: 'education' } },
   SNACKBAR_MSG: { KEY: 'snackbar-msg' }, // VALUE can be any message you want to display
   SNACKBAR_SEVERITY: { KEY: 'snackbar-severity', VALUE: { ERROR: 'error' } },
+  DUPLICATE: { KEY: 'duplicate', VALUE: 'true' },
 };

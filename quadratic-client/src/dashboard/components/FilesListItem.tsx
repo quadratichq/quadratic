@@ -140,7 +140,11 @@ export function FilesListItemUserFile({
   };
 
   const handleDuplicate = () => {
-    const data = getActionFileDuplicate({ redirect: false, isPrivate: isTeamPrivateFilesRoute ? true : false });
+    const data = getActionFileDuplicate({
+      redirect: false,
+      isPrivate: isTeamPrivateFilesRoute ? true : false,
+      teamUuid: activeTeamUuid,
+    });
     fetcherDuplicate.submit(data, fetcherSubmitOpts);
   };
 
