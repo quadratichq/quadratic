@@ -179,7 +179,7 @@ pub fn unused_name(prefix: &str, already_used: &[&str]) -> String {
         Some(i) => i + 1,
         None => 1,
     };
-    format!("{prefix}{i}")
+    format!("{prefix} {i}")
 }
 
 /// Returns a unique name by appending numbers to the base name if the name is not unique.
@@ -348,9 +348,9 @@ mod tests {
 
     #[test]
     fn test_unused_name() {
-        let used = ["Sheet1", "Sheet2"];
-        assert_eq!(unused_name("Sheet", &used), "Sheet3");
-        let used = ["Sheet2", "Sheet3"];
-        assert_eq!(unused_name("Sheet", &used), "Sheet4");
+        let used = ["Sheet 1", "Sheet 2"];
+        assert_eq!(unused_name("Sheet", &used), "Sheet 3");
+        let used = ["Sheet 2", "Sheet 3"];
+        assert_eq!(unused_name("Sheet", &used), "Sheet 4");
     }
 }
