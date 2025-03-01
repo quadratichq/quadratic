@@ -29,3 +29,5 @@ frontend:
           value: "cross-origin"
         - key: "Access-Control-Allow-Origin"
           value: "*"
+        - key: "Content-Security-Policy"
+          value: "frame-ancestors *"
