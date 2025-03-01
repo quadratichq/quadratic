@@ -3,7 +3,10 @@ import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
+import { CELL_HEIGHT, CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { Point, type Rectangle } from 'pixi.js';
+
+const BUFFER = [CELL_WIDTH / 2, CELL_HEIGHT / 2];
 
 export function getVisibleTopRow(): number {
   const viewport = pixiApp.viewport.getVisibleBounds();
@@ -143,18 +146,24 @@ export function cellVisible(
   let is_off_screen = false;
 
   if (cell.x - headingSize.width / viewport.scale.x < viewport.left) {
-    viewport.left = cell.x - headingSize.width / viewport.scale.x;
+    viewport.left = Math.max(
+      -headingSize.width / viewport.scale.x,
+      cell.x - headingSize.width / viewport.scale.x //+ BUFFER[0]
+    );
     is_off_screen = true;
   } else if (cell.x + cell.width > viewport.right) {
-    viewport.right = cell.x + cell.width;
+    viewport.right = cell.x + cell.width + BUFFER[0];
     is_off_screen = true;
   }
 
   if (cell.y < viewport.top + headingSize.height / viewport.scale.y) {
-    viewport.top = cell.y - headingSize.height / viewport.scale.y;
+    viewport.top = Math.max(
+      -headingSize.height / viewport.scale.y,
+      cell.y - headingSize.height / viewport.scale.y - BUFFER[1]
+    );
     is_off_screen = true;
   } else if (cell.y + cell.height > viewport.bottom) {
-    viewport.bottom = cell.y + cell.height;
+    viewport.bottom = cell.y + cell.height + BUFFER[1];
     is_off_screen = true;
   }
 

@@ -169,6 +169,7 @@ impl A1Selection {
     }
 
     #[cfg(test)]
+    #[track_caller]
     pub fn test_a1_context(a1: &str, context: &A1Context) -> Self {
         Self::parse(a1, &SheetId::TEST, context, None).unwrap()
     }

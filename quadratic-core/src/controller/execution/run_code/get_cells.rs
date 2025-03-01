@@ -709,7 +709,7 @@ mod test {
     fn test_get_cells_table_different_sheet() {
         let mut gc = GridController::test();
         let sheet1_id = gc.sheet_ids()[0];
-        gc.add_sheet_with_name("Sheet2".to_string(), None);
+        gc.add_sheet_with_name("Sheet 2".to_string(), None);
         let sheet2_id = gc.sheet_ids()[1];
 
         // set table in sheet 2

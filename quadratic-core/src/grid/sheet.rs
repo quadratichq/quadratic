@@ -105,7 +105,7 @@ impl Sheet {
 
     /// Creates a sheet for testing.
     pub fn test() -> Self {
-        Sheet::new(SheetId::TEST, String::from("Sheet1"), String::from("a0"))
+        Sheet::new(SheetId::TEST, String::from("Sheet 1"), String::from("a0"))
     }
 
     pub fn validate_sheet_name(name: &str, context: &A1Context) -> Result<bool, String> {
@@ -1243,7 +1243,7 @@ mod test {
         // Test valid sheet names
         let longest_name = "a".repeat(31);
         let valid_names = vec![
-            "Sheet1",
+            "Sheet 1",
             "MySheet",
             "Test_Sheet",
             "Sheet-1",
