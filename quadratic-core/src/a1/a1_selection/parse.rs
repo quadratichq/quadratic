@@ -198,7 +198,7 @@ mod tests {
     fn test_from_a1_sheets() {
         let sheet_id = SheetId::new();
         let sheet_id2 = SheetId::new();
-        let context = A1Context::test(&[("Sheet 1", sheet_id), ("Second", sheet_id2)], &[]);
+        let context = A1Context::test(&[("Sheet1", sheet_id), ("Second", sheet_id2)], &[]);
         assert_eq!(
             A1Selection::parse_a1("'Second'!A1", &sheet_id, &context),
             Ok(A1Selection::from_xy(1, 1, sheet_id2)),

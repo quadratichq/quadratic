@@ -165,7 +165,7 @@ mod tests {
     #[test]
     fn test_table_operations() {
         let context = A1Context::test(
-            &[("Sheet 1", SheetId::TEST)],
+            &[("Sheet1", SheetId::TEST)],
             &[
                 ("Table1", &["col1", "col2"], Rect::test_a1("A1:B3")),
                 ("Table2", &["col3", "col4"], Rect::test_a1("D1:E3")),
@@ -189,7 +189,7 @@ mod tests {
             info[0],
             JsTableInfo {
                 name: "Table1".to_string(),
-                sheet_name: "Sheet 1".to_string(),
+                sheet_name: "Sheet1".to_string(),
                 chart: false,
                 language: CodeCellLanguage::Import,
             }
@@ -198,7 +198,7 @@ mod tests {
             info[1],
             JsTableInfo {
                 name: "Table2".to_string(),
-                sheet_name: "Sheet 1".to_string(),
+                sheet_name: "Sheet1".to_string(),
                 chart: false,
                 language: CodeCellLanguage::Import,
             }
@@ -209,17 +209,17 @@ mod tests {
     fn test_sheet_operations() {
         let sheet_id1 = SheetId::new();
         let sheet_id2 = SheetId::new();
-        let context = A1Context::test(&[("Sheet 1", sheet_id1), ("Sheet 2", sheet_id2)], &[]);
+        let context = A1Context::test(&[("Sheet1", sheet_id1), ("Sheet 2", sheet_id2)], &[]);
 
         // Test try_sheet_name
-        assert_eq!(context.try_sheet_name("Sheet 1"), Some(sheet_id1));
+        assert_eq!(context.try_sheet_name("Sheet1"), Some(sheet_id1));
         assert_eq!(context.try_sheet_name("Sheet 2"), Some(sheet_id2));
         assert_eq!(context.try_sheet_name("NonexistentSheet"), None);
 
         // Test try_sheet_id
         assert_eq!(
             context.try_sheet_id(sheet_id1).map(String::as_str),
-            Some("Sheet 1")
+            Some("Sheet1")
         );
         assert_eq!(
             context.try_sheet_id(sheet_id2).map(String::as_str),
@@ -232,7 +232,7 @@ mod tests {
     fn test_convert_table_ref_to_range() {
         let sheet_id = SheetId::TEST;
         let context = A1Context::test(
-            &[("Sheet 1", sheet_id)],
+            &[("Sheet1", sheet_id)],
             &[("Table1", &["col1", "col2"], Rect::test_a1("A1:B3"))],
         );
 
@@ -245,7 +245,7 @@ mod tests {
         // Test conversion when default sheet is different
         assert_eq!(
             context.convert_table_to_range("Table1", SheetId::new()),
-            Ok("Sheet 1!A1:B3".to_string())
+            Ok("Sheet1!A1:B3".to_string())
         );
 
         // Test conversion with non-existent table

@@ -1120,7 +1120,7 @@ pub mod test {
 
         // duplicate table name
         let context = A1Context::test(
-            &[("Sheet 1", SheetId::TEST)],
+            &[("Sheet1", SheetId::TEST)],
             &[
                 ("Table1", &["col1", "col2"], Rect::test_a1("A1:B3")),
                 ("Table2", &["col3", "col4"], Rect::test_a1("D1:E3")),
@@ -1135,7 +1135,7 @@ pub mod test {
     fn test_validate_column_name() {
         // Test valid column names
         let context = A1Context::test(
-            &[("Sheet 1", SheetId::TEST)],
+            &[("Sheet1", SheetId::TEST)],
             &[("Table1", &["existing_col"], Rect::test_a1("A1:A3"))],
         );
         let table_name = "Table1";

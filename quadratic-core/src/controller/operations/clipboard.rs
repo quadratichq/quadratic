@@ -938,7 +938,7 @@ mod test {
         let table_ref = TableRef::new("simple.csv");
         let cell_ref_range = CellRefRange::Table { range: table_ref };
         let context = A1Context::test(
-            &[("Sheet 1", sheet_id)],
+            &[("Sheet1", sheet_id)],
             &[(
                 "simple.csv",
                 &["city", "region", "country", "population"],
@@ -979,7 +979,7 @@ mod test {
         let table_ref = TableRef::new("simple.csv");
         let cell_ref_range = CellRefRange::Table { range: table_ref };
         let context = A1Context::test(
-            &[("Sheet 1", sheet_id)],
+            &[("Sheet1", sheet_id)],
             &[(
                 "simple.csv",
                 &["city", "region", "country", "population"],

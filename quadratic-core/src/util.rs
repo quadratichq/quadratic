@@ -348,7 +348,7 @@ mod tests {
 
     #[test]
     fn test_unused_name() {
-        let used = ["Sheet 1", "Sheet 2"];
+        let used = ["Sheet1", "Sheet 2"];
         assert_eq!(unused_name("Sheet", &used), "Sheet 3");
         let used = ["Sheet 2", "Sheet 3"];
         assert_eq!(unused_name("Sheet", &used), "Sheet 4");

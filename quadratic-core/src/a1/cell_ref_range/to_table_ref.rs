@@ -157,7 +157,7 @@ mod tests {
     #[test]
     fn test_check_for_table_ref_full_table() {
         let context = A1Context::test(
-            &[("Sheet 1", SheetId::TEST)],
+            &[("Sheet1", SheetId::TEST)],
             &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C4"))],
         );
         let cell_ref_range = CellRefRange::Sheet {
@@ -182,7 +182,7 @@ mod tests {
     #[test]
     fn test_check_for_table_ref_data() {
         let context = A1Context::test(
-            &[("Sheet 1", SheetId::TEST)],
+            &[("Sheet1", SheetId::TEST)],
             &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C3"))],
         );
         let cell_ref_range = CellRefRange::Sheet {
@@ -207,7 +207,7 @@ mod tests {
     #[test]
     fn test_check_for_table_ref_headers() {
         let context = A1Context::test(
-            &[("Sheet 1", SheetId::TEST)],
+            &[("Sheet1", SheetId::TEST)],
             &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C3"))],
         );
         let cell_ref_range = CellRefRange::Sheet {
@@ -250,7 +250,7 @@ mod tests {
     #[test]
     fn test_check_for_table_ref_col_range() {
         let context = A1Context::test(
-            &[("Sheet 1", SheetId::TEST)],
+            &[("Sheet1", SheetId::TEST)],
             &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C3"))],
         );
         let cell_ref_range = CellRefRange::Sheet {
@@ -275,7 +275,7 @@ mod tests {
     #[test]
     fn test_check_for_table_ref_col() {
         let context = A1Context::test(
-            &[("Sheet 1", SheetId::TEST)],
+            &[("Sheet1", SheetId::TEST)],
             &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("D5:F10"))],
         );
         let cell_ref_range = CellRefRange::Sheet {
@@ -300,7 +300,7 @@ mod tests {
     #[test]
     fn test_check_for_table_ref_hidden_ui() {
         let mut context = A1Context::test(
-            &[("Sheet 1", SheetId::TEST)],
+            &[("Sheet1", SheetId::TEST)],
             &[("Table1", &["col1", "col2"], Rect::test_a1("A1:B3"))],
         );
 
@@ -328,7 +328,7 @@ mod tests {
     #[test]
     fn test_check_for_table_ref_hidden_columns() {
         let mut context = A1Context::test(
-            &[("Sheet 1", SheetId::TEST)],
+            &[("Sheet1", SheetId::TEST)],
             &[("Table1", &["col1", "col2"], Rect::test_a1("A1:B3"))],
         );
 

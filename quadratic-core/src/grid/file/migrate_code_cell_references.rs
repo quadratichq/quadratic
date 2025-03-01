@@ -565,46 +565,46 @@ mod test {
     #[test]
     fn test_python_c_cell_getcell_migration() {
         let mut shifted_offsets = HashMap::new();
-        shifted_offsets.insert("Sheet 1".to_string(), (1, 1));
+        shifted_offsets.insert("Sheet1".to_string(), (1, 1));
         shifted_offsets.insert("Sheet 2".to_string(), (2, 2));
 
         let test_cases = vec![
             // Basic cell reference
-            ("cell(1, 2)", "q.cells(\"B3\")", "Sheet 1"),
+            ("cell(1, 2)", "q.cells(\"B3\")", "Sheet1"),
             // With sheet name
             (
                 "cell(1, 2, sheet=\"Sheet 2\")",
                 "q.cells(\"'Sheet 2'!C4\")",
-                "Sheet 1",
+                "Sheet1",
             ),
             // Negative coordinates (should stay in old format)
-            ("cell(-1, 2)", "cell(0, 3)", "Sheet 1"),
+            ("cell(-1, 2)", "cell(0, 3)", "Sheet1"),
             // Invalid format (should remain unchanged)
-            ("cell(invalid, 2)", "cell(invalid, 2)", "Sheet 1"),
+            ("cell(invalid, 2)", "cell(invalid, 2)", "Sheet1"),
             // Basic cell reference
-            ("c(1, 2)", "q.cells(\"B3\")", "Sheet 1"),
+            ("c(1, 2)", "q.cells(\"B3\")", "Sheet1"),
             // With sheet name
             (
                 "c(1, 2, sheet=\"Sheet 2\")",
                 "q.cells(\"'Sheet 2'!C4\")",
-                "Sheet 1",
+                "Sheet1",
             ),
             // Negative coordinates (should stay in old format)
-            ("c(-1, 2)", "cell(0, 3)", "Sheet 1"),
+            ("c(-1, 2)", "cell(0, 3)", "Sheet1"),
             // Invalid format (should remain unchanged)
-            ("c(invalid, 2)", "c(invalid, 2)", "Sheet 1"),
+            ("c(invalid, 2)", "c(invalid, 2)", "Sheet1"),
             // Basic cell reference
-            ("getCell(1, 2)", "q.cells(\"B3\")", "Sheet 1"),
+            ("getCell(1, 2)", "q.cells(\"B3\")", "Sheet1"),
             // With sheet name
             (
                 "getCell(1, 2, sheet=\"Sheet 2\")",
                 "q.cells(\"'Sheet 2'!C4\")",
-                "Sheet 1",
+                "Sheet1",
             ),
             // Negative coordinates (should stay in old format)
-            ("getCell(-1, 2)", "cell(0, 3)", "Sheet 1"),
+            ("getCell(-1, 2)", "cell(0, 3)", "Sheet1"),
             // Invalid format (should remain unchanged)
-            ("getCell(invalid, 2)", "getCell(invalid, 2)", "Sheet 1"),
+            ("getCell(invalid, 2)", "getCell(invalid, 2)", "Sheet1"),
         ];
 
         for (input, expected, sheet_name) in test_cases {
@@ -617,33 +617,33 @@ mod test {
     #[test]
     fn test_python_cells_getcells_migration() {
         let mut shifted_offsets = HashMap::new();
-        shifted_offsets.insert("Sheet 1".to_string(), (1, 1));
+        shifted_offsets.insert("Sheet1".to_string(), (1, 1));
         shifted_offsets.insert("Sheet 2".to_string(), (2, 2));
 
         let test_cases = vec![
             // Basic range
-            ("cells((1, 2), (3, 4))", "q.cells(\"B3:D5\")", "Sheet 1"),
+            ("cells((1, 2), (3, 4))", "q.cells(\"B3:D5\")", "Sheet1"),
             // With sheet name
             (
                 "cells((1, 2), (3, 4), \"Sheet 2\")",
                 "q.cells(\"'Sheet 2'!C4:E6\")",
-                "Sheet 1",
+                "Sheet1",
             ),
             // Negative coordinates
-            ("cells((-1, 2), (3, 4))", "cells((0, 3), (4, 5))", "Sheet 1"),
+            ("cells((-1, 2), (3, 4))", "cells((0, 3), (4, 5))", "Sheet1"),
             // Basic range
-            ("getCells((1, 2), (3, 4))", "q.cells(\"B3:D5\")", "Sheet 1"),
+            ("getCells((1, 2), (3, 4))", "q.cells(\"B3:D5\")", "Sheet1"),
             // With sheet name
             (
                 "getCells((1, 2), (3, 4), \"Sheet 2\")",
                 "q.cells(\"'Sheet 2'!C4:E6\")",
-                "Sheet 1",
+                "Sheet1",
             ),
             // Negative coordinates
             (
                 "getCells((-1, 2), (3, 4))",
                 "cells((0, 3), (4, 5))",
-                "Sheet 1",
+                "Sheet1",
             ),
         ];
 
@@ -699,46 +699,46 @@ mod test {
     #[test]
     fn test_javascript_c_cell_getcell_migration() {
         let mut shifted_offsets = HashMap::new();
-        shifted_offsets.insert("Sheet 1".to_string(), (1, 1));
+        shifted_offsets.insert("Sheet1".to_string(), (1, 1));
         shifted_offsets.insert("Sheet 2".to_string(), (2, 2));
 
         let test_cases = vec![
             // Basic cell reference
-            ("cell(1, 2)", "q.cells(\"B3\")", "Sheet 1"),
+            ("cell(1, 2)", "q.cells(\"B3\")", "Sheet1"),
             // With sheet name
             (
                 "cell(1, 2, \"Sheet 2\")",
                 "q.cells(\"'Sheet 2'!C4\")",
-                "Sheet 1",
+                "Sheet1",
             ),
             // Negative coordinates (should stay in old format)
-            ("cell(-1, 2)", "cell(0, 3)", "Sheet 1"),
+            ("cell(-1, 2)", "cell(0, 3)", "Sheet1"),
             // Invalid format (should remain unchanged)
-            ("cell(invalid, 2)", "cell(invalid, 2)", "Sheet 1"),
+            ("cell(invalid, 2)", "cell(invalid, 2)", "Sheet1"),
             // Basic cell reference
-            ("c(1, 2)", "q.cells(\"B3\")", "Sheet 1"),
+            ("c(1, 2)", "q.cells(\"B3\")", "Sheet1"),
             // With sheet name
             (
                 "c(1, 2, \"Sheet 2\")",
                 "q.cells(\"'Sheet 2'!C4\")",
-                "Sheet 1",
+                "Sheet1",
             ),
             // Negative coordinates (should stay in old format)
-            ("c(-1, 2)", "cell(0, 3)", "Sheet 1"),
+            ("c(-1, 2)", "cell(0, 3)", "Sheet1"),
             // Invalid format (should remain unchanged)
-            ("c(invalid, 2)", "c(invalid, 2)", "Sheet 1"),
+            ("c(invalid, 2)", "c(invalid, 2)", "Sheet1"),
             // Basic cell reference
-            ("getCell(1, 2)", "q.cells(\"B3\")", "Sheet 1"),
+            ("getCell(1, 2)", "q.cells(\"B3\")", "Sheet1"),
             // With sheet name
             (
                 "getCell(1, 2, \"Sheet 2\")",
                 "q.cells(\"'Sheet 2'!C4\")",
-                "Sheet 1",
+                "Sheet1",
             ),
             // Negative coordinates (should stay in old format)
-            ("getCell(-1, 2)", "cell(0, 3)", "Sheet 1"),
+            ("getCell(-1, 2)", "cell(0, 3)", "Sheet1"),
             // Invalid format (should remain unchanged)
-            ("getCell(invalid, 2)", "getCell(invalid, 2)", "Sheet 1"),
+            ("getCell(invalid, 2)", "getCell(invalid, 2)", "Sheet1"),
         ];
 
         for (input, expected, sheet_name) in test_cases {
@@ -751,30 +751,30 @@ mod test {
     #[test]
     fn test_javascript_cells_getcells_migration() {
         let mut shifted_offsets = HashMap::new();
-        shifted_offsets.insert("Sheet 1".to_string(), (1, 1));
+        shifted_offsets.insert("Sheet1".to_string(), (1, 1));
         shifted_offsets.insert("Sheet 2".to_string(), (2, 2));
 
         let test_cases = vec![
             // Basic range
-            ("cells(1, 2, 3, 4)", "q.cells(\"B3:D5\")", "Sheet 1"),
+            ("cells(1, 2, 3, 4)", "q.cells(\"B3:D5\")", "Sheet1"),
             // With sheet name
             (
                 "cells(1, 2, 3, 4, \"Sheet 2\")",
                 "q.cells(\"'Sheet 2'!C4:E6\")",
-                "Sheet 1",
+                "Sheet1",
             ),
             // Negative coordinates
-            ("cells(-1, 2, 3, 4)", "cells(0, 3, 4, 5)", "Sheet 1"),
+            ("cells(-1, 2, 3, 4)", "cells(0, 3, 4, 5)", "Sheet1"),
             // Basic range
-            ("getCells(1, 2, 3, 4)", "q.cells(\"B3:D5\")", "Sheet 1"),
+            ("getCells(1, 2, 3, 4)", "q.cells(\"B3:D5\")", "Sheet1"),
             // With sheet name
             (
                 "getCells(1, 2, 3, 4, \"Sheet 2\")",
                 "q.cells(\"'Sheet 2'!C4:E6\")",
-                "Sheet 1",
+                "Sheet1",
             ),
             // Negative coordinates
-            ("getCells(-1, 2, 3, 4)", "cells(0, 3, 4, 5)", "Sheet 1"),
+            ("getCells(-1, 2, 3, 4)", "cells(0, 3, 4, 5)", "Sheet1"),
         ];
 
         for (input, expected, sheet_name) in test_cases {
