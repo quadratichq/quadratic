@@ -1,7 +1,7 @@
 import { useFeatureFlag } from '@/shared/hooks/useFeatureFlag';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { sharedEvents } from '@/shared/sharedEvents';
-import { useEffect } from 'react';
+import { memo, useEffect } from 'react';
 
 const DEFAULT_ACCENT_COLOR = 'blue';
 export const themeAccentColors = ['blue', 'violet', 'orange', 'green', 'rose', 'black'] as const;
@@ -12,7 +12,7 @@ export const useThemeAccentColor = () => {
   return state;
 };
 
-export const ThemeAccentColorEffects = () => {
+export const ThemeAccentColorEffects = memo(() => {
   const [accentColor, setAccentColor] = useThemeAccentColor();
   const [featureFlag] = useFeatureFlag('themeAccentColor');
 
@@ -33,4 +33,4 @@ export const ThemeAccentColorEffects = () => {
   }, [accentColor]);
 
   return null;
-};
+});

@@ -10,14 +10,14 @@ import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
 import { AIAssistantUserMessageForm } from '@/app/ui/menus/CodeEditor/AIAssistant/AIAssistantUserMessageForm';
 import { AICodeBlockParser } from '@/app/ui/menus/CodeEditor/AIAssistant/AICodeBlockParser';
 import { cn } from '@/shared/shadcn/utils';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 type AIAssistantMessagesProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
 };
 
-export function AIAssistantMessages({ textareaRef }: AIAssistantMessagesProps) {
+export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesProps) => {
   const messages = useRecoilValue(aiAssistantMessagesAtom);
   const messagesCount = useRecoilValue(aiAssistantCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAssistantLoadingAtom);
@@ -160,4 +160,4 @@ export function AIAssistantMessages({ textareaRef }: AIAssistantMessagesProps) {
       })}
     </div>
   );
-}
+});

@@ -5,6 +5,7 @@ import { SetCellValues } from '@/app/ai/toolCards/SetCellValues';
 import { SetCodeCellValue } from '@/app/ai/toolCards/SetCodeCellValue';
 import { UpdateCodeCell } from '@/app/ai/toolCards/UpdateCodeCell';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { memo } from 'react';
 
 type AIAnalystToolCardProps = {
   name: string;
@@ -12,7 +13,7 @@ type AIAnalystToolCardProps = {
   loading: boolean;
 };
 
-export const AIAnalystToolCard = ({ name, args, loading }: AIAnalystToolCardProps) => {
+export const AIAnalystToolCard = memo(({ name, args, loading }: AIAnalystToolCardProps) => {
   if (!Object.values(AITool).includes(name as AITool)) {
     return null;
   }
@@ -34,4 +35,4 @@ export const AIAnalystToolCard = ({ name, args, loading }: AIAnalystToolCardProp
       console.error(`Unknown tool: ${name}`);
       return null;
   }
-};
+});

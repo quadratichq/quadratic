@@ -5,12 +5,12 @@ import { Input } from '@/shared/shadcn/ui/input';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import type { Chat } from 'quadratic-shared/typesAndSchemasAI';
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 
 const DEFAULT_CHAT_NAME = 'Untitled chat';
 
-export const AIAnalystChatHistory = () => {
+export const AIAnalystChatHistory = memo(() => {
   const [chats, setChats] = useRecoilState(aiAnalystChatsAtom);
   const [currentChat, setCurrentChat] = useRecoilState(aiAnalystCurrentChatAtom);
   const setShowChatHistory = useSetRecoilState(aiAnalystShowChatHistoryAtom);
@@ -133,7 +133,7 @@ export const AIAnalystChatHistory = () => {
       </div>
     </div>
   );
-};
+});
 
 const groupChatsByTime = (chats: Chat[], searchValue: string) => {
   chats = [...chats]

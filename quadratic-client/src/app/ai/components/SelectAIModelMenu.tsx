@@ -11,14 +11,14 @@ import { CaretDownIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { ModelConfig, ModelKey } from 'quadratic-shared/typesAndSchemasAI';
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 
 interface SelectAIModelMenuProps {
   loading: boolean;
   textAreaRef: React.RefObject<HTMLTextAreaElement>;
 }
 
-export function SelectAIModelMenu({ loading, textAreaRef }: SelectAIModelMenuProps) {
+export const SelectAIModelMenu = memo(({ loading, textAreaRef }: SelectAIModelMenuProps) => {
   const [selectedModel, setSelectedModel, selectedModelConfig] = useAIModel();
 
   const modelConfigs = useMemo(() => {
@@ -72,4 +72,4 @@ export function SelectAIModelMenu({ loading, textAreaRef }: SelectAIModelMenuPro
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
+});
