@@ -172,8 +172,8 @@ export class PointerDown {
       }
     }
 
-    if (!this.active || !this.position || !this.previousPosition) {
-      // cursor intersects bottom-corner indicator (disabled for now)
+    // cursor intersects bottom-corner indicator (disabled for now)
+    if (!this.active || !this.position || !this.previousPosition || !this.positionRaw) {
       return;
     }
 
