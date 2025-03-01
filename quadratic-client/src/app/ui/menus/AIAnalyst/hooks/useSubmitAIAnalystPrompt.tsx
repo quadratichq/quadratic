@@ -172,13 +172,11 @@ export function useSubmitAIAnalystPrompt() {
             modelKey,
             messages: updatedMessages,
             useStream: true,
-            useTools: true,
             useToolsPrompt: true,
             language: undefined,
             useQuadraticContext: true,
             setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
             signal: abortController.signal,
-            thinking: true,
           });
           let toolCalls: AIMessagePrompt['toolCalls'] = response.toolCalls;
 
@@ -223,13 +221,12 @@ export function useSubmitAIAnalystPrompt() {
               modelKey,
               messages: updatedMessages,
               useStream: true,
-              useTools: true,
-              useToolsPrompt: true,
+              toolName: undefined,
+              useToolsPrompt: false,
               language: undefined,
               useQuadraticContext: true,
               setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
               signal: abortController.signal,
-              thinking: true,
             });
             toolCalls = response.toolCalls;
           }

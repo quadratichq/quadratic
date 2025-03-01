@@ -1,5 +1,5 @@
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { ChatMessage, CodeCellType } from 'quadratic-shared/typesAndSchemasAI';
+import type { AISource, ChatMessage, CodeCellType } from 'quadratic-shared/typesAndSchemasAI';
 import { ConnectionDocs } from '../docs/ConnectionDocs';
 import { FormulaDocs } from '../docs/FormulaDocs';
 import { JavascriptDocs } from '../docs/JavascriptDocs';
@@ -36,7 +36,7 @@ I will follow all your instructions with context of quadratic documentation, and
   },
 ];
 
-export const getToolUseContext = (): ChatMessage[] => {
+export const getToolUseContext = (source: AISource): ChatMessage[] => {
   return [
     {
       role: 'user',
@@ -50,7 +50,7 @@ Don't include tool details in your response. Reply in layman's terms what action
 Use multiple tools in a single response if required, use same tool multiple times in a single response if required. Try to reduce tool call iterations.\n
           
 ${Object.entries(aiToolsSpec)
-  .filter(([_, { internalTool }]) => !internalTool)
+  .filter(([_, { sources }]) => sources.includes(source))
   .map(([name, { prompt }]) => `#${name}\n${prompt}`)
   .join('\n\n')}
 

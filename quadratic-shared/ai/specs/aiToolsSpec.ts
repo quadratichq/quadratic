@@ -1,4 +1,4 @@
-import type { AIToolArgs } from 'quadratic-shared/typesAndSchemasAI';
+import type { AISource, AIToolArgs } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 
 export enum AITool {
@@ -8,6 +8,7 @@ export enum AITool {
   SetCodeCellValue = 'set_code_cell_value',
   MoveCells = 'move_cells',
   DeleteCells = 'delete_cells',
+  UpdateCodeCell = 'update_code_cell',
 }
 
 export const AIToolSchema = z.enum([
@@ -17,10 +18,11 @@ export const AIToolSchema = z.enum([
   AITool.SetCodeCellValue,
   AITool.MoveCells,
   AITool.DeleteCells,
+  AITool.UpdateCodeCell,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
-  internalTool: boolean; // tools meant to get structured data from AI, but not meant to be used during chat
+  sources: AISource[];
   description: string; // this is sent with tool definition, has a maximum character limit
   parameters: {
     type: 'object';
@@ -95,6 +97,9 @@ export const AIToolsArgsSchema = {
   [AITool.DeleteCells]: z.object({
     selection: z.string(),
   }),
+  [AITool.UpdateCodeCell]: z.object({
+    code_string: z.string(),
+  }),
 } as const;
 
 export type AIToolSpecRecord = {
@@ -103,7 +108,7 @@ export type AIToolSpecRecord = {
 
 export const aiToolsSpec: AIToolSpecRecord = {
   [AITool.SetChatName]: {
-    internalTool: true,
+    sources: ['GetChatName'],
     description: `
 Set the name of the user chat with AI assistant, this is the name of the chat in the chat history\n
 You should use the set_chat_name function to set the name of the user chat with AI assistant, this is the name of the chat in the chat history.\n
@@ -131,7 +136,7 @@ This name should be from user's perspective, not the assistant's.\n
 `,
   },
   [AITool.AddDataTable]: {
-    internalTool: false,
+    sources: ['AIAnalyst'],
     description: `
 Adds a data table to the currently open sheet, requires the top left cell position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
 The first row of the data table is considered to be the header row, and the data table will be created with the first row as the header row.\n
@@ -178,7 +183,7 @@ To delete a data table, use set_cell_values function with the top_left_position 
 `,
   },
   [AITool.SetCellValues]: {
-    internalTool: false,
+    sources: ['AIAnalyst'],
     description: `
 Sets the values of the currently open sheet cells to a 2d array of strings, requires the top_left_position (in a1 notation) and the 2d array of strings representing the cell values to set.\n
 Use set_cell_values function to add data to the currently open sheet. Don't use code cell for adding data. Always add data using this function.\n
@@ -219,7 +224,7 @@ To clear the values of a cell, set the value to an empty string.\n
 `,
   },
   [AITool.SetCodeCellValue]: {
-    internalTool: false,
+    sources: ['AIAnalyst'],
     description: `
 Sets the value of a code cell and run it in the currently open sheet, requires the cell position (in a1 notation), codeString and language\n
 You should use the set_code_cell_value function to set this code cell value. Use this function instead of responding with code.\n
@@ -272,13 +277,13 @@ The required location code_cell_position for this code cell is one which satisfi
  - In case there is not enough empty space near the referenced data, choose a distant empty cell which is in the same row as the top right corner of referenced data and to the right of this data.\n
  - If there are multiple tables or data sources being referenced, place the code cell in a location that provides a good balance between proximity to all referenced data and maintaining readability of the currently open sheet.\n
  - Consider the overall layout and organization of the currently open sheet when placing the code cell, ensuring it doesn't disrupt existing data or interfere with other code cells.\n
- - A plot returned by the code cell occupies space on the sheet and spills if there is any data present in the sheet where the plot is suppose to take place. Default size of a new plot is 6 wide * 23 tall cells.\n
+ - A plot returned by the code cell occupies space on the sheet and spills if there is any data present in the sheet where the plot is suppose to take place. Default size of a new plot is 7 wide * 23 tall cells.\n
  - Do not use conditional returns in python code cells.\n
  - Don't prefix formulas with \`=\` in code cells.\n
  `,
   },
   [AITool.MoveCells]: {
-    internalTool: false,
+    sources: ['AIAnalyst'],
     description: `
 Moves a rectangular selection of cells from one location to another on the currently open sheet, requires the source and target locations.\n
 You should use the move_cells function to move a rectangular selection of cells from one location to another on the currently open sheet.\n
@@ -310,7 +315,7 @@ Target position is the top left corner of the target position on the currently o
 `,
   },
   [AITool.DeleteCells]: {
-    internalTool: false,
+    sources: ['AIAnalyst'],
     description: `
 Deletes the value(s) of a selection of cells, requires a string representation of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
 You should use the delete_cells function to delete the value(s) of a selection of cells on the currently open sheet.\n
@@ -332,6 +337,34 @@ delete_cells functions requires a string representation (in a1 notation) of a se
     prompt: `
 You should use the delete_cells function to delete value(s) on the currently open sheet.\n
 delete_cells functions requires a string representation (in a1 notation) of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
+`,
+  },
+  [AITool.UpdateCodeCell]: {
+    sources: ['AIAssistant'],
+    description: `
+Updates the code in the code cell you are currently editing, requires the code string to update the code cell with. Provide the full code string, don't provide partial code. This will replace the existing code in the code cell.
+The code cell editor will switch to diff editor mode and will show the changes you made to the code cell, user can accept or reject the changes.
+This also runs in the cell immediately, so you can see the output of the code cell after updating it.
+Do not output the code in chat messages when using this tool, explain the changes you made to the code cell in the chat message in brief.
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        code_string: {
+          type: 'string',
+          description: 'The code string to update the code cell with',
+        },
+      },
+      required: ['code_string'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.UpdateCodeCell],
+    prompt: `
+You should use the update_code_cell function to update the code in the code cell you are currently editing.\n
+update_code_cell function requires the code string to update the code cell with.\n
+Provide the full code string, don't provide partial code. This will replace the existing code in the code cell.\n
+The code cell editor will switch to diff editor mode and will show the changes you made to the code cell.\n
+This also runs in the cell immediately, so you can see the output of the code cell after updating it.\n
 `,
   },
 } as const;

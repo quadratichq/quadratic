@@ -1,5 +1,6 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { SheetRect } from '@/app/quadratic-core-types';
 import { stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -143,6 +144,40 @@ export const aiToolsActions: AIToolActionsRecord = {
       return `Executed delete cells tool successfully.`;
     } catch (e) {
       return `Error executing delete cells tool: ${e}`;
+    }
+  },
+  [AITool.UpdateCodeCell]: async (args) => {
+    const { code_string } = args;
+    try {
+      if (!pixiAppSettings.setCodeEditorState) {
+        throw new Error('setCodeEditorState is not defined');
+      }
+
+      const editorContent = pixiAppSettings.codeEditorState.editorContent;
+      const codeCell = pixiAppSettings.codeEditorState.codeCell;
+      pixiAppSettings.setCodeEditorState((prev) => ({
+        ...prev,
+        diffEditorContent: { editorContent, isApplied: true },
+        waitingForEditorClose: {
+          codeCell,
+          showCellTypeMenu: false,
+          initialCode: code_string,
+          inlineEditor: false,
+        },
+      }));
+
+      quadraticCore.setCodeCellValue({
+        sheetId: codeCell.sheetId,
+        x: codeCell.pos.x,
+        y: codeCell.pos.y,
+        codeString: code_string,
+        language: codeCell.language,
+        cursor: sheets.getCursorPosition(),
+      });
+
+      return 'The code cell has been updated and is running again, user is presented with diff editor, with accept and reject buttons, to revert the changes if needed';
+    } catch (e) {
+      return `Error executing update code cell tool: ${e}`;
     }
   },
 } as const;

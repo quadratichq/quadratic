@@ -1,9 +1,9 @@
+import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
-import { ToolCard } from '@/app/ui/menus/AIAnalyst/toolCards/ToolCard';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { CodeIcon, SaveAndRunIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -94,7 +94,7 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
   if (loading) {
     const partialJson = parsePartialJson(args);
     if (partialJson && 'code_cell_language' in partialJson) {
-      const estimatedNumberOfLines = args.split('\\n').length;
+      const estimatedNumberOfLines = args.split('\n').length;
       const { code_cell_language: language, code_cell_position: position } = partialJson;
       return (
         <ToolCard

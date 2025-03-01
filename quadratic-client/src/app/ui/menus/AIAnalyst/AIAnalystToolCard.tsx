@@ -1,8 +1,9 @@
-import { AddDataTable } from '@/app/ui/menus/AIAnalyst/toolCards/AddDataTable';
-import { DeleteCells } from '@/app/ui/menus/AIAnalyst/toolCards/DeleteCells';
-import { MoveCells } from '@/app/ui/menus/AIAnalyst/toolCards/MoveCells';
-import { SetCellValues } from '@/app/ui/menus/AIAnalyst/toolCards/SetCellValues';
-import { SetCodeCellValue } from '@/app/ui/menus/AIAnalyst/toolCards/SetCodeCellValue';
+import { AddDataTable } from '@/app/ai/toolCards/AddDataTable';
+import { DeleteCells } from '@/app/ai/toolCards/DeleteCells';
+import { MoveCells } from '@/app/ai/toolCards/MoveCells';
+import { SetCellValues } from '@/app/ai/toolCards/SetCellValues';
+import { SetCodeCellValue } from '@/app/ai/toolCards/SetCodeCellValue';
+import { UpdateCodeCell } from '@/app/ai/toolCards/UpdateCodeCell';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 
 type AIAnalystToolCardProps = {
@@ -27,7 +28,10 @@ export const AIAnalystToolCard = ({ name, args, loading }: AIAnalystToolCardProp
       return <MoveCells args={args} loading={loading} />;
     case AITool.DeleteCells:
       return <DeleteCells args={args} loading={loading} />;
+    case AITool.UpdateCodeCell:
+      return <UpdateCodeCell args={args} loading={loading} />;
     default:
+      console.error(`Unknown tool: ${name}`);
       return null;
   }
 };

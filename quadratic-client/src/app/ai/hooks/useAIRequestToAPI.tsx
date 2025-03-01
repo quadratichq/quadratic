@@ -36,11 +36,11 @@ export function useAIRequestToAPI() {
           model: getModelFromModelKey(args.modelKey),
         };
         setMessages?.((prev) => [...prev, { ...responseMessage, content: [] }]);
-        const { modelKey, useStream, useTools, thinking } = args;
+        const { modelKey, useStream, source } = args;
         const fileUuid = await snapshot.getPromise(editorInteractionStateFileUuidAtom);
 
         try {
-          const { stream } = getModelOptions(modelKey, { useTools, useStream, thinking });
+          const { stream } = getModelOptions(modelKey, { source, useStream });
 
           const endpoint = `${apiClient.getApiUrl()}/v0/ai/chat`;
           const token = await authClient.getTokenOrRedirect();

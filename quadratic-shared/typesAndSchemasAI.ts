@@ -248,19 +248,20 @@ export type AIToolArgs = z.infer<typeof AIToolArgsSchema>;
 const CodeCellTypeSchema = z.enum(['Python', 'Javascript', 'Formula', 'Connection', 'Import']);
 export type CodeCellType = z.infer<typeof CodeCellTypeSchema>;
 
+const AISourceSchema = z.enum(['AIAssistant', 'AIAnalyst', 'AIResearcher', 'GetChatName', 'GetFileName']);
+export type AISource = z.infer<typeof AISourceSchema>;
+
 export const AIRequestBodySchema = z.object({
   chatId: z.string().uuid(),
   fileUuid: z.string().uuid(),
-  source: z.enum(['AIAssistant', 'AIAnalyst', 'AIResearcher', 'GetChatName', 'GetFileName']),
+  source: AISourceSchema,
   modelKey: ModelKeySchema,
   messages: z.array(ChatMessageSchema),
   useStream: z.boolean(),
-  useTools: z.boolean(),
   toolName: AIToolSchema.optional(),
-  useToolsPrompt: z.boolean().optional(),
+  useToolsPrompt: z.boolean(),
   language: CodeCellTypeSchema.optional(),
-  useQuadraticContext: z.boolean().optional(),
-  thinking: z.boolean(),
+  useQuadraticContext: z.boolean(),
 });
 export type AIRequestBody = z.infer<typeof AIRequestBodySchema>;
-export type AIRequestHelperArgs = Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'source' | 'modelKey'>;
+export type AIRequestHelperArgs = Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'modelKey'>;
