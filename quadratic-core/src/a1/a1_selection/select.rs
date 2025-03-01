@@ -4,16 +4,6 @@ use crate::Pos;
 use super::{A1Selection, CellRefRange};
 
 impl A1Selection {
-    /// Checks if the last range is a table reference and converts it to a table
-    /// reference.
-    pub(crate) fn check_for_table_ref(&mut self, _context: &A1Context) {
-        // if let Some(last) = self.ranges.last_mut() {
-        //     if let Some(table_ref) = last.check_for_table_ref(self.sheet_id, context) {
-        //         *last = table_ref;
-        //     }
-        // }
-    }
-
     /// Selects the entire sheet.
     pub fn select_all(&mut self, append: bool) {
         if append {
@@ -328,15 +318,7 @@ impl A1Selection {
     /// Selects a rectangular range. If append is true, then the range is appended
     /// to the ranges (or, if the last selection was a range, then the end of
     /// that range is extended).
-    pub fn select_rect(
-        &mut self,
-        left: i64,
-        top: i64,
-        right: i64,
-        bottom: i64,
-        append: bool,
-        context: &A1Context,
-    ) {
+    pub fn select_rect(&mut self, left: i64, top: i64, right: i64, bottom: i64, append: bool) {
         if !append {
             self.ranges.clear();
         }
@@ -352,11 +334,10 @@ impl A1Selection {
         }
         self.cursor.x = left;
         self.cursor.y = top;
-        self.check_for_table_ref(context);
     }
 
     /// Moves the cursor to the given position and clears the selection.
-    pub fn move_to(&mut self, x: i64, y: i64, append: bool, context: &A1Context) {
+    pub fn move_to(&mut self, x: i64, y: i64, append: bool) {
         self.cursor.x = x;
         self.cursor.y = y;
         if !append {
@@ -364,7 +345,6 @@ impl A1Selection {
         }
         self.ranges
             .push(CellRefRange::new_relative_pos(Pos::new(x, y)));
-        self.check_for_table_ref(context);
     }
 
     /// Extends the last selection to the given position. If append is true, then the range is appended
@@ -385,7 +365,14 @@ impl A1Selection {
                                 && self.cursor.y
                                     == table.bounds.min.y + if table.show_name { 1 } else { 0 }
                             {
-                                // change the range so it's
+                                let range = RefRangeBounds::new_relative(
+                                    self.cursor.x,
+                                    self.cursor.y,
+                                    column,
+                                    row,
+                                );
+                                *last = CellRefRange::Sheet { range };
+                                return;
                             }
                         }
                     }
@@ -423,7 +410,6 @@ impl A1Selection {
                     if !append {
                         self.ranges = self.ranges.split_off(self.ranges.len().saturating_sub(1));
                     }
-                    self.check_for_table_ref(context);
                 }
             };
         }
@@ -509,9 +495,8 @@ mod tests {
 
     #[test]
     fn test_move_to() {
-        let context = A1Context::default();
         let mut selection = A1Selection::test_a1("A1,B1,C1");
-        selection.move_to(2, 2, false, &context);
+        selection.move_to(2, 2, false);
         assert_eq!(selection.test_to_string(), "B2");
     }
 
@@ -577,15 +562,14 @@ mod tests {
 
     #[test]
     fn test_select_rect() {
-        let context = A1Context::default();
         let mut selection = A1Selection::test_a1("A1,B2,C3");
-        selection.select_rect(1, 1, 2, 2, false, &context);
+        selection.select_rect(1, 1, 2, 2, false);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:B2")]);
         assert_eq!(selection.cursor.x, 1);
         assert_eq!(selection.cursor.y, 1);
 
         let mut selection = A1Selection::test_a1("A1:C3");
-        selection.select_rect(3, 3, 5, 5, true, &context);
+        selection.select_rect(3, 3, 5, 5, true);
         assert_eq!(
             selection.ranges,
             vec![
@@ -713,9 +697,8 @@ mod tests {
 
     #[test]
     fn test_select_rect_single_cell() {
-        let context = A1Context::default();
         let mut selection = A1Selection::test_a1("A1");
-        selection.select_rect(2, 2, 2, 2, false, &context);
+        selection.select_rect(2, 2, 2, 2, false);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("B2")]);
         assert_eq!(selection.cursor.x, 2);
         assert_eq!(selection.cursor.y, 2);

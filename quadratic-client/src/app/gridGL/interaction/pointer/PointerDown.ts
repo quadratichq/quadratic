@@ -22,9 +22,11 @@ export class PointerDown {
 
   private positionRaw?: Point;
   private position?: Point;
-  private previousPosition?: Point;
   private pointerMoved = false;
   private doubleClickTimeout?: number;
+
+  // the mouse's last column and row
+  previousPosition?: Point;
 
   // used to track the unselect rectangle
   unselectDown?: Rectangle;
@@ -232,8 +234,9 @@ export class PointerDown {
     this.clearDoubleClick();
   }
 
-  pointerDownColumnName(column: number, row: number) {
+  pointerDownColumnName(world: Point, column: number, row: number) {
     this.previousPosition = new Point(column, row);
+    this.positionRaw = world;
     this.pointerMoved = false;
     this.position = new Point(column, row);
     this.active = true;
