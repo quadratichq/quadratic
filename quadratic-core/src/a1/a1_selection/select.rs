@@ -1,4 +1,4 @@
-use crate::a1::{A1Context, CellRefCoord, CellRefRangeEnd, RefRangeBounds, UNBOUNDED};
+use crate::a1::{A1Context, CellRefCoord, CellRefRangeEnd, ColRange, RefRangeBounds, UNBOUNDED};
 use crate::Pos;
 
 use super::{A1Selection, CellRefRange};
@@ -378,6 +378,17 @@ impl A1Selection {
         if let Some(last) = self.ranges.last_mut() {
             match last {
                 CellRefRange::Table { range } => {
+                    // use a different algorithm to handle the case of a column selection
+                    if range.col_range != ColRange::All {
+                        if let Some(table) = context.try_table(&range.table_name) {
+                            if table.show_ui
+                                && self.cursor.y
+                                    == table.bounds.min.y + if table.show_name { 1 } else { 0 }
+                            {
+                                // change the range so it's
+                            }
+                        }
+                    }
                     if let Some(mut range_converted) = range
                         .clone()
                         .convert_to_ref_range_bounds(false, context, false, false)
