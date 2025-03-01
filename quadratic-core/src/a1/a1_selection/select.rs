@@ -359,9 +359,25 @@ impl A1Selection {
             match last {
                 CellRefRange::Table { range } => {
                     // use a different algorithm to handle the case of a column selection
-                    if range.col_range != ColRange::All {
+                    if range.col_range == ColRange::All {
+                        if let Some(table) = context.try_table(&range.table_name) {
+                            if table.show_ui && table.show_name {
+                                // if all, then we should be in the table name cell
+                                let range = RefRangeBounds::new_relative(
+                                    self.cursor.x,
+                                    self.cursor.y,
+                                    column,
+                                    row,
+                                );
+                                *last = CellRefRange::Sheet { range };
+                                return;
+                            }
+                        }
+                    } else {
+                        // if not, then we're in a column of the table
                         if let Some(table) = context.try_table(&range.table_name) {
                             if table.show_ui
+                                && table.show_columns
                                 && self.cursor.y
                                     == table.bounds.min.y + if table.show_name { 1 } else { 0 }
                             {

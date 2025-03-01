@@ -230,7 +230,7 @@ export function pageUpDown(up: boolean) {
     const newY = cursorRect.y + pixiApp.viewport.screenHeightInWorldPixels * (up ? -1 : 1);
     const newRow = Math.max(1, sheets.sheet.getColumnRowFromScreen(0, newY).row);
     const cursor = sheets.sheet.cursor;
-    cursor.moveTo(cursor.position.x, newRow, false);
+    cursor.moveTo(cursor.position.x, newRow, { checkForTableRef: true, ensureVisible: false });
     const newCursorY = sheets.sheet.getRowY(newRow);
     const gridHeadings = pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
     pixiApp.viewport.y = Math.min(gridHeadings, -newCursorY + distanceTopToCursorTop);

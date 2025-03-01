@@ -129,7 +129,7 @@ export class PointerDown {
     } else {
       // If the input is rejected, we cannot move the cursor
       if (await inlineEditorHandler.handleCellPointerDown()) {
-        cursor.moveTo(column, row, event.metaKey || event.ctrlKey);
+        cursor.moveTo(column, row, { append: event.metaKey || event.ctrlKey });
       } else {
         inlineEditorMonaco.focus();
       }

@@ -2,6 +2,8 @@
 
 use wasm_bindgen::prelude::*;
 
+use crate::a1::CellRefRange;
+
 use super::*;
 
 #[wasm_bindgen]
@@ -94,5 +96,16 @@ impl JsSelection {
             shift_key,
             ctrl_key,
         );
+    }
+
+    #[wasm_bindgen(js_name = "checkForTableRef")]
+    pub fn check_for_table_ref(&mut self, sheet_id: String) {
+        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
+            if let Some(last) = self.selection.ranges.last_mut() {
+                if let Some(range) = last.check_for_table_ref(sheet_id, &self.context) {
+                    *last = range;
+                }
+            }
+        }
     }
 }
