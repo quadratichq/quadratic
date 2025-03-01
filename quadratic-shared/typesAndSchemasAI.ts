@@ -43,7 +43,6 @@ const BedrockModelKeySchema = z.enum([
 export type BedrockModelKey = z.infer<typeof BedrockModelKeySchema>;
 
 const BedrockAnthropicModelKeySchema = z.enum([
-  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking',
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0',
   'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0',
   'bedrock-anthropic:us.anthropic.claude-3-5-haiku-20241022-v1:0',
@@ -51,7 +50,6 @@ const BedrockAnthropicModelKeySchema = z.enum([
 export type BedrockAnthropicModelKey = z.infer<typeof BedrockAnthropicModelKeySchema>;
 
 const AnthropicModelKeySchema = z.enum([
-  'anthropic:claude-3-7-sonnet-20250219:thinking',
   'anthropic:claude-3-7-sonnet-20250219',
   'anthropic:claude-3-5-sonnet-20241022',
   'anthropic:claude-3-5-haiku-20241022',

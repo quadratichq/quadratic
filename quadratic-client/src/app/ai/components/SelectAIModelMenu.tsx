@@ -6,12 +6,14 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+import { Switch } from '@/shared/shadcn/ui/switch';
 import { cn } from '@/shared/shadcn/utils';
 import { CaretDownIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
+import { isAnthropicModel, isBedrockAnthropicModel } from 'quadratic-shared/ai/helpers/model.helper';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { ModelConfig, ModelKey } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useMemo } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 
 interface SelectAIModelMenuProps {
   loading: boolean;
@@ -33,43 +35,66 @@ export const SelectAIModelMenu = memo(({ loading, textAreaRef }: SelectAIModelMe
     return configs.filter(([_, config]) => config.enabled);
   }, []);
 
+  const canToggleThinking = useMemo(
+    () => isBedrockAnthropicModel(selectedModel) || isAnthropicModel(selectedModel),
+    [selectedModel]
+  );
+
+  const handleToggleThinking = useCallback(
+    (nextChecked: boolean) => {
+      const nextModel = modelConfigs.find(([_, modelConfig]) => {
+        return modelConfig.provider === selectedModelConfig.provider && !!modelConfig.thinking === nextChecked;
+      });
+      if (nextModel) {
+        setSelectedModel(nextModel[0]);
+      }
+    },
+    [modelConfigs, selectedModelConfig.provider, setSelectedModel]
+  );
+
+  const thinking = useMemo(() => !!selectedModelConfig.thinking, [selectedModelConfig.thinking]);
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        disabled={loading}
-        className={cn(`flex items-center text-xs text-muted-foreground`, !loading && 'hover:text-foreground')}
-      >
-        {selectedModelConfig.displayName}
-        <CaretDownIcon />
-      </DropdownMenuTrigger>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          disabled={loading}
+          className={cn(`flex items-center text-xs text-muted-foreground`, !loading && 'hover:text-foreground')}
+        >
+          {selectedModelConfig.displayName}
+          <CaretDownIcon />
+        </DropdownMenuTrigger>
 
-      <DropdownMenuContent
-        align="start"
-        alignOffset={-4}
-        onCloseAutoFocus={(e) => {
-          e.preventDefault();
-          textAreaRef.current?.focus();
-        }}
-      >
-        {modelConfigs.map(([key, modelConfig]) => {
-          const { model, displayName, provider } = modelConfig;
+        <DropdownMenuContent
+          align="start"
+          alignOffset={-4}
+          onCloseAutoFocus={(e) => {
+            e.preventDefault();
+            textAreaRef.current?.focus();
+          }}
+        >
+          {modelConfigs.map(([key, modelConfig]) => {
+            const { model, displayName, provider } = modelConfig;
 
-          return (
-            <DropdownMenuCheckboxItem
-              key={key}
-              checked={selectedModel === key}
-              onCheckedChange={() => {
-                mixpanel.track('[AI].model.change', { model });
-                setSelectedModel(key);
-              }}
-            >
-              <div className="flex w-full items-center justify-between text-xs">
-                <span className="pr-4">{(debug ? `${provider} - ` : '') + displayName}</span>
-              </div>
-            </DropdownMenuCheckboxItem>
-          );
-        })}
-      </DropdownMenuContent>
-    </DropdownMenu>
+            return (
+              <DropdownMenuCheckboxItem
+                key={key}
+                checked={selectedModel === key}
+                onCheckedChange={() => {
+                  mixpanel.track('[AI].model.change', { model });
+                  setSelectedModel(key);
+                }}
+              >
+                <div className="flex w-full items-center justify-between text-xs">
+                  <span className="pr-4">{(debug ? `${provider} - ` : '') + displayName}</span>
+                </div>
+              </DropdownMenuCheckboxItem>
+            );
+          })}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {canToggleThinking && <Switch disabled={loading} checked={thinking} onCheckedChange={handleToggleThinking} />}
+    </>
   );
 });

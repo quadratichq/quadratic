@@ -342,10 +342,10 @@ delete_cells functions requires a string representation (in a1 notation) of a se
   [AITool.UpdateCodeCell]: {
     sources: ['AIAssistant'],
     description: `
-Updates the code in the code cell you are currently editing, requires the code string to update the code cell with. Provide the full code string, don't provide partial code. This will replace the existing code in the code cell.
-The code cell editor will switch to diff editor mode and will show the changes you made to the code cell, user can accept or reject the changes.
-This also runs in the cell immediately, so you can see the output of the code cell after updating it.
-Do not output the code in chat messages when using this tool, explain the changes you made to the code cell in the chat message in brief.
+This tool updates the code in the code cell you are currently editing, requires the code string to update the code cell with. Provide the full code string, don't provide partial code. This will replace the existing code in the code cell.\n
+The code cell editor will switch to diff editor mode and will show the changes you made to the code cell, user can accept or reject the changes.\n
+New code runs in the cell immediately, so the user can see output of the code cell after it is updates.\n
+Never include code in the chat when using this tool, always explain brief what changes are made and why.\n
 `,
     parameters: {
       type: 'object',
@@ -363,8 +363,9 @@ Do not output the code in chat messages when using this tool, explain the change
 You should use the update_code_cell function to update the code in the code cell you are currently editing.\n
 update_code_cell function requires the code string to update the code cell with.\n
 Provide the full code string, don't provide partial code. This will replace the existing code in the code cell.\n
-The code cell editor will switch to diff editor mode and will show the changes you made to the code cell.\n
-This also runs in the cell immediately, so you can see the output of the code cell after updating it.\n
+The code cell editor will switch to diff editor mode and will show the changes you made to the code cell, user can accept or reject the changes.\n
+New code runs in the cell immediately, so the user can see output of the code cell after it is updates.\n
+Never include code in the chat when using this tool, always explain brief what changes are made and why.\nt.\n
 `,
   },
 } as const;
