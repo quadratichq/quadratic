@@ -17,9 +17,6 @@ import { isMobile } from 'react-device-detect';
 
 const MINIMUM_MOVE_POSITION = 5;
 
-// number of milliseconds to wait before updating the selection again
-const MINIMUM_SELECTION_TIME = 50;
-
 export class PointerDown {
   active = false;
 
@@ -28,10 +25,6 @@ export class PointerDown {
   private previousPosition?: Point;
   private pointerMoved = false;
   private doubleClickTimeout?: number;
-
-  // used to track the last time the selection was updated to avoid selecting
-  // too quickly
-  private lastSelectionTime = 0;
 
   // used to track the unselect rectangle
   unselectDown?: Rectangle;
@@ -167,9 +160,7 @@ export class PointerDown {
 
     if (!this.active) return;
 
-    if (!this.positionRaw) return;
-
-    if (!this.pointerMoved) {
+    if (!this.pointerMoved && this.positionRaw) {
       if (
         Math.abs(this.positionRaw.x - world.x) + Math.abs(this.positionRaw.y - world.y) >
         MINIMUM_MOVE_POSITION / viewport.scale.x
@@ -181,11 +172,6 @@ export class PointerDown {
       }
     }
 
-    // this is to avoid the selection from being updated too quickly at mouse edges
-    if (Date.now() - this.lastSelectionTime < MINIMUM_SELECTION_TIME) {
-      return;
-    }
-
     if (!this.active || !this.position || !this.previousPosition) {
       // cursor intersects bottom-corner indicator (disabled for now)
       return;
@@ -195,10 +181,9 @@ export class PointerDown {
     const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
 
     if (column !== this.previousPosition.x || row !== this.previousPosition.y) {
-      this.lastSelectionTime = Date.now();
       pixiApp.viewport.enableMouseEdges(world);
 
-      sheet.cursor.selectTo(column, row, event.ctrlKey || event.metaKey);
+      sheet.cursor.selectTo(column, row, event.ctrlKey || event.metaKey, false);
       this.previousPosition = new Point(column, row);
 
       if (inlineEditorHandler.isOpen() && !inlineEditorHandler.isEditingFormula()) {
