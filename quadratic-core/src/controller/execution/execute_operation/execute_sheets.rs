@@ -95,7 +95,6 @@ impl GridController {
                     }
                 }
 
-                transaction.sheet_info.insert(sheet_id);
                 transaction.add_fill_cells(sheet_id);
                 transaction.sheet_borders.insert(sheet_id);
 
@@ -645,6 +644,18 @@ mod tests {
             None,
         );
 
+        gc.test_set_code_run_array_2d(sheet_id, 20, 20, 2, 2, vec!["1", "2", "3", "4"]);
+        gc.set_code_cell(
+            SheetPos {
+                sheet_id,
+                x: 20,
+                y: 20,
+            },
+            CodeCellLanguage::Python,
+            "q.cells('Sheet1!A1')".to_string(),
+            None,
+        );
+
         let ops = gc.duplicate_sheet_operations(sheet_id);
         gc.start_user_transaction(ops, None, TransactionName::DuplicateSheet);
 
@@ -656,6 +667,14 @@ mod tests {
             CellValue::Code(CodeCellValue {
                 language: CodeCellLanguage::Python,
                 code: format!("q.cells(\"{}1\")", file_name),
+            })
+        );
+
+        assert_eq!(
+            gc.sheet(duplicated_sheet_id).cell_value(pos![T20]).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Python,
+                code: "q.cells(\"A1\")".to_string(),
             })
         );
     }
