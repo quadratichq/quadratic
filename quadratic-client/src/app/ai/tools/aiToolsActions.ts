@@ -153,8 +153,12 @@ export const aiToolsActions: AIToolActionsRecord = {
         throw new Error('setCodeEditorState is not defined');
       }
 
-      const editorContent = pixiAppSettings.codeEditorState.editorContent;
+      const editorContent = pixiAppSettings.codeEditorState.diffEditorContent?.isApplied
+        ? pixiAppSettings.codeEditorState.diffEditorContent.editorContent
+        : pixiAppSettings.codeEditorState.editorContent;
+
       const codeCell = pixiAppSettings.codeEditorState.codeCell;
+
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
         diffEditorContent: { editorContent, isApplied: true },
