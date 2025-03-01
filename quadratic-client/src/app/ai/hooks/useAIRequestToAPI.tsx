@@ -36,7 +36,7 @@ export function useAIRequestToAPI() {
           model: getModelFromModelKey(args.modelKey),
         };
         setMessages?.((prev) => [...prev, { ...responseMessage, content: [] }]);
-        const { modelKey, useStream, source } = args;
+        const { source, modelKey, useStream } = args;
         const fileUuid = await snapshot.getPromise(editorInteractionStateFileUuidAtom);
 
         try {

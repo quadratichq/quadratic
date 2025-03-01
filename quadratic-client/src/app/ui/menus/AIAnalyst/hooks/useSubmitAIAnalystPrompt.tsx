@@ -263,7 +263,7 @@ export function useSubmitAIAnalystPrompt() {
         set(aiAnalystAbortControllerAtom, undefined);
         set(aiAnalystLoadingAtom, false);
       },
-    [handleAIRequestToAPI, modelKey]
+    [handleAIRequestToAPI, updateInternalContext, modelKey]
   );
 
   return { submitPrompt };

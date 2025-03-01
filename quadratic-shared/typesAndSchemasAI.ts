@@ -43,14 +43,20 @@ const BedrockModelKeySchema = z.enum([
 export type BedrockModelKey = z.infer<typeof BedrockModelKeySchema>;
 
 const BedrockAnthropicModelKeySchema = z.enum([
+  'bedrock-anthropic:claude:thinking-toggle-on',
+  'bedrock-anthropic:claude:thinking-toggle-off',
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0',
+  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking',
   'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0',
   'bedrock-anthropic:us.anthropic.claude-3-5-haiku-20241022-v1:0',
 ]);
 export type BedrockAnthropicModelKey = z.infer<typeof BedrockAnthropicModelKeySchema>;
 
 const AnthropicModelKeySchema = z.enum([
+  'anthropic:claude:thinking-toggle-on',
+  'anthropic:claude:thinking-toggle-off',
   'anthropic:claude-3-7-sonnet-20250219',
+  'anthropic:claude-3-7-sonnet-20250219:thinking',
   'anthropic:claude-3-5-sonnet-20241022',
   'anthropic:claude-3-5-haiku-20241022',
 ]);
@@ -88,6 +94,7 @@ const ModelConfigSchema = z.object({
   strickParams: z.boolean().optional(),
   thinking: z.boolean().optional(),
   thinkingTemperature: z.number().optional(),
+  thinkingToggle: z.boolean().optional(),
 });
 export type ModelConfig = z.infer<typeof ModelConfigSchema>;
 

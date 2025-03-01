@@ -3,7 +3,7 @@ import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import type { z } from 'zod';
 
@@ -32,8 +32,15 @@ export const UpdateCodeCell = ({ args, loading }: UpdateCodeCellProps) => {
     }
   }, [args, loading]);
 
+  const estimatedNumberOfLines = useMemo(() => {
+    if (toolArgs) {
+      return toolArgs.data?.code_string.split('\n').length;
+    } else {
+      return args.split('\n').length;
+    }
+  }, [toolArgs, args]);
+
   if (loading) {
-    const estimatedNumberOfLines = args.split('\n').length;
     return (
       <ToolCard
         icon={<LanguageIcon language={getLanguage(codeCell.language)} />}
@@ -50,8 +57,6 @@ export const UpdateCodeCell = ({ args, loading }: UpdateCodeCellProps) => {
     return <ToolCard isLoading />;
   }
 
-  const { code_string } = toolArgs.data;
-  const estimatedNumberOfLines = code_string.split('\n').length;
   return (
     <ToolCard
       icon={<LanguageIcon language={getLanguage(codeCell.language)} />}

@@ -10,10 +10,9 @@ import { Switch } from '@/shared/shadcn/ui/switch';
 import { cn } from '@/shared/shadcn/utils';
 import { CaretDownIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
-import { isAnthropicModel, isBedrockAnthropicModel } from 'quadratic-shared/ai/helpers/model.helper';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { ModelConfig, ModelKey } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useMemo } from 'react';
 
 interface SelectAIModelMenuProps {
   loading: boolean;
@@ -21,7 +20,7 @@ interface SelectAIModelMenuProps {
 }
 
 export const SelectAIModelMenu = memo(({ loading, textAreaRef }: SelectAIModelMenuProps) => {
-  const [selectedModel, setSelectedModel, selectedModelConfig] = useAIModel();
+  const [selectedModel, setSelectedModel, selectedModelConfig, thinkingToggle, setThinkingToggle] = useAIModel();
 
   const modelConfigs = useMemo(() => {
     const configs = Object.entries(MODELS_CONFIGURATION) as [ModelKey, ModelConfig][];
@@ -36,23 +35,24 @@ export const SelectAIModelMenu = memo(({ loading, textAreaRef }: SelectAIModelMe
   }, []);
 
   const canToggleThinking = useMemo(
-    () => isBedrockAnthropicModel(selectedModel) || isAnthropicModel(selectedModel),
-    [selectedModel]
+    () => selectedModelConfig.thinkingToggle !== undefined,
+    [selectedModelConfig.thinkingToggle]
   );
 
-  const handleToggleThinking = useCallback(
-    (nextChecked: boolean) => {
-      const nextModel = modelConfigs.find(([_, modelConfig]) => {
-        return modelConfig.provider === selectedModelConfig.provider && !!modelConfig.thinking === nextChecked;
-      });
-      if (nextModel) {
-        setSelectedModel(nextModel[0]);
-      }
-    },
-    [modelConfigs, selectedModelConfig.provider, setSelectedModel]
-  );
+  const thinking = useMemo(() => !!selectedModelConfig.thinkingToggle, [selectedModelConfig.thinkingToggle]);
 
-  const thinking = useMemo(() => !!selectedModelConfig.thinking, [selectedModelConfig.thinking]);
+  const handleThinkingToggle = (nextThinking: boolean) => {
+    const nextModel = modelConfigs.find(
+      ([_, modelConfig]) =>
+        modelConfig.provider === selectedModelConfig.provider &&
+        modelConfig.displayName === selectedModelConfig.displayName &&
+        modelConfig.thinkingToggle === nextThinking
+    );
+    if (nextModel) {
+      setSelectedModel(nextModel[0]);
+      setThinkingToggle(nextThinking);
+    }
+  };
 
   return (
     <>
@@ -73,28 +73,35 @@ export const SelectAIModelMenu = memo(({ loading, textAreaRef }: SelectAIModelMe
             textAreaRef.current?.focus();
           }}
         >
-          {modelConfigs.map(([key, modelConfig]) => {
-            const { model, displayName, provider } = modelConfig;
+          {modelConfigs
+            .filter(
+              ([, modelConfig]) =>
+                modelConfig.thinkingToggle === undefined ||
+                (selectedModelConfig.thinkingToggle === undefined && modelConfig.thinkingToggle === thinkingToggle) ||
+                selectedModelConfig.thinkingToggle === modelConfig.thinkingToggle
+            )
+            .map(([key, modelConfig]) => {
+              const { model, displayName, provider } = modelConfig;
 
-            return (
-              <DropdownMenuCheckboxItem
-                key={key}
-                checked={selectedModel === key}
-                onCheckedChange={() => {
-                  mixpanel.track('[AI].model.change', { model });
-                  setSelectedModel(key);
-                }}
-              >
-                <div className="flex w-full items-center justify-between text-xs">
-                  <span className="pr-4">{(debug ? `${provider} - ` : '') + displayName}</span>
-                </div>
-              </DropdownMenuCheckboxItem>
-            );
-          })}
+              return (
+                <DropdownMenuCheckboxItem
+                  key={key}
+                  checked={selectedModel === key}
+                  onCheckedChange={() => {
+                    mixpanel.track('[AI].model.change', { model });
+                    setSelectedModel(key);
+                  }}
+                >
+                  <div className="flex w-full items-center justify-between text-xs">
+                    <span className="pr-4">{(debug ? `${provider} - ` : '') + displayName}</span>
+                  </div>
+                </DropdownMenuCheckboxItem>
+              );
+            })}
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {canToggleThinking && <Switch disabled={loading} checked={thinking} onCheckedChange={handleToggleThinking} />}
+      {canToggleThinking && <Switch disabled={loading} checked={thinking} onCheckedChange={handleThinkingToggle} />}
     </>
   );
 });
