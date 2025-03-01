@@ -2,7 +2,7 @@ import type { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime';
 import { ConverseCommand, ConverseStreamCommand } from '@aws-sdk/client-bedrock-runtime';
 import { type Response } from 'express';
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
-import type { AIMessagePrompt, AIRequestHelperArgs, BedrockModelKey } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIRequestHelperArgs, BedrockModelKey, ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
 import { getBedrockApiArgs, parseBedrockResponse, parseBedrockStream } from '../helpers/bedrock.helper';
 
 export const handleBedrockRequest = async (
@@ -10,7 +10,7 @@ export const handleBedrockRequest = async (
   args: AIRequestHelperArgs,
   response: Response,
   bedrock: BedrockRuntimeClient
-): Promise<AIMessagePrompt | undefined> => {
+): Promise<ParsedAIResponse | undefined> => {
   const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
   const { system, messages, tools, tool_choice } = getBedrockApiArgs(args);
@@ -35,8 +35,8 @@ export const handleBedrockRequest = async (
       response.setHeader('Cache-Control', 'no-cache');
       response.setHeader('Connection', 'keep-alive');
 
-      const responseMessage = await parseBedrockStream(chunks, response, modelKey);
-      return responseMessage;
+      const parsedResponse = await parseBedrockStream(chunks, response, modelKey);
+      return parsedResponse;
     } catch (error: any) {
       if (!response.headersSent) {
         if (error.response) {
@@ -65,8 +65,8 @@ export const handleBedrockRequest = async (
       });
 
       const result = await bedrock.send(command);
-      const responseMessage = parseBedrockResponse(result.output, response, modelKey);
-      return responseMessage;
+      const parsedResponse = parseBedrockResponse(result, response, modelKey);
+      return parsedResponse;
     } catch (error: any) {
       if (error.response) {
         response.status(error.response.status).json(error.response.data);

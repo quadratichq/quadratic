@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
+import { getAIMessageUsageForUser } from '../../ai/usage';
 import { getUsers } from '../../auth/auth';
 import dbClient from '../../dbClient';
 import { licenseClient } from '../../licenseClient';
@@ -9,6 +10,7 @@ import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import { getPresignedFileUrl } from '../../storage/storage';
+import { updateBillingIfNecessary } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
 import type { ResponseError } from '../../types/Response';
 import { ApiError } from '../../utils/ApiError';
@@ -30,6 +32,9 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
     user: { id: userMakingRequestId },
   } = req as RequestWithUser;
   const { team, userMakingRequest } = await getTeam({ uuid, userId: userMakingRequestId });
+
+  // Update billing info if necessary
+  await updateBillingIfNecessary(team);
 
   // Get data associated with the file
   const dbTeam = await dbClient.team.findUnique({
@@ -124,6 +129,8 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
     })
   );
 
+  const usage = await getAIMessageUsageForUser(userMakingRequestId);
+
   const response = {
     team: {
       id: team.id,
@@ -136,6 +143,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
     billing: {
       status: dbTeam.stripeSubscriptionStatus || undefined,
       currentPeriodEnd: dbTeam.stripeCurrentPeriodEnd?.toISOString(),
+      usage,
     },
     userMakingRequest: {
       id: userMakingRequestId,

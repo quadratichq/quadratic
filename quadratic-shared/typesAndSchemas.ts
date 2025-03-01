@@ -324,6 +324,12 @@ export const ApiSchemas = {
     billing: z.object({
       status: TeamSubscriptionStatusSchema.optional(),
       currentPeriodEnd: z.string().optional(),
+      usage: z.array(
+        z.object({
+          month: z.string(),
+          ai_messages: z.number(),
+        })
+      ),
     }),
     files: z.array(
       z.object({

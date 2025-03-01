@@ -8,10 +8,10 @@ import type {
 import type { Response } from 'express';
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import type {
-  AIMessagePrompt,
   AIRequestHelperArgs,
   AnthropicModelKey,
   BedrockAnthropicModelKey,
+  ParsedAIResponse,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { getAnthropicApiArgs, parseAnthropicResponse, parseAnthropicStream } from '../helpers/anthropic.helper';
 
@@ -20,7 +20,7 @@ export const handleAnthropicRequest = async (
   args: AIRequestHelperArgs,
   response: Response,
   anthropic: AnthropicBedrock | Anthropic
-): Promise<AIMessagePrompt | undefined> => {
+): Promise<ParsedAIResponse | undefined> => {
   const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
   const { system, messages, tools, tool_choice } = getAnthropicApiArgs(args, options.thinking);
@@ -59,8 +59,8 @@ export const handleAnthropicRequest = async (
       response.setHeader('Cache-Control', 'no-cache');
       response.setHeader('Connection', 'keep-alive');
 
-      const responseMessage = await parseAnthropicStream(chunks, response, modelKey);
-      return responseMessage;
+      const parsedResponse = await parseAnthropicStream(chunks, response, modelKey);
+      return parsedResponse;
     } catch (error: any) {
       if (!response.headersSent) {
         if (error instanceof Anthropic.APIError) {
@@ -95,8 +95,8 @@ export const handleAnthropicRequest = async (
 
       const result = await anthropic.messages.create(apiArgs);
 
-      const responseMessage = parseAnthropicResponse(result, response, modelKey);
-      return responseMessage;
+      const parsedResponse = parseAnthropicResponse(result, response, modelKey);
+      return parsedResponse;
     } catch (error: any) {
       if (error instanceof Anthropic.APIError) {
         response.status(error.status ?? 400).json(error.message);
