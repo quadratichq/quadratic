@@ -2,8 +2,6 @@
 
 use wasm_bindgen::prelude::*;
 
-use crate::a1::CellRefRange;
-
 use super::*;
 
 #[wasm_bindgen]
