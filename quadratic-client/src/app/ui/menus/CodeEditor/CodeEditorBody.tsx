@@ -19,6 +19,7 @@ import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/Co
 import { useCloseCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useCloseCodeEditor';
 import { useEditorCellHighlights } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
 import { useEditorReturn } from '@/app/ui/menus/CodeEditor/hooks/useEditorReturn';
+import { useSubmitCodeEditorCompletions } from '@/app/ui/menus/CodeEditor/hooks/useSubmitCodeEditorCompletions';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import {
   provideCompletionItems as provideCompletionItemsPython,
@@ -42,6 +43,8 @@ interface CodeEditorBodyProps {
   setEditorInst: React.Dispatch<React.SetStateAction<monaco.editor.IStandaloneCodeEditor | null>>;
 }
 
+const AI_COMPLETION_DEBOUNCE_TIME = 100;
+
 // need to track globally since monaco is a singleton
 const registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
   Formula: false,
@@ -58,6 +61,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   const isConnection = useMemo(() => codeCellIsAConnection(codeCell.language), [codeCell.language]);
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
   const setAiAssistant = useSetRecoilState(codeEditorAiAssistantAtom);
+  const { handleAICompletion } = useSubmitCodeEditorCompletions();
 
   const showDiffEditor = useRecoilValue(codeEditorShowDiffEditorAtom);
   const diffEditorContent = useRecoilValue(codeEditorDiffEditorContentAtom);
@@ -149,7 +153,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
       editor.addCommand(
         monaco.KeyCode.Escape,
         () => closeEditor(false),
-        '!findWidgetVisible && !inReferenceSearchEditor && !editorHasSelection && !suggestWidgetVisible'
+        '!findWidgetVisible && !inReferenceSearchEditor && !editorHasSelection && !suggestWidgetVisible && !inlineSuggestionVisible'
       );
       editor.addCommand(monaco.KeyCode.KeyL | monaco.KeyMod.CtrlCmd, () => {
         insertCellRef(codeCell.sheetId, codeCell.language);
@@ -251,8 +255,84 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
         monaco.editor.createModel(javascriptLibraryForEditor, 'javascript');
         registered.Javascript = true;
       }
+
+      // Add ai assistant completion provider
+      let completionTimeout: NodeJS.Timeout | undefined = undefined; // to debounce the completion request
+      let completionAbortController: AbortController | null = null; // to abort the completion api request
+      const completionProvider = monaco.languages.registerInlineCompletionsProvider(monacoLanguage, {
+        provideInlineCompletions: (
+          model: monaco.editor.ITextModel,
+          position: monaco.Position,
+          _context: monaco.languages.InlineCompletionContext,
+          token: monaco.CancellationToken
+        ) => {
+          return new Promise((resolve) => {
+            clearTimeout(completionTimeout);
+            completionAbortController?.abort();
+            completionTimeout = setTimeout(async () => {
+              let result = null;
+              try {
+                completionAbortController = new AbortController();
+
+                const prefix = model.getValueInRange({
+                  startLineNumber: 1,
+                  startColumn: 1,
+                  endLineNumber: position.lineNumber,
+                  endColumn: position.column,
+                });
+
+                const endLineNumber = model.getLineCount();
+                const endColumn = model.getLineMaxColumn(endLineNumber);
+                const suffix = model.getValueInRange({
+                  startLineNumber: position.lineNumber,
+                  startColumn: position.column,
+                  endLineNumber,
+                  endColumn,
+                });
+
+                const completion = await handleAICompletion({
+                  language: monacoLanguage,
+                  prefix,
+                  suffix,
+                  signal: completionAbortController.signal,
+                });
+
+                if (!completion) return null;
+
+                if (token.isCancellationRequested) return null;
+
+                result = {
+                  items: [
+                    {
+                      insertText: completion,
+                      range: {
+                        startLineNumber: position.lineNumber,
+                        startColumn: position.column,
+                        endLineNumber: position.lineNumber,
+                        endColumn: position.column,
+                      },
+                    },
+                  ],
+                };
+              } catch (error) {
+                console.warn('[CodeEditorBody] Error fetching AI completion: ', error);
+              }
+              resolve(result);
+            }, AI_COMPLETION_DEBOUNCE_TIME);
+          });
+        },
+        freeInlineCompletions: () => {
+          clearTimeout(completionTimeout);
+          completionAbortController?.abort();
+        },
+      });
+
+      // Cleanup provider when editor is disposed
+      editor.onDidDispose(() => {
+        completionProvider.dispose();
+      });
     },
-    [addCommands, monacoLanguage, setEditorInst]
+    [addCommands, handleAICompletion, monacoLanguage, setEditorInst]
   );
 
   const onChange = useCallback(
