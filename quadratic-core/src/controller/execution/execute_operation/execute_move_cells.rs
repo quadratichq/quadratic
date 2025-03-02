@@ -16,9 +16,7 @@ impl GridController {
             // store, we should implement higher-level functions that would more
             // easily implement cut/paste/move without resorting to this
             // approach.
-            let context = self.a1_context();
-            let mut selection = A1Selection::from_rect(source);
-            selection.check_for_table_ref(context);
+            let selection = A1Selection::from_rect(source);
 
             let mut ops = vec![];
 
