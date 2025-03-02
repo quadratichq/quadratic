@@ -1,5 +1,6 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import {
+  codeEditorAiAssistantAtom,
   codeEditorCodeCellAtom,
   codeEditorDiffEditorContentAtom,
   codeEditorEditorContentAtom,
@@ -34,7 +35,7 @@ import type { Monaco } from '@monaco-editor/react';
 import Editor, { DiffEditor } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 interface CodeEditorBodyProps {
   editorInst: monaco.editor.IStandaloneCodeEditor | null;
@@ -56,6 +57,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   const monacoLanguage = useMemo(() => getLanguageForMonaco(codeCell.language), [codeCell.language]);
   const isConnection = useMemo(() => codeCellIsAConnection(codeCell.language), [codeCell.language]);
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
+  const setAiAssistant = useSetRecoilState(codeEditorAiAssistantAtom);
 
   const showDiffEditor = useRecoilValue(codeEditorShowDiffEditorAtom);
   const diffEditorContent = useRecoilValue(codeEditorDiffEditorContentAtom);
@@ -125,6 +127,16 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
 
     const model = editorInst.getModel();
     if (!model) return;
+
+    setAiAssistant((prev) => {
+      prev.abortController?.abort();
+      return {
+        ...prev,
+        abortController: new AbortController(),
+        id: '',
+        messages: [],
+      };
+    });
 
     setTimeout(() => {
       (model as any)._commandManager.clear();

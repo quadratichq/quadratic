@@ -138,6 +138,7 @@ const createCodeEditorSelector = <T extends keyof CodeEditorState>(key: T) =>
         [key]: newValue instanceof DefaultValue ? prev[key] : newValue,
       })),
   });
+export const codeEditorAiAssistantAtom = createCodeEditorSelector('aiAssistant');
 export const codeEditorShowCodeEditorAtom = createCodeEditorSelector('showCodeEditor');
 export const codeEditorEscapePressedAtom = createCodeEditorSelector('escapePressed');
 export const codeEditorLoadingAtom = createCodeEditorSelector('loading');
