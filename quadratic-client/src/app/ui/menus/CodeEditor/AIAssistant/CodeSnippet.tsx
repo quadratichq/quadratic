@@ -137,6 +137,10 @@ const CodeSnippetRunButton = memo(
           mixpanel.track('[AI].code.run', { language });
 
           const editorContent = await snapshot.getPromise(codeEditorEditorContentAtom);
+          if (editorContent === text) {
+            return;
+          }
+
           const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
 
           set(codeEditorAtom, (prev) => ({

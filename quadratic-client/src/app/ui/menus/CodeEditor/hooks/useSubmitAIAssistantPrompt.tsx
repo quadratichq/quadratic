@@ -115,8 +115,8 @@ export function useSubmitAIAssistantPrompt() {
           set(aiAssistantMessagesAtom, (prev) => prev.slice(0, messageIndex));
         }
 
+        set(codeEditorDiffEditorContentAtom, undefined);
         if (codeCell) {
-          set(codeEditorDiffEditorContentAtom, undefined);
           set(codeEditorWaitingForEditorClose, {
             codeCell,
             showCellTypeMenu: false,

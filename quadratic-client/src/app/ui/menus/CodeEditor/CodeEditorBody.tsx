@@ -132,7 +132,6 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
     }, 250);
 
     return () => {
-      lastLocation.current = undefined;
       (model as any)?._commandManager?.clear();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -270,28 +269,9 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
 
   const onMountDiff = useCallback(
     (editor: monaco.editor.IStandaloneDiffEditor, monaco: Monaco) => {
-      const modifiedEditor = editor.getModifiedEditor();
-      const value = modifiedEditor?.getValue();
-
-      if (editorInst && value !== undefined) {
-        const model = editorInst.getModel();
-        if (model) {
-          // Replace the entire content with the new value and add to undo stack
-          const fullRange = model.getFullModelRange();
-          editorInst.popUndoStop();
-          editorInst.executeEdits('diffEditor', [
-            {
-              range: fullRange,
-              text: value,
-              forceMoveMarkers: true,
-            },
-          ]);
-        }
-      }
-
       addCommandsDiff(editor, monaco);
     },
-    [addCommandsDiff, editorInst]
+    [addCommandsDiff]
   );
 
   return (
@@ -303,7 +283,13 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
       }}
       className="dark-mode-hack"
     >
-      <div className={`${loading || showDiffEditor ? 'h-0 w-0 opacity-0' : 'h-full w-full'}`}>
+      {loading && (
+        <div className="flex justify-center">
+          <SpinnerIcon className="text-primary" />
+        </div>
+      )}
+
+      <div className={`${!loading && !showDiffEditor ? 'h-full w-full' : 'h-0 w-0 opacity-0'}`}>
         <Editor
           height="100%"
           width="100%"
@@ -331,13 +317,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
         <CodeEditorPlaceholder />
       </div>
 
-      {loading && !showDiffEditor && (
-        <div className="flex justify-center">
-          <SpinnerIcon className="text-primary" />
-        </div>
-      )}
-
-      {showDiffEditor && (
+      <div className={`${!loading && showDiffEditor ? 'h-full w-full' : 'h-0 w-0 opacity-0'}`}>
         <DiffEditor
           height="100%"
           width="100%"
@@ -364,7 +344,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
             renderSideBySide: false,
           }}
         />
-      )}
+      </div>
     </div>
   );
 };
