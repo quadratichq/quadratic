@@ -107,7 +107,7 @@ export const SelectAIModelMenu = memo(({ loading, textAreaRef }: SelectAIModelMe
           variant={thinking ? 'outline' : 'ghost'}
           disabled={loading}
           onClick={() => handleThinkingToggle(!thinking)}
-          className="ml-2 mr-auto flex h-7 items-center gap-1 px-2 py-1 text-xs text-muted-foreground"
+          className="ml-1 mr-auto flex h-7 items-center gap-1 px-2 py-1 text-xs text-muted-foreground"
         >
           <LightningBoltIcon className={cn('h-3.5 w-3.5', thinking && 'text-primary')} />
           Think
