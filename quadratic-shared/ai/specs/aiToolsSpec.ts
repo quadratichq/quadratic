@@ -346,6 +346,7 @@ This tool updates the code in the code cell you are currently editing, requires 
 The code cell editor will switch to diff editor mode and will show the changes you made to the code cell, user can accept or reject the changes.\n
 New code runs in the cell immediately, so the user can see output of the code cell after it is updates.\n
 Never include code in the chat when using this tool, always explain brief what changes are made and why.\n
+When using this tool, make sure this is the only tool used in the response.\n
 `,
     parameters: {
       type: 'object',
@@ -365,7 +366,9 @@ update_code_cell function requires the code string to update the code cell with.
 Provide the full code string, don't provide partial code. This will replace the existing code in the code cell.\n
 The code cell editor will switch to diff editor mode and will show the changes you made to the code cell, user can accept or reject the changes.\n
 New code runs in the cell immediately, so the user can see output of the code cell after it is updates.\n
-Never include code in the chat when using this tool, always explain brief what changes are made and why.\nt.\n
+Never include code in the chat when using this tool, always explain brief what changes are made and why.\n
+When using this tool, make sure this is the only tool used in the response.\n
+When using this tool, make sure the code cell is the only cell being edited.\n
 `,
   },
 } as const;
