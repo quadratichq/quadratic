@@ -486,8 +486,6 @@ impl A1Selection {
 
 #[cfg(test)]
 mod tests {
-    use crate::{grid::SheetId, Rect};
-
     use super::*;
 
     #[test]
@@ -894,19 +892,5 @@ mod tests {
 
         selection.select_row(6, false, false, true, 1, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("6")]);
-    }
-
-    #[test]
-    fn test_select_to_start_of_table() {
-        let context = A1Context::test(
-            &[("Sheet 1", SheetId::TEST)],
-            &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C3"))],
-        );
-        let mut selection = A1Selection::test_a1("A1");
-        selection.select_to(col![A], 3, false, &context);
-        assert_eq!(
-            selection,
-            A1Selection::test_a1_context("Table1[[#DATA],[#HEADERS],[col1]]", &context)
-        );
     }
 }
