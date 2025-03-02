@@ -219,6 +219,7 @@ export class PointerDown {
         this.doubleClickTimeout = window.setTimeout(() => (this.doubleClickTimeout = undefined), DOUBLE_CLICK_TIME);
       }
       this.active = false;
+      this.previousPosition = undefined;
       pixiApp.viewport.disableMouseEdges();
     }
   }
