@@ -10,15 +10,16 @@ import {
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import type { CodeCell } from '@/app/gridGL/types/codeCell';
+import type { SuggestController } from '@/app/gridGL/types/SuggestController';
 import { codeCellIsAConnection, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { CodeEditorPlaceholder } from '@/app/ui/menus/CodeEditor/CodeEditorPlaceholder';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
 import { useCloseCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useCloseCodeEditor';
+import { useCodeEditorCompletions } from '@/app/ui/menus/CodeEditor/hooks/useCodeEditorCompletions';
 import { useEditorCellHighlights } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
 import { useEditorReturn } from '@/app/ui/menus/CodeEditor/hooks/useEditorReturn';
-import { useSubmitCodeEditorCompletions } from '@/app/ui/menus/CodeEditor/hooks/useSubmitCodeEditorCompletions';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import {
   provideCompletionItems as provideCompletionItemsPython,
@@ -42,7 +43,7 @@ interface CodeEditorBodyProps {
   setEditorInst: React.Dispatch<React.SetStateAction<monaco.editor.IStandaloneCodeEditor | null>>;
 }
 
-const AI_COMPLETION_DEBOUNCE_TIME = 100;
+const AI_COMPLETION_DEBOUNCE_TIME = 250;
 
 // need to track globally since monaco is a singleton
 const registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
@@ -59,7 +60,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   const monacoLanguage = useMemo(() => getLanguageForMonaco(codeCell.language), [codeCell.language]);
   const isConnection = useMemo(() => codeCellIsAConnection(codeCell.language), [codeCell.language]);
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
-  const { handleAICompletion } = useSubmitCodeEditorCompletions();
+  const { getAICompletion } = useCodeEditorCompletions({ language: codeCell.language });
 
   const showDiffEditor = useRecoilValue(codeEditorShowDiffEditorAtom);
   const diffEditorContent = useRecoilValue(codeEditorDiffEditorContentAtom);
@@ -250,8 +251,21 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
       }
 
       // Add ai assistant completion provider
-      let completionTimeout: NodeJS.Timeout | undefined = undefined; // to debounce the completion request
-      let completionAbortController: AbortController | null = null; // to abort the completion api request
+      let completionTimeoutAndController: {
+        timeout: NodeJS.Timeout | undefined; // to debounce the completion request
+        abortController: AbortController | null; // to abort the completion api request
+      } = {
+        timeout: undefined,
+        abortController: null,
+      };
+
+      const suggestionWidget = (editor.getContribution('editor.contrib.suggestController') as SuggestController | null)
+        ?.widget;
+      if (suggestionWidget) {
+        clearTimeout(completionTimeoutAndController.timeout);
+        completionTimeoutAndController.abortController?.abort();
+      }
+
       const completionProvider = monaco.languages.registerInlineCompletionsProvider(monacoLanguage, {
         provideInlineCompletions: (
           model: monaco.editor.ITextModel,
@@ -260,12 +274,13 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
           token: monaco.CancellationToken
         ) => {
           return new Promise((resolve) => {
-            clearTimeout(completionTimeout);
-            completionAbortController?.abort();
-            completionTimeout = setTimeout(async () => {
+            clearTimeout(completionTimeoutAndController.timeout);
+            completionTimeoutAndController.abortController?.abort();
+
+            completionTimeoutAndController.timeout = setTimeout(async () => {
               let result = null;
               try {
-                completionAbortController = new AbortController();
+                completionTimeoutAndController.abortController = new AbortController();
 
                 const prefix = model.getValueInRange({
                   startLineNumber: 1,
@@ -283,11 +298,11 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
                   endColumn,
                 });
 
-                const completion = await handleAICompletion({
+                const completion = await getAICompletion({
                   language: monacoLanguage,
                   prefix,
                   suffix,
-                  signal: completionAbortController.signal,
+                  signal: completionTimeoutAndController.abortController.signal,
                 });
 
                 if (!completion) return null;
@@ -315,8 +330,8 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
           });
         },
         freeInlineCompletions: () => {
-          clearTimeout(completionTimeout);
-          completionAbortController?.abort();
+          clearTimeout(completionTimeoutAndController.timeout);
+          completionTimeoutAndController.abortController?.abort();
         },
       });
 
@@ -325,7 +340,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
         completionProvider.dispose();
       });
     },
-    [addCommands, handleAICompletion, monacoLanguage, setEditorInst]
+    [addCommands, getAICompletion, monacoLanguage, setEditorInst]
   );
 
   const onChange = useCallback(

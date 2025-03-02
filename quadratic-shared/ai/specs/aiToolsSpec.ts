@@ -103,7 +103,7 @@ export const AIToolsArgsSchema = {
     code_string: z.string(),
   }),
   [AITool.CodeEditorCompletions]: z.object({
-    completion: z.string(),
+    text_delta_at_cursor: z.string(),
   }),
 } as const;
 
@@ -386,12 +386,12 @@ Completion is the delta that will be inserted at the cursor position in the code
     parameters: {
       type: 'object',
       properties: {
-        completion: {
+        text_delta_at_cursor: {
           type: 'string',
-          description: 'The completion for the code in the code cell',
+          description: 'The completion for the code in the code cell at the cursor position',
         },
       },
-      required: ['completion'],
+      required: ['text_delta_at_cursor'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.CodeEditorCompletions],

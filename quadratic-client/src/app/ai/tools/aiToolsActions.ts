@@ -185,9 +185,9 @@ export const aiToolsActions: AIToolActionsRecord = {
     }
   },
   [AITool.CodeEditorCompletions]: async (args) => {
-    const { completion } = args;
+    const { text_delta_at_cursor } = args;
     try {
-      return `Executed code editor completions tool successfully with completion: ${completion}`;
+      return `Executed code editor completions tool successfully with completion: ${text_delta_at_cursor}`;
     } catch (e) {
       return `Error executing code editor completions tool: ${e}`;
     }
