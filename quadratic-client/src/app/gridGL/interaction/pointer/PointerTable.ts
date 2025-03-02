@@ -39,8 +39,15 @@ export class PointerTable {
           row: table.y,
         });
       } else {
+        pixiAppSettings.codeEditorState.aiAssistant.abortController?.abort();
         pixiAppSettings.setCodeEditorState?.((prev) => ({
           ...prev,
+          aiAssistant: {
+            abortController: undefined,
+            loading: false,
+            id: '',
+            messages: [],
+          },
           diffEditorContent: undefined,
           waitingForEditorClose: {
             codeCell: {
@@ -106,8 +113,15 @@ export class PointerTable {
           selectedColumn: tableDown.column,
         });
       } else {
+        pixiAppSettings.codeEditorState.aiAssistant.abortController?.abort();
         pixiAppSettings.setCodeEditorState?.((prev) => ({
           ...prev,
+          aiAssistant: {
+            abortController: undefined,
+            loading: false,
+            id: '',
+            messages: [],
+          },
           diffEditorContent: undefined,
           waitingForEditorClose: {
             codeCell: {

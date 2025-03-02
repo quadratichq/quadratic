@@ -1,10 +1,15 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
-import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
+import { codeEditorAtom, codeEditorCodeCellAtom, codeEditorEditorContentAtom } from '@/app/atoms/codeEditorAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { SaveAndRunIcon } from '@/shared/components/Icons';
+import { Button } from '@/shared/shadcn/ui/button';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { useEffect, useMemo, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilCallback, useRecoilValue } from 'recoil';
 import type { z } from 'zod';
 
 type UpdateCodeCellResponse = z.infer<(typeof aiToolsSpec)[AITool.UpdateCodeCell]['responseSchema']>;
@@ -16,7 +21,46 @@ type UpdateCodeCellProps = {
 
 export const UpdateCodeCell = ({ args, loading }: UpdateCodeCellProps) => {
   const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<UpdateCodeCellResponse, UpdateCodeCellResponse>>();
+  const editorContent = useRecoilValue(codeEditorEditorContentAtom);
   const codeCell = useRecoilValue(codeEditorCodeCellAtom);
+
+  const handleSaveAndRun = useRecoilCallback(
+    ({ snapshot, set }) =>
+      async () => {
+        if (!toolArgs?.data) {
+          return;
+        }
+
+        const { code_string } = toolArgs.data;
+        const editorContent = await snapshot.getPromise(codeEditorEditorContentAtom);
+        if (editorContent === code_string) {
+          return;
+        }
+
+        const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
+
+        set(codeEditorAtom, (prev) => ({
+          ...prev,
+          diffEditorContent: { editorContent, isApplied: true },
+          waitingForEditorClose: {
+            codeCell,
+            showCellTypeMenu: false,
+            initialCode: code_string,
+            inlineEditor: false,
+          },
+        }));
+
+        quadraticCore.setCodeCellValue({
+          sheetId: codeCell.sheetId,
+          x: codeCell.pos.x,
+          y: codeCell.pos.y,
+          codeString: code_string ?? '',
+          language: codeCell.language,
+          cursor: sheets.getCursorPosition(),
+        });
+      },
+    [toolArgs]
+  );
 
   useEffect(() => {
     if (!loading) {
@@ -62,6 +106,17 @@ export const UpdateCodeCell = ({ args, loading }: UpdateCodeCellProps) => {
       icon={<LanguageIcon language={getLanguage(codeCell.language)} />}
       label={getLanguage(codeCell.language)}
       description={`${estimatedNumberOfLines} line` + (estimatedNumberOfLines === 1 ? '' : 's')}
+      actions={
+        editorContent !== toolArgs.data.code_string && (
+          <div className="flex gap-1">
+            <TooltipPopover label={'Apply'}>
+              <Button size="icon-sm" variant="ghost" onClick={handleSaveAndRun}>
+                <SaveAndRunIcon />
+              </Button>
+            </TooltipPopover>
+          </div>
+        )
+      }
     />
   );
 };

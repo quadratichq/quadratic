@@ -36,11 +36,20 @@ export async function doubleClickCell(options: {
 
   // Open the correct code editor
   if (language) {
+    pixiAppSettings.codeEditorState.aiAssistant.abortController?.abort();
+
     const formula = language === 'Formula';
     const file_import = language === 'Import';
+
     if (pixiAppSettings.codeEditorState.showCodeEditor && !file_import) {
       pixiAppSettings.setCodeEditorState({
         ...pixiAppSettings.codeEditorState,
+        aiAssistant: {
+          abortController: undefined,
+          loading: false,
+          id: '',
+          messages: [],
+        },
         escapePressed: false,
         diffEditorContent: undefined,
         waitingForEditorClose: {
@@ -105,6 +114,12 @@ export async function doubleClickCell(options: {
       } else {
         pixiAppSettings.setCodeEditorState({
           ...pixiAppSettings.codeEditorState,
+          aiAssistant: {
+            abortController: undefined,
+            loading: false,
+            id: '',
+            messages: [],
+          },
           showCodeEditor: true,
           escapePressed: false,
           diffEditorContent: undefined,
