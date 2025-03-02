@@ -130,7 +130,7 @@ export class Pointer {
       this.pointerImages.pointerMove(world) ||
       this.pointerCellMoving.pointerMove(event, world) ||
       this.pointerHtmlCells.pointerMove(e, world) ||
-      this.pointerTable.pointerMove(world) ||
+      (!this.pointerHeading.active && this.pointerTable.pointerMove(world)) ||
       this.pointerHeading.pointerMove(world) ||
       this.pointerAutoComplete.pointerMove(world) ||
       this.pointerTableResize.pointerMove(world) ||
