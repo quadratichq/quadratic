@@ -1,6 +1,5 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import {
-  codeEditorAiAssistantAtom,
   codeEditorCodeCellAtom,
   codeEditorDiffEditorContentAtom,
   codeEditorEditorContentAtom,
@@ -35,7 +34,7 @@ import type { Monaco } from '@monaco-editor/react';
 import Editor, { DiffEditor } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 
 interface CodeEditorBodyProps {
   editorInst: monaco.editor.IStandaloneCodeEditor | null;
@@ -57,7 +56,6 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   const monacoLanguage = useMemo(() => getLanguageForMonaco(codeCell.language), [codeCell.language]);
   const isConnection = useMemo(() => codeCellIsAConnection(codeCell.language), [codeCell.language]);
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
-  const setAiAssistant = useSetRecoilState(codeEditorAiAssistantAtom);
 
   const showDiffEditor = useRecoilValue(codeEditorShowDiffEditorAtom);
   const diffEditorContent = useRecoilValue(codeEditorDiffEditorContentAtom);
@@ -114,6 +112,11 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   // cell also creates a undo stack entry setTimeout of 250ms is to ensure that
   // the new editor content is loaded, before we clear the undo/redo stack
   useEffect(() => {
+    if (!editorInst) return;
+
+    const model = editorInst.getModel();
+    if (!model) return;
+
     if (
       lastLocation.current &&
       codeCell.sheetId === lastLocation.current.sheetId &&
@@ -123,24 +126,15 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
       return;
     }
     lastLocation.current = codeCell;
-    if (!editorInst) return;
-
-    const model = editorInst.getModel();
-    if (!model) return;
-
-    setAiAssistant((prev) => {
-      prev.abortController?.abort();
-      return {
-        ...prev,
-        abortController: new AbortController(),
-        id: '',
-        messages: [],
-      };
-    });
 
     setTimeout(() => {
-      (model as any)._commandManager.clear();
+      (model as any)?._commandManager?.clear();
     }, 250);
+
+    return () => {
+      lastLocation.current = undefined;
+      (model as any)?._commandManager?.clear();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editorInst, codeCell.sheetId, codeCell.pos.x, codeCell.pos.y]);
 

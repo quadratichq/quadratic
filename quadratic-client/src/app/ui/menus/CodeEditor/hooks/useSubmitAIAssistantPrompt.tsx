@@ -10,6 +10,7 @@ import {
   aiAssistantLoadingAtom,
   aiAssistantMessagesAtom,
   codeEditorCodeCellAtom,
+  codeEditorDiffEditorContentAtom,
   codeEditorWaitingForEditorClose,
   showAIAssistantAtom,
 } from '@/app/atoms/codeEditorAtom';
@@ -115,6 +116,7 @@ export function useSubmitAIAssistantPrompt() {
         }
 
         if (codeCell) {
+          set(codeEditorDiffEditorContentAtom, undefined);
           set(codeEditorWaitingForEditorClose, {
             codeCell,
             showCellTypeMenu: false,
