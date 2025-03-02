@@ -184,4 +184,12 @@ export const aiToolsActions: AIToolActionsRecord = {
       return `Error executing update code cell tool: ${e}`;
     }
   },
+  [AITool.CodeEditorCompletions]: async (args) => {
+    const { completion } = args;
+    try {
+      return `Executed code editor completions tool successfully with completion: ${completion}`;
+    } catch (e) {
+      return `Error executing code editor completions tool: ${e}`;
+    }
+  },
 } as const;

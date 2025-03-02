@@ -253,7 +253,14 @@ export type AIToolArgs = z.infer<typeof AIToolArgsSchema>;
 const CodeCellTypeSchema = z.enum(['Python', 'Javascript', 'Formula', 'Connection', 'Import']);
 export type CodeCellType = z.infer<typeof CodeCellTypeSchema>;
 
-const AISourceSchema = z.enum(['AIAssistant', 'AIAnalyst', 'AIResearcher', 'GetChatName', 'GetFileName']);
+const AISourceSchema = z.enum([
+  'AIAssistant',
+  'AIAnalyst',
+  'AIResearcher',
+  'GetChatName',
+  'GetFileName',
+  'CodeEditorCompletions',
+]);
 export type AISource = z.infer<typeof AISourceSchema>;
 
 export const AIRequestBodySchema = z.object({
