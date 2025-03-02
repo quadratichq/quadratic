@@ -1,14 +1,14 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { debug } from '@/app/debugFlags';
+import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
-import { Switch } from '@/shared/shadcn/ui/switch';
 import { cn } from '@/shared/shadcn/utils';
-import { CaretDownIcon } from '@radix-ui/react-icons';
+import { CaretDownIcon, LightningBoltIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { ModelConfig, ModelKey } from 'quadratic-shared/typesAndSchemasAI';
@@ -101,7 +101,18 @@ export const SelectAIModelMenu = memo(({ loading, textAreaRef }: SelectAIModelMe
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {canToggleThinking && <Switch disabled={loading} checked={thinking} onCheckedChange={handleThinkingToggle} />}
+      {canToggleThinking && (
+        <Button
+          size="sm"
+          variant={thinking ? 'outline' : 'ghost'}
+          disabled={loading}
+          onClick={() => handleThinkingToggle(!thinking)}
+          className="ml-2 mr-auto flex h-7 items-center gap-1 px-2 py-1 text-xs text-muted-foreground"
+        >
+          <LightningBoltIcon className={cn('h-3.5 w-3.5', thinking && 'text-primary')} />
+          Think
+        </Button>
+      )}
     </>
   );
 });
