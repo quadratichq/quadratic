@@ -1,4 +1,4 @@
-import { getRowColSentence, ToolCard } from '@/app/ui/menus/AIAnalyst/toolCards/ToolCard';
+import { getRowColSentence, ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { TableRowsIcon } from '@/shared/components/Icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { useEffect, useState } from 'react';

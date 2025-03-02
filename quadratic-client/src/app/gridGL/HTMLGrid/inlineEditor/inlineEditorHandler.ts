@@ -534,8 +534,15 @@ class InlineEditorHandler {
       throw new Error('Expected location to be defined in openCodeEditor');
     }
     const { sheetId, x, y } = this.location;
+    pixiAppSettings.codeEditorState.aiAssistant.abortController?.abort();
     pixiAppSettings.setCodeEditorState({
       ...pixiAppSettings.codeEditorState,
+      aiAssistant: {
+        abortController: undefined,
+        loading: false,
+        id: '',
+        messages: [],
+      },
       diffEditorContent: undefined,
       waitingForEditorClose: {
         codeCell: {
