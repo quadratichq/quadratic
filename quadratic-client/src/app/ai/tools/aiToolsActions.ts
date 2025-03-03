@@ -184,12 +184,10 @@ export const aiToolsActions: AIToolActionsRecord = {
       return `Error executing update code cell tool: ${e}`;
     }
   },
-  [AITool.CodeEditorCompletions]: async (args) => {
-    const { text_delta_at_cursor } = args;
-    try {
-      return `Executed code editor completions tool successfully with completion: ${text_delta_at_cursor}`;
-    } catch (e) {
-      return `Error executing code editor completions tool: ${e}`;
-    }
+  [AITool.CodeEditorCompletions]: async () => {
+    return `Executed code editor completions tool successfully.`;
+  },
+  [AITool.UserPromptSuggestions]: async () => {
+    return `Executed user prompt suggestions tool successfully.`;
   },
 } as const;

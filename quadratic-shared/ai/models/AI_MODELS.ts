@@ -7,6 +7,9 @@ export const DEFAULT_GET_CHAT_NAME_MODEL: ModelKey = 'bedrock-anthropic:us.anthr
 export const DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL: ModelKey =
   'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0';
 
+export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: ModelKey =
+  'bedrock-anthropic:us.anthropic.claude-3-5-haiku-20241022-v1:0';
+
 // updating this will force the model to be reset to the default model in local storage
 export const DEFAULT_MODEL_VERSION = 6;
 

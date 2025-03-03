@@ -12,7 +12,7 @@ export const useGetChatName = () => {
 
   const getChatName = useRecoilCallback(
     ({ snapshot }) =>
-      async () => {
+      async (): Promise<string> => {
         const chatMessages = await snapshot.getPromise(aiAnalystCurrentChatMessagesAtom);
         const chatPromptMessages = getPromptMessages(chatMessages);
         const messages: ChatMessage[] = [

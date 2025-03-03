@@ -11,6 +11,7 @@ import {
   aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
   aiAnalystLoadingAtom,
+  aiAnalystPromptSuggestionsAtom,
   aiAnalystShowChatHistoryAtom,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
@@ -83,6 +84,7 @@ export function useSubmitAIAnalystPrompt() {
     ({ set, snapshot }) =>
       async ({ userPrompt, context, messageIndex, clearMessages }: SubmitAIAnalystPromptArgs) => {
         set(showAIAnalystAtom, true);
+        set(aiAnalystPromptSuggestionsAtom, []);
         set(aiAnalystShowChatHistoryAtom, false);
 
         const previousLoading = await snapshot.getPromise(aiAnalystLoadingAtom);

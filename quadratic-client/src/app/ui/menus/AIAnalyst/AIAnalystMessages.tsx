@@ -3,6 +3,8 @@ import {
   aiAnalystCurrentChatMessagesAtom,
   aiAnalystCurrentChatMessagesCountAtom,
   aiAnalystLoadingAtom,
+  aiAnalystPromptSuggestionsAtom,
+  aiAnalystPromptSuggestionsCountAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateSettingsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { debugShowAIInternalContext } from '@/app/debugFlags';
@@ -11,13 +13,15 @@ import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamp
 import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
+import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
+import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { apiClient } from '@/shared/api/apiClient';
 import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import mixpanel from 'mixpanel-browser';
-import { getLastUserPromptMessageIndex } from 'quadratic-shared/ai/helpers/message.helper';
+import { getLastUserPromptMessageIndex, getUserPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 
@@ -29,6 +33,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
+  const promptSuggestionsCount = useRecoilValue(aiAnalystPromptSuggestionsCountAtom);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((div: HTMLDivElement | null) => {
@@ -117,6 +122,13 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
       scrollToBottom();
     }
   }, [messages, scrollToBottom, loading, shouldAutoScroll]);
+
+  // Scroll to bottom when prompt suggestions are available
+  useEffect(() => {
+    if (promptSuggestionsCount > 0) {
+      scrollToBottom();
+    }
+  }, [promptSuggestionsCount, scrollToBottom]);
 
   if (messagesCount === 0) {
     return <AIAnalystExamplePrompts />;
@@ -208,6 +220,8 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
 
       {messages.length > 0 && !loading && <FeedbackButtons />}
 
+      {messages.length > 0 && !loading && <PromptSuggestions />}
+
       <div className={cn('flex flex-row gap-1 p-2 transition-opacity', !loading && 'opacity-0')}>
         <span className="h-2 w-2 animate-bounce bg-primary" />
         <span className="h-2 w-2 animate-bounce bg-primary/60 delay-100" />
@@ -288,6 +302,37 @@ const FeedbackButtons = memo(() => {
           <ThumbDownIcon className="scale-75" />
         </Button>
       </TooltipPopover>
+    </div>
+  );
+});
+
+const PromptSuggestions = memo(() => {
+  const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
+  const promptSuggestions = useRecoilValue(aiAnalystPromptSuggestionsAtom);
+  const { submitPrompt } = useSubmitAIAnalystPrompt();
+
+  if (!messages.length || !promptSuggestions.length) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-col gap-2 px-2">
+      {promptSuggestions.map((suggestion, index) => (
+        <div
+          key={`${index}-${suggestion.label}`}
+          className="cursor-pointer rounded-md bg-accent p-2 text-sm hover:bg-accent/80"
+          onClick={() =>
+            submitPrompt({
+              userPrompt: suggestion.prompt,
+              context: {
+                ...(getUserPromptMessages(messages).at(-1)?.context ?? defaultAIAnalystContext),
+              },
+            })
+          }
+        >
+          {suggestion.label}
+        </div>
+      ))}
     </div>
   );
 });

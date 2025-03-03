@@ -80,7 +80,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     !ownerTeam.settingAnalyticsAi ||
     STORAGE_TYPE !== 's3' ||
     !getBucketName(S3Bucket.ANALYTICS) ||
-    ['GetChatName', 'GetFileName', 'CodeEditorCompletions'].includes(source)
+    ['GetChatName', 'GetFileName', 'CodeEditorCompletions', 'UserPromptSuggestions'].includes(source)
   ) {
     return;
   }

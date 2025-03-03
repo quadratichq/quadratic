@@ -10,6 +10,7 @@ export enum AITool {
   DeleteCells = 'delete_cells',
   UpdateCodeCell = 'update_code_cell',
   CodeEditorCompletions = 'code_editor_completions',
+  UserPromptSuggestions = 'user_prompt_suggestions',
 }
 
 export const AIToolSchema = z.enum([
@@ -21,6 +22,7 @@ export const AIToolSchema = z.enum([
   AITool.DeleteCells,
   AITool.UpdateCodeCell,
   AITool.CodeEditorCompletions,
+  AITool.UserPromptSuggestions,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -104,6 +106,14 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.CodeEditorCompletions]: z.object({
     text_delta_at_cursor: z.string(),
+  }),
+  [AITool.UserPromptSuggestions]: z.object({
+    prompt_suggestions: z.array(
+      z.object({
+        label: z.string(),
+        prompt: z.string(),
+      })
+    ),
   }),
 } as const;
 
@@ -399,6 +409,51 @@ Completion is the delta that will be inserted at the cursor position in the code
 This tool provides inline completions for the code in the code cell you are currently editing, you are provided with the prefix and suffix of the cursor position in the code cell.\n
 You should use this tool to provide inline completions for the code in the code cell you are currently editing.\n
 Completion is the delta that will be inserted at the cursor position in the code cell.\n
+`,
+  },
+  [AITool.UserPromptSuggestions]: {
+    sources: ['GetUserPromptSuggestions'],
+    description: `
+This tool provides prompt suggestions for the user, requires an array of three prompt suggestions.\n
+Each prompt suggestion is an object with a label and a prompt.\n
+The label is a short label for the prompt suggestion, this will be displayed to the user in the UI.\n
+The prompt is the actual prompt that will be used to generate the prompt suggestion.\n
+Use the internal context and the chat history to provide the prompt suggestions.\n
+Always maintain strong correlation between the follow up prompts and the user's chat history and the internal context.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        prompt_suggestions: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              label: {
+                type: 'string',
+                description: 'The label of the follow up prompt',
+              },
+              prompt: {
+                type: 'string',
+                description: 'The prompt for the user',
+              },
+            },
+            required: ['label', 'prompt'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['prompt_suggestions'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.UserPromptSuggestions],
+    prompt: `
+This tool provides prompt suggestions for the user, requires an array of three prompt suggestions.\n
+Each prompt suggestion is an object with a label and a prompt.\n
+The label is a short label for the prompt suggestion, this will be displayed to the user in the UI.\n
+The prompt is the actual prompt that will be used to generate the prompt suggestion.\n
+Use the internal context and the chat history to provide the prompt suggestions.\n
+Always maintain strong correlation between the prompt suggestions and the user's chat history and the internal context.\n
 `,
   },
 } as const;
