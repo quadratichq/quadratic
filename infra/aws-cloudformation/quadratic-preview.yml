@@ -164,7 +164,7 @@ Resources:
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
-      AcceleratorArn: ad955cd30e9a42ae0
+      AcceleratorArn: arn:aws:globalaccelerator::058264531788:accelerator/2c705429-eefb-42b0-83ba-c7352ac53a3a
       Protocol: TCP
       PortRanges:
         - FromPort: 80
