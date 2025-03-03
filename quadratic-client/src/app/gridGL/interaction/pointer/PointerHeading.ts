@@ -52,16 +52,20 @@ export class PointerHeading {
   };
 
   handleEscape(): boolean {
-    if (this.active) {
-      this.active = false;
+    if (this.movingColRows) {
+      this.movingColRows = undefined;
+      pixiApp.cellMoving.dirty = true;
+    } else if (this.active) {
       sheets.sheet.offsets.cancelResize();
       pixiApp.gridLines.dirty = true;
-      pixiApp.cursor.dirty = true;
       pixiApp.headings.dirty = true;
-      pixiApp.setViewportDirty();
-      return true;
+      this.active = false;
+    } else {
+      return false;
     }
-    return false;
+    pixiApp.cursor.dirty = true;
+    pixiApp.setViewportDirty();
+    return true;
   }
 
   pointerDown(world: Point, event: InteractivePointerEvent): boolean {
