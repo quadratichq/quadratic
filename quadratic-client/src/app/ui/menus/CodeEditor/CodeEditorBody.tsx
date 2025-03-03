@@ -337,6 +337,8 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
 
       // Cleanup provider when editor is disposed
       editor.onDidDispose(() => {
+        clearTimeout(completionTimeoutAndController.timeout);
+        completionTimeoutAndController.abortController?.abort();
         completionProvider.dispose();
       });
     },
