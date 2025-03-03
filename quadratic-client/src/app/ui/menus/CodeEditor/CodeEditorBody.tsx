@@ -282,6 +282,9 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
               try {
                 completionTimeoutAndController.abortController = new AbortController();
 
+                const value = model.getValue();
+                if (!value) return null;
+
                 const prefix = model.getValueInRange({
                   startLineNumber: 1,
                   startColumn: 1,
