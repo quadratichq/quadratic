@@ -9,6 +9,7 @@ export enum AITool {
   MoveCells = 'move_cells',
   DeleteCells = 'delete_cells',
   UpdateCodeCell = 'update_code_cell',
+  CodeEditorCompletions = 'code_editor_completions',
 }
 
 export const AIToolSchema = z.enum([
@@ -19,6 +20,7 @@ export const AIToolSchema = z.enum([
   AITool.MoveCells,
   AITool.DeleteCells,
   AITool.UpdateCodeCell,
+  AITool.CodeEditorCompletions,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -99,6 +101,9 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.UpdateCodeCell]: z.object({
     code_string: z.string(),
+  }),
+  [AITool.CodeEditorCompletions]: z.object({
+    text_delta_at_cursor: z.string(),
   }),
 } as const;
 
@@ -369,6 +374,31 @@ New code runs in the cell immediately, so the user can see output of the code ce
 Never include code in the chat when using this tool, always explain brief what changes are made and why.\n
 When using this tool, make sure this is the only tool used in the response.\n
 When using this tool, make sure the code cell is the only cell being edited.\n
+`,
+  },
+  [AITool.CodeEditorCompletions]: {
+    sources: ['CodeEditorCompletions'],
+    description: `
+This tool provides inline completions for the code in the code cell you are currently editing, requires the completion for the code in the code cell.\n
+You are provided with the prefix and suffix of the cursor position in the code cell.\n
+Completion is the delta that will be inserted at the cursor position in the code cell.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        text_delta_at_cursor: {
+          type: 'string',
+          description: 'The completion for the code in the code cell at the cursor position',
+        },
+      },
+      required: ['text_delta_at_cursor'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.CodeEditorCompletions],
+    prompt: `
+This tool provides inline completions for the code in the code cell you are currently editing, you are provided with the prefix and suffix of the cursor position in the code cell.\n
+You should use this tool to provide inline completions for the code in the code cell you are currently editing.\n
+Completion is the delta that will be inserted at the cursor position in the code cell.\n
 `,
   },
 } as const;

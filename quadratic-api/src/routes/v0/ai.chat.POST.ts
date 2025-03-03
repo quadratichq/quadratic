@@ -76,7 +76,12 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     file: { id: fileId, ownerTeam },
   } = await getFile({ uuid: fileUuid, userId });
 
-  if (!ownerTeam.settingAnalyticsAi || STORAGE_TYPE !== 's3' || !getBucketName(S3Bucket.ANALYTICS)) {
+  if (
+    !ownerTeam.settingAnalyticsAi ||
+    STORAGE_TYPE !== 's3' ||
+    !getBucketName(S3Bucket.ANALYTICS) ||
+    ['GetChatName', 'GetFileName', 'CodeEditorCompletions'].includes(source)
+  ) {
     return;
   }
 
