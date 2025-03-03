@@ -358,38 +358,48 @@ impl A1Selection {
         if let Some(last) = self.ranges.last_mut() {
             match last {
                 CellRefRange::Table { range } => {
-                    // use a different algorithm to handle the case of a column selection
-                    if range.col_range == ColRange::All {
-                        if let Some(table) = context.try_table(&range.table_name) {
-                            if table.show_ui && table.show_name {
-                                // if all, then we should be in the table name cell
-                                let range = RefRangeBounds::new_relative(
-                                    self.cursor.x,
-                                    self.cursor.y,
-                                    column,
-                                    row,
-                                );
-                                *last = CellRefRange::Sheet { range };
-                                return;
+                    if let Some(table) = context.try_table(&range.table_name) {
+                        let mut start: Option<(i64, i64)> = None;
+                        match &range.col_range {
+                            // all gets the entire table selection
+                            ColRange::All => {
+                                if table.show_ui && table.show_name {
+                                    start = Some((table.bounds.min.x, table.bounds.min.y));
+                                }
+                            }
+                            ColRange::Col(col) => {
+                                if table.show_ui && table.show_columns {
+                                    if let Some(col_index) = table.try_col_index(col) {
+                                        start = Some((
+                                            table.bounds.min.x + col_index,
+                                            table.bounds.min.y
+                                                + if table.show_name { 1 } else { 0 },
+                                        ));
+                                    }
+                                }
+                            }
+                            ColRange::ColRange(start_col, _) => {
+                                if let Some(col_index) = table.try_col_index(start_col) {
+                                    start = Some((
+                                        table.bounds.min.x + col_index,
+                                        table.bounds.min.y + if table.show_name { 1 } else { 0 },
+                                    ));
+                                }
+                            }
+                            ColRange::ColToEnd(col) => {
+                                if let Some(col_index) = table.try_col_index(col) {
+                                    start = Some((
+                                        table.bounds.min.x + col_index,
+                                        table.bounds.min.y + if table.show_name { 1 } else { 0 },
+                                    ));
+                                }
                             }
                         }
-                    } else {
-                        // if not, then we're in a column of the table
-                        if let Some(table) = context.try_table(&range.table_name) {
-                            if table.show_ui
-                                && table.show_columns
-                                && self.cursor.y
-                                    == table.bounds.min.y + if table.show_name { 1 } else { 0 }
-                            {
-                                let range = RefRangeBounds::new_relative(
-                                    self.cursor.x,
-                                    self.cursor.y,
-                                    column,
-                                    row,
-                                );
-                                *last = CellRefRange::Sheet { range };
-                                return;
-                            }
+                        if let Some((start_col, start_row)) = start {
+                            let range =
+                                RefRangeBounds::new_relative(start_col, start_row, column, row);
+                            *last = CellRefRange::Sheet { range };
+                            return;
                         }
                     }
                     if let Some(mut range_converted) = range
@@ -486,6 +496,8 @@ impl A1Selection {
 
 #[cfg(test)]
 mod tests {
+    use crate::Rect;
+
     use super::*;
 
     #[test]
@@ -892,5 +904,87 @@ mod tests {
 
         selection.select_row(6, false, false, true, 1, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("6")]);
+    }
+
+    #[test]
+    fn test_table_selection() {
+        let context = A1Context::test(
+            &[],
+            &[("test_table", &["A", "B", "C"], Rect::test_a1("A1:C5"))],
+        );
+
+        let mut selection = A1Selection::test_a1_context("test_table", &context);
+        selection.select_to(5, 5, true, &context);
+        assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:E5")]);
+
+        // Test table column selection
+        selection = A1Selection::test_a1_context("test_table[B]", &context);
+        selection.select_to(4, 6, true, &context);
+        assert_eq!(selection.ranges, vec![CellRefRange::test_a1("B2:D6")]);
+    }
+
+    #[test]
+    fn test_complex_selection_scenarios() {
+        let context = A1Context::default();
+
+        // Test multiple discontinuous ranges
+        let mut selection = A1Selection::test_a1("A1:B2,D4:E5");
+        selection.select_to(6, 6, false, &context);
+        assert_eq!(selection.ranges, vec![CellRefRange::test_a1("D4:F6")]);
+    }
+
+    #[test]
+    fn test_unbounded_selection_edge_cases() {
+        let context = A1Context::default();
+
+        // Test unbounded column selection
+        let mut selection = A1Selection::test_a1("A:");
+        selection.select_to(3, 5, false, &context);
+        assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:C5")]);
+
+        // Test unbounded row selection
+        selection = A1Selection::test_a1("1:");
+        selection.select_to(4, 3, false, &context);
+        assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:D3")]);
+
+        // Test selection starting from unbounded
+        selection = A1Selection::test_a1(":");
+        selection.select_to(2, 2, false, &context);
+        assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:B2")]);
+    }
+
+    #[test]
+    fn test_cursor_position_handling() {
+        let context = A1Context::default();
+
+        // Test cursor position after column removal
+        let mut selection = A1Selection::test_a1("A:C");
+        selection.cursor = Pos { x: 1, y: 1 };
+        selection.add_or_remove_column(2, 1, &context);
+        assert_eq!(selection.cursor, Pos { x: 1, y: 1 });
+
+        // Test cursor position after row removal
+        selection = A1Selection::test_a1("1:3");
+        selection.cursor = Pos { x: 1, y: 1 };
+        selection.add_or_remove_row(2, 1, &context);
+        assert_eq!(selection.cursor, Pos { x: 1, y: 1 });
+    }
+
+    #[test]
+    fn test_selection_with_modifiers() {
+        let context = A1Context::default();
+
+        // Test shift selection
+        let mut selection = A1Selection::test_a1("B2");
+        selection.select_column(4, false, true, false, 1, &context);
+        assert_eq!(selection.ranges, vec![CellRefRange::test_a1("B2:D")]);
+
+        // Test ctrl selection
+        selection = A1Selection::test_a1("B2");
+        selection.select_column(4, true, false, false, 1, &context);
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test_a1("B2"), CellRefRange::test_a1("D")]
+        );
     }
 }
