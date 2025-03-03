@@ -196,6 +196,16 @@ impl A1Selection {
         self.ranges.contains(&CellRefRange::ALL)
     }
 
+    /// Returns true if the selection includes the entire column.
+    pub fn is_entire_column_selected(&self, column: i64) -> bool {
+        self.ranges.iter().any(|range| range.has_col_range(column))
+    }
+
+    /// Returns true if the selection includes the entire row.
+    pub fn is_entire_row_selected(&self, row: i64) -> bool {
+        self.ranges.iter().any(|range| range.has_row_range(row))
+    }
+
     /// Returns true if all the selected columns are finite.
     pub fn is_selected_columns_finite(&self, context: &A1Context) -> bool {
         self.ranges
@@ -1021,5 +1031,53 @@ mod tests {
             selection.table_column_selection("Table2", &context),
             Some(vec![0])
         );
+    }
+
+    #[test]
+    fn test_is_entire_column_selected() {
+        // Test explicit column selection
+        assert!(A1Selection::test_a1("A").is_entire_column_selected(1));
+        assert!(!A1Selection::test_a1("A").is_entire_column_selected(2));
+
+        // Test range of columns
+        assert!(A1Selection::test_a1("A:C").is_entire_column_selected(2));
+        assert!(!A1Selection::test_a1("A:C").is_entire_column_selected(4));
+
+        // Test with cell selections (should be false)
+        assert!(!A1Selection::test_a1("A1").is_entire_column_selected(1));
+        assert!(!A1Selection::test_a1("A1:A5").is_entire_column_selected(1));
+
+        // Test with multiple ranges
+        assert!(A1Selection::test_a1("A,C:E").is_entire_column_selected(1));
+        assert!(A1Selection::test_a1("A,C:E").is_entire_column_selected(4));
+        assert!(!A1Selection::test_a1("A,C:E").is_entire_column_selected(6));
+
+        // Test with all cells selected
+        assert!(A1Selection::test_a1("*").is_entire_column_selected(1));
+        assert!(A1Selection::test_a1("*").is_entire_column_selected(100));
+    }
+
+    #[test]
+    fn test_is_entire_row_selected() {
+        // Test explicit row selection
+        assert!(A1Selection::test_a1("1").is_entire_row_selected(1));
+        assert!(!A1Selection::test_a1("1").is_entire_row_selected(2));
+
+        // Test range of rows
+        assert!(A1Selection::test_a1("1:3").is_entire_row_selected(2));
+        assert!(!A1Selection::test_a1("1:3").is_entire_row_selected(4));
+
+        // Test with cell selections (should be false)
+        assert!(!A1Selection::test_a1("A1").is_entire_row_selected(1));
+        assert!(!A1Selection::test_a1("A1:E1").is_entire_row_selected(1));
+
+        // Test with multiple ranges
+        assert!(A1Selection::test_a1("1,3:5").is_entire_row_selected(1));
+        assert!(A1Selection::test_a1("1,3:5").is_entire_row_selected(4));
+        assert!(!A1Selection::test_a1("1,3:5").is_entire_row_selected(6));
+
+        // Test with all cells selected
+        assert!(A1Selection::test_a1("*").is_entire_row_selected(1));
+        assert!(A1Selection::test_a1("*").is_entire_row_selected(100));
     }
 }
