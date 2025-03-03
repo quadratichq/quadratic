@@ -241,7 +241,8 @@ To clear the values of a cell, set the value to an empty string.\n
   [AITool.SetCodeCellValue]: {
     sources: ['AIAnalyst'],
     description: `
-Sets the value of a code cell and run it in the currently open sheet, requires the cell position (in a1 notation), codeString and language\n
+Sets the value of a code cell and run it in the currently open sheet, requires the language, cell position (in a1 notation), code string and the width and height of the code output on running this Code in the currently open sheet.\n
+Default output size of a new plot/chart is 7 wide * 23 tall cells.\n
 You should use the set_code_cell_value function to set this code cell value. Use this function instead of responding with code.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not a code. Don't add static data to the currently open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to a code.\n
 Always refer to the data from cell by its position in a1 notation from respective sheet. Don't add values manually in code cells.\n
@@ -292,7 +293,7 @@ The required location code_cell_position for this code cell is one which satisfi
  - In case there is not enough empty space near the referenced data, choose a distant empty cell which is in the same row as the top right corner of referenced data and to the right of this data.\n
  - If there are multiple tables or data sources being referenced, place the code cell in a location that provides a good balance between proximity to all referenced data and maintaining readability of the currently open sheet.\n
  - Consider the overall layout and organization of the currently open sheet when placing the code cell, ensuring it doesn't disrupt existing data or interfere with other code cells.\n
- - A plot returned by the code cell occupies space on the sheet and spills if there is any data present in the sheet where the plot is suppose to take place. Default size of a new plot is 7 wide * 23 tall cells.\n
+ - A plot returned by the code cell occupies space on the sheet and spills if there is any data present in the sheet where the plot is suppose to take place. Default output size of a new plot is 7 wide * 23 tall cells.\n
  - Do not use conditional returns in python code cells.\n
  - Don't prefix formulas with \`=\` in code cells.\n
  `,
