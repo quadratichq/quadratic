@@ -3,10 +3,12 @@ import { codeEditorAtom, codeEditorCodeCellAtom, codeEditorEditorContentAtom } f
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
+import { CodeSnippet } from '@/app/ui/menus/CodeEditor/AIAssistant/CodeSnippet';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { SaveAndRunIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
+import { CodeIcon } from '@radix-ui/react-icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { useEffect, useMemo, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
@@ -23,6 +25,7 @@ export const UpdateCodeCell = ({ args, loading }: UpdateCodeCellProps) => {
   const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<UpdateCodeCellResponse, UpdateCodeCellResponse>>();
   const editorContent = useRecoilValue(codeEditorEditorContentAtom);
   const codeCell = useRecoilValue(codeEditorCodeCellAtom);
+  const [showCode, setShowCode] = useState(false);
 
   const handleSaveAndRun = useRecoilCallback(
     ({ snapshot, set }) =>
@@ -102,21 +105,31 @@ export const UpdateCodeCell = ({ args, loading }: UpdateCodeCellProps) => {
   }
 
   return (
-    <ToolCard
-      icon={<LanguageIcon language={getLanguage(codeCell.language)} />}
-      label={getLanguage(codeCell.language)}
-      description={`${estimatedNumberOfLines} line` + (estimatedNumberOfLines === 1 ? '' : 's')}
-      actions={
-        editorContent !== toolArgs.data.code_string && (
-          <div className="flex gap-1">
-            <TooltipPopover label={'Apply'}>
-              <Button size="icon-sm" variant="ghost" onClick={handleSaveAndRun}>
-                <SaveAndRunIcon />
-              </Button>
-            </TooltipPopover>
-          </div>
-        )
-      }
-    />
+    <div>
+      <ToolCard
+        icon={<LanguageIcon language={getLanguage(codeCell.language)} />}
+        label={getLanguage(codeCell.language)}
+        description={`${estimatedNumberOfLines} line` + (estimatedNumberOfLines === 1 ? '' : 's')}
+        actions={
+          editorContent !== toolArgs.data.code_string && (
+            <div className="flex gap-1">
+              <TooltipPopover label={'Show code'}>
+                <Button size="icon-sm" variant="ghost" onClick={() => setShowCode(!showCode)}>
+                  <CodeIcon />
+                </Button>
+              </TooltipPopover>
+
+              <TooltipPopover label={'Apply'}>
+                <Button size="icon-sm" variant="ghost" onClick={handleSaveAndRun}>
+                  <SaveAndRunIcon />
+                </Button>
+              </TooltipPopover>
+            </div>
+          )
+        }
+      />
+
+      {showCode && <CodeSnippet code={toolArgs.data.code_string} language={getLanguage(codeCell.language)} />}
+    </div>
   );
 };
