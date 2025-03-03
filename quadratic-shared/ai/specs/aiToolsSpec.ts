@@ -175,6 +175,7 @@ Always use this tool when adding a new tabular data to the currently open sheet.
 Don't use this tool to add data to a data table that already exists. Use set_cell_values function to add data to a data table that already exists.\n
 All values can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add values manually in code cells.\n
 To delete a data table, use set_cell_values function with the top_left_position of the data table and with just one empty string value at the top_left_position. Overwriting the top_left_position (anchor position) deletes the data table.\n
+Don't attempt to add formulas or code to data tables.\n
 `,
   },
   [AITool.SetCellValues]: {
@@ -216,6 +217,7 @@ Use this function to add data to the currently open sheet. Don't use code cell f
 This function requires the top_left_position (in a1 notation) and the 2d array of strings representing the cell values to set. Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
 Values set using this function will replace the existing values in the cell and can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add these in code cells.\n
 To clear the values of a cell, set the value to an empty string.\n
+Don't attempt to add formulas or code to tables.\n
 `,
   },
   [AITool.SetCodeCellValue]: {
@@ -225,6 +227,7 @@ Sets the value of a code cell and run it in the currently open sheet, requires t
 You should use the set_code_cell_value function to set this code cell value. Use this function instead of responding with code.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not a code. Don't add static data to the currently open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to a code.\n
 Always refer to the data from cell by its position in a1 notation from respective sheet. Don't add values manually in code cells.\n
+Don't attempt to add formulas or code to tables.\n 
 `,
     parameters: {
       type: 'object',
@@ -260,7 +263,7 @@ Always refer to the data from cell by its position in a1 notation from respectiv
     responseSchema: AIToolsArgsSchema[AITool.SetCodeCellValue],
     prompt: `
 You should use the set_code_cell_value function to set this code cell value. Use set_code_cell_value function instead of responding with code.\n
-Never use set_code_cell_value function to set the value of a cell to a value that is not a code. Don't add data to the currently open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to a code.\n
+Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add data to the currently open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to a code.\n
 set_code_cell_value function requires language, codeString, the cell position (single cell in a1 notation) and the width and height of the code output on running this Code in the currently open sheet.\n
 Always refer to the cells on sheet by its position in a1 notation, using q.cells function. Don't add values manually in code cells.\n
 The required location code_cell_position for this code cell is one which satisfies the following conditions:\n
