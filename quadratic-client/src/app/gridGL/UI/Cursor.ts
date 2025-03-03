@@ -305,7 +305,6 @@ export class Cursor extends Container {
   }
 
   private calculateCursorRectangle(finiteRanges: RefRangeBounds[], infiniteRanges: RefRangeBounds[]) {
-    console.log(1);
     const sheet = sheets.sheet;
     if (finiteRanges.length + infiniteRanges.length === 0) {
       this.cursorRectangle = undefined;
