@@ -1,14 +1,16 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { debug } from '@/app/debugFlags';
-import { Button } from '@/shared/shadcn/ui/button';
+import { LightbulbIcon } from '@/shared/components/Icons';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+import { Toggle } from '@/shared/shadcn/ui/toggle';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { CaretDownIcon, LightningBoltIcon } from '@radix-ui/react-icons';
+import { CaretDownIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { ModelConfig, ModelKey } from 'quadratic-shared/typesAndSchemasAI';
@@ -102,16 +104,21 @@ export const SelectAIModelMenu = memo(({ loading, textAreaRef }: SelectAIModelMe
       </DropdownMenu>
 
       {canToggleThinking && (
-        <Button
-          size="sm"
-          variant={thinking ? 'outline' : 'ghost'}
-          disabled={loading}
-          onClick={() => handleThinkingToggle(!thinking)}
-          className="ml-1 mr-auto flex h-7 items-center gap-1 px-2 py-1 text-xs text-muted-foreground"
-        >
-          <LightningBoltIcon className={cn('h-3.5 w-3.5', thinking && 'text-primary')} />
-          Think
-        </Button>
+        <TooltipPopover label="Extended thinking for harder prompts">
+          <Toggle
+            aria-label="Extended thinking"
+            size="sm"
+            disabled={loading}
+            onClick={() => handleThinkingToggle(!thinking)}
+            className={cn(
+              !loading && (thinking ? '!text-primary' : 'text-muted-foreground hover:text-foreground'),
+              'mr-auto flex h-6 items-center !gap-0 px-2 py-1 text-xs font-normal '
+            )}
+          >
+            <LightbulbIcon className={cn('mr-0.5 !flex !h-4 !w-4 items-center !text-base')} />
+            Think
+          </Toggle>
+        </TooltipPopover>
       )}
     </>
   );
