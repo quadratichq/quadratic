@@ -137,9 +137,11 @@ mod tests {
             None,
         )
         .unwrap();
-        let ops = gc.set_cell_value_operations(
+        let ops = gc.set_cell_values_operations(
             sheet_pos,
-            "test_auto_resize_row_heights_on_set_cell_value_1".to_string(),
+            vec![vec![
+                "test_auto_resize_row_heights_on_set_cell_value_1".to_string()
+            ]],
         );
         // mock response from renderer
         let row_heights = vec![JsRowHeight {
@@ -172,9 +174,11 @@ mod tests {
         let async_transaction = gc.transactions.get_async_transaction(transaction_id);
         assert!(async_transaction.is_err());
 
-        let ops = gc.set_cell_value_operations(
+        let ops = gc.set_cell_values_operations(
             sheet_pos,
-            "test_auto_resize_row_heights_on_set_cell_value_2".to_string(),
+            vec![vec![
+                "test_auto_resize_row_heights_on_set_cell_value_2".to_string()
+            ]],
         );
         let row_heights = vec![JsRowHeight {
             row: 1,
@@ -647,9 +651,11 @@ mod tests {
             None,
         )
         .unwrap();
-        let ops = gc.set_cell_value_operations(
+        let ops = gc.set_cell_values_operations(
             sheet_pos,
-            "test_auto_resize_row_heights_on_user_transaction_only".to_string(),
+            vec![vec![
+                "test_auto_resize_row_heights_on_user_transaction_only".to_string(),
+            ]],
         );
         // mock response from renderer
         let row_heights = vec![JsRowHeight {
