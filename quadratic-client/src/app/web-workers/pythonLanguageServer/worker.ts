@@ -1,8 +1,7 @@
 import { debugWebWorkers } from '@/app/debugFlags';
-import { createMessageConnection } from 'vscode-jsonrpc';
+import { LanguageServerClient } from '@/app/web-workers/pythonLanguageServer/client';
 import { BrowserMessageReader, BrowserMessageWriter } from 'vscode-jsonrpc/browser';
-import { LogMessageNotification, RegistrationRequest } from 'vscode-languageserver-protocol';
-import { LanguageServerClient } from './client';
+import { createMessageConnection, LogMessageNotification, RegistrationRequest } from 'vscode-languageserver-protocol';
 
 // avoid worker caching
 const workerScriptName = '/pyright.worker.js?url' + Math.random().toString(36).substring(2, 20);

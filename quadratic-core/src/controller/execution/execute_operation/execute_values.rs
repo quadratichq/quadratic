@@ -24,16 +24,16 @@ impl GridController {
                         return;
                     }
 
-                    if cfg!(target_family = "wasm")
-                        && !transaction.is_server()
-                        && values.into_iter().any(|(_, _, value)| value.is_html())
-                    {
-                        if let Some(html) = sheet.get_single_html_output(sheet_pos.into()) {
-                            if let Ok(html) = serde_json::to_string(&html) {
-                                crate::wasm_bindings::js::jsUpdateHtml(html);
-                            }
-                        }
-                    };
+                    // if cfg!(target_family = "wasm")
+                    //     && !transaction.is_server()
+                    //     && values.into_iter().any(|(_, _, value)| value.is_html())
+                    // {
+                    //     if let Some(html) = sheet.get_single_html_output(sheet_pos.into()) {
+                    //         if let Ok(html) = serde_json::to_string(&html) {
+                    //             crate::wasm_bindings::js::jsUpdateHtml(html);
+                    //         }
+                    //     }
+                    // };
 
                     let min = sheet_pos.into();
                     let sheet_rect = SheetRect {
@@ -50,9 +50,9 @@ impl GridController {
                             .push(Operation::SetCellValues { sheet_pos, values });
 
                         if transaction.is_user() {
-                            self.check_deleted_code_runs(transaction, &sheet_rect);
+                            self.check_deleted_data_tables(transaction, &sheet_rect);
                             self.add_compute_operations(transaction, &sheet_rect, None);
-                            self.check_all_spills(transaction, sheet_rect.sheet_id, true);
+                            self.check_all_spills(transaction, sheet_rect.sheet_id);
                         }
 
                         transaction
@@ -65,9 +65,8 @@ impl GridController {
 
                     transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
 
+                    self.send_updated_bounds(transaction, sheet_rect.sheet_id);
                     if !transaction.is_server() {
-                        self.send_updated_bounds(sheet_rect.sheet_id);
-
                         transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
 
                         if transaction.is_user() {
@@ -93,14 +92,12 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use bigdecimal::BigDecimal;
-    use serial_test::parallel;
 
     use crate::controller::GridController;
     use crate::grid::SheetId;
     use crate::{CellValue, Pos, SheetPos};
 
     #[test]
-    #[parallel]
     fn test_set_cell_value() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -138,7 +135,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_set_cell_values_no_sheet() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -173,14 +169,12 @@ mod tests {
 #[cfg(test)]
 mod test {
     use bigdecimal::BigDecimal;
-    use serial_test::parallel;
 
     use super::*;
     use crate::grid::CodeCellLanguage;
     use crate::{CellValue, SheetPos};
 
     #[test]
-    #[parallel]
     fn test_set_cell_values_code_cell_remove() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -205,7 +199,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_set_cell_values_undo() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -224,7 +217,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn dependencies_properly_trigger_on_set_cell_values() {
         let mut gc = GridController::test();
         gc.set_cell_value(

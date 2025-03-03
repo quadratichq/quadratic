@@ -1,21 +1,22 @@
 import { events } from '@/app/events/events';
-import { getRectSelection } from '@/app/grid/sheet/selection';
 import { Sheet } from '@/app/grid/sheet/Sheet';
-import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { A1Selection, JsOffset, Rect, SheetInfo } from '@/app/quadratic-core-types';
-import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { A1Selection, JsOffset, Rect, SheetInfo } from '@/app/quadratic-core-types';
+import { type JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { SEARCH_PARAMS } from '@/shared/constants/routes';
-import { Rectangle } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
 
-class Sheets {
+export class Sheets {
   initialized: boolean;
   sheets: Sheet[];
 
   // current sheet id
   private _current: string;
+
+  // Stores stringified TableMap for use by A1 functions
+  a1Context: string;
 
   // set up sheet information
   // ------------------------
@@ -23,19 +24,25 @@ class Sheets {
   constructor() {
     this.sheets = [];
     this._current = '';
+    this.a1Context = '';
     events.on('sheetInfo', this.create);
     events.on('addSheet', this.addSheet);
     events.on('deleteSheet', this.deleteSheet);
     events.on('sheetInfoUpdate', this.updateSheet);
     events.on('setCursor', this.setCursor);
     events.on('sheetOffsets', this.updateOffsets);
+    events.on('a1Context', this.updateA1Context);
     this.initialized = false;
   }
+
+  private updateA1Context = (context: string) => {
+    this.a1Context = context;
+  };
 
   private create = (sheetInfo: SheetInfo[]) => {
     this.sheets = [];
     sheetInfo.forEach((info) => {
-      const sheet = new Sheet(info);
+      const sheet = new Sheet(this, info);
       this.sheets.push(sheet);
     });
     this.sort();
@@ -53,7 +60,7 @@ class Sheets {
   };
 
   private addSheet = (sheetInfo: SheetInfo, user: boolean) => {
-    const sheet = new Sheet(sheetInfo);
+    const sheet = new Sheet(this, sheetInfo);
     this.sheets.push(sheet);
     this.sort();
     if (user) {
@@ -119,9 +126,11 @@ class Sheets {
         const a1Selection = JSON.parse(selection) as A1Selection;
         const sheetId = a1Selection.sheet_id.id;
         const sheet = this.getById(sheetId);
+
         if (sheet) {
           this.current = sheetId;
           sheet.cursor.load(selection);
+          events.emit('cursorPosition');
         }
       } catch (e) {
         console.error('Error loading cursor', e);
@@ -148,6 +157,7 @@ class Sheets {
     if (!sheet) {
       // these lines remove some console errors during hmr loading.
       const sheet = new Sheet(
+        this,
         {
           sheet_id: 'error',
           name: 'Error',
@@ -318,14 +328,7 @@ class Sheets {
   }
 
   getA1String = (sheetId = this.current): string => {
-    return this.sheet.cursor.jsSelection.toA1String(sheetId, this.getSheetIdNameMap());
-  };
-
-  /// Gets a stringified SheetIdNameMap for Rust's A1 functions
-  getSheetIdNameMap = (): string => {
-    const sheetMap: Record<string, { id: string }> = {};
-    this.sheets.forEach((sheet) => (sheetMap[sheet.name] = { id: sheet.id }));
-    return JSON.stringify(sheetMap);
+    return this.sheet.cursor.jsSelection.toA1String(sheetId);
   };
 
   // Changes the cursor to the incoming selection
@@ -366,23 +369,16 @@ class Sheets {
     return rectToRectangle(visibleRect);
   };
 
-  getVisibleSelection = (): string | undefined => {
-    const sheetBounds = this.sheet.boundsWithoutFormatting;
-    if (sheetBounds.type === 'empty') {
-      return undefined;
-    }
+  updateTableName = (oldName: string, newName: string) => {
+    this.sheets.forEach((sheet) => {
+      sheet.cursor.updateTableName(oldName, newName);
+    });
+  };
 
-    const sheetBoundsRect: Rect = {
-      min: sheetBounds.min,
-      max: sheetBounds.max,
-    };
-    const visibleRect = this.getVisibleRect();
-    if (!intersects.rectRect(sheetBoundsRect, visibleRect)) {
-      return undefined;
-    }
-
-    const visibleRectSelection = getRectSelection(this.current, visibleRect);
-    return visibleRectSelection;
+  updateColumnName = (tableName: string, oldName: string, newName: string) => {
+    this.sheets.forEach((sheet) => {
+      sheet.cursor.updateColumnName(tableName, oldName, newName);
+    });
   };
 }
 

@@ -1,10 +1,9 @@
 use std::str::FromStr;
 
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
-
-use super::js_types::{JsCellValuePosAIContext, JsCodeCell};
-use crate::A1Selection;
+use crate::a1::A1Selection;
+use crate::SheetPos;
 use crate::{controller::GridController, grid::SheetId, Pos};
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 #[wasm_bindgen]
 impl GridController {
@@ -19,20 +18,14 @@ impl GridController {
         y: i32,
         value: String,
         cursor: Option<String>,
-    ) -> Result<JsValue, JsValue> {
-        let pos = Pos {
-            x: x as i64,
-            y: y as i64,
-        };
-        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
-            Ok(serde_wasm_bindgen::to_value(&self.set_cell_value(
-                pos.to_sheet_pos(sheet_id),
-                value,
-                cursor,
-            ))?)
-        } else {
-            Err(JsValue::from_str("Invalid sheet id"))
-        }
+    ) -> Result<(), JsValue> {
+        let pos = Pos::from((x, y));
+        let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
+
+        self.set_value((pos, sheet_id).into(), value.to_owned(), cursor)
+            .map_err(|e| e.to_string())?;
+
+        Ok(())
     }
 
     /// Sets a 2d array of cell values with x and y being the top left corner of the 2d array.
@@ -46,23 +39,13 @@ impl GridController {
         y: i32,
         values: JsValue,
         cursor: Option<String>,
-    ) -> Result<JsValue, JsValue> {
+    ) -> Result<(), JsValue> {
         let values: Vec<Vec<String>> = serde_wasm_bindgen::from_value(values)
-            .map_err(|_| JsValue::from_str("Invalid values"))?;
-        let values: Vec<Vec<&str>> = values
-            .iter()
-            .map(|row| row.iter().map(|s| s.as_str()).collect())
-            .collect();
-        let pos = Pos {
-            x: x as i64,
-            y: y as i64,
-        };
+            .map_err(|e| JsValue::from_str(&format!("Failed to parse values: {}", e)))?;
         if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
-            Ok(serde_wasm_bindgen::to_value(&self.set_cell_values(
-                pos.to_sheet_pos(sheet_id),
-                values,
-                cursor,
-            ))?)
+            self.set_cell_values(SheetPos::new(sheet_id, x as i64, y as i64), values, cursor);
+
+            Ok(())
         } else {
             Err(JsValue::from_str("Invalid sheet id"))
         }
@@ -90,11 +73,9 @@ impl GridController {
         let sheet = self
             .try_sheet_from_string_id(sheet_id)
             .ok_or(JsValue::UNDEFINED)?;
-        if let Some(value) = sheet.cell_value(pos) {
-            Ok(value.to_edit())
-        } else {
-            Ok(String::from(""))
-        }
+        let val = sheet.get_cell_for_formula(pos);
+
+        Ok(val.to_edit())
     }
 
     /// gets the display value for a cell
@@ -130,53 +111,8 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| JsValue::from_str("Unable to parse A1Selection"))?;
+
         self.delete_cells(&selection, cursor);
         Ok(())
-    }
-
-    /// gets values, types with position for all cells in selection
-    /// returns a stringified array of JsCellValuePosAIContext for all sheet_rects
-    #[wasm_bindgen(js_name = "getAIContextRectsInSelections")]
-    pub fn js_ai_context_rects_in_selections(
-        &self,
-        selections: Vec<String>,
-        max_rects: Option<usize>,
-    ) -> Result<JsValue, JsValue> {
-        let selections = selections
-            .iter()
-            .map(|selection| serde_json::from_str::<A1Selection>(selection))
-            .collect::<Result<Vec<A1Selection>, _>>()
-            .map_err(|_| JsValue::from_str("Unable to parse A1Selection"))?;
-        let mut all_ai_context_rects: Vec<Vec<JsCellValuePosAIContext>> = Vec::new();
-        for selection in selections {
-            if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-                let ai_context_rects =
-                    sheet.get_ai_context_rects_in_selection(selection, max_rects);
-                all_ai_context_rects.push(ai_context_rects);
-            }
-        }
-        serde_wasm_bindgen::to_value(&all_ai_context_rects).map_err(|_| JsValue::UNDEFINED)
-    }
-
-    /// gets JsCodeCell for all cells in sheet_rects that have errors
-    /// returns a stringified array of JsCodeCell for all sheet_rects
-    #[wasm_bindgen(js_name = "getErroredCodeCellsInSelections")]
-    pub fn js_errored_code_cells_in_selections(
-        &self,
-        selections: Vec<String>,
-    ) -> Result<JsValue, JsValue> {
-        let selections = selections
-            .iter()
-            .map(|selection| serde_json::from_str::<A1Selection>(selection))
-            .collect::<Result<Vec<A1Selection>, _>>()
-            .map_err(|_| JsValue::from_str("Unable to parse A1Selection"))?;
-        let mut all_errored_code_cells: Vec<Vec<JsCodeCell>> = Vec::new();
-        for selection in selections {
-            if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-                let errored_code_cells = sheet.get_errored_code_cells_in_selection(selection);
-                all_errored_code_cells.push(errored_code_cells);
-            }
-        }
-        serde_wasm_bindgen::to_value(&all_errored_code_cells).map_err(|_| JsValue::UNDEFINED)
     }
 }

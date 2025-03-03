@@ -1,4 +1,5 @@
-import { Plugin, Viewport } from 'pixi-viewport';
+import type { Viewport } from 'pixi-viewport';
+import { Plugin } from 'pixi-viewport';
 
 export const DECELERATE_OUT_OF_BOUNDS_FACTOR = 0.8;
 const MIN_SPEED = 0.1;
@@ -262,15 +263,15 @@ export class Decelerate extends Plugin {
     if (this.x !== null && this.y !== null) {
       if (this.x && this.y) {
         if (Math.abs(this.x) < this.options.minSpeed && Math.abs(this.y) < this.options.minSpeed) {
-          this.x = 0;
-          this.y = 0;
+          this.x = null;
+          this.y = null;
         }
       } else {
         if (Math.abs(this.x || 0) < this.options.minSpeed) {
-          this.x = 0;
+          this.x = null;
         }
         if (Math.abs(this.y || 0) < this.options.minSpeed) {
-          this.y = 0;
+          this.y = null;
         }
       }
 

@@ -117,10 +117,8 @@ impl GridBounds {
 #[cfg(test)]
 mod test {
     use super::*;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_bounds_rect() {
         let bounds = BoundsRect {
             x: 1,
@@ -133,14 +131,12 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_bounds_rect_empty() {
         let grid_bounds = GridBounds::Empty;
         assert_eq!(grid_bounds.to_bounds_rect(), None);
     }
 
     #[test]
-    #[parallel]
     fn test_bounds_rect_extend_x() {
         let mut grid_bounds = GridBounds::NonEmpty(Rect::new(1, 2, 3, 4));
         grid_bounds.extend_x(5);
@@ -148,7 +144,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_bounds_rect_extend_y() {
         let mut grid_bounds = GridBounds::NonEmpty(Rect::new(1, 2, 3, 4));
         grid_bounds.extend_y(5);
@@ -156,7 +151,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_first_column() {
         let grid_bounds = GridBounds::NonEmpty(Rect::new(1, 2, 3, 4));
         assert_eq!(grid_bounds.first_column(), Some(1));
@@ -166,7 +160,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_last_column() {
         let grid_bounds = GridBounds::NonEmpty(Rect::new(1, 2, 3, 4));
         assert_eq!(grid_bounds.last_column(), Some(3));
@@ -176,7 +169,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_first_row() {
         let grid_bounds = GridBounds::NonEmpty(Rect::new(1, 2, 3, 4));
         assert_eq!(grid_bounds.first_row(), Some(2));
@@ -186,7 +178,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_last_row() {
         let grid_bounds = GridBounds::NonEmpty(Rect::new(1, 2, 3, 4));
         assert_eq!(grid_bounds.last_row(), Some(4));

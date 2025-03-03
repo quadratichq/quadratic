@@ -1,4 +1,4 @@
-import { Action } from '@/app/actions/actions';
+import type { Action } from '@/app/actions/actions';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { defaultShortcuts } from '@/app/keyboard/defaults';
 import { Keys, MacModifiers, WindowsModifiers } from '@/app/keyboard/keys';

@@ -48,7 +48,7 @@ export default function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
         onChange={(e) => {
           const files = e.target.files;
           if (files) {
-            handleFileImport({ files, isPrivate, teamUuid });
+            handleFileImport({ files: Array.from(files), isPrivate, teamUuid });
           }
         }}
       />

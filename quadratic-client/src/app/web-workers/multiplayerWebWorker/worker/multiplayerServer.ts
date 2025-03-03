@@ -2,14 +2,13 @@
  * Communication between the multiplayer web worker and the quadratic-multiplayer server
  */
 
-import { User } from '@/auth/auth';
-import * as Sentry from '@sentry/react';
-import { Buffer } from 'buffer';
-import sharedConstants from '../../../../../../updateAlertVersion.json';
-import { debugShow, debugShowMultiplayer } from '../../../debugFlags';
-import { ClientMultiplayerInit, MultiplayerState } from '../multiplayerClientMessages';
-import { CoreMultiplayerTransaction } from '../multiplayerCoreMessages';
-import {
+import { debugShow, debugShowMultiplayer } from '@/app/debugFlags';
+import type {
+  ClientMultiplayerInit,
+  MultiplayerState,
+} from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
+import type { CoreMultiplayerTransaction } from '@/app/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
+import type {
   CellEdit,
   Heartbeat,
   MessageUserUpdate,
@@ -21,9 +20,13 @@ import {
   SendTransaction,
   UserUpdate,
   Version,
-} from '../multiplayerTypes';
-import { multiplayerClient } from './multiplayerClient';
-import { multiplayerCore } from './multiplayerCore';
+} from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import { multiplayerClient } from '@/app/web-workers/multiplayerWebWorker/worker/multiplayerClient';
+import { multiplayerCore } from '@/app/web-workers/multiplayerWebWorker/worker/multiplayerCore';
+import type { User } from '@/auth/auth';
+import * as Sentry from '@sentry/react';
+import { Buffer } from 'buffer';
+import sharedConstants from '../../../../../../updateAlertVersion.json';
 
 const UPDATE_TIME_MS = 1000 / 60;
 const HEARTBEAT_TIME = 1000 * 10;

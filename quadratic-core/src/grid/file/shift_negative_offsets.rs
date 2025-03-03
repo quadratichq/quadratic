@@ -10,7 +10,7 @@ use crate::{
     controller::{
         active_transactions::pending_transaction::PendingTransaction, execution::TransactionSource,
     },
-    grid::{Grid, GridBounds},
+    grid::{js_types::JsSnackbarSeverity, Grid, GridBounds},
     CopyFormats,
 };
 
@@ -80,7 +80,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
 
     // translate code runs's cells_accessed
     for sheet in grid.sheets.iter_mut() {
-        for code_run in sheet.code_runs.values_mut() {
+        for (_, code_run) in sheet.iter_code_runs_mut() {
             let cells = &mut code_run.cells_accessed.cells;
             for (sheet_id, ranges) in cells {
                 // Get shift values for the current sheet, skip if not found
@@ -96,7 +96,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
                 // Translate all ranges and collect into new HashSet
                 *ranges = ranges
                     .iter()
-                    .map(|r| r.translate(x_shift, y_shift))
+                    .filter_map(|r| r.translate(x_shift, y_shift).ok())
                     .collect();
             }
         }
@@ -114,7 +114,10 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
     }
 
     if changed && (cfg!(target_family = "wasm") || cfg!(test)) {
-        crate::wasm_bindings::js::jsClientMessage("negative_offsets".to_string(), false);
+        crate::wasm_bindings::js::jsClientMessage(
+            "negative_offsets".to_string(),
+            JsSnackbarSeverity::Success.to_string(),
+        );
     }
 
     shifted_offsets_sheet_name
@@ -122,16 +125,15 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
 
 #[cfg(test)]
 mod test {
-    use serial_test::parallel;
 
     use crate::{
+        a1::UNBOUNDED,
         controller::GridController,
         grid::{file::import, sheet::borders::CellBorderLine},
-        CellValue, Pos, UNBOUNDED,
+        CellValue, Pos,
     };
 
     #[test]
-    #[parallel]
     fn test_negative_offsets() {
         let file = include_bytes!("../../../test-files/v1.7_negative_offsets.grid");
         let imported = import(file.to_vec()).unwrap();

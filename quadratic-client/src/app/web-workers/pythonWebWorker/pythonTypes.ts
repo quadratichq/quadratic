@@ -39,6 +39,8 @@ export interface PythonSuccess {
   success: true;
 
   lineno: undefined;
+
+  has_headers: boolean;
 }
 
 export interface PythonError {
@@ -56,6 +58,8 @@ export interface PythonError {
   line_number: number;
 
   lineno?: number;
+
+  has_headers: boolean;
 }
 
 export type PythonRun = PythonSuccess | PythonError;

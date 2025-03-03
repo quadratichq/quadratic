@@ -51,6 +51,7 @@ services:
     image: localstack/localstack:latest
     ports:
       - "127.0.0.1:4566:4566" # LocalStack Gateway
+      # - "127.0.0.1:4567:4566"
       - "127.0.0.1:4510-4559:4510-4559"
     environment:
       # LocalStack configuration: https://docs.localstack.cloud/references/configuration/
@@ -99,8 +100,10 @@ services:
       /bin/sh -c "/client/scripts/replace_env_vars.sh && nginx -g \"daemon off;\""
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://host.docker.internal:3000/ || exit 1" ]
+      start_period: 10s
       interval: 10s
       timeout: 5s
+      retries: 10
     restart: "always"
     volumes:
       - ./docker/client:/client
@@ -131,6 +134,7 @@ services:
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      XAI_API_KEY: ${XAI_API_KEY}
       EXA_API_KEY: ${EXA_API_KEY}
       AWS_S3_REGION: ${AWS_S3_REGION}
       AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME}
@@ -317,6 +321,7 @@ services:
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      XAI_API_KEY: ${XAI_API_KEY}
       EXA_API_KEY: ${EXA_API_KEY}
       AWS_S3_REGION: ${AWS_S3_REGION}
       AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME}

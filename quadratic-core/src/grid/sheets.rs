@@ -1,8 +1,10 @@
-use crate::SheetNameIdMap;
+use std::str::FromStr;
+
+use crate::a1::A1Context;
 
 use super::{Grid, Sheet, SheetId};
+use anyhow::{anyhow, Result};
 use lexicon_fractional_index::key_between;
-use std::str::FromStr;
 
 impl Grid {
     pub fn sheets(&self) -> &[Sheet] {
@@ -95,7 +97,7 @@ impl Grid {
         let mut sheet = sheet.unwrap_or_else(|| {
             Sheet::new(
                 SheetId::new(),
-                format!("Sheet {}", self.sheets.len() + 1),
+                format!("Sheet{}", self.sheets.len() + 1),
                 self.end_order(),
             )
         });
@@ -155,28 +157,36 @@ impl Grid {
         self.sheets.iter().find(|s| s.id == sheet_id)
     }
 
+    pub fn try_sheet_result(&self, sheet_id: SheetId) -> Result<&Sheet> {
+        self.try_sheet(sheet_id)
+            .ok_or_else(|| anyhow!("Sheet not found: {:?}", sheet_id))
+    }
+
     pub fn try_sheet_mut(&mut self, sheet_id: SheetId) -> Option<&mut Sheet> {
         self.sheets.iter_mut().find(|s| s.id == sheet_id)
+    }
+
+    pub fn update_sheet_name(&mut self, old_name: &str, new_name: &str, context: &A1Context) {
+        for sheet in self.sheets.iter_mut() {
+            sheet.replace_sheet_name_in_code_cells(old_name, new_name, context);
+
+            if sheet.name == old_name {
+                sheet.name = new_name.to_string();
+            }
+        }
     }
 
     #[cfg(test)]
     pub fn sheets_mut(&mut self) -> &mut [Sheet] {
         &mut self.sheets
     }
-
-    /// Returns a map of sheet names to sheet ids.
-    pub fn sheet_name_id_map(&self) -> SheetNameIdMap {
-        self.sheets.iter().map(|s| (s.name.clone(), s.id)).collect()
-    }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_try_sheet_from_id() {
         let grid = Grid::new();
         let id = grid.first_sheet_id();
@@ -186,7 +196,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_try_sheet_mut_from_id() {
         let mut grid = Grid::new();
         let id = grid.first_sheet_id();
@@ -207,7 +216,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_order_add_sheet() {
         let grid = create_three_sheets();
         let sheet_0 = &grid.sheets[0];
@@ -218,7 +226,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_order_move_sheet() {
         // starting as name = 0, 1, 2
         let mut grid = create_three_sheets();
@@ -256,21 +263,18 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_first_sheet() {
         let grid = create_three_sheets();
         assert_eq!(grid.first_sheet().name, String::from('0'));
     }
 
     #[test]
-    #[parallel]
     fn test_first_sheet_id() {
         let grid = create_three_sheets();
         assert_eq!(grid.first_sheet_id(), grid.sheets[0].id);
     }
 
     #[test]
-    #[parallel]
     fn test_previous_sheet_order() {
         let grid = create_three_sheets();
         assert_eq!(grid.previous_sheet_order(grid.sheets[0].id), None);
@@ -285,7 +289,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_next_sheet() {
         let grid = create_three_sheets();
         assert_eq!(grid.next_sheet(grid.sheets[0].id), Some(&grid.sheets[1]));
@@ -294,7 +297,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_sort_sheets() {
         let mut grid = create_three_sheets();
         grid.sheets[0].order = String::from("a2");
@@ -307,7 +309,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_move_sheet() {
         let mut grid = create_three_sheets();
         grid.move_sheet(
@@ -324,45 +325,19 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn add_sheet_adds_suffix_if_name_already_in_use() {
         let mut grid = Grid::new();
         grid.add_sheet(Some(Sheet::new(
             SheetId::new(),
-            "Sheet 1".to_string(),
+            "Sheet1".to_string(),
             "a1".to_string(),
         )));
         grid.add_sheet(Some(Sheet::new(
             SheetId::new(),
-            "Sheet 1".to_string(),
+            "Sheet1".to_string(),
             "a1".to_string(),
         )));
-        assert_eq!(grid.sheets[0].name, "Sheet 1".to_string());
-        assert_eq!(grid.sheets[1].name, "Sheet 1 (1)".to_string());
-    }
-
-    #[test]
-    #[parallel]
-    fn test_sheet_name_id_map() {
-        let mut grid = Grid::new();
-        let id0 = grid.first_sheet_id();
-        grid.sheets[0].name = "Sheet 0".to_string();
-        let id1 = grid.add_sheet(Some(Sheet::new(
-            SheetId::new(),
-            "Sheet 1".to_string(),
-            "a1".to_string(),
-        )));
-        let id2 = grid.add_sheet(Some(Sheet::new(
-            SheetId::new(),
-            "Sheet 2".to_string(),
-            "a2".to_string(),
-        )));
-
-        let map = grid.sheet_name_id_map();
-
-        assert_eq!(map.len(), 3);
-        assert_eq!(map.get("Sheet 0"), Some(&id0));
-        assert_eq!(map.get("Sheet 1"), Some(&id1));
-        assert_eq!(map.get("Sheet 2"), Some(&id2));
+        assert_eq!(grid.sheets[0].name, "Sheet1".to_string());
+        assert_eq!(grid.sheets[1].name, "Sheet1 (1)".to_string());
     }
 }

@@ -1,8 +1,8 @@
 import { getRowColSentence, ToolCard } from '@/app/ui/menus/AIAnalyst/toolCards/ToolCard';
-import { TableIcon } from '@/shared/components/Icons';
+import { TableRowsIcon } from '@/shared/components/Icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { useEffect, useState } from 'react';
-import { z } from 'zod';
+import type { z } from 'zod';
 
 type SetCellValuesResponse = z.infer<(typeof aiToolsSpec)[AITool.SetCellValues]['responseSchema']>;
 
@@ -28,7 +28,7 @@ export const SetCellValues = ({ args, loading }: SetCellValuesProps) => {
     }
   }, [args, loading]);
 
-  const icon = <TableIcon />;
+  const icon = <TableRowsIcon />;
   const label = 'Data';
 
   if (loading) {

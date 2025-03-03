@@ -6,9 +6,10 @@ import { FilesListEmptyState } from '@/dashboard/components/FilesListEmptyState'
 import NewFileButton from '@/dashboard/components/NewFileButton';
 import { OnboardingBanner } from '@/dashboard/components/OnboardingBanner';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
+import { Avatar } from '@/shared/components/Avatar';
+import { AddIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
-import { Add } from '@mui/icons-material';
-import { Avatar, AvatarGroup } from '@mui/material';
+import { cn } from '@/shared/shadcn/utils';
 import { FileIcon } from '@radix-ui/react-icons';
 import { Link } from 'react-router-dom';
 
@@ -22,7 +23,6 @@ export const Component = () => {
     },
   } = useDashboardRouteLoaderData();
   const canEdit = teamPermissions.includes('TEAM_EDIT');
-  const avatarSxProps = { width: 24, height: 24, fontSize: '.875rem' };
 
   const usersById: Record<
     number,
@@ -35,6 +35,8 @@ export const Component = () => {
     {}
   );
 
+  const sharedAvatarClasses = '-ml-1 outline outline-2 outline-background';
+
   return (
     <div className="flex flex-grow flex-col">
       <OnboardingBanner />
@@ -44,26 +46,25 @@ export const Component = () => {
         actions={
           <div className={`flex items-center gap-2`}>
             <div className="hidden lg:block">
-              <Link to={ROUTES.TEAM_MEMBERS(teamUuid)}>
-                {/* TODO(ayush): create custom AvatarGroup component */}
-                <AvatarGroup
-                  max={6}
-                  sx={{ cursor: 'pointer', pr: 0 }}
-                  slotProps={{ additionalAvatar: { sx: avatarSxProps } }}
-                >
-                  <Avatar alt="Add" sx={{ ...avatarSxProps }} className="text-sm">
-                    <Add fontSize="inherit" />
+              <Link to={ROUTES.TEAM_MEMBERS(teamUuid)} className="flex items-center">
+                {users.slice(0, 6).map((user, key) => (
+                  <Avatar
+                    key={key}
+                    alt={user.name}
+                    src={getAuth0AvatarSrc(user.picture)}
+                    className={sharedAvatarClasses}
+                  >
+                    {user.name}
                   </Avatar>
-                  {users.map((user, key) => (
-                    <Avatar
-                      key={key}
-                      alt={user.name}
-                      src={getAuth0AvatarSrc(user.picture)}
-                      sx={avatarSxProps}
-                      imgProps={{ crossOrigin: 'anonymous' }}
-                    />
-                  ))}
-                </AvatarGroup>
+                ))}
+                <div
+                  className={cn(
+                    sharedAvatarClasses,
+                    ' flex h-6 w-6 items-center justify-center rounded-full bg-muted-foreground text-sm text-foreground '
+                  )}
+                >
+                  <AddIcon className="text-background" />
+                </div>
               </Link>
             </div>
             {canEdit && <NewFileButton isPrivate={false} />}

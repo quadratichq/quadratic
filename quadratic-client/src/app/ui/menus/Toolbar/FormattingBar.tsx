@@ -1,5 +1,5 @@
 import { Action } from '@/app/actions/actions';
-import { ActionArgs } from '@/app/actions/actionsSpec';
+import type { ActionArgs } from '@/app/actions/actionsSpec';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
@@ -11,7 +11,6 @@ import {
   BorderAllIcon,
   FormatAlignLeftIcon,
   FormatTextWrapIcon,
-  Number123Icon,
   VerticalAlignTopIcon,
 } from '@/shared/components/Icons';
 import {
@@ -24,7 +23,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popo
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import mixpanel from 'mixpanel-browser';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 export const FormattingBar = () => {
   return (
@@ -40,12 +39,7 @@ export const FormattingBar = () => {
       <FormatButton action={Action.FormatNumberDecimalIncrease} actionArgs={undefined} />
       <FormatButton action={Action.FormatNumberCurrency} actionArgs={undefined} />
       <FormatButton action={Action.FormatNumberPercent} actionArgs={undefined} />
-      <FormatButtonDropdown showDropdownArrow tooltipLabel="More number formats" Icon={Number123Icon}>
-        <FormatButtonDropdownActions
-          actions={[Action.FormatNumberAutomatic, Action.FormatNumberScientific]}
-          actionArgs={undefined}
-        />
-      </FormatButtonDropdown>
+      <FormatButton action={Action.FormatNumberAutomatic} actionArgs={undefined} />
 
       <Separator />
 

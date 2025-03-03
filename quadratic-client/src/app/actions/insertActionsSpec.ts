@@ -1,19 +1,19 @@
 import { Action } from '@/app/actions/actions';
-import { ActionSpecRecord } from '@/app/actions/actionsSpec';
+import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { FILE_INPUT_ID } from '@/app/gridGL/HTMLGrid/GridFileInput';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import { SNIPPET_JS_API, SNIPPET_JS_CHART } from '@/app/ui/menus/CodeEditor/snippetsJS';
 import { SNIPPET_PY_API, SNIPPET_PY_CHART } from '@/app/ui/menus/CodeEditor/snippetsPY';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
-  ArrowDropDownCircleIcon,
+  ArrowDropDownIcon,
   CheckBoxIcon,
   DataValidationsIcon,
   FormatDateTimeIcon,
   SheetIcon,
 } from '@/shared/components/Icons';
-import { quadraticCore } from '../web-workers/quadraticCore/quadraticCore';
 
 type InsertActionSpec = Pick<
   ActionSpecRecord,
@@ -34,6 +34,13 @@ type InsertActionSpec = Pick<
   | Action.InsertTodayTime
   | Action.InsertFile
 >;
+
+export const insertCellReference = () => {
+  if (pixiAppSettings.codeEditorState.showCodeEditor) {
+    const { sheetId, language } = pixiAppSettings.codeEditorState.codeCell;
+    insertCellRef(sheetId, language);
+  }
+};
 
 export const insertActionsSpec: InsertActionSpec = {
   [Action.InsertCodePython]: {
@@ -223,7 +230,7 @@ export const insertActionsSpec: InsertActionSpec = {
   [Action.InsertDropdown]: {
     label: 'Dropdown',
     labelVerbose: 'Insert dropdown',
-    Icon: ArrowDropDownCircleIcon,
+    Icon: ArrowDropDownIcon,
     run: () => {
       if (!pixiAppSettings.setEditorInteractionState) return;
       pixiAppSettings.setEditorInteractionState((prev) => ({
@@ -247,12 +254,7 @@ export const insertActionsSpec: InsertActionSpec = {
   [Action.InsertCellReference]: {
     label: 'Cell reference',
     labelVerbose: 'Insert cell reference',
-    run: () => {
-      if (pixiAppSettings.codeEditorState.showCodeEditor) {
-        const { sheetId, language } = pixiAppSettings.codeEditorState.codeCell;
-        insertCellRef(sheetId, language);
-      }
-    },
+    run: insertCellReference,
   },
   [Action.RemoveInsertedCells]: {
     label: 'Remove inserted cells',

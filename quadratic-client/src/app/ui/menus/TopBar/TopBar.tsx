@@ -1,6 +1,9 @@
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { isEmbed } from '@/app/helpers/isEmbed';
+import { TopBarFileNameAndLocationMenu } from '@/app/ui/menus/TopBar/TopBarFileNameAndLocationMenu';
 import { TopBarMenus } from '@/app/ui/menus/TopBar/TopBarMenus/TopBarMenus';
+import { TopBarShareButton } from '@/app/ui/menus/TopBar/TopBarShareButton';
+import { TopBarUsers } from '@/app/ui/menus/TopBar/TopBarUsers';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { VERSION } from '@/shared/constants/appConstants';
 import {
@@ -10,11 +13,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
-import { isElectron } from '@/shared/utils/isElectron';
-import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
-import { TopBarFileNameAndLocationMenu } from './TopBarFileNameAndLocationMenu';
-import { TopBarShareButton } from './TopBarShareButton';
-import { TopBarUsers } from './TopBarUsers';
 
 export const TopBar = () => {
   // TODO: what about embedable view? should we show the file menu?
@@ -26,20 +24,6 @@ export const TopBar = () => {
         event.preventDefault();
       }}
       className="relative flex h-12 w-full flex-shrink-0 select-none justify-between gap-2 border-b border-border bg-background pl-2 pr-4"
-      style={
-        isElectron()
-          ? {
-              paddingLeft: '4.5rem',
-              // this allows the window to be dragged in Electron
-              // @ts-expect-error
-              WebkitAppRegion: 'drag',
-            }
-          : {}
-      }
-      onDoubleClick={(event) => {
-        // if clicked (not child clicked), maximize window. For electron.
-        if (event.target === event.currentTarget) electronMaximizeCurrentWindow();
-      }}
     >
       <div
         className="flex items-center lg:basis-1/3"

@@ -34,6 +34,7 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
+        a1::A1Selection,
         grid::{
             sheet::validations::{
                 validation::Validation,
@@ -41,7 +42,6 @@ mod tests {
             },
             Sheet,
         },
-        A1Selection,
     };
 
     use super::*;

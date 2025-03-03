@@ -51,8 +51,24 @@ export const ConnectionTypeDetailsPostgresSchema = z.object({
   password: z.string().optional().transform(transformEmptyStringToUndefined),
 });
 export const ConnectionTypeDetailsMysqlSchema = ConnectionTypeDetailsPostgresSchema;
-export const ConnectionTypeDetailsMssqlSchema = ConnectionTypeDetailsPostgresSchema.extend({
+export const ConnectionTypeDetailsMssqlSchema = z.object({
+  host: z.string().min(1, { message: 'Required' }),
+  port: z
+    .string()
+    .min(1, { message: 'Required' })
+    .refine(
+      (port) => {
+        const portNumber = Number(port);
+        if (isNaN(portNumber)) return false;
+        return portNumber >= 0 && portNumber <= 65535;
+      },
+      {
+        message: 'Port must be a valid number between 0 and 65535',
+      }
+    ),
   database: z.string().optional(),
+  username: z.string().min(1, { message: 'Required' }),
+  password: z.string().min(1, { message: 'Required' }),
 });
 export const ConnectionTypeDetailsSnowflakeSchema = z.object({
   account_identifier: z.string().min(1, { message: 'Required' }),

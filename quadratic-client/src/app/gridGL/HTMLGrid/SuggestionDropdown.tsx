@@ -8,7 +8,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { validationRuleSimple } from '@/app/ui/menus/Validations/Validation/validationType';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { cn } from '@/shared/shadcn/utils';
-import { Rectangle } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
 import { useCallback, useEffect, useState } from 'react';
 
 export const SuggestionDropDown = () => {
@@ -40,7 +40,7 @@ export const SuggestionDropDown = () => {
           inlineEditorMonaco.autocompleteList = values;
         } else if (validationRuleSimple(validation) === 'list') {
           if (validation && validationRuleSimple(validation) === 'list') {
-            const values = await quadraticCore.getValidationList(sheets.sheet.id, pos.x, pos.y);
+            const values = await quadraticCore.getValidationList(sheets.current, pos.x, pos.y);
             if (values) {
               // we set the list to undefined so the dropdown doesn't show (it will show only if validation is set to show list)
               // we still want the autocomplete to work so we send the values to the monaco editor
@@ -53,7 +53,12 @@ export const SuggestionDropDown = () => {
           inlineEditorMonaco.autocompleteShowingList = false;
         }
       } else {
-        const values = await quadraticCore.neighborText(sheets.current, pos.x, pos.y);
+        let values: string[] | undefined;
+        try {
+          values = await quadraticCore.neighborText(sheets.current, pos.x, pos.y);
+        } catch (e) {
+          console.error(`[SuggestionDropDown] Error getting neighbor text: ${e}`);
+        }
         setList(values);
         inlineEditorMonaco.autocompleteList = values;
         if (values) {
@@ -98,6 +103,7 @@ export const SuggestionDropDown = () => {
     inlineEditorEvents.emit('replaceText', value, 0);
     inlineEditorHandler.close(0, 1, false);
     inlineEditorMonaco.autocompleteShowingList = false;
+    setIndex(-1);
   }, []);
 
   // handle keyboard events when list is open
@@ -108,21 +114,26 @@ export const SuggestionDropDown = () => {
 
       if (key === 'ArrowDown' || key === 'ArrowUp') {
         setIndex((index) => {
-          const i =
-            key === 'ArrowDown'
-              ? (index + 1) % filteredList.length
-              : (index - 1 + filteredList.length) % filteredList.length;
-          return i;
+          return key === 'ArrowDown'
+            ? (index + 1) % filteredList.length
+            : (index - 1 + filteredList.length) % filteredList.length;
         });
       } else if (key === 'Enter') {
         if (index >= 0) {
           changeValue(filteredList[index]);
+        } else {
+          changeValue(inlineEditorMonaco.get());
         }
       } else if (key === 'Escape') {
+        setIndex(-1);
         inlineEditorMonaco.autocompleteShowingList = false;
         setFilteredList(undefined);
       } else if (key === 'Tab') {
-        inlineEditorMonaco.autocompleteSuggestionShowing = false;
+        if (index >= 0) {
+          changeValue(filteredList[index]);
+        } else {
+          changeValue(inlineEditorMonaco.get());
+        }
       }
     };
 

@@ -11,7 +11,7 @@ export const ToolCard = ({
   isLoading,
 }: {
   icon?: React.ReactNode;
-  label?: string;
+  label?: string | React.ReactNode;
   description?: string | React.ReactNode;
   hasError?: boolean;
   className?: string;
@@ -21,17 +21,17 @@ export const ToolCard = ({
   return (
     <div
       className={cn(
-        'flex h-12 items-center justify-between gap-2 rounded border border-border bg-background p-2 text-sm shadow',
+        'flex h-12 min-w-0 items-center justify-between gap-2 rounded border border-border bg-background p-2 text-sm shadow-sm',
         className
       )}
     >
-      <div className="flex items-center gap-2">
-        <div className="flex h-6 w-6 items-center justify-center">
+      <div className="flex min-w-0 items-center gap-2">
+        <div className="flex h-6 w-6 select-none items-center justify-center">
           {icon ? icon : isLoading ? <Skeleton className="h-6 w-6 bg-accent" /> : null}
         </div>
 
-        <div className="flex flex-col">
-          <span className="flex h-5 items-center font-bold">
+        <div className="flex min-w-0 flex-col">
+          <span className="flex h-5 items-center truncate font-bold">
             {label ? label : isLoading ? <Skeleton className="h-3 w-64 bg-accent" /> : null}
           </span>
           <span className="-mt-0.5 flex h-4 items-center text-xs text-muted-foreground">

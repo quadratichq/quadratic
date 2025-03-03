@@ -3,10 +3,12 @@ use std::fmt;
 mod atoms;
 mod combinators;
 mod expression;
+mod table_ref;
 
 pub use atoms::*;
 pub use combinators::*;
 pub use expression::*;
+pub use table_ref::*;
 
 use super::*;
 use crate::{CodeResult, RunErrorMsg, Span, Spanned};

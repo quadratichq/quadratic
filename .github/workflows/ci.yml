@@ -286,7 +286,10 @@ jobs:
         run: |
           current_version="${{ steps.current_version.outputs.CURRENT_VERSION }}"
           main_version="${{ steps.main_version.outputs.MAIN_VERSION }}"
-          if [ "$(printf '%s\n' "$main_version" "$current_version" | sort -V | tail -n1)" != "$current_version" ]; then
+          if [ "$current_version" = "$main_version" ]; then
+            echo "Error: VERSION in the current branch ($current_version) is the same as VERSION in main ($main_version)"
+            exit 1
+          elif [ "$(printf '%s\n' "$main_version" "$current_version" | sort -V | head -n1)" != "$main_version" ]; then
             echo "Error: VERSION in the current branch ($current_version) is not greater than VERSION in main ($main_version)"
             exit 1
           else

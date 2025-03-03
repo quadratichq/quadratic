@@ -8,7 +8,7 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::A1Error;
+use crate::a1::A1Error;
 
 pub type Result<T> = std::result::Result<T, CoreError>;
 

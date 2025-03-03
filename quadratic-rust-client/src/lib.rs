@@ -1,12 +1,12 @@
 use quadratic_core::sheet_offsets::SheetOffsets;
 use wasm_bindgen::prelude::*;
 
-pub use quadratic_core::a1::JsSelection;
+pub use quadratic_core::a1::js_selection::JsSelection;
 
 pub mod date_time;
+pub mod formulas;
 pub mod jsexpr;
 pub mod lsp;
-pub mod parse_formula;
 
 #[wasm_bindgen]
 pub struct SheetOffsetsWasm {}

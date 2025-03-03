@@ -6,7 +6,7 @@ node_modules
 /.pnp
 .pnp.js
 .cache
-.cargo
+/.cargo
 # testing
 /coverage
 
@@ -42,8 +42,10 @@ quadratic-core/tmp.txt
 quadratic-files/target/
 quadratic-files/storage
 quadratic-multiplayer/target/
+quadratic-rust-client/target/
+
 quadratic-multiplayer/updateAlertVersion.json
-quadratic-shared/src/auto_gen_path.rs
+quadratic-rust-shared/src/auto_gen_path.rs
 
 # Generated JS files
 quadratic-api/node_modules/

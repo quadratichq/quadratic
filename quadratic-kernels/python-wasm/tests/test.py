@@ -41,13 +41,19 @@ class Cell:
         self.value = value
         self.type_name = type_name
 
-class Result:
-    def __init__(self, w, h, x, y, cells):
+class Values:
+    def __init__(self, w, h, x, y, cells, has_headers):
         self.w = w
         self.h = h
         self.x = x
         self.y = y
         self.cells = cells
+        self.has_headers = has_headers
+
+class Result:
+    def __init__(self, values: Values, error: str):
+        self.values = values
+        self.error = error
 
 def mock_getCellsA1(a1: str, first_row_header: bool = False):
     out = []
@@ -64,8 +70,9 @@ def mock_getCellsA1(a1: str, first_row_header: bool = False):
         for y in range(y1, y2 + 1):
             out.append(Cell(x, y, f"hello {x}", "string"))
 
+    values = Values(x2 - x1 + 1, y2 - y1 + 1, x1, y1, out, first_row_header)
 
-    return Result(x2 - x1 + 1, y2 - y1 + 1, x1, y1, out)
+    return Result(values, None)
 
 class mock_micropip:
     async def install(name):
@@ -196,6 +203,7 @@ class TestQuadraticApi(TestCase):
     def test_getCells_1d_array(self):
         q_new = q((0, 0))
         cells = q_new.cells("A1:A2", first_row_header=False)
+        print("CELLS", cells, )
         assert cells.equals(pd.DataFrame([["hello 0"], ["hello 0"]], columns=[0]))
 
     def test_getCells_1d_array_header(self):

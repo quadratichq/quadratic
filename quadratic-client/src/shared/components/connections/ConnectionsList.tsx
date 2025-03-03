@@ -3,7 +3,7 @@ import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
 import { Empty } from '@/dashboard/components/Empty';
 import { AddIcon } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
-import {
+import type {
   ConnectionsListConnection,
   NavigateToCreateView,
   NavigateToView,
@@ -15,7 +15,7 @@ import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { cn } from '@/shared/shadcn/utils';
 import { timeAgo } from '@/shared/utils/timeAgo';
 import { Cross2Icon, Pencil1Icon } from '@radix-ui/react-icons';
-import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
 
 type Props = {

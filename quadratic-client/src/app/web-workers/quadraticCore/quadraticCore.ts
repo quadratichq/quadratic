@@ -8,7 +8,7 @@ import { debugShowFileIO, debugWebWorkersMessages } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import {
+import type {
   BorderSelection,
   BorderStyle,
   CellAlign,
@@ -16,23 +16,27 @@ import {
   CellVerticalAlign,
   CellWrap,
   CodeCellLanguage,
+  DataTableSort,
+  Direction,
   Format,
   JsCellValue,
-  JsCellValuePosAIContext,
   JsClipboard,
   JsCodeCell,
   JsCoordinate,
+  JsDataTableColumnHeader,
   JsRenderCell,
+  JsSelectionContext,
   JsSummarizeSelectionResult,
-  JumpDirection,
+  JsTablesContext,
+  MinMax,
   PasteSpecial,
+  Pos,
   SearchOptions,
   SheetPos,
   SheetRect,
   Validation,
 } from '@/app/quadratic-core-types';
-import { MinMax, Pos } from '@/app/quadratic-core/quadratic_core';
-import {
+import type {
   ClientCoreCellHasContent,
   ClientCoreGetCellFormatSummary,
   ClientCoreGetCodeCell,
@@ -51,6 +55,7 @@ import {
   CoreClientGetCellFormatSummary,
   CoreClientGetCodeCell,
   CoreClientGetColumnsBounds,
+  CoreClientGetCsvPreview,
   CoreClientGetDisplayCell,
   CoreClientGetEditCell,
   CoreClientGetJwt,
@@ -70,7 +75,7 @@ import {
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { authClient } from '@/auth/auth';
-import { Rectangle } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
 
 class QuadraticCore {
   private worker?: Worker;
@@ -112,9 +117,6 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientSetCursor') {
       events.emit('setCursor', e.data.cursor);
-      return;
-    } else if (e.data.type === 'coreClientSetCursorSelection') {
-      events.emit('setCursor', e.data.selection);
       return;
     } else if (e.data.type === 'coreClientSheetOffsets') {
       events.emit('sheetOffsets', e.data.sheetId, e.data.offsets);
@@ -194,12 +196,15 @@ class QuadraticCore {
       events.emit('bordersSheet', e.data.sheetId, e.data.borders);
       return;
     } else if (e.data.type === 'coreClientClientMessage') {
-      pixiAppSettings.snackbar(e.data.message, { severity: e.data.error ? 'error' : 'success' });
+      pixiAppSettings.snackbar(e.data.message, { severity: e.data.severity });
 
       // This is a hack to get import files to properly show negative offsets dialog
       // after importing from dashboard. This can be removed in the future.
       this.receivedClientMessage = true;
 
+      return;
+    } else if (e.data.type === 'coreClientA1Context') {
+      events.emit('a1Context', e.data.context);
       return;
     }
 
@@ -249,8 +254,8 @@ class QuadraticCore {
     const port = new MessageChannel();
     renderWebWorker.init(port.port2);
 
+    const id = this.id++;
     return new Promise((resolve) => {
-      const id = this.id++;
       this.waitingForResponse[id] = (message: CoreClientLoad) => {
         if (message.error) {
           if (debugShowFileIO) console.log(`[quadraticCore] error loading file "${message.error}".`);
@@ -277,8 +282,8 @@ class QuadraticCore {
   }
 
   async export(): Promise<Uint8Array> {
+    const id = this.id++;
     return new Promise((resolve) => {
-      const id = this.id++;
       this.waitingForResponse[id] = (message: { grid: Uint8Array }) => {
         resolve(message.grid);
       };
@@ -288,8 +293,8 @@ class QuadraticCore {
 
   // Gets a code cell from a sheet
   getCodeCell(sheetId: string, x: number, y: number): Promise<JsCodeCell | undefined> {
+    const id = this.id++;
     return new Promise((resolve) => {
-      const id = this.id++;
       const message: ClientCoreGetCodeCell = {
         type: 'clientCoreGetCodeCell',
         sheetId,
@@ -305,8 +310,8 @@ class QuadraticCore {
   }
 
   getRenderCell(sheetId: string, x: number, y: number): Promise<JsRenderCell | undefined> {
+    const id = this.id++;
     return new Promise((resolve) => {
-      const id = this.id++;
       const message: ClientCoreGetRenderCell = {
         type: 'clientCoreGetRenderCell',
         sheetId,
@@ -322,8 +327,8 @@ class QuadraticCore {
   }
 
   cellHasContent(sheetId: string, x: number, y: number): Promise<boolean> {
+    const id = this.id++;
     return new Promise((resolve) => {
-      const id = this.id++;
       this.waitingForResponse[id] = (message: { hasContent: boolean }) => {
         resolve(message.hasContent);
       };
@@ -339,8 +344,8 @@ class QuadraticCore {
   }
 
   getEditCell(sheetId: string, x: number, y: number): Promise<string | undefined> {
+    const id = this.id++;
     return new Promise((resolve) => {
-      const id = this.id++;
       const message: ClientCoreGetEditCell = {
         type: 'clientCoreGetEditCell',
         sheetId,
@@ -356,8 +361,8 @@ class QuadraticCore {
   }
 
   getDisplayCell(sheetId: string, x: number, y: number): Promise<string | undefined> {
+    const id = this.id++;
     return new Promise((resolve) => {
-      const id = this.id++;
       const message: ClientCoreGetDisplayCell = {
         type: 'clientCoreGetDisplayCell',
         sheetId,
@@ -373,8 +378,8 @@ class QuadraticCore {
   }
 
   getCellValue(sheetId: string, x: number, y: number): Promise<JsCellValue | undefined> {
+    const id = this.id++;
     return new Promise((resolve) => {
-      const id = this.id++;
       this.waitingForResponse[id] = (message: { value: JsCellValue | undefined }) => {
         resolve(message.value);
       };
@@ -388,32 +393,43 @@ class QuadraticCore {
     });
   }
 
-  getAIContextRectsInSelections(
-    selections: string[],
-    maxRects?: number
-  ): Promise<JsCellValuePosAIContext[][] | undefined> {
+  getAISelectionContexts(args: {
+    selections: string[];
+    maxRects?: number;
+    includeErroredCodeCells: boolean;
+    includeTablesSummary: boolean;
+    includeChartsSummary: boolean;
+  }): Promise<JsSelectionContext[] | undefined> {
+    const id = this.id++;
     return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: { value: JsCellValuePosAIContext[][] | undefined }) => {
-        resolve(message.value);
+      this.waitingForResponse[id] = (message: { selectionContexts: JsSelectionContext[] | undefined }) => {
+        resolve(message.selectionContexts);
       };
-      this.send({ type: 'clientCoreGetAIContextRectsInSelections', selections, maxRects, id });
+      this.send({
+        type: 'clientCoreGetAISelectionContexts',
+        id,
+        selections: args.selections,
+        maxRects: args.maxRects,
+        includeErroredCodeCells: args.includeErroredCodeCells,
+        includeTablesSummary: args.includeTablesSummary,
+        includeChartsSummary: args.includeChartsSummary,
+      });
     });
   }
 
-  getErroredCodeCellsInSelections(selections: string[]): Promise<JsCodeCell[][] | undefined> {
+  getAITablesContext(): Promise<JsTablesContext[] | undefined> {
+    const id = this.id++;
     return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: { value: JsCodeCell[][] | undefined }) => {
-        resolve(message.value);
+      this.waitingForResponse[id] = (message: { tablesContext: JsTablesContext[] | undefined }) => {
+        resolve(message.tablesContext);
       };
-      this.send({ type: 'clientCoreGetErroredCodeCellsInSelections', selections, id });
+      this.send({ type: 'clientCoreGetAITablesContext', id });
     });
   }
 
   hasRenderCells(sheetId: string, column: number, row: number, width: number, height: number): Promise<boolean> {
+    const id = this.id++;
     return new Promise((resolve) => {
-      const id = this.id++;
       const message: ClientCoreHasRenderCells = {
         type: 'clientCoreHasRenderCells',
         sheetId,
@@ -442,13 +458,20 @@ class QuadraticCore {
   }
 
   setCellValues(sheetId: string, x: number, y: number, values: string[][], cursor?: string) {
-    this.send({
-      type: 'clientCoreSetCellValues',
-      sheetId,
-      x,
-      y,
-      values,
-      cursor,
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = () => {
+        resolve(undefined);
+      };
+      this.send({
+        type: 'clientCoreSetCellValues',
+        sheetId,
+        x,
+        y,
+        values,
+        cursor,
+        id,
+      });
     });
   }
 
@@ -462,14 +485,19 @@ class QuadraticCore {
   }) {
     this.send({
       type: 'clientCoreSetCodeCellValue',
-      ...options,
+      sheetId: options.sheetId,
+      x: options.x,
+      y: options.y,
+      language: options.language,
+      codeString: options.codeString,
+      cursor: options.cursor,
     });
   }
 
   // todo: we should probably only have getFormatCell and not this one...
   getCellFormatSummary(sheetId: string, x: number, y: number): Promise<CellFormatSummary> {
+    const id = this.id++;
     return new Promise((resolve) => {
-      const id = this.id++;
       const message: ClientCoreGetCellFormatSummary = {
         type: 'clientCoreGetCellFormatSummary',
         id,
@@ -485,8 +513,8 @@ class QuadraticCore {
   }
 
   getFormatCell(sheetId: string, x: number, y: number): Promise<Format | undefined> {
+    const id = this.id++;
     return new Promise((resolve) => {
-      const id = this.id++;
       this.waitingForResponse[id] = (message: { format: Format | undefined }) => {
         resolve(message.format);
       };
@@ -508,8 +536,8 @@ class QuadraticCore {
     version?: string;
     error?: string;
   }> {
+    const id = this.id++;
     return new Promise((resolve) => {
-      const id = this.id++;
       this.waitingForResponse[id] = (message: { contents?: ArrayBuffer; version?: string; error?: string }) => {
         resolve(message);
       };
@@ -530,8 +558,8 @@ class QuadraticCore {
     version?: string;
     error?: string;
   }> => {
+    const id = this.id++;
     return new Promise((resolve) => {
-      const id = this.id++;
       this.waitingForResponse[id] = (message: { contents?: ArrayBuffer; version?: string; error?: string }) => {
         resolve(message);
       };
@@ -546,13 +574,31 @@ class QuadraticCore {
     });
   };
 
+  getCsvPreview({
+    file,
+    maxRows,
+    delimiter,
+  }: {
+    file: ArrayBuffer;
+    maxRows: number;
+    delimiter: number | undefined;
+  }): Promise<CoreClientGetCsvPreview['preview']> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientGetCsvPreview) => {
+        resolve(message.preview);
+      };
+      this.send({ type: 'clientCoreGetCsvPreview', file, maxRows, delimiter, id }, file);
+    });
+  }
+
   initMultiplayer(port: MessagePort) {
     this.send({ type: 'clientCoreInitMultiplayer' }, port);
   }
 
   summarizeSelection(decimalPlaces: number, selection: string): Promise<JsSummarizeSelectionResult | undefined> {
+    const id = this.id++;
     return new Promise((resolve) => {
-      const id = this.id++;
       const message: ClientCoreSummarizeSelection = {
         type: 'clientCoreSummarizeSelection',
         id,
@@ -566,7 +612,7 @@ class QuadraticCore {
     });
   }
 
-  setBold(selection: string, bold: boolean, cursor?: string) {
+  setBold(selection: string, bold?: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellBold',
       selection,
@@ -584,7 +630,7 @@ class QuadraticCore {
     });
   }
 
-  setItalic(selection: string, italic: boolean, cursor?: string) {
+  setItalic(selection: string, italic?: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellItalic',
       selection,
@@ -602,7 +648,7 @@ class QuadraticCore {
     });
   }
 
-  setUnderline(selection: string, underline: boolean, cursor?: string) {
+  setUnderline(selection: string, underline?: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellUnderline',
       selection,
@@ -611,7 +657,7 @@ class QuadraticCore {
     });
   }
 
-  setStrikeThrough(selection: string, strikeThrough: boolean, cursor?: string) {
+  setStrikeThrough(selection: string, strikeThrough?: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellStrikeThrough',
       selection,
@@ -697,7 +743,7 @@ class QuadraticCore {
     });
   }
 
-  setCommas(selection: string, commas: boolean, cursor?: string) {
+  setCommas(selection: string, commas?: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCommas',
       selection,
@@ -716,31 +762,38 @@ class QuadraticCore {
   }
 
   deleteCellValues(selection: string, cursor?: string) {
-    this.send({
-      type: 'clientCoreDeleteCellValues',
-      selection,
-      cursor,
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = () => {
+        resolve(undefined);
+      };
+      this.send({
+        type: 'clientCoreDeleteCellValues',
+        id,
+        selection,
+        cursor,
+      });
     });
   }
 
   search(search: string, searchOptions: SearchOptions) {
+    const id = this.id++;
     return new Promise<SheetPos[]>((resolve) => {
-      const id = this.id++;
       this.waitingForResponse[id] = (message: CoreClientSearch) => {
         resolve(message.results);
       };
       this.send({
         type: 'clientCoreSearch',
+        id,
         search,
         searchOptions,
-        id,
       });
     });
   }
 
   neighborText(sheetId: string, x: number, y: number): Promise<string[]> {
+    const id = this.id++;
     return new Promise((resolve) => {
-      const id = this.id++;
       this.waitingForResponse[id] = (message: CoreClientNeighborText) => {
         resolve(message.text);
       };
@@ -866,7 +919,7 @@ class QuadraticCore {
 
   //#region Misc.
 
-  setCellRenderResize(sheetId: string, x: number, y: number, width: number, height: number) {
+  setChartSize(sheetId: string, x: number, y: number, width: number, height: number) {
     this.send({
       type: 'clientCoreSetCellRenderResize',
       sheetId,
@@ -919,13 +972,20 @@ class QuadraticCore {
   }
 
   moveCells(source: SheetRect, targetX: number, targetY: number, targetSheetId: string) {
-    this.send({
-      type: 'clientCoreMoveCells',
-      source,
-      targetSheetId,
-      targetX,
-      targetY,
-      cursor: sheets.getCursorPosition(),
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = () => {
+        resolve(undefined);
+      };
+      this.send({
+        type: 'clientCoreMoveCells',
+        id,
+        source,
+        targetSheetId,
+        targetX,
+        targetY,
+        cursor: sheets.getCursorPosition(),
+      });
     });
   }
 
@@ -996,8 +1056,8 @@ class QuadraticCore {
   //#region Bounds
 
   getColumnsBounds(sheetId: string, start: number, end: number, ignoreFormatting = false): Promise<MinMax | undefined> {
+    const id = this.id++;
     return new Promise((resolve) => {
-      const id = this.id++;
       this.waitingForResponse[id] = (message: CoreClientGetColumnsBounds) => {
         resolve(message.bounds);
       };
@@ -1013,8 +1073,8 @@ class QuadraticCore {
   }
 
   getRowsBounds(sheetId: string, start: number, end: number, ignoreFormatting = false): Promise<MinMax | undefined> {
+    const id = this.id++;
     return new Promise((resolve) => {
-      const id = this.id++;
       this.waitingForResponse[id] = (message: CoreClientGetRowsBounds) => {
         resolve(message.bounds);
       };
@@ -1029,9 +1089,14 @@ class QuadraticCore {
     });
   }
 
-  jumpCursor(sheetId: string, current: JsCoordinate, direction: JumpDirection): Promise<JsCoordinate | undefined> {
+  jumpCursor(
+    sheetId: string,
+    current: JsCoordinate,
+    jump: boolean,
+    direction: Direction
+  ): Promise<JsCoordinate | undefined> {
+    const id = this.id++;
     return new Promise((resolve) => {
-      const id = this.id++;
       this.waitingForResponse[id] = (message: CoreClientJumpCursor) => {
         resolve(message.coordinate);
       };
@@ -1041,56 +1106,7 @@ class QuadraticCore {
         current,
         direction,
         id,
-      });
-    });
-  }
-
-  findNextColumn(options: {
-    sheetId: string;
-    columnStart: number;
-    row: number;
-    reverse: boolean;
-    withContent: boolean;
-  }): Promise<number | undefined> {
-    const { sheetId, columnStart, row, reverse, withContent } = options;
-    return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: { column: number | number }) => {
-        resolve(message.column);
-      };
-      this.send({
-        type: 'clientCoreFindNextColumn',
-        id,
-        sheetId,
-        columnStart,
-        row,
-        reverse,
-        withContent,
-      });
-    });
-  }
-
-  findNextRow(options: {
-    sheetId: string;
-    column: number;
-    rowStart: number;
-    reverse: boolean;
-    withContent: boolean;
-  }): Promise<number | undefined> {
-    const { sheetId, column, rowStart, reverse, withContent } = options;
-    return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: { row: number | undefined }) => {
-        resolve(message.row);
-      };
-      this.send({
-        type: 'clientCoreFindNextRow',
-        id,
-        sheetId,
-        column,
-        rowStart,
-        reverse,
-        withContent,
+        jump,
       });
     });
   }
@@ -1104,8 +1120,8 @@ class QuadraticCore {
     reverse: boolean;
   }): Promise<number> {
     const { sheetId, columnStart, row, width, height, reverse } = options;
+    const id = this.id++;
     return new Promise((resolve) => {
-      const id = this.id++;
       this.waitingForResponse[id] = (message: CoreClientFindNextColumnForRect) => {
         resolve(message.column);
       };
@@ -1131,8 +1147,8 @@ class QuadraticCore {
     reverse: boolean;
   }): Promise<number> {
     const { sheetId, column, rowStart, width, height, reverse } = options;
+    const id = this.id++;
     return new Promise((resolve) => {
-      const id = this.id++;
       this.waitingForResponse[id] = (message: CoreClientFindNextRowForRect) => {
         resolve(message.row);
       };
@@ -1206,8 +1222,8 @@ class QuadraticCore {
   //#region Data Validation
 
   getValidationFromPos(sheetId: string, x: number, y: number): Promise<Validation | undefined> {
+    const id = this.id++;
     return new Promise((resolve) => {
-      const id = this.id++;
       this.waitingForResponse[id] = (message: { validation: Validation | undefined }) => {
         resolve(message.validation);
       };
@@ -1222,8 +1238,8 @@ class QuadraticCore {
   }
 
   getValidations(sheetId: string): Promise<Validation[]> {
+    const id = this.id++;
     return new Promise((resolve) => {
-      const id = this.id++;
       this.waitingForResponse[id] = (message: { validations: Validation[] }) => {
         resolve(message.validations);
       };
@@ -1261,8 +1277,8 @@ class QuadraticCore {
   }
 
   getValidationList(sheetId: string, x: number, y: number): Promise<string[] | undefined> {
+    const id = this.id++;
     return new Promise((resolve) => {
-      const id = this.id++;
       this.waitingForResponse[id] = (message: CoreClientGetValidationList) => {
         resolve(message.validations);
       };
@@ -1277,8 +1293,8 @@ class QuadraticCore {
   }
 
   validateInput(sheetId: string, x: number, y: number, input: string): Promise<string | undefined> {
+    const id = this.id++;
     return new Promise((resolve) => {
-      const id = this.id++;
       this.waitingForResponse[id] = (message: CoreClientValidateInput) => {
         resolve(message.validationId);
       };
@@ -1334,6 +1350,151 @@ class QuadraticCore {
     });
   }
 
+  //#endregion
+  //#region data tables
+
+  flattenDataTable(sheetId: string, x: number, y: number, cursor: string) {
+    this.send({
+      type: 'clientCoreFlattenDataTable',
+      sheetId,
+      x,
+      y,
+      cursor,
+    });
+  }
+
+  codeDataTableToDataTable(sheetId: string, x: number, y: number, cursor: string) {
+    this.send({
+      type: 'clientCoreCodeDataTableToDataTable',
+      sheetId,
+      x,
+      y,
+      cursor,
+    });
+  }
+
+  gridToDataTable(sheetRect: string, cursor: string) {
+    this.send({
+      type: 'clientCoreGridToDataTable',
+      sheetRect,
+      cursor,
+    });
+  }
+
+  dataTableMeta(
+    sheetId: string,
+    x: number,
+    y: number,
+    options: {
+      name?: string;
+      alternatingColors?: boolean;
+      columns?: JsDataTableColumnHeader[];
+      showColumns?: boolean;
+      showName?: boolean;
+      showUI?: boolean;
+    },
+    cursor?: string
+  ) {
+    this.send({
+      type: 'clientCoreDataTableMeta',
+      sheetId,
+      x,
+      y,
+      name: options.name,
+      alternatingColors: options.alternatingColors,
+      columns: options.columns,
+      showUI: options.showUI,
+      showName: options.showName,
+      showColumns: options.showColumns,
+      cursor: cursor || '',
+    });
+  }
+
+  dataTableMutations(args: {
+    sheetId: string;
+    x: number;
+    y: number;
+    select_table: boolean;
+    columns_to_add?: number[];
+    columns_to_remove?: number[];
+    rows_to_add?: number[];
+    rows_to_remove?: number[];
+    flatten_on_delete?: boolean;
+    swallow_on_insert?: boolean;
+    cursor?: string;
+  }) {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = () => {
+        resolve(undefined);
+      };
+      this.send({
+        type: 'clientCoreDataTableMutations',
+        id,
+        sheetId: args.sheetId,
+        x: args.x,
+        y: args.y,
+        select_table: args.select_table,
+        columns_to_add: args.columns_to_add,
+        columns_to_remove: args.columns_to_remove,
+        rows_to_add: args.rows_to_add,
+        rows_to_remove: args.rows_to_remove,
+        flatten_on_delete: args.flatten_on_delete,
+        swallow_on_insert: args.swallow_on_insert,
+        cursor: args.cursor,
+      });
+    });
+  }
+
+  sortDataTable(sheetId: string, x: number, y: number, sort: DataTableSort[] | undefined, cursor: string) {
+    this.send({
+      type: 'clientCoreSortDataTable',
+      sheetId,
+      x,
+      y,
+      sort,
+      cursor,
+    });
+  }
+
+  dataTableFirstRowAsHeader(sheetId: string, x: number, y: number, firstRowAsHeader: boolean, cursor: string) {
+    this.send({
+      type: 'clientCoreDataTableFirstRowAsHeader',
+      sheetId,
+      x,
+      y,
+      firstRowAsHeader,
+      cursor,
+    });
+  }
+
+  addDataTable(args: {
+    sheetId: string;
+    x: number;
+    y: number;
+    name: string;
+    values: string[][];
+    firstRowIsHeader: boolean;
+    cursor: string;
+  }) {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = () => {
+        resolve(undefined);
+      };
+      this.send({
+        type: 'clientCoreAddDataTable',
+        sheetId: args.sheetId,
+        x: args.x,
+        y: args.y,
+        name: args.name,
+        values: args.values,
+        firstRowIsHeader: args.firstRowIsHeader,
+        cursor: args.cursor,
+        id,
+      });
+    });
+  }
   //#endregion
 }
 

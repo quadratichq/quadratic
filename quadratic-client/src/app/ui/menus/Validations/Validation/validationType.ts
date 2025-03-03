@@ -1,4 +1,4 @@
-import { Validation } from '@/app/quadratic-core-types';
+import type { Validation } from '@/app/quadratic-core-types';
 
 export const ValidationRuleSimpleValues = ['text', 'number', 'list', 'list-range', 'logical', 'date', 'none'];
 export type ValidationRuleSimple = 'text' | 'number' | 'list' | 'list-range' | 'logical' | 'date' | 'none' | '';

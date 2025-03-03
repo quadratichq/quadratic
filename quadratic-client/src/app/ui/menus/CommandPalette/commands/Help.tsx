@@ -1,5 +1,5 @@
 import { Action } from '@/app/actions/actions';
-import { CommandGroup } from '../CommandPaletteListItem';
+import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 
 const commands: CommandGroup = {
   heading: 'Help',

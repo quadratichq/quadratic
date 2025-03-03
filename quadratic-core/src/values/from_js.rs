@@ -5,12 +5,13 @@ use bigdecimal::BigDecimal;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
 use crate::{
+    a1::A1Selection,
     controller::operations::operation::Operation,
     grid::{
         formats::{FormatUpdate, SheetFormatUpdates},
         NumericFormat, NumericFormatKind, Sheet,
     },
-    A1Selection, Pos,
+    Pos,
 };
 
 use super::CellValue;
@@ -102,6 +103,7 @@ impl CellValue {
                         .formats
                         .numeric_format
                         .set(pos, Some(numeric_format.clone()));
+
                     ops.push(Operation::SetCellFormatsA1 {
                         sheet_id: sheet.id,
                         formats: SheetFormatUpdates::from_selection(
@@ -140,12 +142,10 @@ impl CellValue {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::parallel;
 
     use super::*;
 
     #[test]
-    #[parallel]
     fn test_image() {
         let value = CellValue::Image("test".into());
         assert_eq!(value.to_string(), "test");
@@ -157,7 +157,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn from_js_date() {
         let value = "2024-08-15T10:53:48.750Z".to_string();
         let js_type = "date time";

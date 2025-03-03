@@ -1,4 +1,4 @@
-import { PythonRun } from './pythonTypes';
+import type { PythonRun } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 
 export interface CorePythonRun {
   type: 'corePythonRun';
@@ -20,7 +20,6 @@ export interface PythonCoreGetCellsA1Length {
   sharedBuffer: SharedArrayBuffer;
   transactionId: string;
   a1: string;
-  lineNumber?: number;
 }
 
 export interface PythonCoreGetCellsA1Data {

@@ -7,7 +7,7 @@ import { showAIAnalystOnStartupAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
-import { Chat, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import type { Chat, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
 import { v4 } from 'uuid';
 

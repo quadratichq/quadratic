@@ -2,9 +2,10 @@ use anyhow::Result;
 use regex::Regex;
 
 use crate::{
+    a1::{A1Error, A1Selection},
     controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
     grid::{CodeCellLanguage, ConnectionKind, SheetId},
-    A1Error, A1Selection, RunError, RunErrorMsg, SheetPos,
+    RunError, RunErrorMsg, SheetPos,
 };
 
 use lazy_static::lazy_static;
@@ -29,7 +30,7 @@ impl GridController {
         let mut result = String::new();
         let mut last_match_end = 0;
 
-        let sheet_map = self.grid.sheet_name_id_map();
+        let context = self.a1_context();
         for cap in HANDLEBARS_REGEX.captures_iter(code) {
             let Some(whole_match) = cap.get(0) else {
                 continue;
@@ -38,9 +39,9 @@ impl GridController {
             result.push_str(&code[last_match_end..whole_match.start()]);
 
             let content = cap.get(1).map(|m| m.as_str().trim()).unwrap_or("");
-            let selection = A1Selection::from_str(content, &default_sheet_id, &sheet_map)?;
+            let selection = A1Selection::parse_a1(content, &default_sheet_id, context)?;
 
-            let Some(pos) = selection.try_to_pos() else {
+            let Some(pos) = selection.try_to_pos(context) else {
                 return Err(A1Error::WrongCellCount(
                     "Connections only supports one cell".to_string(),
                 ));
@@ -115,7 +116,6 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::parallel;
 
     use crate::{
         controller::{
@@ -126,7 +126,6 @@ mod tests {
     };
 
     #[test]
-    #[parallel]
     fn test_replace_handlebars() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -150,7 +149,7 @@ mod tests {
         assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
         assert!(transaction
             .cells_accessed
-            .contains(SheetPos::new(sheet_id, 1, 2)));
+            .contains(SheetPos::new(sheet_id, 1, 2), gc.a1_context()));
 
         gc.add_sheet(None);
         let sheet_2_id = gc.sheet_ids()[1];
@@ -165,11 +164,10 @@ mod tests {
         assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
         assert!(transaction
             .cells_accessed
-            .contains(SheetPos::new(sheet_id, 1, 2)));
+            .contains(SheetPos::new(sheet_id, 1, 2), gc.a1_context()));
     }
 
     #[test]
-    #[parallel]
     fn test_replace_handlebars_relative() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -191,11 +189,12 @@ mod tests {
             .unwrap();
         assert_eq!(result, "test".to_string());
         assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
+        let context = gc.a1_context();
         assert!(transaction
             .cells_accessed
-            .contains(SheetPos::new(sheet_id, 1, 2)));
+            .contains(SheetPos::new(sheet_id, 1, 2), context));
 
-        let code = r#"{{'Sheet 1'!A2}}"#;
+        let code = r#"{{'Sheet1'!A2}}"#;
         let result = gc
             .replace_handlebars(&mut transaction, sheet_pos, code, sheet_id)
             .unwrap();
@@ -203,11 +202,10 @@ mod tests {
         assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
         assert!(transaction
             .cells_accessed
-            .contains(SheetPos::new(sheet_id, 1, 2)));
+            .contains(SheetPos::new(sheet_id, 1, 2), context));
     }
 
     #[test]
-    #[parallel]
     fn test_replace_handlebars_actual_case() {
         let code = "SELECT age FROM 'public'.'test_table' WHERE name='{{A1}}' LIMIT 100";
         let mut gc = GridController::test();
@@ -233,7 +231,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_run_connection_sheet_name_error() {
         fn test_error(gc: &mut GridController, code: &str, sheet_id: SheetId) {
             gc.set_code_cell(
@@ -251,7 +248,7 @@ mod tests {
             );
 
             let sheet = gc.sheet(sheet_id);
-            let code_cell = sheet.code_run(Pos { x: 10, y: 10 });
+            let code_cell = sheet.data_table(Pos { x: 10, y: 10 });
             assert_eq!(
                 code_cell.unwrap().get_error(),
                 Some(RunError {

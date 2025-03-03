@@ -1,4 +1,5 @@
-import { Dispatch, SetStateAction, useEffect } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
+import { useEffect } from 'react';
 import useLocalStorage from './useLocalStorage';
 
 type Theme = 'light' | 'dark' | 'system';

@@ -1,11 +1,11 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
 import { sheets } from '@/app/grid/controller/Sheets.js';
-import { HtmlCell } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCell';
+import type { HtmlCell } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCell';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { DOUBLE_CLICK_TIME } from '@/app/gridGL/interaction/pointer/pointerUtils.js';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { InteractionEvent } from 'pixi.js';
+import type { InteractionEvent, Point } from 'pixi.js';
 
 export class PointerHtmlCells {
   private resizing: HtmlCell | undefined; // cell that is being resized
@@ -16,16 +16,15 @@ export class PointerHtmlCells {
 
   cursor: string | undefined;
 
-  pointerMove(e: InteractionEvent): boolean {
+  pointerMove(e: InteractionEvent, world: Point): boolean {
     if (!hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions)) return false;
 
     if (this.resizing) {
-      this.resizing.pointerMove(e);
+      this.resizing.pointerMove(world);
       return true;
     }
 
     this.clicked = undefined;
-    if (this.active) return true;
 
     const cells = htmlCellsHandler.getCells();
     for (const cell of cells) {
@@ -38,7 +37,7 @@ export class PointerHtmlCells {
           this.hovering.clearHighlightEdges();
         }
         this.hovering = cell;
-        this.cursor = target === 'corner' ? 'nwse-resize' : target === 'right' ? 'col-resize' : 'row-resize';
+        this.cursor = target === 'corner' ? 'all-scroll' : target === 'right' ? 'col-resize' : 'row-resize';
         return true;
       }
 
@@ -69,12 +68,12 @@ export class PointerHtmlCells {
     const cells = htmlCellsHandler.getCells();
     for (const cell of cells) {
       if (cell.sheet !== sheets.sheet) continue;
-
       const target = cell.hover(e);
+
       // pointer down on chart edge, start resizing
       if (target === 'right' || target === 'bottom' || target === 'corner') {
         this.resizing = cell;
-        this.resizing.startResizing(e.data.global.x, e.data.global.y);
+        this.resizing.startResizing();
         this.cursor = target === 'corner' ? 'nwse-resize' : target === 'right' ? 'col-resize' : 'row-resize';
         htmlCellsHandler.movetoTop(cell);
         return true;
@@ -94,13 +93,13 @@ export class PointerHtmlCells {
         // click with meta / ctrl key
         // select cell and add to selection
         else if (event.metaKey || event.ctrlKey) {
-          cursor.moveTo(cell.x, cell.y, true);
+          cursor.selectTable(cell.htmlCell.name, undefined, false, true);
         }
         // click without meta / ctrl key
         // select cell and clear selection
         else {
           this.active = cell;
-          cursor.moveTo(cell.x, cell.y);
+          cursor.selectTable(cell.htmlCell.name, undefined, false, false);
         }
         // move chart to top, useful in case of overlapping charts
         htmlCellsHandler.movetoTop(cell);

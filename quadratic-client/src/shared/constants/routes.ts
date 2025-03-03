@@ -1,5 +1,5 @@
-import { UrlParamsDevState } from '@/app/gridGL/pixiApp/urlParams/UrlParamsDev';
-import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import type { UrlParamsDevState } from '@/app/gridGL/pixiApp/urlParams/UrlParamsDev';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 
 // Any routes referenced outside of the root router are stored here
 export const ROUTES = {

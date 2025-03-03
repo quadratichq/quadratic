@@ -1,5 +1,6 @@
 import { Action } from '@/app/actions/actions';
-import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import { gridToDataTable } from '@/app/actions/dataTableSpec';
+import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { keyboardCell } from '@/app/gridGL/interaction/keyboard/keyboardCell';
@@ -14,7 +15,7 @@ import { keyboardSelect } from '@/app/gridGL/interaction/keyboard/keyboardSelect
 import { keyboardUndoRedo } from '@/app/gridGL/interaction/keyboard/keyboardUndoRedo';
 import { keyboardViewport } from '@/app/gridGL/interaction/keyboard/keyboardViewport';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { Size } from '@/app/gridGL/types/size';
+import type { Size } from '@/app/gridGL/types/size';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
@@ -30,7 +31,7 @@ export const useKeyboard = (): {
   onKeyUp: (event: React.KeyboardEvent<HTMLElement>) => void;
 } => {
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
-    if (pixiAppSettings.input.show && inlineEditorHandler.isOpen()) return;
+    if ((pixiAppSettings.input.show && inlineEditorHandler.isOpen()) || pixiAppSettings.isRenamingTable()) return;
     if (
       keyboardPanMode(event) ||
       keyboardLink(event) ||
@@ -62,6 +63,11 @@ export const useKeyboard = (): {
       const today = new Date();
       const formattedTime = `${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}`;
       quadraticCore.setCellValue(sheet.id, cursor.position.x, cursor.position.y, formattedTime);
+    }
+
+    if (matchShortcut(Action.GridToDataTable, event)) {
+      gridToDataTable();
+      return true;
     }
 
     // Prevent these commands if "command" key is being pressed

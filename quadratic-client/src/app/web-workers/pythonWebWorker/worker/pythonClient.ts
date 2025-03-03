@@ -1,8 +1,12 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
-import { LanguageState } from '@/app/web-workers/languageTypes';
-import type { ClientPythonGetJwt, ClientPythonMessage, PythonClientMessage } from '../pythonClientMessages';
-import { pythonCore } from './pythonCore';
+import type { LanguageState } from '@/app/web-workers/languageTypes';
+import type {
+  ClientPythonGetJwt,
+  ClientPythonMessage,
+  PythonClientMessage,
+} from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
+import { pythonCore } from '@/app/web-workers/pythonWebWorker/worker/pythonCore';
 
 declare var self: WorkerGlobalScope & typeof globalThis & {};
 

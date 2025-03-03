@@ -4,9 +4,9 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { useInlineEditorStatus } from '@/app/gridGL/HTMLGrid/inlineEditor/useInlineEditorStatus';
-import { HtmlValidationsData } from '@/app/gridGL/HTMLGrid/validations/useHtmlValidations';
+import type { HtmlValidationsData } from '@/app/gridGL/HTMLGrid/validations/useHtmlValidations';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { JsCoordinate } from '@/app/quadratic-core-types';
+import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { cn } from '@/shared/shadcn/utils';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -70,10 +70,10 @@ export const HtmlValidationList = (props: Props) => {
         return;
       }
       listCoordinate.current = { x: column, y: row };
-      const list = await quadraticCore.getValidationList(sheets.sheet.id, column, row);
+      const list = await quadraticCore.getValidationList(sheets.current, column, row);
       if (!list) return;
       setAnnotationState('dropdown');
-      const value = await quadraticCore.getDisplayCell(sheets.sheet.id, column, row);
+      const value = await quadraticCore.getDisplayCell(sheets.current, column, row);
       setList(list);
       setIndex(list?.indexOf(value || '') ?? -1);
     };
@@ -95,7 +95,7 @@ export const HtmlValidationList = (props: Props) => {
   const changeValue = useCallback(
     (value: string) => {
       quadraticCore.setCellValue(
-        sheets.sheet.id,
+        sheets.current,
         sheets.sheet.cursor.position.x,
         sheets.sheet.cursor.position.y,
         value,

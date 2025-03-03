@@ -10,6 +10,7 @@ import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
 import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
+import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
 import { apiClient } from '@/shared/api/apiClient';
 import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -39,25 +40,37 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
   }, []);
 
   const shouldAutoScroll = useRef(true);
-  const handleScrollEnd = useCallback((e: Event) => {
+  const handleScroll = useCallback((e: Event) => {
     const div = e.target as HTMLDivElement;
-    const isScrolledToBottom = div.scrollHeight - div.scrollTop <= div.clientHeight;
+    // Add a small buffer (5px) to account for rounding errors and tiny scroll differences
+    const isScrolledToBottom = div.scrollHeight - div.scrollTop - div.clientHeight < 5;
     shouldAutoScroll.current = isScrolledToBottom;
   }, []);
 
   useEffect(() => {
-    div?.addEventListener('scrollend', handleScrollEnd);
+    // Use both scroll and scrollend events for better cross-browser support
+    div?.addEventListener('scroll', handleScroll);
+    div?.addEventListener('scrollend', handleScroll);
     return () => {
-      div?.removeEventListener('scrollend', handleScrollEnd);
+      div?.removeEventListener('scroll', handleScroll);
+      div?.removeEventListener('scrollend', handleScroll);
     };
-  }, [div, handleScrollEnd]);
+  }, [div, handleScroll]);
 
   const scrollToBottom = useCallback(
     (force = false) => {
       if (force || shouldAutoScroll.current) {
-        div?.scrollTo({
-          top: div.scrollHeight,
-          behavior: 'smooth',
+        // Use requestAnimationFrame to ensure scrolling happens in the next frame
+        // This helps prevent race conditions with React re-renders
+        requestAnimationFrame(() => {
+          if (div) {
+            div.scrollTo({
+              top: div.scrollHeight,
+              // Use auto for rapid text updates to avoid falling behind
+              // Smooth scrolling can't keep up with fast text generation
+              behavior: force ? 'auto' : 'smooth',
+            });
+          }
         });
       }
     },
@@ -66,10 +79,31 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
 
   useEffect(() => {
     if (loading) {
-      shouldAutoScroll.current = true;
-      scrollToBottom(true);
+      // Don't force shouldAutoScroll to true - respect current value
+      // Only force initial scroll if already at bottom
+      if (shouldAutoScroll.current) {
+        scrollToBottom(true);
+      }
+
+      // Only observe mutations while loading
+      if (div) {
+        const observer = new MutationObserver(() => {
+          // Only scroll if user was already at bottom
+          if (shouldAutoScroll.current) {
+            scrollToBottom(true);
+          }
+        });
+
+        observer.observe(div, {
+          childList: true,
+          subtree: true,
+          characterData: true,
+        });
+
+        return () => observer.disconnect();
+      }
     }
-  }, [loading, scrollToBottom]);
+  }, [loading, scrollToBottom, div]);
 
   useEffect(() => {
     if (messagesCount === 0) {
@@ -77,9 +111,12 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
     }
   }, [messagesCount]);
 
+  // Only scroll on message changes if we're loading and user was already at bottom
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
+    if (loading && shouldAutoScroll.current) {
+      scrollToBottom();
+    }
+  }, [messages, scrollToBottom, loading, shouldAutoScroll]);
 
   if (messagesCount === 0) {
     return <AIAnalystExamplePrompts />;
@@ -107,12 +144,13 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
           return null;
         }
 
+        const isCurrentMessage = index === messages.length - 1;
+
         return (
           <div
-            key={`${index}-${message.role}-${message.contextType}`}
-            id={`${index}-${message.role}-${message.contextType}`}
+            key={`${index}-${message.role}-${message.contextType}-${message.content}`}
             className={cn(
-              'flex flex-col gap-2',
+              'flex flex-col gap-3',
               message.role === 'user' && message.contextType === 'userPrompt' ? '' : 'px-2',
               // For debugging internal context
               message.contextType === 'userPrompt' ? '' : 'bg-accent'
@@ -133,7 +171,25 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
               )
             ) : (
               <>
-                {message.content && <Markdown key={message.content}>{message.content}</Markdown>}
+                {message.content && Array.isArray(message.content) ? (
+                  <>
+                    {message.content.map((item, contentIndex) =>
+                      item.type === 'anthropic_thinking' ? (
+                        <ThinkingBlock
+                          key={item.text}
+                          isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
+                          isLoading={loading}
+                          thinkingContent={item}
+                          expandedDefault={true}
+                        />
+                      ) : item.type === 'text' ? (
+                        <Markdown key={item.text}>{item.text}</Markdown>
+                      ) : null
+                    )}
+                  </>
+                ) : (
+                  <Markdown key={message.content}>{message.content}</Markdown>
+                )}
 
                 {message.contextType === 'userPrompt' &&
                   message.toolCalls.map((toolCall) => (
@@ -152,7 +208,7 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
 
       {messages.length > 0 && !loading && <FeedbackButtons />}
 
-      <div className={cn('flex flex-row gap-1 px-2 transition-opacity', !loading && 'opacity-0')}>
+      <div className={cn('flex flex-row gap-1 p-2 transition-opacity', !loading && 'opacity-0')}>
         <span className="h-2 w-2 animate-bounce bg-primary" />
         <span className="h-2 w-2 animate-bounce bg-primary/60 delay-100" />
         <span className="h-2 w-2 animate-bounce bg-primary/20 delay-200" />

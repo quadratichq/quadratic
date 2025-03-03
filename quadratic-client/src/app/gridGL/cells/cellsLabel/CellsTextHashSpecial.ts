@@ -1,16 +1,17 @@
+import { hasPermissionToEditFile } from '@/app/actions';
+import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { drawCheckbox, drawDropdown, type SpecialSprite } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
+import { intersects } from '@/app/gridGL/helpers/intersects';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type {
   RenderCheckbox,
   RenderDropdown,
   RenderSpecial,
 } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
-import { Container, Point } from 'pixi.js';
-import { drawCheckbox, drawDropdown, SpecialSprite } from './drawSpecial';
-import { intersects } from '../../helpers/intersects';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { sheets } from '@/app/grid/controller/Sheets';
-import { events } from '@/app/events/events';
-import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
-import { hasPermissionToEditFile } from '@/app/actions';
+import type { Point } from 'pixi.js';
+import { Container } from 'pixi.js';
 
 export class CellsTextHashSpecial extends Container<SpecialSprite> {
   clear() {
@@ -50,7 +51,7 @@ export class CellsTextHashSpecial extends Container<SpecialSprite> {
       if (special.column === column && special.row === row) {
         if (special.type === 'checkbox' && (world === true || intersects.rectanglePoint(special.rectangle, world))) {
           quadraticCore.setCellValue(
-            sheets.sheet.id,
+            sheets.current,
             column,
             row,
             special.checkbox ? 'false' : 'true',

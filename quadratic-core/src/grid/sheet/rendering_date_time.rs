@@ -33,7 +33,6 @@ mod tests {
     use std::str::FromStr;
 
     use chrono::{NaiveDateTime, NaiveTime};
-    use serial_test::parallel;
 
     use crate::{
         controller::GridController,
@@ -44,7 +43,6 @@ mod tests {
     use super::*;
 
     #[test]
-    #[parallel]
     fn value_date_time() {
         let date_time = "%Y-%m-%d %H:%M:%S".to_string();
         let value = CellValue::DateTime(
@@ -78,7 +76,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn render_cell_date_time() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -138,7 +135,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn cell_date_time_error() {
         let format = "%Y-%m-%d %I:%M:%S %p".to_string();
         let value = CellValue::Time(NaiveTime::from_str("17:12:00").unwrap());

@@ -90,7 +90,6 @@ mod test {
     use crate::{grid::series::find_auto_complete, Pos};
 
     use super::*;
-    use serial_test::parallel;
 
     fn naked_time(hour: u32, minute: u32, second: u32) -> NaiveTime {
         NaiveTime::from_hms_opt(hour, minute, second).unwrap()
@@ -101,7 +100,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn time_series_hours() {
         let options = SeriesOptions {
             series: vec![
@@ -140,7 +138,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn time_series_minutes() {
         let options = SeriesOptions {
             series: vec![
@@ -179,7 +176,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn time_series_seconds() {
         let options = SeriesOptions {
             series: vec![
@@ -218,7 +214,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn time_diff_overflow_underflow() {
         let diff = Duration::seconds(-1);
         let mut time = naked_time(0, 0, 0);
@@ -244,7 +239,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn time_series_one() {
         let options = SeriesOptions {
             series: vec![cell_value_time(0, 0, 0)],

@@ -1,11 +1,10 @@
+import type { FilesListExampleFile, FilesListUserFile } from '@/dashboard/components/FilesList';
+import { FilesListItemCore } from '@/dashboard/components/FilesListItemCore';
+import { Layout, Sort, type ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import {
-  Action as FileAction,
-  getActionFileDelete,
-  getActionFileDuplicate,
-  getActionFileMove,
-} from '@/routes/api.files.$uuid';
+import type { Action as FileAction } from '@/routes/api.files.$uuid';
+import { getActionFileDelete, getActionFileDuplicate, getActionFileMove } from '@/routes/api.files.$uuid';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { DraftIcon, MoreVertIcon } from '@/shared/components/Icons';
@@ -23,10 +22,8 @@ import { cn } from '@/shared/shadcn/utils';
 import { timeAgo } from '@/shared/utils/timeAgo';
 import mixpanel from 'mixpanel-browser';
 import { useEffect, useRef, useState } from 'react';
-import { Link, SubmitOptions, useFetcher, useMatch, useSubmit } from 'react-router-dom';
-import { FilesListExampleFile, FilesListUserFile } from './FilesList';
-import { FilesListItemCore } from './FilesListItemCore';
-import { Layout, Sort, ViewPreferences } from './FilesListViewControlsDropdown';
+import type { SubmitOptions } from 'react-router-dom';
+import { Link, useFetcher, useMatch, useSubmit } from 'react-router-dom';
 
 export function FilesListItems({
   children,

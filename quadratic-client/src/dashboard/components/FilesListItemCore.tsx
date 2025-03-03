@@ -1,11 +1,11 @@
+import type { FilesListUserFile } from '@/dashboard/components/FilesList';
+import { Layout, type ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
 import { Avatar } from '@/shared/components/Avatar';
 import { TYPE } from '@/shared/constants/appConstants';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { GlobeIcon } from '@radix-ui/react-icons';
-import { ReactNode } from 'react';
-import { FilesListUserFile } from './FilesList';
-import { Layout, ViewPreferences } from './FilesListViewControlsDropdown';
+import type { ReactNode } from 'react';
 
 export function FilesListItemCore({
   name,

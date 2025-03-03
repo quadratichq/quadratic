@@ -1,7 +1,8 @@
 import { events } from '@/app/events/events';
 import { pluralize } from '@/app/helpers/pluralize';
+import BottomBarItem from '@/app/ui/menus/BottomBar/BottomBarItem';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
+import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CloseIcon, SpinnerIcon } from '@/shared/components/Icons';
@@ -11,7 +12,6 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { timeAgo } from '@/shared/utils/timeAgo';
 import { useEffect, useState } from 'react';
-import BottomBarItem from './BottomBarItem';
 
 // const TIMEOUT_TO_SHOW_DISCONNECT_MESSAGE = 1000;
 

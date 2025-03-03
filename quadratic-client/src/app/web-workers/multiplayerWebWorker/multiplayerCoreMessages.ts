@@ -1,4 +1,4 @@
-import { ReceiveTransaction } from './multiplayerTypes';
+import type { ReceiveTransaction } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 
 export interface MultiplayerCoreSequenceNum {
   type: 'multiplayerCoreSequenceNum';
@@ -7,7 +7,7 @@ export interface MultiplayerCoreSequenceNum {
 
 export interface CoreMultiplayerTransaction {
   type: 'coreMultiplayerTransaction';
-  operations: ArrayBuffer;
+  operations: ArrayBufferLike;
   transaction_id: string;
 }
 

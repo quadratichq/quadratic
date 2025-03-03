@@ -74,7 +74,7 @@ function createTriangle() {
   context.fillStyle = 'white';
   context.moveTo(0, 0);
   context.lineTo(TRIANGLE_SIZE, 0);
-  context.lineTo(0, TRIANGLE_SIZE);
+  context.lineTo(TRIANGLE_SIZE, TRIANGLE_SIZE);
   context.closePath();
   context.fill();
   return Texture.from(canvas);

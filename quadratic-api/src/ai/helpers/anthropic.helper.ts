@@ -1,80 +1,108 @@
 import type Anthropic from '@anthropic-ai/sdk';
+import type { MessageParam, TextBlockParam, Tool, ToolChoice } from '@anthropic-ai/sdk/resources';
 import type { Stream } from '@anthropic-ai/sdk/streaming';
 import type { Response } from 'express';
 import { getSystemPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
   AIMessagePrompt,
-  AIRequestBody,
-  AnthropicModel,
-  AnthropicPromptMessage,
-  AnthropicRequestBody,
-  AnthropicTool,
-  AnthropicToolChoice,
-  BedrockAnthropicModel,
+  AIRequestHelperArgs,
+  AnthropicModelKey,
+  BedrockAnthropicModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 
 export function getAnthropicApiArgs(
-  args: Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'source' | 'model'>
-): Omit<AnthropicRequestBody, 'model'> {
+  args: AIRequestHelperArgs,
+  thinking: boolean | undefined
+): {
+  system: TextBlockParam[] | undefined;
+  messages: MessageParam[];
+  tools: Tool[] | undefined;
+  tool_choice: ToolChoice | undefined;
+} {
   const { messages: chatMessages, useTools, toolName } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
-  const system = systemMessages.join('\n\n');
-  const messages: AnthropicPromptMessage[] = promptMessages.reduce<AnthropicPromptMessage[]>((acc, message) => {
-    if (message.role === 'assistant' && message.contextType === 'userPrompt' && message.toolCalls.length > 0) {
-      const anthropicMessages: AnthropicPromptMessage[] = [
-        ...acc,
-        {
-          role: message.role,
-          content: [
-            ...(message.content
-              ? [
-                  {
-                    type: 'text' as const,
-                    text: message.content,
-                  },
-                ]
-              : []),
-            ...message.toolCalls.map((toolCall) => ({
-              type: 'tool_use' as const,
-              id: toolCall.id,
-              name: toolCall.name,
-              input: JSON.parse(toolCall.arguments),
-            })),
-          ],
-        },
-      ];
-      return anthropicMessages;
+
+  // without prompt caching of system messages
+  const system: TextBlockParam[] = systemMessages.map((message) => ({
+    type: 'text' as const,
+    text: message,
+  }));
+
+  // with prompt caching of system messages
+  // const system: TextBlockParam[] = systemMessages.map((message, index) => ({
+  //   type: 'text' as const,
+  //   text: message,
+  //   ...(index < 4 ? { cache_control: { type: 'ephemeral' } } : {}),
+  // }));
+
+  const messages: MessageParam[] = promptMessages.reduce<MessageParam[]>((acc, message) => {
+    if (message.role === 'assistant' && message.contextType === 'userPrompt') {
+      const anthropicMessage: MessageParam = {
+        role: message.role,
+        content: [
+          ...message.content
+            .filter(
+              (content) =>
+                content.text &&
+                (content.type !== 'anthropic_thinking' || !!content.signature) &&
+                (!!thinking || content.type === 'text')
+            )
+            .map((content) => {
+              if (content.type === 'anthropic_thinking') {
+                return {
+                  type: 'thinking' as const,
+                  thinking: content.text,
+                  signature: content.signature,
+                };
+              } else if (content.type === 'anthropic_redacted_thinking') {
+                return {
+                  type: 'redacted_thinking' as const,
+                  data: content.text,
+                };
+              } else {
+                return {
+                  type: 'text' as const,
+                  text: content.text,
+                };
+              }
+            }),
+          ...message.toolCalls.map((toolCall) => ({
+            type: 'tool_use' as const,
+            id: toolCall.id,
+            name: toolCall.name,
+            input: JSON.parse(toolCall.arguments),
+          })),
+        ],
+      };
+      return [...acc, anthropicMessage];
     } else if (message.role === 'user' && message.contextType === 'toolResult') {
-      const anthropicMessages: AnthropicPromptMessage[] = [
-        ...acc,
-        {
-          role: message.role,
-          content: [
-            ...message.content.map((toolResult) => ({
-              type: 'tool_result' as const,
-              tool_use_id: toolResult.id,
-              content: toolResult.content,
-            })),
-            {
-              type: 'text' as const,
-              text: 'Given the above tool calls results, please provide your final answer to the user.',
-            },
-          ],
-        },
-      ];
-      return anthropicMessages;
+      const anthropicMessages: MessageParam = {
+        role: message.role,
+        content: [
+          ...message.content.map((toolResult) => ({
+            type: 'tool_result' as const,
+            tool_use_id: toolResult.id,
+            content: toolResult.content,
+          })),
+          {
+            type: 'text' as const,
+            text: 'Given the above tool calls results, please provide your final answer to the user.',
+          },
+        ],
+      };
+      return [...acc, anthropicMessages];
+    } else if (message.content) {
+      const anthropicMessage: MessageParam = {
+        role: message.role,
+        content: message.content,
+      };
+      return [...acc, anthropicMessage];
     } else {
-      const anthropicMessages: AnthropicPromptMessage[] = [
-        ...acc,
-        {
-          role: message.role,
-          content: message.content,
-        },
-      ];
-      return anthropicMessages;
+      return acc;
     }
   }, []);
 
@@ -84,7 +112,7 @@ export function getAnthropicApiArgs(
   return { system, messages, tools, tool_choice };
 }
 
-function getAnthropicTools(useTools?: boolean, toolName?: AITool): AnthropicTool[] | undefined {
+function getAnthropicTools(useTools?: boolean, toolName?: AITool): Tool[] | undefined {
   if (!useTools) {
     return undefined;
   }
@@ -96,8 +124,8 @@ function getAnthropicTools(useTools?: boolean, toolName?: AITool): AnthropicTool
     return name === toolName;
   });
 
-  const anthropicTools: AnthropicTool[] = tools.map(
-    ([name, { description, parameters: input_schema }]): AnthropicTool => ({
+  const anthropicTools: Tool[] = tools.map(
+    ([name, { description, parameters: input_schema }]): Tool => ({
       name,
       description,
       input_schema,
@@ -107,51 +135,84 @@ function getAnthropicTools(useTools?: boolean, toolName?: AITool): AnthropicTool
   return anthropicTools;
 }
 
-function getAnthropicToolChoice(useTools?: boolean, name?: AITool): AnthropicToolChoice | undefined {
+function getAnthropicToolChoice(useTools?: boolean, name?: AITool): ToolChoice | undefined {
   if (!useTools) {
     return undefined;
   }
 
-  const toolChoice: AnthropicToolChoice = name === undefined ? { type: 'auto' } : { type: 'tool', name };
+  const toolChoice: ToolChoice = name === undefined ? { type: 'auto' } : { type: 'tool', name };
   return toolChoice;
 }
 
 export async function parseAnthropicStream(
   chunks: Stream<Anthropic.Messages.RawMessageStreamEvent>,
   response: Response,
-  model: AnthropicModel | BedrockAnthropicModel
+  modelKey: BedrockAnthropicModelKey | AnthropicModelKey
 ) {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
-    content: '',
+    content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model,
+    model: getModelFromModelKey(modelKey),
   };
 
   for await (const chunk of chunks) {
     if (!response.writableEnded) {
       if (chunk.type === 'content_block_start') {
         if (chunk.content_block.type === 'text') {
-          responseMessage.content += chunk.content_block.text;
+          responseMessage.content.push({
+            type: 'text',
+            text: chunk.content_block.text ?? '',
+          });
+
+          responseMessage.toolCalls.forEach((toolCall) => {
+            toolCall.loading = false;
+          });
         } else if (chunk.content_block.type === 'tool_use') {
-          const toolCalls = [...responseMessage.toolCalls];
-          const toolCall = {
+          responseMessage.toolCalls.push({
             id: chunk.content_block.id,
             name: chunk.content_block.name,
             arguments: '',
             loading: true,
-          };
-          toolCalls.push(toolCall);
-          responseMessage.toolCalls = toolCalls;
+          });
+        } else if (chunk.content_block.type === 'thinking') {
+          responseMessage.content.push({
+            type: 'anthropic_thinking',
+            text: chunk.content_block.thinking ?? '',
+            signature: chunk.content_block.signature ?? '',
+          });
+
+          responseMessage.toolCalls.forEach((toolCall) => {
+            toolCall.loading = false;
+          });
+        } else if (chunk.content_block.type === 'redacted_thinking') {
+          responseMessage.content.push({
+            type: 'anthropic_redacted_thinking',
+            text: chunk.content_block.data ?? '',
+          });
+
+          responseMessage.toolCalls.forEach((toolCall) => {
+            toolCall.loading = false;
+          });
         }
       } else if (chunk.type === 'content_block_delta') {
         if (chunk.delta.type === 'text_delta') {
-          responseMessage.content += chunk.delta.text;
+          let currentContent = responseMessage.content.pop();
+          if (currentContent?.type !== 'text') {
+            if (currentContent?.text) {
+              responseMessage.content.push(currentContent);
+            }
+            currentContent = {
+              type: 'text',
+              text: '',
+            };
+          }
+          currentContent.text += chunk.delta.text ?? '';
+          responseMessage.content.push(currentContent);
         } else if (chunk.delta.type === 'input_json_delta') {
-          const toolCalls = [...responseMessage.toolCalls];
           const toolCall = {
-            ...(toolCalls.pop() ?? {
+            ...(responseMessage.toolCalls.pop() ?? {
               id: '',
               name: '',
               arguments: '',
@@ -159,15 +220,42 @@ export async function parseAnthropicStream(
             }),
           };
           toolCall.arguments += chunk.delta.partial_json;
-          toolCalls.push(toolCall);
-          responseMessage.toolCalls = toolCalls;
+          responseMessage.toolCalls.push(toolCall);
+        } else if (chunk.delta.type === 'thinking_delta') {
+          let currentContent = responseMessage.content.pop();
+          if (currentContent?.type !== 'anthropic_thinking') {
+            if (currentContent?.text) {
+              responseMessage.content.push(currentContent);
+            }
+            currentContent = {
+              type: 'anthropic_thinking',
+              text: '',
+              signature: '',
+            };
+          }
+          currentContent.text += chunk.delta.thinking ?? '';
+          responseMessage.content.push(currentContent);
+        } else if (chunk.delta.type === 'signature_delta') {
+          let currentContent = responseMessage.content.pop();
+          if (currentContent?.type !== 'anthropic_thinking') {
+            if (currentContent?.text) {
+              responseMessage.content.push(currentContent);
+            }
+            currentContent = {
+              type: 'anthropic_thinking',
+              text: '',
+              signature: '',
+            };
+          }
+          if (currentContent.type === 'anthropic_thinking') {
+            currentContent.signature += chunk.delta.signature ?? '';
+          }
+          responseMessage.content.push(currentContent);
         }
       } else if (chunk.type === 'content_block_stop') {
-        const toolCalls = [...responseMessage.toolCalls];
-        const toolCall = toolCalls.pop();
+        const toolCall = responseMessage.toolCalls.pop();
         if (toolCall) {
-          toolCalls.push({ ...toolCall, loading: false });
-          responseMessage.toolCalls = toolCalls;
+          responseMessage.toolCalls.push({ ...toolCall, loading: false });
         }
       }
 
@@ -177,11 +265,24 @@ export async function parseAnthropicStream(
     }
   }
 
-  if (!responseMessage.content) {
-    responseMessage.content =
-      responseMessage.toolCalls.length > 0 ? '' : "I'm sorry, I don't have a response for that.";
-    response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+  responseMessage.content = responseMessage.content.filter(
+    (content) => !!content.text && (content.type !== 'anthropic_thinking' || !!content.signature)
+  );
+
+  if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
+    responseMessage.content.push({
+      type: 'text',
+      text: "I'm sorry, I don't have a response for that.",
+    });
   }
+
+  if (responseMessage.toolCalls.some((toolCall) => toolCall.loading)) {
+    responseMessage.toolCalls.forEach((toolCall) => {
+      toolCall.loading = false;
+    });
+  }
+
+  response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
 
   if (!response.writableEnded) {
     response.end();
@@ -193,42 +294,55 @@ export async function parseAnthropicStream(
 export function parseAnthropicResponse(
   result: Anthropic.Messages.Message,
   response: Response,
-  model: AnthropicModel | BedrockAnthropicModel
+  modelKey: BedrockAnthropicModelKey | AnthropicModelKey
 ): AIMessagePrompt {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
-    content: '',
+    content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model,
+    model: getModelFromModelKey(modelKey),
   };
 
-  result.content?.forEach(
-    (message: { type: 'text'; text: string } | { type: 'tool_use'; id: string; name: string; input: unknown }) => {
-      switch (message.type) {
-        case 'text':
-          responseMessage.content += message.text;
-          break;
-        case 'tool_use':
-          responseMessage.toolCalls = [
-            ...responseMessage.toolCalls,
-            {
-              id: message.id,
-              name: message.name,
-              arguments: JSON.stringify(message.input),
-              loading: false,
-            },
-          ];
-          break;
-        default:
-          console.error(`Invalid AI response: ${JSON.stringify(message)}`);
-      }
+  result.content?.forEach((message) => {
+    switch (message.type) {
+      case 'text':
+        responseMessage.content.push({
+          type: 'text',
+          text: message.text ?? '',
+        });
+        break;
+      case 'tool_use':
+        responseMessage.toolCalls.push({
+          id: message.id,
+          name: message.name,
+          arguments: JSON.stringify(message.input),
+          loading: false,
+        });
+        break;
+      case 'thinking':
+        responseMessage.content.push({
+          type: 'anthropic_thinking',
+          text: message.thinking ?? '',
+          signature: message.signature ?? '',
+        });
+        break;
+      case 'redacted_thinking':
+        responseMessage.content.push({
+          type: 'anthropic_redacted_thinking',
+          text: message.data ?? '',
+        });
+        break;
+      default:
+        console.error(`Invalid AI response: ${JSON.stringify(message)}`);
     }
-  );
+  });
 
-  if (!responseMessage.content) {
-    responseMessage.content =
-      responseMessage.toolCalls.length > 0 ? '' : "I'm sorry, I don't have a response for that.";
+  if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
+    responseMessage.content.push({
+      type: 'text',
+      text: "I'm sorry, I don't have a response for that.",
+    });
   }
 
   response.json(responseMessage);

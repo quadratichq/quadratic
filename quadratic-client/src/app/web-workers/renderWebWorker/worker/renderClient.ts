@@ -6,16 +6,16 @@
  */
 
 import { debugWebWorkersMessages } from '@/app/debugFlags';
-import { Link } from '@/app/gridGL/types/links';
-import { DrawRects } from '@/app/gridGL/types/size';
-import { JsCoordinate } from '@/app/quadratic-core-types';
-import {
+import type { Link } from '@/app/gridGL/types/links';
+import type { DrawRects } from '@/app/gridGL/types/size';
+import type { JsCoordinate } from '@/app/quadratic-core-types';
+import type {
   ClientRenderMessage,
   RenderClientCellsTextHashClear,
   RenderClientLabelMeshEntry,
   RenderClientMessage,
 } from '@/app/web-workers/renderWebWorker/renderClientMessages';
-import { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
+import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
 import { renderCore } from '@/app/web-workers/renderWebWorker/worker/renderCore';
 import { renderText } from '@/app/web-workers/renderWebWorker/worker/renderText';
 import { Rectangle } from 'pixi.js';
@@ -23,6 +23,8 @@ import { Rectangle } from 'pixi.js';
 declare var self: WorkerGlobalScope & typeof globalThis;
 
 class RenderClient {
+  tableColumnHeaderForeground = 0;
+
   constructor() {
     self.onmessage = this.handleMessage;
   }
@@ -36,6 +38,7 @@ class RenderClient {
       case 'clientRenderInit':
         renderText.clientInit(e.data.bitmapFonts);
         renderCore.init(e.ports[0]);
+        this.tableColumnHeaderForeground = e.data.tableColumnHeaderForeground;
         return;
 
       case 'clientRenderViewport':
@@ -69,7 +72,10 @@ class RenderClient {
         return;
 
       default:
-        console.warn('[renderClient] Unhandled message type', e.data);
+        // ignore messages from react dev tools
+        if (!(e.data as any)?.source) {
+          console.warn('[renderClient] Unhandled message type', e.data);
+        }
     }
   };
 

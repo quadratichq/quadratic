@@ -1,8 +1,8 @@
-import { Response } from 'express';
+import type { Response } from 'express';
 import z from 'zod';
 import { templates } from '../../email/templates';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
-import { RequestWithUser } from '../../types/Request';
+import type { RequestWithUser } from '../../types/Request';
 
 export default [
   validateRequestSchema(

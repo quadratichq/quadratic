@@ -5,6 +5,8 @@ import {
 } from '@/app/atoms/codeEditorAtom';
 import { debugShowAIInternalContext } from '@/app/debugFlags';
 import { colors } from '@/app/theme/colors';
+import { Markdown } from '@/app/ui/components/Markdown';
+import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
 import { AIAssistantUserMessageForm } from '@/app/ui/menus/CodeEditor/AIAssistant/AIAssistantUserMessageForm';
 import { AICodeBlockParser } from '@/app/ui/menus/CodeEditor/AIAssistant/AICodeBlockParser';
 import { cn } from '@/shared/shadcn/utils';
@@ -98,6 +100,8 @@ export function AIAssistantMessages({ textareaRef }: AIAssistantMessagesProps) {
           return null;
         }
 
+        const isCurrentMessage = index === messages.length - 1;
+
         return (
           <div
             key={`${index}-${message.role}-${message.contextType}`}
@@ -116,12 +120,28 @@ export function AIAssistantMessages({ textareaRef }: AIAssistantMessagesProps) {
                 messageIndex={index}
                 textareaRef={textareaRef}
               />
-            ) : Array.isArray(message.content) ? (
+            ) : message.role === 'user' && message.contextType === 'toolResult' ? (
               message.content.map((messageContent) => (
                 <AICodeBlockParser key={messageContent.content} input={messageContent.content} />
               ))
+            ) : Array.isArray(message.content) ? (
+              <>
+                {message.content.map((item, contentIndex) =>
+                  item.type === 'anthropic_thinking' ? (
+                    <ThinkingBlock
+                      key={item.text}
+                      isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
+                      isLoading={loading}
+                      thinkingContent={item}
+                      expandedDefault={false}
+                    />
+                  ) : item.type === 'text' ? (
+                    <AICodeBlockParser key={item.text} input={item.text} />
+                  ) : null
+                )}
+              </>
             ) : (
-              <AICodeBlockParser input={message.content} />
+              <Markdown key={message.content}>{message.content}</Markdown>
             )}
           </div>
         );

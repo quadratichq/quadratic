@@ -9,10 +9,18 @@ import { debugShowLoadingHashes } from '@/app/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { isFloatEqual } from '@/app/helpers/float';
-import { ColumnRow, JsOffset, JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
-import { Pos } from '@/app/quadratic-core/quadratic_core';
-import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import { RenderBitmapFonts } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
+import type {
+  ColumnRow,
+  JsOffset,
+  JsRenderCell,
+  JsRowHeight,
+  Pos,
+  SheetBounds,
+  SheetInfo,
+} from '@/app/quadratic-core-types';
+import type { SheetOffsets } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { RenderBitmapFonts } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
 import { CellsTextHash } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHash';
 import { renderText } from '@/app/web-workers/renderWebWorker/worker/renderText';
 import { CELL_HEIGHT } from '@/shared/constants/gridConstants';
@@ -21,7 +29,7 @@ import { Rectangle } from 'pixi.js';
 // 500 MB maximum memory per sheet before we start unloading hashes (right now
 // this is on a per-sheet basis--we will want to change this to a global limit)
 const MAX_RENDERING_MEMORY = 1024 * 1024 * 500;
-const NEIGHBORS = 10;
+const NEIGHBORS = 4;
 
 export class CellsLabels {
   sheetId: string;
@@ -269,7 +277,7 @@ export class CellsLabels {
     );
   }
 
-  getCornerHashesInBound = (screenRect: Rectangle): number[] => {
+  getNeighborCornerHashesInBound = (screenRect: Rectangle): number[] => {
     const topLeftCell: ColumnRow = JSON.parse(this.sheetOffsets.getColumnRowFromScreen(screenRect.x, screenRect.y));
     const { x: topLeftHashX, y: topLeftHashY } = CellsLabels.getHash(topLeftCell.column, topLeftCell.row);
 
@@ -281,7 +289,15 @@ export class CellsLabels {
       bottomRightCell.row
     );
 
-    return [topLeftHashX, topLeftHashY, bottomRightHashX, bottomRightHashY];
+    const width = bottomRightHashX - topLeftHashX + 1;
+    const height = bottomRightHashY - topLeftHashY + 1;
+
+    return [
+      topLeftHashX - width * NEIGHBORS,
+      topLeftHashY - height * NEIGHBORS * 4,
+      bottomRightHashX + width * NEIGHBORS,
+      bottomRightHashY + height * NEIGHBORS * 4,
+    ];
   };
 
   // distance from viewport center to hash center
