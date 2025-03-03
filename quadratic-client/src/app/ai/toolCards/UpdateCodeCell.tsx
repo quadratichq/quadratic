@@ -20,6 +20,7 @@ type UpdateCodeCellProps = {
 };
 
 export const UpdateCodeCell = ({ args, loading }: UpdateCodeCellProps) => {
+  console.log('[UpdateCodeCell] args: ', args);
   const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<UpdateCodeCellResponse, UpdateCodeCellResponse>>();
   const editorContent = useRecoilValue(codeEditorEditorContentAtom);
   const codeCell = useRecoilValue(codeEditorCodeCellAtom);
@@ -80,9 +81,11 @@ export const UpdateCodeCell = ({ args, loading }: UpdateCodeCellProps) => {
     if (toolArgs) {
       return toolArgs.data?.code_string.split('\n').length;
     } else {
-      return args.split('\n').length;
+      return args.split('\\n').length;
     }
   }, [toolArgs, args]);
+
+  console.log('[UpdateCodeCell] estimatedNumberOfLines: ', estimatedNumberOfLines);
 
   if (loading) {
     return (
