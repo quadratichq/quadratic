@@ -95,7 +95,7 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
     if (toolArgs?.data) {
       return toolArgs.data.code_string.split('\n').length;
     } else {
-      return args.split('\n').length;
+      return args.split('\\n').length;
     }
   }, [toolArgs, args]);
 
