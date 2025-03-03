@@ -1,5 +1,5 @@
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
-import { aiAnalystCurrentChatMessagesAtom } from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystCurrentChatMessagesAtom, aiAnalystPromptSuggestionsAtom } from '@/app/atoms/aiAnalystAtom';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec, type AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -12,8 +12,8 @@ export const useGetUserPromptSuggestions = () => {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
 
   const getUserPromptSuggestions = useRecoilCallback(
-    ({ snapshot }) =>
-      async (): Promise<z.infer<(typeof AIToolsArgsSchema)[AITool.UserPromptSuggestions]>['prompt_suggestions']> => {
+    ({ snapshot, set }) =>
+      async () => {
         const chatMessages = await snapshot.getPromise(aiAnalystCurrentChatMessagesAtom);
         const chatPromptMessages = getPromptMessages(chatMessages);
         if (!chatPromptMessages.length) {
@@ -34,6 +34,14 @@ ${JSON.stringify(chatPromptMessages)}
         ];
 
         const abortController = new AbortController();
+        set(aiAnalystPromptSuggestionsAtom, (prev) => {
+          prev.abortController?.abort();
+          return {
+            abortController,
+            suggestions: [],
+          };
+        });
+
         const response = await handleAIRequestToAPI({
           chatId: v4(),
           source: 'GetUserPromptSuggestions',
@@ -47,6 +55,8 @@ ${JSON.stringify(chatPromptMessages)}
           useQuadraticContext: true,
         });
 
+        let suggestions: z.infer<(typeof AIToolsArgsSchema)[AITool.UserPromptSuggestions]>['prompt_suggestions'] = [];
+
         const userPromptSuggestionsToolCall = response.toolCalls.find(
           (toolCall) => toolCall.name === AITool.UserPromptSuggestions
         );
@@ -54,13 +64,16 @@ ${JSON.stringify(chatPromptMessages)}
           try {
             const argsObject = JSON.parse(userPromptSuggestionsToolCall.arguments);
             const args = aiToolsSpec[AITool.UserPromptSuggestions].responseSchema.parse(argsObject);
-            return args.prompt_suggestions;
+            suggestions = args.prompt_suggestions;
           } catch (error) {
             console.error('[useGetUserPromptSuggestions] toolCall: ', error);
           }
         }
 
-        return [];
+        set(aiAnalystPromptSuggestionsAtom, {
+          abortController: undefined,
+          suggestions,
+        });
       },
     [handleAIRequestToAPI]
   );

@@ -84,8 +84,16 @@ export function useSubmitAIAnalystPrompt() {
     ({ set, snapshot }) =>
       async ({ userPrompt, context, messageIndex, clearMessages }: SubmitAIAnalystPromptArgs) => {
         set(showAIAnalystAtom, true);
-        set(aiAnalystPromptSuggestionsAtom, []);
         set(aiAnalystShowChatHistoryAtom, false);
+
+        // abort and clear prompt suggestions
+        set(aiAnalystPromptSuggestionsAtom, (prev) => {
+          prev.abortController?.abort();
+          return {
+            abortController: undefined,
+            suggestions: [],
+          };
+        });
 
         const previousLoading = await snapshot.getPromise(aiAnalystLoadingAtom);
         if (previousLoading) return;

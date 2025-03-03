@@ -20,7 +20,10 @@ export interface AIAnalystState {
   loading: boolean;
   chats: Chat[];
   currentChat: Chat;
-  promptSuggestions: z.infer<(typeof AIToolsArgsSchema)[AITool.UserPromptSuggestions]>['prompt_suggestions'];
+  promptSuggestions: {
+    abortController: AbortController | undefined;
+    suggestions: z.infer<(typeof AIToolsArgsSchema)[AITool.UserPromptSuggestions]>['prompt_suggestions'];
+  };
 }
 
 export const defaultAIAnalystState: AIAnalystState = {
@@ -35,7 +38,10 @@ export const defaultAIAnalystState: AIAnalystState = {
     lastUpdated: Date.now(),
     messages: [],
   },
-  promptSuggestions: [],
+  promptSuggestions: {
+    abortController: undefined,
+    suggestions: [],
+  },
 };
 
 export const aiAnalystAtom = atom<AIAnalystState>({
@@ -133,6 +139,8 @@ export const aiAnalystChatsAtom = selector<Chat[]>({
         return prev;
       }
 
+      prev.promptSuggestions.abortController?.abort();
+
       // find deleted chats that are not in the new value
       const deletedChatIds = prev.chats
         .filter((chat) => !newValue.some((newChat) => newChat.id === chat.id))
@@ -178,7 +186,10 @@ export const aiAnalystChatsAtom = selector<Chat[]>({
               messages: [],
             }
           : prev.currentChat,
-        promptSuggestions: [],
+        promptSuggestions: {
+          abortController: undefined,
+          suggestions: [],
+        },
       };
     });
   },
@@ -198,6 +209,8 @@ export const aiAnalystCurrentChatAtom = selector<Chat>({
         return prev;
       }
 
+      prev.promptSuggestions.abortController?.abort();
+
       let chats = prev.chats;
       if (newValue.id) {
         chats = [...chats.filter((chat) => chat.id !== newValue.id), newValue];
@@ -208,7 +221,10 @@ export const aiAnalystCurrentChatAtom = selector<Chat>({
         showChatHistory: false,
         chats,
         currentChat: newValue,
-        promptSuggestions: [],
+        promptSuggestions: {
+          abortController: undefined,
+          suggestions: [],
+        },
       };
     });
   },
@@ -256,6 +272,8 @@ export const aiAnalystCurrentChatMessagesAtom = selector<ChatMessage[]>({
         return prev;
       }
 
+      prev.promptSuggestions.abortController?.abort();
+
       // update current chat
       const currentChat: Chat = {
         id: !!prev.currentChat.id ? prev.currentChat.id : v4(),
@@ -271,7 +289,10 @@ export const aiAnalystCurrentChatMessagesAtom = selector<ChatMessage[]>({
         ...prev,
         chats,
         currentChat,
-        promptSuggestions: [],
+        promptSuggestions: {
+          abortController: undefined,
+          suggestions: [],
+        },
       };
     });
   },
@@ -285,5 +306,5 @@ export const aiAnalystCurrentChatMessagesCountAtom = selector<number>({
 export const aiAnalystPromptSuggestionsAtom = createSelector('promptSuggestions');
 export const aiAnalystPromptSuggestionsCountAtom = selector<number>({
   key: 'aiAnalystPromptSuggestionsCountAtom',
-  get: ({ get }) => get(aiAnalystPromptSuggestionsAtom).length,
+  get: ({ get }) => get(aiAnalystPromptSuggestionsAtom).suggestions.length,
 });

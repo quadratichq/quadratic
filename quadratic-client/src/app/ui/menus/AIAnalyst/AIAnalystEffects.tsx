@@ -4,7 +4,6 @@ import {
   aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatNameAtom,
   aiAnalystLoadingAtom,
-  aiAnalystPromptSuggestionsAtom,
   aiAnalystPromptSuggestionsCountAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { memo, useEffect } from 'react';
@@ -34,19 +33,11 @@ export const AIAnalystEffects = memo(() => {
   // updates user prompt suggestions if it is empty
   const { getUserPromptSuggestions } = useGetUserPromptSuggestions();
   const promptSuggestionsCount = useRecoilValue(aiAnalystPromptSuggestionsCountAtom);
-  const setPromptSuggestions = useSetRecoilState(aiAnalystPromptSuggestionsAtom);
   useEffect(() => {
     if (!loading && !promptSuggestionsCount) {
-      getUserPromptSuggestions()
-        .then((suggestions) => {
-          setPromptSuggestions(suggestions);
-        })
-        .catch((error) => {
-          setPromptSuggestions([]);
-          console.error('[AIAnalystEffects] getUserPromptSuggestions: ', error);
-        });
+      getUserPromptSuggestions();
     }
-  }, [currentChat, getUserPromptSuggestions, loading, promptSuggestionsCount, setPromptSuggestions]);
+  }, [currentChat, getUserPromptSuggestions, loading, promptSuggestionsCount]);
 
   return null;
 });

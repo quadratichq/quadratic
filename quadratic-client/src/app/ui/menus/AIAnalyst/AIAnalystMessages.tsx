@@ -318,13 +318,13 @@ const PromptSuggestions = memo(() => {
     [messages]
   );
 
-  if (!messages.length || !promptSuggestions.length) {
+  if (!messages.length || !promptSuggestions.suggestions.length) {
     return null;
   }
 
   return (
     <div className="flex flex-col gap-2 px-2">
-      {promptSuggestions.map((suggestion, index) => (
+      {promptSuggestions.suggestions.map((suggestion, index) => (
         <div
           key={`${index}-${suggestion.label}`}
           className="cursor-pointer rounded-md bg-accent p-2 text-sm hover:bg-accent/80"
