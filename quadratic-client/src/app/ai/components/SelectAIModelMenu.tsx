@@ -104,7 +104,7 @@ export const SelectAIModelMenu = memo(({ loading, textAreaRef }: SelectAIModelMe
       </DropdownMenu>
 
       {canToggleThinking && (
-        <TooltipPopover label="Extended thinking (for harder prompts)">
+        <TooltipPopover label="Extended thinking for harder prompts">
           <Toggle
             aria-label="Extended thinking"
             size="sm"
