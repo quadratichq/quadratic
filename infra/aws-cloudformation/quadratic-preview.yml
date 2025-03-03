@@ -164,7 +164,7 @@ Resources:
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
-      ListenerArn: arn:aws:globalaccelerator::058264531788:accelerator/2c705429-eefb-42b0-83ba-c7352ac53a3a/listener/9f5cd1ec/endpoint-group/ce5f714b3005
+      ListenerArn: arn:aws:globalaccelerator::058264531788:accelerator/2c705429-eefb-42b0-83ba-c7352ac53a3a/listener/9f5cd1ec
       EndpointGroupRegion: !Ref AWS::Region
       EndpointConfigurations:
         - EndpointId: !Ref EC2Instance
