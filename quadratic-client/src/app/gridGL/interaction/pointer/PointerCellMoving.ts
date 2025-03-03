@@ -1,4 +1,3 @@
-import { getTable } from '@/app/actions/dataTableSpec';
 import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -221,22 +220,7 @@ export class PointerCellMoving {
         this.movingCells &&
         (this.startCell.x !== this.movingCells.toColumn || this.startCell.y !== this.movingCells.toRow)
       ) {
-        const table = getTable();
         const rectangle = sheets.sheet.cursor.getLargestRectangle();
-
-        if (
-          table &&
-          table.state !== 'SpillError' &&
-          table.state !== 'RunError' &&
-          table.x === this.startCell.x &&
-          table.y === this.startCell.y
-        ) {
-          rectangle.x = table.x;
-          rectangle.y = table.y;
-          rectangle.width = table.w;
-          rectangle.height = table.h;
-        }
-
         quadraticCore.moveCells(
           rectToSheetRect(rectangle, sheets.current),
           this.movingCells.toColumn,
