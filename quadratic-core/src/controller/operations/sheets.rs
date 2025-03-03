@@ -87,7 +87,11 @@ impl GridController {
         let mut new_sheet = sheet.clone();
         let new_sheet_id = SheetId::new();
         new_sheet.id = new_sheet_id;
-        new_sheet.name = format!("{} Copy", sheet.name);
+
+        let new_name = format!("{} Copy", sheet.name);
+        new_sheet.replace_sheet_name_in_code_cells(&sheet.name, &new_name, self.a1_context());
+        new_sheet.name = new_name;
+
         let right_order = self
             .grid
             .next_sheet(sheet_id)
@@ -168,15 +172,15 @@ mod test {
 
     #[test]
     fn get_sheet_next_name() {
-        // Sheet 1
+        // Sheet1
         let mut gc = GridController::test();
         gc.add_sheet(None);
-        // Sheet 1 | Sheet 2
+        // Sheet1 | Sheet 2
         assert_eq!(gc.sheet_index(1).name, "Sheet 2");
         gc.sheet_mut(gc.sheet_ids()[1]).name = "Sheet 2 modified".to_string();
-        // Sheet 1 | Sheet 2 modified
+        // Sheet1 | Sheet 2 modified
         gc.add_sheet(None);
-        // Sheet 1 | Sheet 2 modified | Sheet 2
+        // Sheet1 | Sheet 2 modified | Sheet 2
         assert_eq!(gc.sheet_index(2).name, "Sheet 2");
         gc.delete_sheet(gc.sheet_ids()[0], None);
         // Sheet 2 modified | Sheet 2
@@ -190,7 +194,7 @@ mod test {
         let mut gc = GridController::test();
         gc.add_sheet(None);
         gc.add_sheet(None);
-        assert_eq!(gc.sheet_names(), vec!["Sheet 1", "Sheet 2", "Sheet 3"]);
+        assert_eq!(gc.sheet_names(), vec!["Sheet1", "Sheet 2", "Sheet 3"]);
     }
 
     #[test]
