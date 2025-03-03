@@ -47,14 +47,10 @@ ${schemaJsonForAi}
 You have to use the code_editor_completions tool and provide the text delta to be inserted at the cursor position.\n
 
 The code before the cursor is:\n
-\`\`\`${language}\n
-${prefix}
-\`\`\`
+${JSON.stringify(prefix)}
 
 The code after the cursor is:\n
-\`\`\`${language}\n
-${suffix}
-\`\`\`
+${JSON.stringify(suffix)}
 
 Include spaces and newlines as required, the text delta will be appended as is at the cursor position.\n
 `,
