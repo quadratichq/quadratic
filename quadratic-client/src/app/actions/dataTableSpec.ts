@@ -79,7 +79,7 @@ const getSelectedRows = (): number[] | undefined => {
   if (!table) return undefined;
 
   return sheets.sheet.cursor
-    .getSelectedRows()
+    .getSelectedRowsFinite()
     .map((r) => r - table.y)
     .sort((a, b) => b - a);
 };
@@ -118,7 +118,7 @@ const getSelectedColumns = (): number[] | undefined => {
   if (!table || !displayColumns) return undefined;
 
   const displayIndexes = sheets.sheet.cursor
-    .getSelectedColumns()
+    .getSelectedColumnsFinite()
     .map((c) => c - table.x)
     .sort((a, b) => b - a);
 
@@ -556,7 +556,7 @@ export const dataTableSpec: DataTableSpec = {
     label: 'Delete table column(s)',
     Icon: DeleteIcon,
     isAvailable: () => {
-      const length = sheets.sheet.cursor.getSelectedColumns().length;
+      const length = sheets.sheet.cursor.getSelectedColumnsFinite().length;
       const plural = length > 1 ? 's' : '';
       dataTableSpec[Action.RemoveTableColumn].label = `Delete ${length} column${plural}`;
       return !isReadOnly() && isWithinTable();
@@ -607,7 +607,7 @@ export const dataTableSpec: DataTableSpec = {
     label: 'Delete table row',
     Icon: DeleteIcon,
     isAvailable: () => {
-      const length = sheets.sheet.cursor.getSelectedRows().length;
+      const length = sheets.sheet.cursor.getSelectedRowsFinite().length;
       const plural = length > 1 ? 's' : '';
       dataTableSpec[Action.RemoveTableRow].label = `Delete ${length} row${plural}`;
       return !isReadOnly() && isWithinTable();
