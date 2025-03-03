@@ -89,7 +89,7 @@ mod tests {
         let sheet1_id = SheetId::TEST;
         let sheet2_id = SheetId::new();
         let context = A1Context::test(
-            &[("Sheet 1", sheet1_id), ("Sheet 2", sheet2_id)],
+            &[("Sheet1", sheet1_id), ("Sheet 2", sheet2_id)],
             &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C3"))],
         );
 
