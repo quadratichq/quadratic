@@ -168,7 +168,6 @@ export class PointerCellMoving {
     // we do not move if there are multiple rectangles (for now)
     const rectangle = sheets.sheet.cursor.getSingleRectangleOrCursor();
     if (!rectangle) return false;
-
     const origin = sheets.sheet.cursor.position;
     const column = origin.x;
     const row = origin.y;
@@ -181,8 +180,8 @@ export class PointerCellMoving {
 
       // the offset is the clamped value of the rectangle based on where the user clicks
       const offset = sheets.sheet.getColumnRowFromScreen(world.x, world.y);
-      offset.column = Math.min(Math.max(offset.column, rectangle.left), rectangle.right);
-      offset.row = Math.min(Math.max(offset.row, rectangle.top), rectangle.bottom);
+      offset.column = Math.min(Math.max(offset.column, rectangle.left), rectangle.right - 1);
+      offset.row = Math.min(Math.max(offset.row, rectangle.top), rectangle.bottom - 1);
       this.movingCells = {
         column,
         row,
