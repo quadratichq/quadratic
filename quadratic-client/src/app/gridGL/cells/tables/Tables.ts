@@ -329,10 +329,14 @@ export class Tables extends Container<Table> {
       this.activeTables.forEach((table) => table.showActive());
       this.contextMenuTable?.showActive();
       this.actionDataTable?.showActive();
+      this.children.forEach((table) => table.header.toggleTableColumnSelection(false));
       pixiApp.setViewportDirty();
     } else {
       this.saveToggleOutlines = true;
-      this.children.forEach((table) => table.hideActive());
+      this.children.forEach((table) => {
+        table.hideActive();
+        table.header.toggleTableColumnSelection(true);
+      });
     }
   }
 
