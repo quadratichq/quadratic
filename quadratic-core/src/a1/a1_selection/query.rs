@@ -1042,4 +1042,57 @@ mod tests {
             Some(vec![0])
         );
     }
+
+    #[test]
+    fn test_single_rect() {
+        let context = A1Context::default();
+
+        // Test single range with multiple cells
+        let selection = A1Selection::test_a1("A1:B2");
+        assert_eq!(
+            selection.single_rect(&context),
+            Some(Rect::new(1, 1, 2, 2)),
+            "Single range with multiple cells should return a rect"
+        );
+
+        // Test single cell selection
+        let selection = A1Selection::test_a1("A1");
+        assert_eq!(
+            selection.single_rect(&context),
+            None,
+            "Single cell selection should return None"
+        );
+
+        // Test multiple ranges
+        let selection = A1Selection::test_a1("A1:B2,C3:D4");
+        assert_eq!(
+            selection.single_rect(&context),
+            None,
+            "Multiple ranges should return None"
+        );
+
+        // Test column selection
+        let selection = A1Selection::test_a1("A:B");
+        assert_eq!(
+            selection.single_rect(&context),
+            None,
+            "Column selection should return None"
+        );
+
+        // Test row selection
+        let selection = A1Selection::test_a1("1:2");
+        assert_eq!(
+            selection.single_rect(&context),
+            None,
+            "Row selection should return None"
+        );
+
+        // Test larger single range
+        let selection = A1Selection::test_a1("B2:D5");
+        assert_eq!(
+            selection.single_rect(&context),
+            Some(Rect::new(2, 2, 4, 5)),
+            "Larger single range should return correct rect"
+        );
+    }
 }
