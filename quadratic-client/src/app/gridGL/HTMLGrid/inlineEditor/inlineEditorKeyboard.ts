@@ -401,6 +401,8 @@ class InlineEditorKeyboard {
         if (sheets.current !== inlineEditorHandler.location?.sheetId) {
           inlineEditorMonaco.sendKeyboardEvent(e);
           inlineEditorHandler.sendMultiplayerUpdate();
+        } else {
+          inlineEditorMonaco.focus();
         }
       }
     }
