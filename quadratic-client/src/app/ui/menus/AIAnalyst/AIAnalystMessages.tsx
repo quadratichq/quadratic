@@ -22,7 +22,7 @@ import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import mixpanel from 'mixpanel-browser';
 import { getLastUserPromptMessageIndex, getUserPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 
 type AIAnalystMessagesProps = {
@@ -307,9 +307,16 @@ const FeedbackButtons = memo(() => {
 });
 
 const PromptSuggestions = memo(() => {
-  const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
-  const promptSuggestions = useRecoilValue(aiAnalystPromptSuggestionsAtom);
   const { submitPrompt } = useSubmitAIAnalystPrompt();
+  const promptSuggestions = useRecoilValue(aiAnalystPromptSuggestionsAtom);
+  const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
+  const lastContext = useMemo(
+    () =>
+      getUserPromptMessages(messages)
+        .filter((message) => message.contextType === 'userPrompt')
+        .at(-1)?.context,
+    [messages]
+  );
 
   if (!messages.length || !promptSuggestions.length) {
     return null;
@@ -325,7 +332,7 @@ const PromptSuggestions = memo(() => {
             submitPrompt({
               userPrompt: suggestion.prompt,
               context: {
-                ...(getUserPromptMessages(messages).at(-1)?.context ?? defaultAIAnalystContext),
+                ...(lastContext ?? defaultAIAnalystContext),
               },
             })
           }
