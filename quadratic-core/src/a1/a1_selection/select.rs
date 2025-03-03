@@ -496,7 +496,7 @@ impl A1Selection {
 
 #[cfg(test)]
 mod tests {
-    use crate::Rect;
+    use crate::{grid::SheetId, Rect};
 
     use super::*;
 
@@ -909,16 +909,16 @@ mod tests {
     #[test]
     fn test_table_selection() {
         let context = A1Context::test(
-            &[],
-            &[("test_table", &["A", "B", "C"], Rect::test_a1("A1:C5"))],
+            &[("Sheet1", SheetId::TEST)],
+            &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C3"))],
         );
 
-        let mut selection = A1Selection::test_a1_context("test_table", &context);
+        let mut selection = A1Selection::test_a1_context("Table1", &context);
         selection.select_to(5, 5, true, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:E5")]);
 
         // Test table column selection
-        selection = A1Selection::test_a1_context("test_table[B]", &context);
+        selection = A1Selection::test_a1_context("Table1[col2]", &context);
         selection.select_to(4, 6, true, &context);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("B2:D6")]);
     }
