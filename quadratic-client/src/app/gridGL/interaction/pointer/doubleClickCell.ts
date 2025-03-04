@@ -60,7 +60,7 @@ export async function doubleClickCell(options: {
 
         // ensure we're in the right cell (which may change if we double clicked on a CodeRun)
         if (codeCell && (cursor.x !== codeCell.x || cursor.y !== codeCell.y)) {
-          sheets.sheet.cursor.moveTo(codeCell.x, codeCell.y);
+          sheets.sheet.cursor.moveTo(codeCell.x, codeCell.y, { checkForTableRef: true });
         }
         pixiAppSettings.changeInput(true, cell, cursorMode);
       }
