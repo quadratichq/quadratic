@@ -1,6 +1,6 @@
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { sharedEvents } from '@/shared/sharedEvents';
-import { useEffect } from 'react';
+import { memo, useEffect } from 'react';
 
 const DEFAULT_ACCENT_COLOR = 'blue';
 export const themeAccentColors = ['blue', 'violet', 'orange', 'green', 'rose', 'black'] as const;
@@ -11,17 +11,18 @@ export const useThemeAccentColor = () => {
   return state;
 };
 
-export const ThemeAccentColorEffects = () => {
-  const [accentColor] = useThemeAccentColor();
+export const ThemeAccentColorEffects = () =>
+  memo(() => {
+    const [accentColor] = useThemeAccentColor();
 
-  // Update the theme color in the UI
-  useEffect(() => {
-    // Set the current theme color variable in CSS via the DOM
-    document.documentElement.setAttribute('data-theme', accentColor);
+    // Update the theme color in the UI
+    useEffect(() => {
+      // Set the current theme color variable in CSS via the DOM
+      document.documentElement.setAttribute('data-theme', accentColor);
 
-    // Set in pixi
-    sharedEvents.emit('changeThemeAccentColor');
-  }, [accentColor]);
+      // Set in pixi
+      sharedEvents.emit('changeThemeAccentColor');
+    }, [accentColor]);
 
-  return null;
-};
+    return null;
+  });

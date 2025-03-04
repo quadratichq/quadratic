@@ -1,6 +1,6 @@
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { getCSSVariableAsHexColor } from '@/shared/utils/colors';
-import { useEffect } from 'react';
+import { memo, useEffect } from 'react';
 
 const DEFAULT_APPEARANCE_MODE = 'light';
 type AppearanceMode = 'light' | 'dark' | 'system';
@@ -18,49 +18,50 @@ export const useThemeAppearanceMode = () => {
  * This component should be mounted in one place at the root of the app and it
  * will handle responding to changes via the effects.
  */
-export const ThemeAppearanceModeEffects = () => {
-  const [appearanceMode] = useThemeAppearanceMode();
-  const userPrefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)');
+export const ThemeAppearanceModeEffects = () =>
+  memo(() => {
+    const [appearanceMode] = useThemeAppearanceMode();
+    const userPrefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)');
 
-  // User changes their preference via _our_ UI
-  useEffect(() => {
-    if (appearanceMode === 'dark' || appearanceMode === 'light') {
-      changeAppearanceModeInDom(appearanceMode);
-    } else if (appearanceMode === 'system') {
-      changeAppearanceModeInDom(userPrefersDarkMode.matches ? 'dark' : 'light');
-    }
-  }, [appearanceMode, userPrefersDarkMode]);
-
-  // User changes their preference via _their_ system (browser or OS)
-  useEffect(() => {
-    const handleMatch = (e: MediaQueryListEvent) => {
-      if (appearanceMode === 'system') {
-        changeAppearanceModeInDom(e.matches ? 'dark' : 'light');
+    // User changes their preference via _our_ UI
+    useEffect(() => {
+      if (appearanceMode === 'dark' || appearanceMode === 'light') {
+        changeAppearanceModeInDom(appearanceMode);
+      } else if (appearanceMode === 'system') {
+        changeAppearanceModeInDom(userPrefersDarkMode.matches ? 'dark' : 'light');
       }
-    };
+    }, [appearanceMode, userPrefersDarkMode]);
 
-    userPrefersDarkMode.addEventListener('change', handleMatch);
-    return () => {
-      userPrefersDarkMode.removeEventListener('change', handleMatch);
-    };
-  }, [appearanceMode, userPrefersDarkMode]);
+    // User changes their preference via _their_ system (browser or OS)
+    useEffect(() => {
+      const handleMatch = (e: MediaQueryListEvent) => {
+        if (appearanceMode === 'system') {
+          changeAppearanceModeInDom(e.matches ? 'dark' : 'light');
+        }
+      };
 
-  useEffect(() => {
-    const metaTag = document.querySelector('meta[name="theme-color"]');
-    const hexColor = getCSSVariableAsHexColor('background');
+      userPrefersDarkMode.addEventListener('change', handleMatch);
+      return () => {
+        userPrefersDarkMode.removeEventListener('change', handleMatch);
+      };
+    }, [appearanceMode, userPrefersDarkMode]);
 
-    if (metaTag) {
-      metaTag.setAttribute('content', hexColor);
-    } else {
-      const meta = document.createElement('meta');
-      meta.name = 'theme-color';
-      meta.content = hexColor;
-      document.head.appendChild(meta);
-    }
-  }, [appearanceMode, userPrefersDarkMode]);
+    useEffect(() => {
+      const metaTag = document.querySelector('meta[name="theme-color"]');
+      const hexColor = getCSSVariableAsHexColor('background');
 
-  return null;
-};
+      if (metaTag) {
+        metaTag.setAttribute('content', hexColor);
+      } else {
+        const meta = document.createElement('meta');
+        meta.name = 'theme-color';
+        meta.content = hexColor;
+        document.head.appendChild(meta);
+      }
+    }, [appearanceMode, userPrefersDarkMode]);
+
+    return null;
+  });
 
 function changeAppearanceModeInDom(mode: 'light' | 'dark') {
   if (mode === 'dark') {

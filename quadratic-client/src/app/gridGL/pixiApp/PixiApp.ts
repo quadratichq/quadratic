@@ -309,6 +309,7 @@ export class PixiApp {
     this.boxCells.visible = false;
     this.htmlPlaceholders.prepare();
     this.cellsSheets.toggleOutlines(false);
+    this.copy.visible = false;
     if (options?.cull) {
       this.cellsSheets.cull(options.cull);
     }
@@ -324,6 +325,7 @@ export class PixiApp {
     this.boxCells.visible = true;
     this.htmlPlaceholders.hide();
     this.cellsSheets.toggleOutlines();
+    this.copy.visible = true;
     if (culled) {
       this.cellsSheets.cull(this.viewport.getVisibleBounds());
     }

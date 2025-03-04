@@ -3,7 +3,10 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    grid::{file::sheet_schema::export_sheet, js_types::JsSnackbarSeverity, Sheet, SheetId},
+    grid::{
+        file::sheet_schema::export_sheet, js_types::JsSnackbarSeverity, unique_data_table_name,
+        Sheet, SheetId,
+    },
 };
 use anyhow::{bail, Result};
 use lexicon_fractional_index::key_between;
@@ -46,26 +49,54 @@ impl GridController {
                     // sheet already exists (unlikely but possible if this operation is run twice)
                     return Ok(());
                 }
-                let sheet_id = sheet.id;
-                let data_tables = sheet
-                    .data_tables
-                    .iter()
-                    .map(|(pos, data_table)| (pos.to_owned(), data_table.name.to_string()))
-                    .collect::<Vec<_>>();
-                self.grid.add_sheet(Some(sheet));
 
-                let context = self.a1_context().to_owned();
+                let sheet_id = self.grid.add_sheet(Some(sheet));
+                self.send_add_sheet(transaction, sheet_id);
 
-                for (pos, name) in data_tables.iter() {
-                    let sheet_pos = pos.to_sheet_pos(sheet_id);
-                    self.grid
-                        .update_data_table_name(sheet_pos, name, name, &context, false)?;
-                    // mark code cells dirty to update meta data
+                let mut context = self.a1_context().to_owned();
+
+                let mut data_tables_pos = vec![];
+                let mut table_names_to_update_in_cell_ref = vec![];
+
+                // update table names in data tables in the new sheet
+                let sheet = self.try_sheet_mut_result(sheet_id)?;
+                for (pos, data_table) in sheet.data_tables.iter_mut() {
+                    let old_name = data_table.name.to_string();
+                    let unique_name = unique_data_table_name(&old_name, false, None, &context);
+                    data_table.name = unique_name.to_owned().into();
+
+                    // update table context for replacing table names in code cells
+                    if let Some(mut table_map_entry) = context.table_map.remove(&old_name) {
+                        table_map_entry.sheet_id = sheet_id;
+                        context.table_map.insert(table_map_entry);
+                    }
+
+                    data_tables_pos.push(*pos);
+                    table_names_to_update_in_cell_ref.push((old_name, unique_name));
+
                     transaction.add_code_cell(sheet_id, *pos);
                 }
 
-                self.send_add_sheet(transaction, sheet_id);
-                self.send_all_fills(sheet_id);
+                // update table names references in code cells in the new sheet
+                let sheet = self.try_sheet_mut_result(sheet_id)?;
+                for pos in data_tables_pos {
+                    if let Some(code_cell_value) = sheet
+                        .cell_value_mut(pos)
+                        .and_then(|cv| cv.code_cell_value_mut())
+                    {
+                        for (old_name, unique_name) in table_names_to_update_in_cell_ref.iter() {
+                            code_cell_value.replace_table_name_in_cell_references(
+                                old_name,
+                                unique_name,
+                                &sheet_id,
+                                &context,
+                            );
+                        }
+                    }
+                }
+
+                transaction.add_fill_cells(sheet_id);
+                transaction.sheet_borders.insert(sheet_id);
 
                 transaction
                     .forward_operations
@@ -73,8 +104,6 @@ impl GridController {
                 transaction
                     .reverse_operations
                     .push(Operation::DeleteSheet { sheet_id });
-
-                transaction.sheet_borders.insert(sheet_id);
             }
         }
         Ok(())
@@ -280,9 +309,10 @@ mod tests {
     use crate::{
         controller::{
             active_transactions::transaction_name::TransactionName,
-            operations::operation::Operation, GridController,
+            operations::operation::Operation, user_actions::import::tests::simple_csv_at,
+            GridController,
         },
-        grid::{CodeCellLanguage, SheetId},
+        grid::{CodeCellLanguage, CodeCellValue, SheetId},
         wasm_bindings::{
             controller::sheet_info::SheetInfo,
             js::{clear_js_calls, expect_js_call},
@@ -456,14 +486,14 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        // Sheet1, Sheet2
+        // Sheet1, Sheet 2
         gc.add_sheet(None);
         assert_eq!(gc.grid.sheets().len(), 2);
         let sheet_id2 = gc.sheet_ids()[1];
         assert_eq!(gc.grid.sheets()[0].id, sheet_id);
         assert_eq!(gc.grid.sheets()[1].id, sheet_id2);
 
-        // Sheet2, Sheet1
+        // Sheet 2, Sheet1
         gc.move_sheet(sheet_id, None, None);
         assert_eq!(gc.grid.sheets()[0].id, sheet_id2);
         assert_eq!(gc.grid.sheets()[1].id, sheet_id);
@@ -475,7 +505,7 @@ mod tests {
             true,
         );
 
-        // Sheet1, Sheet2
+        // Sheet1, Sheet 2
         gc.undo(None);
         assert_eq!(gc.grid.sheets()[0].id, sheet_id);
         assert_eq!(gc.grid.sheets()[1].id, sheet_id2);
@@ -568,7 +598,7 @@ mod tests {
         }];
         gc.start_user_transaction(op, None, TransactionName::DuplicateSheet);
         assert_eq!(gc.grid.sheets().len(), 3);
-        assert_eq!(gc.grid.sheets()[1].name, "Sheet1 Copy1");
+        assert_eq!(gc.grid.sheets()[1].name, "Sheet1 Copy 1");
         assert_eq!(gc.grid.sheets()[2].name, "Sheet1 Copy");
         let duplicated_sheet_id3 = gc.grid.sheets()[1].id;
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id3));
@@ -589,12 +619,63 @@ mod tests {
 
         gc.redo(None);
         assert_eq!(gc.grid.sheets().len(), 3);
-        assert_eq!(gc.grid.sheets()[1].name, "Sheet1 Copy1");
+        assert_eq!(gc.grid.sheets()[1].name, "Sheet1 Copy 1");
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id3));
         expect_js_call(
             "jsAddSheet",
             format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
             true,
+        );
+    }
+
+    #[test]
+    fn test_duplicate_sheet_with_data_table() {
+        let (mut gc, sheet_id, pos, file_name) = simple_csv_at(pos![E2]);
+
+        gc.test_set_code_run_array_2d(sheet_id, 10, 10, 2, 2, vec!["1", "2", "3", "4"]);
+        gc.set_code_cell(
+            SheetPos {
+                sheet_id,
+                x: 10,
+                y: 10,
+            },
+            CodeCellLanguage::Python,
+            format!("q.cells('{}')", file_name),
+            None,
+        );
+
+        gc.test_set_code_run_array_2d(sheet_id, 20, 20, 2, 2, vec!["1", "2", "3", "4"]);
+        gc.set_code_cell(
+            SheetPos {
+                sheet_id,
+                x: 20,
+                y: 20,
+            },
+            CodeCellLanguage::Python,
+            "q.cells('Sheet1!A1')".to_string(),
+            None,
+        );
+
+        let ops = gc.duplicate_sheet_operations(sheet_id);
+        gc.start_user_transaction(ops, None, TransactionName::DuplicateSheet);
+
+        let duplicated_sheet_id = gc.sheet_ids()[1];
+        let data_table = gc.sheet(duplicated_sheet_id).data_table(pos).unwrap();
+        assert_eq!(data_table.name.to_string(), format!("{}1", file_name));
+        assert_eq!(
+            gc.sheet(duplicated_sheet_id).cell_value(pos![J10]).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Python,
+                code: format!("q.cells(\"{}1\")", file_name),
+            })
+        );
+
+        assert_eq!(
+            gc.sheet(duplicated_sheet_id).cell_value(pos![T20]).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Python,
+                code: "q.cells(\"A1\")".to_string(),
+            })
         );
     }
 }

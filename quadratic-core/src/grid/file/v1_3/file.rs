@@ -351,7 +351,7 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<v1_4::Sheet> {
 
     Ok(v1_4::Sheet {
         id: sheet_id,
-        name: "Sheet 1".into(),
+        name: "Sheet1".into(),
         color: None,
         order: "a0".into(),
         offsets: (column_widths, row_heights),

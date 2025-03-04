@@ -188,10 +188,10 @@ mod tests {
         let mut g = Grid::new();
         g.add_sheet(Some(Sheet::new(
             SheetId::new(),
-            "Sheet2".to_string(),
+            "Sheet 2".to_string(),
             String::new(),
         )));
-        let result = parse(&g, "'Sheet2'!A1");
+        let result = parse(&g, "'Sheet 2'!A1");
         assert_eq!(result.parse_error_msg, None);
         assert_eq!(result.parse_error_span, None);
         assert_eq!(result.cell_refs.len(), 1);

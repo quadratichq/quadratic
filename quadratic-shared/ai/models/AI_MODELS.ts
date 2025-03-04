@@ -1,20 +1,44 @@
 import type { ModelConfig, ModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
-export const DEFAULT_MODEL: ModelKey = 'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0';
+export const DEFAULT_MODEL: ModelKey = 'bedrock-anthropic:claude:thinking-toggle-off';
 
 export const DEFAULT_GET_CHAT_NAME_MODEL: ModelKey = 'bedrock-anthropic:us.anthropic.claude-3-5-haiku-20241022-v1:0';
 
 // updating this will force the model to be reset to the default model in local storage
-export const DEFAULT_MODEL_VERSION = 4;
+export const DEFAULT_MODEL_VERSION = 6;
 
 export const MODELS_CONFIGURATION: {
   [key in ModelKey]: ModelConfig;
 } = {
+  'bedrock-anthropic:claude:thinking-toggle-off': {
+    model: 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+    displayName: `claude`,
+    temperature: 0,
+    max_tokens: 8192,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: true,
+    provider: 'bedrock-anthropic',
+    thinkingToggle: false,
+  },
+  'bedrock-anthropic:claude:thinking-toggle-on': {
+    model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
+    displayName: `claude`,
+    temperature: 0,
+    max_tokens: 16000,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: true,
+    provider: 'bedrock-anthropic',
+    thinking: true,
+    thinkingTemperature: 1,
+    thinkingToggle: true,
+  },
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0': {
     model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
     displayName: `claude 3.7 sonnet`,
     temperature: 0,
-    max_tokens: 16000,
+    max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: true,
@@ -52,11 +76,35 @@ export const MODELS_CONFIGURATION: {
     enabled: false,
     provider: 'bedrock-anthropic',
   },
+  'anthropic:claude:thinking-toggle-off': {
+    model: 'claude-3-5-sonnet-20241022',
+    displayName: `claude`,
+    temperature: 0,
+    max_tokens: 8192,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: false,
+    provider: 'anthropic',
+    thinkingToggle: false,
+  },
+  'anthropic:claude:thinking-toggle-on': {
+    model: 'claude-3-7-sonnet-20250219',
+    displayName: `claude`,
+    temperature: 0,
+    max_tokens: 16000,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: false,
+    provider: 'anthropic',
+    thinking: true,
+    thinkingTemperature: 1,
+    thinkingToggle: true,
+  },
   'anthropic:claude-3-7-sonnet-20250219': {
     model: 'claude-3-7-sonnet-20250219',
     displayName: 'claude 3.7 sonnet',
     temperature: 0,
-    max_tokens: 16000,
+    max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: false,
@@ -101,7 +149,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 4096, // not used for openai
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    enabled: false,
     provider: 'openai',
     strickParams: true,
   },
