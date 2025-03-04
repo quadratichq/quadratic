@@ -85,6 +85,7 @@ impl Sheet {
     /// Returns true if the tables contain any cell at Pos (ie, not blank). Uses
     /// the DataTable's output_rect for the check to ensure that charts are
     /// included.
+    /// If ignore_readonly is true, it will ignore readonly tables.
     pub fn has_table_content(&self, pos: Pos, ignore_readonly: bool) -> bool {
         self.data_tables.iter().any(|(code_cell_pos, data_table)| {
             if ignore_readonly && data_table.readonly {

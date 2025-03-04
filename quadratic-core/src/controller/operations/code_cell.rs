@@ -59,9 +59,6 @@ impl GridController {
             .is_some_and(|lang| lang == CodeCellLanguage::Formula);
         let is_source_cell = pos == data_table_pos;
 
-        println!("is_formula_cell: {}", is_formula_cell);
-        println!("is_source_cell: {}", is_source_cell);
-
         // if the cell is a formula cell and the source cell, set the cell value (which will remove the data table)
         if is_formula_cell && is_source_cell {
             ops.push(Operation::SetCellValues {
@@ -70,8 +67,6 @@ impl GridController {
             });
             return ops;
         }
-
-        println!("setting data table at {:?} to {:?}", sheet_pos, cell_value);
 
         ops.push(Operation::SetDataTableAt {
             sheet_pos,

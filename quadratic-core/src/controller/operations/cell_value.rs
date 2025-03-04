@@ -96,7 +96,7 @@ impl GridController {
         &mut self,
         sheet_pos: SheetPos,
         values: Vec<Vec<String>>,
-    ) -> Vec<Operation> {
+    ) -> (Vec<Operation>, Vec<Operation>) {
         let mut ops = vec![];
         let mut compute_code_ops = vec![];
         let mut data_table_ops = vec![];
@@ -105,13 +105,13 @@ impl GridController {
             let height = values.len();
             if height == 0 {
                 dbgjs!("[set_cell_values] Empty values");
-                return ops;
+                return (ops, data_table_ops);
             }
 
             let width = values[0].len();
             if width == 0 {
                 dbgjs!("[set_cell_values] Empty values");
-                return ops;
+                return (ops, data_table_ops);
             }
 
             let mut cell_values = CellValues::new(width as u32, height as u32);
@@ -169,11 +169,10 @@ impl GridController {
                 });
             }
 
-            ops.extend(data_table_ops);
             ops.extend(compute_code_ops);
         }
 
-        ops
+        (ops, data_table_ops)
     }
 
     /// Generate operations adding columns and rows to data tables when the cells to add are touching the data table

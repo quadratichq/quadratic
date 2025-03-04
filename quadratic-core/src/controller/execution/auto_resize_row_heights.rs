@@ -148,7 +148,7 @@ mod tests {
             row: 1,
             height: 40f64,
         }];
-        mock_auto_resize_row_heights(&mut gc, sheet_id, ops.clone(), row_heights.clone());
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops.0.clone(), row_heights.clone());
 
         assert_eq!(
             gc.sheet(sheet_id).display_value(sheet_pos.into()),
@@ -184,7 +184,7 @@ mod tests {
             row: 1,
             height: 40f64,
         }];
-        mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights);
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops.0, row_heights);
         // should trigger auto resize row heights and request row heights from renderer
         let transaction_id = gc.last_transaction().unwrap().id;
         expect_js_call(
@@ -662,7 +662,7 @@ mod tests {
             row: 1,
             height: 40f64,
         }];
-        mock_auto_resize_row_heights(&mut gc, sheet_id, ops.clone(), row_heights.clone());
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops.0.clone(), row_heights.clone());
         assert_eq!(
             gc.sheet(sheet_id).display_value(sheet_pos.into()),
             Some(CellValue::Text(
@@ -686,7 +686,7 @@ mod tests {
         // should not trigger auto resize row heights for multiplayer transactions
         let mut other_gc = GridController::test();
         other_gc.grid_mut().sheets_mut()[0].id = sheet_id;
-        other_gc.received_transaction(transaction_id, 1, ops);
+        other_gc.received_transaction(transaction_id, 1, ops.0);
         let sheet = other_gc.sheet(sheet_id);
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),

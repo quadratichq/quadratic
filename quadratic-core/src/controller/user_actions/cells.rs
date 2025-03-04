@@ -15,8 +15,12 @@ impl GridController {
         values: Vec<Vec<String>>,
         cursor: Option<String>,
     ) {
-        let ops = self.set_cell_values_operations(sheet_pos, values);
-        self.start_user_transaction(ops, cursor, TransactionName::SetCells);
+        let (ops, data_table_ops) = self.set_cell_values_operations(sheet_pos, values);
+        self.start_user_transaction(ops, cursor.to_owned(), TransactionName::SetCells);
+
+        if !data_table_ops.is_empty() {
+            self.start_user_transaction(data_table_ops, cursor, TransactionName::SetCells);
+        }
     }
 
     /// Starts a transaction to deletes the cell values and code in a given rect and updates dependent cells.
