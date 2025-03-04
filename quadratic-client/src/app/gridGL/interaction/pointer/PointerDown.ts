@@ -98,7 +98,6 @@ export class PointerDown {
     if (this.doubleClickTimeout) {
       window.clearTimeout(this.doubleClickTimeout);
       this.doubleClickTimeout = undefined;
-      this.doubleClickPreviousPosition = new Point(column, row);
 
       if (!(await this.isInputValid())) return;
 
@@ -144,6 +143,7 @@ export class PointerDown {
       }
     }
     this.previousPosition = new Point(column, row);
+    this.doubleClickPreviousPosition = new Point(column, row);
     events.emit('clickedToCell', column, row, world);
     this.pointerMoved = false;
     this.position = new Point(column, row);
