@@ -1436,4 +1436,17 @@ mod test {
         assert!(sheet.cell_format(pos![E14]).is_default());
         assert!(sheet.cell_format(pos![F14]).is_default());
     }
+
+    #[test]
+    fn test_paste_html_from_safari() {
+        let safari = include_str!("./safari.txt");
+
+        let mut gc = GridController::test();
+        let ops = gc.paste_html_operations(
+            &A1Selection::test_a1_sheet_id("A1", &SheetId::TEST),
+            safari.to_string(),
+            PasteSpecial::None,
+        );
+        dbg!(&ops);
+    }
 }

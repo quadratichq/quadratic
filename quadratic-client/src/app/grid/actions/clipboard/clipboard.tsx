@@ -7,6 +7,7 @@ import { copyAsPNG } from '@/app/gridGL/pixiApp/copyAsPNG';
 import type { PasteSpecial } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { Button } from '@/shared/shadcn/ui/button';
 import * as Sentry from '@sentry/react';
 import localforage from 'localforage';
 import mixpanel from 'mixpanel-browser';
@@ -59,6 +60,7 @@ export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
 
   if (e.clipboardData.types.includes('text/html')) {
     html = e.clipboardData.getData('text/html');
+    console.log(html);
   }
   if (e.clipboardData.types.includes('text/plain')) {
     plainText = e.clipboardData.getData('text/plain');
@@ -86,12 +88,41 @@ const toClipboard = async (plainText: string, html: string) => {
   // https://github.com/tldraw/tldraw/blob/a85e80961dd6f99ccc717749993e10fa5066bc4d/packages/tldraw/src/state/TldrawApp.ts#L2189
   // browser support clipboard api navigator.clipboard
   if (fullClipboardSupport()) {
-    await navigator.clipboard.write([
-      new ClipboardItem({
-        'text/html': new Blob([html], { type: 'text/html' }),
-        'text/plain': new Blob([plainText], { type: 'text/plain' }),
-      }),
-    ]);
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html': new Blob([html], { type: 'text/html' }),
+          'text/plain': new Blob([plainText], { type: 'text/plain' }),
+        }),
+      ]);
+    } catch (e) {
+      // we are too late and will need to pop a snackbar to gain additional
+      // permissions
+      pixiAppSettings.addGlobalSnackbar?.(
+        <>
+          <div>Failed to copy to clipboard. This is a known issue. Press copy will ensure the contents are copied.</div>
+          <div>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                await navigator.clipboard.write([
+                  new ClipboardItem({
+                    'text/html': new Blob([html], { type: 'text/html' }),
+                    'text/plain': new Blob([plainText], { type: 'text/plain' }),
+                  }),
+                ]);
+                pixiAppSettings.closeCurrentSnackbar?.();
+              }}
+            >
+              Copy
+            </Button>
+          </div>
+        </>,
+        {
+          severity: 'warning',
+        }
+      );
+    }
   }
 
   // fallback support for firefox

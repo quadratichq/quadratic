@@ -59,6 +59,7 @@ class PixiAppSettings {
   setEditorInteractionState?: SetterOrUpdater<EditorInteractionState>;
 
   addGlobalSnackbar?: GlobalSnackbar['addGlobalSnackbar'];
+  closeCurrentSnackbar?: () => void;
 
   inlineEditorState = defaultInlineEditor;
   setInlineEditorState?: (fn: (prev: InlineEditorState) => InlineEditorState) => void;
@@ -261,8 +262,10 @@ class PixiAppSettings {
     );
   }
 
-  setGlobalSnackbar(addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar']) {
+  setGlobalSnackbar(addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'], closeGlobalSnackbar: () => void) {
+    debugger;
     this.addGlobalSnackbar = addGlobalSnackbar;
+    this.closeCurrentSnackbar = closeGlobalSnackbar;
     for (const snackbar of this.waitingForSnackbar) {
       this.addGlobalSnackbar(snackbar.message, snackbar.options);
     }
