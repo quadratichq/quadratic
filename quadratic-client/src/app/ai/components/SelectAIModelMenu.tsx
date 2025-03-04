@@ -104,14 +104,15 @@ export const SelectAIModelMenu = memo(({ loading, textAreaRef }: SelectAIModelMe
       </DropdownMenu>
 
       {canToggleThinking && (
-        <TooltipPopover label="Extended thinking for harder prompts">
+        <TooltipPopover label="Extended thinking for complex prompts">
           <Toggle
             aria-label="Extended thinking"
             size="sm"
             disabled={loading}
             onClick={() => handleThinkingToggle(!thinking)}
             className={cn(
-              !loading && (thinking ? '!text-primary' : 'text-muted-foreground hover:text-foreground'),
+              thinking && 'bg-primary/10 hover:bg-primary/10 hover:text-accent-foreground',
+              !thinking && 'text-muted-foreground hover:text-foreground',
               'mr-auto flex h-6 items-center !gap-0 px-2 py-1 text-xs font-normal '
             )}
           >
