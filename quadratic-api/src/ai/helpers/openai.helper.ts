@@ -35,14 +35,17 @@ export function getOpenAIApiArgs(
             type: 'text',
             text: content.text,
           })),
-        tool_calls: message.toolCalls.map((toolCall) => ({
-          id: toolCall.id,
-          type: 'function' as const,
-          function: {
-            name: toolCall.name,
-            arguments: toolCall.arguments,
-          },
-        })),
+        tool_calls:
+          message.toolCalls.length > 0
+            ? message.toolCalls.map((toolCall) => ({
+                id: toolCall.id,
+                type: 'function' as const,
+                function: {
+                  name: toolCall.name,
+                  arguments: toolCall.arguments,
+                },
+              }))
+            : undefined,
       };
       return [...acc, openaiMessage];
     } else if (message.role === 'user' && message.contextType === 'toolResult') {
