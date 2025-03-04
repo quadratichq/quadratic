@@ -19,8 +19,6 @@ import { useHeadingSize } from '@/app/gridGL/HTMLGrid/useHeadingSize';
 import { HtmlValidations } from '@/app/gridGL/HTMLGrid/validations/HtmlValidations';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Following } from '@/app/ui/components/Following';
-import { ImportProgress } from '@/app/ui/components/ImportProgress';
-import { Search } from '@/app/ui/components/Search';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -122,16 +120,17 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
 
       <GridFileInput />
       <Following />
-      <ImportProgress />
       <EmptyGridMessage />
-      <Search />
 
       {/* This is positioned on the grid over the headings and not zoomed. It comes
           after the above, so it's above it on the grid. */}
       <div
+        id="test"
         ref={normalRef}
         style={{
           position: 'absolute',
+          top: 0,
+          left: 0,
           pointerEvents: 'none',
         }}
       >
