@@ -114,7 +114,7 @@ impl GridController {
                 return (ops, data_table_ops);
             }
 
-            let init_cell_values = || vec![vec![None; height as usize]; width as usize];
+            let init_cell_values = || vec![vec![None; height]; width];
             let mut cell_values = init_cell_values();
             let mut sheet_format_updates = SheetFormatUpdates::default();
 
