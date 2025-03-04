@@ -92,6 +92,12 @@ export const UpdateCodeCell = ({ args, loading }: UpdateCodeCellProps) => {
     }
   }, [args, loading]);
 
+  useEffect(() => {
+    if (showCode && editorContent === toolArgs?.data?.code_string) {
+      setShowCode(false);
+    }
+  }, [codeCell.language, editorContent, showCode, toolArgs]);
+
   const estimatedNumberOfLines = useMemo(() => {
     if (toolArgs) {
       return toolArgs.data?.code_string.split('\n').length;
