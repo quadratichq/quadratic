@@ -145,6 +145,7 @@ export function cellVisible(
   const cell = sheet.getCellOffsets(coordinate.x, coordinate.y);
   let is_off_screen = false;
 
+  const bounds = pixiApp.viewport.getVisibleBounds();
   if (cell.x - headingSize.width / viewport.scale.x < viewport.left) {
     viewport.left = Math.max(
       -headingSize.width / viewport.scale.x,
@@ -152,7 +153,15 @@ export function cellVisible(
     );
     is_off_screen = true;
   } else if (cell.x + cell.width > viewport.right) {
-    viewport.right = cell.x + cell.width + BUFFER[0];
+    // if the cell is wider than the viewport, then we show the start of the cell
+    if (cell.width > bounds.width) {
+      viewport.left = Math.max(
+        -headingSize.width / viewport.scale.x,
+        cell.x - headingSize.width / viewport.scale.x //+ BUFFER[0]
+      );
+    } else {
+      viewport.right = cell.x + cell.width + BUFFER[0];
+    }
     is_off_screen = true;
   }
 
@@ -163,7 +172,15 @@ export function cellVisible(
     );
     is_off_screen = true;
   } else if (cell.y + cell.height > viewport.bottom) {
-    viewport.bottom = cell.y + cell.height + BUFFER[1];
+    // if the cell is taller than the viewport, then we show the start of the cell
+    if (cell.height > bounds.height) {
+      viewport.top = Math.max(
+        -headingSize.height / viewport.scale.y,
+        cell.y - headingSize.height / viewport.scale.y - BUFFER[1]
+      );
+    } else {
+      viewport.bottom = cell.y + cell.height + BUFFER[1];
+    }
     is_off_screen = true;
   }
 
@@ -239,7 +256,7 @@ export function pageUpDown(up: boolean) {
     const newY = cursorRect.y + pixiApp.viewport.screenHeightInWorldPixels * (up ? -1 : 1);
     const newRow = Math.max(1, sheets.sheet.getColumnRowFromScreen(0, newY).row);
     const cursor = sheets.sheet.cursor;
-    cursor.moveTo(cursor.position.x, newRow, false);
+    cursor.moveTo(cursor.position.x, newRow, { checkForTableRef: true, ensureVisible: false });
     const newCursorY = sheets.sheet.getRowY(newRow);
     const gridHeadings = pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
     pixiApp.viewport.y = Math.min(gridHeadings, -newCursorY + distanceTopToCursorTop);
