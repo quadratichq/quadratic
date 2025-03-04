@@ -1,15 +1,18 @@
+import { duplicateFileAction } from '@/app/actions';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { FixedBottomAlert } from '@/shared/components/FixedBottomAlert';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Stack, useTheme } from '@mui/material';
 import { Cross2Icon } from '@radix-ui/react-icons';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import { useState } from 'react';
 import { isMobile } from 'react-device-detect';
-import { Link } from 'react-router-dom';
+import { Link, useSubmit } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 const { FILE_EDIT } = FilePermissionSchema.enum;
 
@@ -17,7 +20,10 @@ export function PermissionOverlay() {
   const [isOpen, setIsOpen] = useState<boolean>(true);
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const theme = useTheme();
+  const { addGlobalSnackbar } = useGlobalSnackbar();
   const { isAuthenticated } = useRootRouteLoaderData();
+  const fileRouteLoaderData = useFileRouteLoaderData();
+  const submit = useSubmit();
 
   // This component assumes that the file can be viewed in some way, either by
   // a logged in user or a logged out user where the file's link is public.
@@ -31,11 +37,14 @@ export function PermissionOverlay() {
           <strong>Welcome to Quadratic.</strong>
         </Type>
         <Stack direction="row" gap={theme.spacing(1)} flexShrink={'0'}>
-          <Button asChild variant="outline" size="sm">
+          <Button asChild variant="ghost" size="sm">
             <Link to={ROUTES.LOGIN_WITH_REDIRECT()}>Log in</Link>
           </Button>
-          <Button size="sm">
+          <Button asChild variant="outline" size="sm">
             <Link to={ROUTES.SIGNUP_WITH_REDIRECT()}>Sign up</Link>
+          </Button>
+          <Button size="sm">
+            <Link to={ROUTES.LOGIN_WITH_REDIRECT_TO_DUPLICATE()}>Duplicate file</Link>
           </Button>
         </Stack>
       </FixedBottomAlert>
@@ -47,8 +56,11 @@ export function PermissionOverlay() {
     return (
       <FixedBottomAlert>
         <Type>
-          <strong>Read-only.</strong> Ask the owner for permission to edit this file.
+          <strong>Read-only.</strong> Duplicate or ask the owner for permission to edit.
         </Type>
+        <Button onClick={() => duplicateFileAction.run({ fileRouteLoaderData, submit, addGlobalSnackbar })}>
+          {duplicateFileAction.label}
+        </Button>
       </FixedBottomAlert>
     );
   }
