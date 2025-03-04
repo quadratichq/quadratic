@@ -148,7 +148,7 @@ export const SuggestionDropDown = () => {
   return (
     <div
       className={cn(
-        'border.gray-300 pointer-events-auto absolute cursor-pointer overflow-y-auto border bg-white text-gray-500',
+        'pointer-events-auto absolute cursor-pointer overflow-y-auto rounded-sm border border-border bg-background text-muted-foreground',
         inlineEditorStatus ? 'mt-1' : 'mt-0'
       )}
       style={{
@@ -163,7 +163,7 @@ export const SuggestionDropDown = () => {
       <div className="block w-full px-1">
         {filteredList.map((item, i) => (
           <div
-            className={cn('block w-full whitespace-nowrap px-1 hover:bg-gray-100', i === index ? 'bg-gray-200' : '')}
+            className={cn('block w-full whitespace-nowrap px-1 hover:bg-accent', i === index ? 'bg-accent' : '')}
             key={item}
             onClick={() => changeValue(item)}
           >

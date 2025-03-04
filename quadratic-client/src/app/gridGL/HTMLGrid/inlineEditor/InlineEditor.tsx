@@ -33,6 +33,7 @@ export const InlineEditor = () => {
   return (
     <div
       ref={ref}
+      className="dark-mode-hack"
       style={{
         position: 'absolute',
         display: 'flex',

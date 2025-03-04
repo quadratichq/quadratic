@@ -88,6 +88,7 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
           height: `calc(100% - ${topHeading}px)`,
           pointerEvents: 'none',
           textRendering: 'optimizeLegibility',
+          zIndex: 1,
         }}
       >
         <div style={{ position: 'relative' }}>
@@ -118,9 +119,7 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
       </div>
 
       <GridFileInput />
-
       <Following />
-
       <EmptyGridMessage />
 
       {/* This is positioned on the grid over the headings and not zoomed. It comes
@@ -129,6 +128,8 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
         ref={normalRef}
         style={{
           position: 'absolute',
+          top: 0,
+          left: 0,
           pointerEvents: 'none',
         }}
       >

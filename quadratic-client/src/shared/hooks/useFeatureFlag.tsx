@@ -1,7 +1,7 @@
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import mixpanel from 'mixpanel-browser';
 
-const initialState = { themeAppearanceMode: false, themeAccentColor: false };
+const initialState = {};
 export type FeatureFlagKey = keyof typeof initialState;
 
 export const useFeatureFlag = (key: FeatureFlagKey) => {
