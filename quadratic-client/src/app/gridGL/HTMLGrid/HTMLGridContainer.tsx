@@ -125,7 +125,6 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
       {/* This is positioned on the grid over the headings and not zoomed. It comes
           after the above, so it's above it on the grid. */}
       <div
-        id="test"
         ref={normalRef}
         style={{
           position: 'absolute',
