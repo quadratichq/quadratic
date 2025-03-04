@@ -347,7 +347,7 @@ mod tests {
         assert_eq!(selection.cursor, pos!(C5));
 
         // clear the table selection so we don't select twice and toggle headers
-        selection.move_to(1, 1, false, &context);
+        selection.move_to(1, 1, false);
 
         selection.select_table("Table1", None, &context, 2, false, false);
         assert_eq!(selection.cursor, pos!(B5));

@@ -16,12 +16,10 @@ const payload: AIRequestBody = {
   modelKey: DEFAULT_MODEL,
   messages: [],
   useStream: false,
-  useTools: false,
   toolName: undefined,
   useToolsPrompt: false,
   language: undefined,
   useQuadraticContext: false,
-  thinking: false,
 };
 
 jest.mock('@anthropic-ai/bedrock-sdk', () => ({
