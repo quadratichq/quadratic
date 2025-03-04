@@ -1,16 +1,16 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { codeEditorAtom, codeEditorCodeCellAtom, codeEditorEditorContentAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { getLanguage } from '@/app/helpers/codeCellLanguage';
+import { getLanguage, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
-import { CodeSnippet } from '@/app/ui/menus/CodeEditor/AIAssistant/CodeSnippet';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { SaveAndRunIcon } from '@/shared/components/Icons';
+import { CollapseIcon, CopyIcon, ExpandIcon, SaveAndRunIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
-import { CodeIcon } from '@radix-ui/react-icons';
+import { Editor } from '@monaco-editor/react';
+import mixpanel from 'mixpanel-browser';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 import type { z } from 'zod';
 
@@ -26,6 +26,19 @@ export const UpdateCodeCell = ({ args, loading }: UpdateCodeCellProps) => {
   const editorContent = useRecoilValue(codeEditorEditorContentAtom);
   const codeCell = useRecoilValue(codeEditorCodeCellAtom);
   const [showCode, setShowCode] = useState(false);
+
+  const handleCopy = useCallback(
+    (e: any) => {
+      e.preventDefault();
+      if (!toolArgs?.data) {
+        return;
+      }
+
+      mixpanel.track('[AI].UpdateCodeCell.copy', { language: getLanguage(codeCell.language) });
+      navigator.clipboard.writeText(toolArgs.data.code_string);
+    },
+    [codeCell.language, toolArgs?.data]
+  );
 
   const handleSaveAndRun = useRecoilCallback(
     ({ snapshot, set }) =>
@@ -113,9 +126,15 @@ export const UpdateCodeCell = ({ args, loading }: UpdateCodeCellProps) => {
         actions={
           editorContent !== toolArgs.data.code_string && (
             <div className="flex gap-1">
-              <TooltipPopover label={'Show code'}>
+              <TooltipPopover label={showCode ? 'Hide code' : 'Show code'}>
                 <Button size="icon-sm" variant="ghost" onClick={() => setShowCode(!showCode)}>
-                  <CodeIcon />
+                  {showCode ? <ExpandIcon /> : <CollapseIcon />}
+                </Button>
+              </TooltipPopover>
+
+              <TooltipPopover label={'Copy'}>
+                <Button size="icon-sm" variant="ghost" onClick={handleCopy}>
+                  <CopyIcon />
                 </Button>
               </TooltipPopover>
 
@@ -129,7 +148,37 @@ export const UpdateCodeCell = ({ args, loading }: UpdateCodeCellProps) => {
         }
       />
 
-      {showCode && <CodeSnippet code={toolArgs.data.code_string} language={getLanguage(codeCell.language)} />}
+      {showCode && (
+        <div
+          className="dark-mode-hack h-max overflow-hidden rounded border shadow-sm"
+          style={{ height: `${Math.ceil(toolArgs.data.code_string.split('\n').length) * 19 + 16}px` }}
+        >
+          <Editor
+            className="pt-2"
+            language={getLanguageForMonaco(codeCell.language)}
+            value={toolArgs.data.code_string}
+            height="100%"
+            width="100%"
+            options={{
+              readOnly: true,
+              minimap: { enabled: false },
+              overviewRulerLanes: 0,
+              hideCursorInOverviewRuler: true,
+              overviewRulerBorder: false,
+              scrollbar: {
+                vertical: 'hidden',
+                handleMouseWheel: false,
+              },
+              scrollBeyondLastLine: false,
+              wordWrap: 'off',
+              lineNumbers: 'off',
+              automaticLayout: true,
+              folding: false,
+              renderLineHighlightOnlyWhenFocus: true,
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 };
