@@ -174,7 +174,7 @@ jobs:
         uses: useblacksmith/cache@v5
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-pr-${{ github.event.pull_request.number }}
+          key: ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-pr-${{ github.event.pull_request.number }}-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-pr-${{ github.event.pull_request.number }}
             ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-
