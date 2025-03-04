@@ -1,4 +1,3 @@
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Matrix, Renderer } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from './PixiApp';
@@ -19,14 +18,14 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
     });
   }
 
-  const rect = await quadraticCore.finiteRectFromSelection(sheets.sheet.cursor.save());
+  const rect = sheets.sheet.cursor.getLargestRectangle();
   if (!rect) return null;
 
   const screenRect = sheets.sheet.getScreenRectangle(rect.x, rect.y, rect.width, rect.height);
 
   // captures bottom-right border size
-  screenRect.width += borderSize * 2;
-  screenRect.height += borderSize * 2;
+  screenRect.width += borderSize * 2 - 1;
+  screenRect.height += borderSize * 2 - 1;
 
   let imageWidth = screenRect.width * resolution,
     imageHeight = screenRect.height * resolution;
@@ -44,8 +43,6 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
   renderer.view.height = imageHeight;
   pixiApp.prepareForCopying();
 
-  // todo
-  // app.cells.drawCells(app.sheet, rectangle, false);
   const transform = new Matrix();
   transform.translate(-screenRect.x + borderSize / 2, -screenRect.y + borderSize / 2);
   const scale = imageWidth / (screenRect.width * resolution);

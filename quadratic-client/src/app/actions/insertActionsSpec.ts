@@ -49,8 +49,15 @@ export const insertActionsSpec: InsertActionSpec = {
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
       const cursor = sheets.sheet.cursor.position;
+      pixiAppSettings.codeEditorState.aiAssistant.abortController?.abort();
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
+        aiAssistant: {
+          abortController: undefined,
+          loading: false,
+          id: '',
+          messages: [],
+        },
         diffEditorContent: undefined,
         waitingForEditorClose: {
           codeCell: {
@@ -71,8 +78,15 @@ export const insertActionsSpec: InsertActionSpec = {
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
       const cursor = sheets.sheet.cursor.position;
+      pixiAppSettings.codeEditorState.aiAssistant.abortController?.abort();
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
+        aiAssistant: {
+          abortController: undefined,
+          loading: false,
+          id: '',
+          messages: [],
+        },
         diffEditorContent: undefined,
         waitingForEditorClose: {
           codeCell: {
@@ -93,8 +107,15 @@ export const insertActionsSpec: InsertActionSpec = {
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
       const cursor = sheets.sheet.cursor.position;
+      pixiAppSettings.codeEditorState.aiAssistant.abortController?.abort();
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
+        aiAssistant: {
+          abortController: undefined,
+          loading: false,
+          id: '',
+          messages: [],
+        },
         diffEditorContent: undefined,
         waitingForEditorClose: {
           codeCell: {
@@ -115,8 +136,15 @@ export const insertActionsSpec: InsertActionSpec = {
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
       const cursor = sheets.sheet.cursor.position;
+      pixiAppSettings.codeEditorState.aiAssistant.abortController?.abort();
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
+        aiAssistant: {
+          abortController: undefined,
+          loading: false,
+          id: '',
+          messages: [],
+        },
         diffEditorContent: undefined,
         waitingForEditorClose: {
           codeCell: {
@@ -137,8 +165,15 @@ export const insertActionsSpec: InsertActionSpec = {
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
       const cursor = sheets.sheet.cursor.position;
+      pixiAppSettings.codeEditorState.aiAssistant.abortController?.abort();
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
+        aiAssistant: {
+          abortController: undefined,
+          loading: false,
+          id: '',
+          messages: [],
+        },
         diffEditorContent: undefined,
         waitingForEditorClose: {
           codeCell: {
@@ -169,8 +204,15 @@ export const insertActionsSpec: InsertActionSpec = {
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
       const cursor = sheets.sheet.cursor.position;
+      pixiAppSettings.codeEditorState.aiAssistant.abortController?.abort();
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
+        aiAssistant: {
+          abortController: undefined,
+          loading: false,
+          id: '',
+          messages: [],
+        },
         diffEditorContent: undefined,
         waitingForEditorClose: {
           codeCell: {
@@ -191,8 +233,15 @@ export const insertActionsSpec: InsertActionSpec = {
     run: () => {
       if (!pixiAppSettings.setCodeEditorState) return;
       const cursor = sheets.sheet.cursor.position;
+      pixiAppSettings.codeEditorState.aiAssistant.abortController?.abort();
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
+        aiAssistant: {
+          abortController: undefined,
+          loading: false,
+          id: '',
+          messages: [],
+        },
         diffEditorContent: undefined,
         waitingForEditorClose: {
           codeCell: {

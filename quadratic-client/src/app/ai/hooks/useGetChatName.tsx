@@ -36,9 +36,10 @@ ${JSON.stringify(chatPromptMessages)}
           messages,
           signal: abortController.signal,
           useStream: false,
-          useTools: true,
           toolName: AITool.SetChatName,
-          thinking: false,
+          useToolsPrompt: false,
+          language: undefined,
+          useQuadraticContext: false,
         });
 
         const setChatNameToolCall = response.toolCalls.find((toolCall) => toolCall.name === AITool.SetChatName);

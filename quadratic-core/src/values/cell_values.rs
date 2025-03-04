@@ -238,6 +238,27 @@ impl From<Vec<Vec<CellValue>>> for CellValues {
     }
 }
 
+/// Converts a sparse 2D array of Vec<Vec<Option<CellValue>>> into CellValues
+/// The first dimension is the x-axis, the second is the y-axis.
+/// This is a different format the the `Vec<Vec<CellValue>>` impl above.
+impl From<Vec<Vec<Option<CellValue>>>> for CellValues {
+    fn from(values: Vec<Vec<Option<CellValue>>>) -> Self {
+        let w = values.iter().map(|col| col.len() as u32).max().unwrap_or(0);
+        let h = values.len() as u32;
+        let mut cell_values = CellValues::new(w, h);
+
+        for (x, col) in values.into_iter().enumerate() {
+            for (y, value) in col.into_iter().enumerate() {
+                if let Some(value) = value {
+                    cell_values.set(x as u32, y as u32, value);
+                }
+            }
+        }
+
+        cell_values
+    }
+}
+
 /// Convert a 2D array of strings into a CellValues.
 /// The first dimension is the x-axis, the second is the y-axis.
 /// Therefore, [[1, 2, 3], [4, 5, 6]] becomes:
