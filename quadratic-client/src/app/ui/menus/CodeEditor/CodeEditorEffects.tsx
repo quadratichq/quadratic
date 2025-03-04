@@ -19,10 +19,10 @@ import { useUpdateCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useUpdateCo
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import mixpanel from 'mixpanel-browser';
-import { useEffect, useMemo } from 'react';
+import { memo, useEffect, useMemo } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
-export const CodeEditorEffects = () => {
+export const CodeEditorEffects = memo(() => {
   const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
 
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
@@ -115,4 +115,4 @@ export const CodeEditorEffects = () => {
   }, [codeCell.sheetId, codeCell.pos.x, codeCell.pos.y, language, showCodeEditor, setPanelBottomActiveTab]);
 
   return null;
-};
+});

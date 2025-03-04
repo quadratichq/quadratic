@@ -1,9 +1,9 @@
 import { AIUserMessageFormDisclaimer } from '@/app/ui/components/AIUserMessageForm';
 import { AIAssistantMessages } from '@/app/ui/menus/CodeEditor/AIAssistant/AIAssistantMessages';
 import { AIAssistantUserMessageForm } from '@/app/ui/menus/CodeEditor/AIAssistant/AIAssistantUserMessageForm';
-import { useRef } from 'react';
+import { memo, useRef } from 'react';
 
-export const AIAssistant = () => {
+export const AIAssistant = memo(() => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const autoFocusRef = useRef(true);
 
@@ -17,4 +17,4 @@ export const AIAssistant = () => {
       </div>
     </div>
   );
-};
+});

@@ -408,6 +408,10 @@ export const InsertCellRefIcon: IconComponent = (props) => {
   return <Icon {...props}>ink_selection</Icon>;
 };
 
+export const LightbulbIcon: IconComponent = (props) => {
+  return <Icon {...props}>lightbulb</Icon>;
+};
+
 export const LogoutIcon: IconComponent = (props) => {
   return <Icon {...props}>logout</Icon>;
 };
