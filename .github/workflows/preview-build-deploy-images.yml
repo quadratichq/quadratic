@@ -171,7 +171,7 @@ jobs:
             network=host
 
       - name: Cache Docker layers
-        uses: actions/cache@v3
+        uses: useblacksmith/cache@v5
         with:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-pr-${{ github.event.pull_request.number }}
