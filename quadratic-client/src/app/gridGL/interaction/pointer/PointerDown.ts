@@ -28,6 +28,9 @@ export class PointerDown {
   // the mouse's last column and row
   previousPosition?: Point;
 
+  // the mouse's last column and row when double clicked
+  doubleClickPreviousPosition?: Point;
+
   // used to track the unselect rectangle
   unselectDown?: Rectangle;
 
@@ -95,9 +98,15 @@ export class PointerDown {
     if (this.doubleClickTimeout) {
       window.clearTimeout(this.doubleClickTimeout);
       this.doubleClickTimeout = undefined;
+      this.doubleClickPreviousPosition = new Point(column, row);
+
       if (!(await this.isInputValid())) return;
 
-      if (this.previousPosition && column === this.previousPosition.x && row === this.previousPosition.y) {
+      if (
+        this.doubleClickPreviousPosition &&
+        column === this.doubleClickPreviousPosition.x &&
+        row === this.doubleClickPreviousPosition.y
+      ) {
         // ignore right click
         if (isRightClick) {
           return;
