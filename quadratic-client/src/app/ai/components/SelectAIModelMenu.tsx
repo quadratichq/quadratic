@@ -111,9 +111,9 @@ export const SelectAIModelMenu = memo(({ loading, textAreaRef }: SelectAIModelMe
             disabled={loading}
             onClick={() => handleThinkingToggle(!thinking)}
             className={cn(
-              thinking && 'bg-primary/10 hover:bg-primary/10 hover:text-accent-foreground',
+              thinking && '!bg-border !text-primary',
               !thinking && 'text-muted-foreground hover:text-foreground',
-              'mr-auto flex h-6 items-center !gap-0 px-2 py-1 text-xs font-normal '
+              'ml-1 mr-auto flex h-6 items-center !gap-0 px-1.5 py-1 text-xs font-normal '
             )}
           >
             <LightbulbIcon className={cn('mr-0.5 !flex !h-4 !w-4 items-center !text-base')} />

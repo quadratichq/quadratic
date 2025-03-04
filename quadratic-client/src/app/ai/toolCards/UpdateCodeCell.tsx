@@ -28,7 +28,7 @@ export const UpdateCodeCell = ({ args, loading }: UpdateCodeCellProps) => {
   const [showCode, setShowCode] = useState(false);
 
   const handleCopy = useCallback(
-    (e: any) => {
+    (e: React.MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
       if (!toolArgs?.data) {
         return;
@@ -92,6 +92,12 @@ export const UpdateCodeCell = ({ args, loading }: UpdateCodeCellProps) => {
     }
   }, [args, loading]);
 
+  useEffect(() => {
+    if (showCode && editorContent === toolArgs?.data?.code_string) {
+      setShowCode(false);
+    }
+  }, [codeCell.language, editorContent, showCode, toolArgs]);
+
   const estimatedNumberOfLines = useMemo(() => {
     if (toolArgs) {
       return toolArgs.data?.code_string.split('\n').length;
@@ -150,11 +156,11 @@ export const UpdateCodeCell = ({ args, loading }: UpdateCodeCellProps) => {
 
       {showCode && (
         <div
-          className="dark-mode-hack h-max overflow-hidden rounded border shadow-sm"
+          className="-mt-0.5 h-max overflow-hidden rounded-b-md rounded-e-md rounded-r-none rounded-s-none border border-t-0 border-border bg-background shadow-sm"
           style={{ height: `${Math.ceil(toolArgs.data.code_string.split('\n').length) * 19 + 16}px` }}
         >
           <Editor
-            className="pt-2"
+            className="dark-mode-hack bg-transparent pt-1"
             language={getLanguageForMonaco(codeCell.language)}
             value={toolArgs.data.code_string}
             height="100%"
