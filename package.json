@@ -84,6 +84,7 @@
     "chalk": "^5.3.0",
     "commander": "^11.1.0",
     "concurrently": "^6.5.1",
+    "dotenv": "^16.4.7",
     "eslint": "^8.57.0",
     "jest": "^29.6.1",
     "kill-port": "^2.0.1",
