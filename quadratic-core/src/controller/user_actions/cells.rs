@@ -418,26 +418,24 @@ mod test {
         );
 
         // set the value on the source cell, which is a header since the name is not shown
-        // TODO(ddimaria): unccmment out once we can paste over the headers again
-        // gc.set_cell_value(SheetPos::from((pos![E2], sheet_id)), "city3".into(), None);
+        gc.set_cell_value(SheetPos::from((pos![E2], sheet_id)), "city3".into(), None);
         gc.set_cell_value(SheetPos::from((pos![H3], sheet_id)), "3333".into(), None);
-        // TODO(ddimaria): unccmment out once we can paste over the headers again
-        // assert_eq!(
-        //     get_cell(&gc, SheetPos::from((pos![E2], sheet_id))),
-        //     CellValue::Text("city3".into())
-        // );
-        // assert_eq!(
-        //     get_data_table_value(&gc, pos, (0, 0).into()),
-        //     CellValue::Text("city3".into())
-        // );
-        // assert_eq!(
-        //     get_cell(&gc, SheetPos::from((pos![H3], sheet_id))),
-        //     CellValue::Number(3333.into())
-        // );
-        // assert_eq!(
-        //     get_data_table_value(&gc, pos, (3, 1).into()),
-        //     CellValue::Number(3333.into())
-        // );
+        assert_eq!(
+            get_cell(&gc, SheetPos::from((pos![E2], sheet_id))),
+            CellValue::Text("city3".into())
+        );
+        assert_eq!(
+            get_data_table_value(&gc, pos, (0, 0).into()),
+            CellValue::Text("city3".into())
+        );
+        assert_eq!(
+            get_cell(&gc, SheetPos::from((pos![H3], sheet_id))),
+            CellValue::Number(3333.into())
+        );
+        assert_eq!(
+            get_data_table_value(&gc, pos, (3, 1).into()),
+            CellValue::Number(3333.into())
+        );
 
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
         data_table.header_is_first_row = true;

@@ -57,10 +57,8 @@ impl GridController {
         let is_formula_cell = sheet
             .get_table_language(pos, data_table)
             .is_some_and(|lang| lang == CodeCellLanguage::Formula);
-        let is_source_cell = pos == data_table_pos;
-
-        println!("is_formula_cell: {}", is_formula_cell);
-        println!("is_source_cell: {}", is_source_cell);
+        let is_source_cell =
+            pos == data_table_pos && !(!data_table.show_name && !data_table.show_columns);
 
         // if the cell is a formula cell and the source cell, set the cell value (which will remove the data table)
         if is_formula_cell && is_source_cell {

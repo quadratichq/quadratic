@@ -188,6 +188,7 @@ impl Sheet {
                 })
         {
             let rect = Rect::from(&values);
+
             for y in rect.y_range() {
                 for x in rect.x_range() {
                     let new_x = u32::try_from(pos.x - code_cell_pos.x + x).unwrap_or(0);

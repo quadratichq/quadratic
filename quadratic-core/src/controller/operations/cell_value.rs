@@ -114,7 +114,8 @@ impl GridController {
                 return (ops, data_table_ops);
             }
 
-            let mut cell_values = CellValues::new(width as u32, height as u32);
+            let init_cell_values = || vec![vec![None; height as usize]; width as usize];
+            let mut cell_values = init_cell_values();
             let mut sheet_format_updates = SheetFormatUpdates::default();
 
             for (y, row) in values.into_iter().enumerate() {
@@ -137,7 +138,11 @@ impl GridController {
                             ops.extend(self.set_data_table_operations_at(sheet_pos, value));
                         }
                         false => {
-                            cell_values.set(x as u32, y as u32, cell_value);
+                            dbgjs!(format!(
+                                "setting cell value at ({x},{y}) to {:?}",
+                                cell_value
+                            ));
+                            cell_values[x][y] = Some(cell_value);
                             data_table_ops.extend(self.set_cell_value_data_table_operations(
                                 SheetPos::from((pos, sheet_pos.sheet_id)),
                                 value,
@@ -157,10 +162,17 @@ impl GridController {
                 }
             }
 
-            ops.push(Operation::SetCellValues {
-                sheet_pos,
-                values: cell_values,
-            });
+            // println!("cell_values: {:?}", cell_values);
+            // println!(
+            //     "CellValues::from(cell_values): {:?}",
+            //     CellValues::from(cell_values.clone())
+            // );
+            if cell_values != init_cell_values() {
+                ops.push(Operation::SetCellValues {
+                    sheet_pos,
+                    values: cell_values.into(),
+                });
+            }
 
             if !sheet_format_updates.is_default() {
                 ops.push(Operation::SetCellFormatsA1 {
