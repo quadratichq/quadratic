@@ -9,6 +9,7 @@ import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
   AIMessagePrompt,
   AIRequestHelperArgs,
+  AISource,
   AIUsage,
   AnthropicModelKey,
   BedrockAnthropicModelKey,
@@ -24,7 +25,7 @@ export function getAnthropicApiArgs(
   tools: Tool[] | undefined;
   tool_choice: ToolChoice | undefined;
 } {
-  const { messages: chatMessages, useTools, toolName } = args;
+  const { messages: chatMessages, toolName, source } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
 
@@ -108,23 +109,23 @@ export function getAnthropicApiArgs(
     }
   }, []);
 
-  const tools = getAnthropicTools(useTools, toolName);
-  const tool_choice = getAnthropicToolChoice(useTools, toolName);
+  const tools = getAnthropicTools(source, toolName);
+  const tool_choice = tools?.length ? getAnthropicToolChoice(toolName) : undefined;
 
   return { system, messages, tools, tool_choice };
 }
 
-function getAnthropicTools(useTools?: boolean, toolName?: AITool): Tool[] | undefined {
-  if (!useTools) {
-    return undefined;
-  }
-
+function getAnthropicTools(source: AISource, toolName?: AITool): Tool[] | undefined {
   const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
     if (toolName === undefined) {
-      return !toolSpec.internalTool;
+      return toolSpec.sources.includes(source);
     }
     return name === toolName;
   });
+
+  if (tools.length === 0) {
+    return undefined;
+  }
 
   const anthropicTools: Tool[] = tools.map(
     ([name, { description, parameters: input_schema }]): Tool => ({
@@ -137,12 +138,8 @@ function getAnthropicTools(useTools?: boolean, toolName?: AITool): Tool[] | unde
   return anthropicTools;
 }
 
-function getAnthropicToolChoice(useTools?: boolean, name?: AITool): ToolChoice | undefined {
-  if (!useTools) {
-    return undefined;
-  }
-
-  const toolChoice: ToolChoice = name === undefined ? { type: 'auto' } : { type: 'tool', name };
+function getAnthropicToolChoice(toolName?: AITool): ToolChoice | undefined {
+  const toolChoice: ToolChoice = toolName === undefined ? { type: 'auto' } : { type: 'tool', name: toolName };
   return toolChoice;
 }
 

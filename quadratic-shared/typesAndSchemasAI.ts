@@ -43,16 +43,20 @@ const BedrockModelKeySchema = z.enum([
 export type BedrockModelKey = z.infer<typeof BedrockModelKeySchema>;
 
 const BedrockAnthropicModelKeySchema = z.enum([
-  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking',
+  'bedrock-anthropic:claude:thinking-toggle-on',
+  'bedrock-anthropic:claude:thinking-toggle-off',
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0',
+  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking',
   'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0',
   'bedrock-anthropic:us.anthropic.claude-3-5-haiku-20241022-v1:0',
 ]);
 export type BedrockAnthropicModelKey = z.infer<typeof BedrockAnthropicModelKeySchema>;
 
 const AnthropicModelKeySchema = z.enum([
-  'anthropic:claude-3-7-sonnet-20250219:thinking',
+  'anthropic:claude:thinking-toggle-on',
+  'anthropic:claude:thinking-toggle-off',
   'anthropic:claude-3-7-sonnet-20250219',
+  'anthropic:claude-3-7-sonnet-20250219:thinking',
   'anthropic:claude-3-5-sonnet-20241022',
   'anthropic:claude-3-5-haiku-20241022',
 ]);
@@ -90,6 +94,7 @@ const ModelConfigSchema = z.object({
   strickParams: z.boolean().optional(),
   thinking: z.boolean().optional(),
   thinkingTemperature: z.number().optional(),
+  thinkingToggle: z.boolean().optional(),
 });
 export type ModelConfig = z.infer<typeof ModelConfigSchema>;
 
@@ -250,22 +255,23 @@ export type AIToolArgs = z.infer<typeof AIToolArgsSchema>;
 const CodeCellTypeSchema = z.enum(['Python', 'Javascript', 'Formula', 'Connection', 'Import']);
 export type CodeCellType = z.infer<typeof CodeCellTypeSchema>;
 
+const AISourceSchema = z.enum(['AIAssistant', 'AIAnalyst', 'AIResearcher', 'GetChatName', 'GetFileName']);
+export type AISource = z.infer<typeof AISourceSchema>;
+
 export const AIRequestBodySchema = z.object({
   chatId: z.string().uuid(),
   fileUuid: z.string().uuid(),
-  source: z.enum(['AIAssistant', 'AIAnalyst', 'AIResearcher', 'GetChatName', 'GetFileName']),
+  source: AISourceSchema,
   modelKey: ModelKeySchema,
   messages: z.array(ChatMessageSchema),
   useStream: z.boolean(),
-  useTools: z.boolean(),
   toolName: AIToolSchema.optional(),
-  useToolsPrompt: z.boolean().optional(),
+  useToolsPrompt: z.boolean(),
   language: CodeCellTypeSchema.optional(),
-  useQuadraticContext: z.boolean().optional(),
-  thinking: z.boolean(),
+  useQuadraticContext: z.boolean(),
 });
 export type AIRequestBody = z.infer<typeof AIRequestBodySchema>;
-export type AIRequestHelperArgs = Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'source' | 'modelKey'>;
+export type AIRequestHelperArgs = Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'modelKey'>;
 
 const AIUsageSchema = z.object({
   inputTokens: z.number(),

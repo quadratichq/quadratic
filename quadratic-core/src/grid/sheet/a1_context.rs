@@ -29,7 +29,7 @@ impl Sheet {
                     .table_map
                     .insert_table(self.id, *pos, table, language);
             } else {
-                // dbgjs!(&format!("No language for table at {:?}", pos));
+                dbgjs!(&format!("No language for table at {:?}", pos));
             }
         });
     }

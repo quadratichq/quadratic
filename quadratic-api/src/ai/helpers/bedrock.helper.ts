@@ -14,6 +14,7 @@ import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
   AIMessagePrompt,
   AIRequestHelperArgs,
+  AISource,
   AIUsage,
   BedrockModelKey,
   ParsedAIResponse,
@@ -25,7 +26,7 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
   tools: Tool[] | undefined;
   tool_choice: ToolChoice | undefined;
 } {
-  const { messages: chatMessages, useTools, toolName } = args;
+  const { messages: chatMessages, toolName, source } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
   const system: SystemContentBlock[] = systemMessages.map((message) => ({ text: message }));
@@ -82,23 +83,23 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
     }
   }, []);
 
-  const tools = getBedrockTools(useTools, toolName);
-  const tool_choice = getBedrockToolChoice(useTools, toolName);
+  const tools = getBedrockTools(source, toolName);
+  const tool_choice = tools?.length ? getBedrockToolChoice(toolName) : undefined;
 
   return { system, messages, tools, tool_choice };
 }
 
-function getBedrockTools(useTools?: boolean, toolName?: AITool): Tool[] | undefined {
-  if (!useTools) {
-    return undefined;
-  }
-
+function getBedrockTools(source: AISource, toolName?: AITool): Tool[] | undefined {
   const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
     if (toolName === undefined) {
-      return !toolSpec.internalTool;
+      return toolSpec.sources.includes(source);
     }
     return name === toolName;
   });
+
+  if (tools.length === 0) {
+    return undefined;
+  }
 
   const bedrockTools: Tool[] = tools.map(
     ([name, { description, parameters: input_schema }]): Tool => ({
@@ -115,12 +116,8 @@ function getBedrockTools(useTools?: boolean, toolName?: AITool): Tool[] | undefi
   return bedrockTools;
 }
 
-function getBedrockToolChoice(useTools?: boolean, name?: AITool): ToolChoice | undefined {
-  if (!useTools) {
-    return undefined;
-  }
-
-  const toolChoice: ToolChoice = name === undefined ? { auto: {} } : { tool: { name } };
+function getBedrockToolChoice(toolName?: AITool): ToolChoice | undefined {
+  const toolChoice: ToolChoice = toolName === undefined ? { auto: {} } : { tool: { name: toolName } };
   return toolChoice;
 }
 
