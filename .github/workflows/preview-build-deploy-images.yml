@@ -187,7 +187,7 @@ jobs:
           push: true
           tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}
           cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max,compression=false
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
           build-args: |
             BUILD_TIME=${{ steps.build-metadata.outputs.BUILD_TIME }}
             GIT_SHA_SHORT=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
