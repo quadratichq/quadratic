@@ -179,7 +179,7 @@ pub fn unused_name(prefix: &str, already_used: &[&str]) -> String {
         Some(i) => i + 1,
         None => 1,
     };
-    format!("{prefix}{i}")
+    format!("{prefix} {i}")
 }
 
 /// Returns a unique name by appending numbers to the base name if the name is not unique.
@@ -238,12 +238,12 @@ pub fn offset_cell_coord(initial: i64, delta: i64) -> Result<i64, RefError> {
 
 /// For debugging both in tests and in the JS console
 #[track_caller]
-pub fn dbgjs(val: impl fmt::Debug) {
-    if cfg!(target_family = "wasm") {
-        crate::wasm_bindings::js::log(&(format!("{:?}", val)));
-    } else {
-        dbg!(val);
-    }
+pub fn dbgjs(_val: impl fmt::Debug) {
+    #[cfg(all(target_family = "wasm", feature = "dbgjs"))]
+    crate::wasm_bindings::js::log(&(format!("{:?}", _val)));
+
+    #[cfg(all(not(target_family = "wasm"), feature = "dbgjs"))]
+    dbg!(_val);
 }
 
 #[allow(unused_macros)]
@@ -348,9 +348,9 @@ mod tests {
 
     #[test]
     fn test_unused_name() {
-        let used = ["Sheet1", "Sheet2"];
-        assert_eq!(unused_name("Sheet", &used), "Sheet3");
-        let used = ["Sheet2", "Sheet3"];
-        assert_eq!(unused_name("Sheet", &used), "Sheet4");
+        let used = ["Sheet1", "Sheet 2"];
+        assert_eq!(unused_name("Sheet", &used), "Sheet 3");
+        let used = ["Sheet 2", "Sheet 3"];
+        assert_eq!(unused_name("Sheet", &used), "Sheet 4");
     }
 }

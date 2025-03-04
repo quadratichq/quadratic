@@ -130,7 +130,10 @@ export class Pointer {
       this.pointerImages.pointerMove(world) ||
       this.pointerCellMoving.pointerMove(event, world) ||
       this.pointerHtmlCells.pointerMove(e, world) ||
-      this.pointerTable.pointerMove(world) ||
+      // we need the pointerDown.active and pointerHeading.active check to
+      // ensure that when dragging the mouse for selection, we don't call
+      // select_table
+      (!this.pointerDown.active && !this.pointerHeading.active && this.pointerTable.pointerMove(world)) ||
       this.pointerHeading.pointerMove(world) ||
       this.pointerAutoComplete.pointerMove(world) ||
       this.pointerTableResize.pointerMove(world) ||

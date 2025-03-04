@@ -209,11 +209,11 @@ mod tests {
     fn test_sheet_operations() {
         let sheet_id1 = SheetId::new();
         let sheet_id2 = SheetId::new();
-        let context = A1Context::test(&[("Sheet1", sheet_id1), ("Sheet2", sheet_id2)], &[]);
+        let context = A1Context::test(&[("Sheet1", sheet_id1), ("Sheet 2", sheet_id2)], &[]);
 
         // Test try_sheet_name
         assert_eq!(context.try_sheet_name("Sheet1"), Some(sheet_id1));
-        assert_eq!(context.try_sheet_name("Sheet2"), Some(sheet_id2));
+        assert_eq!(context.try_sheet_name("Sheet 2"), Some(sheet_id2));
         assert_eq!(context.try_sheet_name("NonexistentSheet"), None);
 
         // Test try_sheet_id
@@ -223,7 +223,7 @@ mod tests {
         );
         assert_eq!(
             context.try_sheet_id(sheet_id2).map(String::as_str),
-            Some("Sheet2")
+            Some("Sheet 2")
         );
         assert_eq!(context.try_sheet_id(SheetId::new()), None);
     }

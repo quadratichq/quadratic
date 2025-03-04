@@ -158,8 +158,9 @@ impl A1Selection {
         }
     }
 
-    /// Returns the last selection's end. It defaults to the cursor if it's
-    /// a non-finite range.
+    /// Returns the last selection's end. It defaults to the cursor if it's a
+    /// non-finite range. Note, for tables, we need to use the end of the
+    /// selection if the cursor is at the end of the table.
     pub fn last_selection_end(&self, context: &A1Context) -> Pos {
         if let Some(range) = self.ranges.last() {
             match range {
@@ -174,12 +175,31 @@ impl A1Selection {
                     }
                 }
                 CellRefRange::Table { range } => {
+                    let name = range.table_name.clone();
                     if let Some(range) =
                         range.convert_to_ref_range_bounds(false, context, false, false)
                     {
-                        Pos {
-                            x: range.end.col(),
-                            y: range.end.row(),
+                        if self.cursor.x == range.end.col() && self.cursor.y == range.end.row() {
+                            // we adjust the y to step over the table name so we
+                            // don't end up with the same selection
+                            let adjust_y = if let Some(table) = context.try_table(&name) {
+                                if table.show_ui && table.show_name {
+                                    -1
+                                } else {
+                                    0
+                                }
+                            } else {
+                                0
+                            };
+                            Pos {
+                                x: range.start.col(),
+                                y: range.start.row() + adjust_y,
+                            }
+                        } else {
+                            Pos {
+                                x: range.end.col(),
+                                y: range.end.row(),
+                            }
                         }
                     } else {
                         self.cursor
@@ -817,7 +837,7 @@ mod tests {
     fn test_is_on_html_image() {
         // Create a context with a table that has an HTML image
         let mut context = A1Context::test(
-            &[("Sheet1", SheetId::TEST), ("Sheet2", SheetId::new())],
+            &[("Sheet1", SheetId::TEST), ("Sheet 2", SheetId::new())],
             &[("Table1", &["A"], Rect::test_a1("B2:D4"))],
         );
         context
@@ -839,9 +859,8 @@ mod tests {
         assert!(!A1Selection::test_a1("E3").cursor_is_on_html_image(&context));
 
         // Test with wrong sheet_id
-        assert!(
-            !A1Selection::test_a1_context("Sheet2!B2", &context).cursor_is_on_html_image(&context)
-        );
+        assert!(!A1Selection::test_a1_context("'Sheet 2'!B2", &context)
+            .cursor_is_on_html_image(&context));
     }
 
     #[test]
@@ -1021,6 +1040,59 @@ mod tests {
         assert_eq!(
             selection.table_column_selection("Table2", &context),
             Some(vec![0])
+        );
+    }
+
+    #[test]
+    fn test_single_rect() {
+        let context = A1Context::default();
+
+        // Test single range with multiple cells
+        let selection = A1Selection::test_a1("A1:B2");
+        assert_eq!(
+            selection.single_rect(&context),
+            Some(Rect::new(1, 1, 2, 2)),
+            "Single range with multiple cells should return a rect"
+        );
+
+        // Test single cell selection
+        let selection = A1Selection::test_a1("A1");
+        assert_eq!(
+            selection.single_rect(&context),
+            None,
+            "Single cell selection should return None"
+        );
+
+        // Test multiple ranges
+        let selection = A1Selection::test_a1("A1:B2,C3:D4");
+        assert_eq!(
+            selection.single_rect(&context),
+            None,
+            "Multiple ranges should return None"
+        );
+
+        // Test column selection
+        let selection = A1Selection::test_a1("A:B");
+        assert_eq!(
+            selection.single_rect(&context),
+            None,
+            "Column selection should return None"
+        );
+
+        // Test row selection
+        let selection = A1Selection::test_a1("1:2");
+        assert_eq!(
+            selection.single_rect(&context),
+            None,
+            "Row selection should return None"
+        );
+
+        // Test larger single range
+        let selection = A1Selection::test_a1("B2:D5");
+        assert_eq!(
+            selection.single_rect(&context),
+            Some(Rect::new(2, 2, 4, 5)),
+            "Larger single range should return correct rect"
         );
     }
 }

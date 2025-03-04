@@ -1,4 +1,4 @@
-import { ToolCard } from '@/app/ui/menus/AIAnalyst/toolCards/ToolCard';
+import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { GridActionIcon } from '@/shared/components/Icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { useEffect, useState } from 'react';

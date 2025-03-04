@@ -151,10 +151,8 @@ export class Cursor extends Container {
         alignment: 1,
       });
       this.graphics.drawRect(x, y, width, height);
-      this.cursorRectangle = undefined;
     } else {
       this.drawError(cell, x, y, width, height);
-      this.cursorRectangle = new Rectangle(x, y, width, height);
     }
   }
 
@@ -306,6 +304,23 @@ export class Cursor extends Container {
     return table?.codeCell.spill_error;
   }
 
+  private calculateCursorRectangle(finiteRanges: RefRangeBounds[], infiniteRanges: RefRangeBounds[]) {
+    const sheet = sheets.sheet;
+    if (finiteRanges.length + infiniteRanges.length === 0) {
+      this.cursorRectangle = undefined;
+    } else if (finiteRanges.length) {
+      this.cursorRectangle = new Rectangle();
+      const start = sheet.getCellOffsets(finiteRanges[0].start.col.coord, finiteRanges[0].start.row.coord);
+      const end = sheet.getCellOffsets(
+        Number(finiteRanges[0].end.col.coord) + 1,
+        Number(finiteRanges[0].end.row.coord) + 1
+      );
+      this.cursorRectangle = new Rectangle(start.x, start.y, end.x - start.x, end.y - start.y);
+    } else {
+      this.cursorRectangle = new Rectangle();
+    }
+  }
+
   // Besides the dirty flag, we also need to update the cursor when the viewport
   // is dirty and columnRow is set because the columnRow selection is drawn to
   // visible bounds on the screen, not to the selection size.
@@ -338,10 +353,11 @@ export class Cursor extends Container {
         alpha: FILL_SELECTION_ALPHA,
         ranges: infiniteRanges,
       });
+      this.calculateCursorRectangle(finiteRanges, infiniteRanges);
       if (
         !columnRow &&
         cursor.rangeCount() === 1 &&
-        cursor.getInfiniteRefRangeBounds().length === 0 &&
+        infiniteRanges.length === 0 &&
         !cursor.isOnHtmlImage() &&
         !this.cursorIsOnSpill()
       ) {

@@ -1,7 +1,7 @@
 import { useFeatureFlag } from '@/shared/hooks/useFeatureFlag';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { getCSSVariableAsHexColor } from '@/shared/utils/colors';
-import { useEffect } from 'react';
+import { memo, useEffect } from 'react';
 
 const DEFAULT_APPEARANCE_MODE = 'light';
 type AppearanceMode = 'light' | 'dark' | 'system';
@@ -19,7 +19,7 @@ export const useThemeAppearanceMode = () => {
  * This component should be mounted in one place at the root of the app and it
  * will handle responding to changes via the effects.
  */
-export const ThemeAppearanceModeEffects = () => {
+export const ThemeAppearanceModeEffects = memo(() => {
   const [featureFlag] = useFeatureFlag('themeAppearanceMode');
   const [appearanceMode, setAppearanceMode] = useThemeAppearanceMode();
   const userPrefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)');
@@ -69,7 +69,7 @@ export const ThemeAppearanceModeEffects = () => {
   }, [appearanceMode, userPrefersDarkMode]);
 
   return null;
-};
+});
 
 function changeAppearanceModeInDom(mode: 'light' | 'dark') {
   if (mode === 'dark') {

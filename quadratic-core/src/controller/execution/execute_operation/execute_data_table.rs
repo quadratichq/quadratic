@@ -2223,8 +2223,18 @@ mod tests {
 
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
-        gc.set_cell_value(pos!(F14).to_sheet_pos(sheet_id), "=1+1".to_string(), None);
-        gc.set_cell_value(pos!(I5).to_sheet_pos(sheet_id), "=2+2".to_string(), None);
+        gc.set_code_cell(
+            pos!(F14).to_sheet_pos(sheet_id),
+            CodeCellLanguage::Formula,
+            "1+1".to_string(),
+            None,
+        );
+        gc.set_code_cell(
+            pos!(I5).to_sheet_pos(sheet_id),
+            CodeCellLanguage::Formula,
+            "2+2".to_string(),
+            None,
+        );
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(

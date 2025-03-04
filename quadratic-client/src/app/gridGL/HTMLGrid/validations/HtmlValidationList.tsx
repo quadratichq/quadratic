@@ -128,7 +128,8 @@ export const HtmlValidationList = (props: Props) => {
         changeValue(list[index]);
         sheets.sheet.cursor.moveTo(
           sheets.sheet.cursor.position.x + (key === 'ArrowLeft' ? -1 : 1),
-          sheets.sheet.cursor.position.y
+          sheets.sheet.cursor.position.y,
+          { checkForTableRef: true }
         );
       } else if (key === 'Escape') {
         setAnnotationState(undefined);

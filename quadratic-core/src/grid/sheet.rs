@@ -243,7 +243,7 @@ impl Sheet {
         {
             return true;
         }
-        self.has_table_content(pos)
+        self.has_table_content(pos, false)
     }
 
     /// Returns true if the cell at Pos has content (ie, not blank). Ignores

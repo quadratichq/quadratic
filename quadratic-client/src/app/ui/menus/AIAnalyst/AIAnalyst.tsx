@@ -9,10 +9,10 @@ import { AIAnalystMessages } from '@/app/ui/menus/AIAnalyst/AIAnalystMessages';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { useAIAnalystPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnalystPanelWidth';
 import { cn } from '@/shared/shadcn/utils';
-import { useCallback, useEffect, useRef } from 'react';
+import { memo, useCallback, useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 
-export const AIAnalyst = () => {
+export const AIAnalyst = memo(() => {
   const showAIAnalyst = useRecoilValue(showAIAnalystAtom);
   const presentationMode = useRecoilValue(presentationModeAtom);
   const showChatHistory = useRecoilValue(aiAnalystShowChatHistoryAtom);
@@ -86,4 +86,4 @@ export const AIAnalyst = () => {
       </div>
     </>
   );
-};
+});

@@ -1,4 +1,3 @@
-import { getTable } from '@/app/actions/dataTableSpec';
 import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -168,7 +167,6 @@ export class PointerCellMoving {
     // we do not move if there are multiple rectangles (for now)
     const rectangle = sheets.sheet.cursor.getSingleRectangleOrCursor();
     if (!rectangle) return false;
-
     const origin = sheets.sheet.cursor.position;
     const column = origin.x;
     const row = origin.y;
@@ -181,8 +179,8 @@ export class PointerCellMoving {
 
       // the offset is the clamped value of the rectangle based on where the user clicks
       const offset = sheets.sheet.getColumnRowFromScreen(world.x, world.y);
-      offset.column = Math.min(Math.max(offset.column, rectangle.left), rectangle.right);
-      offset.row = Math.min(Math.max(offset.row, rectangle.top), rectangle.bottom);
+      offset.column = Math.min(Math.max(offset.column, rectangle.left), rectangle.right - 1);
+      offset.row = Math.min(Math.max(offset.row, rectangle.top), rectangle.bottom - 1);
       this.movingCells = {
         column,
         row,
@@ -222,22 +220,7 @@ export class PointerCellMoving {
         this.movingCells &&
         (this.startCell.x !== this.movingCells.toColumn || this.startCell.y !== this.movingCells.toRow)
       ) {
-        const table = getTable();
         const rectangle = sheets.sheet.cursor.getLargestRectangle();
-
-        if (
-          table &&
-          table.state !== 'SpillError' &&
-          table.state !== 'RunError' &&
-          table.x === this.startCell.x &&
-          table.y === this.startCell.y
-        ) {
-          rectangle.x = table.x;
-          rectangle.y = table.y;
-          rectangle.width = table.w;
-          rectangle.height = table.h;
-        }
-
         quadraticCore.moveCells(
           rectToSheetRect(rectangle, sheets.current),
           this.movingCells.toColumn,

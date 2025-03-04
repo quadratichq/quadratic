@@ -76,7 +76,7 @@ mod test {
         let sheet_ids = gc.sheet_ids();
         assert_eq!(sheet_ids.len(), 2);
         let sheet_id = sheet_ids[1];
-        assert_eq!(gc.sheet(sheet_id).name, "Sheet2");
+        assert_eq!(gc.sheet(sheet_id).name, "Sheet 2");
     }
 
     #[test]
@@ -87,7 +87,7 @@ mod test {
 
         gc.add_sheet(None);
         let sheet_id = gc.sheet_ids()[1];
-        assert_eq!(gc.try_sheet(sheet_id).unwrap().name, "Sheet2");
+        assert_eq!(gc.try_sheet(sheet_id).unwrap().name, "Sheet 2");
 
         let sheet_id = SheetId::new();
         assert_eq!(gc.try_sheet(sheet_id), None);
@@ -101,13 +101,13 @@ mod test {
 
         gc.add_sheet(None);
         let sheet_id_2 = gc.sheet_ids()[1];
-        gc.try_sheet_mut(sheet_id_2).unwrap().name = "Sheet2 modified".to_string();
+        gc.try_sheet_mut(sheet_id_2).unwrap().name = "Sheet 2 modified".to_string();
 
         let new_sheet_id = SheetId::new();
         assert_eq!(gc.try_sheet_mut(new_sheet_id), None);
 
         assert_eq!(gc.sheet(sheet_id).name, "Sheet1 modified");
-        assert_eq!(gc.sheet(sheet_id_2).name, "Sheet2 modified");
+        assert_eq!(gc.sheet(sheet_id_2).name, "Sheet 2 modified");
     }
 
     #[test]
@@ -120,11 +120,11 @@ mod test {
 
         gc.add_sheet(None);
         assert_eq!(
-            gc.try_sheet_from_name("Sheet2".to_string()).unwrap().name,
-            "Sheet2"
+            gc.try_sheet_from_name("Sheet 2".to_string()).unwrap().name,
+            "Sheet 2"
         );
 
-        assert_eq!(gc.try_sheet_from_name("Sheet3".to_string()), None);
+        assert_eq!(gc.try_sheet_from_name("Sheet 3".to_string()), None);
     }
 
     #[test]
@@ -136,13 +136,13 @@ mod test {
             .unwrap()
             .name = "Sheet1 modified".to_string();
 
-        gc.try_sheet_mut_from_name("Sheet2".to_string())
+        gc.try_sheet_mut_from_name("Sheet 2".to_string())
             .unwrap()
-            .name = "Sheet2 modified".to_string();
+            .name = "Sheet 2 modified".to_string();
 
         let sheet_ids = gc.sheet_ids();
         assert_eq!(gc.sheet(sheet_ids[0]).name, "Sheet1 modified");
-        assert_eq!(gc.sheet(sheet_ids[1]).name, "Sheet2 modified");
+        assert_eq!(gc.sheet(sheet_ids[1]).name, "Sheet 2 modified");
     }
 
     #[test]

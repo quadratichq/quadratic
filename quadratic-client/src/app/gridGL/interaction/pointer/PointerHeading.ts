@@ -22,11 +22,12 @@ export interface ResizeHeadingColumnEvent extends CustomEvent {
   detail: number;
 }
 export class PointerHeading {
-  private active = false;
   private downTimeout: number | undefined;
   cursor?: string;
   private clicked = false;
   private fitToColumnTimeout?: number;
+
+  active = false;
 
   private resizing?: {
     start: number;

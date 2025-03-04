@@ -7,6 +7,7 @@ import { focusGrid } from '@/app/helpers/focusGrid';
 import { SheetBarButton } from '@/app/ui/menus/SheetBar/SheetBarButton';
 import { SheetBarTab } from '@/app/ui/menus/SheetBar/SheetBarTab';
 import { AddIcon, ChevronLeftIcon, ChevronRightIcon } from '@/shared/components/Icons';
+import { SEARCH_PARAMS } from '@/shared/constants/routes';
 import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -25,21 +26,22 @@ export const SheetBar = (): JSX.Element => {
 
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const hasPermission = useMemo(() => hasPermissionToEditFile(permissions) && !isMobile, [permissions]);
-
-  // activate sheet
-  const [activeSheet, setActiveSheet] = useState(sheets.current);
-
   const dragTimeOut = useRef<number | undefined>();
 
-  // Store the active sheet in the URL
-  const [activeSheetId, setActiveSheetId] = useState<string | null>(null);
-  useUpdateQueryStringValueWithoutNavigation('sheet', activeSheetId);
+  // Use useRef to store the initial active sheet ID
+  const [activeSheet, setActiveSheet] = useState(sheets.current);
 
+  // Update the URL with the active sheet (if it's not the first sheet)
+  useUpdateQueryStringValueWithoutNavigation(
+    SEARCH_PARAMS.SHEET.KEY,
+    sheets.getFirst().id === activeSheet ? null : activeSheet
+  );
+
+  // Update internal state of the active sheet when user changes sheet
   useEffect(() => {
     const updateSheet = () => {
       setActiveSheet(sheets.current);
       setTrigger((trigger) => trigger + 1);
-      setActiveSheetId(sheets.sheet.order === 'a0' ? null : sheets.current);
     };
 
     events.on('changeSheet', updateSheet);

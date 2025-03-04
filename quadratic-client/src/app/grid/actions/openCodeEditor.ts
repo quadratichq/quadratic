@@ -12,6 +12,9 @@ export const openCodeEditor = async () => {
     throw new Error('Expected setEditorInteractionState to be defined in openCodeEditor');
   }
 
+  // abort any ongoing AI assistant requests and clear the messages
+  codeEditorState.aiAssistant.abortController?.abort();
+
   const { x, y } = sheets.sheet.cursor.position;
   const table = pixiApp.cellsSheet().tables.getTableFromTableCell(x, y);
   const codeCell = table?.codeCell;
@@ -46,6 +49,12 @@ export const openCodeEditor = async () => {
       // this will also open the save changes modal if there are unsaved changes
       setCodeEditorState({
         ...codeEditorState,
+        aiAssistant: {
+          abortController: undefined,
+          loading: false,
+          id: '',
+          messages: [],
+        },
         diffEditorContent: undefined,
         waitingForEditorClose: {
           codeCell: {
@@ -62,6 +71,12 @@ export const openCodeEditor = async () => {
     // code editor is already open, so check it for save before closing
     setCodeEditorState({
       ...codeEditorState,
+      aiAssistant: {
+        abortController: undefined,
+        loading: false,
+        id: '',
+        messages: [],
+      },
       diffEditorContent: undefined,
       waitingForEditorClose: {
         codeCell: {
@@ -81,6 +96,12 @@ export const openCodeEditor = async () => {
     }));
     setCodeEditorState({
       ...codeEditorState,
+      aiAssistant: {
+        abortController: undefined,
+        loading: false,
+        id: '',
+        messages: [],
+      },
       diffEditorContent: undefined,
       initialCode: '',
       codeCell: {

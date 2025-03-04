@@ -13,7 +13,7 @@ import { cn } from '@/shared/shadcn/utils';
 import Editor from '@monaco-editor/react';
 import { ChevronDownIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 
 const MAX_LINES = 6;
@@ -23,7 +23,7 @@ interface CodeSnippetProps {
   language: string;
 }
 
-export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) {
+export const CodeSnippet = memo(({ code, language = 'plaintext' }: CodeSnippetProps) => {
   const isLoading = useRecoilValue(aiAssistantLoadingAtom);
   const syntax = useMemo(() => {
     const lowerCaseLanguage = language.toLowerCase();
@@ -127,98 +127,90 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
       </div>
     </div>
   );
-}
+});
 
-function CodeSnippetRunButton({
-  language,
-  text,
-  isLoading,
-}: {
-  language: CodeSnippetProps['language'];
-  text: string;
-  isLoading: boolean;
-}) {
-  const handleSaveAndRun = useRecoilCallback(
-    ({ snapshot, set }) =>
-      async () => {
-        mixpanel.track('[AI].code.run', { language });
+const CodeSnippetRunButton = memo(
+  ({ language, text, isLoading }: { language: CodeSnippetProps['language']; text: string; isLoading: boolean }) => {
+    const handleSaveAndRun = useRecoilCallback(
+      ({ snapshot, set }) =>
+        async () => {
+          mixpanel.track('[AI].code.run', { language });
 
-        const editorContent = await snapshot.getPromise(codeEditorEditorContentAtom);
-        const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
+          const editorContent = await snapshot.getPromise(codeEditorEditorContentAtom);
+          if (editorContent === text) {
+            return;
+          }
 
-        set(codeEditorAtom, (prev) => ({
-          ...prev,
-          diffEditorContent: { editorContent, isApplied: true },
-          waitingForEditorClose: {
-            codeCell,
-            showCellTypeMenu: false,
-            initialCode: text,
-            inlineEditor: false,
-          },
-        }));
+          const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
 
-        quadraticCore.setCodeCellValue({
-          sheetId: codeCell.sheetId,
-          x: codeCell.pos.x,
-          y: codeCell.pos.y,
-          codeString: text ?? '',
-          language: codeCell.language,
-          cursor: sheets.getCursorPosition(),
-        });
+          set(codeEditorAtom, (prev) => ({
+            ...prev,
+            diffEditorContent: { editorContent, isApplied: true },
+            waitingForEditorClose: {
+              codeCell,
+              showCellTypeMenu: false,
+              initialCode: text,
+              inlineEditor: false,
+            },
+          }));
+
+          quadraticCore.setCodeCellValue({
+            sheetId: codeCell.sheetId,
+            x: codeCell.pos.x,
+            y: codeCell.pos.y,
+            codeString: text ?? '',
+            language: codeCell.language,
+            cursor: sheets.getCursorPosition(),
+          });
+        },
+      [language, text]
+    );
+
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        className="bg-background px-2 text-muted-foreground hover:text-foreground"
+        onClick={handleSaveAndRun}
+        disabled={isLoading}
+      >
+        <SaveAndRunIcon /> Apply & run
+      </Button>
+    );
+  }
+);
+
+const CodeSnippetCopyButton = memo(
+  ({ language, text, isLoading }: { language: CodeSnippetProps['language']; text: string; isLoading: boolean }) => {
+    const [tooltipMsg, setTooltipMsg] = useState<string>('Copy');
+
+    const handleCopy = useCallback(
+      (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        mixpanel.track('[AI].code.copy', { language });
+        navigator.clipboard.writeText(text);
+        setTooltipMsg('Copied!');
+        setTimeout(() => {
+          setTooltipMsg('Copy');
+        }, 2000);
       },
-    [language, text]
-  );
+      [language, text]
+    );
 
-  return (
-    <Button
-      variant="ghost"
-      size="sm"
-      className="bg-background px-2 text-muted-foreground hover:text-foreground"
-      onClick={handleSaveAndRun}
-      disabled={isLoading}
-    >
-      <SaveAndRunIcon /> Apply & run
-    </Button>
-  );
-}
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        className="bg-background px-2 text-muted-foreground hover:text-foreground"
+        onClick={handleCopy}
+        disabled={isLoading}
+      >
+        <CopyIcon className="mr-1" /> {tooltipMsg}
+      </Button>
+    );
+  }
+);
 
-function CodeSnippetCopyButton({
-  language,
-  text,
-  isLoading,
-}: {
-  language: CodeSnippetProps['language'];
-  text: string;
-  isLoading: boolean;
-}) {
-  const [tooltipMsg, setTooltipMsg] = useState<string>('Copy');
-
-  const handleCopy = useCallback(
-    (e: any) => {
-      e.preventDefault();
-      mixpanel.track('[AI].code.copy', { language });
-      navigator.clipboard.writeText(text);
-      setTooltipMsg('Copied!');
-      setTimeout(() => {
-        setTooltipMsg('Copy');
-      }, 2000);
-    },
-    [language, text]
-  );
-
-  return (
-    <Button
-      variant="ghost"
-      size="sm"
-      className="bg-background px-2 text-muted-foreground hover:text-foreground"
-      onClick={handleCopy}
-      disabled={isLoading}
-    >
-      <CopyIcon className="mr-1" /> {tooltipMsg}
-    </Button>
-  );
-}
-
-function calculateHeightInPx(numberOfLines: number) {
+const calculateHeightInPx = (numberOfLines: number) => {
   return Math.ceil(numberOfLines) * 19 + 16 + 'px';
-}
+};
