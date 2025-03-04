@@ -53,22 +53,30 @@ export function useAIRequestToAPI() {
 
           if (!response.ok) {
             const data = await response.json();
-            const error =
-              response.status === 429
-                ? 'You have exceeded the maximum number of requests. Please try again later.'
-                : `Looks like there was a problem. Error: ${data}`;
+            let text = '';
+            switch (response.status) {
+              case 429:
+                text = 'You have exceeded the maximum number of requests. Please try again later.';
+                break;
+              case 402:
+                text = 'You have exceeded your AI message limit. Please upgrade your plan to continue.';
+                break;
+              default:
+                text = `Looks like there was a problem. Error: ${data.error}`;
+                break;
+            }
             setMessages?.((prev) => [
               ...prev.slice(0, -1),
               {
                 role: 'assistant',
-                content: [{ type: 'text', text: error }],
+                content: [{ type: 'text', text }],
                 contextType: 'userPrompt',
                 model: getModelFromModelKey(args.modelKey),
                 toolCalls: [],
               },
             ]);
             console.error(`Error retrieving data from AI API. Error: ${data}`);
-            return { error: true, content: [{ type: 'text', text: error }], toolCalls: [] };
+            return { error: true, content: [{ type: 'text', text }], toolCalls: [] };
           }
 
           if (stream) {
