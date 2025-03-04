@@ -72,7 +72,7 @@ export const GoTo = ({ tableInfo }: { tableInfo: JsTableInfo[] }) => {
   const onSelect = useCallback(() => {
     // if empty, then move cursor to A1
     if (!value) {
-      sheets.sheet.cursor.moveTo(1, 1);
+      sheets.sheet.cursor.moveTo(1, 1, { checkForTableRef: true });
       pixiApp.viewport.reset();
     } else {
       try {
