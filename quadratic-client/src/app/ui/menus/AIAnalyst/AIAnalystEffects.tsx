@@ -4,10 +4,10 @@ import {
   aiAnalystCurrentChatNameAtom,
   aiAnalystLoadingAtom,
 } from '@/app/atoms/aiAnalystAtom';
-import { useEffect } from 'react';
+import { memo, useEffect } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
-export const AIAnalystEffects = () => {
+export const AIAnalystEffects = memo(() => {
   const currentChat = useRecoilValue(aiAnalystCurrentChatAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
   const setCurrentChatName = useSetRecoilState(aiAnalystCurrentChatNameAtom);
@@ -29,4 +29,4 @@ export const AIAnalystEffects = () => {
   }, [currentChat.messages.length, currentChat.name, getChatName, loading, setCurrentChatName]);
 
   return null;
-};
+});

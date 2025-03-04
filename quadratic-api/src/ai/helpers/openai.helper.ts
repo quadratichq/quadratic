@@ -9,6 +9,7 @@ import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
   AIMessagePrompt,
   AIRequestHelperArgs,
+  AISource,
   OpenAIModelKey,
   XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
@@ -21,7 +22,7 @@ export function getOpenAIApiArgs(
   tools: ChatCompletionTool[] | undefined;
   tool_choice: ChatCompletionToolChoiceOption | undefined;
 } {
-  const { messages: chatMessages, useTools, toolName } = args;
+  const { messages: chatMessages, toolName, source } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
   const messages: ChatCompletionMessageParam[] = promptMessages.reduce<ChatCompletionMessageParam[]>((acc, message) => {
@@ -34,14 +35,17 @@ export function getOpenAIApiArgs(
             type: 'text',
             text: content.text,
           })),
-        tool_calls: message.toolCalls.map((toolCall) => ({
-          id: toolCall.id,
-          type: 'function' as const,
-          function: {
-            name: toolCall.name,
-            arguments: toolCall.arguments,
-          },
-        })),
+        tool_calls:
+          message.toolCalls.length > 0
+            ? message.toolCalls.map((toolCall) => ({
+                id: toolCall.id,
+                type: 'function' as const,
+                function: {
+                  name: toolCall.name,
+                  arguments: toolCall.arguments,
+                },
+              }))
+            : undefined,
       };
       return [...acc, openaiMessage];
     } else if (message.role === 'user' && message.contextType === 'toolResult') {
@@ -67,27 +71,27 @@ export function getOpenAIApiArgs(
     ...messages,
   ];
 
-  const tools = getOpenAITools(useTools, toolName, strickParams);
-  const tool_choice = getOpenAIToolChoice(useTools, toolName);
+  const tools = getOpenAITools(source, toolName, strickParams);
+  const tool_choice = tools?.length ? getOpenAIToolChoice(toolName) : undefined;
 
   return { messages: openaiMessages, tools, tool_choice };
 }
 
 function getOpenAITools(
-  useTools: boolean | undefined,
+  source: AISource,
   toolName: AITool | undefined,
   strickParams: boolean
 ): ChatCompletionTool[] | undefined {
-  if (!useTools) {
-    return undefined;
-  }
-
   const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
     if (toolName === undefined) {
-      return !toolSpec.internalTool;
+      return toolSpec.sources.includes(source);
     }
     return name === toolName;
   });
+
+  if (tools.length === 0) {
+    return undefined;
+  }
 
   const openaiTools: ChatCompletionTool[] = tools.map(
     ([name, { description, parameters }]): ChatCompletionTool => ({
@@ -104,11 +108,7 @@ function getOpenAITools(
   return openaiTools;
 }
 
-function getOpenAIToolChoice(useTools?: boolean, name?: AITool): ChatCompletionToolChoiceOption | undefined {
-  if (!useTools) {
-    return undefined;
-  }
-
+function getOpenAIToolChoice(name?: AITool): ChatCompletionToolChoiceOption | undefined {
   const toolChoice: ChatCompletionToolChoiceOption =
     name === undefined ? 'auto' : { type: 'function', function: { name } };
   return toolChoice;

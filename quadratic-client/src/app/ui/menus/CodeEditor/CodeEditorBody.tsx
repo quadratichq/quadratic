@@ -112,6 +112,11 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   // cell also creates a undo stack entry setTimeout of 250ms is to ensure that
   // the new editor content is loaded, before we clear the undo/redo stack
   useEffect(() => {
+    if (!editorInst) return;
+
+    const model = editorInst.getModel();
+    if (!model) return;
+
     if (
       lastLocation.current &&
       codeCell.sheetId === lastLocation.current.sheetId &&
@@ -121,14 +126,14 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
       return;
     }
     lastLocation.current = codeCell;
-    if (!editorInst) return;
-
-    const model = editorInst.getModel();
-    if (!model) return;
 
     setTimeout(() => {
-      (model as any)._commandManager.clear();
+      (model as any)?._commandManager?.clear();
     }, 250);
+
+    return () => {
+      (model as any)?._commandManager?.clear();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editorInst, codeCell.sheetId, codeCell.pos.x, codeCell.pos.y]);
 
@@ -243,6 +248,14 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
     [addCommands, monacoLanguage, setEditorInst]
   );
 
+  const onChange = useCallback(
+    (value: string | undefined) => {
+      if (showDiffEditor) return;
+      setEditorContent(value);
+    },
+    [setEditorContent, showDiffEditor]
+  );
+
   const addCommandsDiff = useCallback(
     (editor: monaco.editor.IStandaloneDiffEditor, monaco: Monaco) => {
       editor.addCommand(
@@ -261,14 +274,6 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
     [addCommandsDiff]
   );
 
-  if (!showDiffEditor && (editorContent === undefined || loading)) {
-    return (
-      <div className="flex justify-center">
-        <SpinnerIcon className="text-primary" />
-      </div>
-    );
-  }
-
   return (
     <div
       style={{
@@ -278,35 +283,41 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
       }}
       className="dark-mode-hack"
     >
-      {!showDiffEditor ? (
-        <>
-          <Editor
-            height="100%"
-            width="100%"
-            language={monacoLanguage}
-            value={editorContent}
-            onChange={setEditorContent}
-            onMount={onMount}
-            loading={<SpinnerIcon className="text-primary" />}
-            options={{
-              theme: 'light',
-              readOnly: !canEdit,
-              minimap: { enabled: true },
-              overviewRulerLanes: 0,
-              hideCursorInOverviewRuler: true,
-              overviewRulerBorder: false,
-              scrollbar: {
-                horizontal: 'hidden',
-              },
-              wordWrap: 'on',
+      {loading && (
+        <div className="flex justify-center">
+          <SpinnerIcon className="text-primary" />
+        </div>
+      )}
 
-              // need to ignore unused b/c of the async wrapper around the code and import code
-              showUnused: codeCell.language === 'Javascript' ? false : true,
-            }}
-          />
-          <CodeEditorPlaceholder />
-        </>
-      ) : (
+      <div className={`${!loading && !showDiffEditor ? 'h-full w-full' : 'h-0 w-0 opacity-0'}`}>
+        <Editor
+          height="100%"
+          width="100%"
+          language={monacoLanguage}
+          value={editorContent}
+          onChange={onChange}
+          onMount={onMount}
+          loading={<SpinnerIcon className="text-primary" />}
+          options={{
+            theme: 'light',
+            readOnly: !canEdit,
+            minimap: { enabled: true },
+            overviewRulerLanes: 0,
+            hideCursorInOverviewRuler: true,
+            overviewRulerBorder: false,
+            scrollbar: {
+              horizontal: 'hidden',
+            },
+            wordWrap: 'on',
+
+            // need to ignore unused b/c of the async wrapper around the code and import code
+            showUnused: codeCell.language === 'Javascript' ? false : true,
+          }}
+        />
+        <CodeEditorPlaceholder />
+      </div>
+
+      <div className={`${!loading && showDiffEditor ? 'h-full w-full' : 'h-0 w-0 opacity-0'}`}>
         <DiffEditor
           height="100%"
           width="100%"
@@ -314,8 +325,9 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
           original={diffEditorContent?.isApplied ? diffEditorContent.editorContent : editorContent}
           modified={diffEditorContent?.isApplied ? editorContent : diffEditorContent?.editorContent}
           onMount={onMountDiff}
+          loading={<SpinnerIcon className="text-primary" />}
+          theme="light"
           options={{
-            renderSideBySide: false,
             readOnly: true,
             minimap: { enabled: true },
             overviewRulerLanes: 0,
@@ -325,10 +337,14 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
               horizontal: 'hidden',
             },
             wordWrap: 'on',
+
+            // need to ignore unused b/c of the async wrapper around the code and import code
             showUnused: codeCell.language === 'Javascript' ? false : true,
+
+            renderSideBySide: false,
           }}
         />
-      )}
+      </div>
     </div>
   );
 };
