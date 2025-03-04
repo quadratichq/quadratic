@@ -138,10 +138,6 @@ impl GridController {
                             ops.extend(self.set_data_table_operations_at(sheet_pos, value));
                         }
                         false => {
-                            dbgjs!(format!(
-                                "setting cell value at ({x},{y}) to {:?}",
-                                cell_value
-                            ));
                             cell_values[x][y] = Some(cell_value);
                             data_table_ops.extend(self.set_cell_value_data_table_operations(
                                 SheetPos::from((pos, sheet_pos.sheet_id)),
