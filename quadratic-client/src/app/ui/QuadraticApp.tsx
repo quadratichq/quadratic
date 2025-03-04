@@ -95,8 +95,6 @@ export function QuadraticApp() {
     }
   }, [multiplayerLoading]);
 
-  console.log('redeploy');
-
   // Show loading screen until everything is loaded
   if (offlineLoading || multiplayerLoading) {
     return <QuadraticLoading />;
