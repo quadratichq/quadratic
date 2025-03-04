@@ -11,18 +11,17 @@ export const useThemeAccentColor = () => {
   return state;
 };
 
-export const ThemeAccentColorEffects = () =>
-  memo(() => {
-    const [accentColor] = useThemeAccentColor();
+export const ThemeAccentColorEffects = memo(() => {
+  const [accentColor] = useThemeAccentColor();
 
-    // Update the theme color in the UI
-    useEffect(() => {
-      // Set the current theme color variable in CSS via the DOM
-      document.documentElement.setAttribute('data-theme', accentColor);
+  // Update the theme color in the UI
+  useEffect(() => {
+    // Set the current theme color variable in CSS via the DOM
+    document.documentElement.setAttribute('data-theme', accentColor);
 
-      // Set in pixi
-      sharedEvents.emit('changeThemeAccentColor');
-    }, [accentColor]);
+    // Set in pixi
+    sharedEvents.emit('changeThemeAccentColor');
+  }, [accentColor]);
 
-    return null;
-  });
+  return null;
+});
