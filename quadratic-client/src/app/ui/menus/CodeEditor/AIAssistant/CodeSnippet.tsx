@@ -185,7 +185,7 @@ const CodeSnippetCopyButton = memo(
     const [tooltipMsg, setTooltipMsg] = useState<string>('Copy');
 
     const handleCopy = useCallback(
-      (e: any) => {
+      (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
         mixpanel.track('[AI].code.copy', { language });
         navigator.clipboard.writeText(text);

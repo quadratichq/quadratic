@@ -28,7 +28,7 @@ export const UpdateCodeCell = ({ args, loading }: UpdateCodeCellProps) => {
   const [showCode, setShowCode] = useState(false);
 
   const handleCopy = useCallback(
-    (e: any) => {
+    (e: React.MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
       if (!toolArgs?.data) {
         return;
