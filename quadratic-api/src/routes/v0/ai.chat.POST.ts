@@ -40,10 +40,11 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   } = req;
 
   const { body } = parseRequest(req, schema);
-  const { chatId, fileUuid, source, modelKey, ...args } = body;
+  const { chatId, fileUuid, modelKey, ...args } = body;
+  const source = args.source;
 
   if (args.useToolsPrompt) {
-    const toolUseContext = getToolUseContext();
+    const toolUseContext = getToolUseContext(source);
     args.messages.unshift(...toolUseContext);
   }
 
