@@ -1364,6 +1364,7 @@ impl GridController {
             if rows.is_empty() {
                 return Ok(());
             }
+            dbgjs!(format!("[execute_insert_data_table_row] rows: {:?}", op));
 
             rows.sort_by(|a, b| b.cmp(a));
 
@@ -2215,6 +2216,33 @@ mod tests {
         execute_forward_operations(&mut gc, &mut transaction);
         print_data_table(&gc, sheet_id, Rect::new(1, 1, 4, 12));
         assert_data_table_row_height(&gc, sheet_id, pos, 10, index, values);
+    }
+
+    #[test]
+    fn test_execute_delete_data_table_row_on_resize() {
+        let (mut gc, sheet_id, pos, _) = simple_csv();
+
+        print_data_table(&gc, sheet_id, Rect::new(1, 1, 4, 11));
+
+        let sheet_pos = SheetPos::from((pos, sheet_id));
+        let index = 11;
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        let values = data_table.get_row(index as usize + 1).unwrap();
+        let op = Operation::DeleteDataTableRows {
+            sheet_pos,
+            rows: vec![index],
+            flatten: true,
+            select_table: true,
+        };
+        let mut transaction = PendingTransaction::default();
+        gc.execute_delete_data_table_row(&mut transaction, op)
+            .unwrap();
+
+        print_data_table(&gc, sheet_id, Rect::new(1, 1, 4, 12));
+        assert_data_table_row_height(&gc, sheet_id, pos, 10, index, values.clone());
+
+        let sheet = gc.sheet(sheet_id);
+        assert!(sheet.edit_code_value(pos!(B9)).is_some());
     }
 
     #[test]
