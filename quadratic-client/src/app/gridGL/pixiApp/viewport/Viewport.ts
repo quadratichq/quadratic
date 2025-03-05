@@ -6,7 +6,7 @@ import { Decelerate } from '@/app/gridGL/pixiApp/viewport/Decelerate';
 import { Drag } from '@/app/gridGL/pixiApp/viewport/Drag';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '@/app/gridGL/pixiApp/viewport/Wheel';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { Viewport as PixiViewport } from 'pixi-viewport';
+import { Viewport as PixiViewport, type IMouseEdgesOptions } from 'pixi-viewport';
 import type { Rectangle } from 'pixi.js';
 import { Point } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
@@ -40,7 +40,7 @@ export class Viewport extends PixiViewport {
   private snapTimeout?: number;
 
   // the last pointer position where the mouse edges were enabled
-  private lastMouse?: Point;
+  lastMouse?: Point;
 
   constructor(pixiApp: PixiApp) {
     super();
@@ -148,16 +148,19 @@ export class Viewport extends PixiViewport {
     this.dirty = true;
   };
 
-  enableMouseEdges = (world?: Point) => {
+  enableMouseEdges = (world?: Point, direction?: 'horizontal' | 'vertical') => {
     this.lastMouse = world;
     const mouseEdges = this.plugins.get('mouse-edges');
     if (mouseEdges && !mouseEdges.paused) return;
-    this.mouseEdges({
-      distance: MOUSE_EDGES_DISTANCE,
+    const options: IMouseEdgesOptions = {
       allowButtons: true,
       speed: MOUSE_EDGES_SPEED / this.scale.x,
-    });
-    this.lastMouse = world;
+      top: direction === 'horizontal' ? null : MOUSE_EDGES_DISTANCE,
+      bottom: direction === 'horizontal' ? null : MOUSE_EDGES_DISTANCE,
+      left: direction === 'vertical' ? null : MOUSE_EDGES_DISTANCE,
+      right: direction === 'vertical' ? null : MOUSE_EDGES_DISTANCE,
+    };
+    this.mouseEdges(options);
   };
 
   disableMouseEdges = () => {
@@ -205,6 +208,8 @@ export class Viewport extends PixiViewport {
 
   private handleMoved = (event: { viewport: Viewport; type: string }) => {
     if (event.type === 'mouse-edges') {
+      if (this.pixiApp.pointer.pointerHeading.movingColRows) return;
+
       const headings = this.pixiApp.headings.headingSize;
       if (this.x > headings.width || this.y > headings.height) {
         this.disableMouseEdges();
@@ -280,6 +285,8 @@ export class Viewport extends PixiViewport {
     const mouseEdges = this.plugins.get('mouse-edges');
     const vertical = mouseEdges?.['vertical'];
     if (vertical) {
+      if (this.pixiApp.pointer.pointerHeading.handleMouseEdges()) return;
+
       const bounds = this.getVisibleBounds();
       if (vertical > 0) {
         // use the second-to-last row of the screen for selection
@@ -295,6 +302,8 @@ export class Viewport extends PixiViewport {
     }
     const horizontal = mouseEdges?.['horizontal'];
     if (horizontal) {
+      if (this.pixiApp.pointer.pointerHeading.handleMouseEdges()) return;
+
       const bounds = this.getVisibleBounds();
       if (horizontal > 0) {
         // use the second-to-last column of the screen for selection

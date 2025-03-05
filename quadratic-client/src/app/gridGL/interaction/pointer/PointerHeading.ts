@@ -14,7 +14,7 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { isMac } from '@/shared/utils/isMac';
-import type { InteractivePointerEvent, Point } from 'pixi.js';
+import type { InteractionEvent, Point } from 'pixi.js';
 
 const MINIMUM_COLUMN_SIZE = 20;
 
@@ -43,6 +43,7 @@ export class PointerHeading {
     indicies: number[];
     place: number;
     offset: number;
+    lastMouse: Point;
   };
 
   // tracks changes to viewport caused by resizing negative column/row headings
@@ -56,6 +57,7 @@ export class PointerHeading {
     if (this.movingColRows) {
       this.movingColRows = undefined;
       pixiApp.cellMoving.dirty = true;
+      pixiApp.viewport.disableMouseEdges();
     } else if (this.active) {
       sheets.sheet.offsets.cancelResize();
       pixiApp.gridLines.dirty = true;
@@ -69,7 +71,8 @@ export class PointerHeading {
     return true;
   }
 
-  pointerDown(world: Point, event: InteractivePointerEvent): boolean {
+  pointerDown(world: Point, e: InteractionEvent): boolean {
+    const event = e.data.originalEvent as PointerEvent;
     clearTimeout(this.fitToColumnTimeout);
     const { headings, viewport } = pixiApp;
     const intersects = headings.intersectsHeadings(world);
@@ -122,7 +125,9 @@ export class PointerHeading {
         indicies,
         place: isColumn ? intersects.column! : intersects.row!,
         offset: (isColumn ? intersects.column! : intersects.row!) - start,
+        lastMouse: e.data.global.clone(),
       };
+      pixiApp.viewport.enableMouseEdges(world, isColumn ? 'horizontal' : 'vertical');
       pixiApp.cellMoving.dirty = true;
       this.cursor = 'grabbing';
     } else {
@@ -168,29 +173,33 @@ export class PointerHeading {
     return true;
   }
 
-  private pointerMoveColRows(world: Point): boolean {
+  private pointerMoveColRows(world: Point, e?: InteractionEvent): boolean {
     if (!this.movingColRows) {
       throw new Error('Expected movingColRows to be defined in pointerMoveColRows');
     }
     const { isColumn, place } = this.movingColRows;
     const current = sheets.sheet.getColumnRowFromScreen(world.x, world.y);
+
     // nothing to do if the pointer is still in the same column
     if ((isColumn ? current.column : current.row) === place) return true;
 
     // if the pointer is in a different column, we need to update the movingColRows
     this.movingColRows.place = isColumn ? current.column : current.row;
     pixiApp.cellMoving.dirty = true;
+    if (e) {
+      this.movingColRows.lastMouse = e.data.global.clone();
+    }
     return true;
   }
 
-  pointerMove(world: Point): boolean {
+  pointerMove(world: Point, e: InteractionEvent): boolean {
     if (this.downTimeout) {
       window.clearTimeout(this.downTimeout);
       this.downTimeout = undefined;
     }
 
     if (this.movingColRows) {
-      return this.pointerMoveColRows(world);
+      return this.pointerMoveColRows(world, e);
     }
 
     const { headings, gridLines, cursor } = pixiApp;
@@ -301,6 +310,7 @@ export class PointerHeading {
     if (this.movingColRows) {
       this.movingColRows = undefined;
       pixiApp.cellMoving.dirty = true;
+      pixiApp.viewport.disableMouseEdges();
     }
     return true;
   }
@@ -362,5 +372,14 @@ export class PointerHeading {
     if (originalSize.height !== size) {
       quadraticCore.commitSingleResize(sheetId, undefined, row, size);
     }
+  }
+
+  // Handles mouse edges if we're moving columns or rows. Returns true if moving
+  // col/rows is active.
+  handleMouseEdges(): boolean {
+    if (!this.movingColRows) return false;
+    const world = pixiApp.viewport.toWorld(this.movingColRows.lastMouse.x, this.movingColRows.lastMouse.y);
+    this.pointerMoveColRows(world);
+    return true;
   }
 }

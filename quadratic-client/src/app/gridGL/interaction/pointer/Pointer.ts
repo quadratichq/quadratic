@@ -105,7 +105,7 @@ export class Pointer {
       this.pointerCellMoving.pointerDown(event) ||
       this.pointerHtmlCells.pointerDown(e) ||
       this.pointerTable.pointerDown(world, event) ||
-      this.pointerHeading.pointerDown(world, event) ||
+      this.pointerHeading.pointerDown(world, e) ||
       this.pointerLink.pointerDown(world, event) ||
       this.pointerAutoComplete.pointerDown(world) ||
       this.pointerTableResize.pointerDown(world) ||
@@ -134,7 +134,7 @@ export class Pointer {
       // ensure that when dragging the mouse for selection, we don't call
       // select_table
       (!this.pointerDown.active && !this.pointerHeading.active && this.pointerTable.pointerMove(world)) ||
-      this.pointerHeading.pointerMove(world) ||
+      this.pointerHeading.pointerMove(world, e) ||
       this.pointerAutoComplete.pointerMove(world) ||
       this.pointerTableResize.pointerMove(world) ||
       this.pointerDown.pointerMove(world, event) ||
