@@ -2,8 +2,12 @@ use super::Sheet;
 use crate::{
     a1::{A1Context, A1Selection},
     cell_values::CellValues,
-    grid::{data_table::DataTable, CodeCellValue, DataTableKind, SheetId},
-    Pos, Rect,
+    grid::{
+        data_table::DataTable,
+        formats::{FormatUpdate, SheetFormatUpdates},
+        CodeCellLanguage, CodeCellValue, DataTableKind, SheetId,
+    },
+    Pos, Rect, SheetPos,
 };
 
 use anyhow::{anyhow, bail, Result};
@@ -139,6 +143,7 @@ impl Sheet {
         })
     }
 
+    /// Replaces in code cells using a supplied function.
     pub fn replace_in_code_cells(
         &mut self,
         context: &A1Context,
@@ -250,6 +255,44 @@ impl Sheet {
             });
 
         data_tables
+    }
+
+    /// Converts a format update to a SheetFormatUpdates
+    pub fn to_sheet_format_updates(
+        &self,
+        sheet_pos: SheetPos,
+        data_table_pos: Pos,
+        format_update: FormatUpdate,
+    ) -> Result<SheetFormatUpdates> {
+        let data_table = self.data_table_result(data_table_pos)?;
+
+        Ok(SheetFormatUpdates::from_selection(
+            &A1Selection::from_xy(
+                sheet_pos.x - data_table_pos.x + 1,
+                sheet_pos.y - data_table_pos.y + 1 - data_table.y_adjustment(true),
+                sheet_pos.sheet_id,
+            ),
+            format_update,
+        ))
+    }
+
+    /// Returns the code language at a pos
+    pub fn code_language_at(&self, pos: Pos) -> Option<CodeCellLanguage> {
+        self.data_table(pos)
+            .and_then(|data_table| self.get_table_language(pos, data_table))
+    }
+
+    /// Returns true if the cell at pos is a formula cell
+    pub fn is_formula_cell(&self, pos: Pos) -> bool {
+        self.code_language_at(pos)
+            .is_some_and(|lang| lang == CodeCellLanguage::Formula)
+    }
+
+    /// Returns true if the cell at pos is a source cell
+    /// If the show_name=false and show_columns=false, it cannot be the source cell
+    pub fn is_source_cell(&self, pos: Pos) -> bool {
+        self.data_table(pos)
+            .is_some_and(|data_table| data_table.show_name || data_table.show_columns)
     }
 }
 

@@ -15,11 +15,16 @@ impl GridController {
         values: Vec<Vec<String>>,
         cursor: Option<String>,
     ) {
-        let (ops, data_table_ops) = self.set_cell_values_operations(sheet_pos, values);
-        self.start_user_transaction(ops, cursor.to_owned(), TransactionName::SetCells);
+        // TODO(ddimaria): implement actuall error bubbling and remove this dbgjs! and return a Result
+        match self.set_cell_values_operations(sheet_pos, values) {
+            Ok((ops, data_table_ops)) => {
+                self.start_user_transaction(ops, cursor.to_owned(), TransactionName::SetCells);
 
-        if !data_table_ops.is_empty() {
-            self.start_user_transaction(data_table_ops, cursor, TransactionName::SetCells);
+                if !data_table_ops.is_empty() {
+                    self.start_user_transaction(data_table_ops, cursor, TransactionName::SetCells);
+                }
+            }
+            Err(e) => dbgjs!(e),
         }
     }
 

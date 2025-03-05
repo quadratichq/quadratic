@@ -1,94 +1,20 @@
-use std::str::FromStr;
-
-use bigdecimal::BigDecimal;
-
 use super::operation::Operation;
 use crate::cell_values::CellValues;
 use crate::controller::GridController;
 use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
-use crate::grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind};
 use crate::Pos;
 use crate::{a1::A1Selection, CellValue, SheetPos};
-
-// when a number's decimal is larger than this value, then it will treat it as text (this avoids an attempt to allocate a huge vector)
-// there is an unmerged alternative that might be interesting: https://github.com/declanvk/bigdecimal-rs/commit/b0a2ea3a403ddeeeaeef1ddfc41ff2ae4a4252d6
-// see original issue here: https://github.com/akubera/bigdecimal-rs/issues/108
-const MAX_BIG_DECIMAL_SIZE: usize = 10000000;
+use anyhow::{bail, Result};
 
 impl GridController {
     /// Convert string to a cell_value and generate necessary operations
+    /// TODO(ddimaria): remove this and reference CellValue::string_to_cell_value directly
     pub(super) fn string_to_cell_value(
         &self,
         value: &str,
         allow_code: bool,
     ) -> (CellValue, FormatUpdate) {
-        let mut format_update = FormatUpdate::default();
-
-        let cell_value = if value.is_empty() {
-            CellValue::Blank
-        } else if let Some((currency, number)) = CellValue::unpack_currency(value) {
-            format_update = FormatUpdate {
-                numeric_format: Some(Some(NumericFormat {
-                    kind: NumericFormatKind::Currency,
-                    symbol: Some(currency),
-                })),
-                ..Default::default()
-            };
-
-            if value.contains(',') {
-                format_update.numeric_commas = Some(Some(true));
-            }
-
-            // We no longer automatically set numeric decimals for
-            // currency; instead, we handle changes in currency decimal
-            // length by using 2 if currency is set by default.
-
-            CellValue::Number(number)
-        } else if let Some(bool) = CellValue::unpack_boolean(value) {
-            bool
-        } else if let Ok(bd) = BigDecimal::from_str(&CellValue::strip_commas(value)) {
-            if (bd.fractional_digit_count().unsigned_abs() as usize) > MAX_BIG_DECIMAL_SIZE {
-                CellValue::Text(value.into())
-            } else {
-                if value.contains(',') {
-                    format_update = FormatUpdate {
-                        numeric_commas: Some(Some(true)),
-                        ..Default::default()
-                    };
-                }
-                CellValue::Number(bd)
-            }
-        } else if let Some(percent) = CellValue::unpack_percentage(value) {
-            format_update = FormatUpdate {
-                numeric_format: Some(Some(NumericFormat {
-                    kind: NumericFormatKind::Percentage,
-                    symbol: None,
-                })),
-                ..Default::default()
-            };
-            CellValue::Number(percent)
-        } else if let Some(time) = CellValue::unpack_time(value) {
-            time
-        } else if let Some(date) = CellValue::unpack_date(value) {
-            date
-        } else if let Some(date_time) = CellValue::unpack_date_time(value) {
-            date_time
-        } else if let Some(duration) = CellValue::unpack_duration(value) {
-            duration
-        } else if let Some(code) = value.strip_prefix("=") {
-            if allow_code {
-                CellValue::Code(CodeCellValue {
-                    language: CodeCellLanguage::Formula,
-                    code: code.to_string(),
-                })
-            } else {
-                CellValue::Text(code.to_string())
-            }
-        } else {
-            CellValue::Text(value.into())
-        };
-
-        (cell_value, format_update)
+        CellValue::string_to_cell_value(value, allow_code)
     }
 
     /// Generate operations for a user-initiated change to a cell value
@@ -96,7 +22,7 @@ impl GridController {
         &mut self,
         sheet_pos: SheetPos,
         values: Vec<Vec<String>>,
-    ) -> (Vec<Operation>, Vec<Operation>) {
+    ) -> Result<(Vec<Operation>, Vec<Operation>)> {
         let mut ops = vec![];
         let mut compute_code_ops = vec![];
         let data_table_ops = vec![];
@@ -104,24 +30,23 @@ impl GridController {
         if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
             let height = values.len();
             if height == 0 {
-                dbgjs!("[set_cell_values] Empty values");
-                return (ops, data_table_ops);
+                bail!("[set_cell_values] Empty values");
             }
 
             let width = values[0].len();
             if width == 0 {
-                dbgjs!("[set_cell_values] Empty values");
-                return (ops, data_table_ops);
+                bail!("[set_cell_values] Empty values");
             }
 
             let init_cell_values = || vec![vec![None; height]; width];
             let mut cell_values = init_cell_values();
+            let mut data_table_cell_values = init_cell_values();
             let mut sheet_format_updates = SheetFormatUpdates::default();
 
             for (y, row) in values.into_iter().enumerate() {
                 for (x, value) in row.into_iter().enumerate() {
                     let value = value.trim().to_string();
-                    let (cell_value, format_update) = self.string_to_cell_value(&value, true);
+                    let (cell_value, format_update) = CellValue::string_to_cell_value(&value, true);
 
                     let pos = Pos {
                         x: sheet_pos.x + x as i64,
@@ -135,7 +60,26 @@ impl GridController {
 
                     match is_data_table {
                         true => {
-                            ops.extend(self.set_data_table_operations_at(sheet_pos, value));
+                            let data_table_pos = sheet.first_data_table_within(pos)?;
+                            let is_source_cell = sheet.is_source_cell(pos);
+                            let is_formula_cell = sheet.is_formula_cell(pos);
+
+                            // if the cell is a formula cell and the source cell, set the cell value (which will remove the data table)
+                            if is_formula_cell && is_source_cell {
+                                cell_values[x][y] = Some(cell_value);
+                            } else {
+                                data_table_cell_values[x][y] = Some(cell_value);
+                                if !format_update.is_default() {
+                                    ops.push(Operation::DataTableFormats {
+                                        sheet_pos: data_table_pos.to_sheet_pos(sheet_pos.sheet_id),
+                                        formats: sheet.to_sheet_format_updates(
+                                            sheet_pos,
+                                            data_table_pos,
+                                            format_update.to_owned(),
+                                        )?,
+                                    });
+                                }
+                            }
                         }
                         false => {
                             cell_values[x][y] = Some(cell_value);
@@ -160,6 +104,13 @@ impl GridController {
                 }
             }
 
+            if data_table_cell_values != init_cell_values() {
+                ops.push(Operation::SetDataTableAt {
+                    sheet_pos,
+                    values: data_table_cell_values.into(),
+                });
+            }
+
             if cell_values != init_cell_values() {
                 ops.push(Operation::SetCellValues {
                     sheet_pos,
@@ -177,7 +128,7 @@ impl GridController {
             ops.extend(compute_code_ops);
         }
 
-        (ops, data_table_ops)
+        Ok((ops, data_table_ops))
     }
 
     /// Generate operations adding columns and rows to data tables when the cells to add are touching the data table
