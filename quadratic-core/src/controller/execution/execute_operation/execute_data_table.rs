@@ -1364,7 +1364,6 @@ impl GridController {
             if rows.is_empty() {
                 return Ok(());
             }
-            dbgjs!(format!("[execute_insert_data_table_row] rows: {:?}", op));
 
             rows.sort_by(|a, b| b.cmp(a));
 
