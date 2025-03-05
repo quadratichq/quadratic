@@ -286,74 +286,93 @@ impl Sheet {
     ) -> (HashMap<SheetPos, Vec<u32>>, HashMap<SheetPos, Vec<u32>>) {
         let mut columns = HashMap::new();
         let mut rows = HashMap::new();
-        let pos = Pos::from(sheet_pos);
 
         if !value.is_empty() {
-            if pos.x > 1 {
-                let data_table_left = self.first_data_table_within(Pos::new(pos.x - 1, pos.y));
-                if let Ok(data_table_left) = data_table_left {
-                    if let Some(data_table) =
-                        self.data_table(data_table_left).filter(|data_table| {
-                            if data_table.readonly {
-                                return false;
-                            }
+            columns = self.expand_columns(sheet_pos);
+            rows = self.expand_rows(sheet_pos);
+        }
 
-                            if data_table.show_ui
-                                && data_table.show_name
-                                && data_table_left.y == pos.y
-                            {
-                                return false;
-                            }
+        (columns, rows)
+    }
 
-                            // check if next column is blank
-                            for y in 0..data_table.height(false) {
-                                let pos = Pos::new(pos.x, data_table_left.y + y as i64);
-                                if self.has_content(pos) {
-                                    return false;
-                                }
-                            }
-                            true
-                        })
-                    {
-                        let sheet_pos = (data_table_left, sheet_pos.sheet_id).into();
-                        let column_index = data_table.width() as u32;
+    /// Returns columns to data tables when the cells to add are touching the data table
+    pub fn expand_columns(&self, sheet_pos: SheetPos) -> HashMap<SheetPos, Vec<u32>> {
+        let mut columns = HashMap::new();
+        let pos = Pos::from(sheet_pos);
 
-                        columns
-                            .entry(sheet_pos)
-                            .or_insert(vec![])
-                            .push(column_index);
+        if pos.x > 1 {
+            let data_table_left = self.first_data_table_within(Pos::new(pos.x - 1, pos.y));
+
+            if let Ok(data_table_left) = data_table_left {
+                if let Some(data_table) = self.data_table(data_table_left).filter(|data_table| {
+                    // don't expand if the data table is readonly
+                    if data_table.readonly {
+                        return false;
                     }
-                }
-            }
 
-            if pos.y > 1 {
-                let data_table_above = self.first_data_table_within(Pos::new(pos.x, pos.y - 1));
-                if let Ok(data_table_above) = data_table_above {
-                    if let Some(data_table) =
-                        self.data_table(data_table_above).filter(|data_table| {
-                            if data_table.readonly {
-                                return false;
-                            }
-                            // check if next row is blank
-                            for x in 0..data_table.width() {
-                                let pos = Pos::new(data_table_above.x + x as i64, pos.y);
-                                if self.has_content(pos) {
-                                    return false;
-                                }
-                            }
-                            true
-                        })
-                    {
-                        let sheet_pos = (data_table_above, sheet_pos.sheet_id).into();
-                        let row_index = data_table.height(false) as u32;
-
-                        rows.entry(sheet_pos).or_insert(vec![]).push(row_index);
+                    // don't expand if the position is at the data table's name
+                    if data_table.show_ui && data_table.show_name && data_table_left.y == pos.y {
+                        return false;
                     }
+
+                    // don't expand if next column is not blank
+                    for y in 0..data_table.height(false) {
+                        let pos = Pos::new(pos.x, data_table_left.y + y as i64);
+                        if self.has_content(pos) {
+                            return false;
+                        }
+                    }
+
+                    true
+                }) {
+                    let sheet_pos = (data_table_left, sheet_pos.sheet_id).into();
+                    let column_index = data_table.width() as u32;
+
+                    columns
+                        .entry(sheet_pos)
+                        .or_insert(vec![])
+                        .push(column_index);
                 }
             }
         }
 
-        (columns, rows)
+        columns
+    }
+
+    /// Returns rows to data tables when the cells to add are touching the data table
+    pub fn expand_rows(&self, sheet_pos: SheetPos) -> HashMap<SheetPos, Vec<u32>> {
+        let mut rows = HashMap::new();
+        let pos = Pos::from(sheet_pos);
+
+        if pos.y > 1 {
+            let data_table_above = self.first_data_table_within(Pos::new(pos.x, pos.y - 1));
+
+            if let Ok(data_table_above) = data_table_above {
+                if let Some(data_table) = self.data_table(data_table_above).filter(|data_table| {
+                    // don't expand if the data table is readonly
+                    if data_table.readonly {
+                        return false;
+                    }
+
+                    // don't expand if next row is not blank
+                    for x in 0..data_table.width() {
+                        let pos = Pos::new(data_table_above.x + x as i64, pos.y);
+                        if self.has_content(pos) {
+                            return false;
+                        }
+                    }
+
+                    true
+                }) {
+                    let sheet_pos = (data_table_above, sheet_pos.sheet_id).into();
+                    let row_index = data_table.height(false) as u32;
+
+                    rows.entry(sheet_pos).or_insert(vec![]).push(row_index);
+                }
+            }
+        }
+
+        rows
     }
 
     /// Returns the code language at a pos

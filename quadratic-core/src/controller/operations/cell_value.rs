@@ -29,11 +29,13 @@ impl GridController {
 
         if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
             let height = values.len();
+
             if height == 0 {
                 bail!("[set_cell_values] Empty values");
             }
 
             let width = values[0].len();
+
             if width == 0 {
                 bail!("[set_cell_values] Empty values");
             }
@@ -50,51 +52,44 @@ impl GridController {
                     let value = value.trim().to_string();
                     let (cell_value, format_update) = CellValue::string_to_cell_value(&value, true);
 
-                    let pos = Pos {
-                        x: sheet_pos.x + x as i64,
-                        y: sheet_pos.y + y as i64,
-                    };
+                    let pos = Pos::new(sheet_pos.x + x as i64, sheet_pos.y + y as i64);
+                    let current_sheet_pos = SheetPos::from((pos, sheet_pos.sheet_id));
 
                     let is_code = matches!(cell_value, CellValue::Code(_));
                     let is_data_table =
                         matches!(cell_value, CellValue::Code(_) | CellValue::Import(_))
                             || sheet.has_table_content(pos, true);
 
-                    match is_data_table {
-                        true => {
-                            let data_table_pos = sheet.first_data_table_within(pos)?;
-                            let is_source_cell = sheet.is_source_cell(pos);
-                            let is_formula_cell = sheet.is_formula_cell(pos);
+                    if is_data_table {
+                        let data_table_pos = sheet.first_data_table_within(pos)?;
+                        let is_source_cell = sheet.is_source_cell(pos);
+                        let is_formula_cell = sheet.is_formula_cell(pos);
 
-                            // if the cell is a formula cell and the source cell, set the cell value (which will remove the data table)
-                            if is_formula_cell && is_source_cell {
-                                cell_values[x][y] = Some(cell_value);
-                            } else {
-                                data_table_cell_values[x][y] = Some(cell_value);
-                                if !format_update.is_default() {
-                                    ops.push(Operation::DataTableFormats {
-                                        sheet_pos: data_table_pos.to_sheet_pos(sheet_pos.sheet_id),
-                                        formats: sheet.to_sheet_format_updates(
-                                            sheet_pos,
-                                            data_table_pos,
-                                            format_update.to_owned(),
-                                        )?,
-                                    });
-                                }
+                        // if the cell is a formula cell and the source cell, set the cell value (which will remove the data table)
+                        if is_formula_cell && is_source_cell {
+                            cell_values[x][y] = Some(cell_value);
+                        } else {
+                            data_table_cell_values[x][y] = Some(cell_value);
+
+                            if !format_update.is_default() {
+                                ops.push(Operation::DataTableFormats {
+                                    sheet_pos: data_table_pos.to_sheet_pos(sheet_pos.sheet_id),
+                                    formats: sheet.to_sheet_format_updates(
+                                        sheet_pos,
+                                        data_table_pos,
+                                        format_update.to_owned(),
+                                    )?,
+                                });
                             }
                         }
-                        false => {
-                            cell_values[x][y] = Some(cell_value);
+                    } else {
+                        cell_values[x][y] = Some(cell_value);
 
-                            let (columns, rows) = sheet.expand_columns_and_rows(
-                                SheetPos::from((pos, sheet_pos.sheet_id)),
-                                value,
-                            );
+                        let (cols, rows) = sheet.expand_columns_and_rows(current_sheet_pos, value);
 
-                            data_table_columns.extend(columns);
-                            data_table_rows.extend(rows);
-                        }
-                    };
+                        data_table_columns.extend(cols);
+                        data_table_rows.extend(rows);
+                    }
 
                     if !format_update.is_default() {
                         sheet_format_updates.set_format_cell(pos, format_update);
@@ -102,7 +97,7 @@ impl GridController {
 
                     if is_code {
                         compute_code_ops.push(Operation::ComputeCode {
-                            sheet_pos: pos.to_sheet_pos(sheet_pos.sheet_id),
+                            sheet_pos: current_sheet_pos,
                         });
                     }
                 }
