@@ -51,7 +51,6 @@ let CELL_TYPE_OPTIONS: CellTypeOption[] = [
     searchStrings: ['js'],
     mode: 'Javascript',
     icon: <JavaScript sx={{ color: colors.languageJavascript }} />,
-
     experimental: true,
   },
 ];
