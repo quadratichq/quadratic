@@ -11,6 +11,7 @@ import {
   aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
   aiAnalystLoadingAtom,
+  aiAnalystPromptSuggestionsAtom,
   aiAnalystShowChatHistoryAtom,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
@@ -84,6 +85,15 @@ export function useSubmitAIAnalystPrompt() {
       async ({ userPrompt, context, messageIndex, clearMessages }: SubmitAIAnalystPromptArgs) => {
         set(showAIAnalystAtom, true);
         set(aiAnalystShowChatHistoryAtom, false);
+
+        // abort and clear prompt suggestions
+        set(aiAnalystPromptSuggestionsAtom, (prev) => {
+          prev.abortController?.abort();
+          return {
+            abortController: undefined,
+            suggestions: [],
+          };
+        });
 
         const previousLoading = await snapshot.getPromise(aiAnalystLoadingAtom);
         if (previousLoading) return;
