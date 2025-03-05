@@ -202,8 +202,16 @@ export class SheetCursor {
   };
 
   // Moves the cursor to the given position. This replaces any selection.
-  moveTo = (x: number, y: number, append = false, ensureVisible = true) => {
+  moveTo = (
+    x: number,
+    y: number,
+    options?: { checkForTableRef?: boolean; append?: boolean; ensureVisible?: boolean | JsCoordinate }
+  ) => {
+    const checkForTableRef = options?.checkForTableRef ?? false;
+    const append = options?.append ?? false;
+    const ensureVisible = options?.ensureVisible ?? true;
     this.jsSelection.moveTo(x, y, append);
+    if (checkForTableRef) this.checkForTableRef();
     this.updatePosition(ensureVisible);
   };
 
@@ -415,5 +423,9 @@ export class SheetCursor {
 
   isEntireRowSelected = (row: number): boolean => {
     return this.jsSelection.isEntireRowSelected(row);
+  }
+
+  checkForTableRef = () => {
+    this.jsSelection.checkForTableRef(this.sheet.id);
   };
 }

@@ -12,13 +12,14 @@ import { AddIcon, CloseIcon, HistoryIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { memo } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 type AIAnalystHeaderProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
 };
 
-export function AIAnalystHeader({ textareaRef }: AIAnalystHeaderProps) {
+export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   const [showChatHistory, setShowChatHistory] = useRecoilState(aiAnalystShowChatHistoryAtom);
   const chatsCount = useRecoilValue(aiAnalystChatsCountAtom);
   const setCurrentChat = useSetRecoilState(aiAnalystCurrentChatAtom);
@@ -80,4 +81,4 @@ export function AIAnalystHeader({ textareaRef }: AIAnalystHeaderProps) {
       </div>
     </div>
   );
-}
+});

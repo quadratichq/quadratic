@@ -39,8 +39,15 @@ export class PointerTable {
           row: table.y,
         });
       } else {
+        pixiAppSettings.codeEditorState.aiAssistant.abortController?.abort();
         pixiAppSettings.setCodeEditorState?.((prev) => ({
           ...prev,
+          aiAssistant: {
+            abortController: undefined,
+            loading: false,
+            id: '',
+            messages: [],
+          },
           diffEditorContent: undefined,
           waitingForEditorClose: {
             codeCell: {
@@ -106,8 +113,15 @@ export class PointerTable {
           selectedColumn: tableDown.column,
         });
       } else {
+        pixiAppSettings.codeEditorState.aiAssistant.abortController?.abort();
         pixiAppSettings.setCodeEditorState?.((prev) => ({
           ...prev,
+          aiAssistant: {
+            abortController: undefined,
+            loading: false,
+            id: '',
+            messages: [],
+          },
           diffEditorContent: undefined,
           waitingForEditorClose: {
             codeCell: {
@@ -123,8 +137,14 @@ export class PointerTable {
     } else {
       // move cursor to column header
       if (await inlineEditorHandler.handleCellPointerDown()) {
-        const columnName = tableDown.table.columns[tableDown.column].name;
-        sheets.sheet.cursor.selectTable(tableDown.table.name, columnName, shiftKey, ctrlKey);
+        // don't change the selection if the mouse hasn't changed cells
+        const previousPosition = pixiApp.pointer.pointerDown.previousPosition;
+        const down = sheets.sheet.getColumnRowFromScreen(world.x, world.y);
+        if (!previousPosition || previousPosition.x !== down.column || previousPosition.y !== down.row) {
+          const columnName = tableDown.table.columns[tableDown.column].name;
+          sheets.sheet.cursor.selectTable(tableDown.table.name, columnName, shiftKey, ctrlKey);
+          pixiApp.pointer.pointerDown.pointerDownColumnName(world, down.column, down.row);
+        }
       } else {
         inlineEditorMonaco.focus();
       }
