@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use super::Sheet;
 use crate::{
     a1::{A1Context, A1Selection},
@@ -276,6 +278,84 @@ impl Sheet {
         ))
     }
 
+    /// Returns columns and rows to data tables when the cells to add are touching the data table
+    pub fn expand_columns_and_rows(
+        &self,
+        sheet_pos: SheetPos,
+        value: String,
+    ) -> (HashMap<SheetPos, Vec<u32>>, HashMap<SheetPos, Vec<u32>>) {
+        let mut columns = HashMap::new();
+        let mut rows = HashMap::new();
+        let pos = Pos::from(sheet_pos);
+
+        if !value.is_empty() {
+            if pos.x > 1 {
+                let data_table_left = self.first_data_table_within(Pos::new(pos.x - 1, pos.y));
+                if let Ok(data_table_left) = data_table_left {
+                    if let Some(data_table) =
+                        self.data_table(data_table_left).filter(|data_table| {
+                            if data_table.readonly {
+                                return false;
+                            }
+
+                            if data_table.show_ui
+                                && data_table.show_name
+                                && data_table_left.y == pos.y
+                            {
+                                return false;
+                            }
+
+                            // check if next column is blank
+                            for y in 0..data_table.height(false) {
+                                let pos = Pos::new(pos.x, data_table_left.y + y as i64);
+                                if self.has_content(pos) {
+                                    return false;
+                                }
+                            }
+                            true
+                        })
+                    {
+                        let sheet_pos = (data_table_left, sheet_pos.sheet_id).into();
+                        let column_index = data_table.width() as u32;
+
+                        columns
+                            .entry(sheet_pos)
+                            .or_insert(vec![])
+                            .push(column_index);
+                    }
+                }
+            }
+
+            if pos.y > 1 {
+                let data_table_above = self.first_data_table_within(Pos::new(pos.x, pos.y - 1));
+                if let Ok(data_table_above) = data_table_above {
+                    if let Some(data_table) =
+                        self.data_table(data_table_above).filter(|data_table| {
+                            if data_table.readonly {
+                                return false;
+                            }
+                            // check if next row is blank
+                            for x in 0..data_table.width() {
+                                let pos = Pos::new(data_table_above.x + x as i64, pos.y);
+                                if self.has_content(pos) {
+                                    return false;
+                                }
+                            }
+                            true
+                        })
+                    {
+                        let sheet_pos = (data_table_above, sheet_pos.sheet_id).into();
+                        let row_index = data_table.height(false) as u32;
+
+                        rows.entry(sheet_pos).or_insert(vec![]).push(row_index);
+                    }
+                }
+            }
+        }
+
+        (columns, rows)
+    }
+
     /// Returns the code language at a pos
     pub fn code_language_at(&self, pos: Pos) -> Option<CodeCellLanguage> {
         self.data_table(pos)
@@ -311,60 +391,66 @@ mod test {
     };
     use bigdecimal::BigDecimal;
 
-    #[test]
-    fn test_set_data_table() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid_mut().try_sheet_mut(sheet_id).unwrap();
+    pub fn code_data_table(sheet: &mut Sheet, pos: Pos) -> (DataTable, Option<DataTable>) {
         let code_run = CodeRun {
-            std_out: None,
             std_err: None,
+            std_out: None,
             cells_accessed: Default::default(),
             error: None,
             return_type: Some("number".into()),
             line_number: None,
             output_type: None,
         };
+
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
             Value::Single(CellValue::Number(BigDecimal::from(2))),
             false,
             false,
-            true,
+            false,
             None,
         );
-        let old = sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
+
+        let old = sheet.set_data_table(pos, Some(data_table.clone()));
+        sheet.set_cell_value(
+            pos,
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "=1".to_string(),
+            }),
+        );
+
+        (data_table, old)
+    }
+
+    // setup the grid controller, sheet, and data table at pos
+    fn test_setup(pos: Pos) -> (GridController, SheetId, DataTable, Option<DataTable>) {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let mut sheet = gc.sheet_mut(sheet_id);
+
+        // insert the data table at pos
+        let (data_table, old) = code_data_table(&mut sheet, pos);
+
+        (gc, sheet_id, data_table, old)
+    }
+
+    #[test]
+    fn test_set_data_table() {
+        let (mut gc, sheet_id, data_table, old) = test_setup(pos![A1]);
+        let sheet = gc.sheet_mut(sheet_id);
+
         assert_eq!(old, None);
-        assert_eq!(sheet.data_table(Pos { x: 0, y: 0 }), Some(&data_table));
-        assert_eq!(sheet.data_table(Pos { x: 0, y: 0 }), Some(&data_table));
-        assert_eq!(sheet.data_table(Pos { x: 1, y: 0 }), None);
+        assert_eq!(sheet.data_table(pos![A1]), Some(&data_table));
+        assert_eq!(sheet.data_table(pos![B2]), None);
     }
 
     #[test]
     fn test_get_data_table() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
+        let (mut gc, sheet_id, data_table, _) = test_setup(pos![A1]);
         let sheet = gc.sheet_mut(sheet_id);
-        let code_run = CodeRun {
-            std_err: None,
-            std_out: None,
-            cells_accessed: Default::default(),
-            error: None,
-            return_type: Some("number".into()),
-            line_number: None,
-            output_type: None,
-        };
-        let data_table = DataTable::new(
-            DataTableKind::CodeRun(code_run),
-            "Table 1",
-            Value::Single(CellValue::Number(BigDecimal::from(2))),
-            false,
-            false,
-            false,
-            None,
-        );
-        sheet.set_data_table(pos![A1], Some(data_table.clone()));
+
         assert_eq!(
             sheet.get_code_cell_value(pos![A1]),
             Some(CellValue::Number(BigDecimal::from(2)))
@@ -376,9 +462,10 @@ mod test {
     #[test]
     fn test_copy_data_table_to_clipboard() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
-        // let sheet_pos = SheetPos::from((pos, sheet_id));
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+
         data_table.chart_pixel_output = Some((100.0, 100.0));
+
         let selection =
             A1Selection::from_ref_range_bounds(sheet_id, RefRangeBounds::new_relative_pos(pos));
 
@@ -407,41 +494,48 @@ mod test {
 
     #[test]
     fn test_data_table_at() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-
-        let code_run = CodeRun {
-            std_err: None,
-            std_out: None,
-            cells_accessed: Default::default(),
-            error: None,
-            return_type: Some("number".into()),
-            line_number: None,
-            output_type: None,
-        };
-
-        let data_table = DataTable::new(
-            DataTableKind::CodeRun(code_run),
-            "Table 1",
-            Value::Single(CellValue::Number(BigDecimal::from(2))),
-            false,
-            false,
-            false,
-            None,
-        );
+        let (mut gc, sheet_id, _, _) = test_setup(pos![A1]);
+        let mut sheet = gc.sheet_mut(sheet_id);
 
         // Insert data table at A1
-        sheet.set_data_table(pos![A1], Some(data_table.clone()));
+        let _ = code_data_table(&mut sheet, pos![A1]);
 
         // Test position within the data table
         let result = sheet.data_table_at(pos![A1]);
         assert!(result.is_some());
+
         let (pos, dt) = result.unwrap();
         assert_eq!(pos, pos![A1]);
         assert_eq!(dt.name.to_display(), "Table 1");
 
         // Test position outside the data table
         assert!(sheet.data_table_at(pos![D4]).is_none());
+    }
+
+    #[test]
+    fn test_is_language_at() {
+        let (mut gc, sheet_id, _, _) = test_setup(pos![A1]);
+        let sheet = gc.sheet_mut(sheet_id);
+
+        assert_eq!(
+            sheet.code_language_at(pos![A1]),
+            Some(CodeCellLanguage::Formula)
+        );
+    }
+
+    #[test]
+    fn test_is_formula_cell() {
+        let (mut gc, sheet_id, _, _) = test_setup(pos![A1]);
+        let sheet = gc.sheet_mut(sheet_id);
+
+        assert!(sheet.is_formula_cell(pos![A1]));
+    }
+
+    #[test]
+    fn test_is_source_cell() {
+        let (mut gc, sheet_id, _, _) = test_setup(pos![A1]);
+        let sheet = gc.sheet_mut(sheet_id);
+
+        assert!(sheet.is_source_cell(pos![A1]));
     }
 }

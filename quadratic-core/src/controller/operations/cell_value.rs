@@ -25,7 +25,7 @@ impl GridController {
     ) -> Result<(Vec<Operation>, Vec<Operation>)> {
         let mut ops = vec![];
         let mut compute_code_ops = vec![];
-        let data_table_ops = vec![];
+        let mut data_table_ops = vec![];
 
         if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
             let height = values.len();
@@ -41,6 +41,8 @@ impl GridController {
             let init_cell_values = || vec![vec![None; height]; width];
             let mut cell_values = init_cell_values();
             let mut data_table_cell_values = init_cell_values();
+            let mut data_table_columns = vec![];
+            let mut data_table_rows = vec![];
             let mut sheet_format_updates = SheetFormatUpdates::default();
 
             for (y, row) in values.into_iter().enumerate() {
@@ -83,12 +85,14 @@ impl GridController {
                         }
                         false => {
                             cell_values[x][y] = Some(cell_value);
-                            // TODO(ddimaria): temporary disabling the below until bugs are fixed
-                            // also re-enable the test_expand_data_table_column_row_on_setting_value test
-                            // data_table_ops.extend(self.set_cell_value_data_table_operations(
-                            //     SheetPos::from((pos, sheet_pos.sheet_id)),
-                            //     value,
-                            // ));
+
+                            let (columns, rows) = sheet.expand_columns_and_rows(
+                                SheetPos::from((pos, sheet_pos.sheet_id)),
+                                value,
+                            );
+
+                            data_table_columns.extend(columns);
+                            data_table_rows.extend(rows);
                         }
                     };
 
@@ -125,93 +129,35 @@ impl GridController {
                 });
             }
 
+            if !data_table_columns.is_empty() {
+                for (sheet_pos, columns) in data_table_columns {
+                    data_table_ops.push(Operation::InsertDataTableColumns {
+                        sheet_pos,
+                        columns: columns
+                            .into_iter()
+                            .map(|c| (c as u32, None, None))
+                            .collect(),
+                        swallow: true,
+                        select_table: false,
+                    });
+                }
+            }
+
+            if !data_table_rows.is_empty() {
+                for (sheet_pos, rows) in data_table_rows {
+                    data_table_ops.push(Operation::InsertDataTableRows {
+                        sheet_pos,
+                        rows: rows.into_iter().map(|r| (r as u32, None)).collect(),
+                        swallow: true,
+                        select_table: false,
+                    });
+                }
+            }
+
             ops.extend(compute_code_ops);
         }
 
         Ok((ops, data_table_ops))
-    }
-
-    /// Generate operations adding columns and rows to data tables when the cells to add are touching the data table
-    pub fn set_cell_value_data_table_operations(
-        &self,
-        sheet_pos: SheetPos,
-        value: String,
-    ) -> Vec<Operation> {
-        let mut ops = vec![];
-        let pos = Pos::from(sheet_pos);
-
-        if !value.is_empty() {
-            if let Ok(sheet) = self.try_sheet_result(sheet_pos.sheet_id) {
-                if pos.x > 1 {
-                    let data_table_left = sheet.first_data_table_within(Pos::new(pos.x - 1, pos.y));
-                    if let Ok(data_table_left) = data_table_left {
-                        if let Some(data_table) =
-                            sheet.data_table(data_table_left).filter(|data_table| {
-                                if data_table.readonly {
-                                    return false;
-                                }
-
-                                if data_table.show_ui
-                                    && data_table.show_name
-                                    && data_table_left.y == pos.y
-                                {
-                                    return false;
-                                }
-
-                                // check if next column is blank
-                                for y in 0..data_table.height(false) {
-                                    let pos = Pos::new(pos.x, data_table_left.y + y as i64);
-                                    if sheet.has_content(pos) {
-                                        return false;
-                                    }
-                                }
-                                true
-                            })
-                        {
-                            let column_index = data_table.width();
-                            ops.push(Operation::InsertDataTableColumns {
-                                sheet_pos: (data_table_left, sheet_pos.sheet_id).into(),
-                                columns: vec![(column_index as u32, None, None)],
-                                swallow: true,
-                                select_table: false,
-                            });
-                        }
-                    }
-                }
-
-                if pos.y > 1 {
-                    let data_table_above =
-                        sheet.first_data_table_within(Pos::new(pos.x, pos.y - 1));
-                    if let Ok(data_table_above) = data_table_above {
-                        if let Some(data_table) =
-                            sheet.data_table(data_table_above).filter(|data_table| {
-                                if data_table.readonly {
-                                    return false;
-                                }
-                                // check if next row is blank
-                                for x in 0..data_table.width() {
-                                    let pos = Pos::new(data_table_above.x + x as i64, pos.y);
-                                    if sheet.has_content(pos) {
-                                        return false;
-                                    }
-                                }
-                                true
-                            })
-                        {
-                            // insert row with swallow
-                            ops.push(Operation::InsertDataTableRows {
-                                sheet_pos: (data_table_above, sheet_pos.sheet_id).into(),
-                                rows: vec![(data_table.height(false) as u32, None)],
-                                swallow: true,
-                                select_table: false,
-                            });
-                        }
-                    }
-                }
-            }
-        }
-
-        ops
     }
 
     /// Generates and returns the set of operations to delete the values and code in a Selection
