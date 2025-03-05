@@ -450,7 +450,7 @@ mod test {
         let mut sheet = gc.sheet_mut(sheet_id);
 
         // insert the data table at pos
-        let (data_table, old) = code_data_table(&mut sheet, pos);
+        let (data_table, old) = code_data_table(sheet, pos);
 
         (gc, sheet_id, data_table, old)
     }
@@ -517,7 +517,7 @@ mod test {
         let mut sheet = gc.sheet_mut(sheet_id);
 
         // Insert data table at A1
-        let _ = code_data_table(&mut sheet, pos![A1]);
+        let _ = code_data_table(sheet, pos![A1]);
 
         // Test position within the data table
         let result = sheet.data_table_at(pos![A1]);

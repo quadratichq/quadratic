@@ -130,7 +130,7 @@ impl GridController {
                         sheet_pos,
                         columns: columns
                             .into_iter()
-                            .map(|c| (c as u32, None, None))
+                            .map(|c| (c, None, None))
                             .collect(),
                         swallow: true,
                         select_table: false,
@@ -142,7 +142,7 @@ impl GridController {
                 for (sheet_pos, rows) in data_table_rows {
                     data_table_ops.push(Operation::InsertDataTableRows {
                         sheet_pos,
-                        rows: rows.into_iter().map(|r| (r as u32, None)).collect(),
+                        rows: rows.into_iter().map(|r| (r, None)).collect(),
                         swallow: true,
                         select_table: false,
                     });
