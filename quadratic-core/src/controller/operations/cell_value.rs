@@ -99,7 +99,7 @@ impl GridController {
     ) -> (Vec<Operation>, Vec<Operation>) {
         let mut ops = vec![];
         let mut compute_code_ops = vec![];
-        let mut data_table_ops = vec![];
+        let data_table_ops = vec![];
 
         if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
             let height = values.len();
@@ -139,10 +139,12 @@ impl GridController {
                         }
                         false => {
                             cell_values[x][y] = Some(cell_value);
-                            data_table_ops.extend(self.set_cell_value_data_table_operations(
-                                SheetPos::from((pos, sheet_pos.sheet_id)),
-                                value,
-                            ));
+                            // TODO(ddimaria): temporary disabling the below until bugs are fixed
+                            // also re-enable the test_expand_data_table_column_row_on_setting_value test
+                            // data_table_ops.extend(self.set_cell_value_data_table_operations(
+                            //     SheetPos::from((pos, sheet_pos.sheet_id)),
+                            //     value,
+                            // ));
                         }
                     };
 
@@ -158,11 +160,6 @@ impl GridController {
                 }
             }
 
-            // println!("cell_values: {:?}", cell_values);
-            // println!(
-            //     "CellValues::from(cell_values): {:?}",
-            //     CellValues::from(cell_values.clone())
-            // );
             if cell_values != init_cell_values() {
                 ops.push(Operation::SetCellValues {
                     sheet_pos,
