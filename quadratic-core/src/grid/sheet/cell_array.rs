@@ -18,7 +18,11 @@ impl Sheet {
             for y in rect.y_range() {
                 let old_value;
                 if let Ok(value) = values.get((x - rect.min.x) as u32, (y - rect.min.y) as u32) {
-                    old_value = column.values.insert(y, value.clone());
+                    if value.is_blank_or_empty_string() {
+                        old_value = column.values.remove(&y);
+                    } else {
+                        old_value = column.values.insert(y, value.clone());
+                    }
                 } else {
                     old_value = column.values.remove(&y);
                 }
