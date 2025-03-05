@@ -18,6 +18,7 @@ import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubm
 import { apiClient } from '@/shared/api/apiClient';
 import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
+import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import mixpanel from 'mixpanel-browser';
@@ -318,28 +319,36 @@ const PromptSuggestions = memo(() => {
     [messages]
   );
 
-  if (!messages.length || !promptSuggestions.suggestions.length) {
+  if (!messages.length || (!promptSuggestions.abortController && !promptSuggestions.suggestions.length)) {
     return null;
   }
 
   return (
     <div className="flex flex-col gap-2 px-2">
-      {promptSuggestions.suggestions.map((suggestion, index) => (
-        <div
-          key={`${index}-${suggestion.label}`}
-          className="cursor-pointer rounded-md bg-accent p-2 text-sm hover:bg-accent/80"
-          onClick={() =>
-            submitPrompt({
-              userPrompt: suggestion.prompt,
-              context: {
-                ...(lastContext ?? defaultAIAnalystContext),
-              },
-            })
-          }
-        >
-          {suggestion.label}
-        </div>
-      ))}
+      {promptSuggestions.abortController ? (
+        <>
+          <Skeleton className="h-8 w-full rounded-md" />
+          <Skeleton className="h-8 w-full rounded-md" />
+          <Skeleton className="h-8 w-full rounded-md" />
+        </>
+      ) : (
+        promptSuggestions.suggestions.map((suggestion, index) => (
+          <div
+            key={`${index}-${suggestion.label}`}
+            className="flex h-8 cursor-pointer items-center justify-between rounded-md bg-accent p-2 text-sm hover:bg-accent/80"
+            onClick={() =>
+              submitPrompt({
+                userPrompt: suggestion.prompt,
+                context: {
+                  ...(lastContext ?? defaultAIAnalystContext),
+                },
+              })
+            }
+          >
+            <span>{suggestion.label}</span>
+          </div>
+        ))
+      )}
     </div>
   );
 });
