@@ -31,7 +31,7 @@ beforeAll(async () => {
         clearInterval(interval);
         resolve();
       }
-    });
+    }, 100);
   });
 });
 
