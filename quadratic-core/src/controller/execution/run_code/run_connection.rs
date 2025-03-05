@@ -156,7 +156,7 @@ mod tests {
         let sheet_2 = gc.sheet_mut(sheet_2_id);
         sheet_2.set_cell_value(Pos { x: 1, y: 2 }, "test2".to_string());
 
-        let code = r#"{{'Sheet2'!$A$2}}"#;
+        let code = r#"{{'Sheet 2'!$A$2}}"#;
         let result = gc
             .replace_handlebars(&mut transaction, sheet_pos, code, sheet_id)
             .unwrap();
@@ -252,7 +252,7 @@ mod tests {
             assert_eq!(
                 code_cell.unwrap().get_error(),
                 Some(RunError {
-                    msg: RunErrorMsg::CodeRunError("Invalid Sheet Name: Sheet2".into()),
+                    msg: RunErrorMsg::CodeRunError("Invalid Sheet Name: Sheet 2".into()),
                     span: None
                 })
             );
@@ -261,7 +261,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        test_error(&mut gc, r#"{{'Sheet2'!A2}}"#, sheet_id);
-        test_error(&mut gc, r#"{{'Sheet2'!$A$2}}"#, sheet_id);
+        test_error(&mut gc, r#"{{'Sheet 2'!A2}}"#, sheet_id);
+        test_error(&mut gc, r#"{{'Sheet 2'!$A$2}}"#, sheet_id);
     }
 }

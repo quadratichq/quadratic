@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-core"
-version = "0.6.3"
+version = "0.6.4"
 authors = ["Andrew Farkas <andrew.farkas@quadratic.to>"]
 edition = "2021"
 description = "Infinite data grid with Python, JavaScript, and SQL built-in"
@@ -33,7 +33,7 @@ name = "upgrade_file"
 path = "src/bin/upgrade_file.rs"
 
 [features]
-default = ["console_error_panic_hook", "js"]
+default = ["console_error_panic_hook", "js", "dbgjs"]
 # "js" feature is disabled for testing (particularly WASI benchmarks)
 js = [
   "js-sys",
@@ -43,8 +43,7 @@ js = [
   "wasm-bindgen-futures",
 ]
 show-operations = []
-multiplayer = []
-files = []
+dbgjs = []
 function-timer = []
 
 [dependencies]

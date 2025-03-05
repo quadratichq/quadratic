@@ -374,7 +374,7 @@ mod tests {
             &[("test.csv", &["city"], Rect::test_a1("A1:C3"))],
         );
 
-        let mut code = CodeCellValue::new_python("q.cells('Sheet1!A1:B2')".to_string());
+        let mut code = CodeCellValue::new_python("q.cells(\"'Sheet1'!A1:B2\")".to_string());
         code.replace_sheet_name_in_cell_references(
             "Sheet1",
             "Sheet1_new",

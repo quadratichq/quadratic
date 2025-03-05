@@ -216,7 +216,8 @@ impl GridController {
                         return Err(Error::msg(message));
                     }
 
-                    let contains_header = intersection_rect.y_range().contains(&output_rect.min.y);
+                    let contains_header = data_table.show_columns
+                        && intersection_rect.y_range().contains(&output_rect.min.y);
                     let headers = data_table.column_headers.to_owned();
 
                     if let (Some(mut headers), true) = (headers, contains_header) {
