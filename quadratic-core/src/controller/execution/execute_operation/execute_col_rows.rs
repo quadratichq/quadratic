@@ -289,6 +289,22 @@ impl GridController {
             self.send_updated_bounds(transaction, sheet_id);
         }
     }
+
+    pub fn execute_move_columns(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+        if let Operation::MoveColumns { sheet_id, cols, to } = op.clone() {
+            if let Some(sheet) = self.try_sheet_mut(sheet_id) {
+                sheet.move_columns(transaction, cols, to);
+            }
+        }
+    }
+
+    pub fn execute_move_rows(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+        if let Operation::MoveRows { sheet_id, rows, to } = op.clone() {
+            if let Some(sheet) = self.try_sheet_mut(sheet_id) {
+                sheet.move_rows(transaction, rows, to);
+            }
+        }
+    }
 }
 
 #[cfg(test)]

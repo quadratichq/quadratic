@@ -315,6 +315,16 @@ pub enum Operation {
         row: i64,
         copy_formats: CopyFormats,
     },
+    MoveColumns {
+        sheet_id: SheetId,
+        cols: Vec<i64>,
+        to: i64,
+    },
+    MoveRows {
+        sheet_id: SheetId,
+        rows: Vec<i64>,
+        to: i64,
+    },
 }
 
 // TODO: either remove this or add a comment explaining why it's better than the
@@ -656,6 +666,20 @@ impl fmt::Display for Operation {
                     fmt,
                     "SetChartCellSize {{ sheet_pos: {}, w: {}, h: {} }}",
                     sheet_pos, w, h
+                )
+            }
+            Operation::MoveColumns { sheet_id, cols, to } => {
+                write!(
+                    fmt,
+                    "MoveColumns {{ sheet_id: {}, cols: {:?}, to: {} }}",
+                    sheet_id, cols, to
+                )
+            }
+            Operation::MoveRows { sheet_id, rows, to } => {
+                write!(
+                    fmt,
+                    "MoveRows {{ sheet_id: {}, rows: {:?}, to: {} }}",
+                    sheet_id, rows, to
                 )
             }
         }
