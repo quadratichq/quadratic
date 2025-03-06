@@ -81,7 +81,7 @@ jobs:
         id: upload-to-s3
         run: |
           # Get the commit hash
-          COMMIT_HASH=$(git rev-parse HEAD)
+          COMMIT_HASH="${{ github.event.pull_request.head.sha }}"
 
           # S3 build directory
           S3_DIR="s3://quadratic-development-amplify/quadratic-client-${COMMIT_HASH}/"
@@ -89,7 +89,7 @@ jobs:
           # Upload entire build directory to S3 with no caching for Amplify
           aws s3 sync /tmp/quadratic-client/ $S3_DIR --delete
 
-          echo "S3_DIR=$S3_DIR" >> $GITHUB_OUTPUT
+          echo "s3-dir=$S3_DIR" >> $GITHUB_OUTPUT
 
   build_images:
     name: Build Images
@@ -240,13 +240,22 @@ jobs:
 
       - name: Trigger New Deployment
         run: |
-          S3_DIR=${{ needs.build_client.outputs.s3-dir }}
-
-          aws amplify start-job \
+          # Create a deployment and capture the job ID
+          DEPLOYMENT=$(aws amplify create-deployment \
             --app-id d1uvolff3y0hsd \
             --branch-name ${{ github.head_ref }} \
-            --job-type RELEASE
+            --output json)
 
+          JOB_ID=$(echo "$DEPLOYMENT" | jq -r '.jobId')
+          echo "Created deployment with Job ID: $JOB_ID"
+
+          # Start the deployment with the S3 source
+          aws amplify start-deployment \
+            --app-id d1uvolff3y0hsd \
+            --branch-name ${{ github.head_ref }} \
+            --job-id "$JOB_ID" \
+            --source-url "${{ needs.build_client.outputs.s3-dir }}" \
+            --source-url-type "BUCKET_PREFIX"
   pulumi:
     needs: [build_client, build_images]
     name: Create or Update Pulumi Infrastructure Stack
