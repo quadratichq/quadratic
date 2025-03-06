@@ -114,7 +114,7 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
 
   amplify:
-    needs: [build_images]
+    # needs: [build_images]
     name: Deploy Client to Amplify
     runs-on: blacksmith-2vcpu-ubuntu-2204
     # if: github.head_ref == 'qa' && github.base_ref == 'main'
