@@ -293,7 +293,7 @@ impl GridController {
     pub fn execute_move_columns(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::MoveColumns { sheet_id, cols, to } = op.clone() {
             if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-                sheet.move_columns(transaction, cols, to);
+                sheet.move_cols(transaction, cols, to);
             }
         }
     }
