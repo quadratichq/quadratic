@@ -208,7 +208,7 @@ jobs:
           # List and cancel any pending jobs with improved error handling
           echo "Checking for pending Amplify jobs..."
           if ! JOBS=$(aws amplify list-jobs \
-            --app-id d1uvolff3y0hsd \
+            --app-id d3dmk4wdzzskoq \
             --branch-name ${{ github.head_ref }} \
             --output json); then
             echo "Failed to list Amplify jobs. Continuing anyway..."
@@ -222,7 +222,7 @@ jobs:
             while read -r JOB_ID STATUS TYPE; do
               echo "Cancelling $TYPE job $JOB_ID (status: $STATUS)"
               if aws amplify stop-job \
-                --app-id d1uvolff3y0hsd \
+                --app-id d3dmk4wdzzskoq \
                 --branch-name ${{ github.head_ref }} \
                 --job-id "$JOB_ID"; then
                 echo "✓ Successfully cancelled job $JOB_ID"
@@ -235,7 +235,7 @@ jobs:
             echo "Verifying jobs are no longer running..."
             sleep 2
             REMAINING=$(aws amplify list-jobs \
-              --app-id d1uvolff3y0hsd \
+              --app-id d3dmk4wdzzskoq \
               --branch-name ${{ github.head_ref }} \
               --output json | jq -r '.jobSummaries[] | select(.status == "PENDING" or .status == "RUNNING") | .jobId' | wc -l)
             echo "$REMAINING jobs still pending or running"
@@ -244,7 +244,7 @@ jobs:
       - name: Trigger New Deployment
         run: |
           aws amplify start-deployment \
-            --app-id d1uvolff3y0hsd \
+            --app-id d3dmk4wdzzskoq \
             --branch-name ${{ github.head_ref }} \
             --source-url "${{ needs.build_client.outputs.s3-dir }}" \
             --source-url-type "BUCKET_PREFIX"
