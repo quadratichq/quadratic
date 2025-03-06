@@ -120,7 +120,6 @@ jobs:
     name: Deploy Client to Amplify
     runs-on: blacksmith-2vcpu-ubuntu-2204
     # if: github.head_ref == 'qa' && github.base_ref == 'main'
-    timeout-minutes: 30
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -132,16 +131,23 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Trigger Amplify Build
+      - name: Update Amplify App
         env:
           CLIENT_IMAGE: "${{ needs.build_images.outputs.ECR_URL }}:pr-qa-github-actions"
         run: |
+          # Read and format the build spec from JSON file
           BUILD_SPEC=$(cat infra/client/amplify.json | jq -c '.')
 
-          aws amplify create-deployment \
+          # Update the app with build spec
+          aws amplify update-app \
+            --app-id d1a661jjy8myo5 \
+            --build-spec "$BUILD_SPEC"
+
+          # Start the build job
+          aws amplify start-job \
             --app-id d1a661jjy8myo5 \
             --branch-name qa \
-            --build-spec "${BUILD_SPEC}"
+            --job-type RELEASE
 
   pulumi:
     needs: [build_images]
