@@ -32,7 +32,7 @@ jobs:
 
           pulumi org set-default quadratic
 
-          STACK_NAME="quadratic-qa"
+          STACK_NAME="quadratic-qa-github-actions"
           pulumi stack select $STACK_NAME
           pulumi config set aws:region us-west-2
 
