@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use super::Sheet;
 use crate::{
     a1::{A1Context, A1Selection},
@@ -281,43 +279,55 @@ impl Sheet {
     /// Returns columns and rows to data tables when the cells to add are touching the data table
     pub fn expand_columns_and_rows(
         &self,
+        bounds: &Vec<Rect>,
         sheet_pos: SheetPos,
         value: String,
-    ) -> (HashMap<SheetPos, Vec<u32>>, HashMap<SheetPos, Vec<u32>>) {
-        let mut columns = HashMap::new();
-        let mut rows = HashMap::new();
+    ) -> (Option<(SheetPos, u32)>, Option<(SheetPos, u32)>) {
+        let mut columns = None;
+        let mut rows = None;
 
         if !value.is_empty() {
-            columns = self.expand_columns(sheet_pos);
-            rows = self.expand_rows(sheet_pos);
+            columns = self.expand_columns(bounds, sheet_pos);
+            rows = self.expand_rows(bounds, sheet_pos);
         }
 
         (columns, rows)
     }
 
     /// Returns columns to data tables when the cells to add are touching the data table
-    pub fn expand_columns(&self, sheet_pos: SheetPos) -> HashMap<SheetPos, Vec<u32>> {
-        let mut columns = HashMap::new();
+    pub fn expand_columns(
+        &self,
+        bounds: &Vec<Rect>,
+        sheet_pos: SheetPos,
+    ) -> Option<(SheetPos, u32)> {
         let pos = Pos::from(sheet_pos);
 
         if pos.x > 1 {
-            let data_table_left = self.first_data_table_within(Pos::new(pos.x - 1, pos.y));
+            let pos_to_check = Pos::new(pos.x - 1, pos.y);
+            let data_table_left = bounds.iter().find(|rect| rect.contains(pos_to_check));
 
-            if let Ok(data_table_left) = data_table_left {
-                if let Some(data_table) = self.data_table(data_table_left).filter(|data_table| {
+            if let Some(data_table_left) = data_table_left {
+                // don't expand if we're not at the end of the data table
+                if data_table_left.max.x != pos_to_check.x {
+                    return None;
+                }
+
+                if let Some(_) = self.data_table(data_table_left.min).filter(|data_table| {
                     // don't expand if the data table is readonly
                     if data_table.readonly {
                         return false;
                     }
 
                     // don't expand if the position is at the data table's name
-                    if data_table.show_ui && data_table.show_name && data_table_left.y == pos.y {
+                    if data_table.show_ui && data_table.show_name && data_table_left.min.y == pos.y
+                    {
                         return false;
                     }
 
                     // don't expand if next column is not blank
-                    for y in 0..data_table.height(false) {
-                        let pos = Pos::new(pos.x, data_table_left.y + y as i64);
+                    for y in 0..data_table_left.height() {
+                        let pos = Pos::new(pos.x, data_table_left.min.y + y as i64);
+
                         if self.has_content(pos) {
                             return false;
                         }
@@ -325,38 +335,40 @@ impl Sheet {
 
                     true
                 }) {
-                    let sheet_pos = (data_table_left, sheet_pos.sheet_id).into();
-                    let column_index = data_table.width() as u32;
+                    let sheet_pos = (data_table_left.min, sheet_pos.sheet_id).into();
+                    let column_index = data_table_left.width();
 
-                    columns
-                        .entry(sheet_pos)
-                        .or_insert(vec![])
-                        .push(column_index);
+                    return Some((sheet_pos, column_index));
                 }
             }
         }
 
-        columns
+        None
     }
 
     /// Returns rows to data tables when the cells to add are touching the data table
-    pub fn expand_rows(&self, sheet_pos: SheetPos) -> HashMap<SheetPos, Vec<u32>> {
-        let mut rows = HashMap::new();
+    pub fn expand_rows(&self, bounds: &Vec<Rect>, sheet_pos: SheetPos) -> Option<(SheetPos, u32)> {
         let pos = Pos::from(sheet_pos);
 
         if pos.y > 1 {
-            let data_table_above = self.first_data_table_within(Pos::new(pos.x, pos.y - 1));
+            let pos_to_check = Pos::new(pos.x, pos.y - 1);
+            let data_table_above = bounds.iter().find(|rect| rect.contains(pos_to_check));
 
-            if let Ok(data_table_above) = data_table_above {
-                if let Some(data_table) = self.data_table(data_table_above).filter(|data_table| {
+            if let Some(data_table_above) = data_table_above {
+                // don't expand if we're not at the bottom of the data table
+                if data_table_above.max.y != pos_to_check.y {
+                    return None;
+                }
+
+                if let Some(_) = self.data_table(data_table_above.min).filter(|data_table| {
                     // don't expand if the data table is readonly
                     if data_table.readonly {
                         return false;
                     }
 
                     // don't expand if next row is not blank
-                    for x in 0..data_table.width() {
-                        let pos = Pos::new(data_table_above.x + x as i64, pos.y);
+                    for x in 0..data_table_above.width() {
+                        let pos = Pos::new(data_table_above.min.x + x as i64, pos.y);
                         if self.has_content(pos) {
                             return false;
                         }
@@ -364,15 +376,15 @@ impl Sheet {
 
                     true
                 }) {
-                    let sheet_pos = (data_table_above, sheet_pos.sheet_id).into();
-                    let row_index = data_table.height(false) as u32;
+                    let sheet_pos = (data_table_above.min, sheet_pos.sheet_id).into();
+                    let row_index = data_table_above.height();
 
-                    rows.entry(sheet_pos).or_insert(vec![]).push(row_index);
+                    return Some((sheet_pos, row_index));
                 }
             }
         }
 
-        rows
+        None
     }
 
     /// Returns the code language at a pos
@@ -447,7 +459,7 @@ mod test {
     fn test_setup(pos: Pos) -> (GridController, SheetId, DataTable, Option<DataTable>) {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let mut sheet = gc.sheet_mut(sheet_id);
+        let sheet = gc.sheet_mut(sheet_id);
 
         // insert the data table at pos
         let (data_table, old) = code_data_table(sheet, pos);
@@ -514,7 +526,7 @@ mod test {
     #[test]
     fn test_data_table_at() {
         let (mut gc, sheet_id, _, _) = test_setup(pos![A1]);
-        let mut sheet = gc.sheet_mut(sheet_id);
+        let sheet = gc.sheet_mut(sheet_id);
 
         // Insert data table at A1
         let _ = code_data_table(sheet, pos![A1]);

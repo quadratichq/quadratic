@@ -651,4 +651,33 @@ mod test {
             Some(CellValue::Text("test4".into()))
         );
     }
+
+    #[test]
+    fn test_set_cell_values() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.grid.sheets()[0].id;
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 1,
+            sheet_id,
+        };
+
+        gc.set_cell_values(
+            sheet_pos,
+            vec![vec!["a".into(), "b".into(), "c".into()]],
+            None,
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).cell_value(pos![A1]),
+            Some(CellValue::Text("a".into()))
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).cell_value(pos![B1]),
+            Some(CellValue::Text("b".into()))
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).cell_value(pos![C1]),
+            Some(CellValue::Text("c".into()))
+        );
+    }
 }

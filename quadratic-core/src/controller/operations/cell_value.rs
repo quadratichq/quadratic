@@ -1,7 +1,10 @@
+use std::collections::HashMap;
+
 use super::operation::Operation;
 use crate::cell_values::CellValues;
 use crate::controller::GridController;
 use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
+use crate::grid::CodeCellLanguage;
 use crate::Pos;
 use crate::{a1::A1Selection, CellValue, SheetPos};
 use anyhow::{bail, Result};
@@ -26,6 +29,14 @@ impl GridController {
         let mut ops = vec![];
         let mut compute_code_ops = vec![];
         let mut data_table_ops = vec![];
+        let mut bounds = self
+            .a1_context()
+            .tables()
+            .filter(|table| {
+                table.sheet_id == sheet_pos.sheet_id && table.language == CodeCellLanguage::Import
+            })
+            .map(|table| table.bounds)
+            .collect::<Vec<_>>();
 
         if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
             let height = values.len();
@@ -43,8 +54,8 @@ impl GridController {
             let init_cell_values = || vec![vec![None; height]; width];
             let mut cell_values = init_cell_values();
             let mut data_table_cell_values = init_cell_values();
-            let mut data_table_columns = vec![];
-            let mut data_table_rows = vec![];
+            let mut data_table_columns: HashMap<SheetPos, Vec<u32>> = HashMap::new();
+            let mut data_table_rows: HashMap<SheetPos, Vec<u32>> = HashMap::new();
             let mut sheet_format_updates = SheetFormatUpdates::default();
 
             for (y, row) in values.into_iter().enumerate() {
@@ -85,10 +96,38 @@ impl GridController {
                     } else {
                         cell_values[x][y] = Some(cell_value);
 
-                        let (cols, rows) = sheet.expand_columns_and_rows(current_sheet_pos, value);
+                        let (col, row) =
+                            sheet.expand_columns_and_rows(&bounds, current_sheet_pos, value);
 
-                        data_table_columns.extend(cols);
-                        data_table_rows.extend(rows);
+                        if let Some((sheet_pos, col)) = col {
+                            let entry = data_table_columns.entry(sheet_pos).or_insert(vec![]);
+
+                            if !entry.contains(&col) {
+                                entry.push(col);
+                                let pos_to_check = Pos::new(sheet_pos.x, sheet_pos.y);
+
+                                bounds.iter_mut().for_each(|rect| {
+                                    if rect.contains(pos_to_check) {
+                                        rect.max.x = rect.max.x + 1;
+                                    }
+                                });
+                            }
+                        }
+
+                        if let Some((sheet_pos, row)) = row {
+                            let entry = data_table_rows.entry(sheet_pos).or_insert(vec![]);
+
+                            if !entry.contains(&row) {
+                                entry.push(row);
+                                let pos_to_check = Pos::new(sheet_pos.x, sheet_pos.y);
+
+                                bounds.iter_mut().for_each(|rect| {
+                                    if rect.contains(pos_to_check) {
+                                        rect.max.y = rect.max.y + 1;
+                                    }
+                                });
+                            }
+                        }
                     }
 
                     if !format_update.is_default() {
@@ -128,10 +167,7 @@ impl GridController {
                 for (sheet_pos, columns) in data_table_columns {
                     data_table_ops.push(Operation::InsertDataTableColumns {
                         sheet_pos,
-                        columns: columns
-                            .into_iter()
-                            .map(|c| (c, None, None))
-                            .collect(),
+                        columns: columns.into_iter().map(|c| (c, None, None)).collect(),
                         swallow: true,
                         select_table: false,
                     });
@@ -271,6 +307,8 @@ mod test {
     use crate::controller::operations::operation::Operation;
     use crate::controller::GridController;
     use crate::grid::{CodeCellLanguage, CodeCellValue, SheetId};
+    use crate::test_util::print_table;
+    use crate::Rect;
     use crate::{a1::A1Selection, CellValue, SheetPos, SheetRect};
 
     #[test]
@@ -482,5 +520,22 @@ mod test {
                 },
             ]
         );
+    }
+
+    #[test]
+    fn test_set_cell_values_operations() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 1,
+            sheet_id,
+        };
+
+        let values = vec![vec!["a".to_string(), "b".to_string()]];
+        let (ops, data_table_ops) = gc.set_cell_values_operations(sheet_pos, values).unwrap();
+        println!("{:?}", ops);
+        println!("{:?}", data_table_ops);
+        print_table(&gc, sheet_id, Rect::from_numbers(1, 1, 2, 2));
     }
 }
