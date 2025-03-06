@@ -77,13 +77,8 @@ jobs:
 
       - name: Upload to S3
         run: |
-          # Create zip file
-          cd /tmp
-          zip -r client-build.zip client-build/
-
-          # Upload zip file with no caching for Amplify
-          aws s3 cp client-build.zip s3://quadratic-development-amplify/client-build.zip \
-            --cache-control "no-cache,no-store,must-revalidate"
+          # Upload entire build directory to S3 with no caching for Amplify
+          aws s3 sync /tmp/client-build/ s3://quadratic-development-amplify/client-build/
 
   build_images:
     name: Build Images
