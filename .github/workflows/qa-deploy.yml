@@ -233,8 +233,7 @@ jobs:
             --app-id d1uvolff3y0hsd \
             --branch-name ${{ github.head_ref }} \
             --job-type RELEASE \
-            --source-url quadratic-development-amplify/quadratic-client-${{ github.sha }} \
-            --source-url-type BUCKET_PREFIX
+            --job-data "{\"sourceUrl\":\"s3://quadratic-development-amplify/quadratic-client-${{ github.sha }}\",\"sourceUrlType\":\"S3\"}"
 
   pulumi:
     needs: [build_client, build_images]
