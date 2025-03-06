@@ -33,7 +33,7 @@ name = "upgrade_file"
 path = "src/bin/upgrade_file.rs"
 
 [features]
-default = ["console_error_panic_hook", "js", "dbgjs", "show-operations"]
+default = ["console_error_panic_hook", "js", "dbgjs"]
 # "js" feature is disabled for testing (particularly WASI benchmarks)
 js = [
   "js-sys",

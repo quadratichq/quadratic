@@ -29,7 +29,7 @@ impl GridController {
         let mut ops = vec![];
         let mut compute_code_ops = vec![];
         let mut data_table_ops = vec![];
-        let mut bounds = self
+        let mut data_tables = self
             .a1_context()
             .tables()
             .filter(|table| {
@@ -97,7 +97,7 @@ impl GridController {
                         cell_values[x][y] = Some(cell_value);
 
                         let (col, row) =
-                            sheet.expand_columns_and_rows(&bounds, current_sheet_pos, value);
+                            sheet.expand_columns_and_rows(&data_tables, current_sheet_pos, value);
 
                         if let Some((sheet_pos, col)) = col {
                             let entry = data_table_columns.entry(sheet_pos).or_insert(vec![]);
@@ -106,7 +106,7 @@ impl GridController {
                                 entry.push(col);
                                 let pos_to_check = Pos::new(sheet_pos.x, sheet_pos.y);
 
-                                bounds.iter_mut().for_each(|rect| {
+                                data_tables.iter_mut().for_each(|rect| {
                                     if rect.contains(pos_to_check) {
                                         rect.max.x = rect.max.x + 1;
                                     }
@@ -121,7 +121,7 @@ impl GridController {
                                 entry.push(row);
                                 let pos_to_check = Pos::new(sheet_pos.x, sheet_pos.y);
 
-                                bounds.iter_mut().for_each(|rect| {
+                                data_tables.iter_mut().for_each(|rect| {
                                     if rect.contains(pos_to_check) {
                                         rect.max.y = rect.max.y + 1;
                                     }

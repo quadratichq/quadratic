@@ -279,7 +279,7 @@ impl Sheet {
     /// Returns columns and rows to data tables when the cells to add are touching the data table
     pub fn expand_columns_and_rows(
         &self,
-        bounds: &Vec<Rect>,
+        data_tables: &Vec<Rect>,
         sheet_pos: SheetPos,
         value: String,
     ) -> (Option<(SheetPos, u32)>, Option<(SheetPos, u32)>) {
@@ -287,8 +287,8 @@ impl Sheet {
         let mut rows = None;
 
         if !value.is_empty() {
-            columns = self.expand_columns(bounds, sheet_pos);
-            rows = self.expand_rows(bounds, sheet_pos);
+            columns = self.expand_columns(data_tables, sheet_pos);
+            rows = self.expand_rows(data_tables, sheet_pos);
         }
 
         (columns, rows)
@@ -297,14 +297,14 @@ impl Sheet {
     /// Returns columns to data tables when the cells to add are touching the data table
     pub fn expand_columns(
         &self,
-        bounds: &Vec<Rect>,
+        data_tables: &Vec<Rect>,
         sheet_pos: SheetPos,
     ) -> Option<(SheetPos, u32)> {
         let pos = Pos::from(sheet_pos);
 
         if pos.x > 1 {
             let pos_to_check = Pos::new(pos.x - 1, pos.y);
-            let data_table_left = bounds.iter().find(|rect| rect.contains(pos_to_check));
+            let data_table_left = data_tables.iter().find(|rect| rect.contains(pos_to_check));
 
             if let Some(data_table_left) = data_table_left {
                 // don't expand if we're not at the end of the data table
@@ -347,12 +347,16 @@ impl Sheet {
     }
 
     /// Returns rows to data tables when the cells to add are touching the data table
-    pub fn expand_rows(&self, bounds: &Vec<Rect>, sheet_pos: SheetPos) -> Option<(SheetPos, u32)> {
+    pub fn expand_rows(
+        &self,
+        data_tables: &Vec<Rect>,
+        sheet_pos: SheetPos,
+    ) -> Option<(SheetPos, u32)> {
         let pos = Pos::from(sheet_pos);
 
         if pos.y > 1 {
             let pos_to_check = Pos::new(pos.x, pos.y - 1);
-            let data_table_above = bounds.iter().find(|rect| rect.contains(pos_to_check));
+            let data_table_above = data_tables.iter().find(|rect| rect.contains(pos_to_check));
 
             if let Some(data_table_above) = data_table_above {
                 // don't expand if we're not at the bottom of the data table
