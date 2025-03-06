@@ -138,16 +138,21 @@ jobs:
           # Read and format the build spec from JSON file
           BUILD_SPEC=$(cat infra/client/amplify.json | jq -c '.')
 
-          # Update the app with build spec
-          aws amplify update-app \
+          # Create a deployment
+          DEPLOYMENT_ID=$(aws amplify create-deployment \
             --app-id d1a661jjy8myo5 \
-            --build-spec "$BUILD_SPEC"
+            --branch-name qa \
+            --build-spec "$BUILD_SPEC" \
+            --query 'jobId' \
+            --output text)
 
-          # Start the build job
-          aws amplify start-job \
+          echo "Created deployment with ID: $DEPLOYMENT_ID"
+
+          # Start the deployment
+          aws amplify start-deployment \
             --app-id d1a661jjy8myo5 \
-            --branch-name ${{ github.head_ref }} \
-            --job-type RELEASE
+            --branch-name qa \
+            --job-id "$DEPLOYMENT_ID"
 
   pulumi:
     needs: [build_images]
