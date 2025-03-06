@@ -3,7 +3,8 @@ name: QA
 on:
   pull_request:
     branches:
-      - main
+      # - main
+      - qa
     types: [opened, synchronize, reopened]
 
 # Use runs on `ubuntu-latest-8-cores`. All of our self hosted runners use this tag.
@@ -17,10 +18,10 @@ concurrency:
 
 jobs:
   infra:
-    needs: [build_preview_images]
+    needs: [build_images]
     name: Create or Update Pulumi Infrastructure Stack
     runs-on: blacksmith-2vcpu-ubuntu-2204
-    if: github.head_ref == 'qa' && github.base_ref == 'main'
+    # if: github.head_ref == 'qa' && github.base_ref == 'main'
     steps:
       - uses: actions/checkout@v4
 
@@ -37,7 +38,7 @@ jobs:
 
           pulumi org set-default quadratic
 
-          STACK_NAME="quadratic-qa"
+          STACK_NAME="quadratic-qa-github-actions"
           if ! pulumi stack ls | grep -q "^$STACK_NAME"; then
             echo "Stack $STACK_NAME does not exist. Initializing..."
             pulumi stack init $STACK_NAME
@@ -66,18 +67,35 @@ jobs:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
           PR_ID: ${{ github.event.pull_request.number }}
 
-  build_preview_images:
+  build_images:
     name: Build Images
-    runs-on: blacksmith-4vcpu-ubuntu-2204
-    if: github.head_ref == 'qa' && github.base_ref == 'main'
+    runs-on: ${{ matrix.runner }}
+    # if: github.head_ref == 'qa' && github.base_ref == 'main'
+    timeout-minutes: 30
     strategy:
       matrix:
-        service: [multiplayer, files, connection]
+        include:
+          - service: client
+            runner: blacksmith-4vcpu-ubuntu-2204
+          - service: api
+            runner: blacksmith-2vcpu-ubuntu-2204
+          - service: connection
+            runner: blacksmith-4vcpu-ubuntu-2204
+          - service: files
+            runner: blacksmith-4vcpu-ubuntu-2204
+          - service: multiplayer
+            runner: blacksmith-4vcpu-ubuntu-2204
+      fail-fast: true
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate Build Metadata
+        id: build-metadata
+        run: |
+          echo "BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+          echo "GIT_SHA_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "BRANCH_NAME=$(echo "${{ github.head_ref }}" | tr '/' '-')" >> $GITHUB_OUTPUT
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -90,11 +108,40 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, Tag, and Push Image to Amazon ECR
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
+            network=host
+
+      - name: Cache Docker layers
+        uses: useblacksmith/cache@v5
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-qa-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-qa
+            ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: quadratic-${{ matrix.service }}-development
           IMAGE_TAG: pr-qa
-        run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f quadratic-${{ matrix.service }}/Dockerfile .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        with:
+          context: .
+          file: quadratic-${{ matrix.service }}/Dockerfile
+          push: true
+          tags: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
+          build-args: |
+            BUILD_TIME=${{ steps.build-metadata.outputs.BUILD_TIME }}
+            GIT_SHA_SHORT=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
+            BRANCH_NAME=${{ steps.build-metadata.outputs.BRANCH_NAME }}
+            PR_NUMBER=${{ github.event.pull_request.number }}
+          labels: |
+            org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
+            org.opencontainers.image.revision=${{ github.sha }}
