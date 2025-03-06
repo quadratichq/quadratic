@@ -147,6 +147,7 @@ jobs:
               echo "Cancelling $TYPE job $JOB_ID (status: $STATUS)"
               if aws amplify stop-job \
                 --app-id ${{ secrets.AWS_AMPLIFY_APP_ID_DEVELOPMENT }} \
+                --branch-name ${{ github.head_ref }} \
                 --job-id "$JOB_ID"; then
                 echo "✓ Successfully cancelled job $JOB_ID"
               else
