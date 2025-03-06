@@ -18,7 +18,7 @@ concurrency:
 
 env:
   AMPLIFY_APP_ID: d3dmk4wdzzskoq
-  S3_BUCKET_NAME: quadratic-development-amplify
+  AMPLIFY_BUCKET_NAME: quadratic-development-amplify
 
 jobs:
   build_client:
@@ -87,7 +87,7 @@ jobs:
           COMMIT_HASH="${{ github.event.pull_request.head.sha }}"
 
           # S3 build directory
-          S3_DIR="s3://${S3_BUCKET_NAME}/quadratic-client-${COMMIT_HASH}/"
+          S3_DIR="s3://${AMPLIFY_BUCKET_NAME}/quadratic-client-${COMMIT_HASH}/"
 
           # Upload entire build directory to S3 with no caching for Amplify
           aws s3 sync /tmp/quadratic-client/ $S3_DIR --delete
