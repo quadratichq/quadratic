@@ -50,16 +50,16 @@ jobs:
         uses: useblacksmith/cache@v5
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-qa-${{ github.sha }}
+          key: ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile.amplify') }}-qa-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-qa-
-            ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-
+            ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile.amplify') }}-qa-
+            ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile.amplify') }}-
 
       - name: Build using Docker
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: quadratic-client/Dockerfile
+          file: quadratic-client/Dockerfile.amplify
           push: false
           load: true
           tags: quadratic-client:local
