@@ -146,7 +146,7 @@ jobs:
           # Start the build job
           aws amplify start-job \
             --app-id d1a661jjy8myo5 \
-            --branch-name qa \
+            --branch-name ${{ github.head_ref }} \
             --job-type RELEASE
 
   pulumi:
