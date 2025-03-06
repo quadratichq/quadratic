@@ -19,8 +19,7 @@ frontend:
           sudo yum update -y
           sudo yum install -y docker
           sudo service docker start
-          sudo usermod -a -G docker ec2-user
-          docker info || (echo "Docker setup failed" && exit 1)
+          sudo docker info || (echo "Docker setup failed" && exit 1)
 
         # Configure AWS
         - |
@@ -35,15 +34,15 @@ frontend:
         # Handle Docker operations
         - |
           echo "Authenticating with ECR..."
-          aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+          aws ecr get-login-password --region ${AWS_REGION} | sudo docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
 
           echo "Pulling client image: ${CLIENT_IMAGE}"
-          docker pull ${CLIENT_IMAGE} || (echo "Failed to pull image" && exit 1)
+          sudo docker pull ${CLIENT_IMAGE} || (echo "Failed to pull image" && exit 1)
 
           echo "Extracting build artifacts..."
-          CONTAINER_ID=$(docker create ${CLIENT_IMAGE})
-          docker cp ${CONTAINER_ID}:/usr/share/nginx/html/. ./build/ || (echo "Failed to copy files" && exit 1)
-          docker rm ${CONTAINER_ID}
+          CONTAINER_ID=$(sudo docker create ${CLIENT_IMAGE})
+          sudo docker cp ${CONTAINER_ID}:/usr/share/nginx/html/. ./build/ || (echo "Failed to copy files" && exit 1)
+          sudo docker rm ${CONTAINER_ID}
 
         # Verify build
         - |
