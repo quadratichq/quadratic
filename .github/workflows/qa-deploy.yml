@@ -151,7 +151,7 @@ jobs:
           context: .
           file: quadratic-${{ matrix.service }}/Dockerfile
           push: true
-          tags: ${{ steps.repo-name.outputs.ECR_URL }}:pr-qa-github-actions
+          tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-qa-github-actions
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
           build-args: |
