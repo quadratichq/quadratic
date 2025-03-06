@@ -17,61 +17,13 @@ concurrency:
   group: qa
 
 jobs:
-  infra:
-    needs: [build_images]
-    name: Create or Update Pulumi Infrastructure Stack
-    runs-on: blacksmith-2vcpu-ubuntu-2204
-    if: github.head_ref == 'qa' && github.base_ref == 'main'
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      - uses: pulumi/actions@v4
-
-      - name: Update Pulumi Infrastructure
-        working-directory: infra
-        run: |
-          npm ci
-
-          pulumi org set-default quadratic
-
-          STACK_NAME="quadratic-qa-github-actions"
-          if ! pulumi stack ls | grep -q "^$STACK_NAME"; then
-            echo "Stack $STACK_NAME does not exist. Initializing..."
-            pulumi stack init $STACK_NAME
-          else
-            echo "Stack $STACK_NAME already exists."
-            pulumi stack select $STACK_NAME
-          fi
-
-          # Point to the Pulumi ESC Environment
-          cat <<EOF | tee Pulumi.$STACK_NAME.yaml
-          environment:
-            - aws-infra-development
-          EOF
-
-          pulumi config set multiplayer-subdomain multiplayer-pr-qa
-          pulumi config set files-subdomain files-pr-qa
-          pulumi config set connection-subdomain connection-pr-qa
-          pulumi config set docker-image-tag pr-qa
-          pulumi config set quadratic-api-uri https://quadratic-staging.herokuapp.com
-          pulumi config set is-preview true
-
-          pulumi up -y
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
-          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-          PR_ID: ${{ github.event.pull_request.number }}
-
   build_images:
     name: Build Images
     runs-on: ${{ matrix.runner }}
     # if: github.head_ref == 'qa' && github.base_ref == 'main'
     timeout-minutes: 30
+    outputs:
+      ECR_URL: ${{ steps.create-ecr.outputs.ECR_URL }}
     strategy:
       matrix:
         include:
@@ -162,3 +114,83 @@ jobs:
           labels: |
             org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
             org.opencontainers.image.revision=${{ github.sha }}
+
+  amplify:
+    needs: [build_images]
+    name: Deploy Client to Amplify
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    # if: github.head_ref == 'qa' && github.base_ref == 'main'
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Trigger Amplify Build
+        env:
+          CLIENT_IMAGE: "${{ needs.build_images.outputs.ECR_URL }}:pr-qa-github-actions"
+        run: |
+          BUILD_SPEC=$(cat infra/client/amplify.yml)
+
+          aws amplify create-deployment \
+            --app-id d1a661jjy8myo5 \
+            --branch-name qa \
+            --build-spec "$BUILD_SPEC"
+
+  pulumi:
+    needs: [build_images]
+    name: Create or Update Pulumi Infrastructure Stack
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    if: github.head_ref == 'qa' && github.base_ref == 'main'
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - uses: pulumi/actions@v4
+
+      - name: Update Pulumi Infrastructure
+        working-directory: infra
+        run: |
+          npm ci
+
+          pulumi org set-default quadratic
+
+          STACK_NAME="quadratic-qa-github-actions"
+          if ! pulumi stack ls | grep -q "^$STACK_NAME"; then
+            echo "Stack $STACK_NAME does not exist. Initializing..."
+            pulumi stack init $STACK_NAME
+          else
+            echo "Stack $STACK_NAME already exists."
+            pulumi stack select $STACK_NAME
+          fi
+
+          # Point to the Pulumi ESC Environment
+          cat <<EOF | tee Pulumi.$STACK_NAME.yaml
+          environment:
+            - aws-infra-development
+          EOF
+
+          pulumi config set multiplayer-subdomain multiplayer-pr-qa
+          pulumi config set files-subdomain files-pr-qa
+          pulumi config set connection-subdomain connection-pr-qa
+          pulumi config set docker-image-tag pr-qa
+          pulumi config set quadratic-api-uri https://quadratic-staging.herokuapp.com
+          pulumi config set is-preview true
+
+          pulumi up -y
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          PR_ID: ${{ github.event.pull_request.number }}
