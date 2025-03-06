@@ -129,19 +129,6 @@ RUN if [ "$CLIENT_DEV" = "true" ]; then \
 ###########################################################################################
 FROM node:18 AS vite-builder
 
-ARG VITE_DEBUG
-ARG VITE_QUADRATIC_API_URL
-ARG VITE_QUADRATIC_MULTIPLAYER_URL
-ARG VITE_QUADRATIC_CONNECTION_URL
-ARG VITE_STORAGE_TYPE
-ARG VITE_AUTH_TYPE
-ARG VITE_AUTH0_ISSUER
-ARG VITE_AUTH0_DOMAIN
-ARG VITE_AUTH0_CLIENT_ID
-ARG VITE_AUTH0_AUDIENCE
-ARG VITE_ORY_HOST
-ARG VITE_SENTRY_AUTH_TOKEN
-
 WORKDIR /quadratic
 
 # Copy files from core, ts/rust types, and rust client builders
@@ -183,19 +170,35 @@ RUN ./quadratic-kernels/python-wasm/package.sh --no-poetry
 RUN echo 'Building quadratic-shared...' && npm run compile --workspace=quadratic-shared
 
 # Build the front-end
-ENV VITE_DEBUG=${VITE_DEBUG}
-ENV VITE_QUADRATIC_API_URL=${VITE_QUADRATIC_API_URL}
-ENV VITE_QUADRATIC_MULTIPLAYER_URL=${VITE_QUADRATIC_MULTIPLAYER_URL}
-ENV VITE_QUADRATIC_CONNECTION_URL=${VITE_QUADRATIC_CONNECTION_URL}
-ENV VITE_STORAGE_TYPE=${VITE_STORAGE_TYPE}
-ENV VITE_AUTH_TYPE=${VITE_AUTH_TYPE}
-ENV VITE_AUTH0_ISSUER=${VITE_AUTH0_ISSUER}
-ENV VITE_AUTH0_DOMAIN=${VITE_AUTH0_DOMAIN}
-ENV VITE_AUTH0_CLIENT_ID=${VITE_AUTH0_CLIENT_ID}
-ENV VITE_AUTH0_AUDIENCE=${VITE_AUTH0_AUDIENCE}
-ENV VITE_ORY_HOST=${VITE_ORY_HOST}
-ENV VITE_SENTRY_AUTH_TOKEN=${VITE_SENTRY_AUTH_TOKEN}
 RUN echo 'Building front-end...' && npm run build --workspace=quadratic-client
+
+# Create .env file from secrets and build the front-end
+RUN --mount=type=secret,id=VITE_DEBUG \
+  --mount=type=secret,id=VITE_QUADRATIC_API_URL \
+  --mount=type=secret,id=VITE_QUADRATIC_MULTIPLAYER_URL \
+  --mount=type=secret,id=VITE_QUADRATIC_CONNECTION_URL \
+  --mount=type=secret,id=VITE_STORAGE_TYPE \
+  --mount=type=secret,id=VITE_AUTH_TYPE \
+  --mount=type=secret,id=VITE_AUTH0_ISSUER \
+  --mount=type=secret,id=VITE_AUTH0_DOMAIN \
+  --mount=type=secret,id=VITE_AUTH0_CLIENT_ID \
+  --mount=type=secret,id=VITE_AUTH0_AUDIENCE \
+  --mount=type=secret,id=VITE_ORY_HOST \
+  --mount=type=secret,id=VITE_SENTRY_AUTH_TOKEN \
+  echo "VITE_DEBUG=$(cat /run/secrets/VITE_DEBUG)" > ./quadratic-client/.env && \
+  echo "VITE_QUADRATIC_API_URL=$(cat /run/secrets/VITE_QUADRATIC_API_URL)" >> ./quadratic-client/.env && \
+  echo "VITE_QUADRATIC_MULTIPLAYER_URL=$(cat /run/secrets/VITE_QUADRATIC_MULTIPLAYER_URL)" >> ./quadratic-client/.env && \
+  echo "VITE_QUADRATIC_CONNECTION_URL=$(cat /run/secrets/VITE_QUADRATIC_CONNECTION_URL)" >> ./quadratic-client/.env && \
+  echo "VITE_STORAGE_TYPE=$(cat /run/secrets/VITE_STORAGE_TYPE)" >> ./quadratic-client/.env && \
+  echo "VITE_AUTH_TYPE=$(cat /run/secrets/VITE_AUTH_TYPE)" >> ./quadratic-client/.env && \
+  echo "VITE_AUTH0_ISSUER=$(cat /run/secrets/VITE_AUTH0_ISSUER)" >> ./quadratic-client/.env && \
+  echo "VITE_AUTH0_DOMAIN=$(cat /run/secrets/VITE_AUTH0_DOMAIN)" >> ./quadratic-client/.env && \
+  echo "VITE_AUTH0_CLIENT_ID=$(cat /run/secrets/VITE_AUTH0_CLIENT_ID)" >> ./quadratic-client/.env && \
+  echo "VITE_AUTH0_AUDIENCE=$(cat /run/secrets/VITE_AUTH0_AUDIENCE)" >> ./quadratic-client/.env && \
+  echo "VITE_ORY_HOST=$(cat /run/secrets/VITE_ORY_HOST)" >> ./quadratic-client/.env && \
+  echo "VITE_SENTRY_AUTH_TOKEN=$(cat /run/secrets/VITE_SENTRY_AUTH_TOKEN)" >> ./quadratic-client/.env && \
+  npm run build --workspace=quadratic-client && \
+  rm ./quadratic-client/.env
 
 # Compress files (except js/mjs/cjs/jsx/ts/tsx, these are done in replace_env_vars.sh)
 RUN find /quadratic/build -type f \

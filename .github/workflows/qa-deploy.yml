@@ -179,23 +179,24 @@ jobs:
           tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-qa-github-actions
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
+          secrets: |
+            "VITE_DEBUG=${{ secrets.VITE_DEBUG_DEVELOPMENT }}"
+            "VITE_QUADRATIC_API_URL=${{ secrets.VITE_QUADRATIC_API_URL_DEVELOPMENT }}"
+            "VITE_QUADRATIC_MULTIPLAYER_URL=${{ secrets.VITE_QUADRATIC_MULTIPLAYER_URL_DEVELOPMENT }}"
+            "VITE_QUADRATIC_CONNECTION_URL=${{ secrets.VITE_QUADRATIC_CONNECTION_URL_DEVELOPMENT }}"
+            "VITE_STORAGE_TYPE=${{ secrets.VITE_STORAGE_TYPE_DEVELOPMENT }}"
+            "VITE_AUTH_TYPE=${{ secrets.VITE_AUTH_TYPE_DEVELOPMENT }}"
+            "VITE_AUTH0_ISSUER=${{ secrets.VITE_AUTH0_ISSUER_DEVELOPMENT }}"
+            "VITE_AUTH0_DOMAIN=${{ secrets.VITE_AUTH0_DOMAIN_DEVELOPMENT }}"
+            "VITE_AUTH0_CLIENT_ID=${{ secrets.VITE_AUTH0_CLIENT_ID_DEVELOPMENT }}"
+            "VITE_AUTH0_AUDIENCE=${{ secrets.VITE_AUTH0_AUDIENCE_DEVELOPMENT }}"
+            "VITE_ORY_HOST=${{ secrets.VITE_ORY_HOST_DEVELOPMENT }}"
+            "VITE_SENTRY_AUTH_TOKEN=${{ secrets.VITE_SENTRY_AUTH_TOKEN_DEVELOPMENT }}"
           build-args: |
             BUILD_TIME=${{ steps.build-metadata.outputs.BUILD_TIME }}
             GIT_SHA_SHORT=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
             BRANCH_NAME=${{ steps.build-metadata.outputs.BRANCH_NAME }}
             PR_NUMBER=${{ github.event.pull_request.number }}
-            VITE_DEBUG=VITE_DEBUG_VAL
-            VITE_QUADRATIC_API_URL=VITE_QUADRATIC_API_URL_VAL
-            VITE_QUADRATIC_MULTIPLAYER_URL=VITE_QUADRATIC_MULTIPLAYER_URL_VAL
-            VITE_QUADRATIC_CONNECTION_URL=VITE_QUADRATIC_CONNECTION_URL_VAL
-            VITE_STORAGE_TYPE=VITE_STORAGE_TYPE_VAL
-            VITE_AUTH_TYPE=VITE_AUTH_TYPE_VAL
-            VITE_AUTH0_ISSUER=VITE_AUTH0_ISSUER_VAL
-            VITE_AUTH0_DOMAIN=VITE_AUTH0_DOMAIN_VAL
-            VITE_AUTH0_CLIENT_ID=VITE_AUTH0_CLIENT_ID_VAL
-            VITE_AUTH0_AUDIENCE=VITE_AUTH0_AUDIENCE_VAL
-            VITE_ORY_HOST=VITE_ORY_HOST_VAL
-            VITE_SENTRY_AUTH_TOKEN=VITE_SENTRY_AUTH_TOKEN_VAL
           labels: |
             org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
             org.opencontainers.image.revision=${{ github.sha }}
