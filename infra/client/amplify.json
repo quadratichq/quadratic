@@ -1,0 +1,73 @@
+{
+  "version": "1",
+  "frontend": {
+    "phases": {
+      "preBuild": {
+        "commands": [
+          "export NODE_OPTIONS=--max-old-space-size=16384",
+          "sudo fallocate -l 16G swapfile || sudo dd if=/dev/zero of=swapfile bs=1M count=8192",
+          "sudo chmod 600 swapfile",
+          "sudo mkswap swapfile",
+          "sudo swapon swapfile",
+          "free -h",
+
+          "sudo yum update -y",
+          "sudo yum install -y docker",
+          "sudo service docker start",
+          "sudo usermod -a -G docker ec2-user",
+          "docker ps",
+
+          "aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}",
+          "aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}",
+          "aws configure set region ${AWS_REGION}",
+
+          "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com",
+
+          "docker pull ${CLIENT_IMAGE}",
+
+          "CONTAINER_ID=$(docker create ${CLIENT_IMAGE})",
+
+          "docker cp ${CONTAINER_ID}:/usr/share/nginx/html/. ./build/",
+
+          "docker rm ${CONTAINER_ID}",
+
+          "ls -la ./build"
+        ]
+      }
+    },
+    "artifacts": {
+      "baseDirectory": "build",
+      "files": ["**/*"]
+    },
+    "cache": {
+      "paths": []
+    }
+  },
+  "customHeaders": [
+    {
+      "pattern": "**/*",
+      "headers": [
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin"
+        },
+        {
+          "key": "Cross-Origin-Embedder-Policy",
+          "value": "require-corp"
+        },
+        {
+          "key": "Cross-Origin-Resource-Policy",
+          "value": "cross-origin"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors *"
+        }
+      ]
+    }
+  ]
+}
