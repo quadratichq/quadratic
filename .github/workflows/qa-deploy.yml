@@ -129,9 +129,44 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Trigger Amplify Build
-        env:
-          CLIENT_IMAGE: "${{ needs.build_images.outputs.ECR_URL }}:pr-qa-github-actions"
+      - name: Cancel Pending Deployments
+        run: |
+          # List and cancel any pending jobs with improved error handling
+          echo "Checking for pending Amplify jobs..."
+          if ! JOBS=$(aws amplify list-jobs \
+            --app-id ${{ secrets.AWS_AMPLIFY_APP_ID_DEVELOPMENT }} \
+            --branch-name ${{ github.head_ref }} \
+            --output json); then
+            echo "Failed to list Amplify jobs. Continuing anyway..."
+          else
+            # Count pending/running jobs for better visibility
+            PENDING_COUNT=$(echo "$JOBS" | jq -r '.jobSummaries[] | select(.status == "PENDING" or .status == "RUNNING") | .jobId' | wc -l)
+            echo "Found $PENDING_COUNT pending or running jobs"
+            
+            # Cancel jobs with timeout and status reporting
+            echo "$JOBS" | jq -r '.jobSummaries[] | select(.status == "PENDING" or .status == "RUNNING") | "\(.jobId) \(.status) \(.jobType)"' | \
+            while read -r JOB_ID STATUS TYPE; do
+              echo "Cancelling $TYPE job $JOB_ID (status: $STATUS)"
+              if aws amplify stop-job \
+                --app-id ${{ secrets.AWS_AMPLIFY_APP_ID_DEVELOPMENT }} \
+                --job-id "$JOB_ID"; then
+                echo "✓ Successfully cancelled job $JOB_ID"
+              else
+                echo "⚠️ Failed to cancel job $JOB_ID, but continuing"
+              fi
+            done
+            
+            # Verify jobs were stopped - optional check
+            echo "Verifying jobs are no longer running..."
+            sleep 2
+            REMAINING=$(aws amplify list-jobs \
+              --app-id ${{ secrets.AWS_AMPLIFY_APP_ID_DEVELOPMENT }} \
+              --branch-name ${{ github.head_ref }} \
+              --output json | jq -r '.jobSummaries[] | select(.status == "PENDING" or .status == "RUNNING") | .jobId' | wc -l)
+            echo "$REMAINING jobs still pending or running"
+          fi
+
+      - name: Trigger New Deployment
         run: |
           aws amplify start-job \
             --app-id ${{ secrets.AWS_AMPLIFY_APP_ID_DEVELOPMENT }} \
