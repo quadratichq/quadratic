@@ -67,10 +67,10 @@ jobs:
           CONTAINER_ID=$(docker create quadratic-client:local)
 
           # Create a temporary directory to hold the build
-          mkdir -p /tmp/client-build
+          mkdir -p /tmp/quadratic-client
 
           # Copy the build files from the container using the correct path
-          docker cp $CONTAINER_ID:/usr/share/nginx/html/. /tmp/client-build/
+          docker cp $CONTAINER_ID:/usr/share/nginx/html/. /tmp/quadratic-client/
 
           # Clean up the temporary container
           docker rm $CONTAINER_ID
@@ -78,7 +78,7 @@ jobs:
       - name: Upload to S3
         run: |
           # Upload entire build directory to S3 with no caching for Amplify
-          aws s3 sync /tmp/client-build/ s3://quadratic-development-amplify/client-build/
+          aws s3 sync /tmp/quadratic-client/ s3://quadratic-development-amplify/quadratic-client-${{ github.sha }}/
 
   build_images:
     name: Build Images
@@ -194,7 +194,7 @@ jobs:
           # List and cancel any pending jobs with improved error handling
           echo "Checking for pending Amplify jobs..."
           if ! JOBS=$(aws amplify list-jobs \
-            --app-id ${{ secrets.AWS_AMPLIFY_APP_ID_DEVELOPMENT }} \
+            --app-id d1uvolff3y0hsd \
             --branch-name ${{ github.head_ref }} \
             --output json); then
             echo "Failed to list Amplify jobs. Continuing anyway..."
@@ -208,7 +208,7 @@ jobs:
             while read -r JOB_ID STATUS TYPE; do
               echo "Cancelling $TYPE job $JOB_ID (status: $STATUS)"
               if aws amplify stop-job \
-                --app-id ${{ secrets.AWS_AMPLIFY_APP_ID_DEVELOPMENT }} \
+                --app-id d1uvolff3y0hsd \
                 --branch-name ${{ github.head_ref }} \
                 --job-id "$JOB_ID"; then
                 echo "✓ Successfully cancelled job $JOB_ID"
@@ -221,7 +221,7 @@ jobs:
             echo "Verifying jobs are no longer running..."
             sleep 2
             REMAINING=$(aws amplify list-jobs \
-              --app-id ${{ secrets.AWS_AMPLIFY_APP_ID_DEVELOPMENT }} \
+              --app-id d1uvolff3y0hsd \
               --branch-name ${{ github.head_ref }} \
               --output json | jq -r '.jobSummaries[] | select(.status == "PENDING" or .status == "RUNNING") | .jobId' | wc -l)
             echo "$REMAINING jobs still pending or running"
@@ -230,9 +230,11 @@ jobs:
       - name: Trigger New Deployment
         run: |
           aws amplify start-job \
-            --app-id ${{ secrets.AWS_AMPLIFY_APP_ID_DEVELOPMENT }} \
+            --app-id d1uvolff3y0hsd \
             --branch-name ${{ github.head_ref }} \
-            --job-type RELEASE
+            --job-type RELEASE \
+            --source-url quadratic-development-amplify/quadratic-client-${{ github.sha }} \
+            --source-url-type BUCKET_PREFIX
 
   pulumi:
     needs: [build_client, build_images]
