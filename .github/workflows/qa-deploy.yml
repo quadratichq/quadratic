@@ -17,6 +17,74 @@ concurrency:
   group: qa
 
 jobs:
+  build_client:
+    name: Build Client
+    runs-on: blacksmith-4vcpu-ubuntu-2204
+    # if: github.head_ref == 'qa' && github.base_ref == 'main'
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
+            network=host
+
+      - name: Cache Docker layers
+        uses: useblacksmith/cache@v5
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-qa-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-qa-
+            ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-
+
+      - name: Build using Docker
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: quadratic-client/Dockerfile
+          push: false
+          load: true
+          tags: quadratic-client:local
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
+          outputs: type=docker
+
+      - name: Copy build from container to host
+        run: |
+          # Create a temporary container from the image
+          CONTAINER_ID=$(docker create quadratic-client:local)
+
+          # Create a temporary directory to hold the build
+          mkdir -p /tmp/client-build
+
+          # Copy the build files from the container using the correct path
+          docker cp $CONTAINER_ID:/usr/share/nginx/html/. /tmp/client-build/
+
+          # Clean up the temporary container
+          docker rm $CONTAINER_ID
+
+      - name: Upload to S3
+        run: |
+          # Create zip file
+          cd /tmp
+          zip -r client-build.zip client-build/
+
+          # Upload zip file with no caching for Amplify
+          aws s3 cp client-build.zip s3://quadratic-development-amplify/client-build.zip \
+            --cache-control "no-cache,no-store,must-revalidate"
+
   build_images:
     name: Build Images
     runs-on: ${{ matrix.runner }}
@@ -25,8 +93,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - service: client
-            runner: blacksmith-4vcpu-ubuntu-2204
           - service: api
             runner: blacksmith-2vcpu-ubuntu-2204
           - service: connection
@@ -114,7 +180,8 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
 
   amplify:
-    # needs: [build_images]
+    # needs: [build_client, build_images]
+    needs: [build_client]
     name: Deploy Client to Amplify
     runs-on: blacksmith-2vcpu-ubuntu-2204
     # if: github.head_ref == 'qa' && github.base_ref == 'main'
@@ -173,7 +240,7 @@ jobs:
             --job-type RELEASE
 
   pulumi:
-    needs: [build_images]
+    needs: [build_client, build_images]
     name: Create or Update Pulumi Infrastructure Stack
     runs-on: blacksmith-2vcpu-ubuntu-2204
     if: github.head_ref == 'qa' && github.base_ref == 'main'
