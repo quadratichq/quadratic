@@ -240,20 +240,9 @@ jobs:
 
       - name: Trigger New Deployment
         run: |
-          # Create a deployment and capture the job ID
-          DEPLOYMENT=$(aws amplify create-deployment \
-            --app-id d1uvolff3y0hsd \
-            --branch-name ${{ github.head_ref }} \
-            --output json)
-
-          JOB_ID=$(echo "$DEPLOYMENT" | jq -r '.jobId')
-          echo "Created deployment with Job ID: $JOB_ID"
-
-          # Start the deployment with the S3 source
           aws amplify start-deployment \
             --app-id d1uvolff3y0hsd \
             --branch-name ${{ github.head_ref }} \
-            --job-id "$JOB_ID" \
             --source-url "${{ needs.build_client.outputs.s3-dir }}" \
             --source-url-type "BUCKET_PREFIX"
   pulumi:
