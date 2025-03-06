@@ -184,6 +184,18 @@ jobs:
             GIT_SHA_SHORT=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
             BRANCH_NAME=${{ steps.build-metadata.outputs.BRANCH_NAME }}
             PR_NUMBER=${{ github.event.pull_request.number }}
+            VITE_DEBUG=VITE_DEBUG_VAL
+            VITE_QUADRATIC_API_URL=VITE_QUADRATIC_API_URL_VAL
+            VITE_QUADRATIC_MULTIPLAYER_URL=VITE_QUADRATIC_MULTIPLAYER_URL_VAL
+            VITE_QUADRATIC_CONNECTION_URL=VITE_QUADRATIC_CONNECTION_URL_VAL
+            VITE_STORAGE_TYPE=VITE_STORAGE_TYPE_VAL
+            VITE_AUTH_TYPE=VITE_AUTH_TYPE_VAL
+            VITE_AUTH0_ISSUER=VITE_AUTH0_ISSUER_VAL
+            VITE_AUTH0_DOMAIN=VITE_AUTH0_DOMAIN_VAL
+            VITE_AUTH0_CLIENT_ID=VITE_AUTH0_CLIENT_ID_VAL
+            VITE_AUTH0_AUDIENCE=VITE_AUTH0_AUDIENCE_VAL
+            VITE_ORY_HOST=VITE_ORY_HOST_VAL
+            VITE_SENTRY_AUTH_TOKEN=VITE_SENTRY_AUTH_TOKEN_VAL
           labels: |
             org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
             org.opencontainers.image.revision=${{ github.sha }}
