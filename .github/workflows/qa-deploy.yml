@@ -53,10 +53,10 @@ jobs:
             - aws-infra-development
           EOF
 
-          pulumi config set multiplayer-subdomain multiplayer-pr-qa
-          pulumi config set files-subdomain files-pr-qa
-          pulumi config set connection-subdomain connection-pr-qa
-          pulumi config set docker-image-tag pr-qa
+          pulumi config set multiplayer-subdomain multiplayer-pr-qa-github-actions
+          pulumi config set files-subdomain files-pr-qa-github-actions
+          pulumi config set connection-subdomain connection-pr-qa-github-actions
+          pulumi config set docker-image-tag pr-qa-github-actions
           pulumi config set quadratic-api-uri https://quadratic-staging.herokuapp.com
           pulumi config set is-preview true
 
@@ -126,15 +126,11 @@ jobs:
 
       - name: Build and push
         uses: docker/build-push-action@v6
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: quadratic-${{ matrix.service }}-development
-          IMAGE_TAG: pr-qa
         with:
           context: .
           file: quadratic-${{ matrix.service }}/Dockerfile
           push: true
-          tags: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          tags: ${{ steps.login-ecr.outputs.registry }}/quadratic-${{ matrix.service }}-development:pr-qa-github-actions
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
           build-args: |
