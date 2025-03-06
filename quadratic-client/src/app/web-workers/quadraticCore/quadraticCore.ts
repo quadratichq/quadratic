@@ -16,12 +16,14 @@ import type {
   CellVerticalAlign,
   CellWrap,
   CodeCellLanguage,
+  DataTableSort,
   Direction,
   Format,
   JsCellValue,
   JsClipboard,
   JsCodeCell,
   JsCoordinate,
+  JsDataTableColumnHeader,
   JsRenderCell,
   JsSelectionContext,
   JsSummarizeSelectionResult,
@@ -917,7 +919,7 @@ class QuadraticCore {
 
   //#region Misc.
 
-  setCellRenderResize(sheetId: string, x: number, y: number, width: number, height: number) {
+  setChartSize(sheetId: string, x: number, y: number, width: number, height: number) {
     this.send({
       type: 'clientCoreSetCellRenderResize',
       sheetId,
@@ -1386,7 +1388,7 @@ class QuadraticCore {
     options: {
       name?: string;
       alternatingColors?: boolean;
-      columns?: { name: string; display: boolean; valueIndex: number }[];
+      columns?: JsDataTableColumnHeader[];
       showColumns?: boolean;
       showName?: boolean;
       showUI?: boolean;
@@ -1444,13 +1446,7 @@ class QuadraticCore {
     });
   }
 
-  sortDataTable(
-    sheetId: string,
-    x: number,
-    y: number,
-    sort: { column_index: number; direction: string }[],
-    cursor: string
-  ) {
+  sortDataTable(sheetId: string, x: number, y: number, sort: DataTableSort[] | undefined, cursor: string) {
     this.send({
       type: 'clientCoreSortDataTable',
       sheetId,

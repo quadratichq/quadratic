@@ -174,6 +174,7 @@ export class HtmlCell {
     this.iframe.height = this.height.toString();
     this.border.style.width = `${this.width}px`;
     this.border.style.height = `${this.height}px`;
+    this.gridBounds = new Rectangle(this.x, this.y, this.htmlCell.w - 1, this.htmlCell.h - 1);
     this.recalculateBounds();
   }
 
@@ -250,7 +251,7 @@ export class HtmlCell {
     this.resizing.pointerMove(world);
   }
 
-  startResizing(x: number, y: number) {
+  startResizing() {
     if (!this.hoverSide) {
       throw new Error('Expected hoverSide to be defined in HtmlCell.startResizing');
     }
@@ -259,9 +260,7 @@ export class HtmlCell {
       this,
       this.hoverSide,
       parseInt(this.iframe.width),
-      parseInt(this.iframe.height),
-      x,
-      y
+      parseInt(this.iframe.height)
     );
   }
 

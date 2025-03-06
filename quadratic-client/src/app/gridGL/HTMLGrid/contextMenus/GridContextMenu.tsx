@@ -34,7 +34,7 @@ export const GridContextMenu = () => {
     }
 
     // Chart
-    if (contextMenu.table.is_html) {
+    if (contextMenu.table.is_html || contextMenu.table.is_html_image) {
       return <GridContextMenuCodeTableChart />;
     }
 
@@ -42,6 +42,11 @@ export const GridContextMenu = () => {
     return <GridContextMenuCodeTable />;
 
     // TODO:(ddimaria/jimniels) How do we handle spill errors for different menus?
+  }
+
+  // This isn't a context menu, but more of a menu that pops up when you click 'sort' on a table
+  if (contextMenu.type === ContextMenuType.TableSort) {
+    return null;
   }
 
   // It's a table column selection
@@ -71,11 +76,6 @@ export const GridContextMenu = () => {
     }
     // It's a grid cell
     return <GridContextMenuCell />;
-  }
-
-  // This isn't a context menu, but more of a menu that pops up when you click 'sort' on a table
-  if (contextMenu.type === ContextMenuType.TableSort) {
-    return null;
   }
 
   return null;

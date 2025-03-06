@@ -1,10 +1,12 @@
 import type { Response } from 'express';
 import { getLastUserPromptMessageIndex } from 'quadratic-shared/ai/helpers/message.helper';
 import {
+  getModelFromModelKey,
   isAnthropicModel,
   isBedrockAnthropicModel,
   isBedrockModel,
   isOpenAIModel,
+  isXAIModel,
 } from 'quadratic-shared/ai/helpers/model.helper';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
@@ -15,6 +17,7 @@ import { handleBedrockRequest } from '../../ai/handler/bedrock';
 import { handleOpenAIRequest } from '../../ai/handler/openai';
 import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
+import { anthropic, bedrock, bedrock_anthropic, openai, xai } from '../../ai/providers';
 import dbClient from '../../dbClient';
 import { STORAGE_TYPE } from '../../env-vars';
 import { getFile } from '../../middleware/getFile';
@@ -37,10 +40,11 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   } = req;
 
   const { body } = parseRequest(req, schema);
-  const { chatId, fileUuid, source, model, ...args } = body;
+  const { chatId, fileUuid, modelKey, ...args } = body;
+  const source = args.source;
 
   if (args.useToolsPrompt) {
-    const toolUseContext = getToolUseContext();
+    const toolUseContext = getToolUseContext(source);
     args.messages.unshift(...toolUseContext);
   }
 
@@ -50,14 +54,18 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   }
 
   let responseMessage: AIMessagePrompt | undefined;
-  if (isBedrockAnthropicModel(model) || isBedrockModel(model)) {
-    responseMessage = await handleBedrockRequest(model, args, res);
-  } else if (isAnthropicModel(model)) {
-    responseMessage = await handleAnthropicRequest(model, args, res);
-  } else if (isOpenAIModel(model)) {
-    responseMessage = await handleOpenAIRequest(model, args, res);
+  if (isBedrockModel(modelKey)) {
+    responseMessage = await handleBedrockRequest(modelKey, args, res, bedrock);
+  } else if (isBedrockAnthropicModel(modelKey)) {
+    responseMessage = await handleAnthropicRequest(modelKey, args, res, bedrock_anthropic);
+  } else if (isAnthropicModel(modelKey)) {
+    responseMessage = await handleAnthropicRequest(modelKey, args, res, anthropic);
+  } else if (isOpenAIModel(modelKey)) {
+    responseMessage = await handleOpenAIRequest(modelKey, args, res, openai);
+  } else if (isXAIModel(modelKey)) {
+    responseMessage = await handleOpenAIRequest(modelKey, args, res, xai);
   } else {
-    throw new Error(`Model not supported: ${model}`);
+    throw new Error(`Model not supported: ${modelKey}`);
   }
 
   if (responseMessage) {
@@ -84,6 +92,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
 
     const contents = Buffer.from(JSON.stringify(args)).toString('base64');
     const response = await uploadFile(key, contents, jwt, S3Bucket.ANALYTICS);
+
+    const model = getModelFromModelKey(modelKey);
 
     await dbClient.analyticsAIChat.upsert({
       where: {

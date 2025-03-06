@@ -79,7 +79,7 @@ class RenderCore {
     }
   };
 
-  async getRowHeights(transactionId: string, sheetId: string, rowsString: string) {
+  private getRowHeights = async (transactionId: string, sheetId: string, rowsString: string) => {
     if (!this.renderCorePort) {
       console.error('Expected renderCorePort to be defined in RenderCore.responseRowHeights');
       return;
@@ -99,13 +99,13 @@ class RenderCore {
     } catch (e) {
       console.error('[renderCore] getRowHeights: Error parsing rows: ', e);
     }
-  }
+  };
 
   /*********************
    * Core API requests *
    *********************/
 
-  async getRenderCells(sheetId: string, x: number, y: number, width: number, height: number): Promise<JsRenderCell[]> {
+  getRenderCells = (sheetId: string, x: number, y: number, width: number, height: number): Promise<JsRenderCell[]> => {
     return new Promise((resolve, reject) => {
       if (!this.renderCorePort) {
         console.warn('Expected renderCorePort to be defined in RenderCore.getRenderCells');
@@ -128,7 +128,7 @@ class RenderCore {
       });
       this.id++;
     });
-  }
+  };
 
   /**********************
    * Core API responses *

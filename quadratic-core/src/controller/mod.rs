@@ -101,7 +101,7 @@ impl GridController {
             .map(|t| &t.forward)
     }
 
-    pub(crate) fn a1_context(&self) -> &A1Context {
+    pub fn a1_context(&self) -> &A1Context {
         &self.a1_context
     }
 
@@ -128,9 +128,11 @@ impl GridController {
                     continue;
                 };
 
-                let language = sheet.get_table_language(*pos, table);
-                let table_map_entry = TableMapEntry::from_table(*sheet_id, *pos, table, language);
-                to_insert.push(table_map_entry);
+                if let Some(language) = sheet.get_table_language(*pos, table) {
+                    let table_map_entry =
+                        TableMapEntry::from_table(*sheet_id, *pos, table, language);
+                    to_insert.push(table_map_entry);
+                }
             }
 
             for pos in to_remove.into_iter() {

@@ -1,9 +1,7 @@
 import type { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { contextMenuAtom } from '@/app/atoms/contextMenuAtom';
-import { events } from '@/app/events/events';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { CheckIcon } from '@/shared/components/Icons';
@@ -15,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { cn } from '@/shared/shadcn/utils';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useRecoilState } from 'recoil';
 
 /**
@@ -29,8 +27,6 @@ export const ContextMenuBase = ({ children }: { children: React.ReactNode }) => 
     if (contextMenu.rename) return;
 
     setContextMenu({});
-    events.emit('contextMenuClose');
-    focusGrid();
   }, [contextMenu.rename, setContextMenu]);
 
   useEffect(() => {
@@ -48,18 +44,27 @@ export const ContextMenuBase = ({ children }: { children: React.ReactNode }) => 
       }
     };
 
+    const handleMouseDown = (event: MouseEvent) => {
+      if (event.target instanceof HTMLInputElement) return;
+      if (event.target instanceof HTMLElement && !event.target.closest('.context-menu-base, .pixi_canvas')) {
+        setContextMenu({});
+      }
+    };
+
     pixiApp.viewport.on('moved', handleMoved);
     pixiApp.viewport.on('zoomed', onClose);
     window.addEventListener('keydown', handleKeydown);
+    window.addEventListener('mousedown', handleMouseDown);
 
     return () => {
       pixiApp.viewport.off('moved', handleMoved);
       pixiApp.viewport.off('zoomed', onClose);
       window.removeEventListener('keydown', handleKeydown);
+      window.removeEventListener('mousedown', handleMouseDown);
     };
-  }, [onClose]);
+  }, [onClose, setContextMenu]);
 
-  const open = !contextMenu.rename && Boolean(children);
+  const open = useMemo(() => !contextMenu.rename && Boolean(children), [contextMenu.rename, children]);
   if (!open) {
     return null;
   }
@@ -75,6 +80,7 @@ export const ContextMenuBase = ({ children }: { children: React.ReactNode }) => 
         className="pointer-events-auto absolute h-0 w-0 opacity-0"
       ></DropdownMenuTrigger>
       <DropdownMenuContent
+        className="context-menu-base"
         animate={false}
         side={left < bounds.x + bounds.width / 2 ? 'right' : 'left'}
         sideOffset={4}
@@ -86,7 +92,6 @@ export const ContextMenuBase = ({ children }: { children: React.ReactNode }) => 
         hideWhenDetached={false}
         avoidCollisions={true}
         updatePositionStrategy="always"
-        onClick={onClose}
       >
         {children}
       </DropdownMenuContent>

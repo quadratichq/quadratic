@@ -1,4 +1,3 @@
-import { getTable } from '@/app/actions/dataTableSpec';
 import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -23,7 +22,6 @@ interface MoveCells {
   toColumn: number;
   toRow: number;
   offset: { x: number; y: number };
-  table?: { offsetX: number; offsetY: number };
   original?: Rectangle;
 }
 
@@ -54,7 +52,7 @@ export class PointerCellMoving {
   tableMove = (column: number, row: number, point: Point, width: number, height: number) => {
     if (this.state) return false;
     this.startCell = new Point(column, row);
-    const offset = sheets.sheet.getCellOffsets(column, row);
+    const offset = sheets.sheet.getColumnRowFromScreen(point.x, point.y);
     this.movingCells = {
       column,
       row,
@@ -62,8 +60,7 @@ export class PointerCellMoving {
       height,
       toColumn: column,
       toRow: row,
-      offset: { x: 0, y: 0 },
-      table: { offsetX: point.x - offset.x, offsetY: point.y - offset.y },
+      offset: { x: column - offset.column, y: row - offset.row },
       original: new Rectangle(column, row, width, height),
     };
     this.startMove();
@@ -98,13 +95,9 @@ export class PointerCellMoving {
     }
     pixiApp.viewport.enableMouseEdges();
     const sheet = sheets.sheet;
-    const moving = this.movingCells;
-    const position = sheet.getColumnRowFromScreen(
-      world.x - (moving.table ? moving.table.offsetX : 0),
-      world.y - (moving.table ? moving.table.offsetY : 0)
-    );
-    this.movingCells.toColumn = position.column + this.movingCells.offset.x;
-    this.movingCells.toRow = position.row + this.movingCells.offset.y;
+    const position = sheet.getColumnRowFromScreen(world.x, world.y);
+    this.movingCells.toColumn = Math.max(1, position.column + this.movingCells.offset.x);
+    this.movingCells.toRow = Math.max(1, position.row + this.movingCells.offset.y);
     pixiApp.cellMoving.dirty = true;
   };
 
@@ -174,7 +167,6 @@ export class PointerCellMoving {
     // we do not move if there are multiple rectangles (for now)
     const rectangle = sheets.sheet.cursor.getSingleRectangleOrCursor();
     if (!rectangle) return false;
-
     const origin = sheets.sheet.cursor.position;
     const column = origin.x;
     const row = origin.y;
@@ -187,8 +179,8 @@ export class PointerCellMoving {
 
       // the offset is the clamped value of the rectangle based on where the user clicks
       const offset = sheets.sheet.getColumnRowFromScreen(world.x, world.y);
-      offset.column = Math.min(Math.max(offset.column, rectangle.left), rectangle.right);
-      offset.row = Math.min(Math.max(offset.row, rectangle.top), rectangle.bottom);
+      offset.column = Math.min(Math.max(offset.column, rectangle.left), rectangle.right - 1);
+      offset.row = Math.min(Math.max(offset.row, rectangle.top), rectangle.bottom - 1);
       this.movingCells = {
         column,
         row,
@@ -228,16 +220,7 @@ export class PointerCellMoving {
         this.movingCells &&
         (this.startCell.x !== this.movingCells.toColumn || this.startCell.y !== this.movingCells.toRow)
       ) {
-        const table = getTable();
         const rectangle = sheets.sheet.cursor.getLargestRectangle();
-
-        if (table) {
-          rectangle.x = table.x;
-          rectangle.y = table.y;
-          rectangle.width = table.w;
-          rectangle.height = table.h;
-        }
-
         quadraticCore.moveCells(
           rectToSheetRect(rectangle, sheets.current),
           this.movingCells.toColumn,

@@ -21,6 +21,7 @@ pub struct DataTableSort {
 }
 
 impl DataTable {
+    /// Sorts the data table by the given column index and direction.
     pub fn sort_column(
         &mut self,
         column_index: usize,
@@ -33,10 +34,19 @@ impl DataTable {
         Ok(old)
     }
 
+    /// Sorts the data table by all the sort rules (`self.sort`).
     pub fn sort_all(&mut self) -> Result<()> {
+        self.display_buffer = self.get_display_buffer()?;
+        self.sort_dirty = false;
+
+        Ok(())
+    }
+
+    fn get_display_buffer(&mut self) -> Result<Option<Vec<u64>>> {
+        let old_display_buffer = self.display_buffer.to_owned();
         self.display_buffer = None;
 
-        if let Some(ref mut sort) = self.sort.to_owned() {
+        let display_buffer = if let Some(ref mut sort) = self.sort.to_owned() {
             let value = self.display_value(true)?.into_array()?;
             let mut display_buffer = (0..value.height()).map(|i| i as u64).collect::<Vec<u64>>();
 
@@ -66,12 +76,16 @@ impl DataTable {
                     display_buffer.insert(0, 0);
                 }
             }
-            self.display_buffer = Some(display_buffer);
-        }
+            Some(display_buffer)
+        } else {
+            None
+        };
 
-        Ok(())
+        self.display_buffer = old_display_buffer;
+        Ok(display_buffer)
     }
 
+    /// Prepends a sort rule to the sort rules (`self.sort`).
     pub fn prepend_sort(
         &mut self,
         column_index: usize,
@@ -96,6 +110,18 @@ impl DataTable {
         }
 
         old
+    }
+
+    /// Checks if the sort is dirty.
+    pub fn check_sort(&mut self) -> Result<()> {
+        if self.sort.as_ref().is_some_and(|sort| sort.is_empty()) {
+            self.sort = None;
+        }
+
+        let display_buffer = self.get_display_buffer()?;
+        self.sort_dirty = self.display_buffer != display_buffer;
+
+        Ok(())
     }
 }
 

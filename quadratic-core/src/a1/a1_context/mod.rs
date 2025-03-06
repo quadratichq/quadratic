@@ -33,7 +33,7 @@ pub struct JsTableInfo {
     pub name: String,
     pub sheet_name: String,
     pub chart: bool,
-    pub language: Option<CodeCellLanguage>,
+    pub language: CodeCellLanguage,
 }
 
 #[cfg(test)]
@@ -118,6 +118,10 @@ impl A1Context {
         self.table_map.table_in_name_or_column(sheet_id, x, y)
     }
 
+    pub fn hide_column(&mut self, table_name: &str, column_name: &str) {
+        self.table_map.hide_column(table_name, column_name);
+    }
+
     /// Creates an A1Context for testing.
     ///
     /// sheets: Vec<(sheet_name: &str, sheet_id: SheetId)>
@@ -131,7 +135,13 @@ impl A1Context {
 
         let mut table_map = TableMap::default();
         for (table_name, column_names, bounds) in tables {
-            table_map.test_insert(table_name, column_names, None, *bounds);
+            table_map.test_insert(
+                table_name,
+                column_names,
+                None,
+                *bounds,
+                CodeCellLanguage::Import,
+            );
         }
 
         Self {
@@ -181,7 +191,7 @@ mod tests {
                 name: "Table1".to_string(),
                 sheet_name: "Sheet1".to_string(),
                 chart: false,
-                language: None,
+                language: CodeCellLanguage::Import,
             }
         );
         assert_eq!(
@@ -190,7 +200,7 @@ mod tests {
                 name: "Table2".to_string(),
                 sheet_name: "Sheet1".to_string(),
                 chart: false,
-                language: None,
+                language: CodeCellLanguage::Import,
             }
         );
     }
@@ -199,11 +209,11 @@ mod tests {
     fn test_sheet_operations() {
         let sheet_id1 = SheetId::new();
         let sheet_id2 = SheetId::new();
-        let context = A1Context::test(&[("Sheet1", sheet_id1), ("Sheet2", sheet_id2)], &[]);
+        let context = A1Context::test(&[("Sheet1", sheet_id1), ("Sheet 2", sheet_id2)], &[]);
 
         // Test try_sheet_name
         assert_eq!(context.try_sheet_name("Sheet1"), Some(sheet_id1));
-        assert_eq!(context.try_sheet_name("Sheet2"), Some(sheet_id2));
+        assert_eq!(context.try_sheet_name("Sheet 2"), Some(sheet_id2));
         assert_eq!(context.try_sheet_name("NonexistentSheet"), None);
 
         // Test try_sheet_id
@@ -213,7 +223,7 @@ mod tests {
         );
         assert_eq!(
             context.try_sheet_id(sheet_id2).map(String::as_str),
-            Some("Sheet2")
+            Some("Sheet 2")
         );
         assert_eq!(context.try_sheet_id(SheetId::new()), None);
     }

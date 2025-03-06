@@ -112,16 +112,16 @@ impl Sheet {
         if transaction.is_user_undo_redo() {
             transaction
                 .reverse_operations
-                .extend(self.reverse_values_ops_for_column(column));
+                .extend(self.reverse_borders_ops_for_column(column));
             transaction
                 .reverse_operations
                 .extend(self.reverse_formats_ops_for_column(column));
             transaction
                 .reverse_operations
-                .extend(self.reverse_borders_ops_for_column(column));
+                .extend(self.reverse_code_runs_ops_for_column(column));
             transaction
                 .reverse_operations
-                .extend(self.reverse_code_runs_ops_for_column(column));
+                .extend(self.reverse_values_ops_for_column(column));
         }
 
         self.delete_column_offset(transaction, column);
@@ -142,14 +142,12 @@ impl Sheet {
         // remove the column's code runs from the sheet
         self.data_tables.retain(|pos, code_run| {
             if pos.x == column {
-                transaction.add_code_cell(self.id, *pos);
-
-                // signal that html and image cells are removed
-                if code_run.is_html() {
-                    transaction.add_html_cell(self.id, *pos);
-                } else if code_run.is_image() {
-                    transaction.add_image_cell(self.id, *pos);
-                }
+                transaction.add_from_code_run(
+                    self.id,
+                    *pos,
+                    code_run.is_image(),
+                    code_run.is_html(),
+                );
                 false
             } else {
                 true

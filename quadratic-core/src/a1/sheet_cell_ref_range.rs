@@ -89,14 +89,14 @@ mod tests {
         let sheet1_id = SheetId::TEST;
         let sheet2_id = SheetId::new();
         let context = A1Context::test(
-            &[("Sheet1", sheet1_id), ("Sheet2", sheet2_id)],
+            &[("Sheet1", sheet1_id), ("Sheet 2", sheet2_id)],
             &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C3"))],
         );
 
-        // Create a table reference in Sheet2
+        // Create a table reference in Sheet 2
         let range = SheetCellRefRange::parse("Table1", sheet2_id, &context, None).unwrap();
 
-        // Verify the sheet ID matches Sheet2
+        // Verify the sheet ID matches Sheet 2
         assert_eq!(range.sheet_id, sheet1_id);
 
         assert_eq!(range.to_a1_string(None, &context, false), "Table1");

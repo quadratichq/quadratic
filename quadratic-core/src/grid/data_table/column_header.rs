@@ -31,6 +31,7 @@ impl DataTableColumnHeader {
 }
 
 impl DataTable {
+    /// Returns the number of columns in the data table.
     pub fn column_headers_len(&self) -> u32 {
         self.column_headers
             .as_ref()
@@ -61,6 +62,7 @@ impl DataTable {
         self.normalize_column_header_names();
     }
 
+    /// Toggles whether the first row of the data table is used as the column headings.
     pub fn toggle_first_row_as_header(&mut self, first_row_as_header: bool) {
         self.header_is_first_row = first_row_as_header;
 
@@ -147,7 +149,8 @@ impl DataTable {
                 .map(|c| c.name.to_string())
                 .collect::<Vec<_>>();
 
-            unique_name(name, &all_names, false)
+            let check_name = |name: &str| !all_names.contains(&name.to_string());
+            unique_name(name, false, check_name)
         } else {
             name.to_string()
         }
@@ -155,11 +158,12 @@ impl DataTable {
 
     /// Set the display of a column header at the given index.
     pub fn normalize_column_header_names(&mut self) {
-        let mut all_names = vec![];
+        let mut all_names: Vec<String> = vec![];
 
         if let Some(columns) = self.column_headers.as_mut() {
             columns.iter_mut().for_each(|column| {
-                let name = unique_name(&column.name.to_string(), &all_names, false);
+                let check_name = |name: &str| !all_names.contains(&name.to_string());
+                let name = unique_name(&column.name.to_string(), false, check_name);
                 column.name = CellValue::Text(name.to_owned());
                 all_names.push(name);
             });
@@ -187,8 +191,9 @@ impl DataTable {
             .map(|columns| columns.iter().map(|c| c.name.clone()).collect())
     }
 
+    /// Get the column header at the given display index.
     pub fn display_header_at(&self, display_x: u32) -> Option<&DataTableColumnHeader> {
-        let column_index = self.get_column_index_from_display_index(display_x);
+        let column_index = self.get_column_index_from_display_index(display_x, true);
         self.get_column_header(column_index as usize)
     }
 }
@@ -283,6 +288,7 @@ pub mod test {
             name: "Table 1".into(),
             column_headers: None,
             sort: None,
+            sort_dirty: false,
             display_buffer: None,
             value: Value::Array(array),
             readonly: false,
@@ -336,6 +342,7 @@ pub mod test {
             name: "Table 1".into(),
             column_headers: None,
             sort: None,
+            sort_dirty: false,
             display_buffer: None,
             value: Value::Array(array),
             readonly: false,

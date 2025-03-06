@@ -36,11 +36,20 @@ export async function doubleClickCell(options: {
 
   // Open the correct code editor
   if (language) {
+    pixiAppSettings.codeEditorState.aiAssistant.abortController?.abort();
+
     const formula = language === 'Formula';
     const file_import = language === 'Import';
+
     if (pixiAppSettings.codeEditorState.showCodeEditor && !file_import) {
       pixiAppSettings.setCodeEditorState({
         ...pixiAppSettings.codeEditorState,
+        aiAssistant: {
+          abortController: undefined,
+          loading: false,
+          id: '',
+          messages: [],
+        },
         escapePressed: false,
         diffEditorContent: undefined,
         waitingForEditorClose: {
@@ -60,7 +69,7 @@ export async function doubleClickCell(options: {
 
         // ensure we're in the right cell (which may change if we double clicked on a CodeRun)
         if (codeCell && (cursor.x !== codeCell.x || cursor.y !== codeCell.y)) {
-          sheets.sheet.cursor.moveTo(codeCell.x, codeCell.y);
+          sheets.sheet.cursor.moveTo(codeCell.x, codeCell.y, { checkForTableRef: true });
         }
         pixiAppSettings.changeInput(true, cell, cursorMode);
       }
@@ -73,10 +82,15 @@ export async function doubleClickCell(options: {
 
         // check column header or table value
         else {
+          const isSpillOrError =
+            codeCell.spill_error || codeCell.state === 'RunError' || codeCell.state === 'SpillError';
+          const isTableName = codeCell.show_ui && codeCell.show_name && row === codeCell.y;
           const isColumnHeader =
             codeCell.show_ui && codeCell.show_columns && row === codeCell.y + (codeCell.show_name ? 1 : 0);
-          const isTableName = codeCell.show_ui && codeCell.show_name && row === codeCell.y;
-          if (isTableName) {
+
+          if (isSpillOrError) {
+            return;
+          } else if (isTableName) {
             events.emit('contextMenu', {
               type: ContextMenuType.Table,
               table: codeCell,
@@ -100,6 +114,12 @@ export async function doubleClickCell(options: {
       } else {
         pixiAppSettings.setCodeEditorState({
           ...pixiAppSettings.codeEditorState,
+          aiAssistant: {
+            abortController: undefined,
+            loading: false,
+            id: '',
+            messages: [],
+          },
           showCodeEditor: true,
           escapePressed: false,
           diffEditorContent: undefined,

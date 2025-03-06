@@ -86,16 +86,20 @@ impl GridController {
                 Operation::SortDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_sort_data_table(transaction, op),
                 ),
-                Operation::InsertDataTableColumn { .. } => Self::handle_execution_operation_result(
-                    self.execute_insert_data_table_column(transaction, op),
-                ),
-                Operation::DeleteDataTableColumn { .. } => Self::handle_execution_operation_result(
-                    self.execute_delete_data_table_column(transaction, op),
-                ),
-                Operation::InsertDataTableRow { .. } => Self::handle_execution_operation_result(
+                Operation::InsertDataTableColumns { .. } => {
+                    Self::handle_execution_operation_result(
+                        self.execute_insert_data_table_column(transaction, op),
+                    );
+                }
+                Operation::DeleteDataTableColumns { .. } => {
+                    Self::handle_execution_operation_result(
+                        self.execute_delete_data_table_column(transaction, op),
+                    );
+                }
+                Operation::InsertDataTableRows { .. } => Self::handle_execution_operation_result(
                     self.execute_insert_data_table_row(transaction, op),
                 ),
-                Operation::DeleteDataTableRow { .. } => Self::handle_execution_operation_result(
+                Operation::DeleteDataTableRows { .. } => Self::handle_execution_operation_result(
                     self.execute_delete_data_table_row(transaction, op),
                 ),
                 Operation::DataTableFirstRowAsHeader { .. } => {

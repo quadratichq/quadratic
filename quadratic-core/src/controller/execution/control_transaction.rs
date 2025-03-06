@@ -39,24 +39,27 @@ impl GridController {
             if transaction.has_async > 0 {
                 self.transactions.update_async_transaction(transaction);
                 break;
-            } else if let Some((sheet_id, rows)) = transaction
-                .resize_rows
-                .iter()
-                .next()
-                .map(|(&k, v)| (k, v.clone()))
-            {
-                transaction.resize_rows.remove(&sheet_id);
+            }
 
-                self.send_sheet_info(transaction);
-                self.send_offsets_modified(transaction);
-                let resizing = self.start_auto_resize_row_heights(
-                    transaction,
-                    sheet_id,
-                    rows.into_iter().collect(),
-                );
-                // break only if async resize operation is being executed
-                if resizing {
-                    break;
+            if transaction.operations.is_empty() {
+                if let Some((sheet_id, rows)) = transaction
+                    .resize_rows
+                    .iter()
+                    .next()
+                    .map(|(&k, v)| (k, v.clone()))
+                {
+                    transaction.resize_rows.remove(&sheet_id);
+
+                    self.send_offsets_modified(transaction);
+                    let resizing = self.start_auto_resize_row_heights(
+                        transaction,
+                        sheet_id,
+                        rows.into_iter().collect(),
+                    );
+                    // break only if async resize operation is being executed
+                    if resizing {
+                        break;
+                    }
                 }
             }
         }
@@ -232,8 +235,6 @@ impl GridController {
             );
 
             self.finalize_data_table(&mut transaction, current_sheet_pos, Some(data_table), None);
-            transaction.cells_accessed.clear();
-            transaction.waiting_for_async = None;
             self.start_transaction(&mut transaction);
             self.finalize_transaction(transaction);
         }

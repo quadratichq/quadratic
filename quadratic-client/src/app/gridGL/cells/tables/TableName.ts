@@ -118,7 +118,12 @@ export class TableName extends Container {
     this.h = this.table.sheet.offsets.getRowHeight(this.table.codeCell.y);
     this.drawSymbol();
     this.drawText();
-    this.drawDropdown();
+    if (this.table.active) {
+      this.dropdown.visible = true;
+      this.drawDropdown();
+    } else {
+      this.dropdown.visible = false;
+    }
     this.drawBackground();
     this.tableNameBounds = new Rectangle(
       this.table.tableBounds.x,
@@ -130,12 +135,12 @@ export class TableName extends Container {
 
   intersects(world: Point): TablePointerDownResult | undefined {
     if (this.visible && intersects.rectanglePoint(this.tableNameBounds, world)) {
-      if (world.x <= this.tableNameBounds.x + this.text.x + this.text.width) {
+      if (world.x <= this.tableNameBounds.x + this.text.x + this.text.width + DROPDOWN_PADDING) {
         return { table: this.table.codeCell, type: 'table-name' };
       }
       if (
-        world.x <=
-        this.tableNameBounds.x + this.text.x + this.text.width + this.dropdown.width + DROPDOWN_PADDING * 2
+        this.table.active &&
+        world.x <= this.tableNameBounds.x + this.text.x + this.text.width + this.dropdown.width + DROPDOWN_PADDING
       ) {
         return { table: this.table.codeCell, type: 'dropdown' };
       }

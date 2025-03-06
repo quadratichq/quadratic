@@ -8,7 +8,8 @@ use super::*;
 use crate::{
     a1::{CellRefCoord, CellRefRange, CellRefRangeEnd, RefRangeBounds, SheetCellRefRange},
     grid::SheetId,
-    Array, ArraySize, CellValue, CodeResult, CoerceInto, RunErrorMsg, SheetRect, Spanned, Value,
+    Array, ArraySize, CellValue, CodeResult, CoerceInto, Pos, RunErrorMsg, SheetRect, Spanned,
+    Value,
 };
 
 /// Abstract syntax tree of a formula expression.
@@ -33,6 +34,7 @@ pub enum AstNodeContents {
     String(String),
     Number(f64),
     Bool(bool),
+    Error(RunErrorMsg),
 }
 impl AstNodeContents {
     fn type_string(&self) -> &'static str {
@@ -54,6 +56,7 @@ impl AstNodeContents {
             AstNodeContents::String(_) => "string literal",
             AstNodeContents::Number(_) => "numeric literal",
             AstNodeContents::Bool(_) => "boolean literal",
+            AstNodeContents::Error(_) => "error literal",
         }
     }
 }
@@ -150,6 +153,9 @@ impl AstNode {
             AstNodeContents::String(s) => Value::from(s.to_string()),
             AstNodeContents::Number(n) => Value::from(*n),
             AstNodeContents::Bool(b) => Value::from(*b),
+            AstNodeContents::Error(e) => {
+                Value::Single(CellValue::Error(Box::new(e.clone().with_span(self.span))))
+            }
         };
 
         Ok(Spanned {
@@ -186,8 +192,8 @@ impl AstNode {
                     internal_error!("invalid arguments to cell range operator");
                 }
 
-                let (sheet1, start) = args[0].to_ref_range_end(ctx)?;
-                let (sheet2, end) = args[1].to_ref_range_end(ctx)?;
+                let (sheet1, range1) = args[0].to_ref_range_bounds(ctx)?;
+                let (sheet2, range2) = args[1].to_ref_range_bounds(ctx)?;
 
                 let sheet_id = match (sheet1, sheet2) {
                     (None, None) => ctx.sheet_pos.sheet_id,
@@ -198,7 +204,7 @@ impl AstNode {
                     (_, Some(id)) | (Some(id), _) => id,
                 };
 
-                let range = RefRangeBounds { start, end };
+                let range = RefRangeBounds::combined_bounding_box(range1, range2);
                 let cells = CellRefRange::Sheet { range };
                 Ok(Cow::Owned(SheetCellRefRange { sheet_id, cells }))
             }
@@ -223,14 +229,14 @@ impl AstNode {
 
     /// Evaluates the expression to a range bound with an optional sheet ID, or
     /// returns an error if this cannot be done.
-    fn to_ref_range_end<'expr, 'ctx: 'expr>(
+    fn to_ref_range_bounds<'expr, 'ctx: 'expr>(
         &'expr self,
         ctx: &'expr mut Ctx<'ctx>,
-    ) -> CodeResult<(Option<SheetId>, CellRefRangeEnd)> {
+    ) -> CodeResult<(Option<SheetId>, RefRangeBounds)> {
         match &self.inner {
-            AstNodeContents::CellRef(sheet_id, bounds) => Ok((*sheet_id, bounds.start)),
+            AstNodeContents::CellRef(sheet_id, bounds) => Ok((*sheet_id, *bounds)),
             AstNodeContents::Paren(contents) if contents.len() == 1 => {
-                contents[0].to_ref_range_end(ctx)
+                contents[0].to_ref_range_bounds(ctx)
             }
             AstNodeContents::FunctionCall { func, args }
                 if func.inner.eq_ignore_ascii_case("INDEX") =>
@@ -274,7 +280,7 @@ impl AstNode {
                 if ctx.skip_computation {
                     // Don't evaluate; just return a dummy value to let the
                     // caller know that this expression is valid.
-                    return Ok((None, CellRefRangeEnd::START));
+                    return Ok((None, RefRangeBounds::new_relative_pos(Pos::ORIGIN)));
                 }
 
                 let args = super::functions::IndexFunctionArgs::from_values(
@@ -294,11 +300,16 @@ impl AstNode {
                     .try_sheet(indexed_pos.sheet_id)
                     .ok_or(RunErrorMsg::IndexOutOfBounds.with_span(self.span))?;
 
+                let range_end = CellRefRangeEnd {
+                    col: CellRefCoord::new_abs(indexed_pos.x),
+                    row: CellRefCoord::new_abs(indexed_pos.y),
+                };
+
                 Ok((
                     Some(sheet.id),
-                    CellRefRangeEnd {
-                        col: CellRefCoord::new_abs(indexed_pos.x),
-                        row: CellRefCoord::new_abs(indexed_pos.y),
+                    RefRangeBounds {
+                        start: range_end,
+                        end: range_end,
                     },
                 ))
             }

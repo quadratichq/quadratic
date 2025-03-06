@@ -1,45 +1,66 @@
-import { MODEL_OPTIONS } from 'quadratic-shared/ai/models/AI_MODELS';
+import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type {
   AIModel,
   AIRequestBody,
-  AnthropicModel,
-  BedrockAnthropicModel,
-  BedrockModel,
-  OpenAIModel,
+  AnthropicModelKey,
+  BedrockAnthropicModelKey,
+  BedrockModelKey,
+  ModelKey,
+  OpenAIModelKey,
+  XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
+import { aiToolsSpec } from '../specs/aiToolsSpec';
 
-export function isBedrockModel(model: AIModel): model is BedrockModel {
-  return MODEL_OPTIONS[model].provider === 'bedrock';
+export function isBedrockModel(modelKey: ModelKey): modelKey is BedrockModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'bedrock';
 }
 
-export function isBedrockAnthropicModel(model: AIModel): model is BedrockAnthropicModel {
-  return MODEL_OPTIONS[model].provider === 'bedrock-anthropic';
+export function isBedrockAnthropicModel(modelKey: ModelKey): modelKey is BedrockAnthropicModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'bedrock-anthropic';
 }
 
-export function isAnthropicModel(model: AIModel): model is AnthropicModel {
-  return MODEL_OPTIONS[model].provider === 'anthropic';
+export function isAnthropicModel(modelKey: ModelKey): modelKey is AnthropicModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'anthropic';
 }
 
-export function isOpenAIModel(model: AIModel): model is OpenAIModel {
-  return MODEL_OPTIONS[model].provider === 'openai';
+export function isXAIModel(modelKey: ModelKey): modelKey is XAIModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'xai';
 }
+
+export function isOpenAIModel(modelKey: ModelKey): modelKey is OpenAIModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'openai';
+}
+
+export const getModelFromModelKey = (modelKey: ModelKey): AIModel => {
+  return MODELS_CONFIGURATION[modelKey].model;
+};
 
 export const getModelOptions = (
-  model: AIModel,
-  args: Pick<AIRequestBody, 'useTools' | 'useStream'>
+  modelKey: ModelKey,
+  args: Pick<AIRequestBody, 'source' | 'useStream'>
 ): {
   stream: boolean;
   temperature: number;
   max_tokens: number;
+  thinking?: boolean;
+  strickParams: boolean;
 } => {
-  const { canStream, canStreamWithToolCalls, temperature, max_tokens } = MODEL_OPTIONS[model];
+  const config = MODELS_CONFIGURATION[modelKey];
+  const { canStream, canStreamWithToolCalls, max_tokens } = config;
 
-  const { useTools, useStream } = args;
+  const { useStream } = args;
+  const useTools = Object.values(aiToolsSpec).some((tool) => tool.sources.includes(args.source));
   const stream = canStream
     ? useTools
       ? canStreamWithToolCalls && (useStream ?? canStream)
       : useStream ?? canStream
     : false;
 
-  return { stream, temperature, max_tokens };
+  const thinking = config.thinking;
+
+  const temperature = thinking ? config.thinkingTemperature ?? config.temperature : config.temperature;
+
+  const strickParams = !!config.strickParams;
+
+  return { stream, temperature, max_tokens, thinking, strickParams };
 };

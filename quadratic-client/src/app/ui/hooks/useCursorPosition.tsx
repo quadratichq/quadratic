@@ -14,9 +14,11 @@ export const useCursorPosition = () => {
 
     events.on('cursorPosition', updateCursor);
     events.on('changeSheet', updateCursor);
+    events.on('a1ContextUpdated', updateCursor);
     return () => {
       events.off('cursorPosition', updateCursor);
       events.off('changeSheet', updateCursor);
+      events.off('a1ContextUpdated', updateCursor);
     };
   }, []);
 

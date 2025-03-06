@@ -15,7 +15,7 @@ use super::*;
 use crate::{
     a1::{A1Context, CellRefRange, CellRefRangeEnd, RefRangeBounds, SheetCellRefRange},
     grid::{Grid, SheetId},
-    CodeResult, CoerceInto, RunError, RunErrorMsg, SheetPos, Span, Spanned,
+    CodeResult, CoerceInto, RefError, RunError, RunErrorMsg, SheetPos, Span, Spanned,
 };
 
 /// Parses a formula.
@@ -48,7 +48,7 @@ pub fn find_cell_references(
     source: &str,
     ctx: &A1Context,
     pos: SheetPos,
-) -> Vec<Spanned<SheetCellRefRange>> {
+) -> Vec<Spanned<Result<SheetCellRefRange, RefError>>> {
     let mut ret = vec![];
 
     let tokens = lexer::tokenize(source)
@@ -61,7 +61,7 @@ pub fn find_cell_references(
         if let Some(Ok(sheet_cell_ref_range)) = p.try_parse(rules::CellRangeReference) {
             ret.push(sheet_cell_ref_range);
         } else if let Some(Ok(sheet_cell_ref_range)) = p.try_parse(rules::SheetTableReference) {
-            ret.push(sheet_cell_ref_range)
+            ret.push(sheet_cell_ref_range.map(Ok));
         } else {
             p.next();
         }
@@ -97,15 +97,15 @@ fn simple_parse_and_check_formula(formula_string: &str) -> bool {
 /// # Example
 ///
 /// ```rust
-/// use quadratic_core::{Pos, a1::A1Context, formulas::replace_internal_cell_references, grid::{Grid, SheetId}};
+/// use quadratic_core::{Pos, a1::A1Context, formulas::convert_rc_to_a1, grid::{Grid, SheetId}};
 ///
 /// let g = Grid::new();
 /// let pos = Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id);
-/// let replaced = replace_internal_cell_references("SUM(R{3}C[1])", &g.a1_context(), pos);
+/// let replaced = convert_rc_to_a1("SUM(R{3}C[1])", &g.a1_context(), pos);
 /// assert_eq!(replaced, "SUM(B$3)");
 /// ```
-pub fn replace_internal_cell_references(source: &str, ctx: &A1Context, pos: SheetPos) -> String {
-    let replace_fn = |range_ref: SheetCellRefRange| range_ref.to_a1_string(None, ctx, false);
+pub fn convert_rc_to_a1(source: &str, ctx: &A1Context, pos: SheetPos) -> String {
+    let replace_fn = |range_ref: SheetCellRefRange| Ok(range_ref.to_a1_string(None, ctx, false));
     replace_cell_range_references(source, ctx, pos, replace_fn)
 }
 
@@ -115,16 +115,16 @@ pub fn replace_internal_cell_references(source: &str, ctx: &A1Context, pos: Shee
 /// # Example
 ///
 /// ```rust
-/// use quadratic_core::{Pos, a1::A1Context, formulas::replace_a1_notation, grid::{Grid, SheetId}};
+/// use quadratic_core::{Pos, a1::A1Context, formulas::convert_a1_to_rc, grid::{Grid, SheetId}};
 ///
 /// let g = Grid::new();
 /// let pos = Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id);
-/// let replaced = replace_a1_notation("SUM(B$3)", &g.a1_context(), pos);
+/// let replaced = convert_a1_to_rc("SUM(B$3)", &g.a1_context(), pos);
 /// assert_eq!(replaced, "SUM(R{3}C[1])");
 /// ```
-pub fn replace_a1_notation(source: &str, ctx: &A1Context, pos: SheetPos) -> String {
+pub fn convert_a1_to_rc(source: &str, ctx: &A1Context, pos: SheetPos) -> String {
     let replace_fn = |range_ref: SheetCellRefRange| {
-        range_ref.to_rc_string(Some(pos.sheet_id), ctx, false, pos.into())
+        Ok(range_ref.to_rc_string(Some(pos.sheet_id), ctx, false, pos.into()))
     };
     replace_cell_range_references(source, ctx, pos, replace_fn)
 }
@@ -136,21 +136,21 @@ pub fn replace_cell_references_with(
     source: &str,
     ctx: &A1Context,
     pos: SheetPos,
-    replace_xy_fn: impl Fn(SheetId, CellRefRangeEnd) -> CellRefRangeEnd,
+    replace_xy_fn: impl Fn(SheetId, CellRefRangeEnd) -> Result<CellRefRangeEnd, RefError>,
 ) -> String {
     replace_cell_range_references(source, ctx, pos, |range_ref| {
-        match range_ref.cells {
+        Ok(match range_ref.cells {
             CellRefRange::Sheet {
                 range: RefRangeBounds { start, end },
             } => CellRefRange::Sheet {
                 range: RefRangeBounds {
-                    start: replace_xy_fn(range_ref.sheet_id, start),
-                    end: replace_xy_fn(range_ref.sheet_id, end),
+                    start: replace_xy_fn(range_ref.sheet_id, start)?,
+                    end: replace_xy_fn(range_ref.sheet_id, end)?,
                 },
             },
-            other @ CellRefRange::Table { .. } => other,
+            other @ CellRefRange::Table { .. } => other, // leave table refs unchanged
         }
-        .to_string()
+        .to_string())
     })
 }
 
@@ -158,18 +158,21 @@ fn replace_cell_range_references(
     source: &str,
     ctx: &A1Context,
     pos: SheetPos,
-    replace_fn: impl Fn(SheetCellRefRange) -> String,
+    replace_fn: impl Fn(SheetCellRefRange) -> Result<String, RefError>,
 ) -> String {
     let spans = find_cell_references(source, ctx, pos);
     let mut replaced = source.to_string();
 
-    // replace in reverse order to preserve previous span references
+    // replace in reverse order to preserve previous span indexes into string
     spans
         .into_iter()
         .rev()
-        .for_each(|spanned: Spanned<SheetCellRefRange>| {
+        .for_each(|spanned: Spanned<Result<SheetCellRefRange, RefError>>| {
             let Spanned { span, inner } = spanned;
-            let new_str = replace_fn(inner);
+            let new_str = match inner.and_then(&replace_fn) {
+                Ok(new_ref) => new_ref,
+                Err(RefError) => RefError.to_string(),
+            };
             replaced.replace_range::<Range<usize>>(span.into(), &new_str);
         });
 
@@ -358,10 +361,12 @@ impl<'a> Parser<'a> {
 #[cfg(test)]
 mod tests {
 
+    use crate::a1::CellRefCoord;
+
     use super::*;
 
     #[test]
-    fn test_replace_internal_cell_references() {
+    fn test_convert_rc_to_a1() {
         let ctx = A1Context::test(&[], &[]);
         let pos = SheetPos::test();
         let src = "SUM(R[1]C[2])
@@ -369,12 +374,12 @@ mod tests {
         let expected = "SUM(C2)
         + SUM(E3)";
 
-        let replaced = replace_internal_cell_references(src, &ctx, pos);
+        let replaced = convert_rc_to_a1(src, &ctx, pos);
         assert_eq!(replaced, expected);
     }
 
     #[test]
-    fn test_replace_a1_notation() {
+    fn test_convert_a1_to_rc() {
         let ctx = A1Context::test(&[], &[]);
         let pos = SheetPos::test();
         let src = "SUM(A$1)
@@ -382,7 +387,7 @@ mod tests {
         let expected = "SUM(R{1}C[0])
         + SUM(R[2]C{2})";
 
-        let replaced = replace_a1_notation(src, &ctx, pos);
+        let replaced = convert_a1_to_rc(src, &ctx, pos);
         assert_eq!(expected, replaced);
     }
 
@@ -393,8 +398,8 @@ mod tests {
         let src = "SUM(A4,B$6, C7)";
         let expected = "SUM(A7,B$5, C10)";
 
-        let replaced =
-            replace_cell_references_with(src, &ctx, pos, |_sheet, range_end| CellRefRangeEnd {
+        let replaced = replace_cell_references_with(src, &ctx, pos, |_sheet, range_end| {
+            Ok(CellRefRangeEnd {
                 col: range_end.col,
                 row: {
                     let delta = if range_end.row.is_unbounded() {
@@ -404,11 +409,15 @@ mod tests {
                     } else {
                         3
                     };
-                    range_end.row + delta
+                    CellRefCoord {
+                        coord: range_end.row.coord + delta,
+                        is_absolute: range_end.row.is_absolute,
+                    }
                 },
-            });
+            })
+        });
 
-        let replaced_a1 = replace_internal_cell_references(&replaced, &ctx, pos);
+        let replaced_a1 = convert_rc_to_a1(&replaced, &ctx, pos);
         assert_eq!(replaced_a1, expected);
     }
 

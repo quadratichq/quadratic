@@ -64,7 +64,7 @@ export const getTable = (): JsRenderCodeCell | undefined => {
   return pixiAppSettings.contextMenu?.table ?? pixiApp.cellsSheet().cursorOnDataTable();
 };
 
-export const getRow = (): number | undefined => {
+const getRow = (): number | undefined => {
   const table = getTable();
 
   if (!table) return undefined;
@@ -74,9 +74,8 @@ export const getRow = (): number | undefined => {
   return row - table.y;
 };
 
-export const getSelectedRows = (): number[] | undefined => {
+const getSelectedRows = (): number[] | undefined => {
   const table = getTable();
-
   if (!table) return undefined;
 
   return sheets.sheet.cursor
@@ -86,7 +85,7 @@ export const getSelectedRows = (): number[] | undefined => {
 };
 
 // returns the column index of the selected column, starting from 0
-export const getColumn = (): number | undefined => {
+const getColumn = (): number | undefined => {
   if (pixiAppSettings.contextMenu?.selectedColumn !== undefined) {
     const selectedColumn = pixiAppSettings.contextMenu.selectedColumn;
     return selectedColumn;
@@ -103,21 +102,8 @@ export const getColumn = (): number | undefined => {
     displayColumnX = sheets.sheet.cursor.position.x - table.x;
   }
 
-  if (columns[displayColumnX] === undefined) {
-    return undefined;
-  }
+  const columnX = columns.filter((c) => c.display).at(displayColumnX)?.valueIndex;
 
-  let seenDisplayColumns = -1;
-  let columnX = -1;
-  for (const column of columns) {
-    columnX++;
-    if (column.display) {
-      seenDisplayColumns++;
-      if (seenDisplayColumns === displayColumnX) {
-        break;
-      }
-    }
-  }
   return columnX;
 };
 
@@ -126,11 +112,22 @@ export const getColumns = (): JsDataTableColumnHeader[] | undefined => {
   return table?.columns.map((c) => ({ ...c }));
 };
 
-export const getSelectedColumns = (): number[] | undefined => {
-  return sheets.sheet.cursor
+const getSelectedColumns = (): number[] | undefined => {
+  const table = getTable();
+  const displayColumns = getDisplayColumns();
+  if (!table || !displayColumns) return undefined;
+
+  const displayIndexes = sheets.sheet.cursor
     .getSelectedColumns()
-    .map((c) => c - 1)
+    .map((c) => c - table.x)
     .sort((a, b) => b - a);
+
+  const columnIndexes = displayIndexes.map((displayIndex) => displayColumns.at(displayIndex)?.valueIndex);
+  if (columnIndexes.includes(undefined)) {
+    console.error('[getSelectedColumns] columnIndexes includes undefined.');
+    return undefined;
+  }
+  return columnIndexes.filter((c) => c !== undefined);
 };
 
 export const getDisplayColumns = (): JsDataTableColumnHeader[] | undefined => {
@@ -155,7 +152,7 @@ const isReadOnly = (): boolean => {
 
 const isWithinTable = (): boolean => {
   // getRow() returns zero if outside of the table
-  return !!getRow();
+  return !!getRow() || getColumn() !== undefined;
 };
 
 const isTableUIShowing = (): boolean => {
@@ -179,6 +176,8 @@ const isCodeCell = (language: CodeCellLanguage) => {
 };
 
 export const gridToDataTable = () => {
+  pixiAppSettings.setContextMenu?.({});
+
   const rectangle = sheets.sheet.cursor.getSingleRectangle();
   if (rectangle) {
     const sheetRect: SheetRect = {
@@ -187,19 +186,21 @@ export const gridToDataTable = () => {
       max: { x: BigInt(rectangle.x + rectangle.width - 1), y: BigInt(rectangle.y + rectangle.height - 1) },
     };
     quadraticCore.gridToDataTable(JSON.stringify(sheetRect, bigIntReplacer), sheets.getCursorPosition());
-    pixiAppSettings.setContextMenu?.({});
   }
 };
 
 export const flattenDataTable = () => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   if (table) {
     quadraticCore.flattenDataTable(sheets.sheet.id, table.x, table.y, sheets.getCursorPosition());
-    pixiAppSettings.setContextMenu?.({});
   }
 };
 
 export const toggleFirstRowAsHeader = () => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   if (table) {
     quadraticCore.dataTableFirstRowAsHeader(
@@ -209,22 +210,21 @@ export const toggleFirstRowAsHeader = () => {
       !isFirstRowHeader(),
       sheets.getCursorPosition()
     );
-    pixiAppSettings.setContextMenu?.({});
   }
 };
 
-export const renameTable = () => {
+const renameTable = () => {
   const table = getTable();
   const contextMenu = pixiAppSettings.contextMenu;
   if (contextMenu) {
-    setTimeout(() => {
-      const newContextMenu = { type: ContextMenuType.Table, rename: true, table };
-      events.emit('contextMenu', newContextMenu);
-    });
+    const newContextMenu = { type: ContextMenuType.Table, rename: true, table };
+    events.emit('contextMenu', newContextMenu);
   }
 };
 
 export const deleteDataTable = () => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   if (table) {
     const selection = newRectSelection(
@@ -235,27 +235,27 @@ export const deleteDataTable = () => {
       BigInt(table.y + table.h - 1)
     );
     quadraticCore.deleteCellValues(selection, sheets.getCursorPosition());
-    pixiAppSettings.setContextMenu?.({});
   }
 };
 
 export const codeToDataTable = () => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   if (table) {
     quadraticCore.codeDataTableToDataTable(sheets.current, table.x, table.y, sheets.getCursorPosition());
-    pixiAppSettings.setContextMenu?.({});
   }
 };
 
 export const sortDataTable = () => {
   const table = getTable();
-  setTimeout(() => {
-    const contextMenu = { type: ContextMenuType.TableSort, table };
-    events.emit('contextMenu', contextMenu);
-  });
+  const contextMenu = { type: ContextMenuType.TableSort, table };
+  events.emit('contextMenu', contextMenu);
 };
 
 export const toggleTableAlternatingColors = () => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   if (table) {
     quadraticCore.dataTableMeta(
@@ -265,25 +265,22 @@ export const toggleTableAlternatingColors = () => {
       { alternatingColors: !isAlternatingColorsShowing() },
       sheets.getCursorPosition()
     );
-    pixiAppSettings.setContextMenu?.({});
   }
 };
 
-export const renameTableColumn = () => {
+const renameTableColumn = () => {
   const table = getTable();
-  const column = getColumn();
+  const selectedColumn = getColumn();
 
-  if (table && column !== undefined) {
-    setTimeout(() => {
-      setTimeout(() => {
-        const contextMenu = { type: ContextMenuType.TableColumn, rename: true, table, column };
-        events.emit('contextMenu', contextMenu);
-      });
-    });
+  if (table && selectedColumn !== undefined) {
+    const contextMenu = { type: ContextMenuType.TableColumn, rename: true, table, selectedColumn };
+    events.emit('contextMenu', contextMenu);
   }
 };
 
-export const sortTableColumn = (direction: 'Ascending' | 'Descending') => {
+const sortTableColumn = (direction: 'Ascending' | 'Descending') => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   const column = getColumn();
 
@@ -306,7 +303,9 @@ export const sortTableColumnDescending = () => {
   sortTableColumn('Descending');
 };
 
-export const insertTableColumn = (increment: number = 0, selectTable = true) => {
+export const insertTableColumn = (increment: number = 0, selectTable = false) => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   const column = getColumn();
 
@@ -327,31 +326,9 @@ export const insertTableColumn = (increment: number = 0, selectTable = true) => 
   }
 };
 
-// TODO(ddimaria): remove this once ull column selection is working in order
-// to test removing a column from the full column selection context menu
-//
-// export const removeTableColumn = (selectTable = true) => {
-//   const table = getTable();
-//   const column = getColumn();
+export const removeTableColumn = (selectTable = false) => {
+  pixiAppSettings.setContextMenu?.({});
 
-//   if (table && column !== undefined) {
-//     quadraticCore.dataTableMutations({
-//       sheetId: sheets.current,
-//       x: table.x,
-//       y: table.y,
-//       select_table: selectTable,
-//       columns_to_add: undefined,
-//       columns_to_remove: [column],
-//       rows_to_add: undefined,
-//       rows_to_remove: undefined,
-//       flatten_on_delete: undefined,
-//       swallow_on_insert: undefined,
-//       cursor: sheets.getCursorPosition(),
-//     });
-//   }
-// };
-
-export const removeTableColumn = (selectTable = true) => {
   const table = getTable();
   const columns = getSelectedColumns();
 
@@ -373,29 +350,34 @@ export const removeTableColumn = (selectTable = true) => {
 };
 
 export const hideTableColumn = () => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   const column = getColumn();
   const columns = getColumns();
 
   if (table && columns && column !== undefined && columns[column]) {
     columns[column].display = false;
-
     quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { columns }, sheets.getCursorPosition());
+    sheets.sheet.cursor.hideColumn(table.name, columns[column].name);
   }
 };
 
 export const showAllTableColumns = () => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   const columns = getColumns();
 
   if (table && columns) {
     columns.forEach((column) => (column.display = true));
-
     quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { columns }, sheets.getCursorPosition());
   }
 };
 
-export const insertTableRow = (increment: number = 0, selectTable = true) => {
+export const insertTableRow = (increment: number = 0, selectTable = false) => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   const row = getRow();
 
@@ -416,31 +398,9 @@ export const insertTableRow = (increment: number = 0, selectTable = true) => {
   }
 };
 
-// TODO(ddimaria): remove this once ull row selection is working in order
-// to test removing a row from the full row selection context menu
-//
-// export const removeTableRow = (selectTable = true) => {
-//   const table = getTable();
-//   const row = getRow();
+export const removeTableRow = (selectTable = false) => {
+  pixiAppSettings.setContextMenu?.({});
 
-//   if (table && row !== undefined) {
-//     quadraticCore.dataTableMutations({
-//       sheetId: sheets.current,
-//       x: table.x,
-//       y: table.y,
-//       select_table: selectTable,
-//       columns_to_add: undefined,
-//       columns_to_remove: undefined,
-//       rows_to_add: undefined,
-//       rows_to_remove: [row],
-//       flatten_on_delete: undefined,
-//       swallow_on_insert: undefined,
-//       cursor: sheets.getCursorPosition(),
-//     });
-//   }
-// };
-
-export const removeTableRow = (selectTable = true) => {
   const table = getTable();
   const rows = getSelectedRows();
 
@@ -461,15 +421,18 @@ export const removeTableRow = (selectTable = true) => {
   }
 };
 
-export const editTableCode = () => {
+const editTableCode = () => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   if (table) {
     doubleClickCell({ column: table.x, row: table.y });
-    pixiAppSettings.setContextMenu?.({});
   }
 };
 
 export const toggleTableUI = () => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   if (table) {
     quadraticCore.dataTableMeta(
@@ -479,11 +442,12 @@ export const toggleTableUI = () => {
       { showUI: !table.show_ui },
       sheets.getCursorPosition()
     );
-    pixiAppSettings.setContextMenu?.({});
   }
 };
 
 export const toggleTableColumns = () => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   if (table) {
     quadraticCore.dataTableMeta(
@@ -493,11 +457,12 @@ export const toggleTableColumns = () => {
       { showColumns: !table.show_columns },
       sheets.getCursorPosition()
     );
-    pixiAppSettings.setContextMenu?.({});
   }
 };
 
 export const toggleTableName = () => {
+  pixiAppSettings.setContextMenu?.({});
+
   const table = getTable();
   if (table) {
     quadraticCore.dataTableMeta(
@@ -507,7 +472,6 @@ export const toggleTableName = () => {
       { showName: !table.show_name },
       sheets.getCursorPosition()
     );
-    pixiAppSettings.setContextMenu?.({});
   }
 };
 
@@ -531,6 +495,10 @@ export const dataTableSpec: DataTableSpec = {
   [Action.RenameTable]: {
     label: 'Rename',
     Icon: FileRenameIcon,
+    isAvailable: () => {
+      const table = getTable();
+      return !!table?.show_ui && !!table?.show_name;
+    },
     run: renameTable,
   },
   [Action.DeleteDataTable]: {

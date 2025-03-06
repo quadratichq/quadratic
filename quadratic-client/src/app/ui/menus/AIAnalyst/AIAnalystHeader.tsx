@@ -9,17 +9,17 @@ import {
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { AddIcon, CloseIcon, HistoryIcon } from '@/shared/components/Icons';
-import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { memo } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 type AIAnalystHeaderProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
 };
 
-export function AIAnalystHeader({ textareaRef }: AIAnalystHeaderProps) {
+export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   const [showChatHistory, setShowChatHistory] = useRecoilState(aiAnalystShowChatHistoryAtom);
   const chatsCount = useRecoilValue(aiAnalystChatsCountAtom);
   const setCurrentChat = useSetRecoilState(aiAnalystCurrentChatAtom);
@@ -31,13 +31,7 @@ export function AIAnalystHeader({ textareaRef }: AIAnalystHeaderProps) {
     <div className="flex items-center justify-between px-4 py-2">
       <span className="flex items-center text-sm font-bold">
         {viewActionsSpec[Action.ToggleAIAnalyst].label}
-        {showChatHistory ? (
-          ' history'
-        ) : (
-          <Badge variant="secondary" className="ml-2">
-            Experimental
-          </Badge>
-        )}
+        {showChatHistory && ' history'}
       </span>
 
       <div className="flex items-center gap-2">
@@ -87,4 +81,4 @@ export function AIAnalystHeader({ textareaRef }: AIAnalystHeaderProps) {
       </div>
     </div>
   );
-}
+});

@@ -11,6 +11,7 @@ import { Table } from '@/app/gridGL/cells/tables/Table';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsCodeCell, JsCoordinate, JsHtmlOutput, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import type { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import type { Point } from 'pixi.js';
@@ -29,7 +30,6 @@ export class Tables extends Container<Table> {
   private cellsSheet: CellsSheet;
 
   private activeTables: Table[] = [];
-  private contextMenuTable: Table | undefined;
 
   // either rename or sort
   private actionDataTable: Table | undefined;
@@ -57,7 +57,6 @@ export class Tables extends Container<Table> {
     events.on('sheetOffsets', this.sheetOffsets);
 
     events.on('contextMenu', this.contextMenu);
-    events.on('contextMenuClose', this.contextMenu);
 
     events.on('htmlOutput', this.htmlOutput);
     events.on('htmlUpdate', this.htmlUpdate);
@@ -72,7 +71,6 @@ export class Tables extends Container<Table> {
     events.off('sheetOffsets', this.sheetOffsets);
 
     events.off('contextMenu', this.contextMenu);
-    events.off('contextMenuClose', this.contextMenu);
 
     events.off('htmlOutput', this.htmlOutput);
     events.off('htmlUpdate', this.htmlUpdate);
@@ -178,6 +176,7 @@ export class Tables extends Container<Table> {
       } else {
         table.hideActive();
       }
+      table.header.updateSelection();
     });
   };
 
@@ -202,7 +201,7 @@ export class Tables extends Container<Table> {
   }
 
   isActive(table: Table): boolean {
-    return this.activeTables.includes(table) || table === this.contextMenuTable;
+    return this.activeTables.includes(table) || pixiAppSettings.contextMenu?.table === table.codeCell;
   }
 
   // Returns true if the pointer down as handled (eg, a column header was
@@ -238,14 +237,9 @@ export class Tables extends Container<Table> {
   // case where you hover a table and open the context menu; we want to keep
   // that table active while the context menu is open)
   contextMenu = (options?: ContextMenuOptions) => {
-    // we keep the former context menu table active after the rename finishes
-    // until the cursor moves again.
     if (this.actionDataTable) {
       this.actionDataTable.showColumnHeaders();
       this.actionDataTable = undefined;
-    }
-    if (this.contextMenuTable) {
-      this.contextMenuTable = undefined;
     }
     if (!options?.type) {
       pixiApp.setViewportDirty();
@@ -263,9 +257,9 @@ export class Tables extends Container<Table> {
           this.actionDataTable.showActive();
         }
       } else {
-        this.contextMenuTable = this.children.find((table) => table.codeCell === options.table);
-        if (this.contextMenuTable) {
-          this.contextMenuTable.showActive();
+        const contextMenuTable = this.children.find((table) => table.codeCell === options.table);
+        if (contextMenuTable) {
+          contextMenuTable.showActive();
         }
       }
     } else if (
@@ -293,9 +287,7 @@ export class Tables extends Container<Table> {
 
   getTableColumnHeaderPosition(x: number, y: number, index: number): Rectangle | undefined {
     const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
-    if (table) {
-      return table.getColumnHeaderBounds(index);
-    }
+    return table?.getColumnHeaderBounds(index);
   }
 
   getTableFromTableCell(x: number, y: number): Table | undefined {
@@ -330,12 +322,22 @@ export class Tables extends Container<Table> {
     if (this.saveToggleOutlines) {
       this.saveToggleOutlines = false;
       this.activeTables.forEach((table) => table.showActive());
-      this.contextMenuTable?.showActive();
+      const contextMenuTable = pixiAppSettings.contextMenu?.table;
+      if (contextMenuTable) {
+        const table = this.children.find((table) => table.codeCell === contextMenuTable);
+        if (table) {
+          table.showActive();
+        }
+      }
       this.actionDataTable?.showActive();
+      this.children.forEach((table) => table.header.toggleTableColumnSelection(false));
       pixiApp.setViewportDirty();
     } else {
       this.saveToggleOutlines = true;
-      this.children.forEach((table) => table.hideActive());
+      this.children.forEach((table) => {
+        table.hideActive();
+        table.header.toggleTableColumnSelection(true);
+      });
     }
   }
 
@@ -358,6 +360,7 @@ export class Tables extends Container<Table> {
     );
   }
 
+  /// Returns true if the cell is inside a table's UI (column, table name, or html/image).
   getTableFromCell(cell: JsCoordinate): Table | undefined {
     return this.children.find((table) => {
       const code = table.codeCell;
@@ -378,6 +381,26 @@ export class Tables extends Container<Table> {
     });
   }
 
+  // Returns Table if the cell is inside a table.
+  getInTable(cell: JsCoordinate): Table | undefined {
+    return this.children.find((table) => {
+      const code = table.codeCell;
+      if (code.state === 'SpillError' || code.state === 'RunError') {
+        return false;
+      }
+      if (
+        code.is_html_image &&
+        cell.x >= code.x &&
+        cell.x <= code.x + code.w - 1 &&
+        cell.y >= code.y &&
+        cell.y <= code.y + code.h - 1
+      ) {
+        return true;
+      }
+      return cell.x >= code.x && cell.x <= code.x + code.w - 1 && cell.y >= code.y && cell.y <= code.y + code.h - 1;
+    });
+  }
+
   getColumnHeaderCell(
     cell: JsCoordinate
   ): { table: Table; x: number; y: number; width: number; height: number } | undefined {
@@ -385,10 +408,10 @@ export class Tables extends Container<Table> {
       if (table.codeCell.show_ui && table.codeCell.show_columns && table.inOverHeadings) {
         if (
           cell.x >= table.codeCell.x &&
-          cell.x <= table.codeCell.x + table.codeCell.w - 1 &&
+          cell.x < table.codeCell.x + table.codeCell.w &&
           table.codeCell.y + (table.codeCell.show_name ? 1 : 0) === cell.y
         ) {
-          const index = table.codeCell.columns.findIndex((c) => c.valueIndex === cell.x - table.codeCell.x);
+          const index = table.codeCell.columns.filter((c) => c.display)[cell.x - table.codeCell.x]?.valueIndex ?? -1;
           if (index !== -1) {
             const bounds = table.header.getColumnHeaderBounds(index);
             return {

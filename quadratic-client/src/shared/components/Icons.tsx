@@ -1,11 +1,23 @@
 /**
  * This is where we map all the icons we use to the ones from [Google's Material Symbols](https://fonts.google.com/icons)
- * We use Google’s recommended implementation strategy, which is loading the font
+ * We use Google's recommended implementation strategy, which is loading the font
  * FWIW: the font is loaded via the root `index.html`
  * We import 20 dp icons, as those are the only ones we use at the moment.
  */
 import { cn } from '@/shared/shadcn/utils';
 import './icons.css';
+
+// Icons are hidden by default and we only show them once the font loads
+if (document.fonts) {
+  document.fonts
+    .load('1em Material Symbols Outlined')
+    .then(() => {
+      document.documentElement.setAttribute('data-material-symbols-loaded', 'true');
+    })
+    .catch(() => {
+      console.error('Failed to load Material Symbols font. Things are going to look funky.');
+    });
+}
 
 // const sizes = {
 //   sm: '20',
@@ -341,7 +353,7 @@ export const FormatStrikethroughIcon: IconComponent = (props) => {
 };
 
 export const FormatNumberAutomaticIcon: IconComponent = (props) => {
-  return <Icon {...props}>award_star</Icon>;
+  return <Number123Icon {...props} />;
 };
 
 export const FormatTextClipIcon: IconComponent = (props) => {
@@ -406,6 +418,10 @@ export const InsertChartIcon: IconComponent = (props) => {
 
 export const InsertCellRefIcon: IconComponent = (props) => {
   return <Icon {...props}>ink_selection</Icon>;
+};
+
+export const LightbulbIcon: IconComponent = (props) => {
+  return <Icon {...props}>lightbulb</Icon>;
 };
 
 export const LogoutIcon: IconComponent = (props) => {
@@ -533,6 +549,10 @@ export const StopCircleIcon: IconComponent = (props) => {
 
 export const TableIcon: IconComponent = (props) => {
   return <Icon {...props}>table</Icon>;
+};
+
+export const TableRowsIcon: IconComponent = (props) => {
+  return <Icon {...props}>table_rows</Icon>;
 };
 
 export const ThemeIcon: IconComponent = (props) => {

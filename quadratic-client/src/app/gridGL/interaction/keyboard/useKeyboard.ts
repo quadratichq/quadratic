@@ -1,4 +1,5 @@
 import { Action } from '@/app/actions/actions';
+import { gridToDataTable } from '@/app/actions/dataTableSpec';
 import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
@@ -62,6 +63,11 @@ export const useKeyboard = (): {
       const today = new Date();
       const formattedTime = `${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}`;
       quadraticCore.setCellValue(sheet.id, cursor.position.x, cursor.position.y, formattedTime);
+    }
+
+    if (matchShortcut(Action.GridToDataTable, event)) {
+      gridToDataTable();
+      return true;
     }
 
     // Prevent these commands if "command" key is being pressed

@@ -25,12 +25,13 @@ RUN echo 'Installing wasm32-unknown-unknown target...' && rustup target add wasm
 WORKDIR /quadratic
 
 # trigger rebuild if updateAlertVersion.json changes
-COPY updateAlertVersion.json .
+COPY --link updateAlertVersion.json .
 
 # Copy required files for building core
-COPY package.json .
-COPY ./quadratic-core/. ./quadratic-core/
-COPY ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
+COPY --link package.json .
+COPY --link ./quadratic-core/. ./quadratic-core/
+COPY --link ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
+COPY --link ./quadratic-rust-shared/. ./quadratic-rust-shared/
 
 # Build core
 RUN if [ "$CLIENT_DEV" = "true" ]; then \
@@ -65,12 +66,13 @@ RUN echo 'Installing wasm32-unknown-unknown target...' && rustup target add wasm
 WORKDIR /quadratic
 
 # trigger rebuild if updateAlertVersion.json changes
-COPY updateAlertVersion.json .
+COPY --link updateAlertVersion.json .
 
 # Copy required files for building ts/rust types
-COPY package.json .
-COPY ./quadratic-core/. ./quadratic-core/
-COPY ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
+COPY --link package.json .
+COPY --link ./quadratic-core/. ./quadratic-core/
+COPY --link ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
+COPY --link ./quadratic-rust-shared/. ./quadratic-rust-shared/
 
 # Build TS/Rust types
 RUN echo 'Building TS/Rust types...' && npm run export_types --workspace=quadratic-core
@@ -106,10 +108,11 @@ WORKDIR /quadratic
 COPY updateAlertVersion.json .
 
 # Copy required files for building rust client
-COPY package.json .
-COPY ./quadratic-core/. ./quadratic-core/
-COPY ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
-COPY ./quadratic-rust-client/. ./quadratic-rust-client/
+COPY --link package.json .
+COPY --link ./quadratic-rust-client/. ./quadratic-rust-client/
+COPY --link ./quadratic-core/. ./quadratic-core/
+COPY --link ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
+COPY --link ./quadratic-rust-shared/. ./quadratic-rust-shared/
 
 # Build the rust-client
 ARG GIT_COMMIT
@@ -129,9 +132,9 @@ FROM node:18 AS vite-builder
 WORKDIR /quadratic
 
 # Copy files from core, ts/rust types, and rust client builders
-COPY --from=core-builder /quadratic/quadratic-client/src/app/quadratic-core/. ./quadratic-client/src/app/quadratic-core
-COPY --from=ts-rust-types-builder /quadratic/quadratic-client/src/app/quadratic-core-types/. ./quadratic-client/src/app/quadratic-core-types
-COPY --from=rust-client-builder /quadratic/quadratic-client/src/app/quadratic-rust-client/. ./quadratic-client/src/app/quadratic-rust-client
+COPY --link --from=core-builder /quadratic/quadratic-client/src/app/quadratic-core/. ./quadratic-client/src/app/quadratic-core
+COPY --link --from=ts-rust-types-builder /quadratic/quadratic-client/src/app/quadratic-core-types/. ./quadratic-client/src/app/quadratic-core-types
+COPY --link --from=rust-client-builder /quadratic/quadratic-client/src/app/quadratic-rust-client/. ./quadratic-client/src/app/quadratic-rust-client
 
 # Install system brotli instead of Rust version
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -141,24 +144,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   pigz
 
 # Copy updateAlertVersion.json
-COPY updateAlertVersion.json .
+COPY --link updateAlertVersion.json .
 
 # Copy all package.json files
-COPY package.json .
-COPY package-lock.json .
-COPY ./quadratic-kernels/python-wasm/package*.json ./quadratic-kernels/python-wasm/
-COPY ./quadratic-core/package*.json ./quadratic-core/
-COPY ./quadratic-rust-client/package*.json ./quadratic-rust-client/
-COPY ./quadratic-shared/package*.json ./quadratic-shared/
-COPY ./quadratic-client/package*.json ./quadratic-client/
+COPY --link package.json .
+COPY --link package-lock.json .
+COPY --link ./quadratic-kernels/python-wasm/package*.json ./quadratic-kernels/python-wasm/
+COPY --link ./quadratic-core/package*.json ./quadratic-core/
+COPY --link ./quadratic-rust-client/package*.json ./quadratic-rust-client/
+COPY --link ./quadratic-shared/package*.json ./quadratic-shared/
+COPY --link ./quadratic-client/package*.json ./quadratic-client/
 
 # Install npm dependencies
 RUN npm install --no-audit --no-fund
 
 # Copy remaining files
-COPY ./quadratic-kernels/python-wasm/. ./quadratic-kernels/python-wasm/
-COPY ./quadratic-shared/. ./quadratic-shared/
-COPY ./quadratic-client/. ./quadratic-client/
+COPY --link ./quadratic-kernels/python-wasm/. ./quadratic-kernels/python-wasm/
+COPY --link ./quadratic-shared/. ./quadratic-shared/
+COPY --link ./quadratic-client/. ./quadratic-client/
 
 # Run the packaging script for quadratic_py
 RUN ./quadratic-kernels/python-wasm/package.sh --no-poetry

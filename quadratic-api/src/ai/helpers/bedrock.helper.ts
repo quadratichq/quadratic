@@ -8,9 +8,15 @@ import {
 } from '@aws-sdk/client-bedrock-runtime';
 import type { Response } from 'express';
 import { getSystemPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { AIMessagePrompt, AIRequestHelperArgs, BedrockModel } from 'quadratic-shared/typesAndSchemasAI';
+import type {
+  AIMessagePrompt,
+  AIRequestHelperArgs,
+  AISource,
+  BedrockModelKey,
+} from 'quadratic-shared/typesAndSchemasAI';
 
 export function getBedrockApiArgs(args: AIRequestHelperArgs): {
   system: SystemContentBlock[] | undefined;
@@ -18,22 +24,20 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
   tools: Tool[] | undefined;
   tool_choice: ToolChoice | undefined;
 } {
-  const { messages: chatMessages, useTools, toolName } = args;
+  const { messages: chatMessages, toolName, source } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
   const system: SystemContentBlock[] = systemMessages.map((message) => ({ text: message }));
-  const messages: Message[] = promptMessages.map<Message>((message) => {
-    if (message.role === 'assistant' && message.contextType === 'userPrompt' && message.toolCalls.length > 0) {
+  const messages: Message[] = promptMessages.reduce<Message[]>((acc, message) => {
+    if (message.role === 'assistant' && message.contextType === 'userPrompt') {
       const bedrockMessage: Message = {
         role: message.role,
         content: [
-          ...(message.content
-            ? [
-                {
-                  text: message.content,
-                },
-              ]
-            : []),
+          ...message.content
+            .filter((content) => content.text && content.type === 'text')
+            .map((content) => ({
+              text: content.text,
+            })),
           ...message.toolCalls.map((toolCall) => ({
             toolUse: {
               toolUseId: toolCall.id,
@@ -43,7 +47,7 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
           })),
         ],
       };
-      return bedrockMessage;
+      return [...acc, bedrockMessage];
     } else if (message.role === 'user' && message.contextType === 'toolResult') {
       const bedrockMessage: Message = {
         role: message.role,
@@ -61,8 +65,8 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
           })),
         ],
       };
-      return bedrockMessage;
-    } else {
+      return [...acc, bedrockMessage];
+    } else if (message.content) {
       const bedrockMessage: Message = {
         role: message.role,
         content: [
@@ -71,27 +75,29 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
           },
         ],
       };
-      return bedrockMessage;
+      return [...acc, bedrockMessage];
+    } else {
+      return acc;
     }
-  });
+  }, []);
 
-  const tools = getBedrockTools(useTools, toolName);
-  const tool_choice = getBedrockToolChoice(useTools, toolName);
+  const tools = getBedrockTools(source, toolName);
+  const tool_choice = tools?.length ? getBedrockToolChoice(toolName) : undefined;
 
   return { system, messages, tools, tool_choice };
 }
 
-function getBedrockTools(useTools?: boolean, toolName?: AITool): Tool[] | undefined {
-  if (!useTools) {
-    return undefined;
-  }
-
+function getBedrockTools(source: AISource, toolName?: AITool): Tool[] | undefined {
   const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
     if (toolName === undefined) {
-      return !toolSpec.internalTool;
+      return toolSpec.sources.includes(source);
     }
     return name === toolName;
   });
+
+  if (tools.length === 0) {
+    return undefined;
+  }
 
   const bedrockTools: Tool[] = tools.map(
     ([name, { description, parameters: input_schema }]): Tool => ({
@@ -108,60 +114,58 @@ function getBedrockTools(useTools?: boolean, toolName?: AITool): Tool[] | undefi
   return bedrockTools;
 }
 
-function getBedrockToolChoice(useTools?: boolean, name?: AITool): ToolChoice | undefined {
-  if (!useTools) {
-    return undefined;
-  }
-
-  const toolChoice: ToolChoice = name === undefined ? { auto: {} } : { tool: { name } };
+function getBedrockToolChoice(toolName?: AITool): ToolChoice | undefined {
+  const toolChoice: ToolChoice = toolName === undefined ? { auto: {} } : { tool: { name: toolName } };
   return toolChoice;
 }
 
 export async function parseBedrockStream(
   chunks: AsyncIterable<ConverseStreamOutput> | never[],
   response: Response,
-  model: BedrockModel
+  modelKey: BedrockModelKey
 ) {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
-    content: '',
+    content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model,
+    model: getModelFromModelKey(modelKey),
   };
 
   for await (const chunk of chunks) {
     if (!response.writableEnded) {
       if (chunk.contentBlockStart && chunk.contentBlockStart.start && chunk.contentBlockStart.start.toolUse) {
-        const toolCalls = [...responseMessage.toolCalls];
         const toolCall = {
           id: chunk.contentBlockStart.start.toolUse.toolUseId ?? '',
           name: chunk.contentBlockStart.start.toolUse.name ?? '',
           arguments: '',
           loading: true,
         };
-        toolCalls.push(toolCall);
-        responseMessage.toolCalls = toolCalls;
+        responseMessage.toolCalls.push(toolCall);
       }
       // tool use stop
       else if (chunk.contentBlockStop) {
-        const toolCalls = [...responseMessage.toolCalls];
-        let toolCall = toolCalls.pop();
+        let toolCall = responseMessage.toolCalls.pop();
         if (toolCall) {
           toolCall = { ...toolCall, loading: false };
-          toolCalls.push(toolCall);
-          responseMessage.toolCalls = toolCalls;
+          responseMessage.toolCalls.push(toolCall);
         }
       } else if (chunk.contentBlockDelta && chunk.contentBlockDelta.delta) {
         // text delta
         if ('text' in chunk.contentBlockDelta.delta) {
-          responseMessage.content += chunk.contentBlockDelta.delta.text;
+          const currentContent = {
+            ...(responseMessage.content.pop() ?? {
+              type: 'text',
+              text: '',
+            }),
+          };
+          currentContent.text += chunk.contentBlockDelta.delta.text ?? '';
+          responseMessage.content.push(currentContent);
         }
         // tool use delta
         if ('toolUse' in chunk.contentBlockDelta.delta) {
-          const toolCalls = [...responseMessage.toolCalls];
           const toolCall = {
-            ...(toolCalls.pop() ?? {
+            ...(responseMessage.toolCalls.pop() ?? {
               id: '',
               name: '',
               arguments: '',
@@ -169,8 +173,7 @@ export async function parseBedrockStream(
             }),
           };
           toolCall.arguments += chunk.contentBlockDelta.delta.toolUse?.input ?? '';
-          toolCalls.push(toolCall);
-          responseMessage.toolCalls = toolCalls;
+          responseMessage.toolCalls.push(toolCall);
         }
       }
 
@@ -180,11 +183,23 @@ export async function parseBedrockStream(
     }
   }
 
-  if (!responseMessage.content) {
-    responseMessage.content =
-      responseMessage.toolCalls.length > 0 ? '' : "I'm sorry, I don't have a response for that.";
-    response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+  responseMessage.content = responseMessage.content.filter((content) => content.text !== '');
+
+  if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
+    responseMessage.content.push({
+      type: 'text',
+      text: "I'm sorry, I don't have a response for that.",
+    });
   }
+
+  if (responseMessage.toolCalls.some((toolCall) => toolCall.loading)) {
+    responseMessage.toolCalls = responseMessage.toolCalls.map((toolCall) => ({
+      ...toolCall,
+      loading: false,
+    }));
+  }
+
+  response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
 
   if (!response.writableEnded) {
     response.end();
@@ -196,31 +211,31 @@ export async function parseBedrockStream(
 export function parseBedrockResponse(
   result: ConverseOutput | undefined,
   response: Response,
-  model: BedrockModel
+  modelKey: BedrockModelKey
 ): AIMessagePrompt {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
-    content: '',
+    content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model,
+    model: getModelFromModelKey(modelKey),
   };
 
   result?.message?.content?.forEach((contentBlock) => {
     if ('text' in contentBlock) {
-      responseMessage.content += contentBlock.text;
+      responseMessage.content.push({
+        type: 'text',
+        text: contentBlock.text ?? '',
+      });
     }
 
     if ('toolUse' in contentBlock) {
-      responseMessage.toolCalls = [
-        ...responseMessage.toolCalls,
-        {
-          id: contentBlock.toolUse?.toolUseId ?? '',
-          name: contentBlock.toolUse?.name ?? '',
-          arguments: JSON.stringify(contentBlock.toolUse?.input ?? ''),
-          loading: false,
-        },
-      ];
+      responseMessage.toolCalls.push({
+        id: contentBlock.toolUse?.toolUseId ?? '',
+        name: contentBlock.toolUse?.name ?? '',
+        arguments: JSON.stringify(contentBlock.toolUse?.input ?? ''),
+        loading: false,
+      });
     }
 
     if (!('text' in contentBlock) && !('toolUse' in contentBlock)) {
@@ -228,9 +243,11 @@ export function parseBedrockResponse(
     }
   });
 
-  if (!responseMessage.content) {
-    responseMessage.content =
-      responseMessage.toolCalls.length > 0 ? '' : "I'm sorry, I don't have a response for that.";
+  if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
+    responseMessage.content.push({
+      type: 'text',
+      text: "I'm sorry, I don't have a response for that.",
+    });
   }
 
   response.json(responseMessage);

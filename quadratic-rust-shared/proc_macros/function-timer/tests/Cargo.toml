@@ -1,0 +1,13 @@
+[package]
+name = "function-timer-tests"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+function-timer = { path = "../", features = ["function-timer"] }
+
+[[bin]]
+name = "function-timer-tests"
+path = "main.rs"
+
+[workspace]

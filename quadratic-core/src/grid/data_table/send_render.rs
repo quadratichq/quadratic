@@ -20,6 +20,8 @@ impl DataTable {
         sheet: &Sheet,
         data_table_pos: Pos,
     ) -> Result<()> {
+        transaction.add_from_code_run(sheet.id, data_table_pos, self.is_image(), self.is_html());
+
         if !(cfg!(target_family = "wasm") || cfg!(test)) || transaction.is_server() {
             return Ok(());
         }

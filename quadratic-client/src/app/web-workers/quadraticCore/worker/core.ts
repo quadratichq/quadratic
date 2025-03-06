@@ -15,6 +15,7 @@ import type {
   CellVerticalAlign,
   CellWrap,
   CodeCellLanguage,
+  DataTableSort,
   Direction,
   Format,
   JsCellValue,
@@ -22,6 +23,7 @@ import type {
   JsCodeCell,
   JsCodeResult,
   JsCoordinate,
+  JsDataTableColumnHeader,
   JsRenderCell,
   JsSelectionContext,
   JsSummarizeSelectionResult,
@@ -1077,12 +1079,10 @@ class Core {
     return validation;
   }
 
-  receiveRowHeights(transactionId: string, sheetId: string, rowHeights: string) {
-    this.renderQueue.push(() => {
-      if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.receiveRowHeights(transactionId, sheetId, rowHeights);
-    });
-  }
+  receiveRowHeights = (transactionId: string, sheetId: string, rowHeights: string) => {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.receiveRowHeights(transactionId, sheetId, rowHeights);
+  };
 
   setDateTimeFormat(selection: string, format: string, cursor: string) {
     this.clientQueue.push(() => {
@@ -1193,7 +1193,7 @@ class Core {
     y: number,
     name?: string,
     alternatingColors?: boolean,
-    columns?: { name: string; display: boolean; valueIndex: number }[],
+    columns?: JsDataTableColumnHeader[],
     showUI?: boolean,
     showName?: boolean,
     showColumns?: boolean,
@@ -1241,13 +1241,7 @@ class Core {
     );
   }
 
-  sortDataTable(
-    sheetId: string,
-    x: number,
-    y: number,
-    sort: { column_index: number; direction: string }[],
-    cursor: string
-  ) {
+  sortDataTable(sheetId: string, x: number, y: number, sort: DataTableSort[] | undefined, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.sortDataTable(sheetId, posToPos(x, y), JSON.stringify(sort), cursor);
   }
@@ -1269,9 +1263,9 @@ class Core {
     );
   }
 
-  getCellsA1(transactionId: string, a1: string, lineNumber?: number): string {
+  getCellsA1(transactionId: string, a1: string): string {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    return this.gridController.calculationGetCellsA1(transactionId, a1, lineNumber);
+    return this.gridController.calculationGetCellsA1(transactionId, a1);
   }
 
   finiteRectFromSelection(selection: string): Rectangle | undefined {

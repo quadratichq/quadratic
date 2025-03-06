@@ -122,10 +122,10 @@ pub fn parse_formula(formula_string: &str, ctx: &A1Context, pos: SheetPos) -> Fo
         parse_error_msg: parse_error.as_ref().map(|e| e.msg.to_string()),
         parse_error_span: parse_error.and_then(|e| e.span),
 
-        // todo: cell_refs are returning Relative positions that are actually Absolute
         cell_refs: formulas::find_cell_references(formula_string, ctx, pos)
             .into_iter()
-            .map(|r| r.into())
+            .filter_map(|spanned_result| spanned_result.transpose().ok())
+            .map(|spanned| spanned.into())
             .collect(),
     };
     result
@@ -188,10 +188,10 @@ mod tests {
         let mut g = Grid::new();
         g.add_sheet(Some(Sheet::new(
             SheetId::new(),
-            "Sheet2".to_string(),
+            "Sheet 2".to_string(),
             String::new(),
         )));
-        let result = parse(&g, "'Sheet2'!A1");
+        let result = parse(&g, "'Sheet 2'!A1");
         assert_eq!(result.parse_error_msg, None);
         assert_eq!(result.parse_error_span, None);
         assert_eq!(result.cell_refs.len(), 1);

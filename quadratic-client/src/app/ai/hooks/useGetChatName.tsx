@@ -32,12 +32,14 @@ ${JSON.stringify(chatPromptMessages)}
         const response = await handleAIRequestToAPI({
           chatId: v4(),
           source: 'GetChatName',
-          model: DEFAULT_GET_CHAT_NAME_MODEL,
+          modelKey: DEFAULT_GET_CHAT_NAME_MODEL,
           messages,
           signal: abortController.signal,
           useStream: false,
-          useTools: true,
           toolName: AITool.SetChatName,
+          useToolsPrompt: false,
+          language: undefined,
+          useQuadraticContext: false,
         });
 
         const setChatNameToolCall = response.toolCalls.find((toolCall) => toolCall.name === AITool.SetChatName);

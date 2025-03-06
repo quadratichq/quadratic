@@ -24,7 +24,6 @@ use crate::{
 use anyhow::{anyhow, bail, Ok, Result};
 use chrono::{DateTime, Utc};
 use column_header::DataTableColumnHeader;
-use itertools::Itertools;
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -40,54 +39,41 @@ use tabled::{
 use super::sheet::borders::Borders;
 use super::{CodeRunOld, CodeRunResult, Grid, SheetFormatting, SheetId};
 
+/// Returns a unique name for the data table, taking into account its
+/// position on the sheet (so it doesn't conflict with itself).
+pub fn unique_data_table_name(
+    name: &str,
+    require_number: bool,
+    sheet_pos: Option<SheetPos>,
+    context: &A1Context,
+) -> String {
+    let check_name = |name: &str| !context.table_map.contains_name(name, sheet_pos);
+
+    let name = unique_name(name, require_number, check_name);
+
+    // replace spaces with underscores
+    name.replace(' ', "_")
+}
+
 impl Grid {
+    /// Returns the data table at the given position.
     pub fn data_table(&self, sheet_id: SheetId, pos: Pos) -> Result<&DataTable> {
         self.try_sheet_result(sheet_id)?.data_table_result(pos)
     }
 
-    /// Returns a unique name for the data table, taking into account its
-    /// Returns a unique name for the data table, taking into account its
-    /// position on the sheet (so it doesn't conflict with itself).
-    pub fn unique_data_table_name(
-        &self,
-        name: &str,
-        require_number: bool,
-        sheet_pos: Option<SheetPos>,
-    ) -> String {
-        let all_names = &self
-            .sheets()
-            .iter()
-            .flat_map(|sheet| {
-                sheet.data_tables.iter().filter_map(|(pos, dt)| {
-                    if let Some(sheet_pos) = sheet_pos {
-                        if sheet.id != sheet_pos.sheet_id || pos != &sheet_pos.into() {
-                            Some(dt.name.to_display())
-                        } else {
-                            None
-                        }
-                    } else {
-                        Some(dt.name.to_display())
-                    }
-                })
-            })
-            .collect_vec();
-
-        let name = unique_name(name, all_names, require_number);
-
-        // replace spaces with underscores
-        name.replace(' ', "_")
-    }
-
+    /// Updates the name of a data table and replaces the old name in all code cells that reference it.
     pub fn update_data_table_name(
         &mut self,
         sheet_pos: SheetPos,
         old_name: &str,
         new_name: &str,
+        context: &A1Context,
         require_number: bool,
     ) -> Result<()> {
-        let unique_name = self.unique_data_table_name(new_name, require_number, Some(sheet_pos));
+        let unique_name =
+            unique_data_table_name(new_name, require_number, Some(sheet_pos), context);
 
-        self.replace_table_name_in_code_cells(old_name, &unique_name);
+        self.replace_table_name_in_code_cells(old_name, &unique_name, context);
 
         let sheet = self
             .try_sheet_mut(sheet_pos.sheet_id)
@@ -101,20 +87,32 @@ impl Grid {
     }
 
     /// Returns a unique name for a data table
-    pub fn next_data_table_name(&self) -> String {
-        self.unique_data_table_name("Table", true, None)
+    pub fn next_data_table_name(&self, context: &A1Context) -> String {
+        unique_data_table_name("Table", true, None, context)
     }
 
     /// Replaces the table name in all code cells that reference the old name in all sheets in the grid.
-    pub fn replace_table_name_in_code_cells(&mut self, old_name: &str, new_name: &str) {
+    pub fn replace_table_name_in_code_cells(
+        &mut self,
+        old_name: &str,
+        new_name: &str,
+        context: &A1Context,
+    ) {
         for sheet in self.sheets.iter_mut() {
-            sheet.replace_table_name_in_code_cells(old_name, new_name);
+            sheet.replace_table_name_in_code_cells(old_name, new_name, context);
         }
     }
 
-    pub fn replace_data_table_column_name_in_code_cells(&mut self, old_name: &str, new_name: &str) {
+    /// Replaces the column name in all code cells that reference the old name in all sheets in the grid.
+    pub fn replace_table_column_name_in_code_cells(
+        &mut self,
+        table_name: &str,
+        old_name: &str,
+        new_name: &str,
+        context: &A1Context,
+    ) {
         for sheet in self.sheets.iter_mut() {
-            sheet.replace_data_table_column_name_in_code_cells(old_name, new_name);
+            sheet.replace_table_column_name_in_code_cells(table_name, old_name, new_name, context);
         }
     }
 }
@@ -122,7 +120,7 @@ impl Grid {
 const A1_REGEX: &str = r#"\b\$?[a-zA-Z]+\$\d+\b"#;
 const R1C1_REGEX: &str = r#"\bR\d+C\d+\b"#;
 const TABLE_NAME_VALID_CHARS: &str = r#"^[a-zA-Z_\\][a-zA-Z0-9_.]*$"#;
-const COLUMN_NAME_VALID_CHARS: &str = r#"^[a-zA-Z_\-(][a-zA-Z0-9_\- .()\p{Pd}]*[a-zA-Z0-9_\-)]$"#;
+const COLUMN_NAME_VALID_CHARS: &str = r#"^[a-zA-Z_\-]([a-zA-Z0-9_\- .()\p{Pd}]*[a-zA-Z0-9_\-)])?$"#;
 lazy_static! {
     static ref A1_REGEX_COMPILED: Regex = Regex::new(A1_REGEX).expect("Failed to compile A1_REGEX");
     static ref R1C1_REGEX_COMPILED: Regex =
@@ -147,6 +145,7 @@ pub struct DataTable {
     pub header_is_first_row: bool,
     pub column_headers: Option<Vec<DataTableColumnHeader>>,
     pub sort: Option<Vec<DataTableSort>>,
+    pub sort_dirty: bool,
     pub display_buffer: Option<Vec<u64>>,
     pub value: Value,
     pub readonly: bool,
@@ -165,9 +164,9 @@ pub struct DataTable {
     pub chart_output: Option<(u32, u32)>,
 }
 
-impl From<(Import, Array, &Grid)> for DataTable {
-    fn from((import, cell_values, grid): (Import, Array, &Grid)) -> Self {
-        let name = grid.unique_data_table_name(&import.file_name, false, None);
+impl From<(Import, Array, &A1Context)> for DataTable {
+    fn from((import, cell_values, context): (Import, Array, &A1Context)) -> Self {
+        let name = unique_data_table_name(&import.file_name, false, None, context);
 
         DataTable::new(
             DataTableKind::Import(import),
@@ -235,9 +234,12 @@ impl DataTable {
 
             column_headers: None,
             sort: None,
+            sort_dirty: false,
+            display_buffer: None,
+
             formats: Default::default(),
             borders: Default::default(),
-            display_buffer: None,
+
             chart_output: None,
         };
 
@@ -248,6 +250,32 @@ impl DataTable {
         }
 
         data_table
+    }
+
+    pub fn clone_without_values(&self) -> Self {
+        Self {
+            kind: self.kind.clone(),
+            name: self.name.clone(),
+            header_is_first_row: self.header_is_first_row,
+            column_headers: self.column_headers.clone(),
+            sort: self.sort.clone(),
+            sort_dirty: self.sort_dirty,
+            display_buffer: self.display_buffer.clone(),
+            value: Value::Single(CellValue::Blank),
+            readonly: self.readonly,
+            spill_error: self.spill_error,
+            last_modified: self.last_modified,
+            alternating_colors: self.alternating_colors,
+            formats: self.formats.clone(),
+            borders: self.borders.clone(),
+
+            show_ui: self.show_ui,
+            show_name: self.show_name,
+            show_columns: self.show_columns,
+
+            chart_pixel_output: self.chart_pixel_output,
+            chart_output: self.chart_output,
+        }
     }
 
     /// Apply a new last modified date to the DataTable.
@@ -267,7 +295,13 @@ impl DataTable {
         self.show_columns = show_columns;
         self
     }
-
+    /// Validates the table name.
+    ///
+    /// Table name must be between 1 and 255 characters
+    /// Table name cannot be a single 'R' or 'C'
+    /// Table name cannot be a cell reference
+    /// Table name cannot contain invalid characters
+    /// Table name must be unique
     pub fn validate_table_name(
         name: &str,
         context: &A1Context,
@@ -300,9 +334,14 @@ impl DataTable {
         std::result::Result::Ok(true)
     }
 
+    /// Validates the column name.
+    ///
+    /// Column name must be between 1 and 255 characters
+    /// Column name cannot contain invalid characters
+    /// Column name must be unique
     pub fn validate_column_name(
-        column_name: &str,
         table_name: &str,
+        column_name: &str,
         context: &A1Context,
     ) -> std::result::Result<bool, String> {
         // Check length limit
@@ -323,10 +362,12 @@ impl DataTable {
         std::result::Result::Ok(true)
     }
 
+    /// Updates the table name.
     pub fn update_table_name(&mut self, name: &str) {
         self.name = name.into();
     }
 
+    /// Returns a reference to the values in the data table.
     pub fn value_ref(&self) -> Result<Vec<&CellValue>> {
         match &self.value {
             Value::Single(value) => Ok(vec![value]),
@@ -335,6 +376,7 @@ impl DataTable {
         }
     }
 
+    /// Returns the width of the data table.
     pub fn width(&self) -> usize {
         match &self.value {
             Value::Single(_) => 1,
@@ -343,6 +385,7 @@ impl DataTable {
         }
     }
 
+    /// Returns the height of the data table.
     pub fn height(&self, force_table_bounds: bool) -> usize {
         match &self.value {
             Value::Single(_) => 1,
@@ -488,6 +531,7 @@ impl DataTable {
         }
     }
 
+    /// Returns true if the data table is an html.
     pub fn is_html(&self) -> bool {
         if let Value::Single(value) = &self.value {
             matches!(value, CellValue::Html(_))
@@ -496,6 +540,7 @@ impl DataTable {
         }
     }
 
+    /// Returns true if the data table is an image.
     pub fn is_image(&self) -> bool {
         if let Value::Single(value) = &self.value {
             matches!(value, CellValue::Image(_))
@@ -532,6 +577,7 @@ impl DataTable {
         }
     }
 
+    /// Returns the value as an array.
     pub fn value_as_array(&self) -> Result<&Array> {
         match &self.value {
             Value::Array(array) => Ok(array),
@@ -570,7 +616,7 @@ impl DataTable {
             let row = row.iter().map(|s| s.to_string()).collect::<Vec<_>>();
             let display_index = vec![display_buffer[index].to_string()];
 
-            if index == 0 && data_table.column_headers.is_some() {
+            if index == 0 && data_table.column_headers.is_some() && data_table.show_columns {
                 let headers = data_table
                     .column_headers
                     .as_ref()
@@ -580,7 +626,7 @@ impl DataTable {
                     .map(|h| h.name.to_string())
                     .collect::<Vec<_>>();
                 builder.set_header([display_index, headers].concat());
-            } else if index == 0 && data_table.header_is_first_row {
+            } else if index == 0 && data_table.header_is_first_row && data_table.show_columns {
                 let row = [display_index, row].concat();
                 builder.set_header(row);
             } else {
@@ -657,6 +703,7 @@ impl DataTable {
     pub fn is_dataframe(&self) -> bool {
         if let DataTableKind::CodeRun(code_run) = &self.kind {
             code_run.output_type == Some("DataFrame".into())
+                || code_run.output_type == Some("Series".into())
         } else {
             false
         }
@@ -690,7 +737,8 @@ pub mod test {
         let values = test_csv_values();
         let import = Import::new(file_name.into());
         let array = Array::from_str_vec(values, true).unwrap();
-        let data_table = DataTable::from((import.clone(), array, grid));
+        let context = gc.a1_context();
+        let data_table = DataTable::from((import.clone(), array, context));
 
         (sheet, data_table)
     }
@@ -980,9 +1028,9 @@ pub mod test {
             DataTableColumnHeader::new("D".to_string(), true, 3),  // visible
         ]);
 
-        assert_eq!(data_table.get_column_index_from_display_index(0), 1);
-        assert_eq!(data_table.get_column_index_from_display_index(1), 3);
-        assert_eq!(data_table.get_column_index_from_display_index(2), 4); // out of bounds
+        assert_eq!(data_table.get_column_index_from_display_index(0, true), 1);
+        assert_eq!(data_table.get_column_index_from_display_index(1, true), 3);
+        assert_eq!(data_table.get_column_index_from_display_index(2, true), 4); // out of bounds
     }
 
     #[test]
@@ -1037,6 +1085,7 @@ pub mod test {
             "_hidden",
             "\\special",
             longest_name.as_str(),
+            "a",
         ];
 
         for name in valid_names {
@@ -1103,13 +1152,14 @@ pub mod test {
             "Column.With.Dots",
             "Column(With)Parentheses",
             "_hidden_column",
+            "a",
             "Column-with–en—dash", // Testing various dash characters
             longest_name.as_str(),
         ];
 
         for name in valid_names {
             assert!(
-                DataTable::validate_column_name(name, table_name, &context).is_ok(),
+                DataTable::validate_column_name(table_name, name, &context).is_ok(),
                 "Expected '{}' to be valid",
                 name
             );
@@ -1160,7 +1210,7 @@ pub mod test {
         ];
 
         for (name, expected_error) in test_cases {
-            let result = DataTable::validate_column_name(name, table_name, &context);
+            let result = DataTable::validate_column_name(table_name, name, &context);
             assert!(
                 result.is_err(),
                 "Expected '{}' to be invalid, but it was valid",
@@ -1175,7 +1225,7 @@ pub mod test {
         }
 
         // Test duplicate column name
-        let result = DataTable::validate_column_name("existing_col", table_name, &context);
+        let result = DataTable::validate_column_name(table_name, "existing_col", &context);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Column name must be unique");
     }

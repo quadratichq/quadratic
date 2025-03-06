@@ -52,14 +52,8 @@ impl JsSelection {
 
     #[wasm_bindgen(js_name = "selectRect")]
     pub fn select_rect(&mut self, left: u32, top: u32, right: u32, bottom: u32, append: bool) {
-        self.selection.select_rect(
-            left as i64,
-            top as i64,
-            right as i64,
-            bottom as i64,
-            append,
-            &self.context,
-        );
+        self.selection
+            .select_rect(left as i64, top as i64, right as i64, bottom as i64, append);
     }
 
     #[wasm_bindgen(js_name = "selectTo")]
@@ -70,8 +64,7 @@ impl JsSelection {
 
     #[wasm_bindgen(js_name = "moveTo")]
     pub fn move_to(&mut self, x: u32, y: u32, append: bool) {
-        self.selection
-            .move_to(x as i64, y as i64, append, &self.context);
+        self.selection.move_to(x as i64, y as i64, append);
     }
 
     #[wasm_bindgen(js_name = "setColumnsSelected")]
@@ -101,5 +94,16 @@ impl JsSelection {
             shift_key,
             ctrl_key,
         );
+    }
+
+    #[wasm_bindgen(js_name = "checkForTableRef")]
+    pub fn check_for_table_ref(&mut self, sheet_id: String) {
+        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
+            if let Some(last) = self.selection.ranges.last_mut() {
+                if let Some(range) = last.check_for_table_ref(sheet_id, &self.context) {
+                    *last = range;
+                }
+            }
+        }
     }
 }

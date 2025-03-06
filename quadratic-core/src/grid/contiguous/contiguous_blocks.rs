@@ -166,7 +166,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     {
         self.non_default_blocks()
             .rev()
-            .last()
+            .next_back()
             .map(|block| block.start)
     }
 
@@ -548,9 +548,10 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use itertools::Itertools;
     use proptest::prelude::*;
+
+    use super::*;
 
     // Comment out variants to test individual operations
     #[derive(Debug, Copy, Clone, proptest_derive::Arbitrary)]

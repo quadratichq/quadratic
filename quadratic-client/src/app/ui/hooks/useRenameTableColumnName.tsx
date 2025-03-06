@@ -1,4 +1,5 @@
 import { sheets } from '@/app/grid/controller/Sheets';
+import type { JsDataTableColumnHeader } from '@/app/quadratic-core-types';
 import { validateColumnName } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -12,25 +13,29 @@ export function useRenameTableColumnName() {
       sheetId,
       x,
       y,
-      columnName,
       tableName,
+      oldColumnName,
+      newColumnName,
       columns,
     }: {
       sheetId: string;
       x: number;
       y: number;
-      columnName: string;
       tableName: string;
-      columns: { name: string; display: boolean; valueIndex: number }[];
+      oldColumnName: string;
+      newColumnName: string;
+      columns: JsDataTableColumnHeader[];
     }) => {
       try {
-        validateColumnName(columnName, tableName, sheets.a1Context);
+        validateColumnName(tableName, newColumnName, sheets.a1Context);
       } catch (error) {
         addGlobalSnackbar(error as string, { severity: 'error' });
         return;
       }
 
-      quadraticCore.dataTableMeta(sheetId, x, y, { columns }, sheets.getCursorPosition());
+      const cursor = sheets.getCursorPosition();
+      sheets.updateColumnName(tableName, oldColumnName, newColumnName);
+      quadraticCore.dataTableMeta(sheetId, x, y, { columns }, cursor);
     },
     [addGlobalSnackbar]
   );

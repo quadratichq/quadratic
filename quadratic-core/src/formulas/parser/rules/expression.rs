@@ -204,7 +204,8 @@ impl SyntaxRule for ExpressionWithPrecedence {
                 | Token::UnterminatedStringLiteral
                 | Token::NumericLiteral
                 | Token::CellOrTableRef
-                | Token::InternalCellRef => true,
+                | Token::InternalCellRef
+                | Token::Error => true,
 
                 Token::TableRefBracketsExpression => false,
                 Token::Whitespace => false,
@@ -228,6 +229,7 @@ impl SyntaxRule for ExpressionWithPrecedence {
                     NumericLiteral.map(Some),
                     ArrayLiteral.map(Some),
                     BoolExpression.map(Some),
+                    ErrorExpression.map(Some),
                     ParenExpression.map(Some),
                 ],
             )
@@ -415,8 +417,10 @@ impl SyntaxRule for CellReferenceExpression {
         CellReference.prefix_matches(p)
     }
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
-        Ok(p.parse(CellReference)?
-            .map(|(sheet_id, range)| ast::AstNodeContents::CellRef(sheet_id, range)))
+        Ok(p.parse(CellReference)?.map(|result| match result {
+            Ok((sheet_id, range)) => ast::AstNodeContents::CellRef(sheet_id, range),
+            Err(e) => ast::AstNodeContents::Error(e.into()),
+        }))
     }
 }
 

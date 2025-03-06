@@ -6,6 +6,9 @@ use itertools::Itertools;
 use lazy_static::lazy_static;
 use regex::Regex;
 
+use crate::a1::UNBOUNDED;
+use crate::RefError;
+
 lazy_static! {
     pub static ref MATCH_NUMBERS: Regex = Regex::new(r"\d+$").expect("regex should compile");
 }
@@ -169,26 +172,26 @@ pub fn unused_name(prefix: &str, already_used: &[&str]) -> String {
         .iter()
         .filter_map(|s| s.strip_prefix(prefix)?.trim().parse().ok())
         .sorted()
-        .last();
+        .next_back();
 
     // Find the last number
     let i = match last_number {
         Some(i) => i + 1,
         None => 1,
     };
-    format!("{prefix}{i}")
+    format!("{prefix} {i}")
 }
 
 /// Returns a unique name by appending numbers to the base name if the name is not unique.
 /// Starts at 1, and checks if the name is unique, then 2, etc.
 /// If `require_number` is true, the name will always have an appended number.
-pub fn unique_name(name: &str, all_names: &[String], require_number: bool) -> String {
+pub fn unique_name(name: &str, require_number: bool, check_name: impl Fn(&str) -> bool) -> String {
     let base = MATCH_NUMBERS.replace(name, "");
     let contains_number = base != name;
     let should_short_circuit = !require_number || contains_number;
 
     // short circuit if the name is unique
-    if should_short_circuit && !all_names.contains(&name.to_owned()) {
+    if should_short_circuit && check_name(name) {
         return name.to_string();
     }
 
@@ -201,10 +204,7 @@ pub fn unique_name(name: &str, all_names: &[String], require_number: bool) -> St
         let new_name_alt = format!("{} {}", base, num);
         let new_names = [new_name.as_str(), new_name_alt.as_str()];
 
-        if !all_names
-            .iter()
-            .any(|item| new_names.contains(&item.as_str()))
-        {
+        if new_names.iter().all(|name| check_name(name)) {
             name = new_name;
         }
 
@@ -225,14 +225,25 @@ pub fn maybe_reverse<I: DoubleEndedIterator>(
     }
 }
 
+pub fn offset_cell_coord(initial: i64, delta: i64) -> Result<i64, RefError> {
+    if initial == UNBOUNDED {
+        Ok(UNBOUNDED)
+    } else {
+        match initial.saturating_add(delta) {
+            ..=0 => Err(RefError),
+            other => Ok(other),
+        }
+    }
+}
+
 /// For debugging both in tests and in the JS console
 #[track_caller]
-pub fn dbgjs(val: impl fmt::Debug) {
-    if cfg!(target_family = "wasm") {
-        crate::wasm_bindings::js::log(&(format!("{:?}", val)));
-    } else {
-        dbg!(val);
-    }
+pub fn dbgjs(_val: impl fmt::Debug) {
+    #[cfg(all(target_family = "wasm", feature = "dbgjs"))]
+    crate::wasm_bindings::js::log(&(format!("{:?}", _val)));
+
+    #[cfg(all(not(target_family = "wasm"), feature = "dbgjs"))]
+    dbg!(_val);
 }
 
 #[allow(unused_macros)]
@@ -337,9 +348,9 @@ mod tests {
 
     #[test]
     fn test_unused_name() {
-        let used = ["Sheet1", "Sheet2"];
-        assert_eq!(unused_name("Sheet", &used), "Sheet3");
-        let used = ["Sheet2", "Sheet3"];
-        assert_eq!(unused_name("Sheet", &used), "Sheet4");
+        let used = ["Sheet1", "Sheet 2"];
+        assert_eq!(unused_name("Sheet", &used), "Sheet 3");
+        let used = ["Sheet 2", "Sheet 3"];
+        assert_eq!(unused_name("Sheet", &used), "Sheet 4");
     }
 }

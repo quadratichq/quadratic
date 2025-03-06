@@ -12,7 +12,6 @@ impl Sheet {
                 if let Some(CellValue::Code(code)) = self.cell_value_ref(pos) {
                     Some(code.language.clone())
                 } else {
-                    dbgjs!(&format!("No cell value for code run at {:?}", pos));
                     None
                 }
             }
@@ -25,10 +24,13 @@ impl Sheet {
     pub fn add_sheet_to_a1_context(&self, context: &mut A1Context) {
         context.sheet_map.insert(self);
         self.data_tables.iter().for_each(|(pos, table)| {
-            let language = self.get_table_language(*pos, table);
-            context
-                .table_map
-                .insert_table(self.id, *pos, table, language);
+            if let Some(language) = self.get_table_language(*pos, table) {
+                context
+                    .table_map
+                    .insert_table(self.id, *pos, table, language);
+            } else {
+                dbgjs!(&format!("No language for table at {:?}", pos));
+            }
         });
     }
 

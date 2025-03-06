@@ -3,7 +3,6 @@
 //! cursor, or you save the cursor state in the URL at ?state=.
 
 import { events } from '@/app/events/events';
-import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -49,16 +48,17 @@ export class SheetCursor {
 
   constructor(sheet: Sheet) {
     this.sheet = sheet;
-    this.jsSelection = new JsSelection(sheet.id, sheets.a1Context);
+    this.jsSelection = new JsSelection(sheet.id, this.sheet.sheets.a1Context);
     this.boxCells = false;
     events.on('a1Context', this.updateA1Context);
   }
 
   private updateA1Context = (context: string) => {
     this.jsSelection.updateContext(context);
-    if (sheets.current === this.sheet.id) {
+    if (this.sheet.sheets.current === this.sheet.id) {
       pixiApp.cursor.dirty = true;
     }
+    events.emit('a1ContextUpdated');
   };
 
   set viewport(save: IViewportTransformState) {
@@ -202,14 +202,22 @@ export class SheetCursor {
   };
 
   // Moves the cursor to the given position. This replaces any selection.
-  moveTo = (x: number, y: number, append = false, ensureVisible = true) => {
+  moveTo = (
+    x: number,
+    y: number,
+    options?: { checkForTableRef?: boolean; append?: boolean; ensureVisible?: boolean | JsCoordinate }
+  ) => {
+    const checkForTableRef = options?.checkForTableRef ?? false;
+    const append = options?.append ?? false;
+    const ensureVisible = options?.ensureVisible ?? true;
     this.jsSelection.moveTo(x, y, append);
+    if (checkForTableRef) this.checkForTableRef();
     this.updatePosition(ensureVisible);
   };
 
   selectTo = (x: number, y: number, append: boolean, ensureVisible = true) => {
     this.jsSelection.selectTo(x, y, append);
-    this.updatePosition(ensureVisible);
+    this.updatePosition(ensureVisible ? { x, y } : false);
   };
 
   // Selects columns that have a current selection (used by cmd+space)
@@ -336,8 +344,11 @@ export class SheetCursor {
   };
 
   selectTable = (tableName: string, column: string | undefined, shiftKey: boolean, ctrlKey: boolean) => {
+    if (this.sheet.sheets.current !== this.sheet.id) {
+      return;
+    }
     const bounds = pixiApp.viewport.getVisibleBounds();
-    const left = sheets.sheet.getColumnFromScreen(bounds.left) + 1;
+    const left = this.sheet.getColumnFromScreen(bounds.left) + 1;
     this.jsSelection.selectTable(tableName, column, left, shiftKey, ctrlKey);
     this.updatePosition(true);
   };
@@ -387,7 +398,26 @@ export class SheetCursor {
   getSingleFullTableSelectionName(): string | undefined {
     return this.jsSelection.getSingleFullTableSelectionName();
   }
+
   getTableNameInNameOrColumn(sheetId: string, x: number, y: number): string | undefined {
     return getTableNameInNameOrColumn(sheetId, x, y, this.sheet.sheets.a1Context);
   }
+
+  updateTableName = (oldName: string, newName: string) => {
+    this.jsSelection.updateTableName(oldName, newName);
+  };
+
+  updateColumnName = (tableName: string, oldName: string, newName: string) => {
+    this.jsSelection.updateColumnName(tableName, oldName, newName);
+  };
+
+  hideColumn = (tableName: string, columnName: string) => {
+    this.jsSelection.hideColumn(tableName, columnName);
+    const { x, y } = this.position;
+    this.selectRect(x, y, x, y);
+  };
+
+  checkForTableRef = () => {
+    this.jsSelection.checkForTableRef(this.sheet.id);
+  };
 }

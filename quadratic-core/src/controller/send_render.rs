@@ -44,8 +44,6 @@ impl GridController {
         self.process_remaining_dirty_hashes(transaction);
         self.send_validations(transaction);
         self.send_borders(transaction);
-        self.send_html_cells(transaction);
-        self.send_images(transaction);
 
         transaction.fill_cells.iter().for_each(|sheet_id| {
             self.send_all_fills(*sheet_id);
@@ -345,11 +343,15 @@ impl GridController {
         }
 
         transaction.code_cells.clear();
+
+        self.send_html_cells(transaction);
+        self.send_images(transaction);
     }
 
     /// Sends individual offsets that have been modified to the client
     pub(crate) fn send_offsets_modified(&self, transaction: &mut PendingTransaction) {
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+            transaction.offsets_modified.clear();
             return;
         }
 
@@ -381,6 +383,8 @@ impl GridController {
 
     fn send_validations(&self, transaction: &mut PendingTransaction) {
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+            transaction.validations.clear();
+            transaction.validations_warnings.clear();
             return;
         }
 
@@ -406,6 +410,7 @@ impl GridController {
 
     fn send_borders(&self, transaction: &mut PendingTransaction) {
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+            transaction.sheet_borders.clear();
             return;
         }
 
@@ -421,6 +426,7 @@ impl GridController {
 
     fn send_html_cells(&self, transaction: &mut PendingTransaction) {
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+            transaction.html_cells.clear();
             return;
         }
 
@@ -438,8 +444,6 @@ impl GridController {
                     w: 0,
                     h: 0,
                     html: None,
-                    pixel_width: None,
-                    pixel_height: None,
                     name: "".to_string(),
                     show_name: true,
                 });
@@ -462,6 +466,7 @@ impl GridController {
 
     fn send_images(&self, transaction: &mut PendingTransaction) {
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+            transaction.image_cells.clear();
             return;
         }
 
@@ -625,8 +630,8 @@ mod test {
                 y: 1,
                 sheet_id,
             },
-            1.0,
-            2.0,
+            1,
+            2,
             None,
         );
 
@@ -637,10 +642,8 @@ mod test {
                 x: 1,
                 y: 1,
                 w: 1,
-                h: 2,
+                h: 3,
                 html: Some("<html></html>".to_string()),
-                pixel_width: Some(1.0),
-                pixel_height: Some(2.0),
                 show_name: true,
                 name: "Python1".to_string(),
             })

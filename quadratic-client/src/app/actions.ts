@@ -212,7 +212,7 @@ export const deleteDataTableAction = {
 };
 
 export const codeToDataTableAction = {
-  label: 'Convert to Table (editable)',
+  label: 'Convert code to data table',
   isAvailable: isAvailableBecauseCanEditFile,
 };
 

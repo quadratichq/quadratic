@@ -3,7 +3,7 @@ use crate::controller::operations::operation::Operation;
 use crate::controller::transaction_types::JsCodeResult;
 use crate::controller::GridController;
 use crate::error_core::{CoreError, Result};
-use crate::grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind};
+use crate::grid::{unique_data_table_name, CodeCellLanguage, CodeRun, DataTable, DataTableKind};
 use crate::{Array, CellValue, Pos, RunError, RunErrorMsg, SheetPos, SheetRect, Span, Value};
 
 pub mod get_cells;
@@ -17,8 +17,15 @@ const DEFAULT_HTML_WIDTH: f32 = 600.0;
 const DEFAULT_HTML_HEIGHT: f32 = 460.0;
 
 impl GridController {
-    /// finalize changes to a data table
-    /// TODO(ddimaria): add documentation for this
+    /// Finalize changes to a data table.
+    ///
+    /// This function is called after a code run has completed and the data
+    /// table has been updated. It ensures that the data table is updated in the
+    /// grid, and that the necessary client updates are added to the
+    /// transaction.
+    ///
+    /// This also maintains any old values from the data table, such as the
+    /// user-defined chart size.
     pub(crate) fn finalize_data_table(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -26,14 +33,19 @@ impl GridController {
         mut new_data_table: Option<DataTable>,
         index: Option<usize>,
     ) {
+        transaction.current_sheet_pos = None;
+        transaction.cells_accessed.clear();
+        transaction.waiting_for_async = None;
+
         let sheet_id = sheet_pos.sheet_id;
 
         // enforce unique data table names
         if let Some(new_data_table) = &mut new_data_table {
-            let unique_name = self.grid().unique_data_table_name(
+            let unique_name = unique_data_table_name(
                 &new_data_table.name.to_display(),
                 false,
                 Some(sheet_pos),
+                self.a1_context(),
             );
             new_data_table.update_table_name(&unique_name);
         }
@@ -53,11 +65,9 @@ impl GridController {
                 .unwrap_or(sheet.data_tables.len()),
         );
 
-        if new_data_table
-            .as_ref()
-            .is_some_and(|dt| dt.is_html_or_image())
-        {
-            if let Some(new_data_table) = new_data_table.as_mut() {
+        // calculate the chart_output if it is an image or html data table based on the pixel output
+        if let Some(new_data_table) = &mut new_data_table {
+            if new_data_table.is_html_or_image() && new_data_table.chart_output.is_none() {
                 let (pixel_width, pixel_height) = new_data_table
                     .chart_pixel_output
                     .unwrap_or((DEFAULT_HTML_WIDTH, DEFAULT_HTML_HEIGHT));
@@ -80,12 +90,18 @@ impl GridController {
             // for python dataframes, we don't want preserve the show_columns setting
             if !new_data_table.is_dataframe() {
                 new_data_table.show_columns = old_data_table.show_columns;
-            }
 
-            // if the old data table has headers, then the new data table should
-            // have headers; if the data table already has headers (eg, via data
-            // frames), then leave them in.
-            new_data_table.header_is_first_row |= old_data_table.header_is_first_row;
+                // since we don't automatically apply the first row as headers in JS,
+                // we need to do it manually here
+                if old_data_table.header_is_first_row {
+                    new_data_table.apply_first_row_as_header();
+                }
+
+                // if the old data table has headers, then the new data table should
+                // have headers; if the data table already has headers (eg, via data
+                // frames), then leave them in.
+                new_data_table.header_is_first_row |= old_data_table.header_is_first_row;
+            }
 
             // if the width of the old and new data tables are the same,
             // then we can preserve other user-selected properties
@@ -99,6 +115,16 @@ impl GridController {
                     if let Err(e) = new_data_table.sort_all() {
                         dbgjs!(format!("Error sorting data table: {}", e));
                     }
+                }
+            }
+
+            // If there is an existing chart, then we keep its
+            // chart_output setting since it may have been set by the user.
+            // TODO (DF): we should be tracking whether a user set this, and
+            // if not, we should use the pixel output.
+            if new_data_table.is_html_or_image() {
+                if let Some(chart_output) = old_data_table.chart_output {
+                    new_data_table.chart_output = Some(chart_output);
                 }
             }
         }
@@ -181,7 +207,6 @@ impl GridController {
         transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
 
         self.send_updated_bounds(transaction, sheet_id);
-        self.send_code_cells(transaction);
 
         if (cfg!(target_family = "wasm") || cfg!(test)) && transaction.is_user() {
             if let Some(sheet) = self.try_sheet(sheet_id) {
@@ -214,9 +239,9 @@ impl GridController {
                 self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
                 self.check_all_spills(transaction, sheet_pos.sheet_id);
             }
-        }
 
-        transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
+            transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
+        }
     }
 
     /// continues the calculate cycle after an async call
@@ -252,8 +277,6 @@ impl GridController {
                     language.clone(),
                 );
 
-                transaction.waiting_for_async = None;
-
                 // Keep chart_pixel_output and table name consistent if
                 // there already exists a data table at the same position.
                 if let Some(sheet) = self.try_sheet(current_sheet_pos.sheet_id) {
@@ -262,7 +285,7 @@ impl GridController {
                         .iter()
                         .find(|(p, _)| **p == current_sheet_pos.into())
                     {
-                        new_data_table.chart_pixel_output = existing_data_table.chart_pixel_output;
+                        // new_data_table.chart_pixel_output = existing_data_table.chart_pixel_output;
                         new_data_table.name = existing_data_table.name.clone();
                         new_data_table.show_ui = existing_data_table.show_ui;
                     }
@@ -357,8 +380,7 @@ impl GridController {
             false,
             None,
         );
-        transaction.cells_accessed.clear();
-        transaction.waiting_for_async = None;
+
         self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None);
 
         Ok(())
@@ -653,7 +675,7 @@ mod test {
             gc.calculation_complete(result).unwrap();
             let sheet = gc.try_sheet(sheet_id).unwrap();
             let dt = sheet.data_table(sheet_pos.into()).unwrap();
-            assert_eq!(dt.chart_pixel_output, Some((100.0, 100.0)));
+            assert_eq!(dt.chart_output, Some((2, 5)));
 
             // change the cell
             gc.set_code_cell(sheet_pos, language, "code".to_string(), None);
@@ -668,7 +690,7 @@ mod test {
             gc.calculation_complete(result).unwrap();
             let sheet = gc.try_sheet(sheet_id).unwrap();
             let dt = sheet.data_table(sheet_pos.into()).unwrap();
-            assert_eq!(dt.chart_pixel_output, Some((100.0, 100.0)));
+            assert_eq!(dt.chart_output, Some((2, 5)));
         }
     }
 }

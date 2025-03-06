@@ -66,20 +66,13 @@ impl Sheet {
 
                         let fills_min_y = (pos.y + dt.y_adjustment(false)).max(pos.y);
 
-                        if let Some(display_buffer) = &dt.display_buffer {
+                        if dt.display_buffer.is_some() {
                             for y in y0..=y1 {
                                 let x = rect.min.x + x0;
                                 let x1 = rect.min.x + x1;
 
                                 // formats is 1 based, display_buffer is 0 based
-                                let mut y = y;
-                                if y >= 0 && y < display_buffer.len() as i64 {
-                                    y = display_buffer
-                                        .iter()
-                                        .position(|&display_y| y == display_y as i64)
-                                        .unwrap_or(y as usize)
-                                        as i64;
-                                }
+                                let mut y = dt.get_display_index_from_row_index(y as u64) as i64;
                                 y += rect.min.y;
 
                                 // check if the fill is within the table bounds and size is non zero
@@ -450,11 +443,7 @@ mod tests {
             None,
         )
         .unwrap();
-        dbgjs!(format!("gc.a1_context {:?}", gc.a1_context()));
-        dbgjs!(format!(
-            "{:?}",
-            A1Selection::test_a1_context(&format!("{}[country]", file_name), gc.a1_context())
-        ));
+
         gc.set_fill_color(
             &A1Selection::test_a1_context(&format!("{}[country]", file_name), gc.a1_context()),
             Some("yellow".to_string()),
@@ -464,7 +453,6 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
         let fills = sheet.get_all_render_fills();
-        dbgjs!(format!("fills {:?}", fills));
         assert_fill_eq(&fills[0], 8, 10, 1, 1, "green");
         assert_fill_eq(&fills[1], 9, 4, 1, 1, "red");
         assert_fill_eq(&fills[2], 9, 10, 1, 1, "green");

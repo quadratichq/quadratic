@@ -8,7 +8,9 @@ members = [
     "quadratic-multiplayer",
     "quadratic-rust-client",
     "quadratic-rust-shared",
+    "quadratic-rust-shared/proc_macros/function-timer",
 ]
+
 
 [workspace.package]
 authors = ["Quadratic"]
@@ -16,7 +18,7 @@ edition = "2021"
 description = "Infinite data grid with Python, JavaScript, and SQL built-in"
 repository = "https://github.com/quadratichq/quadratic"
 license-file = "LICENSE"
-version = "0.6.1"
+version = "0.6.4"
 
 [profile.release]
 # Tell `rustc` to optimize for small code size.

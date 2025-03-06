@@ -14,7 +14,7 @@ impl GridController {
         sheet_id: SheetId,
         rows: Vec<i64>,
     ) -> bool {
-        if (!cfg!(target_family = "wasm") && !cfg!(test))
+        if !(cfg!(target_family = "wasm") || cfg!(test))
             || !transaction.is_user()
             || rows.is_empty()
         {
@@ -74,8 +74,9 @@ mod tests {
     use bigdecimal::BigDecimal;
 
     use crate::controller::active_transactions::pending_transaction::PendingTransaction;
-    use crate::controller::execution::run_code::get_cells::CellA1Response;
-    use crate::controller::execution::run_code::get_cells::JsGetCellResponse;
+    use crate::controller::execution::run_code::get_cells::JsCellsA1Response;
+    use crate::controller::execution::run_code::get_cells::JsCellsA1Value;
+    use crate::controller::execution::run_code::get_cells::JsCellsA1Values;
     use crate::controller::operations::operation::Operation;
     use crate::controller::transaction_types::JsCodeResult;
     use crate::controller::GridController;
@@ -136,16 +137,18 @@ mod tests {
             None,
         )
         .unwrap();
-        let ops = gc.set_cell_value_operations(
+        let ops = gc.set_cell_values_operations(
             sheet_pos,
-            "test_auto_resize_row_heights_on_set_cell_value_1".to_string(),
+            vec![vec![
+                "test_auto_resize_row_heights_on_set_cell_value_1".to_string()
+            ]],
         );
         // mock response from renderer
         let row_heights = vec![JsRowHeight {
             row: 1,
             height: 40f64,
         }];
-        mock_auto_resize_row_heights(&mut gc, sheet_id, ops.clone(), row_heights.clone());
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops.0.clone(), row_heights.clone());
 
         assert_eq!(
             gc.sheet(sheet_id).display_value(sheet_pos.into()),
@@ -171,15 +174,17 @@ mod tests {
         let async_transaction = gc.transactions.get_async_transaction(transaction_id);
         assert!(async_transaction.is_err());
 
-        let ops = gc.set_cell_value_operations(
+        let ops = gc.set_cell_values_operations(
             sheet_pos,
-            "test_auto_resize_row_heights_on_set_cell_value_2".to_string(),
+            vec![vec![
+                "test_auto_resize_row_heights_on_set_cell_value_2".to_string()
+            ]],
         );
         let row_heights = vec![JsRowHeight {
             row: 1,
             height: 40f64,
         }];
-        mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights);
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops.0, row_heights);
         // should trigger auto resize row heights and request row heights from renderer
         let transaction_id = gc.last_transaction().unwrap().id;
         expect_js_call(
@@ -491,24 +496,27 @@ mod tests {
         assert_eq!(transaction.has_async, 1);
         let transaction_id = transaction.id;
 
-        let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None);
-        assert!(cells.is_ok());
+        let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
         assert_eq!(
             cells,
-            Ok(CellA1Response {
-                cells: vec![JsGetCellResponse {
+            JsCellsA1Response {
+                values: Some(JsCellsA1Values {
+                    cells: vec![JsCellsA1Value {
+                        x: 1,
+                        y: 1,
+                        value: "9".into(),
+                        type_name: "number".into(),
+                    }],
                     x: 1,
                     y: 1,
-                    value: "9".into(),
-                    type_name: "number".into(),
-                }],
-                x: 1,
-                y: 1,
-                w: 1,
-                h: 1,
-                two_dimensional: false,
-                has_headers: false,
-            })
+                    w: 1,
+                    h: 1,
+                    one_dimensional: false,
+                    two_dimensional: false,
+                    has_headers: false,
+                }),
+                error: None,
+            }
         );
         // pending cal
         let transaction = gc.async_transactions().first().unwrap();
@@ -643,16 +651,18 @@ mod tests {
             None,
         )
         .unwrap();
-        let ops = gc.set_cell_value_operations(
+        let ops = gc.set_cell_values_operations(
             sheet_pos,
-            "test_auto_resize_row_heights_on_user_transaction_only".to_string(),
+            vec![vec![
+                "test_auto_resize_row_heights_on_user_transaction_only".to_string(),
+            ]],
         );
         // mock response from renderer
         let row_heights = vec![JsRowHeight {
             row: 1,
             height: 40f64,
         }];
-        mock_auto_resize_row_heights(&mut gc, sheet_id, ops.clone(), row_heights.clone());
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops.0.clone(), row_heights.clone());
         assert_eq!(
             gc.sheet(sheet_id).display_value(sheet_pos.into()),
             Some(CellValue::Text(
@@ -676,7 +686,7 @@ mod tests {
         // should not trigger auto resize row heights for multiplayer transactions
         let mut other_gc = GridController::test();
         other_gc.grid_mut().sheets_mut()[0].id = sheet_id;
-        other_gc.received_transaction(transaction_id, 1, ops);
+        other_gc.received_transaction(transaction_id, 1, ops.0);
         let sheet = other_gc.sheet(sheet_id);
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),

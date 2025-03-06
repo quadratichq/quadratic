@@ -16,6 +16,7 @@ import {
 } from '@/app/atoms/aiAnalystAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
   AIMessage,
@@ -43,7 +44,7 @@ export function useSubmitAIAnalystPrompt() {
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
   const { getSelectionContext } = useSelectionContextMessages();
-  const [model] = useAIModel();
+  const [modelKey] = useAIModel();
 
   const updateInternalContext = useRecoilCallback(
     ({ set }) =>
@@ -94,17 +95,22 @@ export function useSubmitAIAnalystPrompt() {
             const lastMessage = prevMessages.at(-1);
             if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
               const newLastMessage = { ...lastMessage };
-              newLastMessage.content += '\n\nRequest aborted by the user.';
-              newLastMessage.content = newLastMessage.content.trim();
+              let currentContent = { ...(newLastMessage.content.at(-1) ?? { type: 'text', text: '' }) };
+              if (currentContent?.type !== 'text') {
+                currentContent = { type: 'text', text: '' };
+              }
+              currentContent.text += '\n\nRequest aborted by the user.';
+              currentContent.text = currentContent.text.trim();
               newLastMessage.toolCalls = [];
+              newLastMessage.content = [...newLastMessage.content.slice(0, -1), currentContent];
               return [...prevMessages.slice(0, -1), newLastMessage];
             } else if (lastMessage?.role === 'user') {
               const newLastMessage: AIMessage = {
                 role: 'assistant',
-                content: 'Request aborted by the user.',
+                content: [{ type: 'text', text: 'Request aborted by the user.' }],
                 contextType: 'userPrompt',
                 toolCalls: [],
-                model,
+                model: getModelFromModelKey(modelKey),
               };
               return [...prevMessages, newLastMessage];
             }
@@ -163,10 +169,9 @@ export function useSubmitAIAnalystPrompt() {
           const response = await handleAIRequestToAPI({
             chatId,
             source: 'AIAnalyst',
-            model,
+            modelKey,
             messages: updatedMessages,
             useStream: true,
-            useTools: true,
             useToolsPrompt: true,
             language: undefined,
             useQuadraticContext: true,
@@ -213,11 +218,11 @@ export function useSubmitAIAnalystPrompt() {
             const response = await handleAIRequestToAPI({
               chatId,
               source: 'AIAnalyst',
-              model,
+              modelKey,
               messages: updatedMessages,
               useStream: true,
-              useTools: true,
-              useToolsPrompt: true,
+              toolName: undefined,
+              useToolsPrompt: false,
               language: undefined,
               useQuadraticContext: true,
               setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
@@ -230,17 +235,22 @@ export function useSubmitAIAnalystPrompt() {
             const lastMessage = prevMessages.at(-1);
             if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
               const newLastMessage = { ...lastMessage };
-              newLastMessage.content += '\n\nLooks like there was a problem. Please try again.';
-              newLastMessage.content = newLastMessage.content.trim();
+              let currentContent = { ...(newLastMessage.content.at(-1) ?? { type: 'text', text: '' }) };
+              if (currentContent?.type !== 'text') {
+                currentContent = { type: 'text', text: '' };
+              }
+              currentContent.text += '\n\nLooks like there was a problem. Please try again.';
+              currentContent.text = currentContent.text.trim();
               newLastMessage.toolCalls = [];
+              newLastMessage.content = [...newLastMessage.content.slice(0, -1), currentContent];
               return [...prevMessages.slice(0, -1), newLastMessage];
             } else if (lastMessage?.role === 'user') {
               const newLastMessage: AIMessage = {
                 role: 'assistant',
-                content: 'Looks like there was a problem. Please try again.',
+                content: [{ type: 'text', text: 'Looks like there was a problem. Please try again.' }],
                 contextType: 'userPrompt',
                 toolCalls: [],
-                model,
+                model: getModelFromModelKey(modelKey),
               };
               return [...prevMessages, newLastMessage];
             }
@@ -253,7 +263,7 @@ export function useSubmitAIAnalystPrompt() {
         set(aiAnalystAbortControllerAtom, undefined);
         set(aiAnalystLoadingAtom, false);
       },
-    [handleAIRequestToAPI, model]
+    [handleAIRequestToAPI, updateInternalContext, modelKey]
   );
 
   return { submitPrompt };

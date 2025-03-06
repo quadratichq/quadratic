@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::a1::UNBOUNDED;
+use crate::Rect;
 use crate::{grid::SheetId, ArraySize, Pos, SheetPos};
 
 /// Used for referencing a range during computation.
@@ -40,6 +41,14 @@ impl SheetRect {
         SheetRect {
             min: pos,
             max: pos,
+            sheet_id,
+        }
+    }
+
+    pub fn new_from_rect(rect: Rect, sheet_id: SheetId) -> SheetRect {
+        SheetRect {
+            min: rect.min,
+            max: rect.max,
             sheet_id,
         }
     }

@@ -857,6 +857,7 @@ class CoreClient {
       this.send({ type: 'coreClientGetJwt', id });
     });
   }
+
   sendImage = (
     sheetId: string,
     x: number,

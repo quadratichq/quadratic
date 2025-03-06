@@ -72,40 +72,54 @@ export class UICopy extends Graphics {
       let minX = Number(range.start.col.coord);
       let minY = Number(range.start.row.coord);
       let maxX: number;
+
       if (range.end.col.coord < 0) {
         maxX = bounds.width + DASHED;
       } else {
         minX = Math.min(minX, Number(range.end.col.coord));
         maxX = Math.max(Number(range.start.col.coord), Number(range.end.col.coord));
       }
+
       let maxY: number;
+
       if (range.end.row.coord < 0) {
         maxY = bounds.height + DASHED;
       } else {
         minY = Math.min(minY, Number(range.end.row.coord));
         maxY = Math.max(Number(range.start.row.coord), Number(range.end.row.coord));
       }
+
       const rect = sheets.sheet.getScreenRectangle(minX, minY, maxX - minX + 1, maxY - minY + 1);
       rect.x += RECT_OFFSET;
       rect.y += RECT_OFFSET;
       rect.width -= RECT_OFFSET * 2;
       rect.height -= RECT_OFFSET * 2;
-      const color = getCSSVariableTint('primary');
+      const color = getCSSVariableTint('primary', { luminosity: 0.8 });
+
+      const offsets = {
+        left: -RECT_OFFSET,
+        top: RECT_OFFSET,
+        right: RECT_OFFSET,
+        bottom: -RECT_OFFSET,
+      };
+
       drawDashedRectangleMarching({
         g: this,
         color,
         range,
         march: this.march,
         alpha: ALPHA,
-        offset: RECT_OFFSET,
+        offsets,
         noFill: true,
       });
+
       if (!render) {
         if (intersects.rectangleRectangle(rect, bounds)) {
           render = true;
         }
       }
     });
+
     if (render) {
       pixiApp.setViewportDirty();
     }

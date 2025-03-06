@@ -7,7 +7,7 @@ import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { FILL_SELECTION_ALPHA } from '@/app/gridGL/UI/Cursor';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
-import type { JsCoordinate, JsDataTableColumnHeader, SortDirection } from '@/app/quadratic-core-types';
+import type { DataTableSort, JsCoordinate, JsDataTableColumnHeader, SortDirection } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { sharedEvents } from '@/shared/sharedEvents';
 import type { Point } from 'pixi.js';
@@ -16,7 +16,7 @@ import { Container, Graphics, Rectangle } from 'pixi.js';
 export class TableColumnHeaders extends Container {
   private table: Table;
   private background: Graphics;
-  private headerHeight = 0;
+  private columnsHeight = 0;
 
   columns: Container<TableColumnHeader>;
   tableCursor: string | undefined;
@@ -35,13 +35,18 @@ export class TableColumnHeaders extends Container {
     super.destroy();
   }
 
-  drawBackground = () => {
+  toggleTableColumnSelection(hide: boolean) {
+    this.drawBackground(hide);
+  }
+
+  drawBackground = (skipSelection = false) => {
     this.background.clear();
 
     this.background.lineStyle();
     this.background.beginFill(0xffffff);
+
     // need to adjust so the outside border is still visible
-    this.background.drawShape(new Rectangle(0.5, 0, this.table.tableBounds.width - 1, this.headerHeight));
+    this.background.drawShape(new Rectangle(0.5, 0, this.table.tableBounds.width - 1, this.columnsHeight));
     this.background.endFill();
 
     // draw borders on the top and bottom of the column headers (either active or inactive)
@@ -54,16 +59,18 @@ export class TableColumnHeaders extends Container {
         alignment: 1,
       });
       this.background.moveTo(0, 0);
-      this.background.lineTo(0, this.headerHeight);
+      this.background.lineTo(0, this.columnsHeight);
       this.background.lineStyle({
         color: getCSSVariableTint(this.table.active ? 'primary' : 'muted-foreground'),
         width,
         alignment: 0,
       });
       this.background.moveTo(this.table.tableBounds.width, 0);
-      this.background.lineTo(this.table.tableBounds.width, this.headerHeight);
+      this.background.lineTo(this.table.tableBounds.width, this.columnsHeight);
     }
-    if (this.table.inOverHeadings) {
+
+    if (!skipSelection) {
+      // draws selection background
       const columnsSelected = this.table.sheet.cursor.getTableColumnSelection(this.table.codeCell.name);
       if (columnsSelected) {
         const startX = this.table.sheet.offsets.getColumnPlacement(
@@ -75,7 +82,7 @@ export class TableColumnHeaders extends Container {
         const endX = end.position + end.size;
         this.background.lineStyle();
         this.background.beginFill(pixiApp.accentColor, FILL_SELECTION_ALPHA);
-        this.background.drawRect(startX, 0, endX - startX, this.headerHeight);
+        this.background.drawRect(startX - this.table.tableBounds.x, 0, endX - startX, this.columnsHeight);
         this.background.endFill();
       }
     }
@@ -85,32 +92,41 @@ export class TableColumnHeaders extends Container {
       width: 1,
       alignment: 1,
     });
-    this.background.moveTo(0, this.headerHeight);
-    this.background.lineTo(this.table.tableBounds.width, this.headerHeight);
+    this.background.moveTo(0, this.columnsHeight);
+    this.background.lineTo(this.table.tableBounds.width, this.columnsHeight);
   };
 
   private onSortPressed = (column: JsDataTableColumnHeader) => {
-    const sortOrder: SortDirection | undefined = this.table.codeCell.sort?.find(
-      (s) => s.column_index === column.valueIndex
-    )?.direction;
-    let newOrder: SortDirection;
-    switch (sortOrder) {
-      case undefined:
-      case 'None':
-        newOrder = 'Ascending';
-        break;
-      case 'Ascending':
-        newOrder = 'Descending';
-        break;
-      case 'Descending':
-        newOrder = 'None';
-        break;
-    }
-    if (!newOrder) {
-      throw new Error('Unknown sort order in onSortPressed');
-    }
     const table = this.table.codeCell;
-    const sort = newOrder === 'None' ? [] : [{ column_index: column.valueIndex, direction: newOrder }];
+
+    let sort: DataTableSort[] | undefined;
+
+    if (table.sort_dirty) {
+      sort = table.sort ?? undefined;
+    } else {
+      const sortOrder: SortDirection | undefined = this.table.codeCell.sort?.find(
+        (s) => s.column_index === column.valueIndex
+      )?.direction;
+      let newOrder: SortDirection;
+      switch (sortOrder) {
+        case undefined:
+        case 'None':
+          newOrder = 'Ascending';
+          break;
+        case 'Ascending':
+          newOrder = 'Descending';
+          break;
+        case 'Descending':
+          newOrder = 'None';
+          break;
+      }
+      if (!newOrder) {
+        throw new Error('Unknown sort order in onSortPressed');
+      }
+
+      sort = newOrder === 'None' ? [] : [{ column_index: column.valueIndex, direction: newOrder }];
+    }
+
     quadraticCore.sortDataTable(sheets.current, table.x, table.y, sort, sheets.getCursorPosition());
   };
 
@@ -143,10 +159,11 @@ export class TableColumnHeaders extends Container {
         columnHeader.updateHeader({
           x,
           width,
-          height: this.headerHeight,
+          height: this.columnsHeight,
           name: column.name,
           sort: codeCell.sort?.find((s) => s.column_index === column.valueIndex),
-          columnY: this.table.codeCell.show_ui && this.table.codeCell.show_name ? this.headerHeight : 0,
+          dirtySort: codeCell.sort_dirty,
+          columnY: this.columnsHeight,
         });
       } else {
         // new column, add it
@@ -156,11 +173,12 @@ export class TableColumnHeaders extends Container {
             index: column.valueIndex,
             x,
             width,
-            height: this.headerHeight,
+            height: this.columnsHeight,
             name: column.name,
             sort: codeCell.sort?.find((s) => s.column_index === column.valueIndex),
+            dirtySort: codeCell.sort_dirty,
             onSortPressed: () => this.onSortPressed(column),
-            columnY: this.table.codeCell.show_ui && this.table.codeCell.show_name ? this.headerHeight : 0,
+            columnY: this.columnsHeight,
           })
         );
       }
@@ -172,9 +190,10 @@ export class TableColumnHeaders extends Container {
 
   // update appearance when there is an updated code cell
   update() {
-    if (this.table.codeCell.show_ui && this.table.codeCell.show_columns && !this.table.codeCell.spill_error) {
+    const codeCell = this.table.codeCell;
+    if (codeCell.show_ui && codeCell.show_columns && !codeCell.spill_error) {
       this.visible = true;
-      this.headerHeight = this.table.sheet.offsets.getRowHeight(this.table.codeCell.y);
+      this.columnsHeight = this.table.sheet.offsets.getRowHeight(codeCell.y + (codeCell.show_name ? 1 : 0));
       this.drawBackground();
       this.createColumnHeaders();
     } else {
@@ -186,7 +205,7 @@ export class TableColumnHeaders extends Container {
     this.columns.children.forEach((column) => {
       if (column !== current) {
         if (column.sortButton?.visible) {
-          column.sortButton.visible = false;
+          column.updateSortButtonVisibility(false);
           pixiApp.setViewportDirty();
         }
       }
@@ -252,7 +271,7 @@ export class TableColumnHeaders extends Container {
         lines.push(column.x + column.w);
       }
     });
-    return { y0: 0, y1: this.headerHeight, lines };
+    return { y0: 0, y1: this.columnsHeight, lines };
   }
 
   toHoverGrid(y: number) {

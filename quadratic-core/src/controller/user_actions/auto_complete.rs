@@ -30,7 +30,7 @@ mod tests {
     use crate::{
         a1::A1Selection,
         array,
-        formulas::replace_a1_notation,
+        formulas::convert_a1_to_rc,
         grid::{
             sheet::borders::{BorderSelection, BorderStyle},
             CodeCellLanguage, CodeCellValue,
@@ -106,7 +106,7 @@ mod tests {
                     let code_cell = match code_cell.language {
                         CodeCellLanguage::Formula => {
                             let mut code_cell = code_cell.to_owned();
-                            code_cell.code = replace_a1_notation(
+                            code_cell.code = convert_a1_to_rc(
                                 &code_cell.code,
                                 grid_controller.a1_context(),
                                 sheet_pos,

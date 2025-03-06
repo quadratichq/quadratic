@@ -194,15 +194,20 @@ impl A1Selection {
         let table_ref = CellRefRange::Table { range: table_ref };
 
         // toggle selection with ctrl/meta key
-        if ctrl_key && self.ranges.last().is_some_and(|last| last == &table_ref) {
-            self.ranges.pop();
-            if self.ranges.is_empty() {
-                self.ranges
-                    .push(CellRefRange::new_relative_pos(self.cursor));
+        if ctrl_key {
+            if let Some(last) = self.ranges.last() {
+                if last == &table_ref {
+                    self.ranges.pop();
+                    if self.ranges.is_empty() {
+                        self.ranges
+                            .push(CellRefRange::new_relative_pos(self.cursor));
+                    }
+                    self.update_cursor(context);
+                    return;
+                }
             }
-            self.update_cursor(context);
-            return;
         }
+
         self.ranges.push(table_ref);
         self.cursor = Pos { x, y };
         self.sheet_id = table.sheet_id;
@@ -342,7 +347,7 @@ mod tests {
         assert_eq!(selection.cursor, pos!(C5));
 
         // clear the table selection so we don't select twice and toggle headers
-        selection.move_to(1, 1, false, &context);
+        selection.move_to(1, 1, false);
 
         selection.select_table("Table1", None, &context, 2, false, false);
         assert_eq!(selection.cursor, pos!(B5));

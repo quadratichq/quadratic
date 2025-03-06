@@ -1,6 +1,6 @@
 {
   "name": "quadratic",
-  "version": "0.6.1",
+  "version": "0.6.4",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -46,6 +46,7 @@
     "coverage:wasm:gen": "cd quadratic-core && cd quadratic-core && CARGO_INCREMENTAL=0 RUSTFLAGS='-Cinstrument-coverage' LLVM_PROFILE_FILE='coverage/cargo-test-%p-%m.profraw' cargo test",
     "coverage:wasm:html": "cd quadratic-core && cd quadratic-core && grcov . --binary-path ./target/debug/deps/ -s . -t html --branch --ignore-not-existing --ignore 'src/wasm_bindings/*' --ignore 'src/bin/*' --ignore '../*' --ignore '/*' -o coverage/html",
     "coverage:wasm:view": "open quadratic-core/coverage/html/index.html",
+    "test:wasm:time": "cd quadratic-core && rustup run nightly cargo test -- -Zunstable-options --report-time",
     "test:wasm": "cd quadratic-core && cargo test",
     "test:ts": "cd quadratic-client && vitest",
     "test:api": "npm run docker:test:dev --workspace=quadratic-api",
@@ -75,7 +76,7 @@
   "dependencies": {
     "@ory/kratos-client": "^1.2.1",
     "react-router-dom": "^6.28.1",
-    "vitest": "^1.5.0",
+    "vitest": "^3.0.7",
     "zod": "^3.23.8"
   },
   "devDependencies": {

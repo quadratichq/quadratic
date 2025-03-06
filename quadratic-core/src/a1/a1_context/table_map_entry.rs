@@ -17,7 +17,7 @@ pub struct TableMapEntry {
     pub show_columns: bool,
     pub is_html_image: bool,
     pub header_is_first_row: bool,
-    pub language: Option<CodeCellLanguage>,
+    pub language: CodeCellLanguage,
 }
 
 impl TableMapEntry {
@@ -25,7 +25,7 @@ impl TableMapEntry {
         sheet_id: SheetId,
         pos: Pos,
         table: &DataTable,
-        language: Option<CodeCellLanguage>,
+        language: CodeCellLanguage,
     ) -> Self {
         if table.spill_error || table.has_error() {
             Self {
@@ -203,6 +203,7 @@ impl TableMapEntry {
         visible_columns: &[&str],
         all_columns: Option<&[&str]>,
         bounds: Rect,
+        language: CodeCellLanguage,
     ) -> Self {
         let visible_columns: Vec<String> = visible_columns.iter().map(|c| c.to_string()).collect();
         let all_columns: Vec<String> = all_columns.map_or(visible_columns.clone(), |c| {
@@ -219,7 +220,7 @@ impl TableMapEntry {
             show_columns: true,
             is_html_image: false,
             header_is_first_row: false,
-            language: None,
+            language,
         }
     }
 }
@@ -235,6 +236,7 @@ mod tests {
             &["Col1", "Col2", "Col3"],
             None,
             Rect::test_a1("A1:D4"),
+            CodeCellLanguage::Import,
         );
 
         assert_eq!(entry.try_col_index("Col1"), Some(0));
@@ -251,6 +253,7 @@ mod tests {
             &["Col1", "Col3", "Col5"],
             Some(&["Col1", "Col2", "Col3", "Col4", "Col5"]),
             Rect::test_a1("A1:D4"),
+            CodeCellLanguage::Import,
         );
 
         // Test visible columns
@@ -271,6 +274,7 @@ mod tests {
             &["Col1", "Col3", "Col5"],
             Some(&["Col1", "Col2", "Col3", "Col4", "Col5"]),
             Rect::test_a1("A1:D4"),
+            CodeCellLanguage::Import,
         );
 
         assert_eq!(entry.try_col_range("Col1", "Col5"), Some((0, 2)));
@@ -280,7 +284,13 @@ mod tests {
 
     #[test]
     fn test_y_adjustment() {
-        let mut entry = TableMapEntry::test("test_table", &["Col1"], None, Rect::test_a1("A1:D4"));
+        let mut entry = TableMapEntry::test(
+            "test_table",
+            &["Col1"],
+            None,
+            Rect::test_a1("A1:D4"),
+            CodeCellLanguage::Import,
+        );
 
         // Default settings (show_ui = true, show_name = true, show_columns = true)
         assert_eq!(entry.y_adjustment(false), 2);
@@ -297,7 +307,13 @@ mod tests {
 
     #[test]
     fn test_contains() {
-        let entry = TableMapEntry::test("test_table", &["Col1"], None, Rect::test_a1("A1:C4"));
+        let entry = TableMapEntry::test(
+            "test_table",
+            &["Col1"],
+            None,
+            Rect::test_a1("A1:C4"),
+            CodeCellLanguage::Import,
+        );
 
         assert!(entry.contains(SheetPos::new(entry.sheet_id, 2, 2)));
         assert!(!entry.contains(SheetPos::new(entry.sheet_id, 0, 0)));
@@ -311,6 +327,7 @@ mod tests {
             &["A", "C", "E"],
             Some(&["A", "B", "C", "D", "E"]),
             Rect::test_a1("A1:E5"),
+            CodeCellLanguage::Import,
         );
 
         // visible index 0 (A) should return all_columns index 0

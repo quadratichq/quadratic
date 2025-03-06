@@ -29,7 +29,7 @@ export const ZoomMenu = () => {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="group flex h-full w-full items-center justify-between border-l border-border px-2 text-sm hover:bg-accent focus:bg-accent focus:outline-none data-[state=open]:bg-accent">
+      <DropdownMenuTrigger className="group flex h-full w-24 items-center justify-between border-l border-border  px-2 text-sm hover:bg-accent focus:bg-accent focus:outline-none data-[state=open]:bg-accent">
         {zoom === Infinity ? 100 : Math.round(zoom * 100)}%
         <ArrowDropDownIcon className="text-muted-foreground group-hover:text-foreground" />
       </DropdownMenuTrigger>

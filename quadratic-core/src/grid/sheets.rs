@@ -1,5 +1,7 @@
 use std::str::FromStr;
 
+use crate::a1::A1Context;
+
 use super::{Grid, Sheet, SheetId};
 use anyhow::{anyhow, Result};
 use lexicon_fractional_index::key_between;
@@ -162,6 +164,16 @@ impl Grid {
 
     pub fn try_sheet_mut(&mut self, sheet_id: SheetId) -> Option<&mut Sheet> {
         self.sheets.iter_mut().find(|s| s.id == sheet_id)
+    }
+
+    pub fn update_sheet_name(&mut self, old_name: &str, new_name: &str, context: &A1Context) {
+        for sheet in self.sheets.iter_mut() {
+            sheet.replace_sheet_name_in_code_cells(old_name, new_name, context);
+
+            if sheet.name == old_name {
+                sheet.name = new_name.to_string();
+            }
+        }
     }
 
     #[cfg(test)]

@@ -4,18 +4,20 @@ import {
   aiAssistantMessagesAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { debugShowAIInternalContext } from '@/app/debugFlags';
-import { colors } from '@/app/theme/colors';
+import { Markdown } from '@/app/ui/components/Markdown';
+import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
+import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
 import { AIAssistantUserMessageForm } from '@/app/ui/menus/CodeEditor/AIAssistant/AIAssistantUserMessageForm';
 import { AICodeBlockParser } from '@/app/ui/menus/CodeEditor/AIAssistant/AICodeBlockParser';
 import { cn } from '@/shared/shadcn/utils';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 type AIAssistantMessagesProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
 };
 
-export function AIAssistantMessages({ textareaRef }: AIAssistantMessagesProps) {
+export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesProps) => {
   const messages = useRecoilValue(aiAssistantMessagesAtom);
   const messagesCount = useRecoilValue(aiAssistantCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAssistantLoadingAtom);
@@ -98,17 +100,17 @@ export function AIAssistantMessages({ textareaRef }: AIAssistantMessagesProps) {
           return null;
         }
 
+        const isCurrentMessage = index === messages.length - 1;
+
         return (
           <div
             key={`${index}-${message.role}-${message.contextType}`}
             className={cn(
               'flex flex-col gap-1',
-              message.role === 'user' && message.contextType === 'userPrompt' ? 'px-2 py-2' : 'px-4'
+              message.role === 'user' && message.contextType === 'userPrompt' ? 'px-2 py-2' : 'px-4',
+              // For debugging internal context
+              message.contextType === 'userPrompt' ? '' : 'bg-accent'
             )}
-            // For debugging internal context
-            style={{
-              backgroundColor: message.contextType === 'userPrompt' ? 'transparent' : colors.lightGray,
-            }}
           >
             {message.role === 'user' && message.contextType === 'userPrompt' ? (
               <AIAssistantUserMessageForm
@@ -116,16 +118,46 @@ export function AIAssistantMessages({ textareaRef }: AIAssistantMessagesProps) {
                 messageIndex={index}
                 textareaRef={textareaRef}
               />
-            ) : Array.isArray(message.content) ? (
+            ) : message.role === 'user' && message.contextType === 'toolResult' ? (
               message.content.map((messageContent) => (
-                <AICodeBlockParser key={messageContent.content} input={messageContent.content} />
+                <Markdown key={messageContent.content}>{messageContent.content}</Markdown>
               ))
             ) : (
-              <AICodeBlockParser input={message.content} />
+              <>
+                {message.content && Array.isArray(message.content) ? (
+                  <>
+                    {message.content.map((item, contentIndex) =>
+                      item.type === 'anthropic_thinking' ? (
+                        <ThinkingBlock
+                          key={item.text}
+                          isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
+                          isLoading={loading}
+                          thinkingContent={item}
+                          expandedDefault={false}
+                        />
+                      ) : item.type === 'text' ? (
+                        <AICodeBlockParser key={item.text} input={item.text} />
+                      ) : null
+                    )}
+                  </>
+                ) : (
+                  <Markdown key={message.content}>{message.content}</Markdown>
+                )}
+
+                {message.contextType === 'userPrompt' &&
+                  message.toolCalls.map((toolCall) => (
+                    <AIAnalystToolCard
+                      key={toolCall.id}
+                      name={toolCall.name}
+                      args={toolCall.arguments}
+                      loading={toolCall.loading}
+                    />
+                  ))}
+              </>
             )}
           </div>
         );
       })}
     </div>
   );
-}
+});

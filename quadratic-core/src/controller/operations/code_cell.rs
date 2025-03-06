@@ -3,9 +3,9 @@ use crate::{
     a1::A1Selection,
     cell_values::CellValues,
     controller::GridController,
-    formulas::replace_a1_notation,
+    formulas::convert_a1_to_rc,
     grid::{formats::SheetFormatUpdates, CodeCellLanguage, CodeCellValue, DataTable, SheetId},
-    CellValue, SheetPos,
+    CellValue, Pos, SheetPos,
 };
 
 impl GridController {
@@ -18,7 +18,7 @@ impl GridController {
     ) -> Vec<Operation> {
         let parse_ctx = self.a1_context();
         let code = match language {
-            CodeCellLanguage::Formula => replace_a1_notation(&code, parse_ctx, sheet_pos),
+            CodeCellLanguage::Formula => convert_a1_to_rc(&code, parse_ctx, sheet_pos),
             _ => code,
         };
 
@@ -37,12 +37,13 @@ impl GridController {
         value: String,
     ) -> Vec<Operation> {
         let mut ops = vec![];
+        let pos = Pos::from(sheet_pos);
 
         let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) else {
             return ops;
         };
 
-        let Ok(data_table_pos) = sheet.first_data_table_within(sheet_pos.into()) else {
+        let Ok(data_table_pos) = sheet.first_data_table_within(pos) else {
             return ops;
         };
 
@@ -52,8 +53,21 @@ impl GridController {
 
         // strip whitespace
         let value = value.trim();
+        let (cell_value, format_update) = self.string_to_cell_value(value, false);
+        let is_formula_cell = sheet
+            .get_table_language(pos, data_table)
+            .is_some_and(|lang| lang == CodeCellLanguage::Formula);
+        let is_source_cell =
+            pos == data_table_pos && !(!data_table.show_name && !data_table.show_columns);
 
-        let (cell_value, format_update, ..) = self.string_to_cell_value(value, false);
+        // if the cell is a formula cell and the source cell, set the cell value (which will remove the data table)
+        if is_formula_cell && is_source_cell {
+            ops.push(Operation::SetCellValues {
+                sheet_pos,
+                values: CellValues::from(cell_value),
+            });
+            return ops;
+        }
 
         ops.push(Operation::SetDataTableAt {
             sheet_pos,
@@ -182,17 +196,8 @@ impl GridController {
         vec![Operation::ComputeCode { sheet_pos }]
     }
 
-    pub fn set_chart_size_operations(
-        &self,
-        sheet_pos: SheetPos,
-        pixel_width: f32,
-        pixel_height: f32,
-    ) -> Vec<Operation> {
-        vec![Operation::SetChartSize {
-            sheet_pos,
-            pixel_width,
-            pixel_height,
-        }]
+    pub fn set_chart_size_operations(&self, sheet_pos: SheetPos, w: u32, h: u32) -> Vec<Operation> {
+        vec![Operation::SetChartCellSize { sheet_pos, w, h }]
     }
 }
 
@@ -270,7 +275,7 @@ mod test {
             );
         };
 
-        // (1, 1, Sheet2) = Sheet1:A1
+        // (1, 1, Sheet 2) = Sheet1:A1
         let third = |gc: &mut GridController| {
             let sheet_id_2 = gc.sheet_ids()[1];
             gc.set_code_cell(
@@ -280,7 +285,7 @@ mod test {
                     sheet_id: sheet_id_2,
                 },
                 CodeCellLanguage::Formula,
-                "Sheet1!A1".to_string(),
+                "'Sheet1'!A1".to_string(),
                 None,
             );
         };

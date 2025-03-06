@@ -91,7 +91,7 @@ impl DataTable {
         }
 
         // add x adjustment for hidden columns
-        x = self.get_column_index_from_display_index(x);
+        x = self.get_column_index_from_display_index(x, true);
 
         let cell_value = self.value.get(x, y)?;
 
@@ -172,8 +172,20 @@ impl DataTable {
             .collect::<Vec<CellValue>>()
     }
 
+    /// Get the display index from the row index.
+    pub fn get_display_index_from_row_index(&self, index: u64) -> u64 {
+        match self.display_buffer {
+            Some(ref display_buffer) => display_buffer
+                .iter()
+                .position(|&i| i == index)
+                .map(|i| i as u64)
+                .unwrap_or(index),
+            None => index,
+        }
+    }
+
     /// Transmute an index from the display buffer to the source index.
-    pub fn transmute_index(&self, index: u64) -> u64 {
+    pub fn get_row_index_from_display_index(&self, index: u64) -> u64 {
         match self.display_buffer {
             Some(ref display_buffer) => *display_buffer.get(index as usize).unwrap_or(&index),
             None => index,
@@ -217,7 +229,7 @@ pub mod test {
             ..Default::default()
         })
         .unwrap();
-        gc.set_chart_size(sheet_pos, 100.0, 100.0, None);
+        gc.set_chart_size(sheet_pos, 10, 10, None);
 
         let sheet = gc.sheet(sheet_id);
 

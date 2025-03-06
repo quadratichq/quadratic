@@ -15,9 +15,10 @@ impl DataTable {
         format
     }
 
+    /// Get the position of the format in the display buffer.
     pub(crate) fn get_format_pos_from_display_buffer(&self, mut pos: Pos) -> Pos {
         // adjust for hidden columns
-        pos.x = self.get_column_index_from_display_index(pos.x as u32) as i64;
+        pos.x = self.get_column_index_from_display_index(pos.x as u32, true) as i64;
 
         // adjust for first row header and show ui offset
         pos.y -= self.y_adjustment(true);
@@ -45,28 +46,27 @@ impl DataTable {
         &self,
         data_table_pos: Pos,
         formats_rect: Rect,
-    ) -> Result<SheetFormatUpdates> {
-        let mut format_update = SheetFormatUpdates::default();
-
+        sheet_format_updates: &mut SheetFormatUpdates,
+    ) -> Result<()> {
         for x in formats_rect.x_range() {
             let format_display_x = u32::try_from(x - data_table_pos.x)?;
-            let format_actual_x = self.get_column_index_from_display_index(format_display_x);
+            let format_actual_x = self.get_column_index_from_display_index(format_display_x, true);
 
             for y in formats_rect.y_range() {
                 let format_display_y =
                     u64::try_from(y - data_table_pos.y - self.y_adjustment(true))?;
-                let format_actual_y = self.transmute_index(format_display_y);
+                let format_actual_y = self.get_row_index_from_display_index(format_display_y);
 
                 let format = self
                     .formats
                     .format((format_actual_x as i64 + 1, format_actual_y as i64 + 1).into());
                 if !format.is_default() {
-                    format_update.set_format_cell((x, y).into(), format.into());
+                    sheet_format_updates.set_format_cell((x, y).into(), format.into());
                 }
             }
         }
 
-        Ok(format_update)
+        Ok(())
     }
 
     /// Create a SheetFormatUpdates object that transfers the formats from the Sheet to the DataTable.
@@ -82,12 +82,12 @@ impl DataTable {
 
         for x in formats_rect.x_range() {
             let format_display_x = u32::try_from(x - data_table_pos.x)?;
-            let format_actual_x = self.get_column_index_from_display_index(format_display_x);
+            let format_actual_x = self.get_column_index_from_display_index(format_display_x, true);
 
             for y in formats_rect.y_range() {
                 let format_display_y =
                     u64::try_from(y - data_table_pos.y - self.y_adjustment(true))?;
-                let format_actual_y = self.transmute_index(format_display_y);
+                let format_actual_y = self.get_row_index_from_display_index(format_display_y);
 
                 let format = sheet.formats.format((x, y).into());
                 if !format.is_default() {

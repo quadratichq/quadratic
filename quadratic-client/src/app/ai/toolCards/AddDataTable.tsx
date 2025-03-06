@@ -1,4 +1,4 @@
-import { getRowColSentence, ToolCard } from '@/app/ui/menus/AIAnalyst/toolCards/ToolCard';
+import { getRowColSentence, ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { TableIcon } from '@/shared/components/Icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { useEffect, useState } from 'react';
@@ -29,7 +29,7 @@ export const AddDataTable = ({ args, loading }: AddDataTableProps) => {
   }, [args, loading]);
 
   const icon = <TableIcon />;
-  const label = 'Data Table';
+  const label = 'Table';
 
   if (loading) {
     return <ToolCard icon={icon} label={label} isLoading />;
@@ -47,7 +47,11 @@ export const AddDataTable = ({ args, loading }: AddDataTableProps) => {
   return (
     <ToolCard
       icon={icon}
-      label={`${label} - ${table_name}`}
+      label={
+        <span>
+          {label} <span className="text-muted-foreground">| {table_name}</span>
+        </span>
+      }
       description={`${getRowColSentence({ rows, cols })} at ${top_left_position}`}
     />
   );

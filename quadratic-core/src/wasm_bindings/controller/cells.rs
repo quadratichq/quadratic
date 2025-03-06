@@ -1,10 +1,9 @@
 use std::str::FromStr;
 
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
-
 use crate::a1::A1Selection;
 use crate::SheetPos;
 use crate::{controller::GridController, grid::SheetId, Pos};
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 #[wasm_bindgen]
 impl GridController {
@@ -23,8 +22,7 @@ impl GridController {
         let pos = Pos::from((x, y));
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
 
-        self.set_value((pos, sheet_id).into(), value.to_owned(), cursor)
-            .map_err(|e| e.to_string())?;
+        self.set_cell_value((pos, sheet_id).into(), value.to_owned(), cursor);
 
         Ok(())
     }

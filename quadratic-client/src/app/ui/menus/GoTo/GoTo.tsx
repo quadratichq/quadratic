@@ -72,7 +72,7 @@ export const GoTo = ({ tableInfo }: { tableInfo: JsTableInfo[] }) => {
   const onSelect = useCallback(() => {
     // if empty, then move cursor to A1
     if (!value) {
-      sheets.sheet.cursor.moveTo(1, 1);
+      sheets.sheet.cursor.moveTo(1, 1, { checkForTableRef: true });
       pixiApp.viewport.reset();
     } else {
       try {
@@ -120,7 +120,7 @@ export const GoTo = ({ tableInfo }: { tableInfo: JsTableInfo[] }) => {
     () =>
       tableInfo
         ? tableInfo.filter(({ name, language }) => {
-            if (!language || language === 'Formula' || language === 'Import') {
+            if (language === 'Formula' || language === 'Import') {
               return false;
             }
             return value ? name.toLowerCase().includes(value.toLowerCase()) : true;

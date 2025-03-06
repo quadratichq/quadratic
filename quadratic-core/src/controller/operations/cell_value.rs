@@ -92,105 +92,173 @@ impl GridController {
     }
 
     /// Generate operations for a user-initiated change to a cell value
-    pub fn set_cell_value_operations(
-        &mut self,
-        sheet_pos: SheetPos,
-        value: String,
-    ) -> Vec<Operation> {
-        let mut ops = vec![];
-
-        // strip whitespace
-        let value = value.trim();
-
-        // convert the string to a cell value and generate necessary operations
-        let (cell_value, format_update) = self.string_to_cell_value(value, true);
-
-        let is_code = matches!(cell_value, CellValue::Code(_));
-
-        ops.push(Operation::SetCellValues {
-            sheet_pos,
-            values: CellValues::from(cell_value),
-        });
-
-        if !format_update.is_default() {
-            ops.push(Operation::SetCellFormatsA1 {
-                sheet_id: sheet_pos.sheet_id,
-                formats: SheetFormatUpdates::from_selection(
-                    &A1Selection::from_single_cell(sheet_pos),
-                    format_update,
-                ),
-            });
-        }
-
-        if is_code {
-            ops.push(Operation::ComputeCode { sheet_pos });
-        }
-
-        ops
-    }
-
-    /// Generate operations for a user-initiated change to a cell value
     pub fn set_cell_values_operations(
         &mut self,
         sheet_pos: SheetPos,
         values: Vec<Vec<String>>,
-    ) -> Vec<Operation> {
+    ) -> (Vec<Operation>, Vec<Operation>) {
         let mut ops = vec![];
         let mut compute_code_ops = vec![];
+        let data_table_ops = vec![];
 
-        let height = values.len();
-        if height == 0 {
-            dbgjs!("[set_cell_values] Empty values");
-            return ops;
+        if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
+            let height = values.len();
+            if height == 0 {
+                dbgjs!("[set_cell_values] Empty values");
+                return (ops, data_table_ops);
+            }
+
+            let width = values[0].len();
+            if width == 0 {
+                dbgjs!("[set_cell_values] Empty values");
+                return (ops, data_table_ops);
+            }
+
+            let init_cell_values = || vec![vec![None; height]; width];
+            let mut cell_values = init_cell_values();
+            let mut sheet_format_updates = SheetFormatUpdates::default();
+
+            for (y, row) in values.into_iter().enumerate() {
+                for (x, value) in row.into_iter().enumerate() {
+                    let value = value.trim().to_string();
+                    let (cell_value, format_update) = self.string_to_cell_value(&value, true);
+
+                    let pos = Pos {
+                        x: sheet_pos.x + x as i64,
+                        y: sheet_pos.y + y as i64,
+                    };
+
+                    let is_code = matches!(cell_value, CellValue::Code(_));
+                    let is_data_table =
+                        matches!(cell_value, CellValue::Code(_) | CellValue::Import(_))
+                            || sheet.has_table_content(pos, true);
+
+                    match is_data_table {
+                        true => {
+                            ops.extend(self.set_data_table_operations_at(sheet_pos, value));
+                        }
+                        false => {
+                            cell_values[x][y] = Some(cell_value);
+                            // TODO(ddimaria): temporary disabling the below until bugs are fixed
+                            // also re-enable the test_expand_data_table_column_row_on_setting_value test
+                            // data_table_ops.extend(self.set_cell_value_data_table_operations(
+                            //     SheetPos::from((pos, sheet_pos.sheet_id)),
+                            //     value,
+                            // ));
+                        }
+                    };
+
+                    if !format_update.is_default() {
+                        sheet_format_updates.set_format_cell(pos, format_update);
+                    }
+
+                    if is_code {
+                        compute_code_ops.push(Operation::ComputeCode {
+                            sheet_pos: pos.to_sheet_pos(sheet_pos.sheet_id),
+                        });
+                    }
+                }
+            }
+
+            if cell_values != init_cell_values() {
+                ops.push(Operation::SetCellValues {
+                    sheet_pos,
+                    values: cell_values.into(),
+                });
+            }
+
+            if !sheet_format_updates.is_default() {
+                ops.push(Operation::SetCellFormatsA1 {
+                    sheet_id: sheet_pos.sheet_id,
+                    formats: sheet_format_updates,
+                });
+            }
+
+            ops.extend(compute_code_ops);
         }
 
-        let width = values[0].len();
-        if width == 0 {
-            dbgjs!("[set_cell_values] Empty values");
-            return ops;
-        }
+        (ops, data_table_ops)
+    }
 
-        let mut cell_values = CellValues::new(width as u32, height as u32);
-        let mut sheet_format_updates = SheetFormatUpdates::default();
+    /// Generate operations adding columns and rows to data tables when the cells to add are touching the data table
+    pub fn set_cell_value_data_table_operations(
+        &self,
+        sheet_pos: SheetPos,
+        value: String,
+    ) -> Vec<Operation> {
+        let mut ops = vec![];
+        let pos = Pos::from(sheet_pos);
 
-        for (y, row) in values.iter().enumerate() {
-            for (x, value) in row.iter().enumerate() {
-                let (cell_value, format_update) = self.string_to_cell_value(value, true);
+        if !value.is_empty() {
+            if let Ok(sheet) = self.try_sheet_result(sheet_pos.sheet_id) {
+                if pos.x > 1 {
+                    let data_table_left = sheet.first_data_table_within(Pos::new(pos.x - 1, pos.y));
+                    if let Ok(data_table_left) = data_table_left {
+                        if let Some(data_table) =
+                            sheet.data_table(data_table_left).filter(|data_table| {
+                                if data_table.readonly {
+                                    return false;
+                                }
 
-                let is_code = matches!(cell_value, CellValue::Code(_));
+                                if data_table.show_ui
+                                    && data_table.show_name
+                                    && data_table_left.y == pos.y
+                                {
+                                    return false;
+                                }
 
-                cell_values.set(x as u32, y as u32, cell_value);
-
-                let pos = Pos {
-                    x: sheet_pos.x + x as i64,
-                    y: sheet_pos.y + y as i64,
-                };
-
-                if !format_update.is_default() {
-                    sheet_format_updates.set_format_cell(pos, format_update);
+                                // check if next column is blank
+                                for y in 0..data_table.height(false) {
+                                    let pos = Pos::new(pos.x, data_table_left.y + y as i64);
+                                    if sheet.has_content(pos) {
+                                        return false;
+                                    }
+                                }
+                                true
+                            })
+                        {
+                            let column_index = data_table.width();
+                            ops.push(Operation::InsertDataTableColumns {
+                                sheet_pos: (data_table_left, sheet_pos.sheet_id).into(),
+                                columns: vec![(column_index as u32, None, None)],
+                                swallow: true,
+                                select_table: false,
+                            });
+                        }
+                    }
                 }
 
-                if is_code {
-                    compute_code_ops.push(Operation::ComputeCode {
-                        sheet_pos: pos.to_sheet_pos(sheet_pos.sheet_id),
-                    });
+                if pos.y > 1 {
+                    let data_table_above =
+                        sheet.first_data_table_within(Pos::new(pos.x, pos.y - 1));
+                    if let Ok(data_table_above) = data_table_above {
+                        if let Some(data_table) =
+                            sheet.data_table(data_table_above).filter(|data_table| {
+                                if data_table.readonly {
+                                    return false;
+                                }
+                                // check if next row is blank
+                                for x in 0..data_table.width() {
+                                    let pos = Pos::new(data_table_above.x + x as i64, pos.y);
+                                    if sheet.has_content(pos) {
+                                        return false;
+                                    }
+                                }
+                                true
+                            })
+                        {
+                            // insert row with swallow
+                            ops.push(Operation::InsertDataTableRows {
+                                sheet_pos: (data_table_above, sheet_pos.sheet_id).into(),
+                                rows: vec![(data_table.height(false) as u32, None)],
+                                swallow: true,
+                                select_table: false,
+                            });
+                        }
+                    }
                 }
             }
         }
-
-        ops.push(Operation::SetCellValues {
-            sheet_pos,
-            values: cell_values,
-        });
-
-        if !sheet_format_updates.is_default() {
-            ops.push(Operation::SetCellFormatsA1 {
-                sheet_id: sheet_pos.sheet_id,
-                formats: sheet_format_updates,
-            });
-        }
-
-        ops.extend(compute_code_ops);
 
         ops
     }
@@ -236,22 +304,22 @@ impl GridController {
                             });
                         } else if can_delete_column {
                             // adjust for hidden columns, reverse the order to delete from right to left
-                            (rect.min.x..=rect.max.x)
+                            let columns = (rect.min.x..=rect.max.x)
                                 .map(|x| {
                                     // account for hidden columns
                                     data_table.get_column_index_from_display_index(
                                         (x - data_table_rect.min.x) as u32,
+                                        true,
                                     )
                                 })
                                 .rev()
-                                .for_each(|index| {
-                                    ops.push(Operation::DeleteDataTableColumn {
-                                        sheet_pos: data_table_pos.to_sheet_pos(sheet_pos.sheet_id),
-                                        index,
-                                        flatten: false,
-                                        select_table: false,
-                                    });
-                                });
+                                .collect();
+                            ops.push(Operation::DeleteDataTableColumns {
+                                sheet_pos: data_table_pos.to_sheet_pos(sheet_pos.sheet_id),
+                                columns,
+                                flatten: false,
+                                select_table: false,
+                            });
                         } else {
                             ops.push(Operation::SetDataTableAt {
                                 sheet_pos,
@@ -513,12 +581,12 @@ mod test {
             operations,
             vec![
                 Operation::SetCellValues {
-                    sheet_pos: SheetPos::new(sheet_id, 1, 2),
-                    values: CellValues::new(2, 1)
-                },
-                Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 2, 1),
                     values: CellValues::new(1, 2)
+                },
+                Operation::SetCellValues {
+                    sheet_pos: SheetPos::new(sheet_id, 1, 2),
+                    values: CellValues::new(2, 1)
                 },
             ]
         );

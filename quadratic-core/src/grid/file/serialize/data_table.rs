@@ -159,6 +159,11 @@ pub(crate) fn import_run_error_msg_builder(
         current::RunErrorMsgSchema::NonRectangularArray => RunErrorMsg::NonRectangularArray,
         current::RunErrorMsgSchema::NonLinearArray => RunErrorMsg::NonLinearArray,
         current::RunErrorMsgSchema::ArrayTooBig => RunErrorMsg::ArrayTooBig,
+        current::RunErrorMsgSchema::NotAvailable => RunErrorMsg::NotAvailable,
+        current::RunErrorMsgSchema::Name => RunErrorMsg::Name,
+        current::RunErrorMsgSchema::Null => RunErrorMsg::Null,
+        current::RunErrorMsgSchema::Num => RunErrorMsg::Num,
+        current::RunErrorMsgSchema::Value => RunErrorMsg::Value,
         current::RunErrorMsgSchema::CircularReference => RunErrorMsg::CircularReference,
         current::RunErrorMsgSchema::Overflow => RunErrorMsg::Overflow,
         current::RunErrorMsgSchema::DivideByZero => RunErrorMsg::DivideByZero,
@@ -264,9 +269,7 @@ pub(crate) fn import_data_table_builder(
 
     for (pos, data_table) in data_tables.into_iter() {
         let value = match data_table.value {
-            current::OutputValueSchema::Single(value) => {
-                Value::Single(import_cell_value(value.to_owned()))
-            }
+            current::OutputValueSchema::Single(value) => Value::Single(import_cell_value(value)),
             current::OutputValueSchema::Array(current::OutputArraySchema { size, values }) => {
                 Value::Array(crate::Array::from(
                     values
@@ -325,6 +328,7 @@ pub(crate) fn import_data_table_builder(
                     })
                     .collect()
             }),
+            sort_dirty: data_table.sort_dirty,
             display_buffer: data_table.display_buffer,
             alternating_colors: data_table.alternating_colors,
             formats: import_formats(data_table.formats),
@@ -414,6 +418,11 @@ pub(crate) fn export_run_error_msg(run_error_msg: RunErrorMsg) -> current::RunEr
         RunErrorMsg::NonRectangularArray => current::RunErrorMsgSchema::NonRectangularArray,
         RunErrorMsg::NonLinearArray => current::RunErrorMsgSchema::NonLinearArray,
         RunErrorMsg::ArrayTooBig => current::RunErrorMsgSchema::ArrayTooBig,
+        RunErrorMsg::NotAvailable => current::RunErrorMsgSchema::NotAvailable,
+        RunErrorMsg::Name => current::RunErrorMsgSchema::Name,
+        RunErrorMsg::Null => current::RunErrorMsgSchema::Null,
+        RunErrorMsg::Num => current::RunErrorMsgSchema::Num,
+        RunErrorMsg::Value => current::RunErrorMsgSchema::Value,
         RunErrorMsg::CircularReference => current::RunErrorMsgSchema::CircularReference,
         RunErrorMsg::Overflow => current::RunErrorMsgSchema::Overflow,
         RunErrorMsg::DivideByZero => current::RunErrorMsgSchema::DivideByZero,
@@ -467,9 +476,10 @@ pub(crate) fn export_data_tables(
                             h: array.height() as i64,
                         },
                         values: array
-                            .rows()
+                            .into_rows()
+                            .into_iter()
                             .flat_map(|row| {
-                                row.iter().map(|value| export_cell_value(value.to_owned()))
+                                row.into_iter().map(export_cell_value).collect::<Vec<_>>()
                             })
                             .collect(),
                     })
@@ -524,6 +534,7 @@ pub(crate) fn export_data_tables(
                 show_columns: data_table.show_columns,
                 columns,
                 sort,
+                sort_dirty: data_table.sort_dirty,
                 display_buffer: data_table.display_buffer,
                 readonly: data_table.readonly,
                 last_modified: Some(data_table.last_modified),

@@ -1,5 +1,5 @@
 import { debugWebWorkers } from '@/app/debugFlags';
-import type { JsGetCellResponse } from '@/app/quadratic-core-types';
+import type { JsCellsA1Response } from '@/app/quadratic-core-types';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import type { CorePythonRun } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
@@ -36,14 +36,11 @@ class Python {
     this.init();
   }
 
-  private getCellsA1 = (
-    a1: string,
-    lineNumber?: number
-  ): { cells: JsGetCellResponse[]; x: number; y: number; w: number; h: number; has_headers: boolean } | undefined => {
+  private getCellsA1 = (a1: string): JsCellsA1Response => {
     if (!this.transactionId) {
       throw new Error('No transactionId in getCellsA1');
     }
-    return pythonCore.sendGetCellsA1(this.transactionId, a1, lineNumber);
+    return pythonCore.sendGetCellsA1(this.transactionId, a1);
   };
 
   private init = async () => {
@@ -182,7 +179,7 @@ class Python {
     }
   };
 
-  private async inspectPython(pythonCode: string): Promise<InspectPython | undefined> {
+  private inspectPython = async (pythonCode: string): Promise<InspectPython | undefined> => {
     if (!this.pyodide) {
       console.warn('Python not loaded');
     } else {
@@ -194,9 +191,9 @@ class Python {
 
       return Object.fromEntries(output.toJs()) as InspectPython;
     }
-  }
+  };
 
-  async runPython(message: CorePythonRun) {
+  runPython = async (message: CorePythonRun) => {
     if (!this.pyodide || this.state !== 'ready') {
       this.awaitingExecution.push(this.corePythonRunToCodeRun(message));
       return;
@@ -279,7 +276,7 @@ class Python {
     pythonClient.sendPythonState('ready', { current: undefined });
     this.state = 'ready';
     setTimeout(this.next, 0);
-  }
+  };
 }
 
 export const python = new Python();

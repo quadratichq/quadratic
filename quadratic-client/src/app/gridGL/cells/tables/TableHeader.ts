@@ -4,7 +4,7 @@ import { TableColumnHeadersGridLines } from '@/app/gridGL/cells/tables/TableColu
 import { TableName } from '@/app/gridGL/cells/tables/TableName';
 import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
-import { Container, type Point, type Rectangle } from 'pixi.js';
+import { Container, Rectangle, type Point } from 'pixi.js';
 
 export class TableHeader extends Container {
   table: Table;
@@ -16,7 +16,7 @@ export class TableHeader extends Container {
   // Calculated lowest y position for a floating table header
   private bottomOfTable = 0;
 
-  private onGrid = true;
+  onGrid = true;
 
   tableCursor?: string;
 
@@ -71,6 +71,10 @@ export class TableHeader extends Container {
     }
   }
 
+  updateSelection() {
+    this.columnHeaders.drawBackground();
+  }
+
   update(onlyGridLines: boolean) {
     if (this.table.codeCell.state === 'SpillError' || this.table.codeCell.state === 'RunError') {
       this.visible = false;
@@ -106,12 +110,17 @@ export class TableHeader extends Container {
     }
   }
 
+  getTableHeaderBounds(): Rectangle {
+    return new Rectangle(this.x, this.y, this.width, this.height);
+  }
+
   toHover = (bounds: Rectangle, gridHeading: number) => {
     this.onGrid = false;
     this.position.set(
       this.table.tableBounds.x,
       Math.min(this.bottomOfTable, this.table.tableBounds.y + bounds.top + gridHeading - this.table.tableBounds.top)
     );
+
     this.columnHeaders.toHoverGrid(
       this.y + (this.table.codeCell.show_ui && this.table.codeCell.show_name ? this.columnHeaders.y : 0)
     );
@@ -131,6 +140,9 @@ export class TableHeader extends Container {
   }
 
   intersectsTableName(world: Point): TablePointerDownResult | undefined {
+    if (this.table.codeCell.state === 'SpillError' || this.table.codeCell.state === 'RunError') {
+      return undefined;
+    }
     if (this.table.codeCell.show_ui && this.table.codeCell.show_name) {
       return this.tableName.intersects(world);
     }
@@ -141,6 +153,9 @@ export class TableHeader extends Container {
   }
 
   pointerDown(world: Point): TablePointerDownResult | undefined {
+    if (this.table.codeCell.state === 'SpillError' || this.table.codeCell.state === 'RunError') {
+      return undefined;
+    }
     if (this.table.codeCell.show_ui && this.table.codeCell.show_name) {
       const result = this.tableName.intersects(world);
       if (result?.type === 'table-name') {
@@ -173,5 +188,9 @@ export class TableHeader extends Container {
     }
     this.update(false);
     return this.columnHeaders.getSortDialogPosition();
+  }
+
+  toggleTableColumnSelection(hide: boolean) {
+    this.columnHeaders.toggleTableColumnSelection(hide);
   }
 }

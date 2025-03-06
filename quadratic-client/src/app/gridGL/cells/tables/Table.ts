@@ -51,6 +51,7 @@ export class Table extends Container {
     if (cellsMarkers) {
       cellsMarkers.remove(this.codeCell.x, this.codeCell.y);
     }
+    this.sheet.gridOverflowLines.updateImageHtml(this.codeCell.x, this.codeCell.y);
 
     super.destroy();
   }
@@ -107,6 +108,16 @@ export class Table extends Container {
     } else {
       cellsMarkers.remove(this.codeCell.x, this.codeCell.y);
     }
+    if (
+      !this.codeCell.spill_error &&
+      // !this.codeCell.is_html_image &&
+      this.codeCell.show_ui &&
+      this.codeCell.show_name
+    ) {
+      this.sheet.gridOverflowLines.updateImageHtml(this.codeCell.x, this.codeCell.y, this.codeCell.w, 1);
+    } else {
+      this.sheet.gridOverflowLines.updateImageHtml(this.codeCell.x, this.codeCell.y);
+    }
   };
 
   private headingPosition = (bounds: Rectangle, gridHeading: number) => {
@@ -146,7 +157,7 @@ export class Table extends Container {
     }
     if (
       this.codeCell.show_ui &&
-      this.codeCell.show_name &&
+      (this.codeCell.show_name || this.codeCell.show_columns) &&
       this.codeCell.state !== 'RunError' &&
       this.codeCell.state !== 'SpillError'
     ) {
@@ -178,16 +189,22 @@ export class Table extends Container {
   }
 
   // Intersects a column/row rectangle
-  intersects(rectangle: Rectangle): boolean {
-    return intersects.rectangleRectangle(
-      new Rectangle(this.codeCell.x, this.codeCell.y, this.codeCell.w, this.codeCell.h),
-      rectangle
-    );
-  }
+  intersects = (rectangle: Rectangle): boolean => {
+    let width = this.codeCell.w;
+    let height = this.codeCell.h;
+    if (this.codeCell.spill_error || this.codeCell.state === 'RunError' || this.codeCell.state === 'SpillError') {
+      width = 1;
+      height = 1;
+    }
+    return intersects.rectangleRectangle(new Rectangle(this.codeCell.x, this.codeCell.y, width, height), rectangle);
+  };
 
   // Checks whether the cursor is on the table
   isCursorOnDataTable(): boolean {
     const cursor = sheets.sheet.cursor.position;
+    if (this.codeCell.spill_error) {
+      return this.codeCell.x === cursor.x && this.codeCell.y === cursor.y;
+    }
     return intersects.rectanglePoint(
       new Rectangle(this.codeCell.x, this.codeCell.y, this.codeCell.w - 1, this.codeCell.h - 1),
       cursor
@@ -252,8 +269,6 @@ export class Table extends Container {
   resize(width: number, height: number) {
     this.tableBounds.width = width;
     this.tableBounds.height = height;
-    this.codeCell.html_image_width = width;
-    this.codeCell.html_image_height = height;
     this.outline.update();
     this.header.update(false);
   }

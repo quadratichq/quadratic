@@ -1,12 +1,16 @@
 use super::Sheet;
 use crate::{
-    a1::A1Context,
-    grid::{data_table::DataTable, CodeCellValue, SheetId},
-    Pos,
+    a1::{A1Context, A1Selection},
+    cell_values::CellValues,
+    grid::{data_table::DataTable, CodeCellValue, DataTableKind, SheetId},
+    Pos, Rect,
 };
 
 use anyhow::{anyhow, bail, Result};
-use indexmap::map::{Entry, OccupiedEntry};
+use indexmap::{
+    map::{Entry, OccupiedEntry},
+    IndexMap,
+};
 
 impl Sheet {
     /// Sets or deletes a data table.
@@ -90,9 +94,21 @@ impl Sheet {
         }
     }
 
-    /// Checks whether a table intersects a position. We ignore the table if it
+    /// Returns the (Pos, DataTable) that intersects a position
+    pub fn data_table_at(&self, pos: Pos) -> Option<(Pos, &DataTable)> {
+        self.data_tables
+            .iter()
+            .find_map(|(data_table_pos, data_table)| {
+                data_table
+                    .output_rect(*data_table_pos, false)
+                    .contains(pos)
+                    .then_some((*data_table_pos, data_table))
+            })
+    }
+
+    /// Checks whether a chart intersects a position. We ignore the chart if it
     /// includes either exclude_x or exclude_y.
-    pub fn table_intersects(
+    pub fn chart_intersects(
         &self,
         x: i64,
         y: i64,
@@ -125,35 +141,115 @@ impl Sheet {
 
     pub fn replace_in_code_cells(
         &mut self,
+        context: &A1Context,
         func: impl Fn(&mut CodeCellValue, &A1Context, &SheetId),
     ) {
-        let a1_context = self.a1_context();
         let positions = self.data_tables.keys().cloned().collect::<Vec<_>>();
         let sheet_id = self.id;
 
         for pos in positions {
             if let Some(cell_value) = self.cell_value_mut(pos) {
                 if let Some(code_cell_value) = cell_value.code_cell_value_mut() {
-                    func(code_cell_value, &a1_context, &sheet_id);
+                    func(code_cell_value, context, &sheet_id);
                 }
             }
         }
     }
 
     /// Replaces the table name in all code cells that reference the old name.
-    pub fn replace_table_name_in_code_cells(&mut self, old_name: &str, new_name: &str) {
-        self.replace_in_code_cells(|code_cell_value, a1_context, id| {
+    pub fn replace_table_name_in_code_cells(
+        &mut self,
+        old_name: &str,
+        new_name: &str,
+        context: &A1Context,
+    ) {
+        self.replace_in_code_cells(context, |code_cell_value, a1_context, id| {
             code_cell_value
                 .replace_table_name_in_cell_references(old_name, new_name, id, a1_context);
         });
     }
 
     /// Replaces the column name in all code cells that reference the old name.
-    pub fn replace_data_table_column_name_in_code_cells(&mut self, old_name: &str, new_name: &str) {
-        self.replace_in_code_cells(|code_cell_value, a1_context, id| {
-            code_cell_value
-                .replace_column_name_in_cell_references(old_name, new_name, id, a1_context);
+    pub fn replace_table_column_name_in_code_cells(
+        &mut self,
+        table_name: &str,
+        old_name: &str,
+        new_name: &str,
+        context: &A1Context,
+    ) {
+        self.replace_in_code_cells(context, |code_cell_value, a1_context, id| {
+            code_cell_value.replace_column_name_in_cell_references(
+                table_name, old_name, new_name, id, a1_context,
+            );
         });
+    }
+
+    pub fn data_tables_and_cell_values_in_rect(
+        &self,
+        rect: &Rect,
+        cells: &mut CellValues,
+        values: &mut CellValues,
+        context: &A1Context,
+        selection: &A1Selection,
+        include_code_table_values: bool,
+    ) -> IndexMap<Pos, DataTable> {
+        let mut data_tables = IndexMap::new();
+
+        self.iter_code_output_in_rect(rect.to_owned())
+            .for_each(|(output_rect, data_table)| {
+                // only change the cells if the CellValue::Code is not in the selection box
+                let data_table_pos = Pos {
+                    x: output_rect.min.x,
+                    y: output_rect.min.y,
+                };
+
+                // add the CellValue to cells if the code is not included in the clipboard
+                let include_in_cells = !rect.contains(data_table_pos);
+
+                // if the source cell is included in the clipboard, add the data_table to the clipboard
+                if !include_in_cells {
+                    if matches!(data_table.kind, DataTableKind::Import(_))
+                        || include_code_table_values
+                    {
+                        data_tables.insert(data_table_pos, data_table.clone());
+                    } else {
+                        data_tables.insert(data_table_pos, data_table.clone_without_values());
+                    }
+                }
+
+                if data_table.spill_error {
+                    return;
+                }
+
+                let x_start = std::cmp::max(output_rect.min.x, rect.min.x);
+                let y_start = std::cmp::max(output_rect.min.y, rect.min.y);
+                let x_end = std::cmp::min(output_rect.max.x, rect.max.x);
+                let y_end = std::cmp::min(output_rect.max.y, rect.max.y);
+
+                // add the code_run output to clipboard.values
+                for y in y_start..=y_end {
+                    for x in x_start..=x_end {
+                        if let Some(value) = data_table.cell_value_at(
+                            (x - data_table_pos.x) as u32,
+                            (y - data_table_pos.y) as u32,
+                        ) {
+                            let pos = Pos {
+                                x: x - rect.min.x,
+                                y: y - rect.min.y,
+                            };
+                            if selection.might_contain_pos(Pos { x, y }, context) {
+                                if include_in_cells {
+                                    cells.set(pos.x as u32, pos.y as u32, value.clone());
+                                }
+
+                                values.set(pos.x as u32, pos.y as u32, value);
+                            }
+                        }
+                    }
+                }
+            });
+
+        data_tables
     }
 }
 
@@ -244,8 +340,8 @@ mod test {
             A1Selection::from_ref_range_bounds(sheet_id, RefRangeBounds::new_relative_pos(pos));
 
         let JsClipboard { html, .. } = gc
-            .sheet_mut(sheet_id)
-            .copy_to_clipboard(&selection, ClipboardOperation::Copy)
+            .sheet(sheet_id)
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, false)
             .unwrap();
 
         gc.paste_from_clipboard(
@@ -264,5 +360,45 @@ mod test {
                 .chart_pixel_output
         );
         // assert_eq!(clipboard.html, data_table.html());
+    }
+
+    #[test]
+    fn test_data_table_at() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+
+        let code_run = CodeRun {
+            std_err: None,
+            std_out: None,
+            cells_accessed: Default::default(),
+            error: None,
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
+        };
+
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "Table 1",
+            Value::Single(CellValue::Number(BigDecimal::from(2))),
+            false,
+            false,
+            false,
+            None,
+        );
+
+        // Insert data table at A1
+        sheet.set_data_table(pos![A1], Some(data_table.clone()));
+
+        // Test position within the data table
+        let result = sheet.data_table_at(pos![A1]);
+        assert!(result.is_some());
+        let (pos, dt) = result.unwrap();
+        assert_eq!(pos, pos![A1]);
+        assert_eq!(dt.name.to_display(), "Table 1");
+
+        // Test position outside the data table
+        assert!(sheet.data_table_at(pos![D4]).is_none());
     }
 }

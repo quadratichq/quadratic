@@ -65,27 +65,33 @@ export function drawDashedRectangle(options: {
   }
 }
 
+export type Offsets = {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+};
+
 export function drawDashedRectangleMarching(options: {
   g: Graphics;
   color: number;
   march: number;
   noFill?: boolean;
   alpha?: number;
-  offset?: number;
+  offsets?: Offsets;
   range: RefRangeBounds;
 }): boolean {
-  const { g, color, march, noFill, alpha = 1, offset = 0, range } = options;
-
+  const { g, color, march, noFill, alpha = 1, offsets = { left: 0, top: 0, right: 0, bottom: 0 }, range } = options;
   const selectionRect = getRangeScreenRectangleFromCellRefRange(range);
   const bounds = pixiApp.viewport.getVisibleBounds();
   if (!intersects.rectangleRectangle(selectionRect, bounds)) {
     return false;
   }
 
-  const minX = selectionRect.left + offset;
-  const minY = selectionRect.top + offset;
-  const maxX = selectionRect.right - offset;
-  const maxY = selectionRect.bottom - offset;
+  const minX = selectionRect.left + offsets.left;
+  const minY = selectionRect.top + offsets.top;
+  const maxX = selectionRect.right - offsets.right;
+  const maxY = selectionRect.bottom - offsets.bottom;
 
   const boundedRight = Math.min(maxX, bounds.right);
   const boundedBottom = Math.min(maxY, bounds.bottom);
@@ -95,10 +101,10 @@ export function drawDashedRectangleMarching(options: {
   }
 
   g.lineStyle({
-    alignment: 0,
+    alignment: 0.5,
   });
   if (!noFill) {
-    g.beginFill(color, FILL_SELECTION_ALPHA);
+    g.beginFill(color, alpha);
     g.drawRect(minX, minY, boundedRight - minX, boundedBottom - minY);
     g.endFill();
   }
@@ -107,8 +113,7 @@ export function drawDashedRectangleMarching(options: {
   g.lineStyle({
     width: CURSOR_THICKNESS,
     color,
-    alignment: 0,
-    alpha,
+    alignment: 0.5,
   });
 
   const clamp = (n: number, min: number, max: number): number => {

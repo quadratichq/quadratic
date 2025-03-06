@@ -1,16 +1,16 @@
+import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
-import { ToolCard } from '@/app/ui/menus/AIAnalyst/toolCards/ToolCard';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { CodeIcon, SaveAndRunIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { OBJ, parse, STR } from 'partial-json';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRecoilCallback } from 'recoil';
 import type { z } from 'zod';
 
@@ -91,14 +91,21 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
     [codeCellPos]
   );
 
-  if (loading) {
+  const estimatedNumberOfLines = useMemo(() => {
+    if (toolArgs?.data) {
+      return toolArgs.data.code_string.split('\n').length;
+    } else {
+      return args.split('\\n').length;
+    }
+  }, [toolArgs, args]);
+
+  if (loading && estimatedNumberOfLines) {
     const partialJson = parsePartialJson(args);
     if (partialJson && 'code_cell_language' in partialJson) {
-      const estimatedNumberOfLines = args.split('\\n').length;
       const { code_cell_language: language, code_cell_position: position } = partialJson;
       return (
         <ToolCard
-          icon={<LanguageIcon language={language} />}
+          icon={<LanguageIcon language={language} className="text-primary" />}
           label={language}
           description={
             `${estimatedNumberOfLines} line` +
@@ -117,8 +124,7 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
     return <ToolCard isLoading />;
   }
 
-  const { code_cell_language, code_cell_position, code_string } = toolArgs.data;
-  const estimatedNumberOfLines = code_string.split('\n').length;
+  const { code_cell_language, code_cell_position } = toolArgs.data;
   return (
     <ToolCard
       icon={<LanguageIcon language={code_cell_language} />}
