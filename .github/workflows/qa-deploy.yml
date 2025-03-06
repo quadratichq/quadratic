@@ -136,12 +136,12 @@ jobs:
         env:
           CLIENT_IMAGE: "${{ needs.build_images.outputs.ECR_URL }}:pr-qa-github-actions"
         run: |
-          BUILD_SPEC=$(cat infra/client/amplify.json)
+          BUILD_SPEC=$(cat infra/client/amplify.json | jq -c '.')
 
           aws amplify create-deployment \
             --app-id d1a661jjy8myo5 \
             --branch-name qa \
-            --build-spec "$BUILD_SPEC"
+            --build-spec "${BUILD_SPEC}"
 
   pulumi:
     needs: [build_images]
