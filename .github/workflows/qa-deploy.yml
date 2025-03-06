@@ -22,6 +22,8 @@ jobs:
     runs-on: blacksmith-4vcpu-ubuntu-2204
     # if: github.head_ref == 'qa' && github.base_ref == 'main'
     timeout-minutes: 30
+    outputs:
+      s3-dir: ${{ steps.upload-to-s3.outputs.s3-dir }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -76,9 +78,18 @@ jobs:
           docker rm $CONTAINER_ID
 
       - name: Upload to S3
+        id: upload-to-s3
         run: |
+          # Get the commit hash
+          COMMIT_HASH=$(git rev-parse HEAD)
+
+          # S3 build directory
+          S3_DIR="s3://quadratic-development-amplify/quadratic-client-${COMMIT_HASH}/"
+
           # Upload entire build directory to S3 with no caching for Amplify
-          aws s3 sync /tmp/quadratic-client/ s3://quadratic-development-amplify/quadratic-client-${{ github.sha }}/
+          aws s3 sync /tmp/quadratic-client/ $S3_DIR --delete
+
+          echo "S3_DIR=$S3_DIR" >> $GITHUB_OUTPUT
 
   build_images:
     name: Build Images
@@ -229,11 +240,12 @@ jobs:
 
       - name: Trigger New Deployment
         run: |
+          S3_DIR=${{ needs.build_client.outputs.s3-dir }}
+
           aws amplify start-job \
             --app-id d1uvolff3y0hsd \
             --branch-name ${{ github.head_ref }} \
-            --job-type RELEASE \
-            --job-data "{\"sourceUrl\":\"s3://quadratic-development-amplify/quadratic-client-${{ github.sha }}\",\"sourceUrlType\":\"S3\"}"
+            --job-type RELEASE
 
   pulumi:
     needs: [build_client, build_images]
