@@ -13,13 +13,13 @@ frontend:
           sudo swapon swapfile
           free -h
 
-        # Setup Docker
-        - |
-          echo "Setting up Docker..."
-          sudo yum update -y
-          sudo yum install -y docker
-          sudo service docker start
-          sudo docker info || (echo "Docker setup failed" && exit 1)
+        # # Setup Docker
+        # - |
+        #   echo "Setting up Docker..."
+        #   sudo yum update -y
+        #   sudo yum install -y docker
+        #   sudo service docker start
+        #   sudo docker info || (echo "Docker setup failed" && exit 1)
 
         # Configure AWS
         - |
