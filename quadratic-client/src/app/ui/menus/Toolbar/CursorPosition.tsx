@@ -30,11 +30,11 @@ export const CursorPosition = () => {
 
     sync();
 
-    events.on('updateCodeCell', sync);
-    events.on('renderCodeCells', sync);
+    events.on('a1Context', sync);
+    events.on('a1ContextUpdated', sync);
     return () => {
-      events.off('updateCodeCell', sync);
-      events.off('renderCodeCells', sync);
+      events.off('a1Context', sync);
+      events.off('a1ContextUpdated', sync);
     };
   }, []);
 
