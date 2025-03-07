@@ -197,7 +197,7 @@ impl GridController {
         op: Operation,
     ) -> Result<()> {
         if let Operation::SetSheetName { sheet_id, name } = op {
-            if let Err(e) = Sheet::validate_sheet_name(&name, self.a1_context()) {
+            if let Err(e) = Sheet::validate_sheet_name(&name, sheet_id, self.a1_context()) {
                 if cfg!(target_family = "wasm") || cfg!(test) {
                     crate::wasm_bindings::js::jsClientMessage(
                         e.to_owned(),
@@ -208,7 +208,6 @@ impl GridController {
                 transaction.operations.clear();
                 bail!(e);
             }
-
             let context = self.a1_context().to_owned();
 
             let sheet = self.try_sheet_result(sheet_id)?;
