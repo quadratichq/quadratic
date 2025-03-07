@@ -189,4 +189,8 @@ export class TableHeader extends Container {
     this.update(false);
     return this.columnHeaders.getSortDialogPosition();
   }
+
+  toggleTableColumnSelection(hide: boolean) {
+    this.columnHeaders.toggleTableColumnSelection(hide);
+  }
 }

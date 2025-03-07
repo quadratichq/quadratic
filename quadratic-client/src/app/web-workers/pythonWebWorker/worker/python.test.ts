@@ -29,7 +29,7 @@ beforeAll(async () => {
     const interval = setInterval(() => {
       if (pythonState === 'ready') {
         clearInterval(interval);
-        resolve();
+        resolve(undefined);
       }
     });
   });
