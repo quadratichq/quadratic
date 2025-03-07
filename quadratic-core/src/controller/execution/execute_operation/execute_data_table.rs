@@ -640,7 +640,9 @@ impl GridController {
             if let Some(name) = name.to_owned() {
                 if old_name != name {
                     // validate table name
-                    if let Err(e) = DataTable::validate_table_name(&name, self.a1_context()) {
+                    if let Err(e) =
+                        DataTable::validate_table_name(&name, sheet_pos, self.a1_context())
+                    {
                         if cfg!(target_family = "wasm") || cfg!(test) {
                             crate::wasm_bindings::js::jsClientMessage(
                                 e.to_owned(),

@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use wasm_bindgen::prelude::*;
 
-use crate::grid::SheetId;
+use crate::{grid::SheetId, SheetPos};
 
 use super::{A1Context, DataTable, Sheet};
 
@@ -14,9 +14,17 @@ pub fn js_validate_sheet_name(name: &str, sheet_id: &str, context: &str) -> Resu
 }
 
 #[wasm_bindgen(js_name = "validateTableName")]
-pub fn js_validate_table_name(name: &str, context: &str) -> Result<bool, String> {
+pub fn js_validate_table_name(
+    name: &str,
+    sheet_id: &str,
+    x: i32,
+    y: i32,
+    context: &str,
+) -> Result<bool, String> {
+    let sheet_id = SheetId::from_str(sheet_id).map_err(|e| e.to_string())?;
+    let sheet_pos = SheetPos::new(sheet_id, x as i64, y as i64);
     let context = serde_json::from_str::<A1Context>(context).map_err(|e| e.to_string())?;
-    DataTable::validate_table_name(name, &context)
+    DataTable::validate_table_name(name, sheet_pos, &context)
 }
 
 #[wasm_bindgen(js_name = "validateColumnName")]
