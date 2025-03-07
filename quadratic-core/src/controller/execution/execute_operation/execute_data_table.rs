@@ -674,6 +674,7 @@ impl GridController {
                             // validate column name
                             if let Err(e) = DataTable::validate_column_name(
                                 &old_name,
+                                index,
                                 &new_column.name.to_string(),
                                 &context,
                             ) {

@@ -343,6 +343,7 @@ impl DataTable {
     /// Column name must be unique
     pub fn validate_column_name(
         table_name: &str,
+        index: usize,
         column_name: &str,
         context: &A1Context,
     ) -> std::result::Result<bool, String> {
@@ -357,7 +358,10 @@ impl DataTable {
         }
 
         // Check if column name already exists
-        if context.table_map.table_has_column(table_name, column_name) {
+        if context
+            .table_map
+            .table_has_column(table_name, column_name, index)
+        {
             return Err("Column name must be unique".to_string());
         }
 
@@ -1171,7 +1175,7 @@ pub mod test {
 
         for name in valid_names {
             assert!(
-                DataTable::validate_column_name(table_name, name, &context).is_ok(),
+                DataTable::validate_column_name(table_name, 10, name, &context).is_ok(),
                 "Expected '{}' to be valid",
                 name
             );
@@ -1222,7 +1226,7 @@ pub mod test {
         ];
 
         for (name, expected_error) in test_cases {
-            let result = DataTable::validate_column_name(table_name, name, &context);
+            let result = DataTable::validate_column_name(table_name, 10, name, &context);
             assert!(
                 result.is_err(),
                 "Expected '{}' to be invalid, but it was valid",
@@ -1237,8 +1241,12 @@ pub mod test {
         }
 
         // Test duplicate column name
-        let result = DataTable::validate_column_name(table_name, "existing_col", &context);
+        let result = DataTable::validate_column_name(table_name, 10, "existing_col", &context);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Column name must be unique");
+
+        // Allow duplicate column name if the index is the same as the existing column index
+        let result = DataTable::validate_column_name(table_name, 0, "existing_col", &context);
+        assert!(result.is_ok());
     }
 }
