@@ -122,12 +122,12 @@ export const Component = () => {
                     </div>
                     <div className="space-y-3">
                       <div className="flex justify-between">
-                        <span className="text-sm">AI Messages / User / Month</span>
-                        <span className="text-sm font-medium">50</span>
+                        <span className="text-sm">AI Messages</span>
+                        <span className="text-sm font-medium">Limited</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm">Team Members</span>
-                        <span className="text-sm font-medium">∞</span>
+                        <span className="text-sm font-medium">Limited</span>
                       </div>
                     </div>
                   </div>
@@ -142,14 +142,13 @@ export const Component = () => {
                     </div>
                     <div className="space-y-3">
                       <div className="flex justify-between">
-                        <span className="text-sm">AI Messages / User / Month</span>
-                        <span className="text-sm font-medium">∞</span>
+                        <span className="text-sm">AI Messages</span>
+                        <span className="text-sm font-medium">Many</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm">Team Members</span>
                         <span className="text-right text-sm font-medium">
-                          $20<br></br>
-                          <span className="text-xs text-muted-foreground">/ User / Month</span>
+                          $20 <span className="text-xs text-muted-foreground">/ User / Month</span>
                         </span>
                       </div>
                     </div>
@@ -187,8 +186,14 @@ export const Component = () => {
                   <h3 className="mb-3 text-lg font-semibold">Current Usage</h3>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
+                      <span className="text-sm">Team Members</span>
+                      <div className="flex items-start gap-2">
+                        <span className="w-4 text-left font-medium">{users.length}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm">AI Messages / User / Month</span>
+                        <span className="text-sm">Your AI Messages</span>
                         <Dialog>
                           <DialogTrigger>
                             <InfoCircledIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
@@ -197,10 +202,7 @@ export const Component = () => {
                             <DialogHeader>
                               <DialogTitle>Usage History</DialogTitle>
                             </DialogHeader>
-                            <p className="mb-4 text-sm text-muted-foreground">
-                              Users receive 50 free AI messages per month across all teams. If a user belongs to a paid
-                              team, they'll use that team's unlimited messages instead.
-                            </p>
+                            <p className="mb-4 text-sm text-muted-foreground">Prompts per user per month.</p>
                             <div className="space-y-3">
                               {billing.usage.map((usage) => (
                                 <div key={usage.month} className="flex justify-between">
@@ -213,17 +215,7 @@ export const Component = () => {
                         </Dialog>
                       </div>
                       <div className="flex items-start gap-2">
-                        <span className="w-4 text-right font-medium">{latestUsage.ai_messages}</span>
-                        <span className="w-8 translate-y-[5px] text-xs text-muted-foreground">
-                          / {billing.status === undefined ? '50' : '∞'}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Team Members</span>
-                      <div className="flex items-start gap-2">
-                        <span className="w-4 text-right font-medium">{users.length}</span>
-                        <span className="w-8 translate-y-[5px] text-xs text-muted-foreground">/ ∞</span>
+                        <span className="w-4 text-left font-medium">{latestUsage.ai_messages}</span>
                       </div>
                     </div>
                   </div>
