@@ -23,7 +23,7 @@ env:
 jobs:
   build_client:
     name: Build Client
-    runs-on: blacksmith-8vcpu-ubuntu-2204
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     # if: github.head_ref == 'qa' && github.base_ref == 'main'
     timeout-minutes: 30
     outputs:
@@ -65,6 +65,19 @@ jobs:
           tags: quadratic-client:local
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
+          secrets: |
+            "VITE_DEBUG=${{ secrets.VITE_DEBUG_DEVELOPMENT }}"
+            "VITE_QUADRATIC_API_URL=${{ secrets.VITE_QUADRATIC_API_URL_DEVELOPMENT }}"
+            "VITE_QUADRATIC_MULTIPLAYER_URL=${{ secrets.VITE_QUADRATIC_MULTIPLAYER_URL_DEVELOPMENT }}"
+            "VITE_QUADRATIC_CONNECTION_URL=${{ secrets.VITE_QUADRATIC_CONNECTION_URL_DEVELOPMENT }}"
+            "VITE_STORAGE_TYPE=${{ secrets.VITE_STORAGE_TYPE_DEVELOPMENT }}"
+            "VITE_AUTH_TYPE=${{ secrets.VITE_AUTH_TYPE_DEVELOPMENT }}"
+            "VITE_AUTH0_ISSUER=${{ secrets.VITE_AUTH0_ISSUER_DEVELOPMENT }}"
+            "VITE_AUTH0_DOMAIN=${{ secrets.VITE_AUTH0_DOMAIN_DEVELOPMENT }}"
+            "VITE_AUTH0_CLIENT_ID=${{ secrets.VITE_AUTH0_CLIENT_ID_DEVELOPMENT }}"
+            "VITE_AUTH0_AUDIENCE=${{ secrets.VITE_AUTH0_AUDIENCE_DEVELOPMENT }}"
+            "VITE_ORY_HOST=${{ secrets.VITE_ORY_HOST_DEVELOPMENT }}"
+            "VITE_SENTRY_AUTH_TOKEN=${{ secrets.VITE_SENTRY_AUTH_TOKEN_DEVELOPMENT }}"
           outputs: type=docker
 
       - name: Copy build from container to host
@@ -179,19 +192,6 @@ jobs:
           tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-qa-github-actions
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
-          secrets: |
-            "VITE_DEBUG=${{ secrets.VITE_DEBUG_DEVELOPMENT }}"
-            "VITE_QUADRATIC_API_URL=${{ secrets.VITE_QUADRATIC_API_URL_DEVELOPMENT }}"
-            "VITE_QUADRATIC_MULTIPLAYER_URL=${{ secrets.VITE_QUADRATIC_MULTIPLAYER_URL_DEVELOPMENT }}"
-            "VITE_QUADRATIC_CONNECTION_URL=${{ secrets.VITE_QUADRATIC_CONNECTION_URL_DEVELOPMENT }}"
-            "VITE_STORAGE_TYPE=${{ secrets.VITE_STORAGE_TYPE_DEVELOPMENT }}"
-            "VITE_AUTH_TYPE=${{ secrets.VITE_AUTH_TYPE_DEVELOPMENT }}"
-            "VITE_AUTH0_ISSUER=${{ secrets.VITE_AUTH0_ISSUER_DEVELOPMENT }}"
-            "VITE_AUTH0_DOMAIN=${{ secrets.VITE_AUTH0_DOMAIN_DEVELOPMENT }}"
-            "VITE_AUTH0_CLIENT_ID=${{ secrets.VITE_AUTH0_CLIENT_ID_DEVELOPMENT }}"
-            "VITE_AUTH0_AUDIENCE=${{ secrets.VITE_AUTH0_AUDIENCE_DEVELOPMENT }}"
-            "VITE_ORY_HOST=${{ secrets.VITE_ORY_HOST_DEVELOPMENT }}"
-            "VITE_SENTRY_AUTH_TOKEN=${{ secrets.VITE_SENTRY_AUTH_TOKEN_DEVELOPMENT }}"
           build-args: |
             BUILD_TIME=${{ steps.build-metadata.outputs.BUILD_TIME }}
             GIT_SHA_SHORT=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
