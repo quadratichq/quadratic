@@ -11,6 +11,12 @@ use tabled::{
     settings::{Modify, Style},
 };
 
+#[track_caller]
+#[cfg(test)]
+pub fn str_vec_to_string_vec(values: &Vec<&str>) -> Vec<String> {
+    values.into_iter().map(|s| s.to_string()).collect()
+}
+
 /// Run an assertion that a cell value is equal to the given value
 #[track_caller]
 #[cfg(test)]
@@ -56,6 +62,18 @@ pub fn assert_display_cell_value(
         CellValue::Text(value.into()),
         cell_value
     );
+}
+
+/// Run an assertion that a cell value is equal to the given value
+#[track_caller]
+#[cfg(test)]
+pub fn assert_display_cell_value_pos(
+    grid_controller: &GridController,
+    sheet_id: SheetId,
+    pos: Pos,
+    value: &str,
+) {
+    assert_display_cell_value(grid_controller, sheet_id, pos.x, pos.y, value);
 }
 
 /// Run an assertion that a cell value is equal to the given value
@@ -143,6 +161,25 @@ pub fn assert_data_table_cell_value_row(
             assert_data_table_cell_value(grid_controller, sheet_id, x, y, cell_value);
         } else {
             println!("No value at position ({},{})", index, y);
+        }
+    }
+}
+
+#[track_caller]
+#[cfg(test)]
+pub fn assert_data_table_cell_value_column(
+    grid_controller: &GridController,
+    sheet_id: SheetId,
+    x: i64,
+    y_start: i64,
+    y_end: i64,
+    value: Vec<&str>,
+) {
+    for (index, y) in (y_start..=y_end).enumerate() {
+        if let Some(cell_value) = value.get(index) {
+            assert_data_table_cell_value(grid_controller, sheet_id, x, y, cell_value);
+        } else {
+            panic!("No value at position ({},{})", index, y);
         }
     }
 }

@@ -57,6 +57,10 @@ mod test {
         a1::A1Selection,
         controller::{user_actions::import::tests::simple_csv_at, GridController},
         grid::{sort::SortDirection, NumericFormat, SheetId},
+        test_util::{
+            assert_data_table_cell_value_column, assert_data_table_cell_value_row,
+            assert_display_cell_value_pos, print_table, str_vec_to_string_vec,
+        },
         CellValue, Pos, Rect, SheetPos,
     };
     use std::str::FromStr;
@@ -653,31 +657,90 @@ mod test {
     }
 
     #[test]
-    fn test_set_cell_values() {
+    fn test_set_cell_values_grid() {
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 1,
-            sheet_id,
-        };
+        let sheet_pos = SheetPos::from((pos![A1], sheet_id));
+        let values = vec![vec!["a".into(), "b".into(), "c".into()]];
 
-        gc.set_cell_values(
-            sheet_pos,
-            vec![vec!["a".into(), "b".into(), "c".into()]],
-            None,
-        );
-        assert_eq!(
-            gc.sheet(sheet_id).cell_value(pos![A1]),
-            Some(CellValue::Text("a".into()))
-        );
-        assert_eq!(
-            gc.sheet(sheet_id).cell_value(pos![B1]),
-            Some(CellValue::Text("b".into()))
-        );
-        assert_eq!(
-            gc.sheet(sheet_id).cell_value(pos![C1]),
-            Some(CellValue::Text("c".into()))
-        );
+        print_table(&gc, sheet_id, Rect::new(1, 1, 3, 1));
+
+        gc.set_cell_values(sheet_pos, values, None);
+
+        print_table(&gc, sheet_id, Rect::new(1, 1, 3, 1));
+
+        assert_display_cell_value_pos(&gc, sheet_id, pos![A1], "a");
+        assert_display_cell_value_pos(&gc, sheet_id, pos![B1], "b");
+        assert_display_cell_value_pos(&gc, sheet_id, pos![C1], "c");
+    }
+
+    #[test]
+    fn test_set_cell_values_within_data_table() {
+        let (mut gc, sheet_id, _, _) = simple_csv_at(pos!(A1));
+        let sheet_pos = SheetPos::from((pos![A3], sheet_id));
+        let values = vec![vec!["a".into(), "b".into(), "c".into()]];
+
+        print_table(&gc, sheet_id, Rect::new(1, 1, 10, 12));
+
+        gc.set_cell_values(sheet_pos, values, None);
+
+        print_table(&gc, sheet_id, Rect::new(1, 1, 10, 12));
+
+        assert_display_cell_value_pos(&gc, sheet_id, pos![A3], "a");
+        assert_display_cell_value_pos(&gc, sheet_id, pos![B3], "b");
+        assert_display_cell_value_pos(&gc, sheet_id, pos![C3], "c");
+    }
+
+    #[test]
+    fn test_set_cell_values_grow_data_table_bottom() {
+        let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(A1));
+        let sheet_pos = SheetPos::from((pos![A13], sheet_id));
+        let row_1_values = vec!["a", "b", "c"];
+        let row_2_values = vec!["d", "e", "f"];
+        let values = vec![
+            str_vec_to_string_vec(&row_1_values),
+            str_vec_to_string_vec(&row_2_values),
+        ];
+        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+
+        assert_eq!(data_table.output_rect(pos, false), Rect::new(1, 1, 4, 12));
+
+        print_table(&gc, sheet_id, Rect::new(1, 1, 10, 12));
+
+        gc.set_cell_values(sheet_pos, values, None);
+
+        print_table(&gc, sheet_id, Rect::new(1, 1, 12, 13));
+
+        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        assert_eq!(data_table.output_rect(pos, false), Rect::new(1, 1, 4, 14));
+
+        assert_data_table_cell_value_row(&gc, sheet_id, 1, 3, 13, row_1_values);
+        assert_data_table_cell_value_row(&gc, sheet_id, 1, 3, 14, row_2_values);
+    }
+
+    #[test]
+    fn test_set_cell_values_grow_data_table_right() {
+        let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(A1));
+        let sheet_pos = SheetPos::from((pos![E3], sheet_id));
+        let values = vec![
+            vec!["a".into(), "d".into()],
+            vec!["b".into(), "e".into()],
+            vec!["c".into(), "f".into()],
+        ];
+        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+
+        assert_eq!(data_table.output_rect(pos, false), Rect::new(1, 1, 4, 12));
+
+        print_table(&gc, sheet_id, Rect::new(1, 1, 4, 12));
+
+        gc.set_cell_values(sheet_pos, values, None);
+
+        print_table(&gc, sheet_id, Rect::new(1, 1, 6, 12));
+
+        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        assert_eq!(data_table.output_rect(pos, false), Rect::new(1, 1, 6, 12));
+
+        assert_data_table_cell_value_column(&gc, sheet_id, 5, 3, 5, vec!["a", "b", "c"]);
+        assert_data_table_cell_value_column(&gc, sheet_id, 6, 3, 5, vec!["d", "e", "f"]);
     }
 }
