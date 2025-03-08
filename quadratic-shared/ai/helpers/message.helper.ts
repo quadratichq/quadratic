@@ -1,4 +1,11 @@
-import type { ChatMessage, SystemMessage, UserMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
+import type {
+  ChatMessage,
+  SystemMessage,
+  ToolResultContextType,
+  ToolResultMessage,
+  UserMessagePrompt,
+  UserPromptContextType,
+} from 'quadratic-shared/typesAndSchemasAI';
 
 export const getSystemMessages = (messages: ChatMessage[]): string[] => {
   const systemMessages: SystemMessage[] = messages.filter<SystemMessage>(
@@ -8,12 +15,20 @@ export const getSystemMessages = (messages: ChatMessage[]): string[] => {
   return systemMessages.map((message) => message.content);
 };
 
-export const getPromptMessages = (messages: ChatMessage[]): ChatMessage[] => {
-  return messages.filter((message) => message.contextType === 'userPrompt' || message.contextType === 'toolResult');
+export const getPromptMessages = (messages: ChatMessage[]): (UserMessagePrompt | ToolResultMessage)[] => {
+  return messages.filter(
+    (message): message is UserMessagePrompt | ToolResultMessage =>
+      message.contextType === 'userPrompt' || message.contextType === 'toolResult'
+  );
 };
 
 export const getUserPromptMessages = (messages: ChatMessage[]): UserMessagePrompt[] => {
   return getPromptMessages(messages).filter((message): message is UserMessagePrompt => message.role === 'user');
+};
+
+export const getLastPromptMessageType = (messages: ChatMessage[]): UserPromptContextType | ToolResultContextType => {
+  const userPromptMessage = getUserPromptMessages(messages);
+  return userPromptMessage[userPromptMessage.length - 1].contextType;
 };
 
 export const getLastUserPromptMessageIndex = (messages: ChatMessage[]): number => {

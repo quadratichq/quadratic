@@ -1,6 +1,7 @@
 import type { TeamRole } from '@prisma/client';
 import dbClient from '../dbClient';
 import { licenseClient } from '../licenseClient';
+import { updateSeatQuantity } from '../stripe/stripe';
 
 export const addUserToTeam = async (args: { userId: number; teamId: number; role: TeamRole }) => {
   const { userId, teamId, role } = args;
@@ -18,7 +19,7 @@ export const addUserToTeam = async (args: { userId: number; teamId: number; role
   await licenseClient.check(true);
 
   // Update the seat quantity on the team's stripe subscription
-  // await updateSeatQuantity(teamId);
+  await updateSeatQuantity(teamId);
 
   return userTeamRole;
 };
