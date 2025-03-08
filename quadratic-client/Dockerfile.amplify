@@ -196,7 +196,10 @@ RUN --mount=type=secret,id=VITE_DEBUG \
   echo "VITE_SENTRY_AUTH_TOKEN=$(cat /run/secrets/VITE_SENTRY_AUTH_TOKEN)" >> ./quadratic-client/.env
 
 # Hash the .env file to invalidate cache when env changes
-RUN sha256sum ./quadratic-client/.env > /tmp/env-hash
+RUN sha256sum ./quadratic-client/.env > /tmp/.env-hash
+
+# Add the hash file as a separate layer to invalidate build cache
+COPY /tmp/.env-hash ./quadratic-client/.env-hash
 
 # Build the front-end
 RUN echo "Building front-end..." && npm run build --workspace=quadratic-client
