@@ -45,7 +45,7 @@ export function FileDragDrop({ className }: FileDragDropProps) {
     <div
       id="file-drag-drop"
       className={cn(
-        'fixed left-0 top-0 z-20 flex h-full w-full flex-col items-center justify-center bg-white opacity-90',
+        'fixed left-0 top-0 z-20 flex h-full w-full flex-col items-center justify-center bg-background opacity-90',
         className
       )}
       onDragEnter={handleDrag}
@@ -53,14 +53,14 @@ export function FileDragDrop({ className }: FileDragDropProps) {
       onDragOver={handleDrag}
     >
       <div
-        className="relative z-10 h-[90%] w-[90%] select-none rounded-lg border-4 border-dashed border-border bg-white opacity-90"
+        className="relative z-10 h-[90%] w-[90%] select-none rounded-lg border-4 border-dashed border-border bg-background opacity-90"
         onDrop={handleDrop}
         onDragLeave={handleDrag}
       >
         <div className="pointer-events-none flex h-full w-full flex-col items-center justify-center gap-2">
-          <span className="text-2xl font-bold text-[#020817]">Drop file here</span>
+          <span className="text-2xl font-bold text-foreground">Drop file here</span>
 
-          <span className="pl-4 pr-4 text-center text-base font-medium text-[#6A778B]">
+          <span className="pl-4 pr-4 text-center text-base font-medium text-muted-foreground">
             Start a new spreadsheet by importing a CSV, Parquet, Excel or Grid file(s)
           </span>
         </div>
