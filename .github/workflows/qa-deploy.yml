@@ -7,15 +7,6 @@ on:
       - qa
     types: [opened, synchronize, reopened]
 
-# Use runs on `ubuntu-latest-8-cores`. All of our self hosted runners use this tag.
-# Our runners pick up jobs first, and if all our runners are being used or are down
-# it will automatically back up to using GitHub hosted runners.
-
-# Require previous builds and deployments to finish before starting a new one
-# Not sure how Pulumi would handle being terminated when changing a stack.
-concurrency:
-  group: qa
-
 env:
   AMPLIFY_APP_ID: d3dmk4wdzzskoq
   AMPLIFY_BUCKET_NAME: quadratic-development-amplify
@@ -113,7 +104,7 @@ jobs:
   build_images:
     name: Build Images
     runs-on: ${{ matrix.runner }}
-    if: github.head_ref == 'qa' && github.base_ref == 'main'
+    # if: github.head_ref == 'qa' && github.base_ref == 'main'
     concurrency:
       group: qa
       cancel-in-progress: true
@@ -213,6 +204,8 @@ jobs:
     name: Deploy Client to Amplify
     runs-on: blacksmith-2vcpu-ubuntu-2204
     # if: github.head_ref == 'qa' && github.base_ref == 'main'
+    concurrency:
+      group: qa
     timeout-minutes: 30
     steps:
       - name: Install AWS CLI v2
@@ -279,6 +272,8 @@ jobs:
     name: Create or Update Pulumi Infrastructure Stack
     runs-on: blacksmith-2vcpu-ubuntu-2204
     if: github.head_ref == 'qa' && github.base_ref == 'main'
+    concurrency:
+      group: qa
     timeout-minutes: 30
     env:
       STACK_NAME: quadratic-qa
