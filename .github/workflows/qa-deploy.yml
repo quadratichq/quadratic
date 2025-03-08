@@ -55,6 +55,7 @@ jobs:
           pulumi config set multiplayer-subdomain multiplayer-pr-qa
           pulumi config set files-subdomain files-pr-qa
           pulumi config set connection-subdomain connection-pr-qa
+          pulumi config set api-subdomain api-pr-qa
           pulumi config set docker-image-tag pr-qa
           pulumi config set quadratic-api-uri https://quadratic-staging.herokuapp.com
           pulumi config set is-preview true
@@ -72,7 +73,7 @@ jobs:
     if: github.head_ref == 'qa' && github.base_ref == 'main'
     strategy:
       matrix:
-        service: [multiplayer, files, connection]
+        service: [multiplayer, files, connection, api]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
