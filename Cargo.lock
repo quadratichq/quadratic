@@ -2690,8 +2690,8 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "proc-macro2 0.4.30",
- "quote 0.6.13",
- "syn 0.15.44",
+ "quote 1.0.38",
+ "syn 2.0.98",
  "trybuild",
  "wasm-bindgen",
 ]
