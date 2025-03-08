@@ -169,6 +169,9 @@ RUN ./quadratic-kernels/python-wasm/package.sh --no-poetry
 # Build the quadratic-shared
 RUN echo 'Building quadratic-shared...' && npm run compile --workspace=quadratic-shared
 
+# Cache buster for changing env vars
+ARG ENV_HASH
+
 # Create .env file
 RUN --mount=type=secret,id=VITE_DEBUG \
   --mount=type=secret,id=VITE_QUADRATIC_API_URL \
@@ -194,9 +197,6 @@ RUN --mount=type=secret,id=VITE_DEBUG \
   echo "VITE_AUTH0_AUDIENCE=$(cat /run/secrets/VITE_AUTH0_AUDIENCE)" >> ./.env && \
   echo "VITE_ORY_HOST=$(cat /run/secrets/VITE_ORY_HOST)" >> ./.env && \
   echo "VITE_SENTRY_AUTH_TOKEN=$(cat /run/secrets/VITE_SENTRY_AUTH_TOKEN)" >> ./.env
-
-
-COPY ./.env ./quadratic-client/.env
 
 # Build the front-end
 RUN echo "Building front-end..." && npm run build --workspace=quadratic-client

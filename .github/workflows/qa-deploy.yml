@@ -49,6 +49,23 @@ jobs:
             ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile.amplify') }}-qa-
             ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile.amplify') }}-
 
+      - name: Create ENV Hash
+        id: create-env-hash
+        run: |
+          ENV_HASH=$(echo "${{ secrets.VITE_DEBUG_DEVELOPMENT }}
+          ${{ secrets.VITE_QUADRATIC_API_URL_DEVELOPMENT }}
+          ${{ secrets.VITE_QUADRATIC_MULTIPLAYER_URL_DEVELOPMENT }}
+          ${{ secrets.VITE_QUADRATIC_CONNECTION_URL_DEVELOPMENT }}
+          ${{ secrets.VITE_STORAGE_TYPE_DEVELOPMENT }}
+          ${{ secrets.VITE_AUTH_TYPE_DEVELOPMENT }}
+          ${{ secrets.VITE_AUTH0_ISSUER_DEVELOPMENT }}
+          ${{ secrets.VITE_AUTH0_DOMAIN_DEVELOPMENT }}
+          ${{ secrets.VITE_AUTH0_CLIENT_ID_DEVELOPMENT }}
+          ${{ secrets.VITE_AUTH0_AUDIENCE_DEVELOPMENT }}
+          ${{ secrets.VITE_ORY_HOST_DEVELOPMENT }}
+          ${{ secrets.VITE_SENTRY_AUTH_TOKEN_DEVELOPMENT }}" | sha256sum | cut -d' ' -f1)
+          echo "env-hash=$ENV_HASH" >> $GITHUB_OUTPUT
+
       - name: Build using Docker
         uses: docker/build-push-action@v6
         with:
@@ -59,6 +76,8 @@ jobs:
           tags: quadratic-client:local
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
+          build-args: |
+            ENV_HASH=${{ steps.create-env-hash.outputs.env-hash }}
           secrets: |
             "VITE_DEBUG=${{ secrets.VITE_DEBUG_DEVELOPMENT }}"
             "VITE_QUADRATIC_API_URL=${{ secrets.VITE_QUADRATIC_API_URL_DEVELOPMENT }}"
