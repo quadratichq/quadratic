@@ -312,7 +312,7 @@ impl Sheet {
                     return None;
                 }
 
-                if let Some(_) = self.data_table(data_table_left.min).filter(|data_table| {
+                if self.data_table(data_table_left.min).filter(|data_table| {
                     // don't expand if the data table is readonly
                     if data_table.readonly {
                         return false;
@@ -334,7 +334,7 @@ impl Sheet {
                     }
 
                     true
-                }) {
+                }).is_some() {
                     let sheet_pos = (data_table_left.min, sheet_pos.sheet_id).into();
                     let column_index = data_table_left.width();
 
@@ -364,7 +364,7 @@ impl Sheet {
                     return None;
                 }
 
-                if let Some(_) = self.data_table(data_table_above.min).filter(|data_table| {
+                if self.data_table(data_table_above.min).filter(|data_table| {
                     // don't expand if the data table is readonly
                     if data_table.readonly {
                         return false;
@@ -379,7 +379,7 @@ impl Sheet {
                     }
 
                     true
-                }) {
+                }).is_some() {
                     let sheet_pos = (data_table_above.min, sheet_pos.sheet_id).into();
                     let row_index = data_table_above.height();
 

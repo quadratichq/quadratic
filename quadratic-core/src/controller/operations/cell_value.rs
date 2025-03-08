@@ -100,7 +100,7 @@ impl GridController {
                             sheet.expand_columns_and_rows(&data_tables, current_sheet_pos, value);
 
                         if let Some((sheet_pos, col)) = col {
-                            let entry = data_table_columns.entry(sheet_pos).or_insert(vec![]);
+                            let entry = data_table_columns.entry(sheet_pos).or_default();
 
                             if !entry.contains(&col) {
                                 entry.push(col);
@@ -108,14 +108,14 @@ impl GridController {
 
                                 data_tables.iter_mut().for_each(|rect| {
                                     if rect.contains(pos_to_check) {
-                                        rect.max.x = rect.max.x + 1;
+                                        rect.max.x += 1;
                                     }
                                 });
                             }
                         }
 
                         if let Some((sheet_pos, row)) = row {
-                            let entry = data_table_rows.entry(sheet_pos).or_insert(vec![]);
+                            let entry = data_table_rows.entry(sheet_pos).or_default();
 
                             if !entry.contains(&row) {
                                 entry.push(row);
@@ -123,7 +123,7 @@ impl GridController {
 
                                 data_tables.iter_mut().for_each(|rect| {
                                     if rect.contains(pos_to_check) {
-                                        rect.max.y = rect.max.y + 1;
+                                        rect.max.y += 1;
                                     }
                                 });
                             }

@@ -14,7 +14,7 @@ use tabled::{
 #[track_caller]
 #[cfg(test)]
 pub fn str_vec_to_string_vec(values: &Vec<&str>) -> Vec<String> {
-    values.into_iter().map(|s| s.to_string()).collect()
+    values.iter().map(|s| s.to_string()).collect()
 }
 
 /// Run an assertion that a cell value is equal to the given value
