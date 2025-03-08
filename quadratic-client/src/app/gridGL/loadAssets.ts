@@ -53,6 +53,7 @@ export function loadAssets(): Promise<void> {
     addResourceOnce('checkbox-checked-icon', '/images/checkbox-checked.png');
     addResourceOnce('dropdown-icon', '/images/dropdown.png');
     addResourceOnce('dropdown-white-icon', '/images/dropdown-white.png');
+    addResourceOnce('chart-placeholder', '/images/chart-placeholder.png');
 
     addResourceOnce('sort-ascending', '/images/sort-ascending.svg');
     addResourceOnce('sort-descending', '/images/sort-descending.svg');
