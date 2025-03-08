@@ -129,6 +129,9 @@ RUN if [ "$CLIENT_DEV" = "true" ]; then \
 ###########################################################################################
 FROM node:18 AS vite-builder
 
+# Hash of the environment variables, as a cache buster
+ARG ENV_HASH
+
 WORKDIR /quadratic
 
 # Copy files from core, ts/rust types, and rust client builders
@@ -169,8 +172,7 @@ RUN ./quadratic-kernels/python-wasm/package.sh --no-poetry
 # Build the quadratic-shared
 RUN echo 'Building quadratic-shared...' && npm run compile --workspace=quadratic-shared
 
-# Cache buster for changing env vars
-ARG ENV_HASH
+ARG CACHE_BUSTER=${ENV_HASH}
 
 # Create .env file
 RUN --mount=type=secret,id=VITE_DEBUG \
