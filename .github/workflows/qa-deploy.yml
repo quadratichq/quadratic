@@ -11,8 +11,8 @@ concurrency:
   group: qa
 
 env:
-  AMPLIFY_APP_ID: d3dmk4wdzzskoq
-  AMPLIFY_BUCKET_NAME: quadratic-development-amplify
+  AMPLIFY_APP_ID_DEVELOPMENT: d3dmk4wdzzskoq
+  AMPLIFY_BUCKET_NAME_DEVELOPMENT: quadratic-development-amplify
 
 jobs:
   build_client:
@@ -30,8 +30,7 @@ jobs:
       - name: Create ENV Hash
         id: create-env-hash
         run: |
-          ENV_HASH=$(echo "${{ secrets.VITE_DEBUG_DEVELOPMENT }}
-          ${{ secrets.VITE_QUADRATIC_API_URL_DEVELOPMENT }}
+          ENV_HASH=$(echo "${{ secrets.VITE_QUADRATIC_API_URL_DEVELOPMENT }}
           ${{ secrets.VITE_QUADRATIC_MULTIPLAYER_URL_DEVELOPMENT }}
           ${{ secrets.VITE_QUADRATIC_CONNECTION_URL_DEVELOPMENT }}
           ${{ secrets.VITE_STORAGE_TYPE_DEVELOPMENT }}
@@ -40,7 +39,6 @@ jobs:
           ${{ secrets.VITE_AUTH0_DOMAIN_DEVELOPMENT }}
           ${{ secrets.VITE_AUTH0_CLIENT_ID_DEVELOPMENT }}
           ${{ secrets.VITE_AUTH0_AUDIENCE_DEVELOPMENT }}
-          ${{ secrets.VITE_ORY_HOST_DEVELOPMENT }}
           ${{ secrets.VITE_SENTRY_AUTH_TOKEN_DEVELOPMENT }}" | sha256sum | cut -d' ' -f1)
           echo "env-hash=$ENV_HASH" >> $GITHUB_OUTPUT
 
@@ -80,7 +78,6 @@ jobs:
           build-args: |
             ENV_HASH=${{ steps.create-env-hash.outputs.env-hash }}
           secrets: |
-            "VITE_DEBUG=${{ secrets.VITE_DEBUG_DEVELOPMENT }}"
             "VITE_QUADRATIC_API_URL=${{ secrets.VITE_QUADRATIC_API_URL_DEVELOPMENT }}"
             "VITE_QUADRATIC_MULTIPLAYER_URL=${{ secrets.VITE_QUADRATIC_MULTIPLAYER_URL_DEVELOPMENT }}"
             "VITE_QUADRATIC_CONNECTION_URL=${{ secrets.VITE_QUADRATIC_CONNECTION_URL_DEVELOPMENT }}"
@@ -90,7 +87,6 @@ jobs:
             "VITE_AUTH0_DOMAIN=${{ secrets.VITE_AUTH0_DOMAIN_DEVELOPMENT }}"
             "VITE_AUTH0_CLIENT_ID=${{ secrets.VITE_AUTH0_CLIENT_ID_DEVELOPMENT }}"
             "VITE_AUTH0_AUDIENCE=${{ secrets.VITE_AUTH0_AUDIENCE_DEVELOPMENT }}"
-            "VITE_ORY_HOST=${{ secrets.VITE_ORY_HOST_DEVELOPMENT }}"
             "VITE_SENTRY_AUTH_TOKEN=${{ secrets.VITE_SENTRY_AUTH_TOKEN_DEVELOPMENT }}"
           outputs: type=docker
 
@@ -114,7 +110,7 @@ jobs:
           COMMIT_HASH="${{ github.event.pull_request.head.sha }}"
 
           # S3 build directory
-          S3_DIR="s3://${AMPLIFY_BUCKET_NAME}/quadratic-client-${COMMIT_HASH}/"
+          S3_DIR="s3://${AMPLIFY_BUCKET_NAME_DEVELOPMENT}/quadratic-client-${COMMIT_HASH}/"
 
           # Upload entire build directory to S3 with no caching for Amplify
           aws s3 sync /tmp/quadratic-client/ $S3_DIR --delete
@@ -241,7 +237,7 @@ jobs:
           # List and cancel any pending jobs with improved error handling
           echo "Checking for pending Amplify jobs..."
           if ! JOBS=$(aws amplify list-jobs \
-            --app-id ${{ env.AMPLIFY_APP_ID }} \
+            --app-id ${{ env.AMPLIFY_APP_ID_DEVELOPMENT }} \
             --branch-name ${{ github.head_ref }} \
             --output json); then
             echo "Failed to list Amplify jobs. Continuing anyway..."
@@ -255,7 +251,7 @@ jobs:
             while read -r JOB_ID STATUS TYPE; do
               echo "Cancelling $TYPE job $JOB_ID (status: $STATUS)"
               if aws amplify stop-job \
-                --app-id ${{ env.AMPLIFY_APP_ID }} \
+                --app-id ${{ env.AMPLIFY_APP_ID_DEVELOPMENT }} \
                 --branch-name ${{ github.head_ref }} \
                 --job-id "$JOB_ID"; then
                 echo "✓ Successfully cancelled job $JOB_ID"
@@ -268,7 +264,7 @@ jobs:
             echo "Verifying jobs are no longer running..."
             sleep 2
             REMAINING=$(aws amplify list-jobs \
-              --app-id ${{ env.AMPLIFY_APP_ID }} \
+              --app-id ${{ env.AMPLIFY_APP_ID_DEVELOPMENT }} \
               --branch-name ${{ github.head_ref }} \
               --output json | jq -r '.jobSummaries[] | select(.status == "PENDING" or .status == "RUNNING") | .jobId' | wc -l)
             echo "$REMAINING jobs still pending or running"
@@ -277,7 +273,7 @@ jobs:
       - name: Create New Deployment
         run: |
           aws amplify start-deployment \
-            --app-id ${{ env.AMPLIFY_APP_ID }} \
+            --app-id ${{ env.AMPLIFY_APP_ID_DEVELOPMENT }} \
             --branch-name ${{ github.head_ref }} \
             --source-url ${{ needs.build_client.outputs.s3-dir }} \
             --source-url-type "BUCKET_PREFIX"
