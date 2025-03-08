@@ -199,7 +199,7 @@ RUN --mount=type=secret,id=VITE_DEBUG \
   echo "VITE_SENTRY_AUTH_TOKEN=$(cat /run/secrets/VITE_SENTRY_AUTH_TOKEN)" >> ./quadratic-client/.env
 
 # Build the front-end
-RUN echo "Building front-end..." && echo "ENV_HASH=$ENV_HASH" >> ./quadratic-client/.env && npm run build --workspace=quadratic-client
+RUN echo "Building front-end..." && npm run build --workspace=quadratic-client
 
 # Compress files (except js/mjs/cjs/jsx/ts/tsx, these are done in replace_env_vars.sh)
 RUN find /quadratic/build -type f \
