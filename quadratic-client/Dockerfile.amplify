@@ -185,21 +185,21 @@ RUN --mount=type=secret,id=VITE_DEBUG \
   --mount=type=secret,id=VITE_AUTH0_AUDIENCE \
   --mount=type=secret,id=VITE_ORY_HOST \
   --mount=type=secret,id=VITE_SENTRY_AUTH_TOKEN \
-  echo "VITE_DEBUG=$(cat /run/secrets/VITE_DEBUG)" > ./.env && \
-  echo "VITE_QUADRATIC_API_URL=$(cat /run/secrets/VITE_QUADRATIC_API_URL)" >> ./.env && \
-  echo "VITE_QUADRATIC_MULTIPLAYER_URL=$(cat /run/secrets/VITE_QUADRATIC_MULTIPLAYER_URL)" >> ./.env && \
-  echo "VITE_QUADRATIC_CONNECTION_URL=$(cat /run/secrets/VITE_QUADRATIC_CONNECTION_URL)" >> ./.env && \
-  echo "VITE_STORAGE_TYPE=$(cat /run/secrets/VITE_STORAGE_TYPE)" >> ./.env && \
-  echo "VITE_AUTH_TYPE=$(cat /run/secrets/VITE_AUTH_TYPE)" >> ./.env && \
-  echo "VITE_AUTH0_ISSUER=$(cat /run/secrets/VITE_AUTH0_ISSUER)" >> ./.env && \
-  echo "VITE_AUTH0_DOMAIN=$(cat /run/secrets/VITE_AUTH0_DOMAIN)" >> ./.env && \
-  echo "VITE_AUTH0_CLIENT_ID=$(cat /run/secrets/VITE_AUTH0_CLIENT_ID)" >> ./.env && \
-  echo "VITE_AUTH0_AUDIENCE=$(cat /run/secrets/VITE_AUTH0_AUDIENCE)" >> ./.env && \
-  echo "VITE_ORY_HOST=$(cat /run/secrets/VITE_ORY_HOST)" >> ./.env && \
-  echo "VITE_SENTRY_AUTH_TOKEN=$(cat /run/secrets/VITE_SENTRY_AUTH_TOKEN)" >> ./.env
+  echo "VITE_DEBUG=$(cat /run/secrets/VITE_DEBUG)" >> ./quadratic-client/.env && \
+  echo "VITE_QUADRATIC_API_URL=$(cat /run/secrets/VITE_QUADRATIC_API_URL)" >> ./quadratic-client/.env && \
+  echo "VITE_QUADRATIC_MULTIPLAYER_URL=$(cat /run/secrets/VITE_QUADRATIC_MULTIPLAYER_URL)" >> ./quadratic-client/.env && \
+  echo "VITE_QUADRATIC_CONNECTION_URL=$(cat /run/secrets/VITE_QUADRATIC_CONNECTION_URL)" >> ./quadratic-client/.env && \
+  echo "VITE_STORAGE_TYPE=$(cat /run/secrets/VITE_STORAGE_TYPE)" >> ./quadratic-client/.env && \
+  echo "VITE_AUTH_TYPE=$(cat /run/secrets/VITE_AUTH_TYPE)" >> ./quadratic-client/.env && \
+  echo "VITE_AUTH0_ISSUER=$(cat /run/secrets/VITE_AUTH0_ISSUER)" >> ./quadratic-client/.env && \
+  echo "VITE_AUTH0_DOMAIN=$(cat /run/secrets/VITE_AUTH0_DOMAIN)" >> ./quadratic-client/.env && \
+  echo "VITE_AUTH0_CLIENT_ID=$(cat /run/secrets/VITE_AUTH0_CLIENT_ID)" >> ./quadratic-client/.env && \
+  echo "VITE_AUTH0_AUDIENCE=$(cat /run/secrets/VITE_AUTH0_AUDIENCE)" >> ./quadratic-client/.env && \
+  echo "VITE_ORY_HOST=$(cat /run/secrets/VITE_ORY_HOST)" >> ./quadratic-client/.env && \
+  echo "VITE_SENTRY_AUTH_TOKEN=$(cat /run/secrets/VITE_SENTRY_AUTH_TOKEN)" >> ./quadratic-client/.env
 
 # Build the front-end
-RUN echo "Building front-end..." && npm run build --workspace=quadratic-client
+RUN echo "Building front-end..." && echo "ENV_HASH=$ENV_HASH" >> ./quadratic-client/.env && npm run build --workspace=quadratic-client
 
 # Compress files (except js/mjs/cjs/jsx/ts/tsx, these are done in replace_env_vars.sh)
 RUN find /quadratic/build -type f \
