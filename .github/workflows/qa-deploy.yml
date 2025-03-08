@@ -330,3 +330,22 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
           PR_ID: ${{ github.event.pull_request.number }}
+
+  qa-wolf-notify:
+    needs: [amplify, pulumi]
+    name: Notify QA Wolf
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    concurrency:
+      group: qa-wolf-notify
+      cancel-in-progress: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Notify deploy_success
+        id: run_tests
+        run: |
+          curl -H "Authorization: ${{ secrets.QAW_API_KEY }}" \
+          -H 'Content-Type: application/json' \
+          -d '{"branch": "qa", "deployment_type": "new_qa", "commit_url": "https://github.com/quadratichq/quadratic/commit/${{ github.sha }}", "sha": "${{ github.sha }}"}' \
+          https://app.qawolf.com/api/webhooks/deploy_success
