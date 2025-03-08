@@ -10,6 +10,7 @@ import type { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider'
 import * as Sentry from '@sentry/react';
 import localforage from 'localforage';
 import mixpanel from 'mixpanel-browser';
+import { isSafari } from 'react-device-detect';
 
 const clipboardLocalStorageKey = 'quadratic-clipboard';
 
@@ -29,8 +30,7 @@ export const copyToClipboardEvent = async (e: ClipboardEvent) => {
   if (!canvasIsTarget()) return;
   e.preventDefault();
   debugTimeReset();
-  const jsClipboard = await quadraticCore.copyToClipboard(sheets.getRustSelection());
-  await toClipboard(jsClipboard.plainText, jsClipboard.html);
+  await toClipboardCopy();
   pixiApp.copy.changeCopyRanges();
   debugTimeCheck('copy to clipboard');
 };
@@ -40,8 +40,7 @@ export const cutToClipboardEvent = async (e: ClipboardEvent) => {
   if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
   e.preventDefault();
   debugTimeReset();
-  const jsClipboard = await quadraticCore.cutToClipboard(sheets.getRustSelection(), sheets.getCursorPosition());
-  await toClipboard(jsClipboard.plainText, jsClipboard.html);
+  await toClipboardCut();
   debugTimeCheck('[Clipboard] cut to clipboard');
 };
 
@@ -63,6 +62,7 @@ export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
   if (e.clipboardData.types.includes('text/plain')) {
     plainText = e.clipboardData.getData('text/plain');
   }
+
   if (plainText || html) {
     quadraticCore.pasteFromClipboard({
       selection: sheets.sheet.cursor.save(),
@@ -81,21 +81,76 @@ export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
 
 //#region triggered via menu (limited support on Firefox)
 
-// copies plainText and html to the clipboard
-const toClipboard = async (plainText: string, html: string) => {
+// cuts plainText and html to the clipboard
+const toClipboardCut = async () => {
   // https://github.com/tldraw/tldraw/blob/a85e80961dd6f99ccc717749993e10fa5066bc4d/packages/tldraw/src/state/TldrawApp.ts#L2189
   // browser support clipboard api navigator.clipboard
   if (fullClipboardSupport()) {
-    await navigator.clipboard.write([
-      new ClipboardItem({
-        'text/html': new Blob([html], { type: 'text/html' }),
-        'text/plain': new Blob([plainText], { type: 'text/plain' }),
-      }),
-    ]);
+    if (isSafari) {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html': quadraticCore
+            .copyToClipboard(sheets.getRustSelection())
+            .then(({ html }) => new Blob([html], { type: 'text/html' })),
+          'text/plain': quadraticCore
+            .cutToClipboard(sheets.getRustSelection(), sheets.getCursorPosition())
+            .then(({ plainText }) => new Blob([plainText], { type: 'text/plain' })),
+        }),
+      ]);
+    } else {
+      const { plainText, html } = await quadraticCore.cutToClipboard(
+        sheets.getRustSelection(),
+        sheets.getCursorPosition()
+      );
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html': new Blob([html], { type: 'text/html' }),
+          'text/plain': new Blob([plainText], { type: 'text/plain' }),
+        }),
+      ]);
+    }
   }
 
   // fallback support for firefox
   else {
+    const { plainText, html } = await quadraticCore.cutToClipboard(
+      sheets.getRustSelection(),
+      sheets.getCursorPosition()
+    );
+    await Promise.all([navigator.clipboard.writeText(plainText), localforage.setItem(clipboardLocalStorageKey, html)]);
+  }
+};
+
+// copies plainText and html to the clipboard
+const toClipboardCopy = async () => {
+  // https://github.com/tldraw/tldraw/blob/a85e80961dd6f99ccc717749993e10fa5066bc4d/packages/tldraw/src/state/TldrawApp.ts#L2189
+  // browser support clipboard api navigator.clipboard
+  if (fullClipboardSupport()) {
+    if (isSafari) {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html': quadraticCore
+            .copyToClipboard(sheets.getRustSelection())
+            .then(({ html }) => new Blob([html], { type: 'text/html' })),
+          'text/plain': quadraticCore
+            .copyToClipboard(sheets.getRustSelection())
+            .then(({ plainText }) => new Blob([plainText], { type: 'text/plain' })),
+        }),
+      ]);
+    } else {
+      const { plainText, html } = await quadraticCore.copyToClipboard(sheets.getRustSelection());
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html': new Blob([html], { type: 'text/html' }),
+          'text/plain': new Blob([plainText], { type: 'text/plain' }),
+        }),
+      ]);
+    }
+  }
+
+  // fallback support for firefox
+  else {
+    const { plainText, html } = await quadraticCore.copyToClipboard(sheets.getRustSelection());
     await Promise.all([navigator.clipboard.writeText(plainText), localforage.setItem(clipboardLocalStorageKey, html)]);
   }
 };
@@ -103,26 +158,19 @@ const toClipboard = async (plainText: string, html: string) => {
 export const cutToClipboard = async () => {
   if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
   debugTimeReset();
-  const jsClipboard = await quadraticCore.cutToClipboard(sheets.getRustSelection(), sheets.getCursorPosition());
-  await toClipboard(jsClipboard.plainText, jsClipboard.html);
+  await toClipboardCut();
   debugTimeCheck('cut to clipboard (fallback)');
 };
 
 export const copyToClipboard = async () => {
   debugTimeReset();
-  const jsClipboard = await quadraticCore.copyToClipboard(sheets.getRustSelection());
-  await toClipboard(jsClipboard.plainText, jsClipboard.html);
+  await toClipboardCopy();
   pixiApp.copy.changeCopyRanges();
   debugTimeCheck('copy to clipboard');
 };
 
 export const copySelectionToPNG = async (addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar']) => {
   try {
-    const blob = await copyAsPNG();
-    if (!blob) {
-      throw new Error('The function `copyAsPng` failed to return data');
-    }
-
     if (!fullClipboardSupport()) {
       console.log('copy to PNG is not supported in Firefox (yet)');
       mixpanel.track('[clipboard].copySelectionToPNG.notSupported');
@@ -131,7 +179,16 @@ export const copySelectionToPNG = async (addGlobalSnackbar: GlobalSnackbar['addG
 
     await navigator.clipboard.write([
       new ClipboardItem({
-        'image/png': blob,
+        'image/png': copyAsPNG()
+          .then((results) => {
+            if (!results) {
+              throw new Error('No PNG data generated');
+            }
+            return new Blob([results], { type: 'image/png' });
+          })
+          .catch(() => {
+            throw new Error('Failed to copy as PNG');
+          }),
       }),
     ]);
 

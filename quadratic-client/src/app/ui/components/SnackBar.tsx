@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { QuadraticSnackBar } from './QuadraticSnackBar';
 
 const defaultDuration = 3000;

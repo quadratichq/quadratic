@@ -7,17 +7,10 @@ import {
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
-import { LinkNewTab } from '@/app/ui/components/LinkNewTab';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { JavaScript } from '@/app/ui/icons';
 import '@/app/ui/styles/floating-dialog.css';
 import { DatabaseIcon } from '@/shared/components/Icons';
-import {
-  DOCUMENTATION_FORMULAS_URL,
-  DOCUMENTATION_JAVASCRIPT_URL,
-  DOCUMENTATION_PYTHON_URL,
-  DOCUMENTATION_URL,
-} from '@/shared/constants/urls';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import {
   CommandDialog,
@@ -37,7 +30,6 @@ export interface CellTypeOption {
   searchStrings?: string[];
   mode: CodeCellLanguage;
   icon: any;
-  description: string | JSX.Element;
   disabled?: boolean;
   experimental?: boolean;
 }
@@ -47,36 +39,18 @@ let CELL_TYPE_OPTIONS: CellTypeOption[] = [
     name: 'Python',
     mode: 'Python',
     icon: <LanguageIcon language="Python" />,
-    description: (
-      <>
-        Script with Pandas, NumPy, SciPy, Micropip,{' '}
-        <LinkNewTabWrapper href={DOCUMENTATION_PYTHON_URL}>and more</LinkNewTabWrapper>.
-      </>
-    ),
   },
   {
     name: 'Formula',
     searchStrings: ['fx', 'functions', 'formulas'],
     mode: 'Formula',
     icon: <LanguageIcon language="Formula" />,
-    description: (
-      <>
-        Classic spreadsheet logic like <code>SUM</code>, <code>AVERAGE</code>,{' '}
-        <LinkNewTabWrapper href={DOCUMENTATION_FORMULAS_URL}>and more</LinkNewTabWrapper>.
-      </>
-    ),
   },
   {
     name: 'JavaScript',
     searchStrings: ['js'],
     mode: 'Javascript',
     icon: <JavaScript sx={{ color: colors.languageJavascript }} />,
-    description: (
-      <>
-        Script with modern ES modules{' '}
-        <LinkNewTabWrapper href={DOCUMENTATION_JAVASCRIPT_URL}>and more</LinkNewTabWrapper>.
-      </>
-    ),
     experimental: true,
   },
 ];
@@ -142,14 +116,13 @@ export default function CellTypeMenu() {
       <CommandList id="CellTypeMenuID">
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading="Languages">
-          {CELL_TYPE_OPTIONS.map(({ name, disabled, experimental, icon, description, mode }, i) => (
+          {CELL_TYPE_OPTIONS.map(({ name, disabled, experimental, icon, mode }, i) => (
             <CommandItemWrapper
               key={name}
               disabled={disabled}
               icon={icon}
               name={name}
               experimental={experimental}
-              description={description}
               onSelect={() => openEditor(mode)}
             />
           ))}
@@ -163,18 +136,12 @@ export default function CellTypeMenu() {
                 key={uuid}
                 uuid={uuid}
                 name={name}
-                description={`${type === 'POSTGRES' ? 'PostgreSQL' : 'SQL'}`}
                 icon={<LanguageIcon language={type} />}
                 onSelect={() => openEditor({ Connection: { kind: type, id: uuid } })}
               />
             ))}
             <CommandItemWrapper
               name="Manage connections"
-              description={
-                <>
-                  Connect to Postgres, MySQL, <LinkNewTabWrapper href={DOCUMENTATION_URL}>and more</LinkNewTabWrapper>
-                </>
-              }
               icon={<DatabaseIcon className="text-muted-foreground opacity-80" />}
               onSelect={manageConnections}
             />
@@ -190,7 +157,6 @@ function CommandItemWrapper({
   icon,
   name,
   experimental,
-  description,
   onSelect,
   uuid,
 }: {
@@ -198,7 +164,6 @@ function CommandItemWrapper({
   icon: React.ReactNode;
   name: string;
   experimental?: boolean;
-  description: string | JSX.Element;
   onSelect: () => void;
   uuid?: string;
 }) {
@@ -222,19 +187,7 @@ function CommandItemWrapper({
             </Badge>
           )}
         </span>
-        {/* <span className="text-xs text-muted-foreground">{description}</span> */}
       </div>
     </CommandItem>
-  );
-}
-
-function LinkNewTabWrapper(props: any) {
-  return (
-    <LinkNewTab
-      {...props}
-      onClick={(e: React.SyntheticEvent) => {
-        e.stopPropagation();
-      }}
-    />
   );
 }

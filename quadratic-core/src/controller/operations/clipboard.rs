@@ -640,7 +640,7 @@ impl GridController {
         let insert_at = selection.cursor;
 
         // use regex to find data-quadratic
-        match Regex::new(r#"data-quadratic="(.*)"><tbody"#) {
+        match Regex::new(r#"data-quadratic="(.*?)".*><tbody"#) {
             Err(e) => Err(error(e.to_string(), "Regex creation error")),
             Ok(re) => {
                 let data = re

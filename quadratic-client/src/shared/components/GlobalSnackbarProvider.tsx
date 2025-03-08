@@ -23,11 +23,17 @@ export interface SnackbarOptions {
 
 export interface GlobalSnackbar {
   addGlobalSnackbar: (message: string | JSX.Element, options?: SnackbarOptions) => void;
+  closeCurrentSnackbar: () => void;
 }
 const defaultContext: GlobalSnackbar = {
   addGlobalSnackbar: () => {
     console.warn(
       '[GlobalSnackbarContext] `addGlobalSnackbar` was fired before it was initialized with a default value.'
+    );
+  },
+  closeCurrentSnackbar: () => {
+    console.warn(
+      '[GlobalSnackbarContext] `closeCurrentSnackbar` was fired before it was initialized with a default value.'
     );
   },
 };
@@ -97,6 +103,10 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
     []
   );
 
+  const closeCurrentSnackbar: GlobalSnackbar['closeCurrentSnackbar'] = useCallback(() => {
+    setOpen(false);
+  }, []);
+
   const handleClose = (event: React.SyntheticEvent | Event, reason?: string) => {
     if (reason === 'clickaway') {
       return;
@@ -108,7 +118,7 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
     setActiveMessage(undefined);
   };
 
-  const value: GlobalSnackbar = { addGlobalSnackbar };
+  const value: GlobalSnackbar = { addGlobalSnackbar, closeCurrentSnackbar };
 
   const customButton = activeMessage?.button ? (
     <Button

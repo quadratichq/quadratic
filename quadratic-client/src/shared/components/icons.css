@@ -1,3 +1,11 @@
+/* By default, we visually hide the icons until the font is loaded
+   This prevents the icon text from showing up.
+   Also: removing the `opacity` rule makes it so tailwind classes like `opacity-x`
+   will work regardless of specificity. */
+[data-material-symbols-loaded='false'] .material-symbols-outlined {
+  opacity: 0;
+}
+
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';
   font-weight: normal;
