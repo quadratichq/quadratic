@@ -335,9 +335,7 @@ jobs:
     needs: [amplify, pulumi]
     name: Notify QA Wolf
     runs-on: blacksmith-2vcpu-ubuntu-2204
-    concurrency:
-      group: qa-wolf-notify
-      cancel-in-progress: true
+    if: github.head_ref == 'qa' && github.base_ref == 'main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
