@@ -60,9 +60,9 @@ jobs:
         uses: useblacksmith/cache@v5
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile.amplify') }}-qa-${{ github.sha }}
+          key: ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile.amplify') }}-${{ github.head_ref }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile.amplify') }}-qa-
+            ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile.amplify') }}-${{ github.head_ref }}-
             ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile.amplify') }}-
 
       - name: Build using Docker
@@ -188,9 +188,9 @@ jobs:
         uses: useblacksmith/cache@v5
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-qa-${{ github.sha }}
+          key: ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-${{ github.head_ref }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-qa
+            ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-${{ github.head_ref }}
             ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-
 
       - name: Build and push
@@ -199,7 +199,7 @@ jobs:
           context: .
           file: quadratic-${{ matrix.service }}/Dockerfile
           push: true
-          tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-qa-github-actions
+          tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-qa
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
           build-args: |
