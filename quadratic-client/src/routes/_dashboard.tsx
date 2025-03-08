@@ -4,7 +4,7 @@ import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { Empty } from '@/dashboard/components/Empty';
 import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
-import getActiveTeam from '@/dashboard/shared/getActiveTeam';
+import { determineAndSetActiveTeam, setActiveTeam } from '@/dashboard/shared/getActiveTeam';
 import { apiClient } from '@/shared/api/apiClient';
 import { MenuIcon } from '@/shared/components/Icons';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
@@ -33,7 +33,6 @@ import {
 import { RecoilRoot } from 'recoil';
 
 export const DRAWER_WIDTH = 264;
-export const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
 
 /**
  * Revalidation
@@ -69,7 +68,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
   /**
    * Handle a few cases
    */
-  let { teamUuid, teamCreated } = await getActiveTeam(teams, params.teamUuid);
+  let { teamUuid, teamCreated } = await determineAndSetActiveTeam(teams, params.teamUuid);
 
   // If a team was created, it was probably a first time user so send them to
   // the team dashboard if mobile, otherwise to a new file
@@ -90,10 +89,6 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
   const activeTeam = await apiClient.teams
     .get(teamUuid)
     .then((data) => {
-      // If we got to here, we successfully loaded the active team so now this is
-      // the one we keep in localstorage for when the page loads anew
-      localStorage.setItem(ACTIVE_TEAM_UUID_KEY, teamUuid);
-
       // Sort the users so the logged-in user is first in the list
       data.users.sort((a, b) => {
         const loggedInUser = data.userMakingRequest.id;
@@ -110,7 +105,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
     .catch((error) => {
       // If we errored out, remove this one from localstorage because we can't access it
       // so we don't want to keep trying to load it on the home route `/`
-      localStorage.setItem(ACTIVE_TEAM_UUID_KEY, '');
+      setActiveTeam('');
       const { status } = error;
       if (status >= 400 && status < 500) throw new Response('4xx level error', { status });
       throw error;

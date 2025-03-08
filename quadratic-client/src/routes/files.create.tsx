@@ -1,4 +1,4 @@
-import getActiveTeam from '@/dashboard/shared/getActiveTeam';
+import { determineAndSetActiveTeam } from '@/dashboard/shared/getActiveTeam';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import type { LoaderFunctionArgs } from 'react-router-dom';
@@ -9,7 +9,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   // Get the active team
   const { teams } = await apiClient.teams.list();
-  const { teamUuid } = await getActiveTeam(teams, undefined);
+  const { teamUuid } = await determineAndSetActiveTeam(teams, undefined);
 
   // Ensure the active team is _writeable_. If it's not, redirect them to the dashboard.
   // (They may have write access to another team, but not the 'active' one.)
