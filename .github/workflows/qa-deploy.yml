@@ -60,7 +60,7 @@ jobs:
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
           secrets: |
-            "VITE_DEBUG=${{ secrets.VITE_DEBUG_DEVELOPMENT || 0 }}"
+            "VITE_DEBUG=${{ secrets.VITE_DEBUG_DEVELOPMENT }}"
             "VITE_QUADRATIC_API_URL=${{ secrets.VITE_QUADRATIC_API_URL_DEVELOPMENT }}"
             "VITE_QUADRATIC_MULTIPLAYER_URL=${{ secrets.VITE_QUADRATIC_MULTIPLAYER_URL_DEVELOPMENT }}"
             "VITE_QUADRATIC_CONNECTION_URL=${{ secrets.VITE_QUADRATIC_CONNECTION_URL_DEVELOPMENT }}"
@@ -104,7 +104,7 @@ jobs:
   build_images:
     name: Build Images
     runs-on: ${{ matrix.runner }}
-    # if: github.head_ref == 'qa' && github.base_ref == 'main'
+    if: github.head_ref == 'qa' && github.base_ref == 'main'
     timeout-minutes: 30
     strategy:
       matrix:
