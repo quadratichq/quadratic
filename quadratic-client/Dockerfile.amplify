@@ -194,10 +194,10 @@ RUN --mount=type=secret,id=VITE_DEBUG \
   echo "VITE_AUTH0_AUDIENCE=$(cat /run/secrets/VITE_AUTH0_AUDIENCE)" >> ./quadratic-client/.env && \
   echo "VITE_ORY_HOST=$(cat /run/secrets/VITE_ORY_HOST)" >> ./quadratic-client/.env && \
   echo "VITE_SENTRY_AUTH_TOKEN=$(cat /run/secrets/VITE_SENTRY_AUTH_TOKEN)" >> ./quadratic-client/.env && \
-  sha256sum ./quadratic-client/.env > ./quadratic-client/.env-hash
+  sha256sum ./quadratic-client/.env > /tmp/.env-hash
 
 # Create a marker file with the hash to invalidate cache
-RUN cat ./quadratic-client/.env-hash > ./quadratic-client/.env-marker
+COPY /tmp/.env-hash ./quadratic-client/.env-hash
 
 # Build the front-end
 RUN echo "Building front-end..." && npm run build --workspace=quadratic-client
