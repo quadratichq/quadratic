@@ -25,6 +25,9 @@ jobs:
     name: Build Client
     runs-on: blacksmith-4vcpu-ubuntu-2204
     # if: github.head_ref == 'qa' && github.base_ref == 'main'
+    concurrency:
+      group: qa
+      cancel-in-progress: true
     timeout-minutes: 30
     outputs:
       s3-dir: ${{ steps.upload-to-s3.outputs.s3-dir }}
@@ -111,6 +114,9 @@ jobs:
     name: Build Images
     runs-on: ${{ matrix.runner }}
     if: github.head_ref == 'qa' && github.base_ref == 'main'
+    concurrency:
+      group: qa
+      cancel-in-progress: true
     timeout-minutes: 30
     strategy:
       matrix:
