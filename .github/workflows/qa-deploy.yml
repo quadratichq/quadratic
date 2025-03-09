@@ -27,19 +27,27 @@ jobs:
         uses: actions/checkout@v4
 
       # Create a hash of the environment variables, as a cache buster
-      - name: Create ENV Hash
-        id: create-env-hash
+      - name: Pull Pulumi ESC Environment Variables
+        id: pull-pulumi-esc-env-vars
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          PULUMI_ESC_ENVIRONMENT_NAME: quadratic-client-development
         run: |
-          ENV_HASH=$(echo "${{ secrets.VITE_QUADRATIC_API_URL_DEVELOPMENT }}
-          ${{ secrets.VITE_QUADRATIC_MULTIPLAYER_URL_DEVELOPMENT }}
-          ${{ secrets.VITE_QUADRATIC_CONNECTION_URL_DEVELOPMENT }}
-          ${{ secrets.VITE_STORAGE_TYPE_DEVELOPMENT }}
-          ${{ secrets.VITE_AUTH_TYPE_DEVELOPMENT }}
-          ${{ secrets.VITE_AUTH0_ISSUER_DEVELOPMENT }}
-          ${{ secrets.VITE_AUTH0_DOMAIN_DEVELOPMENT }}
-          ${{ secrets.VITE_AUTH0_CLIENT_ID_DEVELOPMENT }}
-          ${{ secrets.VITE_AUTH0_AUDIENCE_DEVELOPMENT }}
-          ${{ secrets.VITE_SENTRY_AUTH_TOKEN_DEVELOPMENT }}" | sha256sum | cut -d' ' -f1)
+          # Install Pulumi ESC CLI
+          curl -fsSL https://get.pulumi.com/esc/install.sh | sh
+          export PATH=$PATH:/.pulumi/bin
+
+          # Login and get environment variables
+          esc login
+          ENV_VARS=$(esc env open quadratic/${PULUMI_ESC_ENVIRONMENT_NAME} --format dotenv)
+
+          # Write to client.env file to be used in Dockerfile
+          echo "$ENV_VARS" > ./client.env
+          # Remove quotes if present
+          sed -i 's/"//g' ./client.env
+
+          # Create hash from environment variables
+          ENV_HASH=$(echo "$ENV_VARS" | sha256sum | cut -d' ' -f1)
           echo "env-hash=$ENV_HASH" >> $GITHUB_OUTPUT
 
       - name: Configure AWS Credentials
@@ -60,34 +68,23 @@ jobs:
         uses: useblacksmith/cache@v5
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile.amplify') }}-${{ github.head_ref }}-${{ github.sha }}
+          key: ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-${{ github.head_ref }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile.amplify') }}-${{ github.head_ref }}-
-            ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile.amplify') }}-
+            ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-${{ github.head_ref }}-
+            ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-
 
       - name: Build using Docker
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: quadratic-client/Dockerfile.amplify
+          file: quadratic-client/Dockerfile
           push: false
           load: true
           tags: quadratic-client:local
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
           build-args: |
-            ENV_HASH=${{ steps.create-env-hash.outputs.env-hash }}
-          secrets: |
-            "VITE_QUADRATIC_API_URL=${{ secrets.VITE_QUADRATIC_API_URL_DEVELOPMENT }}"
-            "VITE_QUADRATIC_MULTIPLAYER_URL=${{ secrets.VITE_QUADRATIC_MULTIPLAYER_URL_DEVELOPMENT }}"
-            "VITE_QUADRATIC_CONNECTION_URL=${{ secrets.VITE_QUADRATIC_CONNECTION_URL_DEVELOPMENT }}"
-            "VITE_STORAGE_TYPE=${{ secrets.VITE_STORAGE_TYPE_DEVELOPMENT }}"
-            "VITE_AUTH_TYPE=${{ secrets.VITE_AUTH_TYPE_DEVELOPMENT }}"
-            "VITE_AUTH0_ISSUER=${{ secrets.VITE_AUTH0_ISSUER_DEVELOPMENT }}"
-            "VITE_AUTH0_DOMAIN=${{ secrets.VITE_AUTH0_DOMAIN_DEVELOPMENT }}"
-            "VITE_AUTH0_CLIENT_ID=${{ secrets.VITE_AUTH0_CLIENT_ID_DEVELOPMENT }}"
-            "VITE_AUTH0_AUDIENCE=${{ secrets.VITE_AUTH0_AUDIENCE_DEVELOPMENT }}"
-            "VITE_SENTRY_AUTH_TOKEN=${{ secrets.VITE_SENTRY_AUTH_TOKEN_DEVELOPMENT }}"
+            ENV_HASH=${{ steps.pull-pulumi-esc-env-vars.outputs.env-hash }}
           outputs: type=docker
 
       - name: Copy build from container to host
@@ -153,19 +150,13 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Login to Amazon ECR
-        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Define repository name
-        id: repo-name
-        run: |
-          echo "REPO_NAME=quadratic-${{ matrix.service }}-development" >> $GITHUB_OUTPUT
 
       - name: Create Private ECR Repository
         id: create-ecr
-        env:
-          REPO_NAME: ${{ steps.repo-name.outputs.REPO_NAME }}
         run: |
+          REPO_NAME=quadratic-${{ matrix.service }}-development
+
           # Try to describe the repository first
           if ! aws ecr describe-repositories --repository-names $REPO_NAME 2>/dev/null; then
             # Repository doesn't exist, create it
@@ -290,11 +281,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      - uses: pulumi/actions@v4
+      - name: Setup Pulumi
+        uses: pulumi/actions@v4
 
       - name: Update Pulumi Infrastructure
         working-directory: infra
