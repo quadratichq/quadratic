@@ -113,7 +113,11 @@ jobs:
           S3_DIR="s3://${AMPLIFY_BUCKET_NAME_DEVELOPMENT}/quadratic-client-${COMMIT_HASH}/"
 
           # Upload entire build directory to S3 with no caching for Amplify
-          aws s3 sync /tmp/quadratic-client/ $S3_DIR --delete
+          aws s3 sync /tmp/quadratic-client/ $S3_DIR --delete \
+            --exclude "*" \
+            --include "*.br" --content-encoding "br" \
+            --include "*.gz" --content-encoding "gzip" \
+            --include "*"
 
           echo "s3-dir=$S3_DIR" >> $GITHUB_OUTPUT
 
