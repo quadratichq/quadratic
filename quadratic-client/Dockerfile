@@ -172,8 +172,8 @@ ARG ENV_HASH
 
 # If ENV_HASH is set, copy the client.env, otherwise create default .env
 RUN if [ ! -z "$ENV_HASH" ]; then \
-  echo "Copying client.env to quadratic-client/.env" && \
-  cp ./client.env ./quadratic-client/.env; \
+  echo "ENV_HASH is set, renaming client.env to .env" && \
+  mv ./quadratic-client/client.env ./quadratic-client/.env; \
   else \
   echo "ENV_HASH is not set, creating default .env" && \
   echo "VITE_DEBUG=VITE_DEBUG_VAL" > ./quadratic-client/.env && \
