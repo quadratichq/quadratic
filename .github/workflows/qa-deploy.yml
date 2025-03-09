@@ -37,6 +37,9 @@ jobs:
           curl -fsSL https://get.pulumi.com/esc/install.sh | sh
           export PATH="$HOME/.pulumi/bin:$PATH"
 
+          # Debug: Show current directory
+          echo "Current directory: $(pwd)"
+
           # Login and get environment variables
           esc login
           ENV_VARS=$(esc env open quadratic/${PULUMI_ESC_ENVIRONMENT_NAME} --format dotenv)
