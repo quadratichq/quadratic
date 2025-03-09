@@ -42,12 +42,20 @@ jobs:
 
           # Login and get environment variables
           esc login
-          ENV_VARS=$(esc env open quadratic/${PULUMI_ESC_ENVIRONMENT_NAME} --format dotenv)
+          ENV_VARS=$(esc env open quadratic/default/${PULUMI_ESC_ENVIRONMENT_NAME} --format dotenv)
 
           # Write to client.env file to be used in Dockerfile
           echo "$ENV_VARS" > ./client.env
           # Remove quotes if present
           sed -i 's/"//g' ./client.env
+
+          # Debug: Check client.env file
+          echo "Verifying client.env file:"
+          ls -la ./client.env
+          echo "Directory contents:"
+          ls -la
+          echo "First line of client.env:"
+          head -n 1 ./client.env
 
           # Create hash from environment variables
           ENV_HASH=$(echo "$ENV_VARS" | sha256sum | cut -d' ' -f1)
