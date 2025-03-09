@@ -210,7 +210,7 @@ RUN if [ ! -z "$ENV_HASH" ]; then \
   echo "Created: {}.br and {}.gz"'; \
   fi
 
-# Compress files (except js/mjs/cjs/jsx/ts/tsx, these are done in replace_env_vars.sh)
+# Compress files (except js/mjs/cjs/jsx/ts/tsx, these are done in previous step or replace_env_vars.sh)
 RUN find /quadratic/build -type f \
   \( \
   -name "*.wasm" -o \

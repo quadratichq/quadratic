@@ -35,7 +35,7 @@ jobs:
         run: |
           # Install Pulumi ESC CLI
           curl -fsSL https://get.pulumi.com/esc/install.sh | sh
-          export PATH=$PATH:/.pulumi/bin
+          export PATH="$HOME/.pulumi/bin:$PATH"
 
           # Login and get environment variables
           esc login
