@@ -193,25 +193,10 @@ RUN if [ ! -z "$ENV_HASH" ]; then \
 # Build the front-end
 RUN echo "Building front-end..." && npm run build --workspace=quadratic-client
 
-# Compress JS/TS files only when ENV_HASH is set (env variables are set in the github action)
-RUN if [ ! -z "$ENV_HASH" ]; then \
-  find /quadratic/build -type f \( \
-  -name "*.js" -o \
-  -name "*.mjs" -o \
-  -name "*.cjs" -o \
-  -name "*.jsx" -o \
-  -name "*.ts" -o \
-  -name "*.tsx" \
-  \) -print0 | \
-  xargs -0 -n1 -P$(nproc) -I {} sh -c '\
-  echo "Compressing JS/TS: {}" && \
-  brotli -q 9 -w 24 -f "{}" && \
-  pigz -6kf "{}" && \
-  echo "Created: {}.br and {}.gz"'; \
-  fi
-
-# Compress files (except js/mjs/cjs/jsx/ts/tsx, these are done in previous step or replace_env_vars.sh)
-RUN find /quadratic/build -type f \
+# Compress files (except js/mjs/cjs/jsx/ts/tsx, these are done in replace_env_vars.sh)
+# Compress files only when ENV_HASH is not set, i.e. when env variables are not set in the github action
+RUN if [ -z "$ENV_HASH" ]; then \
+  find /quadratic/build -type f \
   \( \
   -name "*.wasm" -o \
   -name "*.whl" -o \
@@ -246,7 +231,8 @@ RUN find /quadratic/build -type f \
   brotli -q 9 -w 24 -f "{}" && \
   pigz -6kf "{}" && \
   echo "Created: {}.br and {}.gz" \
-  '
+  '; \
+  fi
 
 
 ###########################################################################################

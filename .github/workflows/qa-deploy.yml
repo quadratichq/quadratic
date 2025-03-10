@@ -107,6 +107,9 @@ jobs:
           name: client-build
           path: /tmp/quadratic-client-development
           retention-days: 1
+          compression-level: 0
+          overwrite: true
+          include-hidden-files: true
 
   build_images:
     name: Build Images
