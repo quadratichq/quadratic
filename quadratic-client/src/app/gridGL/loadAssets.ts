@@ -6,9 +6,11 @@ import { createBorderTypes } from './generateTextures';
 const intervalToCheckBitmapFonts = 100;
 export const bitmapFonts = ['OpenSans', 'OpenSans-Bold', 'OpenSans-Italic', 'OpenSans-BoldItalic'];
 
+const TIMEOUT = 10000;
+
 function loadFont(fontName: string): void {
   const font = new FontFaceObserver(fontName);
-  font.load();
+  font.load(undefined, TIMEOUT);
 }
 
 export function ensureBitmapFontLoaded(resolve: () => void): void {
