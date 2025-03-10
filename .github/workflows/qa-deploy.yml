@@ -7,9 +7,6 @@ on:
       - qa
     types: [opened, synchronize, reopened]
 
-env:
-  CLIENT_S3_BUCKET_NAME: quadratic-client-development
-
 jobs:
   build_client:
     name: Build Client
@@ -187,7 +184,7 @@ jobs:
   deploy_client:
     # needs: [build_client, build_images]
     needs: [build_client]
-    name: Deploy Client to Amplify
+    name: Deploy Client to S3 + Cloudflare
     runs-on: blacksmith-2vcpu-ubuntu-2204
     # if: github.head_ref == 'qa' && github.base_ref == 'main'
     concurrency:
@@ -210,7 +207,7 @@ jobs:
       - name: Upload to S3
         run: |
           # S3 build directory
-          S3_DIR="s3://${CLIENT_S3_BUCKET_NAME}/"
+          S3_DIR="s3://quadratic-client-development/"
 
           # Upload entire build directory to S3 with no caching for Amplify
           aws s3 sync /tmp/quadratic-client-development/ $S3_DIR --delete
