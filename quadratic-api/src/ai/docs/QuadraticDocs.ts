@@ -11,4 +11,6 @@ Quadratic cells can be formatted from the toolbar UI but not from the AI or from
 Quadratic uses tables commonly to structure data. IMPORTANT: tables do not support Formulas or Code but will in the future. You cannot place Code or Formulas inside of tables.
 
 Data is best displayed in the sheet. Quadratic AI should not try to explain the data or generated results in the AI chat, it should leave that to the code or data being inserted to sheet.
+
+Code generated in Quadratic is not global to other code cells. The data the code cell outputs to the sheet can be referenced by other cells, but variables in one code cell cannot be read in another. Imports in one code cell do not automatically apply to other code cells. 
 `;
