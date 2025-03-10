@@ -31,6 +31,16 @@ impl TableRef {
             // the table may no longer exist
             return None;
         };
+
+        // for html and images, we return only the anchor cell
+        if table.is_html_image {
+            return Some(RefRangeBounds::new_relative(
+                table.bounds.min.x,
+                table.bounds.min.y,
+                table.bounds.min.x,
+                table.bounds.min.y,
+            ));
+        }
         let (mut y_start, y_end) = table.to_sheet_rows();
 
         if !force_table_bounds {
