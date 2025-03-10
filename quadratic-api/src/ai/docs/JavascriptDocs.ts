@@ -19,7 +19,7 @@ let x = q.cells("Table_name[column_name]")
 let x = q.cells("Table_name[#HEADERS]")
 
 // Reference a range of columns in a table
-let x = q.cells("Table_name[[Column_name:Column_name]]")
+let x = q.cells("Table_name[[Column_name]:[Column_name]]")
 \`\`\`
 
 ## Referencing individual cells
