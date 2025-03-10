@@ -408,16 +408,14 @@ impl Sheet {
                 }
                 other => other.clone(),
             }
-        } else {
-            if let Some(value) = self.get_code_cell_value(pos) {
-                if matches!(value, CellValue::Html(_) | CellValue::Image(_)) {
-                    CellValue::Blank
-                } else {
-                    value
-                }
-            } else {
+        } else if let Some(value) = self.get_code_cell_value(pos) {
+            if matches!(value, CellValue::Html(_) | CellValue::Image(_)) {
                 CellValue::Blank
+            } else {
+                value
             }
+        } else {
+            CellValue::Blank
         }
     }
 

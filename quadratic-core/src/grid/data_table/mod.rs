@@ -462,8 +462,8 @@ impl DataTable {
         } else {
             match &self.value {
                 Value::Single(v) => match v {
-                    &CellValue::Image(_) => CellValue::Blank,
-                    &CellValue::Html(_) => CellValue::Blank,
+                    CellValue::Image(_) => CellValue::Blank,
+                    CellValue::Html(_) => CellValue::Blank,
                     _ => v.clone(),
                 },
                 Value::Array(a) => a.get(x, y).cloned().unwrap_or(CellValue::Blank),
