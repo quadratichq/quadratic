@@ -101,6 +101,9 @@ impl TableRef {
         if self.headers && self.data {
             return true;
         }
+        if self.headers && !self.data && matches!(self.col_range, ColRange::Col(_)) {
+            return false;
+        }
         match &self.col_range {
             ColRange::Col(_) => (),
             ColRange::All => {
@@ -169,7 +172,7 @@ impl TableRef {
             ColRange::ColToEnd(col) => {
                 let start = table.visible_columns.iter().position(|c| c == col)?;
                 min_x = min_x.min(bounds.min.x + start as i64);
-                max_x = min_x.max(bounds.min.x + table.visible_columns.len() as i64);
+                max_x = min_x.max(bounds.min.x + table.visible_columns.len() as i64 - 1);
             }
         }
 
@@ -241,6 +244,8 @@ impl TableRef {
             ColRange::Col(col) => {
                 if let Some(col_index) = table.try_col_index(col) {
                     cols.push(col_index);
+                } else {
+                    return None;
                 }
             }
             ColRange::ColRange(start, end) => {
@@ -250,6 +255,8 @@ impl TableRef {
                     for col in start..=end {
                         cols.push(col);
                     }
+                } else {
+                    return None;
                 }
             }
             ColRange::ColToEnd(col) => {
@@ -257,6 +264,8 @@ impl TableRef {
                     for col in start..table.visible_columns.len() as i64 {
                         cols.push(col);
                     }
+                } else {
+                    return None;
                 }
             }
         }
@@ -677,5 +686,180 @@ mod tests {
         };
         let rows = table_ref.selected_rows_finite(&context);
         assert_eq!(rows, vec![2]);
+    }
+
+    #[test]
+    fn test_selected_cols_edge_cases() {
+        let context = setup_test_context();
+
+        // Test column range with out of bounds
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::All,
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        let cols = table_ref.selected_cols(4, 6, &context); // Beyond table bounds
+        assert_eq!(cols, Vec::<i64>::new());
+
+        // Test non-existent table
+        let table_ref = TableRef {
+            table_name: "non_existent".to_string(),
+            col_range: ColRange::All,
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        let cols = table_ref.selected_cols(1, 3, &context);
+        assert_eq!(cols, Vec::<i64>::new());
+
+        // Test non-existent column
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::Col("Z".to_string()),
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        let cols = table_ref.selected_cols(1, 3, &context);
+        assert_eq!(cols, Vec::<i64>::new());
+    }
+
+    #[test]
+    fn test_is_multi_cursor_comprehensive() {
+        let mut context = A1Context::default();
+        context.table_map.test_insert(
+            "test_table",
+            &["A", "B", "C"],
+            None,
+            Rect::test_a1("A1:C4"),
+            CodeCellLanguage::Import,
+        );
+
+        // Test ColToEnd with multiple columns
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::ColToEnd("B".to_string()),
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        assert!(table_ref.is_multi_cursor(&context));
+
+        // Test All with single column table
+        context.table_map.test_insert(
+            "single_col",
+            &["A"],
+            None,
+            Rect::test_a1("A1:A4"),
+            CodeCellLanguage::Import,
+        );
+        let table_ref = TableRef {
+            table_name: "single_col".to_string(),
+            col_range: ColRange::All,
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        assert!(table_ref.is_multi_cursor(&context));
+
+        // Test headers only with show_ui false
+        let table = context.table_map.get_mut("test_table").unwrap();
+        table.show_ui = false;
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::Col("A".to_string()),
+            data: false,
+            headers: true,
+            totals: false,
+        };
+        assert!(!table_ref.is_multi_cursor(&context));
+    }
+
+    #[test]
+    fn test_to_largest_rect_comprehensive() {
+        let context = setup_test_context();
+
+        // Test ColToEnd
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::ColToEnd("B".to_string()),
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        let rect = table_ref.to_largest_rect(&context);
+        assert_eq!(rect.unwrap(), Rect::test_a1("B3:C3"));
+
+        // Test with hidden columns
+        let context = setup_test_context_with_hidden_columns();
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::All,
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        let rect = table_ref.to_largest_rect(&context);
+        assert_eq!(rect.unwrap(), Rect::test_a1("A3:C3"));
+
+        // Test with non-existent column
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::Col("Z".to_string()),
+            data: true,
+            headers: false,
+            totals: false,
+        };
+        assert!(table_ref.to_largest_rect(&context).is_none());
+    }
+
+    #[test]
+    fn test_table_column_selection_ui_states() {
+        let mut context = setup_test_context();
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::All,
+            data: true,
+            headers: true,
+            totals: false,
+        };
+
+        // Test when show_ui is false
+        {
+            let table = context.table_map.get_mut("test_table").unwrap();
+            table.show_ui = false;
+            assert_eq!(
+                table_ref.table_column_selection("test_table", &context),
+                None
+            );
+        }
+
+        // Test when show_columns is false
+        {
+            let table = context.table_map.get_mut("test_table").unwrap();
+            table.show_ui = true;
+            table.show_columns = false;
+            assert_eq!(
+                table_ref.table_column_selection("test_table", &context),
+                None
+            );
+        }
+
+        // Test with non-existent column in ColRange
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::ColRange("A".to_string(), "Z".to_string()),
+            data: true,
+            headers: true,
+            totals: false,
+        };
+        let table = context.table_map.get_mut("test_table").unwrap();
+        table.show_columns = true;
+        assert_eq!(
+            table_ref.table_column_selection("test_table", &context),
+            None
+        );
     }
 }

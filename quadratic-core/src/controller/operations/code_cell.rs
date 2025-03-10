@@ -57,7 +57,8 @@ impl GridController {
         let is_formula_cell = sheet
             .get_table_language(pos, data_table)
             .is_some_and(|lang| lang == CodeCellLanguage::Formula);
-        let is_source_cell = pos == data_table_pos;
+        let is_source_cell =
+            pos == data_table_pos && !(!data_table.show_name && !data_table.show_columns);
 
         // if the cell is a formula cell and the source cell, set the cell value (which will remove the data table)
         if is_formula_cell && is_source_cell {
@@ -205,7 +206,7 @@ mod test {
     use bigdecimal::BigDecimal;
 
     use super::*;
-    use crate::Pos;
+    use crate::{constants::SHEET_NAME, Pos};
 
     #[test]
     fn test_set_code_cell_operations() {
@@ -274,7 +275,7 @@ mod test {
             );
         };
 
-        // (1, 1, Sheet 2) = Sheet 1:A1
+        // (1, 1, Sheet 2) = Sheet1:A1
         let third = |gc: &mut GridController| {
             let sheet_id_2 = gc.sheet_ids()[1];
             gc.set_code_cell(
@@ -284,7 +285,7 @@ mod test {
                     sheet_id: sheet_id_2,
                 },
                 CodeCellLanguage::Formula,
-                "'Sheet 1'!A1".to_string(),
+                format!("'{}1'!A1", SHEET_NAME.to_owned()),
                 None,
             );
         };

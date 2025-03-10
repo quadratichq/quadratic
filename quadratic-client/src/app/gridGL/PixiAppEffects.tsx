@@ -10,11 +10,11 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { useEffect } from 'react';
+import { memo, useEffect } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
-export const PixiAppEffects = () => {
+export const PixiAppEffects = memo(() => {
   const presentationMode = useRecoilValue(presentationModeAtom);
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
 
@@ -54,10 +54,11 @@ export const PixiAppEffects = () => {
     }
   }, [codeEditorState, setCodeEditorState]);
 
-  const { addGlobalSnackbar } = useGlobalSnackbar();
+  const { addGlobalSnackbar, closeCurrentSnackbar } = useGlobalSnackbar();
   useEffect(() => {
     pixiAppSettings.addGlobalSnackbar = addGlobalSnackbar;
-  }, [addGlobalSnackbar]);
+    pixiAppSettings.closeCurrentSnackbar = closeCurrentSnackbar;
+  }, [addGlobalSnackbar, closeCurrentSnackbar]);
 
   const [gridSettings, setGridSettings] = useRecoilState(gridSettingsAtom);
   useEffect(() => {
@@ -102,4 +103,4 @@ export const PixiAppEffects = () => {
   }, [setGridPanMode]);
 
   return null;
-};
+});

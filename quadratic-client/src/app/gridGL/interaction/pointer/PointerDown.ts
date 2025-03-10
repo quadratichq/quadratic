@@ -22,9 +22,14 @@ export class PointerDown {
 
   private positionRaw?: Point;
   private position?: Point;
-  private previousPosition?: Point;
   private pointerMoved = false;
   private doubleClickTimeout?: number;
+
+  // the mouse's last column and row
+  previousPosition?: Point;
+
+  // the mouse's last column and row when double clicked
+  doubleClickPreviousPosition?: Point;
 
   // used to track the unselect rectangle
   unselectDown?: Rectangle;
@@ -93,9 +98,14 @@ export class PointerDown {
     if (this.doubleClickTimeout) {
       window.clearTimeout(this.doubleClickTimeout);
       this.doubleClickTimeout = undefined;
+
       if (!(await this.isInputValid())) return;
 
-      if (this.previousPosition && column === this.previousPosition.x && row === this.previousPosition.y) {
+      if (
+        this.doubleClickPreviousPosition &&
+        column === this.doubleClickPreviousPosition.x &&
+        row === this.doubleClickPreviousPosition.y
+      ) {
         // ignore right click
         if (isRightClick) {
           return;
@@ -127,19 +137,20 @@ export class PointerDown {
     } else {
       // If the input is rejected, we cannot move the cursor
       if (await inlineEditorHandler.handleCellPointerDown()) {
-        cursor.moveTo(column, row, event.metaKey || event.ctrlKey);
+        cursor.moveTo(column, row, { ensureVisible: false, append: event.metaKey || event.ctrlKey });
       } else {
         inlineEditorMonaco.focus();
       }
     }
     this.previousPosition = new Point(column, row);
+    this.doubleClickPreviousPosition = new Point(column, row);
     events.emit('clickedToCell', column, row, world);
     this.pointerMoved = false;
     this.position = new Point(column, row);
     this.active = true;
   }
 
-  pointerMove(world: Point, event: PointerEvent): void {
+  pointerMove(world: Point, event: PointerEvent) {
     if (pixiAppSettings.panMode !== PanMode.Disabled) return;
 
     const { viewport } = pixiApp;
@@ -181,9 +192,9 @@ export class PointerDown {
     const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
 
     if (column !== this.previousPosition.x || row !== this.previousPosition.y) {
-      pixiApp.viewport.enableMouseEdges();
+      pixiApp.viewport.enableMouseEdges(world);
 
-      sheet.cursor.selectTo(column, row, event.ctrlKey || event.metaKey);
+      sheet.cursor.selectTo(column, row, event.ctrlKey || event.metaKey, false);
       this.previousPosition = new Point(column, row);
 
       if (inlineEditorHandler.isOpen() && !inlineEditorHandler.isEditingFormula()) {
@@ -192,7 +203,7 @@ export class PointerDown {
     }
   }
 
-  pointerUp(event?: PointerEvent): void {
+  pointerUp(event?: PointerEvent) {
     const isMiddleClick = event && event.button === 1;
     // to prevent default paste behavior on middle click, in Linux
     if (isLinux && isMiddleClick) {
@@ -217,18 +228,27 @@ export class PointerDown {
         this.doubleClickTimeout = window.setTimeout(() => (this.doubleClickTimeout = undefined), DOUBLE_CLICK_TIME);
       }
       this.active = false;
+      this.previousPosition = undefined;
       pixiApp.viewport.disableMouseEdges();
     }
   }
 
-  private clearDoubleClick(): void {
+  private clearDoubleClick() {
     if (this.doubleClickTimeout) {
       window.clearTimeout(this.doubleClickTimeout);
       this.doubleClickTimeout = undefined;
     }
   }
 
-  destroy(): void {
+  destroy() {
     this.clearDoubleClick();
+  }
+
+  pointerDownColumnName(world: Point, column: number, row: number) {
+    this.previousPosition = new Point(column, row);
+    this.positionRaw = world;
+    this.pointerMoved = false;
+    this.position = new Point(column, row);
+    this.active = true;
   }
 }

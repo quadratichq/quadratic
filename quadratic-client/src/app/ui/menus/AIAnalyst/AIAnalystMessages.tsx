@@ -18,14 +18,14 @@ import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import mixpanel from 'mixpanel-browser';
 import { getLastUserPromptMessageIndex } from 'quadratic-shared/ai/helpers/message.helper';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 
 type AIAnalystMessagesProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
 };
 
-export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
+export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) => {
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
@@ -215,9 +215,9 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
       </div>
     </div>
   );
-}
+});
 
-function FeedbackButtons() {
+const FeedbackButtons = memo(() => {
   // true=positive, false=negative, null=neutral
   const [like, setLike] = useState<boolean | null>(null);
   const settings = useRecoilValue(editorInteractionStateSettingsAtom);
@@ -290,4 +290,4 @@ function FeedbackButtons() {
       </TooltipPopover>
     </div>
   );
-}
+});

@@ -295,10 +295,10 @@ mod tests {
     fn test_update_cell_references_with_sheet_name() {
         let sheet_id = SheetId::new();
         let mut a1_context = A1Context::default();
-        a1_context.sheet_map.insert_test("Sheet 1", sheet_id);
+        a1_context.sheet_map.insert_test("Sheet1", sheet_id);
         a1_context
             .sheet_map
-            .insert_test("Sheet 1 (1)", SheetId::new());
+            .insert_test("Sheet1 (1)", SheetId::new());
         let pos = SheetPos {
             x: 100,
             y: 100,
@@ -308,77 +308,77 @@ mod tests {
         // Basic single reference
         let mut code = CodeCellValue {
             language: CodeCellLanguage::Python,
-            code: r#"q.cells("'Sheet 1 (1)'!A1:B2")"#.to_string(),
+            code: r#"q.cells("'Sheet1 (1)'!A1:B2")"#.to_string(),
         };
         code.translate_cell_references(&a1_context, pos, sheet_id, 1, 1);
         assert_eq!(
-            code.code, r#"q.cells("'Sheet 1 (1)'!B2:C3")"#,
+            code.code, r#"q.cells("'Sheet1 (1)'!B2:C3")"#,
             "Basic reference failed"
         );
 
         // Multiple references in one line
         let mut code = CodeCellValue {
             language: CodeCellLanguage::Python,
-            code: r#"x = q.cells("'Sheet 1'!A1:B2") + q.cells("'Sheet 1 (1)'!C3:D4")"#.to_string(),
+            code: r#"x = q.cells("'Sheet1'!A1:B2") + q.cells("'Sheet1 (1)'!C3:D4")"#.to_string(),
         };
         code.translate_cell_references(&a1_context, pos, sheet_id, 1, 1);
         assert_eq!(
-            code.code, r#"x = q.cells("B2:C3") + q.cells("'Sheet 1 (1)'!D4:E5")"#,
+            code.code, r#"x = q.cells("B2:C3") + q.cells("'Sheet1 (1)'!D4:E5")"#,
             "Multiple references failed"
         );
 
         // Different quote types
         let mut code = CodeCellValue {
             language: CodeCellLanguage::Python,
-            code: r#"q.cells("'Sheet 1'!A1:B2"); q.cells("'Sheet 1 (1)'!C3:D4"); q.cells("'Sheet 1'!E5:F6");"#.to_string(),
+            code: r#"q.cells("'Sheet1'!A1:B2"); q.cells("'Sheet1 (1)'!C3:D4"); q.cells("'Sheet1'!E5:F6");"#.to_string(),
         };
         code.translate_cell_references(&a1_context, pos, sheet_id, 1, 1);
         assert_eq!(
-            code.code, r#"q.cells("B2:C3"); q.cells("'Sheet 1 (1)'!D4:E5"); q.cells("F6:G7");"#,
+            code.code, r#"q.cells("B2:C3"); q.cells("'Sheet1 (1)'!D4:E5"); q.cells("F6:G7");"#,
             "Quote types failed"
         );
 
         // Mismatched quotes should remain unchanged
         let mut code = CodeCellValue {
             language: CodeCellLanguage::Python,
-            code: r#"q.cells("'Sheet 1'!A1:B2'); q.cells(''Sheet 1 (1)'!C3:D4")"#.to_string(),
+            code: r#"q.cells("'Sheet1'!A1:B2'); q.cells(''Sheet1 (1)'!C3:D4")"#.to_string(),
         };
         code.translate_cell_references(&a1_context, pos, sheet_id, 1, 1);
         assert_eq!(
-            code.code, r#"q.cells("'Sheet 1'!A1:B2'); q.cells(''Sheet 1 (1)'!C3:D4")"#,
+            code.code, r#"q.cells("'Sheet1'!A1:B2'); q.cells(''Sheet1 (1)'!C3:D4")"#,
             "Mismatched quotes failed"
         );
 
         // Zero delta should not change anything
         let mut code = CodeCellValue {
             language: CodeCellLanguage::Python,
-            code: r#"q.cells("'Sheet 1 (1)'!A1:B2")"#.to_string(),
+            code: r#"q.cells("'Sheet1 (1)'!A1:B2")"#.to_string(),
         };
         code.translate_cell_references(&a1_context, pos, sheet_id, 0, 0);
         assert_eq!(
-            code.code, r#"q.cells("'Sheet 1 (1)'!A1:B2")"#,
+            code.code, r#"q.cells("'Sheet1 (1)'!A1:B2")"#,
             "Zero delta failed"
         );
 
         // Negative delta
         let mut code = CodeCellValue {
             language: CodeCellLanguage::Python,
-            code: r#"q.cells("'Sheet 1 (1)'!C3:D4")"#.to_string(),
+            code: r#"q.cells("'Sheet1 (1)'!C3:D4")"#.to_string(),
         };
         code.translate_cell_references(&a1_context, pos, sheet_id, -1, -1);
         assert_eq!(
-            code.code, r#"q.cells("'Sheet 1 (1)'!B2:C3")"#,
+            code.code, r#"q.cells("'Sheet1 (1)'!B2:C3")"#,
             "Negative delta failed"
         );
 
         // Whitespace variations
         let mut code = CodeCellValue {
             language: CodeCellLanguage::Python,
-            code: r#"q.cells  (  "'Sheet 1 (1)'!A1:B2"  )"#.to_string(),
+            code: r#"q.cells  (  "'Sheet1 (1)'!A1:B2"  )"#.to_string(),
         };
         code.translate_cell_references(&a1_context, pos, sheet_id, 1, 1);
         assert_eq!(
-            code.code, r#"q.cells("'Sheet 1 (1)'!B2:C3"  )"#,
+            code.code, r#"q.cells("'Sheet1 (1)'!B2:C3"  )"#,
             "Whitespace variations failed"
         );
 
@@ -393,11 +393,11 @@ mod tests {
         // Python first_row_header=True
         let mut code = CodeCellValue {
             language: CodeCellLanguage::Python,
-            code: r#"q.cells("'Sheet 1 (1)'!A1:B2", first_row_header=True)"#.to_string(),
+            code: r#"q.cells("'Sheet1 (1)'!A1:B2", first_row_header=True)"#.to_string(),
         };
         code.translate_cell_references(&a1_context, pos, sheet_id, 1, 1);
         assert_eq!(
-            code.code, r#"q.cells("'Sheet 1 (1)'!B2:C3", first_row_header=True)"#,
+            code.code, r#"q.cells("'Sheet1 (1)'!B2:C3", first_row_header=True)"#,
             "first_row_header=True failed"
         );
     }
@@ -406,30 +406,30 @@ mod tests {
     fn test_replace_sheet_name_in_cell_references() {
         let changed_sheet_id = SheetId::new();
         let old_a1_context = A1Context::test(
-            &[("Sheet 1", changed_sheet_id)],
+            &[("Sheet1", changed_sheet_id)],
             &[("test.csv", &["city"], Rect::test_a1("A1:C3"))],
         );
         let mut new_a1_context = old_a1_context.clone();
         new_a1_context.sheet_map.remove_name("Sheet1");
         new_a1_context
             .sheet_map
-            .insert_parts("Sheet 1_new", changed_sheet_id);
+            .insert_parts("Sheet1_new", changed_sheet_id);
         let pos = SheetPos {
             x: 100,
             y: 100,
             sheet_id: SheetId::new(),
         };
 
-        let mut code = CodeCellValue::new_python(r#"q.cells("'Sheet 1'!A1:B2")"#.to_string());
+        let mut code = CodeCellValue::new_python(r#"q.cells("'Sheet1'!A1:B2")"#.to_string());
         code.replace_sheet_name_in_cell_references(&old_a1_context, &new_a1_context, pos);
-        assert_eq!(code.code, r#"q.cells("'Sheet 1_new'!A1:B2")"#);
+        assert_eq!(code.code, r#"q.cells("'Sheet1_new'!A1:B2")"#);
     }
 
     #[test]
     fn test_replace_table_name_in_cell_references() {
         let sheet_id = SheetId::TEST;
         let a1_context = A1Context::test(
-            &[("Sheet 1", sheet_id)],
+            &[("Sheet1", sheet_id)],
             &[("simple", &["city"], Rect::test_a1("A1:C3"))],
         );
         let pos = SheetPos {
@@ -451,7 +451,7 @@ mod tests {
     fn test_replace_column_name_in_cell_references() {
         let sheet_id = SheetId::TEST;
         let a1_context = A1Context::test(
-            &[("Sheet 1", sheet_id)],
+            &[("Sheet1", sheet_id)],
             &[("test.csv", &["city", "state"], Rect::test_a1("A1:C3"))],
         );
         let pos = SheetPos {

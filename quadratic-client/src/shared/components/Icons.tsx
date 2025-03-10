@@ -7,6 +7,18 @@
 import { cn } from '@/shared/shadcn/utils';
 import './icons.css';
 
+// Icons are hidden by default and we only show them once the font loads
+if (document.fonts) {
+  document.fonts
+    .load('1em Material Symbols Outlined')
+    .then(() => {
+      document.documentElement.setAttribute('data-material-symbols-loaded', 'true');
+    })
+    .catch(() => {
+      console.error('Failed to load Material Symbols font. Things are going to look funky.');
+    });
+}
+
 // const sizes = {
 //   sm: '20',
 //   md: '24',
@@ -406,6 +418,10 @@ export const InsertChartIcon: IconComponent = (props) => {
 
 export const InsertCellRefIcon: IconComponent = (props) => {
   return <Icon {...props}>ink_selection</Icon>;
+};
+
+export const LightbulbIcon: IconComponent = (props) => {
+  return <Icon {...props}>lightbulb</Icon>;
 };
 
 export const LogoutIcon: IconComponent = (props) => {

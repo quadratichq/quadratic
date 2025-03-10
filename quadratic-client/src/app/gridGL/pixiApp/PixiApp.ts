@@ -178,9 +178,9 @@ export class PixiApp {
 
     this.boxCells = this.viewportContents.addChild(new BoxCells());
     this.cellImages = this.viewportContents.addChild(this.cellImages);
-    this.copy = this.viewportContents.addChild(this.copy);
     this.multiplayerCursor = this.viewportContents.addChild(new UIMultiPlayerCursor());
     this.cursor = this.viewportContents.addChild(new Cursor());
+    this.copy = this.viewportContents.addChild(this.copy);
     this.htmlPlaceholders = this.viewportContents.addChild(new HtmlPlaceholders());
     this.imagePlaceholders = this.viewportContents.addChild(new Container());
     this.cellHighlights = this.viewportContents.addChild(new CellHighlights());
@@ -308,6 +308,7 @@ export class PixiApp {
     this.boxCells.visible = false;
     this.htmlPlaceholders.prepare();
     this.cellsSheets.toggleOutlines(false);
+    this.copy.visible = false;
     if (options?.cull) {
       this.cellsSheets.cull(options.cull);
     }
@@ -323,6 +324,7 @@ export class PixiApp {
     this.boxCells.visible = true;
     this.htmlPlaceholders.hide();
     this.cellsSheets.toggleOutlines();
+    this.copy.visible = true;
     if (culled) {
       this.cellsSheets.cull(this.viewport.getVisibleBounds());
     }

@@ -215,7 +215,8 @@ impl GridController {
                         return Err(Error::msg(message));
                     }
 
-                    let contains_header = intersection_rect.y_range().contains(&output_rect.min.y);
+                    let contains_header = data_table.show_columns
+                        && intersection_rect.y_range().contains(&output_rect.min.y);
                     let headers = data_table.column_headers.to_owned();
 
                     if let (Some(mut headers), true) = (headers, contains_header) {
@@ -638,7 +639,7 @@ impl GridController {
         let insert_at = selection.cursor;
 
         // use regex to find data-quadratic
-        match Regex::new(r#"data-quadratic="(.*)"><tbody"#) {
+        match Regex::new(r#"data-quadratic="(.*?)".*><tbody"#) {
             Err(e) => Err(error(e.to_string(), "Regex creation error")),
             Ok(re) => {
                 let data = re
@@ -927,7 +928,7 @@ mod test {
         let table_ref = TableRef::new("simple.csv");
         let cell_ref_range = CellRefRange::Table { range: table_ref };
         let context = A1Context::test(
-            &[("Sheet 1", sheet_id)],
+            &[("Sheet1", sheet_id)],
             &[(
                 "simple.csv",
                 &["city", "region", "country", "population"],
@@ -968,7 +969,7 @@ mod test {
         let table_ref = TableRef::new("simple.csv");
         let cell_ref_range = CellRefRange::Table { range: table_ref };
         let context = A1Context::test(
-            &[("Sheet 1", sheet_id)],
+            &[("Sheet1", sheet_id)],
             &[(
                 "simple.csv",
                 &["city", "region", "country", "population"],

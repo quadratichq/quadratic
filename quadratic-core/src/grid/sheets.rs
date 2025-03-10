@@ -1,5 +1,7 @@
 use std::str::FromStr;
 
+use crate::constants::SHEET_NAME;
+
 use super::{Grid, Sheet, SheetId};
 use anyhow::{anyhow, Context, Result};
 use lexicon_fractional_index::key_between;
@@ -95,7 +97,7 @@ impl Grid {
         let mut sheet = sheet.unwrap_or_else(|| {
             Sheet::new(
                 SheetId::new(),
-                format!("Sheet {}", self.sheets.len() + 1),
+                format!("{}{}", SHEET_NAME.to_owned(), self.sheets.len() + 1),
                 self.end_order(),
             )
         });
@@ -333,15 +335,18 @@ mod test {
         let mut grid = Grid::new();
         grid.add_sheet(Some(Sheet::new(
             SheetId::new(),
-            "Sheet 1".to_string(),
+            format!("{}1", SHEET_NAME.to_owned()),
             "a1".to_string(),
         )));
         grid.add_sheet(Some(Sheet::new(
             SheetId::new(),
-            "Sheet 1".to_string(),
+            format!("{}1", SHEET_NAME.to_owned()),
             "a1".to_string(),
         )));
-        assert_eq!(grid.sheets[0].name, "Sheet 1".to_string());
-        assert_eq!(grid.sheets[1].name, "Sheet 1 (1)".to_string());
+        assert_eq!(grid.sheets[0].name, format!("{}1", SHEET_NAME.to_owned()));
+        assert_eq!(
+            grid.sheets[1].name,
+            format!("{}1 (1)", SHEET_NAME.to_owned())
+        );
     }
 }

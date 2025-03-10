@@ -248,7 +248,7 @@ impl Sheet {
         {
             return true;
         }
-        self.has_table_content(pos)
+        self.has_table_content(pos, false)
     }
 
     /// Returns true if the cell at Pos has content (ie, not blank). Ignores
@@ -1248,7 +1248,7 @@ mod test {
         // Test valid sheet names
         let longest_name = "a".repeat(31);
         let valid_names = vec![
-            "Sheet 1",
+            "Sheet1",
             "MySheet",
             "Test_Sheet",
             "Sheet-1",

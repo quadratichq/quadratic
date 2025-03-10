@@ -9,6 +9,7 @@ import type {
   OpenAIModelKey,
   XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
+import { aiToolsSpec } from '../specs/aiToolsSpec';
 
 export function isBedrockModel(modelKey: ModelKey): modelKey is BedrockModelKey {
   return MODELS_CONFIGURATION[modelKey].provider === 'bedrock';
@@ -36,7 +37,7 @@ export const getModelFromModelKey = (modelKey: ModelKey): AIModel => {
 
 export const getModelOptions = (
   modelKey: ModelKey,
-  args: Pick<AIRequestBody, 'useTools' | 'useStream' | 'thinking'>
+  args: Pick<AIRequestBody, 'source' | 'useStream'>
 ): {
   stream: boolean;
   temperature: number;
@@ -47,14 +48,15 @@ export const getModelOptions = (
   const config = MODELS_CONFIGURATION[modelKey];
   const { canStream, canStreamWithToolCalls, max_tokens } = config;
 
-  const { useTools, useStream } = args;
+  const { useStream } = args;
+  const useTools = Object.values(aiToolsSpec).some((tool) => tool.sources.includes(args.source));
   const stream = canStream
     ? useTools
       ? canStreamWithToolCalls && (useStream ?? canStream)
       : useStream ?? canStream
     : false;
 
-  const thinking = config.thinking && args.thinking;
+  const thinking = config.thinking;
 
   const temperature = thinking ? config.thinkingTemperature ?? config.temperature : config.temperature;
 

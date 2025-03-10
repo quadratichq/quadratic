@@ -85,8 +85,13 @@ impl Sheet {
     /// Returns true if the tables contain any cell at Pos (ie, not blank). Uses
     /// the DataTable's output_rect for the check to ensure that charts are
     /// included.
-    pub fn has_table_content(&self, pos: Pos) -> bool {
+    /// If ignore_readonly is true, it will ignore readonly tables.
+    pub fn has_table_content(&self, pos: Pos, ignore_readonly: bool) -> bool {
         self.data_tables.iter().any(|(code_cell_pos, data_table)| {
+            if ignore_readonly && data_table.readonly {
+                return false;
+            }
+
             data_table.output_rect(*code_cell_pos, false).contains(pos)
         })
     }
@@ -183,6 +188,7 @@ impl Sheet {
                 })
         {
             let rect = Rect::from(&values);
+
             for y in rect.y_range() {
                 for x in rect.x_range() {
                     let new_x = u32::try_from(pos.x - code_cell_pos.x + x).unwrap_or(0);

@@ -1,4 +1,5 @@
 use crate::{
+    constants::SHEET_NAME,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
@@ -95,7 +96,6 @@ impl GridController {
                     }
                 }
 
-                transaction.sheet_info.insert(sheet_id);
                 transaction.add_fill_cells(sheet_id);
                 transaction.sheet_borders.insert(sheet_id);
 
@@ -140,7 +140,7 @@ impl GridController {
             // create a sheet if we deleted the last one (only for user actions)
             if transaction.is_user() && self.sheet_ids().is_empty() {
                 let new_first_sheet_id = SheetId::new();
-                let name = String::from("Sheet 1");
+                let name = SHEET_NAME.to_owned() + "1";
                 let order = self.grid.end_order();
                 let new_first_sheet = Sheet::new(new_first_sheet_id, name, order);
                 self.grid.add_sheet(Some(new_first_sheet.clone()));
@@ -303,6 +303,7 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
+        constants::SHEET_NAME,
         controller::{
             active_transactions::transaction_name::TransactionName,
             operations::operation::Operation, user_actions::import::tests::simple_csv_at,
@@ -482,14 +483,14 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        // Sheet 1, Sheet 2
+        // Sheet1, Sheet 2
         gc.add_sheet(None);
         assert_eq!(gc.grid.sheets().len(), 2);
         let sheet_id2 = gc.sheet_ids()[1];
         assert_eq!(gc.grid.sheets()[0].id, sheet_id);
         assert_eq!(gc.grid.sheets()[1].id, sheet_id2);
 
-        // Sheet 2, Sheet 1
+        // Sheet 2, Sheet1
         gc.move_sheet(sheet_id, None, None);
         assert_eq!(gc.grid.sheets()[0].id, sheet_id2);
         assert_eq!(gc.grid.sheets()[1].id, sheet_id);
@@ -501,7 +502,7 @@ mod tests {
             true,
         );
 
-        // Sheet 1, Sheet 2
+        // Sheet1, Sheet 2
         gc.undo(None);
         assert_eq!(gc.grid.sheets()[0].id, sheet_id);
         assert_eq!(gc.grid.sheets()[1].id, sheet_id2);
@@ -534,7 +535,7 @@ mod tests {
     }
 
     #[test]
-    fn duplicate_sheet() {
+    fn test_duplicate_sheet() {
         clear_js_calls();
 
         let mut gc = GridController::test();
@@ -640,6 +641,18 @@ mod tests {
             None,
         );
 
+        gc.test_set_code_run_array_2d(sheet_id, 20, 20, 2, 2, vec!["1", "2", "3", "4"]);
+        gc.set_code_cell(
+            SheetPos {
+                sheet_id,
+                x: 20,
+                y: 20,
+            },
+            CodeCellLanguage::Python,
+            format!("q.cells(\"\'{}1\'!A1\")", SHEET_NAME.to_owned()),
+            None,
+        );
+
         let ops = gc.duplicate_sheet_operations(sheet_id);
         gc.start_user_transaction(ops, None, TransactionName::DuplicateSheet);
 
@@ -651,6 +664,14 @@ mod tests {
             CellValue::Code(CodeCellValue {
                 language: CodeCellLanguage::Python,
                 code: format!("q.cells(\"{}1\")", file_name),
+            })
+        );
+
+        assert_eq!(
+            gc.sheet(duplicated_sheet_id).cell_value(pos![T20]).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Python,
+                code: r#"q.cells("A1")"#.to_string(),
             })
         );
     }

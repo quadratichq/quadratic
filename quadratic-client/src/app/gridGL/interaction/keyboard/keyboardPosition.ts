@@ -9,7 +9,8 @@ import type { Direction } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 function setCursorPosition(x: number, y: number) {
-  sheets.sheet.cursor.moveTo(x, y);
+  const cursor = sheets.sheet.cursor;
+  cursor.moveTo(x, y, { checkForTableRef: true });
 }
 
 // handle cases for meta/ctrl keys
@@ -56,10 +57,7 @@ async function jumpCursor(direction: Direction, jump: boolean, select: boolean) 
         break;
     }
   } else {
-    // todo: hack so we can select the table if in the table anchor (this entire
-    // fn should be moved to rust-client)
-    cursor.moveTo(jumpCol, jumpRow);
-    ensureVisible({ x: jumpCol, y: jumpRow });
+    cursor.moveTo(jumpCol, jumpRow, { checkForTableRef: true, ensureVisible: { x: jumpCol, y: jumpRow } });
   }
 }
 

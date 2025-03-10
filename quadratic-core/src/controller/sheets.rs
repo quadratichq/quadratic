@@ -62,7 +62,7 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use crate::{controller::GridController, grid::SheetId};
+    use crate::{constants::SHEET_NAME, controller::GridController, grid::SheetId};
 
     #[test]
     fn test_sheet_ids() {
@@ -70,7 +70,7 @@ mod test {
         let sheet_ids = gc.sheet_ids();
         assert_eq!(sheet_ids.len(), 1);
         let sheet_id = sheet_ids[0];
-        assert_eq!(gc.sheet(sheet_id).name, "Sheet 1");
+        assert_eq!(gc.sheet(sheet_id).name, SHEET_NAME.to_owned() + "1");
 
         gc.add_sheet(None);
         let sheet_ids = gc.sheet_ids();
@@ -83,11 +83,17 @@ mod test {
     fn test_try_sheet_from_id() {
         let mut gc = super::GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        assert_eq!(gc.try_sheet(sheet_id).unwrap().name, "Sheet 1");
+        assert_eq!(
+            gc.try_sheet(sheet_id).unwrap().name,
+            SHEET_NAME.to_owned() + "1"
+        );
 
         gc.add_sheet(None);
         let sheet_id = gc.sheet_ids()[1];
-        assert_eq!(gc.try_sheet(sheet_id).unwrap().name, "Sheet 2");
+        assert_eq!(
+            gc.try_sheet(sheet_id).unwrap().name,
+            SHEET_NAME.to_owned() + "2"
+        );
 
         let sheet_id = SheetId::new();
         assert_eq!(gc.try_sheet(sheet_id), None);
@@ -97,7 +103,7 @@ mod test {
     fn test_try_sheet_mut_from_id() {
         let mut gc = super::GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.try_sheet_mut(sheet_id).unwrap().name = "Sheet 1 modified".to_string();
+        gc.try_sheet_mut(sheet_id).unwrap().name = "Sheet1 modified".to_string();
 
         gc.add_sheet(None);
         let sheet_id_2 = gc.sheet_ids()[1];
@@ -106,7 +112,7 @@ mod test {
         let new_sheet_id = SheetId::new();
         assert_eq!(gc.try_sheet_mut(new_sheet_id), None);
 
-        assert_eq!(gc.sheet(sheet_id).name, "Sheet 1 modified");
+        assert_eq!(gc.sheet(sheet_id).name, "Sheet1 modified");
         assert_eq!(gc.sheet(sheet_id_2).name, "Sheet 2 modified");
     }
 
@@ -114,17 +120,21 @@ mod test {
     fn test_try_sheet_from_name() {
         let mut gc = super::GridController::test();
         assert_eq!(
-            gc.try_sheet_from_name("Sheet 1".to_string()).unwrap().name,
-            "Sheet 1"
+            gc.try_sheet_from_name(SHEET_NAME.to_owned() + "1")
+                .unwrap()
+                .name,
+            SHEET_NAME.to_owned() + "1"
         );
 
         gc.add_sheet(None);
         assert_eq!(
-            gc.try_sheet_from_name("Sheet 2".to_string()).unwrap().name,
-            "Sheet 2"
+            gc.try_sheet_from_name(SHEET_NAME.to_owned() + "2")
+                .unwrap()
+                .name,
+            SHEET_NAME.to_owned() + "2"
         );
 
-        assert_eq!(gc.try_sheet_from_name("Sheet 3".to_string()), None);
+        assert_eq!(gc.try_sheet_from_name(SHEET_NAME.to_owned() + "3"), None);
     }
 
     #[test]
@@ -132,17 +142,23 @@ mod test {
         let mut gc = GridController::test();
         gc.add_sheet(None);
 
-        gc.try_sheet_mut_from_name("Sheet 1".to_string())
+        gc.try_sheet_mut_from_name(SHEET_NAME.to_owned() + "1")
             .unwrap()
-            .name = "Sheet 1 modified".to_string();
+            .name = SHEET_NAME.to_owned() + "1 modified";
 
-        gc.try_sheet_mut_from_name("Sheet 2".to_string())
+        gc.try_sheet_mut_from_name(SHEET_NAME.to_owned() + "2")
             .unwrap()
-            .name = "Sheet 2 modified".to_string();
+            .name = SHEET_NAME.to_owned() + "2 modified";
 
         let sheet_ids = gc.sheet_ids();
-        assert_eq!(gc.sheet(sheet_ids[0]).name, "Sheet 1 modified");
-        assert_eq!(gc.sheet(sheet_ids[1]).name, "Sheet 2 modified");
+        assert_eq!(
+            gc.sheet(sheet_ids[0]).name,
+            SHEET_NAME.to_owned() + "1 modified"
+        );
+        assert_eq!(
+            gc.sheet(sheet_ids[1]).name,
+            SHEET_NAME.to_owned() + "2 modified"
+        );
     }
 
     #[test]
@@ -153,7 +169,7 @@ mod test {
             gc.try_sheet_from_string_id(sheet_id.to_string())
                 .unwrap()
                 .name,
-            "Sheet 1"
+            SHEET_NAME.to_owned() + "1"
         );
         assert_eq!(gc.try_sheet_from_string_id("not found".to_string()), None);
     }
