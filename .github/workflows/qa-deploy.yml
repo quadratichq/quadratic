@@ -85,7 +85,7 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
           build-args: |
             ENV_HASH=${{ steps.pull-pulumi-esc-env-vars.outputs.env-hash }}
-          outputs: type=docker\
+          outputs: type=docker
 
       - name: Copy build from container to host
         run: |
