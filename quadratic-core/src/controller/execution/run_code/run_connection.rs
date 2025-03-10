@@ -118,6 +118,7 @@ impl GridController {
 mod tests {
 
     use crate::{
+        constants::SHEET_NAME,
         controller::{
             active_transactions::pending_transaction::PendingTransaction, GridController,
         },
@@ -194,9 +195,9 @@ mod tests {
             .cells_accessed
             .contains(SheetPos::new(sheet_id, 1, 2), context));
 
-        let code = r#"{{'Sheet 1'!A2}}"#;
+        let code = format!(r#"{{{{'{}1'!A2}}}}"#, SHEET_NAME);
         let result = gc
-            .replace_handlebars(&mut transaction, sheet_pos, code, sheet_id)
+            .replace_handlebars(&mut transaction, sheet_pos, &code, sheet_id)
             .unwrap();
         assert_eq!(result, "test".to_string());
         assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));

@@ -2,6 +2,7 @@ import { CheckSmallIcon } from '@/shared/components/Icons';
 import { themeAccentColors, useThemeAccentColor } from '@/shared/hooks/useThemeAccentColor';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
+import mixpanel from 'mixpanel-browser';
 
 export const ThemeAccentColors = () => {
   const [accentColor, setThemeAccentColor] = useThemeAccentColor();
@@ -13,6 +14,9 @@ export const ThemeAccentColors = () => {
       key={c}
       onClick={() => {
         setThemeAccentColor(c);
+        mixpanel.track('[Theme].changeAccentColor', {
+          accentColor: c,
+        });
       }}
       className={cn(c === accentColor && 'border-2 border-foreground', 'justify-start')}
     >

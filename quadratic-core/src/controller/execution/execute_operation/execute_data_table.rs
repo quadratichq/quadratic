@@ -640,7 +640,9 @@ impl GridController {
             if let Some(name) = name.to_owned() {
                 if old_name != name {
                     // validate table name
-                    if let Err(e) = DataTable::validate_table_name(&name, self.a1_context()) {
+                    if let Err(e) =
+                        DataTable::validate_table_name(&name, sheet_pos, self.a1_context())
+                    {
                         if cfg!(target_family = "wasm") || cfg!(test) {
                             crate::wasm_bindings::js::jsClientMessage(
                                 e.to_owned(),
@@ -672,6 +674,7 @@ impl GridController {
                             // validate column name
                             if let Err(e) = DataTable::validate_column_name(
                                 &old_name,
+                                index,
                                 &new_column.name.to_string(),
                                 &context,
                             ) {
@@ -2218,13 +2221,50 @@ mod tests {
     }
 
     #[test]
+    fn test_execute_delete_data_table_row_on_resize() {
+        let (mut gc, sheet_id, pos, _) = simple_csv();
+
+        print_data_table(&gc, sheet_id, Rect::new(1, 1, 4, 11));
+
+        let sheet_pos = SheetPos::from((pos, sheet_id));
+        let index = 11;
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        let values = data_table.get_row(index as usize + 1).unwrap();
+        let op = Operation::DeleteDataTableRows {
+            sheet_pos,
+            rows: vec![index],
+            flatten: true,
+            select_table: true,
+        };
+        let mut transaction = PendingTransaction::default();
+        gc.execute_delete_data_table_row(&mut transaction, op)
+            .unwrap();
+
+        print_data_table(&gc, sheet_id, Rect::new(1, 1, 4, 12));
+        assert_data_table_row_height(&gc, sheet_id, pos, 10, index, values.clone());
+
+        let sheet = gc.sheet(sheet_id);
+        assert!(sheet.edit_code_value(pos!(B9)).is_some());
+    }
+
+    #[test]
     fn test_execute_insert_column_row_over_code_cell() {
         clear_js_calls();
 
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
-        gc.set_cell_value(pos!(F14).to_sheet_pos(sheet_id), "=1+1".to_string(), None);
-        gc.set_cell_value(pos!(I5).to_sheet_pos(sheet_id), "=2+2".to_string(), None);
+        gc.set_code_cell(
+            pos!(F14).to_sheet_pos(sheet_id),
+            CodeCellLanguage::Formula,
+            "1+1".to_string(),
+            None,
+        );
+        gc.set_code_cell(
+            pos!(I5).to_sheet_pos(sheet_id),
+            CodeCellLanguage::Formula,
+            "2+2".to_string(),
+            None,
+        );
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(

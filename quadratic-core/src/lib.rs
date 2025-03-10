@@ -10,6 +10,7 @@ pub mod a1;
 mod clear_option;
 pub mod color;
 pub mod compression;
+pub mod constants;
 pub mod controller;
 mod copy_formats;
 pub mod date_time;

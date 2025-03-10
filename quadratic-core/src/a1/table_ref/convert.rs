@@ -13,7 +13,7 @@ impl TableRef {
     ///   even if not specified
     ///
     /// todo: we should probably break this into a few separate functions since
-    /// it's use varies so much
+    /// its use varies so much
     ///
     /// (ask David F for more details & accuracy checks on this)
     pub fn convert_to_ref_range_bounds(
@@ -31,6 +31,16 @@ impl TableRef {
             // the table may no longer exist
             return None;
         };
+
+        // for html and images, we return only the anchor cell
+        if table.is_html_image {
+            return Some(RefRangeBounds::new_relative(
+                table.bounds.min.x,
+                table.bounds.min.y,
+                table.bounds.min.x,
+                table.bounds.min.y,
+            ));
+        }
         let (mut y_start, y_end) = table.to_sheet_rows();
 
         if !force_table_bounds {
@@ -41,6 +51,14 @@ impl TableRef {
             } else {
                 0
             };
+        } else if self.headers && !self.data {
+            // this is the case where we only want the header row and can ignore force_table_bounds
+            y_start = table.bounds.min.y
+                + if table.show_ui && table.show_name {
+                    1
+                } else {
+                    0
+                };
         }
         // this is for the clipboard, we don't want to copy the table name when it's a full column
         else if let ColRange::Col(_) = &self.col_range {
@@ -294,5 +312,21 @@ mod tests {
             table_ref.convert_to_ref_range_bounds(false, &context, false, false),
             None
         );
+    }
+
+    #[test]
+    fn test_convert_table_ref_column_name() {
+        let context = create_test_context(Rect::test_a1("A1:C4"));
+
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::Col("Col1".to_string()),
+            data: false,
+            headers: true,
+            totals: false,
+        };
+
+        let bounds = table_ref.convert_to_ref_range_bounds(false, &context, false, true);
+        assert_eq!(bounds, Some(RefRangeBounds::test_a1("A2")));
     }
 }
