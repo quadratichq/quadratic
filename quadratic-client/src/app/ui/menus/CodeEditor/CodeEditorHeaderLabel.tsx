@@ -84,14 +84,20 @@ export function CodeEditorHeaderLabel() {
 
         let isValid = false;
         try {
-          isValid = validateTableName(value, sheets.a1Context);
+          isValid = validateTableName(
+            value,
+            codeCellState.sheetId,
+            codeCellState.pos.x,
+            codeCellState.pos.y,
+            sheets.a1Context
+          );
         } catch (error) {
           isValid = false;
         }
         input.setAttribute('aria-invalid', (!isValid).toString());
       }
     },
-    [tableName]
+    [codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId, tableName]
   );
 
   const handleBlur = useCallback(
