@@ -277,6 +277,7 @@ impl Sheet {
     }
 
     /// Returns columns and rows to data tables when the cells to add are touching the data table
+    #[allow(clippy::type_complexity)]
     pub fn expand_columns_and_rows(
         &self,
         data_tables: &Vec<Rect>,
@@ -297,7 +298,7 @@ impl Sheet {
     /// Returns columns to data tables when the cells to add are touching the data table
     pub fn expand_columns(
         &self,
-        data_tables: &Vec<Rect>,
+        data_tables: &[Rect],
         sheet_pos: SheetPos,
     ) -> Option<(SheetPos, u32)> {
         let pos = Pos::from(sheet_pos);
@@ -360,7 +361,7 @@ impl Sheet {
     /// Returns rows to data tables when the cells to add are touching the data table
     pub fn expand_rows(
         &self,
-        data_tables: &Vec<Rect>,
+        data_tables: &[Rect],
         sheet_pos: SheetPos,
     ) -> Option<(SheetPos, u32)> {
         let pos = Pos::from(sheet_pos);
