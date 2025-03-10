@@ -280,7 +280,7 @@ impl Sheet {
     #[allow(clippy::type_complexity)]
     pub fn expand_columns_and_rows(
         &self,
-        data_tables: &Vec<Rect>,
+        data_tables: &[Rect],
         sheet_pos: SheetPos,
         value: String,
     ) -> (Option<(SheetPos, u32)>, Option<(SheetPos, u32)>) {
