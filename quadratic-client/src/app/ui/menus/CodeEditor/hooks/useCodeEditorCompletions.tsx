@@ -47,14 +47,10 @@ ${schemaJsonForAi}
 You have to use the code_editor_completions tool and provide the text delta to be inserted at the cursor position.\n
 
 The code before the cursor is:\n
-\`\`\`${language}\n
-${prefix}
-\`\`\`
+${JSON.stringify(prefix)}
 
 The code after the cursor is:\n
-\`\`\`${language}\n
-${suffix}
-\`\`\`
+${JSON.stringify(suffix)}
 
 Include spaces and newlines as required, the text delta will be appended as is at the cursor position.\n
 `,
@@ -68,12 +64,14 @@ Include spaces and newlines as required, the text delta will be appended as is a
         modelKey: DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL,
         messages,
         signal,
-        useStream: false,
+        useStream: true,
         toolName: AITool.CodeEditorCompletions,
         useToolsPrompt: false,
         language: undefined,
         useQuadraticContext: false,
       });
+
+      let completion = '';
 
       const codeEditorCompletionsToolCall = response.toolCalls.find(
         (toolCall) => toolCall.name === AITool.CodeEditorCompletions
@@ -82,13 +80,13 @@ Include spaces and newlines as required, the text delta will be appended as is a
         try {
           const argsObject = JSON.parse(codeEditorCompletionsToolCall.arguments);
           const args = aiToolsSpec[AITool.CodeEditorCompletions].responseSchema.parse(argsObject);
-          return args.text_delta_at_cursor;
+          completion = args.text_delta_at_cursor;
         } catch (error) {
           console.error('[useSubmitCodeEditorCompletions] toolCall: ', error);
         }
       }
 
-      return '';
+      return completion;
     },
     [connectionInfo, isLoading, schemaJsonForAi, handleAIRequestToAPI]
   );

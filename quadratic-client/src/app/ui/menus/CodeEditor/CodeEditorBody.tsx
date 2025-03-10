@@ -278,9 +278,13 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
             completionTimeoutAndController.abortController?.abort();
 
             completionTimeoutAndController.timeout = setTimeout(async () => {
-              let result = null;
               try {
                 completionTimeoutAndController.abortController = new AbortController();
+
+                const value = model.getValue();
+                if (!value) {
+                  return resolve(null);
+                }
 
                 const prefix = model.getValueInRange({
                   startLineNumber: 1,
@@ -305,11 +309,11 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
                   signal: completionTimeoutAndController.abortController.signal,
                 });
 
-                if (!completion) return null;
+                if (!completion || token.isCancellationRequested) {
+                  return resolve(null);
+                }
 
-                if (token.isCancellationRequested) return null;
-
-                result = {
+                const result = {
                   items: [
                     {
                       insertText: completion,
@@ -322,10 +326,11 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
                     },
                   ],
                 };
+                resolve(result);
               } catch (error) {
                 console.warn('[CodeEditorBody] Error fetching AI completion: ', error);
+                resolve(null);
               }
-              resolve(result);
             }, AI_COMPLETION_DEBOUNCE_TIME);
           });
         },
@@ -337,6 +342,8 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
 
       // Cleanup provider when editor is disposed
       editor.onDidDispose(() => {
+        clearTimeout(completionTimeoutAndController.timeout);
+        completionTimeoutAndController.abortController?.abort();
         completionProvider.dispose();
       });
     },

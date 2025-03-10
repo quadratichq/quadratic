@@ -140,7 +140,7 @@ export const selectionActionsSpec: SelectionActionSpec = {
   },
   [Action.GotoRowStart]: {
     label: 'Goto row start',
-    run: () => sheets.sheet.cursor.moveTo(1, sheets.sheet.cursor.position.y),
+    run: () => sheets.sheet.cursor.moveTo(1, sheets.sheet.cursor.position.y, { checkForTableRef: true }),
   },
   [Action.GotoRowEnd]: {
     label: 'Goto row end',

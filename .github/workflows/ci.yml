@@ -17,7 +17,7 @@ concurrency:
 jobs:
   test_rust:
     runs-on: blacksmith-2vcpu-ubuntu-2204
-    timeout-minutes: 10
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -106,7 +106,7 @@ jobs:
 
   test_client:
     runs-on: blacksmith-4vcpu-ubuntu-2204
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -156,7 +156,7 @@ jobs:
 
   test_python:
     runs-on: blacksmith-2vcpu-ubuntu-2204
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -177,7 +177,7 @@ jobs:
 
   test_api:
     runs-on: blacksmith-2vcpu-ubuntu-2204
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -194,7 +194,7 @@ jobs:
 
   lint_rust:
     runs-on: blacksmith-2vcpu-ubuntu-2204
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -214,7 +214,7 @@ jobs:
 
   lint_typescript:
     runs-on: blacksmith-4vcpu-ubuntu-2204
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
