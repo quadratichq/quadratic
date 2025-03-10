@@ -46,6 +46,11 @@ class Thumbnail {
           debugTimeReset();
           this.generate().then((blob) => {
             if (blob) {
+              // Open blob in new tab for preview
+              // const url = URL.createObjectURL(blob);
+              // window.open(url);
+              // URL.revokeObjectURL(url);
+
               debugTimeCheck('thumbnail', 20);
               apiClient.files.thumbnail.update(uuid, blob).then(() => {
                 if (debugShowFileIO) {
