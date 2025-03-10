@@ -235,30 +235,6 @@ model QFeedback {
     user         User?    @relation(fields: [userId], references: [id])
 }
 
-// !!Legacy user model
-// use User instead
-model QUser {
-    id            Int     @id @default(autoincrement())
-    auth0_user_id String? @unique
-    QFile         QFile[]
-}
-
-// !!Legacy user model
-// use File instead
-model QFile {
-    id            Int      @id @default(autoincrement())
-    uuid          String   @unique @default(uuid())
-    user_owner    QUser    @relation(fields: [qUserId], references: [id])
-    name          String
-    contents      Json
-    created_date  DateTime @default(now())
-    updated_date  DateTime @default(now())
-    qUserId       Int
-    // analytics fields
-    times_updated Int      @default(1)
-    version       String?
-}
-
 model AnalyticsAIChat {
     id          Int                      @id @default(autoincrement())
     userId      Int                      @map("user_id")
