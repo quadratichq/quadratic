@@ -3,15 +3,55 @@ frontend:
   phases:
     preBuild:
       commands:
-        - export NODE_OPTIONS=--max-old-space-size=16384
-        - sudo fallocate -l 16G swapfile || sudo dd if=/dev/zero of=swapfile bs=1M count=8192
-        - sudo chmod 600 swapfile
-        - sudo mkswap swapfile
-        - sudo swapon swapfile
-        - free -h
+        # Configure system resources
+        - |
+          echo "Configuring swap space..."
+          export NODE_OPTIONS=--max-old-space-size=16384
+          sudo fallocate -l 16G swapfile || sudo dd if=/dev/zero of=swapfile bs=1M count=16384
+          sudo chmod 600 swapfile
+          sudo mkswap swapfile
+          sudo swapon swapfile
+          free -h
+
+        # # Setup Docker
+        # - |
+        #   echo "Setting up Docker..."
+        #   sudo yum update -y
+        #   sudo yum install -y docker
+        #   sudo service docker start
+        #   sudo docker info || (echo "Docker setup failed" && exit 1)
+
+        # Configure AWS
+        - |
+          echo "Configuring AWS credentials..."
+          aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
+          aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
+          aws configure set region ${AWS_REGION}
+          aws configure set output json
+
     build:
       commands:
-        - ./infra/client/build-client-ci.sh
+        # Handle Docker operations
+        - |
+          echo "Authenticating with ECR..."
+          aws ecr get-login-password --region ${AWS_REGION} | sudo docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+
+          echo "Pulling client image: ${CLIENT_IMAGE}"
+          sudo docker pull ${CLIENT_IMAGE} || (echo "Failed to pull image" && exit 1)
+
+          echo "Extracting build artifacts..."
+          CONTAINER_ID=$(sudo docker create ${CLIENT_IMAGE})
+          sudo docker cp ${CONTAINER_ID}:/usr/share/nginx/html/. ./build/ || (echo "Failed to copy files" && exit 1)
+          sudo docker rm ${CONTAINER_ID}
+
+        # Verify build
+        - |
+          echo "Verifying build artifacts..."
+          if [ ! -d "./build" ]; then
+            echo "Build directory not found"
+            exit 1
+          fi
+          ls -la ./build
   artifacts:
     baseDirectory: build
     files:
