@@ -345,6 +345,7 @@ impl Sheet {
                     let sheet_pos = (data_table_left.min, sheet_pos.sheet_id).into();
                     let mut column_index = data_table_left.width();
 
+                    // the column index is the display index, not the actual index, we need to convert it to the actual index
                     if let Ok(data_table) = self.data_table_result(data_table_left.min) {
                         column_index =
                             data_table.get_column_index_from_display_index(column_index, true);
