@@ -220,8 +220,6 @@ jobs:
     concurrency:
       group: qa-pulumi
     timeout-minutes: 30
-    env:
-      STACK_NAME: quadratic-qa
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -267,7 +265,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-          PR_ID: ${{ github.event.pull_request.number }}
+          STACK_NAME: quadratic-qa
 
   qa-wolf-notify:
     needs: [deploy_client, pulumi]
