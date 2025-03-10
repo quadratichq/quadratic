@@ -29,5 +29,6 @@ export const getAIMessageUsageForUser = async (userId: number) => {
 };
 
 export const userExceededUsageLimit = async (monthlyUsage: Awaited<ReturnType<typeof getAIMessageUsageForUser>>) => {
+  // Unused for now
   return monthlyUsage[0]?.ai_messages > 5;
 };

@@ -18,7 +18,6 @@ import { handleOpenAIRequest } from '../../ai/handler/openai';
 import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { anthropic, bedrock, bedrock_anthropic, openai, xai } from '../../ai/providers';
-import { getAIMessageUsageForUser, userExceededUsageLimit } from '../../ai/usage';
 import dbClient from '../../dbClient';
 import { STORAGE_TYPE } from '../../env-vars';
 import { getFile } from '../../middleware/getFile';
@@ -40,13 +39,14 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     user: { id: userId },
   } = req;
 
-  const usage = await getAIMessageUsageForUser(userId);
-  const exceededUsageLimit = await userExceededUsageLimit(usage);
+  // TODO: Enforce usage limit
+  // const usage = await getAIMessageUsageForUser(userId);
+  // const exceededUsageLimit = await userExceededUsageLimit(usage);
 
-  if (exceededUsageLimit) {
-    //@ts-expect-error
-    return res.status(402).json({ error: 'Usage limit exceeded' });
-  }
+  // if (exceededUsageLimit) {
+  //   //@ts-expect-error
+  //   return res.status(402).json({ error: 'Usage limit exceeded' });
+  // }
 
   const { body } = parseRequest(req, schema);
   const { chatId, fileUuid, modelKey, ...args } = body;
