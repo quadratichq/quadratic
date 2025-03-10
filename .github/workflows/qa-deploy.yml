@@ -74,7 +74,7 @@ jobs:
           file: quadratic-client/Dockerfile
           push: false
           load: true
-          tags: quadratic-client:local
+          tags: quadratic-client-development:local
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max,compression=zstd,force-compression=true
           cache-from: type=local,src=/tmp/.buildx-cache
           build-args: |
@@ -84,7 +84,7 @@ jobs:
       - name: Copy build from container to host
         run: |
           # Create a temporary container from the image
-          CONTAINER_ID=$(docker create quadratic-client:local)
+          CONTAINER_ID=$(docker create quadratic-client-development:local)
 
           # Create a temporary directory to hold the build
           mkdir -p /tmp/quadratic-client-development
