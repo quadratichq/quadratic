@@ -14,7 +14,7 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { isMac } from '@/shared/utils/isMac';
-import type { InteractivePointerEvent, Point } from 'pixi.js';
+import type { InteractionEvent, Point } from 'pixi.js';
 
 const MINIMUM_COLUMN_SIZE = 20;
 
@@ -38,6 +38,14 @@ export class PointerHeading {
     lastSize: number;
   };
 
+  movingColRows?: {
+    isColumn: boolean;
+    indicies: number[];
+    place: number;
+    offset: number;
+    lastMouse: Point;
+  };
+
   // tracks changes to viewport caused by resizing negative column/row headings
   private viewportChanges = {
     change: 0,
@@ -46,19 +54,25 @@ export class PointerHeading {
   };
 
   handleEscape(): boolean {
-    if (this.active) {
-      this.active = false;
+    if (this.movingColRows) {
+      this.movingColRows = undefined;
+      pixiApp.cellMoving.dirty = true;
+      pixiApp.viewport.disableMouseEdges();
+    } else if (this.active) {
       sheets.sheet.offsets.cancelResize();
       pixiApp.gridLines.dirty = true;
-      pixiApp.cursor.dirty = true;
       pixiApp.headings.dirty = true;
-      pixiApp.setViewportDirty();
-      return true;
+      this.active = false;
+    } else {
+      return false;
     }
-    return false;
+    pixiApp.cursor.dirty = true;
+    pixiApp.setViewportDirty();
+    return true;
   }
 
-  pointerDown(world: Point, event: InteractivePointerEvent): boolean {
+  pointerDown(world: Point, e: InteractionEvent): boolean {
+    const event = e.data.originalEvent as PointerEvent;
     clearTimeout(this.fitToColumnTimeout);
     const { headings, viewport } = pixiApp;
     const intersects = headings.intersectsHeadings(world);
@@ -95,6 +109,27 @@ export class PointerHeading {
         height: headingResize.height,
       };
       this.active = true;
+    } else if (
+      !cursor.isMultiRange() &&
+      (intersects.column == null || cursor.isEntireColumnSelected(intersects.column)) &&
+      (intersects.row == null || cursor.isEntireRowSelected(intersects.row))
+    ) {
+      const bounds = cursor.getInfiniteRefRangeBounds();
+      const indicies = [];
+      const isColumn = intersects.column !== null;
+      const start = Number(isColumn ? bounds[0].start.col.coord : bounds[0].start.row.coord);
+      const end = Number(isColumn ? bounds[0].end.col.coord : bounds[0].end.row.coord);
+      for (let i = start; i <= end; i++) indicies.push(i);
+      this.movingColRows = {
+        isColumn,
+        indicies,
+        place: isColumn ? intersects.column! : intersects.row!,
+        offset: (isColumn ? intersects.column! : intersects.row!) - start,
+        lastMouse: e.data.global.clone(),
+      };
+      pixiApp.viewport.enableMouseEdges(world, isColumn ? 'horizontal' : 'vertical');
+      pixiApp.cellMoving.dirty = true;
+      this.cursor = 'grabbing';
     } else {
       if (intersects.corner) {
         if (this.downTimeout) {
@@ -138,11 +173,35 @@ export class PointerHeading {
     return true;
   }
 
-  pointerMove(world: Point): boolean {
+  private pointerMoveColRows(world: Point, e?: InteractionEvent): boolean {
+    if (!this.movingColRows) {
+      throw new Error('Expected movingColRows to be defined in pointerMoveColRows');
+    }
+    const { isColumn, place } = this.movingColRows;
+    const current = sheets.sheet.getColumnRowFromScreen(world.x, world.y);
+
+    // nothing to do if the pointer is still in the same column
+    if ((isColumn ? current.column : current.row) === place) return true;
+
+    // if the pointer is in a different column, we need to update the movingColRows
+    this.movingColRows.place = isColumn ? current.column : current.row;
+    pixiApp.cellMoving.dirty = true;
+    if (e) {
+      this.movingColRows.lastMouse = e.data.global.clone();
+    }
+    return true;
+  }
+
+  pointerMove(world: Point, e: InteractionEvent): boolean {
     if (this.downTimeout) {
       window.clearTimeout(this.downTimeout);
       this.downTimeout = undefined;
     }
+
+    if (this.movingColRows) {
+      return this.pointerMoveColRows(world, e);
+    }
+
     const { headings, gridLines, cursor } = pixiApp;
     this.cursor = undefined;
     this.clicked = false;
@@ -153,7 +212,22 @@ export class PointerHeading {
       if (hasPermission && headingResize) {
         this.cursor = headingResize.column !== null ? 'col-resize' : 'row-resize';
       } else {
-        this.cursor = headings.intersectsHeadings(world) ? 'pointer' : undefined;
+        const result = headings.intersectsHeadings(world);
+        if (result) {
+          const cursor = sheets.sheet.cursor;
+          if (
+            !cursor.isMultiRange() &&
+            !result.corner &&
+            (result.column == null || cursor.isEntireColumnSelected(result.column)) &&
+            (result.row == null || cursor.isEntireRowSelected(result.row))
+          ) {
+            this.cursor = 'grab';
+          } else {
+            this.cursor = 'pointer';
+          }
+        } else {
+          this.cursor = undefined;
+        }
       }
     }
 
@@ -232,7 +306,19 @@ export class PointerHeading {
     return true;
   }
 
+  private pointerUpMovingColRows(): boolean {
+    if (this.movingColRows) {
+      this.movingColRows = undefined;
+      pixiApp.cellMoving.dirty = true;
+      pixiApp.viewport.disableMouseEdges();
+    }
+    return true;
+  }
+
   pointerUp(): boolean {
+    if (this.movingColRows) {
+      return this.pointerUpMovingColRows();
+    }
     this.clicked = true;
     this.fitToColumnTimeout = window.setTimeout(() => {
       this.clicked = false;
@@ -286,5 +372,14 @@ export class PointerHeading {
     if (originalSize.height !== size) {
       quadraticCore.commitSingleResize(sheetId, undefined, row, size);
     }
+  }
+
+  // Handles mouse edges if we're moving columns or rows. Returns true if moving
+  // col/rows is active.
+  handleMouseEdges(): boolean {
+    if (!this.movingColRows) return false;
+    const world = pixiApp.viewport.toWorld(this.movingColRows.lastMouse.x, this.movingColRows.lastMouse.y);
+    this.pointerMoveColRows(world);
+    return true;
   }
 }
