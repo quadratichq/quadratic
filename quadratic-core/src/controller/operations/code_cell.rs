@@ -206,7 +206,7 @@ mod test {
     use bigdecimal::BigDecimal;
 
     use super::*;
-    use crate::Pos;
+    use crate::{constants::SHEET_NAME, Pos};
 
     #[test]
     fn test_set_code_cell_operations() {
@@ -285,7 +285,7 @@ mod test {
                     sheet_id: sheet_id_2,
                 },
                 CodeCellLanguage::Formula,
-                "'Sheet1'!A1".to_string(),
+                format!("'{}1'!A1", SHEET_NAME.to_owned()),
                 None,
             );
         };
