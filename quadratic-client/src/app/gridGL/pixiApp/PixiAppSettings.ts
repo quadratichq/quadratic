@@ -191,7 +191,7 @@ class PixiAppSettings {
   }
 
   get showCodePeek(): boolean {
-    return !this.settings.presentationMode && this.codeEditorState.showCodeEditor;
+    return !this.settings.presentationMode && this.settings.showCodePeek;
   }
 
   setDirty(dirty: { cursor?: boolean; headings?: boolean; gridLines?: boolean }): void {
