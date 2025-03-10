@@ -4,27 +4,15 @@ use crate::{
     Pos, SheetPos, SheetRect,
 };
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 
 impl GridController {
     /// Returns all data tables within the given sheet position.
     pub fn data_tables_within(&self, sheet_pos: SheetPos) -> Result<Vec<Pos>> {
-        let sheet = self
-            .try_sheet(sheet_pos.sheet_id)
-            .ok_or_else(|| anyhow!("Sheet not found"))?;
+        let sheet = self.try_sheet_result(sheet_pos.sheet_id)?;
         let pos = Pos::from(sheet_pos);
 
         sheet.data_tables_within(pos)
-    }
-
-    pub fn set_data_table_value(
-        &mut self,
-        sheet_pos: SheetPos,
-        value: String,
-        cursor: Option<String>,
-    ) {
-        let ops = self.set_data_table_operations_at(sheet_pos, value);
-        self.start_user_transaction(ops, cursor, TransactionName::SetDataTableAt);
     }
 
     pub fn flatten_data_table(&mut self, sheet_pos: SheetPos, cursor: Option<String>) {
