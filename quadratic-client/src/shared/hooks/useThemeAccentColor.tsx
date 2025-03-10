@@ -1,4 +1,3 @@
-import { useFeatureFlag } from '@/shared/hooks/useFeatureFlag';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { sharedEvents } from '@/shared/sharedEvents';
 import { memo, useEffect } from 'react';
@@ -13,15 +12,7 @@ export const useThemeAccentColor = () => {
 };
 
 export const ThemeAccentColorEffects = memo(() => {
-  const [accentColor, setAccentColor] = useThemeAccentColor();
-  const [featureFlag] = useFeatureFlag('themeAccentColor');
-
-  // If the user turns the feature off, reset it to the default
-  useEffect(() => {
-    if (featureFlag === false) {
-      setAccentColor(DEFAULT_ACCENT_COLOR);
-    }
-  }, [featureFlag, setAccentColor]);
+  const [accentColor] = useThemeAccentColor();
 
   // Update the theme color in the UI
   useEffect(() => {

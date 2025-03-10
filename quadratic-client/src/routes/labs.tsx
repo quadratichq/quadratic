@@ -1,33 +1,18 @@
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 
-import { ThemeAccentColors } from '@/shared/components/ThemeAccentColors';
-import { ThemeAppearanceModes } from '@/shared/components/ThemeAppearanceModes';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { useFeatureFlag, type FeatureFlagKey } from '@/shared/hooks/useFeatureFlag';
 import { Label } from '@/shared/shadcn/ui/label';
 import { Switch } from '@/shared/shadcn/ui/switch';
 
-type LabProps = {
+type LabFeature = {
   featureFlagKey: FeatureFlagKey;
   label: string;
   description: string;
   Component: React.ComponentType<any>;
 };
 
-const labFeatures = [
-  {
-    featureFlagKey: 'themeAccentColor',
-    label: 'Accent color',
-    description: 'Choose a custom accent color used throughout the app.',
-    Component: ThemeAccentColors,
-  },
-  {
-    featureFlagKey: 'themeAppearanceMode',
-    label: 'Appearance',
-    description: 'Choose light or dark mode (or use your system’s setting).',
-    Component: ThemeAppearanceModes,
-  },
-] as const;
+export const labFeatures: LabFeature[] = [];
 
 export const Component = () => {
   return (
@@ -59,7 +44,7 @@ export const Component = () => {
   );
 };
 
-function LabToggle({ featureFlagKey, label, description, Component }: LabProps) {
+function LabToggle({ featureFlagKey, label, description, Component }: LabFeature) {
   const [featureFlag, setFeatureFlag] = useFeatureFlag(featureFlagKey);
 
   return (
