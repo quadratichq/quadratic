@@ -616,7 +616,7 @@ impl DataTable {
             let row = row.iter().map(|s| s.to_string()).collect::<Vec<_>>();
             let display_index = vec![display_buffer[index].to_string()];
 
-            if index == 0 && data_table.column_headers.is_some() {
+            if index == 0 && data_table.column_headers.is_some() && data_table.show_columns {
                 let headers = data_table
                     .column_headers
                     .as_ref()
@@ -626,7 +626,7 @@ impl DataTable {
                     .map(|h| h.name.to_string())
                     .collect::<Vec<_>>();
                 builder.set_header([display_index, headers].concat());
-            } else if index == 0 && data_table.header_is_first_row {
+            } else if index == 0 && data_table.header_is_first_row && data_table.show_columns {
                 let row = [display_index, row].concat();
                 builder.set_header(row);
             } else {
