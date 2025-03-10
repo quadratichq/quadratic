@@ -210,7 +210,7 @@ impl GridController {
                 bail!(e);
             }
 
-            let old_name = self.grid.update_sheet_name(sheet_id, name.clone())?;
+            let old_name = self.grid.update_sheet_name(sheet_id, &name)?;
 
             transaction
                 .forward_operations

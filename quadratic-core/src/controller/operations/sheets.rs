@@ -86,16 +86,11 @@ impl GridController {
         // clone the sheet and update id, name and order
         let mut new_sheet = sheet.clone();
         let new_sheet_id = SheetId::new();
-        new_sheet.id = new_sheet_id;
-
         let new_name = format!("{} Copy", sheet.name);
-        let old_a1_context = self.a1_context().clone();
-        let mut new_a1_context = old_a1_context.clone();
-        new_a1_context
-            .sheet_map
-            .replace_sheet_name(&sheet.name, &new_name);
-        new_sheet.replace_sheet_name_in_code_cells(&old_a1_context, &new_a1_context);
-        new_sheet.name = new_name;
+        new_sheet.id = new_sheet_id;
+        new_sheet.name = new_name.clone();
+
+        new_sheet.replace_sheet_name_in_code_cells(&sheet.name, &new_name);
 
         let right_order = self
             .grid

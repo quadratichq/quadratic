@@ -167,16 +167,12 @@ impl Grid {
     }
 
     /// Updates a sheet's name and returns the old name.
-    pub fn update_sheet_name(&mut self, sheet_id: SheetId, new_name: String) -> Result<String> {
-        let old_a1_context = self.a1_context();
-
+    pub fn update_sheet_name(&mut self, sheet_id: SheetId, new_name: &str) -> Result<String> {
         let sheet = self.try_sheet_mut(sheet_id).context("missing sheet")?;
-        let old_name = std::mem::replace(&mut sheet.name, new_name);
-
-        let new_a1_context = self.a1_context();
+        let old_name = std::mem::replace(&mut sheet.name, new_name.to_owned());
 
         for sheet in &mut self.sheets {
-            sheet.replace_sheet_name_in_code_cells(&old_a1_context, &new_a1_context);
+            sheet.replace_sheet_name_in_code_cells(&old_name, new_name);
         }
 
         Ok(old_name)

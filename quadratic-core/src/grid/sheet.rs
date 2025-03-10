@@ -128,10 +128,17 @@ impl Sheet {
         Ok(true)
     }
 
-    /// Replaces the sheet name when referenced in code cells.
-    ///
-    /// This must be called _before_ the sheet is actually renamed.
-    pub fn replace_sheet_name_in_code_cells(
+    /// Replaces a sheet name when referenced in code cells.
+    pub fn replace_sheet_name_in_code_cells(&mut self, old_name: &str, new_name: &str) {
+        let sheet_id = SheetId::new();
+        let old_a1_context = A1Context::with_single_sheet(old_name, sheet_id);
+        let new_a1_context = A1Context::with_single_sheet(new_name, sheet_id);
+        self.replace_names_in_code_cells(&old_a1_context, &new_a1_context);
+    }
+
+    /// Replaces any number of sheet names and table names when referenced in
+    /// code cells.
+    pub fn replace_names_in_code_cells(
         &mut self,
         old_a1_context: &A1Context,
         new_a1_context: &A1Context,
