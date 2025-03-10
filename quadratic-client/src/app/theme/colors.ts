@@ -33,7 +33,7 @@ export const colors = {
   headerSelectedRowColumnBackgroundColorAlpha: 0.25,
   headerCornerBackgroundColor: 0xffffff,
   boxCellsDeleteColor: Number(`0x${muiColors.red['400'].replace('#', '')}`),
-  htmlPlaceholderThumbnailColor: 0xeeeeee,
+  htmlPlaceholderThumbnailColor: 0xfefefe,
   htmlPlaceholderThumbnailBorderColor: 0,
   boxCellsColor: 0x2463eb,
   boxCellsAlpha: 0.333,
