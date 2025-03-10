@@ -467,7 +467,11 @@ impl DataTable {
             CellValue::Blank
         } else {
             match &self.value {
-                Value::Single(v) => v.clone(),
+                Value::Single(v) => match v {
+                    CellValue::Image(_) => CellValue::Blank,
+                    CellValue::Html(_) => CellValue::Blank,
+                    _ => v.clone(),
+                },
                 Value::Array(a) => a.get(x, y).cloned().unwrap_or(CellValue::Blank),
                 Value::Tuple(_) => CellValue::Error(Box::new(
                     // should never happen
