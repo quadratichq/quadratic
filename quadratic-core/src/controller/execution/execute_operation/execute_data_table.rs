@@ -857,17 +857,17 @@ impl GridController {
                 return Ok(());
             }
 
+            // ensure columns are inserted in ascending order
             columns.sort_by(|a, b| a.0.cmp(&b.0));
-
-            let reverse_columns = columns
-                .iter()
-                .map(|(index, _, _)| *index)
-                .collect::<Vec<_>>();
-            let mut reverse_operations: Vec<Operation> = vec![];
 
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
+            let mut reverse_operations: Vec<Operation> = vec![];
+            let reverse_columns = columns
+                .iter()
+                .map(|(index, _, _)| *index)
+                .collect::<Vec<_>>();
 
             for (index, mut column_header, mut values) in columns {
                 let sheet = self.try_sheet_mut_result(sheet_id)?;
@@ -885,6 +885,7 @@ impl GridController {
                     } else {
                         0
                     };
+
                     let values_rect = Rect::from_numbers(
                         data_table_pos.x + display_index,
                         data_table_pos.y + y_adjustment,
@@ -899,6 +900,7 @@ impl GridController {
                             || cell_value.is_image()
                             || cell_value.is_html()
                     });
+
                     if has_code_cell {
                         if cfg!(target_family = "wasm") || cfg!(test) {
                             crate::wasm_bindings::js::jsClientMessage(
@@ -916,6 +918,7 @@ impl GridController {
                             } else {
                                 cell_values.remove(0).to_string()
                             };
+
                             column_header = if header.is_empty() {
                                 None
                             } else {
@@ -933,6 +936,7 @@ impl GridController {
                         1,
                         data_table_rect.height() as i64 - data_table.y_adjustment(true),
                     );
+
                     format_update = data_table.transfer_formats_from_sheet(
                         data_table_pos,
                         sheet,
@@ -969,6 +973,7 @@ impl GridController {
                         }
                     }
                 }
+
                 data_table.insert_column_sorted(index as usize, column_header, values)?;
 
                 if !format_update.is_default() {
@@ -1031,6 +1036,7 @@ impl GridController {
             let mut reverse_columns = vec![];
             let mut reverse_operations: Vec<Operation> = vec![];
 
+            // ensure columns are deleted in reverse order
             columns.sort_by(|a, b| b.cmp(a));
 
             let sheet_id = sheet_pos.sheet_id;
@@ -1048,13 +1054,15 @@ impl GridController {
 
             // for flattening
             let mut old_data_table_rect = data_table.output_rect(data_table_pos, true);
-            old_data_table_rect.min.x += 1; //cannot flatten the first column
+            old_data_table_rect.min.x += 1; // cannot flatten the first column
+
             let y_adjustment = if data_table.show_ui && data_table.show_name {
                 1
             } else {
                 0
             };
             old_data_table_rect.min.y += y_adjustment;
+
             let mut sheet_cell_values =
                 CellValues::new(old_data_table_rect.width(), old_data_table_rect.height());
             let mut sheet_format_updates = SheetFormatUpdates::default();

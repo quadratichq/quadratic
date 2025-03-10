@@ -583,18 +583,25 @@ mod test {
     #[test]
     fn test_expand_data_table_column_row_on_setting_value() {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
+        let sheet_pos = SheetPos::from((pos, sheet_id));
 
-        let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
         assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 8, 13));
 
+        print_table(&gc, sheet_id, Rect::new(5, 2, 8, 13));
+
         // hide first column
-        let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table_mut(pos).unwrap();
-        let column_headers = data_table.column_headers.as_mut().unwrap();
+        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
+        let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[0].display = false;
+        gc.test_data_table_update_meta(sheet_pos, Some(column_headers), None, None, None);
+
+        print_table(&gc, sheet_id, Rect::new(5, 2, 10, 13));
+        // assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 7, 13));
 
         gc.set_cell_value(SheetPos::from((8, 4, sheet_id)), "test1".into(), None);
+
+        print_table(&gc, sheet_id, Rect::new(5, 2, 10, 13));
 
         // column expand
         let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();

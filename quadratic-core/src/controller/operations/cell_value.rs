@@ -116,6 +116,9 @@ impl GridController {
 
                                 let pos_to_check = Pos::new(sheet_pos.x, sheet_pos.y);
 
+                                // adjust the size of the data table rect so that
+                                // successive iterations continue to expand the data
+                                // table.
                                 data_tables
                                     .iter_mut()
                                     .filter(|rect| rect.contains(pos_to_check))

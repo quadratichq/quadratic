@@ -312,31 +312,42 @@ impl Sheet {
                     return None;
                 }
 
-                if self.data_table(data_table_left.min).filter(|data_table| {
-                    // don't expand if the data table is readonly
-                    if data_table.readonly {
-                        return false;
-                    }
-
-                    // don't expand if the position is at the data table's name
-                    if data_table.show_ui && data_table.show_name && data_table_left.min.y == pos.y
-                    {
-                        return false;
-                    }
-
-                    // don't expand if next column is not blank
-                    for y in 0..data_table_left.height() {
-                        let pos = Pos::new(pos.x, data_table_left.min.y + y as i64);
-
-                        if self.has_content(pos) {
+                if self
+                    .data_table(data_table_left.min)
+                    .filter(|data_table| {
+                        // don't expand if the data table is readonly
+                        if data_table.readonly {
                             return false;
                         }
-                    }
 
-                    true
-                }).is_some() {
+                        // don't expand if the position is at the data table's name
+                        if data_table.show_ui
+                            && data_table.show_name
+                            && data_table_left.min.y == pos.y
+                        {
+                            return false;
+                        }
+
+                        // don't expand if next column is not blank
+                        for y in 0..data_table_left.height() {
+                            let pos = Pos::new(pos.x, data_table_left.min.y + y as i64);
+
+                            if self.has_content(pos) {
+                                return false;
+                            }
+                        }
+
+                        true
+                    })
+                    .is_some()
+                {
                     let sheet_pos = (data_table_left.min, sheet_pos.sheet_id).into();
-                    let column_index = data_table_left.width();
+                    let mut column_index = data_table_left.width();
+
+                    if let Ok(data_table) = self.data_table_result(data_table_left.min) {
+                        column_index =
+                            data_table.get_column_index_from_display_index(column_index, true);
+                    }
 
                     return Some((sheet_pos, column_index));
                 }
@@ -364,22 +375,26 @@ impl Sheet {
                     return None;
                 }
 
-                if self.data_table(data_table_above.min).filter(|data_table| {
-                    // don't expand if the data table is readonly
-                    if data_table.readonly {
-                        return false;
-                    }
-
-                    // don't expand if next row is not blank
-                    for x in 0..data_table_above.width() {
-                        let pos = Pos::new(data_table_above.min.x + x as i64, pos.y);
-                        if self.has_content(pos) {
+                if self
+                    .data_table(data_table_above.min)
+                    .filter(|data_table| {
+                        // don't expand if the data table is readonly
+                        if data_table.readonly {
                             return false;
                         }
-                    }
 
-                    true
-                }).is_some() {
+                        // don't expand if next row is not blank
+                        for x in 0..data_table_above.width() {
+                            let pos = Pos::new(data_table_above.min.x + x as i64, pos.y);
+                            if self.has_content(pos) {
+                                return false;
+                            }
+                        }
+
+                        true
+                    })
+                    .is_some()
+                {
                     let sheet_pos = (data_table_above.min, sheet_pos.sheet_id).into();
                     let row_index = data_table_above.height();
 
