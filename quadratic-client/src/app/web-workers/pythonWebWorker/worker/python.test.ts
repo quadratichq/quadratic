@@ -25,7 +25,7 @@ vi.mock('./pythonCore.ts', () => {
 });
 
 beforeAll(async () => {
-  return new Promise((resolve) => {
+  return new Promise<void>((resolve) => {
     const interval = setInterval(() => {
       if (pythonState === 'ready') {
         clearInterval(interval);
