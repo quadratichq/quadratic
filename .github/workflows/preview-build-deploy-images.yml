@@ -179,8 +179,8 @@ jobs:
           file: quadratic-${{ matrix.service }}/Dockerfile
           push: true
           tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max,compression=zstd,force-compression=true
           cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
 
       - name: Find Build & Deploy Images Comment
         if: failure()
