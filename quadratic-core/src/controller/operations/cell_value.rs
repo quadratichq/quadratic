@@ -71,6 +71,7 @@ impl GridController {
                         matches!(cell_value, CellValue::Code(_) | CellValue::Import(_))
                             || sheet.has_table_content(pos, true);
 
+                    // (x,y) is within a data table
                     if is_data_table {
                         let data_table_pos = sheet.first_data_table_within(pos)?;
                         let is_source_cell = sheet.is_source_cell(pos);
@@ -93,39 +94,60 @@ impl GridController {
                                 });
                             }
                         }
-                    } else {
+                    }
+                    // (x,y) is not within a data table
+                    else {
                         cell_values[x][y] = Some(cell_value);
 
+                        // expand the data table to the right if the cell
+                        // value is touching the right edge
                         let (col, row) =
                             sheet.expand_columns_and_rows(&data_tables, current_sheet_pos, value);
 
+                        // if an expansion happened, adjust the size of the
+                        // data table rect so that successive iterations
+                        // continue to expand the data table.
                         if let Some((sheet_pos, col)) = col {
                             let entry = data_table_columns.entry(sheet_pos).or_default();
 
                             if !entry.contains(&col) {
+                                // add the column to data_table_columns
                                 entry.push(col);
+
                                 let pos_to_check = Pos::new(sheet_pos.x, sheet_pos.y);
 
-                                data_tables.iter_mut().for_each(|rect| {
-                                    if rect.contains(pos_to_check) {
+                                data_tables
+                                    .iter_mut()
+                                    .filter(|rect| rect.contains(pos_to_check))
+                                    .for_each(|rect| {
                                         rect.max.x += 1;
-                                    }
-                                });
+                                    });
                             }
                         }
 
+                        // expand the data table to the bottom if the cell
+                        // value is touching the bottom edge
                         if let Some((sheet_pos, row)) = row {
                             let entry = data_table_rows.entry(sheet_pos).or_default();
 
+                            // if an expansion happened, adjust the size of the
+                            // data table rect so that successive iterations
+                            // continue to expand the data table.
                             if !entry.contains(&row) {
+                                // add the row to data_table_rows
                                 entry.push(row);
+
                                 let pos_to_check = Pos::new(sheet_pos.x, sheet_pos.y);
 
-                                data_tables.iter_mut().for_each(|rect| {
-                                    if rect.contains(pos_to_check) {
+                                // adjust the size of the data table rect so that
+                                // successive iterations continue to expand the data
+                                // table.
+                                data_tables
+                                    .iter_mut()
+                                    .filter(|rect| rect.contains(pos_to_check))
+                                    .for_each(|rect| {
                                         rect.max.y += 1;
-                                    }
-                                });
+                                    });
                             }
                         }
                     }
