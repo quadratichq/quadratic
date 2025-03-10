@@ -11,8 +11,7 @@ concurrency:
   group: qa
 
 env:
-  AMPLIFY_APP_ID_DEVELOPMENT: d3dmk4wdzzskoq
-  AMPLIFY_BUCKET_NAME_DEVELOPMENT: quadratic-development-amplify
+  CLIENT_S3_BUCKET_NAME: quadratic-client-development
 
 jobs:
   build_client:
@@ -23,8 +22,6 @@ jobs:
       group: qa-build-client
       cancel-in-progress: true
     timeout-minutes: 30
-    outputs:
-      s3-dir: ${{ steps.upload-to-s3.outputs.s3-dir }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -88,7 +85,7 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
           build-args: |
             ENV_HASH=${{ steps.pull-pulumi-esc-env-vars.outputs.env-hash }}
-          outputs: type=docker
+          outputs: type=docker\
 
       - name: Copy build from container to host
         run: |
@@ -96,30 +93,20 @@ jobs:
           CONTAINER_ID=$(docker create quadratic-client:local)
 
           # Create a temporary directory to hold the build
-          mkdir -p /tmp/quadratic-client
+          mkdir -p /tmp/quadratic-client-development
 
           # Copy the build files from the container using the correct path
-          docker cp $CONTAINER_ID:/usr/share/nginx/html/. /tmp/quadratic-client/
+          docker cp $CONTAINER_ID:/usr/share/nginx/html/. /tmp/quadratic-client-development/
 
           # Clean up the temporary container
           docker rm $CONTAINER_ID
 
-      - name: Upload to S3
-        id: upload-to-s3
-        run: |
-          COMMIT_HASH="${{ github.event.pull_request.head.sha }}"
-
-          # S3 build directory
-          S3_DIR="s3://${AMPLIFY_BUCKET_NAME_DEVELOPMENT}/quadratic-client-${COMMIT_HASH}/"
-
-          # Upload entire build directory to S3 with no caching for Amplify
-          aws s3 sync /tmp/quadratic-client/ $S3_DIR --delete \
-            --exclude "*" \
-            --include "*.br" --content-encoding "br" \
-            --include "*.gz" --content-encoding "gzip" \
-            --include "*"
-
-          echo "s3-dir=$S3_DIR" >> $GITHUB_OUTPUT
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-build
+          path: /tmp/quadratic-client-development
+          retention-days: 1
 
   build_images:
     name: Build Images
@@ -212,7 +199,7 @@ jobs:
             org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
             org.opencontainers.image.revision=${{ github.sha }}
 
-  amplify:
+  deploy_client:
     # needs: [build_client, build_images]
     needs: [build_client]
     name: Deploy Client to Amplify
@@ -220,12 +207,6 @@ jobs:
     # if: github.head_ref == 'qa' && github.base_ref == 'main'
     timeout-minutes: 30
     steps:
-      - name: Install AWS CLI v2
-        run: |
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          sudo ./aws/install --update
-
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -233,51 +214,19 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Cancel Pending Deployments
-        run: |
-          # List and cancel any pending jobs with improved error handling
-          echo "Checking for pending Amplify jobs..."
-          if ! JOBS=$(aws amplify list-jobs \
-            --app-id ${{ env.AMPLIFY_APP_ID_DEVELOPMENT }} \
-            --branch-name ${{ github.head_ref }} \
-            --output json); then
-            echo "Failed to list Amplify jobs. Continuing anyway..."
-          else
-            # Count pending/running jobs for better visibility
-            PENDING_COUNT=$(echo "$JOBS" | jq -r '.jobSummaries[] | select(.status == "PENDING" or .status == "RUNNING") | .jobId' | wc -l)
-            echo "Found $PENDING_COUNT pending or running jobs"
-            
-            # Cancel jobs with timeout and status reporting
-            echo "$JOBS" | jq -r '.jobSummaries[] | select(.status == "PENDING" or .status == "RUNNING") | "\(.jobId) \(.status) \(.jobType)"' | \
-            while read -r JOB_ID STATUS TYPE; do
-              echo "Cancelling $TYPE job $JOB_ID (status: $STATUS)"
-              if aws amplify stop-job \
-                --app-id ${{ env.AMPLIFY_APP_ID_DEVELOPMENT }} \
-                --branch-name ${{ github.head_ref }} \
-                --job-id "$JOB_ID"; then
-                echo "✓ Successfully cancelled job $JOB_ID"
-              else
-                echo "⚠️ Failed to cancel job $JOB_ID, but continuing"
-              fi
-            done
-            
-            # Verify jobs were stopped - optional check
-            echo "Verifying jobs are no longer running..."
-            sleep 2
-            REMAINING=$(aws amplify list-jobs \
-              --app-id ${{ env.AMPLIFY_APP_ID_DEVELOPMENT }} \
-              --branch-name ${{ github.head_ref }} \
-              --output json | jq -r '.jobSummaries[] | select(.status == "PENDING" or .status == "RUNNING") | .jobId' | wc -l)
-            echo "$REMAINING jobs still pending or running"
-          fi
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: client-build
+          path: /tmp/quadratic-client-development
 
-      - name: Create New Deployment
+      - name: Upload to S3
         run: |
-          aws amplify start-deployment \
-            --app-id ${{ env.AMPLIFY_APP_ID_DEVELOPMENT }} \
-            --branch-name ${{ github.head_ref }} \
-            --source-url ${{ needs.build_client.outputs.s3-dir }} \
-            --source-url-type "BUCKET_PREFIX"
+          # S3 build directory
+          S3_DIR="s3://${CLIENT_S3_BUCKET_NAME}/"
+
+          # Upload entire build directory to S3 with no caching for Amplify
+          aws s3 sync /tmp/quadratic-client-development/ $S3_DIR --delete
 
   pulumi:
     needs: [build_client, build_images]
@@ -335,7 +284,7 @@ jobs:
           PR_ID: ${{ github.event.pull_request.number }}
 
   qa-wolf-notify:
-    needs: [amplify, pulumi]
+    needs: [deploy_client, pulumi]
     name: Notify QA Wolf
     runs-on: blacksmith-2vcpu-ubuntu-2204
     if: github.head_ref == 'qa' && github.base_ref == 'main'
