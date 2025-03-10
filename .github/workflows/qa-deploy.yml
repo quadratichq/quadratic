@@ -7,9 +7,6 @@ on:
       - qa
     types: [opened, synchronize, reopened]
 
-concurrency:
-  group: qa
-
 env:
   CLIENT_S3_BUCKET_NAME: quadratic-client-development
 
@@ -104,7 +101,7 @@ jobs:
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: client-build
+          name: quadratic-client-development
           path: /tmp/quadratic-client-development
           retention-days: 1
           compression-level: 0
@@ -193,6 +190,8 @@ jobs:
     name: Deploy Client to Amplify
     runs-on: blacksmith-2vcpu-ubuntu-2204
     # if: github.head_ref == 'qa' && github.base_ref == 'main'
+    concurrency:
+      group: qa-deploy-client
     timeout-minutes: 30
     steps:
       - name: Configure AWS Credentials
@@ -205,7 +204,7 @@ jobs:
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
-          name: client-build
+          name: quadratic-client-development
           path: /tmp/quadratic-client-development
 
       - name: Upload to S3
@@ -221,6 +220,8 @@ jobs:
     name: Create or Update Pulumi Infrastructure Stack
     runs-on: blacksmith-2vcpu-ubuntu-2204
     if: github.head_ref == 'qa' && github.base_ref == 'main'
+    concurrency:
+      group: qa-pulumi
     timeout-minutes: 30
     env:
       STACK_NAME: quadratic-qa
@@ -276,6 +277,10 @@ jobs:
     name: Notify QA Wolf
     runs-on: blacksmith-2vcpu-ubuntu-2204
     if: github.head_ref == 'qa' && github.base_ref == 'main'
+    concurrency:
+      group: qa-wolf-notify
+      cancel-in-progress: true
+    timeout-minutes: 30
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
