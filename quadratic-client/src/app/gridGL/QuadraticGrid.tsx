@@ -37,7 +37,6 @@ export default function QuadraticGrid() {
   return (
     <div
       ref={containerRef}
-      className="dark-mode-hack"
       style={{
         position: 'relative',
         width: '100%',
@@ -55,8 +54,8 @@ export default function QuadraticGrid() {
       onKeyUp={onKeyUp}
     >
       <HTMLGridContainer parent={container} />
-      <ImportProgress />
       <Search />
+      <ImportProgress />
     </div>
   );
 }
