@@ -41,6 +41,7 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
             crossOrigin="anonymous"
             onError={() => setError(true)}
             style={{ ...stylePreset, ...style }}
+            className={className}
             {...rest}
           />
         )}

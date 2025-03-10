@@ -16,6 +16,7 @@ pub fn function_timer(_attrs: TokenStream, item: TokenStream) -> TokenStream {
         vis,
         sig,
         block,
+        ..
     } = input_fn;
 
     let expanded = quote! {

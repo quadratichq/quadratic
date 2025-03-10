@@ -10,6 +10,7 @@ import { Graphics } from 'pixi.js';
 
 const MARCH_TIME = 80;
 const ALPHA = 0.5;
+const ANTS_LUMINOSITY = 1.25;
 
 // walking rectangle offset
 const RECT_OFFSET = 1;
@@ -94,7 +95,7 @@ export class UICopy extends Graphics {
       rect.y += RECT_OFFSET;
       rect.width -= RECT_OFFSET * 2;
       rect.height -= RECT_OFFSET * 2;
-      const color = getCSSVariableTint('primary', { luminosity: 0.8 });
+      const color = getCSSVariableTint('primary', { luminosity: ANTS_LUMINOSITY });
 
       const offsets = {
         left: -RECT_OFFSET,

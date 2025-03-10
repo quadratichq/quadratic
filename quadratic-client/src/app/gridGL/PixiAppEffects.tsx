@@ -54,10 +54,11 @@ export const PixiAppEffects = memo(() => {
     }
   }, [codeEditorState, setCodeEditorState]);
 
-  const { addGlobalSnackbar } = useGlobalSnackbar();
+  const { addGlobalSnackbar, closeCurrentSnackbar } = useGlobalSnackbar();
   useEffect(() => {
     pixiAppSettings.addGlobalSnackbar = addGlobalSnackbar;
-  }, [addGlobalSnackbar]);
+    pixiAppSettings.closeCurrentSnackbar = closeCurrentSnackbar;
+  }, [addGlobalSnackbar, closeCurrentSnackbar]);
 
   const [gridSettings, setGridSettings] = useRecoilState(gridSettingsAtom);
   useEffect(() => {
