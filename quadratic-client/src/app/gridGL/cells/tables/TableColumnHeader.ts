@@ -88,6 +88,7 @@ export class TableColumnHeader extends Container {
     // todo: this fn is called too often (this is needed for rename column name)
     if (this.columnHeaderBounds) {
       this.columnHeaderBounds.x = this.table.tableBounds.x + x;
+      this.columnHeaderBounds.y = this.table.tableBounds.y + columnY;
       this.columnHeaderBounds.width = width;
       this.columnHeaderBounds.height = height;
     } else {

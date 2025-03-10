@@ -323,11 +323,9 @@ export class Tables extends Container<Table> {
       this.saveToggleOutlines = false;
       this.activeTables.forEach((table) => table.showActive());
       const contextMenuTable = pixiAppSettings.contextMenu?.table;
-      if (contextMenuTable) {
+      if (contextMenuTable && pixiAppSettings.contextMenu?.column === undefined) {
         const table = this.children.find((table) => table.codeCell === contextMenuTable);
-        if (table) {
-          table.showActive();
-        }
+        table?.showActive();
       }
       this.actionDataTable?.showActive();
       this.children.forEach((table) => table.header.toggleTableColumnSelection(false));
