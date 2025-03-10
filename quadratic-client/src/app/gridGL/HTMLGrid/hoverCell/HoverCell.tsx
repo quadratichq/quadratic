@@ -121,7 +121,7 @@ export function HoverCell() {
           } else {
             setOnlyCode(true);
             setText(
-              <HoverCellDisplay title={`${language} Code`}>
+              <HoverCellDisplay title={language === 'Formula' ? 'Formula Code' : `${renderCodeCell.name} Code`}>
                 <HoverCellDisplayCode language={language}>{codeCell?.code_string}</HoverCellDisplayCode>
               </HoverCellDisplay>
             );
