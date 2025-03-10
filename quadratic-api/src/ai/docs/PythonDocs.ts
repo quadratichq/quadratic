@@ -34,7 +34,7 @@ df_column = q.cells("Table1[column_name]")
 df_headers = q.cells("Table1[#HEADERS]")
 
 # Reference a range of columns from a table, e.g. in following example we reference columns 1, 2, and 3. Columns can then be dropped or manipulated using Pandas DataFrame logic.
-df_columns = q.cells("Table1[[Column 1:Column 3]]")
+df_columns = q.cells("Table1[[Column 1]:[Column 3]]")
 \`\`\`python
 
 Tables should be used whenever possible. Use ranged A1 references or single cell references otherwise. 
