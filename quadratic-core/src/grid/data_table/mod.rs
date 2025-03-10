@@ -295,15 +295,15 @@ impl DataTable {
         self.show_columns = show_columns;
         self
     }
-    /// Validates the table name.
+    /// Validates the table name. SheetPos is provided to allow the table to be
+    /// renamed to itself (eg, with different casing).
     ///
-    /// Table name must be between 1 and 255 characters
-    /// Table name cannot be a single 'R' or 'C'
-    /// Table name cannot be a cell reference
-    /// Table name cannot contain invalid characters
-    /// Table name must be unique
+    /// Table name must be between 1 and 255 characters Table name cannot be a
+    /// single 'R' or 'C' Table name cannot be a cell reference Table name
+    /// cannot contain invalid characters Table name must be unique
     pub fn validate_table_name(
         name: &str,
+        sheet_pos: SheetPos,
         context: &A1Context,
     ) -> std::result::Result<bool, String> {
         // Check length limit
@@ -327,8 +327,10 @@ impl DataTable {
         }
 
         // Check if table name already exists
-        if context.table_map.try_table(name).is_some() {
-            return Err("Table name must be unique".to_string());
+        if let Some(table) = context.table_map.try_table(name) {
+            if table.sheet_id != sheet_pos.sheet_id || table.bounds.min != sheet_pos.into() {
+                return Err("Table name must be unique".to_string());
+            }
         }
 
         std::result::Result::Ok(true)
@@ -341,6 +343,7 @@ impl DataTable {
     /// Column name must be unique
     pub fn validate_column_name(
         table_name: &str,
+        index: usize,
         column_name: &str,
         context: &A1Context,
     ) -> std::result::Result<bool, String> {
@@ -355,7 +358,10 @@ impl DataTable {
         }
 
         // Check if column name already exists
-        if context.table_map.table_has_column(table_name, column_name) {
+        if context
+            .table_map
+            .table_has_column(table_name, column_name, index)
+        {
             return Err("Column name must be unique".to_string());
         }
 
@@ -1088,8 +1094,10 @@ pub mod test {
             "a",
         ];
 
+        let sheet_pos = SheetPos::from((1, 1, SheetId::TEST));
+
         for name in valid_names {
-            assert!(DataTable::validate_table_name(name, &context).is_ok());
+            assert!(DataTable::validate_table_name(name, sheet_pos, &context).is_ok());
         }
 
         // invalid table name
@@ -1113,7 +1121,7 @@ pub mod test {
         ];
 
         for (name, expected_error) in test_cases {
-            let result = DataTable::validate_table_name(name, &context);
+            let result = DataTable::validate_table_name(name, sheet_pos, &context);
             assert!(result.is_err());
             assert_eq!(result.unwrap_err(), expected_error);
         }
@@ -1126,9 +1134,17 @@ pub mod test {
                 ("Table2", &["col3", "col4"], Rect::test_a1("D1:E3")),
             ],
         );
-        let result = DataTable::validate_table_name("Table1", &context);
+        let result = DataTable::validate_table_name(
+            "Table1",
+            SheetPos::new(SheetId::TEST, 10, 10),
+            &context,
+        );
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Table name must be unique");
+
+        // duplicate table name with different casing
+        let result = DataTable::validate_table_name("TABLE1", sheet_pos, &context);
+        assert!(result.is_ok());
     }
 
     #[test]
@@ -1159,7 +1175,7 @@ pub mod test {
 
         for name in valid_names {
             assert!(
-                DataTable::validate_column_name(table_name, name, &context).is_ok(),
+                DataTable::validate_column_name(table_name, 10, name, &context).is_ok(),
                 "Expected '{}' to be valid",
                 name
             );
@@ -1210,7 +1226,7 @@ pub mod test {
         ];
 
         for (name, expected_error) in test_cases {
-            let result = DataTable::validate_column_name(table_name, name, &context);
+            let result = DataTable::validate_column_name(table_name, 10, name, &context);
             assert!(
                 result.is_err(),
                 "Expected '{}' to be invalid, but it was valid",
@@ -1225,8 +1241,12 @@ pub mod test {
         }
 
         // Test duplicate column name
-        let result = DataTable::validate_column_name(table_name, "existing_col", &context);
+        let result = DataTable::validate_column_name(table_name, 10, "existing_col", &context);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Column name must be unique");
+
+        // Allow duplicate column name if the index is the same as the existing column index
+        let result = DataTable::validate_column_name(table_name, 0, "existing_col", &context);
+        assert!(result.is_ok());
     }
 }
