@@ -439,8 +439,12 @@ export class Tables extends Container<Table> {
 
   intersectsCodeInfo(world: Point): JsRenderCodeCell | undefined {
     for (const table of this.children) {
-      if (table.codeCell.state === 'SpillError' || table.codeCell.state === 'RunError') {
-        if (intersects.rectanglePoint(table.tableBounds, world)) {
+      if (
+        pixiAppSettings.showCodePeek ||
+        table.codeCell.state === 'SpillError' ||
+        table.codeCell.state === 'RunError'
+      ) {
+        if (!table.codeCell.is_html_image && intersects.rectanglePoint(table.tableBounds, world)) {
           return table.codeCell;
         }
       }
