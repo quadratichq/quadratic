@@ -18,7 +18,6 @@ export const CursorPosition = () => {
 
   useEffect(() => {
     const sync = () => {
-      console.log('syncing cursor position');
       let tableInfo: JsTableInfo[] = [];
       try {
         tableInfo = getTableInfo(sheets.a1Context);
