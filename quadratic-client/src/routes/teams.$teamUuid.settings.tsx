@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
-import { InfoCircledIcon } from '@radix-ui/react-icons';
+import { InfoCircledIcon, PieChartIcon } from '@radix-ui/react-icons';
 import type { TeamSettings } from 'quadratic-shared/typesAndSchemas';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
@@ -155,7 +155,23 @@ export const Component = () => {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-sm">AI Messages</span>
-                          <span className="text-sm font-medium">Many</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">Many</span>
+                            <Dialog>
+                              <DialogTrigger>
+                                <InfoCircledIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>AI Message Limits</DialogTitle>
+                                </DialogHeader>
+                                <p className="text-sm text-muted-foreground">
+                                  We don't impose a strict limit on AI usage on the Pro plan. We reserve the right to
+                                  limit unreasonable use and abuse.
+                                </p>
+                              </DialogContent>
+                            </Dialog>
+                          </div>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-sm">Connections</span>
@@ -206,7 +222,7 @@ export const Component = () => {
                           <span className="text-sm">Your AI Messages</span>
                           <Dialog>
                             <DialogTrigger>
-                              <InfoCircledIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                              <PieChartIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
                             </DialogTrigger>
                             <DialogContent>
                               <DialogHeader>
