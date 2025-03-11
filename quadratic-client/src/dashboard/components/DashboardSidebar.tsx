@@ -146,7 +146,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
                 Upgrade to Quadratic Pro
               </Type>
             </div>
-            <p className="mt-2 text-sm text-muted-foreground">Get unlimited AI messages, connections, and more.</p>
+            <p className="mt-2 text-sm text-muted-foreground">Get more AI messages, connections, and more.</p>
             <NavLink to={ROUTES.TEAM_SETTINGS(activeTeamUuid)}>
               <Button className="mt-3 w-full">Upgrade Now</Button>
             </NavLink>
