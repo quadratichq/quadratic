@@ -7,7 +7,7 @@ import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CheckIcon } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
-import { DOCUMENTATION_ANALYTICS_AI } from '@/shared/constants/urls';
+import { DOCUMENTATION_ANALYTICS_AI, PRICING_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/shadcn/ui/dialog';
 import { Input } from '@/shared/shadcn/ui/input';
@@ -109,117 +109,145 @@ export const Component = () => {
               <Type variant="body2" className="font-bold">
                 Billing
               </Type>
-              <div className="flex flex-col gap-4">
-                {/* Plan Comparison */}
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Free Plan */}
-                  <div className="rounded-lg border border-border p-4">
-                    <div className="mb-3 flex items-center justify-between">
-                      <h3 className="text-lg font-semibold">Free Plan</h3>
-                      {billing.status === undefined && (
-                        <span className="rounded-full bg-muted px-2 py-1 text-xs">Current Plan</span>
-                      )}
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-sm">AI Messages</span>
-                        <span className="text-sm font-medium">Limited</span>
+              <div>
+                <div className="flex flex-col gap-4">
+                  {/* Plan Comparison */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Free Plan */}
+                    <div className="rounded-lg border border-border p-4">
+                      <div className="mb-3 flex items-center justify-between">
+                        <h3 className="text-lg font-semibold">Free Plan</h3>
+                        {billing.status === undefined && (
+                          <span className="rounded-full bg-muted px-2 py-1 text-xs">Current Plan</span>
+                        )}
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Team Members</span>
-                        <span className="text-sm font-medium">Limited</span>
-                      </div>
-                    </div>
-                  </div>
+                      <div className="space-y-3">
+                        <div className="flex justify-between">
+                          <span className="text-sm">Team Members</span>
+                          <span className="text-sm font-medium">Limited</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm">AI Messages</span>
+                          <span className="text-sm font-medium">Limited</span>
+                        </div>
 
-                  {/* Team AI Plan */}
-                  <div className="rounded-lg border border-border p-4">
-                    <div className="mb-3 flex items-center justify-between">
-                      <h3 className="text-lg font-semibold">Pro Plan</h3>
-                      {billing.status === 'ACTIVE' && (
-                        <span className="rounded-full bg-muted px-2 py-1 text-xs">Current Plan</span>
-                      )}
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-sm">AI Messages</span>
-                        <span className="text-sm font-medium">Many</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Team Members</span>
-                        <span className="text-right text-sm font-medium">
-                          $20 <span className="text-xs text-muted-foreground">/ User / Month</span>
-                        </span>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm">Connections</span>
+                          <span className="text-right text-sm font-medium">Limited</span>
+                        </div>
                       </div>
                     </div>
-                    {billing.status === undefined ? (
-                      <Button
-                        onClick={() => {
-                          apiClient.teams.billing.getCheckoutSessionUrl(team.uuid).then((data) => {
-                            window.location.href = data.url;
-                          });
-                        }}
-                        className="mt-4 w-full"
-                      >
-                        Upgrade to Pro
-                      </Button>
-                    ) : (
-                      billing.status === 'ACTIVE' && (
+
+                    {/* Team AI Plan */}
+                    <div className="rounded-lg border border-border p-4">
+                      <div className="mb-3 flex items-center justify-between">
+                        <h3 className="text-lg font-semibold">Pro Plan</h3>
+                        {billing.status === 'ACTIVE' && (
+                          <span className="rounded-full bg-muted px-2 py-1 text-xs">Current Plan</span>
+                        )}
+                      </div>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm">Team Members</span>
+                          <span className="text-right text-sm font-medium">
+                            $20 <span className="text-xs text-muted-foreground">/ User / Month</span>
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm">AI Messages</span>
+                          <span className="text-sm font-medium">Many</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm">Connections</span>
+                          <span className="text-right text-sm font-medium">Unlimited</span>
+                        </div>
+                      </div>
+                      {billing.status === undefined ? (
                         <Button
-                          variant="secondary"
-                          className="mt-4 w-full"
                           onClick={() => {
-                            apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
+                            apiClient.teams.billing.getCheckoutSessionUrl(team.uuid).then((data) => {
                               window.location.href = data.url;
                             });
                           }}
+                          className="mt-4 w-full"
                         >
-                          Manage Billing
+                          Upgrade to Pro
                         </Button>
-                      )
-                    )}
+                      ) : (
+                        billing.status === 'ACTIVE' && (
+                          <Button
+                            variant="secondary"
+                            className="mt-4 w-full"
+                            onClick={() => {
+                              apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
+                                window.location.href = data.url;
+                              });
+                            }}
+                          >
+                            Manage Billing
+                          </Button>
+                        )
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Current Usage */}
+                  <div className="rounded-lg border border-border p-4">
+                    <h3 className="mb-3 text-lg font-semibold">Current Usage</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Team Members</span>
+                        <div className="flex items-start gap-2">
+                          <span className="w-4 text-left font-medium">{users.length}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">Your AI Messages</span>
+                          <Dialog>
+                            <DialogTrigger>
+                              <InfoCircledIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Usage History</DialogTitle>
+                              </DialogHeader>
+                              <p className="mb-4 text-sm text-muted-foreground">Your billable AI messages per month.</p>
+                              <div className="space-y-3">
+                                {billing.usage.map((usage) => (
+                                  <div key={usage.month} className="flex justify-between">
+                                    <span>
+                                      {(function formatDate(dateStr: string) {
+                                        const [year, month] = dateStr.split('-');
+                                        const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+                                        return date.toLocaleDateString('en-US', {
+                                          month: 'short',
+                                          year: 'numeric',
+                                        });
+                                      })(usage.month)}
+                                    </span>
+                                    <span>{usage.ai_messages}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="w-4 text-left font-medium">{latestUsage.ai_messages}</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Current Usage */}
-                <div className="rounded-lg border border-border p-4">
-                  <h3 className="mb-3 text-lg font-semibold">Current Usage</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Team Members</span>
-                      <div className="flex items-start gap-2">
-                        <span className="w-4 text-left font-medium">{users.length}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">Your AI Messages</span>
-                        <Dialog>
-                          <DialogTrigger>
-                            <InfoCircledIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Usage History</DialogTitle>
-                            </DialogHeader>
-                            <p className="mb-4 text-sm text-muted-foreground">Prompts per user per month.</p>
-                            <div className="space-y-3">
-                              {billing.usage.map((usage) => (
-                                <div key={usage.month} className="flex justify-between">
-                                  <span>{usage.month}</span>
-                                  <span>{usage.ai_messages}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <span className="w-4 text-left font-medium">{latestUsage.ai_messages}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <p className="pt-4 text-sm text-muted-foreground">
+                  Learn more on our{' '}
+                  <a href={PRICING_URL} target="_blank" className="underline hover:text-primary">
+                    pricing
+                  </a>{' '}
+                  page.
+                </p>
               </div>
             </SettingsRow>
             <SettingsRow>
@@ -243,18 +271,21 @@ export const Component = () => {
                     handleUpdatePreference('analyticsAi', checked);
                   }}
                   checked={optimisticSettings.analyticsAi}
-                  className="rounded border border-border px-3 py-2 shadow-sm"
+                  className="rounded-lg border border-border p-4 shadow-sm"
                 />
-                <p className="mt-2 text-sm text-muted-foreground">
-                  When using AI features your data is sent to our AI providers:
-                </p>
-                <ul className="mt-2 text-sm text-muted-foreground">
-                  {['OpenAI', 'Anthropic', 'AWS Bedrock'].map((item, i) => (
-                    <li className="flex items-center gap-2" key={i}>
-                      <CheckIcon /> <span className="font-semibold">{item}:</span> zero-day data retention
-                    </li>
-                  ))}
-                </ul>
+                <div className="mt-4">
+                  <p className="text-sm text-muted-foreground">
+                    When using AI features your data is sent to our AI providers:
+                  </p>
+                  <ul className="mt-2 space-y-2">
+                    {['OpenAI', 'Anthropic', 'AWS Bedrock'].map((item, i) => (
+                      <li className="flex items-center gap-2 text-sm text-muted-foreground" key={i}>
+                        <CheckIcon className="h-4 w-4" /> <span className="font-medium">{item}:</span> zero-day data
+                        retention
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </SettingsRow>
           </>

@@ -11,7 +11,7 @@ export const DOCUMENTATION_CONNECTIONS_IP_LIST_URL = `${DOCUMENTATION_CONNECTION
 export const DOCUMENTATION_BROWSER_COMPATIBILITY_URL = `${DOCUMENTATION_URL}/spreadsheet/browser-compatibility`;
 export const DOCUMENTATION_DATE_TIME_FORMATTING = `${DOCUMENTATION_URL}/spreadsheet/date-time-formatting`;
 export const DOCUMENTATION_NEGATIVE_OFFSETS = `${DOCUMENTATION_URL}/spreadsheet/negative-offsets`;
-export const DOCUMENTATION_ANALYTICS_AI = `${DOCUMENTATION_URL}/security#ai-data-privacy-setting`;
+export const DOCUMENTATION_ANALYTICS_AI = `${DOCUMENTATION_URL}/quadratic-ai/security`;
 export const TRUST_CENTER = 'https://trust.quadratichq.com';
 export const BUG_REPORT_URL = 'https://github.com/quadratichq/quadratic/issues';
 export const TWITTER = 'https://twitter.com/quadratichq';
@@ -23,3 +23,4 @@ export const SCHEDULE_MEETING = 'https://calendly.com/d/ckz9-g8t-stb/quadratic-d
 export const AI_SECURITY = 'https://docs.quadratichq.com/quadratic-ai/security';
 export const COMMUNITY_A1_FILE_UPDATE_URL =
   'https://community.quadratichq.com/t/switch-to-a1-notation-from-x-y-coordinates/';
+export const PRICING_URL = 'https://www.quadratichq.com/pricing';
