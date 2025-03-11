@@ -14,6 +14,7 @@ export function useRenameTableColumnName() {
       x,
       y,
       tableName,
+      index,
       oldColumnName,
       newColumnName,
       columns,
@@ -22,12 +23,13 @@ export function useRenameTableColumnName() {
       x: number;
       y: number;
       tableName: string;
+      index: number;
       oldColumnName: string;
       newColumnName: string;
       columns: JsDataTableColumnHeader[];
     }) => {
       try {
-        validateColumnName(tableName, newColumnName, sheets.a1Context);
+        validateColumnName(tableName, index, newColumnName, sheets.a1Context);
       } catch (error) {
         addGlobalSnackbar(error as string, { severity: 'error' });
         return;
