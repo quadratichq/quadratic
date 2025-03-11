@@ -51,7 +51,7 @@ export function EmptyGridMessage() {
   }
 
   return (
-    <div className="absolute bottom-4 right-4 flex w-72 flex-col items-center rounded border border-border bg-background p-4 text-center shadow-md">
+    <div className="absolute bottom-4 right-4 z-10 flex w-72 flex-col items-center rounded border border-border bg-background p-4 text-center shadow-md">
       <div className="flex gap-4 pb-8 pt-10">
         <div className="flex flex-col items-start gap-2">
           <div className="h-2 w-12 bg-foreground/15" />

@@ -183,7 +183,7 @@ function TabName({
   const validateName = useCallback(
     (value: string) => {
       try {
-        validateSheetName(value, sheets.a1Context);
+        validateSheetName(value, sheet.id, sheets.a1Context);
         return true;
       } catch (error) {
         setErrorMessage(error as string);
@@ -191,7 +191,7 @@ function TabName({
         return false;
       }
     },
-    [setErrorMessage]
+    [setErrorMessage, sheet.id]
   );
 
   // When a rename begins, focus contenteditable and select its contents

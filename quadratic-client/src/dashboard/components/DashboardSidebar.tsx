@@ -2,6 +2,7 @@ import { TeamSwitcher } from '@/dashboard/components/TeamSwitcher';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { getActionFileMove } from '@/routes/api.files.$uuid';
+import { labFeatures } from '@/routes/labs';
 import { Avatar } from '@/shared/components/Avatar';
 import {
   AddIcon,
@@ -174,10 +175,12 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             </Badge>
           </SidebarNavLink>
         )}
-        <SidebarNavLink to="/labs">
-          <LabsIcon className={classNameIcons} />
-          Labs
-        </SidebarNavLink>
+        {labFeatures.length > 0 && (
+          <SidebarNavLink to="/labs">
+            <LabsIcon className={classNameIcons} />
+            Labs
+          </SidebarNavLink>
+        )}
         <SidebarNavLink to="/account">
           <Avatar src={user?.picture} alt={user?.name}>
             {user?.name}

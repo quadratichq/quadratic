@@ -6,9 +6,11 @@ import { createBorderTypes } from './generateTextures';
 const intervalToCheckBitmapFonts = 100;
 export const bitmapFonts = ['OpenSans', 'OpenSans-Bold', 'OpenSans-Italic', 'OpenSans-BoldItalic'];
 
+const TIMEOUT = 10000;
+
 function loadFont(fontName: string): void {
   const font = new FontFaceObserver(fontName);
-  font.load();
+  font.load(undefined, TIMEOUT);
 }
 
 export function ensureBitmapFontLoaded(resolve: () => void): void {
@@ -53,6 +55,7 @@ export function loadAssets(): Promise<void> {
     addResourceOnce('checkbox-checked-icon', '/images/checkbox-checked.png');
     addResourceOnce('dropdown-icon', '/images/dropdown.png');
     addResourceOnce('dropdown-white-icon', '/images/dropdown-white.png');
+    addResourceOnce('chart-placeholder', '/images/chart-placeholder.png');
 
     addResourceOnce('sort-ascending', '/images/sort-ascending.svg');
     addResourceOnce('sort-descending', '/images/sort-descending.svg');

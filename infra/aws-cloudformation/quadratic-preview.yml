@@ -161,45 +161,6 @@ Resources:
           ./login.sh
           ./pull_start.sh
 
-  # Global Accelerator
-  GlobalAccelerator:
-    Type: AWS::GlobalAccelerator::Accelerator
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
-    Properties:
-      Name: !Sub "${ImageTag}"
-      Enabled: true
-      Tags:
-        - Key: Name
-          Value: !Ref ImageTag
-
-  # Global Accelerator Listener
-  GlobalAcceleratorListener:
-    Type: AWS::GlobalAccelerator::Listener
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
-    Properties:
-      AcceleratorArn: !Ref GlobalAccelerator
-      Protocol: TCP
-      PortRanges:
-        - FromPort: 80
-          ToPort: 80
-        - FromPort: 443
-          ToPort: 443
-
-  # Global Accelerator Endpoint Group
-  GlobalAcceleratorEndpointGroup:
-    Type: AWS::GlobalAccelerator::EndpointGroup
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
-    Properties:
-      ListenerArn: !Ref GlobalAcceleratorListener
-      EndpointGroupRegion: !Ref AWS::Region
-      EndpointConfigurations:
-        - EndpointId: !Ref EC2Instance
-          Weight: 100
-          ClientIPPreservationEnabled: true
-
   # DNS record for the main application
   DNSRecord:
     Type: AWS::Route53::RecordSet
@@ -209,10 +170,9 @@ Resources:
       HostedZoneId: Z0126430TJ1UYIMO3SYX
       Name: !Sub "${SubDomainName}.quadratic-preview.com."
       Type: A
-      AliasTarget:
-        DNSName: !GetAtt GlobalAccelerator.DnsName
-        HostedZoneId: Z2BJ6XQ5FK7U4H
-        EvaluateTargetHealth: true
+      TTL: 300
+      ResourceRecords:
+        - !GetAtt EC2Instance.PublicIp
 
   # Wildcard DNS record for all services on subdomains
   WildcardDNSRecord:
@@ -223,10 +183,9 @@ Resources:
       HostedZoneId: Z0126430TJ1UYIMO3SYX
       Name: !Sub "*.${SubDomainName}.quadratic-preview.com."
       Type: A
-      AliasTarget:
-        DNSName: !GetAtt GlobalAccelerator.DnsName
-        HostedZoneId: Z2BJ6XQ5FK7U4H
-        EvaluateTargetHealth: true
+      TTL: 300
+      ResourceRecords:
+        - !GetAtt EC2Instance.PublicIp
 
 Outputs:
   WebsiteURL:

@@ -1,4 +1,5 @@
 use crate::{
+    constants::SHEET_NAME,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
@@ -139,7 +140,7 @@ impl GridController {
             // create a sheet if we deleted the last one (only for user actions)
             if transaction.is_user() && self.sheet_ids().is_empty() {
                 let new_first_sheet_id = SheetId::new();
-                let name = String::from("Sheet1");
+                let name = SHEET_NAME.to_owned() + "1";
                 let order = self.grid.end_order();
                 let new_first_sheet = Sheet::new(new_first_sheet_id, name, order);
                 self.grid.add_sheet(Some(new_first_sheet.clone()));
@@ -197,7 +198,7 @@ impl GridController {
         op: Operation,
     ) -> Result<()> {
         if let Operation::SetSheetName { sheet_id, name } = op {
-            if let Err(e) = Sheet::validate_sheet_name(&name, self.a1_context()) {
+            if let Err(e) = Sheet::validate_sheet_name(&name, sheet_id, self.a1_context()) {
                 if cfg!(target_family = "wasm") || cfg!(test) {
                     crate::wasm_bindings::js::jsClientMessage(
                         e.to_owned(),
@@ -208,7 +209,6 @@ impl GridController {
                 transaction.operations.clear();
                 bail!(e);
             }
-
             let context = self.a1_context().to_owned();
 
             let sheet = self.try_sheet_result(sheet_id)?;
@@ -307,6 +307,7 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
+        constants::SHEET_NAME,
         controller::{
             active_transactions::transaction_name::TransactionName,
             operations::operation::Operation, user_actions::import::tests::simple_csv_at,
@@ -448,7 +449,7 @@ mod tests {
         );
 
         gc.undo(None);
-        assert_eq!(gc.grid.sheets()[0].name, "Sheet1".to_string());
+        assert_eq!(gc.grid.sheets()[0].name, "Sheet 1".to_string());
         let sheet_info = SheetInfo::from(gc.sheet(sheet_id));
         expect_js_call(
             "jsSheetInfoUpdate",
@@ -538,7 +539,7 @@ mod tests {
     }
 
     #[test]
-    fn duplicate_sheet() {
+    fn test_duplicate_sheet() {
         clear_js_calls();
 
         let mut gc = GridController::test();
@@ -561,7 +562,7 @@ mod tests {
         }];
         gc.start_user_transaction(op, None, TransactionName::DuplicateSheet);
         assert_eq!(gc.grid.sheets().len(), 2);
-        assert_eq!(gc.grid.sheets()[1].name, "Sheet1 Copy");
+        assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy");
         let duplicated_sheet_id = gc.grid.sheets()[1].id;
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id));
         expect_js_call(
@@ -598,8 +599,8 @@ mod tests {
         }];
         gc.start_user_transaction(op, None, TransactionName::DuplicateSheet);
         assert_eq!(gc.grid.sheets().len(), 3);
-        assert_eq!(gc.grid.sheets()[1].name, "Sheet1 Copy 1");
-        assert_eq!(gc.grid.sheets()[2].name, "Sheet1 Copy");
+        assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy 1");
+        assert_eq!(gc.grid.sheets()[2].name, "Sheet 1 Copy");
         let duplicated_sheet_id3 = gc.grid.sheets()[1].id;
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id3));
         expect_js_call(
@@ -610,7 +611,7 @@ mod tests {
 
         gc.undo(None);
         assert_eq!(gc.grid.sheets().len(), 2);
-        assert_eq!(gc.grid.sheets()[1].name, "Sheet1 Copy");
+        assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy");
         expect_js_call(
             "jsDeleteSheet",
             format!("{},{}", duplicated_sheet_id3, true),
@@ -619,7 +620,7 @@ mod tests {
 
         gc.redo(None);
         assert_eq!(gc.grid.sheets().len(), 3);
-        assert_eq!(gc.grid.sheets()[1].name, "Sheet1 Copy 1");
+        assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy 1");
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id3));
         expect_js_call(
             "jsAddSheet",
@@ -652,7 +653,7 @@ mod tests {
                 y: 20,
             },
             CodeCellLanguage::Python,
-            "q.cells('Sheet1!A1')".to_string(),
+            format!("q.cells(\"\'{}1\'!A1\")", SHEET_NAME.to_owned()),
             None,
         );
 
@@ -674,7 +675,7 @@ mod tests {
             gc.sheet(duplicated_sheet_id).cell_value(pos![T20]).unwrap(),
             CellValue::Code(CodeCellValue {
                 language: CodeCellLanguage::Python,
-                code: "q.cells(\"A1\")".to_string(),
+                code: r#"q.cells("A1")"#.to_string(),
             })
         );
     }
