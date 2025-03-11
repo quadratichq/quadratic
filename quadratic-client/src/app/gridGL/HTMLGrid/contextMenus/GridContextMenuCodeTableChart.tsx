@@ -17,6 +17,8 @@ export function GridContextMenuCodeTableChart() {
     );
   }
 
+  const isHtml = contextMenu.table?.is_html;
+
   return (
     <ContextMenuBase>
       <ContextMenuItemAction action={Action.Cut} />
@@ -24,7 +26,7 @@ export function GridContextMenuCodeTableChart() {
       <ContextMenuItemAction action={Action.Paste} />
       <ContextMenuItemAction action={Action.PasteValuesOnly} />
       <ContextMenuItemAction action={Action.PasteFormattingOnly} />
-      <ContextMenuItemAction action={Action.CopyAsPng} />
+      {!isHtml && <ContextMenuItemAction action={Action.CopyAsPng} />}
       <ContextMenuItemAction action={Action.DownloadAsCsv} />
       <DropdownMenuSeparator />
       <ContextMenuItemAction action={Action.EditTableCode} />
