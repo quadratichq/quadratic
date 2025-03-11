@@ -152,15 +152,39 @@ impl GridController {
             // select the entire data table
             Self::select_full_data_table(transaction, sheet_id, data_table_pos, &data_table);
 
-            sheet.set_cell_value(data_table_pos, cell_value);
-            sheet.data_tables.insert_sorted(data_table_pos, data_table);
+            let old_value = sheet.set_cell_value(data_table_pos, cell_value);
+            let old_data_table = sheet.data_tables.insert_sorted(data_table_pos, data_table);
 
             // mark new data table as dirty
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
+
+            // mark old data table as dirty, if it exists
+            if let (_, Some(old_data_table)) = &old_data_table {
+                let old_data_table_rect = old_data_table.output_sheet_rect(sheet_pos, false);
+                transaction.add_dirty_hashes_from_sheet_rect(old_data_table_rect);
+            }
+
             self.send_updated_bounds(transaction, sheet_id);
 
             let forward_operations = vec![op];
-            let reverse_operations = vec![Operation::DeleteDataTable { sheet_pos }];
+            let reverse_operations = match (old_value, old_data_table) {
+                (Some(old_value), (_, Some(old_data_table))) => {
+                    vec![Operation::AddDataTable {
+                        sheet_pos,
+                        data_table: old_data_table,
+                        cell_value: old_value,
+                    }]
+                }
+                (Some(old_value), (_, None)) => {
+                    vec![Operation::SetCellValues {
+                        sheet_pos,
+                        values: old_value.into(),
+                    }]
+                }
+                _ => {
+                    vec![Operation::DeleteDataTable { sheet_pos }]
+                }
+            };
             self.data_table_operations(
                 transaction,
                 forward_operations,
@@ -196,6 +220,7 @@ impl GridController {
 
             let old_cell_value = sheet.cell_value_result(data_table_pos)?;
             sheet.set_cell_value(data_table_pos, CellValue::Blank);
+            sheet.data_tables.shift_remove(&data_table_pos);
 
             self.send_updated_bounds(transaction, sheet_id);
 
