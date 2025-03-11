@@ -159,24 +159,24 @@ impl GridController {
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
             self.send_updated_bounds(transaction, sheet_id);
 
-            let forward_operations = vec![op];
-
-            let mut reverse_operations = vec![];
-            if let (index, Some(old_data_table)) = old_data_table {
-                // mark old data table as dirty, if it exists
+            // mark old data table as dirty, if it exists
+            if let (_, Some(old_data_table)) = &old_data_table {
                 let old_data_table_rect = old_data_table.output_sheet_rect(sheet_pos, false);
                 transaction.add_dirty_hashes_from_sheet_rect(old_data_table_rect);
-
-                reverse_operations.push(Operation::SetDataTable {
-                    sheet_pos,
-                    data_table: Some(old_data_table),
-                    index,
-                });
             }
-            reverse_operations.push(Operation::SetCellValues {
-                sheet_pos,
-                values: old_value.unwrap_or(CellValue::Blank).into(),
-            });
+
+            let forward_operations = vec![op];
+            let reverse_operations = vec![
+                Operation::SetDataTable {
+                    sheet_pos,
+                    data_table: old_data_table.1,
+                    index: old_data_table.0,
+                },
+                Operation::SetCellValues {
+                    sheet_pos,
+                    values: old_value.unwrap_or(CellValue::Blank).into(),
+                },
+            ];
 
             self.data_table_operations(
                 transaction,
