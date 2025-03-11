@@ -1,5 +1,5 @@
-export const QUADRATIC_FOR_EDUCATION = 'https://docs.quadratichq.com/quadratic-for-education';
 export const DOCUMENTATION_URL = 'https://docs.quadratichq.com';
+export const QUADRATIC_FOR_EDUCATION = `${DOCUMENTATION_URL}/quadratic-for-education`;
 export const DOCUMENTATION_PYTHON_URL = `${DOCUMENTATION_URL}/python`;
 export const DOCUMENTATION_FORMULAS_URL = `${DOCUMENTATION_URL}/formulas`;
 export const DOCUMENTATION_JAVASCRIPT_URL = `${DOCUMENTATION_URL}/javascript`;
@@ -20,7 +20,6 @@ export const WEBSITE_CONNECTIONS = 'https://www.quadratichq.com/connections';
 export const WEBSITE_EXAMPLES = 'https://www.quadratichq.com/examples';
 export const WEBSITE_CHANGELOG = 'https://www.quadratichq.com/changelog';
 export const SCHEDULE_MEETING = 'https://calendly.com/d/ckz9-g8t-stb/quadratic-demo';
-export const AI_SECURITY = 'https://docs.quadratichq.com/quadratic-ai/security';
 export const COMMUNITY_A1_FILE_UPDATE_URL =
   'https://community.quadratichq.com/t/switch-to-a1-notation-from-x-y-coordinates/';
 export const PRICING_URL = 'https://www.quadratichq.com/pricing';
