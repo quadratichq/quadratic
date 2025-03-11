@@ -10,7 +10,7 @@ import {
 } from 'quadratic-shared/ai/helpers/model.helper';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
-import { type ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
+import type { ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 import { handleAnthropicRequest } from '../../ai/handler/anthropic';
 import { handleBedrockRequest } from '../../ai/handler/bedrock';
@@ -85,8 +85,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   } = await getFile({ uuid: fileUuid, userId });
 
   const model = getModelFromModelKey(modelKey);
-  const messageType = getLastPromptMessageType(args.messages);
   const messageIndex = getLastUserPromptMessageIndex(args.messages);
+  const messageType = getLastPromptMessageType(args.messages);
 
   const chat = await dbClient.analyticsAIChat.upsert({
     where: {
@@ -102,10 +102,10 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
           model,
           messageIndex,
           messageType,
-          inputTokens: parsedResponse?.usage?.inputTokens,
-          outputTokens: parsedResponse?.usage?.outputTokens,
-          cacheReadTokens: parsedResponse?.usage?.cacheReadTokens,
-          cacheWriteTokens: parsedResponse?.usage?.cacheWriteTokens,
+          inputTokens: parsedResponse?.usage.inputTokens,
+          outputTokens: parsedResponse?.usage.outputTokens,
+          cacheReadTokens: parsedResponse?.usage.cacheReadTokens,
+          cacheWriteTokens: parsedResponse?.usage.cacheWriteTokens,
         },
       },
     },
@@ -115,10 +115,10 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
           model,
           messageIndex,
           messageType,
-          inputTokens: parsedResponse?.usage?.inputTokens,
-          outputTokens: parsedResponse?.usage?.outputTokens,
-          cacheReadTokens: parsedResponse?.usage?.cacheReadTokens,
-          cacheWriteTokens: parsedResponse?.usage?.cacheWriteTokens,
+          inputTokens: parsedResponse?.usage.inputTokens,
+          outputTokens: parsedResponse?.usage.outputTokens,
+          cacheReadTokens: parsedResponse?.usage.cacheReadTokens,
+          cacheWriteTokens: parsedResponse?.usage.cacheWriteTokens,
         },
       },
       updatedDate: new Date(),

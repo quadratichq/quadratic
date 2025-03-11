@@ -1,4 +1,5 @@
 import type {
+  AIMessagePrompt,
   ChatMessage,
   SystemMessage,
   ToolResultContextType,
@@ -15,15 +16,19 @@ export const getSystemMessages = (messages: ChatMessage[]): string[] => {
   return systemMessages.map((message) => message.content);
 };
 
-export const getPromptMessages = (messages: ChatMessage[]): (UserMessagePrompt | ToolResultMessage)[] => {
+export const getPromptMessages = (
+  messages: ChatMessage[]
+): (UserMessagePrompt | ToolResultMessage | AIMessagePrompt)[] => {
   return messages.filter(
-    (message): message is UserMessagePrompt | ToolResultMessage =>
+    (message): message is UserMessagePrompt | ToolResultMessage | AIMessagePrompt =>
       message.contextType === 'userPrompt' || message.contextType === 'toolResult'
   );
 };
 
-export const getUserPromptMessages = (messages: ChatMessage[]): UserMessagePrompt[] => {
-  return getPromptMessages(messages).filter((message): message is UserMessagePrompt => message.role === 'user');
+export const getUserPromptMessages = (messages: ChatMessage[]): (UserMessagePrompt | ToolResultMessage)[] => {
+  return getPromptMessages(messages).filter(
+    (message): message is UserMessagePrompt | ToolResultMessage => message.role === 'user'
+  );
 };
 
 export const getLastPromptMessageType = (messages: ChatMessage[]): UserPromptContextType | ToolResultContextType => {

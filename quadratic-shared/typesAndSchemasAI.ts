@@ -6,7 +6,7 @@ const AIProvidersSchema = z
   .default('bedrock-anthropic');
 
 const BedrockModelSchema = z
-  .enum(['us.meta.llama3-2-90b-instruct-v1:0', 'mistral.mistral-large-2407-v1:0'])
+  .enum(['us.deepseek.r1-v1:0', 'us.meta.llama3-2-90b-instruct-v1:0', 'mistral.mistral-large-2407-v1:0'])
   .default('us.meta.llama3-2-90b-instruct-v1:0');
 
 const BedrockAnthropicModelSchema = z
@@ -37,6 +37,7 @@ const AIModelSchema = z.union([
 export type AIModel = z.infer<typeof AIModelSchema>;
 
 const BedrockModelKeySchema = z.enum([
+  'bedrock:us.deepseek.r1-v1:0',
   'bedrock:us.meta.llama3-2-90b-instruct-v1:0',
   'bedrock:mistral.mistral-large-2407-v1:0',
 ]);
