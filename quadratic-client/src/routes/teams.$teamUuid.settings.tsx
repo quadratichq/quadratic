@@ -14,6 +14,7 @@ import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { InfoCircledIcon, PieChartIcon } from '@radix-ui/react-icons';
+import mixpanel from 'mixpanel-browser';
 import type { TeamSettings } from 'quadratic-shared/typesAndSchemas';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
@@ -181,6 +182,9 @@ export const Component = () => {
                       {billing.status === undefined ? (
                         <Button
                           onClick={() => {
+                            mixpanel.track('[TeamSettings].upgradeToProClicked', {
+                              team_uuid: team.uuid,
+                            });
                             apiClient.teams.billing.getCheckoutSessionUrl(team.uuid).then((data) => {
                               window.location.href = data.url;
                             });
@@ -195,6 +199,9 @@ export const Component = () => {
                             variant="secondary"
                             className="mt-4 w-full"
                             onClick={() => {
+                              mixpanel.track('[TeamSettings].manageBillingClicked', {
+                                team_uuid: team.uuid,
+                              });
                               apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
                                 window.location.href = data.url;
                               });

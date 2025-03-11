@@ -26,6 +26,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { RocketIcon } from '@radix-ui/react-icons';
+import mixpanel from 'mixpanel-browser';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { Link, NavLink, useLocation, useMatch, useNavigation, useSearchParams, useSubmit } from 'react-router-dom';
@@ -147,7 +148,14 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
               </Type>
             </div>
             <p className="mt-2 text-sm text-muted-foreground">Get more AI messages, connections, and more.</p>
-            <NavLink to={ROUTES.TEAM_SETTINGS(activeTeamUuid)}>
+            <NavLink
+              to={ROUTES.TEAM_SETTINGS(activeTeamUuid)}
+              onClick={() => {
+                mixpanel.track('[DashboardSidebar].upgradeToProClicked', {
+                  team_uuid: activeTeamUuid,
+                });
+              }}
+            >
               <Button className="mt-3 w-full">Upgrade Now</Button>
             </NavLink>
           </div>
