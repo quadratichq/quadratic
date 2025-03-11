@@ -83,6 +83,10 @@ impl GridController {
         if let (Some(old_data_table), Some(new_data_table)) =
             (sheet.data_table(pos), &mut new_data_table)
         {
+            let is_code_cell = sheet
+                .get_table_language(pos, &new_data_table)
+                .is_some_and(|lang| lang.is_code_language());
+
             new_data_table.show_ui = old_data_table.show_ui;
             new_data_table.show_name = old_data_table.show_name;
             new_data_table.alternating_colors = old_data_table.alternating_colors;
@@ -101,6 +105,14 @@ impl GridController {
                 // have headers; if the data table already has headers (eg, via data
                 // frames), then leave them in.
                 new_data_table.header_is_first_row |= old_data_table.header_is_first_row;
+            }
+
+            // if the new data table is a single value and is a code cell, then we don't want to show the name
+            if new_data_table.is_single_value()
+                && is_code_cell
+                && !new_data_table.is_html_or_image()
+            {
+                new_data_table.show_name = false;
             }
 
             // if the width of the old and new data tables are the same,
@@ -486,6 +498,8 @@ impl GridController {
             cells_accessed: transaction.cells_accessed.clone(),
         };
 
+        let is_single_value = matches!(value, Value::Single(_));
+
         let mut data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             table_name,
@@ -498,6 +512,11 @@ impl GridController {
 
         transaction.cells_accessed.clear();
         data_table.show_columns = js_code_result.has_headers;
+
+        // if the new data table is a single value and is a code cell, then we don't want to show the name
+        if is_single_value && language.is_code_language() && !data_table.is_html_or_image() {
+            data_table.show_name = false;
+        }
 
         // If no headers were returned, we want column headers: [0, 1, 2, 3, ...etc]
         if !js_code_result.has_headers {
@@ -594,7 +613,8 @@ mod test {
             false,
             true,
             None,
-        );
+        )
+        .with_show_name(false);
         gc.finalize_data_table(transaction, sheet_pos, Some(new_data_table.clone()), None);
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
