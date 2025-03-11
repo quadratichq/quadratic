@@ -118,7 +118,7 @@ export class CellLabel {
   private strikeThrough: boolean;
 
   private textWidth = 0;
-  textHeight = 0;
+  textHeight = CELL_HEIGHT;
   unwrappedTextWidth;
 
   // overflow values
