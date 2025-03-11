@@ -435,6 +435,12 @@ mod tests {
         // Data table without headers
         let values_no_header = vec![vec!["A".into(), "B".into()], vec!["C".into(), "D".into()]];
 
+        gc.set_cell_value(
+            SheetPos::from((pos![D1], sheet_id)),
+            "Test value".into(),
+            None,
+        );
+
         gc.add_data_table(
             SheetPos::from((pos![D1], sheet_id)),
             "Table 2".to_string(),
@@ -443,6 +449,75 @@ mod tests {
             None,
         );
 
+        // Verify the second data table
+        {
+            let sheet = gc.sheet(sheet_id);
+            let data_table = sheet.data_table(pos![D1]).unwrap();
+
+            // Check basic properties
+            assert_eq!(data_table.name, "Table_2".into());
+            assert!(!data_table.header_is_first_row);
+            assert_eq!(
+                data_table.value,
+                Value::Array(values_no_header.to_owned().into())
+            );
+
+            // Check that column headers are automatically generated
+            let headers = data_table.column_headers.as_ref().unwrap();
+            assert_eq!(headers.len(), 2);
+            assert_eq!(headers[0].name, "Column 1".into());
+            assert_eq!(headers[1].name, "Column 2".into());
+        }
+
+        // Test undo/redo functionality
+        gc.undo(None);
+        {
+            let sheet = gc.sheet(sheet_id);
+            assert_eq!(
+                sheet.cell_value(pos![D1]),
+                Some(CellValue::Text("Test value".into()))
+            );
+            assert!(sheet.data_table(pos![D1]).is_none());
+        }
+
+        gc.redo(None);
+        {
+            let sheet = gc.sheet(sheet_id);
+            assert!(sheet.cell_value(pos![D1]).is_some());
+            assert!(sheet.data_table(pos![D1]).is_some());
+        }
+
+        // overwrite second data table with a new data table
+        let table_3_values = vec![vec!["Z".into(), "Y".into()], vec!["X".into(), "W".into()]];
+        gc.add_data_table(
+            SheetPos::from((pos![D1], sheet_id)),
+            "Table 3".to_string(),
+            table_3_values.to_owned(),
+            false,
+            None,
+        );
+        // Verify the third data table
+        {
+            let sheet = gc.sheet(sheet_id);
+            let data_table = sheet.data_table(pos![D1]).unwrap();
+
+            // Check basic properties
+            assert_eq!(data_table.name, "Table_3".into());
+            assert!(!data_table.header_is_first_row);
+            assert_eq!(
+                data_table.value,
+                Value::Array(table_3_values.to_owned().into())
+            );
+
+            // Check that column headers are automatically generated
+            let headers = data_table.column_headers.as_ref().unwrap();
+            assert_eq!(headers.len(), 2);
+            assert_eq!(headers[0].name, "Column 1".into());
+            assert_eq!(headers[1].name, "Column 2".into());
+        }
+
+        // undo, the third data table should be gone, second data table should be back
+        gc.undo(None);
         // Verify the second data table
         {
             let sheet = gc.sheet(sheet_id);
@@ -460,17 +535,23 @@ mod tests {
             assert_eq!(headers[1].name, "Column 2".into());
         }
 
-        // Test undo/redo functionality
-        gc.undo(None);
-        {
-            let sheet = gc.sheet(sheet_id);
-            assert!(sheet.data_table(pos![D1]).is_none());
-        }
-
+        // redo, the third data table should be back
         gc.redo(None);
+        // Verify the third data table
         {
             let sheet = gc.sheet(sheet_id);
-            assert!(sheet.data_table(pos![D1]).is_some());
+            let data_table = sheet.data_table(pos![D1]).unwrap();
+
+            // Check basic properties
+            assert_eq!(data_table.name, "Table_3".into());
+            assert!(!data_table.header_is_first_row);
+            assert_eq!(data_table.value, Value::Array(table_3_values.into()));
+
+            // Check that column headers are automatically generated
+            let headers = data_table.column_headers.as_ref().unwrap();
+            assert_eq!(headers.len(), 2);
+            assert_eq!(headers[0].name, "Column 1".into());
+            assert_eq!(headers[1].name, "Column 2".into());
         }
     }
 }

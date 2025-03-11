@@ -160,7 +160,7 @@ impl GridController {
             self.send_updated_bounds(transaction, sheet_id);
 
             // mark old data table as dirty, if it exists
-            if let (_, Some(old_data_table)) = &old_data_table {
+            if let Some(old_data_table) = &old_data_table.1 {
                 let old_data_table_rect = old_data_table.output_sheet_rect(sheet_pos, false);
                 transaction.add_dirty_hashes_from_sheet_rect(old_data_table_rect);
             }
