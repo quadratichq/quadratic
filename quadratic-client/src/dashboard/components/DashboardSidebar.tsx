@@ -24,9 +24,10 @@ import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { RocketIcon } from '@radix-ui/react-icons';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { Link, NavLink, useLocation, useNavigation, useSearchParams, useSubmit } from 'react-router-dom';
+import { Link, NavLink, useLocation, useMatch, useNavigation, useSearchParams, useSubmit } from 'react-router-dom';
 
 const SHOW_EXAMPLES = import.meta.env.VITE_STORAGE_TYPE !== 'file-system';
 
@@ -42,9 +43,11 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
     activeTeam: {
       userMakingRequest: { teamPermissions },
       team: { uuid: activeTeamUuid },
+      billing,
     },
   } = useDashboardRouteLoaderData();
 
+  const isSettingsPage = useMatch('/teams/:teamId/settings');
   const canEditTeam = teamPermissions.includes('TEAM_EDIT');
   const classNameIcons = `mx-0.5 text-muted-foreground`;
 
@@ -134,6 +137,20 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             Contact us
           </SidebarNavLink>
         </div>
+        {billing?.status !== 'ACTIVE' && !isSettingsPage && (
+          <div className="my-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
+            <div className="flex items-center gap-2">
+              <RocketIcon className="h-5 w-5 text-primary" />
+              <Type variant="body2" className="font-semibold">
+                Upgrade to Quadratic Pro
+              </Type>
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">Get unlimited AI messages, connections, and more.</p>
+            <NavLink to={ROUTES.TEAM_SETTINGS(activeTeamUuid)}>
+              <Button className="mt-3 w-full">Upgrade Now</Button>
+            </NavLink>
+          </div>
+        )}
       </div>
       <div className="mt-auto flex flex-col gap-1 bg-accent px-3 pb-2">
         {eduStatus === 'ENROLLED' && (
