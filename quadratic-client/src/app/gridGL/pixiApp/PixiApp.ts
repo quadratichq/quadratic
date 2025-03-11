@@ -178,9 +178,9 @@ export class PixiApp {
 
     this.boxCells = this.viewportContents.addChild(new BoxCells());
     this.cellImages = this.viewportContents.addChild(this.cellImages);
-    this.copy = this.viewportContents.addChild(this.copy);
     this.multiplayerCursor = this.viewportContents.addChild(new UIMultiPlayerCursor());
     this.cursor = this.viewportContents.addChild(new Cursor());
+    this.copy = this.viewportContents.addChild(this.copy);
     this.htmlPlaceholders = this.viewportContents.addChild(new HtmlPlaceholders());
     this.imagePlaceholders = this.viewportContents.addChild(new Container());
     this.cellHighlights = this.viewportContents.addChild(new CellHighlights());
@@ -254,6 +254,7 @@ export class PixiApp {
     if (!this.canvas) return;
 
     this.parent = parent;
+    this.canvas.classList.add('dark-mode-hack');
     parent.appendChild(this.canvas);
     this.resize();
     this.update.start();

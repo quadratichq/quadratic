@@ -34,6 +34,7 @@ impl GridController {
                 return self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
             }
         }
+
         // if not quadratic html, then use the plain text
         if let Some(plain_text) = plain_text {
             let dest_pos = selection.to_cursor_sheet_pos();
