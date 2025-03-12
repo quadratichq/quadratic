@@ -84,7 +84,7 @@ impl GridController {
             (sheet.data_table(pos), &mut new_data_table)
         {
             let is_code_cell = sheet
-                .get_table_language(pos, &new_data_table)
+                .get_table_language(pos, new_data_table)
                 .is_some_and(|lang| lang.is_code_language());
 
             new_data_table.show_ui = old_data_table.show_ui;
