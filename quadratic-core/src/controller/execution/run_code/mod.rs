@@ -618,7 +618,8 @@ mod test {
             true,
             None,
         )
-        .with_show_name(false);
+        .with_show_name(false)
+        .with_show_columns(false);
         gc.finalize_data_table(transaction, sheet_pos, Some(new_data_table.clone()), None);
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
