@@ -8,7 +8,7 @@ import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { AIAnalystContext } from '@/app/ui/menus/AIAnalyst/AIAnalystContext';
 import { ArrowUpwardIcon, BackspaceIcon, EditIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
-import { AI_SECURITY } from '@/shared/constants/urls';
+import { DOCUMENTATION_ANALYTICS_AI } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
@@ -217,7 +217,7 @@ export const AIUserMessageFormDisclaimer = memo(() => {
         ? 'Your data can be used to improve Quadratic. '
         : 'Some sheet data is sent to the AI model. '}
       <a
-        href={teamSettings.analyticsAi ? ROUTES.TEAM_SETTINGS(teamUuid) : AI_SECURITY}
+        href={teamSettings.analyticsAi ? ROUTES.TEAM_SETTINGS(teamUuid) : DOCUMENTATION_ANALYTICS_AI}
         target="_blank"
         rel="noreferrer"
         className="underline hover:text-foreground"
