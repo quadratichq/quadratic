@@ -106,7 +106,7 @@ mod tests {
         assert!(summary.is_ok());
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_code_cell_value(pos![A2]),
+            sheet.display_value(pos![A1]),
             Some(CellValue::Text("hello world".into()))
         );
 
@@ -171,7 +171,7 @@ mod tests {
         // check that the value at A3 contains the expected output
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(pos![A3]),
+            sheet.display_value(pos![A2]),
             Some(CellValue::Number(BigDecimal::from(10)))
         );
 
@@ -250,7 +250,7 @@ mod tests {
         // check that the value at A2 contains the expected output
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(pos![A3]),
+            sheet.display_value(pos![A2]),
             Some(CellValue::Number(BigDecimal::from(11)))
         );
 
@@ -338,7 +338,7 @@ mod tests {
         assert!(gc.async_transactions().is_empty());
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert!(sheet
-            .display_value(pos![A2])
+            .display_value(pos![A1])
             .unwrap()
             .is_blank_or_empty_string());
 
@@ -376,7 +376,7 @@ mod tests {
         // check that the value at A1 contains the expected output
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(pos![A2]),
+            sheet.display_value(pos![A1]),
             Some(CellValue::Text("original output".into()))
         );
         gc.set_code_cell(
@@ -389,7 +389,7 @@ mod tests {
         // check that the value at A1 contains the original output
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(pos![A2]),
+            sheet.display_value(pos![A1]),
             Some(CellValue::Text("original output".into()))
         );
 
@@ -408,7 +408,7 @@ mod tests {
         // repeat the same action to find a bug that occurs on second change
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(pos![A2]),
+            sheet.display_value(pos![A1]),
             Some(CellValue::Text("new output".into()))
         );
         gc.set_code_cell(
@@ -421,7 +421,7 @@ mod tests {
         // check that the value at A1 contains the original output
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(pos![A2]),
+            sheet.display_value(pos![A1]),
             Some(CellValue::Text("new output".into()))
         );
 
@@ -440,7 +440,7 @@ mod tests {
         // check that the value at A1 contains the original output
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(pos![A2]),
+            sheet.display_value(pos![A1]),
             Some(CellValue::Text("new output second time".into()))
         );
 
@@ -492,13 +492,13 @@ mod tests {
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
-        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "B2".to_string());
+        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "B1".to_string());
         assert_eq!(result.values.as_ref().unwrap().cells.len(), 1);
         assert_eq!(
             result.values.unwrap().cells[0],
             JsCellsA1Value {
                 x: 2,
-                y: 2,
+                y: 1,
                 value: "2".into(),
                 type_name: "number".into(),
             }
@@ -520,11 +520,11 @@ mod tests {
             Some(CellValue::Number(BigDecimal::from(1)))
         );
         assert_eq!(
-            sheet.display_value(pos![B2]),
+            sheet.display_value(pos![B1]),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
         assert_eq!(
-            sheet.display_value(pos![C2]),
+            sheet.display_value(pos![C1]),
             Some(CellValue::Number(BigDecimal::from(3)))
         );
 

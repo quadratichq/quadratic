@@ -295,6 +295,13 @@ impl DataTable {
         self.show_columns = show_columns;
         self
     }
+
+    /// Sets the show_name flag.
+    pub fn with_show_name(mut self, show_name: bool) -> Self {
+        self.show_name = show_name;
+        self
+    }
+
     /// Validates the table name. SheetPos is provided to allow the table to be
     /// renamed to itself (eg, with different casing).
     ///
@@ -690,11 +697,8 @@ impl DataTable {
         if self.is_html_or_image() {
             return false;
         }
-        match &self.value {
-            Value::Single(_) => true,
-            Value::Array(_) => false,
-            Value::Tuple(_) => false,
-        }
+
+        matches!(self.value, Value::Single(_))
     }
 
     /// Returns true if the data table is a single column (ie, not an array), or
