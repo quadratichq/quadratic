@@ -604,15 +604,15 @@ impl GridController {
 
             let forward_operations = vec![op];
             let reverse_operations = vec![
-                Operation::DeleteDataTable { sheet_pos },
-                Operation::SetCellValues {
-                    sheet_pos,
-                    values: old_values.into(),
-                },
                 Operation::SetCellFormatsA1 {
                     sheet_id,
                     formats: sheet_format_update,
                 },
+                Operation::SetCellValues {
+                    sheet_pos,
+                    values: old_values.into(),
+                },
+                Operation::DeleteDataTable { sheet_pos },
             ];
             self.data_table_operations(
                 transaction,
