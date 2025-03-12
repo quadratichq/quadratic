@@ -29,10 +29,7 @@ export const TableRename = () => {
       ) {
         return;
       } else {
-        const bounds = pixiApp.cellsSheets.current?.tables.getTableNamePosition(
-          contextMenu.table.x,
-          contextMenu.table.y
-        );
+        const bounds = pixiApp.cellsSheet().tables.getTableNamePosition(contextMenu.table.x, contextMenu.table.y);
         if (bounds && inputElement) {
           setWidth(bounds.width);
           inputElement.style.top = `${bounds.y}px`;

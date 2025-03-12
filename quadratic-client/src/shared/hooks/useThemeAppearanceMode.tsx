@@ -1,4 +1,3 @@
-import { useFeatureFlag } from '@/shared/hooks/useFeatureFlag';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { getCSSVariableAsHexColor } from '@/shared/utils/colors';
 import { memo, useEffect } from 'react';
@@ -20,16 +19,8 @@ export const useThemeAppearanceMode = () => {
  * will handle responding to changes via the effects.
  */
 export const ThemeAppearanceModeEffects = memo(() => {
-  const [featureFlag] = useFeatureFlag('themeAppearanceMode');
-  const [appearanceMode, setAppearanceMode] = useThemeAppearanceMode();
+  const [appearanceMode] = useThemeAppearanceMode();
   const userPrefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)');
-
-  // If the user turns the feature off, reset it to the default
-  useEffect(() => {
-    if (featureFlag === false) {
-      setAppearanceMode(DEFAULT_APPEARANCE_MODE);
-    }
-  }, [featureFlag, setAppearanceMode]);
 
   // User changes their preference via _our_ UI
   useEffect(() => {

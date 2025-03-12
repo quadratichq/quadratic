@@ -87,6 +87,7 @@ export const TableColumnHeaderRename = () => {
               x: contextMenu.table.x,
               y: contextMenu.table.y,
               tableName: contextMenu.table.name,
+              index: contextMenu.selectedColumn,
               oldColumnName,
               newColumnName: value,
               columns,

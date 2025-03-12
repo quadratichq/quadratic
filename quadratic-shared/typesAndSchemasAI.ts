@@ -6,7 +6,7 @@ const AIProvidersSchema = z
   .default('bedrock-anthropic');
 
 const BedrockModelSchema = z
-  .enum(['us.meta.llama3-2-90b-instruct-v1:0', 'mistral.mistral-large-2407-v1:0'])
+  .enum(['us.deepseek.r1-v1:0', 'us.meta.llama3-2-90b-instruct-v1:0', 'mistral.mistral-large-2407-v1:0'])
   .default('us.meta.llama3-2-90b-instruct-v1:0');
 
 const BedrockAnthropicModelSchema = z
@@ -37,6 +37,7 @@ const AIModelSchema = z.union([
 export type AIModel = z.infer<typeof AIModelSchema>;
 
 const BedrockModelKeySchema = z.enum([
+  'bedrock:us.deepseek.r1-v1:0',
   'bedrock:us.meta.llama3-2-90b-instruct-v1:0',
   'bedrock:mistral.mistral-large-2407-v1:0',
 ]);
@@ -111,7 +112,9 @@ const InternalContextTypeSchema = z.enum([
   'tables',
 ]);
 const ToolResultContextTypeSchema = z.literal('toolResult');
+export type ToolResultContextType = z.infer<typeof ToolResultContextTypeSchema>;
 const UserPromptContextTypeSchema = z.literal('userPrompt');
+export type UserPromptContextType = z.infer<typeof UserPromptContextTypeSchema>;
 
 const ContextSchema = z.object({
   sheets: z.array(z.string()),
@@ -270,3 +273,17 @@ export const AIRequestBodySchema = z.object({
 });
 export type AIRequestBody = z.infer<typeof AIRequestBodySchema>;
 export type AIRequestHelperArgs = Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'modelKey'>;
+
+const AIUsageSchema = z.object({
+  inputTokens: z.number(),
+  outputTokens: z.number(),
+  cacheReadTokens: z.number(),
+  cacheWriteTokens: z.number(),
+});
+export type AIUsage = z.infer<typeof AIUsageSchema>;
+
+const parsedAIResponseSchema = z.object({
+  responseMessage: AIMessagePromptSchema,
+  usage: AIUsageSchema,
+});
+export type ParsedAIResponse = z.infer<typeof parsedAIResponseSchema>;
