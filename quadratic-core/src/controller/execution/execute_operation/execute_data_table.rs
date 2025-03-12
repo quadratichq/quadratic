@@ -153,14 +153,15 @@ impl GridController {
             Self::select_full_data_table(transaction, sheet_id, data_table_pos, &data_table);
 
             let old_value = sheet.set_cell_value(data_table_pos, cell_value);
-            let old_data_table = sheet.data_tables.insert_sorted(data_table_pos, data_table);
+            let (old_index, old_data_table) =
+                sheet.data_tables.insert_sorted(data_table_pos, data_table);
 
             // mark new data table as dirty
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
             self.send_updated_bounds(transaction, sheet_id);
 
             // mark old data table as dirty, if it exists
-            if let Some(old_data_table) = &old_data_table.1 {
+            if let Some(old_data_table) = &old_data_table {
                 let old_data_table_rect = old_data_table.output_sheet_rect(sheet_pos, false);
                 transaction.add_dirty_hashes_from_sheet_rect(old_data_table_rect);
             }
@@ -169,8 +170,8 @@ impl GridController {
             let reverse_operations = vec![
                 Operation::SetDataTable {
                     sheet_pos,
-                    data_table: old_data_table.1,
-                    index: old_data_table.0,
+                    data_table: old_data_table,
+                    index: old_index,
                 },
                 Operation::SetCellValues {
                     sheet_pos,
