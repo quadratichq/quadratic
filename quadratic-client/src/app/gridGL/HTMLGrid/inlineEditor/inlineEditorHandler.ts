@@ -423,9 +423,9 @@ class InlineEditorHandler {
     this.updateFont();
   };
 
-  closeIfOpen = () => {
+  closeIfOpen = async () => {
     if (this.open) {
-      this.close(0, 0, false);
+      await this.close(0, 0, false);
     }
   };
 
