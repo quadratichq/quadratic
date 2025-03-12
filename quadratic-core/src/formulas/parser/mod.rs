@@ -13,7 +13,7 @@ use rules::SyntaxRule;
 
 use super::*;
 use crate::{
-    a1::{A1Context, CellRefRange, CellRefRangeEnd, RefRangeBounds, SheetCellRefRange},
+    a1::{A1Context, CellRefRange, RefRangeBounds, SheetCellRefRange},
     grid::{Grid, RefAdjust, SheetId},
     CodeResult, CoerceInto, RefError, RunError, RunErrorMsg, SheetPos, Span, Spanned, TableRef,
 };
@@ -104,7 +104,7 @@ fn simple_parse_and_check_formula(formula_string: &str) -> bool {
 /// let replaced = convert_rc_to_a1("SUM(R{3}C[1])", &g.a1_context(), pos);
 /// assert_eq!(replaced, "SUM(B$3)");
 /// ```
-#[must_use]
+#[must_use = "this method returns a new value instead of modifying its input"]
 pub fn convert_rc_to_a1(source: &str, ctx: &A1Context, pos: SheetPos) -> String {
     let replace_fn = |range_ref: SheetCellRefRange| Ok(range_ref.to_a1_string(None, ctx, false));
     replace_cell_range_references(source, ctx, pos, replace_fn)
@@ -123,7 +123,7 @@ pub fn convert_rc_to_a1(source: &str, ctx: &A1Context, pos: SheetPos) -> String 
 /// let replaced = convert_a1_to_rc("SUM(B$3)", &g.a1_context(), pos);
 /// assert_eq!(replaced, "SUM(R{3}C[1])");
 /// ```
-#[must_use]
+#[must_use = "this method returns a new value instead of modifying its input"]
 pub fn convert_a1_to_rc(source: &str, ctx: &A1Context, pos: SheetPos) -> String {
     let replace_fn = |range_ref: SheetCellRefRange| {
         Ok(range_ref.to_rc_string(Some(pos.sheet_id), ctx, false, pos.into()))
@@ -133,7 +133,7 @@ pub fn convert_a1_to_rc(source: &str, ctx: &A1Context, pos: SheetPos) -> String 
 
 /// Adjusts all cell references in a formula. If a references is out of bounds
 /// after the adjustment, it is replaced with an error.
-#[must_use]
+#[must_use = "this method returns a new value instead of modifying its input"]
 pub fn adjust_references(
     source: &str,
     ctx: &A1Context,
@@ -147,7 +147,7 @@ pub fn adjust_references(
     })
 }
 
-#[must_use]
+#[must_use = "this method returns a new value instead of modifying its input"]
 pub fn replace_table_name(
     source: &str,
     ctx: &A1Context,
@@ -163,7 +163,7 @@ pub fn replace_table_name(
     })
 }
 
-#[must_use]
+#[must_use = "this method returns a new value instead of modifying its input"]
 pub fn replace_column_name(
     source: &str,
     ctx: &A1Context,
@@ -180,7 +180,7 @@ pub fn replace_column_name(
     })
 }
 
-#[must_use]
+#[must_use = "this method returns a new value instead of modifying its input"]
 fn replace_table_references(
     source: &str,
     ctx: &A1Context,
@@ -198,7 +198,7 @@ fn replace_table_references(
     })
 }
 
-#[must_use]
+#[must_use = "this method returns a new value instead of modifying its input"]
 pub fn replace_sheet_name(
     source: &str,
     pos: SheetPos,
@@ -210,7 +210,7 @@ pub fn replace_sheet_name(
     })
 }
 
-#[must_use]
+#[must_use = "this method returns a new value instead of modifying its input"]
 fn replace_cell_range_references(
     source: &str,
     ctx: &A1Context,

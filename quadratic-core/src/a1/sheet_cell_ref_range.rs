@@ -79,7 +79,7 @@ impl SheetCellRefRange {
 
     /// Adjusts coordinates by `adjust`. Returns an error if the result is out
     /// of bounds.
-    #[must_use]
+    #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn adjust(self, adjust: RefAdjust) -> Result<Self, RefError> {
         if self.sheet_id == adjust.sheet_id {
             Ok(Self {
@@ -92,7 +92,7 @@ impl SheetCellRefRange {
     }
     /// Adjusts coordinates by `adjust`, clamping the result within the sheet
     /// bounds. Returns `None` if the whole range goes out of bounds.
-    #[must_use]
+    #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn saturating_adjust(self, adjust: RefAdjust) -> Option<Self> {
         if self.sheet_id == adjust.sheet_id {
             Some(Self {

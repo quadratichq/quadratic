@@ -86,7 +86,7 @@ impl Pos {
     }
 
     /// Returns a new Pos translated by the given delta, clamping the result to the given min.
-    #[must_use]
+    #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn translate(&self, x: i64, y: i64, min_x: i64, min_y: i64) -> Self {
         let mut pos = *self;
         pos.translate_in_place(x, y, min_x, min_y);
@@ -98,7 +98,7 @@ impl Pos {
     ///
     /// **Note:** `adjust.sheet_id` and `adjust.relative_only` are ignored by
     /// this method.
-    #[must_use]
+    #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn saturating_adjust(self, adjust: RefAdjust) -> Self {
         let x_start = adjust.x_start;
         let dx = if self.x < x_start { 0 } else { adjust.dx };

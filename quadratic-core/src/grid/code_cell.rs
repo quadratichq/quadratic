@@ -72,7 +72,7 @@ impl CodeCellValue {
             if self.language == CodeCellLanguage::Formula {
                 self.code = crate::formulas::adjust_references(&self.code, a1_context, pos, adjust);
             } else if self.language.has_q_cells() {
-                self.replace_q_cells_a1_selection(pos.sheet_id, a1_context, |mut a1_selection| {
+                self.replace_q_cells_a1_selection(pos.sheet_id, a1_context, |a1_selection| {
                     Ok(a1_selection
                         .adjust(adjust)?
                         .to_string(Some(pos.sheet_id), a1_context))

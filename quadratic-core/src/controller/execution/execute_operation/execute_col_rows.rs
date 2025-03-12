@@ -1,10 +1,9 @@
 use crate::{
-    a1::{CellRefRange, UNBOUNDED},
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    grid::{GridBounds, SheetId},
+    grid::GridBounds,
     CellValue, RefAdjust,
 };
 

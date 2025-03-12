@@ -7,7 +7,6 @@ impl CellRefRange {
     /// of bounds.
     ///
     /// **Note:** `adjust.sheet_id` is ignored by this method.
-    #[must_use]
     pub fn adjust(self, adjust: RefAdjust) -> Result<Self, RefError> {
         match self {
             Self::Sheet { range } => Ok(Self::Sheet {
@@ -20,7 +19,7 @@ impl CellRefRange {
     /// bounds. Returns `None` if the result is empty.
     ///
     /// **Note:** `adjust.sheet_id` is ignored by this method.
-    #[must_use]
+    #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn saturating_adjust(self, adjust: RefAdjust) -> Option<Self> {
         match self {
             CellRefRange::Sheet { range } => Some(Self::Sheet {

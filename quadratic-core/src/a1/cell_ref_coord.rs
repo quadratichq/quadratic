@@ -120,14 +120,14 @@ impl CellRefCoord {
     /// Adjusts the coordinate as an X coordinate. See `Self::adjust()`.
     ///
     /// **Note:** `adjust.sheet_id` is ignored by this method.
-    #[must_use]
+    #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn adjust_x(self, adjust: RefAdjust) -> Result<Self, RefError> {
         self.adjust(adjust.relative_only, adjust.dx, adjust.x_start)
     }
     /// Adjusts the coordinate as a Y coordinate. See `Self::adjust()`.
     ///
     /// **Note:** `adjust.sheet_id` is ignored by this method.
-    #[must_use]
+    #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn adjust_y(self, adjust: RefAdjust) -> Result<Self, RefError> {
         self.adjust(adjust.relative_only, adjust.dy, adjust.y_start)
     }
@@ -139,7 +139,7 @@ impl CellRefCoord {
     ///   unmodified.
     ///
     /// Returns an error if the result is out of bounds.
-    #[must_use]
+    #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn adjust(self, relative_only: bool, delta: i64, start: i64) -> Result<Self, RefError> {
         if (relative_only && self.is_absolute) || self.is_unbounded() || self.coord < start {
             Ok(self)
@@ -157,7 +157,7 @@ impl CellRefCoord {
     /// Adjusts the coordinate by `delta` if it is at least `start`. See
     /// [`Self::adjust()`]. If the coordinate ends up out of range, it is
     /// clamped to A1.
-    #[must_use]
+    #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn saturating_adjust(self, relative_only: bool, delta: i64, start: i64) -> Self {
         self.adjust(relative_only, delta, start).unwrap_or(Self {
             coord: 1,
@@ -166,7 +166,7 @@ impl CellRefCoord {
     }
 
     // TODO: remove this function when switching to u64
-    #[must_use]
+    #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn translate_unchecked(mut self, delta: i64) -> Self {
         if !self.is_unbounded() {
             self.coord = self.coord.saturating_add(delta);

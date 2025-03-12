@@ -7,7 +7,7 @@ impl RefRangeBounds {
     /// of bounds.
     ///
     /// **Note:** `adjust.sheet_id` is ignored by this method.
-    #[must_use]
+    #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn adjust(self, adjust: RefAdjust) -> Result<Self, RefError> {
         Ok(Self {
             start: self.start.adjust(adjust)?,
@@ -18,7 +18,7 @@ impl RefRangeBounds {
     /// bounds. Returns `None` if the result is empty.
     ///
     /// **Note:** `adjust.sheet_id` is ignored by this method.
-    #[must_use]
+    #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn saturating_adjust(self, adjust: RefAdjust) -> Option<Self> {
         // If both X coordinates or both Y coordinates end up out of range then
         // the whole range becomes empty.
@@ -35,7 +35,7 @@ impl RefRangeBounds {
     }
 
     // TODO: remove this function when switching to u64
-    #[must_use]
+    #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn translate_unchecked(self, x: i64, y: i64) -> Self {
         if self.is_all() {
             return self;

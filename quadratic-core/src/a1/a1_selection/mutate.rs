@@ -88,7 +88,7 @@ impl A1Selection {
 
     /// Adjusts coordinates by `adjust`. Returns an error if the result is out
     /// of bounds.
-    #[must_use]
+    #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn adjust(self, adjust: RefAdjust) -> Result<Self, RefError> {
         if self.sheet_id == adjust.sheet_id {
             Ok(Self {
@@ -106,7 +106,7 @@ impl A1Selection {
     }
     /// Adjusts coordinates by `adjust`, clamping the result within the sheet
     /// bounds. Returns `None` if the whole selection becomes empty.
-    #[must_use]
+    #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn saturating_adjust(self, adjust: RefAdjust) -> Option<Self> {
         if self.sheet_id == adjust.sheet_id {
             Some(Self {
@@ -125,7 +125,7 @@ impl A1Selection {
     }
 
     /// Translates the selection, clamping the result within the sheet bounds.
-    #[must_use]
+    #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn saturating_translate(self, dx: i64, dy: i64) -> Option<Self> {
         let adjust = RefAdjust::new_translate(self.sheet_id, dx, dy);
         self.saturating_adjust(adjust)

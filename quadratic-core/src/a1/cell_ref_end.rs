@@ -57,7 +57,7 @@ impl CellRefRangeEnd {
     /// of bounds.
     ///
     /// **Note:** `adjust.sheet_id` is ignored by this method.
-    #[must_use]
+    #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn adjust(self, adjust: RefAdjust) -> Result<Self, RefError> {
         Ok(Self {
             col: self.col.adjust_x(adjust)?,
@@ -68,7 +68,7 @@ impl CellRefRangeEnd {
     /// range, it is clamped to A1.
     ///
     /// **Note:** `adjust.sheet_id` is ignored by this method.
-    #[must_use]
+    #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn saturating_adjust(self, adjust: RefAdjust) -> Self {
         let Self { col, row } = self;
         Self {
@@ -78,7 +78,7 @@ impl CellRefRangeEnd {
     }
 
     // TODO: remove this function when switching to u64
-    #[must_use]
+    #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn translate_unchecked(self, delta_x: i64, delta_y: i64) -> Self {
         CellRefRangeEnd {
             col: self.col.translate_unchecked(delta_x),
