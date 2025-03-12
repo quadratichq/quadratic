@@ -8,7 +8,6 @@ import type { StopwatchIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 import type { ReactNode } from 'react';
-import { useEffect } from 'react';
 import { useSubmit } from 'react-router-dom';
 
 export function Empty({
@@ -19,6 +18,7 @@ export function Empty({
   severity,
   className,
   showLoggedInUser,
+  error,
 }: {
   title: string;
   description: ReactNode;
@@ -27,24 +27,24 @@ export function Empty({
   severity?: 'error';
   className?: string;
   showLoggedInUser?: boolean;
+  error?: unknown;
 }) {
   const { loggedInUser } = useRootRouteLoaderData();
   const submit = useSubmit();
 
-  useEffect(() => {
-    if (severity === 'error') {
-      mixpanel.track('[Empty].error', {
+  if (severity === 'error' || error) {
+    mixpanel.track('[Empty].error', {
+      title,
+      description,
+    });
+    Sentry.captureException(new Error('error-page'), {
+      extra: {
         title,
         description,
-      });
-      Sentry.captureException(new Error('error-page'), {
-        extra: {
-          title,
-          description,
-        },
-      });
-    }
-  }, [severity, title, description]);
+        error,
+      },
+    });
+  
 
   return (
     <div className={cn(`max-w mx-auto my-10 max-w-md px-2 text-center`, className)}>

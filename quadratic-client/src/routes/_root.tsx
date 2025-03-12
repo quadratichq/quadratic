@@ -66,6 +66,8 @@ export const ErrorBoundary = () => {
       title="Something went wrong"
       description="An unexpected error occurred. Try reloading the page or contact us if the error continues."
       Icon={ExclamationTriangleIcon}
+      severity="error"
+      error={error}
     />
   );
 };
