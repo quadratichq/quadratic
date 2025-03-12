@@ -4,13 +4,16 @@ import { BigNumber } from 'bignumber.js';
 // Converts a number to a string with the given cell formatting
 export const convertNumber = (n: string, format: JsNumber, currentFractionDigits?: number): string => {
   let number = new BigNumber(n);
+  const isNegative = number.isNegative();
+  number = number.abs();
+
   let suffix = '';
   if (format.format?.type === 'PERCENTAGE') {
     number = number.times(100);
     suffix = '%';
   }
 
-  let options: BigNumber.Format = { decimalSeparator: '.', groupSeparator: ',' };
+  let options: BigNumber.Format = { decimalSeparator: '.', groupSeparator: ',', prefix: isNegative ? '-' : '' };
   const isCurrency = format.format?.type === 'CURRENCY';
   const isScientific = format.format?.type === 'EXPONENTIAL';
   const isPercent = format.format?.type === 'PERCENTAGE';
@@ -34,7 +37,7 @@ export const convertNumber = (n: string, format: JsNumber, currentFractionDigits
 
   if (format.format?.type === 'CURRENCY') {
     if (format.format.symbol) {
-      options.prefix = format.format.symbol;
+      options.prefix += format.format.symbol;
     } else {
       throw new Error('Expected format.symbol to be defined in convertNumber.ts');
     }
