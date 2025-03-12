@@ -4,21 +4,26 @@ import { isWebGLSupported } from '@pixi/utils';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
+import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Empty } from './Empty';
 
 export function BrowserCompatibilityLayoutRoute() {
+  useEffect(() => {
+    if (!isWASMSupported || !isWebGLSupported()) {
+      mixpanel.track('[BrowserCompatibilityLayoutRoute].browserNotSupported', {
+        isWASMSupported,
+        isWebGLSupported,
+      });
+
+      Sentry.captureEvent({
+        message: 'Browser does not support WebGL or WASM',
+        level: 'info',
+      });
+    }
+  }, []);
+
   if (!isWASMSupported || !isWebGLSupported()) {
-    mixpanel.track('[BrowserCompatibilityLayoutRoute].browserNotSupported', {
-      isWASMSupported,
-      isWebGLSupported,
-    });
-
-    Sentry.captureEvent({
-      message: 'Browser does not support WebGL or WASM',
-      level: 'info',
-    });
-
     return (
       <Empty
         title="Browser not supported"
