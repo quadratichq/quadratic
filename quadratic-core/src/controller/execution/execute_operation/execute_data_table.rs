@@ -1572,8 +1572,12 @@ impl GridController {
         {
             let sheet_id = sheet_pos.sheet_id;
 
-            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let sheet = self.try_sheet_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
+
+            self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
+
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
             if data_table.header_is_first_row == first_row_is_header {
                 return Ok(());
@@ -1585,7 +1589,6 @@ impl GridController {
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
 
-            self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
             self.send_updated_bounds(transaction, sheet_id);
 
             let forward_operations = vec![op];
