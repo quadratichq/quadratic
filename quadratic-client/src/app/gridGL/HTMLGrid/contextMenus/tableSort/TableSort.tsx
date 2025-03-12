@@ -56,9 +56,8 @@ export const TableSort = () => {
     handleClose();
   }, [contextMenu.table, sort, handleClose]);
 
-  const [display, setDisplay] = useState('none');
-  useLayoutEffect(() => {
-    const changePosition = () => {
+  const changePosition = useCallback(
+    (div: HTMLDivElement | null) => {
       if (!div) {
         return;
       }
@@ -74,22 +73,24 @@ export const TableSort = () => {
       } else {
         setDisplay('none');
       }
-    };
+    },
+    [contextMenu.table]
+  );
 
+  const [display, setDisplay] = useState('none');
+  useLayoutEffect(() => {
     const viewportChanged = () => {
       if (div) {
         div.style.transform = `scale(${1 / pixiApp.viewport.scaled})`;
       }
-      changePosition();
+      changePosition(div);
     };
-
-    changePosition();
 
     events.on('viewportChanged', viewportChanged);
     return () => {
       events.off('viewportChanged', viewportChanged);
     };
-  }, [contextMenu.table, div]);
+  }, [changePosition, contextMenu.table, div]);
 
   const columnNames = useMemo(() => contextMenu.table?.columns ?? [], [contextMenu.table]);
 
@@ -156,9 +157,13 @@ export const TableSort = () => {
     });
   }, []);
 
-  const ref = useCallback((node: HTMLDivElement | null) => {
-    setDiv(node);
-  }, []);
+  const ref = useCallback(
+    (node: HTMLDivElement | null) => {
+      setDiv(node);
+      changePosition(node);
+    },
+    [changePosition]
+  );
 
   if (contextMenu.type !== ContextMenuType.TableSort) return null;
 
@@ -173,12 +178,12 @@ export const TableSort = () => {
         display,
       }}
       onKeyDown={(e) => {
+        e.stopPropagation();
         if (e.key === 'Escape') {
           handleClose();
         } else if (e.key === 'Enter') {
           handleSave();
         }
-        e.stopPropagation();
       }}
     >
       <div className="mb-4 text-lg font-semibold">Sort</div>

@@ -109,10 +109,7 @@ impl GridController {
 
             // if the new data table is a single value and is a code cell, then we
             // don't want to show the name or columns headers
-            if new_data_table.is_single_value()
-                && is_code_cell
-                && !new_data_table.is_html_or_image()
-            {
+            if new_data_table.is_single_value() && is_code_cell {
                 new_data_table.show_name = false;
                 new_data_table.show_columns = false;
             }
@@ -500,8 +497,6 @@ impl GridController {
             cells_accessed: transaction.cells_accessed.clone(),
         };
 
-        let is_single_value = matches!(value, Value::Single(_));
-
         let mut data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             table_name,
@@ -517,7 +512,7 @@ impl GridController {
 
         // if the new data table is a single value and is a code cell, then we
         // don't want to show the name or columns headers
-        if is_single_value && language.is_code_language() && !data_table.is_html_or_image() {
+        if data_table.is_single_value() && language.is_code_language() {
             data_table.show_name = false;
             data_table.show_columns = false;
         }
