@@ -107,12 +107,14 @@ impl GridController {
                 new_data_table.header_is_first_row |= old_data_table.header_is_first_row;
             }
 
-            // if the new data table is a single value and is a code cell, then we don't want to show the name
+            // if the new data table is a single value and is a code cell, then we
+            // don't want to show the name or columns headers
             if new_data_table.is_single_value()
                 && is_code_cell
                 && !new_data_table.is_html_or_image()
             {
                 new_data_table.show_name = false;
+                new_data_table.show_columns = false;
             }
 
             // if the width of the old and new data tables are the same,
@@ -513,9 +515,11 @@ impl GridController {
         transaction.cells_accessed.clear();
         data_table.show_columns = js_code_result.has_headers;
 
-        // if the new data table is a single value and is a code cell, then we don't want to show the name
+        // if the new data table is a single value and is a code cell, then we
+        // don't want to show the name or columns headers
         if is_single_value && language.is_code_language() && !data_table.is_html_or_image() {
             data_table.show_name = false;
+            data_table.show_columns = false;
         }
 
         // If no headers were returned, we want column headers: [0, 1, 2, 3, ...etc]
