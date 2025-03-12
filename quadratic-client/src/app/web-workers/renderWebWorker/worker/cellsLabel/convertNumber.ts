@@ -5,15 +5,14 @@ import { BigNumber } from 'bignumber.js';
 export const convertNumber = (n: string, format: JsNumber, currentFractionDigits?: number): string => {
   let number = new BigNumber(n);
   const isNegative = number.isNegative();
-  number = number.abs();
-
-  let suffix = '';
-  if (format.format?.type === 'PERCENTAGE') {
-    number = number.times(100);
-    suffix = '%';
-  }
 
   let options: BigNumber.Format = { decimalSeparator: '.', groupSeparator: ',', prefix: isNegative ? '-' : '' };
+
+  if (format.format?.type === 'PERCENTAGE') {
+    number = number.times(100);
+    options.suffix = '%';
+  }
+
   const isCurrency = format.format?.type === 'CURRENCY';
   const isScientific = format.format?.type === 'EXPONENTIAL';
   const isPercent = format.format?.type === 'PERCENTAGE';
@@ -52,9 +51,9 @@ export const convertNumber = (n: string, format: JsNumber, currentFractionDigits
   }
 
   if (currentFractionDigits !== undefined) {
-    return number.toFormat(currentFractionDigits, options) + suffix;
+    return number.abs().toFormat(currentFractionDigits, options);
   }
-  return number.toFormat(options) + suffix;
+  return number.abs().toFormat(options);
 };
 
 // Reduces the number of decimals (used by rendering to show a fractional number in a smaller-width cell)
