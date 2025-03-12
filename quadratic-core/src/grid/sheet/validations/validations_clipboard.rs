@@ -19,10 +19,8 @@ impl Validations {
             .filter_map(|validation| {
                 if let Some(intersection) = selection.intersection(&validation.selection, context) {
                     let mut v = validation.clone();
-                    v.selection = intersection;
-                    v.selection
-                        .translate_in_place(1 + -clipboard_origin.x, 1 + -clipboard_origin.y)
-                        .ok()?;
+                    v.selection = intersection
+                        .saturating_translate(1 + -clipboard_origin.x, 1 + -clipboard_origin.y)?;
                     Some(v)
                 } else {
                     None

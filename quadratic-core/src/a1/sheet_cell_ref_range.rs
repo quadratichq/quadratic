@@ -3,7 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{grid::SheetId, Pos};
+use crate::{grid::SheetId, Pos, RefAdjust, RefError};
 
 use super::{parse_optional_sheet_name_to_id, A1Context, A1Error, CellRefRange};
 
@@ -75,6 +75,33 @@ impl SheetCellRefRange {
             }
         }
         self.cells.to_rc_string(base_pos)
+    }
+
+    /// Adjusts coordinates by `adjust`. Returns an error if the result is out
+    /// of bounds.
+    #[must_use]
+    pub fn adjust(self, adjust: RefAdjust) -> Result<Self, RefError> {
+        if self.sheet_id == adjust.sheet_id {
+            Ok(Self {
+                sheet_id: self.sheet_id,
+                cells: self.cells.adjust(adjust)?,
+            })
+        } else {
+            Ok(self)
+        }
+    }
+    /// Adjusts coordinates by `adjust`, clamping the result within the sheet
+    /// bounds. Returns `None` if the whole range goes out of bounds.
+    #[must_use]
+    pub fn saturating_adjust(self, adjust: RefAdjust) -> Option<Self> {
+        if self.sheet_id == adjust.sheet_id {
+            Some(Self {
+                sheet_id: self.sheet_id,
+                cells: self.cells.saturating_adjust(adjust)?,
+            })
+        } else {
+            Some(self)
+        }
     }
 }
 

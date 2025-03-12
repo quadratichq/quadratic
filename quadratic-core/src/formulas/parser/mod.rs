@@ -14,7 +14,7 @@ use rules::SyntaxRule;
 use super::*;
 use crate::{
     a1::{A1Context, CellRefRange, CellRefRangeEnd, RefRangeBounds, SheetCellRefRange},
-    grid::{Grid, SheetId},
+    grid::{Grid, RefAdjust, SheetId},
     CodeResult, CoerceInto, RefError, RunError, RunErrorMsg, SheetPos, Span, Spanned, TableRef,
 };
 
@@ -131,76 +131,19 @@ pub fn convert_a1_to_rc(source: &str, ctx: &A1Context, pos: SheetPos) -> String 
     replace_cell_range_references(source, ctx, pos, replace_fn)
 }
 
-/// Translates all relative cell references that are within the same sheet as
-/// the formula by `(delta_x, delta_y)`.
+/// Adjusts all cell references in a formula. If a references is out of bounds
+/// after the adjustment, it is replaced with an error.
 #[must_use]
-pub fn translate_cell_references_within_sheet(
+pub fn adjust_references(
     source: &str,
     ctx: &A1Context,
     pos: SheetPos,
-    delta_x: i64,
-    delta_y: i64,
-) -> String {
-    replace_cell_references_with(source, ctx, pos, |sheet_id, mut cell_ref_range_end| {
-        if sheet_id == pos.sheet_id {
-            cell_ref_range_end.col.translate_in_place(delta_x)?;
-            cell_ref_range_end.row.translate_in_place(delta_y)?;
-        }
-        Ok(cell_ref_range_end)
-    })
-}
-
-/// Translates all relative cell references that are within the same sheet as
-/// the formula _and_ past the given column or row.
-///
-/// - If a column is supplied, then all X coordinates greater than or equal to
-///   it are adjusted by `delta`.
-/// - If a row is supplied, then all Y coordinates greater than or equal to it
-///   are adjusted by `delta`.
-#[must_use]
-pub fn adjust_cell_references_within_sheet(
-    source: &str,
-    ctx: &A1Context,
-    pos: SheetPos,
-    column: Option<i64>,
-    row: Option<i64>,
-    delta: i64,
-) -> String {
-    replace_cell_references_with(source, ctx, pos, |sheet_id, mut cell_ref_range_end| {
-        if sheet_id == pos.sheet_id {
-            if column.is_some_and(|c| c <= cell_ref_range_end.col.coord) {
-                cell_ref_range_end.col.translate_in_place(delta)?;
-            }
-            if row.is_some_and(|r| r <= cell_ref_range_end.row.coord) {
-                cell_ref_range_end.row.translate_in_place(delta)?;
-            }
-        }
-        Ok(cell_ref_range_end)
-    })
-}
-
-/// Replace all cell references by applying the function `replace_xy_fn` to each
-/// end of the range.
-#[must_use]
-pub fn replace_cell_references_with(
-    source: &str,
-    ctx: &A1Context,
-    pos: SheetPos,
-    replace_xy_fn: impl Fn(SheetId, CellRefRangeEnd) -> Result<CellRefRangeEnd, RefError>,
+    adjust: RefAdjust,
 ) -> String {
     replace_cell_range_references(source, ctx, pos, |range_ref| {
-        Ok(match range_ref.cells {
-            CellRefRange::Sheet {
-                range: RefRangeBounds { start, end },
-            } => CellRefRange::Sheet {
-                range: RefRangeBounds {
-                    start: replace_xy_fn(range_ref.sheet_id, start)?,
-                    end: replace_xy_fn(range_ref.sheet_id, end)?,
-                },
-            },
-            other @ CellRefRange::Table { .. } => other, // leave table refs unchanged
-        }
-        .to_string())
+        Ok(range_ref
+            .adjust(adjust)?
+            .to_a1_string(Some(pos.sheet_id), ctx, false))
     })
 }
 
@@ -512,7 +455,7 @@ mod tests {
         let src = "SUM(A4,B$6, C7)";
         let expected = "SUM(A7,B$5, C10)";
 
-        let replaced = replace_cell_references_with(src, &ctx, pos, |_sheet, range_end| {
+        let replaced = adjust_references(src, &ctx, pos, |_sheet, range_end| {
             Ok(CellRefRangeEnd {
                 col: range_end.col,
                 row: {

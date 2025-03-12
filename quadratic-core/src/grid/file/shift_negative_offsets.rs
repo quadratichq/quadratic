@@ -11,7 +11,7 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction, execution::TransactionSource,
     },
     grid::{js_types::JsSnackbarSeverity, Grid, GridBounds},
-    CopyFormats,
+    CopyFormats, RefAdjust,
 };
 
 const IMPORT_OFFSET: i64 = 1000000;
@@ -94,9 +94,14 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
                 }
 
                 // Translate all ranges and collect into new HashSet
-                *ranges = ranges
-                    .iter()
-                    .filter_map(|r| r.translate(x_shift, y_shift).ok())
+                *ranges = std::mem::take(ranges)
+                    .into_iter()
+                    .filter_map(|r| {
+                        // This is actually wrong -- we should translate differently
+                        // for every sheet, not just once for the current sheet
+                        r.adjust(RefAdjust::new_translate(*sheet_id, x_shift, y_shift))
+                            .ok()
+                    })
                     .collect();
             }
         }

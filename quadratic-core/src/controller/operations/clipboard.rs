@@ -20,7 +20,7 @@ use crate::grid::unique_data_table_name;
 use crate::grid::DataTable;
 use crate::grid::DataTableKind;
 use crate::grid::SheetId;
-use crate::{a1::A1Selection, CellValue, Pos, Rect, SheetPos, SheetRect};
+use crate::{a1::A1Selection, CellValue, Pos, Rect, RefAdjust, RefError, SheetPos, SheetRect};
 
 // todo: break up this file so tests are easier to write
 
@@ -464,7 +464,9 @@ impl GridController {
 
         let mut cursor = clipboard
             .selection
-            .translate(cursor_translate_x, cursor_translate_y)?;
+            .clone()
+            .saturating_translate(cursor_translate_x, cursor_translate_y)
+            .ok_or(RefError)?;
         cursor.sheet_id = selection.sheet_id;
 
         match special {
@@ -660,8 +662,14 @@ impl GridController {
                 drop(decoded);
 
                 let context = self.a1_context();
-                let delta_x = insert_at.x - clipboard.origin.x;
-                let delta_y = insert_at.y - clipboard.origin.y;
+                let adjust = RefAdjust {
+                    sheet_id: selection.sheet_id,
+                    relative_only: true,
+                    dx: insert_at.x - clipboard.origin.x,
+                    dy: insert_at.y - clipboard.origin.y,
+                    x_start: 0,
+                    y_start: 0,
+                };
 
                 // loop through the clipboard and replace cell references in formulas, translate cell references in other languages
                 for (x, col) in clipboard.cells.columns.iter_mut().enumerate() {
@@ -673,13 +681,7 @@ impl GridController {
                                 sheet_id: clipboard.origin.sheet_id,
                             };
                             if clipboard.operation == ClipboardOperation::Copy {
-                                code_cell.translate_cell_references(
-                                    context,
-                                    original_pos,
-                                    selection.sheet_id,
-                                    delta_x,
-                                    delta_y,
-                                );
+                                code_cell.adjust_references(context, original_pos, adjust);
                             }
                         }
                     }

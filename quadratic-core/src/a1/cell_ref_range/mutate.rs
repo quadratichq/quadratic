@@ -1,54 +1,32 @@
-use crate::RefError;
+use crate::{RefAdjust, RefError};
 
 use super::*;
 
 impl CellRefRange {
-    pub fn translate_in_place(&mut self, x: i64, y: i64) -> Result<(), RefError> {
-        match self {
-            Self::Sheet { range } => range.translate_in_place(x, y),
-            Self::Table { .. } => Ok(()),
-        }
-    }
-
-    pub fn translate(&self, x: i64, y: i64) -> Result<Self, RefError> {
-        if let Self::Sheet { range } = self {
-            Ok(Self::Sheet {
-                range: range.translate(x, y)?,
-            })
-        } else {
-            Ok(self.clone())
-        }
-    }
-
-    pub fn saturating_translate(&self, x: i64, y: i64) -> Option<Self> {
-        if let Self::Sheet { range } = self {
-            Some(Self::Sheet {
-                range: range.saturating_translate(x, y)?,
-            })
-        } else {
-            Some(self.clone())
-        }
-    }
-
-    pub fn adjust_column_row_in_place(
-        &mut self,
-        column: Option<i64>,
-        row: Option<i64>,
-        delta: i64,
-    ) {
-        if let Self::Sheet { range } = self {
-            range.adjust_column_row_in_place(column, row, delta);
-        }
-    }
-
+    /// Adjusts coordinates by `adjust`. Returns an error if the result is out
+    /// of bounds.
+    ///
+    /// **Note:** `adjust.sheet_id` is ignored by this method.
     #[must_use]
-    pub fn adjust_column_row(&self, column: Option<i64>, row: Option<i64>, delta: i64) -> Self {
-        if let Self::Sheet { range } = self {
-            Self::Sheet {
-                range: range.adjust_column_row(column, row, delta),
-            }
-        } else {
-            self.clone()
+    pub fn adjust(self, adjust: RefAdjust) -> Result<Self, RefError> {
+        match self {
+            Self::Sheet { range } => Ok(Self::Sheet {
+                range: range.adjust(adjust)?,
+            }),
+            other => Ok(other),
+        }
+    }
+    /// Adjusts coordinates by `adjust`, clamping the result within the sheet
+    /// bounds. Returns `None` if the result is empty.
+    ///
+    /// **Note:** `adjust.sheet_id` is ignored by this method.
+    #[must_use]
+    pub fn saturating_adjust(self, adjust: RefAdjust) -> Option<Self> {
+        match self {
+            CellRefRange::Sheet { range } => Some(Self::Sheet {
+                range: range.saturating_adjust(adjust)?,
+            }),
+            other => Some(other),
         }
     }
 

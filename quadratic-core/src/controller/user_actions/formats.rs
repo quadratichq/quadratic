@@ -10,6 +10,7 @@ use crate::controller::operations::operation::Operation;
 use crate::controller::GridController;
 use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
 use crate::grid::{CellAlign, CellVerticalAlign, CellWrap, NumericFormat, NumericFormatKind};
+use crate::RefAdjust;
 
 impl GridController {
     pub(crate) fn clear_format_borders(&mut self, selection: &A1Selection, cursor: Option<String>) {
@@ -69,7 +70,8 @@ impl GridController {
 
             // Force the range to be within bounds.
             // TODO: this should not be necessary
-            if range.saturating_translate(0, 0).is_none() {
+            let no_op_adjust = RefAdjust::new_no_op(selection.sheet_id);
+            if range.saturating_adjust(no_op_adjust).is_none() {
                 return;
             };
 

@@ -2,6 +2,7 @@
 
 use crate::{
     a1::{A1Context, CellRefRange, RefRangeBounds, TableRef},
+    grid::RefAdjust,
     RefError,
 };
 
@@ -85,43 +86,49 @@ impl A1Selection {
         changed
     }
 
-    pub fn translate_in_place(&mut self, x: i64, y: i64) -> Result<(), RefError> {
-        self.cursor.translate_in_place(x, y, 1, 1);
-        for range in &mut self.ranges {
-            range.translate_in_place(x, y)?;
+    /// Adjusts coordinates by `adjust`. Returns an error if the result is out
+    /// of bounds.
+    #[must_use]
+    pub fn adjust(self, adjust: RefAdjust) -> Result<Self, RefError> {
+        if self.sheet_id == adjust.sheet_id {
+            Ok(Self {
+                sheet_id: self.sheet_id,
+                cursor: self.cursor.saturating_adjust(adjust),
+                ranges: self
+                    .ranges
+                    .into_iter()
+                    .map(|r| r.adjust(adjust))
+                    .collect::<Result<Vec<_>, RefError>>()?,
+            })
+        } else {
+            Ok(self)
         }
-        Ok(())
     }
-
-    pub fn translate(&self, x: i64, y: i64) -> Result<Self, RefError> {
-        let mut selection = self.clone();
-        selection.translate_in_place(x, y)?;
-        Ok(selection)
-    }
-
-    pub fn saturating_translate(&self, x: i64, y: i64) -> Option<Self> {
-        Some(Self {
-            sheet_id: self.sheet_id,
-            cursor: self.cursor.translate(x, y, 1, 1),
-            ranges: self
-                .ranges
-                .iter()
-                .filter_map(|range| range.saturating_translate(x, y))
-                .collect(),
-        })
-        .filter(|sel| !sel.ranges.is_empty())
-    }
-
-    pub fn adjust_column_row_in_place(
-        &mut self,
-        column: Option<i64>,
-        row: Option<i64>,
-        delta: i64,
-    ) {
-        self.cursor.adjust_column_row_in_place(column, row, delta);
-        for range in &mut self.ranges {
-            range.adjust_column_row_in_place(column, row, delta);
+    /// Adjusts coordinates by `adjust`, clamping the result within the sheet
+    /// bounds. Returns `None` if the whole selection becomes empty.
+    #[must_use]
+    pub fn saturating_adjust(self, adjust: RefAdjust) -> Option<Self> {
+        if self.sheet_id == adjust.sheet_id {
+            Some(Self {
+                sheet_id: self.sheet_id,
+                cursor: self.cursor.saturating_adjust(adjust),
+                ranges: self
+                    .ranges
+                    .into_iter()
+                    .filter_map(|r| r.saturating_adjust(adjust))
+                    .collect(),
+            })
+            .filter(|sel| !sel.ranges.is_empty())
+        } else {
+            Some(self)
         }
+    }
+
+    /// Translates the selection, clamping the result within the sheet bounds.
+    #[must_use]
+    pub fn saturating_translate(self, dx: i64, dy: i64) -> Option<Self> {
+        let adjust = RefAdjust::new_translate(self.sheet_id, dx, dy);
+        self.saturating_adjust(adjust)
     }
 
     /// Returns (vector of TableRef, vector of CellRefRange) contained within the selection.

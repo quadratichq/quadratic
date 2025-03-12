@@ -8,6 +8,8 @@ use crate::{
 use super::DataTable;
 
 impl DataTable {
+    /// Returns the cell format for a relative position within the data table.
+    /// 0,0 is the top left.
     pub fn get_format(&self, pos: Pos) -> Format {
         let pos = self.get_format_pos_from_display_buffer(pos);
         let mut format = self.formats.try_format(pos).unwrap_or_default();
@@ -15,7 +17,8 @@ impl DataTable {
         format
     }
 
-    /// Get the position of the format in the display buffer.
+    /// Get the position of the format in the display buffer for a relative
+    /// position within the data table. 0,0 is the top left.
     pub(crate) fn get_format_pos_from_display_buffer(&self, mut pos: Pos) -> Pos {
         // adjust for hidden columns
         pos.x = self.get_column_index_from_display_index(pos.x as u32, true) as i64;

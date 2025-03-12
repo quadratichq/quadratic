@@ -5,60 +5,27 @@ use crate::{
         operations::operation::Operation, GridController,
     },
     grid::{GridBounds, SheetId},
-    CellValue,
+    CellValue, RefAdjust,
 };
 
 impl GridController {
-    fn adjust_code_cells_column_row(
-        &self,
-        transaction: &mut PendingTransaction,
-        sheet_id: SheetId,
-        column: Option<i64>,
-        row: Option<i64>,
-        delta: i64,
-    ) {
+    fn adjust_code_cell_references(&self, transaction: &mut PendingTransaction, adjust: RefAdjust) {
+        let a1_context = self.a1_context();
+
         for sheet in self.grid.sheets().iter() {
-            for (pos, code_run) in sheet.iter_code_runs() {
-                if let Some(cells_ranges) = code_run.cells_accessed.cells.get(&sheet_id) {
-                    let Some(sheet) = self.try_sheet(sheet_id) else {
-                        continue;
-                    };
-
-                    for cells_range in cells_ranges.iter() {
-                        let ref_range_bounds = match cells_range {
-                            CellRefRange::Sheet { range } => range,
-                            CellRefRange::Table { .. } => continue,
-                        };
-                        let cells_rect = sheet.ref_range_bounds_to_rect(ref_range_bounds);
-
-                        if cells_rect.max.x < column.unwrap_or(UNBOUNDED)
-                            && cells_rect.max.y < row.unwrap_or(UNBOUNDED)
-                        {
-                            continue;
-                        }
-
-                        if let Some(CellValue::Code(code)) = sheet.cell_value_ref(pos) {
-                            let context = self.a1_context();
-                            let mut new_code = code.clone();
-                            new_code.adjust_code_cell_column_row(
-                                context,
-                                pos.to_sheet_pos(sheet_id),
-                                column,
-                                row,
-                                delta,
-                            );
-                            if new_code != *code {
-                                let code_cell_value = CellValue::Code(new_code);
-                                let sheet_pos = pos.to_sheet_pos(sheet.id);
-                                transaction.operations.push_back(Operation::SetCellValues {
-                                    sheet_pos,
-                                    values: code_cell_value.into(),
-                                });
-                                transaction
-                                    .operations
-                                    .push_back(Operation::ComputeCode { sheet_pos });
-                            }
-                        }
+            for (pos, _) in sheet.iter_code_runs() {
+                if let Some(CellValue::Code(code)) = sheet.cell_value_ref(pos) {
+                    let sheet_pos = pos.to_sheet_pos(sheet.id);
+                    let mut new_code = code.clone();
+                    new_code.adjust_references(a1_context, sheet_pos, adjust);
+                    if code.code != new_code.code {
+                        transaction.operations.push_back(Operation::SetCellValues {
+                            sheet_pos,
+                            values: CellValue::Code(new_code).into(),
+                        });
+                        transaction
+                            .operations
+                            .push_back(Operation::ComputeCode { sheet_pos });
                     }
                 }
             }
@@ -80,7 +47,10 @@ impl GridController {
             if transaction.is_user() {
                 // adjust formulas to account for deleted column (needs to be
                 // here since it's across sheets)
-                self.adjust_code_cells_column_row(transaction, sheet_id, Some(column), None, -1);
+                self.adjust_code_cell_references(
+                    transaction,
+                    RefAdjust::new_delete_column(sheet_id, column),
+                );
 
                 transaction
                     .operations
@@ -117,7 +87,10 @@ impl GridController {
             if transaction.is_user() {
                 // adjust formulas to account for deleted column (needs to be
                 // here since it's across sheets)
-                self.adjust_code_cells_column_row(transaction, sheet_id, None, Some(row), -1);
+                self.adjust_code_cell_references(
+                    transaction,
+                    RefAdjust::new_delete_row(sheet_id, row),
+                );
 
                 transaction
                     .operations
@@ -159,7 +132,10 @@ impl GridController {
             if transaction.is_user() {
                 // adjust formulas to account for inserted column (needs to be
                 // here since it's across sheets)
-                self.adjust_code_cells_column_row(transaction, sheet_id, Some(column), None, 1);
+                self.adjust_code_cell_references(
+                    transaction,
+                    RefAdjust::new_insert_column(sheet_id, column),
+                );
 
                 transaction
                     .operations
@@ -201,7 +177,10 @@ impl GridController {
             if transaction.is_user() {
                 // adjust formulas to account for deleted column (needs to be
                 // here since it's across sheets)
-                self.adjust_code_cells_column_row(transaction, sheet_id, None, Some(row), 1);
+                self.adjust_code_cell_references(
+                    transaction,
+                    RefAdjust::new_insert_row(sheet_id, row),
+                );
 
                 transaction
                     .operations
@@ -232,6 +211,7 @@ mod tests {
 
     use crate::{
         a1::A1Selection,
+        cell_values::CellValues,
         grid::{
             sheet::validations::{validation::Validation, validation_rules::ValidationRule},
             CellsAccessed, CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
@@ -250,14 +230,14 @@ mod tests {
         let column = 0;
         let row = 0;
         let delta = 1;
-        gc.adjust_code_cells_column_row(
+        gc.adjust_code_cell_references(
             &mut PendingTransaction::default(),
             sheet_id,
             Some(column),
             None,
             delta,
         );
-        gc.adjust_code_cells_column_row(
+        gc.adjust_code_cell_references(
             &mut PendingTransaction::default(),
             sheet_id,
             None,
@@ -270,32 +250,19 @@ mod tests {
     fn adjust_code_cells_formula() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_value(
-            SheetPos {
-                sheet_id,
-                x: 2,
-                y: 1,
-            },
-            "1".into(),
-            None,
-        );
-        gc.set_cell_value(
-            SheetPos {
-                sheet_id,
-                x: 2,
-                y: 2,
-            },
-            "2".into(),
+        gc.add_sheet(Some("Other".to_string()));
+        gc.set_cell_value(SheetPos::new(sheet_id, 2, 1), "1".into(), None);
+        gc.set_cell_value(SheetPos::new(sheet_id, 2, 2), "2".into(), None);
+        gc.set_code_cell(
+            SheetPos::new(sheet_id, 1, 1),
+            CodeCellLanguage::Formula,
+            "B1 + B2".into(),
             None,
         );
         gc.set_code_cell(
-            SheetPos {
-                sheet_id,
-                x: 1,
-                y: 1,
-            },
+            SheetPos::new(sheet_id, 1, 2),
             CodeCellLanguage::Formula,
-            "B1 + B2".into(),
+            "'Sheet 1'!F1+Other!F1 - Nonexistent!F1".into(),
             None,
         );
 
@@ -306,23 +273,52 @@ mod tests {
         );
 
         let mut transaction = PendingTransaction::default();
-        gc.adjust_code_cells_column_row(&mut transaction, sheet_id, None, Some(2), 1);
+        gc.adjust_code_cell_references(&mut transaction, sheet_id, None, Some(2), 1);
+        gc.adjust_code_cell_references(&mut transaction, sheet_id, Some(5), None, 1);
 
-        assert_eq!(transaction.operations.len(), 2);
+        let single_formula = |formula_str: &str| {
+            CellValues::from(CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: formula_str.to_string(),
+            }))
+        };
+
         assert_eq!(
-            transaction.operations[0],
-            Operation::SetCellValues {
-                sheet_pos: SheetPos {
-                    sheet_id,
-                    x: 1,
-                    y: 1
+            &transaction.operations,
+            &[
+                // first formula, x += 2
+                Operation::SetCellValues {
+                    sheet_pos: SheetPos::new(sheet_id, 1, 1),
+                    values: single_formula("B1 + $B3"),
                 },
-                values: CellValue::Code(CodeCellValue {
-                    language: CodeCellLanguage::Formula,
-                    code: "B1 + B3".to_string()
-                })
-                .into(),
-            }
+                Operation::ComputeCode {
+                    sheet_pos: SheetPos::new(sheet_id, 1, 1)
+                },
+                // second formula, x += 2
+                Operation::SetCellValues {
+                    sheet_pos: SheetPos::new(sheet_id, 1, 2),
+                    values: single_formula("F3+Other!F1 - Nonexistent!F1"),
+                },
+                Operation::ComputeCode {
+                    sheet_pos: SheetPos::new(sheet_id, 1, 2)
+                },
+                // first formula, y += 5
+                Operation::SetCellValues {
+                    sheet_pos: SheetPos::new(sheet_id, 1, 1),
+                    values: single_formula("B6 + $B3"),
+                },
+                Operation::ComputeCode {
+                    sheet_pos: SheetPos::new(sheet_id, 1, 1)
+                },
+                // second formula, y += 5
+                Operation::SetCellValues {
+                    sheet_pos: SheetPos::new(sheet_id, 1, 2),
+                    values: single_formula("F3+Other!F1 - Nonexistent!F1"),
+                },
+                Operation::ComputeCode {
+                    sheet_pos: SheetPos::new(sheet_id, 1, 2)
+                },
+            ]
         );
     }
 
@@ -392,7 +388,7 @@ mod tests {
         );
 
         let mut transaction = PendingTransaction::default();
-        gc.adjust_code_cells_column_row(&mut transaction, sheet_id, None, Some(2), 1);
+        gc.adjust_code_cell_references(&mut transaction, sheet_id, None, Some(2), 1);
         assert_eq!(transaction.operations.len(), 2);
         assert_eq!(
             transaction.operations[0],
@@ -474,7 +470,7 @@ mod tests {
         );
 
         let mut transaction = PendingTransaction::default();
-        gc.adjust_code_cells_column_row(&mut transaction, sheet_id, None, Some(2), 1);
+        gc.adjust_code_cell_references(&mut transaction, sheet_id, None, Some(2), 1);
         assert_eq!(transaction.operations.len(), 2);
         assert_eq!(
             transaction.operations[0],

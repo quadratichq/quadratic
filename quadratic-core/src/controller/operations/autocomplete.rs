@@ -9,7 +9,7 @@ use crate::{
         unique_data_table_name, SheetId,
     },
     util::maybe_reverse,
-    CellValue, Pos, Rect, SheetPos, SheetRect,
+    CellValue, Pos, Rect, RefAdjust, SheetPos, SheetRect,
 };
 use anyhow::{Error, Result};
 use itertools::Itertools;
@@ -662,14 +662,17 @@ impl GridController {
                 if let Some((CellValue::Code(code_cell), original_pos)) = series.get_mut(i) {
                     let mut data_table_ops = vec![];
                     if let Some(original_pos) = original_pos {
-                        let delta_x = x - original_pos.x;
-                        let delta_y = y - original_pos.y;
-                        code_cell.translate_cell_references(
+                        code_cell.adjust_references(
                             context,
                             original_pos.to_sheet_pos(sheet_id),
-                            sheet_id,
-                            delta_x,
-                            delta_y,
+                            RefAdjust {
+                                sheet_id,
+                                relative_only: true,
+                                dx: x - original_pos.x,
+                                dy: y - original_pos.y,
+                                x_start: 0,
+                                y_start: 0,
+                            },
                         );
 
                         let source_pos = original_pos.to_owned();

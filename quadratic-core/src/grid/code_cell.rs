@@ -66,55 +66,16 @@ impl CodeCellValue {
             .to_string();
     }
 
-    /// Updates the cell references in the code by translating them by the given
-    /// delta. Updates only relative cell references.
-    ///
-    /// `pos` should be the original position of the code cell, not the new
-    /// position.
-    pub fn translate_cell_references(
-        &mut self,
-        a1_context: &A1Context,
-        pos: SheetPos,
-        new_sheet_id: SheetId,
-        delta_x: i64,
-        delta_y: i64,
-    ) {
-        if delta_x == 0 && delta_y == 0 {
-            return;
-        }
-
-        if self.language == CodeCellLanguage::Formula {
-            self.code = crate::formulas::translate_cell_references_within_sheet(
-                &self.code, a1_context, pos, delta_x, delta_y,
-            );
-        } else if self.language.has_q_cells() {
-            self.replace_q_cells_a1_selection(new_sheet_id, a1_context, |mut a1_selection| {
-                a1_selection.translate_in_place(delta_x, delta_y)?;
-                Ok(a1_selection.to_string(Some(new_sheet_id), a1_context))
-            });
-        }
-    }
-
-    /// Adjusts the code cell references by the given delta. Updates only relative
-    /// cell references. Used for adjusting code cell references when the column
-    /// or row is inserted or deleted.
-    pub fn adjust_code_cell_column_row(
-        &mut self,
-        a1_context: &A1Context,
-        pos: SheetPos,
-        column: Option<i64>,
-        row: Option<i64>,
-        delta: i64,
-    ) {
-        if delta != 0 {
+    /// Adjusts references in the code cell.
+    pub fn adjust_references(&mut self, a1_context: &A1Context, pos: SheetPos, adjust: RefAdjust) {
+        if !adjust.is_no_op() {
             if self.language == CodeCellLanguage::Formula {
-                self.code = crate::formulas::adjust_cell_references_within_sheet(
-                    &self.code, a1_context, pos, column, row, delta,
-                );
+                self.code = crate::formulas::adjust_references(&self.code, a1_context, pos, adjust);
             } else if self.language.has_q_cells() {
                 self.replace_q_cells_a1_selection(pos.sheet_id, a1_context, |mut a1_selection| {
-                    a1_selection.adjust_column_row_in_place(column, row, delta);
-                    Ok(a1_selection.to_string(Some(pos.sheet_id), a1_context))
+                    Ok(a1_selection
+                        .adjust(adjust)?
+                        .to_string(Some(pos.sheet_id), a1_context))
                 });
             }
         }
@@ -187,6 +148,102 @@ impl CodeCellValue {
     }
 }
 
+/// Adjustment to make to the coordinates of cell references in code cells.
+///
+/// Unbounded coordinates are always unmodified.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub struct RefAdjust {
+    /// Only references to this sheet will be adjusted.
+    pub sheet_id: SheetId,
+
+    /// Whether to translate only relative references.
+    ///
+    /// If this is false, then relative and absolute references are both
+    /// translated.
+    pub relative_only: bool,
+
+    /// Offset to add to each X coordinate.
+    pub dx: i64,
+    /// Offset to add to each Y coordinate.
+    pub dy: i64,
+
+    /// Column before which coordinates should remain unmodified, or 0 if all
+    /// columns should be affected.
+    ///
+    /// This is used when adding/removing a column.
+    pub x_start: i64,
+    /// Row before which coordinates should remain unmodified, or 0 if all rows
+    /// should be affected.
+    ///
+    /// This is used when adding/removing a row.
+    pub y_start: i64,
+}
+impl RefAdjust {
+    /// Returns whether the adjustment has no effect.
+    pub fn is_no_op(self) -> bool {
+        self.dx == 0 && self.dy == 0
+    }
+
+    /// Constructs an adjustment with no effect.
+    pub fn new_no_op(sheet_id: SheetId) -> Self {
+        Self {
+            sheet_id,
+            relative_only: false,
+            dx: 0,
+            dy: 0,
+            x_start: 0,
+            y_start: 0,
+        }
+    }
+
+    /// Constructs an adjustment for inserting a column.
+    pub fn new_insert_column(sheet_id: SheetId, column: i64) -> Self {
+        Self {
+            relative_only: false,
+            dx: 1,
+            x_start: column,
+            ..Self::new_no_op(sheet_id)
+        }
+    }
+    /// Constructs an adjustment for deleting a column.
+    pub fn new_delete_column(sheet_id: SheetId, column: i64) -> Self {
+        Self {
+            relative_only: false,
+            dx: -1,
+            x_start: column,
+            ..Self::new_no_op(sheet_id)
+        }
+    }
+    /// Constructs an adjustment for inserting a row.
+    pub fn new_insert_row(sheet_id: SheetId, row: i64) -> Self {
+        Self {
+            relative_only: false,
+            dy: 1,
+            y_start: row,
+            ..Self::new_no_op(sheet_id)
+        }
+    }
+    /// Constructs an adjustment for deleting a row.
+    pub fn new_delete_row(sheet_id: SheetId, row: i64) -> Self {
+        Self {
+            relative_only: false,
+            dy: -1,
+            y_start: row,
+            ..Self::new_no_op(sheet_id)
+        }
+    }
+
+    /// Constructs a simple translation that applies to all references.
+    pub fn new_translate(sheet_id: SheetId, dx: i64, dy: i64) -> Self {
+        Self {
+            relative_only: false,
+            dx,
+            dy,
+            ..Self::new_no_op(sheet_id)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::Rect;
@@ -196,7 +253,9 @@ mod tests {
     #[test]
     fn test_update_cell_references() {
         let sheet_id = SheetId::new();
-        let a1_context = A1Context::default();
+        let mut a1_context = A1Context::default();
+        a1_context.sheet_map.insert_parts("This", sheet_id);
+        a1_context.sheet_map.insert_parts("Other", SheetId::new());
         let pos = SheetPos {
             x: 100,
             y: 100,
@@ -219,6 +278,20 @@ mod tests {
         code.translate_cell_references(&a1_context, pos, sheet_id, 1, 1);
         assert_eq!(
             code.code, r#"x = q.cells("B2:C3") + q.cells("D4:E5")"#,
+            "Multiple references failed"
+        );
+
+        // Sheet names
+        let mut code = CodeCellValue {
+            language: CodeCellLanguage::Python,
+            code:
+                "x = q.cells('This!A1:C2') + q.cells('Other!B3:E4') + q.cells('Nonexistent!E5:G6')"
+                    .to_string(),
+        };
+        code.translate_cell_references(&a1_context, pos, sheet_id, 1, 5);
+        assert_eq!(
+            code.code,
+            r#"x = q.cells("B6:D7") + q.cells("Other!B3:E4") + q.cells('Nonexistent!E5:G6')"#,
             "Multiple references failed"
         );
 

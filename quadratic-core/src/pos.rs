@@ -2,6 +2,7 @@ use crate::{
     a1::CellRefRangeEnd,
     grid::SheetId,
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
+    RefAdjust,
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -85,27 +86,29 @@ impl Pos {
     }
 
     /// Returns a new Pos translated by the given delta, clamping the result to the given min.
+    #[must_use]
     pub fn translate(&self, x: i64, y: i64, min_x: i64, min_y: i64) -> Self {
         let mut pos = *self;
         pos.translate_in_place(x, y, min_x, min_y);
         pos
     }
 
-    pub fn adjust_column_row_in_place(
-        &mut self,
-        column: Option<i64>,
-        row: Option<i64>,
-        delta: i64,
-    ) {
-        if let Some(column) = column {
-            if self.x >= column {
-                self.x = self.x.saturating_add(delta).max(1);
-            }
-        }
-        if let Some(row) = row {
-            if self.y >= row {
-                self.y = self.y.saturating_add(delta).max(1);
-            }
+    /// Adjusts coordinates by `adjust`, clamping the result within the sheet
+    /// bounds.
+    ///
+    /// **Note:** `adjust.sheet_id` and `adjust.relative_only` are ignored by
+    /// this method.
+    #[must_use]
+    pub fn saturating_adjust(self, adjust: RefAdjust) -> Self {
+        let x_start = adjust.x_start;
+        let dx = if self.x < x_start { 0 } else { adjust.dx };
+
+        let y_start = adjust.y_start;
+        let dy = if self.y < y_start { 0 } else { adjust.dy };
+
+        Self {
+            x: self.x.saturating_add(dx).max(1),
+            y: self.y.saturating_add(dy).max(1),
         }
     }
 

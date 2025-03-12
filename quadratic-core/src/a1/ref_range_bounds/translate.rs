@@ -1,37 +1,41 @@
-use crate::RefError;
+use crate::{RefAdjust, RefError};
 
 use super::*;
 
 impl RefRangeBounds {
-    /// Translates the range in place by the given delta.
-    pub fn translate_in_place(&mut self, x: i64, y: i64) -> Result<(), RefError> {
-        if self.is_all() {
-            return Ok(());
-        }
-        self.start.translate_in_place(x, y)?;
-        self.end.translate_in_place(x, y)?;
-        Ok(())
+    /// Adjusts coordinates by `adjust`. Returns an error if the result is out
+    /// of bounds.
+    ///
+    /// **Note:** `adjust.sheet_id` is ignored by this method.
+    #[must_use]
+    pub fn adjust(self, adjust: RefAdjust) -> Result<Self, RefError> {
+        Ok(Self {
+            start: self.start.adjust(adjust)?,
+            end: self.end.adjust(adjust)?,
+        })
     }
-
-    /// Returns a new range translated by the given delta.
-    pub fn translate(mut self, x: i64, y: i64) -> Result<Self, RefError> {
-        self.translate_in_place(x, y)?;
-        Ok(self)
-    }
-
-    pub fn saturating_translate(self, x: i64, y: i64) -> Option<Self> {
-        if self.is_all() {
-            return Some(self);
+    /// Adjusts coordinates by `adjust`, clamping the result within the sheet
+    /// bounds. Returns `None` if the result is empty.
+    ///
+    /// **Note:** `adjust.sheet_id` is ignored by this method.
+    #[must_use]
+    pub fn saturating_adjust(self, adjust: RefAdjust) -> Option<Self> {
+        // If both X coordinates or both Y coordinates end up out of range then
+        // the whole range becomes empty.
+        if self.start.col.adjust_x(adjust).is_err() && self.end.col.adjust_x(adjust).is_err()
+            || self.start.row.adjust_y(adjust).is_err() && self.end.row.adjust_y(adjust).is_err()
+        {
+            return None;
         }
+
         Some(Self {
-            // clamp start to A1
-            start: self.start.saturating_translate(x, y),
-            // if end goes past A1, then the new range is empty so return nothing
-            end: self.end.translate(x, y).ok()?,
+            start: self.start.saturating_adjust(adjust),
+            end: self.end.saturating_adjust(adjust),
         })
     }
 
     // TODO: remove this function when switching to u64
+    #[must_use]
     pub fn translate_unchecked(self, x: i64, y: i64) -> Self {
         if self.is_all() {
             return self;
@@ -40,22 +44,6 @@ impl RefRangeBounds {
             start: self.start.translate_unchecked(x, y),
             end: self.end.translate_unchecked(x, y),
         }
-    }
-
-    pub fn adjust_column_row_in_place(
-        &mut self,
-        column: Option<i64>,
-        row: Option<i64>,
-        delta: i64,
-    ) {
-        self.start.adjust_column_row_in_place(column, row, delta);
-        self.end.adjust_column_row_in_place(column, row, delta);
-    }
-
-    #[must_use]
-    pub fn adjust_column_row(mut self, column: Option<i64>, row: Option<i64>, delta: i64) -> Self {
-        self.adjust_column_row_in_place(column, row, delta);
-        self
     }
 }
 
