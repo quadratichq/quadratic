@@ -33,6 +33,7 @@
   "dependencies": {
     "@anthropic-ai/bedrock-sdk": "^0.12.4",
     "@anthropic-ai/sdk": "^0.39.0",
+    "@anthropic-ai/vertex-sdk": "^0.7.0",
     "@aws-sdk/client-bedrock-runtime": "^3.758.0",
     "@aws-sdk/client-s3": "^3.427.0",
     "@aws-sdk/client-secrets-manager": "^3.441.0",
@@ -69,8 +70,8 @@
     "@tsconfig/node20": "^1.0.1",
     "@types/auth0": "^3.3.4",
     "@types/aws-sdk": "^2.7.0",
-    "@types/express": "^4.17.14",
     "@types/cors": "^2.8.12",
+    "@types/express": "^4.17.14",
     "@types/multer": "^1.4.8",
     "@types/multer-s3": "^3.0.1",
     "@types/node": "^18.19.74",

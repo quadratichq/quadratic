@@ -1,5 +1,6 @@
 import { AnthropicBedrock } from '@anthropic-ai/bedrock-sdk';
 import { Anthropic } from '@anthropic-ai/sdk';
+import { AnthropicVertex } from '@anthropic-ai/vertex-sdk';
 import { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime';
 import { OpenAI } from 'openai';
 import {
@@ -10,6 +11,10 @@ import {
   OPENAI_API_KEY,
   XAI_API_KEY,
 } from '../env-vars';
+
+// Reads from the `CLOUD_ML_REGION` & `ANTHROPIC_VERTEX_PROJECT_ID` environment variables.
+// Additionally goes through the standard `google-auth-library` flow.
+const vertex_anthropic = new AnthropicVertex({ region: '', projectId: '' });
 
 // aws-sdk for bedrock, generic for all models
 export const bedrock = new BedrockRuntimeClient({
