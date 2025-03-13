@@ -36,6 +36,7 @@ export class PointerHeading {
     width?: number;
     height?: number;
     lastSize: number;
+    oldSize: number;
   };
 
   // tracks changes to viewport caused by resizing negative column/row headings
@@ -49,6 +50,10 @@ export class PointerHeading {
     if (this.active) {
       this.active = false;
       sheets.sheet.offsets.cancelResize();
+      if (this.resizing) {
+        const delta = this.resizing.lastSize - this.resizing.oldSize;
+        renderWebWorker.updateSheetOffsetsTransient(sheets.current, this.resizing.column, this.resizing.row, delta);
+      }
       pixiApp.gridLines.dirty = true;
       pixiApp.cursor.dirty = true;
       pixiApp.headings.dirty = true;
@@ -88,6 +93,7 @@ export class PointerHeading {
       };
       this.resizing = {
         lastSize: this.viewportChanges.originalSize,
+        oldSize: this.viewportChanges.originalSize,
         start: headingResize.start,
         row: headingResize.row,
         column: headingResize.column,
