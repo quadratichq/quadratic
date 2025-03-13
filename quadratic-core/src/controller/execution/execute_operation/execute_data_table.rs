@@ -1574,21 +1574,28 @@ impl GridController {
 
             let sheet = self.try_sheet_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
-
-            self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
-
-            let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let data_table = sheet.data_table_mut(data_table_pos)?;
+            let data_table = sheet.data_table_result(data_table_pos)?;
             if data_table.header_is_first_row == first_row_is_header {
                 return Ok(());
             }
 
+            // mark dirty if the first row is not the header, so that largest rect gets marked dirty
+            if !data_table.header_is_first_row {
+                self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
+            }
+
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let data_table = sheet.data_table_mut(data_table_pos)?;
             data_table.toggle_first_row_as_header(first_row_is_header);
 
             let data_table_rect = data_table
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
 
+            // mark dirty if the first row is not the header, so that largest rect gets marked dirty
+            if !data_table.header_is_first_row {
+                self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
+            }
             self.send_updated_bounds(transaction, sheet_id);
 
             let forward_operations = vec![op];
