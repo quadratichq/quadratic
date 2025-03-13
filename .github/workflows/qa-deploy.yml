@@ -215,10 +215,18 @@ jobs:
 
       - name: Purge Cloudflare Cache
         run: |
-          curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_ZONE_ID_DEVELOPMENT }}/purge_cache" \
+          response=$(curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_ZONE_ID_DEVELOPMENT }}/purge_cache" \
           -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_KEY_DEVELOPMENT }}" \
           -H "Content-Type: application/json" \
-          -d '{"purge_everything": true}'
+          -d '{"purge_everything": true}')
+
+          # Check if Purge was successful
+          if echo "$response" | jq -e '.success' > /dev/null; then
+            echo "Successfully purged Cloudflare cache"
+          else
+            echo "Failed to purge Cloudflare cache: $response"
+            exit 1
+          fi
 
   pulumi:
     needs: [build_client, build_images]
