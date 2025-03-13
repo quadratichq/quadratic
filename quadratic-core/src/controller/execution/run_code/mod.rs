@@ -602,7 +602,7 @@ mod test {
             output_type: None,
             cells_accessed: Default::default(),
         };
-        let new_data_table = DataTable::new(
+        let mut new_data_table = DataTable::new(
             DataTableKind::CodeRun(new_code_run),
             "Table_2",
             Value::Single(CellValue::Text("replace me".to_string())),
@@ -613,6 +613,8 @@ mod test {
         )
         .with_show_name(false)
         .with_show_columns(false);
+        new_data_table.column_headers = None;
+
         gc.finalize_data_table(transaction, sheet_pos, Some(new_data_table.clone()), None);
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
