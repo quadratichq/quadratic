@@ -101,9 +101,10 @@ jobs:
           name: quadratic-client-development
           path: /tmp/quadratic-client-development
           retention-days: 1
-          compression-level: 0
+          compression-level: 9
           overwrite: true
           include-hidden-files: true
+          if-no-files-found: error
 
   build_images:
     name: Build Images
@@ -209,8 +210,15 @@ jobs:
           # S3 build directory
           S3_DIR="s3://qa-cloudflare.quadratic-preview.com/"
 
-          # Upload entire build directory to S3 with no caching for Amplify
+          # Upload entire build directory to S3
           aws s3 sync /tmp/quadratic-client-development/ $S3_DIR --delete
+
+      - name: Purge Cloudflare Cache
+        run: |
+          curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_ZONE_ID_DEVELOPMENT }}/purge_cache" \
+          -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_KEY_DEVELOPMENT }}" \
+          -H "Content-Type: application/json" \
+          -d '{"purge_everything": true}'
 
   pulumi:
     needs: [build_client, build_images]
