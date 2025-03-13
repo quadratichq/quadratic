@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::{
-    a1::{A1Context, ColRange, RefRangeBounds},
+    a1::{A1Context, ColRange, RefRangeBounds, UNBOUNDED},
     grid::Sheet,
     Pos, Rect, SheetPos,
 };
@@ -501,6 +501,57 @@ impl A1Selection {
             }
         }
         None
+    }
+
+    /// If range is a single, contiguous column(s) selection, then it returns
+    /// the [start] or [start, end].
+    pub fn contiguous_columns(&self) -> Option<Vec<u32>> {
+        if self.ranges.len() != 1 {
+            return None;
+        }
+        let Some(CellRefRange::Sheet { range }) = self.ranges.first() else {
+            return None;
+        };
+
+        // we expect a contiguous column range
+        if range.start.row() != 1 || range.end.row() != UNBOUNDED {
+            return None;
+        }
+        let start = range.start.col();
+        let end = range.end.col();
+        if start == end {
+            Some(vec![start as u32])
+        } else if start < end {
+            Some(vec![start as u32, end as u32])
+        } else {
+            Some(vec![end as u32, start as u32])
+        }
+    }
+
+    /// If range is a single, contiguous column(s) selection, then it returns
+    /// the [start] or [start, end].
+    pub fn contiguous_rows(&self) -> Option<Vec<u32>> {
+        if self.ranges.len() != 1 {
+            return None;
+        }
+        let Some(CellRefRange::Sheet { range }) = self.ranges.first() else {
+            return None;
+        };
+
+        // we expect a contiguous row range
+        if range.start.col() != 1 || range.end.col() != UNBOUNDED {
+            return None;
+        }
+
+        let start = range.start.row();
+        let end = range.end.row();
+        if start == end {
+            Some(vec![start as u32])
+        } else if start < end {
+            Some(vec![start as u32, end as u32])
+        } else {
+            Some(vec![end as u32, start as u32])
+        }
     }
 }
 
@@ -1101,6 +1152,7 @@ mod tests {
         assert!(A1Selection::test_a1("*").is_entire_row_selected(100));
     }
 
+    #[test]
     fn test_single_rect() {
         let context = A1Context::default();
 
@@ -1151,5 +1203,67 @@ mod tests {
             Some(Rect::new(2, 2, 4, 5)),
             "Larger single range should return correct rect"
         );
+    }
+
+    #[test]
+    fn test_contiguous_columns() {
+        // Test single column selection
+        let selection = A1Selection::test_a1("A");
+        assert_eq!(selection.contiguous_columns(), Some(vec![1]));
+
+        // Test column range selection
+        let selection = A1Selection::test_a1("A:C");
+        assert_eq!(selection.contiguous_columns(), Some(vec![1, 3]));
+
+        // Test reverse column range
+        let selection = A1Selection::test_a1("C:A");
+        assert_eq!(selection.contiguous_columns(), Some(vec![1, 3]));
+
+        // Test non-contiguous columns
+        let selection = A1Selection::test_a1("A,C");
+        assert_eq!(selection.contiguous_columns(), None);
+
+        // Test cell selection (not a column)
+        let selection = A1Selection::test_a1("A1");
+        assert_eq!(selection.contiguous_columns(), None);
+
+        // Test cell range (not a column)
+        let selection = A1Selection::test_a1("A1:C3");
+        assert_eq!(selection.contiguous_columns(), None);
+
+        // Test row selection (not a column)
+        let selection = A1Selection::test_a1("1:3");
+        assert_eq!(selection.contiguous_columns(), None);
+    }
+
+    #[test]
+    fn test_contiguous_rows() {
+        // Test single row selection
+        let selection = A1Selection::test_a1("1");
+        assert_eq!(selection.contiguous_rows(), Some(vec![1]));
+
+        // Test row range selection
+        let selection = A1Selection::test_a1("1:3");
+        assert_eq!(selection.contiguous_rows(), Some(vec![1, 3]));
+
+        // Test reverse row range
+        let selection = A1Selection::test_a1("3:1");
+        assert_eq!(selection.contiguous_rows(), Some(vec![1, 3]));
+
+        // Test non-contiguous rows
+        let selection = A1Selection::test_a1("1,3");
+        assert_eq!(selection.contiguous_rows(), None);
+
+        // Test cell selection (not a row)
+        let selection = A1Selection::test_a1("A1");
+        assert_eq!(selection.contiguous_rows(), None);
+
+        // Test cell range (not a row)
+        let selection = A1Selection::test_a1("A1:C3");
+        assert_eq!(selection.contiguous_rows(), None);
+
+        // Test column selection (not a row)
+        let selection = A1Selection::test_a1("A:C");
+        assert_eq!(selection.contiguous_rows(), None);
     }
 }

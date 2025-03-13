@@ -12,7 +12,7 @@ use super::MAX_OPERATION_SIZE_COL_ROW;
 
 impl Sheet {
     // create reverse operations for values in the column broken up by MAX_OPERATION_SIZE
-    fn reverse_values_ops_for_column(&self, column: i64) -> Vec<Operation> {
+    pub(crate) fn reverse_values_ops_for_column(&self, column: i64) -> Vec<Operation> {
         let mut reverse_operations = Vec::new();
 
         if let Some((min, max)) = self.column_bounds(column, true) {

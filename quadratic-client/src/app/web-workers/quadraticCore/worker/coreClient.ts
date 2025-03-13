@@ -715,6 +715,14 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreMoveColumns':
+        core.moveColumns(e.data.sheetId, e.data.colStart, e.data.colEnd, e.data.to, e.data.cursor);
+        return;
+
+      case 'clientCoreMoveRows':
+        core.moveRows(e.data.sheetId, e.data.rowStart, e.data.rowEnd, e.data.to, e.data.cursor);
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core

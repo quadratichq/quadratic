@@ -291,17 +291,31 @@ impl GridController {
     }
 
     pub fn execute_move_columns(&mut self, transaction: &mut PendingTransaction, op: Operation) {
-        if let Operation::MoveColumns { sheet_id, cols, to } = op.clone() {
-            if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-                sheet.move_cols(transaction, cols, to);
-            }
+        if let Operation::MoveColumns {
+            sheet_id,
+            col_start,
+            col_end,
+            to,
+        } = op.clone()
+        {
+            self.move_cols(transaction, sheet_id, col_start, col_end, to);
+            transaction.forward_operations.push(op);
         }
     }
 
     pub fn execute_move_rows(&mut self, transaction: &mut PendingTransaction, op: Operation) {
-        if let Operation::MoveRows { sheet_id, rows, to } = op.clone() {
-            if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-                sheet.move_rows(transaction, rows, to);
+        if let Operation::MoveRows {
+            sheet_id,
+            ..
+            // row_start,
+            // row_end,
+            // to,
+        } = op.clone()
+        {
+            if let Some(_sheet) = self.try_sheet_mut(sheet_id) {
+                // sheet.move_rows(transaction, rows, to);
+
+                transaction.forward_operations.push(op);
             }
         }
     }

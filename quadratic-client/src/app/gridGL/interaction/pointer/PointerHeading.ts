@@ -74,6 +74,10 @@ export class PointerHeading {
   pointerDown(world: Point, e: InteractionEvent): boolean {
     const event = e.data.originalEvent as PointerEvent;
     clearTimeout(this.fitToColumnTimeout);
+
+    const isRightClick =
+      (event as MouseEvent).button === 2 || (isMac && (event as MouseEvent).button === 0 && event.ctrlKey);
+
     const { headings, viewport } = pixiApp;
     const intersects = headings.intersectsHeadings(world);
     if (!intersects) return false;
@@ -110,6 +114,7 @@ export class PointerHeading {
       };
       this.active = true;
     } else if (
+      !isRightClick &&
       !cursor.isMultiRange() &&
       (intersects.column == null || cursor.isEntireColumnSelected(intersects.column)) &&
       (intersects.row == null || cursor.isEntireRowSelected(intersects.row))
@@ -149,8 +154,6 @@ export class PointerHeading {
       // then it add or removes the clicked column or row. If shift is pressed,
       // then it selects all columns or rows between the last clicked column or
       // row and the current one.
-      const isRightClick =
-        (event as MouseEvent).button === 2 || (isMac && (event as MouseEvent).button === 0 && event.ctrlKey);
       const bounds = pixiApp.viewport.getVisibleBounds();
       const headingSize = pixiApp.headings.headingSize;
       if (intersects.column !== null) {
@@ -306,8 +309,43 @@ export class PointerHeading {
     return true;
   }
 
+  downColumnsOrRows(columns: number[] | undefined, rows: number[] | undefined, world: Point, global: Point) {
+    const isColumn = columns !== undefined;
+    const fromScreen = isColumn ? sheets.sheet.getColumnFromScreen(world.x) : sheets.sheet.getRowFromScreen(world.y);
+    const from = isColumn
+      ? Math.max(fromScreen, columns![columns!.length - 1])
+      : Math.max(fromScreen, rows![rows!.length - 1]);
+    const start = isColumn ? columns![0] : rows![0];
+    this.movingColRows = {
+      isColumn,
+      indicies: columns ?? rows ?? [],
+      place: start,
+      offset: from - start,
+      lastMouse: global,
+    };
+    pixiApp.viewport.enableMouseEdges(world, isColumn ? 'horizontal' : 'vertical');
+    pixiApp.cellMoving.dirty = true;
+    this.cursor = 'grabbing';
+
+    if (columns) {
+      this.cursor = 'grabbing';
+    } else if (rows) {
+      this.cursor = 'grabbing';
+    }
+  }
+  hoverColumnsOrRows() {
+    this.cursor = 'grab';
+  }
+
   private pointerUpMovingColRows(): boolean {
     if (this.movingColRows) {
+      quadraticCore.moveColumns(
+        sheets.current,
+        this.movingColRows.indicies[0],
+        this.movingColRows.indicies[this.movingColRows.indicies.length - 1],
+        this.movingColRows.place,
+        sheets.getCursorPosition()
+      );
       this.movingColRows = undefined;
       pixiApp.cellMoving.dirty = true;
       pixiApp.viewport.disableMouseEdges();

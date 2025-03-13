@@ -69,6 +69,40 @@ impl GridController {
         }];
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }
+
+    pub fn move_columns(
+        &mut self,
+        sheet_id: SheetId,
+        col_start: i64,
+        col_end: i64,
+        to: i64,
+        cursor: Option<String>,
+    ) {
+        let ops = vec![Operation::MoveColumns {
+            sheet_id,
+            col_start,
+            col_end,
+            to,
+        }];
+        self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
+    }
+
+    pub fn move_rows(
+        &mut self,
+        sheet_id: SheetId,
+        row_start: i64,
+        row_end: i64,
+        to: i64,
+        cursor: Option<String>,
+    ) {
+        let ops = vec![Operation::MoveRows {
+            sheet_id,
+            row_start,
+            row_end,
+            to,
+        }];
+        self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
+    }
 }
 
 #[cfg(test)]

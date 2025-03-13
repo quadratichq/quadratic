@@ -42,4 +42,46 @@ impl GridController {
             self.insert_row(sheet_id, row, after, cursor);
         }
     }
+
+    #[allow(non_snake_case)]
+    #[wasm_bindgen(js_name = "moveColumns")]
+    pub fn js_move_columns(
+        &mut self,
+        sheet_id: &str,
+        col_start: i32,
+        col_end: i32,
+        to: i32,
+        cursor: Option<String>,
+    ) {
+        if let Ok(sheet_id) = SheetId::from_str(sheet_id) {
+            self.move_columns(
+                sheet_id,
+                col_start as i64,
+                col_end as i64,
+                to as i64,
+                cursor,
+            );
+        }
+    }
+
+    #[allow(non_snake_case)]
+    #[wasm_bindgen(js_name = "moveRows")]
+    pub fn js_move_rows(
+        &mut self,
+        sheet_id: &str,
+        row_start: i32,
+        row_end: i32,
+        to: i32,
+        cursor: Option<String>,
+    ) {
+        if let Ok(sheet_id) = SheetId::from_str(sheet_id) {
+            self.move_rows(
+                sheet_id,
+                row_start as i64,
+                row_end as i64,
+                to as i64,
+                cursor,
+            );
+        }
+    }
 }

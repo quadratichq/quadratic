@@ -1229,6 +1229,24 @@ export interface CoreClientAddDataTable {
   id: number;
 }
 
+export interface ClientCoreMoveColumns {
+  type: 'clientCoreMoveColumns';
+  sheetId: string;
+  colStart: number;
+  colEnd: number;
+  to: number;
+  cursor: string;
+}
+
+export interface ClientCoreMoveRows {
+  type: 'clientCoreMoveRows';
+  sheetId: string;
+  rowStart: number;
+  rowEnd: number;
+  to: number;
+  cursor: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1322,7 +1340,9 @@ export type ClientCoreMessage =
   | ClientCoreMoveCodeCellHorizontally
   | ClientCoreFiniteRectFromSelection
   | ClientCoreGetCsvPreview
-  | ClientCoreAddDataTable;
+  | ClientCoreAddDataTable
+  | ClientCoreMoveColumns
+  | ClientCoreMoveRows;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

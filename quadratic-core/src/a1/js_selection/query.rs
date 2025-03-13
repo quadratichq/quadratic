@@ -51,6 +51,16 @@ impl JsSelection {
         Ok(self.selection.single_rect_or_cursor(&self.context))
     }
 
+    #[wasm_bindgen(js_name = "getContiguousColumns")]
+    pub fn get_contiguous_columns(&self) -> Option<Vec<u32>> {
+        self.selection.contiguous_columns()
+    }
+
+    #[wasm_bindgen(js_name = "getContiguousRows")]
+    pub fn get_contiguous_rows(&self) -> Option<Vec<u32>> {
+        self.selection.contiguous_rows()
+    }
+
     #[wasm_bindgen(js_name = "contains")]
     pub fn contains(&self, x: u32, y: u32) -> bool {
         self.selection

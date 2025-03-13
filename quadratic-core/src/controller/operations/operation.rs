@@ -315,14 +315,17 @@ pub enum Operation {
         row: i64,
         copy_formats: CopyFormats,
     },
+
     MoveColumns {
         sheet_id: SheetId,
-        cols: Vec<i64>,
+        col_start: i64,
+        col_end: i64,
         to: i64,
     },
     MoveRows {
         sheet_id: SheetId,
-        rows: Vec<i64>,
+        row_start: i64,
+        row_end: i64,
         to: i64,
     },
 }
@@ -668,18 +671,28 @@ impl fmt::Display for Operation {
                     sheet_pos, w, h
                 )
             }
-            Operation::MoveColumns { sheet_id, cols, to } => {
+            Operation::MoveColumns {
+                sheet_id,
+                col_start,
+                col_end,
+                to,
+            } => {
                 write!(
                     fmt,
-                    "MoveColumns {{ sheet_id: {}, cols: {:?}, to: {} }}",
-                    sheet_id, cols, to
+                    "MoveColumns {{ sheet_id: {}, col_start: {}, col_end: {}, to: {} }}",
+                    sheet_id, col_start, col_end, to
                 )
             }
-            Operation::MoveRows { sheet_id, rows, to } => {
+            Operation::MoveRows {
+                sheet_id,
+                row_start,
+                row_end,
+                to,
+            } => {
                 write!(
                     fmt,
-                    "MoveRows {{ sheet_id: {}, rows: {:?}, to: {} }}",
-                    sheet_id, rows, to
+                    "MoveRows {{ sheet_id: {}, row_start: {}, row_end: {}, to: {} }}",
+                    sheet_id, row_start, row_end, to
                 )
             }
         }

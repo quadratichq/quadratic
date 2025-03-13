@@ -7,7 +7,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { rectToSheetRect } from '@/app/web-workers/quadraticCore/worker/rustConversions';
-import { Point, Rectangle } from 'pixi.js';
+import { Point, Rectangle, type InteractionEvent } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 
 // Distance from top left corner to trigger a cell move.
@@ -66,8 +66,17 @@ export class PointerCellMoving {
     this.startMove();
   };
 
-  pointerDown = (event: PointerEvent): boolean => {
+  pointerDown = (e: InteractionEvent, world: Point): boolean => {
+    const event = e.data.originalEvent as PointerEvent;
     if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled || event.button === 1) return false;
+
+    // handle moving columns or rows (pointerHeading handles this)
+    const colsMove = sheets.sheet.cursor.getContiguousColumns();
+    const rowsMove = sheets.sheet.cursor.getContiguousRows();
+    if ((colsMove || rowsMove) && this.moveOverlaps(world)) {
+      pixiApp.pointer.pointerHeading.downColumnsOrRows(colsMove, rowsMove, world, e.data.global);
+      return true;
+    }
 
     if (this.state === 'hover' && this.movingCells && event.button === 0) {
       this.startCell = new Point(this.movingCells.column, this.movingCells.row);
@@ -104,7 +113,6 @@ export class PointerCellMoving {
   private moveOverlaps = (world: Point): false | 'corner' | 'top' | 'bottom' | 'left' | 'right' => {
     const cursorRectangle = pixiApp.cursor.cursorRectangle;
     if (!cursorRectangle) return false;
-
     // top-left corner + threshold
     if (
       Math.pow(cursorRectangle.x - world.x, 2) + Math.pow(cursorRectangle.y - world.y, 2) <=
@@ -164,6 +172,13 @@ export class PointerCellMoving {
   };
 
   private pointerMoveHover = (world: Point): boolean => {
+    // handle moving columns or rows (pointerHeading handles this)
+    const colRowsHover = sheets.sheet.cursor.getContiguousColumns() || sheets.sheet.cursor.getContiguousRows();
+    if (colRowsHover && this.moveOverlaps(world)) {
+      pixiApp.pointer.pointerHeading.hoverColumnsOrRows();
+      return true;
+    }
+
     // we do not move if there are multiple rectangles (for now)
     const rectangle = sheets.sheet.cursor.getSingleRectangleOrCursor();
     if (!rectangle) return false;

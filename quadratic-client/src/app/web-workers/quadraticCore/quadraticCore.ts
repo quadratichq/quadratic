@@ -1350,6 +1350,28 @@ class QuadraticCore {
     });
   }
 
+  moveColumns(sheetId: string, colStart: number, colEnd: number, to: number, cursor: string) {
+    this.send({
+      type: 'clientCoreMoveColumns',
+      sheetId,
+      colStart,
+      colEnd,
+      to,
+      cursor,
+    });
+  }
+
+  moveRows(sheetId: string, rowStart: number, rowEnd: number, to: number, cursor: string) {
+    this.send({
+      type: 'clientCoreMoveRows',
+      sheetId,
+      rowStart,
+      rowEnd,
+      to,
+      cursor,
+    });
+  }
+
   //#endregion
   //#region data tables
 

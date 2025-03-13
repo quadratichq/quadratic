@@ -1280,6 +1280,20 @@ class Core {
         )
       : undefined;
   }
+
+  moveColumns(sheetId: string, colStart: number, colEnd: number, to: number, cursor: string) {
+    this.clientQueue.push(() => {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      this.gridController.moveColumns(sheetId, colStart, colEnd, to, cursor);
+    });
+  }
+
+  moveRows(sheetId: string, rowStart: number, rowEnd: number, to: number, cursor: string) {
+    this.clientQueue.push(() => {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      this.gridController.moveRows(sheetId, rowStart, rowEnd, to, cursor);
+    });
+  }
 }
 
 export const core = new Core();

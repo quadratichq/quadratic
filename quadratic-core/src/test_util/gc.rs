@@ -31,6 +31,18 @@ pub fn assert_cell_value(
     );
 }
 
+/// Run an assertion that a cell value is equal to the given value using the first sheet of the gc
+#[track_caller]
+#[cfg(test)]
+pub fn assert_display_cell_value_first_sheet(
+    grid_controller: &GridController,
+    x: i64,
+    y: i64,
+    value: &str,
+) {
+    assert_display_cell_value(grid_controller, grid_controller.sheet_ids()[0], x, y, value);
+}
+
 /// Run an assertion that a cell value is equal to the given value
 #[track_caller]
 #[cfg(test)]
@@ -105,6 +117,28 @@ pub fn assert_data_table_cell_value(
         CellValue::Text(value.into()),
         cell_value
     );
+}
+
+// Run an assertion that cell values in a give column are equal to the given value
+#[track_caller]
+#[cfg(test)]
+pub fn assert_cell_value_col(
+    grid_controller: &GridController,
+    sheet_id: SheetId,
+    x: i64,
+    y_start: i64,
+    y_end: i64,
+    value: Vec<&str>,
+) {
+    for y in y_start..=y_end {
+        assert_display_cell_value(
+            grid_controller,
+            sheet_id,
+            x,
+            y,
+            value.get(y as usize).unwrap(),
+        );
+    }
 }
 
 /// Run an assertion that cell values in a given row are equal to the given value
@@ -259,6 +293,16 @@ pub fn print_data_table(grid_controller: &GridController, sheet_id: SheetId, rec
         );
     } else {
         println!("Data table not found at {:?}", rect.min);
+    }
+}
+
+/// Util to print the entire sheet from the gc
+#[track_caller]
+pub fn print_first_sheet(gc: &GridController) {
+    if let Some(sheet) = gc.try_sheet(gc.sheet_ids()[0]) {
+        print_sheet(&sheet);
+    } else {
+        println!("Sheet not found");
     }
 }
 

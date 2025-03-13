@@ -423,9 +423,23 @@ export class SheetCursor {
 
   isEntireRowSelected = (row: number): boolean => {
     return this.jsSelection.isEntireRowSelected(row);
-  }
+  };
 
   checkForTableRef = () => {
     this.jsSelection.checkForTableRef(this.sheet.id);
+  };
+
+  getContiguousColumns = (): number[] | undefined => {
+    const response = this.jsSelection.getContiguousColumns();
+    if (response) {
+      return Array.from(response);
+    }
+  };
+
+  getContiguousRows = (): number[] | undefined => {
+    const response = this.jsSelection.getContiguousRows();
+    if (response) {
+      return Array.from(response);
+    }
   };
 }

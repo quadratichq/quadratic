@@ -24,7 +24,7 @@ use crate::grid::DataTableKind;
 use crate::grid::SheetId;
 use crate::{a1::A1Selection, CellValue, Pos, Rect, SheetPos, SheetRect};
 
-// todo: break up this file so tests are easier to write
+// todo: this probably belongs in sheet and not controller
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, ts_rs::TS)]
 pub enum PasteSpecial {
@@ -659,6 +659,8 @@ impl GridController {
                 let mut clipboard = serde_json::from_str::<Clipboard>(&decoded)
                     .map_err(|e| error(e.to_string(), "Serialization error"))?;
                 drop(decoded);
+
+                dbgjs!(&clipboard);
 
                 let context = self.a1_context();
                 let delta_x = insert_at.x - clipboard.origin.x;
