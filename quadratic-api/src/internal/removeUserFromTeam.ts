@@ -1,5 +1,6 @@
 import dbClient from '../dbClient';
 import { licenseClient } from '../licenseClient';
+import { updateSeatQuantity } from '../stripe/stripe';
 
 export const removeUserFromTeam = async (userId: number, teamId: number) => {
   await dbClient.$transaction(async (prisma) => {
@@ -28,5 +29,5 @@ export const removeUserFromTeam = async (userId: number, teamId: number) => {
   await licenseClient.check(true);
 
   // Update the seat quantity on the team's stripe subscription
-  // await updateSeatQuantity(teamId);
+  await updateSeatQuantity(teamId);
 };

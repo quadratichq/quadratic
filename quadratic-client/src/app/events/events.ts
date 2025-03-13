@@ -1,4 +1,4 @@
-import type { ContextMenuOptions } from '@/app/atoms/contextMenuAtom';
+import type { ContextMenuState } from '@/app/atoms/contextMenuAtom';
 import type { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import type { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
@@ -127,7 +127,7 @@ interface EventTypes {
   validation: (validation: string | boolean) => void;
 
   // trigger a context menu
-  contextMenu: (options: ContextMenuOptions) => void;
+  contextMenu: (options: ContextMenuState) => void;
 
   suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;
 

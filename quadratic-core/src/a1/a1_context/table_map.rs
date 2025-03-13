@@ -51,14 +51,15 @@ impl TableMap {
     }
 
     /// Returns true if the table has a column with the given name.
-    pub fn table_has_column(&self, table_name: &str, column_name: &str) -> bool {
+    pub fn table_has_column(&self, table_name: &str, column_name: &str, index: usize) -> bool {
         let column_name_folded = case_fold(column_name);
         self.try_table(table_name)
             .map(|table| {
                 table
                     .all_columns
                     .iter()
-                    .any(|col| case_fold(col) == column_name_folded)
+                    .enumerate()
+                    .any(|(i, col)| case_fold(col) == column_name_folded && i != index)
             })
             .unwrap_or(false)
     }
@@ -422,25 +423,25 @@ mod tests {
         );
 
         // Test existing visible column (exact match)
-        assert!(map.table_has_column("test_table", "Visible1"));
-        assert!(map.table_has_column("test_table", "Visible2"));
+        assert!(map.table_has_column("test_table", "Visible1", 10));
+        assert!(map.table_has_column("test_table", "Visible2", 10));
 
         // Test existing hidden column
-        assert!(map.table_has_column("test_table", "Hidden1"));
+        assert!(map.table_has_column("test_table", "Hidden1", 10));
 
         // Test case insensitivity
-        assert!(map.table_has_column("TEST_TABLE", "visible1"));
-        assert!(map.table_has_column("test_table", "VISIBLE2"));
-        assert!(map.table_has_column("TEST_TABLE", "HIDDEN1"));
+        assert!(map.table_has_column("TEST_TABLE", "visible1", 10));
+        assert!(map.table_has_column("test_table", "VISIBLE2", 10));
+        assert!(map.table_has_column("TEST_TABLE", "HIDDEN1", 10));
 
         // Test non-existent column
-        assert!(!map.table_has_column("test_table", "NonExistent"));
+        assert!(!map.table_has_column("test_table", "NonExistent", 10));
 
         // Test non-existent table
-        assert!(!map.table_has_column("non_existent_table", "Visible1"));
+        assert!(!map.table_has_column("non_existent_table", "Visible1", 10));
 
         // Test empty column name
-        assert!(!map.table_has_column("test_table", ""));
+        assert!(!map.table_has_column("test_table", "", 10));
 
         // Create a table with empty column list
         map.test_insert(
@@ -450,6 +451,10 @@ mod tests {
             Rect::new(1, 1, 3, 5),
             CodeCellLanguage::Import,
         );
-        assert!(!map.table_has_column("empty_table", "AnyColumn"));
+        assert!(!map.table_has_column("empty_table", "AnyColumn", 10));
+
+        assert!(map.table_has_column("test_table", "VISIBLE1", 1));
+        // table_has_column is false when the index is the same as the existing column index
+        assert!(!map.table_has_column("test_table", "VISIBLE1", 0));
     }
 }

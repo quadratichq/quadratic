@@ -175,6 +175,14 @@ const isCodeCell = (language: CodeCellLanguage) => {
   return table?.language === language;
 };
 
+const isSingleCell = () => {
+  const table = getTable();
+
+  if (!table) return false;
+
+  return table.w === 1 && table.h === 1;
+};
+
 export const gridToDataTable = () => {
   pixiAppSettings.setContextMenu?.({});
 
@@ -633,6 +641,7 @@ export const dataTableSpec: DataTableSpec = {
   },
   [Action.ToggleTableName]: {
     label: 'Show name',
+    isAvailable: () => !isSingleCell(),
     labelVerbose: 'Show table name',
     checkbox: isTableNameShowing,
     run: toggleTableName,
