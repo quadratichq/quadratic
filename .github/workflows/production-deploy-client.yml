@@ -130,7 +130,7 @@ jobs:
           S3_DIR="s3://app-cloudflare.quadratichq.com/"
 
           # Upload entire build directory to S3
-          aws s3 sync /tmp/quadratic-client-production/ $S3_DIR --delete
+          aws s3 sync /tmp/quadratic-client-production/ $S3_DIR --delete --force
 
       - name: Purge Cloudflare Cache
         run: |
