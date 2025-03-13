@@ -1,5 +1,5 @@
 import type { Response } from 'express';
-import { getLastUserPromptMessageIndex } from 'quadratic-shared/ai/helpers/message.helper';
+import { getLastPromptMessageType, getLastUserPromptMessageIndex } from 'quadratic-shared/ai/helpers/message.helper';
 import {
   getModelFromModelKey,
   isAnthropicModel,
@@ -10,7 +10,7 @@ import {
 } from 'quadratic-shared/ai/helpers/model.helper';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
-import { type AIMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
+import type { ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 import { handleAnthropicRequest } from '../../ai/handler/anthropic';
 import { handleBedrockRequest } from '../../ai/handler/bedrock';
@@ -39,6 +39,15 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     user: { id: userId },
   } = req;
 
+  // TODO: Enforce usage limit
+  // const usage = await getAIMessageUsageForUser(userId);
+  // const exceededUsageLimit = await userExceededUsageLimit(usage);
+
+  // if (exceededUsageLimit) {
+  //   //@ts-expect-error
+  //   return res.status(402).json({ error: 'Usage limit exceeded' });
+  // }
+
   const { body } = parseRequest(req, schema);
   const { chatId, fileUuid, modelKey, ...args } = body;
   const source = args.source;
@@ -53,76 +62,96 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     args.messages.unshift(...quadraticContext);
   }
 
-  let responseMessage: AIMessagePrompt | undefined;
+  let parsedResponse: ParsedAIResponse | undefined;
   if (isBedrockModel(modelKey)) {
-    responseMessage = await handleBedrockRequest(modelKey, args, res, bedrock);
+    parsedResponse = await handleBedrockRequest(modelKey, args, res, bedrock);
   } else if (isBedrockAnthropicModel(modelKey)) {
-    responseMessage = await handleAnthropicRequest(modelKey, args, res, bedrock_anthropic);
+    parsedResponse = await handleAnthropicRequest(modelKey, args, res, bedrock_anthropic);
   } else if (isAnthropicModel(modelKey)) {
-    responseMessage = await handleAnthropicRequest(modelKey, args, res, anthropic);
+    parsedResponse = await handleAnthropicRequest(modelKey, args, res, anthropic);
   } else if (isOpenAIModel(modelKey)) {
-    responseMessage = await handleOpenAIRequest(modelKey, args, res, openai);
+    parsedResponse = await handleOpenAIRequest(modelKey, args, res, openai);
   } else if (isXAIModel(modelKey)) {
-    responseMessage = await handleOpenAIRequest(modelKey, args, res, xai);
+    parsedResponse = await handleOpenAIRequest(modelKey, args, res, xai);
   } else {
     throw new Error(`Model not supported: ${modelKey}`);
   }
-
-  if (responseMessage) {
-    args.messages.push(responseMessage);
+  if (parsedResponse) {
+    args.messages.push(parsedResponse.responseMessage);
   }
 
   const {
     file: { id: fileId, ownerTeam },
   } = await getFile({ uuid: fileUuid, userId });
 
-  if (!ownerTeam.settingAnalyticsAi || STORAGE_TYPE !== 's3' || !getBucketName(S3Bucket.ANALYTICS)) {
-    return;
-  }
+  const model = getModelFromModelKey(modelKey);
+  const messageIndex = getLastUserPromptMessageIndex(args.messages);
+  const messageType = getLastPromptMessageType(args.messages);
 
-  const jwt = req.header('Authorization');
-  if (!jwt) {
-    return;
-  }
+  const chat = await dbClient.analyticsAIChat.upsert({
+    where: {
+      chatId,
+    },
+    create: {
+      userId,
+      fileId,
+      chatId,
+      source,
+      messages: {
+        create: {
+          model,
+          messageIndex,
+          messageType,
+          inputTokens: parsedResponse?.usage.inputTokens,
+          outputTokens: parsedResponse?.usage.outputTokens,
+          cacheReadTokens: parsedResponse?.usage.cacheReadTokens,
+          cacheWriteTokens: parsedResponse?.usage.cacheWriteTokens,
+        },
+      },
+    },
+    update: {
+      messages: {
+        create: {
+          model,
+          messageIndex,
+          messageType,
+          inputTokens: parsedResponse?.usage.inputTokens,
+          outputTokens: parsedResponse?.usage.outputTokens,
+          cacheReadTokens: parsedResponse?.usage.cacheReadTokens,
+          cacheWriteTokens: parsedResponse?.usage.cacheWriteTokens,
+        },
+      },
+      updatedDate: new Date(),
+    },
+  });
 
+  // Save the data to s3
   try {
-    // key: <fileUuid>-<source>_<chatUuid>_<messageIndex>.json
-    const messageIndex = getLastUserPromptMessageIndex(args.messages);
-    const key = `${fileUuid}-${source}_${chatId.replace(/-/g, '_')}_${messageIndex}.json`;
+    if (ownerTeam.settingAnalyticsAi) {
+      const key = `${fileUuid}-${source}_${chatId.replace(/-/g, '_')}_${messageIndex}.json`;
 
-    const contents = Buffer.from(JSON.stringify(args)).toString('base64');
-    const response = await uploadFile(key, contents, jwt, S3Bucket.ANALYTICS);
+      // If we aren't using s3 or the analytics bucket name is not set, don't save the data
+      // This path is also used for self-hosted users, so we don't want to save the data in that case
+      if (STORAGE_TYPE !== 's3' || !getBucketName(S3Bucket.ANALYTICS)) {
+        return;
+      }
 
-    const model = getModelFromModelKey(modelKey);
+      const jwt = req.header('Authorization');
+      if (!jwt) {
+        return;
+      }
 
-    await dbClient.analyticsAIChat.upsert({
-      where: {
-        chatId,
-      },
-      create: {
-        userId,
-        fileId,
-        chatId,
-        source,
-        messages: {
-          create: {
-            model,
-            messageIndex,
-            s3Key: response.key,
-          },
+      const contents = Buffer.from(JSON.stringify(args)).toString('base64');
+      const response = await uploadFile(key, contents, jwt, S3Bucket.ANALYTICS);
+      const s3Key = response.key;
+
+      await dbClient.analyticsAIChatMessage.update({
+        where: {
+          chatId_messageIndex: { chatId: chat.id, messageIndex },
         },
-      },
-      update: {
-        messages: {
-          create: {
-            model,
-            messageIndex,
-            s3Key: response.key,
-          },
-        },
-        updatedDate: new Date(),
-      },
-    });
+        data: { s3Key },
+      });
+    }
   } catch (e) {
     console.error(e);
   }

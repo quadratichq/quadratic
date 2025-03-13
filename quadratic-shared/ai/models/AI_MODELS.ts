@@ -208,6 +208,16 @@ export const MODELS_CONFIGURATION: {
     provider: 'xai',
     strickParams: false,
   },
+  'bedrock:us.deepseek.r1-v1:0': {
+    model: 'us.deepseek.r1-v1:0',
+    displayName: 'deepseek r1',
+    temperature: 0,
+    max_tokens: 32768,
+    canStream: true,
+    canStreamWithToolCalls: false,
+    enabled: false,
+    provider: 'bedrock',
+  },
   'bedrock:us.meta.llama3-2-90b-instruct-v1:0': {
     model: 'us.meta.llama3-2-90b-instruct-v1:0',
     displayName: 'llama 3.2 90b instruct',
