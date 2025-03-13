@@ -5,7 +5,7 @@ import { colors } from '@/app/theme/colors';
 import type { Point } from 'pixi.js';
 import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
 
-// const INDICATOR_SIZE = 4;
+const INDICATOR_SIZE = 4;
 export const TRIANGLE_SCALE = 0.1;
 
 export type CellsMarkerTypes = 'CodeIcon' | 'FormulaIcon' | 'AIIcon' | 'ErrorIcon';
@@ -79,31 +79,37 @@ export class CellsMarkers extends Container {
       triangle.tint = colors.cellColorError;
     }
 
-    if (isError) {
-      //   const symbol = getLanguageSymbol(codeCell.language, isError);
-      //   if (symbol) {
-      //     this.addChild(symbol);
-      //     symbol.height = INDICATOR_SIZE;
-      //     symbol.width = INDICATOR_SIZE;
-      //     symbol.position.set(box.x + 1.25, box.y + 1.25);
-      //     if (isError) {
-      //       symbol.x -= 1;
-      //       symbol.y -= 1;
-      //     }
+    const symbol = getLanguageSymbol(codeCell.language, isError);
+
+    if (codeCell.language !== 'Import' && codeCell.h === 1 && codeCell.w === 1) {
+      if (symbol) {
+        this.addChild(symbol);
+        symbol.height = INDICATOR_SIZE;
+        symbol.width = INDICATOR_SIZE;
+        symbol.position.set(box.x + 1.25, box.y + 1.25);
+      }
+    }
+
+    if (isError || symbol) {
       this.markers.push({
         bounds: new Rectangle(box.x, box.y, box.width, box.height),
         codeCell,
         triangle,
+        symbol,
       });
     }
-    // }
   }
 
   remove(x: number, y: number) {
     const marker = this.markers.find((marker) => marker.codeCell.x === x && marker.codeCell.y === y);
-    if (marker?.triangle) {
+    if (marker) {
+      if (marker.triangle) {
+        this.removeChild(marker.triangle);
+      }
+      if (marker?.symbol) {
+        this.removeChild(marker.symbol);
+      }
       this.markers = this.markers.filter((m) => m !== marker);
-      this.removeChild(marker.triangle);
     }
   }
 

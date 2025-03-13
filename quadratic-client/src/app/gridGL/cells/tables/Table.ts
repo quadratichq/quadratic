@@ -102,12 +102,17 @@ export class Table extends Container {
       console.log('Expected CellsMarkers to be defined in sheet');
       return;
     }
-    if (this.codeCell.state === 'RunError' || this.codeCell.state === 'SpillError') {
+    if (
+      this.codeCell.state === 'RunError' ||
+      this.codeCell.state === 'SpillError' ||
+      this.codeCell.language !== 'Import'
+    ) {
       const box = this.sheet.getCellOffsets(this.codeCell.x, this.codeCell.y);
       cellsMarkers.add(box, this.codeCell);
     } else {
       cellsMarkers.remove(this.codeCell.x, this.codeCell.y);
     }
+
     if (
       !this.codeCell.spill_error &&
       // !this.codeCell.is_html_image &&
