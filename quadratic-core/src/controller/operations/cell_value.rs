@@ -29,7 +29,7 @@ impl GridController {
         let mut ops = vec![];
         let mut compute_code_ops = vec![];
         let mut data_table_ops = vec![];
-        let mut data_tables = self
+        let existing_data_tables = self
             .a1_context()
             .tables()
             .filter(|table| {
@@ -37,6 +37,7 @@ impl GridController {
             })
             .map(|table| table.bounds)
             .collect::<Vec<_>>();
+        let mut growing_data_tables = existing_data_tables.clone();
 
         if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
             let height = values.len();
@@ -67,13 +68,13 @@ impl GridController {
                     let current_sheet_pos = SheetPos::from((pos, sheet_pos.sheet_id));
 
                     let is_code = matches!(cell_value, CellValue::Code(_));
-                    let is_data_table =
-                        matches!(cell_value, CellValue::Code(_) | CellValue::Import(_))
-                            || sheet.has_table_content(pos, true);
+                    let data_table_pos = existing_data_tables
+                        .iter()
+                        .find(|rect| rect.contains(pos))
+                        .map(|rect| rect.min);
 
                     // (x,y) is within a data table
-                    if is_data_table {
-                        let data_table_pos = sheet.first_data_table_within(pos)?;
+                    if let Some(data_table_pos) = data_table_pos {
                         let is_source_cell = sheet.is_source_cell(pos);
                         let is_formula_cell = sheet.is_formula_cell(pos);
 
@@ -101,8 +102,11 @@ impl GridController {
 
                         // expand the data table to the right if the cell
                         // value is touching the right edge
-                        let (col, row) =
-                            sheet.expand_columns_and_rows(&data_tables, current_sheet_pos, value);
+                        let (col, row) = sheet.expand_columns_and_rows(
+                            &growing_data_tables,
+                            current_sheet_pos,
+                            value,
+                        );
 
                         // if an expansion happened, adjust the size of the
                         // data table rect so that successive iterations
@@ -119,7 +123,7 @@ impl GridController {
                                 // adjust the size of the data table rect so that
                                 // successive iterations continue to expand the data
                                 // table.
-                                data_tables
+                                growing_data_tables
                                     .iter_mut()
                                     .filter(|rect| rect.contains(pos_to_check))
                                     .for_each(|rect| {
@@ -145,7 +149,7 @@ impl GridController {
                                 // adjust the size of the data table rect so that
                                 // successive iterations continue to expand the data
                                 // table.
-                                data_tables
+                                growing_data_tables
                                     .iter_mut()
                                     .filter(|rect| rect.contains(pos_to_check))
                                     .for_each(|rect| {
