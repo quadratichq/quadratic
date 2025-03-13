@@ -228,9 +228,9 @@ jobs:
             exit 1
           fi
 
-  pulumi:
+  infra_development:
     needs: [build_client, build_images]
-    name: Create or Update Pulumi Infrastructure Stack
+    name: Update Infrastructure with Pulumi
     runs-on: blacksmith-2vcpu-ubuntu-2204
     if: github.head_ref == 'qa' && github.base_ref == 'main'
     concurrency:
@@ -284,7 +284,7 @@ jobs:
           STACK_NAME: quadratic-qa
 
   qa-wolf-notify:
-    needs: [deploy_client, pulumi]
+    needs: [deploy_client, infra_development]
     name: Notify QA Wolf
     runs-on: blacksmith-2vcpu-ubuntu-2204
     if: github.head_ref == 'qa' && github.base_ref == 'main'
