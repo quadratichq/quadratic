@@ -15,7 +15,7 @@ const examples = [
     title: 'Build a chart',
     description: 'Charts let you visualize data on your sheet.',
     icon: <InsertChartIcon className="text-primary" />,
-    prompt: 'Help me build a chart in Quadratic.',
+    prompt: 'Help me build a chart in Quadratic. If there is no data on the sheet add sample data and plot it',
   },
   {
     title: 'Generate code',
