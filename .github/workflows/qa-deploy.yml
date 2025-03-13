@@ -101,7 +101,7 @@ jobs:
           name: quadratic-client-development
           path: /tmp/quadratic-client-development
           retention-days: 1
-          compression-level: 9
+          compression-level: 6
           overwrite: true
           include-hidden-files: true
           if-no-files-found: error
