@@ -2,7 +2,10 @@ use crate::{
     a1::A1Selection,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
-        operations::clipboard::{ClipboardOperation, PasteSpecial},
+        operations::{
+            clipboard::{ClipboardOperation, PasteSpecial},
+            operation::Operation,
+        },
         GridController,
     },
     grid::SheetId,
@@ -18,37 +21,52 @@ impl GridController {
         col_end: i64,
         to: i64,
     ) {
-        dbgjs!(format!(
-            "move_cols: {:?}",
-            (sheet_id, col_start, col_end, to)
-        ));
         let context = self.a1_context().clone();
-        let mut html: Option<String> = None;
-        if let Some(sheet) = self.try_sheet_mut(sheet_id) {
+        let Some(sheet) = self.try_sheet_mut(sheet_id) else {
+            return;
+        };
+
+        // copy all data in the columns range
+        let html = {
             let selection = A1Selection::cols(sheet_id, col_start, col_end);
-            if let Ok(clipboard) =
+            let Ok(clipboard) =
                 sheet.copy_to_clipboard(&selection, &context, ClipboardOperation::Cut, false)
-            {
-                for col in col_end..=col_start {
-                    sheet.delete_column(transaction, col);
-                }
-                let adjusted_to = if to > col_start {
-                    to - (col_end - col_start + 1)
-                } else {
-                    to
-                };
-                for col in adjusted_to..=adjusted_to + (col_end - col_start) {
-                    sheet.insert_column(transaction, col, CopyFormats::None, false);
-                }
-                html = Some(clipboard.html);
+            else {
+                return;
+            };
+            clipboard.html
+        };
+
+        // delete existing columns
+        self.execute_delete_columns(
+            transaction,
+            Operation::DeleteColumns {
+                sheet_id,
+                columns: vec![col_start, col_end],
+            },
+        );
+
+        // calculate the adjusted to value based on whether we're moving columns
+        // before, between, or after the source columns
+        let adjusted_to = if to > col_end {
+            to - (col_end - col_start + 1)
+        } else if to > col_start && to <= col_end {
+            col_start
+        } else {
+            to
+        };
+
+        // insert new columns at the adjusted location
+        if let Some(sheet) = self.try_sheet_mut(sheet_id) {
+            for col in adjusted_to..=adjusted_to + (col_end - col_start) {
+                sheet.insert_column(transaction, col, CopyFormats::None, false);
             }
         }
 
-        if let Some(html) = html {
-            let selection = A1Selection::from_single_cell((to, 1, sheet_id).into());
-            if let Ok(ops) = self.paste_html_operations(&selection, html, PasteSpecial::None) {
-                transaction.operations.extend(ops);
-            }
+        // paste the copied data into the new columns
+        let selection = A1Selection::from_single_cell((to, 1, sheet_id).into());
+        if let Ok(ops) = self.paste_html_operations(&selection, html, PasteSpecial::None) {
+            transaction.operations.extend(ops);
         }
     }
 }

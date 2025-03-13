@@ -1,3 +1,10 @@
+//! Checks for pointer hovering or pressed on the column and row headings.
+//! 1. Resizing columns and rows
+//! 2. Moving columns and rows (also triggered artificially from
+//!    PointerCellMoving when clicking on the side of column/row selection)
+//! 3. Selecting columns and rows
+//! 4. Triggering context menu
+
 import { hasPermissionToEditFile } from '@/app/actions';
 import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { PanMode } from '@/app/atoms/gridPanModeAtom';
@@ -41,6 +48,7 @@ export class PointerHeading {
   movingColRows?: {
     isColumn: boolean;
     indicies: number[];
+    start: number;
     place: number;
     offset: number;
     lastMouse: Point;
@@ -128,6 +136,7 @@ export class PointerHeading {
       this.movingColRows = {
         isColumn,
         indicies,
+        start,
         place: isColumn ? intersects.column! : intersects.row!,
         offset: (isColumn ? intersects.column! : intersects.row!) - start,
         lastMouse: e.data.global.clone(),
@@ -319,6 +328,7 @@ export class PointerHeading {
     this.movingColRows = {
       isColumn,
       indicies: columns ?? rows ?? [],
+      start,
       place: start,
       offset: from - start,
       lastMouse: global,
@@ -339,13 +349,16 @@ export class PointerHeading {
 
   private pointerUpMovingColRows(): boolean {
     if (this.movingColRows) {
-      quadraticCore.moveColumns(
-        sheets.current,
-        this.movingColRows.indicies[0],
-        this.movingColRows.indicies[this.movingColRows.indicies.length - 1],
-        this.movingColRows.place,
-        sheets.getCursorPosition()
-      );
+      console.log(this.movingColRows.place, this.movingColRows.start);
+      if (this.movingColRows.place !== this.movingColRows.start) {
+        quadraticCore.moveColumns(
+          sheets.current,
+          this.movingColRows.indicies[0],
+          this.movingColRows.indicies[this.movingColRows.indicies.length - 1],
+          this.movingColRows.place,
+          sheets.getCursorPosition()
+        );
+      }
       this.movingColRows = undefined;
       pixiApp.cellMoving.dirty = true;
       pixiApp.viewport.disableMouseEdges();

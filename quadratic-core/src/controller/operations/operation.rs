@@ -328,6 +328,14 @@ pub enum Operation {
         row_end: i64,
         to: i64,
     },
+    DeleteColumns {
+        sheet_id: SheetId,
+        columns: Vec<i64>,
+    },
+    DeleteRows {
+        sheet_id: SheetId,
+        rows: Vec<i64>,
+    },
 }
 
 // TODO: either remove this or add a comment explaining why it's better than the
@@ -693,6 +701,20 @@ impl fmt::Display for Operation {
                     fmt,
                     "MoveRows {{ sheet_id: {}, row_start: {}, row_end: {}, to: {} }}",
                     sheet_id, row_start, row_end, to
+                )
+            }
+            Operation::DeleteColumns { sheet_id, columns } => {
+                write!(
+                    fmt,
+                    "DeleteColumns {{ sheet_id: {}, columns: {:?} }}",
+                    sheet_id, columns
+                )
+            }
+            Operation::DeleteRows { sheet_id, rows } => {
+                write!(
+                    fmt,
+                    "DeleteRows {{ sheet_id: {}, rows: {:?} }}",
+                    sheet_id, rows
                 )
             }
         }

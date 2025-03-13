@@ -160,7 +160,7 @@ impl A1Selection {
     pub fn cols(sheet: SheetId, col_start: i64, col_end: i64) -> Self {
         Self {
             sheet_id: sheet,
-            cursor: Pos { x: col_start, y: 0 },
+            cursor: Pos { x: col_start, y: 1 },
             ranges: vec![CellRefRange::Sheet {
                 range: RefRangeBounds::new_relative_column_range(col_start, col_end),
             }],
