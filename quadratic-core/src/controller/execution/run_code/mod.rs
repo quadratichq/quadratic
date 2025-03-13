@@ -516,7 +516,7 @@ impl GridController {
         }
 
         // If no headers were returned, we want column headers: [0, 1, 2, 3, ...etc]
-        if !js_code_result.has_headers {
+        if !js_code_result.has_headers && !data_table.is_dataframe() {
             let column_headers =
                 data_table.default_header_with_name(|i| format!("{}", i - 1), None);
             data_table.with_column_headers(column_headers)
@@ -535,7 +535,7 @@ mod test {
 
     #[test]
     fn test_finalize_data_table() {
-        let mut gc = GridController::default();
+        let mut gc: GridController = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
 
         let sheet_pos = SheetPos {
