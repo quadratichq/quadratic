@@ -207,7 +207,7 @@ jobs:
       - name: Upload to S3
         run: |
           # S3 build directory
-          S3_DIR="s3://quadratic-client-development/"
+          S3_DIR="s3://qa-cloudflare.quadratic-preview.com/"
 
           # Upload entire build directory to S3 with no caching for Amplify
           aws s3 sync /tmp/quadratic-client-development/ $S3_DIR --delete
