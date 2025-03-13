@@ -13,7 +13,7 @@ const examples = [
   },
   {
     title: 'Build a chart',
-    description: 'Charts let you visualize data on your sheet.',
+    description: 'Visualize your data with a chart.',
     icon: <InsertChartIcon className="text-primary" />,
     prompt: 'Help me build a chart in Quadratic. If there is no data on the sheet add sample data and plot it',
   },
