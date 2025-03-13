@@ -6,22 +6,22 @@ import { useEffect, useState } from 'react';
 
 const examples = [
   {
-    title: 'Create a table',
-    description: 'All 50 U.S. states with their population and GDP',
+    title: 'Give me sample data',
+    description: 'Sample data is a great way to get started with Quadratic.',
     icon: <TableIcon className="text-primary" />,
-    prompt: 'Create a table with the 50 U.S. states and their populations and GDP.',
-  },
-  {
-    title: 'Generate code',
-    description: 'The first 100 prime numbers using Python',
-    icon: <CodeIcon className="text-primary" />,
-    prompt: 'Generate Python code that calculates the first 100 prime numbers.',
+    prompt: 'Create sample data in my sheet.',
   },
   {
     title: 'Build a chart',
-    description: 'Plot Apple’s employee count by year',
+    description: 'Charts let you visualize data on your sheet.',
     icon: <InsertChartIcon className="text-primary" />,
-    prompt: 'Find data on Apple’s employee count by year up to 2020, put it in a table, then plot it.',
+    prompt: 'Help me build a chart in Quadratic.',
+  },
+  {
+    title: 'Generate code',
+    description: 'Use code to manipulate data, query APIs, and more.',
+    icon: <CodeIcon className="text-primary" />,
+    prompt: 'Help me use code in Quadratic.',
   },
 ];
 
