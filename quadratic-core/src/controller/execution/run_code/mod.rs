@@ -110,8 +110,7 @@ impl GridController {
             // if the new data table is a single value and is a code cell, then we
             // don't want to show the name or columns headers
             if new_data_table.is_single_value() && is_code_cell {
-                new_data_table.show_name = false;
-                new_data_table.show_columns = false;
+                new_data_table.apply_single_value_settings();
             }
 
             // if the width of the old and new data tables are the same,
@@ -513,8 +512,7 @@ impl GridController {
         // if the new data table is a single value and is a code cell, then we
         // don't want to show the name or columns headers
         if data_table.is_single_value() && language.is_code_language() {
-            data_table.show_name = false;
-            data_table.show_columns = false;
+            data_table.apply_single_value_settings();
         }
 
         // If no headers were returned, we want column headers: [0, 1, 2, 3, ...etc]
