@@ -1,0 +1,148 @@
+name: Production
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+jobs:
+  build_client:
+    name: Build Client
+    runs-on: blacksmith-4vcpu-ubuntu-2204
+    concurrency:
+      group: production-build-client
+      cancel-in-progress: true
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Pull Pulumi ESC Environment Variables
+        id: pull-pulumi-esc-env-vars
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          PULUMI_ESC_ENVIRONMENT_NAME: quadratic-client-production
+        run: |
+          # Install Pulumi ESC CLI
+          curl -fsSL https://get.pulumi.com/esc/install.sh | sh
+          export PATH="$HOME/.pulumi/bin:$PATH"
+
+          # Login and get environment variables
+          esc login
+          ENV_VARS=$(esc env open quadratic/default/${PULUMI_ESC_ENVIRONMENT_NAME} --format dotenv)
+
+          # Write to client.env file to be used in Dockerfile
+          echo "$ENV_VARS" > ./quadratic-client/client.env
+          # Remove quotes if present
+          sed -i 's/"//g' ./quadratic-client/client.env
+
+          # Create hash from environment variables
+          ENV_HASH=$(echo "$ENV_VARS" | sha256sum | cut -d' ' -f1)
+          echo "env-hash=$ENV_HASH" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
+            network=host
+
+      - name: Cache Docker layers
+        uses: useblacksmith/cache@v5
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-qa-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-qa-
+            ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-
+
+      - name: Build using Docker
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: quadratic-client/Dockerfile
+          push: false
+          load: true
+          tags: quadratic-client-production:local
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max,compression=zstd,force-compression=true
+          cache-from: type=local,src=/tmp/.buildx-cache
+          build-args: |
+            ENV_HASH=${{ steps.pull-pulumi-esc-env-vars.outputs.env-hash }}
+          outputs: type=docker
+
+      - name: Copy build from container to host
+        run: |
+          # Create a temporary container from the image
+          CONTAINER_ID=$(docker create quadratic-client-production:local)
+
+          # Create a temporary directory to hold the build
+          mkdir -p /tmp/quadratic-client-production
+
+          # Copy the build files from the container using the correct path
+          docker cp $CONTAINER_ID:/usr/share/nginx/html/. /tmp/quadratic-client-production/
+
+          # Clean up the temporary container
+          docker rm $CONTAINER_ID
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: quadratic-client-production
+          path: /tmp/quadratic-client-production
+          retention-days: 1
+          compression-level: 6
+          overwrite: true
+          include-hidden-files: true
+          if-no-files-found: error
+
+  deploy_client:
+    needs: [build_client]
+    name: Deploy Client to S3 + Cloudflare
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    concurrency:
+      group: production-deploy-client
+    timeout-minutes: 30
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: quadratic-client-production
+          path: /tmp/quadratic-client-production
+
+      - name: Upload to S3
+        run: |
+          # S3 build directory
+          S3_DIR="s3://app-cloudflare.quadratichq.com/"
+
+          # Upload entire build directory to S3
+          aws s3 sync /tmp/quadratic-client-production/ $S3_DIR --delete
+
+      - name: Purge Cloudflare Cache
+        run: |
+          response=$(curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_ZONE_ID_PRODUCTION }}/purge_cache" \
+          -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_KEY_PRODUCTION }}" \
+          -H "Content-Type: application/json" \
+          -d '{"purge_everything": true}')
+
+          # Check if Purge was successful
+          if echo "$response" | jq -e '.success' > /dev/null; then
+            echo "Successfully purged Cloudflare cache"
+          else
+            echo "Failed to purge Cloudflare cache: $response"
+            exit 1
+          fi
