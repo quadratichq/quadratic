@@ -192,7 +192,7 @@ export const AIUserMessageForm = memo(
               <Button
                 size="sm"
                 variant="outline"
-                className="absolute -top-9 right-1/2 z-10 translate-x-1/2 bg-background"
+                className="absolute -top-10 right-1/2 z-10 translate-x-1/2 bg-background"
                 onClick={(e) => {
                   e.stopPropagation();
                   abortPrompt();
