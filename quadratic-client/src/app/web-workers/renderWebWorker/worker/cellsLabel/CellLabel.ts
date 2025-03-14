@@ -32,6 +32,7 @@ import type { LabelMeshes } from '@/app/web-workers/renderWebWorker/worker/cells
 import {
   CELL_HEIGHT,
   CELL_TEXT_MARGIN_LEFT,
+  CELL_WIDTH,
   MIN_CELL_WIDTH,
   SORT_BUTTON_PADDING,
   SORT_BUTTON_RADIUS,
@@ -118,8 +119,8 @@ export class CellLabel {
   private strikeThrough: boolean;
 
   private textWidth = 0;
-  textHeight = 0;
-  unwrappedTextWidth;
+  textHeight = CELL_HEIGHT;
+  unwrappedTextWidth = CELL_WIDTH;
 
   // overflow values
   private overflowRight = 0;
@@ -217,7 +218,6 @@ export class CellLabel {
     this.strikeThrough = !!cell.strikeThrough;
     this.columnHeader = !!cell.columnHeader;
     this.updateCellLimits();
-    this.unwrappedTextWidth = this.getUnwrappedTextWidth(this.text);
   }
 
   private updateFontName = () => {
@@ -348,9 +348,8 @@ export class CellLabel {
     this.actualBottom = Math.min(this.AABB.bottom, this.position.y + this.textHeight);
   };
 
-  public updateText = (labelMeshes: LabelMeshes): void => {
+  updateText = (labelMeshes: LabelMeshes): void => {
     if (!this.visible) return;
-    if (this.columnHeader) return;
 
     let processedText = this.processText(labelMeshes, this.text);
     if (!processedText) return;
@@ -363,6 +362,8 @@ export class CellLabel {
     this.unwrappedTextWidth = this.getUnwrappedTextWidth(this.text);
 
     this.calculatePosition();
+
+    if (this.columnHeader) return;
 
     if (this.checkNumberClip()) {
       const clippedNumber = this.getClippedNumber(this.originalText, this.text, this.number);
@@ -380,9 +381,8 @@ export class CellLabel {
   };
 
   /** Calculates the text glyphs and positions */
-  public processText = (labelMeshes: LabelMeshes, originalText: string) => {
+  private processText = (labelMeshes: LabelMeshes, originalText: string) => {
     if (!this.visible) return;
-    if (this.columnHeader) return;
 
     const data = this.cellsLabels.bitmapFonts[this.fontName];
     if (!data) throw new Error(`Expected BitmapFont ${this.fontName} to be defined in CellLabel.processText`);

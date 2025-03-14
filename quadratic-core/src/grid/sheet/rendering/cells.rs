@@ -1,7 +1,7 @@
 use crate::{
     grid::{
         js_types::{JsNumber, JsRenderCell, JsRenderCellSpecial},
-        CellAlign, CodeCellLanguage, DataTable, Format, Sheet,
+        CellAlign, CellWrap, CodeCellLanguage, DataTable, Format, Sheet,
     },
     CellValue, Pos, Rect, RunError, RunErrorMsg,
 };
@@ -156,8 +156,9 @@ impl Sheet {
 
                             if let Some(value) = value {
                                 let format = if is_header {
-                                    // column headers are bold
+                                    // column headers are always clipped and bold
                                     Format {
+                                        wrap: Some(CellWrap::Clip),
                                         bold: Some(true),
                                         ..Default::default()
                                     }
