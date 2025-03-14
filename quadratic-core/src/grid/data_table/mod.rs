@@ -730,7 +730,24 @@ impl DataTable {
     pub fn is_dataframe(&self) -> bool {
         if let DataTableKind::CodeRun(code_run) = &self.kind {
             code_run.output_type == Some("DataFrame".into())
-                || code_run.output_type == Some("Series".into())
+        } else {
+            false
+        }
+    }
+
+    /// Returns true if the data table is a pandas Series
+    pub fn is_series(&self) -> bool {
+        if let DataTableKind::CodeRun(code_run) = &self.kind {
+            code_run.output_type == Some("Series".into())
+        } else {
+            false
+        }
+    }
+
+    /// Returns true if the data table is a list
+    pub fn is_list(&self) -> bool {
+        if let DataTableKind::CodeRun(code_run) = &self.kind {
+            code_run.output_type == Some("list".into())
         } else {
             false
         }
