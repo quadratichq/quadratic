@@ -35,6 +35,7 @@ export class HtmlPlaceholders extends Graphics {
   }
 
   prepare() {
+    this.removeChildren();
     this.clear();
     const firstId = sheets.getFirst().id;
     htmlCellsHandler.getCells().forEach((cell) => {
