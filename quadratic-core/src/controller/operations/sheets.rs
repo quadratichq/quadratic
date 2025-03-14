@@ -194,7 +194,7 @@ mod test {
         let mut gc = GridController::test();
         gc.add_sheet(None);
         gc.add_sheet(None);
-        assert_eq!(gc.sheet_names(), vec!["Sheet1", "Sheet 2", "Sheet 3"]);
+        assert_eq!(gc.sheet_names(), vec!["Sheet 1", "Sheet 2", "Sheet 3"]);
     }
 
     #[test]

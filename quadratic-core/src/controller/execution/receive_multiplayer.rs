@@ -798,7 +798,7 @@ mod tests {
             client
                 .try_sheet(sheet_id)
                 .unwrap()
-                .display_value(Pos { x: 1, y: 2 }),
+                .display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Text("async output".to_string()))
         );
     }
@@ -870,7 +870,7 @@ mod tests {
         assert!(result.is_ok());
 
         assert_eq!(
-            client.try_sheet(sheet_id).unwrap().display_value(pos![A2]),
+            client.try_sheet(sheet_id).unwrap().display_value(pos![A1]),
             Some(CellValue::Text("async output".to_string()))
         );
     }
@@ -964,11 +964,11 @@ mod tests {
             Some(CellValue::Number(BigDecimal::from(1)))
         );
         assert_eq!(
-            sheet.display_value(pos![B2]),
+            sheet.display_value(pos![B1]),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
         assert_eq!(
-            sheet.display_value(pos![C2]),
+            sheet.display_value(pos![C1]),
             Some(CellValue::Number(BigDecimal::from(3)))
         );
     }
@@ -991,11 +991,11 @@ mod tests {
             Some(CellValue::Number(BigDecimal::from(1)))
         );
         assert_eq!(
-            sheet.display_value(pos![B2]),
+            sheet.display_value(pos![B1]),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
         assert_eq!(
-            sheet.display_value(pos![C2]),
+            sheet.display_value(pos![C1]),
             Some(CellValue::Number(BigDecimal::from(3)))
         );
     }
@@ -1127,11 +1127,11 @@ mod tests {
             Some(CellValue::Number(BigDecimal::from(1)))
         );
         assert_eq!(
-            sheet.display_value(pos![B2]),
+            sheet.display_value(pos![B1]),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
         assert_eq!(
-            sheet.display_value(pos![C2]),
+            sheet.display_value(pos![C1]),
             Some(CellValue::Number(BigDecimal::from(3)))
         );
     }

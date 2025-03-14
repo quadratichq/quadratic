@@ -84,6 +84,7 @@ impl DataTable {
         if self.display_buffer.is_some() {
             if let Some(cell_values) = values {
                 let mut sorted_cell_values = vec![CellValue::Blank; cell_values.len()];
+
                 for (index, cell_value) in cell_values.into_iter().enumerate() {
                     let actual_index = self.get_row_index_from_display_index(index as u64);
                     sorted_cell_values[actual_index as usize] = cell_value;

@@ -83,6 +83,10 @@ impl GridController {
         if let (Some(old_data_table), Some(new_data_table)) =
             (sheet.data_table(pos), &mut new_data_table)
         {
+            let is_code_cell = sheet
+                .get_table_language(pos, new_data_table)
+                .is_some_and(|lang| lang.is_code_language());
+
             new_data_table.show_ui = old_data_table.show_ui;
             new_data_table.show_name = old_data_table.show_name;
             new_data_table.alternating_colors = old_data_table.alternating_colors;
@@ -101,6 +105,12 @@ impl GridController {
                 // have headers; if the data table already has headers (eg, via data
                 // frames), then leave them in.
                 new_data_table.header_is_first_row |= old_data_table.header_is_first_row;
+            }
+
+            // if the new data table is a single value and is a code cell, then we
+            // don't want to show the name or columns headers
+            if new_data_table.is_single_value() && is_code_cell {
+                new_data_table.apply_single_value_settings();
             }
 
             // if the width of the old and new data tables are the same,
@@ -499,8 +509,14 @@ impl GridController {
         transaction.cells_accessed.clear();
         data_table.show_columns = js_code_result.has_headers;
 
+        // if the new data table is a single value and is a code cell, then we
+        // don't want to show the name or columns headers
+        if data_table.is_single_value() && language.is_code_language() {
+            data_table.apply_single_value_settings();
+        }
+
         // If no headers were returned, we want column headers: [0, 1, 2, 3, ...etc]
-        if !js_code_result.has_headers {
+        if !js_code_result.has_headers && !data_table.is_dataframe() {
             let column_headers =
                 data_table.default_header_with_name(|i| format!("{}", i - 1), None);
             data_table.with_column_headers(column_headers)
@@ -519,7 +535,7 @@ mod test {
 
     #[test]
     fn test_finalize_data_table() {
-        let mut gc = GridController::default();
+        let mut gc: GridController = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
 
         let sheet_pos = SheetPos {
@@ -586,7 +602,7 @@ mod test {
             output_type: None,
             cells_accessed: Default::default(),
         };
-        let new_data_table = DataTable::new(
+        let mut new_data_table = DataTable::new(
             DataTableKind::CodeRun(new_code_run),
             "Table_2",
             Value::Single(CellValue::Text("replace me".to_string())),
@@ -594,7 +610,11 @@ mod test {
             false,
             true,
             None,
-        );
+        )
+        .with_show_name(false)
+        .with_show_columns(false);
+        new_data_table.column_headers = None;
+
         gc.finalize_data_table(transaction, sheet_pos, Some(new_data_table.clone()), None);
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
