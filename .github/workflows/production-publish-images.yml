@@ -45,6 +45,7 @@ jobs:
         id: get-ecr-url
         run: |
           REPO_NAME=quadratic-${{ matrix.service }}
+          aws ecr-public create-repository --repository-name $REPO_NAME || true
           REPO_INFO=$(aws ecr-public describe-repositories --repository-names $REPO_NAME)
           ECR_URL=$(echo $REPO_INFO | jq -r '.repositories[0].repositoryUri')
           echo "ECR_URL=$ECR_URL" >> $GITHUB_OUTPUT
