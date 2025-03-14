@@ -57,8 +57,8 @@ export class SheetCursor {
     this.jsSelection.updateContext(context);
     if (this.sheet.sheets.current === this.sheet.id) {
       pixiApp.cursor.dirty = true;
+      events.emit('a1ContextUpdated');
     }
-    events.emit('a1ContextUpdated');
   };
 
   set viewport(save: IViewportTransformState) {

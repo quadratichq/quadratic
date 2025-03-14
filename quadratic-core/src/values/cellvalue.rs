@@ -8,6 +8,7 @@ use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use serde::{Deserialize, Serialize};
 
 use super::{Duration, Instant, IsBlank};
+use crate::grid::formats::FormatUpdate;
 use crate::grid::{CodeCellLanguage, CodeCellValue};
 use crate::{
     date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
@@ -18,6 +19,11 @@ use crate::{
 // todo: fill this out
 const CURRENCY_SYMBOLS: &str = "$€£¥";
 const PERCENTAGE_SYMBOL: char = '%';
+
+// when a number's decimal is larger than this value, then it will treat it as text (this avoids an attempt to allocate a huge vector)
+// there is an unmerged alternative that might be interesting: https://github.com/declanvk/bigdecimal-rs/commit/b0a2ea3a403ddeeeaeef1ddfc41ff2ae4a4252d6
+// see original issue here: https://github.com/akubera/bigdecimal-rs/issues/108
+const MAX_BIG_DECIMAL_SIZE: usize = 10000000;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Import {
@@ -554,6 +560,77 @@ impl CellValue {
             (_, true) => CellValue::Logical(is_true),
             _ => CellValue::Text(String::from(value)),
         }
+    }
+
+    /// Convert string to a cell_value and generate necessary operations
+    pub fn string_to_cell_value(value: &str, allow_code: bool) -> (CellValue, FormatUpdate) {
+        let mut format_update = FormatUpdate::default();
+
+        let cell_value = if value.is_empty() {
+            CellValue::Blank
+        } else if let Some((currency, number)) = CellValue::unpack_currency(value) {
+            format_update = FormatUpdate {
+                numeric_format: Some(Some(NumericFormat {
+                    kind: NumericFormatKind::Currency,
+                    symbol: Some(currency),
+                })),
+                ..Default::default()
+            };
+
+            if value.contains(',') {
+                format_update.numeric_commas = Some(Some(true));
+            }
+
+            // We no longer automatically set numeric decimals for
+            // currency; instead, we handle changes in currency decimal
+            // length by using 2 if currency is set by default.
+
+            CellValue::Number(number)
+        } else if let Some(bool) = CellValue::unpack_boolean(value) {
+            bool
+        } else if let Ok(bd) = BigDecimal::from_str(&CellValue::strip_commas(value)) {
+            if (bd.fractional_digit_count().unsigned_abs() as usize) > MAX_BIG_DECIMAL_SIZE {
+                CellValue::Text(value.into())
+            } else {
+                if value.contains(',') {
+                    format_update = FormatUpdate {
+                        numeric_commas: Some(Some(true)),
+                        ..Default::default()
+                    };
+                }
+                CellValue::Number(bd)
+            }
+        } else if let Some(percent) = CellValue::unpack_percentage(value) {
+            format_update = FormatUpdate {
+                numeric_format: Some(Some(NumericFormat {
+                    kind: NumericFormatKind::Percentage,
+                    symbol: None,
+                })),
+                ..Default::default()
+            };
+            CellValue::Number(percent)
+        } else if let Some(time) = CellValue::unpack_time(value) {
+            time
+        } else if let Some(date) = CellValue::unpack_date(value) {
+            date
+        } else if let Some(date_time) = CellValue::unpack_date_time(value) {
+            date_time
+        } else if let Some(duration) = CellValue::unpack_duration(value) {
+            duration
+        } else if let Some(code) = value.strip_prefix("=") {
+            if allow_code {
+                CellValue::Code(CodeCellValue {
+                    language: CodeCellLanguage::Formula,
+                    code: code.to_string(),
+                })
+            } else {
+                CellValue::Text(code.to_string())
+            }
+        } else {
+            CellValue::Text(value.into())
+        };
+
+        (cell_value, format_update)
     }
 
     pub fn is_html(&self) -> bool {

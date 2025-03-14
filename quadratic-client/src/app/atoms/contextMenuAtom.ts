@@ -35,17 +35,6 @@ export const defaultContextMenuState: ContextMenuState = {
   initialValue: undefined,
 };
 
-export interface ContextMenuOptions {
-  type?: ContextMenuType;
-  world?: Point;
-  column?: number;
-  row?: number;
-  table?: JsRenderCodeCell;
-  rename?: boolean;
-  selectedColumn?: number;
-  initialValue?: string;
-}
-
 export const contextMenuAtom = atom({
   key: 'contextMenuState',
   default: defaultContextMenuState,
@@ -56,10 +45,11 @@ export const contextMenuAtom = atom({
         focusGrid();
       };
 
-      const set = (options: ContextMenuOptions) => {
-        setSelf(() => options);
+      const set = (options: ContextMenuState) => {
         if (!options.type) {
           clear();
+        } else {
+          setSelf(() => options);
         }
       };
 

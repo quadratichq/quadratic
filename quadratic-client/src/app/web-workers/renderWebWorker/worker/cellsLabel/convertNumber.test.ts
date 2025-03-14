@@ -35,6 +35,9 @@ describe('convertNumber', () => {
     expect(
       convertNumber('100200100.1234', { commas: null, decimals: null, format: { type: 'CURRENCY', symbol: '$' } })
     ).toBe('$100,200,100.12');
+    expect(
+      convertNumber('-100200100.1234', { commas: null, decimals: null, format: { type: 'CURRENCY', symbol: '$' } })
+    ).toBe('-$100,200,100.12');
   });
 
   it('reduceDecimals', () => {
