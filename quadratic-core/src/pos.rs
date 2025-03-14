@@ -248,7 +248,7 @@ mod test {
     use crate::{
         grid::SheetId,
         renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-        Pos, SheetPos, SheetRect,
+        Pos, RefAdjust, SheetPos, SheetRect,
     };
 
     #[test]
@@ -491,28 +491,24 @@ mod test {
 
     #[test]
     fn test_adjust_column_row() {
-        let mut pos = pos![B3];
-        pos.adjust_column_row_in_place(Some(2), None, 1);
+        let sheet_id = SheetId::TEST;
+
+        let pos = pos![B3].saturating_adjust(RefAdjust::new_insert_column(sheet_id, 2));
         assert_eq!(pos, pos![C3]);
 
-        let mut pos = pos![B3];
-        pos.adjust_column_row_in_place(None, Some(2), 1);
+        let pos = pos![B3].saturating_adjust(RefAdjust::new_insert_row(sheet_id, 2));
         assert_eq!(pos, pos![B4]);
 
-        let mut pos = pos![B3];
-        pos.adjust_column_row_in_place(Some(3), None, 1);
+        let pos = pos![B3].saturating_adjust(RefAdjust::new_insert_column(sheet_id, 3));
         assert_eq!(pos, pos![B3]);
 
-        let mut pos = pos![B3];
-        pos.adjust_column_row_in_place(None, Some(4), 1);
+        let pos = pos![B3].saturating_adjust(RefAdjust::new_insert_column(sheet_id, 4));
         assert_eq!(pos, pos![B3]);
 
-        let mut pos = pos![B3];
-        pos.adjust_column_row_in_place(Some(1), None, -1);
+        let pos = pos![B3].saturating_adjust(RefAdjust::new_delete_column(sheet_id, 1));
         assert_eq!(pos, pos![A3]);
 
-        let mut pos = pos![B3];
-        pos.adjust_column_row_in_place(None, Some(1), -1);
+        let pos = pos![B3].saturating_adjust(RefAdjust::new_delete_row(sheet_id, 1));
         assert_eq!(pos, pos![B2]);
     }
 }

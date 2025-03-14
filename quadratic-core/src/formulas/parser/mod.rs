@@ -417,9 +417,6 @@ impl<'a> Parser<'a> {
 
 #[cfg(test)]
 mod tests {
-
-    use crate::a1::CellRefCoord;
-
     use super::*;
 
     #[test]
@@ -453,26 +450,21 @@ mod tests {
         let ctx = A1Context::test(&[], &[]);
         let pos = pos![C6].to_sheet_pos(SheetId::new());
         let src = "SUM(A4,B$6, C7)";
-        let expected = "SUM(A7,B$5, C10)";
+        let expected = "SUM(#REF!,B$6, B10)";
 
-        let replaced = adjust_references(src, &ctx, pos, |_sheet, range_end| {
-            Ok(CellRefRangeEnd {
-                col: range_end.col,
-                row: {
-                    let delta = if range_end.row.is_unbounded() {
-                        0
-                    } else if range_end.row.is_absolute {
-                        -1
-                    } else {
-                        3
-                    };
-                    CellRefCoord {
-                        coord: range_end.row.coord + delta,
-                        is_absolute: range_end.row.is_absolute,
-                    }
-                },
-            })
-        });
+        let replaced = adjust_references(
+            src,
+            &ctx,
+            pos,
+            RefAdjust {
+                sheet_id: pos.sheet_id,
+                relative_only: true,
+                dx: -1,
+                dy: 3,
+                x_start: 2,
+                y_start: 0,
+            },
+        );
 
         let replaced_a1 = convert_rc_to_a1(&replaced, &ctx, pos);
         assert_eq!(replaced_a1, expected);

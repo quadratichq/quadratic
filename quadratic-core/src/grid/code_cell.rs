@@ -1,3 +1,5 @@
+use std::ops::RangeInclusive;
+
 use fancy_regex::Regex;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
@@ -198,37 +200,54 @@ impl RefAdjust {
 
     /// Constructs an adjustment for inserting a column.
     pub fn new_insert_column(sheet_id: SheetId, column: i64) -> Self {
-        Self {
-            relative_only: false,
-            dx: 1,
-            x_start: column,
-            ..Self::new_no_op(sheet_id)
-        }
+        Self::new_insert_columns(sheet_id, column..=column)
     }
     /// Constructs an adjustment for deleting a column.
     pub fn new_delete_column(sheet_id: SheetId, column: i64) -> Self {
-        Self {
-            relative_only: false,
-            dx: -1,
-            x_start: column,
-            ..Self::new_no_op(sheet_id)
-        }
+        Self::new_delete_columns(sheet_id, column..=column)
     }
     /// Constructs an adjustment for inserting a row.
     pub fn new_insert_row(sheet_id: SheetId, row: i64) -> Self {
-        Self {
-            relative_only: false,
-            dy: 1,
-            y_start: row,
-            ..Self::new_no_op(sheet_id)
-        }
+        Self::new_insert_rows(sheet_id, row..=row)
     }
     /// Constructs an adjustment for deleting a row.
     pub fn new_delete_row(sheet_id: SheetId, row: i64) -> Self {
+        Self::new_delete_rows(sheet_id, row..=row)
+    }
+
+    /// Constructs an adjustment for inserting multiple columns at once.
+    pub fn new_insert_columns(sheet_id: SheetId, range: RangeInclusive<i64>) -> Self {
         Self {
             relative_only: false,
-            dy: -1,
-            y_start: row,
+            x_start: *range.start(),
+            dx: range.count() as i64,
+            ..Self::new_no_op(sheet_id)
+        }
+    }
+    /// Constructs an adjustment for deleting multiple columns at once.
+    pub fn new_delete_columns(sheet_id: SheetId, range: RangeInclusive<i64>) -> Self {
+        Self {
+            relative_only: false,
+            x_start: *range.start(),
+            dx: -(range.count() as i64),
+            ..Self::new_no_op(sheet_id)
+        }
+    }
+    /// Constructs an adjustment for inserting multiple rows at once.
+    pub fn new_insert_rows(sheet_id: SheetId, range: RangeInclusive<i64>) -> Self {
+        Self {
+            relative_only: false,
+            y_start: *range.start(),
+            dy: range.count() as i64,
+            ..Self::new_no_op(sheet_id)
+        }
+    }
+    /// Constructs an adjustment for deleting multiple rows at once.
+    pub fn new_delete_rows(sheet_id: SheetId, range: RangeInclusive<i64>) -> Self {
+        Self {
+            relative_only: false,
+            y_start: *range.start(),
+            dy: -(range.count() as i64),
             ..Self::new_no_op(sheet_id)
         }
     }
@@ -262,12 +281,14 @@ mod tests {
             sheet_id,
         };
 
+        let translate = |x, y| RefAdjust::new_translate(sheet_id, x, y);
+
         // Basic single reference
         let mut code = CodeCellValue {
             language: CodeCellLanguage::Python,
             code: "q.cells('A1:B2')".to_string(),
         };
-        code.translate_cell_references(&a1_context, pos, sheet_id, 1, 1);
+        code.adjust_references(&a1_context, pos, translate(1, 1));
         assert_eq!(code.code, r#"q.cells("B2:C3")"#, "Basic reference failed");
 
         // Multiple references in one line
@@ -275,7 +296,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: "x = q.cells('A1:B2') + q.cells('C3:D4')".to_string(),
         };
-        code.translate_cell_references(&a1_context, pos, sheet_id, 1, 1);
+        code.adjust_references(&a1_context, pos, translate(1, 1));
         assert_eq!(
             code.code, r#"x = q.cells("B2:C3") + q.cells("D4:E5")"#,
             "Multiple references failed"
@@ -288,7 +309,7 @@ mod tests {
                 "x = q.cells('This!A1:C2') + q.cells('Other!B3:E4') + q.cells('Nonexistent!E5:G6')"
                     .to_string(),
         };
-        code.translate_cell_references(&a1_context, pos, sheet_id, 1, 5);
+        code.adjust_references(&a1_context, pos, translate(1, 5));
         assert_eq!(
             code.code,
             r#"x = q.cells("B6:D7") + q.cells("Other!B3:E4") + q.cells('Nonexistent!E5:G6')"#,
@@ -300,7 +321,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: r#"q.cells("A1:B2"); q.cells("C3:D4"); q.cells("E5:F6");"#.to_string(),
         };
-        code.translate_cell_references(&a1_context, pos, sheet_id, 1, 1);
+        code.adjust_references(&a1_context, pos, translate(1, 1));
         assert_eq!(
             code.code, r#"q.cells("B2:C3"); q.cells("D4:E5"); q.cells("F6:G7");"#,
             "Quote types failed"
@@ -311,7 +332,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: r#"q.cells("A1:B2'); q.cells('C3:D4")"#.to_string(),
         };
-        code.translate_cell_references(&a1_context, pos, sheet_id, 1, 1);
+        code.adjust_references(&a1_context, pos, translate(1, 1));
         assert_eq!(
             code.code, r#"q.cells("A1:B2'); q.cells('C3:D4")"#,
             "Mismatched quotes failed"
@@ -322,7 +343,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: "q.cells('A1:B2')".to_string(),
         };
-        code.translate_cell_references(&a1_context, pos, sheet_id, 0, 0);
+        code.adjust_references(&a1_context, pos, translate(0, 0));
         assert_eq!(code.code, r#"q.cells('A1:B2')"#, "Zero delta failed");
 
         // Negative delta
@@ -330,7 +351,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: "q.cells('C3:D4')".to_string(),
         };
-        code.translate_cell_references(&a1_context, pos, sheet_id, -1, -1);
+        code.adjust_references(&a1_context, pos, translate(-1, -1));
         assert_eq!(code.code, r#"q.cells("B2:C3")"#, "Negative delta failed");
 
         // Whitespace variations
@@ -338,7 +359,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: "q.cells  (  'A1:B2'  )".to_string(),
         };
-        code.translate_cell_references(&a1_context, pos, sheet_id, 1, 1);
+        code.adjust_references(&a1_context, pos, translate(1, 1));
         assert_eq!(
             code.code, r#"q.cells("B2:C3"  )"#,
             "Whitespace variations failed"
@@ -349,7 +370,7 @@ mod tests {
             language: CodeCellLanguage::Formula,
             code: "A1".to_string(),
         };
-        code.translate_cell_references(&a1_context, pos, sheet_id, 1, 1);
+        code.adjust_references(&a1_context, pos, translate(1, 1));
         assert_eq!(code.code, "B2", "Formula failed");
 
         // Python first_row_header=True
@@ -357,7 +378,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: r#"q.cells("A1:B2", first_row_header=True)"#.to_string(),
         };
-        code.translate_cell_references(&a1_context, pos, sheet_id, 1, 1);
+        code.adjust_references(&a1_context, pos, translate(1, 1));
         assert_eq!(
             code.code, r#"q.cells("B2:C3", first_row_header=True)"#,
             "first_row_header=True failed"
@@ -378,12 +399,14 @@ mod tests {
             sheet_id,
         };
 
+        let translate = |x, y| RefAdjust::new_translate(sheet_id, x, y);
+
         // Basic single reference
         let mut code = CodeCellValue {
             language: CodeCellLanguage::Python,
             code: r#"q.cells("'Sheet1 (1)'!A1:B2")"#.to_string(),
         };
-        code.translate_cell_references(&a1_context, pos, sheet_id, 1, 1);
+        code.adjust_references(&a1_context, pos, translate(1, 1));
         assert_eq!(
             code.code, r#"q.cells("'Sheet1 (1)'!B2:C3")"#,
             "Basic reference failed"
@@ -394,7 +417,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: r#"x = q.cells("'Sheet1'!A1:B2") + q.cells("'Sheet1 (1)'!C3:D4")"#.to_string(),
         };
-        code.translate_cell_references(&a1_context, pos, sheet_id, 1, 1);
+        code.adjust_references(&a1_context, pos, translate(1, 1));
         assert_eq!(
             code.code, r#"x = q.cells("B2:C3") + q.cells("'Sheet1 (1)'!D4:E5")"#,
             "Multiple references failed"
@@ -405,7 +428,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: r#"q.cells("'Sheet1'!A1:B2"); q.cells("'Sheet1 (1)'!C3:D4"); q.cells("'Sheet1'!E5:F6");"#.to_string(),
         };
-        code.translate_cell_references(&a1_context, pos, sheet_id, 1, 1);
+        code.adjust_references(&a1_context, pos, translate(1, 1));
         assert_eq!(
             code.code, r#"q.cells("B2:C3"); q.cells("'Sheet1 (1)'!D4:E5"); q.cells("F6:G7");"#,
             "Quote types failed"
@@ -416,7 +439,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: r#"q.cells("'Sheet1'!A1:B2'); q.cells(''Sheet1 (1)'!C3:D4")"#.to_string(),
         };
-        code.translate_cell_references(&a1_context, pos, sheet_id, 1, 1);
+        code.adjust_references(&a1_context, pos, translate(1, 1));
         assert_eq!(
             code.code, r#"q.cells("'Sheet1'!A1:B2'); q.cells(''Sheet1 (1)'!C3:D4")"#,
             "Mismatched quotes failed"
@@ -427,7 +450,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: r#"q.cells("'Sheet1 (1)'!A1:B2")"#.to_string(),
         };
-        code.translate_cell_references(&a1_context, pos, sheet_id, 0, 0);
+        code.adjust_references(&a1_context, pos, translate(0, 0));
         assert_eq!(
             code.code, r#"q.cells("'Sheet1 (1)'!A1:B2")"#,
             "Zero delta failed"
@@ -438,7 +461,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: r#"q.cells("'Sheet1 (1)'!C3:D4")"#.to_string(),
         };
-        code.translate_cell_references(&a1_context, pos, sheet_id, -1, -1);
+        code.adjust_references(&a1_context, pos, translate(-1, -1));
         assert_eq!(
             code.code, r#"q.cells("'Sheet1 (1)'!B2:C3")"#,
             "Negative delta failed"
@@ -449,7 +472,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: r#"q.cells  (  "'Sheet1 (1)'!A1:B2"  )"#.to_string(),
         };
-        code.translate_cell_references(&a1_context, pos, sheet_id, 1, 1);
+        code.adjust_references(&a1_context, pos, translate(1, 1));
         assert_eq!(
             code.code, r#"q.cells("'Sheet1 (1)'!B2:C3"  )"#,
             "Whitespace variations failed"
@@ -460,7 +483,7 @@ mod tests {
             language: CodeCellLanguage::Formula,
             code: r#"A1"#.to_string(),
         };
-        code.translate_cell_references(&a1_context, pos, sheet_id, 1, 1);
+        code.adjust_references(&a1_context, pos, translate(1, 1));
         assert_eq!(code.code, r#"B2"#, "Formula failed");
 
         // Python first_row_header=True
@@ -468,7 +491,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: r#"q.cells("'Sheet1 (1)'!A1:B2", first_row_header=True)"#.to_string(),
         };
-        code.translate_cell_references(&a1_context, pos, sheet_id, 1, 1);
+        code.adjust_references(&a1_context, pos, translate(1, 1));
         assert_eq!(
             code.code, r#"q.cells("'Sheet1 (1)'!B2:C3", first_row_header=True)"#,
             "first_row_header=True failed"

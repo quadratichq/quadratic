@@ -87,7 +87,7 @@ mod tests {
         assert_eq!(clipboard_validations.validations.len(), 1);
         assert_eq!(
             clipboard_validations.validations[0].selection,
-            selection.translate(-1, -1).unwrap(),
+            selection.saturating_translate(-1, -1).unwrap(),
         );
     }
 }

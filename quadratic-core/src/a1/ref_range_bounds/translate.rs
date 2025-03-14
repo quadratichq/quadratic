@@ -49,123 +49,89 @@ impl RefRangeBounds {
 
 #[cfg(test)]
 mod tests {
+    use crate::grid::SheetId;
+
     use super::*;
 
     #[test]
-    fn test_translate_in_place() {
-        // Test single cell translation
-        let mut range = RefRangeBounds::test_a1("A1");
-        range.translate_in_place(1, 1).unwrap();
-        assert_eq!(range.to_string(), "B2");
+    fn test_adjust() {
+        let sheet_id = SheetId::TEST;
 
-        // Test range translation
-        let mut range = RefRangeBounds::test_a1("A1:C3");
-        range.translate_in_place(1, 1).unwrap();
-        assert_eq!(range.to_string(), "B2:D4");
-
-        // Test column range translation
-        let mut range = RefRangeBounds::test_a1("A:C");
-        range.translate_in_place(1, 0).unwrap();
-        assert_eq!(range.to_string(), "B:D");
-
-        // Test row range translation
-        let mut range = RefRangeBounds::test_a1("1:3");
-        range.translate_in_place(0, 1).unwrap();
-        assert_eq!(range.to_string(), "2:4");
-
-        // Test negative translation
-        let mut range = RefRangeBounds::test_a1("B2:D4");
-        range.translate_in_place(-1, -1).unwrap();
-        assert_eq!(range.to_string(), "A1:C3");
-
-        // Test zero translation
-        let mut range = RefRangeBounds::test_a1("A1:C3");
-        range.translate_in_place(0, 0).unwrap();
-        assert_eq!(range.to_string(), "A1:C3");
-
-        // Test that * remains unchanged
-        let mut range = RefRangeBounds::test_a1("*");
-        range.translate_in_place(1, 1).unwrap();
-        assert_eq!(range.to_string(), "*");
-
-        // Test negative translation capping
-        let mut range = RefRangeBounds::test_a1("A1");
-        range.translate_in_place(-10, -10).unwrap_err();
-    }
-
-    #[test]
-    fn test_translate() {
         // Test single cell translation
         let range = RefRangeBounds::test_a1("A1");
-        let translated = range.translate(1, 1).unwrap();
-        assert_eq!(translated.to_string(), "B2");
-        assert_eq!(range.to_string(), "A1");
+        let adj = RefAdjust::new_translate(sheet_id, 1, 1);
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "B2");
+        assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "B2");
 
         // Test range translation
         let range = RefRangeBounds::test_a1("A1:C3");
-        let translated = range.translate(1, 1).unwrap();
-        assert_eq!(translated.to_string(), "B2:D4");
-        assert_eq!(range.to_string(), "A1:C3");
+        let adj = RefAdjust::new_translate(sheet_id, 1, 1);
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "B2:D4");
+        assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "B2:D4");
 
         // Test column range translation
         let range = RefRangeBounds::test_a1("A:C");
-        let translated = range.translate(1, 0).unwrap();
-        assert_eq!(translated.to_string(), "B:D");
-        assert_eq!(range.to_string(), "A:C");
+        let adj = RefAdjust::new_translate(sheet_id, 1, 0);
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "B:D");
+        assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "B:D");
 
         // Test row range translation
         let range = RefRangeBounds::test_a1("1:3");
-        let translated = range.translate(0, 1).unwrap();
-        assert_eq!(translated.to_string(), "2:4");
-        assert_eq!(range.to_string(), "1:3");
+        let adj = RefAdjust::new_translate(sheet_id, 0, 1);
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "2:4");
+        assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "2:4");
 
         // Test negative translation
         let range = RefRangeBounds::test_a1("B2:D4");
-        let translated = range.translate(-1, -1).unwrap();
-        assert_eq!(translated.to_string(), "A1:C3");
-        assert_eq!(range.to_string(), "B2:D4");
+        let adj = RefAdjust::new_translate(sheet_id, -1, -1);
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "A1:C3");
+        assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "A1:C3");
 
         // Test zero translation
         let range = RefRangeBounds::test_a1("A1:C3");
-        let translated = range.translate(0, 0).unwrap();
-        assert_eq!(translated.to_string(), "A1:C3");
-        assert_eq!(range.to_string(), "A1:C3");
+        let adj = RefAdjust::new_translate(sheet_id, 0, 0);
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "A1:C3");
+        assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "A1:C3");
 
         // Test that * remains unchanged
         let range = RefRangeBounds::test_a1("*");
-        let translated = range.translate(1, 1).unwrap();
-        assert_eq!(translated.to_string(), "*");
-        assert_eq!(range.to_string(), "*");
+        let adj = RefAdjust::new_translate(sheet_id, 1, 1);
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "*");
+        assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "*");
 
         // Test negative translation capping
-        let range = RefRangeBounds::test_a1("A1");
-        range.translate(-10, -10).unwrap_err();
+        let range = RefRangeBounds::test_a1("A12");
+        let adj = RefAdjust::new_translate(sheet_id, -10, -10);
+        range.adjust(adj).unwrap_err();
+        assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "A2");
     }
 
     #[test]
     fn test_adjust_column_row() {
-        let mut range = RefRangeBounds::test_a1("B3");
-        range.adjust_column_row_in_place(Some(2), None, 1);
-        assert_eq!(range.to_string(), "C3");
+        let sheet_id = SheetId::TEST;
 
-        let mut range = RefRangeBounds::test_a1("B3");
-        range.adjust_column_row_in_place(None, Some(2), 1);
-        assert_eq!(range.to_string(), "B4");
+        let range = RefRangeBounds::test_a1("B3");
+        let adj = RefAdjust::new_insert_column(sheet_id, 2);
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "C3");
 
-        let mut range = RefRangeBounds::test_a1("B3");
-        range.adjust_column_row_in_place(Some(3), None, 1);
-        assert_eq!(range.to_string(), "B3");
+        let range = RefRangeBounds::test_a1("B3");
+        let adj = RefAdjust::new_insert_row(sheet_id, 2);
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "B4");
 
-        let mut range = RefRangeBounds::test_a1("B3");
-        range.adjust_column_row_in_place(None, Some(4), 1);
-        assert_eq!(range.to_string(), "B3");
+        let range = RefRangeBounds::test_a1("B3");
+        let adj = RefAdjust::new_insert_column(sheet_id, 3);
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "B3");
 
-        let mut range = RefRangeBounds::test_a1("B3");
-        range.adjust_column_row_in_place(Some(1), None, -1);
-        assert_eq!(range.to_string(), "A3");
+        let range = RefRangeBounds::test_a1("B3");
+        let adj = RefAdjust::new_insert_row(sheet_id, 4);
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "B3");
 
-        let mut range = RefRangeBounds::test_a1("B3");
-        range.adjust_column_row_in_place(None, Some(1), -1);
-        assert_eq!(range.to_string(), "B2");
+        let range = RefRangeBounds::test_a1("B3");
+        let adj = RefAdjust::new_delete_column(sheet_id, 1);
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "A3");
+
+        let range = RefRangeBounds::test_a1("B3");
+        let adj = RefAdjust::new_delete_row(sheet_id, 1);
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "B2");
     }
 }

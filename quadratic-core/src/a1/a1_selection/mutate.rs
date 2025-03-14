@@ -432,72 +432,47 @@ mod tests {
     }
 
     #[test]
-    fn test_translate_in_place() {
-        // Test positive translation
-        let mut selection = A1Selection::test_a1("A1:B2");
-        selection.translate_in_place(1, 1).unwrap();
-        assert_eq!(selection, A1Selection::test_a1("B2:C3"));
-
-        // Test negative translation
-        let mut selection = A1Selection::test_a1("C3:D4");
-        selection.translate_in_place(-1, -1).unwrap();
-        assert_eq!(selection, A1Selection::test_a1("B2:C3"));
-
-        // Test zero translation
-        let mut selection = A1Selection::test_a1("A1:B2");
-        selection.translate_in_place(0, 0).unwrap();
-        assert_eq!(selection, A1Selection::test_a1("A1:B2"));
-
-        // Test x-only translation
-        let mut selection = A1Selection::test_a1("A1:B2");
-        selection.translate_in_place(2, 0).unwrap();
-        assert_eq!(selection, A1Selection::test_a1("C1:D2"));
-
-        // Test y-only translation
-        let mut selection = A1Selection::test_a1("A1:B2");
-        selection.translate_in_place(0, 2).unwrap();
-        assert_eq!(selection, A1Selection::test_a1("A3:B4"));
-
-        // Test single cell selection
-        let mut selection = A1Selection::test_a1("A1");
-        selection.translate_in_place(1, 1).unwrap();
-        assert_eq!(selection, A1Selection::test_a1("B2"));
-
-        // Test negative translation capping
-        let mut selection = A1Selection::test_a1("A1");
-        let r = selection.translate_in_place(-10, -10);
-        r.unwrap_err();
-    }
-
-    #[test]
-    fn test_translate() {
+    fn test_adjust_translate() {
         // Test positive translation
         let selection = A1Selection::test_a1("A1:B2");
-        let translated = selection.translate(1, 1).unwrap();
-        assert_eq!(translated, A1Selection::test_a1("B2:C3"));
-        assert_eq!(selection, A1Selection::test_a1("A1:B2"));
+        let adj = RefAdjust::new_translate(selection.sheet_id, 1, 1);
+        let res = selection.adjust(adj).unwrap();
+        assert_eq!(res, A1Selection::test_a1("B2:C3"));
 
         // Test negative translation
         let selection = A1Selection::test_a1("C3:D4");
-        let translated = selection.translate(-1, -1).unwrap();
-        assert_eq!(translated, A1Selection::test_a1("B2:C3"));
-        assert_eq!(selection, A1Selection::test_a1("C3:D4"));
+        let adj = RefAdjust::new_translate(selection.sheet_id, -1, -1);
+        let res = selection.adjust(adj).unwrap();
+        assert_eq!(res, A1Selection::test_a1("B2:C3"));
 
         // Test zero translation
         let selection = A1Selection::test_a1("A1:B2");
-        let translated = selection.translate(0, 0).unwrap();
-        assert_eq!(translated, A1Selection::test_a1("A1:B2"));
-        assert_eq!(selection, A1Selection::test_a1("A1:B2"));
+        let adj = RefAdjust::new_translate(selection.sheet_id, 0, 0);
+        let res = selection.adjust(adj).unwrap();
+        assert_eq!(res, A1Selection::test_a1("A1:B2"));
+
+        // Test x-only translation
+        let selection = A1Selection::test_a1("A1:B2");
+        let adj = RefAdjust::new_translate(selection.sheet_id, 2, 0);
+        let res = selection.adjust(adj).unwrap();
+        assert_eq!(res, A1Selection::test_a1("C1:D2"));
+
+        // Test y-only translation
+        let selection = A1Selection::test_a1("A1:B2");
+        let adj = RefAdjust::new_translate(selection.sheet_id, 0, 2);
+        let res = selection.adjust(adj).unwrap();
+        assert_eq!(res, A1Selection::test_a1("A3:B4"));
 
         // Test single cell selection
         let selection = A1Selection::test_a1("A1");
-        let translated = selection.translate(1, 1).unwrap();
-        assert_eq!(translated, A1Selection::test_a1("B2"));
-        assert_eq!(selection, A1Selection::test_a1("A1"));
+        let adj = RefAdjust::new_translate(selection.sheet_id, 1, 1);
+        let res = selection.adjust(adj).unwrap();
+        assert_eq!(res, A1Selection::test_a1("B2"));
 
         // Test negative translation capping
         let selection = A1Selection::test_a1("A1");
-        selection.translate(-10, -10).unwrap_err();
+        let adj = RefAdjust::new_translate(selection.sheet_id, -10, -10);
+        selection.adjust(adj).unwrap_err();
     }
 
     #[test]
@@ -505,29 +480,29 @@ mod tests {
         let sheet_id = SheetId::TEST;
         let a1_context = A1Context::default();
 
-        let mut selection = A1Selection::test_a1("B3");
-        selection.adjust_column_row_in_place(Some(2), None, 1);
-        assert_eq!(selection.to_string(Some(sheet_id), &a1_context), "C3");
+        let selection = A1Selection::test_a1("B3");
+        let result = selection.adjust(RefAdjust::new_insert_column(sheet_id, 2));
+        assert_eq!(result.unwrap().to_string(Some(sheet_id), &a1_context), "C3");
 
-        let mut selection = A1Selection::test_a1("B3");
-        selection.adjust_column_row_in_place(None, Some(2), 1);
-        assert_eq!(selection.to_string(Some(sheet_id), &a1_context), "B4");
+        let selection = A1Selection::test_a1("B3");
+        let result = selection.adjust(RefAdjust::new_insert_row(sheet_id, 2));
+        assert_eq!(result.unwrap().to_string(Some(sheet_id), &a1_context), "B4");
 
-        let mut selection = A1Selection::test_a1("B3");
-        selection.adjust_column_row_in_place(Some(3), None, 1);
-        assert_eq!(selection.to_string(Some(sheet_id), &a1_context), "B3");
+        let selection = A1Selection::test_a1("B3");
+        let result = selection.adjust(RefAdjust::new_insert_column(sheet_id, 3));
+        assert_eq!(result.unwrap().to_string(Some(sheet_id), &a1_context), "B3");
 
-        let mut selection = A1Selection::test_a1("B3");
-        selection.adjust_column_row_in_place(None, Some(4), 1);
-        assert_eq!(selection.to_string(Some(sheet_id), &a1_context), "B3");
+        let selection = A1Selection::test_a1("B3");
+        let result = selection.adjust(RefAdjust::new_insert_row(sheet_id, 4));
+        assert_eq!(result.unwrap().to_string(Some(sheet_id), &a1_context), "B3");
 
-        let mut selection = A1Selection::test_a1("B3");
-        selection.adjust_column_row_in_place(Some(1), None, -1);
-        assert_eq!(selection.to_string(Some(sheet_id), &a1_context), "A3");
+        let selection = A1Selection::test_a1("B3");
+        let result = selection.adjust(RefAdjust::new_insert_column(sheet_id, 1));
+        assert_eq!(result.unwrap().to_string(Some(sheet_id), &a1_context), "A3");
 
-        let mut selection = A1Selection::test_a1("B3");
-        selection.adjust_column_row_in_place(None, Some(1), -1);
-        assert_eq!(selection.to_string(Some(sheet_id), &a1_context), "B2");
+        let selection = A1Selection::test_a1("B3");
+        let result = selection.adjust(RefAdjust::new_insert_row(sheet_id, 1));
+        assert_eq!(result.unwrap().to_string(Some(sheet_id), &a1_context), "B2");
     }
 
     #[test]

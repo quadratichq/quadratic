@@ -311,6 +311,8 @@ impl CellRefRangeEnd {
 
 #[cfg(test)]
 mod tests {
+    use crate::grid::SheetId;
+
     use super::*;
 
     #[test]
@@ -503,28 +505,35 @@ mod tests {
     }
 
     #[test]
-    fn test_translate_in_place() {
-        let mut ref_end = CellRefRangeEnd::new_relative_xy(1, 1);
-        ref_end.translate_in_place(1, 2, RelativeOnly).unwrap();
-        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(2, 3));
+    fn test_adjust() {
+        let rel_only = RefAdjust {
+            sheet_id: SheetId::TEST,
+            relative_only: true,
+            dx: 1,
+            dy: 2,
+            x_start: 0,
+            y_start: 0,
+        };
+        let all = RefAdjust {
+            relative_only: false,
+            ..rel_only
+        };
 
-        let mut ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
-        ref_end.translate_in_place(-1, -1, RelativeOnly).unwrap();
-        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(1, 2));
-    }
+        let init_rel = CellRefRangeEnd::new_relative_xy(1, 1);
+        let init_abs = CellRefRangeEnd {
+            col: CellRefCoord::new_abs(1),
+            row: CellRefCoord::new_abs(1),
+        };
+        let expected_rel = CellRefRangeEnd::new_relative_xy(2, 3);
+        let expected_abs = CellRefRangeEnd {
+            col: CellRefCoord::new_abs(2),
+            row: CellRefCoord::new_abs(3),
+        };
 
-    #[test]
-    fn test_translate() {
-        let ref_end = CellRefRangeEnd::new_relative_xy(1, 1);
-        assert_eq!(
-            ref_end.translate(1, 2, RelativeOnly),
-            Ok(CellRefRangeEnd::new_relative_xy(2, 3))
-        );
-        let ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
-        assert_eq!(
-            ref_end.translate(-1, -1, RelativeOnly),
-            Ok(CellRefRangeEnd::new_relative_xy(1, 2))
-        );
+        assert_eq!(Ok(expected_rel), init_rel.adjust(rel_only));
+        assert_eq!(Ok(init_abs), init_abs.adjust(all));
+        assert_eq!(Ok(expected_rel), init_rel.adjust(rel_only));
+        assert_eq!(Ok(expected_abs), init_abs.adjust(all));
     }
 
     #[test]
@@ -548,28 +557,30 @@ mod tests {
 
     #[test]
     fn test_adjust_column_row() {
-        let mut ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
-        ref_end.adjust_column_row_in_place(Some(2), None, 1, RelativeOnly);
-        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(3, 3));
+        let sheet_id = SheetId::TEST;
 
-        let mut ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
-        ref_end.adjust_column_row_in_place(None, Some(2), 1, RelativeOnly);
-        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(2, 4));
+        let ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
+        let res = ref_end.adjust(RefAdjust::new_insert_column(sheet_id, 2));
+        assert_eq!(res.unwrap(), CellRefRangeEnd::new_relative_xy(3, 3));
 
-        let mut ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
-        ref_end.adjust_column_row_in_place(Some(3), None, 1, RelativeOnly);
-        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(2, 3));
+        let ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
+        let res = ref_end.adjust(RefAdjust::new_insert_row(sheet_id, 2));
+        assert_eq!(res.unwrap(), CellRefRangeEnd::new_relative_xy(2, 4));
 
-        let mut ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
-        ref_end.adjust_column_row_in_place(None, Some(4), 1, RelativeOnly);
-        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(2, 3));
+        let ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
+        let res = ref_end.adjust(RefAdjust::new_insert_column(sheet_id, 3));
+        assert_eq!(res.unwrap(), CellRefRangeEnd::new_relative_xy(2, 3));
 
-        let mut ref_end = CellRefRangeEnd::new_relative_xy(1, 3);
-        ref_end.adjust_column_row_in_place(Some(1), None, -1, RelativeOnly);
-        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(1, 3));
+        let ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
+        let res = ref_end.adjust(RefAdjust::new_insert_row(sheet_id, 4));
+        assert_eq!(res.unwrap(), CellRefRangeEnd::new_relative_xy(2, 3));
 
-        let mut ref_end = CellRefRangeEnd::new_relative_xy(UNBOUNDED, 3);
-        ref_end.adjust_column_row_in_place(Some(1), None, 1, RelativeOnly);
-        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(UNBOUNDED, 3));
+        let ref_end = CellRefRangeEnd::new_relative_xy(1, 3);
+        let res = ref_end.adjust(RefAdjust::new_delete_column(sheet_id, 1));
+        assert_eq!(res.unwrap(), CellRefRangeEnd::new_relative_xy(1, 3));
+
+        let ref_end = CellRefRangeEnd::new_relative_xy(UNBOUNDED, 3);
+        let res = ref_end.adjust(RefAdjust::new_insert_row(sheet_id, 1));
+        assert_eq!(res.unwrap(), CellRefRangeEnd::new_relative_xy(UNBOUNDED, 3));
     }
 }

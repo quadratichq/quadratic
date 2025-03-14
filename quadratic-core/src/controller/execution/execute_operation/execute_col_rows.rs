@@ -226,22 +226,15 @@ mod tests {
     fn adjust_code_cells_nothing() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let column = 0;
-        let row = 0;
-        let delta = 1;
+        let column = 1;
+        let row = 1;
         gc.adjust_code_cell_references(
             &mut PendingTransaction::default(),
-            sheet_id,
-            Some(column),
-            None,
-            delta,
+            RefAdjust::new_insert_column(sheet_id, column),
         );
         gc.adjust_code_cell_references(
             &mut PendingTransaction::default(),
-            sheet_id,
-            None,
-            Some(row),
-            delta,
+            RefAdjust::new_insert_row(sheet_id, row),
         );
     }
 
@@ -272,8 +265,8 @@ mod tests {
         );
 
         let mut transaction = PendingTransaction::default();
-        gc.adjust_code_cell_references(&mut transaction, sheet_id, None, Some(2), 1);
-        gc.adjust_code_cell_references(&mut transaction, sheet_id, Some(5), None, 1);
+        gc.adjust_code_cell_references(&mut transaction, RefAdjust::new_insert_row(sheet_id, 2));
+        gc.adjust_code_cell_references(&mut transaction, RefAdjust::new_insert_column(sheet_id, 5));
 
         let single_formula = |formula_str: &str| {
             CellValues::from(CellValue::Code(CodeCellValue {
@@ -387,7 +380,7 @@ mod tests {
         );
 
         let mut transaction = PendingTransaction::default();
-        gc.adjust_code_cell_references(&mut transaction, sheet_id, None, Some(2), 1);
+        gc.adjust_code_cell_references(&mut transaction, RefAdjust::new_insert_row(sheet_id, 2));
         assert_eq!(transaction.operations.len(), 2);
         assert_eq!(
             transaction.operations[0],
@@ -469,7 +462,7 @@ mod tests {
         );
 
         let mut transaction = PendingTransaction::default();
-        gc.adjust_code_cell_references(&mut transaction, sheet_id, None, Some(2), 1);
+        gc.adjust_code_cell_references(&mut transaction, RefAdjust::new_insert_row(sheet_id, 2));
         assert_eq!(transaction.operations.len(), 2);
         assert_eq!(
             transaction.operations[0],
