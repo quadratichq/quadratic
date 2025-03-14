@@ -19,7 +19,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Create a hash of the environment variables, as a cache buster
       - name: Pull Pulumi ESC Environment Variables
         id: pull-pulumi-esc-env-vars
         env:
@@ -166,9 +165,9 @@ jobs:
         uses: useblacksmith/cache@v5
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-${{ github.head_ref }}-${{ github.sha }}
+          key: ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-qa-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-${{ github.head_ref }}
+            ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-qa-
             ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-
 
       - name: Build and push
@@ -205,11 +204,10 @@ jobs:
 
       - name: Upload to S3
         run: |
-          # S3 build directory
-          S3_DIR="s3://qa.quadratic-preview.com/"
-
           # Upload entire build directory to S3
           aws s3 sync /tmp/quadratic-client-development/ $S3_DIR --delete --force
+        env:
+          S3_DIR: s3://qa.quadratic-preview.com/
 
       - name: Purge Cloudflare Cache
         run: |
@@ -226,7 +224,7 @@ jobs:
             exit 1
           fi
 
-  infra_development:
+  deploy_infra:
     needs: [build_client, build_images]
     name: Update Infrastructure with Pulumi
     runs-on: blacksmith-2vcpu-ubuntu-2204
@@ -282,7 +280,7 @@ jobs:
           STACK_NAME: quadratic-qa
 
   qa-wolf-notify:
-    needs: [deploy_client, infra_development]
+    needs: [deploy_client, deploy_infra]
     name: Notify QA Wolf
     runs-on: blacksmith-2vcpu-ubuntu-2204
     if: github.head_ref == 'qa' && github.base_ref == 'main'
