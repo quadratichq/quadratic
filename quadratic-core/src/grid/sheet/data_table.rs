@@ -434,7 +434,7 @@ mod test {
             user_actions::import::tests::simple_csv,
             GridController,
         },
-        grid::{js_types::JsClipboard, CodeRun, DataTableKind},
+        grid::{js_types::JsClipboard, CodeRun, DataTableKind, SheetId},
         CellValue, Value,
     };
     use bigdecimal::BigDecimal;
