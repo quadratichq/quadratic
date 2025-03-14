@@ -5,7 +5,7 @@ import { colors } from '@/app/theme/colors';
 import type { Point } from 'pixi.js';
 import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
 
-const INDICATOR_SIZE = 4;
+// const INDICATOR_SIZE = 4;
 export const TRIANGLE_SCALE = 0.1;
 
 export type CellsMarkerTypes = 'CodeIcon' | 'FormulaIcon' | 'AIIcon' | 'ErrorIcon';
@@ -21,15 +21,15 @@ export const getLanguageSymbol = (language: CodeCellLanguage, isError: boolean):
   const symbol = new Sprite();
   if (language === 'Python') {
     symbol.texture = Texture.from('icon-python');
-    symbol.tint = isError ? 0xffffff : colors.cellColorUserPython;
+    symbol.tint = 0xffffff;
     return symbol;
   } else if (language === 'Formula') {
     symbol.texture = Texture.from('icon-formula');
-    symbol.tint = isError ? 0xffffff : colors.cellColorUserFormula;
+    symbol.tint = 0xffffff;
     return symbol;
   } else if (language === 'Javascript') {
     symbol.texture = Texture.from('icon-javascript');
-    symbol.tint = isError ? colors.cellColorError : 0xffffff;
+    symbol.tint = 0xffffff;
     return symbol;
   } else if (typeof language === 'object') {
     switch (language.Connection?.kind) {
@@ -71,31 +71,27 @@ export class CellsMarkers extends Container {
     this.remove(codeCell.x, codeCell.y);
     const isError = codeCell.state === 'RunError' || codeCell.state === 'SpillError';
     let triangle: Sprite | undefined;
+    // const symbol = getLanguageSymbol(codeCell.language, isError);
     if (isError) {
       triangle = this.addChild(new Sprite(generatedTextures.triangle));
       triangle.scale.set(TRIANGLE_SCALE);
       triangle.anchor.set(1, 0);
-      triangle.position.set(box.x + box.width - 0.5, box.y + 0.5);
+      triangle.position.set(box.x + box.width, box.y);
       triangle.tint = colors.cellColorError;
+
+      // if (symbol) {
+      //   this.addChild(symbol);
+      //   symbol.height = INDICATOR_SIZE;
+      //   symbol.width = INDICATOR_SIZE;
+      //   symbol.position.set(box.x + box.width - 5, box.y + 1);
+      // }
     }
 
-    const symbol = getLanguageSymbol(codeCell.language, isError);
-
-    if (codeCell.language !== 'Import' && codeCell.h === 1 && codeCell.w === 1) {
-      if (symbol) {
-        this.addChild(symbol);
-        symbol.height = INDICATOR_SIZE;
-        symbol.width = INDICATOR_SIZE;
-        symbol.position.set(box.x + 1.25, box.y + 1.25);
-      }
-    }
-
-    if (isError || symbol) {
+    if (isError) {
       this.markers.push({
         bounds: new Rectangle(box.x, box.y, box.width, box.height),
         codeCell,
         triangle,
-        symbol,
       });
     }
   }
