@@ -14,7 +14,7 @@ jobs:
     concurrency:
       group: qa-build-client
       cancel-in-progress: true
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -111,7 +111,7 @@ jobs:
     concurrency:
       group: qa-build-images
       cancel-in-progress: true
-    timeout-minutes: 30
+    timeout-minutes: 60
     strategy:
       matrix:
         include:
@@ -187,7 +187,7 @@ jobs:
     if: github.head_ref == 'qa' && github.base_ref == 'main'
     concurrency:
       group: qa-deploy-client
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -231,7 +231,7 @@ jobs:
     if: github.head_ref == 'qa' && github.base_ref == 'main'
     concurrency:
       group: qa-pulumi
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -287,7 +287,7 @@ jobs:
     concurrency:
       group: qa-wolf-notify
       cancel-in-progress: true
-    timeout-minutes: 30
+    timeout-minutes: 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
