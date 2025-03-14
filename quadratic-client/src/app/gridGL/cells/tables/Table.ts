@@ -108,6 +108,7 @@ export class Table extends Container {
     } else {
       cellsMarkers.remove(this.codeCell.x, this.codeCell.y);
     }
+
     if (
       !this.codeCell.spill_error &&
       // !this.codeCell.is_html_image &&
