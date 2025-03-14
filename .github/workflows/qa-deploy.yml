@@ -109,7 +109,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     if: github.head_ref == 'qa' && github.base_ref == 'main'
     concurrency:
-      group: qa-build-images-${{ matrix.runner }}
+      group: qa-build-images-${{ matrix.service }}
       cancel-in-progress: true
     timeout-minutes: 60
     strategy:
