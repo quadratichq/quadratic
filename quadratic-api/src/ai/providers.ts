@@ -2,25 +2,35 @@ import { AnthropicBedrock } from '@anthropic-ai/bedrock-sdk';
 import { Anthropic } from '@anthropic-ai/sdk';
 import { AnthropicVertex } from '@anthropic-ai/vertex-sdk';
 import { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime';
+import { GoogleAuth } from 'google-auth-library';
 import { OpenAI } from 'openai';
 import {
   ANTHROPIC_API_KEY,
   AWS_S3_ACCESS_KEY_ID,
   AWS_S3_REGION,
   AWS_S3_SECRET_ACCESS_KEY,
-  GCP_API_KEY_DEVELOPMENT,
+  GCP_CLIENT_EMAIL,
+  GCP_PRIVATE_KEY,
   GCP_PROJECT_ID,
   GCP_REGION,
   OPENAI_API_KEY,
   XAI_API_KEY,
 } from '../env-vars';
 
-// Reads from the `CLOUD_ML_REGION` & `ANTHROPIC_VERTEX_PROJECT_ID` environment variables.
-// Additionally goes through the standard `google-auth-library` flow.
+const googleAuth = new GoogleAuth({
+  credentials: {
+    project_id: GCP_PROJECT_ID,
+    client_email: GCP_CLIENT_EMAIL,
+    private_key: GCP_PRIVATE_KEY,
+  },
+  scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+});
+
+// anthropic-sdk for gcp
 export const vertex_anthropic = new AnthropicVertex({
-  region: GCP_REGION,
   projectId: GCP_PROJECT_ID,
-  accessToken: GCP_API_KEY_DEVELOPMENT,
+  region: GCP_REGION,
+  googleAuth,
 });
 
 // aws-sdk for bedrock, generic for all models

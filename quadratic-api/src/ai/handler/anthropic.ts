@@ -5,6 +5,7 @@ import type {
   MessageCreateParamsStreaming,
   ThinkingConfigParam,
 } from '@anthropic-ai/sdk/resources';
+import type { AnthropicVertex } from '@anthropic-ai/vertex-sdk';
 import type { Response } from 'express';
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import type {
@@ -12,18 +13,19 @@ import type {
   AnthropicModelKey,
   BedrockAnthropicModelKey,
   ParsedAIResponse,
+  VertexAnthropicModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { getAnthropicApiArgs, parseAnthropicResponse, parseAnthropicStream } from '../helpers/anthropic.helper';
 
 export const handleAnthropicRequest = async (
-  modelKey: BedrockAnthropicModelKey | AnthropicModelKey,
+  modelKey: VertexAnthropicModelKey | BedrockAnthropicModelKey | AnthropicModelKey,
   args: AIRequestHelperArgs,
   response: Response,
-  anthropic: AnthropicBedrock | Anthropic
+  anthropic: AnthropicVertex | AnthropicBedrock | Anthropic
 ): Promise<ParsedAIResponse | undefined> => {
   const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
-  const { system, messages, tools, tool_choice } = getAnthropicApiArgs(args, options.thinking);
+  const { system, messages, tools, tool_choice } = getAnthropicApiArgs(args, options.promptCaching, options.thinking);
 
   const thinking: ThinkingConfigParam = options.thinking
     ? {

@@ -17,7 +17,7 @@ export const handleOpenAIRequest = async (
 ): Promise<ParsedAIResponse | undefined> => {
   const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
-  const { messages, tools, tool_choice } = getOpenAIApiArgs(args, options.strickParams);
+  const { messages, tools, tool_choice } = getOpenAIApiArgs(args, options.strictParams);
 
   if (options.stream) {
     try {

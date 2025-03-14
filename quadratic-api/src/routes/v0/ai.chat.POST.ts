@@ -6,6 +6,7 @@ import {
   isBedrockAnthropicModel,
   isBedrockModel,
   isOpenAIModel,
+  isVertexAnthropicModel,
   isXAIModel,
 } from 'quadratic-shared/ai/helpers/model.helper';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
@@ -17,7 +18,7 @@ import { handleBedrockRequest } from '../../ai/handler/bedrock';
 import { handleOpenAIRequest } from '../../ai/handler/openai';
 import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
-import { anthropic, bedrock, bedrock_anthropic, openai, xai } from '../../ai/providers';
+import { anthropic, bedrock, bedrock_anthropic, openai, vertex_anthropic, xai } from '../../ai/providers';
 import dbClient from '../../dbClient';
 import { STORAGE_TYPE } from '../../env-vars';
 import { getFile } from '../../middleware/getFile';
@@ -63,8 +64,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   }
 
   let parsedResponse: ParsedAIResponse | undefined;
-  if (isBedrockModel(modelKey)) {
-    parsedResponse = await handleBedrockRequest(modelKey, args, res, bedrock);
+  if (isVertexAnthropicModel(modelKey)) {
+    parsedResponse = await handleAnthropicRequest(modelKey, args, res, vertex_anthropic);
   } else if (isBedrockAnthropicModel(modelKey)) {
     parsedResponse = await handleAnthropicRequest(modelKey, args, res, bedrock_anthropic);
   } else if (isAnthropicModel(modelKey)) {
@@ -73,6 +74,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     parsedResponse = await handleOpenAIRequest(modelKey, args, res, openai);
   } else if (isXAIModel(modelKey)) {
     parsedResponse = await handleOpenAIRequest(modelKey, args, res, xai);
+  } else if (isBedrockModel(modelKey)) {
+    parsedResponse = await handleBedrockRequest(modelKey, args, res, bedrock);
   } else {
     throw new Error(`Model not supported: ${modelKey}`);
   }

@@ -14,10 +14,12 @@ import type {
   AnthropicModelKey,
   BedrockAnthropicModelKey,
   ParsedAIResponse,
+  VertexAnthropicModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 
 export function getAnthropicApiArgs(
   args: AIRequestHelperArgs,
+  promptCaching: boolean,
   thinking: boolean | undefined
 ): {
   system: TextBlockParam[] | undefined;
@@ -30,17 +32,11 @@ export function getAnthropicApiArgs(
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
 
   // without prompt caching of system messages
-  const system: TextBlockParam[] = systemMessages.map((message) => ({
+  const system: TextBlockParam[] = systemMessages.map((message, index) => ({
     type: 'text' as const,
     text: message,
+    ...(promptCaching && index < 4 ? { cache_control: { type: 'ephemeral' } } : {}),
   }));
-
-  // with prompt caching of system messages
-  // const system: TextBlockParam[] = systemMessages.map((message, index) => ({
-  //   type: 'text' as const,
-  //   text: message,
-  //   ...(index < 4 ? { cache_control: { type: 'ephemeral' } } : {}),
-  // }));
 
   const messages: MessageParam[] = promptMessages.reduce<MessageParam[]>((acc, message) => {
     if (message.role === 'assistant' && message.contextType === 'userPrompt') {
@@ -146,7 +142,7 @@ function getAnthropicToolChoice(toolName?: AITool): ToolChoice | undefined {
 export async function parseAnthropicStream(
   chunks: Stream<Anthropic.Messages.RawMessageStreamEvent>,
   response: Response,
-  modelKey: BedrockAnthropicModelKey | AnthropicModelKey
+  modelKey: VertexAnthropicModelKey | BedrockAnthropicModelKey | AnthropicModelKey
 ): Promise<ParsedAIResponse> {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
@@ -322,7 +318,7 @@ export async function parseAnthropicStream(
 export function parseAnthropicResponse(
   result: Anthropic.Messages.Message,
   response: Response,
-  modelKey: BedrockAnthropicModelKey | AnthropicModelKey
+  modelKey: VertexAnthropicModelKey | BedrockAnthropicModelKey | AnthropicModelKey
 ): ParsedAIResponse {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',

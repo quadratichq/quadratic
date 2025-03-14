@@ -7,9 +7,14 @@ import type {
   BedrockModelKey,
   ModelKey,
   OpenAIModelKey,
+  VertexAnthropicModelKey,
   XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { aiToolsSpec } from '../specs/aiToolsSpec';
+
+export function isVertexAnthropicModel(modelKey: ModelKey): modelKey is VertexAnthropicModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'vertex-anthropic';
+}
 
 export function isBedrockModel(modelKey: ModelKey): modelKey is BedrockModelKey {
   return MODELS_CONFIGURATION[modelKey].provider === 'bedrock';
@@ -43,7 +48,8 @@ export const getModelOptions = (
   temperature: number;
   max_tokens: number;
   thinking?: boolean;
-  strickParams: boolean;
+  promptCaching: boolean;
+  strictParams: boolean;
 } => {
   const config = MODELS_CONFIGURATION[modelKey];
   const { canStream, canStreamWithToolCalls, max_tokens } = config;
@@ -60,7 +66,9 @@ export const getModelOptions = (
 
   const temperature = thinking ? config.thinkingTemperature ?? config.temperature : config.temperature;
 
-  const strickParams = !!config.strickParams;
+  const promptCaching = config.promptCaching;
 
-  return { stream, temperature, max_tokens, thinking, strickParams };
+  const strictParams = !!config.strictParams;
+
+  return { stream, temperature, max_tokens, thinking, promptCaching, strictParams };
 };
