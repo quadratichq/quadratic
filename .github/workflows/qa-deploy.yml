@@ -138,8 +138,8 @@ jobs:
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Create Private ECR Repository
-        id: create-ecr
+      - name: Get Private ECR URL
+        id: get-ecr-url
         run: |
           REPO_NAME=quadratic-${{ matrix.service }}-development
           REPO_INFO=$(aws ecr describe-repositories --repository-names $REPO_NAME)
@@ -168,7 +168,7 @@ jobs:
           context: .
           file: quadratic-${{ matrix.service }}/Dockerfile
           push: true
-          tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-qa
+          tags: ${{ steps.get-ecr-url.outputs.ECR_URL }}:${{ github.sha }}
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max,compression=zstd,force-compression=true
           cache-from: type=local,src=/tmp/.buildx-cache
 
