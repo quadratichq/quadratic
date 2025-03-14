@@ -21,9 +21,6 @@ jobs:
 
       - name: Pull Pulumi ESC Environment Variables
         id: pull-pulumi-esc-env-vars
-        env:
-          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-          PULUMI_ESC_ENVIRONMENT_NAME: quadratic-client-development
         run: |
           # Install Pulumi ESC CLI
           curl -fsSL https://get.pulumi.com/esc/install.sh | sh
@@ -41,6 +38,9 @@ jobs:
           # Create hash from environment variables
           ENV_HASH=$(echo "$ENV_VARS" | sha256sum | cut -d' ' -f1)
           echo "env-hash=$ENV_HASH" >> $GITHUB_OUTPUT
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          PULUMI_ESC_ENVIRONMENT_NAME: quadratic-client-development
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -60,9 +60,9 @@ jobs:
         uses: useblacksmith/cache@v5
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-${{ github.head_ref }}-${{ github.sha }}
+          key: ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-qa-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-${{ github.head_ref }}-
+            ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-qa-
             ${{ runner.os }}-buildx-client-${{ hashFiles('quadratic-client/Dockerfile') }}-
 
       - name: Build using Docker
@@ -142,14 +142,6 @@ jobs:
         id: create-ecr
         run: |
           REPO_NAME=quadratic-${{ matrix.service }}-development
-
-          # Try to describe the repository first
-          if ! aws ecr describe-repositories --repository-names $REPO_NAME 2>/dev/null; then
-            # Repository doesn't exist, create it
-            aws ecr create-repository --repository-name $REPO_NAME || true
-          fi
-
-          # Get the repository URI either way
           REPO_INFO=$(aws ecr describe-repositories --repository-names $REPO_NAME)
           ECR_URL=$(echo $REPO_INFO | jq -r '.repositories[0].repositoryUri')
           echo "ECR_URL=$ECR_URL" >> $GITHUB_OUTPUT
@@ -230,7 +222,7 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     if: github.head_ref == 'qa' && github.base_ref == 'main'
     concurrency:
-      group: qa-pulumi
+      group: qa-deploy-infra
     timeout-minutes: 60
     steps:
       - name: Checkout code
