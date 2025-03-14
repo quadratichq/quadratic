@@ -32,3 +32,7 @@ root.render(
     <RouterProvider router={router} future={{ v7_startTransition: true }} />
   </React.StrictMode>
 );
+
+// Hide the loading screen
+const loaderElement = document.getElementById('loading');
+if (loaderElement) loaderElement.style.display = 'none';
