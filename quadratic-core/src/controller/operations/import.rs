@@ -24,6 +24,33 @@ use super::operation::Operation;
 const IMPORT_LINES_PER_OPERATION: u32 = 10000;
 
 impl GridController {
+    /// Guesses if the first row of a CSV file is a header based on the types of the
+    /// first three rows.
+    pub fn guess_csv_first_row_is_header(&self, cell_values: &Array) -> bool {
+        if cell_values.height() < 3 {
+            return false;
+        }
+
+        let types = |row: usize| {
+            cell_values
+                .get_row(row)
+                .unwrap_or_default()
+                .iter()
+                .map(|c| c.type_id())
+                .collect::<Vec<_>>()
+        };
+
+        let row_0 = types(0);
+        let row_1 = types(1);
+        let row_2 = types(2);
+
+        let row_0_is_different_from_row_1 = row_0 != row_1;
+        let row_1_is_same_as_row_2 = row_1 == row_2;
+        
+
+        row_0_is_different_from_row_1 && row_1_is_same_as_row_2
+    }
+
     pub fn get_csv_preview(
         file: Vec<u8>,
         max_rows: u32,
@@ -186,14 +213,20 @@ impl GridController {
         let mut data_table =
             DataTable::from((import.to_owned(), Array::new_empty(array_size), context));
 
+        let apply_first_row_as_header = match header_is_first_row {
+            Some(true) => true,
+            Some(false) => false,
+            None => self.guess_csv_first_row_is_header(&cell_values),
+        };
+
         data_table.value = cell_values.into();
         data_table.formats.apply_updates(&sheet_format_updates);
 
-        drop(sheet_format_updates);
-
-        if Some(true) == header_is_first_row {
+        if apply_first_row_as_header {
             data_table.apply_first_row_as_header();
         }
+
+        drop(sheet_format_updates);
 
         let ops = vec![Operation::AddDataTable {
             sheet_pos,
@@ -488,6 +521,7 @@ fn read_utf16(bytes: &[u8]) -> Option<String> {
 mod test {
     use super::{read_utf16, *};
     use crate::{
+        controller::user_actions::import::tests::simple_csv_at,
         test_util::{assert_data_table_cell_value, assert_display_cell_value},
         CellValue,
     };
@@ -495,6 +529,14 @@ mod test {
 
     const INVALID_ENCODING_FILE: &[u8] =
         include_bytes!("../../../../quadratic-rust-shared/data/csv/encoding_issue.csv");
+
+    #[test]
+    fn guesses_the_csv_header() {
+        let (gc, sheet_id, pos, _) = simple_csv_at(Pos { x: 1, y: 1 });
+        let sheet = gc.sheet(sheet_id);
+        let values = sheet.data_table(pos).unwrap().value_as_array().unwrap();
+        assert!(gc.guess_csv_first_row_is_header(values));
+    }
 
     #[test]
     fn test_get_csv_preview_with_valid_csv() {
