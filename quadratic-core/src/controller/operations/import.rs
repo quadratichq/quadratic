@@ -46,9 +46,9 @@ impl GridController {
 
         let row_0_is_different_from_row_1 = row_0 != row_1;
         let row_1_is_same_as_row_2 = row_1 == row_2;
-        let first_row_is_header = row_0_is_different_from_row_1 && row_1_is_same_as_row_2;
+        
 
-        first_row_is_header
+        row_0_is_different_from_row_1 && row_1_is_same_as_row_2
     }
 
     pub fn get_csv_preview(
@@ -535,7 +535,7 @@ mod test {
         let (gc, sheet_id, pos, _) = simple_csv_at(Pos { x: 1, y: 1 });
         let sheet = gc.sheet(sheet_id);
         let values = sheet.data_table(pos).unwrap().value_as_array().unwrap();
-        assert_eq!(gc.guess_csv_first_row_is_header(values), true);
+        assert!(gc.guess_csv_first_row_is_header(values));
     }
 
     #[test]
