@@ -243,8 +243,8 @@ impl From<Vec<Vec<CellValue>>> for CellValues {
 /// This is a different format the the `Vec<Vec<CellValue>>` impl above.
 impl From<Vec<Vec<Option<CellValue>>>> for CellValues {
     fn from(values: Vec<Vec<Option<CellValue>>>) -> Self {
-        let w = values.iter().map(|col| col.len() as u32).max().unwrap_or(0);
-        let h = values.len() as u32;
+        let w = values.len() as u32;
+        let h = values[0].len() as u32;
         let mut cell_values = CellValues::new(w, h);
 
         for (x, col) in values.into_iter().enumerate() {
@@ -305,6 +305,7 @@ impl From<CellValues> for Vec<Vec<CellValue>> {
 
 #[cfg(test)]
 mod test {
+
     use crate::wasm_bindings::js::clear_js_calls;
 
     use super::*;
@@ -435,5 +436,20 @@ mod test {
         assert_eq!(cell_values.columns.len(), 2);
         assert_eq!(cell_values.h, 1);
         assert_eq!(cell_values.get(1, 0), Some(&CellValue::from("a")));
+    }
+
+    #[test]
+    fn cell_values_from_vec_of_vec_of_option() {
+        let mut cell_values = vec![vec![None; 1]; 4];
+        cell_values[0][0] = Some(CellValue::from("a"));
+        cell_values[1][0] = Some(CellValue::from("b"));
+        cell_values[3][0] = Some(CellValue::from("c"));
+        let cell_values = CellValues::from(cell_values);
+
+        assert_eq!(cell_values.w, 4);
+        assert_eq!(cell_values.h, 1);
+        assert_eq!(cell_values.get(0, 0), Some(&CellValue::from("a")));
+        assert_eq!(cell_values.get(1, 0), Some(&CellValue::from("b")));
+        assert_eq!(cell_values.get(3, 0), Some(&CellValue::from("c")));
     }
 }

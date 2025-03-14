@@ -265,7 +265,8 @@ mod test {
                 None,
             )
             .with_last_modified(result.last_modified)
-            .with_show_columns(false),
+            .with_show_columns(false)
+            .with_show_name(false),
         );
     }
 
