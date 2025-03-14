@@ -3,15 +3,14 @@ name: QA
 on:
   pull_request:
     branches:
-      # - main
-      - qa
+      - main
     types: [opened, synchronize, reopened]
 
 jobs:
   build_client:
     name: Build Client
     runs-on: blacksmith-4vcpu-ubuntu-2204
-    # if: github.head_ref == 'qa' && github.base_ref == 'main'
+    if: github.head_ref == 'qa' && github.base_ref == 'main'
     concurrency:
       group: qa-build-client
       cancel-in-progress: true
@@ -183,11 +182,10 @@ jobs:
           cache-from: type=local,src=/tmp/.buildx-cache
 
   deploy_client:
-    # needs: [build_client, build_images]
-    needs: [build_client]
+    needs: [build_client, build_images]
     name: Deploy Client to S3 + Cloudflare
     runs-on: blacksmith-2vcpu-ubuntu-2204
-    # if: github.head_ref == 'qa' && github.base_ref == 'main'
+    if: github.head_ref == 'qa' && github.base_ref == 'main'
     concurrency:
       group: qa-deploy-client
     timeout-minutes: 30
