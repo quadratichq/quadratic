@@ -159,6 +159,7 @@ export const ErrorBoundary = () => {
     let title = '';
     let description: string = '';
     let actions = actionsDefault;
+    let reportError = false;
 
     if (error.status === 404) {
       title = 'File not found';
@@ -180,9 +181,11 @@ export const ErrorBoundary = () => {
       title = 'File validation failed';
       description =
         'The file was retrieved from the server but failed to load into the app. Try again or contact us for help.';
+      reportError = true;
     } else {
       title = 'Failed to load file';
       description = 'There was an error retrieving and loading this file.';
+      reportError = true;
     }
     return (
       <Empty
@@ -191,12 +194,13 @@ export const ErrorBoundary = () => {
         Icon={ExclamationTriangleIcon}
         actions={actions}
         showLoggedInUser
+        error={reportError ? error : undefined}
+        severity={reportError ? 'error' : undefined}
       />
     );
   }
 
   // If we reach here, it's an error we don't know how to handle.
-  // TODO: probably log this to Sentry...
   console.error(error);
   return (
     <Empty
@@ -205,6 +209,7 @@ export const ErrorBoundary = () => {
       Icon={ExclamationTriangleIcon}
       actions={actionsDefault}
       severity="error"
+      error={error}
       showLoggedInUser
     />
   );
