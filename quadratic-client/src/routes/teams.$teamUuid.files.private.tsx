@@ -56,6 +56,7 @@ export const ErrorBoundary = () => {
         description="An unexpected error occurred while retrieving your files. Try reloading the page. If the issue continues, contact us."
         Icon={ExclamationTriangleIcon}
         severity="error"
+        error={error}
       />
     </div>
   );

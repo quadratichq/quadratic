@@ -142,7 +142,6 @@ export const Component = () => {
 export const ErrorBoundary = () => {
   const error = useRouteError();
   console.error(error);
-  // Maybe we log this to Sentry?
   return (
     <Empty
       title="Unexpected error"
@@ -154,6 +153,7 @@ export const ErrorBoundary = () => {
         </Button>
       }
       severity="error"
+      error={error}
     />
   );
 };

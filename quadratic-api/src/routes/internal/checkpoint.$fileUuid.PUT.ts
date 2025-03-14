@@ -39,7 +39,7 @@ router.put(
 
     const result = await dbClient.$transaction(async (prisma) => {
       // Retrieve the latest checkpoint
-      const lastTransactionQuery = await dbClient.file.findUniqueOrThrow({
+      const lastTransactionQuery = await prisma.file.findUniqueOrThrow({
         where: {
           uuid: fileUuid,
         },
@@ -60,7 +60,6 @@ router.put(
       }
 
       // Create a new checkpoint
-
       const newCheckpoint = await prisma.fileCheckpoint.create({
         data: {
           file: { connect: { uuid: fileUuid } },
@@ -69,6 +68,12 @@ router.put(
           s3Key: req.body.s3Key,
           version: req.body.version,
         },
+      });
+
+      // Update when the file was last modified
+      await prisma.file.update({
+        where: { uuid: fileUuid },
+        data: { updatedDate: new Date() },
       });
 
       return newCheckpoint;
