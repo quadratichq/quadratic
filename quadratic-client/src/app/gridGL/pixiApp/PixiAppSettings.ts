@@ -2,7 +2,7 @@ import type { AIAnalystState } from '@/app/atoms/aiAnalystAtom';
 import { defaultAIAnalystState } from '@/app/atoms/aiAnalystAtom';
 import type { CodeEditorState } from '@/app/atoms/codeEditorAtom';
 import { defaultCodeEditorState } from '@/app/atoms/codeEditorAtom';
-import type { ContextMenuOptions, ContextMenuState } from '@/app/atoms/contextMenuAtom';
+import type { ContextMenuState } from '@/app/atoms/contextMenuAtom';
 import { ContextMenuType, defaultContextMenuState } from '@/app/atoms/contextMenuAtom';
 import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { defaultEditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
@@ -68,7 +68,7 @@ class PixiAppSettings {
   setCodeEditorState?: SetterOrUpdater<CodeEditorState>;
 
   contextMenu = defaultContextMenuState;
-  setContextMenu?: SetterOrUpdater<ContextMenuOptions>;
+  setContextMenu?: SetterOrUpdater<ContextMenuState>;
   aiAnalystState = defaultAIAnalystState;
   setAIAnalystState?: SetterOrUpdater<AIAnalystState>;
   submitAIAnalystPrompt?: (prompt: SubmitAIAnalystPromptArgs) => Promise<void>;
@@ -244,7 +244,7 @@ class PixiAppSettings {
     return this._panMode;
   }
 
-  updateContextMenu(contextMenu: ContextMenuState, setContextMenu: SetterOrUpdater<ContextMenuOptions>) {
+  updateContextMenu(contextMenu: ContextMenuState, setContextMenu: SetterOrUpdater<ContextMenuState>) {
     this.contextMenu = contextMenu;
     this.setContextMenu = setContextMenu;
   }

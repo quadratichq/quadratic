@@ -43,6 +43,7 @@ export class PointerHeading {
     width?: number;
     height?: number;
     lastSize: number;
+    oldSize: number;
   };
 
   movingColRows?: {
@@ -68,6 +69,10 @@ export class PointerHeading {
       pixiApp.viewport.disableMouseEdges();
     } else if (this.active) {
       sheets.sheet.offsets.cancelResize();
+      if (this.resizing) {
+        const delta = this.resizing.lastSize - this.resizing.oldSize;
+        renderWebWorker.updateSheetOffsetsTransient(sheets.current, this.resizing.column, this.resizing.row, delta);
+      }
       pixiApp.gridLines.dirty = true;
       pixiApp.headings.dirty = true;
       this.active = false;
@@ -114,6 +119,7 @@ export class PointerHeading {
       };
       this.resizing = {
         lastSize: this.viewportChanges.originalSize,
+        oldSize: this.viewportChanges.originalSize,
         start: headingResize.start,
         row: headingResize.row,
         column: headingResize.column,

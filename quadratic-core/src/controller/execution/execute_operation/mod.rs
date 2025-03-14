@@ -189,24 +189,16 @@ impl GridController {
 
 #[cfg(test)]
 pub fn execute_reverse_operations(gc: &mut GridController, transaction: &PendingTransaction) {
-    let mut undo_transaction = PendingTransaction {
-        operations: transaction.reverse_operations.clone().into(),
-        ..Default::default()
-    };
+    use super::TransactionSource;
 
-    while !undo_transaction.operations.is_empty() {
-        gc.execute_operation(&mut undo_transaction);
-    }
+    let undo_transaction = transaction.to_undo_transaction();
+    gc.start_undo_transaction(undo_transaction, TransactionSource::Undo, None);
 }
 
 #[cfg(test)]
 pub fn execute_forward_operations(gc: &mut GridController, transaction: &mut PendingTransaction) {
-    let mut undo_transaction = PendingTransaction {
-        operations: transaction.forward_operations.clone().into(),
-        ..Default::default()
-    };
+    use super::TransactionSource;
 
-    while !undo_transaction.operations.is_empty() {
-        gc.execute_operation(&mut undo_transaction);
-    }
+    let redo_transaction = transaction.to_forward_transaction();
+    gc.start_undo_transaction(redo_transaction, TransactionSource::Redo, None);
 }

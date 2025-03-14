@@ -50,7 +50,7 @@ export class Viewport extends PixiViewport {
       new Drag(this, {
         pressDrag: true,
         wheel: false, // handled by Wheel plugin below
-        keyToPress: ['Space'],
+        keyToPress: isMobile ? undefined : ['Space'],
       })
     );
     this.plugins.add('decelerate', new Decelerate(this));
