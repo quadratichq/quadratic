@@ -8,7 +8,7 @@ use crate::{
         },
         GridController,
     },
-    grid::SheetId,
+    grid::{GridBounds, SheetId},
     CopyFormats,
 };
 
@@ -29,7 +29,6 @@ impl GridController {
         // copy all data in the columns range
         let html = {
             let selection = A1Selection::cols(sheet_id, col_start, col_end);
-            dbgjs!(selection.to_cursor_a1());
             let Ok(clipboard) =
                 sheet.copy_to_clipboard(&selection, &context, ClipboardOperation::Cut, false)
             else {
@@ -39,13 +38,20 @@ impl GridController {
         };
 
         // delete existing columns
-        self.execute_delete_columns(
-            transaction,
-            Operation::DeleteColumns {
-                sheet_id,
-                columns: (col_start..=col_end).collect(),
-            },
-        );
+
+        let min_column = col_start.min(col_end);
+        sheet.delete_columns(transaction, (col_start..=col_end).collect());
+
+        // update information for all cells to the right of the deleted column
+        if let Some(sheet) = self.try_sheet(sheet_id) {
+            if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+                let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
+                sheet_rect.min.x = min_column;
+                self.check_deleted_data_tables(transaction, &sheet_rect);
+                self.add_compute_operations(transaction, &sheet_rect, None);
+                self.check_all_spills(transaction, sheet_rect.sheet_id);
+            }
+        }
 
         // calculate the adjusted to value based on whether we're moving columns
         // before, between, or after the source columns
@@ -59,7 +65,7 @@ impl GridController {
 
         // insert new columns at the adjusted location
         if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-            for col in adjusted_to..=adjusted_to + (col_end - col_start + 1) {
+            for col in adjusted_to..=adjusted_to + col_end - col_start {
                 sheet.insert_column(transaction, col, CopyFormats::None, false);
             }
         }
@@ -96,13 +102,19 @@ impl GridController {
         };
 
         // delete existing rows
-        self.execute_delete_rows(
-            transaction,
-            Operation::DeleteRows {
-                sheet_id,
-                rows: (row_start..=row_end).collect(),
-            },
-        );
+        let min_row = row_start.min(row_end);
+        sheet.delete_rows(transaction, (row_start..=row_end).collect());
+
+        // update information for all cells below the deleted rows
+        if let Some(sheet) = self.try_sheet(sheet_id) {
+            if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+                let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
+                sheet_rect.min.y = min_row;
+                self.check_deleted_data_tables(transaction, &sheet_rect);
+                self.add_compute_operations(transaction, &sheet_rect, None);
+                self.check_all_spills(transaction, sheet_rect.sheet_id);
+            }
+        }
 
         // calculate the adjusted to value based on whether we're moving rows
         // before, between, or after the source rows
@@ -116,7 +128,7 @@ impl GridController {
 
         // insert new rows at the adjusted location
         if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-            for row in adjusted_to..=adjusted_to + (row_end - row_start + 1) {
+            for row in adjusted_to..=adjusted_to + row_end - row_start {
                 sheet.insert_row(transaction, row, CopyFormats::None, false);
             }
         }
