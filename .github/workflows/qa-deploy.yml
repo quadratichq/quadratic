@@ -279,10 +279,13 @@ jobs:
     concurrency:
       group: qa-wolf-notify
       cancel-in-progress: true
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Wait for 5 minutes
+        run: sleep 300
 
       - name: Notify deploy_success
         id: run_tests
