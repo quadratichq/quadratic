@@ -887,6 +887,8 @@ export interface ClientCoreMoveCells {
   targetSheetId: string;
   targetX: number;
   targetY: number;
+  columns: boolean;
+  rows: boolean;
   cursor: string;
 }
 

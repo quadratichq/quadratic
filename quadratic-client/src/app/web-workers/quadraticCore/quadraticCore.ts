@@ -971,7 +971,14 @@ class QuadraticCore {
     });
   }
 
-  moveCells(source: SheetRect, targetX: number, targetY: number, targetSheetId: string) {
+  moveCells(
+    source: SheetRect,
+    targetX: number,
+    targetY: number,
+    targetSheetId: string,
+    columns: boolean,
+    rows: boolean
+  ) {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = () => {
@@ -984,6 +991,8 @@ class QuadraticCore {
         targetSheetId,
         targetX,
         targetY,
+        columns,
+        rows,
         cursor: sheets.getCursorPosition(),
       });
     });

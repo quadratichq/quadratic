@@ -228,10 +228,24 @@ impl GridController {
         }
     }
 
-    pub fn execute_delete_rows(&mut self, _transaction: &mut PendingTransaction, op: Operation) {
+    pub fn execute_delete_rows(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::DeleteRows { sheet_id, rows } = op.clone() {
-            if let Some(_sheet) = self.try_sheet_mut(sheet_id) {
-                // sheet.delete_rows(transaction, rows);
+            if let Some(sheet) = self.try_sheet_mut(sheet_id) {
+                let min_row = rows.iter().min().unwrap_or(&1).clone();
+                sheet.delete_rows(transaction, rows);
+
+                transaction.forward_operations.push(op);
+
+                // update information for all cells below the deleted row
+                if let Some(sheet) = self.try_sheet(sheet_id) {
+                    if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+                        let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
+                        sheet_rect.min.y = min_row;
+                        self.check_deleted_data_tables(transaction, &sheet_rect);
+                        self.add_compute_operations(transaction, &sheet_rect, None);
+                        self.check_all_spills(transaction, sheet_rect.sheet_id);
+                    }
+                }
             }
         }
     }

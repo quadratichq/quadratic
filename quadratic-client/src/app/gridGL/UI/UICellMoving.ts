@@ -40,11 +40,24 @@ export class UICellMoving extends Container {
     this.graphics.clear();
     this.graphics.lineStyle({ color: this.borderColor(), width: MOVING_THICKNESS });
     const sheet = sheets.sheet;
+    if (moving.colRows) {
+      this.drawMovingColRow();
+      return;
+    }
+    if (
+      moving.toColumn === undefined ||
+      moving.toRow === undefined ||
+      moving.width === undefined ||
+      moving.height === undefined
+    ) {
+      throw new Error('Expected non-colRows moving to be defined in drawMove');
+    }
     const start = sheet.getCellOffsets(moving.toColumn, moving.toRow);
     const end = sheet.getCellOffsets(moving.toColumn + moving.width - 1, moving.toRow + moving.height - 1);
-    this.graphics.drawRect(start.x, start.y, end.x + end.width - start.x, end.y + end.height - start.y);
+    this.graphics.drawRect(start.x, start.y, end.x - start.x, end.y - start.y);
   }
 
+  // draw moving columns and rows (this is the cut and paste version when dragging from the headers)
   private drawColRow() {
     const moving = pixiApp.pointer.pointerHeading.movingColRows;
     if (!moving) {
@@ -82,6 +95,35 @@ export class UICellMoving extends Container {
       }
       this.graphics.moveTo(bounds.left, line);
       this.graphics.lineTo(bounds.right, line);
+    }
+  }
+
+  // draw moving columns and rows (this is the normal cell move for entire rows and columns)
+  private drawMovingColRow() {
+    const moving = pixiApp.pointer.pointerCellMoving.movingCells;
+    if (!moving) {
+      throw new Error('Expected moving to be defined in drawColRow');
+    }
+    this.visible = true;
+    this.graphics.clear();
+    this.graphics.lineStyle({ color: this.borderColor(), width: MOVING_THICKNESS });
+    const sheet = sheets.sheet;
+    const isColumn = moving.colRows === 'columns';
+    const bounds = pixiApp.viewport.getVisibleBounds();
+    const startX = isColumn && moving.toColumn ? sheet.getColumnX(moving.toColumn) : bounds.left;
+    const endX = isColumn && moving.toColumn ? sheet.getColumnX(moving.toColumn + (moving.width ?? 1)) : bounds.right;
+    const startY = !isColumn && moving.toRow ? sheet.getRowY(moving.toRow) : bounds.top;
+    const endY = !isColumn && moving.toRow ? sheet.getRowY(moving.toRow + (moving.height ?? 1)) : bounds.bottom;
+    if (isColumn) {
+      this.graphics.moveTo(startX, bounds.y);
+      this.graphics.lineTo(startX, bounds.bottom);
+      this.graphics.moveTo(endX, bounds.y);
+      this.graphics.lineTo(endX, bounds.bottom);
+    } else {
+      this.graphics.moveTo(bounds.left, startY);
+      this.graphics.lineTo(bounds.right, startY);
+      this.graphics.moveTo(bounds.left, endY);
+      this.graphics.lineTo(bounds.right, endY);
     }
   }
 

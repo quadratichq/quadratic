@@ -288,6 +288,14 @@ pub enum Operation {
     MoveCells {
         source: SheetRect,
         dest: SheetPos,
+
+        /// Move entire column and ignore rows.
+        #[serde(default)]
+        columns: bool,
+
+        /// Move entire rows and ignore columns.
+        #[serde(default)]
+        rows: bool,
     },
 
     /// Creates or updates a data validation rule.
@@ -616,8 +624,17 @@ impl fmt::Display for Operation {
                     sheet_id, new_sheet_id
                 )
             }
-            Operation::MoveCells { source, dest } => {
-                write!(fmt, "MoveCells {{ source: {} dest: {} }}", source, dest)
+            Operation::MoveCells {
+                source,
+                dest,
+                columns,
+                rows,
+            } => {
+                write!(
+                    fmt,
+                    "MoveCells {{ source: {} dest: {} columns: {:?} rows: {:?} }}",
+                    source, dest, columns, rows
+                )
             }
             Operation::AddSheetSchema { schema } => {
                 write!(fmt, "AddSheetSchema {{ schema: {:?} }}", schema)

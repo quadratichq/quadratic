@@ -1,9 +1,5 @@
 use crate::{
-    controller::{
-        active_transactions::pending_transaction::PendingTransaction,
-        operations::operation::Operation,
-    },
-    grid::Sheet,
+    controller::active_transactions::pending_transaction::PendingTransaction, grid::Sheet,
 };
 
 impl Sheet {
@@ -13,41 +9,9 @@ impl Sheet {
         columns.dedup();
         columns.reverse();
 
-        // let min_column = columns[columns.len() - 1].clone();
-        // let max_column = columns[0].clone();
         for column in columns {
             self.delete_column(transaction, column);
         }
-
-        // // also need to remove any tables completely enclosed by the deleted columns
-        // let dt_to_remove = self
-        //     .data_tables
-        //     .iter()
-        //     .filter_map(|(pos, dt)| {
-        //         let rect = dt.output_rect(*pos, false);
-        //         if rect.min.x >= min_column && rect.max.x <= max_column {
-        //             Some(pos.clone())
-        //         } else {
-        //             None
-        //         }
-        //     })
-        //     .collect::<Vec<_>>();
-
-        // for pos in dt_to_remove {
-        //     let Some(index) = self.data_tables.get_index_of(&pos) else {
-        //         continue;
-        //     };
-        //     if let Some(table) = self.data_tables.shift_remove(&pos) {
-        //         transaction
-        //             .reverse_operations
-        //             .push(Operation::SetDataTable {
-        //                 sheet_pos: pos.to_sheet_pos(self.id),
-        //                 data_table: Some(table),
-        //                 index,
-        //             });
-        //     }
-        // }
-
         self.recalculate_bounds();
     }
 

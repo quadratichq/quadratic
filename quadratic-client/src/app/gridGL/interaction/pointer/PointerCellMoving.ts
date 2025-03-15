@@ -15,14 +15,15 @@ const TOP_LEFT_CORNER_THRESHOLD_SQUARED = 50;
 const BORDER_THRESHOLD = 8;
 
 interface MoveCells {
-  column: number;
-  row: number;
-  width: number;
-  height: number;
-  toColumn: number;
-  toRow: number;
+  column?: number;
+  row?: number;
+  width?: number;
+  height?: number;
+  toColumn?: number;
+  toRow?: number;
   offset: { x: number; y: number };
   original?: Rectangle;
+  colRows?: 'columns' | 'rows';
 }
 
 export class PointerCellMoving {
@@ -66,17 +67,9 @@ export class PointerCellMoving {
     this.startMove();
   };
 
-  pointerDown = (e: InteractionEvent, world: Point): boolean => {
+  pointerDown = (e: InteractionEvent): boolean => {
     const event = e.data.originalEvent as PointerEvent;
     if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled || event.button === 1) return false;
-
-    // handle moving columns or rows (pointerHeading handles this)
-    const colsMove = sheets.sheet.cursor.getContiguousColumns();
-    const rowsMove = sheets.sheet.cursor.getContiguousRows();
-    if ((colsMove || rowsMove) && this.moveOverlaps(world)) {
-      pixiApp.pointer.pointerHeading.downColumnsOrRows(colsMove, rowsMove, world, e.data.global);
-      return true;
-    }
 
     if (this.state === 'hover' && this.movingCells && event.button === 0) {
       this.startCell = new Point(this.movingCells.column, this.movingCells.row);
@@ -172,16 +165,37 @@ export class PointerCellMoving {
   };
 
   private pointerMoveHover = (world: Point): boolean => {
-    // handle moving columns or rows (pointerHeading handles this)
-    const colRowsHover = sheets.sheet.cursor.getContiguousColumns() || sheets.sheet.cursor.getContiguousRows();
-    if (colRowsHover && this.moveOverlaps(world)) {
-      pixiApp.pointer.pointerHeading.hoverColumnsOrRows();
-      return true;
-    }
+    // we move if a single rectangle
+    let rectangle = sheets.sheet.cursor.getSingleRectangleOrCursor();
 
-    // we do not move if there are multiple rectangles (for now)
-    const rectangle = sheets.sheet.cursor.getSingleRectangleOrCursor();
+    // also move if contiguous columns or rows
+    let colsHover, rowsHover;
+    if (!rectangle) {
+      colsHover = sheets.sheet.cursor.getContiguousColumns();
+      if (!colsHover) {
+        rowsHover = sheets.sheet.cursor.getContiguousRows();
+      }
+    }
+    if (!rectangle && !colsHover && !rowsHover) return false;
+    if (!rectangle) {
+      if (colsHover) {
+        rectangle = new Rectangle(
+          colsHover[0],
+          1,
+          colsHover[colsHover.length - 1] - colsHover[0] + 1,
+          sheets.sheet.bounds.type === 'nonEmpty' ? Number(sheets.sheet.bounds.max.y) : 1
+        );
+      } else if (rowsHover) {
+        rectangle = new Rectangle(
+          1,
+          rowsHover[0],
+          sheets.sheet.bounds.type === 'nonEmpty' ? Number(sheets.sheet.bounds.max.x) : 1,
+          rowsHover[rowsHover.length - 1] - rowsHover[0] + 1
+        );
+      }
+    }
     if (!rectangle) return false;
+
     const origin = sheets.sheet.cursor.position;
     const column = origin.x;
     const row = origin.y;
@@ -197,16 +211,17 @@ export class PointerCellMoving {
       offset.column = Math.min(Math.max(offset.column, rectangle.left), rectangle.right - 1);
       offset.row = Math.min(Math.max(offset.row, rectangle.top), rectangle.bottom - 1);
       this.movingCells = {
-        column,
-        row,
-        width: rectangle.width,
-        height: rectangle.height,
-        toColumn: column,
-        toRow: row,
+        column: rowsHover ? undefined : column,
+        row: colsHover ? undefined : row,
+        width: rowsHover ? undefined : rectangle.width,
+        height: colsHover ? undefined : rectangle.height,
+        toColumn: rowsHover ? undefined : column,
+        toRow: colsHover ? undefined : row,
         offset: {
           x: rectangle.left - offset.column,
           y: rectangle.top - offset.row,
         },
+        colRows: colsHover ? 'columns' : rowsHover ? 'rows' : undefined,
       };
       return true;
     }
@@ -238,9 +253,11 @@ export class PointerCellMoving {
         const rectangle = sheets.sheet.cursor.getLargestRectangle();
         quadraticCore.moveCells(
           rectToSheetRect(rectangle, sheets.current),
-          this.movingCells.toColumn,
-          this.movingCells.toRow,
-          sheets.current
+          this.movingCells.toColumn ?? 0,
+          this.movingCells.toRow ?? 0,
+          sheets.current,
+          this.movingCells.colRows ? this.movingCells.colRows === 'columns' : false,
+          this.movingCells.colRows ? this.movingCells.colRows === 'rows' : false
         );
 
         const { showCodeEditor, codeCell } = pixiAppSettings.codeEditorState;
@@ -254,8 +271,8 @@ export class PointerCellMoving {
             codeCell: {
               ...codeCell,
               pos: {
-                x: codeCell.pos.x + this.movingCells.toColumn - this.movingCells.column,
-                y: codeCell.pos.y + this.movingCells.toRow - this.movingCells.row,
+                x: codeCell.pos.x + (this.movingCells.toColumn ?? 0) - (this.movingCells.column ?? 0),
+                y: codeCell.pos.y + (this.movingCells.toRow ?? 0) - (this.movingCells.row ?? 0),
               },
             },
           });

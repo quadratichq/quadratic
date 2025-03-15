@@ -102,7 +102,7 @@ export class Pointer {
     // do not interfere with pointerImages when its resizing.
     (!this.pointerImages.resizing && this.pointerHtmlCells.pointerDown(e)) ||
       this.pointerImages.pointerDown(world) ||
-      this.pointerCellMoving.pointerDown(e, world) ||
+      this.pointerCellMoving.pointerDown(e) ||
       this.pointerHtmlCells.pointerDown(e) ||
       this.pointerTable.pointerDown(world, event) ||
       this.pointerHeading.pointerDown(world, e) ||

@@ -660,8 +660,6 @@ impl GridController {
                     .map_err(|e| error(e.to_string(), "Serialization error"))?;
                 drop(decoded);
 
-                dbgjs!(&clipboard);
-
                 let context = self.a1_context();
                 let delta_x = insert_at.x - clipboard.origin.x;
                 let delta_y = insert_at.y - clipboard.origin.y;
@@ -703,8 +701,19 @@ impl GridController {
         }
     }
 
-    pub fn move_cells_operations(&mut self, source: SheetRect, dest: SheetPos) -> Vec<Operation> {
-        vec![Operation::MoveCells { source, dest }]
+    pub fn move_cells_operations(
+        &mut self,
+        source: SheetRect,
+        dest: SheetPos,
+        columns: bool,
+        rows: bool,
+    ) -> Vec<Operation> {
+        vec![Operation::MoveCells {
+            source,
+            dest,
+            columns,
+            rows,
+        }]
     }
 }
 
@@ -731,9 +740,17 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         let source = (0, 0, 2, 2, sheet_id).into();
         let dest = (2, 2, sheet_id).into();
-        let operations = gc.move_cells_operations(source, dest);
+        let operations = gc.move_cells_operations(source, dest, false, false);
         assert_eq!(operations.len(), 1);
-        assert_eq!(operations[0], Operation::MoveCells { source, dest });
+        assert_eq!(
+            operations[0],
+            Operation::MoveCells {
+                source,
+                dest,
+                columns: false,
+                rows: false
+            }
+        );
     }
 
     #[test]

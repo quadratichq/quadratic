@@ -1015,6 +1015,8 @@ class Core {
         this.gridController.moveCells(
           JSON.stringify(message.source, bigIntReplacer),
           JSON.stringify(dest, bigIntReplacer),
+          message.columns,
+          message.rows,
           message.cursor
         );
         resolve(undefined);
