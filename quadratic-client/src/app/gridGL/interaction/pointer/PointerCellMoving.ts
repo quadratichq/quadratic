@@ -103,62 +103,78 @@ export class PointerCellMoving {
     pixiApp.cellMoving.dirty = true;
   };
 
-  private moveOverlaps = (world: Point): false | 'corner' | 'top' | 'bottom' | 'left' | 'right' => {
+  // Checks if mouse overlaps the selection rectangle. We do not check the
+  // top/bottom when columns are selected, and left/right when rows are
+  // selected. We also ignore the indicator and the corner when cols or rows are
+  // selected. (Cols/rows means the entire column or row.)
+  private moveOverlaps = (
+    world: Point,
+    cols: boolean,
+    rows: boolean
+  ): false | 'corner' | 'top' | 'bottom' | 'left' | 'right' => {
     const cursorRectangle = pixiApp.cursor.cursorRectangle;
     if (!cursorRectangle) return false;
+
     // top-left corner + threshold
-    if (
-      Math.pow(cursorRectangle.x - world.x, 2) + Math.pow(cursorRectangle.y - world.y, 2) <=
-      TOP_LEFT_CORNER_THRESHOLD_SQUARED
-    ) {
-      return 'corner';
+    if (!cols && !rows) {
+      if (
+        Math.pow(cursorRectangle.x - world.x, 2) + Math.pow(cursorRectangle.y - world.y, 2) <=
+        TOP_LEFT_CORNER_THRESHOLD_SQUARED
+      ) {
+        return 'corner';
+      }
+
+      // if overlap indicator (autocomplete), then return false
+      const indicator = pixiApp.cursor.indicator;
+      if (intersects.rectanglePoint(indicator, world)) {
+        return false;
+      }
     }
 
-    // if overlap indicator (autocomplete), then return false
-    const indicator = pixiApp.cursor.indicator;
-    if (intersects.rectanglePoint(indicator, world)) {
-      return false;
+    if (!rows) {
+      // if overlaps any of the borders (with threshold), then return true
+      const left = new Rectangle(
+        cursorRectangle.x - BORDER_THRESHOLD / 2,
+        cursorRectangle.y,
+        BORDER_THRESHOLD,
+        cursorRectangle.height
+      );
+      if (intersects.rectanglePoint(left, world)) {
+        return 'left';
+      }
+
+      const right = new Rectangle(
+        cursorRectangle.x + cursorRectangle.width - BORDER_THRESHOLD / 2,
+        cursorRectangle.y,
+        BORDER_THRESHOLD,
+        cursorRectangle.height
+      );
+      if (intersects.rectanglePoint(right, world)) {
+        return 'right';
+      }
     }
 
-    // if overlaps any of the borders (with threshold), then return true
-    const left = new Rectangle(
-      cursorRectangle.x - BORDER_THRESHOLD / 2,
-      cursorRectangle.y,
-      BORDER_THRESHOLD,
-      cursorRectangle.height
-    );
-    if (intersects.rectanglePoint(left, world)) {
-      return 'left';
-    }
+    // top/bottom i
+    if (!cols) {
+      const top = new Rectangle(
+        cursorRectangle.x,
+        cursorRectangle.y - BORDER_THRESHOLD / 2,
+        cursorRectangle.width,
+        BORDER_THRESHOLD
+      );
+      if (intersects.rectanglePoint(top, world)) {
+        return 'top';
+      }
 
-    const right = new Rectangle(
-      cursorRectangle.x + cursorRectangle.width - BORDER_THRESHOLD / 2,
-      cursorRectangle.y,
-      BORDER_THRESHOLD,
-      cursorRectangle.height
-    );
-    if (intersects.rectanglePoint(right, world)) {
-      return 'right';
-    }
-
-    const top = new Rectangle(
-      cursorRectangle.x,
-      cursorRectangle.y - BORDER_THRESHOLD / 2,
-      cursorRectangle.width,
-      BORDER_THRESHOLD
-    );
-    if (intersects.rectanglePoint(top, world)) {
-      return 'top';
-    }
-    const bottom = new Rectangle(
-      cursorRectangle.x,
-      cursorRectangle.y + cursorRectangle.height - BORDER_THRESHOLD / 2,
-      cursorRectangle.width,
-      BORDER_THRESHOLD
-    );
-
-    if (intersects.rectanglePoint(bottom, world)) {
-      return 'bottom';
+      const bottom = new Rectangle(
+        cursorRectangle.x,
+        cursorRectangle.y + cursorRectangle.height - BORDER_THRESHOLD / 2,
+        cursorRectangle.width,
+        BORDER_THRESHOLD
+      );
+      if (intersects.rectanglePoint(bottom, world)) {
+        return 'bottom';
+      }
     }
 
     return false;
@@ -200,7 +216,7 @@ export class PointerCellMoving {
     const column = origin.x;
     const row = origin.y;
 
-    const overlap = this.moveOverlaps(world);
+    const overlap = this.moveOverlaps(world, !!colsHover, !!rowsHover);
     if (overlap) {
       this.state = 'hover';
       const screenRectangle = pixiApp.cursor.cursorRectangle;
