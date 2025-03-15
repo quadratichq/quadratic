@@ -327,13 +327,23 @@ export class PointerHeading {
   private pointerUpMovingColRows(): boolean {
     if (this.movingColRows) {
       if (this.movingColRows.place !== this.movingColRows.start) {
-        quadraticCore.moveColumns(
-          sheets.current,
-          this.movingColRows.indicies[0],
-          this.movingColRows.indicies[this.movingColRows.indicies.length - 1],
-          this.movingColRows.place,
-          sheets.getCursorPosition()
-        );
+        if (this.movingColRows.isColumn) {
+          quadraticCore.moveColumns(
+            sheets.current,
+            this.movingColRows.indicies[0],
+            this.movingColRows.indicies[this.movingColRows.indicies.length - 1],
+            this.movingColRows.place - this.movingColRows.offset,
+            sheets.getCursorPosition()
+          );
+        } else {
+          quadraticCore.moveRows(
+            sheets.current,
+            this.movingColRows.indicies[0],
+            this.movingColRows.indicies[this.movingColRows.indicies.length - 1],
+            this.movingColRows.place - this.movingColRows.offset,
+            sheets.getCursorPosition()
+          );
+        }
       }
       this.movingColRows = undefined;
       pixiApp.cellMoving.dirty = true;

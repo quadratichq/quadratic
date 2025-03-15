@@ -130,8 +130,10 @@ impl Sheet {
         transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
 
         // remove the column's data from the sheet
+        if self.formats.column_has_fills(column) {
+            transaction.add_fill_cells(self.id);
+        }
         self.formats.remove_column(column);
-        transaction.add_fill_cells(self.id);
 
         // remove the column's borders from the sheet
         self.borders.remove_column(column);
