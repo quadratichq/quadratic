@@ -55,7 +55,7 @@ export const TopBar = () => {
               Back to dashboard
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem disabled>{VERSION}</DropdownMenuItem>
+            <DropdownMenuItem disabled>Quadratic {VERSION}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
