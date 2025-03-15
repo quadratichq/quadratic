@@ -324,39 +324,8 @@ export class PointerHeading {
     return true;
   }
 
-  // downColumnsOrRows(columns: number[] | undefined, rows: number[] | undefined, world: Point, global: Point) {
-  //   const isColumn = columns !== undefined;
-  //   const fromScreen = isColumn ? sheets.sheet.getColumnFromScreen(world.x) : sheets.sheet.getRowFromScreen(world.y);
-  //   const from = isColumn
-  //     ? Math.max(fromScreen, columns![columns!.length - 1])
-  //     : Math.max(fromScreen, rows![rows!.length - 1]);
-  //   const start = isColumn ? columns![0] : rows![0];
-  //   this.movingColRows = {
-  //     isColumn,
-  //     indicies: columns ?? rows ?? [],
-  //     start,
-  //     place: start,
-  //     offset: from - start,
-  //     lastMouse: global,
-  //   };
-  //   pixiApp.viewport.enableMouseEdges(world, isColumn ? 'horizontal' : 'vertical');
-  //   pixiApp.cellMoving.dirty = true;
-  //   this.cursor = 'grabbing';
-
-  //   if (columns) {
-  //     this.cursor = 'grabbing';
-  //   } else if (rows) {
-  //     this.cursor = 'grabbing';
-  //   }
-  // }
-
-  // hoverColumnsOrRows() {
-  //   this.cursor = 'grab';
-  // }
-
   private pointerUpMovingColRows(): boolean {
     if (this.movingColRows) {
-      console.log(this.movingColRows.place, this.movingColRows.start);
       if (this.movingColRows.place !== this.movingColRows.start) {
         quadraticCore.moveColumns(
           sheets.current,

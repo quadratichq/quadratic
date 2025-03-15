@@ -250,7 +250,12 @@ export class PointerCellMoving {
         this.movingCells &&
         (this.startCell.x !== this.movingCells.toColumn || this.startCell.y !== this.movingCells.toRow)
       ) {
-        const rectangle = sheets.sheet.cursor.getLargestRectangle();
+        const rectangle = new Rectangle(
+          this.movingCells.column ?? 0,
+          this.movingCells.row ?? 0,
+          this.movingCells.width ?? 1,
+          this.movingCells.height ?? 1
+        );
         quadraticCore.moveCells(
           rectToSheetRect(rectangle, sheets.current),
           this.movingCells.toColumn ?? 0,

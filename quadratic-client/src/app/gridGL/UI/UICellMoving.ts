@@ -54,7 +54,7 @@ export class UICellMoving extends Container {
     }
     const start = sheet.getCellOffsets(moving.toColumn, moving.toRow);
     const end = sheet.getCellOffsets(moving.toColumn + moving.width - 1, moving.toRow + moving.height - 1);
-    this.graphics.drawRect(start.x, start.y, end.x - start.x, end.y - start.y);
+    this.graphics.drawRect(start.x, start.y, end.x + end.width - start.x, end.y + end.height - start.y);
   }
 
   // draw moving columns and rows (this is the cut and paste version when dragging from the headers)
