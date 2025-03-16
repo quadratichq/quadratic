@@ -114,14 +114,12 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
           >
             {message.role === 'user' && message.contextType === 'userPrompt' ? (
               <AIAssistantUserMessageForm
-                initialPrompt={message.content}
+                initialContent={message.content}
                 messageIndex={index}
                 textareaRef={textareaRef}
               />
             ) : message.role === 'user' && message.contextType === 'toolResult' ? (
-              message.content.map((messageContent) => (
-                <Markdown key={messageContent.content}>{messageContent.content}</Markdown>
-              ))
+              message.content.map(({ text }) => <Markdown key={text}>{text}</Markdown>)
             ) : (
               <>
                 {message.content && Array.isArray(message.content) ? (

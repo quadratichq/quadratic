@@ -63,7 +63,7 @@ export function getVertexAIApiArgs(args: AIRequestHelperArgs): {
           ...message.content.map((toolResult) => ({
             functionResponse: {
               name: toolResult.id,
-              response: { res: toolResult.content },
+              response: { res: toolResult.text },
             },
           })),
           {
@@ -75,7 +75,7 @@ export function getVertexAIApiArgs(args: AIRequestHelperArgs): {
     } else if (message.content) {
       const vertexaiMessage: Content = {
         role: message.role,
-        parts: [{ text: message.content }],
+        parts: message.content.map((content) => ({ text: content.text })),
       };
       return [...acc, vertexaiMessage];
     } else {

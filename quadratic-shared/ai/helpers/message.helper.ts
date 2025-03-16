@@ -13,7 +13,7 @@ export const getSystemMessages = (messages: ChatMessage[]): string[] => {
     (message): message is SystemMessage =>
       message.role === 'user' && message.contextType !== 'userPrompt' && message.contextType !== 'toolResult'
   );
-  return systemMessages.map((message) => message.content);
+  return systemMessages.flatMap((message) => message.content.map((content) => content.text));
 };
 
 export const getPromptMessages = (

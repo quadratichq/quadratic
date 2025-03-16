@@ -59,7 +59,7 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
               toolUseId: toolResult.id,
               content: [
                 {
-                  text: toolResult.content,
+                  text: toolResult.text,
                 },
               ],
               status: 'success' as const,
@@ -71,11 +71,9 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
     } else if (message.content) {
       const bedrockMessage: Message = {
         role: message.role,
-        content: [
-          {
-            text: message.content,
-          },
-        ],
+        content: message.content.map((content) => ({
+          text: content.text,
+        })),
       };
       return [...acc, bedrockMessage];
     } else {

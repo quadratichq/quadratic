@@ -30,7 +30,10 @@ export function useVisibleContextMessages() {
     return [
       {
         role: 'user',
-        content: `
+        content: [
+          {
+            type: 'text',
+            text: `
 Note: This is an internal message for context. Do not quote it in your response.\n\n
 I have an open sheet with the following part of the sheet visible: ${visibleA1String}\n\n
 ${
@@ -145,11 +148,18 @@ Code was run recently and the console output is:\n
 }`
     : 'The visible part of the sheet is empty.'
 }`,
+          },
+        ],
         contextType: 'visibleData',
       },
       {
         role: 'assistant',
-        content: `I understand the visible data, I will reference it to answer following messages. How can I help you?`,
+        content: [
+          {
+            type: 'text',
+            text: `I understand the visible data, I will reference it to answer following messages. How can I help you?`,
+          },
+        ],
         contextType: 'visibleData',
       },
     ];

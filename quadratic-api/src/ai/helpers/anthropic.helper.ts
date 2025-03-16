@@ -84,7 +84,7 @@ export function getAnthropicApiArgs(
           ...message.content.map((toolResult) => ({
             type: 'tool_result' as const,
             tool_use_id: toolResult.id,
-            content: toolResult.content,
+            content: toolResult.text,
           })),
           {
             type: 'text' as const,

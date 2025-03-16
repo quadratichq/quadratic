@@ -27,7 +27,10 @@ export function useCurrentSheetContextMessages() {
       return [
         {
           role: 'user',
-          content: `
+          content: [
+            {
+              type: 'text',
+              text: `
 Note: This is an internal message for context. Do not quote it in your response.\n\n
 I have an open sheet, with sheet name '${currentSheetName}', all actions are performed on this sheet.\n
 You can reference data from this or other sheets in the currently open file.\n
@@ -118,11 +121,18 @@ Note: All this data is only for your reference to data on the sheet. This data c
 Use this visible data in the context of following messages. Refer to cells if required in code.\n\n`
     : `This currently open sheet is empty.\n`
 }`,
+            },
+          ],
           contextType: 'currentSheet',
         },
         {
           role: 'assistant',
-          content: `I understand the current sheet data, I will reference it to answer following messages. How can I help you?`,
+          content: [
+            {
+              type: 'text',
+              text: `I understand the current sheet data, I will reference it to answer following messages. How can I help you?`,
+            },
+          ],
           contextType: 'currentSheet',
         },
       ];

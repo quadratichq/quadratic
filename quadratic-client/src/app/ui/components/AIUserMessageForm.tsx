@@ -13,15 +13,15 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import type { Context } from 'quadratic-shared/typesAndSchemasAI';
-import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import type { Content, Context } from 'quadratic-shared/typesAndSchemasAI';
+import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import type { SetterOrUpdater } from 'recoil';
 import { useRecoilValue } from 'recoil';
 
 export type AIUserMessageFormWrapperProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
   autoFocusRef?: React.RefObject<boolean>;
-  initialPrompt?: string;
+  initialContent?: Content;
   messageIndex?: number;
 };
 
@@ -29,7 +29,7 @@ type Props = Omit<AIUserMessageFormWrapperProps, 'messageIndex'> & {
   abortController: AbortController | undefined;
   loading: boolean;
   setLoading: SetterOrUpdater<boolean>;
-  submitPrompt: (prompt: string) => void;
+  submitPrompt: (content: Content) => void;
   formOnKeyDown?: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   maxHeight?: string;
   ctx?: {
@@ -42,7 +42,7 @@ type Props = Omit<AIUserMessageFormWrapperProps, 'messageIndex'> & {
 export const AIUserMessageForm = memo(
   forwardRef<HTMLTextAreaElement, Props>((props: Props, ref) => {
     const {
-      initialPrompt,
+      initialContent,
       ctx,
       autoFocusRef,
       textareaRef: bottomTextareaRef,
@@ -54,8 +54,14 @@ export const AIUserMessageForm = memo(
       maxHeight = '120px',
     } = props;
 
-    const [editing, setEditing] = useState(!initialPrompt);
+    const [editing, setEditing] = useState(!initialContent?.length);
+
+    const initialPrompt = useMemo(() => initialContent?.map((item) => item.text).join('\n'), [initialContent]);
     const [prompt, setPrompt] = useState(initialPrompt ?? '');
+
+    const submit = useCallback(() => {
+      submitPrompt([{ type: 'text', text: prompt }]);
+    }, [prompt, submitPrompt]);
 
     const abortPrompt = useCallback(() => {
       abortController?.abort();
@@ -73,10 +79,10 @@ export const AIUserMessageForm = memo(
     }, [autoFocusRef, textareaRef]);
 
     useEffect(() => {
-      if (loading && initialPrompt !== undefined) {
+      if (loading && initialContent !== undefined) {
         setEditing(false);
       }
-    }, [loading, initialPrompt]);
+    }, [loading, initialContent]);
 
     return (
       <form
@@ -126,7 +132,7 @@ export const AIUserMessageForm = memo(
 
                 if (prompt.trim().length === 0) return;
 
-                submitPrompt(prompt);
+                submit();
 
                 if (initialPrompt === undefined) {
                   setPrompt('');
@@ -178,7 +184,7 @@ export const AIUserMessageForm = memo(
                     className="rounded-full"
                     onClick={(e) => {
                       e.stopPropagation();
-                      submitPrompt(prompt);
+                      submit();
                     }}
                     disabled={prompt.length === 0 || loading}
                   >

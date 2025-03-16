@@ -26,13 +26,13 @@ export const handleVertexAIRequest = async (
       toolConfig: tool_choice,
     });
 
-    const requestArgs: GenerateContentRequest = {
+    const apiArgs: GenerateContentRequest = {
       systemInstruction: system,
       contents: messages,
     };
 
     if (options.stream) {
-      const result = await generativeModel.generateContentStream(requestArgs);
+      const result = await generativeModel.generateContentStream(apiArgs);
 
       response.setHeader('Content-Type', 'text/event-stream');
       response.setHeader('Cache-Control', 'no-cache');
@@ -41,7 +41,7 @@ export const handleVertexAIRequest = async (
       const parsedResponse = await parseVertexAIStream(result, response, modelKey);
       return parsedResponse;
     } else {
-      const result = await generativeModel.generateContent(requestArgs);
+      const result = await generativeModel.generateContent(apiArgs);
 
       const parsedResponse = parseVertexAIResponse(result, response, modelKey);
       return parsedResponse;

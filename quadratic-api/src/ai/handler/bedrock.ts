@@ -16,7 +16,7 @@ export const handleBedrockRequest = async (
   const { system, messages, tools, tool_choice } = getBedrockApiArgs(args);
 
   try {
-    const requestArgs: ConverseStreamRequest | ConverseRequest = {
+    const apiArgs: ConverseStreamRequest | ConverseRequest = {
       modelId: model,
       system,
       messages,
@@ -29,7 +29,7 @@ export const handleBedrockRequest = async (
     };
 
     if (options.stream) {
-      const command = new ConverseStreamCommand(requestArgs);
+      const command = new ConverseStreamCommand(apiArgs);
 
       const chunks = (await bedrock.send(command)).stream ?? [];
 
@@ -40,7 +40,7 @@ export const handleBedrockRequest = async (
       const parsedResponse = await parseBedrockStream(chunks, response, modelKey);
       return parsedResponse;
     } else {
-      const command = new ConverseCommand(requestArgs);
+      const command = new ConverseCommand(apiArgs);
 
       const result = await bedrock.send(command);
       const parsedResponse = parseBedrockResponse(result, response, modelKey);

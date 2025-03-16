@@ -54,7 +54,7 @@ export function getOpenAIApiArgs(
       const openaiMessages: ChatCompletionMessageParam[] = message.content.map((toolResult) => ({
         role: 'tool' as const,
         tool_call_id: toolResult.id,
-        content: toolResult.content,
+        content: toolResult.text,
       }));
       return [...acc, ...openaiMessages];
     } else if (message.content) {
