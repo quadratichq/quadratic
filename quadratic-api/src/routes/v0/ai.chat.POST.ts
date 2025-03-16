@@ -6,7 +6,8 @@ import {
   isBedrockAnthropicModel,
   isBedrockModel,
   isOpenAIModel,
-  isVertexAnthropicModel,
+  isVertexAIAnthropicModel,
+  isVertexAIModel,
   isXAIModel,
 } from 'quadratic-shared/ai/helpers/model.helper';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
@@ -16,9 +17,10 @@ import { z } from 'zod';
 import { handleAnthropicRequest } from '../../ai/handler/anthropic';
 import { handleBedrockRequest } from '../../ai/handler/bedrock';
 import { handleOpenAIRequest } from '../../ai/handler/openai';
+import { handleVertexAIRequest } from '../../ai/handler/vertexai';
 import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
-import { anthropic, bedrock, bedrock_anthropic, openai, vertex_anthropic, xai } from '../../ai/providers';
+import { anthropic, bedrock, bedrock_anthropic, openai, vertex_anthropic, vertexai, xai } from '../../ai/providers';
 import dbClient from '../../dbClient';
 import { STORAGE_TYPE } from '../../env-vars';
 import { getFile } from '../../middleware/getFile';
@@ -64,7 +66,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   }
 
   let parsedResponse: ParsedAIResponse | undefined;
-  if (isVertexAnthropicModel(modelKey)) {
+  if (isVertexAIAnthropicModel(modelKey)) {
     parsedResponse = await handleAnthropicRequest(modelKey, args, res, vertex_anthropic);
   } else if (isBedrockAnthropicModel(modelKey)) {
     parsedResponse = await handleAnthropicRequest(modelKey, args, res, bedrock_anthropic);
@@ -74,6 +76,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     parsedResponse = await handleOpenAIRequest(modelKey, args, res, openai);
   } else if (isXAIModel(modelKey)) {
     parsedResponse = await handleOpenAIRequest(modelKey, args, res, xai);
+  } else if (isVertexAIModel(modelKey)) {
+    parsedResponse = await handleVertexAIRequest(modelKey, args, res, vertexai);
   } else if (isBedrockModel(modelKey)) {
     parsedResponse = await handleBedrockRequest(modelKey, args, res, bedrock);
   } else {

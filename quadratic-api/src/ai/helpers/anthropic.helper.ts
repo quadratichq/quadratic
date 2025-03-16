@@ -14,7 +14,7 @@ import type {
   AnthropicModelKey,
   BedrockAnthropicModelKey,
   ParsedAIResponse,
-  VertexAnthropicModelKey,
+  VertexAIAnthropicModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 
 export function getAnthropicApiArgs(
@@ -31,7 +31,6 @@ export function getAnthropicApiArgs(
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
 
-  // without prompt caching of system messages
   const system: TextBlockParam[] = systemMessages.map((message, index) => ({
     type: 'text' as const,
     text: message,
@@ -142,7 +141,7 @@ function getAnthropicToolChoice(toolName?: AITool): ToolChoice | undefined {
 export async function parseAnthropicStream(
   chunks: Stream<Anthropic.Messages.RawMessageStreamEvent>,
   response: Response,
-  modelKey: VertexAnthropicModelKey | BedrockAnthropicModelKey | AnthropicModelKey
+  modelKey: VertexAIAnthropicModelKey | BedrockAnthropicModelKey | AnthropicModelKey
 ): Promise<ParsedAIResponse> {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
@@ -318,7 +317,7 @@ export async function parseAnthropicStream(
 export function parseAnthropicResponse(
   result: Anthropic.Messages.Message,
   response: Response,
-  modelKey: VertexAnthropicModelKey | BedrockAnthropicModelKey | AnthropicModelKey
+  modelKey: VertexAIAnthropicModelKey | BedrockAnthropicModelKey | AnthropicModelKey
 ): ParsedAIResponse {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',

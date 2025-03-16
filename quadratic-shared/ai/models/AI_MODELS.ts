@@ -1,8 +1,8 @@
 import type { ModelConfig, ModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
-export const DEFAULT_MODEL: ModelKey = 'vertex-anthropic:claude:thinking-toggle-off';
+export const DEFAULT_MODEL: ModelKey = 'vertexai-anthropic:claude:thinking-toggle-off';
 
-export const DEFAULT_GET_CHAT_NAME_MODEL: ModelKey = 'vertex-anthropic:claude-3-5-haiku@20241022';
+export const DEFAULT_GET_CHAT_NAME_MODEL: ModelKey = 'vertexai-anthropic:claude-3-5-haiku@20241022';
 
 // updating this will force the model to be reset to the default model in local storage
 export const DEFAULT_MODEL_VERSION = 7;
@@ -10,7 +10,7 @@ export const DEFAULT_MODEL_VERSION = 7;
 export const MODELS_CONFIGURATION: {
   [key in ModelKey]: ModelConfig;
 } = {
-  'vertex-anthropic:claude:thinking-toggle-off': {
+  'vertexai-anthropic:claude:thinking-toggle-off': {
     model: 'claude-3-5-sonnet-v2@20241022',
     displayName: `claude`,
     temperature: 0,
@@ -18,11 +18,11 @@ export const MODELS_CONFIGURATION: {
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: true,
-    provider: 'vertex-anthropic',
+    provider: 'vertexai-anthropic',
     promptCaching: true,
     thinkingToggle: false,
   },
-  'vertex-anthropic:claude:thinking-toggle-on': {
+  'vertexai-anthropic:claude:thinking-toggle-on': {
     model: 'claude-3-7-sonnet@20250219',
     displayName: `claude`,
     temperature: 0,
@@ -30,13 +30,13 @@ export const MODELS_CONFIGURATION: {
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: true,
-    provider: 'vertex-anthropic',
+    provider: 'vertexai-anthropic',
     promptCaching: true,
     thinking: true,
     thinkingTemperature: 1,
     thinkingToggle: true,
   },
-  'vertex-anthropic:claude-3-7-sonnet@20250219': {
+  'vertexai-anthropic:claude-3-7-sonnet@20250219': {
     model: 'claude-3-7-sonnet@20250219',
     displayName: `claude 3.7 sonnet`,
     temperature: 0,
@@ -44,10 +44,10 @@ export const MODELS_CONFIGURATION: {
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: true,
-    provider: 'vertex-anthropic',
+    provider: 'vertexai-anthropic',
     promptCaching: true,
   },
-  'vertex-anthropic:claude-3-7-sonnet@20250219:thinking': {
+  'vertexai-anthropic:claude-3-7-sonnet@20250219:thinking': {
     model: 'claude-3-7-sonnet@20250219',
     displayName: `claude 3.7 sonnet thinking`,
     temperature: 0,
@@ -55,12 +55,12 @@ export const MODELS_CONFIGURATION: {
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: true,
-    provider: 'vertex-anthropic',
+    provider: 'vertexai-anthropic',
     promptCaching: true,
     thinking: true,
     thinkingTemperature: 1,
   },
-  'vertex-anthropic:claude-3-5-sonnet-v2@20241022': {
+  'vertexai-anthropic:claude-3-5-sonnet-v2@20241022': {
     model: 'claude-3-5-sonnet-v2@20241022',
     displayName: `claude 3.5 sonnet`,
     temperature: 0,
@@ -68,10 +68,10 @@ export const MODELS_CONFIGURATION: {
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: true,
-    provider: 'vertex-anthropic',
+    provider: 'vertexai-anthropic',
     promptCaching: true,
   },
-  'vertex-anthropic:claude-3-5-haiku@20241022': {
+  'vertexai-anthropic:claude-3-5-haiku@20241022': {
     model: 'claude-3-5-haiku@20241022',
     displayName: 'claude 3.5 haiku',
     temperature: 0,
@@ -79,7 +79,7 @@ export const MODELS_CONFIGURATION: {
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: false,
-    provider: 'vertex-anthropic',
+    provider: 'vertexai-anthropic',
     promptCaching: true,
   },
   'bedrock-anthropic:claude:thinking-toggle-off': {
@@ -297,6 +297,50 @@ export const MODELS_CONFIGURATION: {
     provider: 'xai',
     promptCaching: true, // not used for xai
     strictParams: false,
+  },
+  'vertexai:gemini-2.0-flash-001': {
+    model: 'gemini-2.0-flash-001',
+    displayName: 'gemini 2.0 flash',
+    temperature: 0,
+    max_tokens: 8192,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: false,
+    provider: 'vertexai',
+    promptCaching: false,
+  },
+  'vertexai:gemini-2.0-flash-lite-001': {
+    model: 'gemini-2.0-flash-lite-001',
+    displayName: 'gemini 2.0 flash lite',
+    temperature: 0,
+    max_tokens: 8192,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: false,
+    provider: 'vertexai',
+    promptCaching: true,
+  },
+  'vertexai:gemini-1.5-pro-002': {
+    model: 'gemini-1.5-pro-002',
+    displayName: 'gemini 1.5 pro',
+    temperature: 0,
+    max_tokens: 8192,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: false,
+    provider: 'vertexai',
+    promptCaching: true,
+  },
+  'vertexai:gemini-1.5-flash-002': {
+    model: 'gemini-1.5-flash-002',
+    displayName: 'gemini 1.5 flash',
+    temperature: 0,
+    max_tokens: 8192,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: false,
+    provider: 'vertexai',
+    promptCaching: true,
   },
   'bedrock:us.deepseek.r1-v1:0': {
     model: 'us.deepseek.r1-v1:0',

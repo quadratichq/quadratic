@@ -13,12 +13,12 @@ import type {
   AnthropicModelKey,
   BedrockAnthropicModelKey,
   ParsedAIResponse,
-  VertexAnthropicModelKey,
+  VertexAIAnthropicModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { getAnthropicApiArgs, parseAnthropicResponse, parseAnthropicStream } from '../helpers/anthropic.helper';
 
 export const handleAnthropicRequest = async (
-  modelKey: VertexAnthropicModelKey | BedrockAnthropicModelKey | AnthropicModelKey,
+  modelKey: VertexAIAnthropicModelKey | BedrockAnthropicModelKey | AnthropicModelKey,
   args: AIRequestHelperArgs,
   response: Response,
   anthropic: AnthropicVertex | AnthropicBedrock | Anthropic
@@ -36,26 +36,25 @@ export const handleAnthropicRequest = async (
         type: 'disabled',
       };
 
-  if (options.stream) {
-    try {
-      let apiArgs: MessageCreateParamsStreaming = {
-        model,
-        system,
-        messages,
-        temperature: options.temperature,
-        max_tokens: options.max_tokens,
-        stream: options.stream,
-        tools,
-        tool_choice,
+  try {
+    let requestArgs: MessageCreateParamsStreaming | MessageCreateParamsNonStreaming = {
+      model,
+      system,
+      messages,
+      temperature: options.temperature,
+      max_tokens: options.max_tokens,
+      stream: options.stream,
+      tools,
+      tool_choice,
+    };
+    if (options.thinking !== undefined) {
+      requestArgs = {
+        ...requestArgs,
+        thinking,
       };
-      if (options.thinking !== undefined) {
-        apiArgs = {
-          ...apiArgs,
-          thinking,
-        };
-      }
-
-      const chunks = await anthropic.messages.create(apiArgs);
+    }
+    if (options.stream) {
+      const chunks = await anthropic.messages.create(requestArgs as MessageCreateParamsStreaming);
 
       response.setHeader('Content-Type', 'text/event-stream');
       response.setHeader('Cache-Control', 'no-cache');
@@ -63,50 +62,24 @@ export const handleAnthropicRequest = async (
 
       const parsedResponse = await parseAnthropicStream(chunks, response, modelKey);
       return parsedResponse;
-    } catch (error: any) {
-      if (!response.headersSent) {
-        if (error instanceof Anthropic.APIError) {
-          response.status(error.status ?? 400).json(error.message);
-          console.log(error.status, error.message);
-        } else {
-          response.status(400).json(error);
-          console.log(error);
-        }
-      } else {
-        console.error('Error occurred after headers were sent:', error);
-      }
-    }
-  } else {
-    try {
-      let apiArgs: MessageCreateParamsNonStreaming = {
-        model,
-        system,
-        messages,
-        temperature: options.temperature,
-        max_tokens: options.max_tokens,
-        stream: options.stream,
-        tools,
-        tool_choice,
-      };
-      if (options.thinking !== undefined) {
-        apiArgs = {
-          ...apiArgs,
-          thinking,
-        };
-      }
-
-      const result = await anthropic.messages.create(apiArgs);
+    } else {
+      const result = await anthropic.messages.create(requestArgs as MessageCreateParamsNonStreaming);
 
       const parsedResponse = parseAnthropicResponse(result, response, modelKey);
       return parsedResponse;
-    } catch (error: any) {
+    }
+  } catch (error: any) {
+    if (!options.stream || !response.headersSent) {
       if (error instanceof Anthropic.APIError) {
-        response.status(error.status ?? 400).json(error.message);
+        response.status(error.status ?? 400).json({ error: error.message });
         console.log(error.status, error.message);
       } else {
-        response.status(400).json(error);
+        response.status(400).json({ error });
         console.log(error);
       }
+    } else {
+      response.end();
+      console.log('Error occurred after headers were sent:', error);
     }
   }
 };
