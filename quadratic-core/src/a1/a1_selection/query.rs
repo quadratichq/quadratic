@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{cmp::Ordering, collections::HashSet};
 
 use crate::{
     a1::{A1Context, ColRange, RefRangeBounds, UNBOUNDED},
@@ -519,12 +519,10 @@ impl A1Selection {
         }
         let start = range.start.col();
         let end = range.end.col();
-        if start == end {
-            Some(vec![start as u32])
-        } else if start < end {
-            Some(vec![start as u32, end as u32])
-        } else {
-            Some(vec![end as u32, start as u32])
+        match start.cmp(&end) {
+            Ordering::Equal => Some(vec![start as u32]),
+            Ordering::Less => Some(vec![start as u32, end as u32]),
+            Ordering::Greater => Some(vec![end as u32, start as u32]),
         }
     }
 
@@ -545,12 +543,10 @@ impl A1Selection {
 
         let start = range.start.row();
         let end = range.end.row();
-        if start == end {
-            Some(vec![start as u32])
-        } else if start < end {
-            Some(vec![start as u32, end as u32])
-        } else {
-            Some(vec![end as u32, start as u32])
+        match start.cmp(&end) {
+            Ordering::Equal => Some(vec![start as u32]),
+            Ordering::Less => Some(vec![start as u32, end as u32]),
+            Ordering::Greater => Some(vec![end as u32, start as u32]),
         }
     }
 }

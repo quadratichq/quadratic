@@ -172,7 +172,7 @@ impl GridController {
     pub fn execute_delete_columns(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::DeleteColumns { sheet_id, columns } = op.clone() {
             if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-                let min_column = columns.iter().min().unwrap_or(&1).clone();
+                let min_column = *columns.iter().min().unwrap_or(&1);
                 let mut columns_to_adjust = columns.clone();
                 sheet.delete_columns(transaction, columns);
 
@@ -248,7 +248,7 @@ impl GridController {
     pub fn execute_delete_rows(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::DeleteRows { sheet_id, rows } = op.clone() {
             if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-                let min_row = rows.iter().min().unwrap_or(&1).clone();
+                let min_row = *rows.iter().min().unwrap_or(&1);
                 let mut rows_to_adjust = rows.clone();
                 sheet.delete_rows(transaction, rows);
 

@@ -337,7 +337,7 @@ pub fn print_data_table(grid_controller: &GridController, sheet_id: SheetId, rec
 #[track_caller]
 pub fn print_first_sheet(gc: &GridController) {
     if let Some(sheet) = gc.try_sheet(gc.sheet_ids()[0]) {
-        print_sheet(&sheet);
+        print_sheet(sheet);
     } else {
         println!("Sheet not found");
     }
