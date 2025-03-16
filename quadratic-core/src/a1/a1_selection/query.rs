@@ -32,7 +32,10 @@ impl A1Selection {
             .any(|range| range.is_col_range() || range.is_row_range())
     }
 
-    /// Returns whether the first range is a column range.
+    // range has multiple columns
+    /// Returns whether the first range has multiple columns
+    /// todo (DSF): this is a bit of a weird function; probably worth more
+    /// thought on its utility)
     pub fn is_col_range(&self) -> bool {
         self.ranges
             .first()
@@ -239,7 +242,11 @@ impl A1Selection {
         self.ranges.iter().for_each(|range| {
             columns.extend(range.selected_columns_finite(context));
         });
-        columns.into_iter().collect::<Vec<_>>()
+
+        // sort added for testing purposes
+        let mut c = columns.into_iter().collect::<Vec<_>>();
+        c.sort_unstable();
+        c
     }
 
     /// Returns the selected column ranges as a list of [start, end] pairs between two coordinates.
@@ -291,7 +298,11 @@ impl A1Selection {
         self.ranges.iter().for_each(|range| {
             rows.extend(range.selected_rows_finite(context));
         });
-        rows.into_iter().collect::<Vec<_>>()
+
+        // sort added for testing purposes
+        let mut r = rows.into_iter().collect::<Vec<_>>();
+        r.sort_unstable();
+        r
     }
 
     /// Returns the selected row ranges as a list of [start, end] pairs between two coordinates.
@@ -1261,5 +1272,101 @@ mod tests {
         // Test column selection (not a row)
         let selection = A1Selection::test_a1("A:C");
         assert_eq!(selection.contiguous_rows(), None);
+    }
+
+    #[test]
+    fn test_rects_to_hashes() {
+        let context = A1Context::default();
+        let sheet = Sheet::test();
+
+        // Test single cell
+        let selection = A1Selection::test_a1("A1");
+        let hashes = selection.rects_to_hashes(&sheet, &context);
+        assert_eq!(hashes.len(), 1);
+        assert!(hashes.contains(&Pos { x: 0, y: 0 }));
+
+        // Test range
+        let selection = A1Selection::test_a1("A1:B2");
+        let hashes = selection.rects_to_hashes(&sheet, &context);
+        assert_eq!(hashes.len(), 1);
+        assert!(hashes.contains(&Pos { x: 0, y: 0 }));
+
+        // Test multiple ranges
+        let selection = A1Selection::test_a1("A1,Q31");
+        let hashes = selection.rects_to_hashes(&sheet, &context);
+        assert_eq!(hashes.len(), 2);
+        assert!(hashes.contains(&Pos { x: 0, y: 0 }));
+        assert!(hashes.contains(&Pos { x: 1, y: 1 }));
+    }
+
+    #[test]
+    fn test_is_col_range() {
+        // Test single column
+        assert!(A1Selection::test_a1("A").is_col_range());
+
+        // Test column range
+        assert!(A1Selection::test_a1("A:C").is_col_range());
+
+        // Test cell selection (not a column range)
+        assert!(!A1Selection::test_a1("A1").is_col_range());
+
+        // Test row selection (not a column range)
+        assert!(!A1Selection::test_a1("1").is_col_range());
+
+        // Test row selection (is a column range because multiple columns are selected)
+        assert!(A1Selection::test_a1("1:3").is_col_range());
+
+        // Test cell range (is a column range because multiple columns are selected)
+        assert!(A1Selection::test_a1("A1:C3").is_col_range());
+    }
+
+    #[test]
+    fn test_selected_columns_finite() {
+        let context = A1Context::default();
+
+        // Test single column
+        let selection = A1Selection::test_a1("A");
+        assert_eq!(selection.selected_columns_finite(&context), vec![1]);
+
+        // Test column range
+        let selection = A1Selection::test_a1("A:C");
+        assert_eq!(selection.selected_columns_finite(&context), vec![1, 2, 3]);
+
+        // Test multiple columns
+        let selection = A1Selection::test_a1("A,C,E");
+        assert_eq!(selection.selected_columns_finite(&context), vec![1, 3, 5]);
+
+        // Test cell selection
+        let selection = A1Selection::test_a1("A1");
+        assert_eq!(selection.selected_columns_finite(&context), vec![1]);
+
+        // Test cell range
+        let selection = A1Selection::test_a1("A1:C3");
+        assert_eq!(selection.selected_columns_finite(&context), vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn test_selected_rows_finite() {
+        let context = A1Context::default();
+
+        // Test single row
+        let selection = A1Selection::test_a1("1");
+        assert_eq!(selection.selected_rows_finite(&context), vec![1]);
+
+        // Test row range
+        let selection = A1Selection::test_a1("1:3");
+        assert_eq!(selection.selected_rows_finite(&context), vec![1, 2, 3]);
+
+        // Test multiple rows
+        let selection = A1Selection::test_a1("1,3,5");
+        assert_eq!(selection.selected_rows_finite(&context), vec![1, 3, 5]);
+
+        // Test cell selection
+        let selection = A1Selection::test_a1("A1");
+        assert_eq!(selection.selected_rows_finite(&context), vec![1]);
+
+        // Test cell range
+        let selection = A1Selection::test_a1("A1:C3");
+        assert_eq!(selection.selected_rows_finite(&context), vec![1, 2, 3]);
     }
 }
