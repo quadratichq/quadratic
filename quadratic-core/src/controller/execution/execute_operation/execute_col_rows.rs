@@ -173,18 +173,35 @@ impl GridController {
         if let Operation::DeleteColumns { sheet_id, columns } = op.clone() {
             if let Some(sheet) = self.try_sheet_mut(sheet_id) {
                 let min_column = columns.iter().min().unwrap_or(&1).clone();
+                let mut columns_to_adjust = columns.clone();
                 sheet.delete_columns(transaction, columns);
 
                 transaction.forward_operations.push(op);
 
-                // update information for all cells to the right of the deleted column
-                if let Some(sheet) = self.try_sheet(sheet_id) {
-                    if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
-                        let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
-                        sheet_rect.min.x = min_column;
-                        self.check_deleted_data_tables(transaction, &sheet_rect);
-                        self.add_compute_operations(transaction, &sheet_rect, None);
-                        self.check_all_spills(transaction, sheet_rect.sheet_id);
+                if transaction.is_user() {
+                    columns_to_adjust.sort_unstable();
+                    columns_to_adjust.dedup();
+                    columns_to_adjust.reverse();
+
+                    for column in columns_to_adjust {
+                        self.adjust_code_cells_column_row(
+                            transaction,
+                            sheet_id,
+                            Some(column),
+                            None,
+                            -1,
+                        );
+                    }
+
+                    // update information for all cells to the right of the deleted column
+                    if let Some(sheet) = self.try_sheet(sheet_id) {
+                        if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+                            let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
+                            sheet_rect.min.x = min_column;
+                            self.check_deleted_data_tables(transaction, &sheet_rect);
+                            self.add_compute_operations(transaction, &sheet_rect, None);
+                            self.check_all_spills(transaction, sheet_rect.sheet_id);
+                        }
                     }
                 }
             }
@@ -232,18 +249,35 @@ impl GridController {
         if let Operation::DeleteRows { sheet_id, rows } = op.clone() {
             if let Some(sheet) = self.try_sheet_mut(sheet_id) {
                 let min_row = rows.iter().min().unwrap_or(&1).clone();
+                let mut rows_to_adjust = rows.clone();
                 sheet.delete_rows(transaction, rows);
 
                 transaction.forward_operations.push(op);
 
-                // update information for all cells below the deleted row
-                if let Some(sheet) = self.try_sheet(sheet_id) {
-                    if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
-                        let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
-                        sheet_rect.min.y = min_row;
-                        self.check_deleted_data_tables(transaction, &sheet_rect);
-                        self.add_compute_operations(transaction, &sheet_rect, None);
-                        self.check_all_spills(transaction, sheet_rect.sheet_id);
+                if transaction.is_user() {
+                    rows_to_adjust.sort_unstable();
+                    rows_to_adjust.dedup();
+                    rows_to_adjust.reverse();
+
+                    for row in rows_to_adjust {
+                        self.adjust_code_cells_column_row(
+                            transaction,
+                            sheet_id,
+                            None,
+                            Some(row),
+                            -1,
+                        );
+                    }
+
+                    // update information for all cells below the deleted row
+                    if let Some(sheet) = self.try_sheet(sheet_id) {
+                        if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+                            let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
+                            sheet_rect.min.y = min_row;
+                            self.check_deleted_data_tables(transaction, &sheet_rect);
+                            self.add_compute_operations(transaction, &sheet_rect, None);
+                            self.check_all_spills(transaction, sheet_rect.sheet_id);
+                        }
                     }
                 }
             }

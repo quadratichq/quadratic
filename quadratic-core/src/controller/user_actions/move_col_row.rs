@@ -2,10 +2,7 @@ use crate::{
     a1::A1Selection,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
-        operations::{
-            clipboard::{ClipboardOperation, PasteSpecial},
-            operation::Operation,
-        },
+        operations::clipboard::{ClipboardOperation, PasteSpecial},
         GridController,
     },
     grid::{GridBounds, SheetId},
@@ -38,7 +35,6 @@ impl GridController {
         };
 
         // delete existing columns
-
         let min_column = col_start.min(col_end);
         sheet.delete_columns(transaction, (col_start..=col_end).collect());
 
