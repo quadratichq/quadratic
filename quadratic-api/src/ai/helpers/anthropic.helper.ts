@@ -133,9 +133,8 @@ function getAnthropicTools(source: AISource, toolName?: AITool): Tool[] | undefi
   return anthropicTools;
 }
 
-function getAnthropicToolChoice(toolName?: AITool): ToolChoice | undefined {
-  const toolChoice: ToolChoice = toolName === undefined ? { type: 'auto' } : { type: 'tool', name: toolName };
-  return toolChoice;
+function getAnthropicToolChoice(toolName?: AITool): ToolChoice {
+  return toolName === undefined ? { type: 'auto' } : { type: 'tool', name: toolName };
 }
 
 export async function parseAnthropicStream(

@@ -116,9 +116,8 @@ function getBedrockTools(source: AISource, toolName?: AITool): Tool[] | undefine
   return bedrockTools;
 }
 
-function getBedrockToolChoice(toolName?: AITool): ToolChoice | undefined {
-  const toolChoice: ToolChoice = toolName === undefined ? { auto: {} } : { tool: { name: toolName } };
-  return toolChoice;
+function getBedrockToolChoice(toolName?: AITool): ToolChoice {
+  return toolName === undefined ? { auto: {} } : { tool: { name: toolName } };
 }
 
 export async function parseBedrockStream(

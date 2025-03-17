@@ -110,10 +110,8 @@ function getOpenAITools(
   return openaiTools;
 }
 
-function getOpenAIToolChoice(name?: AITool): ChatCompletionToolChoiceOption | undefined {
-  const toolChoice: ChatCompletionToolChoiceOption =
-    name === undefined ? 'auto' : { type: 'function', function: { name } };
-  return toolChoice;
+function getOpenAIToolChoice(name?: AITool): ChatCompletionToolChoiceOption {
+  return name === undefined ? 'auto' : { type: 'function', function: { name } };
 }
 
 export async function parseOpenAIStream(
