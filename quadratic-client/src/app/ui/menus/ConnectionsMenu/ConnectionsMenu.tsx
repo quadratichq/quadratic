@@ -1,11 +1,17 @@
-import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
+import {
+  editorInteractionStateShowCellTypeMenuAtom,
+  editorInteractionStateShowConnectionsMenuAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { Connections } from '@/shared/components/connections/Connections';
 import { ROUTES } from '@/shared/constants/routes';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
-import { useEffect } from 'react';
-import { useRecoilState } from 'recoil';
+import mixpanel from 'mixpanel-browser';
+import { useCallback, useEffect } from 'react';
+import { useRecoilState, useSetRecoilState } from 'recoil';
 
 export function ConnectionsMenu() {
   const [showConnectionsMenu, setShowConnectionsMenu] = useRecoilState(editorInteractionStateShowConnectionsMenuAtom);
@@ -23,10 +29,32 @@ export function ConnectionsMenu() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
+  const setCodeEditorState = useSetRecoilState(codeEditorAtom);
+  const openEditor = useCallback(
+    (language: CodeCellLanguage) => {
+      mixpanel.track('[Connections].query', { language });
+      setShowCellTypeMenu(false);
+      // TODO: somewhere `prev` isn't being set correctly
+      // this code was copied from CellTypeMenu
+      setCodeEditorState((prev) => ({
+        ...prev,
+        showCodeEditor: true,
+        initialCode: '',
+        codeCell: {
+          ...prev.codeCell,
+          language,
+        },
+      }));
+      setShowConnectionsMenu(false);
+    },
+    [setCodeEditorState, setShowConnectionsMenu, setShowCellTypeMenu]
+  );
+
   return (
     <Dialog open={showConnectionsMenu} onOpenChange={() => setShowConnectionsMenu(false)}>
       <DialogContent
-        className="max-w-4xl"
+        className="max-w-xl"
         onPointerDownOutside={(event) => {
           event.preventDefault();
         }}
@@ -41,6 +69,7 @@ export function ConnectionsMenu() {
             connectionsAreLoading={fetcher.data === undefined}
             teamUuid={teamUuid}
             staticIps={fetcher.data && fetcher.data.staticIps ? fetcher.data.staticIps : []}
+            handleNavigateToDetailsViewOverride={openEditor}
           />
         )}
       </DialogContent>
