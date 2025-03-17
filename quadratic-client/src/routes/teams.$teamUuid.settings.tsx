@@ -104,82 +104,82 @@ export const Component = () => {
           </form>
         </SettingsRow>
 
-        {teamPermissions.includes('TEAM_MANAGE') && (
-          <>
-            <SettingsRow>
-              <Type variant="body2" className="font-bold">
-                Billing
-              </Type>
-              <div>
-                <div className="flex flex-col gap-4">
-                  {/* Plan Comparison */}
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* Free Plan */}
-                    <div className="rounded-lg border border-border p-4">
-                      <div className="mb-3 flex items-center justify-between">
-                        <h3 className="text-lg font-semibold">Free Plan</h3>
-                        {billing.status === undefined && (
-                          <span className="rounded-full bg-muted px-2 py-1 text-xs">Current Plan</span>
-                        )}
+        <>
+          <SettingsRow>
+            <Type variant="body2" className="font-bold">
+              Billing
+            </Type>
+            <div>
+              <div className="flex flex-col gap-4">
+                {/* Plan Comparison */}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Free Plan */}
+                  <div className="rounded-lg border border-border p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Free Plan</h3>
+                      {billing.status === undefined && (
+                        <span className="rounded-full bg-muted px-2 py-1 text-xs">Current Plan</span>
+                      )}
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-sm">Team Members</span>
+                        <span className="text-sm font-medium">Limited</span>
                       </div>
-                      <div className="space-y-3">
-                        <div className="flex justify-between">
-                          <span className="text-sm">Team Members</span>
-                          <span className="text-sm font-medium">Limited</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm">AI Messages</span>
-                          <span className="text-sm font-medium">Limited</span>
-                        </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm">AI Messages</span>
+                        <span className="text-sm font-medium">Limited</span>
+                      </div>
 
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm">Connections</span>
-                          <span className="text-right text-sm font-medium">Limited</span>
-                        </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Connections</span>
+                        <span className="text-right text-sm font-medium">Limited</span>
                       </div>
                     </div>
+                  </div>
 
-                    {/* Team AI Plan */}
-                    <div className="rounded-lg border border-border p-4">
-                      <div className="mb-3 flex items-center justify-between">
-                        <h3 className="text-lg font-semibold">Pro Plan</h3>
-                        {billing.status === 'ACTIVE' && (
-                          <span className="rounded-full bg-muted px-2 py-1 text-xs">Current Plan</span>
-                        )}
+                  {/* Team AI Plan */}
+                  <div className="rounded-lg border border-border p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Pro Plan</h3>
+                      {billing.status === 'ACTIVE' && (
+                        <span className="rounded-full bg-muted px-2 py-1 text-xs">Current Plan</span>
+                      )}
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Team Members</span>
+                        <span className="text-right text-sm font-medium">
+                          $20 <span className="text-xs text-muted-foreground">/ User / Month</span>
+                        </span>
                       </div>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm">Team Members</span>
-                          <span className="text-right text-sm font-medium">
-                            $20 <span className="text-xs text-muted-foreground">/ User / Month</span>
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm">AI Messages</span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">Many</span>
-                            <Dialog>
-                              <DialogTrigger>
-                                <InfoCircledIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                              </DialogTrigger>
-                              <DialogContent>
-                                <DialogHeader>
-                                  <DialogTitle>AI Message Limits</DialogTitle>
-                                </DialogHeader>
-                                <p className="text-sm text-muted-foreground">
-                                  We don't impose a strict limit on AI usage on the Pro plan. We reserve the right to
-                                  limit unreasonable use and abuse.
-                                </p>
-                              </DialogContent>
-                            </Dialog>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm">Connections</span>
-                          <span className="text-right text-sm font-medium">Unlimited</span>
+                      <div className="flex justify-between">
+                        <span className="text-sm">AI Messages</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">Many</span>
+                          <Dialog>
+                            <DialogTrigger>
+                              <InfoCircledIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>AI Message Limits</DialogTitle>
+                              </DialogHeader>
+                              <p className="text-sm text-muted-foreground">
+                                We don't impose a strict limit on AI usage on the Pro plan. We reserve the right to
+                                limit unreasonable use and abuse.
+                              </p>
+                            </DialogContent>
+                          </Dialog>
                         </div>
                       </div>
-                      {billing.status === undefined ? (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Connections</span>
+                        <span className="text-right text-sm font-medium">Unlimited</span>
+                      </div>
+                    </div>
+                    {teamPermissions.includes('TEAM_MANAGE') ? (
+                      billing.status === undefined ? (
                         <Button
                           onClick={() => {
                             mixpanel.track('[TeamSettings].upgradeToProClicked', {
@@ -210,109 +210,114 @@ export const Component = () => {
                             Manage Billing
                           </Button>
                         )
-                      )}
-                    </div>
+                      )
+                    ) : (
+                      <Button variant="secondary" className="mt-4 w-full" disabled>
+                        Contact your team owner to upgrade to Pro
+                      </Button>
+                    )}
                   </div>
+                </div>
 
-                  {/* Current Usage */}
-                  <div className="rounded-lg border border-border p-4">
-                    <h3 className="mb-3 text-lg font-semibold">Current Usage</h3>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Team Members</span>
-                        <div className="flex items-start gap-2">
-                          <span className="w-4 text-left font-medium">{users.length}</span>
-                        </div>
+                {/* Current Usage */}
+                <div className="rounded-lg border border-border p-4">
+                  <h3 className="mb-3 text-lg font-semibold">Current Usage</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Team Members</span>
+                      <div className="flex items-start gap-2">
+                        <span className="w-4 text-left font-medium">{users.length}</span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">Your AI Messages</span>
-                          <Dialog>
-                            <DialogTrigger>
-                              <PieChartIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Usage History</DialogTitle>
-                              </DialogHeader>
-                              <p className="mb-4 text-sm text-muted-foreground">Your billable AI messages per month.</p>
-                              <div className="space-y-3">
-                                {billing.usage.map((usage) => (
-                                  <div key={usage.month} className="flex justify-between">
-                                    <span>
-                                      {(function formatDate(dateStr: string) {
-                                        const [year, month] = dateStr.split('-');
-                                        const date = new Date(parseInt(year), parseInt(month) - 1, 1);
-                                        return date.toLocaleDateString('en-US', {
-                                          month: 'short',
-                                          year: 'numeric',
-                                        });
-                                      })(usage.month)}
-                                    </span>
-                                    <span>{usage.ai_messages}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-                        </div>
-                        <div className="flex items-start gap-2">
-                          <span className="w-4 text-left font-medium">{latestUsage.ai_messages}</span>
-                        </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">Your AI Messages</span>
+                        <Dialog>
+                          <DialogTrigger>
+                            <PieChartIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Usage History</DialogTitle>
+                            </DialogHeader>
+                            <p className="mb-4 text-sm text-muted-foreground">Your billable AI messages per month.</p>
+                            <div className="space-y-3">
+                              {billing.usage.map((usage) => (
+                                <div key={usage.month} className="flex justify-between">
+                                  <span>
+                                    {(function formatDate(dateStr: string) {
+                                      const [year, month] = dateStr.split('-');
+                                      const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+                                      return date.toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        year: 'numeric',
+                                      });
+                                    })(usage.month)}
+                                  </span>
+                                  <span>{usage.ai_messages}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="w-4 text-left font-medium">{latestUsage.ai_messages}</span>
                       </div>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <p className="pt-4 text-sm text-muted-foreground">
-                  Learn more on our{' '}
-                  <a href={PRICING_URL} target="_blank" className="underline hover:text-primary">
-                    pricing
-                  </a>{' '}
-                  page.
+              <p className="pt-4 text-sm text-muted-foreground">
+                Learn more on our{' '}
+                <a href={PRICING_URL} target="_blank" className="underline hover:text-primary">
+                  pricing
+                </a>{' '}
+                page.
+              </p>
+            </div>
+          </SettingsRow>
+          <SettingsRow>
+            <Type variant="body2" className="font-bold">
+              Privacy
+            </Type>
+
+            <div>
+              <SettingControl
+                label="Improve AI results"
+                description={
+                  <>
+                    Help improve AI results by allowing Quadratic to store and analyze user prompts.{' '}
+                    <a href={DOCUMENTATION_ANALYTICS_AI} target="_blank" className="underline hover:text-primary">
+                      Learn more
+                    </a>
+                    .
+                  </>
+                }
+                onCheckedChange={(checked) => {
+                  handleUpdatePreference('analyticsAi', checked);
+                }}
+                checked={optimisticSettings.analyticsAi}
+                className="rounded-lg border border-border p-4 shadow-sm"
+                disabled={!teamPermissions.includes('TEAM_MANAGE')}
+              />
+              <div className="mt-4">
+                <p className="text-sm text-muted-foreground">
+                  When using AI features your data is sent to our AI providers:
                 </p>
+                <ul className="mt-2 space-y-2">
+                  {['OpenAI', 'Anthropic', 'AWS Bedrock'].map((item, i) => (
+                    <li className="flex items-center gap-2 text-sm text-muted-foreground" key={i}>
+                      <CheckIcon className="h-4 w-4" /> <span className="font-medium">{item}:</span> zero-day data
+                      retention
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </SettingsRow>
-            <SettingsRow>
-              <Type variant="body2" className="font-bold">
-                Privacy
-              </Type>
-
-              <div>
-                <SettingControl
-                  label="Improve AI results"
-                  description={
-                    <>
-                      Help improve AI results by allowing Quadratic to store and analyze user prompts.{' '}
-                      <a href={DOCUMENTATION_ANALYTICS_AI} target="_blank" className="underline hover:text-primary">
-                        Learn more
-                      </a>
-                      .
-                    </>
-                  }
-                  onCheckedChange={(checked) => {
-                    handleUpdatePreference('analyticsAi', checked);
-                  }}
-                  checked={optimisticSettings.analyticsAi}
-                  className="rounded-lg border border-border p-4 shadow-sm"
-                />
-                <div className="mt-4">
-                  <p className="text-sm text-muted-foreground">
-                    When using AI features your data is sent to our AI providers:
-                  </p>
-                  <ul className="mt-2 space-y-2">
-                    {['OpenAI', 'Anthropic', 'AWS Bedrock'].map((item, i) => (
-                      <li className="flex items-center gap-2 text-sm text-muted-foreground" key={i}>
-                        <CheckIcon className="h-4 w-4" /> <span className="font-medium">{item}:</span> zero-day data
-                        retention
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </SettingsRow>
-          </>
-        )}
+            </div>
+          </SettingsRow>
+        </>
       </div>
     </>
   );
