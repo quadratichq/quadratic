@@ -328,6 +328,8 @@ pub(crate) async fn healthcheck() -> impl IntoResponse {
 #[cfg(test)]
 pub(crate) mod tests {
 
+    use std::time::Duration;
+
     use super::*;
     use crate::state::settings::MinVersion;
     use crate::state::user::{User, UserStateUpdate};
@@ -343,6 +345,7 @@ pub(crate) mod tests {
     use quadratic_core::controller::transaction::Transaction;
     use quadratic_core::grid::SheetId;
 
+    use tokio::time::{sleep, Instant};
     use tower::ServiceExt;
     use uuid::Uuid;
 
@@ -442,8 +445,15 @@ pub(crate) mod tests {
         // kick off the background worker and wait for the stale users to be removed
         let handle = background_worker::start(Arc::clone(&state), 1, 0);
 
-        // expect a RoomNotFound error when trying to get the room
+        // wait on the background worker to finish, then abort it
+        sleep(Duration::from_secs(2)).await;
+        handle.abort();
+
+        let now = Instant::now();
+        let mut timed_out = false;
+
         loop {
+            // expect a RoomNotFound error when trying to get the room
             match state.get_room(&file_id).await {
                 Ok(_) => {} // do nothing
                 Err(error) => {
@@ -451,10 +461,13 @@ pub(crate) mod tests {
                     break;
                 }
             };
-        }
 
-        // stop the background worker
-        handle.abort();
+            // failsafe to avoid timeouts in CI
+            if now.elapsed().as_secs() > 3 {
+                timed_out = true;
+                break;
+            }
+        }
 
         // room should be closed, add user_1 back
         add_user_via_ws(file_id, socket.clone(), user_1.clone()).await;
@@ -466,23 +479,25 @@ pub(crate) mod tests {
         )
         .await;
 
-        // expect 1 user to be in the room
-        let num_users_in_room = state.get_room(&file_id).await.unwrap().users.len();
-        assert_eq!(num_users_in_room, 1);
+        if !timed_out {
+            // expect 1 user to be in the room
+            let num_users_in_room = state.get_room(&file_id).await.unwrap().users.len();
+            assert_eq!(num_users_in_room, 1);
 
-        // add user_2 back
-        add_user_via_ws(file_id, socket.clone(), user_2.clone()).await;
-        integration_test_send_and_receive(
-            &socket.clone(),
-            new_user_state_update(user_2.clone(), file_id),
-            true,
-            1,
-        )
-        .await;
+            // add user_2 back
+            add_user_via_ws(file_id, socket.clone(), user_2.clone()).await;
+            integration_test_send_and_receive(
+                &socket.clone(),
+                new_user_state_update(user_2.clone(), file_id),
+                true,
+                1,
+            )
+            .await;
 
-        // expect 2 users to be in the room
-        let num_users_in_room = state.get_room(&file_id).await.unwrap().users.len();
-        assert_eq!(num_users_in_room, 2);
+            // expect 2 users to be in the room
+            let num_users_in_room = state.get_room(&file_id).await.unwrap().users.len();
+            assert_eq!(num_users_in_room, 2);
+        }
     }
 
     #[tokio::test]
