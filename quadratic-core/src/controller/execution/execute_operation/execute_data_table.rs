@@ -31,6 +31,8 @@ impl GridController {
         }
     }
 
+    /// Adds signals to the transaction to send the modified data table to the
+    /// client.
     fn mark_data_table_dirty(
         &self,
         transaction: &mut PendingTransaction,

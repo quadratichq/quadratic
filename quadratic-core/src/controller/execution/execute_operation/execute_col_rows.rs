@@ -172,27 +172,27 @@ impl GridController {
     pub fn execute_delete_columns(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::DeleteColumns { sheet_id, columns } = op.clone() {
             if let Some(sheet) = self.try_sheet_mut(sheet_id) {
+                transaction.forward_operations.push(op);
+
                 let min_column = *columns.iter().min().unwrap_or(&1);
                 let mut columns_to_adjust = columns.clone();
                 sheet.delete_columns(transaction, columns);
 
-                transaction.forward_operations.push(op);
+                columns_to_adjust.sort_unstable();
+                columns_to_adjust.dedup();
+                columns_to_adjust.reverse();
+
+                for column in columns_to_adjust {
+                    self.adjust_code_cells_column_row(
+                        transaction,
+                        sheet_id,
+                        Some(column),
+                        None,
+                        -1,
+                    );
+                }
 
                 if transaction.is_user() {
-                    columns_to_adjust.sort_unstable();
-                    columns_to_adjust.dedup();
-                    columns_to_adjust.reverse();
-
-                    for column in columns_to_adjust {
-                        self.adjust_code_cells_column_row(
-                            transaction,
-                            sheet_id,
-                            Some(column),
-                            None,
-                            -1,
-                        );
-                    }
-
                     // update information for all cells to the right of the deleted column
                     if let Some(sheet) = self.try_sheet(sheet_id) {
                         if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
