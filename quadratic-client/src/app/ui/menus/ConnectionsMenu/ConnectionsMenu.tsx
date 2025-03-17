@@ -1,8 +1,6 @@
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
-import {
-  editorInteractionStateShowCellTypeMenuAtom,
-  editorInteractionStateShowConnectionsMenuAtom,
-} from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { Connections } from '@/shared/components/connections/Connections';
@@ -29,26 +27,29 @@ export function ConnectionsMenu() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
   const openEditor = useCallback(
     (language: CodeCellLanguage) => {
       mixpanel.track('[Connections].query', { language });
-      setShowCellTypeMenu(false);
-      // TODO: somewhere `prev` isn't being set correctly
-      // this code was copied from CellTypeMenu
+
+      const cursor = sheets.sheet.cursor.position;
+      setShowConnectionsMenu(false);
       setCodeEditorState((prev) => ({
         ...prev,
-        showCodeEditor: true,
-        initialCode: '',
-        codeCell: {
-          ...prev.codeCell,
-          language,
+        diffEditorContent: undefined,
+        waitingForEditorClose: {
+          codeCell: {
+            sheetId: sheets.current,
+            pos: { x: cursor.x, y: cursor.y },
+            language,
+          },
+          showCellTypeMenu: false,
+          inlineEditor: false,
+          initialCode: '',
         },
       }));
-      setShowConnectionsMenu(false);
     },
-    [setCodeEditorState, setShowConnectionsMenu, setShowCellTypeMenu]
+    [setCodeEditorState, setShowConnectionsMenu]
   );
 
   return (
