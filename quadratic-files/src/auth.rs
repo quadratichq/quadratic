@@ -3,14 +3,13 @@
 //!
 
 use axum::{
-    async_trait,
+    RequestPartsExt,
     extract::{FromRef, FromRequestParts},
     http::request::Parts,
-    RequestPartsExt,
 };
 use axum_extra::{
-    headers::{authorization::Bearer, Authorization},
     TypedHeader,
+    headers::{Authorization, authorization::Bearer},
 };
 use jsonwebtoken::jwk::JwkSet;
 use quadratic_rust_shared::auth::jwt::authorize;
@@ -45,7 +44,6 @@ pub fn get_middleware(
 /// Extract the claims from the request.
 /// Anytime a claims parameter is added to a handler, this will automatically
 /// be called.
-#[async_trait]
 impl<S> FromRequestParts<S> for Claims
 where
     JwkSet: FromRef<S>,

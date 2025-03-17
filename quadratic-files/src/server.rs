@@ -3,10 +3,10 @@
 //! Handle bootstrapping and starting the HTTP server.  Adds global state
 //! to be shared across all requests and threads.  Adds tracing/logging.
 
+use axum::Json;
 use axum::http::{Method, StatusCode};
 use axum::response::IntoResponse;
-use axum::Json;
-use axum::{routing::get, Extension, Router};
+use axum::{Extension, Router, routing::get};
 use quadratic_rust_shared::auth::jwt::get_jwks;
 use quadratic_rust_shared::storage::Storage;
 use std::time::Duration;
@@ -53,6 +53,10 @@ pub(crate) fn app(state: Arc<State>) -> Router {
     tracing::info!("Serving files from {path}");
 
     Router::new()
+        // Turn off checks for compatibility with route matching syntax from 0.7.
+        // This allows usage of paths starting with a colon : or an asterisk * which are otherwise prohibited.
+        .without_v07_checks()
+        //
         // PROTECTED ROUTES (via JWT)
         //
         // get a file from storage
