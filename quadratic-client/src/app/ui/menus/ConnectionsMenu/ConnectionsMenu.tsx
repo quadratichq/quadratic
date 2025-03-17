@@ -4,11 +4,14 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { Connections } from '@/shared/components/connections/Connections';
+import { ConnectionsSidebar } from '@/shared/components/connections/ConnectionsSidebar';
+import { HelpIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
+import { Toggle } from '@/shared/shadcn/ui/toggle';
 import mixpanel from 'mixpanel-browser';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 
 export function ConnectionsMenu() {
@@ -51,6 +54,7 @@ export function ConnectionsMenu() {
     },
     [setCodeEditorState, setShowConnectionsMenu]
   );
+  const [showHelp, setShowHelp] = useState(false);
 
   return (
     <Dialog open={showConnectionsMenu} onOpenChange={() => setShowConnectionsMenu(false)}>
@@ -61,8 +65,24 @@ export function ConnectionsMenu() {
         }}
       >
         <DialogHeader>
-          <DialogTitle>Team connections</DialogTitle>
+          <DialogTitle className="flex items-center gap-1">
+            Team connections
+            <Toggle
+              size="icon"
+              onClick={() => setShowHelp((prev) => !prev)}
+              aria-label="Help"
+              className="text-muted-foreground"
+            >
+              <HelpIcon />
+            </Toggle>
+          </DialogTitle>
         </DialogHeader>
+        {showHelp && (
+          <>
+            <ConnectionsSidebar staticIps={fetcher.data && fetcher.data.staticIps ? fetcher.data.staticIps : []} />
+            <hr />
+          </>
+        )}
         {/* Unmount it so we reset the state */}
         {showConnectionsMenu && (
           <Connections
