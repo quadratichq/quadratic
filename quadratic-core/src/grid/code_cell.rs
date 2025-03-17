@@ -387,19 +387,18 @@ mod tests {
 
     #[test]
     fn test_update_cell_references_with_sheet_name() {
-        let sheet_id = SheetId::new();
+        let sheet_id_init = SheetId::new();
+        let sheet_id_11 = SheetId::new();
         let mut a1_context = A1Context::default();
-        a1_context.sheet_map.insert_test("Sheet1", sheet_id);
-        a1_context
-            .sheet_map
-            .insert_test("Sheet1 (1)", SheetId::new());
+        a1_context.sheet_map.insert_test("Sheet1", sheet_id_init);
+        a1_context.sheet_map.insert_test("Sheet1 (1)", sheet_id_11);
         let pos = SheetPos {
             x: 100,
             y: 100,
-            sheet_id,
+            sheet_id: sheet_id_init,
         };
 
-        let translate = |x, y| RefAdjust::new_translate(sheet_id, x, y);
+        let translate = |x, y| RefAdjust::new_translate(sheet_id_11, x, y);
 
         // Basic single reference
         let mut code = CodeCellValue {
@@ -419,7 +418,7 @@ mod tests {
         };
         code.adjust_references(&a1_context, pos, translate(1, 1));
         assert_eq!(
-            code.code, r#"x = q.cells("B2:C3") + q.cells("'Sheet1 (1)'!D4:E5")"#,
+            code.code, r#"x = q.cells("'Sheet1'!A1:B2") + q.cells("'Sheet1 (1)'!D4:E5")"#,
             "Multiple references failed"
         );
 
@@ -430,7 +429,7 @@ mod tests {
         };
         code.adjust_references(&a1_context, pos, translate(1, 1));
         assert_eq!(
-            code.code, r#"q.cells("B2:C3"); q.cells("'Sheet1 (1)'!D4:E5"); q.cells("F6:G7");"#,
+            code.code, r#"q.cells("A1:B2"); q.cells("'Sheet1 (1)'!D4:E5"); q.cells("E5:F6");"#,
             "Quote types failed"
         );
 

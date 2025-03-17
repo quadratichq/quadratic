@@ -466,8 +466,7 @@ mod tests {
             },
         );
 
-        let replaced_a1 = convert_rc_to_a1(&replaced, &ctx, pos);
-        assert_eq!(replaced_a1, expected);
+        assert_eq!(replaced, expected);
     }
 
     #[test]
