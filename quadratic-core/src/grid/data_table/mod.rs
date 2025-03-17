@@ -692,6 +692,19 @@ impl DataTable {
         y_adjustment
     }
 
+    /// Applies settings for a single value data table
+    ///
+    /// This is used when a single value data table is created from a code run
+    /// and is a code cell.
+    pub fn apply_single_value_settings(&mut self) {
+        if self.is_single_value() {
+            self.show_name = false;
+            self.show_columns = false;
+            self.header_is_first_row = false;
+            self.column_headers = None;
+        }
+    }
+
     /// Returns true if the data table is a single value (ie, not an array)
     pub fn is_single_value(&self) -> bool {
         if self.is_html_or_image() {
