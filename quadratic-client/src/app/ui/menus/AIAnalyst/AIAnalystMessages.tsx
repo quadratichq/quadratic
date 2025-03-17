@@ -191,9 +191,9 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                 )}
 
                 {message.contextType === 'userPrompt' &&
-                  message.toolCalls.map((toolCall) => (
+                  message.toolCalls.map((toolCall, index) => (
                     <AIAnalystToolCard
-                      key={toolCall.id}
+                      key={`${index}-${toolCall.id}-${toolCall.arguments}`}
                       name={toolCall.name}
                       args={toolCall.arguments}
                       loading={toolCall.loading}

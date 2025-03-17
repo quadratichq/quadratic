@@ -3,6 +3,7 @@ import {
   editorInteractionStateSettingsAtom,
   editorInteractionStateTeamUuidAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
+import { debug } from '@/app/debugFlags';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { AIAnalystContext } from '@/app/ui/menus/AIAnalyst/AIAnalystContext';
@@ -13,8 +14,26 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import type { Content, Context } from 'quadratic-shared/typesAndSchemasAI';
-import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { isSupportedMimeType } from 'quadratic-shared/ai/helpers/files.helper';
+import type {
+  Content,
+  Context,
+  ImageContent,
+  PdfFileContent,
+  TextFileContent,
+} from 'quadratic-shared/typesAndSchemasAI';
+import {
+  forwardRef,
+  memo,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  type ClipboardEvent,
+  type DragEvent,
+} from 'react';
 import type { SetterOrUpdater } from 'recoil';
 import { useRecoilValue } from 'recoil';
 
@@ -56,17 +75,49 @@ export const AIUserMessageForm = memo(
 
     const [editing, setEditing] = useState(!initialContent?.length);
 
-    const initialPrompt = useMemo(() => initialContent?.map((item) => item.text).join('\n'), [initialContent]);
-    const [prompt, setPrompt] = useState(initialPrompt ?? '');
+    const initialFiles = useMemo(() => initialContent?.filter((item) => item.type !== 'text'), [initialContent]);
+    const [files, setFiles] = useState<(ImageContent | PdfFileContent | TextFileContent)[]>(initialFiles ?? []);
+
+    const initialPrompt = useMemo(
+      () =>
+        initialContent
+          ?.filter((item) => item.type === 'text')
+          .map((item) => item.text)
+          .join('\n'),
+      [initialContent]
+    );
+    const [prompt, setPrompt] = useState<string>(initialPrompt ?? '');
 
     const submit = useCallback(() => {
-      submitPrompt([{ type: 'text', text: prompt }]);
-    }, [prompt, submitPrompt]);
+      submitPrompt([...files, { type: 'text', text: prompt }]);
+    }, [files, prompt, submitPrompt]);
 
     const abortPrompt = useCallback(() => {
       abortController?.abort();
       setLoading(false);
     }, [abortController, setLoading]);
+
+    const handleFiles = useCallback((e: ClipboardEvent<HTMLFormElement> | DragEvent<HTMLFormElement>) => {
+      if (!debug) return;
+
+      const files = 'clipboardData' in e ? e.clipboardData.files : 'dataTransfer' in e ? e.dataTransfer.files : [];
+      if (files && files.length > 0) {
+        e.preventDefault();
+
+        for (const file of files) {
+          const mimeType = file.type;
+          if (isSupportedMimeType(mimeType)) {
+            const reader = new FileReader();
+            reader.onloadend = (e) => {
+              const dataUrl = e.target?.result as string;
+              const base64 = dataUrl.split(',')[1];
+              setFiles((prev) => [...prev, { type: 'data', data: base64, mimeType, fileName: file.name }]);
+            };
+            reader.readAsDataURL(file);
+          }
+        }
+      }
+    }, []);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     useImperativeHandle(ref, () => textareaRef.current!);
@@ -93,6 +144,8 @@ export const AIUserMessageForm = memo(
             textareaRef.current?.focus();
           }
         }}
+        onPaste={handleFiles}
+        onDrop={handleFiles}
       >
         {!editing && !loading && (
           <TooltipPopover label="Edit">
@@ -135,6 +188,7 @@ export const AIUserMessageForm = memo(
                 submit();
 
                 if (initialPrompt === undefined) {
+                  setFiles([]);
                   setPrompt('');
                   textareaRef.current?.focus();
                 } else {

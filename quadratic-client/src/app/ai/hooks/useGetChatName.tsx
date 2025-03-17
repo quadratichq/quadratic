@@ -14,7 +14,10 @@ export const useGetChatName = () => {
     ({ snapshot }) =>
       async () => {
         const chatMessages = await snapshot.getPromise(aiAnalystCurrentChatMessagesAtom);
-        const chatPromptMessages = getPromptMessages(chatMessages);
+        const chatPromptMessages = getPromptMessages(chatMessages).map((message) => ({
+          ...message,
+          content: message.content.filter((content) => !('type' in content) || content.type !== 'data'),
+        }));
         const messages: ChatMessage[] = [
           {
             role: 'user',

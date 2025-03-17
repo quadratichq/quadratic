@@ -10,6 +10,7 @@ import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
 import { AIAssistantUserMessageForm } from '@/app/ui/menus/CodeEditor/AIAssistant/AIAssistantUserMessageForm';
 import { AICodeBlockParser } from '@/app/ui/menus/CodeEditor/AIAssistant/AICodeBlockParser';
 import { cn } from '@/shared/shadcn/utils';
+import { isToolResultMessage } from 'quadratic-shared/ai/helpers/message.helper';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -118,7 +119,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
                 messageIndex={index}
                 textareaRef={textareaRef}
               />
-            ) : message.role === 'user' && message.contextType === 'toolResult' ? (
+            ) : isToolResultMessage(message) ? (
               message.content.map(({ text }) => <Markdown key={text}>{text}</Markdown>)
             ) : (
               <>
@@ -143,9 +144,9 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
                 )}
 
                 {message.contextType === 'userPrompt' &&
-                  message.toolCalls.map((toolCall) => (
+                  message.toolCalls.map((toolCall, index) => (
                     <AIAnalystToolCard
-                      key={toolCall.id}
+                      key={`${index}-${toolCall.id}-${toolCall.arguments}`}
                       name={toolCall.name}
                       args={toolCall.arguments}
                       loading={toolCall.loading}

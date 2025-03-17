@@ -168,7 +168,75 @@ const TextContentSchema = z.object({
   text: z.string(),
 });
 export type TextContent = z.infer<typeof TextContentSchema>;
-const convertStringToTextContent = (val: any): TextContent[] => {
+
+const SystemMessageSchema = z.object({
+  role: z.literal('user'),
+  content: z.union([
+    z.string().transform((str) => [
+      {
+        type: 'text' as const,
+        text: str,
+      },
+    ]),
+    z.array(TextContentSchema),
+  ]),
+  contextType: InternalContextTypeSchema,
+});
+export type SystemMessage = z.infer<typeof SystemMessageSchema>;
+
+const ToolResultContentSchema = z.object({
+  id: z.string(),
+  text: z.string(),
+});
+export type ToolResultContent = z.infer<typeof ToolResultContentSchema>;
+
+const ToolResultSchema = z.object({
+  role: z.literal('user'),
+  content: z.union([
+    z.array(
+      z
+        .object({
+          id: z.string(),
+          content: z.string(),
+        })
+        .transform((old) => ({ id: old.id, text: old.content }))
+    ),
+    z.array(ToolResultContentSchema),
+  ]),
+  contextType: ToolResultContextTypeSchema,
+});
+export type ToolResultMessage = z.infer<typeof ToolResultSchema>;
+
+export const ImageContentSchema = z.object({
+  type: z.literal('data'),
+  data: z.string(),
+  mimeType: z.enum(['image/jpeg', 'image/png', 'image/gif', 'image/webp']),
+  fileName: z.string(),
+});
+export type ImageContent = z.infer<typeof ImageContentSchema>;
+
+export const PdfFileContentSchema = z.object({
+  type: z.literal('data'),
+  data: z.string(),
+  mimeType: z.literal('application/pdf'),
+  fileName: z.string(),
+});
+export type PdfFileContent = z.infer<typeof PdfFileContentSchema>;
+
+export const TextFileContentSchema = z.object({
+  type: z.literal('data'),
+  data: z.string(),
+  mimeType: z.literal('text/plain'),
+  fileName: z.string(),
+});
+export type TextFileContent = z.infer<typeof TextFileContentSchema>;
+
+const ContentSchema = z.array(
+  TextContentSchema.or(ImageContentSchema).or(PdfFileContentSchema).or(TextFileContentSchema)
+);
+export type Content = z.infer<typeof ContentSchema>;
+
+const convertStringToContent = (val: any): Content => {
   // old chat messages are single strings, being migrated to array of text objects
   if (typeof val === 'string') {
     return val
@@ -177,35 +245,11 @@ const convertStringToTextContent = (val: any): TextContent[] => {
       .filter((line) => !!line)
       .map((line) => ({ type: 'text', text: line }));
   }
-
   return val;
 };
-
-const ContentSchema = z.preprocess(convertStringToTextContent, z.array(TextContentSchema));
-export type Content = z.infer<typeof ContentSchema>;
-
-const SystemMessageSchema = z.object({
-  role: z.literal('user'),
-  content: ContentSchema,
-  contextType: InternalContextTypeSchema,
-});
-export type SystemMessage = z.infer<typeof SystemMessageSchema>;
-
-const ToolResultSchema = z.object({
-  role: z.literal('user'),
-  content: z.array(
-    z.object({
-      id: z.string(),
-      text: z.string(),
-    })
-  ),
-  contextType: ToolResultContextTypeSchema,
-});
-export type ToolResultMessage = z.infer<typeof ToolResultSchema>;
-
 const UserMessagePromptSchema = z.object({
   role: z.literal('user'),
-  content: ContentSchema,
+  content: z.preprocess(convertStringToContent, ContentSchema),
   contextType: UserPromptContextTypeSchema,
   context: ContextSchema.optional(),
 });
@@ -216,32 +260,40 @@ export type UserMessage = z.infer<typeof UserMessageSchema>;
 
 const AIMessageInternalSchema = z.object({
   role: z.literal('assistant'),
-  content: ContentSchema,
+  content: z.array(TextContentSchema),
   contextType: InternalContextTypeSchema,
 });
 
-const AIResponseContentSchema = z.preprocess(
-  convertStringToTextContent,
-  z.array(
-    TextContentSchema.or(
-      z.object({
-        type: z.literal('anthropic_thinking'),
-        text: z.string(),
-        signature: z.string(),
-      })
-    ).or(
-      z.object({
-        type: z.literal('anthropic_redacted_thinking'),
-        text: z.string(),
-      })
-    )
+const AIResponseContentSchema = z.array(
+  TextContentSchema.or(
+    z.object({
+      type: z.literal('anthropic_thinking'),
+      text: z.string(),
+      signature: z.string(),
+    })
+  ).or(
+    z.object({
+      type: z.literal('anthropic_redacted_thinking'),
+      text: z.string(),
+    })
   )
 );
 export type AIResponseContent = z.infer<typeof AIResponseContentSchema>;
 
+const convertStringToTextContent = (val: any): AIResponseContent => {
+  // old chat messages are single strings, being migrated to array of text objects
+  if (typeof val === 'string') {
+    return val
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => !!line)
+      .map((line) => ({ type: 'text', text: line }));
+  }
+  return val;
+};
 export const AIMessagePromptSchema = z.object({
   role: z.literal('assistant'),
-  content: AIResponseContentSchema,
+  content: z.preprocess(convertStringToTextContent, AIResponseContentSchema),
   contextType: UserPromptContextTypeSchema,
   toolCalls: z.array(
     z.object({
