@@ -200,7 +200,7 @@ impl Sheet {
     /// current input value.
     pub fn neighbor_text(&self, pos: Pos) -> Vec<String> {
         let mut text = vec![];
-        if let Ok(data_table_pos) = self.first_data_table_within(pos) {
+        match self.first_data_table_within(pos) { Ok(data_table_pos) => {
             let Some(data_table) = self.data_tables.get(&data_table_pos) else {
                 return text;
             };
@@ -232,7 +232,7 @@ impl Sheet {
                     text.push(cell.to_string());
                 }
             }
-        } else if let Some(column) = self.columns.get(&pos.x) {
+        } _ => if let Some(column) = self.columns.get(&pos.x) {
             // walk forwards
             let mut y = pos.y + 1;
             while let Some(CellValue::Text(t)) = column.values.get(&y) {
@@ -256,7 +256,7 @@ impl Sheet {
                     break;
                 }
             }
-        }
+        }}
         text.sort();
         text.dedup();
         text

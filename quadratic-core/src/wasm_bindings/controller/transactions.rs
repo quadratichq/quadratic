@@ -70,17 +70,16 @@ impl GridController {
             Ok(transaction_id) => transaction_id,
             Err(e) => return Err(JsValue::from_str(&format!("Invalid transaction id: {}", e))),
         };
-        if let Ok(unsaved_transaction) =
-            serde_json::from_str::<UnsavedTransaction>(&unsaved_transaction)
-        {
+        match serde_json::from_str::<UnsavedTransaction>(&unsaved_transaction)
+        { Ok(unsaved_transaction) => {
             Ok(serde_wasm_bindgen::to_value(
                 &self.apply_offline_unsaved_transaction(transaction_id, unsaved_transaction),
             )?)
-        } else {
+        } _ => {
             Err(JsValue::from_str(&format!(
                 "Invalid unsaved transaction received in applyOfflineUnsavedTransaction {}",
                 unsaved_transaction
             )))
-        }
+        }}
     }
 }

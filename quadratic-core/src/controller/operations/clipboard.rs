@@ -447,12 +447,12 @@ impl GridController {
         let mut cursor_translate_y = start_pos.y - clipboard.origin.y;
 
         // we paste the entire sheet over the existing sheet
-        if let Some((x, y)) = clipboard.origin.all {
+        match clipboard.origin.all { Some((x, y)) => {
             // set the start_pos to the origin of the clipboard for the
             // copied sheet
             start_pos.x = x;
             start_pos.y = y;
-        } else {
+        } _ => {
             if let Some(column_origin) = clipboard.origin.column {
                 start_pos.x += column_origin;
                 cursor_translate_x += clipboard.origin.x;
@@ -461,7 +461,7 @@ impl GridController {
                 start_pos.y += row_origin;
                 cursor_translate_y += clipboard.origin.y;
             }
-        }
+        }}
 
         let mut cursor = clipboard
             .selection
@@ -863,11 +863,11 @@ mod test {
             },
         );
         assert_eq!(operations.len(), 1);
-        if let Operation::SetValidation { validation } = &operations[0] {
+        match &operations[0] { Operation::SetValidation { validation } => {
             assert_eq!(validation.selection, A1Selection::test_a1("B2:C3"));
-        } else {
+        } _ => {
             panic!("Expected SetValidation operation");
-        }
+        }}
     }
 
     #[test]

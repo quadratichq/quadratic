@@ -126,22 +126,22 @@ impl<B: BlockContent> ColumnData<B> {
         match (self.remove_block_containing(y), value) {
             (None, None) => None,
             (None, Some(value)) => {
-                if let Some(block_above) = self.remove_block_containing(y - 1) {
+                match self.remove_block_containing(y - 1) { Some(block_above) => {
                     // Push to bottom of block above.
                     self.add_blocks(block_above.push_bottom(value));
                     // Try to merge with block below.
                     self.try_merge_at(y + 1);
                     None
-                } else if let Some(block_below) = self.remove_block_at(y + 1) {
+                } _ => { match self.remove_block_at(y + 1) { Some(block_below) => {
                     // Push to top of block below.
                     self.add_blocks(block_below.push_top(value));
                     None
-                } else {
+                } _ => {
                     // There are no adjacent blocks, so insert a new block and
                     // don't run any other checks.
                     self.add_block(Block::new(y, value));
                     return None;
-                }
+                }}}}
             }
             (Some(block), None) => {
                 let (new_blocks, old_value) =

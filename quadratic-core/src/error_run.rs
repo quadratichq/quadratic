@@ -302,7 +302,7 @@ impl From<RunErrorMsg> for anyhow::Error {
 /// than `.ok_or(internal_error_value!(...))`.
 macro_rules! internal_error_value {
     // Don't allocate a new String for &'static str literals.
-    ( $msg:expr ) => {{
+    ( $msg:expr_2021 ) => {{
         // Panic in a debug build (for stack trace).
         #[cfg(all(debug_assertions, not(target_arch = "wasm32")))]
         #[allow(unused)]
@@ -318,7 +318,7 @@ macro_rules! internal_error_value {
         ret
     }};
     // Automatically format!() arguments.
-    ( $( $args:expr ),+ $(,)? ) => {{
+    ( $( $args:expr_2021 ),+ $(,)? ) => {{
         // Panic in a debug build (for stack trace).
         #[cfg(all(debug_assertions, not(target_arch = "wasm32")))]
         #[allow(unused)]
@@ -339,7 +339,7 @@ macro_rules! internal_error_value {
 /// Note that this macro actually returns the error from the caller; it does not
 /// just provide the value.
 macro_rules! internal_error {
-    ( $( $args:expr ),+ $(,)? ) => {
+    ( $( $args:expr_2021 ),+ $(,)? ) => {
         return Err(internal_error_value!($( $args ),+))
     };
 }

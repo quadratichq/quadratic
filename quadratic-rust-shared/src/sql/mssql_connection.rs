@@ -231,7 +231,7 @@ ORDER BY
     }
 
     fn to_arrow(row: &tiberius::Row, _: &tiberius::Column, index: usize) -> ArrowType {
-        if let Some((_, column_data)) = row.cells().nth(index) {
+        match row.cells().nth(index) { Some((_, column_data)) => {
             match column_data {
                 ColumnData::Bit(_) => {
                     convert_mssql_type::<bool, _>(column_data, ArrowType::Boolean)
@@ -282,9 +282,9 @@ ORDER BY
                     })
                 }
             }
-        } else {
+        } _ => {
             ArrowType::Unsupported
-        }
+        }}
     }
 }
 

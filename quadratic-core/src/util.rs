@@ -75,11 +75,11 @@ pub(crate) mod indexmap_serde {
         Ok(HashMap::<String, V>::deserialize(d)?
             .into_iter()
             .filter_map(|(k, v)| {
-                if let Ok(key) = serde_json::from_str(&k) {
+                match serde_json::from_str(&k) { Ok(key) => {
                     Some((key, v))
-                } else {
+                } _ => {
                     None
-                }
+                }}
             })
             .collect())
     }
@@ -131,7 +131,7 @@ pub fn join_with_conjunction(conjunction: &str, items: &[impl fmt::Display]) -> 
 
 /// Implements `std::format::Display` for a type using arguments to `write!()`.
 macro_rules! impl_display {
-    ( for $typename:ty, $( $fmt_arg:expr ),+ $(,)? ) => {
+    ( for $typename:ty, $( $fmt_arg:expr_2021 ),+ $(,)? ) => {
         impl std::fmt::Display for $typename {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 write!(f, $( $fmt_arg ),+ )

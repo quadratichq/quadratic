@@ -10,23 +10,23 @@ impl GridController {
     /// Returns a list of values for a List validation
     #[wasm_bindgen(js_name = "getValidationList")]
     pub fn js_validation_list(&self, sheet_id: String, x: i64, y: i64) -> Result<JsValue, JsValue> {
-        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
+        match SheetId::from_str(&sheet_id) { Ok(sheet_id) => {
             Ok(serde_wasm_bindgen::to_value(
                 &self.validation_list(sheet_id, x, y),
             )?)
-        } else {
+        } _ => {
             Err(JsValue::from_str("Invalid sheet id"))
-        }
+        }}
     }
 
     /// Returns a stringified version of Vec<Validation>
     #[wasm_bindgen(js_name = "getValidations")]
     pub fn js_validations(&self, sheet_id: String) -> Result<JsValue, JsValue> {
-        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
+        match SheetId::from_str(&sheet_id) { Ok(sheet_id) => {
             Ok(serde_wasm_bindgen::to_value(&self.validations(sheet_id))?)
-        } else {
+        } _ => {
             Err(JsValue::from_str("Invalid sheet id"))
-        }
+        }}
     }
 
     /// Creates or updates a validation and applies it to a selection
@@ -76,16 +76,16 @@ impl GridController {
         sheet_id: String,
         pos: String,
     ) -> Result<JsValue, JsValue> {
-        if let (Ok(sheet_id), Ok(pos)) = (
+        match (
             SheetId::from_str(&sheet_id),
             serde_json::from_str::<Pos>(&pos),
-        ) {
+        ) { (Ok(sheet_id), Ok(pos)) => {
             Ok(serde_wasm_bindgen::to_value(
                 &self.get_validation_from_pos(sheet_id, pos),
             )?)
-        } else {
+        } _ => {
             Err(JsValue::from_str("Invalid sheet id"))
-        }
+        }}
     }
 
     /// Validates user input against any validation rules.
@@ -96,15 +96,15 @@ impl GridController {
         pos: String,
         value: String,
     ) -> Result<JsValue, JsValue> {
-        if let (Ok(sheet_id), Ok(pos)) = (
+        match (
             SheetId::from_str(&sheet_id),
             serde_json::from_str::<Pos>(&pos),
-        ) {
+        ) { (Ok(sheet_id), Ok(pos)) => {
             Ok(serde_wasm_bindgen::to_value(
                 &self.validate_input(sheet_id, pos, &value),
             )?)
-        } else {
+        } _ => {
             Err(JsValue::from_str("Invalid sheet id"))
-        }
+        }}
     }
 }

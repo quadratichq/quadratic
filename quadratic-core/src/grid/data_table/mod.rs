@@ -426,7 +426,7 @@ impl DataTable {
     /// Returns `None` if the DataTableKind is not CodeRun.
     pub fn code_run_mut(&mut self) -> Option<&mut CodeRun> {
         match &mut self.kind {
-            DataTableKind::CodeRun(ref mut code_run) => Some(code_run),
+            DataTableKind::CodeRun(code_run) => Some(code_run),
             _ => None,
         }
     }
@@ -550,28 +550,28 @@ impl DataTable {
 
     /// Returns true if the data table is an html.
     pub fn is_html(&self) -> bool {
-        if let Value::Single(value) = &self.value {
+        match &self.value { Value::Single(value) => {
             matches!(value, CellValue::Html(_))
-        } else {
+        } _ => {
             false
-        }
+        }}
     }
 
     /// Returns true if the data table is an image.
     pub fn is_image(&self) -> bool {
-        if let Value::Single(value) = &self.value {
+        match &self.value { Value::Single(value) => {
             matches!(value, CellValue::Image(_))
-        } else {
+        } _ => {
             false
-        }
+        }}
     }
 
     pub fn is_html_or_image(&self) -> bool {
-        if let Value::Single(value) = &self.value {
+        match &self.value { Value::Single(value) => {
             matches!(value, CellValue::Html(_) | CellValue::Image(_))
-        } else {
+        } _ => {
             false
-        }
+        }}
     }
 
     /// returns a SheetRect for the output size of a code cell (defaults to 1x1)
@@ -728,12 +728,12 @@ impl DataTable {
 
     /// Returns true if the data table is a pandas DataFrame
     pub fn is_dataframe(&self) -> bool {
-        if let DataTableKind::CodeRun(code_run) = &self.kind {
+        match &self.kind { DataTableKind::CodeRun(code_run) => {
             code_run.output_type == Some("DataFrame".into())
                 || code_run.output_type == Some("Series".into())
-        } else {
+        } _ => {
             false
-        }
+        }}
     }
 }
 

@@ -65,11 +65,11 @@ macro_rules! jsexpr {
     }};
 
     // Function call with a specific number of arguments
-    (@ call_internal ($recv:expr) $func:ident($arg1:tt $(, $($rest:tt)*)?)) => {{
+    (@ call_internal ($recv:expr_2021) $func:ident($arg1:tt $(, $($rest:tt)*)?)) => {{
         let bound_function = $func.bind1(&$recv, &jsexpr!($arg1));
         jsexpr!(@ call_internal ($recv) bound_function($($($rest)*)?))
     }};
-    (@ call_internal ($recv:expr) $func:ident()) => {{
+    (@ call_internal ($recv:expr_2021) $func:ident()) => {{
         $func.call0(&$recv)?
     }};
 }

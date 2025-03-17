@@ -436,7 +436,7 @@ pub(crate) fn export_run_error_msg(run_error_msg: RunErrorMsg) -> current::RunEr
 }
 
 pub(crate) fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
-    let error = if let Some(error) = code_run.error {
+    let error = match code_run.error { Some(error) => {
         Some(current::RunErrorSchema {
             span: error.span.map(|span| current::SpanSchema {
                 start: span.start,
@@ -444,9 +444,9 @@ pub(crate) fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
             }),
             msg: export_run_error_msg(error.msg),
         })
-    } else {
+    } _ => {
         None
-    };
+    }};
 
     current::CodeRunSchema {
         std_out: code_run.std_out,

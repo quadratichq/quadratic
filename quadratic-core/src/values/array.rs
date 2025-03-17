@@ -19,7 +19,7 @@ use crate::{CodeResult, Pos, RunError, RunErrorMsg, Span};
 
 #[macro_export]
 macro_rules! array {
-    ($( $( $value:expr ),+ );+ $(;)?) => {{
+    ($( $( $value:expr_2021 ),+ );+ $(;)?) => {{
         let values = [$( [$( $crate::CellValue::from($value) ),+] ),+];
         let height = values.len();
         let width = values[0].len(); // This will generate a compile-time error if there are no values.

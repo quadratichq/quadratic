@@ -22,11 +22,11 @@ impl Sheet {
     /// Returns the old value if it was set.
     #[cfg(test)]
     pub fn set_data_table(&mut self, pos: Pos, data_table: Option<DataTable>) -> Option<DataTable> {
-        if let Some(data_table) = data_table {
+        match data_table { Some(data_table) => {
             self.data_tables.insert_sorted(pos, data_table).1
-        } else {
+        } _ => {
             self.data_tables.shift_remove(&pos)
-        }
+        }}
     }
 
     /// Returns a DataTable at a Pos

@@ -121,7 +121,7 @@ impl FormulaFnArgs {
         })
     }
     /// Takes the rest of the arguments and iterates over them.
-    pub fn take_rest(&mut self) -> impl Iterator<Item = Spanned<Value>> {
+    pub fn take_rest(&mut self) -> impl Iterator<Item = Spanned<Value>> + use<> {
         std::mem::take(&mut self.values).into_iter()
     }
 
@@ -140,15 +140,15 @@ impl FormulaFnArgs {
 
     /// Returns an error if there are any arguments that have not been taken.
     pub fn error_if_more_args(&self) -> CodeResult<()> {
-        if let Some(next_arg) = self.values.front() {
+        match self.values.front() { Some(next_arg) => {
             Err(RunErrorMsg::TooManyArguments {
                 func_name: self.func_name.into(),
                 max_arg_count: self.args_popped,
             }
             .with_span(next_arg.span))
-        } else {
+        } _ => {
             Ok(())
-        }
+        }}
     }
 }
 

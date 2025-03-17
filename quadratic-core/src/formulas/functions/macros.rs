@@ -143,11 +143,11 @@ macro_rules! formula_fn {
     };
 
     (
-        #[doc = $doc:expr]
-        $(#[doc = $additional_doc:expr])*
-        $(#[include_args_in_completion($include_args_in_completion:expr)])?
+        #[doc = $doc:expr_2021]
+        $(#[doc = $additional_doc:expr_2021])*
+        $(#[include_args_in_completion($include_args_in_completion:expr_2021)])?
         $(#[name = $name_str:literal])?
-        #[examples($($example_str:expr),+ $(,)?)]
+        #[examples($($example_str:expr_2021),+ $(,)?)]
         $(#[$($attr:tt)*])*
         fn $fn_name:ident( $($params:tt)* ) { $($body:tt)* }
     ) => {{
@@ -187,7 +187,7 @@ macro_rules! formula_fn_eval {
 /// Constructs the body of the `eval` function for a `FormulaFunction`.
 macro_rules! formula_fn_eval_inner {
     (
-        $ctx:ident, $args:ident, $body:expr;
+        $ctx:ident, $args:ident, $body:expr_2021;
         #[zip_map]
         $($params:tt)*
     ) => {{
@@ -220,7 +220,7 @@ macro_rules! formula_fn_eval_inner {
     }};
 
     (
-        $ctx:ident, $args:ident, $body:expr;
+        $ctx:ident, $args:ident, $body:expr_2021;
         $($params:tt)*
     ) => {{
         // `formula_fn_args!` may borrow `$ctx` for `$body`, so we need
@@ -415,7 +415,7 @@ macro_rules! formula_fn_arg {
 /// The spaces inside `< ... >` in this macro are often necessary; it's
 /// important that Rust doesn't see `>>` and think it's a single token.
 macro_rules! formula_fn_convert_arg {
-    ($value:expr, $($arg_type:tt)*) => {
+    ($value:expr_2021, $($arg_type:tt)*) => {
         formula_fn_convert_arg!(@retokenize ($value,) $($arg_type)*)
     };
 
@@ -432,44 +432,44 @@ macro_rules! formula_fn_convert_arg {
     };
 
     // No conversion
-    (@convert $value:expr, Value -> Spanned< Value > $(>)?) => {
+    (@convert $value:expr_2021, Value -> Spanned< Value > $(>)?) => {
         $value
     };
-    (@convert $value:expr, CellValue -> Spanned< CellValue > $(>)?) => {
+    (@convert $value:expr_2021, CellValue -> Spanned< CellValue > $(>)?) => {
         $value
     };
-    (@convert $value:expr, CellValue -> Spanned< Value > $(>)?) => {
+    (@convert $value:expr_2021, CellValue -> Spanned< Value > $(>)?) => {
         compile_error!("unnecessary conversion from `CellValue` to `Value`; \
                         change the argument to have type `CellValue`")
     };
 
     // Iterate
-    (@convert $value:expr, Value -> Iter< Spanned< CellValue > > $(>)*) => {
+    (@convert $value:expr_2021, Value -> Iter< Spanned< CellValue > > $(>)*) => {
         $value.into_iter_cell_values()
     };
-    (@convert $value:expr, Value -> Iter< Spanned< $inner_type:ty > > $(>)*) => {
+    (@convert $value:expr_2021, Value -> Iter< Spanned< $inner_type:ty > > $(>)*) => {
         $value.into_iter::<$inner_type>()
     };
-    (@convert $value:expr, Value -> Iter< $($inner_type:tt)* $(>)*) => {
+    (@convert $value:expr_2021, Value -> Iter< $($inner_type:tt)* $(>)*) => {
         formula_fn_convert_arg!(@convert $value, Iter< Spanned< $inner_type > >).unspanned();
     };
 
     // Generic conversion
-    (@convert $value:expr, Value -> Spanned< CellValue > $(>)?) => {
+    (@convert $value:expr_2021, Value -> Spanned< CellValue > $(>)?) => {
         $value.into_cell_value()?
     };
-    (@convert $value:expr, Value -> Spanned< $arg_type:ty > $(>)?) => {
+    (@convert $value:expr_2021, Value -> Spanned< $arg_type:ty > $(>)?) => {
         $value.try_coerce::<$arg_type>()?
     };
-    (@convert $value:expr, CellValue -> Spanned< $arg_type:ty > $(>)?) => {
+    (@convert $value:expr_2021, CellValue -> Spanned< $arg_type:ty > $(>)?) => {
         $value.try_coerce::<$arg_type>()?
     };
 
     // Unspanned conversion
-    (@convert $value:expr, $orig:tt -> Spanned< $($arg_type:tt)*) => {
+    (@convert $value:expr_2021, $orig:tt -> Spanned< $($arg_type:tt)*) => {
         compile_error!(concat!("invalid type: ", stringify!($($arg_type)*)))
     };
-    (@convert $value:expr, $orig:tt -> $($arg_type:tt)*) => {
+    (@convert $value:expr_2021, $orig:tt -> $($arg_type:tt)*) => {
         formula_fn_convert_arg!(@convert $value, $orig -> Spanned< $($arg_type)* >).inner
     };
 }

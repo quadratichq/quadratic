@@ -67,14 +67,14 @@ impl State {
 
         tracing::info!("Removing connection_id {id} from room {file_id}");
 
-        if let Err(error) = self.leave_room(*file_id, session_id).await {
+        match self.leave_room(*file_id, session_id).await { Err(error) => {
             tracing::warn!(
                 "Error removing connection_id {id} from room {file_id}: {:?}",
                 error
             );
-        } else {
+        } _ => {
             removed_from_room = Some(*file_id);
-        }
+        }}
 
         self.connections.lock().await.remove(id);
         Ok(removed_from_room)

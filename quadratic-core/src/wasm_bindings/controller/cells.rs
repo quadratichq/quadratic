@@ -41,13 +41,13 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let values: Vec<Vec<String>> = serde_wasm_bindgen::from_value(values)
             .map_err(|e| JsValue::from_str(&format!("Failed to parse values: {}", e)))?;
-        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
+        match SheetId::from_str(&sheet_id) { Ok(sheet_id) => {
             self.set_cell_values(SheetPos::new(sheet_id, x as i64, y as i64), values, cursor);
 
             Ok(())
-        } else {
+        } _ => {
             Err(JsValue::from_str("Invalid sheet id"))
-        }
+        }}
     }
 
     /// changes the decimal places

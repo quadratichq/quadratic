@@ -135,7 +135,7 @@ mod test {
 
         let ops = gc.move_sheet_operations(sheet_ids[0], Some(sheet_ids[1]));
         assert_eq!(ops.len(), 1);
-        if let Operation::ReorderSheet { target, order } = &ops[0] {
+        match &ops[0] { Operation::ReorderSheet { target, order } => {
             assert_eq!(target, &sheet_ids[0]);
             let key = key_between(
                 &Some(gc.sheet_index(0).order.clone()),
@@ -143,31 +143,31 @@ mod test {
             )
             .unwrap();
             assert_eq!(order, &key);
-        } else {
+        } _ => {
             panic!("wrong operation type");
-        }
+        }}
 
         // 2, 1, 3
         let ops = gc.move_sheet_operations(sheet_ids[2], Some(sheet_ids[0]));
         assert_eq!(ops.len(), 1);
-        if let Operation::ReorderSheet { target, order } = &ops[0] {
+        match &ops[0] { Operation::ReorderSheet { target, order } => {
             assert_eq!(target, &sheet_ids[2]);
             let key = key_between(&None, &Some(gc.sheet_index(0).order.clone())).unwrap();
             assert_eq!(order, &key);
-        } else {
+        } _ => {
             panic!("wrong operation type");
-        }
+        }}
 
         // 1, 3, 2
         let ops = gc.move_sheet_operations(sheet_ids[1], None);
         assert_eq!(ops.len(), 1);
-        if let Operation::ReorderSheet { target, order } = &ops[0] {
+        match &ops[0] { Operation::ReorderSheet { target, order } => {
             assert_eq!(target, &sheet_ids[1]);
             let key = key_between(&Some(gc.sheet_index(2).order.clone()), &None).unwrap();
             assert_eq!(order, &key);
-        } else {
+        } _ => {
             panic!("wrong operation type");
-        }
+        }}
     }
 
     #[test]

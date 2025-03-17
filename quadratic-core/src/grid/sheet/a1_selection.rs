@@ -112,7 +112,7 @@ impl Sheet {
         selection: &A1Selection,
         skip_code_runs: bool,
     ) -> Vec<(Pos, &CellValue)> {
-        if let Some(map) = self.selection_values(selection, None, skip_code_runs, false) {
+        match self.selection_values(selection, None, skip_code_runs, false) { Some(map) => {
             let mut vec: Vec<_> = map.iter().map(|(pos, value)| (*pos, *value)).collect();
             vec.sort_by(|(a, _), (b, _)| {
                 if a.y < b.y {
@@ -124,9 +124,9 @@ impl Sheet {
                 a.x.cmp(&b.x)
             });
             vec
-        } else {
+        } _ => {
             vec![]
-        }
+        }}
     }
 
     /// Converts a table ref to a rect.

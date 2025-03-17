@@ -14,7 +14,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             url: $url:literal;
             inverse_url: $inv_url:literal;
             $(
-                $full_name:literal($func_name:ident = $f:expr, $inv_func_name:ident = $inv_f:expr $(, $inv_range:literal)?)
+                $full_name:literal($func_name:ident = $f:expr_2021, $inv_func_name:ident = $inv_f:expr_2021 $(, $inv_range:literal)?)
             );+ $(;)?
         ) => {
             vec![

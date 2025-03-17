@@ -173,11 +173,11 @@ impl GridController {
         // this is the normal case where we receive the next transaction in sequence
         if sequence_num == self.transactions.last_sequence_num + 1 {
             // first check if the received transaction is one of ours
-            if let Some(index) = self
+            match self
                 .transactions
                 .unsaved_transactions
                 .find_index(transaction.id)
-            {
+            { Some(index) => {
                 // if it's our first unsaved_transaction, then there's nothing more to do except delete it and mark it as sent
                 if index == 0 {
                     self.transactions.unsaved_transactions.remove(index);
@@ -193,7 +193,7 @@ impl GridController {
                     self.apply_out_of_order_transactions(transaction, sequence_num);
                     self.reapply_unsaved_transactions(transaction);
                 }
-            } else {
+            } _ => {
                 // If the transaction is not one of ours, then we just apply the transaction after rolling back any unsaved transactions
                 self.rollback_unsaved_transactions(transaction);
                 self.start_transaction(transaction);
@@ -206,7 +206,7 @@ impl GridController {
                 if self.transactions.unsaved_transactions.is_empty() {
                     transaction.generate_thumbnail = false;
                 }
-            }
+            }}
         } else if sequence_num > self.transactions.last_sequence_num {
             // If we receive an unexpected later transaction then we just hold on to it in a sorted list.
             // We could apply these transactions as they come in, but only if multiplayer also sent all undo
@@ -241,7 +241,7 @@ impl GridController {
             let operations =
                 Transaction::decompress_and_deserialize::<Vec<Operation>>(&t.operations);
 
-            if let Ok(operations) = operations {
+            match operations { Ok(operations) => {
                 let mut transaction = PendingTransaction {
                     id: t.id,
                     source: TransactionSource::Multiplayer,
@@ -252,11 +252,11 @@ impl GridController {
 
                 self.client_apply_transaction(&mut transaction, t.sequence_num);
                 results.add_updates_from_transaction(transaction);
-            } else {
+            } _ => {
                 dbgjs!(
                     "Unable to decompress and deserialize operations in received_transactions()"
                 );
-            }
+            }}
         });
         self.reapply_unsaved_transactions(&mut results);
         results.complete = true;
@@ -270,22 +270,22 @@ impl GridController {
         unsaved_transaction: UnsavedTransaction,
     ) {
         // first check if we've already applied this transaction
-        if let Some(transaction) = self.transactions.unsaved_transactions.find(transaction_id) {
+        match self.transactions.unsaved_transactions.find(transaction_id) { Some(transaction) => {
             // send it to the server if we've not successfully sent it to the server
             if cfg!(target_family = "wasm") && !transaction.sent_to_server {
                 let compressed_ops =
                     Transaction::serialize_and_compress(&unsaved_transaction.forward.operations);
 
-                if let Ok(compressed_ops) = compressed_ops {
+                match compressed_ops { Ok(compressed_ops) => {
                     crate::wasm_bindings::js::jsSendTransaction(
                         transaction_id.to_string(),
                         compressed_ops,
                     );
-                } else {
+                } _ => {
                     dbgjs!("Unable to serialize and compress operations in apply_offline_unsaved_transaction()");
-                }
+                }}
             }
-        } else {
+        } _ => {
             let mut transaction = PendingTransaction {
                 id: transaction_id,
                 source: TransactionSource::Unsaved,
@@ -297,7 +297,7 @@ impl GridController {
 
             self.start_transaction(&mut transaction);
             self.finalize_transaction(transaction);
-        }
+        }}
     }
 }
 

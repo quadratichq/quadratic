@@ -142,7 +142,7 @@ async fn ws_handler(
         // validate the JWT or ignore for anonymous users if it doesn't exist
         let result = async {
             let cookie = cookie.ok_or_else(|| auth_error("No cookie found"))?;
-            if let Some(token) = cookie.get("jwt") {
+            match cookie.get("jwt") { Some(token) => {
                 let jwks: jsonwebtoken::jwk::JwkSet = state
                     .settings
                     .jwks
@@ -154,10 +154,10 @@ async fn ws_handler(
                 jwt = Some(token.to_owned());
 
                 Ok::<_, MpError>(())
-            } else {
+            } _ => {
                 // this is for anonymous users
                 Ok::<_, MpError>(())
-            }
+            }}
         }
         .await;
 

@@ -24,7 +24,7 @@ use crate::state::State;
 /// Utility to test a connection over various databases.
 #[macro_export]
 macro_rules! test_connection {
-    ( $get_connection:expr ) => {{
+    ( $get_connection:expr_2021 ) => {{
         let connection_id = Uuid::new_v4();
         let state = new_state().await;
         let claims = get_claims();
@@ -40,7 +40,7 @@ macro_rules! test_connection {
 /// Convert a number into a vector of bytes.
 #[macro_export]
 macro_rules! num_vec {
-    ( $value:expr ) => {{
+    ( $value:expr_2021 ) => {{
         $value.to_le_bytes().to_vec()
     }};
 }
@@ -74,10 +74,9 @@ pub(crate) fn get_claims() -> Claims {
 }
 
 pub(crate) async fn response_bytes(response: Response) -> Bytes {
-    response
+    StreamExt::into_future(response
         .into_body()
-        .into_data_stream()
-        .into_future()
+        .into_data_stream())
         .await
         .0
         .unwrap_or(Ok(Bytes::new()))

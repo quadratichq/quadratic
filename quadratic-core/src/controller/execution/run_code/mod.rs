@@ -139,7 +139,7 @@ impl GridController {
             }
         }
 
-        let old_data_table = if let Some(new_data_table) = &new_data_table {
+        let old_data_table = match &new_data_table { Some(new_data_table) => {
             let (old_index, old_data_table) =
                 sheet.data_tables.insert_sorted(pos, new_data_table.clone());
 
@@ -152,9 +152,9 @@ impl GridController {
 
             sheet.data_tables.move_index(old_index, index);
             old_data_table
-        } else {
+        } _ => {
             sheet.data_tables.shift_remove(&pos)
-        };
+        }};
 
         if old_data_table == new_data_table {
             return;
@@ -444,11 +444,11 @@ impl GridController {
             if let Some(array_output) = js_code_result.output_array {
                 let (array, ops) = Array::from_string_list(start.into(), sheet, array_output);
                 transaction.reverse_operations.extend(ops);
-                if let Some(array) = array {
+                match array { Some(array) => {
                     Value::Array(array)
-                } else {
+                } _ => {
                     Value::Single("".into())
-                }
+                }}
             } else if let Some(output_value) = js_code_result.output_value {
                 let (cell_value, ops) =
                     CellValue::from_js(&output_value[0], &output_value[1], start.into(), sheet)
