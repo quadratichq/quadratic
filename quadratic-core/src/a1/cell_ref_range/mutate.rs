@@ -64,7 +64,7 @@ mod tests {
             .adjust(RefAdjust::new_translate(sheet_id, 1, 2))
             .unwrap();
         assert_eq!(translated.to_string(), "B3");
-        assert_eq!(translated, CellRefRange::test_a1("A1"));
+        assert_eq!(translated, CellRefRange::test_a1("B3"));
 
         // Test range translation
         let range = CellRefRange::test_a1("A1:B2");
@@ -72,7 +72,7 @@ mod tests {
             .adjust(RefAdjust::new_translate(sheet_id, 2, 1))
             .unwrap();
         assert_eq!(translated.to_string(), "C2:D3");
-        assert_eq!(translated, CellRefRange::test_a1("A1:B2"));
+        assert_eq!(translated, CellRefRange::test_a1("C2:D3"));
 
         // Test column range translation
         let col_range = CellRefRange::test_a1("A:B");
@@ -80,7 +80,7 @@ mod tests {
             .adjust(RefAdjust::new_translate(sheet_id, 1, 0))
             .unwrap();
         assert_eq!(translated.to_string(), "B:C");
-        assert_eq!(translated, CellRefRange::test_a1("A:B"));
+        assert_eq!(translated, CellRefRange::test_a1("B:C"));
 
         // Test row range translation
         let row_range = CellRefRange::test_a1("1:2");
@@ -88,7 +88,7 @@ mod tests {
             .adjust(RefAdjust::new_translate(sheet_id, 0, 2))
             .unwrap();
         assert_eq!(translated.to_string(), "3:4");
-        assert_eq!(translated, CellRefRange::test_a1("1:2"));
+        assert_eq!(translated, CellRefRange::test_a1("3:4"));
 
         // Test negative translation capping
         let cell = CellRefRange::test_a1("A1");
@@ -117,11 +117,11 @@ mod tests {
         assert_eq!(res.unwrap().to_string(), "B3");
 
         let range = CellRefRange::test_a1("B3");
-        let res = range.adjust(RefAdjust::new_insert_column(sheet_id, 1));
+        let res = range.adjust(RefAdjust::new_delete_column(sheet_id, 1));
         assert_eq!(res.unwrap().to_string(), "A3");
 
         let range = CellRefRange::test_a1("B3");
-        let res = range.adjust(RefAdjust::new_insert_row(sheet_id, 1));
+        let res = range.adjust(RefAdjust::new_delete_row(sheet_id, 1));
         assert_eq!(res.unwrap().to_string(), "B2");
     }
 }

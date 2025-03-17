@@ -22,9 +22,9 @@ impl RefRangeBounds {
     pub fn saturating_adjust(self, adjust: RefAdjust) -> Option<Self> {
         // If both X coordinates or both Y coordinates end up out of range then
         // the whole range becomes empty.
-        if self.start.col.adjust_x(adjust).is_err() && self.end.col.adjust_x(adjust).is_err()
-            || self.start.row.adjust_y(adjust).is_err() && self.end.row.adjust_y(adjust).is_err()
-        {
+        let (x1, y1) = self.start.try_adjust_xy(adjust);
+        let (x2, y2) = self.end.try_adjust_xy(adjust);
+        if x1.is_err() && x2.is_err() || y1.is_err() && y2.is_err() {
             return None;
         }
 
@@ -93,17 +93,17 @@ mod tests {
         assert_eq!(range.adjust(adj).unwrap().to_string(), "A1:C3");
         assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "A1:C3");
 
-        // Test that * remains unchanged
+        // Ideally * remains unchanged, but that's impossible
         let range = RefRangeBounds::test_a1("*");
         let adj = RefAdjust::new_translate(sheet_id, 1, 1);
-        assert_eq!(range.adjust(adj).unwrap().to_string(), "*");
-        assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "*");
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "B2:");
+        assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "B2:");
 
         // Test negative translation capping
-        let range = RefRangeBounds::test_a1("A12");
+        let range = RefRangeBounds::test_a1("A12:Z12");
         let adj = RefAdjust::new_translate(sheet_id, -10, -10);
         range.adjust(adj).unwrap_err();
-        assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "A2");
+        assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "A2:P2");
     }
 
     #[test]

@@ -240,15 +240,15 @@ mod tests {
 
     #[test]
     fn adjust_code_cells_formula() {
-        let mut gc = GridController::test();
+        let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
         gc.add_sheet(Some("Other".to_string()));
-        gc.set_cell_value(SheetPos::new(sheet_id, 2, 1), "1".into(), None);
-        gc.set_cell_value(SheetPos::new(sheet_id, 2, 2), "2".into(), None);
+        gc.set_cell_value(SheetPos::new(sheet_id, 2, 16), "1".into(), None);
+        gc.set_cell_value(SheetPos::new(sheet_id, 2, 17), "2".into(), None);
         gc.set_code_cell(
             SheetPos::new(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
-            "B1 + B2".into(),
+            "B$16 + $B17".into(),
             None,
         );
         gc.set_code_cell(
@@ -264,10 +264,6 @@ mod tests {
             "3".to_string()
         );
 
-        let mut transaction = PendingTransaction::default();
-        gc.adjust_code_cell_references(&mut transaction, RefAdjust::new_insert_row(sheet_id, 2));
-        gc.adjust_code_cell_references(&mut transaction, RefAdjust::new_insert_column(sheet_id, 5));
-
         let single_formula = |formula_str: &str| {
             CellValues::from(CellValue::Code(CodeCellValue {
                 language: CodeCellLanguage::Formula,
@@ -275,37 +271,47 @@ mod tests {
             }))
         };
 
+        let mut transaction = PendingTransaction::default();
+        gc.adjust_code_cell_references(&mut transaction, RefAdjust::new_insert_row(sheet_id, 2));
         assert_eq!(
             &transaction.operations,
             &[
-                // first formula, x += 2
+                // first formula, y += 1 for y >= 2
                 Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 1, 1),
-                    values: single_formula("B1 + $B3"),
+                    values: single_formula("B$17 + $B18"),
                 },
                 Operation::ComputeCode {
                     sheet_pos: SheetPos::new(sheet_id, 1, 1)
                 },
-                // second formula, x += 2
+                // second formula, y += 1 for y >= 2
                 Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 1, 2),
-                    values: single_formula("F3+Other!F1 - Nonexistent!F1"),
+                    values: single_formula("F1+Other!F1 - Nonexistent!F1"),
                 },
                 Operation::ComputeCode {
                     sheet_pos: SheetPos::new(sheet_id, 1, 2)
                 },
-                // first formula, y += 5
+            ]
+        );
+
+        let mut transaction = PendingTransaction::default();
+        gc.adjust_code_cell_references(&mut transaction, RefAdjust::new_insert_column(sheet_id, 5));
+        assert_eq!(
+            &transaction.operations,
+            &[
+                // first formula, x += 1 for x >= 5
                 Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 1, 1),
-                    values: single_formula("B6 + $B3"),
+                    values: single_formula("B$16 + $B17"),
                 },
                 Operation::ComputeCode {
                     sheet_pos: SheetPos::new(sheet_id, 1, 1)
                 },
-                // second formula, y += 5
+                // second formula, x += 1 for x >= 5
                 Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 1, 2),
-                    values: single_formula("F3+Other!F1 - Nonexistent!F1"),
+                    values: single_formula("G1+Other!F1 - Nonexistent!F1"),
                 },
                 Operation::ComputeCode {
                     sheet_pos: SheetPos::new(sheet_id, 1, 2)

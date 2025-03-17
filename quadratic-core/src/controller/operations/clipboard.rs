@@ -663,7 +663,8 @@ impl GridController {
 
                 let context = self.a1_context();
                 let adjust = RefAdjust {
-                    sheet_id: selection.sheet_id,
+                    sheet_id: clipboard.origin.sheet_id,
+                    new_sheet_id: Some(selection.sheet_id),
                     relative_only: true,
                     dx: insert_at.x - clipboard.origin.x,
                     dy: insert_at.y - clipboard.origin.y,

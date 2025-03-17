@@ -74,10 +74,11 @@ impl CodeCellValue {
             if self.language == CodeCellLanguage::Formula {
                 self.code = crate::formulas::adjust_references(&self.code, a1_context, pos, adjust);
             } else if self.language.has_q_cells() {
+                let new_sheet_id = adjust.new_sheet_id.unwrap_or(pos.sheet_id);
                 self.replace_q_cells_a1_selection(pos.sheet_id, a1_context, |a1_selection| {
                     Ok(a1_selection
                         .adjust(adjust)?
-                        .to_string(Some(pos.sheet_id), a1_context))
+                        .to_string(Some(new_sheet_id), a1_context))
                 });
             }
         }
@@ -157,6 +158,10 @@ impl CodeCellValue {
 pub struct RefAdjust {
     /// Only references to this sheet will be adjusted.
     pub sheet_id: SheetId,
+    /// New sheet ID to use for references to the current sheet, if different
+    /// from `sheet_id`. If this is specified, then the code string is assumed
+    /// to be existing on this sheet, so its sheet name may be omitted.
+    pub new_sheet_id: Option<SheetId>,
 
     /// Whether to translate only relative references.
     ///
@@ -190,6 +195,7 @@ impl RefAdjust {
     pub fn new_no_op(sheet_id: SheetId) -> Self {
         Self {
             sheet_id,
+            new_sheet_id: None,
             relative_only: false,
             dx: 0,
             dy: 0,
@@ -418,7 +424,7 @@ mod tests {
         };
         code.adjust_references(&a1_context, pos, translate(1, 1));
         assert_eq!(
-            code.code, r#"x = q.cells("'Sheet1'!A1:B2") + q.cells("'Sheet1 (1)'!D4:E5")"#,
+            code.code, r#"x = q.cells("A1:B2") + q.cells("'Sheet1 (1)'!D4:E5")"#,
             "Multiple references failed"
         );
 
@@ -480,10 +486,10 @@ mod tests {
         // Formulas should get translated too
         let mut code = CodeCellValue {
             language: CodeCellLanguage::Formula,
-            code: r#"A1"#.to_string(),
+            code: r#"A1 + 'Sheet1 (1)'!A1"#.to_string(),
         };
         code.adjust_references(&a1_context, pos, translate(1, 1));
-        assert_eq!(code.code, r#"B2"#, "Formula failed");
+        assert_eq!(code.code, r#"A1 + 'Sheet1 (1)'!B2"#, "Formula failed");
 
         // Python first_row_header=True
         let mut code = CodeCellValue {
@@ -495,6 +501,36 @@ mod tests {
             code.code, r#"q.cells("'Sheet1 (1)'!B2:C3", first_row_header=True)"#,
             "first_row_header=True failed"
         );
+    }
+
+    #[test]
+    fn test_update_cell_references_with_sheet_id() {
+        let id1 = SheetId::new();
+        let id2 = SheetId::new();
+        let id3 = SheetId::new();
+        let a1_context = A1Context::test(&[("Sheet1", id1), ("Sheet2", id2), ("Sheet3", id3)], &[]);
+
+        let mut code = CodeCellValue {
+            language: CodeCellLanguage::Formula,
+            code: r#"A1 + Sheet1!A1 + Sheet2!A1 + Sheet3!A1"#.to_string(),
+        };
+
+        let pos = SheetPos {
+            x: 2,
+            y: 2,
+            sheet_id: id1, // starting on Sheet1
+        };
+        let adjust = RefAdjust {
+            sheet_id: id2,           // update Sheet2 references ...
+            new_sheet_id: Some(id3), // ... and make them Sheet3
+            relative_only: false,
+            dx: 5,
+            dy: 3,
+            x_start: 0,
+            y_start: 0,
+        };
+        code.adjust_references(&a1_context, pos, adjust);
+        assert_eq!(code.code, r#"Sheet1!A1 + Sheet1!A1 + F4 + A1"#);
     }
 
     #[test]

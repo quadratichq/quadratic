@@ -92,7 +92,7 @@ impl A1Selection {
     pub fn adjust(self, adjust: RefAdjust) -> Result<Self, RefError> {
         if self.sheet_id == adjust.sheet_id {
             Ok(Self {
-                sheet_id: self.sheet_id,
+                sheet_id: adjust.new_sheet_id.unwrap_or(self.sheet_id),
                 cursor: self.cursor.saturating_adjust(adjust),
                 ranges: self
                     .ranges
@@ -110,7 +110,7 @@ impl A1Selection {
     pub fn saturating_adjust(self, adjust: RefAdjust) -> Option<Self> {
         if self.sheet_id == adjust.sheet_id {
             Some(Self {
-                sheet_id: self.sheet_id,
+                sheet_id: adjust.new_sheet_id.unwrap_or(self.sheet_id),
                 cursor: self.cursor.saturating_adjust(adjust),
                 ranges: self
                     .ranges
@@ -497,11 +497,11 @@ mod tests {
         assert_eq!(result.unwrap().to_string(Some(sheet_id), &a1_context), "B3");
 
         let selection = A1Selection::test_a1("B3");
-        let result = selection.adjust(RefAdjust::new_insert_column(sheet_id, 1));
+        let result = selection.adjust(RefAdjust::new_delete_column(sheet_id, 1));
         assert_eq!(result.unwrap().to_string(Some(sheet_id), &a1_context), "A3");
 
         let selection = A1Selection::test_a1("B3");
-        let result = selection.adjust(RefAdjust::new_insert_row(sheet_id, 1));
+        let result = selection.adjust(RefAdjust::new_delete_row(sheet_id, 1));
         assert_eq!(result.unwrap().to_string(Some(sheet_id), &a1_context), "B2");
     }
 

@@ -62,6 +62,12 @@ pub fn find_cell_references(
             ret.push(sheet_cell_ref_range);
         } else if let Some(Ok(sheet_cell_ref_range)) = p.try_parse(rules::SheetTableReference) {
             ret.push(sheet_cell_ref_range.map(Ok));
+        } else if rules::SheetRefPrefix.prefix_matches(p) {
+            // If we didn't recognize the sheet name,
+            // then skip the cell reference entirely.
+            _ = rules::SheetRefPrefix.consume_match(&mut p);
+            None.or_else(|| p.try_parse(rules::CellRangeReference).map(|_| ()))
+                .or_else(|| p.try_parse(rules::SheetTableReference).map(|_| ()));
         } else {
             p.next();
         }
@@ -140,10 +146,11 @@ pub fn adjust_references(
     pos: SheetPos,
     adjust: RefAdjust,
 ) -> String {
+    let new_sheet_id = adjust.new_sheet_id.unwrap_or(pos.sheet_id);
     replace_cell_range_references(source, ctx, pos, |range_ref| {
         Ok(range_ref
             .adjust(adjust)?
-            .to_a1_string(Some(pos.sheet_id), ctx, false))
+            .to_a1_string(Some(new_sheet_id), ctx, false))
     })
 }
 
@@ -449,23 +456,33 @@ mod tests {
     fn test_replace_xy_shift() {
         let ctx = A1Context::test(&[], &[]);
         let pos = pos![C6].to_sheet_pos(SheetId::new());
+
+        let adj = RefAdjust {
+            sheet_id: pos.sheet_id,
+            new_sheet_id: None,
+            relative_only: true,
+            dx: -1,
+            dy: 3,
+            x_start: 2,
+            y_start: 0,
+        };
         let src = "SUM(A4,B$6, C7)";
-        let expected = "SUM(#REF!,B$6, B10)";
+        let replaced = adjust_references(src, &ctx, pos, adj);
+        let expected = "SUM(A4,A$6, B10)";
+        assert_eq!(replaced, expected);
 
-        let replaced = adjust_references(
-            src,
-            &ctx,
-            pos,
-            RefAdjust {
-                sheet_id: pos.sheet_id,
-                relative_only: true,
-                dx: -1,
-                dy: 3,
-                x_start: 2,
-                y_start: 0,
-            },
-        );
-
+        let adj = RefAdjust {
+            sheet_id: pos.sheet_id,
+            new_sheet_id: None,
+            relative_only: true,
+            dx: -1,
+            dy: 3,
+            x_start: 0,
+            y_start: 16,
+        };
+        let src = "SUM(A1, A15, A16, B16)";
+        let replaced = adjust_references(src, &ctx, pos, adj);
+        let expected = "SUM(A1, A15, #REF!, A19)";
         assert_eq!(replaced, expected);
     }
 

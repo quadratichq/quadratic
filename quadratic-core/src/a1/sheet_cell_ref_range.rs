@@ -83,7 +83,7 @@ impl SheetCellRefRange {
     pub fn adjust(self, adjust: RefAdjust) -> Result<Self, RefError> {
         if self.sheet_id == adjust.sheet_id {
             Ok(Self {
-                sheet_id: self.sheet_id,
+                sheet_id: adjust.new_sheet_id.unwrap_or(self.sheet_id),
                 cells: self.cells.adjust(adjust)?,
             })
         } else {
@@ -96,7 +96,7 @@ impl SheetCellRefRange {
     pub fn saturating_adjust(self, adjust: RefAdjust) -> Option<Self> {
         if self.sheet_id == adjust.sheet_id {
             Some(Self {
-                sheet_id: self.sheet_id,
+                sheet_id: adjust.new_sheet_id.unwrap_or(self.sheet_id),
                 cells: self.cells.saturating_adjust(adjust)?,
             })
         } else {
