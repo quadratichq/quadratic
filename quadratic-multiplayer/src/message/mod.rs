@@ -83,7 +83,7 @@ pub(crate) fn broadcast(
                         let sent = sender
                             .lock()
                             .await
-                            .send(Message::Text(serialized_message.clone()))
+                            .send(Message::Text(serialized_message.clone().into()))
                             .await
                             .map_err(|e| MpError::SendingMessage(e.to_string()));
 
@@ -127,7 +127,7 @@ pub(crate) fn send_user_message(
                     sender
                         .lock()
                         .await
-                        .send(Message::Text(serde_json::to_string(&message)?))
+                        .send(Message::Text(serde_json::to_string(&message)?.into()))
                         .await
                         .map_err(|e| MpError::SendingMessage(e.to_string()))?;
                 }

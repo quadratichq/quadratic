@@ -155,7 +155,7 @@ impl State {
         file_id: Uuid,
         sequence_num: u64,
     ) -> Result<u64> {
-        let sequence_num = match get_room!(self, file_id) {
+        let sequence_num: u64 = match get_room!(self, file_id) {
             Ok(room) => room.sequence_num.max(sequence_num),
             Err(_) => {
                 if cfg!(test) {
