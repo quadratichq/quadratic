@@ -3,7 +3,7 @@ use super::*;
 #[wasm_bindgen]
 impl GridController {
     #[allow(non_snake_case)]
-    #[wasm_bindgen(js_name = "deleteColumn")]
+    #[wasm_bindgen(js_name = "deleteColumns")]
     pub fn js_delete_columns(&mut self, sheet_id: &str, columns: String, cursor: Option<String>) {
         if let (Ok(sheet_id), Ok(columns)) =
             (SheetId::from_str(sheet_id), serde_json::from_str(&columns))

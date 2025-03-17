@@ -1149,7 +1149,7 @@ class Core {
   deleteColumns(sheetId: string, columns: number[], cursor: string) {
     this.clientQueue.push(() => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.deleteColumn(sheetId, JSON.stringify(columns), cursor);
+      this.gridController.deleteColumns(sheetId, JSON.stringify(columns), cursor);
     });
   }
 
