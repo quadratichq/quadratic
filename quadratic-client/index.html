@@ -55,7 +55,26 @@
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
     <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
+    <!-- These styles are carried over to the <QuadraticLoading> component
+         which additionally adds the effects for light/dark mode -->
+    <style>
+      .root-loader {
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        user-select: none;
+        align-items: center;
+      }
+      .root-loader-logo {
+        width: 100px;
+        height: 100px;
+      }
+    </style>
+    <div id="root">
+      <div class="root-loader">
+        <img class="root-loader-logo" src="../public/images/logo_loading.gif" alt="Loading Quadratic Grid" />
+      </div>
+    </div>
     <script type="module" src="/src/index.tsx"></script>
   </body>
 
