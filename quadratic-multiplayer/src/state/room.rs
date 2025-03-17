@@ -1,10 +1,11 @@
 use dashmap::DashMap;
+use quadratic_rust_shared::quadratic_api::get_file_checkpoint;
 use serde::Serialize;
 use uuid::Uuid;
 
 use crate::error::{MpError, Result};
-use crate::state::{user::User, State};
-use crate::{get_mut_room, get_or_create_room, get_room};
+use crate::state::{State, user::User};
+use crate::{get_mut_room, get_room};
 
 use super::connection::{Connection, PreConnection};
 
@@ -78,8 +79,21 @@ impl State {
         mut pre_connection: PreConnection,
         sequence_num: u64,
     ) -> Result<bool> {
-        user.index = get_or_create_room!(self, file_id, sequence_num).user_index_increment();
-        let is_new = get_room!(self, file_id)?
+        let sequence_num = self.get_max_sequence_num(file_id, sequence_num).await?;
+        let rooms = self.rooms.lock().await;
+        let mut room = rooms.entry(file_id).or_insert_with(|| {
+            tracing::info!(
+                "Room {} created with sequence_num {}",
+                file_id,
+                sequence_num
+            );
+
+            Room::new(file_id, sequence_num)
+        });
+
+        user.index = room.user_index_increment();
+
+        let is_new = room
             .users
             .insert(user.session_id.to_owned(), user.to_owned())
             .is_none();
@@ -132,6 +146,40 @@ impl State {
     pub(crate) async fn get_sequence_num(&self, file_id: &Uuid) -> Result<u64> {
         Ok(get_room!(self, file_id)?.sequence_num)
     }
+
+    /// Get the maximum sequence number for a room.
+    /// If the room doesn't exist in memory, get the latest checkpoint from
+    /// quadratic api.
+    pub(crate) async fn get_max_sequence_num(
+        &self,
+        file_id: Uuid,
+        sequence_num: u64,
+    ) -> Result<u64> {
+        let sequence_num = match get_room!(self, file_id) {
+            Ok(room) => room.sequence_num.max(sequence_num),
+            Err(_) => {
+                if cfg!(test) {
+                    0
+                } else {
+                    let url = &self.settings.quadratic_api_uri;
+                    let jwt = &self.settings.m2m_auth_token;
+                    let response = get_file_checkpoint(url, jwt, &file_id)
+                        .await?
+                        .sequence_number
+                        .max(sequence_num);
+
+                    tracing::info!(
+                        "Retrieved sequence number {} for room {}",
+                        response,
+                        file_id
+                    );
+                    response
+                }
+            }
+        };
+
+        Ok(sequence_num)
+    }
 }
 
 #[macro_export]
@@ -156,45 +204,6 @@ macro_rules! get_mut_room {
             .get_mut(&$file_id)
             .ok_or($crate::error::MpError::RoomNotFound($file_id.to_string()))
     };
-}
-
-#[macro_export]
-macro_rules! get_or_create_room {
-    ( $self:ident, $file_id:ident, $sequence_num:ident ) => {{
-        let sequence_num = match get_room!($self, $file_id) {
-            Ok(room) => room.sequence_num.max($sequence_num),
-            Err(_) => {
-                if cfg!(test) {
-                    0
-                } else {
-                    let url = &$self.settings.quadratic_api_uri;
-                    let jwt = &$self.settings.m2m_auth_token;
-                    let response = quadratic_rust_shared::quadratic_api::get_file_checkpoint(
-                        url, jwt, &$file_id,
-                    )
-                    .await?
-                    .sequence_number
-                    .max($sequence_num);
-                    tracing::info!(
-                        "Retrieved sequence number {} for room {}",
-                        response,
-                        $file_id
-                    );
-                    response
-                }
-            }
-        };
-
-        $self.rooms.lock().await.entry($file_id).or_insert_with(|| {
-            tracing::info!(
-                "Room {} created with sequence_num {}",
-                $file_id,
-                $sequence_num
-            );
-
-            Room::new($file_id, sequence_num)
-        })
-    }};
 }
 
 #[cfg(test)]
