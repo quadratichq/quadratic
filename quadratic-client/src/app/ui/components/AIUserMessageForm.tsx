@@ -15,13 +15,7 @@ import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { isSupportedMimeType } from 'quadratic-shared/ai/helpers/files.helper';
-import type {
-  Content,
-  Context,
-  ImageContent,
-  PdfFileContent,
-  TextFileContent,
-} from 'quadratic-shared/typesAndSchemasAI';
+import type { Content, Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
 import {
   forwardRef,
   memo,
@@ -76,7 +70,7 @@ export const AIUserMessageForm = memo(
     const [editing, setEditing] = useState(!initialContent?.length);
 
     const initialFiles = useMemo(() => initialContent?.filter((item) => item.type !== 'text'), [initialContent]);
-    const [files, setFiles] = useState<(ImageContent | PdfFileContent | TextFileContent)[]>(initialFiles ?? []);
+    const [files, setFiles] = useState<FileContent[]>(initialFiles ?? []);
 
     const initialPrompt = useMemo(
       () =>
@@ -165,8 +159,18 @@ export const AIUserMessageForm = memo(
           </TooltipPopover>
         )}
 
-        {ctx && <AIAnalystContext {...ctx} editing={editing} disabled={!editing} textAreaRef={textareaRef} />}
-
+        {ctx && (
+          <AIAnalystContext
+            initialContext={ctx.initialContext}
+            context={ctx.context}
+            setContext={ctx.setContext}
+            files={files}
+            setFiles={setFiles}
+            editing={editing}
+            disabled={!editing}
+            textAreaRef={textareaRef}
+          />
+        )}
         {editing ? (
           <Textarea
             ref={textareaRef}

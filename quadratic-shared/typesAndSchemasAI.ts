@@ -231,6 +231,9 @@ export const TextFileContentSchema = z.object({
 });
 export type TextFileContent = z.infer<typeof TextFileContentSchema>;
 
+const FileContentSchema = z.union([ImageContentSchema, PdfFileContentSchema, TextFileContentSchema]);
+export type FileContent = z.infer<typeof FileContentSchema>;
+
 const ContentSchema = z.array(
   TextContentSchema.or(ImageContentSchema).or(PdfFileContentSchema).or(TextFileContentSchema)
 );
