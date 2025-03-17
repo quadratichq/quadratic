@@ -72,14 +72,14 @@ export const handleAnthropicRequest = async (
     if (!options.stream || !response.headersSent) {
       if (error instanceof Anthropic.APIError) {
         response.status(error.status ?? 400).json({ error: error.message });
-        console.log(error.status, error.message);
+        console.error(error.status, error.message);
       } else {
         response.status(400).json({ error });
-        console.log(error);
+        console.error(error);
       }
     } else {
       response.end();
-      console.log('Error occurred after headers were sent:', error);
+      console.error('Error occurred after headers were sent:', error);
     }
   }
 };
