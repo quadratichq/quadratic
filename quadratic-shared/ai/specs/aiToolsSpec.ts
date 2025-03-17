@@ -44,24 +44,35 @@ const numberSchema = z.number().or(
   })
 );
 
-const array2DSchema = z.array(z.array(z.union([z.string(), z.number()]).transform(String))).or(
-  z.string().transform((str) => {
-    try {
-      const parsed = JSON.parse(str);
-      if (Array.isArray(parsed)) {
-        return parsed.map((row) => {
-          if (!Array.isArray(row)) {
-            throw new Error('Invalid 2D array format - each row must be an array');
-          }
-          return row.map(String);
-        });
+const array2DSchema = z
+  .array(
+    z.array(
+      z.union([
+        z.string(),
+        z.number().transform(String),
+        z.undefined().transform(() => ''),
+        z.null().transform(() => ''),
+      ])
+    )
+  )
+  .or(
+    z.string().transform((str) => {
+      try {
+        const parsed = JSON.parse(str);
+        if (Array.isArray(parsed)) {
+          return parsed.map((row) => {
+            if (!Array.isArray(row)) {
+              throw new Error('Invalid 2D array format - each row must be an array');
+            }
+            return row.map(String);
+          });
+        }
+        throw new Error('Invalid 2D array format');
+      } catch {
+        throw new Error('Invalid 2D array format');
       }
-      throw new Error('Invalid 2D array format');
-    } catch {
-      throw new Error('Invalid 2D array format');
-    }
-  })
-);
+    })
+  );
 
 const cellLanguageSchema = z
   .string()

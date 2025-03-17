@@ -15,10 +15,22 @@ const VertexAnthropicModelSchema = z.enum([
   'claude-3-5-sonnet-v2@20241022',
   'claude-3-5-haiku@20241022',
 ]);
+const VertexAIModelSchema = z.enum([
+  'gemini-2.0-flash-thinking-exp-01-21',
+  'gemini-2.0-flash-001',
+  'gemini-2.0-flash-lite-001',
+  'gemini-1.5-pro-002',
+  'gemini-1.5-flash-002',
+]);
 const BedrockAnthropicModelSchema = z.enum([
   'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
   'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
   'us.anthropic.claude-3-5-haiku-20241022-v1:0',
+]);
+const BedrockModelSchema = z.enum([
+  'us.deepseek.r1-v1:0',
+  'us.meta.llama3-2-90b-instruct-v1:0',
+  'mistral.mistral-large-2407-v1:0',
 ]);
 const AnthropicModelSchema = z.enum([
   'claude-3-7-sonnet-20250219',
@@ -32,26 +44,14 @@ const OpenAIModelSchema = z.enum([
   'o3-mini-2025-01-31',
 ]);
 const XAIModelSchema = z.enum(['grok-2-1212', 'grok-beta']);
-const VertexAIModelSchema = z.enum([
-  'gemini-2.0-flash-thinking-exp-01-21',
-  'gemini-2.0-flash-001',
-  'gemini-2.0-flash-lite-001',
-  'gemini-1.5-pro-002',
-  'gemini-1.5-flash-002',
-]);
-const BedrockModelSchema = z.enum([
-  'us.deepseek.r1-v1:0',
-  'us.meta.llama3-2-90b-instruct-v1:0',
-  'mistral.mistral-large-2407-v1:0',
-]);
 const AIModelSchema = z.union([
   VertexAnthropicModelSchema,
+  VertexAIModelSchema,
   BedrockAnthropicModelSchema,
+  BedrockModelSchema,
   AnthropicModelSchema,
   OpenAIModelSchema,
   XAIModelSchema,
-  VertexAIModelSchema,
-  BedrockModelSchema,
 ]);
 export type AIModel = z.infer<typeof AIModelSchema>;
 
@@ -65,6 +65,14 @@ const VertexAIAnthropicModelKeySchema = z.enum([
 ]);
 export type VertexAIAnthropicModelKey = z.infer<typeof VertexAIAnthropicModelKeySchema>;
 
+const VertexAIModelKeySchema = z.enum([
+  'vertexai:gemini-2.0-flash-001',
+  'vertexai:gemini-2.0-flash-lite-001',
+  'vertexai:gemini-1.5-pro-002',
+  'vertexai:gemini-1.5-flash-002',
+]);
+export type VertexAIModelKey = z.infer<typeof VertexAIModelKeySchema>;
+
 const BedrockAnthropicModelKeySchema = z.enum([
   'bedrock-anthropic:claude:thinking-toggle-off',
   'bedrock-anthropic:claude:thinking-toggle-on',
@@ -74,6 +82,13 @@ const BedrockAnthropicModelKeySchema = z.enum([
   'bedrock-anthropic:us.anthropic.claude-3-5-haiku-20241022-v1:0',
 ]);
 export type BedrockAnthropicModelKey = z.infer<typeof BedrockAnthropicModelKeySchema>;
+
+const BedrockModelKeySchema = z.enum([
+  'bedrock:us.deepseek.r1-v1:0',
+  'bedrock:us.meta.llama3-2-90b-instruct-v1:0',
+  'bedrock:mistral.mistral-large-2407-v1:0',
+]);
+export type BedrockModelKey = z.infer<typeof BedrockModelKeySchema>;
 
 const AnthropicModelKeySchema = z.enum([
   'anthropic:claude:thinking-toggle-on',
@@ -96,29 +111,14 @@ export type OpenAIModelKey = z.infer<typeof OpenAIModelKeySchema>;
 const XAIModelKeySchema = z.enum(['xai:grok-2-1212', 'xai:grok-beta']);
 export type XAIModelKey = z.infer<typeof XAIModelKeySchema>;
 
-const VertexAIModelKeySchema = z.enum([
-  'vertexai:gemini-2.0-flash-001',
-  'vertexai:gemini-2.0-flash-lite-001',
-  'vertexai:gemini-1.5-pro-002',
-  'vertexai:gemini-1.5-flash-002',
-]);
-export type VertexAIModelKey = z.infer<typeof VertexAIModelKeySchema>;
-
-const BedrockModelKeySchema = z.enum([
-  'bedrock:us.deepseek.r1-v1:0',
-  'bedrock:us.meta.llama3-2-90b-instruct-v1:0',
-  'bedrock:mistral.mistral-large-2407-v1:0',
-]);
-export type BedrockModelKey = z.infer<typeof BedrockModelKeySchema>;
-
 const ModelKeySchema = z.union([
   VertexAIAnthropicModelKeySchema,
+  VertexAIModelKeySchema,
   BedrockAnthropicModelKeySchema,
+  BedrockModelKeySchema,
   AnthropicModelKeySchema,
   OpenAIModelKeySchema,
   XAIModelKeySchema,
-  VertexAIModelKeySchema,
-  BedrockModelKeySchema,
 ]);
 export type ModelKey = z.infer<typeof ModelKeySchema>;
 
