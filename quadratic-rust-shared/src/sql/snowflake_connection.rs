@@ -104,7 +104,7 @@ impl Connection for SnowflakeConnection {
         let query_error = |e: String| SharedError::Sql(SqlError::Query(e));
 
         #[cfg(any(test, feature = "test"))]
-        let (mut _client, _recording) = tests::get_mocked(&self, "snowflake-connection").await;
+        let (mut _client, _recording) = tests::get_mocked(self, "snowflake-connection").await;
 
         let query_result = _client
             .exec_raw(sql, true)
@@ -194,7 +194,7 @@ impl Connection for SnowflakeConnection {
 
         #[cfg(any(test, feature = "test"))]
         let (mut _client, _recording) =
-            tests::get_mocked(&self, "snowflake-connection-schema").await;
+            tests::get_mocked(self, "snowflake-connection-schema").await;
 
         let row_stream = _client
             .exec(&sql)
@@ -328,8 +328,8 @@ pub mod tests {
         connection: &'a SnowflakeConnection,
         scenario: &'a str,
     ) -> (SnowflakeApi, Option<Recording<'a>>) {
-        let (recording, server) = tests::get_mock_server(&connection, scenario);
-        let client = tests::get_mocked_client(&connection, &server).await;
+        let (recording, server) = tests::get_mock_server(connection, scenario);
+        let client = tests::get_mocked_client(connection, &server).await;
         (client, recording)
     }
 
@@ -394,16 +394,16 @@ pub mod tests {
     pub async fn test_query(max_bytes: Option<u64>) -> (Bytes, bool, usize) {
         let connection = new_snowflake_connection();
         let mut client = connection.connect().await.unwrap();
-        let result = connection
+        
+
+        connection
             .query(
                 &mut client,
                 "select * from all_native_data_types;",
                 max_bytes,
             )
             .await
-            .unwrap();
-
-        result
+            .unwrap()
     }
 
     #[tokio::test]
@@ -422,12 +422,12 @@ pub mod tests {
             PARQUET_FILE,
             rows
         ));
-        assert_eq!(over_the_limit, false);
+        assert!(!over_the_limit);
         assert_eq!(num_records, 2);
 
         // // test if we're over the limit
         let (_, over_the_limit, num_records) = test_query(Some(10)).await;
-        assert_eq!(over_the_limit, true);
+        assert!(over_the_limit);
         assert_eq!(num_records, 0);
     }
 

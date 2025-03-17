@@ -264,7 +264,7 @@ mod tests {
         let (_, pool) = setup().await;
         let mut pool = pool.unwrap();
         let sql = "select * from all_native_data_types order by id limit 1";
-        let rows = MySqlConnection::query_all(&mut pool, &sql).await.unwrap();
+        let rows = MySqlConnection::query_all(&mut pool, sql).await.unwrap();
 
         // for row in &rows {
         //     for (index, col) in row.columns().iter().enumerate() {
