@@ -215,7 +215,7 @@ export async function parseOpenAIStream(
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
     responseMessage.content.push({
       type: 'text',
-      text: "I'm sorry, I don't have a response for that.",
+      text: 'Please try again.',
     });
   }
 
@@ -281,7 +281,7 @@ export function parseOpenAIResponse(
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
     responseMessage.content.push({
       type: 'text',
-      text: "I'm sorry, I don't have a response for that.",
+      text: 'Please try again.',
     });
   }
 
