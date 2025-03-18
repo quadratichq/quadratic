@@ -50,14 +50,14 @@ export const handleBedrockRequest = async (
     if (!options.stream || !response.headersSent) {
       if (error.response) {
         response.status(error.response.status).json({ error: error.response.data });
-        console.log(error.response.status, error.response.data);
+        console.error(error.response.status, error.response.data);
       } else {
         response.status(400).json({ error: error.message });
-        console.log(error.message);
+        console.error(error.message);
       }
     } else {
       response.end();
-      console.log('Error occurred after headers were sent:', error);
+      console.error('Error occurred after headers were sent:', error);
     }
   }
 };

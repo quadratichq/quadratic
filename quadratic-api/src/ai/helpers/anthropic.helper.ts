@@ -187,9 +187,8 @@ function getAnthropicTools(source: AISource, toolName?: AITool): Tool[] | undefi
   return anthropicTools;
 }
 
-function getAnthropicToolChoice(toolName?: AITool): ToolChoice | undefined {
-  const toolChoice: ToolChoice = toolName === undefined ? { type: 'auto' } : { type: 'tool', name: toolName };
-  return toolChoice;
+function getAnthropicToolChoice(toolName?: AITool): ToolChoice {
+  return toolName === undefined ? { type: 'auto' } : { type: 'tool', name: toolName };
 }
 
 export async function parseAnthropicStream(
@@ -349,7 +348,7 @@ export async function parseAnthropicStream(
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
     responseMessage.content.push({
       type: 'text',
-      text: "I'm sorry, I don't have a response for that.",
+      text: 'Please try again.',
     });
   }
 
@@ -418,7 +417,7 @@ export function parseAnthropicResponse(
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
     responseMessage.content.push({
       type: 'text',
-      text: "I'm sorry, I don't have a response for that.",
+      text: 'Please try again.',
     });
   }
 

@@ -5,7 +5,7 @@ use std::fmt;
 use std::ops::Range;
 
 use serde::{Deserialize, Serialize};
-use smallvec::{smallvec, SmallVec};
+use smallvec::{SmallVec, smallvec};
 
 mod same;
 mod value;
@@ -242,7 +242,7 @@ pub fn contiguous_optional_blocks<B: BlockContent>(
     // TODO(jrice): This could be simplified to just a blocks iter (no block_ranges vec) if we tag range equality somehow
 
     expected_range
-        .group_by(|i| block_ranges.iter().find(|block| block.contains(i)))
+        .chunk_by(|i| block_ranges.iter().find(|block| block.contains(i)))
         .into_iter()
         .map(|(containing_range, indices)| match containing_range {
             None => {

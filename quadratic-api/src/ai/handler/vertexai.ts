@@ -51,14 +51,14 @@ export const handleVertexAIRequest = async (
       if (error instanceof ClientError || error instanceof GoogleApiError || error instanceof GoogleAuthError) {
         const code = 'code' in error ? Number(error.code) : 400;
         response.status(code).json({ error: error.message });
-        console.log(code, error.message);
+        console.error(code, error.message);
       } else {
         response.status(400).json({ error });
-        console.log(error);
+        console.error(error);
       }
     } else {
       response.end();
-      console.log('Error occurred after headers were sent:', error);
+      console.error('Error occurred after headers were sent:', error);
     }
   }
 };

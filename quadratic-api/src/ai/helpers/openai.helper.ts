@@ -134,10 +134,8 @@ function getOpenAITools(
   return openaiTools;
 }
 
-function getOpenAIToolChoice(name?: AITool): ChatCompletionToolChoiceOption | undefined {
-  const toolChoice: ChatCompletionToolChoiceOption =
-    name === undefined ? 'auto' : { type: 'function', function: { name } };
-  return toolChoice;
+function getOpenAIToolChoice(name?: AITool): ChatCompletionToolChoiceOption {
+  return name === undefined ? 'auto' : { type: 'function', function: { name } };
 }
 
 export async function parseOpenAIStream(
@@ -241,7 +239,7 @@ export async function parseOpenAIStream(
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
     responseMessage.content.push({
       type: 'text',
-      text: "I'm sorry, I don't have a response for that.",
+      text: 'Please try again.',
     });
   }
 
@@ -307,7 +305,7 @@ export function parseOpenAIResponse(
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
     responseMessage.content.push({
       type: 'text',
-      text: "I'm sorry, I don't have a response for that.",
+      text: 'Please try again.',
     });
   }
 

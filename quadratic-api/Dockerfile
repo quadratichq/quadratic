@@ -1,4 +1,4 @@
-FROM node:18-alpine AS builder
+FROM node:23-alpine AS builder
 WORKDIR /quadratic
 COPY package.json .
 COPY package-lock.json .
@@ -8,7 +8,7 @@ RUN npm install
 COPY quadratic-api ./quadratic-api
 COPY quadratic-shared ./quadratic-shared
 
-FROM node:18-slim AS runtime
+FROM node:23-slim AS runtime
 WORKDIR /quadratic
 COPY --from=builder /quadratic .
 RUN apt-get update && apt install -y openssl
