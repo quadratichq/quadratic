@@ -1,14 +1,20 @@
-use httpmock::prelude::*;
+//! Request
+//!
+//! Functions to interact with requests
+
 use httpmock::Recording;
+use httpmock::prelude::*;
 use std::path::PathBuf;
 
 include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/auto_gen_path.rs"));
 
+/// Get the path to a scenario
 pub fn scenario_path(scenario: &str) -> PathBuf {
     let scenario_path = format!("{FIXTURES_PATH}/{scenario}.yml");
     PathBuf::from(scenario_path)
 }
 
+/// Get a server
 pub fn get_server(record: bool, scenario: &str, url: &str) -> MockServer {
     match record {
         true => recording_server(url),
@@ -16,6 +22,7 @@ pub fn get_server(record: bool, scenario: &str, url: &str) -> MockServer {
     }
 }
 
+/// Get a recording server
 pub fn recording_server(url: &str) -> MockServer {
     let recording_server = MockServer::start();
 
@@ -29,6 +36,7 @@ pub fn recording_server(url: &str) -> MockServer {
     recording_server
 }
 
+/// Get a playback server
 pub fn playback_server(scenario: &str) -> MockServer {
     let path = scenario_path(scenario);
     let playback_server = MockServer::start();
@@ -37,6 +45,7 @@ pub fn playback_server(scenario: &str) -> MockServer {
     playback_server
 }
 
+/// Start recording
 pub fn record_start(recording_server: &MockServer) -> Recording<'_> {
     recording_server.record(|rule| {
         rule.filter(|when| {
@@ -45,6 +54,7 @@ pub fn record_start(recording_server: &MockServer) -> Recording<'_> {
     })
 }
 
+/// Stop recording
 pub async fn record_stop(scenario: &str, recording: Recording<'_>) {
     let path = scenario_path(scenario);
     let fixtures_path = PathBuf::from(FIXTURES_PATH);
