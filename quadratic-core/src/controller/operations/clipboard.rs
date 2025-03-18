@@ -728,9 +728,7 @@ mod test {
     use crate::grid::js_types::JsClipboard;
     use crate::grid::sheet::validations::validation_rules::ValidationRule;
     use crate::grid::{CellWrap, CodeCellLanguage, SheetId};
-    use crate::test_util::{
-        assert_cell_value_row, assert_data_table_cell_value, print_data_table, print_table,
-    };
+    use crate::test_util::{assert_cell_value_row, assert_display_cell_value, print_table_in_rect};
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
     use crate::Rect;
 
@@ -976,7 +974,7 @@ mod test {
 
         // paste side by side
         paste(&mut gc, 10, 1, html.clone());
-        print_table(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
+        print_table_in_rect(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
         assert_cell_value_row(&gc, sheet_id, 10, 13, 0, expected_row1);
 
         let cursor = A1Selection::table(pos![J2].to_sheet_pos(sheet_id), "simple.csv1");
@@ -1015,7 +1013,7 @@ mod test {
 
         // paste side by side
         paste(&mut gc, 10, 1, js_clipboard.html.clone());
-        print_table(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
+        print_table_in_rect(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
         assert_cell_value_row(&gc, sheet_id, 10, 13, 0, expected_row1);
     }
 
@@ -1086,28 +1084,28 @@ mod test {
 
         // paste overlap inner
         paste(&mut gc, 4, 2, html.clone());
-        print_table(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 11));
+        print_table_in_rect(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 11));
         assert_cell_value_row(&gc, sheet_id, 4, 5, 2, expected_row1.clone());
         assert_cell_value_row(&gc, sheet_id, 4, 5, 3, expected_row2.clone());
         gc.undo(None);
 
         // paste overlap with right grid
         paste(&mut gc, 5, 2, html.clone());
-        print_table(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 11));
+        print_table_in_rect(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 11));
         assert_cell_value_row(&gc, sheet_id, 5, 6, 2, expected_row1.clone());
         assert_cell_value_row(&gc, sheet_id, 5, 6, 3, expected_row2.clone());
         gc.undo(None);
 
         // paste overlap with bottom grid
         paste(&mut gc, 4, 10, html.clone());
-        print_table(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 12));
+        print_table_in_rect(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 12));
         assert_cell_value_row(&gc, sheet_id, 4, 5, 10, expected_row1.clone());
         assert_cell_value_row(&gc, sheet_id, 4, 5, 11, expected_row2.clone());
         gc.undo(None);
 
         // paste overlap with bottom left grid
         paste(&mut gc, 1, 10, html.clone());
-        print_table(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 12));
+        print_table_in_rect(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 12));
         // print_table(&gc, sheet_id, Rect::from_numbers(1, 10, 2, 2));
         assert_cell_value_row(&gc, sheet_id, 1, 2, 10, expected_row1.clone());
         assert_cell_value_row(&gc, sheet_id, 1, 2, 11, expected_row2.clone());
@@ -1115,7 +1113,7 @@ mod test {
 
         // paste overlap with top left grid
         paste(&mut gc, 3, 0, html.clone());
-        print_data_table(&gc, sheet_id, Rect::from_numbers(2, 0, 4, 4));
+        print_table_in_rect(&gc, sheet_id, Rect::from_numbers(2, 0, 4, 4));
         // print_table(&gc, sheet_id, Rect::from_numbers(2, 0, 4, 4));
         // assert_cell_value_row(&gc, sheet_id, 1, 2, 10, expected_row1.clone());
         // assert_cell_value_row(&gc, sheet_id, 1, 2, 11, expected_row2.clone());
@@ -1198,7 +1196,7 @@ mod test {
             true,
         );
 
-        assert_data_table_cell_value(&gc, sheet_id, 2, 3, "MA");
+        assert_display_cell_value(&gc, sheet_id, 2, 3, "MA");
     }
 
     #[test]

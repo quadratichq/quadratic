@@ -129,8 +129,11 @@ impl DataTable {
 pub mod test {
 
     use super::*;
-    use crate::grid::test::{
-        assert_data_table_row, new_data_table, pretty_print_data_table, test_csv_values,
+    use crate::{
+        grid::test::{new_data_table, test_csv_values},
+        test_util::{
+            assert_data_table_row, assert_data_table_row_values_only, pretty_print_data_table,
+        },
     };
 
     #[test]
@@ -144,9 +147,9 @@ pub mod test {
         // sort by population city ascending
         data_table.sort_column(0, SortDirection::Ascending).unwrap();
         pretty_print_data_table(&data_table, Some("Sorted by City"), None);
-        assert_data_table_row(&data_table, 1, values[2].clone());
-        assert_data_table_row(&data_table, 2, values[3].clone());
-        assert_data_table_row(&data_table, 3, values[1].clone());
+        assert_data_table_row_values_only(&data_table, 1, values[2].clone());
+        assert_data_table_row_values_only(&data_table, 2, values[3].clone());
+        assert_data_table_row_values_only(&data_table, 3, values[1].clone());
 
         // sort by population descending
         data_table

@@ -17,7 +17,7 @@ impl Sheet {
     /// with the CellValue::Import is deleted.
     ///
     /// This fn expects columns to be sorted (ascending) and deduplicated.
-    fn check_delete_tables_columns(
+    pub(crate) fn check_delete_tables_columns(
         &mut self,
         transaction: &mut PendingTransaction,
         columns: &Vec<i64>,
@@ -169,5 +169,64 @@ impl Sheet {
             self.delete_row(transaction, row);
         }
         self.recalculate_bounds();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        controller::GridController,
+        grid::SheetId,
+        test_util::{assert_data_table_size, test_create_data_table_first_sheet},
+    };
+
+    use super::*;
+
+    #[test]
+    fn test_check_delete_tables_columns() {
+        let mut gc = GridController::test();
+
+        // dummy transaction
+        let mut transaction = PendingTransaction::default();
+
+        // Create a simple data table
+        test_create_data_table_first_sheet(&mut gc, pos![A1], 3, 1, &["A", "B", "C"]);
+
+        let sheet = gc.sheet_mut(gc.sheet_ids()[0]);
+
+        // Test 1: Columns outside data table range
+        sheet.check_delete_tables_columns(&mut transaction, &vec![5, 6]);
+        assert!(
+            sheet.data_tables.contains_key(&pos!(A1)),
+            "Data table should remain unchanged when deleting columns outside its range"
+        );
+
+        // Test 2: Delete middle column
+        let mut transaction = PendingTransaction::default();
+        sheet.check_delete_tables_columns(&mut transaction, &vec![2]);
+
+        assert_data_table_size(&gc, SheetId::TEST, pos![A1], 2, 1);
+
+        // // Test 3: Delete anchor column (first column)
+        // let mut transaction = PendingTransaction::default();
+        // sheet.check_delete_tables_columns(&mut transaction, &vec![1]);
+        // assert!(
+        //     !sheet.data_tables.contains_key(&pos!(A1)),
+        //     "Original data table should be removed"
+        // );
+        // assert!(
+        //     sheet.data_tables.values().next().is_some(),
+        //     "Data table should be moved to new position"
+        // );
+
+        // // Test 4: Readonly table should not be modified
+        // let mut readonly_table = DataTable::default();
+        // readonly_table.readonly = true;
+        // sheet.data_tables.insert(pos!(D1), readonly_table);
+        // let mut transaction = PendingTransaction::default();
+        // sheet.check_delete_tables_columns(&mut transaction, &vec![4]);
+        // if let Some(table) = sheet.data_tables.get(&pos!(D1)) {
+        //     assert!(table.readonly, "Readonly table should remain unchanged");
+        // }
     }
 }

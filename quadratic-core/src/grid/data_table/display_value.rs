@@ -198,11 +198,10 @@ pub mod test {
     use crate::{
         controller::{transaction_types::JsCodeResult, GridController},
         grid::{
-            test::{
-                assert_data_table_row, new_data_table, pretty_print_data_table, test_csv_values,
-            },
+            test::{new_data_table, test_csv_values},
             CodeCellLanguage, DataTable,
         },
+        test_util::{assert_data_table_row_values_only, pretty_print_data_table},
         CellValue, Pos, SheetPos,
     };
 
@@ -258,7 +257,7 @@ pub mod test {
         data_table.column_headers = Some(columns.clone());
         let mut values = test_csv_values();
         values[0].remove(0);
-        assert_data_table_row(&data_table, 0, values[0].clone());
+        assert_data_table_row_values_only(&data_table, 0, values[0].clone());
 
         // reset values
         columns[0].display = true;

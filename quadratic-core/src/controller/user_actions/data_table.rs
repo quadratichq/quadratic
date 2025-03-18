@@ -129,7 +129,7 @@ mod tests {
             GridController,
         },
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
-        test_util::{assert_cell_value, assert_data_table_cell_value_row, print_data_table},
+        test_util::{assert_cell_value, assert_cell_value_row, print_table_in_rect},
         wasm_bindings::js::{clear_js_calls, expect_js_call},
         Array, CellValue, Pos, Rect, SheetPos, Value,
     };
@@ -170,8 +170,8 @@ mod tests {
         let import = Import::new("".into());
 
         // initial value
-        print_data_table(&gc, sheet_id, Rect::new(0, 0, 2, 1));
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 2, expected.clone());
+        print_table_in_rect(&gc, sheet_id, Rect::new(0, 0, 2, 1));
+        assert_cell_value_row(&gc, sheet_id, 0, 2, 2, expected.clone());
         assert_cell_value(
             &gc,
             sheet_id,
@@ -182,8 +182,8 @@ mod tests {
 
         gc.code_data_table_to_data_table(sheet_pos, None).unwrap();
 
-        print_data_table(&gc, sheet_id, Rect::new(0, 0, 2, 2));
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 2, expected.clone());
+        print_table_in_rect(&gc, sheet_id, Rect::new(0, 0, 2, 2));
+        assert_cell_value_row(&gc, sheet_id, 0, 2, 2, expected.clone());
         assert_cell_value(&gc, sheet_id, 0, 0, CellValue::Import(import.clone()));
 
         // undo, the value should be a code run data table again
@@ -325,7 +325,7 @@ mod tests {
 
         let (mut gc, sheet_id, pos, file_name) = simple_csv();
 
-        print_data_table(&gc, sheet_id, Rect::new(1, 1, 5, 15));
+        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 5, 15));
         assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().height(true), 11);
         assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().width(), 4);
 
@@ -350,17 +350,17 @@ mod tests {
             cursor,
         );
 
-        print_data_table(&gc, sheet_id, Rect::new(1, 1, 5, 15));
+        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 5, 15));
         assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().height(true), 12);
         assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().width(), 5);
 
         gc.undo(None);
-        print_data_table(&gc, sheet_id, Rect::new(1, 1, 5, 15));
+        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 5, 15));
         assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().height(true), 11);
         assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().width(), 4);
 
         gc.redo(None);
-        print_data_table(&gc, sheet_id, Rect::new(1, 1, 5, 15));
+        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 5, 15));
         assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().height(true), 12);
         assert_eq!(gc.sheet(sheet_id).data_table(pos).unwrap().width(), 5);
 
