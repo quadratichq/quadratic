@@ -53,15 +53,11 @@ pub(crate) fn app(state: Arc<State>) -> Router {
     tracing::info!("Serving files from {path}");
 
     Router::new()
-        // Turn off checks for compatibility with route matching syntax from 0.7.
-        // This allows usage of paths starting with a colon : or an asterisk * which are otherwise prohibited.
-        .without_v07_checks()
-        //
         // PROTECTED ROUTES (via JWT)
         //
         // get a file from storage
         .route(
-            "/storage/:key",
+            "/storage/{key}",
             get(get_storage)
                 //
                 // upload a file
@@ -80,7 +76,7 @@ pub(crate) fn app(state: Arc<State>) -> Router {
         .route("/stats", get(stats))
         //
         // presigned urls
-        .route("/storage/presigned/:key", get(get_presigned_storage))
+        .route("/storage/presigned/{key}", get(get_presigned_storage))
         //
         // state
         .layer(Extension(state))
