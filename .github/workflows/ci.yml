@@ -46,7 +46,7 @@ jobs:
 
       - uses: useblacksmith/setup-node@v5
         with:
-          node-version: 18
+          node-version: 23
           cache: "npm"
 
       - name: Set up Rust
@@ -117,7 +117,7 @@ jobs:
 
       - uses: useblacksmith/setup-node@v5
         with:
-          node-version: 18
+          node-version: 23
           cache: "npm"
 
       - uses: useblacksmith/setup-python@v6
@@ -162,7 +162,7 @@ jobs:
 
       - uses: useblacksmith/setup-node@v5
         with:
-          node-version: 18
+          node-version: 23
           cache: "npm"
 
       - uses: useblacksmith/setup-python@v6
@@ -183,7 +183,7 @@ jobs:
 
       - uses: useblacksmith/setup-node@v5
         with:
-          node-version: 18
+          node-version: 23
           cache: "npm"
 
       - name: Run npm test:ci in quadratic-api
@@ -225,7 +225,7 @@ jobs:
 
       - uses: useblacksmith/setup-node@v5
         with:
-          node-version: 18
+          node-version: 23
           cache: "npm"
 
       - name: Set up Rust
