@@ -134,13 +134,8 @@ export const Connections = ({
     setActiveConnectionType(connectionType);
   };
 
-  const splitView = handleNavigateToDetailsViewOverride
-    ? Boolean(activeConnectionState) && Boolean(activeConnectionType)
-    : true;
-  console.log('splitView activeConnectionState', splitView, activeConnectionState);
-
   return (
-    <div className="">
+    <div>
       {activeConnectionState && activeConnectionType ? (
         activeConnectionState.view === 'edit' ? (
           <ConnectionFormEdit
