@@ -12,9 +12,9 @@ use std::sync::Arc;
 
 use crate::arrow::arrow_type::ArrowType;
 use crate::error::{Result, SharedError};
+use crate::sql::Connection;
 use crate::sql::error::Sql as SqlError;
 use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
-use crate::sql::Connection;
 use crate::utils::array::transpose;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -394,7 +394,6 @@ pub mod tests {
     pub async fn test_query(max_bytes: Option<u64>) -> (Bytes, bool, usize) {
         let connection = new_snowflake_connection();
         let mut client = connection.connect().await.unwrap();
-        
 
         connection
             .query(
