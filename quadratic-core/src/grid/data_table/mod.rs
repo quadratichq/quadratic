@@ -426,7 +426,7 @@ impl DataTable {
     /// Returns `None` if the DataTableKind is not CodeRun.
     pub fn code_run_mut(&mut self) -> Option<&mut CodeRun> {
         match &mut self.kind {
-            DataTableKind::CodeRun(ref mut code_run) => Some(code_run),
+            DataTableKind::CodeRun(code_run) => Some(code_run),
             _ => None,
         }
     }
@@ -730,7 +730,6 @@ impl DataTable {
     pub fn is_dataframe(&self) -> bool {
         if let DataTableKind::CodeRun(code_run) = &self.kind {
             code_run.output_type == Some("DataFrame".into())
-                || code_run.output_type == Some("Series".into())
         } else {
             false
         }

@@ -11,7 +11,7 @@ pub fn scenario_path(scenario: &str) -> PathBuf {
 
 pub fn get_server(record: bool, scenario: &str, url: &str) -> MockServer {
     match record {
-        true => recording_server(&url),
+        true => recording_server(url),
         false => playback_server(scenario),
     }
 }
@@ -37,7 +37,7 @@ pub fn playback_server(scenario: &str) -> MockServer {
     playback_server
 }
 
-pub fn record_start<'a>(recording_server: &'a MockServer) -> Recording<'a> {
+pub fn record_start(recording_server: &MockServer) -> Recording<'_> {
     recording_server.record(|rule| {
         rule.filter(|when| {
             when.any_request();

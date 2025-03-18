@@ -1,19 +1,18 @@
 use chrono::prelude::*;
 use futures_util::StreamExt;
 use redis::{
-    aio::{AsyncStream, Monitor, MultiplexedConnection, PubSub},
+    AsyncCommands, Client, Value,
+    aio::{Monitor, MultiplexedConnection, PubSub},
     cmd,
     streams::{StreamId, StreamKey, StreamRangeReply, StreamReadOptions, StreamReadReply},
-    AsyncCommands, Client, Value,
 };
-use std::pin::Pin;
 use std::{
     fmt::{self, Debug},
     vec,
 };
 
 use crate::pubsub::Config;
-use crate::{error::Result, SharedError};
+use crate::{SharedError, error::Result};
 
 #[derive(Debug, Clone)]
 pub struct RedisStreamsConfig {
@@ -23,7 +22,7 @@ pub struct RedisStreamsConfig {
     pub active_channels: String,
 }
 
-pub type PubSubConnection = PubSub<Pin<Box<dyn AsyncStream + Send + Sync>>>;
+pub type PubSubConnection = PubSub;
 
 pub struct RedisConnection {
     pub multiplex: MultiplexedConnection,
@@ -77,7 +76,7 @@ fn from_key(key: &str) -> String {
 
 fn value_bytes(value: Value) -> Vec<u8> {
     match value {
-        Value::Data(bytes) => bytes,
+        Value::BulkString(bytes) => bytes,
         _ => vec![],
     }
 }
