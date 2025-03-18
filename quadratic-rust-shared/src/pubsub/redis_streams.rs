@@ -1,3 +1,7 @@
+//! Redis Streams
+//!
+//! Functions to interact with Redis Streams
+
 use chrono::prelude::*;
 use futures_util::StreamExt;
 use redis::{
@@ -14,6 +18,7 @@ use std::{
 use crate::pubsub::Config;
 use crate::{SharedError, error::Result};
 
+/// Redis Streams configuration
 #[derive(Debug, Clone)]
 pub struct RedisStreamsConfig {
     pub host: String,
@@ -22,8 +27,10 @@ pub struct RedisStreamsConfig {
     pub active_channels: String,
 }
 
+/// Redis Streams connection
 pub type PubSubConnection = PubSub;
 
+/// Redis Streams connection
 pub struct RedisConnection {
     pub multiplex: MultiplexedConnection,
     pub monitor: Monitor,
@@ -35,9 +42,10 @@ impl Debug for RedisConnection {
     }
 }
 
-// A message consists of a key (String) and a value (Bytes).
+/// A message consists of a key (String) and a value (Bytes).
 type Message = (String, Vec<u8>);
 
+/// Create a Redis client
 fn client(config: Config) -> Result<Client> {
     if let Config::RedisStreams(RedisStreamsConfig {
         host,
@@ -56,6 +64,7 @@ fn client(config: Config) -> Result<Client> {
     ))
 }
 
+/// Convert a key to a string, either preserving the sequence or adding a sequence number
 fn to_key(key: &str, preserve_sequence: bool) -> String {
     if preserve_sequence {
         key.into()
@@ -64,16 +73,19 @@ fn to_key(key: &str, preserve_sequence: bool) -> String {
     }
 }
 
+/// Convert a vector of keys to a vector of strings, either preserving the sequence or adding a sequence number
 fn to_keys(keys: Vec<&str>, preserve_sequence: bool) -> Vec<String> {
     keys.iter()
         .map(|key| to_key(key, preserve_sequence))
         .collect::<Vec<_>>()
 }
 
+/// Convert a key to a string, removing the sequence number
 fn from_key(key: &str) -> String {
     key.split_once('-').unwrap_or_default().0.to_string()
 }
 
+/// Convert a Redis value to a vector of bytes
 fn value_bytes(value: Value) -> Vec<u8> {
     match value {
         Value::BulkString(bytes) => bytes,
@@ -81,6 +93,7 @@ fn value_bytes(value: Value) -> Vec<u8> {
     }
 }
 
+/// Parse a Redis message
 fn parse_message(id: &StreamId, preserve_sequence: bool) -> Message {
     let StreamId {
         mut id,
@@ -96,6 +109,7 @@ fn parse_message(id: &StreamId, preserve_sequence: bool) -> Message {
     (id.to_string(), message)
 }
 
+/// Convert a vector of Redis stream ids to a vector of messages
 fn stream_ids_to_messages(ids: Vec<StreamId>, preserve_sequence: bool) -> Vec<Message> {
     ids.iter()
         .map(|id| parse_message(id, preserve_sequence))

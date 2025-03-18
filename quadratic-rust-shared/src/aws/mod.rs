@@ -1,10 +1,12 @@
+//! Interacting with AWS services
+
 pub mod error;
 pub mod s3;
 
-pub use aws_config::{retry::RetryConfig, BehaviorVersion, Region};
+pub use aws_config::{BehaviorVersion, Region, retry::RetryConfig};
 pub use aws_sdk_s3::{
-    config::{Credentials, SharedCredentialsProvider},
     Client,
+    config::{Credentials, SharedCredentialsProvider},
 };
 
 pub async fn client(

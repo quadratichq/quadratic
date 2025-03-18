@@ -1,3 +1,7 @@
+//! Snowflake
+//!
+//! Functions to interact with Snowflake
+
 use arrow::array::ArrayRef;
 use arrow_array::array::Array;
 use async_trait::async_trait;
@@ -17,6 +21,7 @@ use crate::sql::error::Sql as SqlError;
 use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
 use crate::utils::array::transpose;
 
+/// Snowflake connection
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SnowflakeConnection {
     pub account_identifier: String,
@@ -29,6 +34,7 @@ pub struct SnowflakeConnection {
 }
 
 impl SnowflakeConnection {
+    /// Create a new Snowflake connection
     pub fn new(
         account_identifier: String,
         username: String,
@@ -60,22 +66,27 @@ impl Connection for SnowflakeConnection {
     type Row = Arc<dyn Array>;
     type Column = ArrayRef;
 
+    /// Get the length of a row
     fn row_len(_row: &Self::Row) -> usize {
         unimplemented!();
     }
 
+    /// Get the columns of a row
     fn row_columns(_row: &Self::Row) -> Box<dyn Iterator<Item = &Self::Column> + '_> {
         unimplemented!();
     }
 
+    /// Get the name of a column
     fn column_name(_col: &Self::Column) -> &str {
         unimplemented!();
     }
 
+    /// Convert a row to an Arrow type
     fn to_arrow(_row: &Self::Row, _: &ArrayRef, _index: usize) -> ArrowType {
         unimplemented!();
     }
 
+    /// Connect to a Snowflake database
     async fn connect(&self) -> Result<SnowflakeApi> {
         let client = SnowflakeApi::with_password_auth(
             &self.account_identifier,
@@ -95,6 +106,7 @@ impl Connection for SnowflakeConnection {
         Ok(client)
     }
 
+    /// Query rows from a Snowflake database
     async fn query(
         &self,
         _client: &mut Self::Conn,
@@ -211,6 +223,7 @@ impl Connection for SnowflakeConnection {
                 for batch in a {
                     let num_cols = batch.num_columns();
 
+                    #[allow(clippy::needless_range_loop)]
                     for col_index in 0..num_cols {
                         let col = batch.column(col_index);
 
