@@ -567,12 +567,11 @@ class Core {
     language: CodeCellLanguage,
     codeString: string,
     cursor?: string
-  ) {
+  ): Promise<string | undefined> {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setCellCode(sheetId, posToPos(x, y), language, codeString, cursor);
-        resolve(undefined);
+        resolve(this.gridController.setCellCode(sheetId, posToPos(x, y), language, codeString, cursor));
       });
     });
   }
@@ -946,15 +945,19 @@ class Core {
     });
   }
 
-  rerunCodeCells(sheetId?: string, x?: number, y?: number, cursor?: string) {
-    if (!this.gridController) throw new Error('Expected gridController to be defined');
-    if (sheetId !== undefined && x !== undefined && y !== undefined) {
-      this.gridController.rerunCodeCell(sheetId, posToPos(x, y), cursor);
-    } else if (sheetId !== undefined) {
-      this.gridController.rerunSheetCodeCells(sheetId, cursor);
-    } else {
-      this.gridController.rerunAllCodeCells(cursor);
-    }
+  rerunCodeCells(sheetId?: string, x?: number, y?: number, cursor?: string): Promise<string | undefined> {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        if (sheetId !== undefined && x !== undefined && y !== undefined) {
+          resolve(this.gridController.rerunCodeCell(sheetId, posToPos(x, y), cursor));
+        }
+        if (sheetId !== undefined) {
+          resolve(this.gridController.rerunSheetCodeCells(sheetId, cursor));
+        }
+        resolve(this.gridController.rerunAllCodeCells(cursor));
+      });
+    });
   }
 
   cancelExecution(transactionId: string) {
