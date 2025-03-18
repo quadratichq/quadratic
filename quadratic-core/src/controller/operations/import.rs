@@ -1,18 +1,18 @@
 use std::{borrow::Cow, io::Cursor};
 
-use anyhow::{anyhow, bail, Result};
+use anyhow::{Result, anyhow, bail};
 use chrono::{NaiveDate, NaiveTime};
 use csv_sniffer::Sniffer;
 
 use crate::{
+    Array, ArraySize, CellValue, Pos, SheetPos,
     arrow::arrow_col_to_cell_value_vec,
     cellvalue::Import,
     controller::GridController,
     grid::{
-        file::sheet_schema::export_sheet, formats::SheetFormatUpdates, CodeCellLanguage,
-        CodeCellValue, DataTable, Sheet, SheetId,
+        CodeCellLanguage, CodeCellValue, DataTable, Sheet, SheetId,
+        file::sheet_schema::export_sheet, formats::SheetFormatUpdates,
     },
-    Array, ArraySize, CellValue, Pos, SheetPos,
 };
 use bytes::Bytes;
 use calamine::{Data as ExcelData, Reader as ExcelReader, Xlsx, XlsxError};
@@ -46,7 +46,6 @@ impl GridController {
 
         let row_0_is_different_from_row_1 = row_0 != row_1;
         let row_1_is_same_as_row_2 = row_1 == row_2;
-        
 
         row_0_is_different_from_row_1 && row_1_is_same_as_row_2
     }
@@ -274,11 +273,11 @@ impl GridController {
         let mut current_y_values = 0;
         let mut current_y_formula = 0;
 
-        let mut order = key_between(&None, &None).unwrap_or("A0".to_string());
+        let mut order = key_between(None, None).unwrap_or("A0".to_string());
         for sheet_name in sheets {
             // add the sheet
             let mut sheet = Sheet::new(SheetId::new(), sheet_name.to_owned(), order.clone());
-            order = key_between(&Some(order), &None).unwrap_or("A0".to_string());
+            order = key_between(Some(&order), None).unwrap_or("A0".to_string());
 
             // values
             let range = workbook.worksheet_range(&sheet_name).map_err(error)?;
@@ -288,9 +287,9 @@ impl GridController {
                     let cell_value = match cell {
                         ExcelData::Empty => continue,
                         ExcelData::String(value) => CellValue::Text(value.to_string()),
-                        ExcelData::DateTimeIso(ref value) => CellValue::unpack_date_time(value)
+                        ExcelData::DateTimeIso(value) => CellValue::unpack_date_time(value)
                             .unwrap_or(CellValue::Text(value.to_string())),
-                        ExcelData::DateTime(ref value) => {
+                        ExcelData::DateTime(value) => {
                             if value.is_datetime() {
                                 value.as_datetime().map_or_else(
                                     || CellValue::Blank,
@@ -316,11 +315,11 @@ impl GridController {
                                 CellValue::Text(value.to_string())
                             }
                         }
-                        ExcelData::DurationIso(ref value) => CellValue::Text(value.to_string()),
-                        ExcelData::Float(ref value) => {
+                        ExcelData::DurationIso(value) => CellValue::Text(value.to_string()),
+                        ExcelData::Float(value) => {
                             CellValue::unpack_str_float(&value.to_string(), CellValue::Blank)
                         }
-                        ExcelData::Int(ref value) => {
+                        ExcelData::Int(value) => {
                             CellValue::unpack_str_float(&value.to_string(), CellValue::Blank)
                         }
                         ExcelData::Error(_) => continue,
@@ -521,9 +520,9 @@ fn read_utf16(bytes: &[u8]) -> Option<String> {
 mod test {
     use super::{read_utf16, *};
     use crate::{
+        CellValue,
         controller::user_actions::import::tests::simple_csv_at,
         test_util::{assert_data_table_cell_value, assert_display_cell_value},
-        CellValue,
     };
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 

@@ -1,3 +1,7 @@
+//! S3
+//!
+//! Functions to interact with S3
+
 use async_trait::async_trait;
 use aws_sdk_s3::Client;
 use bytes::Bytes;
@@ -8,12 +12,14 @@ use crate::{
     error::Result,
 };
 
+/// S3 configuration
 #[derive(Debug, Clone)]
 pub struct S3Config {
     pub client: Client,
     pub bucket: String,
 }
 
+/// S3
 #[derive(Debug, Clone)]
 pub struct S3 {
     pub config: S3Config,
@@ -64,6 +70,7 @@ impl Storage for S3 {
 }
 
 impl S3 {
+    /// Create a new S3
     pub fn new(config: S3Config) -> Self {
         Self { config }
     }

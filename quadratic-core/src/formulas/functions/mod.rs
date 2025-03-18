@@ -121,7 +121,7 @@ impl FormulaFnArgs {
         })
     }
     /// Takes the rest of the arguments and iterates over them.
-    pub fn take_rest(&mut self) -> impl Iterator<Item = Spanned<Value>> {
+    pub fn take_rest(&mut self) -> impl Iterator<Item = Spanned<Value>> + use<> {
         std::mem::take(&mut self.values).into_iter()
     }
 

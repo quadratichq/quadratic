@@ -21,7 +21,7 @@ use crate::util::unique_name;
 use crate::{
     Array, ArraySize, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Value,
 };
-use anyhow::{anyhow, bail, Ok, Result};
+use anyhow::{Ok, Result, anyhow, bail};
 use chrono::{DateTime, Utc};
 use column_header::DataTableColumnHeader;
 use lazy_static::lazy_static;
@@ -426,7 +426,7 @@ impl DataTable {
     /// Returns `None` if the DataTableKind is not CodeRun.
     pub fn code_run_mut(&mut self) -> Option<&mut CodeRun> {
         match &mut self.kind {
-            DataTableKind::CodeRun(ref mut code_run) => Some(code_run),
+            DataTableKind::CodeRun(code_run) => Some(code_run),
             _ => None,
         }
     }
@@ -742,9 +742,9 @@ pub mod test {
 
     use super::*;
     use crate::{
+        Array,
         controller::GridController,
         grid::{Sheet, SheetId},
-        Array,
     };
 
     pub fn test_csv_values() -> Vec<Vec<&'static str>> {
