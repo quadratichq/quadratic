@@ -223,6 +223,7 @@ impl Connection for SnowflakeConnection {
                 for batch in a {
                     let num_cols = batch.num_columns();
 
+                    #[allow(clippy::needless_range_loop)]
                     for col_index in 0..num_cols {
                         let col = batch.column(col_index);
 
