@@ -14,7 +14,7 @@ members = [
 
 [workspace.package]
 authors = ["Quadratic"]
-edition = "2021"
+edition = "2024"
 description = "Infinite data grid with Python, JavaScript, and SQL built-in"
 repository = "https://github.com/quadratichq/quadratic"
 license-file = "LICENSE"
