@@ -950,12 +950,12 @@ class Core {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
         if (sheetId !== undefined && x !== undefined && y !== undefined) {
-          resolve(this.gridController.rerunCodeCell(sheetId, posToPos(x, y), cursor));
+          return resolve(this.gridController.rerunCodeCell(sheetId, posToPos(x, y), cursor));
         }
         if (sheetId !== undefined) {
-          resolve(this.gridController.rerunSheetCodeCells(sheetId, cursor));
+          return resolve(this.gridController.rerunSheetCodeCells(sheetId, cursor));
         }
-        resolve(this.gridController.rerunAllCodeCells(cursor));
+        return resolve(this.gridController.rerunAllCodeCells(cursor));
       });
     });
   }
