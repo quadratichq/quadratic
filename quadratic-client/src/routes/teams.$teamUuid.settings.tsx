@@ -4,7 +4,7 @@ import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { getActionUpdateTeam, type TeamAction } from '@/routes/teams.$teamUuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { CheckIcon } from '@/shared/components/Icons';
+import { CheckIcon, ExternalLinkIcon } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { DOCUMENTATION_ANALYTICS_AI, PRICING_URL } from '@/shared/constants/urls';
@@ -162,8 +162,8 @@ export const Component = () => {
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm">AI messages</span>
-                        <div className="flex items-center gap-1">
+                        <span className="flex items-center gap-1 text-sm">
+                          AI messages
                           <Dialog>
                             <DialogTrigger>
                               <InfoCircledIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
@@ -178,6 +178,8 @@ export const Component = () => {
                               </p>
                             </DialogContent>
                           </Dialog>
+                        </span>
+                        <div className="flex items-center gap-1">
                           <span className="text-sm font-medium">Many</span>
                         </div>
                       </div>
@@ -294,10 +296,10 @@ export const Component = () => {
 
               <p className="pt-4 text-sm text-muted-foreground">
                 Learn more on our{' '}
-                <a href={PRICING_URL} target="_blank" className="underline hover:text-primary">
-                  pricing
-                </a>{' '}
-                page.
+                <a href={PRICING_URL} target="_blank" className="  underline hover:text-primary">
+                  pricing page
+                  <ExternalLinkIcon className="relative top-1 ml-0.5 !text-sm" />
+                </a>
               </p>
             </div>
           </SettingsRow>

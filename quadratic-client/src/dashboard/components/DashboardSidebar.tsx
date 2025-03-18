@@ -146,7 +146,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             <div className="flex gap-2">
               <RocketIcon className="h-5 w-5 text-primary" />
               <div className="flex flex-col">
-                <span className="font-semibold">Upgrade to Pro</span>
+                <span className="font-semibold">Upgrade to Quadratic Pro</span>
                 <span className="text-muted-foreground">Get more AI messages, connections, and more.</span>
               </div>
             </div>
@@ -160,7 +160,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
                   });
                 }}
               >
-                Manage billing
+                Upgrade to Pro
               </Link>
             </Button>
           </div>
