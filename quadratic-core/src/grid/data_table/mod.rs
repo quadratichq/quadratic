@@ -21,7 +21,7 @@ use crate::util::unique_name;
 use crate::{
     Array, ArraySize, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Value,
 };
-use anyhow::{anyhow, bail, Ok, Result};
+use anyhow::{Ok, Result, anyhow, bail};
 use chrono::{DateTime, Utc};
 use column_header::DataTableColumnHeader;
 use lazy_static::lazy_static;
@@ -730,6 +730,7 @@ impl DataTable {
     pub fn is_dataframe(&self) -> bool {
         if let DataTableKind::CodeRun(code_run) = &self.kind {
             code_run.output_type == Some("DataFrame".into())
+                || code_run.output_type == Some("Series".into())
         } else {
             false
         }
@@ -741,9 +742,9 @@ pub mod test {
 
     use super::*;
     use crate::{
+        Array,
         controller::GridController,
         grid::{Sheet, SheetId},
-        Array,
     };
 
     pub fn test_csv_values() -> Vec<Vec<&'static str>> {
