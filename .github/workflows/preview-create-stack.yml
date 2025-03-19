@@ -20,9 +20,8 @@ jobs:
     env:
       STACK_NAME: pr-${{ github.event.pull_request.number }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          lfs: true
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
