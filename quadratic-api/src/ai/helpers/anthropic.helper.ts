@@ -1,8 +1,21 @@
 import type Anthropic from '@anthropic-ai/sdk';
-import type { MessageParam, TextBlockParam, Tool, ToolChoice } from '@anthropic-ai/sdk/resources';
+import type {
+  DocumentBlockParam,
+  ImageBlockParam,
+  MessageParam,
+  TextBlockParam,
+  Tool,
+  ToolChoice,
+} from '@anthropic-ai/sdk/resources';
 import type { Stream } from '@anthropic-ai/sdk/streaming';
 import type { Response } from 'express';
-import { getSystemPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import {
+  getSystemPromptMessages,
+  isContentImage,
+  isContentPdfFile,
+  isContentTextFile,
+  isToolResultMessage,
+} from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -31,10 +44,11 @@ export function getAnthropicApiArgs(
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
 
-  const system: TextBlockParam[] = systemMessages.map((message, index) => ({
+  let cacheRemaining = promptCaching ? 4 : 0;
+  const system: TextBlockParam[] = systemMessages.map((message) => ({
     type: 'text' as const,
     text: message,
-    ...(promptCaching && index < 4 ? { cache_control: { type: 'ephemeral' } } : {}),
+    ...(cacheRemaining-- > 0 ? { cache_control: { type: 'ephemeral' } } : {}),
   }));
 
   const messages: MessageParam[] = promptMessages.reduce<MessageParam[]>((acc, message) => {
@@ -77,26 +91,66 @@ export function getAnthropicApiArgs(
         ],
       };
       return [...acc, anthropicMessage];
-    } else if (message.role === 'user' && message.contextType === 'toolResult') {
+    } else if (isToolResultMessage(message)) {
       const anthropicMessages: MessageParam = {
         role: message.role,
         content: [
           ...message.content.map((toolResult) => ({
             type: 'tool_result' as const,
             tool_use_id: toolResult.id,
-            content: toolResult.content,
+            content: toolResult.text,
           })),
           {
             type: 'text' as const,
-            text: 'Given the above tool calls results, please provide your final answer to the user.',
+            text: 'Given the above tool calls results, continue with your response.',
           },
         ],
       };
       return [...acc, anthropicMessages];
-    } else if (message.content) {
+    } else if (message.content.length) {
       const anthropicMessage: MessageParam = {
         role: message.role,
-        content: message.content,
+        content: message.content.map((content) => {
+          if (isContentImage(content)) {
+            const imageBlockParam: ImageBlockParam = {
+              type: 'image' as const,
+              source: {
+                data: content.data,
+                media_type: content.mimeType,
+                type: 'base64' as const,
+              },
+            };
+            return imageBlockParam;
+          } else if (isContentPdfFile(content)) {
+            const documentBlockParam: DocumentBlockParam = {
+              type: 'document' as const,
+              source: {
+                data: content.data,
+                media_type: content.mimeType,
+                type: 'base64' as const,
+              },
+              title: content.fileName,
+            };
+            return documentBlockParam;
+          } else if (isContentTextFile(content)) {
+            const documentBlockParam: DocumentBlockParam = {
+              type: 'document' as const,
+              source: {
+                data: content.data,
+                media_type: content.mimeType,
+                type: 'text' as const,
+              },
+              title: content.fileName,
+            };
+            return documentBlockParam;
+          } else {
+            const textBlockParam: TextBlockParam = {
+              type: 'text' as const,
+              text: content.text,
+            };
+            return textBlockParam;
+          }
+        }),
       };
       return [...acc, anthropicMessage];
     } else {

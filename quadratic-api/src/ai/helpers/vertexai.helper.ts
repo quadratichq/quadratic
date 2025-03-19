@@ -8,7 +8,11 @@ import type {
 } from '@google-cloud/vertexai';
 import { FunctionCallingMode, SchemaType } from '@google-cloud/vertexai';
 import type { Response } from 'express';
-import { getSystemPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import {
+  getSystemPromptMessages,
+  isContentText,
+  isToolResultMessage,
+} from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -56,14 +60,14 @@ export function getVertexAIApiArgs(args: AIRequestHelperArgs): {
         ],
       };
       return [...acc, vertexaiMessage];
-    } else if (message.role === 'user' && message.contextType === 'toolResult') {
+    } else if (isToolResultMessage(message)) {
       const vertexaiMessage: Content = {
         role: message.role,
         parts: [
           ...message.content.map((toolResult) => ({
             functionResponse: {
               name: toolResult.id,
-              response: { res: toolResult.content },
+              response: { res: toolResult.text },
             },
           })),
           {
@@ -75,7 +79,18 @@ export function getVertexAIApiArgs(args: AIRequestHelperArgs): {
     } else if (message.content) {
       const vertexaiMessage: Content = {
         role: message.role,
-        parts: [{ text: message.content }],
+        parts: message.content.map((content) => {
+          if (isContentText(content)) {
+            return { text: content.text };
+          } else {
+            return {
+              inlineData: {
+                data: content.data,
+                mimeType: content.mimeType,
+              },
+            };
+          }
+        }),
       };
       return [...acc, vertexaiMessage];
     } else {

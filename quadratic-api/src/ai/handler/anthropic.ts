@@ -37,7 +37,7 @@ export const handleAnthropicRequest = async (
       };
 
   try {
-    let requestArgs: MessageCreateParamsStreaming | MessageCreateParamsNonStreaming = {
+    let apiArgs: MessageCreateParamsStreaming | MessageCreateParamsNonStreaming = {
       model,
       system,
       messages,
@@ -48,13 +48,13 @@ export const handleAnthropicRequest = async (
       tool_choice,
     };
     if (options.thinking !== undefined) {
-      requestArgs = {
-        ...requestArgs,
+      apiArgs = {
+        ...apiArgs,
         thinking,
       };
     }
     if (options.stream) {
-      const chunks = await anthropic.messages.create(requestArgs as MessageCreateParamsStreaming);
+      const chunks = await anthropic.messages.create(apiArgs as MessageCreateParamsStreaming);
 
       response.setHeader('Content-Type', 'text/event-stream');
       response.setHeader('Cache-Control', 'no-cache');
@@ -63,7 +63,7 @@ export const handleAnthropicRequest = async (
       const parsedResponse = await parseAnthropicStream(chunks, response, modelKey);
       return parsedResponse;
     } else {
-      const result = await anthropic.messages.create(requestArgs as MessageCreateParamsNonStreaming);
+      const result = await anthropic.messages.create(apiArgs as MessageCreateParamsNonStreaming);
 
       const parsedResponse = parseAnthropicResponse(result, response, modelKey);
       return parsedResponse;

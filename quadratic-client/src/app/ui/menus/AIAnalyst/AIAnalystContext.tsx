@@ -11,21 +11,23 @@ import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultA
 import { CloseIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
-import type { Context, UserMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
+import type { Context, FileContent, UserMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 type AIAnalystContextProps = {
+  initialContext?: Context;
   context: Context;
   setContext: React.Dispatch<React.SetStateAction<Context>>;
-  initialContext?: Context;
+  files: FileContent[];
+  setFiles: React.Dispatch<React.SetStateAction<FileContent[]>>;
   editing: boolean;
   disabled: boolean;
   textAreaRef: React.RefObject<HTMLTextAreaElement>;
 };
 
 export const AIAnalystContext = memo(
-  ({ context, setContext, initialContext, editing, disabled, textAreaRef }: AIAnalystContextProps) => {
+  ({ initialContext, context, setContext, files, setFiles, editing, disabled, textAreaRef }: AIAnalystContextProps) => {
     const loading = useRecoilValue(aiAnalystLoadingAtom);
     const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
     const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
@@ -98,6 +100,16 @@ export const AIAnalystContext = memo(
             onClose={() => textAreaRef.current?.focus()}
           />
         )}
+
+        {files.map((file, index) => (
+          <ContextPill
+            key={`${index}-${file.fileName}`}
+            primary={file.fileName}
+            secondary=""
+            disabled={disabled}
+            onClick={() => setFiles(files.filter((f) => f !== file))}
+          />
+        ))}
 
         <ContextPill
           key="cursor"

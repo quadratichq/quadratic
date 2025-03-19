@@ -22,7 +22,7 @@ import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { anthropic, bedrock, bedrock_anthropic, openai, vertex_anthropic, vertexai, xai } from '../../ai/providers';
 import dbClient from '../../dbClient';
-import { STORAGE_TYPE } from '../../env-vars';
+import { DEBUG, STORAGE_TYPE } from '../../env-vars';
 import { getFile } from '../../middleware/getFile';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
@@ -85,6 +85,10 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   }
   if (parsedResponse) {
     args.messages.push(parsedResponse.responseMessage);
+  }
+
+  if (DEBUG) {
+    console.log('[AI.TokenUsage]', parsedResponse?.usage);
   }
 
   const {
