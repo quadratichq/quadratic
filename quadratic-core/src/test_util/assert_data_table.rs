@@ -2,17 +2,18 @@
 use crate::{controller::GridController, grid::DataTable, grid::SheetId, Pos};
 
 /// Runs an assertion that a cell value is equal to the given value. The col/row
-/// are 0-indexed to the table.
+/// are 0-indexed to the table and ignore all ui elements (ie, table name and
+/// column headers).
 #[track_caller]
 #[cfg(test)]
-pub fn assert_data_table_cell_value(dt: &DataTable, col: i64, row: i64, value: &str) {
-    let cell_value = dt.cell_value_at(col as u32, row as u32);
+pub fn assert_data_table_at(dt: &DataTable, col: i64, row: i64, value: &str) {
+    let cell_value = dt.cell_value_at(col as u32, row as u32 + dt.y_adjustment(true) as u32);
     assert_eq!(
         cell_value,
         if value.is_empty() {
             None
         } else {
-            Some(value.into())
+            Some(crate::CellValue::parse_from_str(value))
         },
         "Cell at ({}, {}) does not have the value {:?}, it's actually {:?}",
         col,
@@ -27,27 +28,16 @@ pub fn assert_data_table_cell_value(dt: &DataTable, col: i64, row: i64, value: &
 #[cfg(test)]
 pub fn assert_data_table_row(dt: &DataTable, row: i64, values: Vec<&str>) {
     for (index, value) in values.iter().enumerate() {
-        assert_data_table_cell_value(dt, index as i64, row, value);
+        assert_data_table_at(dt, index as i64, row, value);
     }
 }
 
-/// Run an assertion that a row of data table is equal to the given values.
-/// Note, this fn ignores the table name and column headers. Use
-/// assert_data_table_row if you're testing those.
-#[track_caller]
-#[cfg(test)]
-pub fn assert_data_table_row_values_only(dt: &DataTable, row: i64, values: Vec<&str>) {
-    for (index, value) in values.iter().enumerate() {
-        assert_data_table_cell_value(dt, index as i64, row + dt.y_adjustment(true), value);
-    }
-}
-
-/// Run an assertion that cell values in a given column are equal to the given values
+/// Run an assertion that cell values in a given column are equal to the given values. It ignores the table name.
 #[track_caller]
 #[cfg(test)]
 pub fn assert_data_table_column(dt: &DataTable, column: i64, values: Vec<&str>) {
     for (index, value) in values.iter().enumerate() {
-        assert_data_table_cell_value(dt, column, index as i64, value);
+        assert_data_table_at(dt, column, index as i64, value);
     }
 }
 
@@ -96,14 +86,14 @@ mod tests {
     }
 
     #[test]
-    fn test_assert_data_table_cell_value() {
+    fn test_assert_data_table_at() {
         let mut gc = GridController::test();
         let dt = test_create_data_table_first_sheet(&mut gc, pos![A1], 2, 2, &["a", "b", "c", "d"]);
 
-        assert_data_table_cell_value(&dt, 0, 0, "a");
-        assert_data_table_cell_value(&dt, 1, 0, "b");
-        assert_data_table_cell_value(&dt, 0, 1, "c");
-        assert_data_table_cell_value(&dt, 1, 1, "d");
+        assert_data_table_at(&dt, 0, 0, "a");
+        assert_data_table_at(&dt, 1, 0, "b");
+        assert_data_table_at(&dt, 0, 1, "c");
+        assert_data_table_at(&dt, 1, 1, "d");
     }
 
     #[test]
@@ -112,7 +102,7 @@ mod tests {
         let mut gc = GridController::test();
         let dt = test_create_data_table_first_sheet(&mut gc, pos![A1], 2, 2, &["a", "b", "c", "d"]);
 
-        assert_data_table_cell_value(&dt, 0, 0, "wrong");
+        assert_data_table_at(&dt, 0, 0, "wrong");
     }
 
     #[test]
@@ -131,5 +121,25 @@ mod tests {
 
         assert_data_table_column(&dt, 0, vec!["a", "c"]);
         assert_data_table_column(&dt, 1, vec!["b", "d"]);
+    }
+
+    #[test]
+    #[should_panic(expected = "Cell at (0, 2) does not have the value")]
+    fn test_assert_data_table_row_failure() {
+        let mut gc = GridController::test();
+        let dt = test_create_data_table_first_sheet(&mut gc, pos![A1], 2, 2, &["a", "b", "c", "d"]);
+
+        assert_data_table_row(&dt, 2, vec!["wrong", "value"]);
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "Cell at (1, 0) does not have the value \"wrong\", it's actually Some(Text(\"b\"))"
+    )]
+    fn test_assert_data_table_column_failure() {
+        let mut gc = GridController::test();
+        let dt = test_create_data_table_first_sheet(&mut gc, pos![A1], 2, 2, &["a", "b", "c", "d"]);
+
+        assert_data_table_column(&dt, 1, vec!["wrong", "value"]);
     }
 }
