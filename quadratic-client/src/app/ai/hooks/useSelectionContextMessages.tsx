@@ -25,7 +25,10 @@ export function useSelectionContextMessages() {
       return [
         {
           role: 'user',
-          content: `
+          content: [
+            {
+              type: 'text',
+              text: `
 Note: This is an internal message for context. Do not quote it in your response.\n\n
 ${
   !!selectionContext && selectionContext.length === 1
@@ -106,11 +109,18 @@ Code was run recently and the console output is:\n
 My cursor position is at ${sheets.sheet.cursor.toCursorA1()} on the currently open sheet. Use this to position your response on the sheet.
 Always check if there is sufficient space on the sheet to position your response. Never accidentally overwrite any data on the sheet just to use this cursor position.`
 }`,
+            },
+          ],
           contextType: 'selection',
         },
         {
           role: 'assistant',
-          content: `I understand the cursor selection data, I will reference it to answer following messages. How can I help you?`,
+          content: [
+            {
+              type: 'text',
+              text: `I understand the cursor selection data, I will reference it to answer following messages. How can I help you?`,
+            },
+          ],
           contextType: 'selection',
         },
       ];
