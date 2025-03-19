@@ -99,8 +99,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
                     .filter_map(|r| {
                         // This is actually wrong -- we should translate differently
                         // for every sheet, not just once for the current sheet
-                        r.adjust(RefAdjust::new_translate(*sheet_id, x_shift, y_shift))
-                            .ok()
+                        r.adjust(RefAdjust::new_translate(x_shift, y_shift)).ok()
                     })
                     .collect();
             }
