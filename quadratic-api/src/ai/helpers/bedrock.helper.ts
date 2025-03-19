@@ -116,9 +116,8 @@ function getBedrockTools(source: AISource, toolName?: AITool): Tool[] | undefine
   return bedrockTools;
 }
 
-function getBedrockToolChoice(toolName?: AITool): ToolChoice | undefined {
-  const toolChoice: ToolChoice = toolName === undefined ? { auto: {} } : { tool: { name: toolName } };
-  return toolChoice;
+function getBedrockToolChoice(toolName?: AITool): ToolChoice {
+  return toolName === undefined ? { auto: {} } : { tool: { name: toolName } };
 }
 
 export async function parseBedrockStream(
@@ -207,7 +206,7 @@ export async function parseBedrockStream(
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
     responseMessage.content.push({
       type: 'text',
-      text: "I'm sorry, I don't have a response for that.",
+      text: 'Please try again.',
     });
   }
 
@@ -265,7 +264,7 @@ export function parseBedrockResponse(
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
     responseMessage.content.push({
       type: 'text',
-      text: "I'm sorry, I don't have a response for that.",
+      text: 'Please try again.',
     });
   }
 
