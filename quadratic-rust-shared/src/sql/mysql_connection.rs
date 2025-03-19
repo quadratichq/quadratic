@@ -1,3 +1,7 @@
+//! MySQL
+//!
+//! Functions to interact with MySQL
+
 use std::collections::BTreeMap;
 
 use arrow::datatypes::Date32Type;
@@ -11,8 +15,8 @@ use serde_json::Value;
 use uuid::Uuid;
 
 use sqlx::{
-    mysql::{MySqlColumn, MySqlConnectOptions, MySqlRow /* , MySqlTypeInfo*/},
     Column, ConnectOptions, MySqlConnection as SqlxMySqlConnection, Row, TypeInfo,
+    mysql::{MySqlColumn, MySqlConnectOptions, MySqlRow /* , MySqlTypeInfo*/},
 };
 
 use crate::convert_mysql_type;
@@ -21,6 +25,7 @@ use crate::sql::error::Sql as SqlError;
 use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
 use crate::sql::{ArrowType, Connection};
 
+/// MySQL connection
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MySqlConnection {
     pub username: Option<String>,
@@ -31,6 +36,7 @@ pub struct MySqlConnection {
 }
 
 impl MySqlConnection {
+    /// Create a new MySQL connection
     pub fn new(
         username: Option<String>,
         password: Option<String>,
@@ -47,6 +53,7 @@ impl MySqlConnection {
         }
     }
 
+    /// Query all rows from a MySQL database
     async fn query_all(pool: &mut SqlxMySqlConnection, sql: &str) -> Result<Vec<MySqlRow>> {
         let rows = sqlx::query(sql)
             .fetch_all(pool)
@@ -63,18 +70,22 @@ impl Connection for MySqlConnection {
     type Row = MySqlRow;
     type Column = MySqlColumn;
 
+    /// Get the length of a row
     fn row_len(row: &Self::Row) -> usize {
         row.len()
     }
 
+    /// Get the columns of a row
     fn row_columns(row: &Self::Row) -> Box<dyn Iterator<Item = &Self::Column> + '_> {
         Box::new(row.columns().iter())
     }
 
+    /// Get the name of a column
     fn column_name(col: &Self::Column) -> &str {
         col.name()
     }
 
+    /// Connect to a MySQL database
     async fn connect(&self) -> Result<Self::Conn> {
         let mut options = MySqlConnectOptions::new();
         options = options.host(&self.host);
@@ -103,6 +114,7 @@ impl Connection for MySqlConnection {
         Ok(pool)
     }
 
+    /// Query rows from a MySQL database
     async fn query(
         &self,
         pool: &mut Self::Conn,
@@ -136,6 +148,7 @@ impl Connection for MySqlConnection {
         Ok((bytes, over_the_limit, num_records))
     }
 
+    /// Get the schema of a MySQL database
     async fn schema(&self, pool: &mut Self::Conn) -> Result<DatabaseSchema> {
         let database = self.database.to_owned();
         let sql = format!("
@@ -179,6 +192,7 @@ impl Connection for MySqlConnection {
         Ok(schema)
     }
 
+    /// Convert a row to an Arrow type
     fn to_arrow(row: &Self::Row, column: &Self::Column, index: usize) -> ArrowType {
         // println!("Column: {} ({})", column.name(), column.type_info().name());
         match column.type_info().name() {
@@ -264,7 +278,7 @@ mod tests {
         let (_, pool) = setup().await;
         let mut pool = pool.unwrap();
         let sql = "select * from all_native_data_types order by id limit 1";
-        let rows = MySqlConnection::query_all(&mut pool, &sql).await.unwrap();
+        let rows = MySqlConnection::query_all(&mut pool, sql).await.unwrap();
 
         // for row in &rows {
         //     for (index, col) in row.columns().iter().enumerate() {

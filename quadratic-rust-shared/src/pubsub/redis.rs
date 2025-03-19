@@ -1,11 +1,11 @@
 use redis::{
-    aio::{AsyncStream, MultiplexedConnection, PubSub},
-    cmd, AsyncCommands, Client,
+    AsyncCommands, Client,
+    aio::{MultiplexedConnection, PubSub},
+    cmd,
 };
-use std::pin::Pin;
 
 use crate::pubsub::Config;
-use crate::{error::Result, SharedError};
+use crate::{SharedError, error::Result};
 
 #[derive(Debug, Clone)]
 pub struct RedisConfig {
@@ -15,7 +15,7 @@ pub struct RedisConfig {
     pub active_channels: String,
 }
 
-pub type PubSubConnection = PubSub<Pin<Box<dyn AsyncStream + Send + Sync>>>;
+pub type PubSubConnection = PubSub;
 
 pub struct RedisConnection {
     pub pubsub: PubSubConnection,

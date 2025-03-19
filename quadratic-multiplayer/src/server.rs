@@ -4,6 +4,7 @@
 //! to be shared across all requests and threads.  Adds tracing/logging.
 
 use axum::{
+    Extension, Router,
     extract::{
         connect_info::ConnectInfo,
         ws::{Message, WebSocket, WebSocketUpgrade},
@@ -11,12 +12,11 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
     routing::get,
-    Extension, Router,
 };
 use axum_extra::TypedHeader;
 use futures::stream::StreamExt;
-use futures_util::stream::SplitSink;
 use futures_util::SinkExt;
+use futures_util::stream::SplitSink;
 use quadratic_rust_shared::auth::jwt::{authorize, get_jwks};
 use serde::{Deserialize, Serialize};
 use std::ops::ControlFlow;
@@ -32,7 +32,7 @@ use crate::{
     message::{
         broadcast, handle::handle_message, request::MessageRequest, response::MessageResponse,
     },
-    state::{connection::PreConnection, State},
+    state::{State, connection::PreConnection},
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -116,17 +116,18 @@ pub(crate) async fn serve() -> Result<()> {
 
 // Handle the websocket upgrade from http.
 #[tracing::instrument(level = "trace")]
+#[axum_macros::debug_handler]
 async fn ws_handler(
     ws: WebSocketUpgrade,
     user_agent: Option<TypedHeader<headers::UserAgent>>,
-    addr: Option<ConnectInfo<SocketAddr>>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Extension(state): Extension<Arc<State>>,
     cookie: Option<TypedHeader<headers::Cookie>>,
 ) -> impl IntoResponse {
     let user_agent = user_agent.map_or("Unknown user agent".into(), |user_agent| {
         user_agent.to_string()
     });
-    let addr = addr.map_or("Unknown address".into(), |addr| addr.to_string());
+    let addr = addr.to_string();
 
     #[allow(unused)]
     let mut jwt = None;
@@ -212,7 +213,11 @@ async fn handle_socket(
                     error_level,
                 }) {
                     // send error message to the client
-                    let sent = sender.lock().await.send(Message::Text(message)).await;
+                    let sent = sender
+                        .lock()
+                        .await
+                        .send(Message::Text(message.into()))
+                        .await;
 
                     if let Err(sent) = sent {
                         tracing::warn!("Error sending error message: {:?}", sent);
@@ -290,10 +295,9 @@ async fn process_message(
                     .await?;
 
             if let Some(message_response) = message_response {
-                let response = Message::Text(serde_json::to_string(&message_response)?);
-
+                let response_text = serde_json::to_string(&message_response)?;
                 (*sender.lock().await)
-                    .send(response)
+                    .send(Message::Text(response_text.into()))
                     .await
                     .map_err(|e| MpError::SendingMessage(e.to_string()))?;
             }
@@ -340,12 +344,12 @@ pub(crate) mod tests {
         body::Body,
         http::{self, Request},
     };
-    use base64::{engine::general_purpose::STANDARD, Engine};
+    use base64::{Engine, engine::general_purpose::STANDARD};
     use quadratic_core::controller::operations::operation::Operation;
     use quadratic_core::controller::transaction::Transaction;
     use quadratic_core::grid::SheetId;
 
-    use tokio::time::{sleep, Instant};
+    use tokio::time::{Instant, sleep};
     use tower::ServiceExt;
     use uuid::Uuid;
 
