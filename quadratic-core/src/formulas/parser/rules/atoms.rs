@@ -174,10 +174,13 @@ impl SyntaxRule for CellRangeReference {
             range = range1;
         }
 
-        let cells = CellRefRange::Sheet { range };
         Ok(Spanned {
             span,
-            inner: Ok(SheetCellRefRange { sheet_id, cells }),
+            inner: Ok(SheetCellRefRange {
+                sheet_id,
+                cells: CellRefRange::Sheet { range },
+                explicit_sheet_name: sheet1.is_some(),
+            }),
         })
     }
 }

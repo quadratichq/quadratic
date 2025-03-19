@@ -55,53 +55,51 @@ mod tests {
 
     #[test]
     fn test_adjust() {
-        let sheet_id = SheetId::TEST;
-
         // Test single cell translation
         let range = RefRangeBounds::test_a1("A1");
-        let adj = RefAdjust::new_translate(sheet_id, 1, 1);
+        let adj = RefAdjust::new_translate(1, 1);
         assert_eq!(range.adjust(adj).unwrap().to_string(), "B2");
         assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "B2");
 
         // Test range translation
         let range = RefRangeBounds::test_a1("A1:C3");
-        let adj = RefAdjust::new_translate(sheet_id, 1, 1);
+        let adj = RefAdjust::new_translate(1, 1);
         assert_eq!(range.adjust(adj).unwrap().to_string(), "B2:D4");
         assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "B2:D4");
 
         // Test column range translation
         let range = RefRangeBounds::test_a1("A:C");
-        let adj = RefAdjust::new_translate(sheet_id, 1, 0);
+        let adj = RefAdjust::new_translate(1, 0);
         assert_eq!(range.adjust(adj).unwrap().to_string(), "B:D");
         assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "B:D");
 
         // Test row range translation
         let range = RefRangeBounds::test_a1("1:3");
-        let adj = RefAdjust::new_translate(sheet_id, 0, 1);
+        let adj = RefAdjust::new_translate(0, 1);
         assert_eq!(range.adjust(adj).unwrap().to_string(), "2:4");
         assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "2:4");
 
         // Test negative translation
         let range = RefRangeBounds::test_a1("B2:D4");
-        let adj = RefAdjust::new_translate(sheet_id, -1, -1);
+        let adj = RefAdjust::new_translate(-1, -1);
         assert_eq!(range.adjust(adj).unwrap().to_string(), "A1:C3");
         assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "A1:C3");
 
         // Test zero translation
         let range = RefRangeBounds::test_a1("A1:C3");
-        let adj = RefAdjust::new_translate(sheet_id, 0, 0);
+        let adj = RefAdjust::new_translate(0, 0);
         assert_eq!(range.adjust(adj).unwrap().to_string(), "A1:C3");
         assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "A1:C3");
 
         // Ideally * remains unchanged, but that's impossible
         let range = RefRangeBounds::test_a1("*");
-        let adj = RefAdjust::new_translate(sheet_id, 1, 1);
+        let adj = RefAdjust::new_translate(1, 1);
         assert_eq!(range.adjust(adj).unwrap().to_string(), "B2:");
         assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "B2:");
 
         // Test negative translation capping
         let range = RefRangeBounds::test_a1("A12:Z12");
-        let adj = RefAdjust::new_translate(sheet_id, -10, -10);
+        let adj = RefAdjust::new_translate(-10, -10);
         range.adjust(adj).unwrap_err();
         assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "A2:P2");
     }

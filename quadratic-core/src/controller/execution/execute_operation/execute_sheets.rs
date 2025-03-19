@@ -303,7 +303,6 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
-        constants::SHEET_NAME,
         controller::{
             active_transactions::transaction_name::TransactionName,
             operations::operation::Operation, user_actions::import::tests::simple_csv_at,
@@ -642,14 +641,11 @@ mod tests {
         );
 
         gc.test_set_code_run_array_2d(sheet_id, 20, 20, 2, 2, vec!["1", "2", "3", "4"]);
+        let quoted_sheet = crate::a1::quote_sheet_name(gc.sheet_names()[0]);
         gc.set_code_cell(
-            SheetPos {
-                sheet_id,
-                x: 20,
-                y: 20,
-            },
+            pos![sheet_id!T20],
             CodeCellLanguage::Python,
-            format!("q.cells(\"\'{}1\'!A1\")", SHEET_NAME.to_owned()),
+            format!(r#"q.cells("F5") + q.cells("{quoted_sheet}!Q9")"#),
             None,
         );
 
@@ -667,11 +663,12 @@ mod tests {
             })
         );
 
+        let new_quoted_sheet = crate::a1::quote_sheet_name(gc.sheet_names()[1]);
         assert_eq!(
             gc.sheet(duplicated_sheet_id).cell_value(pos![T20]).unwrap(),
             CellValue::Code(CodeCellValue {
                 language: CodeCellLanguage::Python,
-                code: r#"q.cells("A1")"#.to_string(),
+                code: format!(r#"q.cells("F5") + q.cells("{new_quoted_sheet}!Q9")"#),
             })
         );
     }

@@ -284,14 +284,8 @@ mod tests {
                 Operation::ComputeCode {
                     sheet_pos: SheetPos::new(sheet_id, 1, 1)
                 },
-                // second formula, y += 1 for y >= 2
-                Operation::SetCellValues {
-                    sheet_pos: SheetPos::new(sheet_id, 1, 2),
-                    values: single_formula("F1+Other!F1 - Nonexistent!F1"),
-                },
-                Operation::ComputeCode {
-                    sheet_pos: SheetPos::new(sheet_id, 1, 2)
-                },
+                // second formula doesn't change because all Y coordinates are < 2
+                // so no operations needed
             ]
         );
 
@@ -300,18 +294,13 @@ mod tests {
         assert_eq!(
             &transaction.operations,
             &[
-                // first formula, x += 1 for x >= 5
-                Operation::SetCellValues {
-                    sheet_pos: SheetPos::new(sheet_id, 1, 1),
-                    values: single_formula("B$16 + $B17"),
-                },
-                Operation::ComputeCode {
-                    sheet_pos: SheetPos::new(sheet_id, 1, 1)
-                },
+                // first formula doesn't change because all X coordinates are < 5
+                // so no operations needed
+                //
                 // second formula, x += 1 for x >= 5
                 Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 1, 2),
-                    values: single_formula("G1+Other!F1 - Nonexistent!F1"),
+                    values: single_formula("'Sheet 1'!G1+Other!F1 - Nonexistent!F1"),
                 },
                 Operation::ComputeCode {
                     sheet_pos: SheetPos::new(sheet_id, 1, 2)

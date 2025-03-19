@@ -90,9 +90,9 @@ impl A1Selection {
     /// of bounds.
     #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn adjust(self, adjust: RefAdjust) -> Result<Self, RefError> {
-        if self.sheet_id == adjust.sheet_id {
+        if adjust.affects_sheet(self.sheet_id) {
             Ok(Self {
-                sheet_id: adjust.new_sheet_id.unwrap_or(self.sheet_id),
+                sheet_id: self.sheet_id,
                 cursor: self.cursor.saturating_adjust(adjust),
                 ranges: self
                     .ranges
@@ -108,9 +108,9 @@ impl A1Selection {
     /// bounds. Returns `None` if the whole selection becomes empty.
     #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn saturating_adjust(self, adjust: RefAdjust) -> Option<Self> {
-        if self.sheet_id == adjust.sheet_id {
+        if adjust.affects_sheet(self.sheet_id) {
             Some(Self {
-                sheet_id: adjust.new_sheet_id.unwrap_or(self.sheet_id),
+                sheet_id: self.sheet_id,
                 cursor: self.cursor.saturating_adjust(adjust),
                 ranges: self
                     .ranges
@@ -127,7 +127,7 @@ impl A1Selection {
     /// Translates the selection, clamping the result within the sheet bounds.
     #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn saturating_translate(self, dx: i64, dy: i64) -> Option<Self> {
-        let adjust = RefAdjust::new_translate(self.sheet_id, dx, dy);
+        let adjust = RefAdjust::new_translate(dx, dy);
         self.saturating_adjust(adjust)
     }
 
@@ -435,44 +435,39 @@ mod tests {
     fn test_adjust_translate() {
         // Test positive translation
         let selection = A1Selection::test_a1("A1:B2");
-        let adj = RefAdjust::new_translate(selection.sheet_id, 1, 1);
-        let res = selection.adjust(adj).unwrap();
+        let res = selection.adjust(RefAdjust::new_translate(1, 1)).unwrap();
         assert_eq!(res, A1Selection::test_a1("B2:C3"));
 
         // Test negative translation
         let selection = A1Selection::test_a1("C3:D4");
-        let adj = RefAdjust::new_translate(selection.sheet_id, -1, -1);
-        let res = selection.adjust(adj).unwrap();
+        let res = selection.adjust(RefAdjust::new_translate(-1, -1)).unwrap();
         assert_eq!(res, A1Selection::test_a1("B2:C3"));
 
         // Test zero translation
         let selection = A1Selection::test_a1("A1:B2");
-        let adj = RefAdjust::new_translate(selection.sheet_id, 0, 0);
-        let res = selection.adjust(adj).unwrap();
+        let res = selection.adjust(RefAdjust::new_translate(0, 0)).unwrap();
         assert_eq!(res, A1Selection::test_a1("A1:B2"));
 
         // Test x-only translation
         let selection = A1Selection::test_a1("A1:B2");
-        let adj = RefAdjust::new_translate(selection.sheet_id, 2, 0);
-        let res = selection.adjust(adj).unwrap();
+        let res = selection.adjust(RefAdjust::new_translate(2, 0)).unwrap();
         assert_eq!(res, A1Selection::test_a1("C1:D2"));
 
         // Test y-only translation
         let selection = A1Selection::test_a1("A1:B2");
-        let adj = RefAdjust::new_translate(selection.sheet_id, 0, 2);
-        let res = selection.adjust(adj).unwrap();
+        let res = selection.adjust(RefAdjust::new_translate(0, 2)).unwrap();
         assert_eq!(res, A1Selection::test_a1("A3:B4"));
 
         // Test single cell selection
         let selection = A1Selection::test_a1("A1");
-        let adj = RefAdjust::new_translate(selection.sheet_id, 1, 1);
-        let res = selection.adjust(adj).unwrap();
+        let res = selection.adjust(RefAdjust::new_translate(1, 1)).unwrap();
         assert_eq!(res, A1Selection::test_a1("B2"));
 
         // Test negative translation capping
         let selection = A1Selection::test_a1("A1");
-        let adj = RefAdjust::new_translate(selection.sheet_id, -10, -10);
-        selection.adjust(adj).unwrap_err();
+        selection
+            .adjust(RefAdjust::new_translate(-10, -10))
+            .unwrap_err();
     }
 
     #[test]

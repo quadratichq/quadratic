@@ -4,7 +4,7 @@ use fancy_regex::Regex;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
-use crate::a1::{A1Context, A1Selection};
+use crate::a1::{A1Context, SheetCellRefRange};
 use crate::grid::CodeCellLanguage;
 use crate::{RefError, SheetPos};
 
@@ -43,18 +43,19 @@ impl CodeCellValue {
     /// Do not call this function unless `self.is_code_cell()`.
     fn replace_q_cells_a1_selection(
         &mut self,
-        default_sheet_id: SheetId,
+        pos: SheetPos,
         a1_context: &A1Context,
-        mut func: impl FnMut(A1Selection) -> Result<String, RefError>,
+        mut func: impl FnMut(SheetCellRefRange) -> Result<String, RefError>,
     ) {
         self.code = Q_CELLS_A1_REGEX_COMPILED
             .replace_all(&self.code, |caps: &fancy_regex::Captures<'_>| {
                 let full_match = &caps[0]; // Capture the entire match
                 let a1_str = &caps[2]; // Capture the first argument which is inside quotes
 
-                match A1Selection::parse_a1(a1_str, default_sheet_id, a1_context) {
-                    Ok(a1_selection) => {
-                        let a1_str = func(a1_selection).unwrap_or_else(|e: RefError| e.to_string());
+                match SheetCellRefRange::parse_at(a1_str, pos, a1_context) {
+                    Ok(sheet_cell_ref_range) => {
+                        let a1_str =
+                            func(sheet_cell_ref_range).unwrap_or_else(|e: RefError| e.to_string());
 
                         // let a1_str = a1_selection.to_string(Some(*default_sheet_id), a1_context);
 
@@ -74,11 +75,10 @@ impl CodeCellValue {
             if self.language == CodeCellLanguage::Formula {
                 self.code = crate::formulas::adjust_references(&self.code, a1_context, pos, adjust);
             } else if self.language.has_q_cells() {
-                let new_sheet_id = adjust.new_sheet_id.unwrap_or(pos.sheet_id);
-                self.replace_q_cells_a1_selection(pos.sheet_id, a1_context, |a1_selection| {
-                    Ok(a1_selection
+                self.replace_q_cells_a1_selection(pos, a1_context, |cell_ref| {
+                    Ok(cell_ref
                         .adjust(adjust)?
-                        .to_string(Some(new_sheet_id), a1_context))
+                        .to_a1_string(Some(pos.sheet_id), a1_context))
                 });
             }
         }
@@ -99,8 +99,8 @@ impl CodeCellValue {
                 new_a1_context,
             );
         } else if self.language.has_q_cells() {
-            self.replace_q_cells_a1_selection(pos.sheet_id, old_a1_context, |a1_selection| {
-                Ok(a1_selection.to_string(Some(pos.sheet_id), new_a1_context))
+            self.replace_q_cells_a1_selection(pos, old_a1_context, |cell_ref| {
+                Ok(cell_ref.to_a1_string(Some(pos.sheet_id), new_a1_context))
             });
         }
     }
@@ -119,9 +119,9 @@ impl CodeCellValue {
                     &self.code, a1_context, pos, old_name, new_name,
                 );
             } else if self.language.has_q_cells() {
-                self.replace_q_cells_a1_selection(pos.sheet_id, a1_context, |mut a1_selection| {
-                    a1_selection.replace_table_name(old_name, new_name);
-                    Ok(a1_selection.to_string(Some(pos.sheet_id), a1_context))
+                self.replace_q_cells_a1_selection(pos, a1_context, |mut cell_ref| {
+                    cell_ref.replace_table_name(old_name, new_name);
+                    Ok(cell_ref.to_a1_string(Some(pos.sheet_id), a1_context))
                 });
             }
         }
@@ -142,9 +142,9 @@ impl CodeCellValue {
                     &self.code, a1_context, pos, table_name, old_name, new_name,
                 );
             } else if self.language.has_q_cells() {
-                self.replace_q_cells_a1_selection(pos.sheet_id, a1_context, |mut a1_selection| {
-                    a1_selection.replace_column_name(table_name, old_name, new_name);
-                    Ok(a1_selection.to_string(Some(pos.sheet_id), a1_context))
+                self.replace_q_cells_a1_selection(pos, a1_context, |mut cell_ref| {
+                    cell_ref.replace_column_name(table_name, old_name, new_name);
+                    Ok(cell_ref.to_a1_string(Some(pos.sheet_id), a1_context))
                 });
             }
         }
@@ -156,12 +156,9 @@ impl CodeCellValue {
 /// Unbounded coordinates are always unmodified.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct RefAdjust {
-    /// Only references to this sheet will be adjusted.
-    pub sheet_id: SheetId,
-    /// New sheet ID to use for references to the current sheet, if different
-    /// from `sheet_id`. If this is specified, then the code string is assumed
-    /// to be existing on this sheet, so its sheet name may be omitted.
-    pub new_sheet_id: Option<SheetId>,
+    /// If specified, then only references to this sheet will be adjusted. If
+    /// `None`, then all references will be adjusted.
+    pub sheet_id: Option<SheetId>,
 
     /// Whether to translate only relative references.
     ///
@@ -186,22 +183,24 @@ pub struct RefAdjust {
     pub y_start: i64,
 }
 impl RefAdjust {
+    /// Adjustment with no effect.
+    pub const NO_OP: Self = Self {
+        sheet_id: None,
+        relative_only: false,
+        dx: 0,
+        dy: 0,
+        x_start: 0,
+        y_start: 0,
+    };
+
     /// Returns whether the adjustment has no effect.
     pub fn is_no_op(self) -> bool {
         self.dx == 0 && self.dy == 0
     }
 
-    /// Constructs an adjustment with no effect.
-    pub fn new_no_op(sheet_id: SheetId) -> Self {
-        Self {
-            sheet_id,
-            new_sheet_id: None,
-            relative_only: false,
-            dx: 0,
-            dy: 0,
-            x_start: 0,
-            y_start: 0,
-        }
+    /// Returns whether the adjustment affects a sheet.
+    pub fn affects_sheet(self, sheet_id: SheetId) -> bool {
+        self.sheet_id.is_none_or(|id| id == sheet_id)
     }
 
     /// Constructs an adjustment for inserting a column.
@@ -224,47 +223,51 @@ impl RefAdjust {
     /// Constructs an adjustment for inserting multiple columns at once.
     pub fn new_insert_columns(sheet_id: SheetId, range: RangeInclusive<i64>) -> Self {
         Self {
+            sheet_id: Some(sheet_id),
             relative_only: false,
             x_start: *range.start(),
             dx: range.count() as i64,
-            ..Self::new_no_op(sheet_id)
+            ..Self::NO_OP
         }
     }
     /// Constructs an adjustment for deleting multiple columns at once.
     pub fn new_delete_columns(sheet_id: SheetId, range: RangeInclusive<i64>) -> Self {
         Self {
+            sheet_id: Some(sheet_id),
             relative_only: false,
             x_start: *range.start(),
             dx: -(range.count() as i64),
-            ..Self::new_no_op(sheet_id)
+            ..Self::NO_OP
         }
     }
     /// Constructs an adjustment for inserting multiple rows at once.
     pub fn new_insert_rows(sheet_id: SheetId, range: RangeInclusive<i64>) -> Self {
         Self {
+            sheet_id: Some(sheet_id),
             relative_only: false,
             y_start: *range.start(),
             dy: range.count() as i64,
-            ..Self::new_no_op(sheet_id)
+            ..Self::NO_OP
         }
     }
     /// Constructs an adjustment for deleting multiple rows at once.
     pub fn new_delete_rows(sheet_id: SheetId, range: RangeInclusive<i64>) -> Self {
         Self {
+            sheet_id: Some(sheet_id),
             relative_only: false,
             y_start: *range.start(),
             dy: -(range.count() as i64),
-            ..Self::new_no_op(sheet_id)
+            ..Self::NO_OP
         }
     }
 
     /// Constructs a simple translation that applies to all references.
-    pub fn new_translate(sheet_id: SheetId, dx: i64, dy: i64) -> Self {
+    pub fn new_translate(dx: i64, dy: i64) -> Self {
         Self {
             relative_only: false,
             dx,
             dy,
-            ..Self::new_no_op(sheet_id)
+            ..Self::NO_OP
         }
     }
 }
@@ -287,7 +290,7 @@ mod tests {
             sheet_id,
         };
 
-        let translate = |x, y| RefAdjust::new_translate(sheet_id, x, y);
+        let translate = |x, y| RefAdjust::new_translate(x, y);
 
         // Basic single reference
         let mut code = CodeCellValue {
@@ -316,9 +319,10 @@ mod tests {
                     .to_string(),
         };
         code.adjust_references(&a1_context, pos, translate(1, 5));
+        // Excel adjusts `E5:G6` to `F10:H11` but we aren't able to represent that
         assert_eq!(
             code.code,
-            r#"x = q.cells("B6:D7") + q.cells("Other!B3:E4") + q.cells('Nonexistent!E5:G6')"#,
+            r#"x = q.cells("This!B6:D7") + q.cells("Other!C8:F9") + q.cells('Nonexistent!E5:G6')"#,
             "Multiple references failed"
         );
 
@@ -404,7 +408,7 @@ mod tests {
             sheet_id: sheet_id_init,
         };
 
-        let translate = |x, y| RefAdjust::new_translate(sheet_id_11, x, y);
+        let translate = |x, y| RefAdjust::new_translate(x, y);
 
         // Basic single reference
         let mut code = CodeCellValue {
@@ -424,7 +428,7 @@ mod tests {
         };
         code.adjust_references(&a1_context, pos, translate(1, 1));
         assert_eq!(
-            code.code, r#"x = q.cells("A1:B2") + q.cells("'Sheet1 (1)'!D4:E5")"#,
+            code.code, r#"x = q.cells("Sheet1!B2:C3") + q.cells("'Sheet1 (1)'!D4:E5")"#,
             "Multiple references failed"
         );
 
@@ -435,7 +439,8 @@ mod tests {
         };
         code.adjust_references(&a1_context, pos, translate(1, 1));
         assert_eq!(
-            code.code, r#"q.cells("A1:B2"); q.cells("'Sheet1 (1)'!D4:E5"); q.cells("E5:F6");"#,
+            code.code,
+            r#"q.cells("Sheet1!B2:C3"); q.cells("'Sheet1 (1)'!D4:E5"); q.cells("Sheet1!F6:G7");"#,
             "Quote types failed"
         );
 
@@ -489,7 +494,7 @@ mod tests {
             code: r#"A1 + 'Sheet1 (1)'!A1"#.to_string(),
         };
         code.adjust_references(&a1_context, pos, translate(1, 1));
-        assert_eq!(code.code, r#"A1 + 'Sheet1 (1)'!B2"#, "Formula failed");
+        assert_eq!(code.code, r#"B2 + 'Sheet1 (1)'!B2"#, "Formula failed");
 
         // Python first_row_header=True
         let mut code = CodeCellValue {
@@ -521,8 +526,7 @@ mod tests {
             sheet_id: id1, // starting on Sheet1
         };
         let adjust = RefAdjust {
-            sheet_id: id2,           // update Sheet2 references ...
-            new_sheet_id: Some(id3), // ... and make them Sheet3
+            sheet_id: Some(id2), // update Sheet2 references
             relative_only: false,
             dx: 5,
             dy: 3,
@@ -530,7 +534,18 @@ mod tests {
             y_start: 0,
         };
         code.adjust_references(&a1_context, pos, adjust);
-        assert_eq!(code.code, r#"Sheet1!A1 + Sheet1!A1 + F4 + A1"#);
+        assert_eq!(code.code, r#"A1 + Sheet1!A1 + Sheet2!F4 + Sheet3!A1"#);
+
+        let adjust = RefAdjust {
+            sheet_id: Some(id1), // update Sheet1 references
+            relative_only: false,
+            dx: 1,
+            dy: 2,
+            x_start: 0,
+            y_start: 0,
+        };
+        code.adjust_references(&a1_context, pos, adjust);
+        assert_eq!(code.code, r#"B3 + Sheet1!B3 + Sheet2!F4 + Sheet3!A1"#)
     }
 
     #[test]

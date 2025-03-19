@@ -537,8 +537,7 @@ mod tests {
     #[test]
     fn test_adjust() {
         let rel_only = RefAdjust {
-            sheet_id: SheetId::TEST,
-            new_sheet_id: None,
+            sheet_id: None,
             relative_only: true,
             dx: 1,
             dy: 2,

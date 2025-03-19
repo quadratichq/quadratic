@@ -663,8 +663,7 @@ impl GridController {
 
                 let context = self.a1_context();
                 let adjust = RefAdjust {
-                    sheet_id: clipboard.origin.sheet_id,
-                    new_sheet_id: Some(selection.sheet_id),
+                    sheet_id: None,
                     relative_only: true,
                     dx: insert_at.x - clipboard.origin.x,
                     dy: insert_at.y - clipboard.origin.y,
@@ -927,7 +926,9 @@ mod test {
         gc.set_cell_value(pos![sheet1!B5], "5".into(), None);
         gc.set_cell_value(pos![sheet1!B6], "6".into(), None);
         gc.set_cell_value(pos![sheet1!C4], "100".into(), None);
-        gc.set_cell_value(pos![sheet2!A1], "1000".into(), None);
+
+        gc.set_cell_value(pos![sheet2!B2], "50".into(), None);
+        gc.set_cell_value(pos![sheet2!C4], "1000".into(), None);
 
         let s1 = gc.sheet(sheet1).name.clone();
         let s2 = gc.sheet(sheet2).name.clone();
@@ -936,7 +937,7 @@ mod test {
         gc.set_code_cell(
             pos![sheet1!A4],
             CodeCellLanguage::Formula,
-            format!("SUM(B1:B3, B4:B6, '{s1}'!C4, '{s2}'!A1)"),
+            format!("SUM(B1:B3, B4:B6, '{s1}'!C4, '{s2}'!C4)"),
             None,
         );
 
@@ -968,13 +969,16 @@ mod test {
             .copy_to_clipboard(&a4_sel, gc.a1_context(), ClipboardOperation::Copy, false)
             .unwrap();
         gc.paste_from_clipboard(&a3_sel, None, Some(html), PasteSpecial::None, None);
-        // reference to this sheet should have updated; other sheet should be unaffected
+        // all references should have updated
         assert_eq!(
-            format!("SUM(#REF!, B3:B5, '{s1}'!C3, '{s2}'!A1)"),
+            format!("SUM(#REF!, B3:B5, '{s1}'!C3, '{s2}'!C3)"),
             get_code_cell_source_str(&gc, pos![sheet1!A3]),
         );
         // code cell should have been re-evaluated
-        assert_eq!("#REF!", get_code_cell_value_str(&gc, pos![sheet1!A3]));
+        assert_eq!(
+            "Bad cell reference",
+            get_code_cell_value_str(&gc, pos![sheet1!A3])
+        );
 
         // cut within sheet
         let JsClipboard { html, .. } = gc
@@ -984,7 +988,7 @@ mod test {
         gc.paste_from_clipboard(&a3_sel, None, Some(html), PasteSpecial::None, None);
         // all references should have stayed the same
         assert_eq!(
-            format!("SUM(B1:B3, B4:B6, '{s1}'!C4, '{s2}'!A1)"),
+            format!("SUM(B1:B3, B4:B6, '{s1}'!C4, '{s2}'!C4)"),
             get_code_cell_source_str(&gc, pos![sheet1!A3]),
         );
         // code cell should have the same value
@@ -1002,13 +1006,13 @@ mod test {
             PasteSpecial::None,
             None,
         );
-        // non-sheet references should update
+        // all references should have updated
         assert_eq!(
-            format!("SUM(B2:B4, B5:B7, '{s1}'!C3, '{s2}'!A1)"),
-            get_code_cell_source_str(&gc, pos![sheet1!A3]),
+            format!("SUM(B2:B4, B5:B7, '{s1}'!C5, '{s2}'!C5)"),
+            get_code_cell_source_str(&gc, pos![sheet2!A4]),
         );
-        // code cell should have been re-evaluated
-        assert_eq!("#REF!", get_code_cell_value_str(&gc, pos![sheet1!A3]));
+        // code cell should have been re-evaluated.
+        assert_eq!("50", get_code_cell_value_str(&gc, pos![sheet2!A4]));
     }
 
     #[test]

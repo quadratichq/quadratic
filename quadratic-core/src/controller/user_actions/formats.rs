@@ -70,7 +70,7 @@ impl GridController {
 
             // Force the range to be within bounds.
             // TODO: this should not be necessary
-            let no_op_adjust = RefAdjust::new_no_op(selection.sheet_id);
+            let no_op_adjust = RefAdjust::NO_OP;
             if range.saturating_adjust(no_op_adjust).is_none() {
                 return;
             };

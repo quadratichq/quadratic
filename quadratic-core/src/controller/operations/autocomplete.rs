@@ -666,8 +666,7 @@ impl GridController {
                             context,
                             original_pos.to_sheet_pos(sheet_id),
                             RefAdjust {
-                                sheet_id,
-                                new_sheet_id: None, // same sheet
+                                sheet_id: None,
                                 relative_only: true,
                                 dx: x - original_pos.x,
                                 dy: y - original_pos.y,

@@ -112,7 +112,8 @@ fn simple_parse_and_check_formula(formula_string: &str) -> bool {
 /// ```
 #[must_use = "this method returns a new value instead of modifying its input"]
 pub fn convert_rc_to_a1(source: &str, ctx: &A1Context, pos: SheetPos) -> String {
-    let replace_fn = |range_ref: SheetCellRefRange| Ok(range_ref.to_a1_string(None, ctx, false));
+    let replace_fn =
+        |range_ref: SheetCellRefRange| Ok(range_ref.to_a1_string(Some(pos.sheet_id), ctx));
     replace_cell_range_references(source, ctx, pos, replace_fn)
 }
 
@@ -132,7 +133,7 @@ pub fn convert_rc_to_a1(source: &str, ctx: &A1Context, pos: SheetPos) -> String 
 #[must_use = "this method returns a new value instead of modifying its input"]
 pub fn convert_a1_to_rc(source: &str, ctx: &A1Context, pos: SheetPos) -> String {
     let replace_fn = |range_ref: SheetCellRefRange| {
-        Ok(range_ref.to_rc_string(Some(pos.sheet_id), ctx, false, pos.into()))
+        Ok(range_ref.to_rc_string(Some(pos.sheet_id), ctx, pos.into()))
     };
     replace_cell_range_references(source, ctx, pos, replace_fn)
 }
@@ -146,11 +147,10 @@ pub fn adjust_references(
     pos: SheetPos,
     adjust: RefAdjust,
 ) -> String {
-    let new_sheet_id = adjust.new_sheet_id.unwrap_or(pos.sheet_id);
     replace_cell_range_references(source, ctx, pos, |range_ref| {
         Ok(range_ref
             .adjust(adjust)?
-            .to_a1_string(Some(new_sheet_id), ctx, false))
+            .to_a1_string(Some(pos.sheet_id), ctx))
     })
 }
 
@@ -213,7 +213,7 @@ pub fn replace_sheet_name(
     new_ctx: &A1Context,
 ) -> String {
     replace_cell_range_references(source, old_ctx, pos, |sheet_cell_ref_range| {
-        Ok(sheet_cell_ref_range.to_a1_string(Some(pos.sheet_id), new_ctx, false))
+        Ok(sheet_cell_ref_range.to_a1_string(Some(pos.sheet_id), new_ctx))
     })
 }
 
@@ -458,8 +458,7 @@ mod tests {
         let pos = pos![C6].to_sheet_pos(SheetId::new());
 
         let adj = RefAdjust {
-            sheet_id: pos.sheet_id,
-            new_sheet_id: None,
+            sheet_id: None,
             relative_only: true,
             dx: -1,
             dy: 3,
@@ -472,8 +471,7 @@ mod tests {
         assert_eq!(replaced, expected);
 
         let adj = RefAdjust {
-            sheet_id: pos.sheet_id,
-            new_sheet_id: None,
+            sheet_id: None,
             relative_only: true,
             dx: -1,
             dy: 3,

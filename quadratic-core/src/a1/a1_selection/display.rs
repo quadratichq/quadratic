@@ -31,8 +31,9 @@ impl A1Selection {
                 SheetCellRefRange {
                     sheet_id,
                     cells: cells.clone(),
+                    explicit_sheet_name: force_sheet_name,
                 }
-                .to_a1_string(default_sheet_id, context, force_sheet_name)
+                .to_a1_string(default_sheet_id, context)
             })
             .collect::<Vec<_>>()
             .join(",")
