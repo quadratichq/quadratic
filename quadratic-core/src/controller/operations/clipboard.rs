@@ -914,6 +914,104 @@ mod test {
     }
 
     #[test]
+    fn paste_clipboard_with_formula_across_sheets() {
+        let mut gc = GridController::new();
+        gc.add_sheet(None);
+        let sheet1 = gc.sheet_ids()[0];
+        let sheet2 = gc.sheet_ids()[1];
+
+        gc.set_cell_value(pos![sheet1!B1], "1".into(), None);
+        gc.set_cell_value(pos![sheet1!B2], "2".into(), None);
+        gc.set_cell_value(pos![sheet1!B3], "3".into(), None);
+        gc.set_cell_value(pos![sheet1!B4], "4".into(), None);
+        gc.set_cell_value(pos![sheet1!B5], "5".into(), None);
+        gc.set_cell_value(pos![sheet1!B6], "6".into(), None);
+        gc.set_cell_value(pos![sheet1!C4], "100".into(), None);
+        gc.set_cell_value(pos![sheet2!A1], "1000".into(), None);
+
+        let s1 = gc.sheet(sheet1).name.clone();
+        let s2 = gc.sheet(sheet2).name.clone();
+        assert_ne!(s1, s2);
+
+        gc.set_code_cell(
+            pos![sheet1!A4],
+            CodeCellLanguage::Formula,
+            format!("SUM(B1:B3, B4:B6, '{s1}'!C4, '{s2}'!A1)"),
+            None,
+        );
+
+        crate::test_util::print_sheet(gc.sheet(sheet1));
+
+        let get_code_cell_value_str = |gc: &GridController, sheet_pos: SheetPos| {
+            gc.sheet(sheet_pos.sheet_id)
+                .get_code_cell_value(sheet_pos.into())
+                .unwrap()
+                .to_string()
+        };
+        let get_code_cell_source_str = |gc: &GridController, sheet_pos: SheetPos| {
+            gc.sheet(sheet_pos.sheet_id)
+                .cell_value(sheet_pos.into())
+                .unwrap()
+                .code_cell_value()
+                .unwrap()
+                .code
+        };
+
+        assert_eq!("1121", get_code_cell_value_str(&gc, pos![sheet1!A4]));
+
+        let a4_sel = A1Selection::from_single_cell(pos![sheet1!A4]);
+        let a3_sel = A1Selection::from_single_cell(pos![sheet1!A3]);
+
+        // copy within sheet
+        let JsClipboard { html, .. } = gc
+            .sheet(sheet1)
+            .copy_to_clipboard(&a4_sel, gc.a1_context(), ClipboardOperation::Copy, false)
+            .unwrap();
+        gc.paste_from_clipboard(&a3_sel, None, Some(html), PasteSpecial::None, None);
+        // reference to this sheet should have updated; other sheet should be unaffected
+        assert_eq!(
+            format!("SUM(#REF!, B3:B5, '{s1}'!C3, '{s2}'!A1)"),
+            get_code_cell_source_str(&gc, pos![sheet1!A3]),
+        );
+        // code cell should have been re-evaluated
+        assert_eq!("#REF!", get_code_cell_value_str(&gc, pos![sheet1!A3]));
+
+        // cut within sheet
+        let JsClipboard { html, .. } = gc
+            .sheet(sheet1)
+            .copy_to_clipboard(&a4_sel, gc.a1_context(), ClipboardOperation::Cut, false)
+            .unwrap();
+        gc.paste_from_clipboard(&a3_sel, None, Some(html), PasteSpecial::None, None);
+        // all references should have stayed the same
+        assert_eq!(
+            format!("SUM(B1:B3, B4:B6, '{s1}'!C4, '{s2}'!A1)"),
+            get_code_cell_source_str(&gc, pos![sheet1!A3]),
+        );
+        // code cell should have the same value
+        assert_eq!("1121", get_code_cell_value_str(&gc, pos![sheet1!A3]));
+
+        // copy to other sheet
+        let JsClipboard { html, .. } = gc
+            .sheet(sheet1)
+            .copy_to_clipboard(&a3_sel, gc.a1_context(), ClipboardOperation::Copy, false)
+            .unwrap();
+        gc.paste_from_clipboard(
+            &A1Selection::from_single_cell(pos![sheet2!A4]),
+            None,
+            Some(html),
+            PasteSpecial::None,
+            None,
+        );
+        // non-sheet references should update
+        assert_eq!(
+            format!("SUM(B2:B4, B5:B7, '{s1}'!C3, '{s2}'!A1)"),
+            get_code_cell_source_str(&gc, pos![sheet1!A3]),
+        );
+        // code cell should have been re-evaluated
+        assert_eq!("#REF!", get_code_cell_value_str(&gc, pos![sheet1!A3]));
+    }
+
+    #[test]
     fn copy_paste_clipboard_with_data_table() {
         clear_js_calls();
 
