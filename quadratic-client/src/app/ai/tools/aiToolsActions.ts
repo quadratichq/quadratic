@@ -31,25 +31,38 @@ const waitForSetCodeCellValue = (transactionId: string) => {
 
 const setCodeCellResult = async (sheetId: string, x: number, y: number): Promise<string> => {
   const table = pixiApp.cellsSheets.getById(sheetId)?.tables.getTableFromTableCell(x, y);
-  if (!table) return 'Error executing set code cell value tool';
+  const codeCell = await quadraticCore.getCodeCell(sheetId, x, y);
+  if (!table || !codeCell) return 'Error executing set code cell value tool';
 
-  switch (table.codeCell.state) {
-    case 'RunError':
-      const codeCell = await quadraticCore.getCodeCell(sheetId, x, y);
-      return `
-The code cell has resulted in an error:
+  if (codeCell.std_err) {
+    return `
+The code cell run has resulted in an error:
 \`\`\`
-${codeCell?.std_err}
-\`\`\``;
-    case 'SpillError':
-      return `
+${codeCell.std_err}
+\`\`\`
+Think and reason about the error and try to fix it.
+`;
+  }
+
+  if (codeCell.spill_error) {
+    return `
 The code cell has spilled, because the output overlaps with existing data on the sheet at position:
 \`\`\`json\n
-${JSON.stringify(table.codeCell.spill_error?.map((p) => ({ x: Number(p.x), y: Number(p.y) })))}
-\`\`\``;
-    default:
-      return 'Executed set code cell value tool successfully';
+${JSON.stringify(codeCell.spill_error?.map((p) => ({ x: Number(p.x), y: Number(p.y) })))}
+\`\`\`
+Output size is ${table.codeCell.w} cells wide and ${table.codeCell.h} cells high.
+Move the code cell to a new position to avoid spilling. Make sure the new position is not overlapping with existing data on the sheet.
+`;
   }
+
+  return `
+Executed set code cell value tool successfully.
+${
+  table.isSingleValue()
+    ? `Output is ${codeCell.evaluation_result}`
+    : `Output size is ${table.codeCell.w} cells wide and ${table.codeCell.h} cells high.`
+}
+`;
 };
 
 export type AIToolActionsRecord = {
