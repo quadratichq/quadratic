@@ -1,13 +1,17 @@
+//! AES CBC Encryption and Decryption
+//!
+//! Functions to encrypt and decrypt data using AES-256-CBC
+
 use std::fmt::Debug;
 
 use aes::{
-    cipher::{block_padding::Pkcs7, BlockDecryptMut, BlockEncryptMut, KeyIvInit},
     Aes256,
+    cipher::{BlockDecryptMut, BlockEncryptMut, KeyIvInit, block_padding::Pkcs7},
 };
 use bytes::Bytes;
 use cbc::{Decryptor, Encryptor};
 
-use crate::{crypto::error::Crypto as CryptoError, error::Result, SharedError};
+use crate::{SharedError, crypto::error::Crypto as CryptoError, error::Result};
 
 type Aes256CbcEnc = Encryptor<Aes256>;
 type Aes256CbcDec = Decryptor<Aes256>;

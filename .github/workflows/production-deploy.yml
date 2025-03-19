@@ -71,7 +71,7 @@ jobs:
           push: false
           load: true
           tags: quadratic-client-production:local
-          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max,compression=zstd,force-compression=true
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=min,compression=zstd,force-compression=true
           cache-from: type=local,src=/tmp/.buildx-cache
           build-args: |
             ENV_HASH=${{ steps.pull-pulumi-esc-env-vars.outputs.env-hash }}
@@ -166,7 +166,7 @@ jobs:
           file: quadratic-${{ matrix.service }}/Dockerfile
           push: true
           tags: ${{ steps.get-ecr-url.outputs.ECR_URL }}:${{ github.sha }}
-          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max,compression=zstd,force-compression=true
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=min,compression=zstd,force-compression=true
           cache-from: type=local,src=/tmp/.buildx-cache
 
   deploy_client:

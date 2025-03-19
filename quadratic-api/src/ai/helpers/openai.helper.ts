@@ -18,7 +18,7 @@ import type {
 
 export function getOpenAIApiArgs(
   args: AIRequestHelperArgs,
-  strickParams: boolean
+  strictParams: boolean
 ): {
   messages: ChatCompletionMessageParam[];
   tools: ChatCompletionTool[] | undefined;
@@ -73,7 +73,7 @@ export function getOpenAIApiArgs(
     ...messages,
   ];
 
-  const tools = getOpenAITools(source, toolName, strickParams);
+  const tools = getOpenAITools(source, toolName, strictParams);
   const tool_choice = tools?.length ? getOpenAIToolChoice(toolName) : undefined;
 
   return { messages: openaiMessages, tools, tool_choice };
@@ -82,7 +82,7 @@ export function getOpenAIApiArgs(
 function getOpenAITools(
   source: AISource,
   toolName: AITool | undefined,
-  strickParams: boolean
+  strictParams: boolean
 ): ChatCompletionTool[] | undefined {
   const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
     if (toolName === undefined) {
@@ -102,7 +102,7 @@ function getOpenAITools(
         name,
         description,
         parameters,
-        strict: strickParams,
+        strict: strictParams,
       },
     })
   );
@@ -110,10 +110,8 @@ function getOpenAITools(
   return openaiTools;
 }
 
-function getOpenAIToolChoice(name?: AITool): ChatCompletionToolChoiceOption | undefined {
-  const toolChoice: ChatCompletionToolChoiceOption =
-    name === undefined ? 'auto' : { type: 'function', function: { name } };
-  return toolChoice;
+function getOpenAIToolChoice(name?: AITool): ChatCompletionToolChoiceOption {
+  return name === undefined ? 'auto' : { type: 'function', function: { name } };
 }
 
 export async function parseOpenAIStream(
@@ -217,7 +215,7 @@ export async function parseOpenAIStream(
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
     responseMessage.content.push({
       type: 'text',
-      text: "I'm sorry, I don't have a response for that.",
+      text: 'Please try again.',
     });
   }
 
@@ -283,7 +281,7 @@ export function parseOpenAIResponse(
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
     responseMessage.content.push({
       type: 'text',
-      text: "I'm sorry, I don't have a response for that.",
+      text: 'Please try again.',
     });
   }
 
