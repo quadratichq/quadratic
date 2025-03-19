@@ -1,5 +1,4 @@
 import * as Sentry from '@sentry/node';
-import * as Tracing from '@sentry/tracing';
 import cors from 'cors';
 import type { NextFunction, Request, Response } from 'express';
 import express from 'express';
@@ -11,32 +10,6 @@ import { CORS, NODE_ENV, SENTRY_DSN } from './env-vars';
 import internal_router from './routes/internal';
 import { ApiError } from './utils/ApiError';
 export const app = express();
-
-// Configure Sentry
-if (SENTRY_DSN) {
-  Sentry.init({
-    dsn: SENTRY_DSN,
-    integrations: [
-      // enable HTTP calls tracing
-      new Sentry.Integrations.Http({ tracing: true }),
-      // enable Express.js middleware tracing
-      new Tracing.Integrations.Express({ app }),
-      // Automatically instrument Node.js libraries and frameworks
-      ...Sentry.autoDiscoverNodePerformanceMonitoringIntegrations(),
-    ],
-
-    // Set tracesSampleRate to 1.0 to capture 100%
-    // of transactions for performance monitoring.
-    // We recommend adjusting this value in production
-    tracesSampleRate: 1.0,
-  });
-
-  // RequestHandler creates a separate execution context, so that all
-  // transactions/spans/breadcrumbs are isolated across requests
-  app.use(Sentry.Handlers.requestHandler());
-  // TracingHandler creates a trace for every incoming request
-  app.use(Sentry.Handlers.tracingHandler());
-}
 
 app.use((req: express.Request, res: express.Response, next: express.NextFunction): void => {
   if (req.originalUrl === '/v0/webhooks/stripe') {
@@ -69,16 +42,6 @@ app.get('/', (req, res) => {
 // App routes
 // Internal routes
 app.use('/v0/internal', internal_router);
-
-if (SENTRY_DSN) {
-  // test route
-  app.get('/debug-sentry', function mainHandler(/*req, res*/) {
-    throw new Error('My first Sentry error!');
-  });
-
-  // The error handler must be before any other error middleware and after all controllers
-  app.use(Sentry.Handlers.errorHandler());
-}
 
 // Register all our dynamic routes, then regsiter the error middleware last of all
 registerRoutes().then(() => {
@@ -162,4 +125,15 @@ async function registerRoutes() {
   // if (NODE_ENV !== 'production' && NODE_ENV !== 'test') {
   //   console.log(`Dynamically registered routes: ${registeredRoutes.map((route) => `\n  ${route}`).join('')}`);
   // }
+}
+
+// Setup Sentry as the last route in the stack
+if (SENTRY_DSN) {
+  // test route
+  app.get('/debug-sentry', function mainHandler(/*req, res*/) {
+    throw new Error('My first Sentry error!');
+  });
+
+  // The error handler must be before any other error middleware and after all controllers
+  Sentry.setupExpressErrorHandler(app);
 }
