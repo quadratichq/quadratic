@@ -22,7 +22,7 @@ const googleAuthOptions = {
   credentials: {
     project_id: GCP_PROJECT_ID,
     client_email: GCP_CLIENT_EMAIL,
-    private_key: GCP_PRIVATE_KEY,
+    private_key: GCP_PRIVATE_KEY?.replace(/\\n/g, '\n'),
   },
   scopes: ['https://www.googleapis.com/auth/cloud-platform'],
 };
