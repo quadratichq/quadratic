@@ -1,40 +1,87 @@
 import { AIToolSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { z } from 'zod';
 
-const AIProvidersSchema = z
-  .enum(['bedrock', 'bedrock-anthropic', 'anthropic', 'openai', 'xai'])
-  .default('bedrock-anthropic');
-
-const BedrockModelSchema = z
-  .enum(['us.deepseek.r1-v1:0', 'us.meta.llama3-2-90b-instruct-v1:0', 'mistral.mistral-large-2407-v1:0'])
-  .default('us.meta.llama3-2-90b-instruct-v1:0');
-
-const BedrockAnthropicModelSchema = z
-  .enum([
-    'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-    'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
-    'us.anthropic.claude-3-5-haiku-20241022-v1:0',
-  ])
-  .default('us.anthropic.claude-3-5-sonnet-20241022-v2:0');
-
-const AnthropicModelSchema = z
-  .enum(['claude-3-7-sonnet-20250219', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022'])
-  .default('claude-3-5-sonnet-20241022');
-
-const OpenAIModelSchema = z
-  .enum(['gpt-4.5-preview-2025-02-27', 'gpt-4o-2024-11-20', 'o1-2024-12-17', 'o3-mini-2025-01-31'])
-  .default('gpt-4o-2024-11-20');
-
-const XAIModelSchema = z.enum(['grok-2-1212', 'grok-beta']).default('grok-2-1212');
-
+const AIProvidersSchema = z.enum([
+  'vertexai-anthropic',
+  'bedrock-anthropic',
+  'anthropic',
+  'openai',
+  'xai',
+  'vertexai',
+  'bedrock',
+]);
+const VertexAnthropicModelSchema = z.enum([
+  'claude-3-7-sonnet@20250219',
+  'claude-3-5-sonnet-v2@20241022',
+  'claude-3-5-haiku@20241022',
+]);
+const VertexAIModelSchema = z.enum([
+  'gemini-2.0-flash-thinking-exp-01-21',
+  'gemini-2.0-flash-001',
+  'gemini-2.0-flash-lite-001',
+  'gemini-1.5-pro-002',
+  'gemini-1.5-flash-002',
+]);
+const BedrockAnthropicModelSchema = z.enum([
+  'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
+  'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+  'us.anthropic.claude-3-5-haiku-20241022-v1:0',
+]);
+const BedrockModelSchema = z.enum([
+  'us.deepseek.r1-v1:0',
+  'us.meta.llama3-2-90b-instruct-v1:0',
+  'mistral.mistral-large-2407-v1:0',
+]);
+const AnthropicModelSchema = z.enum([
+  'claude-3-7-sonnet-20250219',
+  'claude-3-5-sonnet-20241022',
+  'claude-3-5-haiku-20241022',
+]);
+const OpenAIModelSchema = z.enum([
+  'gpt-4.5-preview-2025-02-27',
+  'gpt-4o-2024-11-20',
+  'o1-2024-12-17',
+  'o3-mini-2025-01-31',
+]);
+const XAIModelSchema = z.enum(['grok-2-1212', 'grok-beta']);
 const AIModelSchema = z.union([
-  BedrockModelSchema,
+  VertexAnthropicModelSchema,
+  VertexAIModelSchema,
   BedrockAnthropicModelSchema,
+  BedrockModelSchema,
   AnthropicModelSchema,
   OpenAIModelSchema,
   XAIModelSchema,
 ]);
 export type AIModel = z.infer<typeof AIModelSchema>;
+
+const VertexAIAnthropicModelKeySchema = z.enum([
+  'vertexai-anthropic:claude:thinking-toggle-off',
+  'vertexai-anthropic:claude:thinking-toggle-on',
+  'vertexai-anthropic:claude-3-7-sonnet@20250219',
+  'vertexai-anthropic:claude-3-7-sonnet@20250219:thinking',
+  'vertexai-anthropic:claude-3-5-sonnet-v2@20241022',
+  'vertexai-anthropic:claude-3-5-haiku@20241022',
+]);
+export type VertexAIAnthropicModelKey = z.infer<typeof VertexAIAnthropicModelKeySchema>;
+
+const VertexAIModelKeySchema = z.enum([
+  'vertexai:gemini-2.0-flash-001',
+  'vertexai:gemini-2.0-flash-lite-001',
+  'vertexai:gemini-1.5-pro-002',
+  'vertexai:gemini-1.5-flash-002',
+]);
+export type VertexAIModelKey = z.infer<typeof VertexAIModelKeySchema>;
+
+const BedrockAnthropicModelKeySchema = z.enum([
+  'bedrock-anthropic:claude:thinking-toggle-off',
+  'bedrock-anthropic:claude:thinking-toggle-on',
+  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0',
+  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking',
+  'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+  'bedrock-anthropic:us.anthropic.claude-3-5-haiku-20241022-v1:0',
+]);
+export type BedrockAnthropicModelKey = z.infer<typeof BedrockAnthropicModelKeySchema>;
 
 const BedrockModelKeySchema = z.enum([
   'bedrock:us.deepseek.r1-v1:0',
@@ -42,16 +89,6 @@ const BedrockModelKeySchema = z.enum([
   'bedrock:mistral.mistral-large-2407-v1:0',
 ]);
 export type BedrockModelKey = z.infer<typeof BedrockModelKeySchema>;
-
-const BedrockAnthropicModelKeySchema = z.enum([
-  'bedrock-anthropic:claude:thinking-toggle-on',
-  'bedrock-anthropic:claude:thinking-toggle-off',
-  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking',
-  'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0',
-  'bedrock-anthropic:us.anthropic.claude-3-5-haiku-20241022-v1:0',
-]);
-export type BedrockAnthropicModelKey = z.infer<typeof BedrockAnthropicModelKeySchema>;
 
 const AnthropicModelKeySchema = z.enum([
   'anthropic:claude:thinking-toggle-on',
@@ -75,8 +112,10 @@ const XAIModelKeySchema = z.enum(['xai:grok-2-1212', 'xai:grok-beta']);
 export type XAIModelKey = z.infer<typeof XAIModelKeySchema>;
 
 const ModelKeySchema = z.union([
-  BedrockModelKeySchema,
+  VertexAIAnthropicModelKeySchema,
+  VertexAIModelKeySchema,
   BedrockAnthropicModelKeySchema,
+  BedrockModelKeySchema,
   AnthropicModelKeySchema,
   OpenAIModelKeySchema,
   XAIModelKeySchema,
@@ -92,7 +131,8 @@ const ModelConfigSchema = z.object({
   canStreamWithToolCalls: z.boolean(),
   enabled: z.boolean(),
   provider: AIProvidersSchema,
-  strickParams: z.boolean().optional(),
+  promptCaching: z.boolean(),
+  strictParams: z.boolean().optional(),
   thinking: z.boolean().optional(),
   thinkingTemperature: z.number().optional(),
   thinkingToggle: z.boolean().optional(),

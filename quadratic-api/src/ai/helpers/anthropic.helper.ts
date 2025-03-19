@@ -14,10 +14,12 @@ import type {
   AnthropicModelKey,
   BedrockAnthropicModelKey,
   ParsedAIResponse,
+  VertexAIAnthropicModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 
 export function getAnthropicApiArgs(
   args: AIRequestHelperArgs,
+  promptCaching: boolean,
   thinking: boolean | undefined
 ): {
   system: TextBlockParam[] | undefined;
@@ -29,18 +31,11 @@ export function getAnthropicApiArgs(
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
 
-  // without prompt caching of system messages
-  const system: TextBlockParam[] = systemMessages.map((message) => ({
+  const system: TextBlockParam[] = systemMessages.map((message, index) => ({
     type: 'text' as const,
     text: message,
+    ...(promptCaching && index < 4 ? { cache_control: { type: 'ephemeral' } } : {}),
   }));
-
-  // with prompt caching of system messages
-  // const system: TextBlockParam[] = systemMessages.map((message, index) => ({
-  //   type: 'text' as const,
-  //   text: message,
-  //   ...(index < 4 ? { cache_control: { type: 'ephemeral' } } : {}),
-  // }));
 
   const messages: MessageParam[] = promptMessages.reduce<MessageParam[]>((acc, message) => {
     if (message.role === 'assistant' && message.contextType === 'userPrompt') {
@@ -138,15 +133,14 @@ function getAnthropicTools(source: AISource, toolName?: AITool): Tool[] | undefi
   return anthropicTools;
 }
 
-function getAnthropicToolChoice(toolName?: AITool): ToolChoice | undefined {
-  const toolChoice: ToolChoice = toolName === undefined ? { type: 'auto' } : { type: 'tool', name: toolName };
-  return toolChoice;
+function getAnthropicToolChoice(toolName?: AITool): ToolChoice {
+  return toolName === undefined ? { type: 'auto' } : { type: 'tool', name: toolName };
 }
 
 export async function parseAnthropicStream(
   chunks: Stream<Anthropic.Messages.RawMessageStreamEvent>,
   response: Response,
-  modelKey: BedrockAnthropicModelKey | AnthropicModelKey
+  modelKey: VertexAIAnthropicModelKey | BedrockAnthropicModelKey | AnthropicModelKey
 ): Promise<ParsedAIResponse> {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
@@ -300,7 +294,7 @@ export async function parseAnthropicStream(
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
     responseMessage.content.push({
       type: 'text',
-      text: "I'm sorry, I don't have a response for that.",
+      text: 'Please try again.',
     });
   }
 
@@ -322,7 +316,7 @@ export async function parseAnthropicStream(
 export function parseAnthropicResponse(
   result: Anthropic.Messages.Message,
   response: Response,
-  modelKey: BedrockAnthropicModelKey | AnthropicModelKey
+  modelKey: VertexAIAnthropicModelKey | BedrockAnthropicModelKey | AnthropicModelKey
 ): ParsedAIResponse {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
@@ -369,7 +363,7 @@ export function parseAnthropicResponse(
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
     responseMessage.content.push({
       type: 'text',
-      text: "I'm sorry, I don't have a response for that.",
+      text: 'Please try again.',
     });
   }
 
