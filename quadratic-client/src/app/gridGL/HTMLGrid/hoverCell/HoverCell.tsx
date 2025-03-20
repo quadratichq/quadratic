@@ -121,7 +121,7 @@ export function HoverCell() {
           } else {
             setOnlyCode(true);
             setText(
-              <HoverCellDisplay title={`${language} Code`}>
+              <HoverCellDisplay title={language === 'Formula' ? 'Formula Code' : `${renderCodeCell.name} Code`}>
                 <HoverCellDisplayCode language={language}>{codeCell?.code_string}</HoverCellDisplayCode>
               </HoverCellDisplay>
             );
@@ -177,11 +177,11 @@ export function HoverCell() {
 
     pixiApp.viewport.on('moved', remove);
     pixiApp.viewport.on('zoomed', remove);
-    events.on('cursorPosition', remove);
+    // events.on('cursorPosition', remove);
     return () => {
       pixiApp.viewport.off('moved', remove);
       pixiApp.viewport.off('zoomed', remove);
-      events.off('cursorPosition', remove);
+      // events.off('cursorPosition', remove);
     };
   }, [hideHoverCell]);
 
@@ -248,9 +248,11 @@ function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCo
           size="sm"
           variant="destructive"
           onClick={() => {
-            submitPrompt({ userPrompt: 'Fix the error in the code cell', clearMessages: true, codeCell }).catch(
-              console.error
-            );
+            submitPrompt({
+              content: [{ type: 'text', text: 'Fix the error in the code cell' }],
+              clearMessages: true,
+              codeCell,
+            }).catch(console.error);
             onClick();
           }}
           disabled={loading}

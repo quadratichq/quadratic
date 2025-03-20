@@ -1,7 +1,7 @@
 import { DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { getLanguageSymbol } from '@/app/gridGL/cells/CellsMarkers';
 import type { Table } from '@/app/gridGL/cells/tables/Table';
-import { type TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
+import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
@@ -118,7 +118,12 @@ export class TableName extends Container {
     this.h = this.table.sheet.offsets.getRowHeight(this.table.codeCell.y);
     this.drawSymbol();
     this.drawText();
-    this.drawDropdown();
+    if (this.table.active) {
+      this.dropdown.visible = true;
+      this.drawDropdown();
+    } else {
+      this.dropdown.visible = false;
+    }
     this.drawBackground();
     this.tableNameBounds = new Rectangle(
       this.table.tableBounds.x,
@@ -133,7 +138,10 @@ export class TableName extends Container {
       if (world.x <= this.tableNameBounds.x + this.text.x + this.text.width + DROPDOWN_PADDING) {
         return { table: this.table.codeCell, type: 'table-name' };
       }
-      if (world.x <= this.tableNameBounds.x + this.text.x + this.text.width + this.dropdown.width + DROPDOWN_PADDING) {
+      if (
+        this.table.active &&
+        world.x <= this.tableNameBounds.x + this.text.x + this.text.width + this.dropdown.width + DROPDOWN_PADDING
+      ) {
         return { table: this.table.codeCell, type: 'dropdown' };
       }
       return { table: this.table.codeCell, type: 'table-name' };

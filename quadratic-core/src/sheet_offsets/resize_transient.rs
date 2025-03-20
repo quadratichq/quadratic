@@ -47,6 +47,7 @@ impl SheetOffsets {
                 self.resize_row_transiently(row, Some(resize.old_size));
             }
         }
+        self.transient_resize = None;
     }
 
     /// Resizes a column and returns the old width.

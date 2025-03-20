@@ -108,6 +108,9 @@ pub enum Operation {
     },
     InsertDataTableColumns {
         sheet_pos: SheetPos,
+
+        // Vec<(column_index, column_header, values)>
+        // the column index is the actual index, not the display index
         columns: Vec<(u32, Option<String>, Option<Vec<CellValue>>)>,
 
         /// swallow neighboring cells
@@ -118,6 +121,9 @@ pub enum Operation {
     },
     DeleteDataTableColumns {
         sheet_pos: SheetPos,
+
+        // Vec<column_index>
+        // the column index is the actual index, not the display index
         columns: Vec<u32>,
 
         /// Inserts the removed column into sheet at the same position.
@@ -128,6 +134,9 @@ pub enum Operation {
     },
     InsertDataTableRows {
         sheet_pos: SheetPos,
+
+        // Vec<(row_index, values)>
+        // the row index is the display index, not the actual index
         rows: Vec<(u32, Option<Vec<CellValue>>)>,
 
         /// swallow neighboring cells
@@ -138,6 +147,9 @@ pub enum Operation {
     },
     DeleteDataTableRows {
         sheet_pos: SheetPos,
+
+        // Vec<row_index>
+        // the row index is the display index, not the actual index
         rows: Vec<u32>,
 
         /// Inserts the removed row into sheet at the same position.

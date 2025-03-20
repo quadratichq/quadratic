@@ -24,18 +24,17 @@ You can reference tables, individual cells, and ranges of cells using Python.
 Much of Quadratic's data is formatted in Data Tables for ease of use. To perform any reference type you can use \`q.cells\`. For table references this places the table in a DataFrame.
 
 \`\`\`python
-# References entire table, including headers 
-df = q.cells("Table1[#ALL]")
+# References entire table, including headers, places into DataFrame 
+df = q.cells("Table1")
 
-# Reads the values in Table1 and places them into variable df
-# Only retrieves the values of the table
-df_values = q.cells("Table1")
-
-# Only retrieves the column's data without the header
+# Retrieves the column data and its header, places into single column DataFrame
 df_column = q.cells("Table1[column_name]")
 
 # Creates an empty DataFrame with just the DataFrame's headers as table's column names
 df_headers = q.cells("Table1[#HEADERS]")
+
+# Reference a range of columns from a table, e.g. in following example we reference columns 1, 2, and 3. Columns can then be dropped or manipulated using Pandas DataFrame logic.
+df_columns = q.cells("Table1[[Column 1]:[Column 3]]")
 \`\`\`python
 
 Tables should be used whenever possible. Use ranged A1 references or single cell references otherwise. 
@@ -91,7 +90,7 @@ q.cells("'Sheet_name_here'!A1:C9")
 q.cells("'Sheet_name_here'!A1")
 
 # Since tables are global to a file, they can be referenced across sheets without defining sheet name
-q.cells("Table1[#ALL]")
+q.cells("Table1")
 \`\`\`
 
 ## Column references
@@ -466,4 +465,9 @@ fig.show()
 # Correlations
 
 Do not attempt to build a correlation analysis unless the user asks for it. 
+
+# File imports and exports
+Python can not be used to import files like .xlsx or .csv. Users should import those files directly to Quadratic by drag and dropping them directly into the sheet. They can then be read into Python with q.cells(). Python can not be used to import files (.xlsx, .csv, .pqt, etc).
+
+Python can also not be used to export/download data as various file types. To download data from Quadratic highlight the data you'd like to download, right click, and select the "Download as CSV" button.
 `;

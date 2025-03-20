@@ -238,6 +238,27 @@ impl From<Vec<Vec<CellValue>>> for CellValues {
     }
 }
 
+/// Converts a sparse 2D array of Vec<Vec<Option<CellValue>>> into CellValues
+/// The first dimension is the x-axis, the second is the y-axis.
+/// This is a different format the the `Vec<Vec<CellValue>>` impl above.
+impl From<Vec<Vec<Option<CellValue>>>> for CellValues {
+    fn from(values: Vec<Vec<Option<CellValue>>>) -> Self {
+        let w = values.len() as u32;
+        let h = values[0].len() as u32;
+        let mut cell_values = CellValues::new(w, h);
+
+        for (x, col) in values.into_iter().enumerate() {
+            for (y, value) in col.into_iter().enumerate() {
+                if let Some(value) = value {
+                    cell_values.set(x as u32, y as u32, value);
+                }
+            }
+        }
+
+        cell_values
+    }
+}
+
 /// Convert a 2D array of strings into a CellValues.
 /// The first dimension is the x-axis, the second is the y-axis.
 /// Therefore, [[1, 2, 3], [4, 5, 6]] becomes:
@@ -284,6 +305,7 @@ impl From<CellValues> for Vec<Vec<CellValue>> {
 
 #[cfg(test)]
 mod test {
+
     use crate::wasm_bindings::js::clear_js_calls;
 
     use super::*;
@@ -414,5 +436,20 @@ mod test {
         assert_eq!(cell_values.columns.len(), 2);
         assert_eq!(cell_values.h, 1);
         assert_eq!(cell_values.get(1, 0), Some(&CellValue::from("a")));
+    }
+
+    #[test]
+    fn cell_values_from_vec_of_vec_of_option() {
+        let mut cell_values = vec![vec![None; 1]; 4];
+        cell_values[0][0] = Some(CellValue::from("a"));
+        cell_values[1][0] = Some(CellValue::from("b"));
+        cell_values[3][0] = Some(CellValue::from("c"));
+        let cell_values = CellValues::from(cell_values);
+
+        assert_eq!(cell_values.w, 4);
+        assert_eq!(cell_values.h, 1);
+        assert_eq!(cell_values.get(0, 0), Some(&CellValue::from("a")));
+        assert_eq!(cell_values.get(1, 0), Some(&CellValue::from("b")));
+        assert_eq!(cell_values.get(3, 0), Some(&CellValue::from("c")));
     }
 }

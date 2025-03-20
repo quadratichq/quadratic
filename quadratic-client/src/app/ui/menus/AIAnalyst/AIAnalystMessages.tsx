@@ -4,7 +4,6 @@ import {
   aiAnalystCurrentChatMessagesCountAtom,
   aiAnalystLoadingAtom,
 } from '@/app/atoms/aiAnalystAtom';
-import { editorInteractionStateSettingsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { debugShowAIInternalContext } from '@/app/debugFlags';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
@@ -159,13 +158,13 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
             {message.role === 'user' ? (
               message.contextType === 'userPrompt' ? (
                 <AIAnalystUserMessageForm
-                  initialPrompt={message.content}
+                  initialContent={message.content}
                   initialContext={message.context}
                   messageIndex={index}
                   textareaRef={textareaRef}
                 />
               ) : Array.isArray(message.content) ? (
-                message.content.map(({ content }) => <Markdown key={content}>{content}</Markdown>)
+                message.content.map(({ text }) => <Markdown key={text}>{text}</Markdown>)
               ) : (
                 <Markdown key={message.content}>{message.content}</Markdown>
               )
@@ -192,9 +191,9 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                 )}
 
                 {message.contextType === 'userPrompt' &&
-                  message.toolCalls.map((toolCall) => (
+                  message.toolCalls.map((toolCall, index) => (
                     <AIAnalystToolCard
-                      key={toolCall.id}
+                      key={`${index}-${toolCall.id}-${toolCall.arguments}`}
                       name={toolCall.name}
                       args={toolCall.arguments}
                       loading={toolCall.loading}
@@ -220,18 +219,12 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
 const FeedbackButtons = memo(() => {
   // true=positive, false=negative, null=neutral
   const [like, setLike] = useState<boolean | null>(null);
-  const settings = useRecoilValue(editorInteractionStateSettingsAtom);
 
   const logFeedback = useRecoilCallback(
     ({ snapshot }) =>
       (newLike: boolean | null) => {
         // Log it to mixpanel
         mixpanel.track('[AIAnalyst].feedback', { like: newLike });
-
-        // If they have AI analytics turned off, don't do anything else
-        if (!settings.analyticsAi) {
-          return;
-        }
 
         // Otherwise, log it to our DB
         const messages = snapshot.getLoadable(aiAnalystCurrentChatMessagesAtom).getValue();

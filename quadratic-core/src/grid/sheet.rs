@@ -105,10 +105,14 @@ impl Sheet {
 
     /// Creates a sheet for testing.
     pub fn test() -> Self {
-        Sheet::new(SheetId::TEST, String::from("Sheet1"), String::from("a0"))
+        Sheet::new(SheetId::TEST, String::from("Sheet 1"), String::from("a0"))
     }
 
-    pub fn validate_sheet_name(name: &str, context: &A1Context) -> Result<bool, String> {
+    pub fn validate_sheet_name(
+        name: &str,
+        sheet_id: SheetId,
+        context: &A1Context,
+    ) -> Result<bool, String> {
         // Check length limit
         if name.is_empty() || name.len() > 31 {
             return Err("Sheet name must be between 1 and 31 characters".to_string());
@@ -121,8 +125,10 @@ impl Sheet {
 
         // Check if sheet name already exists
 
-        if context.sheet_map.try_sheet_name(name).is_some() {
-            return Err("Sheet name must be unique".to_string());
+        if let Some(existing_sheet_id) = context.sheet_map.try_sheet_name(name) {
+            if existing_sheet_id != sheet_id {
+                return Err("Sheet name must be unique".to_string());
+            }
         }
 
         Ok(true)
@@ -243,7 +249,7 @@ impl Sheet {
         {
             return true;
         }
-        self.has_table_content(pos)
+        self.has_table_content(pos, false)
     }
 
     /// Returns true if the cell at Pos has content (ie, not blank). Ignores
@@ -408,8 +414,14 @@ impl Sheet {
                 }
                 other => other.clone(),
             }
+        } else if let Some(value) = self.get_code_cell_value(pos) {
+            if matches!(value, CellValue::Html(_) | CellValue::Image(_)) {
+                CellValue::Blank
+            } else {
+                value
+            }
         } else {
-            self.get_code_cell_value(pos).unwrap_or(CellValue::Blank)
+            CellValue::Blank
         }
     }
 
@@ -1262,7 +1274,7 @@ mod test {
 
         for name in valid_names {
             assert!(
-                Sheet::validate_sheet_name(name, &context).is_ok(),
+                Sheet::validate_sheet_name(name, SheetId::TEST, &context).is_ok(),
                 "Expected '{}' to be valid",
                 name
             );
@@ -1312,7 +1324,7 @@ mod test {
         ];
 
         for (name, expected_error) in test_cases {
-            let result = Sheet::validate_sheet_name(name, &context);
+            let result = Sheet::validate_sheet_name(name, SheetId::TEST, &context);
             assert!(
                 result.is_err(),
                 "Expected '{}' to be invalid, but it was valid",
@@ -1327,9 +1339,13 @@ mod test {
         }
 
         // Test duplicate sheet name
-        let result = Sheet::validate_sheet_name("ExistingSheet", &context);
+        let result = Sheet::validate_sheet_name("ExistingSheet", SheetId::new(), &context);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Sheet name must be unique");
+
+        // Test same sheet name with different case
+        let result = Sheet::validate_sheet_name("EXISTINGSHEET", SheetId::TEST, &context);
+        assert!(result.is_ok());
     }
 
     #[test]

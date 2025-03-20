@@ -21,7 +21,7 @@ use crate::util::unique_name;
 use crate::{
     Array, ArraySize, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Value,
 };
-use anyhow::{anyhow, bail, Ok, Result};
+use anyhow::{Ok, Result, anyhow, bail};
 use chrono::{DateTime, Utc};
 use column_header::DataTableColumnHeader;
 use lazy_static::lazy_static;
@@ -295,15 +295,22 @@ impl DataTable {
         self.show_columns = show_columns;
         self
     }
-    /// Validates the table name.
+
+    /// Sets the show_name flag.
+    pub fn with_show_name(mut self, show_name: bool) -> Self {
+        self.show_name = show_name;
+        self
+    }
+
+    /// Validates the table name. SheetPos is provided to allow the table to be
+    /// renamed to itself (eg, with different casing).
     ///
-    /// Table name must be between 1 and 255 characters
-    /// Table name cannot be a single 'R' or 'C'
-    /// Table name cannot be a cell reference
-    /// Table name cannot contain invalid characters
-    /// Table name must be unique
+    /// Table name must be between 1 and 255 characters Table name cannot be a
+    /// single 'R' or 'C' Table name cannot be a cell reference Table name
+    /// cannot contain invalid characters Table name must be unique
     pub fn validate_table_name(
         name: &str,
+        sheet_pos: SheetPos,
         context: &A1Context,
     ) -> std::result::Result<bool, String> {
         // Check length limit
@@ -327,8 +334,10 @@ impl DataTable {
         }
 
         // Check if table name already exists
-        if context.table_map.try_table(name).is_some() {
-            return Err("Table name must be unique".to_string());
+        if let Some(table) = context.table_map.try_table(name) {
+            if table.sheet_id != sheet_pos.sheet_id || table.bounds.min != sheet_pos.into() {
+                return Err("Table name must be unique".to_string());
+            }
         }
 
         std::result::Result::Ok(true)
@@ -341,6 +350,7 @@ impl DataTable {
     /// Column name must be unique
     pub fn validate_column_name(
         table_name: &str,
+        index: usize,
         column_name: &str,
         context: &A1Context,
     ) -> std::result::Result<bool, String> {
@@ -355,7 +365,10 @@ impl DataTable {
         }
 
         // Check if column name already exists
-        if context.table_map.table_has_column(table_name, column_name) {
+        if context
+            .table_map
+            .table_has_column(table_name, column_name, index)
+        {
             return Err("Column name must be unique".to_string());
         }
 
@@ -413,7 +426,7 @@ impl DataTable {
     /// Returns `None` if the DataTableKind is not CodeRun.
     pub fn code_run_mut(&mut self) -> Option<&mut CodeRun> {
         match &mut self.kind {
-            DataTableKind::CodeRun(ref mut code_run) => Some(code_run),
+            DataTableKind::CodeRun(code_run) => Some(code_run),
             _ => None,
         }
     }
@@ -461,7 +474,11 @@ impl DataTable {
             CellValue::Blank
         } else {
             match &self.value {
-                Value::Single(v) => v.clone(),
+                Value::Single(v) => match v {
+                    CellValue::Image(_) => CellValue::Blank,
+                    CellValue::Html(_) => CellValue::Blank,
+                    _ => v.clone(),
+                },
                 Value::Array(a) => a.get(x, y).cloned().unwrap_or(CellValue::Blank),
                 Value::Tuple(_) => CellValue::Error(Box::new(
                     // should never happen
@@ -616,7 +633,7 @@ impl DataTable {
             let row = row.iter().map(|s| s.to_string()).collect::<Vec<_>>();
             let display_index = vec![display_buffer[index].to_string()];
 
-            if index == 0 && data_table.column_headers.is_some() {
+            if index == 0 && data_table.column_headers.is_some() && data_table.show_columns {
                 let headers = data_table
                     .column_headers
                     .as_ref()
@@ -626,7 +643,7 @@ impl DataTable {
                     .map(|h| h.name.to_string())
                     .collect::<Vec<_>>();
                 builder.set_header([display_index, headers].concat());
-            } else if index == 0 && data_table.header_is_first_row {
+            } else if index == 0 && data_table.header_is_first_row && data_table.show_columns {
                 let row = [display_index, row].concat();
                 builder.set_header(row);
             } else {
@@ -675,16 +692,26 @@ impl DataTable {
         y_adjustment
     }
 
+    /// Applies settings for a single value data table
+    ///
+    /// This is used when a single value data table is created from a code run
+    /// and is a code cell.
+    pub fn apply_single_value_settings(&mut self) {
+        if self.is_single_value() {
+            self.show_name = false;
+            self.show_columns = false;
+            self.header_is_first_row = false;
+            self.column_headers = None;
+        }
+    }
+
     /// Returns true if the data table is a single value (ie, not an array)
     pub fn is_single_value(&self) -> bool {
         if self.is_html_or_image() {
             return false;
         }
-        match &self.value {
-            Value::Single(_) => true,
-            Value::Array(_) => false,
-            Value::Tuple(_) => false,
-        }
+
+        matches!(self.value, Value::Single(_))
     }
 
     /// Returns true if the data table is a single column (ie, not an array), or
@@ -703,7 +730,24 @@ impl DataTable {
     pub fn is_dataframe(&self) -> bool {
         if let DataTableKind::CodeRun(code_run) = &self.kind {
             code_run.output_type == Some("DataFrame".into())
-                || code_run.output_type == Some("Series".into())
+        } else {
+            false
+        }
+    }
+
+    /// Returns true if the data table is a pandas Series
+    pub fn is_series(&self) -> bool {
+        if let DataTableKind::CodeRun(code_run) = &self.kind {
+            code_run.output_type == Some("Series".into())
+        } else {
+            false
+        }
+    }
+
+    /// Returns true if the data table is a list
+    pub fn is_list(&self) -> bool {
+        if let DataTableKind::CodeRun(code_run) = &self.kind {
+            code_run.output_type == Some("list".into())
         } else {
             false
         }
@@ -715,9 +759,9 @@ pub mod test {
 
     use super::*;
     use crate::{
+        Array,
         controller::GridController,
         grid::{Sheet, SheetId},
-        Array,
     };
 
     pub fn test_csv_values() -> Vec<Vec<&'static str>> {
@@ -1088,8 +1132,10 @@ pub mod test {
             "a",
         ];
 
+        let sheet_pos = SheetPos::from((1, 1, SheetId::TEST));
+
         for name in valid_names {
-            assert!(DataTable::validate_table_name(name, &context).is_ok());
+            assert!(DataTable::validate_table_name(name, sheet_pos, &context).is_ok());
         }
 
         // invalid table name
@@ -1113,7 +1159,7 @@ pub mod test {
         ];
 
         for (name, expected_error) in test_cases {
-            let result = DataTable::validate_table_name(name, &context);
+            let result = DataTable::validate_table_name(name, sheet_pos, &context);
             assert!(result.is_err());
             assert_eq!(result.unwrap_err(), expected_error);
         }
@@ -1126,9 +1172,17 @@ pub mod test {
                 ("Table2", &["col3", "col4"], Rect::test_a1("D1:E3")),
             ],
         );
-        let result = DataTable::validate_table_name("Table1", &context);
+        let result = DataTable::validate_table_name(
+            "Table1",
+            SheetPos::new(SheetId::TEST, 10, 10),
+            &context,
+        );
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Table name must be unique");
+
+        // duplicate table name with different casing
+        let result = DataTable::validate_table_name("TABLE1", sheet_pos, &context);
+        assert!(result.is_ok());
     }
 
     #[test]
@@ -1159,7 +1213,7 @@ pub mod test {
 
         for name in valid_names {
             assert!(
-                DataTable::validate_column_name(table_name, name, &context).is_ok(),
+                DataTable::validate_column_name(table_name, 10, name, &context).is_ok(),
                 "Expected '{}' to be valid",
                 name
             );
@@ -1210,7 +1264,7 @@ pub mod test {
         ];
 
         for (name, expected_error) in test_cases {
-            let result = DataTable::validate_column_name(table_name, name, &context);
+            let result = DataTable::validate_column_name(table_name, 10, name, &context);
             assert!(
                 result.is_err(),
                 "Expected '{}' to be invalid, but it was valid",
@@ -1225,8 +1279,12 @@ pub mod test {
         }
 
         // Test duplicate column name
-        let result = DataTable::validate_column_name(table_name, "existing_col", &context);
+        let result = DataTable::validate_column_name(table_name, 10, "existing_col", &context);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Column name must be unique");
+
+        // Allow duplicate column name if the index is the same as the existing column index
+        let result = DataTable::validate_column_name(table_name, 0, "existing_col", &context);
+        assert!(result.is_ok());
     }
 }

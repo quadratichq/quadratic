@@ -1,9 +1,9 @@
 use std::str::FromStr;
 
-use crate::a1::A1Context;
+use crate::{a1::A1Context, constants::SHEET_NAME};
 
 use super::{Grid, Sheet, SheetId};
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use lexicon_fractional_index::key_between;
 
 impl Grid {
@@ -57,7 +57,7 @@ impl Grid {
 
     pub fn end_order(&self) -> String {
         let last_order = self.sheets.last().map(|last| last.order.clone());
-        key_between(&last_order, &None).unwrap()
+        key_between(last_order.as_deref(), None).unwrap()
     }
 
     /// Find the order of the sheet before the given id
@@ -97,7 +97,7 @@ impl Grid {
         let mut sheet = sheet.unwrap_or_else(|| {
             Sheet::new(
                 SheetId::new(),
-                format!("Sheet{}", self.sheets.len() + 1),
+                format!("{}{}", SHEET_NAME.to_owned(), self.sheets.len() + 1),
                 self.end_order(),
             )
         });
@@ -233,11 +233,7 @@ mod test {
         // moved to name = 1, 0, 2
         grid.move_sheet(
             grid.sheets[0].id,
-            key_between(
-                &Some(grid.sheets[1].order.clone()),
-                &Some(grid.sheets[2].order.clone()),
-            )
-            .unwrap(),
+            key_between(Some(&grid.sheets[1].order), Some(&grid.sheets[2].order)).unwrap(),
         );
         assert_eq!(grid.sheets[0].name, String::from('1'));
         assert_eq!(grid.sheets[1].name, String::from('0'));
@@ -246,7 +242,7 @@ mod test {
         // moved to name = 1, 2, 0
         grid.move_sheet(
             grid.sheets[1].id,
-            key_between(&Some(grid.sheets[2].order.clone()), &None).unwrap(),
+            key_between(Some(&grid.sheets[2].order), None).unwrap(),
         );
         assert_eq!(grid.sheets[0].name, String::from('1'));
         assert_eq!(grid.sheets[1].name, String::from('2'));
@@ -255,7 +251,7 @@ mod test {
         // moved back to name = 0, 1, 2
         grid.move_sheet(
             grid.sheets[2].id,
-            key_between(&None, &Some(grid.sheets[0].order.clone())).unwrap(),
+            key_between(None, Some(&grid.sheets[0].order)).unwrap(),
         );
         assert_eq!(grid.sheets[0].name, String::from('0'));
         assert_eq!(grid.sheets[1].name, String::from('1'));
@@ -313,11 +309,7 @@ mod test {
         let mut grid = create_three_sheets();
         grid.move_sheet(
             grid.sheets[0].id,
-            key_between(
-                &Some(grid.sheets[1].order.clone()),
-                &Some(grid.sheets[2].order.clone()),
-            )
-            .unwrap(),
+            key_between(Some(&grid.sheets[1].order), Some(&grid.sheets[2].order)).unwrap(),
         );
         assert_eq!(grid.sheets[0].name, String::from('1'));
         assert_eq!(grid.sheets[1].name, String::from('0'));
@@ -329,15 +321,18 @@ mod test {
         let mut grid = Grid::new();
         grid.add_sheet(Some(Sheet::new(
             SheetId::new(),
-            "Sheet1".to_string(),
+            format!("{}1", SHEET_NAME.to_owned()),
             "a1".to_string(),
         )));
         grid.add_sheet(Some(Sheet::new(
             SheetId::new(),
-            "Sheet1".to_string(),
+            format!("{}1", SHEET_NAME.to_owned()),
             "a1".to_string(),
         )));
-        assert_eq!(grid.sheets[0].name, "Sheet1".to_string());
-        assert_eq!(grid.sheets[1].name, "Sheet1 (1)".to_string());
+        assert_eq!(grid.sheets[0].name, format!("{}1", SHEET_NAME.to_owned()));
+        assert_eq!(
+            grid.sheets[1].name,
+            format!("{}1 (1)", SHEET_NAME.to_owned())
+        );
     }
 }

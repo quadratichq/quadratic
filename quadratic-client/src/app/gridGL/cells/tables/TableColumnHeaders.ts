@@ -35,7 +35,11 @@ export class TableColumnHeaders extends Container {
     super.destroy();
   }
 
-  drawBackground = () => {
+  toggleTableColumnSelection(hide: boolean) {
+    this.drawBackground(hide);
+  }
+
+  drawBackground = (skipSelection = false) => {
     this.background.clear();
 
     this.background.lineStyle();
@@ -65,18 +69,22 @@ export class TableColumnHeaders extends Container {
       this.background.lineTo(this.table.tableBounds.width, this.columnsHeight);
     }
 
-    // draws selection background
-    const columnsSelected = this.table.sheet.cursor.getTableColumnSelection(this.table.codeCell.name);
-    if (columnsSelected) {
-      const startX = this.table.sheet.offsets.getColumnPlacement(this.table.codeCell.x + columnsSelected[0])?.position;
-      const end = this.table.sheet.offsets.getColumnPlacement(
-        this.table.codeCell.x + columnsSelected[columnsSelected.length - 1]
-      );
-      const endX = end.position + end.size;
-      this.background.lineStyle();
-      this.background.beginFill(pixiApp.accentColor, FILL_SELECTION_ALPHA);
-      this.background.drawRect(startX - this.table.tableBounds.x, 0, endX - startX, this.columnsHeight);
-      this.background.endFill();
+    if (!skipSelection) {
+      // draws selection background
+      const columnsSelected = this.table.sheet.cursor.getTableColumnSelection(this.table.codeCell.name);
+      if (columnsSelected) {
+        const startX = this.table.sheet.offsets.getColumnPlacement(
+          this.table.codeCell.x + columnsSelected[0]
+        )?.position;
+        const end = this.table.sheet.offsets.getColumnPlacement(
+          this.table.codeCell.x + columnsSelected[columnsSelected.length - 1]
+        );
+        const endX = end.position + end.size;
+        this.background.lineStyle();
+        this.background.beginFill(pixiApp.accentColor, FILL_SELECTION_ALPHA);
+        this.background.drawRect(startX - this.table.tableBounds.x, 0, endX - startX, this.columnsHeight);
+        this.background.endFill();
+      }
     }
 
     this.background.lineStyle({
@@ -145,7 +153,7 @@ export class TableColumnHeaders extends Container {
       }
 
       const width = this.table.sheet.offsets.getColumnWidth(codeCell.x + displayIndex);
-
+      const columnY = codeCell.show_name ? this.table.sheet.offsets.getRowHeight(codeCell.y) : 0;
       if (columnHeader) {
         // existing column, update it
         columnHeader.updateHeader({
@@ -155,7 +163,7 @@ export class TableColumnHeaders extends Container {
           name: column.name,
           sort: codeCell.sort?.find((s) => s.column_index === column.valueIndex),
           dirtySort: codeCell.sort_dirty,
-          columnY: this.columnsHeight,
+          columnY,
         });
       } else {
         // new column, add it
@@ -170,7 +178,7 @@ export class TableColumnHeaders extends Container {
             sort: codeCell.sort?.find((s) => s.column_index === column.valueIndex),
             dirtySort: codeCell.sort_dirty,
             onSortPressed: () => this.onSortPressed(column),
-            columnY: this.columnsHeight,
+            columnY,
           })
         );
       }

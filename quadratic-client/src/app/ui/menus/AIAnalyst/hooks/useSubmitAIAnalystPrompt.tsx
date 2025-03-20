@@ -22,16 +22,18 @@ import type {
   AIMessage,
   AIMessagePrompt,
   ChatMessage,
+  Content,
   Context,
   ToolResultMessage,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 
+const USE_STREAM = true;
 const MAX_TOOL_CALL_ITERATIONS = 25;
 
 export type SubmitAIAnalystPromptArgs = {
-  userPrompt: string;
+  content: Content;
   context: Context;
   messageIndex?: number;
   clearMessages?: boolean;
@@ -81,7 +83,7 @@ export function useSubmitAIAnalystPrompt() {
 
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
-      async ({ userPrompt, context, messageIndex, clearMessages }: SubmitAIAnalystPromptArgs) => {
+      async ({ content, context, messageIndex, clearMessages }: SubmitAIAnalystPromptArgs) => {
         set(showAIAnalystAtom, true);
         set(aiAnalystShowChatHistoryAtom, false);
 
@@ -144,7 +146,7 @@ export function useSubmitAIAnalystPrompt() {
           ...prevMessages,
           {
             role: 'user' as const,
-            content: userPrompt,
+            content,
             contextType: 'userPrompt' as const,
             context: {
               ...context,
@@ -171,7 +173,7 @@ export function useSubmitAIAnalystPrompt() {
             source: 'AIAnalyst',
             modelKey,
             messages: updatedMessages,
-            useStream: true,
+            useStream: USE_STREAM,
             useToolsPrompt: true,
             language: undefined,
             useQuadraticContext: true,
@@ -200,12 +202,12 @@ export function useSubmitAIAnalystPrompt() {
                 const result = await aiToolsActions[aiTool](args as any);
                 toolResultMessage.content.push({
                   id: toolCall.id,
-                  content: result,
+                  text: result,
                 });
               } else {
                 toolResultMessage.content.push({
                   id: toolCall.id,
-                  content: 'Unknown tool',
+                  text: 'Unknown tool',
                 });
               }
             }
@@ -220,7 +222,7 @@ export function useSubmitAIAnalystPrompt() {
               source: 'AIAnalyst',
               modelKey,
               messages: updatedMessages,
-              useStream: true,
+              useStream: USE_STREAM,
               toolName: undefined,
               useToolsPrompt: false,
               language: undefined,

@@ -1,7 +1,7 @@
 //! Tables renders all pixi-based UI elements for tables. Right now that's the
 //! headings.
 
-import type { ContextMenuOptions } from '@/app/atoms/contextMenuAtom';
+import type { ContextMenuState } from '@/app/atoms/contextMenuAtom';
 import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -11,6 +11,7 @@ import { Table } from '@/app/gridGL/cells/tables/Table';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsCodeCell, JsCoordinate, JsHtmlOutput, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import type { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import type { Point } from 'pixi.js';
@@ -29,7 +30,6 @@ export class Tables extends Container<Table> {
   private cellsSheet: CellsSheet;
 
   private activeTables: Table[] = [];
-  private contextMenuTable: Table | undefined;
 
   // either rename or sort
   private actionDataTable: Table | undefined;
@@ -201,7 +201,7 @@ export class Tables extends Container<Table> {
   }
 
   isActive(table: Table): boolean {
-    return this.activeTables.includes(table) || table === this.contextMenuTable;
+    return this.activeTables.includes(table) || pixiAppSettings.contextMenu?.table === table.codeCell;
   }
 
   // Returns true if the pointer down as handled (eg, a column header was
@@ -236,15 +236,10 @@ export class Tables extends Container<Table> {
   // track and activate a table whose context menu is open (this handles the
   // case where you hover a table and open the context menu; we want to keep
   // that table active while the context menu is open)
-  contextMenu = (options?: ContextMenuOptions) => {
-    // we keep the former context menu table active after the rename finishes
-    // until the cursor moves again.
+  contextMenu = (options: ContextMenuState) => {
     if (this.actionDataTable) {
       this.actionDataTable.showColumnHeaders();
       this.actionDataTable = undefined;
-    }
-    if (this.contextMenuTable) {
-      this.contextMenuTable = undefined;
     }
     if (!options?.type) {
       pixiApp.setViewportDirty();
@@ -262,9 +257,9 @@ export class Tables extends Container<Table> {
           this.actionDataTable.showActive();
         }
       } else {
-        this.contextMenuTable = this.children.find((table) => table.codeCell === options.table);
-        if (this.contextMenuTable) {
-          this.contextMenuTable.showActive();
+        const contextMenuTable = this.children.find((table) => table.codeCell === options.table);
+        if (contextMenuTable) {
+          contextMenuTable.showActive();
         }
       }
     } else if (
@@ -315,7 +310,7 @@ export class Tables extends Container<Table> {
   }
 
   getSortDialogPosition(codeCell: JsRenderCodeCell): JsCoordinate | undefined {
-    const table = this.children.find((table) => table.codeCell === codeCell);
+    const table = this.children.find((table) => table.codeCell.x === codeCell.x && table.codeCell.y === codeCell.y);
     if (!table) {
       return;
     }
@@ -327,12 +322,20 @@ export class Tables extends Container<Table> {
     if (this.saveToggleOutlines) {
       this.saveToggleOutlines = false;
       this.activeTables.forEach((table) => table.showActive());
-      this.contextMenuTable?.showActive();
+      const contextMenuTable = pixiAppSettings.contextMenu?.table;
+      if (contextMenuTable && pixiAppSettings.contextMenu?.column === undefined) {
+        const table = this.children.find((table) => table.codeCell === contextMenuTable);
+        table?.showActive();
+      }
       this.actionDataTable?.showActive();
+      this.children.forEach((table) => table.header.toggleTableColumnSelection(false));
       pixiApp.setViewportDirty();
     } else {
       this.saveToggleOutlines = true;
-      this.children.forEach((table) => table.hideActive());
+      this.children.forEach((table) => {
+        table.hideActive();
+        table.header.toggleTableColumnSelection(true);
+      });
     }
   }
 
@@ -436,8 +439,12 @@ export class Tables extends Container<Table> {
 
   intersectsCodeInfo(world: Point): JsRenderCodeCell | undefined {
     for (const table of this.children) {
-      if (table.codeCell.state === 'SpillError' || table.codeCell.state === 'RunError') {
-        if (intersects.rectanglePoint(table.tableBounds, world)) {
+      if (
+        pixiAppSettings.showCodePeek ||
+        table.codeCell.state === 'SpillError' ||
+        table.codeCell.state === 'RunError'
+      ) {
+        if (!table.codeCell.is_html_image && intersects.rectanglePoint(table.tableBounds, world)) {
           return table.codeCell;
         }
       }

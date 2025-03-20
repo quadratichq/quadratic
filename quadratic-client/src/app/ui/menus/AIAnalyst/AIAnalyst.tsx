@@ -54,7 +54,7 @@ export const AIAnalyst = memo(() => {
 
       <div
         ref={aiPanelRef}
-        className="relative hidden h-full shrink-0 overflow-hidden lg:block"
+        className="relative hidden h-full shrink-0 overflow-hidden md:block"
         style={{ width: `${panelWidth}px` }}
         onCopy={(e) => e.stopPropagation()}
         onCut={(e) => e.stopPropagation()}
