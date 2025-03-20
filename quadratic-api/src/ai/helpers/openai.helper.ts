@@ -2,7 +2,12 @@ import type { Response } from 'express';
 import type OpenAI from 'openai';
 import type { ChatCompletionMessageParam, ChatCompletionTool, ChatCompletionToolChoiceOption } from 'openai/resources';
 import type { Stream } from 'openai/streaming';
-import { getSystemPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import {
+  getSystemPromptMessages,
+  isContentImage,
+  isContentText,
+  isToolResultMessage,
+} from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -11,14 +16,16 @@ import type {
   AIRequestHelperArgs,
   AISource,
   AIUsage,
+  ImageContent,
   OpenAIModelKey,
   ParsedAIResponse,
+  TextContent,
   XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 
 export function getOpenAIApiArgs(
   args: AIRequestHelperArgs,
-  strickParams: boolean
+  strictParams: boolean
 ): {
   messages: ChatCompletionMessageParam[];
   tools: ChatCompletionTool[] | undefined;
@@ -50,21 +57,38 @@ export function getOpenAIApiArgs(
             : undefined,
       };
       return [...acc, openaiMessage];
-    } else if (message.role === 'user' && message.contextType === 'toolResult') {
+    } else if (isToolResultMessage(message)) {
       const openaiMessages: ChatCompletionMessageParam[] = message.content.map((toolResult) => ({
         role: 'tool' as const,
         tool_call_id: toolResult.id,
-        content: toolResult.content,
+        content: toolResult.text,
       }));
       return [...acc, ...openaiMessages];
-    } else if (message.content) {
+    } else if (message.role === 'user') {
+      const openaiMessage: ChatCompletionMessageParam = {
+        role: message.role,
+        content: message.content
+          .filter((content): content is TextContent | ImageContent => isContentText(content) || isContentImage(content))
+          .map((content) => {
+            if (isContentText(content)) {
+              return content;
+            } else {
+              return {
+                type: 'image_url',
+                image_url: {
+                  url: content.data,
+                },
+              };
+            }
+          }),
+      };
+      return [...acc, openaiMessage];
+    } else {
       const openaiMessage: ChatCompletionMessageParam = {
         role: message.role,
         content: message.content,
       };
       return [...acc, openaiMessage];
-    } else {
-      return acc;
     }
   }, []);
 
@@ -73,7 +97,7 @@ export function getOpenAIApiArgs(
     ...messages,
   ];
 
-  const tools = getOpenAITools(source, toolName, strickParams);
+  const tools = getOpenAITools(source, toolName, strictParams);
   const tool_choice = tools?.length ? getOpenAIToolChoice(toolName) : undefined;
 
   return { messages: openaiMessages, tools, tool_choice };
@@ -82,7 +106,7 @@ export function getOpenAIApiArgs(
 function getOpenAITools(
   source: AISource,
   toolName: AITool | undefined,
-  strickParams: boolean
+  strictParams: boolean
 ): ChatCompletionTool[] | undefined {
   const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
     if (toolName === undefined) {
@@ -102,7 +126,7 @@ function getOpenAITools(
         name,
         description,
         parameters,
-        strict: strickParams,
+        strict: strictParams,
       },
     })
   );
@@ -110,10 +134,8 @@ function getOpenAITools(
   return openaiTools;
 }
 
-function getOpenAIToolChoice(name?: AITool): ChatCompletionToolChoiceOption | undefined {
-  const toolChoice: ChatCompletionToolChoiceOption =
-    name === undefined ? 'auto' : { type: 'function', function: { name } };
-  return toolChoice;
+function getOpenAIToolChoice(name?: AITool): ChatCompletionToolChoiceOption {
+  return name === undefined ? 'auto' : { type: 'function', function: { name } };
 }
 
 export async function parseOpenAIStream(
@@ -217,7 +239,7 @@ export async function parseOpenAIStream(
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
     responseMessage.content.push({
       type: 'text',
-      text: "I'm sorry, I don't have a response for that.",
+      text: 'Please try again.',
     });
   }
 
@@ -283,7 +305,7 @@ export function parseOpenAIResponse(
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
     responseMessage.content.push({
       type: 'text',
-      text: "I'm sorry, I don't have a response for that.",
+      text: 'Please try again.',
     });
   }
 

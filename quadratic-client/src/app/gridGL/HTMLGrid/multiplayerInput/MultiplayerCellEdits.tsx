@@ -1,7 +1,7 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { MultiplayerCellEdit } from '@/app/gridGL/HTMLGrid/multiplayerInput/MultiplayerCellEdit';
-import type { SheetPosTS } from '@/app/gridGL/types/size';
+import type { SheetPosTS } from '@/app/shared/types/size';
 import type { CellEdit, MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import { useEffect, useState } from 'react';
 

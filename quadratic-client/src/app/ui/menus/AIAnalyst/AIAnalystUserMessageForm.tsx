@@ -40,9 +40,9 @@ export const AIAnalystUserMessageForm = memo(
         abortController={abortController}
         loading={loading}
         setLoading={setLoading}
-        submitPrompt={(prompt) => {
+        submitPrompt={(content) => {
           mixpanel.track('[AIAnalyst].submitPrompt');
-          submitPrompt({ userPrompt: prompt, context, messageIndex: props.messageIndex });
+          submitPrompt({ content, context, messageIndex: props.messageIndex });
         }}
         formOnKeyDown={formOnKeyDown}
         ctx={{

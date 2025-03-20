@@ -158,13 +158,13 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
             {message.role === 'user' ? (
               message.contextType === 'userPrompt' ? (
                 <AIAnalystUserMessageForm
-                  initialPrompt={message.content}
+                  initialContent={message.content}
                   initialContext={message.context}
                   messageIndex={index}
                   textareaRef={textareaRef}
                 />
               ) : Array.isArray(message.content) ? (
-                message.content.map(({ content }) => <Markdown key={content}>{content}</Markdown>)
+                message.content.map(({ text }) => <Markdown key={text}>{text}</Markdown>)
               ) : (
                 <Markdown key={message.content}>{message.content}</Markdown>
               )
@@ -191,9 +191,9 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                 )}
 
                 {message.contextType === 'userPrompt' &&
-                  message.toolCalls.map((toolCall) => (
+                  message.toolCalls.map((toolCall, index) => (
                     <AIAnalystToolCard
-                      key={toolCall.id}
+                      key={`${index}-${toolCall.id}-${toolCall.arguments}`}
                       name={toolCall.name}
                       args={toolCall.arguments}
                       loading={toolCall.loading}

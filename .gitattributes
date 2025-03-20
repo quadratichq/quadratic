@@ -1,3 +1,4 @@
 # Do not include vendor files in GitHub Languages analysis
 public/monaco/** linguist-vendored
 public/pyodide/** linguist-vendored
+quadratic-client/public/pyodide/** filter=lfs diff=lfs merge=lfs -text

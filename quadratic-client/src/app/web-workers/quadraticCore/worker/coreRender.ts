@@ -6,7 +6,7 @@
  */
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import type { JsOffset, JsRenderCell, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import type { JsOffset, JsRenderCell, SheetBounds, SheetInfo, TransactionName } from '@/app/quadratic-core-types';
 import type {
   CoreRenderMessage,
   RenderCoreMessage,
@@ -27,6 +27,8 @@ declare var self: WorkerGlobalScope &
     handleResponseRowHeights: (transactionId: string, sheetId: string, rowHeights: string) => void;
     sendHashesDirty: (sheetId: string, hashes: string) => void;
     sendViewportBuffer: (buffer: SharedArrayBuffer) => void;
+    sendTransactionStartRender: (transactionId: string, transactionName: TransactionName) => void;
+    sendTransactionEndRender: (transactionId: string, transactionName: TransactionName) => void;
   };
 
 class CoreRender {
@@ -118,6 +120,14 @@ class CoreRender {
       buffer,
     });
   };
+
+  sendTransactionStart = (transactionId: string, transactionName: TransactionName) => {
+    this.send({ type: 'coreRenderTransactionStart', transactionId, transactionName });
+  };
+
+  sendTransactionEnd = (transactionId: string, transactionName: TransactionName) => {
+    this.send({ type: 'coreRenderTransactionEnd', transactionId, transactionName });
+  };
 }
 
 export const coreRender = new CoreRender();
@@ -133,3 +143,5 @@ self.sendRequestRowHeights = coreRender.sendRequestRowHeights;
 self.handleResponseRowHeights = coreRender.handleResponseRowHeights;
 self.sendHashesDirty = coreRender.sendHashesDirty;
 self.sendViewportBuffer = coreRender.sendViewportBuffer;
+self.sendTransactionStartRender = coreRender.sendTransactionStart;
+self.sendTransactionEndRender = coreRender.sendTransactionEnd;

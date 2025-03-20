@@ -115,6 +115,15 @@ impl GridController {
         self.send_transaction_client_updates(&mut transaction);
 
         transaction.send_transaction();
+
+        if cfg!(target_family = "wasm") {
+            let transaction_name = serde_json::to_string(&transaction.transaction_name)
+                .unwrap_or("Unknown".to_string());
+            crate::wasm_bindings::js::jsTransactionEnd(
+                transaction.id.to_string(),
+                transaction_name,
+            );
+        }
     }
 
     pub fn start_user_transaction(
@@ -122,7 +131,7 @@ impl GridController {
         operations: Vec<Operation>,
         cursor: Option<String>,
         transaction_name: TransactionName,
-    ) {
+    ) -> String {
         let mut transaction = PendingTransaction {
             source: TransactionSource::User,
             operations: operations.into(),
@@ -130,8 +139,10 @@ impl GridController {
             transaction_name,
             ..Default::default()
         };
+        let transaction_id = transaction.id.to_string();
         self.start_transaction(&mut transaction);
         self.finalize_transaction(transaction);
+        transaction_id
     }
 
     pub fn start_undo_transaction(
