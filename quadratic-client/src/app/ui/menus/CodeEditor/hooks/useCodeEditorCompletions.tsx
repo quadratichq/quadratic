@@ -33,7 +33,10 @@ export function useCodeEditorCompletions({ language }: { language: CodeCellLangu
       const messages: ChatMessage[] = [
         {
           role: 'user',
-          content: `
+          content: [
+            {
+              type: 'text',
+              text: `
 You are a code editor assistant, you are inside a code editor of code cell of spreadsheet application called Quadratic.\n
 The language of the code cell is ${language}.\n
 ${
@@ -53,7 +56,11 @@ The code after the cursor is:\n
 ${JSON.stringify(suffix)}
 
 Include spaces and newlines as required, the text delta will be appended as is at the cursor position.\n
+
+Never try to insert the cell reference, inside q.cells function. Always try code changes to improve or fix the code only.\n
 `,
+            },
+          ],
           contextType: 'userPrompt',
         },
       ];

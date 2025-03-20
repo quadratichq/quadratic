@@ -43,7 +43,7 @@ interface CodeEditorBodyProps {
   setEditorInst: React.Dispatch<React.SetStateAction<monaco.editor.IStandaloneCodeEditor | null>>;
 }
 
-const AI_COMPLETION_DEBOUNCE_TIME = 250;
+const AI_COMPLETION_DEBOUNCE_TIME = 100;
 
 // need to track globally since monaco is a singleton
 const registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
