@@ -10,11 +10,11 @@ import {
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { debug } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
-import type { CodeCell } from '@/app/gridGL/types/codeCell';
-import type { SuggestController } from '@/app/gridGL/types/SuggestController';
 import { codeCellIsAConnection, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { CodeCell } from '@/app/shared/types/codeCell';
+import type { SuggestController } from '@/app/shared/types/SuggestController';
 import { CodeEditorPlaceholder } from '@/app/ui/menus/CodeEditor/CodeEditorPlaceholder';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
 import { useCloseCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useCloseCodeEditor';

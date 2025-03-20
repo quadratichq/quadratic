@@ -61,7 +61,7 @@ export const filesImportProgressAtom = atom({
         };
 
         const handleTransactionStart = (message: CoreClientTransactionStart) => {
-          if (message.transactionType === 'Import') {
+          if (message.transactionName === 'Import') {
             setSelf((prev) => {
               if (prev instanceof DefaultValue) return prev;
               const updatedFiles = prev.files.map((file, index) => {
