@@ -8,6 +8,7 @@ import {
   codeEditorShowDiffEditorAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { debug } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import type { CodeCell } from '@/app/gridGL/types/codeCell';
 import type { SuggestController } from '@/app/gridGL/types/SuggestController';
@@ -273,6 +274,9 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
           _context: monaco.languages.InlineCompletionContext,
           token: monaco.CancellationToken
         ) => {
+          // enabled in debug mode only
+          if (!debug) return;
+
           return new Promise((resolve) => {
             clearTimeout(completionTimeoutAndController.timeout);
             completionTimeoutAndController.abortController?.abort();
