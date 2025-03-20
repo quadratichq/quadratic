@@ -15,16 +15,29 @@ import {
   showAIAssistantAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import type { CodeCell } from '@/app/gridGL/types/codeCell';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
+import type { CodeCell } from '@/app/shared/types/codeCell';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { AIMessage, AIMessagePrompt, ChatMessage, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
+import type {
+  AIMessage,
+  AIMessagePrompt,
+  ChatMessage,
+  Content,
+  ToolResultMessage,
+} from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 
 const MAX_TOOL_CALL_ITERATIONS = 25;
+
+export type SubmitAIAssistantPromptArgs = {
+  content: Content;
+  messageIndex?: number;
+  clearMessages?: boolean;
+  codeCell?: CodeCell;
+};
 
 export function useSubmitAIAssistantPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
@@ -57,17 +70,7 @@ export function useSubmitAIAssistantPrompt() {
 
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
-      async ({
-        userPrompt,
-        messageIndex,
-        clearMessages,
-        codeCell,
-      }: {
-        userPrompt: string;
-        messageIndex?: number;
-        clearMessages?: boolean;
-        codeCell?: CodeCell;
-      }) => {
+      async ({ content, messageIndex, clearMessages, codeCell }: SubmitAIAssistantPromptArgs) => {
         set(showAIAssistantAtom, true);
 
         const previousLoading = await snapshot.getPromise(aiAssistantLoadingAtom);
@@ -131,7 +134,7 @@ export function useSubmitAIAssistantPrompt() {
           ...prevMessages,
           {
             role: 'user' as const,
-            content: userPrompt,
+            content,
             contextType: 'userPrompt' as const,
           },
         ]);
@@ -180,12 +183,12 @@ export function useSubmitAIAssistantPrompt() {
                 const result = await aiToolsActions[aiTool](args as any);
                 toolResultMessage.content.push({
                   id: toolCall.id,
-                  content: result,
+                  text: result,
                 });
               } else {
                 toolResultMessage.content.push({
                   id: toolCall.id,
-                  content: 'Unknown tool',
+                  text: 'Unknown tool',
                 });
               }
             }

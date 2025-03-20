@@ -1,15 +1,15 @@
 use crate::{
     constants::SHEET_NAME,
     controller::{
-        active_transactions::pending_transaction::PendingTransaction,
-        operations::operation::Operation, GridController,
+        GridController, active_transactions::pending_transaction::PendingTransaction,
+        operations::operation::Operation,
     },
     grid::{
-        file::sheet_schema::export_sheet, js_types::JsSnackbarSeverity, unique_data_table_name,
-        Sheet, SheetId,
+        Sheet, SheetId, file::sheet_schema::export_sheet, js_types::JsSnackbarSeverity,
+        unique_data_table_name,
     },
 };
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use lexicon_fractional_index::key_between;
 
 impl GridController {
@@ -277,7 +277,7 @@ impl GridController {
             new_sheet.id = new_sheet_id;
             let right = self.grid.next_sheet(sheet_id);
             let right_order = right.map(|right| right.order.clone());
-            if let Ok(order) = key_between(&Some(sheet.order.clone()), &right_order) {
+            if let Ok(order) = key_between(Some(&sheet.order), right_order.as_deref()) {
                 new_sheet.order = order;
             };
             let name = format!("{} Copy", sheet.name);
@@ -307,18 +307,17 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
+        CellValue, SheetPos,
         constants::SHEET_NAME,
         controller::{
-            active_transactions::transaction_name::TransactionName,
+            GridController, active_transactions::transaction_name::TransactionName,
             operations::operation::Operation, user_actions::import::tests::simple_csv_at,
-            GridController,
         },
         grid::{CodeCellLanguage, CodeCellValue, SheetId},
         wasm_bindings::{
             controller::sheet_info::SheetInfo,
             js::{clear_js_calls, expect_js_call},
         },
-        CellValue, SheetPos,
     };
     use bigdecimal::BigDecimal;
 

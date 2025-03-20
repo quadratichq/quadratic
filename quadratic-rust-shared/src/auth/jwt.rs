@@ -1,5 +1,9 @@
+//! JWT Authentication
+//!
+//! Functions to interact with JWT tokens
+
 use jsonwebtoken::jwk::{AlgorithmParameters, JwkSet};
-use jsonwebtoken::{decode, decode_header, jwk, Algorithm, DecodingKey, TokenData, Validation};
+use jsonwebtoken::{Algorithm, DecodingKey, TokenData, Validation, decode, decode_header, jwk};
 use serde::de::DeserializeOwned;
 use std::str::FromStr;
 use tokio::sync::OnceCell;
@@ -58,7 +62,7 @@ where
             _ => {
                 return Err(SharedError::Auth(Auth::Jwt(
                     "Unsupported algorithm, should be RSA".into(),
-                )))
+                )));
             }
         }
     } else {
