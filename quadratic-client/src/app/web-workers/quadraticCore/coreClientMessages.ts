@@ -474,6 +474,13 @@ export interface ClientCoreSetCodeCellValue {
   language: CodeCellLanguage;
   codeString: string;
   cursor?: string;
+  id: number;
+}
+
+export interface CoreClientSetCodeCellValue {
+  type: 'coreClientSetCodeCellValue';
+  id: number;
+  transactionId: string | undefined;
 }
 
 export interface CoreClientSheetFills {
@@ -840,13 +847,19 @@ export interface CoreClientImportProgress {
 export interface CoreClientTransactionStart {
   type: 'coreClientTransactionStart';
   transactionId: string;
-  transactionType: TransactionName;
+  transactionName: TransactionName;
 }
 
 export interface CoreClientTransactionProgress {
   type: 'coreClientTransactionProgress';
   transactionId: string;
   remainingOperations: number;
+}
+
+export interface CoreClientTransactionEnd {
+  type: 'coreClientTransactionEnd';
+  transactionId: string;
+  transactionName: TransactionName;
 }
 
 export interface CoreClientUpdateCodeCell {
@@ -1359,6 +1372,7 @@ export type CoreClientMessage =
   | CoreClientImportProgress
   | CoreClientTransactionStart
   | CoreClientTransactionProgress
+  | CoreClientTransactionEnd
   | CoreClientUpdateCodeCell
   | CoreClientMultiplayerState
   | CoreClientConnectionState
@@ -1395,4 +1409,5 @@ export type CoreClientMessage =
   | CoreClientSetCellValues
   | CoreClientMoveCells
   | CoreClientDeleteCellValues
-  | CoreClientDataTableMutations;
+  | CoreClientDataTableMutations
+  | CoreClientSetCodeCellValue;
