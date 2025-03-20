@@ -1,11 +1,13 @@
 import { focusGrid } from '@/app/helpers/focusGrid.js';
 import type { SearchOptions } from '@/app/quadratic-core-types';
+import type { TransactionInfo } from '@/app/shared/types/transactionInfo';
 import type { User } from '@/auth/auth';
 import type { FilePermission, TeamSettings } from 'quadratic-shared/typesAndSchemas';
 import { atom, DefaultValue, selector } from 'recoil';
 
 export interface EditorInteractionState {
   isRunningAsyncAction: boolean;
+  transactionsInfo: TransactionInfo[];
   showCellTypeMenu: boolean;
   showCommandPalette: boolean;
   showConnectionsMenu: boolean;
@@ -29,6 +31,7 @@ export interface EditorInteractionState {
 
 export const defaultEditorInteractionState: EditorInteractionState = {
   isRunningAsyncAction: false,
+  transactionsInfo: [],
   showCellTypeMenu: false,
   showCommandPalette: false,
   showConnectionsMenu: false,
@@ -100,6 +103,7 @@ const createSelector = <T extends keyof EditorInteractionState>(key: T) =>
   });
 
 export const editorInteractionStateShowIsRunningAsyncActionAtom = createSelector('isRunningAsyncAction');
+export const editorInteractionStateTransactionsInfoAtom = createSelector('transactionsInfo');
 export const editorInteractionStateShowCellTypeMenuAtom = createSelector('showCellTypeMenu');
 export const editorInteractionStateShowCommandPaletteAtom = createSelector('showCommandPalette');
 export const editorInteractionStateShowConnectionsMenuAtom = createSelector('showConnectionsMenu');
