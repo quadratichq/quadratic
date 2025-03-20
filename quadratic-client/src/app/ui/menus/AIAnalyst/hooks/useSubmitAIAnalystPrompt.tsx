@@ -18,17 +18,11 @@ import {
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type {
-  AIMessage,
-  AIMessagePrompt,
-  ChatMessage,
-  Content,
-  Context,
-  ToolResultMessage,
-} from 'quadratic-shared/typesAndSchemasAI';
+import { AITool, aiToolsSpec, type AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { AIMessage, ChatMessage, Content, Context, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
+import type { z } from 'zod';
 
 const USE_STREAM = true;
 const MAX_TOOL_CALL_ITERATIONS = 25;
@@ -176,55 +170,9 @@ export function useSubmitAIAnalystPrompt() {
         });
 
         try {
-          // Send user prompt to API
-          const updatedMessages = await updateInternalContext({ context });
-          const response = await handleAIRequestToAPI({
-            chatId,
-            source: 'AIAnalyst',
-            modelKey,
-            messages: updatedMessages,
-            useStream: USE_STREAM,
-            useToolsPrompt: true,
-            language: undefined,
-            useQuadraticContext: true,
-            setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
-            signal: abortController.signal,
-          });
-          let toolCalls: AIMessagePrompt['toolCalls'] = response.toolCalls;
-
           // Handle tool calls
           let toolCallIterations = 0;
-          while (toolCalls.length > 0 && toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
-            toolCallIterations++;
-
-            // Message containing tool call results
-            const toolResultMessage: ToolResultMessage = {
-              role: 'user',
-              content: [],
-              contextType: 'toolResult',
-            };
-
-            for (const toolCall of toolCalls) {
-              if (Object.values(AITool).includes(toolCall.name as AITool)) {
-                const aiTool = toolCall.name as AITool;
-                const argsObject = JSON.parse(toolCall.arguments);
-                const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
-                const result = await aiToolsActions[aiTool](args as any);
-                toolResultMessage.content.push({
-                  id: toolCall.id,
-                  text: result,
-                });
-              } else {
-                toolResultMessage.content.push({
-                  id: toolCall.id,
-                  text: 'Unknown tool',
-                });
-              }
-            }
-            toolCalls = [];
-
-            set(aiAnalystCurrentChatMessagesAtom, (prev) => [...prev, toolResultMessage]);
-
+          while (toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
             // Send tool call results to API
             const updatedMessages = await updateInternalContext({ context });
             const response = await handleAIRequestToAPI({
@@ -240,7 +188,55 @@ export function useSubmitAIAnalystPrompt() {
               setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
               signal: abortController.signal,
             });
-            toolCalls = response.toolCalls;
+
+            if (response.toolCalls.length === 0) {
+              break;
+            }
+
+            toolCallIterations++;
+
+            // Message containing tool call results
+            const toolResultMessage: ToolResultMessage = {
+              role: 'user',
+              content: [],
+              contextType: 'toolResult',
+            };
+
+            let promptSuggestions: z.infer<
+              (typeof AIToolsArgsSchema)[AITool.UserPromptSuggestions]
+            >['prompt_suggestions'] = [];
+
+            for (const toolCall of response.toolCalls) {
+              if (Object.values(AITool).includes(toolCall.name as AITool)) {
+                const aiTool = toolCall.name as AITool;
+                const argsObject = JSON.parse(toolCall.arguments);
+                const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
+                const result = await aiToolsActions[aiTool](args as any);
+                toolResultMessage.content.push({
+                  id: toolCall.id,
+                  text: result,
+                });
+
+                if (aiTool === AITool.UserPromptSuggestions) {
+                  promptSuggestions = (args as any).prompt_suggestions;
+                }
+              } else {
+                toolResultMessage.content.push({
+                  id: toolCall.id,
+                  text: 'Unknown tool',
+                });
+              }
+            }
+
+            set(aiAnalystCurrentChatMessagesAtom, (prev) => [...prev, toolResultMessage]);
+
+            if (promptSuggestions.length > 0) {
+              set(aiAnalystPromptSuggestionsAtom, {
+                abortController: undefined,
+                suggestions: promptSuggestions,
+              });
+              break;
+            }
           }
         } catch (error) {
           set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {

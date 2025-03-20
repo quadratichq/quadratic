@@ -23,12 +23,18 @@ export const useGetUserPromptSuggestions = () => {
         const messages: ChatMessage[] = [
           {
             role: 'user',
-            content: `Use user_prompt_suggestions tool to provide follow up prompts for the user based on the following chat messages between AI assistant and the user.\n
+            content: [
+              {
+                type: 'text',
+                text: `
+Use user_prompt_suggestions tool to provide follow up prompts for the user based on the following chat messages between AI assistant and the user.\n
 Previous messages:\n
 \`\`\`json
 ${JSON.stringify(chatPromptMessages)}
 \`\`\`
 `,
+              },
+            ],
             contextType: 'userPrompt',
           },
         ];

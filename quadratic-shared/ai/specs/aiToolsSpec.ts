@@ -425,7 +425,7 @@ Completion is the delta that will be inserted at the cursor position in the code
 `,
   },
   [AITool.UserPromptSuggestions]: {
-    sources: ['GetUserPromptSuggestions'],
+    sources: ['GetUserPromptSuggestions', 'AIAnalyst'],
     description: `
 This tool provides prompt suggestions for the user, requires an array of three prompt suggestions.\n
 Each prompt suggestion is an object with a label and a prompt.\n
@@ -433,6 +433,7 @@ The label is a short label for the prompt suggestion, this will be displayed to 
 The prompt is the actual prompt that will be used to generate the prompt suggestion.\n
 Use the internal context and the chat history to provide the prompt suggestions.\n
 Always maintain strong correlation between the follow up prompts and the user's chat history and the internal context.\n
+This tool should always be called after you have provided the response to the user's prompt and all tool calls are finished, to provide user follow up prompts suggestions.\n
 `,
     parameters: {
       type: 'object',
@@ -467,6 +468,7 @@ The label is a short label for the prompt suggestion, this will be displayed to 
 The prompt is the actual prompt that will be used to generate the prompt suggestion.\n
 Use the internal context and the chat history to provide the prompt suggestions.\n
 Always maintain strong correlation between the prompt suggestions and the user's chat history and the internal context.\n
+This tool should always be called after you have provided the response to the user's prompt and all tool calls are finished, to provide user follow up prompts suggestions.\n
 `,
   },
 } as const;

@@ -185,9 +185,9 @@ export const aiToolsActions: AIToolActionsRecord = {
     }
   },
   [AITool.CodeEditorCompletions]: async () => {
-    return `Executed code editor completions tool successfully.`;
+    return `Code editor completions tool executed successfully, user is presented with a list of code completions, to choose from.`;
   },
   [AITool.UserPromptSuggestions]: async () => {
-    return `Executed user prompt suggestions tool successfully.`;
+    return `User prompt suggestions tool executed successfully, user is presented with a list of prompt suggestions, to choose from.`;
   },
 } as const;
