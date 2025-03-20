@@ -1,11 +1,13 @@
 import { apiClient } from '@/shared/api/apiClient';
-import { ChevronRightIcon, DraftIcon } from '@/shared/components/Icons';
+import { ChevronRightIcon } from '@/shared/components/Icons';
+import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { useState } from 'react';
-import { useLoaderData, useParams, type LoaderFunctionArgs } from 'react-router-dom';
+import { Link, useLoaderData, useParams, type LoaderFunctionArgs } from 'react-router-dom';
 
 type LoaderData = Awaited<ReturnType<typeof loader>>;
 
@@ -30,14 +32,27 @@ export const Component = () => {
 
   // TODO: we probably want to hide the file name because it's changed over time
 
+  // TODO: permissions
+
   return (
     <div className="grid h-full w-full grid-cols-[300px_1fr] overflow-hidden">
       <div className="overflow-hidden border-r border-border">
-        <div className="p-3">
-          <p className="mb-1 inline-flex items-center gap-0.5 rounded bg-accent py-1 pl-1 pr-2 text-xs font-semibold">
-            <DraftIcon />
-            {data.name}
-          </p>
+        <div className="p-3 pb-0">
+          <div className="mb-1 flex items-center justify-between">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    to="/"
+                    className="flex h-8 w-8 items-center justify-center rounded text-muted-foreground hover:bg-border"
+                  >
+                    <QuadraticLogo />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right">Go to dashboard</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
           <h3 className="mr-auto text-lg font-semibold">Version history</h3>
           <p className="text-sm text-muted-foreground">
             Browse previous file versions in read-only mode to see changes and restore them.
@@ -65,7 +80,13 @@ export const Component = () => {
             </Button>
           </div>
         </div>
-        <div className="flex h-full flex-col  overflow-scroll border-t border-border p-3">
+        <p className="mt-3 flex items-center gap-1 overflow-hidden border-y border-border bg-accent py-1 pl-3 pr-2 text-xs font-semibold">
+          <span className="truncate">{data.name}</span>
+          <Button variant="ghost" size="sm" className="ml-auto flex-shrink-0 text-muted-foreground">
+            Open file
+          </Button>
+        </p>
+        <div className="flex h-full flex-col overflow-scroll p-3">
           {Object.entries(checkpointsByDay).map(([day, versions], groupIndex) => {
             return (
               <div id={day} className={cn(groupIndex !== 0 && 'mt-6')}>

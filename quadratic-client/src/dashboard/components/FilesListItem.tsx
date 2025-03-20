@@ -271,6 +271,14 @@ export function FilesListItemUserFile({
                   )}
                   <DropdownMenuSeparator />
 
+                  <DropdownMenuItem
+                    onClick={() => {
+                      window.open(ROUTES.FILE(uuid) + '/versions', '_blank');
+                    }}
+                  >
+                    Open version history
+                  </DropdownMenuItem>
+
                   {permissions.includes('FILE_EDIT') && (
                     <DropdownMenuItem onClick={() => setActiveRecoverFileId(uuid)}>
                       View version history
