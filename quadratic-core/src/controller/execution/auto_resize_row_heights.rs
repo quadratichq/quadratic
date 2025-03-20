@@ -137,12 +137,14 @@ mod tests {
             None,
         )
         .unwrap();
-        let ops = gc.set_cell_values_operations(
-            sheet_pos,
-            vec![vec![
-                "test_auto_resize_row_heights_on_set_cell_value_1".to_string()
-            ]],
-        );
+        let ops = gc
+            .set_cell_values_operations(
+                sheet_pos,
+                vec![vec![
+                    "test_auto_resize_row_heights_on_set_cell_value_1".to_string()
+                ]],
+            )
+            .unwrap();
         // mock response from renderer
         let row_heights = vec![JsRowHeight {
             row: 1,
@@ -174,12 +176,14 @@ mod tests {
         let async_transaction = gc.transactions.get_async_transaction(transaction_id);
         assert!(async_transaction.is_err());
 
-        let ops = gc.set_cell_values_operations(
-            sheet_pos,
-            vec![vec![
-                "test_auto_resize_row_heights_on_set_cell_value_2".to_string()
-            ]],
-        );
+        let ops = gc
+            .set_cell_values_operations(
+                sheet_pos,
+                vec![vec![
+                    "test_auto_resize_row_heights_on_set_cell_value_2".to_string()
+                ]],
+            )
+            .unwrap();
         let row_heights = vec![JsRowHeight {
             row: 1,
             height: 40f64,
@@ -532,7 +536,7 @@ mod tests {
             .is_ok());
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 3 }),
+            sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Number(BigDecimal::from(10)))
         );
 
@@ -651,12 +655,14 @@ mod tests {
             None,
         )
         .unwrap();
-        let ops = gc.set_cell_values_operations(
-            sheet_pos,
-            vec![vec![
-                "test_auto_resize_row_heights_on_user_transaction_only".to_string(),
-            ]],
-        );
+        let ops = gc
+            .set_cell_values_operations(
+                sheet_pos,
+                vec![vec![
+                    "test_auto_resize_row_heights_on_user_transaction_only".to_string(),
+                ]],
+            )
+            .unwrap();
         // mock response from renderer
         let row_heights = vec![JsRowHeight {
             row: 1,

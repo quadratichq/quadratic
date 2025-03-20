@@ -25,9 +25,11 @@ import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { RocketIcon } from '@radix-ui/react-icons';
+import mixpanel from 'mixpanel-browser';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { Link, NavLink, useLocation, useNavigation, useSearchParams, useSubmit } from 'react-router-dom';
+import { Link, NavLink, useLocation, useMatch, useNavigation, useSearchParams, useSubmit } from 'react-router-dom';
 
 const SHOW_EXAMPLES = import.meta.env.VITE_STORAGE_TYPE !== 'file-system';
 
@@ -43,9 +45,11 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
     activeTeam: {
       userMakingRequest: { teamPermissions },
       team: { uuid: activeTeamUuid },
+      billing,
     },
   } = useDashboardRouteLoaderData();
 
+  const isSettingsPage = useMatch('/teams/:teamId/settings');
   const canEditTeam = teamPermissions.includes('TEAM_EDIT');
   const classNameIcons = `mx-0.5 text-muted-foreground`;
 
@@ -137,6 +141,30 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         </div>
       </div>
       <div className="mt-auto flex flex-col gap-1 bg-accent px-3 pb-2">
+        {billing?.status !== 'ACTIVE' && !isSettingsPage && (
+          <div className="mb-2 flex flex-col gap-2 rounded-lg border border-border p-3 text-xs shadow-sm">
+            <div className="flex gap-2">
+              <RocketIcon className="h-5 w-5 text-primary" />
+              <div className="flex flex-col">
+                <span className="font-semibold">Upgrade to Quadratic Pro</span>
+                <span className="text-muted-foreground">Get more AI messages, connections, and more.</span>
+              </div>
+            </div>
+
+            <Button size="sm" className="w-full" asChild>
+              <Link
+                to={ROUTES.TEAM_SETTINGS(activeTeamUuid)}
+                onClick={() => {
+                  mixpanel.track('[DashboardSidebar].upgradeToProClicked', {
+                    team_uuid: activeTeamUuid,
+                  });
+                }}
+              >
+                Upgrade to Pro
+              </Link>
+            </Button>
+          </div>
+        )}
         {eduStatus === 'ENROLLED' && (
           <SidebarNavLink
             to={`./?${SEARCH_PARAMS.DIALOG.KEY}=${SEARCH_PARAMS.DIALOG.VALUES.EDUCATION}`}

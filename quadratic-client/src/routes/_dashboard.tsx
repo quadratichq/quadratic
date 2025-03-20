@@ -257,7 +257,6 @@ export const ErrorBoundary = () => {
       );
   }
 
-  // Maybe we log this to Sentry someday...
   console.error(error);
   return (
     <Empty
@@ -270,6 +269,7 @@ export const ErrorBoundary = () => {
         </Button>
       }
       severity="error"
+      error={error}
       showLoggedInUser
     />
   );

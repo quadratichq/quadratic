@@ -134,11 +134,20 @@ Resources:
           AUTH0_CLIENT_ID=$(aws ssm get-parameter --name "/quadratic-development/AUTH0_CLIENT_ID" --with-decryption --query "Parameter.Value" --output text)
           AUTH0_CLIENT_SECRET=$(aws ssm get-parameter --name "/quadratic-development/AUTH0_CLIENT_SECRET" --with-decryption --query "Parameter.Value" --output text)
 
+          # gcp
+          GCP_REGION=$(aws ssm get-parameter --name "/quadratic-development/GCP_REGION" --with-decryption --query "Parameter.Value" --output text)
+          GCP_PROJECT_ID=$(aws ssm get-parameter --name "/quadratic-development/GCP_PROJECT_ID" --with-decryption --query "Parameter.Value" --output text)
+          GCP_CLIENT_EMAIL=$(aws ssm get-parameter --name "/quadratic-development/GCP_CLIENT_EMAIL" --with-decryption --query "Parameter.Value" --output text)
+          GCP_PRIVATE_KEY=$(aws ssm get-parameter --name "/quadratic-development/GCP_PRIVATE_KEY" --with-decryption --query "Parameter.Value" --output text)
+
           # ai api keys
           OPENAI_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/OPENAI_API_KEY" --with-decryption --query "Parameter.Value" --output text)
           ANTHROPIC_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/ANTHROPIC_API_KEY" --with-decryption --query "Parameter.Value" --output text)
           XAI_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/XAI_API_KEY" --with-decryption --query "Parameter.Value" --output text)
           EXA_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/EXA_API_KEY" --with-decryption --query "Parameter.Value" --output text)
+
+          # stripe 
+          STRIPE_SECRET_KEY=$(aws ssm get-parameter --name "/quadratic-development/STRIPE_SECRET_KEY" --with-decryption --query "Parameter.Value" --output text)
 
           # aws ecr
           ECR_URL=${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
@@ -158,6 +167,45 @@ Resources:
           ./login.sh
           ./pull_start.sh
 
+  # Global Accelerator
+  GlobalAccelerator:
+    Type: AWS::GlobalAccelerator::Accelerator
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      Name: !Sub "${ImageTag}"
+      Enabled: true
+      Tags:
+        - Key: Name
+          Value: !Ref ImageTag
+
+  # Global Accelerator Listener
+  GlobalAcceleratorListener:
+    Type: AWS::GlobalAccelerator::Listener
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      AcceleratorArn: !Ref GlobalAccelerator
+      Protocol: TCP
+      PortRanges:
+        - FromPort: 80
+          ToPort: 80
+        - FromPort: 443
+          ToPort: 443
+
+  # Global Accelerator Endpoint Group
+  GlobalAcceleratorEndpointGroup:
+    Type: AWS::GlobalAccelerator::EndpointGroup
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      ListenerArn: !Ref GlobalAcceleratorListener
+      EndpointGroupRegion: !Ref AWS::Region
+      EndpointConfigurations:
+        - EndpointId: !Ref EC2Instance
+          Weight: 100
+          ClientIPPreservationEnabled: true
+
   # DNS record for the main application
   DNSRecord:
     Type: AWS::Route53::RecordSet
@@ -167,9 +215,10 @@ Resources:
       HostedZoneId: Z0126430TJ1UYIMO3SYX
       Name: !Sub "${SubDomainName}.quadratic-preview.com."
       Type: A
-      TTL: 300
-      ResourceRecords:
-        - !GetAtt EC2Instance.PublicIp
+      AliasTarget:
+        DNSName: !GetAtt GlobalAccelerator.DnsName
+        HostedZoneId: Z2BJ6XQ5FK7U4H
+        EvaluateTargetHealth: true
 
   # Wildcard DNS record for all services on subdomains
   WildcardDNSRecord:
@@ -180,9 +229,10 @@ Resources:
       HostedZoneId: Z0126430TJ1UYIMO3SYX
       Name: !Sub "*.${SubDomainName}.quadratic-preview.com."
       Type: A
-      TTL: 300
-      ResourceRecords:
-        - !GetAtt EC2Instance.PublicIp
+      AliasTarget:
+        DNSName: !GetAtt GlobalAccelerator.DnsName
+        HostedZoneId: Z2BJ6XQ5FK7U4H
+        EvaluateTargetHealth: true
 
 Outputs:
   WebsiteURL:

@@ -124,13 +124,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Generate Build Metadata
-        id: build-metadata
-        run: |
-          echo "BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
-          echo "GIT_SHA_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-          echo "BRANCH_NAME=$(echo "${{ github.head_ref }}" | tr '/' '-')" >> $GITHUB_OUTPUT
-
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -177,6 +170,7 @@ jobs:
           key: ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-pr-${{ github.event.pull_request.number }}-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-pr-${{ github.event.pull_request.number }}-
+            ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-qa-
             ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(format('quadratic-{0}/Dockerfile', matrix.service)) }}-
 
       - name: Build and push
@@ -186,16 +180,8 @@ jobs:
           file: quadratic-${{ matrix.service }}/Dockerfile
           push: true
           tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=min,compression=zstd,force-compression=true
           cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
-          build-args: |
-            BUILD_TIME=${{ steps.build-metadata.outputs.BUILD_TIME }}
-            GIT_SHA_SHORT=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
-            BRANCH_NAME=${{ steps.build-metadata.outputs.BRANCH_NAME }}
-            PR_NUMBER=${{ github.event.pull_request.number }}
-          labels: |
-            org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
-            org.opencontainers.image.revision=${{ github.sha }}
 
       - name: Find Build & Deploy Images Comment
         if: failure()

@@ -49,7 +49,7 @@ export const BottomBar = () => {
           </BottomBarItem>
         )}
       </div>
-      <div className="flex items-center">
+      <div className="mr-2 flex items-center">
         <SelectionSummary />
         <SyncState />
         <div className="hidden lg:block">

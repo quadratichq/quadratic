@@ -2,7 +2,12 @@ import type { Response } from 'express';
 import type OpenAI from 'openai';
 import type { ChatCompletionMessageParam, ChatCompletionTool, ChatCompletionToolChoiceOption } from 'openai/resources';
 import type { Stream } from 'openai/streaming';
-import { getSystemPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import {
+  getSystemPromptMessages,
+  isContentImage,
+  isContentText,
+  isToolResultMessage,
+} from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -10,13 +15,17 @@ import type {
   AIMessagePrompt,
   AIRequestHelperArgs,
   AISource,
+  AIUsage,
+  ImageContent,
   OpenAIModelKey,
+  ParsedAIResponse,
+  TextContent,
   XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 
 export function getOpenAIApiArgs(
   args: AIRequestHelperArgs,
-  strickParams: boolean
+  strictParams: boolean
 ): {
   messages: ChatCompletionMessageParam[];
   tools: ChatCompletionTool[] | undefined;
@@ -48,21 +57,38 @@ export function getOpenAIApiArgs(
             : undefined,
       };
       return [...acc, openaiMessage];
-    } else if (message.role === 'user' && message.contextType === 'toolResult') {
+    } else if (isToolResultMessage(message)) {
       const openaiMessages: ChatCompletionMessageParam[] = message.content.map((toolResult) => ({
         role: 'tool' as const,
         tool_call_id: toolResult.id,
-        content: toolResult.content,
+        content: toolResult.text,
       }));
       return [...acc, ...openaiMessages];
-    } else if (message.content) {
+    } else if (message.role === 'user') {
+      const openaiMessage: ChatCompletionMessageParam = {
+        role: message.role,
+        content: message.content
+          .filter((content): content is TextContent | ImageContent => isContentText(content) || isContentImage(content))
+          .map((content) => {
+            if (isContentText(content)) {
+              return content;
+            } else {
+              return {
+                type: 'image_url',
+                image_url: {
+                  url: content.data,
+                },
+              };
+            }
+          }),
+      };
+      return [...acc, openaiMessage];
+    } else {
       const openaiMessage: ChatCompletionMessageParam = {
         role: message.role,
         content: message.content,
       };
       return [...acc, openaiMessage];
-    } else {
-      return acc;
     }
   }, []);
 
@@ -71,7 +97,7 @@ export function getOpenAIApiArgs(
     ...messages,
   ];
 
-  const tools = getOpenAITools(source, toolName, strickParams);
+  const tools = getOpenAITools(source, toolName, strictParams);
   const tool_choice = tools?.length ? getOpenAIToolChoice(toolName) : undefined;
 
   return { messages: openaiMessages, tools, tool_choice };
@@ -80,7 +106,7 @@ export function getOpenAIApiArgs(
 function getOpenAITools(
   source: AISource,
   toolName: AITool | undefined,
-  strickParams: boolean
+  strictParams: boolean
 ): ChatCompletionTool[] | undefined {
   const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
     if (toolName === undefined) {
@@ -100,7 +126,7 @@ function getOpenAITools(
         name,
         description,
         parameters,
-        strict: strickParams,
+        strict: strictParams,
       },
     })
   );
@@ -108,17 +134,15 @@ function getOpenAITools(
   return openaiTools;
 }
 
-function getOpenAIToolChoice(name?: AITool): ChatCompletionToolChoiceOption | undefined {
-  const toolChoice: ChatCompletionToolChoiceOption =
-    name === undefined ? 'auto' : { type: 'function', function: { name } };
-  return toolChoice;
+function getOpenAIToolChoice(name?: AITool): ChatCompletionToolChoiceOption {
+  return name === undefined ? 'auto' : { type: 'function', function: { name } };
 }
 
 export async function parseOpenAIStream(
   chunks: Stream<OpenAI.Chat.Completions.ChatCompletionChunk>,
   response: Response,
   modelKey: OpenAIModelKey | XAIModelKey
-) {
+): Promise<ParsedAIResponse> {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: [],
@@ -127,7 +151,21 @@ export async function parseOpenAIStream(
     model: getModelFromModelKey(modelKey),
   };
 
+  const usage: AIUsage = {
+    inputTokens: 0,
+    outputTokens: 0,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+  };
+
   for await (const chunk of chunks) {
+    if (chunk.usage) {
+      usage.inputTokens = Math.max(usage.inputTokens, chunk.usage.prompt_tokens);
+      usage.outputTokens = Math.max(usage.outputTokens, chunk.usage.completion_tokens);
+      usage.cacheReadTokens = Math.max(usage.cacheReadTokens, chunk.usage.prompt_tokens_details?.cached_tokens ?? 0);
+      usage.inputTokens -= usage.cacheReadTokens;
+    }
+
     if (!response.writableEnded) {
       if (chunk.choices && chunk.choices[0] && chunk.choices[0].delta) {
         // text delta
@@ -201,7 +239,7 @@ export async function parseOpenAIStream(
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
     responseMessage.content.push({
       type: 'text',
-      text: "I'm sorry, I don't have a response for that.",
+      text: 'Please try again.',
     });
   }
 
@@ -218,14 +256,14 @@ export async function parseOpenAIStream(
     response.end();
   }
 
-  return responseMessage;
+  return { responseMessage, usage };
 }
 
 export function parseOpenAIResponse(
   result: OpenAI.Chat.Completions.ChatCompletion,
   response: Response,
   modelKey: OpenAIModelKey | XAIModelKey
-): AIMessagePrompt {
+): ParsedAIResponse {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: [],
@@ -267,11 +305,19 @@ export function parseOpenAIResponse(
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
     responseMessage.content.push({
       type: 'text',
-      text: "I'm sorry, I don't have a response for that.",
+      text: 'Please try again.',
     });
   }
 
   response.json(responseMessage);
 
-  return responseMessage;
+  const cacheReadTokens = result.usage?.prompt_tokens_details?.cached_tokens ?? 0;
+  const usage: AIUsage = {
+    inputTokens: (result.usage?.prompt_tokens ?? 0) - cacheReadTokens,
+    outputTokens: result.usage?.completion_tokens ?? 0,
+    cacheReadTokens,
+    cacheWriteTokens: 0,
+  };
+
+  return { responseMessage, usage };
 }

@@ -13,14 +13,12 @@ if (import.meta.env.VITE_SENTRY_DSN && import.meta.env.VITE_SENTRY_DSN !== 'none
   Sentry.init({
     dsn: import.meta.env.VITE_SENTRY_DSN,
     environment: import.meta.env.VITE_ENVIRONMENT ?? 'development',
-    integrations: [Sentry.browserTracingIntegration()],
+    integrations: [Sentry.browserTracingIntegration(), Sentry.captureConsoleIntegration()],
 
     // We recommend adjusting this value in production, or using tracesSampler
     // for finer control
     tracesSampleRate: 0.1,
   });
-
-Sentry.addTracingExtensions();
 
 // This increases the size of the stack traces that are shown from Rust -> console.error
 Error.stackTraceLimit = 100;

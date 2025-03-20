@@ -21,7 +21,7 @@ use crate::util::unique_name;
 use crate::{
     Array, ArraySize, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Value,
 };
-use anyhow::{anyhow, bail, Ok, Result};
+use anyhow::{Ok, Result, anyhow, bail};
 use chrono::{DateTime, Utc};
 use column_header::DataTableColumnHeader;
 use lazy_static::lazy_static;
@@ -295,6 +295,13 @@ impl DataTable {
         self.show_columns = show_columns;
         self
     }
+
+    /// Sets the show_name flag.
+    pub fn with_show_name(mut self, show_name: bool) -> Self {
+        self.show_name = show_name;
+        self
+    }
+
     /// Validates the table name. SheetPos is provided to allow the table to be
     /// renamed to itself (eg, with different casing).
     ///
@@ -419,7 +426,7 @@ impl DataTable {
     /// Returns `None` if the DataTableKind is not CodeRun.
     pub fn code_run_mut(&mut self) -> Option<&mut CodeRun> {
         match &mut self.kind {
-            DataTableKind::CodeRun(ref mut code_run) => Some(code_run),
+            DataTableKind::CodeRun(code_run) => Some(code_run),
             _ => None,
         }
     }
@@ -685,16 +692,26 @@ impl DataTable {
         y_adjustment
     }
 
+    /// Applies settings for a single value data table
+    ///
+    /// This is used when a single value data table is created from a code run
+    /// and is a code cell.
+    pub fn apply_single_value_settings(&mut self) {
+        if self.is_single_value() {
+            self.show_name = false;
+            self.show_columns = false;
+            self.header_is_first_row = false;
+            self.column_headers = None;
+        }
+    }
+
     /// Returns true if the data table is a single value (ie, not an array)
     pub fn is_single_value(&self) -> bool {
         if self.is_html_or_image() {
             return false;
         }
-        match &self.value {
-            Value::Single(_) => true,
-            Value::Array(_) => false,
-            Value::Tuple(_) => false,
-        }
+
+        matches!(self.value, Value::Single(_))
     }
 
     /// Returns true if the data table is a single column (ie, not an array), or
@@ -713,7 +730,24 @@ impl DataTable {
     pub fn is_dataframe(&self) -> bool {
         if let DataTableKind::CodeRun(code_run) = &self.kind {
             code_run.output_type == Some("DataFrame".into())
-                || code_run.output_type == Some("Series".into())
+        } else {
+            false
+        }
+    }
+
+    /// Returns true if the data table is a pandas Series
+    pub fn is_series(&self) -> bool {
+        if let DataTableKind::CodeRun(code_run) = &self.kind {
+            code_run.output_type == Some("Series".into())
+        } else {
+            false
+        }
+    }
+
+    /// Returns true if the data table is a list
+    pub fn is_list(&self) -> bool {
+        if let DataTableKind::CodeRun(code_run) = &self.kind {
+            code_run.output_type == Some("list".into())
         } else {
             false
         }
@@ -725,9 +759,9 @@ pub mod test {
 
     use super::*;
     use crate::{
+        Array,
         controller::GridController,
         grid::{Sheet, SheetId},
-        Array,
     };
 
     pub fn test_csv_values() -> Vec<Vec<&'static str>> {
