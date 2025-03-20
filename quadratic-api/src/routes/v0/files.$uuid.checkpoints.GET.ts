@@ -30,10 +30,9 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/che
 
   const {
     file: { id, name },
-    // userMakingRequest: { filePermissions },
   } = await getFile({ uuid, userId });
 
-  // TODO: permissions - anyone with access to this file can see checkpoints?
+  // FWIW: anyone with _some_ access to this file can access the checkpoints
 
   const checkpoints = await dbClient.fileCheckpoint.findMany({
     where: {

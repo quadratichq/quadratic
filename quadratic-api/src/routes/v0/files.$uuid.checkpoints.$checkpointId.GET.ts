@@ -35,7 +35,7 @@ async function handler(
   // Ensures the file exists and the user has access to it
   await getFile({ uuid, userId });
 
-  // TODO: permissions?
+  // FWIW: if you have access to the file, you have access to the checkpoints
 
   const checkpoint = await dbClient.fileCheckpoint.findFirstOrThrow({
     where: {
