@@ -5,11 +5,11 @@ type UserPromptSuggestionsProps = {
   loading: boolean;
 };
 
-export const UserPromptSuggestions = ({ loading }: UserPromptSuggestionsProps) => {
+export const UserPromptSuggestionsSkeleton = ({ loading }: UserPromptSuggestionsProps) => {
   if (loading) {
     return (
       <div>
-        <div className="mb-2 flex flex-row">
+        <div className="mb-1 mt-1 flex flex-row">
           <Skeleton className="mb-2 mr-4 h-6 w-6  rounded-md" />
           <Skeleton className="mb-2 h-6 w-6 rounded-md" />
         </div>

@@ -4,7 +4,7 @@ import { MoveCells } from '@/app/ai/toolCards/MoveCells';
 import { SetCellValues } from '@/app/ai/toolCards/SetCellValues';
 import { SetCodeCellValue } from '@/app/ai/toolCards/SetCodeCellValue';
 import { UpdateCodeCell } from '@/app/ai/toolCards/UpdateCodeCell';
-import { UserPromptSuggestions } from '@/app/ai/toolCards/UserPromptSuggestions';
+import { UserPromptSuggestionsSkeleton } from '@/app/ai/toolCards/UserPromptSuggestions';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { memo } from 'react';
 
@@ -33,7 +33,7 @@ export const AIAnalystToolCard = memo(({ name, args, loading }: AIAnalystToolCar
     case AITool.UpdateCodeCell:
       return <UpdateCodeCell args={args} loading={loading} />;
     case AITool.UserPromptSuggestions:
-      return <UserPromptSuggestions args={args} loading={loading} />;
+      return <UserPromptSuggestionsSkeleton args={args} loading={loading} />;
     default:
       console.error(`Unknown tool: ${name}`);
       return null;
