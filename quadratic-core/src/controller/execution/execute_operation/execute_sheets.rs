@@ -304,7 +304,6 @@ impl GridController {
 mod tests {
     use crate::{
         CellValue, SheetPos,
-        constants::SHEET_NAME,
         controller::{
             GridController, active_transactions::transaction_name::TransactionName,
             operations::operation::Operation, user_actions::import::tests::simple_csv_at,
