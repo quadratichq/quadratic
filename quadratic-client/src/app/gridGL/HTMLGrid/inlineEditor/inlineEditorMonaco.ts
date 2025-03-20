@@ -5,10 +5,10 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { SuggestController } from '@/app/gridGL/types/SuggestController';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import type { CellAlign, CellVerticalAlign, CellWrap } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { SuggestController } from '@/app/shared/types/SuggestController';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
 import { FONT_SIZE, LINE_HEIGHT } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import * as monaco from 'monaco-editor';
