@@ -81,17 +81,18 @@ class AIAnalystOfflineChats {
           let chats = getAll.result
             .filter((chat) => chat.fileId === fileId)
             .map(({ userEmail, fileId, ...chat }) => chat);
-          chats = chats.filter((chat) => {
-            if (ChatSchema.safeParse(chat).success) {
-              return true;
+          chats = chats.reduce((acc, chat) => {
+            const parsedChat = ChatSchema.safeParse(chat);
+            if (parsedChat.success) {
+              acc.push(parsedChat.data);
             } else {
               // delete chat if it is not valid or schema has changed
               this.deleteChats([chat.id]).catch((error) => {
                 console.error('[AIAnalystOfflineChats] loadChats: ', error);
               });
-              return false;
             }
-          });
+            return acc;
+          }, []);
           resolve(chats);
         };
         getAll.onerror = () => {

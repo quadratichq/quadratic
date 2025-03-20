@@ -27,13 +27,6 @@ const googleAuthOptions = {
   scopes: ['https://www.googleapis.com/auth/cloud-platform'],
 };
 
-// gcp-sdk for vertexai, generic for all models
-export const vertexai = new VertexAI({
-  project: GCP_PROJECT_ID,
-  location: GCP_REGION,
-  googleAuthOptions,
-});
-
 // anthropic-sdk for gcp
 export const vertex_anthropic = new AnthropicVertex({
   projectId: GCP_PROJECT_ID,
@@ -41,10 +34,11 @@ export const vertex_anthropic = new AnthropicVertex({
   googleAuth: new GoogleAuth(googleAuthOptions),
 });
 
-// aws-sdk for bedrock, generic for all models
-export const bedrock = new BedrockRuntimeClient({
-  region: AWS_S3_REGION,
-  credentials: { accessKeyId: AWS_S3_ACCESS_KEY_ID, secretAccessKey: AWS_S3_SECRET_ACCESS_KEY },
+// gcp-sdk for vertexai, generic for all models
+export const vertexai = new VertexAI({
+  project: GCP_PROJECT_ID,
+  location: GCP_REGION,
+  googleAuthOptions,
 });
 
 // anthropic-sdk for bedrock
@@ -54,15 +48,21 @@ export const bedrock_anthropic = new AnthropicBedrock({
   awsRegion: AWS_S3_REGION,
 });
 
+// aws-sdk for bedrock, generic for all models
+export const bedrock = new BedrockRuntimeClient({
+  region: AWS_S3_REGION,
+  credentials: { accessKeyId: AWS_S3_ACCESS_KEY_ID, secretAccessKey: AWS_S3_SECRET_ACCESS_KEY },
+});
+
 export const anthropic = new Anthropic({
   apiKey: ANTHROPIC_API_KEY,
+});
+
+export const openai = new OpenAI({
+  apiKey: OPENAI_API_KEY || '',
 });
 
 export const xai = new OpenAI({
   apiKey: XAI_API_KEY || '',
   baseURL: 'https://api.x.ai/v1',
-});
-
-export const openai = new OpenAI({
-  apiKey: OPENAI_API_KEY || '',
 });

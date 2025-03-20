@@ -21,7 +21,7 @@ export const handleOpenAIRequest = async (
   const { messages, tools, tool_choice } = getOpenAIApiArgs(args, options.strictParams);
 
   try {
-    let requestArgs: ChatCompletionCreateParamsStreaming | ChatCompletionCreateParamsNonStreaming = {
+    let apiArgs: ChatCompletionCreateParamsStreaming | ChatCompletionCreateParamsNonStreaming = {
       model,
       messages,
       temperature: options.temperature,
@@ -30,13 +30,13 @@ export const handleOpenAIRequest = async (
       tool_choice,
     };
     if (options.stream) {
-      requestArgs = {
-        ...requestArgs,
+      apiArgs = {
+        ...apiArgs,
         stream_options: {
           include_usage: true,
         },
       };
-      const completion = await openai.chat.completions.create(requestArgs as ChatCompletionCreateParamsStreaming);
+      const completion = await openai.chat.completions.create(apiArgs as ChatCompletionCreateParamsStreaming);
 
       response.setHeader('Content-Type', 'text/event-stream');
       response.setHeader('Cache-Control', 'no-cache');
@@ -45,7 +45,7 @@ export const handleOpenAIRequest = async (
       const parsedResponse = await parseOpenAIStream(completion, response, modelKey);
       return parsedResponse;
     } else {
-      const result = await openai.chat.completions.create(requestArgs as ChatCompletionCreateParamsNonStreaming);
+      const result = await openai.chat.completions.create(apiArgs as ChatCompletionCreateParamsNonStreaming);
 
       const parsedResponse = parseOpenAIResponse(result, response, modelKey);
       return parsedResponse;

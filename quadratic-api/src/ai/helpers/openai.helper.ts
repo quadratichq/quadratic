@@ -2,7 +2,12 @@ import type { Response } from 'express';
 import type OpenAI from 'openai';
 import type { ChatCompletionMessageParam, ChatCompletionTool, ChatCompletionToolChoiceOption } from 'openai/resources';
 import type { Stream } from 'openai/streaming';
-import { getSystemPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import {
+  getSystemPromptMessages,
+  isContentImage,
+  isContentText,
+  isToolResultMessage,
+} from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -11,8 +16,10 @@ import type {
   AIRequestHelperArgs,
   AISource,
   AIUsage,
+  ImageContent,
   OpenAIModelKey,
   ParsedAIResponse,
+  TextContent,
   XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 
@@ -50,21 +57,38 @@ export function getOpenAIApiArgs(
             : undefined,
       };
       return [...acc, openaiMessage];
-    } else if (message.role === 'user' && message.contextType === 'toolResult') {
+    } else if (isToolResultMessage(message)) {
       const openaiMessages: ChatCompletionMessageParam[] = message.content.map((toolResult) => ({
         role: 'tool' as const,
         tool_call_id: toolResult.id,
-        content: toolResult.content,
+        content: toolResult.text,
       }));
       return [...acc, ...openaiMessages];
-    } else if (message.content) {
+    } else if (message.role === 'user') {
+      const openaiMessage: ChatCompletionMessageParam = {
+        role: message.role,
+        content: message.content
+          .filter((content): content is TextContent | ImageContent => isContentText(content) || isContentImage(content))
+          .map((content) => {
+            if (isContentText(content)) {
+              return content;
+            } else {
+              return {
+                type: 'image_url',
+                image_url: {
+                  url: content.data,
+                },
+              };
+            }
+          }),
+      };
+      return [...acc, openaiMessage];
+    } else {
       const openaiMessage: ChatCompletionMessageParam = {
         role: message.role,
         content: message.content,
       };
       return [...acc, openaiMessage];
-    } else {
-      return acc;
     }
   }, []);
 

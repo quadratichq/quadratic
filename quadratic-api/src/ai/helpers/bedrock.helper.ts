@@ -1,13 +1,23 @@
 import {
   type ConverseResponse,
   type ConverseStreamOutput,
+  type DocumentBlock,
+  type DocumentFormat,
+  type ImageBlock,
+  type ImageFormat,
   type Message,
   type SystemContentBlock,
   type Tool,
   type ToolChoice,
 } from '@aws-sdk/client-bedrock-runtime';
 import type { Response } from 'express';
-import { getSystemPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import {
+  getSystemPromptMessages,
+  isContentImage,
+  isContentPdfFile,
+  isContentTextFile,
+  isToolResultMessage,
+} from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -50,7 +60,7 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
         ],
       };
       return [...acc, bedrockMessage];
-    } else if (message.role === 'user' && message.contextType === 'toolResult') {
+    } else if (isToolResultMessage(message)) {
       const bedrockMessage: Message = {
         role: message.role,
         content: [
@@ -59,7 +69,7 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
               toolUseId: toolResult.id,
               content: [
                 {
-                  text: toolResult.content,
+                  text: toolResult.text,
                 },
               ],
               status: 'success' as const,
@@ -71,11 +81,26 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
     } else if (message.content) {
       const bedrockMessage: Message = {
         role: message.role,
-        content: [
-          {
-            text: message.content,
-          },
-        ],
+        content: message.content.map((content) => {
+          if (isContentImage(content)) {
+            const image: ImageBlock = {
+              format: content.mimeType.split('/')[1] as ImageFormat,
+              source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
+            };
+            return { image };
+          } else if (isContentPdfFile(content) || isContentTextFile(content)) {
+            const document: DocumentBlock = {
+              format: content.mimeType.split('/')[1] as DocumentFormat,
+              name: content.fileName,
+              source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
+            };
+            return { document };
+          } else {
+            return {
+              text: content.text,
+            };
+          }
+        }),
       };
       return [...acc, bedrockMessage];
     } else {
