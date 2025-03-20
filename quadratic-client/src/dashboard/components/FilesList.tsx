@@ -48,7 +48,7 @@ export function FilesList({
   const [filterValue, setFilterValue] = useState<string>('');
   const fetchers = useFetchers();
   const [activeShareMenuFileId, setActiveShareMenuFileId] = useState<string>('');
-  const [activeRecoverFileId, setActiveRecoverFileId] = useState<string>('464c5931-f33f-44a3-b91c-4662970de78a');
+  const [activeRecoverFileId, setActiveRecoverFileId] = useState<string>('');
   const [viewPreferences, setViewPreferences] = useLocalStorage<ViewPreferences>(
     // Persist the layout preference across views (by URL)
     `FilesList-${pathname}`,
