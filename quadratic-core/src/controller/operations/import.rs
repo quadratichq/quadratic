@@ -520,7 +520,7 @@ fn read_utf16(bytes: &[u8]) -> Option<String> {
 mod test {
     use super::{read_utf16, *};
     use crate::{
-        CellValue, CellValue, controller::user_actions::import::tests::simple_csv_at,
+        CellValue, controller::user_actions::import::tests::simple_csv_at,
         test_util::assert_display_cell_value,
     };
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};

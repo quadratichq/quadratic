@@ -2,10 +2,10 @@ use std::collections::{HashMap, HashSet};
 
 use self::{active_transactions::ActiveTransactions, transaction::Transaction};
 use crate::{
+    Pos,
     a1::{A1Context, TableMapEntry},
     grid::{Grid, SheetId},
     viewport::ViewportBuffer,
-    Pos,
 };
 use wasm_bindgen::prelude::*;
 pub mod active_transactions;
@@ -162,5 +162,17 @@ impl GridController {
     /// Creates a grid controller for testing purposes in both Rust and TS
     pub fn test() -> Self {
         Self::from_grid(Grid::test(), 0)
+    }
+}
+
+impl GridController {
+    /// Returns the undo stack for testing purposes
+    pub fn undo_stack(&self) -> &Vec<Transaction> {
+        &self.undo_stack
+    }
+
+    /// Returns the redo stack for testing purposes
+    pub fn redo_stack(&self) -> &Vec<Transaction> {
+        &self.redo_stack
     }
 }

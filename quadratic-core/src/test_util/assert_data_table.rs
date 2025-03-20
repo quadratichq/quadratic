@@ -1,5 +1,5 @@
 #[cfg(test)]
-use crate::{controller::GridController, grid::DataTable, grid::SheetId, Pos};
+use crate::{Pos, controller::GridController, grid::DataTable, grid::SheetId};
 
 /// Runs an assertion that a cell value is equal to the given value. The col/row
 /// are 0-indexed to the table and ignore all ui elements (ie, table name and
@@ -51,11 +51,22 @@ pub fn assert_data_table_size(
     pos: Pos,
     width: usize,
     height: usize,
+    include_ui: bool,
 ) {
     let sheet = grid_controller.sheet(sheet_id);
     let data_table = sheet
         .data_table(pos)
         .expect(&format!("Data table at {} not found", pos));
+    let adjust_height = if !include_ui {
+        if data_table.show_ui {
+            (if data_table.show_name { 1 } else { 0 })
+                + (if data_table.show_columns { 1 } else { 0 })
+        } else {
+            0
+        }
+    } else {
+        0
+    };
     assert_eq!(
         data_table.width(),
         width,
@@ -64,11 +75,12 @@ pub fn assert_data_table_size(
         width
     );
     assert_eq!(
-        data_table.height(false),
+        data_table.height(false) - adjust_height,
         height,
-        "Height of data table at {} is not {}",
+        "Height of data table at {} is not {} ({})",
         pos,
-        height
+        height,
+        if include_ui { "with ui" } else { "without ui" }
     );
 }
 
@@ -82,7 +94,8 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         test_create_data_table_first_sheet(&mut gc, pos![A1], 2, 2, &["a", "b", "c", "d"]);
-        assert_data_table_size(&gc, sheet_id, pos![A1], 2, 4);
+        assert_data_table_size(&gc, sheet_id, pos![A1], 2, 4, false);
+        assert_data_table_size(&gc, sheet_id, pos![A1], 2, 2, true);
     }
 
     #[test]
