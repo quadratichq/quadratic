@@ -122,7 +122,7 @@ fn get_series_next_key(last_key: &str, all_keys: &&[&str], negative: bool) -> Re
 pub fn find_string_series(options: &SeriesOptions) -> Option<Vec<CellValue>> {
     let mut results: Vec<CellValue> = vec![];
     let SeriesOptions {
-        ref series,
+        series,
         spaces,
         negative,
     } = options;

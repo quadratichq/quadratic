@@ -1,5 +1,6 @@
-import { type Response } from 'express';
+import type { Response } from 'express';
 import OpenAI from 'openai';
+import type { ChatCompletionCreateParamsNonStreaming, ChatCompletionCreateParamsStreaming } from 'openai/resources';
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import type {
   AIRequestHelperArgs,
@@ -17,21 +18,25 @@ export const handleOpenAIRequest = async (
 ): Promise<ParsedAIResponse | undefined> => {
   const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
-  const { messages, tools, tool_choice } = getOpenAIApiArgs(args, options.strickParams);
+  const { messages, tools, tool_choice } = getOpenAIApiArgs(args, options.strictParams);
 
-  if (options.stream) {
-    try {
-      const completion = await openai.chat.completions.create({
-        model,
-        messages,
-        temperature: options.temperature,
-        stream: options.stream,
-        tools,
-        tool_choice,
+  try {
+    let apiArgs: ChatCompletionCreateParamsStreaming | ChatCompletionCreateParamsNonStreaming = {
+      model,
+      messages,
+      temperature: options.temperature,
+      stream: options.stream,
+      tools,
+      tool_choice,
+    };
+    if (options.stream) {
+      apiArgs = {
+        ...apiArgs,
         stream_options: {
           include_usage: true,
         },
-      });
+      };
+      const completion = await openai.chat.completions.create(apiArgs as ChatCompletionCreateParamsStreaming);
 
       response.setHeader('Content-Type', 'text/event-stream');
       response.setHeader('Cache-Control', 'no-cache');
@@ -39,40 +44,24 @@ export const handleOpenAIRequest = async (
 
       const parsedResponse = await parseOpenAIStream(completion, response, modelKey);
       return parsedResponse;
-    } catch (error: any) {
-      if (!response.headersSent) {
-        if (error instanceof OpenAI.APIError) {
-          response.status(error.status ?? 400).json(error.message);
-          console.log(error.status, error.message);
-        } else {
-          response.status(400).json(error);
-          console.log(error);
-        }
-      } else {
-        console.error('Error occurred after headers were sent:', error);
-      }
-    }
-  } else {
-    try {
-      const result = await openai.chat.completions.create({
-        model,
-        messages,
-        temperature: options.temperature,
-        stream: options.stream,
-        tools,
-        tool_choice,
-      });
+    } else {
+      const result = await openai.chat.completions.create(apiArgs as ChatCompletionCreateParamsNonStreaming);
 
       const parsedResponse = parseOpenAIResponse(result, response, modelKey);
       return parsedResponse;
-    } catch (error: any) {
+    }
+  } catch (error: any) {
+    if (!options.stream || !response.headersSent) {
       if (error instanceof OpenAI.APIError) {
-        response.status(error.status ?? 400).json(error.message);
-        console.log(error.status, error.message);
+        response.status(error.status ?? 400).json({ error: error.message });
+        console.error(error.status, error.message);
       } else {
-        response.status(400).json(error);
-        console.log(error);
+        response.status(400).json({ error });
+        console.error(error);
       }
+    } else {
+      response.end();
+      console.error('Error occurred after headers were sent:', error);
     }
   }
 };

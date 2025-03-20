@@ -1,7 +1,7 @@
 import { DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { getLanguageSymbol } from '@/app/gridGL/cells/CellsMarkers';
 import type { Table } from '@/app/gridGL/cells/tables/Table';
-import { type TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
+import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';

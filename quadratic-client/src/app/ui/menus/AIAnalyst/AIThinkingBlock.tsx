@@ -1,14 +1,14 @@
 import { Markdown } from '@/app/ui/components/Markdown';
 import { cn } from '@/shared/shadcn/utils';
 import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons';
-import type { Content } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIResponseContent } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 
 // Props for the thinking block
 interface ThinkingBlockProps {
   isCurrentMessage: boolean;
   isLoading: boolean;
-  thinkingContent: Content[number];
+  thinkingContent: AIResponseContent[number];
   expandedDefault: boolean;
 }
 
