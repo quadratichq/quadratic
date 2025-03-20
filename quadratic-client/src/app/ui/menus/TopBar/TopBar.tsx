@@ -17,6 +17,10 @@ import {
 export const TopBar = () => {
   // TODO: what about embedable view? should we show the file menu?
 
+  if (isEmbed) {
+    return null;
+  }
+
   return (
     <div
       onContextMenu={(event) => {
@@ -32,11 +36,10 @@ export const TopBar = () => {
           WebkitAppRegion: 'no-drag',
         }}
       >
-        {!isEmbed && (
-          <div className="hidden lg:block">
-            <TopBarMenus />
-          </div>
-        )}
+        <div className="hidden lg:block">
+          <TopBarMenus />
+        </div>
+
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-0 self-stretch px-2 md:hidden">
             <QuadraticLogo />
@@ -69,14 +72,12 @@ export const TopBar = () => {
           WebkitAppRegion: 'no-drag',
         }}
       >
-        {!isEmbed && (
-          <>
-            <TopBarUsers />
-            <div className="hidden md:block">
-              <TopBarShareButton />
-            </div>
-          </>
-        )}
+        <>
+          <TopBarUsers />
+          <div className="hidden md:block">
+            <TopBarShareButton />
+          </div>
+        </>
       </div>
     </div>
   );

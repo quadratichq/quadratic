@@ -3,6 +3,7 @@ import {
   editorInteractionStatePermissionsAtom,
   editorInteractionStateShowRenameFileMenuAtom,
   editorInteractionStateShowShareFileMenuAtom,
+  editorInteractionStateShowVersionHistoryDialogAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -28,6 +29,7 @@ import { QuadraticSidebar } from '@/app/ui/QuadraticSidebar';
 import { UpdateAlertVersion } from '@/app/ui/UpdateAlertVersion';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
+import { FileVersionHistoryDialog } from '@/shared/components/FileVersionHistoryDialog';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
 import { COMMUNITY_A1_FILE_UPDATE_URL } from '@/shared/constants/urls';
@@ -42,6 +44,9 @@ export default function QuadraticUI() {
   const { name, renameFile } = useFileContext();
   const [showShareFileMenu, setShowShareFileMenu] = useRecoilState(editorInteractionStateShowShareFileMenuAtom);
   const [showRenameFileMenu, setShowRenameFileMenu] = useRecoilState(editorInteractionStateShowRenameFileMenuAtom);
+  const [showVersionHistoryDialog, setShowVersionHistoryDialog] = useRecoilState(
+    editorInteractionStateShowVersionHistoryDialogAtom
+  );
   const presentationMode = useRecoilValue(presentationModeAtom);
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const canEditFile = useMemo(() => hasPermissionToEditFile(permissions), [permissions]);
@@ -106,6 +111,9 @@ export default function QuadraticUI() {
       {/* Global overlay menus */}
       <FeedbackMenu />
       {showShareFileMenu && <ShareFileDialog onClose={() => setShowShareFileMenu(false)} name={name} uuid={uuid} />}
+      {showVersionHistoryDialog && (
+        <FileVersionHistoryDialog onClose={() => setShowVersionHistoryDialog(false)} uuid={uuid} />
+      )}
       {presentationMode && <PresentationModeHint />}
       <CellTypeMenu />
       <CommandPalette />

@@ -6,6 +6,7 @@ import { FilesListViewControls } from '@/dashboard/components/FilesListViewContr
 import { Layout, Order, Sort, type ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
 import { DRAWER_WIDTH } from '@/routes/_dashboard';
 import type { Action as FilesAction } from '@/routes/api.files.$uuid';
+import { FileVersionHistoryDialog } from '@/shared/components/FileVersionHistoryDialog';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
@@ -47,6 +48,7 @@ export function FilesList({
   const [filterValue, setFilterValue] = useState<string>('');
   const fetchers = useFetchers();
   const [activeShareMenuFileId, setActiveShareMenuFileId] = useState<string>('');
+  const [activeRecoverFileId, setActiveRecoverFileId] = useState<string>('464c5931-f33f-44a3-b91c-4662970de78a');
   const [viewPreferences, setViewPreferences] = useLocalStorage<ViewPreferences>(
     // Persist the layout preference across views (by URL)
     `FilesList-${pathname}`,
@@ -155,7 +157,7 @@ export function FilesList({
             lazyLoad={i > 12}
             filterValue={filterValue}
             setFilterValue={setFilterValue}
-            activeShareMenuFileId={activeShareMenuFileId}
+            setActiveRecoverFileId={setActiveRecoverFileId}
             setActiveShareMenuFileId={setActiveShareMenuFileId}
             viewPreferences={viewPreferences}
           />
@@ -174,6 +176,10 @@ export function FilesList({
           uuid={activeShareMenuFileId}
           name={activeShareMenuFileName}
         />
+      )}
+
+      {activeRecoverFileId && (
+        <FileVersionHistoryDialog onClose={() => setActiveRecoverFileId('')} uuid={activeRecoverFileId} />
       )}
 
       <FileDragDrop className={`lg:left-[${DRAWER_WIDTH}px] lg:w-[calc(100%-${DRAWER_WIDTH}px)]`} />

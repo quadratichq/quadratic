@@ -17,7 +17,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
-import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { FilePermissionSchema, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type { LoaderFunctionArgs } from 'react-router-dom';
 import { Link, Outlet, isRouteErrorResponse, redirect, useLoaderData, useRouteError } from 'react-router-dom';
 import type { MutableSnapshot } from 'recoil';
@@ -28,6 +28,9 @@ type FileData = ApiTypes['/v0/files/:uuid.GET.response'];
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData | Response> => {
   const { uuid } = params as { uuid: string };
+  const url = new URL(request.url);
+  const searchParams = new URLSearchParams(url.search);
+  const checkpointId = searchParams.get('checkpoint');
 
   // Fetch the file. If it fails because of permissions, redirect to login. Otherwise throw.
   let data;
@@ -52,12 +55,24 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   // initialize: Rust metadata and PIXI assets
   await Promise.all([initRustClient(), loadAssets()]);
 
-  // initialize Core web worker
-  const result = await quadraticCore.load({
-    fileId: uuid,
+  let checkpoint = {
     url: data.file.lastCheckpointDataUrl,
     version: data.file.lastCheckpointVersion,
     sequenceNumber: data.file.lastCheckpointSequenceNumber,
+  };
+  if (checkpointId !== null) {
+    const c = await apiClient.files.checkpoints.get(uuid, checkpointId);
+    checkpoint.url = c.dataUrl;
+    checkpoint.version = c.version;
+    checkpoint.sequenceNumber = c.sequenceNumber;
+  }
+
+  // initialize Core web worker
+  const result = await quadraticCore.load({
+    fileId: uuid,
+    url: checkpoint.url,
+    version: checkpoint.version,
+    sequenceNumber: checkpoint.sequenceNumber,
   });
   if (result.error) {
     Sentry.captureEvent({
@@ -86,6 +101,13 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     throw new Error('Expected quadraticCore.load to return either a version or an error');
   }
   updateRecentFiles(uuid, data.file.name, true);
+
+  // TODO: only do certain pieces of this logic if it's the iframe embed
+
+  // Hot-modify permissions if its an embed so it's read-only
+  if (isEmbed) {
+    data.userMakingRequest.filePermissions = [FilePermissionSchema.enum.FILE_VIEW];
+  }
   return data;
 };
 
@@ -129,6 +151,7 @@ export const ErrorBoundary = () => {
 
   const actionsDefault = (
     <div className={`flex justify-center gap-2`}>
+      <Button variant="secondary">Version history…</Button>
       <Button asChild variant="outline">
         <a href={CONTACT_URL} target="_blank" rel="noreferrer">
           Get help

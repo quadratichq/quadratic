@@ -57,6 +57,7 @@ const commands: CommandGroup = {
         );
       },
     },
+    Action.FileVersionHistory,
     {
       label: renameFileActionSpec?.label ?? '',
       isAvailable: isAvailableBecauseCanEditFile,

@@ -5,9 +5,12 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { DownloadIcon, FileRenameIcon, PersonAddIcon } from '@/shared/components/Icons';
+import { DownloadIcon, FileRenameIcon, HistoryIcon, PersonAddIcon } from '@/shared/components/Icons';
 
-type FileActionSpec = Pick<ActionSpecRecord, Action.FileShare | Action.FileRename | Action.FileDownload>;
+type FileActionSpec = Pick<
+  ActionSpecRecord,
+  Action.FileShare | Action.FileRename | Action.FileDownload | Action.FileVersionHistory
+>;
 
 export type FileActionArgs = {
   [Action.FileDownload]: { name: string };
@@ -42,6 +45,17 @@ export const fileActionsSpec: FileActionSpec = {
       const data = await quadraticCore.export();
       downloadQuadraticFile(name, data);
       pixiAppSettings.setEditorInteractionState((prev) => ({ ...prev, isRunningAsyncAction: false }));
+    },
+  },
+  // This is only for the app-side, we don't use this (yet) on the dashboard-side
+  [Action.FileVersionHistory]: {
+    label: 'Version history',
+    labelVerbose: 'View version history',
+    Icon: HistoryIcon,
+    isAvailable: isAvailableBecauseCanEditFile,
+    run: () => {
+      if (!pixiAppSettings.setEditorInteractionState) return;
+      pixiAppSettings.setEditorInteractionState((prev) => ({ ...prev, showVersionHistoryDialog: true }));
     },
   },
 };

@@ -17,6 +17,7 @@ export interface EditorInteractionState {
   showSearch: boolean | SearchOptions;
   showContextMenu: boolean;
   showValidation: boolean | string;
+  showVersionHistoryDialog: boolean;
   annotationState?: 'dropdown' | 'date-format' | 'calendar' | 'calendar-time';
   permissions: FilePermission[];
   settings: TeamSettings;
@@ -40,6 +41,7 @@ export const defaultEditorInteractionState: EditorInteractionState = {
   showSearch: false,
   showContextMenu: false,
   showValidation: false,
+  showVersionHistoryDialog: false,
   annotationState: undefined,
   permissions: ['FILE_VIEW'], // FYI: when we call <RecoilRoot> we initialize this with the value from the server
   settings: {
@@ -70,7 +72,8 @@ export const editorInteractionStateAtom = atom<EditorInteractionState>({
           oldValue.showRenameFileMenu ||
           oldValue.showShareFileMenu ||
           oldValue.showSearch ||
-          oldValue.showContextMenu;
+          oldValue.showContextMenu ||
+          oldValue.showVersionHistoryDialog;
         const newModelShow =
           newValue.showCellTypeMenu ||
           newValue.showCommandPalette ||
@@ -80,7 +83,8 @@ export const editorInteractionStateAtom = atom<EditorInteractionState>({
           newValue.showRenameFileMenu ||
           newValue.showShareFileMenu ||
           newValue.showSearch ||
-          newValue.showContextMenu;
+          newValue.showContextMenu ||
+          newValue.showVersionHistoryDialog;
         if (oldModalShow && !newModelShow) {
           focusGrid();
         }
@@ -111,6 +115,7 @@ export const editorInteractionStateShowShareFileMenuAtom = createSelector('showS
 export const editorInteractionStateShowSearchAtom = createSelector('showSearch');
 export const editorInteractionStateShowContextMenuAtom = createSelector('showContextMenu');
 export const editorInteractionStateShowValidationAtom = createSelector('showValidation');
+export const editorInteractionStateShowVersionHistoryDialogAtom = createSelector('showVersionHistoryDialog');
 
 export const editorInteractionStateAnnotationStateAtom = createSelector('annotationState');
 export const editorInteractionStatePermissionsAtom = createSelector('permissions');
