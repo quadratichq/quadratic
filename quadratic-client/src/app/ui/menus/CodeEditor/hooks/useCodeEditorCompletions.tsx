@@ -57,7 +57,22 @@ ${JSON.stringify(suffix)}
 
 Include spaces and newlines as required, the text delta will be appended as is at the cursor position.\n
 
-Never try to insert the cell reference, inside q.cells function. Always try code changes to improve or fix the code only.\n
+NEVER try to insert a cell reference inside the q.cells() function.\n 
+
+Always try code changes to improve or fix the code only.\n
+
+${
+  language === 'Python'
+    ? `
+Never try to insert the following code:
+- Never suggest .plot(), df.hist() or any other Pandas plotting function because only Plotly charts work 
+- Never suggest anything with q. other than q.cells()
+- Never suggest .to_json()
+- Files can not be imported or exported using Python so don't recommend functions like to_csv()
+- Never suggest Polars functions
+`
+    : ''
+}
 `,
             },
           ],
