@@ -103,7 +103,7 @@ export const Component = () => {
       </div>
       <div className="h-full w-full">
         {iframeUrl ? (
-          <iframe src={iframeUrl} title="App" className="pointer-events-nonez h-full w-full" />
+          <iframe src={iframeUrl} title="App" className="h-full w-full" />
         ) : (
           <p className="flex h-full w-full flex-col items-center justify-center text-sm text-muted-foreground">
             Select a file version on the left to preview it…
