@@ -27,6 +27,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
