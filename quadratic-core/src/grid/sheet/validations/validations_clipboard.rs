@@ -79,7 +79,7 @@ mod tests {
         let clipboard_origin = ClipboardOrigin {
             x: 2,
             y: 2,
-            ..Default::default()
+            ..ClipboardOrigin::default(sheet_id)
         };
         let clipboard_validations = validations
             .to_clipboard(&selection, &clipboard_origin, &A1Context::default())

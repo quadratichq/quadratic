@@ -16,7 +16,7 @@ impl GridController {
                 if let Some(CellValue::Code(code)) = sheet.cell_value_ref(pos) {
                     let sheet_pos = pos.to_sheet_pos(sheet.id);
                     let mut new_code = code.clone();
-                    new_code.adjust_references(a1_context, sheet_pos, adjust);
+                    new_code.adjust_references(sheet_pos.sheet_id, a1_context, sheet_pos, adjust);
                     if code.code != new_code.code {
                         transaction.operations.push_back(Operation::SetCellValues {
                             sheet_pos,

@@ -143,6 +143,7 @@ pub fn convert_a1_to_rc(source: &str, ctx: &A1Context, pos: SheetPos) -> String 
 #[must_use = "this method returns a new value instead of modifying its input"]
 pub fn adjust_references(
     source: &str,
+    new_default_sheet_id: SheetId,
     ctx: &A1Context,
     pos: SheetPos,
     adjust: RefAdjust,
@@ -150,7 +151,7 @@ pub fn adjust_references(
     replace_cell_range_references(source, ctx, pos, |range_ref| {
         Ok(range_ref
             .adjust(adjust)?
-            .to_a1_string(Some(pos.sheet_id), ctx))
+            .to_a1_string(Some(new_default_sheet_id), ctx))
     })
 }
 
@@ -466,7 +467,7 @@ mod tests {
             y_start: 0,
         };
         let src = "SUM(A4,B$6, C7)";
-        let replaced = adjust_references(src, &ctx, pos, adj);
+        let replaced = adjust_references(src, pos.sheet_id, &ctx, pos, adj);
         let expected = "SUM(A4,A$6, B10)";
         assert_eq!(replaced, expected);
 
@@ -479,7 +480,7 @@ mod tests {
             y_start: 16,
         };
         let src = "SUM(A1, A15, A16, B16)";
-        let replaced = adjust_references(src, &ctx, pos, adj);
+        let replaced = adjust_references(src, pos.sheet_id, &ctx, pos, adj);
         let expected = "SUM(A1, A15, #REF!, A19)";
         assert_eq!(replaced, expected);
     }

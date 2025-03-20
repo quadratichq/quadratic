@@ -19,7 +19,7 @@ impl Sheet {
         clipboard_operation: ClipboardOperation,
         include_plain_text: bool,
     ) -> Result<JsClipboard, String> {
-        let mut clipboard_origin = ClipboardOrigin::default();
+        let mut clipboard_origin = ClipboardOrigin::default(selection.sheet_id);
         let mut plain_text = String::new();
         let mut html_body = String::from("<tbody>");
         let mut cells = CellValues::default();

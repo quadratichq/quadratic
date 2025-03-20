@@ -37,7 +37,7 @@ pub enum PasteSpecial {
 ///
 /// For example, this is used to copy and paste a column
 /// on top of another column, or a sheet on top of another sheet.
-#[derive(Default, Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct ClipboardOrigin {
     pub x: i64,
     pub y: i64,
@@ -45,6 +45,18 @@ pub struct ClipboardOrigin {
     pub column: Option<i64>,
     pub row: Option<i64>,
     pub all: Option<(i64, i64)>,
+}
+impl ClipboardOrigin {
+    pub fn default(sheet_id: SheetId) -> Self {
+        Self {
+            x: 0,
+            y: 0,
+            sheet_id,
+            column: None,
+            row: None,
+            all: None,
+        }
+    }
 }
 
 #[derive(Default, Debug, Serialize, Deserialize)]
@@ -662,26 +674,39 @@ impl GridController {
                 drop(decoded);
 
                 let context = self.a1_context();
-                let adjust = RefAdjust {
-                    sheet_id: None,
-                    relative_only: true,
-                    dx: insert_at.x - clipboard.origin.x,
-                    dy: insert_at.y - clipboard.origin.y,
-                    x_start: 0,
-                    y_start: 0,
-                };
 
-                // loop through the clipboard and replace cell references in formulas, translate cell references in other languages
-                for (x, col) in clipboard.cells.columns.iter_mut().enumerate() {
-                    for (&y, cell) in col {
-                        if let CellValue::Code(code_cell) = cell {
-                            let original_pos = SheetPos {
-                                x: clipboard.origin.x + x as i64,
-                                y: clipboard.origin.y + y as i64,
-                                sheet_id: clipboard.origin.sheet_id,
-                            };
-                            if clipboard.operation == ClipboardOperation::Copy {
-                                code_cell.adjust_references(context, original_pos, adjust);
+                // loop through the clipboard and replace cell references in
+                // formulas and other languages
+                let adjust = match clipboard.operation {
+                    ClipboardOperation::Cut => RefAdjust::NO_OP,
+                    ClipboardOperation::Copy => RefAdjust {
+                        sheet_id: None,
+                        relative_only: true,
+                        dx: insert_at.x - clipboard.origin.x,
+                        dy: insert_at.y - clipboard.origin.y,
+                        x_start: 0,
+                        y_start: 0,
+                    },
+                };
+                let new_default_sheet_id = match clipboard.operation {
+                    ClipboardOperation::Cut => selection.sheet_id,
+                    ClipboardOperation::Copy => clipboard.origin.sheet_id,
+                };
+                if !(adjust.is_no_op() && new_default_sheet_id == clipboard.origin.sheet_id) {
+                    for (x, col) in clipboard.cells.columns.iter_mut().enumerate() {
+                        for (&y, cell) in col {
+                            if let CellValue::Code(code_cell) = cell {
+                                let original_pos = SheetPos {
+                                    x: clipboard.origin.x + x as i64,
+                                    y: clipboard.origin.y + y as i64,
+                                    sheet_id: clipboard.origin.sheet_id,
+                                };
+                                code_cell.adjust_references(
+                                    new_default_sheet_id,
+                                    context,
+                                    original_pos,
+                                    adjust,
+                                );
                             }
                         }
                     }
@@ -1011,8 +1036,28 @@ mod test {
             format!("SUM(B2:B4, B5:B7, '{s1}'!C5, '{s2}'!C5)"),
             get_code_cell_source_str(&gc, pos![sheet2!A4]),
         );
-        // code cell should have been re-evaluated.
+        // code cell should have been re-evaluated
         assert_eq!("50", get_code_cell_value_str(&gc, pos![sheet2!A4]));
+
+        // cut to other sheet
+        let JsClipboard { html, .. } = gc
+            .sheet(sheet1)
+            .copy_to_clipboard(&a3_sel, gc.a1_context(), ClipboardOperation::Cut, false)
+            .unwrap();
+        gc.paste_from_clipboard(
+            &A1Selection::from_single_cell(pos![sheet2!A4]),
+            None,
+            Some(html),
+            PasteSpecial::None,
+            None,
+        );
+        // all references should have updated to have a sheet name
+        assert_eq!(
+            format!("SUM('{s1}'!B1:B3, '{s1}'!B4:B6, '{s1}'!C4, '{s2}'!C4)"),
+            get_code_cell_source_str(&gc, pos![sheet2!A4]),
+        );
+        // code cell should have the same value
+        assert_eq!("1121", get_code_cell_value_str(&gc, pos![sheet2!A4]));
     }
 
     #[test]

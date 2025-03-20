@@ -663,6 +663,7 @@ impl GridController {
                     let mut data_table_ops = vec![];
                     if let Some(original_pos) = original_pos {
                         code_cell.adjust_references(
+                            sheet_id,
                             context,
                             original_pos.to_sheet_pos(sheet_id),
                             RefAdjust {
