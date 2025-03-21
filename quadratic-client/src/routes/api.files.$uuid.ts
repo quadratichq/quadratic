@@ -8,8 +8,7 @@ import { redirectDocument } from 'react-router-dom';
 export const loader = async () => null;
 
 export type Action = {
-  response: Action['response.duplicate'] | { ok: boolean } | null;
-  'response.duplicate': { ok: boolean; uuid: string };
+  response: { ok: boolean } | null;
   'request.delete': ReturnType<typeof getActionFileDelete>;
   'request.download': ReturnType<typeof getActionFileDownload>;
   'request.duplicate': ReturnType<typeof getActionFileDuplicate>;
@@ -58,7 +57,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
       const checkpoint =
         checkpointDataUrl && checkpointVersion ? { dataUrl: checkpointDataUrl, version: checkpointVersion } : undefined;
       const { uuid: newFileUuid } = await apiClient.files.duplicate(uuid, { isPrivate, checkpoint });
-      return redirect ? redirectDocument(ROUTES.FILE(newFileUuid)) : { ok: true, uuid: newFileUuid };
+      return redirect ? redirectDocument(ROUTES.FILE(newFileUuid)) : { ok: true };
     } catch (error) {
       return { ok: false };
     }
