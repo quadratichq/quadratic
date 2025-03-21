@@ -86,14 +86,21 @@ pub fn assert_data_table_size(
 
 #[cfg(test)]
 mod tests {
-    use crate::test_util::test_create_data_table_first_sheet;
+    use crate::test_util::test_create_data_table;
 
     use super::*;
     #[test]
     fn test_assert_data_table_size() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        test_create_data_table_first_sheet(&mut gc, pos![A1], 2, 2, &["a", "b", "c", "d"]);
+        test_create_data_table(
+            &mut gc,
+            SheetId::TEST,
+            pos![A1],
+            2,
+            2,
+            &["a", "b", "c", "d"],
+        );
         assert_data_table_size(&gc, sheet_id, pos![A1], 2, 4, false);
         assert_data_table_size(&gc, sheet_id, pos![A1], 2, 2, true);
     }
@@ -101,7 +108,14 @@ mod tests {
     #[test]
     fn test_assert_data_table_at() {
         let mut gc = GridController::test();
-        let dt = test_create_data_table_first_sheet(&mut gc, pos![A1], 2, 2, &["a", "b", "c", "d"]);
+        let dt = test_create_data_table(
+            &mut gc,
+            SheetId::TEST,
+            pos![A1],
+            2,
+            2,
+            &["a", "b", "c", "d"],
+        );
 
         assert_data_table_at(&dt, 0, 0, "a");
         assert_data_table_at(&dt, 1, 0, "b");
@@ -113,7 +127,14 @@ mod tests {
     #[should_panic(expected = "Cell at (0, 0) does not have the value")]
     fn test_assert_data_table_cell_value_failure() {
         let mut gc = GridController::test();
-        let dt = test_create_data_table_first_sheet(&mut gc, pos![A1], 2, 2, &["a", "b", "c", "d"]);
+        let dt = test_create_data_table(
+            &mut gc,
+            SheetId::TEST,
+            pos![A1],
+            2,
+            2,
+            &["a", "b", "c", "d"],
+        );
 
         assert_data_table_at(&dt, 0, 0, "wrong");
     }
@@ -121,7 +142,14 @@ mod tests {
     #[test]
     fn test_assert_data_table_row() {
         let mut gc = GridController::test();
-        let dt = test_create_data_table_first_sheet(&mut gc, pos![A1], 2, 2, &["a", "b", "c", "d"]);
+        let dt = test_create_data_table(
+            &mut gc,
+            SheetId::TEST,
+            pos![A1],
+            2,
+            2,
+            &["a", "b", "c", "d"],
+        );
 
         assert_data_table_row(&dt, 0, vec!["a", "b"]);
         assert_data_table_row(&dt, 1, vec!["c", "d"]);
@@ -130,7 +158,14 @@ mod tests {
     #[test]
     fn test_assert_data_table_column() {
         let mut gc = GridController::test();
-        let dt = test_create_data_table_first_sheet(&mut gc, pos![A1], 2, 2, &["a", "b", "c", "d"]);
+        let dt = test_create_data_table(
+            &mut gc,
+            SheetId::TEST,
+            pos![A1],
+            2,
+            2,
+            &["a", "b", "c", "d"],
+        );
 
         assert_data_table_column(&dt, 0, vec!["a", "c"]);
         assert_data_table_column(&dt, 1, vec!["b", "d"]);
@@ -140,7 +175,14 @@ mod tests {
     #[should_panic(expected = "Cell at (0, 2) does not have the value")]
     fn test_assert_data_table_row_failure() {
         let mut gc = GridController::test();
-        let dt = test_create_data_table_first_sheet(&mut gc, pos![A1], 2, 2, &["a", "b", "c", "d"]);
+        let dt = test_create_data_table(
+            &mut gc,
+            SheetId::TEST,
+            pos![A1],
+            2,
+            2,
+            &["a", "b", "c", "d"],
+        );
 
         assert_data_table_row(&dt, 2, vec!["wrong", "value"]);
     }
@@ -151,7 +193,14 @@ mod tests {
     )]
     fn test_assert_data_table_column_failure() {
         let mut gc = GridController::test();
-        let dt = test_create_data_table_first_sheet(&mut gc, pos![A1], 2, 2, &["a", "b", "c", "d"]);
+        let dt = test_create_data_table(
+            &mut gc,
+            SheetId::TEST,
+            pos![A1],
+            2,
+            2,
+            &["a", "b", "c", "d"],
+        );
 
         assert_data_table_column(&dt, 1, vec!["wrong", "value"]);
     }

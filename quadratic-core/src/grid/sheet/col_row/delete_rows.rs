@@ -161,10 +161,7 @@ mod tests {
     use crate::{
         controller::GridController,
         grid::SheetId,
-        test_util::{
-            assert_data_table_size, test_create_code_table_first_sheet,
-            test_create_data_table_first_sheet,
-        },
+        test_util::{assert_data_table_size, test_create_code_table, test_create_data_table},
     };
 
     use super::*;
@@ -173,7 +170,7 @@ mod tests {
     fn test_check_delete_tables_rows_outside_table_range() {
         let mut gc = GridController::test();
         let mut transaction = PendingTransaction::default();
-        test_create_data_table_first_sheet(&mut gc, pos![A1], 1, 3, &["A", "B", "C"]);
+        test_create_data_table(&mut gc, SheetId::TEST, pos![A1], 1, 3, &["A", "B", "C"]);
 
         // Delete rows outside data table range
         let sheet = gc.sheet_mut(gc.sheet_ids()[0]);
@@ -188,7 +185,7 @@ mod tests {
     fn test_check_delete_tables_rows_middle_row() {
         let mut gc = GridController::test();
         let mut transaction = PendingTransaction::default();
-        test_create_data_table_first_sheet(&mut gc, pos![A1], 1, 3, &["A", "B", "C"]);
+        test_create_data_table(&mut gc, SheetId::TEST, pos![A1], 1, 3, &["A", "B", "C"]);
 
         // Delete middle row
         let sheet = gc.sheet_mut(gc.sheet_ids()[0]);
@@ -201,7 +198,7 @@ mod tests {
     fn test_check_delete_tables_rows_anchor_row() {
         let mut gc = GridController::test();
         let mut transaction = PendingTransaction::default();
-        test_create_data_table_first_sheet(&mut gc, pos![A1], 1, 3, &["A", "B", "C"]);
+        test_create_data_table(&mut gc, SheetId::TEST, pos![A1], 1, 3, &["A", "B", "C"]);
 
         // Delete anchor row (first row)
         let sheet = gc.sheet_mut(gc.sheet_ids()[0]);
@@ -221,7 +218,7 @@ mod tests {
     fn test_check_delete_tables_rows_readonly_table() {
         let mut gc = GridController::test();
         let mut transaction = PendingTransaction::default();
-        test_create_code_table_first_sheet(&mut gc, pos![A1], 1, 3, vec!["A", "B", "C"]);
+        test_create_code_table(&mut gc, SheetId::TEST, pos![A1], 1, 3, vec!["A", "B", "C"]);
 
         // Test 4: Readonly table should not be modified
         let sheet = gc.sheet_mut(gc.sheet_ids()[0]);

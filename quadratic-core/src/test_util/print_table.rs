@@ -148,8 +148,18 @@ pub fn print_table_sheet_formats(sheet: &Sheet, rect: Rect) {
 }
 
 #[cfg(test)]
+pub fn print_data_table_locations(gc: &GridController, sheet_id: SheetId) {
+    let sheet = gc.sheet(sheet_id);
+    sheet.data_tables.iter().for_each(|(pos, dt)| {
+        let size = dt.output_rect(*pos, false);
+        println!("Data table at {:?} {}x{}", pos, size.width(), size.height());
+    });
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_util::test_create_data_table;
 
     #[test]
     fn print_table_sheet_format() {
@@ -168,5 +178,19 @@ mod tests {
             .fill_color
             .set(pos![C3], Some("green".to_string()));
         print_table_sheet_formats(sheet, Rect::test_a1("A1:C3"));
+    }
+
+    #[test]
+    fn test_print_data_table_locations() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create two data tables using the test utility
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2, &["A", "B", "C", "D"]);
+        test_create_data_table(&mut gc, sheet_id, pos![C3], 1, 3, &["X", "Y", "Z"]);
+
+        // Test the print function (this will print to console during test)
+        print_data_table_locations(&gc, sheet_id);
+        // Since this is primarily a print utility, we just verify it runs without panicking
     }
 }

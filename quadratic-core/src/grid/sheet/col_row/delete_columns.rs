@@ -1,6 +1,5 @@
 use crate::{
     Pos,
-    cell_values::CellValues,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
@@ -27,10 +26,10 @@ impl Sheet {
         let mut set_dirty_hash_rects = Vec::new();
         let mut set_dirty_code_cells = Vec::new();
         let mut dt_to_add = Vec::new();
-        let mut dt_to_remove = Vec::new();
+        let mut dt_to_replace = Vec::new();
 
         self.data_tables
-            .iter_mut()
+            .iter()
             .enumerate()
             .for_each(|(index, (pos, table))| {
                 // we can only adjust non-readonly (ie, non-code-run) tables
@@ -53,12 +52,13 @@ impl Sheet {
 
                 // create a new data table with the columns removed
                 let mut new_dt = table.clone();
+                let mut deleted_count = 0; // Track number of columns already deleted
+
                 for column in columns {
-                    // we use display the column index since that's how a user sees it
-                    let display_column = new_dt.get_column_index_from_display_index(
-                        (column - output_rect.min.x) as u32,
-                        true,
-                    );
+                    // Adjust the column index based on previously deleted columns
+                    let adjusted_column = column - output_rect.min.x - deleted_count;
+                    let display_column =
+                        new_dt.get_column_index_from_display_index(adjusted_column as u32, true);
                     if let Err(e) = new_dt.delete_column_sorted(display_column as usize) {
                         dbgjs!(format!(
                             "Error in check_delete_tables_columns: cannot delete column\n{:?}",
@@ -66,6 +66,7 @@ impl Sheet {
                         ));
                         continue;
                     }
+                    deleted_count += 1;
                 }
 
                 // if the first column is inside the deletion range, then we need to
@@ -80,9 +81,7 @@ impl Sheet {
                             x: change_column,
                             y: pos.y,
                         };
-                        dt_to_add.push((*pos, new_pos, new_dt));
-                        dt_to_remove.push((*pos, index));
-
+                        dt_to_add.push((*pos, new_pos, new_dt, index));
                         set_dirty_code_cells.push(*pos);
                         let mut new_output_rect = output_rect.clone();
                         set_dirty_hash_rects.push(output_rect);
@@ -94,19 +93,14 @@ impl Sheet {
                         return;
                     }
                 } else {
-                    let old_dt = std::mem::replace(table, new_dt);
-                    reverse_operations.push(Operation::SetDataTable {
-                        sheet_pos: pos.to_sheet_pos(self.id),
-                        data_table: Some(old_dt),
-                        index,
-                    });
+                    dt_to_replace.push((*pos, index, new_dt));
                     set_dirty_hash_rects.push(output_rect);
                     set_dirty_code_cells.push(*pos);
                 }
             });
 
-        for (pos, index) in dt_to_remove {
-            let old_dt = self.data_tables.shift_remove(&pos);
+        for (pos, index, new_dt) in dt_to_replace {
+            let old_dt = self.data_tables.insert(pos, new_dt);
             reverse_operations.push(Operation::SetDataTable {
                 sheet_pos: pos.to_sheet_pos(self.id),
                 data_table: old_dt,
@@ -114,24 +108,27 @@ impl Sheet {
             });
         }
 
-        for (pos, new_pos, new_dt) in dt_to_add {
+        for (pos, new_pos, new_dt, index) in dt_to_add {
             // move anchor cell to new position
             let Some(old_anchor) = self.cell_value(pos) else {
                 dbgjs!(format!("No anchor cell found for position: {:?}", pos));
                 continue;
             };
             self.set_cell_value(new_pos, old_anchor);
-            reverse_operations.push(Operation::SetCellValues {
-                sheet_pos: pos.to_sheet_pos(self.id),
-                values: CellValues::new_blank(1, 1),
-            });
 
-            // add new data table
-            let (index, old_dt) = self.data_tables.insert_sorted(new_pos, new_dt);
+            // remove old data table
+            let old_dt = self.data_tables.shift_remove(&pos);
             reverse_operations.push(Operation::SetDataTable {
                 sheet_pos: pos.to_sheet_pos(self.id),
                 data_table: old_dt, // this should always be None
                 index,
+            });
+
+            // add new data table
+            self.data_tables.insert_sorted(new_pos, new_dt);
+
+            reverse_operations.push(Operation::DeleteDataTable {
+                sheet_pos: new_pos.to_sheet_pos(self.id),
             });
         }
 
@@ -154,6 +151,8 @@ impl Sheet {
         transaction.reverse_operations.extend(reverse_operations);
     }
 
+    /// Deletes columns. Columns is a vec of all columns to be deleted. This fn
+    /// will dedup and sort the columns.
     pub fn delete_columns(&mut self, transaction: &mut PendingTransaction, columns: Vec<i64>) {
         if columns.is_empty() {
             return;
@@ -182,7 +181,7 @@ mod tests {
         grid::SheetId,
         test_util::{
             assert_data_table_size, first_sheet, test_create_code_table_first_sheet,
-            test_create_data_table_first_sheet,
+            test_create_data_table,
         },
     };
 
@@ -192,13 +191,19 @@ mod tests {
     fn test_check_delete_tables_columns_outside_table_range() {
         let mut gc = GridController::test();
         let mut transaction = PendingTransaction::default();
-        test_create_data_table_first_sheet(&mut gc, pos![A1], 3, 1, &["A", "B", "C"]);
+        test_create_data_table(&mut gc, SheetId::TEST, pos![A1], 3, 1, &["A", "B", "C"]);
+        test_create_data_table(&mut gc, SheetId::TEST, pos![B10], 3, 1, &["D", "E", "F"]);
 
         // Delete columns outside data table range
         let sheet = gc.sheet_mut(gc.sheet_ids()[0]);
+
         sheet.check_delete_tables_columns(&mut transaction, &vec![5, 6]);
         assert!(
             sheet.data_tables.contains_key(&pos!(A1)),
+            "Data table should remain unchanged when deleting columns outside its range"
+        );
+        assert!(
+            sheet.data_tables.contains_key(&pos!(B10)),
             "Data table should remain unchanged when deleting columns outside its range"
         );
     }
@@ -207,10 +212,10 @@ mod tests {
     fn test_check_delete_tables_columns_middle_column() {
         let mut gc = GridController::test();
         let mut transaction = PendingTransaction::default();
-        test_create_data_table_first_sheet(&mut gc, pos![A1], 3, 1, &["A", "B", "C"]);
+        test_create_data_table(&mut gc, SheetId::TEST, pos![A1], 3, 1, &["A", "B", "C"]);
 
-        // Delete middle column
-        let sheet = gc.sheet_mut(gc.sheet_ids()[0]);
+        // Delete middle column for A1
+        let sheet = gc.sheet_mut(SheetId::TEST);
         sheet.check_delete_tables_columns(&mut transaction, &vec![2]);
 
         assert_data_table_size(&gc, SheetId::TEST, pos![A1], 2, 1, false);
@@ -220,7 +225,7 @@ mod tests {
     fn test_check_delete_tables_columns_anchor_column() {
         let mut gc = GridController::test();
         let mut transaction = PendingTransaction::default();
-        test_create_data_table_first_sheet(&mut gc, pos![A1], 3, 1, &["A", "B", "C"]);
+        test_create_data_table(&mut gc, SheetId::TEST, pos![A1], 3, 1, &["A", "B", "C"]);
 
         // Delete anchor column (first column)
         let sheet = gc.sheet_mut(gc.sheet_ids()[0]);
@@ -258,7 +263,7 @@ mod tests {
     #[test]
     fn test_delete_first_column_with_entire_data_table() {
         let mut gc = GridController::test();
-        test_create_data_table_first_sheet(&mut gc, pos![A1], 1, 3, &["A", "B", "C"]);
+        test_create_data_table(&mut gc, SheetId::TEST, pos![A1], 1, 3, &["A", "B", "C"]);
 
         // Delete first column
         gc.delete_columns(SheetId::TEST, vec![1], None);
@@ -269,16 +274,63 @@ mod tests {
     #[test]
     fn test_delete_first_column_and_shift_data_table() {
         let mut gc = GridController::test();
-        test_create_data_table_first_sheet(&mut gc, pos![A1], 2, 2, &["A", "B", "C", "D"]);
+        test_create_data_table(
+            &mut gc,
+            SheetId::TEST,
+            pos![A1],
+            2,
+            2,
+            &["A", "B", "C", "D"],
+        );
 
         // Delete first column
         gc.delete_columns(SheetId::TEST, vec![1], None);
         assert_data_table_size(&gc, SheetId::TEST, pos![A1], 1, 2, false);
 
-        crate::test_util::print_last_reverse_transaction_names(&gc);
-
         gc.undo(None);
         assert_data_table_size(&gc, SheetId::TEST, pos![A1], 2, 2, false);
         assert_eq!(first_sheet(&gc).data_tables.len(), 1);
+    }
+
+    #[test]
+    fn test_delete_multiple_columns_including_anchor_column() {
+        let mut gc = GridController::test();
+        test_create_data_table(
+            &mut gc,
+            SheetId::TEST,
+            pos![A1],
+            5,
+            1,
+            &["A", "B", "C", "D", "E"],
+        );
+
+        // Delete columns including anchor column
+        gc.delete_columns(SheetId::TEST, vec![1, 3], None);
+
+        assert_data_table_size(&gc, SheetId::TEST, pos![A1], 3, 1, false);
+        assert_eq!(first_sheet(&gc).data_tables.len(), 1);
+
+        gc.undo(None);
+        assert_data_table_size(&gc, SheetId::TEST, pos![A1], 5, 1, false);
+        assert_eq!(first_sheet(&gc).data_tables.len(), 1);
+    }
+
+    #[test]
+    fn test_delete_multiple_tables_with_overlapping_columns() {
+        let mut gc = GridController::test();
+        test_create_data_table(&mut gc, SheetId::TEST, pos![A1], 3, 1, &["A", "B", "C"]);
+        test_create_data_table(&mut gc, SheetId::TEST, pos![B10], 3, 1, &["D", "E", "F"]);
+
+        // Delete columns that overlap with both tables
+        gc.delete_columns(SheetId::TEST, vec![2, 3], None);
+
+        assert_data_table_size(&gc, SheetId::TEST, pos![A1], 1, 1, false);
+        assert_data_table_size(&gc, SheetId::TEST, pos![B10], 1, 1, false);
+        assert_eq!(first_sheet(&gc).data_tables.len(), 2);
+
+        gc.undo(None);
+        assert_data_table_size(&gc, SheetId::TEST, pos![A1], 3, 1, false);
+        assert_data_table_size(&gc, SheetId::TEST, pos![B10], 3, 1, false);
+        assert_eq!(first_sheet(&gc).data_tables.len(), 2);
     }
 }
