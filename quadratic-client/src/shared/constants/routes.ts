@@ -63,7 +63,6 @@ export const ROUTE_LOADER_IDS = {
   ROOT: 'root',
   FILE: 'file',
   DASHBOARD: 'dashboard',
-  TEAM_FILES: 'team-files',
 };
 
 export const SEARCH_PARAMS = {
