@@ -28,7 +28,7 @@ impl A1Selection {
                 } else {
                     match range {
                         CellRefRange::Table { .. } => (),
-                        CellRefRange::Sheet { mut range } => {
+                        &CellRefRange::Sheet { mut range } => {
                             if range.start.col() == range.end.col() {
                                 // if the range is a single column, then we
                                 // should do nothing to remove the range
@@ -134,7 +134,7 @@ impl A1Selection {
                 } else {
                     match range {
                         CellRefRange::Table { .. } => (),
-                        CellRefRange::Sheet { mut range } => {
+                        &CellRefRange::Sheet { mut range } => {
                             if range.start.row() == range.end.row() {
                                 // if the range is a single row, then we
                                 // should do nothing to remove the range

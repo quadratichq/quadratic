@@ -2,6 +2,9 @@ use crate::{a1::A1Selection, grid::Sheet, Pos};
 
 use super::{Borders, BordersUpdates};
 
+// todo: this is wrong. it does not properly handle infinite selections (it cuts
+// them off at the bounds of the sheet)
+
 impl Borders {
     /// Prepares borders within the selection for copying to the clipboard.
     ///

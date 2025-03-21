@@ -78,7 +78,7 @@ impl GridController {
     }
 
     // delete any code runs within the sheet_rect.
-    pub(super) fn check_deleted_data_tables(
+    pub(crate) fn check_deleted_data_tables(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_rect: &SheetRect,

@@ -74,10 +74,7 @@ pub(crate) fn get_claims() -> Claims {
 }
 
 pub(crate) async fn response_bytes(response: Response) -> Bytes {
-    response
-        .into_body()
-        .into_data_stream()
-        .into_future()
+    StreamExt::into_future(response.into_body().into_data_stream())
         .await
         .0
         .unwrap_or(Ok(Bytes::new()))

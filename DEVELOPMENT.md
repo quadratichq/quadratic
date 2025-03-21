@@ -19,8 +19,8 @@ Start the Docker Desktop by opening Docker.
 Now install the tool chain:
 
 ```shell
-# install node version 18
-nvm install 18
+# install node
+nvm install
 
 #install the WASM toolchain
 rustup target add wasm32-unknown-unknown

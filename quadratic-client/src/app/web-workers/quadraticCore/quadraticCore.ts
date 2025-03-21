@@ -70,6 +70,7 @@ import type {
   CoreClientMoveCodeCellVertically,
   CoreClientNeighborText,
   CoreClientSearch,
+  CoreClientSetCodeCellValue,
   CoreClientSummarizeSelection,
   CoreClientValidateInput,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
@@ -147,6 +148,9 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientTransactionProgress') {
       events.emit('transactionProgress', e.data);
+      return;
+    } else if (e.data.type === 'coreClientTransactionEnd') {
+      events.emit('transactionEnd', e.data);
       return;
     } else if (e.data.type === 'coreClientUpdateCodeCell') {
       events.emit('updateCodeCell', {
@@ -482,15 +486,22 @@ class QuadraticCore {
     language: CodeCellLanguage;
     codeString: string;
     cursor?: string;
-  }) {
-    this.send({
-      type: 'clientCoreSetCodeCellValue',
-      sheetId: options.sheetId,
-      x: options.x,
-      y: options.y,
-      language: options.language,
-      codeString: options.codeString,
-      cursor: options.cursor,
+  }): Promise<string | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientSetCodeCellValue) => {
+        resolve(message.transactionId);
+      };
+      this.send({
+        type: 'clientCoreSetCodeCellValue',
+        sheetId: options.sheetId,
+        x: options.x,
+        y: options.y,
+        language: options.language,
+        codeString: options.codeString,
+        cursor: options.cursor,
+        id,
+      });
     });
   }
 
@@ -971,7 +982,14 @@ class QuadraticCore {
     });
   }
 
-  moveCells(source: SheetRect, targetX: number, targetY: number, targetSheetId: string) {
+  moveCells(
+    source: SheetRect,
+    targetX: number,
+    targetY: number,
+    targetSheetId: string,
+    columns: boolean,
+    rows: boolean
+  ) {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = () => {
@@ -984,6 +1002,8 @@ class QuadraticCore {
         targetSheetId,
         targetX,
         targetY,
+        columns,
+        rows,
         cursor: sheets.getCursorPosition(),
       });
     });
@@ -1346,6 +1366,28 @@ class QuadraticCore {
       sheetId,
       row,
       below,
+      cursor,
+    });
+  }
+
+  moveColumns(sheetId: string, colStart: number, colEnd: number, to: number, cursor: string) {
+    this.send({
+      type: 'clientCoreMoveColumns',
+      sheetId,
+      colStart,
+      colEnd,
+      to,
+      cursor,
+    });
+  }
+
+  moveRows(sheetId: string, rowStart: number, rowEnd: number, to: number, cursor: string) {
+    this.send({
+      type: 'clientCoreMoveRows',
+      sheetId,
+      rowStart,
+      rowEnd,
+      to,
       cursor,
     });
   }

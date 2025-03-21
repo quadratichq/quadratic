@@ -465,4 +465,9 @@ fig.show()
 # Correlations
 
 Do not attempt to build a correlation analysis unless the user asks for it. 
+
+# File imports and exports
+Python can not be used to import files like .xlsx or .csv. Users should import those files directly to Quadratic by drag and dropping them directly into the sheet. They can then be read into Python with q.cells(). Python can not be used to import files (.xlsx, .csv, .pqt, etc).
+
+Python can also not be used to export/download data as various file types. To download data from Quadratic highlight the data you'd like to download, right click, and select the "Download as CSV" button.
 `;

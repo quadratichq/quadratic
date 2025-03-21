@@ -1,3 +1,5 @@
+//! Accessing SQL databases that implement the Connection trait
+
 use arrow::{
     array::{ArrayRef, RecordBatch},
     datatypes::{Schema as ArrowSchema, *},

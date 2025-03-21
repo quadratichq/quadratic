@@ -1,6 +1,7 @@
 const SAMPLE_ENCRYPTION_KEY = 'eb4758047f74bdb2603cce75c4370327ca2c3662c4786867659126da8e64dfcc';
 
 // Optional
+export const DEBUG = process.env.DEBUG;
 export const RATE_LIMIT_AI_WINDOW_MS = process.env.RATE_LIMIT_AI_WINDOW_MS;
 export const RATE_LIMIT_AI_REQUESTS_MAX = process.env.RATE_LIMIT_AI_REQUESTS_MAX;
 export const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
@@ -25,6 +26,10 @@ export const AWS_S3_ACCESS_KEY_ID = process.env.AWS_S3_ACCESS_KEY_ID as string;
 export const AWS_S3_SECRET_ACCESS_KEY = process.env.AWS_S3_SECRET_ACCESS_KEY as string;
 export const AWS_S3_BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME as string;
 export const AWS_S3_ANALYTICS_BUCKET_NAME = process.env.AWS_S3_ANALYTICS_BUCKET_NAME as string;
+export const GCP_REGION = process.env.GCP_REGION as string;
+export const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID as string;
+export const GCP_CLIENT_EMAIL = process.env.GCP_CLIENT_EMAIL as string;
+export const GCP_PRIVATE_KEY = process.env.GCP_PRIVATE_KEY as string;
 
 // Required
 export const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY as string;

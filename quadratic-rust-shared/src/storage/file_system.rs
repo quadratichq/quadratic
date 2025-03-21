@@ -1,20 +1,26 @@
+//! File System
+//!
+//! Functions to interact with the file system
+
 use async_trait::async_trait;
 use bytes::Bytes;
 use std::path::{Path, PathBuf};
-use tokio::fs::{create_dir_all, File};
+use tokio::fs::{File, create_dir_all};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use super::Storage;
+use crate::SharedError;
 use crate::error::Result;
 use crate::storage::error::Storage as StorageError;
-use crate::SharedError;
 
+/// File System configuration
 #[derive(Debug, Clone)]
 pub struct FileSystemConfig {
     pub path: String,
     pub encryption_keys: Vec<String>,
 }
 
+/// File System
 #[derive(Debug, Clone)]
 pub struct FileSystem {
     pub config: FileSystemConfig,
@@ -64,6 +70,7 @@ impl Storage for FileSystem {
 }
 
 impl FileSystem {
+    /// Create a new File System
     pub fn new(config: FileSystemConfig) -> Self {
         Self { config }
     }

@@ -15,7 +15,7 @@ const payload: AIRequestBody = {
   messages: [
     {
       role: 'user',
-      content: 'Hello',
+      content: [{ type: 'text', text: 'Hello' }],
       contextType: 'userPrompt',
     },
   ],

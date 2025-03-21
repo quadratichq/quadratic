@@ -16,6 +16,8 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 use itertools::Itertools;
 
+// todo: delete_many and insert_many would be helpful
+
 /// Data structure that tracks column widths or row heights in pixel units,
 /// optimized for converting between column/row indices and pixel units.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

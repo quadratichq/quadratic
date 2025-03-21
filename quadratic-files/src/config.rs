@@ -75,7 +75,8 @@ mod tests {
     #[test]
     fn gets_a_config() {
         let host = "127.0.0.1";
-        std::env::set_var("HOST", host);
+        // TODO: Audit that the environment access only happens in single-threaded code.
+        unsafe { std::env::set_var("HOST", host) };
         let config = config().unwrap();
         assert_eq!(config.host, host.to_string());
     }

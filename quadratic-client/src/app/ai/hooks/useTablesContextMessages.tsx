@@ -30,7 +30,10 @@ export function useTablesContextMessages() {
     return [
       {
         role: 'user',
-        content: `
+        content: [
+          {
+            type: 'text',
+            text: `
 Note: This is an internal message for context. Do not quote it in your response.\n\n
 Quadratic has following tables and chart support:\n
 - Data tables: These are editable tables that contain data from file imports or user inputs.\n
@@ -151,11 +154,18 @@ Note: All this data is only for your reference to data on the sheet. This data c
 - Use \`q.cells("Table_Name[#ALL]")\` to reference the entire table including the header.\n
 - Use \`q.cells("Table_Name[#HEADERS]")\` to reference the header of the table.\n
 - Use \`q.cells("Table_Name[#DATA]")\` to reference the data of the table.\n`,
+          },
+        ],
         contextType: 'tables',
       },
       {
         role: 'assistant',
-        content: `I understand the other sheets data, I will reference it to answer following messages. How can I help you?`,
+        content: [
+          {
+            type: 'text',
+            text: `I understand the other sheets data, I will reference it to answer following messages. How can I help you?`,
+          },
+        ],
         contextType: 'tables',
       },
     ];

@@ -10,7 +10,7 @@ import { Plugin } from 'pixi-viewport';
 
 export const SCALE_OUT_OF_BOUNDS_SCROLL = 0.1;
 
-const MAX_RUBBER_BAND_GAP = 50;
+const MAX_RUBBER_BAND_GAP = 0;
 const RUBBER_BAND_DECELERATION_POWER = 5;
 
 /** Options for {@link Wheel}. */

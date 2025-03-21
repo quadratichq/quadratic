@@ -249,7 +249,7 @@ pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result
     state.stats.lock().await.files_to_process_in_pubsub = files.len() as u64;
 
     for file_id in files.into_iter() {
-        let state = Arc::clone(&state);
+        let state = Arc::clone(state);
         let active_channels = active_channels.to_owned();
 
         // process file in a separate thread

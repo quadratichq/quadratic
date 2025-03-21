@@ -113,8 +113,11 @@ export const CodeEditorPanels = memo(({ codeEditorRef }: CodeEditorPanelsResizeP
               const containerRect = codeEditorRef.current.getBoundingClientRect();
               const newTopHeight = ((mouseEvent.clientY - containerRect.top) / containerRect.height) * 100;
 
-              if (newTopHeight >= 25 && newTopHeight <= 75) {
+              if (newTopHeight >= 35 && newTopHeight <= 70) {
+                codeEditorPanelData.setBottomHidden(false);
                 codeEditorPanelData.setEditorHeightPercentage(newTopHeight);
+              } else if (newTopHeight > 65) {
+                codeEditorPanelData.setBottomHidden(true);
               }
             }}
             position="HORIZONTAL"

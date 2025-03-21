@@ -87,12 +87,17 @@ impl GridController {
                 .get_table_language(pos, new_data_table)
                 .is_some_and(|lang| lang.is_code_language());
 
-            new_data_table.show_ui = old_data_table.show_ui;
-            new_data_table.show_name = old_data_table.show_name;
             new_data_table.alternating_colors = old_data_table.alternating_colors;
 
             // for python dataframes, we don't want preserve the show_columns setting
-            if !new_data_table.is_dataframe() {
+            // for other data tables types, we want to preserve most settings
+            if !new_data_table.is_dataframe()
+                && !new_data_table.is_list()
+                && !new_data_table.is_series()
+                && !new_data_table.is_html_or_image()
+            {
+                new_data_table.show_ui = old_data_table.show_ui;
+                new_data_table.show_name = old_data_table.show_name;
                 new_data_table.show_columns = old_data_table.show_columns;
 
                 // since we don't automatically apply the first row as headers in JS,
@@ -516,7 +521,12 @@ impl GridController {
         }
 
         // If no headers were returned, we want column headers: [0, 1, 2, 3, ...etc]
-        if !js_code_result.has_headers && !data_table.is_dataframe() {
+        if !js_code_result.has_headers
+            && !data_table.is_dataframe()
+            && !data_table.is_list()
+            && !data_table.is_series()
+            && !data_table.is_html_or_image()
+        {
             let column_headers =
                 data_table.default_header_with_name(|i| format!("{}", i - 1), None);
             data_table.with_column_headers(column_headers)

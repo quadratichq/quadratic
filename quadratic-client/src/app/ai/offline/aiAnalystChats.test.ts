@@ -31,10 +31,10 @@ describe('aiAnalystOfflineChats', () => {
         name: 'Chat 1',
         lastUpdated: Date.now(),
         messages: [
-          { role: 'user', content: 'test1', contextType: 'quadraticDocs' },
+          { role: 'user', content: [{ type: 'text', text: 'test1' }], contextType: 'quadraticDocs' },
           {
             role: 'assistant',
-            content: 'response1',
+            content: [{ type: 'text', text: 'response1' }],
             contextType: 'quadraticDocs',
           },
         ],
@@ -44,7 +44,12 @@ describe('aiAnalystOfflineChats', () => {
         name: 'Chat 2',
         lastUpdated: Date.now(),
         messages: [
-          { role: 'user', content: 'test2', contextType: 'userPrompt', context: defaultAIAnalystContext },
+          {
+            role: 'user',
+            content: [{ type: 'text', text: 'test2' }],
+            contextType: 'userPrompt',
+            context: defaultAIAnalystContext,
+          },
           {
             role: 'assistant',
             content: [{ type: 'text', text: 'response2' }],
@@ -67,7 +72,7 @@ describe('aiAnalystOfflineChats', () => {
     expect(testChat1?.name).toBe('Chat 1');
     expect(testChat1?.messages.length).toBe(0); // Only userPrompt messages are stored
     expect(testChat2?.name).toBe('Chat 2');
-    expect(testChat2?.messages[0].content).toBe('test2');
+    expect(testChat2?.messages[0].content).toEqual([{ type: 'text', text: 'test2' }]);
     expect(testChat2?.messages[1].content).toEqual([{ type: 'text', text: 'response2' }]);
   });
 
@@ -77,19 +82,40 @@ describe('aiAnalystOfflineChats', () => {
         id: v4(),
         name: 'Chat 1',
         lastUpdated: Date.now(),
-        messages: [{ role: 'user', content: 'test1', contextType: 'userPrompt', context: defaultAIAnalystContext }],
+        messages: [
+          {
+            role: 'user',
+            content: [{ type: 'text', text: 'test1' }],
+            contextType: 'userPrompt',
+            context: defaultAIAnalystContext,
+          },
+        ],
       },
       {
         id: v4(),
         name: 'Chat 2',
         lastUpdated: Date.now(),
-        messages: [{ role: 'user', content: 'test2', contextType: 'userPrompt', context: defaultAIAnalystContext }],
+        messages: [
+          {
+            role: 'user',
+            content: [{ type: 'text', text: 'test2' }],
+            contextType: 'userPrompt',
+            context: defaultAIAnalystContext,
+          },
+        ],
       },
       {
         id: v4(),
         name: 'Chat 3',
         lastUpdated: Date.now(),
-        messages: [{ role: 'user', content: 'test3', contextType: 'userPrompt', context: defaultAIAnalystContext }],
+        messages: [
+          {
+            role: 'user',
+            content: [{ type: 'text', text: 'test3' }],
+            contextType: 'userPrompt',
+            context: defaultAIAnalystContext,
+          },
+        ],
       },
     ];
 
@@ -114,19 +140,40 @@ describe('aiAnalystOfflineChats', () => {
         id: v4(),
         name: 'Chat 1',
         lastUpdated: Date.now(),
-        messages: [{ role: 'user', content: 'test1', contextType: 'userPrompt', context: defaultAIAnalystContext }],
+        messages: [
+          {
+            role: 'user',
+            content: [{ type: 'text', text: 'test1' }],
+            contextType: 'userPrompt',
+            context: defaultAIAnalystContext,
+          },
+        ],
       },
       {
         id: v4(),
         name: 'Chat 2',
         lastUpdated: Date.now(),
-        messages: [{ role: 'user', content: 'test2', contextType: 'userPrompt', context: defaultAIAnalystContext }],
+        messages: [
+          {
+            role: 'user',
+            content: [{ type: 'text', text: 'test2' }],
+            contextType: 'userPrompt',
+            context: defaultAIAnalystContext,
+          },
+        ],
       },
       {
         id: v4(),
         name: 'Chat 3',
         lastUpdated: Date.now(),
-        messages: [{ role: 'user', content: 'test3', contextType: 'userPrompt', context: defaultAIAnalystContext }],
+        messages: [
+          {
+            role: 'user',
+            content: [{ type: 'text', text: 'test3' }],
+            contextType: 'userPrompt',
+            context: defaultAIAnalystContext,
+          },
+        ],
       },
     ];
     await aiAnalystOfflineChats.saveChats(testChats);
@@ -143,7 +190,14 @@ describe('aiAnalystOfflineChats', () => {
         id: v4(),
         name: 'Chat 1',
         lastUpdated: Date.now(),
-        messages: [{ role: 'user', content: 'test1', contextType: 'userPrompt', context: defaultAIAnalystContext }],
+        messages: [
+          {
+            role: 'user',
+            content: [{ type: 'text', text: 'test1' }],
+            contextType: 'userPrompt',
+            context: defaultAIAnalystContext,
+          },
+        ],
       },
     ];
 
@@ -161,7 +215,14 @@ describe('aiAnalystOfflineChats', () => {
         id: v4(),
         name: 'Chat 1',
         lastUpdated: Date.now(),
-        messages: [{ role: 'user', content: 'test1', contextType: 'userPrompt', context: defaultAIAnalystContext }],
+        messages: [
+          {
+            role: 'user',
+            content: [{ type: 'text', text: 'test1' }],
+            contextType: 'userPrompt',
+            context: defaultAIAnalystContext,
+          },
+        ],
       },
     ];
     await aiAnalystOfflineChats.saveChats(testChats);

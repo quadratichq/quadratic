@@ -60,37 +60,54 @@ impl GridController {
         language: JsValue,
         code_string: String,
         cursor: Option<String>,
-    ) {
+    ) -> Option<String> {
         if let Ok(pos) = serde_json::from_str::<Pos>(&pos) {
             let sheet_id = SheetId::from_str(&sheet_id).unwrap();
             if let Ok(language) = serde_wasm_bindgen::from_value(language) {
-                self.set_code_cell(pos.to_sheet_pos(sheet_id), language, code_string, cursor);
+                return Some(self.set_code_cell(
+                    pos.to_sheet_pos(sheet_id),
+                    language,
+                    code_string,
+                    cursor,
+                ));
             }
         }
+        None
     }
 
     /// Reruns all code cells in grid.
     #[wasm_bindgen(js_name = "rerunAllCodeCells")]
-    pub fn js_rerun_code_cells(&mut self, cursor: Option<String>) {
-        self.rerun_all_code_cells(cursor);
+    pub fn js_rerun_code_cells(&mut self, cursor: Option<String>) -> Option<String> {
+        Some(self.rerun_all_code_cells(cursor))
     }
 
     /// Reruns all code cells in a sheet.
     #[wasm_bindgen(js_name = "rerunSheetCodeCells")]
-    pub fn js_rerun_sheet_code_cells(&mut self, sheet_id: String, cursor: Option<String>) {
+    pub fn js_rerun_sheet_code_cells(
+        &mut self,
+        sheet_id: String,
+        cursor: Option<String>,
+    ) -> Option<String> {
         if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
-            self.rerun_sheet_code_cells(sheet_id, cursor);
+            return Some(self.rerun_sheet_code_cells(sheet_id, cursor));
         }
+        None
     }
 
     /// Reruns one code cell
     #[wasm_bindgen(js_name = "rerunCodeCell")]
-    pub fn js_rerun_code_cell(&mut self, sheet_id: String, pos: String, cursor: Option<String>) {
+    pub fn js_rerun_code_cell(
+        &mut self,
+        sheet_id: String,
+        pos: String,
+        cursor: Option<String>,
+    ) -> Option<String> {
         if let Ok(pos) = serde_json::from_str::<Pos>(&pos) {
             if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
-                self.rerun_code_cell(pos.to_sheet_pos(sheet_id), cursor);
+                return Some(self.rerun_code_cell(pos.to_sheet_pos(sheet_id), cursor));
             }
         }
+        None
     }
 
     #[wasm_bindgen(js_name = "connectionComplete")]

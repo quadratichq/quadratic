@@ -1,4 +1,8 @@
-// convert columns to rows
+//! Array
+//!
+//! Functions to interact with arrays
+
+/// convert columns to rows
 pub fn transpose<T: Clone>(matrix: Vec<Vec<T>>) -> Vec<Vec<T>> {
     if matrix.is_empty() {
         return vec![];

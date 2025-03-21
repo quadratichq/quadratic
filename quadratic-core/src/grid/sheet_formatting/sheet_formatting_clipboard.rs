@@ -6,7 +6,12 @@ use crate::{
 
 use super::SheetFormatting;
 
+// todo: this is wrong. it does not properly handle infinite selections (it cuts
+// them off at the bounds of the sheet)
+
 impl SheetFormatting {
+    /// Returns a format update that applies the formatting to the cells in the
+    /// selection.
     pub fn to_clipboard(
         &self,
         sheet: &Sheet,

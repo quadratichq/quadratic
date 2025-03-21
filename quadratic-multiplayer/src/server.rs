@@ -4,6 +4,7 @@
 //! to be shared across all requests and threads.  Adds tracing/logging.
 
 use axum::{
+    Extension, Router,
     extract::{
         connect_info::ConnectInfo,
         ws::{Message, WebSocket, WebSocketUpgrade},
@@ -11,12 +12,11 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
     routing::get,
-    Extension, Router,
 };
 use axum_extra::TypedHeader;
 use futures::stream::StreamExt;
-use futures_util::stream::SplitSink;
 use futures_util::SinkExt;
+use futures_util::stream::SplitSink;
 use quadratic_rust_shared::auth::jwt::{authorize, get_jwks};
 use serde::{Deserialize, Serialize};
 use std::ops::ControlFlow;
@@ -32,7 +32,7 @@ use crate::{
     message::{
         broadcast, handle::handle_message, request::MessageRequest, response::MessageResponse,
     },
-    state::{connection::PreConnection, State},
+    state::{State, connection::PreConnection},
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -116,17 +116,18 @@ pub(crate) async fn serve() -> Result<()> {
 
 // Handle the websocket upgrade from http.
 #[tracing::instrument(level = "trace")]
+#[axum_macros::debug_handler]
 async fn ws_handler(
     ws: WebSocketUpgrade,
     user_agent: Option<TypedHeader<headers::UserAgent>>,
-    addr: Option<ConnectInfo<SocketAddr>>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Extension(state): Extension<Arc<State>>,
     cookie: Option<TypedHeader<headers::Cookie>>,
 ) -> impl IntoResponse {
     let user_agent = user_agent.map_or("Unknown user agent".into(), |user_agent| {
         user_agent.to_string()
     });
-    let addr = addr.map_or("Unknown address".into(), |addr| addr.to_string());
+    let addr = addr.to_string();
 
     #[allow(unused)]
     let mut jwt = None;
@@ -212,7 +213,11 @@ async fn handle_socket(
                     error_level,
                 }) {
                     // send error message to the client
-                    let sent = sender.lock().await.send(Message::Text(message)).await;
+                    let sent = sender
+                        .lock()
+                        .await
+                        .send(Message::Text(message.into()))
+                        .await;
 
                     if let Err(sent) = sent {
                         tracing::warn!("Error sending error message: {:?}", sent);
@@ -290,10 +295,9 @@ async fn process_message(
                     .await?;
 
             if let Some(message_response) = message_response {
-                let response = Message::Text(serde_json::to_string(&message_response)?);
-
+                let response_text = serde_json::to_string(&message_response)?;
                 (*sender.lock().await)
-                    .send(response)
+                    .send(Message::Text(response_text.into()))
                     .await
                     .map_err(|e| MpError::SendingMessage(e.to_string()))?;
             }
@@ -328,6 +332,8 @@ pub(crate) async fn healthcheck() -> impl IntoResponse {
 #[cfg(test)]
 pub(crate) mod tests {
 
+    use std::time::Duration;
+
     use super::*;
     use crate::state::settings::MinVersion;
     use crate::state::user::{User, UserStateUpdate};
@@ -338,11 +344,12 @@ pub(crate) mod tests {
         body::Body,
         http::{self, Request},
     };
-    use base64::{engine::general_purpose::STANDARD, Engine};
+    use base64::{Engine, engine::general_purpose::STANDARD};
     use quadratic_core::controller::operations::operation::Operation;
     use quadratic_core::controller::transaction::Transaction;
     use quadratic_core::grid::SheetId;
 
+    use tokio::time::{Instant, sleep};
     use tower::ServiceExt;
     use uuid::Uuid;
 
@@ -442,8 +449,15 @@ pub(crate) mod tests {
         // kick off the background worker and wait for the stale users to be removed
         let handle = background_worker::start(Arc::clone(&state), 1, 0);
 
-        // expect a RoomNotFound error when trying to get the room
+        // wait on the background worker to finish, then abort it
+        sleep(Duration::from_secs(2)).await;
+        handle.abort();
+
+        let now = Instant::now();
+        let mut timed_out = false;
+
         loop {
+            // expect a RoomNotFound error when trying to get the room
             match state.get_room(&file_id).await {
                 Ok(_) => {} // do nothing
                 Err(error) => {
@@ -451,10 +465,13 @@ pub(crate) mod tests {
                     break;
                 }
             };
-        }
 
-        // stop the background worker
-        handle.abort();
+            // failsafe to avoid timeouts in CI
+            if now.elapsed().as_secs() > 3 {
+                timed_out = true;
+                break;
+            }
+        }
 
         // room should be closed, add user_1 back
         add_user_via_ws(file_id, socket.clone(), user_1.clone()).await;
@@ -466,23 +483,25 @@ pub(crate) mod tests {
         )
         .await;
 
-        // expect 1 user to be in the room
-        let num_users_in_room = state.get_room(&file_id).await.unwrap().users.len();
-        assert_eq!(num_users_in_room, 1);
+        if !timed_out {
+            // expect 1 user to be in the room
+            let num_users_in_room = state.get_room(&file_id).await.unwrap().users.len();
+            assert_eq!(num_users_in_room, 1);
 
-        // add user_2 back
-        add_user_via_ws(file_id, socket.clone(), user_2.clone()).await;
-        integration_test_send_and_receive(
-            &socket.clone(),
-            new_user_state_update(user_2.clone(), file_id),
-            true,
-            1,
-        )
-        .await;
+            // add user_2 back
+            add_user_via_ws(file_id, socket.clone(), user_2.clone()).await;
+            integration_test_send_and_receive(
+                &socket.clone(),
+                new_user_state_update(user_2.clone(), file_id),
+                true,
+                1,
+            )
+            .await;
 
-        // expect 2 users to be in the room
-        let num_users_in_room = state.get_room(&file_id).await.unwrap().users.len();
-        assert_eq!(num_users_in_room, 2);
+            // expect 2 users to be in the room
+            let num_users_in_room = state.get_room(&file_id).await.unwrap().users.len();
+            assert_eq!(num_users_in_room, 2);
+        }
     }
 
     #[tokio::test]

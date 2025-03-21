@@ -1,8 +1,21 @@
 import type Anthropic from '@anthropic-ai/sdk';
-import type { MessageParam, TextBlockParam, Tool, ToolChoice } from '@anthropic-ai/sdk/resources';
+import type {
+  DocumentBlockParam,
+  ImageBlockParam,
+  MessageParam,
+  TextBlockParam,
+  Tool,
+  ToolChoice,
+} from '@anthropic-ai/sdk/resources';
 import type { Stream } from '@anthropic-ai/sdk/streaming';
 import type { Response } from 'express';
-import { getSystemPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import {
+  getSystemPromptMessages,
+  isContentImage,
+  isContentPdfFile,
+  isContentTextFile,
+  isToolResultMessage,
+} from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -14,10 +27,12 @@ import type {
   AnthropicModelKey,
   BedrockAnthropicModelKey,
   ParsedAIResponse,
+  VertexAIAnthropicModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 
 export function getAnthropicApiArgs(
   args: AIRequestHelperArgs,
+  promptCaching: boolean,
   thinking: boolean | undefined
 ): {
   system: TextBlockParam[] | undefined;
@@ -29,18 +44,12 @@ export function getAnthropicApiArgs(
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
 
-  // without prompt caching of system messages
+  let cacheRemaining = promptCaching ? 4 : 0;
   const system: TextBlockParam[] = systemMessages.map((message) => ({
     type: 'text' as const,
     text: message,
+    ...(cacheRemaining-- > 0 ? { cache_control: { type: 'ephemeral' } } : {}),
   }));
-
-  // with prompt caching of system messages
-  // const system: TextBlockParam[] = systemMessages.map((message, index) => ({
-  //   type: 'text' as const,
-  //   text: message,
-  //   ...(index < 4 ? { cache_control: { type: 'ephemeral' } } : {}),
-  // }));
 
   const messages: MessageParam[] = promptMessages.reduce<MessageParam[]>((acc, message) => {
     if (message.role === 'assistant' && message.contextType === 'userPrompt') {
@@ -82,26 +91,66 @@ export function getAnthropicApiArgs(
         ],
       };
       return [...acc, anthropicMessage];
-    } else if (message.role === 'user' && message.contextType === 'toolResult') {
+    } else if (isToolResultMessage(message)) {
       const anthropicMessages: MessageParam = {
         role: message.role,
         content: [
           ...message.content.map((toolResult) => ({
             type: 'tool_result' as const,
             tool_use_id: toolResult.id,
-            content: toolResult.content,
+            content: toolResult.text,
           })),
           {
             type: 'text' as const,
-            text: 'Given the above tool calls results, please provide your final answer to the user.',
+            text: 'Given the above tool calls results, continue with your response.',
           },
         ],
       };
       return [...acc, anthropicMessages];
-    } else if (message.content) {
+    } else if (message.content.length) {
       const anthropicMessage: MessageParam = {
         role: message.role,
-        content: message.content,
+        content: message.content.map((content) => {
+          if (isContentImage(content)) {
+            const imageBlockParam: ImageBlockParam = {
+              type: 'image' as const,
+              source: {
+                data: content.data,
+                media_type: content.mimeType,
+                type: 'base64' as const,
+              },
+            };
+            return imageBlockParam;
+          } else if (isContentPdfFile(content)) {
+            const documentBlockParam: DocumentBlockParam = {
+              type: 'document' as const,
+              source: {
+                data: content.data,
+                media_type: content.mimeType,
+                type: 'base64' as const,
+              },
+              title: content.fileName,
+            };
+            return documentBlockParam;
+          } else if (isContentTextFile(content)) {
+            const documentBlockParam: DocumentBlockParam = {
+              type: 'document' as const,
+              source: {
+                data: content.data,
+                media_type: content.mimeType,
+                type: 'text' as const,
+              },
+              title: content.fileName,
+            };
+            return documentBlockParam;
+          } else {
+            const textBlockParam: TextBlockParam = {
+              type: 'text' as const,
+              text: content.text,
+            };
+            return textBlockParam;
+          }
+        }),
       };
       return [...acc, anthropicMessage];
     } else {
@@ -138,15 +187,14 @@ function getAnthropicTools(source: AISource, toolName?: AITool): Tool[] | undefi
   return anthropicTools;
 }
 
-function getAnthropicToolChoice(toolName?: AITool): ToolChoice | undefined {
-  const toolChoice: ToolChoice = toolName === undefined ? { type: 'auto' } : { type: 'tool', name: toolName };
-  return toolChoice;
+function getAnthropicToolChoice(toolName?: AITool): ToolChoice {
+  return toolName === undefined ? { type: 'auto' } : { type: 'tool', name: toolName };
 }
 
 export async function parseAnthropicStream(
   chunks: Stream<Anthropic.Messages.RawMessageStreamEvent>,
   response: Response,
-  modelKey: BedrockAnthropicModelKey | AnthropicModelKey
+  modelKey: VertexAIAnthropicModelKey | BedrockAnthropicModelKey | AnthropicModelKey
 ): Promise<ParsedAIResponse> {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
@@ -300,7 +348,7 @@ export async function parseAnthropicStream(
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
     responseMessage.content.push({
       type: 'text',
-      text: "I'm sorry, I don't have a response for that.",
+      text: 'Please try again.',
     });
   }
 
@@ -322,7 +370,7 @@ export async function parseAnthropicStream(
 export function parseAnthropicResponse(
   result: Anthropic.Messages.Message,
   response: Response,
-  modelKey: BedrockAnthropicModelKey | AnthropicModelKey
+  modelKey: VertexAIAnthropicModelKey | BedrockAnthropicModelKey | AnthropicModelKey
 ): ParsedAIResponse {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
@@ -369,7 +417,7 @@ export function parseAnthropicResponse(
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
     responseMessage.content.push({
       type: 'text',
-      text: "I'm sorry, I don't have a response for that.",
+      text: 'Please try again.',
     });
   }
 

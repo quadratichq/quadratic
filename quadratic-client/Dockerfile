@@ -1,7 +1,7 @@
 ###########################################################################################
 # Builder 1 - Build core
 ###########################################################################################
-FROM node:18 AS core-builder
+FROM node:23 AS core-builder
 
 ARG CLIENT_DEV
 
@@ -44,7 +44,7 @@ RUN if [ "$CLIENT_DEV" = "true" ]; then \
 ###########################################################################################
 # Builder 2 - Build TS/Rust types
 ###########################################################################################
-FROM node:18 AS ts-rust-types-builder
+FROM node:23 AS ts-rust-types-builder
 
 # Install build-essential, llvm, and clang
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential llvm clang
@@ -81,7 +81,7 @@ RUN echo 'Building TS/Rust types...' && npm run export_types --workspace=quadrat
 ###########################################################################################
 # Builder 3 - Build rust client
 ###########################################################################################
-FROM node:18 AS rust-client-builder
+FROM node:23 AS rust-client-builder
 
 ARG CLIENT_DEV
 
@@ -127,7 +127,7 @@ RUN if [ "$CLIENT_DEV" = "true" ]; then \
 ###########################################################################################
 # Builder 4 - Combine all builder files and build the client
 ###########################################################################################
-FROM node:18 AS vite-builder
+FROM node:23 AS vite-builder
 
 WORKDIR /quadratic
 

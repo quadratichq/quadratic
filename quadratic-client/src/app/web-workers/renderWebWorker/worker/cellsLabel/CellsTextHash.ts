@@ -13,9 +13,9 @@ import { debugShowHashUpdates, debugShowLoadingHashes } from '@/app/debugFlags';
 import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
-import type { Link } from '@/app/gridGL/types/links';
-import type { DrawRects } from '@/app/gridGL/types/size';
 import type { JsCoordinate, JsRenderCell } from '@/app/quadratic-core-types';
+import type { Link } from '@/app/shared/types/links';
+import type { DrawRects } from '@/app/shared/types/size';
 import { CellLabel } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import type { CellsLabels } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsLabels';
 import { CellsTextHashContent } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashContent';
@@ -177,7 +177,7 @@ export class CellsTextHash {
     );
   };
 
-  update = async (): Promise<boolean> => {
+  update = async (isTransactionRunning: boolean, abortSignal?: AbortSignal): Promise<boolean> => {
     if (!this.loaded || this.dirty) {
       // If dirty is true, then we need to get the cells from the server; but we
       // need to keep open the case where we receive new cells after dirty is
@@ -187,13 +187,15 @@ export class CellsTextHash {
       this.dirty = false;
       let cells: JsRenderCell[] | false;
       if (!Array.isArray(dirty) && (!this.loaded || dirty === true)) {
+        if (isTransactionRunning) return false;
         try {
           cells = await renderCore.getRenderCells(
             this.cellsLabels.sheetId,
             this.AABB.x,
             this.AABB.y,
             this.AABB.width + 1,
-            this.AABB.height + 1
+            this.AABB.height + 1,
+            abortSignal
           );
           this.renderCellsReceivedTime = performance.now();
         } catch (e) {
@@ -476,7 +478,7 @@ export class CellsTextHash {
     if (!neighborRect) return this.columnsMaxCache ?? new Map();
     const visibleOrNeighbor = intersects.rectangleRectangle(this.viewRectangle, neighborRect);
     if (visibleOrNeighbor && (Array.isArray(this.dirty) || (this.loaded && !this.dirty && this.dirtyText))) {
-      await this.update();
+      await this.update(true);
     }
     return this.columnsMaxCache ?? new Map();
   };
@@ -491,7 +493,7 @@ export class CellsTextHash {
     if (!neighborRect) return this.rowsMaxCache ?? new Map();
     const visibleOrNeighbor = intersects.rectangleRectangle(this.viewRectangle, neighborRect);
     if (visibleOrNeighbor && (Array.isArray(this.dirty) || (this.loaded && !this.dirty && this.dirtyText))) {
-      await this.update();
+      await this.update(true);
     }
     return this.rowsMaxCache ?? new Map();
   };

@@ -7,8 +7,16 @@
  */
 
 import { debugShowCellHashesInfo } from '@/app/debugFlags';
-import type { JsOffset, JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import type {
+  JsOffset,
+  JsRenderCell,
+  JsRowHeight,
+  SheetBounds,
+  SheetInfo,
+  TransactionName,
+} from '@/app/quadratic-core-types';
 import init from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { TransactionInfo } from '@/app/shared/types/transactionInfo';
 import type { RenderBitmapFonts } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
 import { CellsLabels } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsLabels';
 import { renderClient } from '@/app/web-workers/renderWebWorker/worker/renderClient';
@@ -30,6 +38,9 @@ class RenderText {
     core: false,
   };
   private cellsLabels = new Map<string, CellsLabels>();
+
+  private transactions: TransactionInfo[] = [];
+  private abortController = new AbortController();
 
   bitmapFonts?: RenderBitmapFonts;
   viewport?: Rectangle;
@@ -90,7 +101,9 @@ class RenderText {
     let render = false;
     for (const sheetId of sheetIds) {
       const cellsLabel = this.cellsLabels.get(sheetId);
-      const result = await cellsLabel?.update();
+      const isTransactionRunning = this.transactions.length > 0;
+      this.abortController = new AbortController();
+      const result = await cellsLabel?.update(isTransactionRunning, this.abortController.signal);
       if (result) {
         // for first render, we render all the visible text before showing pixiApp
         if (result === 'visible') {
@@ -249,6 +262,18 @@ class RenderText {
   receiveViewportBuffer = (buffer: SharedArrayBuffer) => {
     this.viewportBuffer = buffer;
     this.updateViewportBuffer();
+  };
+
+  transactionStart = (transactionId: string, transactionName: TransactionName) => {
+    this.abortController.abort();
+    this.transactions = [
+      ...this.transactions.filter((t) => t.transactionId !== transactionId),
+      { transactionId, transactionName },
+    ];
+  };
+
+  transactionEnd = (transactionId: string, _transactionName: TransactionName) => {
+    this.transactions = this.transactions.filter((t) => t.transactionId !== transactionId);
   };
 }
 

@@ -15,8 +15,8 @@ import { keyboardSelect } from '@/app/gridGL/interaction/keyboard/keyboardSelect
 import { keyboardUndoRedo } from '@/app/gridGL/interaction/keyboard/keyboardUndoRedo';
 import { keyboardViewport } from '@/app/gridGL/interaction/keyboard/keyboardViewport';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { Size } from '@/app/gridGL/types/size';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
+import type { Size } from '@/app/shared/types/size';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 export interface IProps {

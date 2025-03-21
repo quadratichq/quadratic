@@ -9,10 +9,10 @@ use std::ops::Range;
 
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use smallvec::{smallvec, SmallVec};
+use smallvec::{SmallVec, smallvec};
 
 use super::block::{Block, BlockContent, SameValue};
-use crate::grid::block::{contiguous_optional_blocks, OptionBlock};
+use crate::grid::block::{OptionBlock, contiguous_optional_blocks};
 use crate::{CellValue, IsBlank};
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
@@ -182,18 +182,18 @@ impl<B: BlockContent> ColumnData<B> {
     pub fn blocks_of_range(&self, y_range: Range<i64>) -> impl Iterator<Item = Cow<'_, Block<B>>> {
         self.blocks_covering_range(y_range.clone())
             .with_position()
-            .filter_map(move |it| {
+            .filter_map(move |(it, block)| {
                 Some(match it {
-                    itertools::Position::First(block) => {
+                    itertools::Position::First => {
                         let [_, b] = block.clone().split(y_range.start);
                         Cow::Owned(b?)
                     }
-                    itertools::Position::Middle(block) => Cow::Borrowed(block),
-                    itertools::Position::Last(block) => {
+                    itertools::Position::Middle => Cow::Borrowed(block),
+                    itertools::Position::Last => {
                         let [a, _] = block.clone().split(y_range.end);
                         Cow::Owned(a?)
                     }
-                    itertools::Position::Only(block) => {
+                    itertools::Position::Only => {
                         let [_, b] = block.clone().split(y_range.start);
                         let [mid, _] = b?.split(y_range.end);
                         Cow::Owned(mid?)
@@ -205,23 +205,23 @@ impl<B: BlockContent> ColumnData<B> {
         let mut to_return = vec![];
         let mut to_put_back: SmallVec<[Block<B>; 2]> = smallvec![];
 
-        for it in self
+        for (it, block) in self
             .remove_blocks_covering_range(y_range.clone())
             .with_position()
         {
             match it {
-                itertools::Position::First(block) => {
+                itertools::Position::First => {
                     let [above, below] = block.split(y_range.start);
                     to_put_back.extend(above);
                     to_return.extend(below);
                 }
-                itertools::Position::Middle(block) => to_return.push(block),
-                itertools::Position::Last(block) => {
+                itertools::Position::Middle => to_return.push(block),
+                itertools::Position::Last => {
                     let [above, below] = block.split(y_range.end);
                     to_return.extend(above);
                     to_put_back.extend(below);
                 }
-                itertools::Position::Only(block) => {
+                itertools::Position::Only => {
                     let [above, rest] = block.split(y_range.start);
                     to_put_back.extend(above);
                     if let Some(rest) = rest {

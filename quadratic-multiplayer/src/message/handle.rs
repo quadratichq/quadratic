@@ -6,9 +6,9 @@
 //! to all users in a room.
 
 use axum::extract::ws::{Message, WebSocket};
-use base64::{engine::general_purpose::STANDARD, Engine};
+use base64::{Engine, engine::general_purpose::STANDARD};
 use futures_util::stream::SplitSink;
-use quadratic_rust_shared::quadratic_api::{get_file_perms, FilePermRole};
+use quadratic_rust_shared::quadratic_api::{FilePermRole, get_file_perms};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use uuid::Uuid;
@@ -24,10 +24,10 @@ use crate::permissions::{
     validate_user_can_edit_or_view_file,
 };
 use crate::state::{
+    State,
     connection::PreConnection,
     pubsub::GROUP_NAME,
     user::{User, UserState},
-    State,
 };
 
 /// Handle incoming messages.  All requests and responses are strictly typed.

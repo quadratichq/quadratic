@@ -1,4 +1,4 @@
-import type { SheetPosTS } from '@/app/gridGL/types/size';
+import type { SheetPosTS } from '@/app/shared/types/size';
 
 export interface CodeRun {
   transactionId: string;

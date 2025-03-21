@@ -1,9 +1,11 @@
+//! Storage code that implements the Storage trait
+
 use async_trait::async_trait;
 use bytes::Bytes;
 use file_system::FileSystemConfig;
 use s3::S3Config;
 
-use crate::{error::Result, storage::error::Storage as StorageError, SharedError};
+use crate::{SharedError, error::Result, storage::error::Storage as StorageError};
 
 pub mod error;
 pub mod file_system;

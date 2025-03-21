@@ -8,19 +8,8 @@ use crate::{
 };
 
 impl GridController {
-    pub fn delete_columns(
-        &mut self,
-        sheet_id: SheetId,
-        mut columns: Vec<i64>,
-        cursor: Option<String>,
-    ) {
-        columns.sort_unstable();
-        columns.dedup();
-        columns.reverse();
-        let ops = columns
-            .into_iter()
-            .map(|column| Operation::DeleteColumn { sheet_id, column })
-            .collect();
+    pub fn delete_columns(&mut self, sheet_id: SheetId, columns: Vec<i64>, cursor: Option<String>) {
+        let ops = vec![Operation::DeleteColumns { sheet_id, columns }];
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }
 
@@ -43,17 +32,8 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }
 
-    pub fn delete_rows(&mut self, sheet_id: SheetId, mut rows: Vec<i64>, cursor: Option<String>) {
-        rows.sort_unstable();
-        rows.dedup();
-        rows.reverse();
-        let ops = rows
-            .iter()
-            .map(|row| Operation::DeleteRow {
-                sheet_id,
-                row: *row,
-            })
-            .collect();
+    pub fn delete_rows(&mut self, sheet_id: SheetId, rows: Vec<i64>, cursor: Option<String>) {
+        let ops = vec![Operation::DeleteRows { sheet_id, rows }];
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }
 
@@ -66,6 +46,40 @@ impl GridController {
             } else {
                 CopyFormats::Before
             },
+        }];
+        self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
+    }
+
+    pub fn move_columns(
+        &mut self,
+        sheet_id: SheetId,
+        col_start: i64,
+        col_end: i64,
+        to: i64,
+        cursor: Option<String>,
+    ) {
+        let ops = vec![Operation::MoveColumns {
+            sheet_id,
+            col_start,
+            col_end,
+            to,
+        }];
+        self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
+    }
+
+    pub fn move_rows(
+        &mut self,
+        sheet_id: SheetId,
+        row_start: i64,
+        row_end: i64,
+        to: i64,
+        cursor: Option<String>,
+    ) {
+        let ops = vec![Operation::MoveRows {
+            sheet_id,
+            row_start,
+            row_end,
+            to,
         }];
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }

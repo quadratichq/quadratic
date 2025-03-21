@@ -18,9 +18,9 @@ export const AIAssistantUserMessageForm = memo(
         abortController={abortController}
         loading={loading}
         setLoading={setLoading}
-        submitPrompt={(prompt) => {
+        submitPrompt={(content) => {
           mixpanel.track('[AIAssistant].submitPrompt');
-          submitPrompt({ userPrompt: prompt, messageIndex: props.messageIndex });
+          submitPrompt({ content, messageIndex: props.messageIndex });
         }}
       />
     );

@@ -1,4 +1,4 @@
-use core::fmt;
+// use core::fmt;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -288,6 +288,14 @@ pub enum Operation {
     MoveCells {
         source: SheetRect,
         dest: SheetPos,
+
+        /// Move entire column and ignore rows.
+        #[serde(default)]
+        columns: bool,
+
+        /// Move entire rows and ignore columns.
+        #[serde(default)]
+        rows: bool,
     },
 
     /// Creates or updates a data validation rule.
@@ -327,349 +335,25 @@ pub enum Operation {
         row: i64,
         copy_formats: CopyFormats,
     },
-}
 
-// TODO: either remove this or add a comment explaining why it's better than the
-// debug impl.
-impl fmt::Display for Operation {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Operation::SetCellValues { values, .. } => {
-                write!(fmt, "SetCellValues {{ value count: {} }}", values.size())
-            }
-            Operation::ComputeCode { sheet_pos } => {
-                write!(fmt, "ComputeCode {{ sheet_pos: {} }}", sheet_pos)
-            }
-            Operation::SetDataTable {
-                sheet_pos,
-                data_table: run,
-                index,
-            } => write!(
-                fmt,
-                "SetDataTable {{ sheet_pos: {} data_table: {:?}, index: {} }}",
-                sheet_pos, run, index
-            ),
-            Operation::AddDataTable {
-                sheet_pos,
-                data_table,
-                cell_value,
-            } => write!(
-                fmt,
-                "AddDataTable {{ sheet_pos: {} data_table: {:?} cell_value: {:?} }}",
-                sheet_pos, data_table, cell_value
-            ),
-            Operation::DeleteDataTable { sheet_pos } => {
-                write!(fmt, "DeleteDataTable {{ sheet_pos: {} }}", sheet_pos)
-            }
-            Operation::SetCodeRun {
-                sheet_pos,
-                code_run: run,
-                index,
-            } => write!(
-                fmt,
-                "SetCellRun {{ sheet_pos: {} code_cell_value: {:?}, index: {} }}",
-                sheet_pos, run, index
-            ),
-            Operation::SetDataTableAt { sheet_pos, values } => write!(
-                fmt,
-                "SetDataTableAt {{ sheet_pos: {} values: {:?} }}",
-                sheet_pos, values
-            ),
-            Operation::FlattenDataTable { sheet_pos } => {
-                write!(fmt, "FlattenDataTable {{ sheet_pos: {} }}", sheet_pos)
-            }
-            Operation::SwitchDataTableKind {
-                sheet_pos,
-                kind,
-                value,
-            } => {
-                write!(
-                    fmt,
-                    "SwitchDataTableKind {{ sheet_pos: {}, kind: {}, value: {:?} }}",
-                    sheet_pos, kind, value
-                )
-            }
-            Operation::GridToDataTable { sheet_rect } => {
-                write!(fmt, "GridToDataTable {{ sheet_rect: {} }}", sheet_rect)
-            }
-            Operation::DataTableMeta {
-                sheet_pos,
-                name,
-                alternating_colors,
-                columns,
-                show_ui,
-                show_name,
-                show_columns,
-                readonly,
-            } => {
-                write!(
-                    fmt,
-                    "DataTableMeta {{ sheet_pos: {} name: {:?} alternating_colors: {:?} columns: {:?} show_ui: {:?} show_name: {:?} show_columns: {:?} readonly: {:?} }}",
-                    sheet_pos, name, alternating_colors, columns, show_ui, show_name, show_columns, readonly
-                )
-            }
-            Operation::DataTableFormats { sheet_pos, formats } => {
-                write!(
-                    fmt,
-                    "DataTableFormat {{ sheet_pos: {}, formats: {:?} }}",
-                    sheet_pos, formats
-                )
-            }
-            Operation::DataTableBorders { sheet_pos, borders } => {
-                write!(
-                    fmt,
-                    "DataTableBorders {{ sheet_pos: {}, borders: {:?} }}",
-                    sheet_pos, borders
-                )
-            }
-            Operation::SortDataTable {
-                sheet_pos,
-                sort,
-                display_buffer,
-            } => {
-                write!(
-                    fmt,
-                    "SortDataTable {{ sheet_pos: {}, sort: {:?} display_buffer: {:?} }}",
-                    sheet_pos, sort, display_buffer
-                )
-            }
-            Operation::DataTableFirstRowAsHeader {
-                sheet_pos,
-                first_row_is_header,
-            } => {
-                write!(
-                    fmt,
-                    "DataTableFirstRowAsHeader {{ sheet_pos: {}, first_row_is_header {} }}",
-                    sheet_pos, first_row_is_header
-                )
-            }
-            Operation::InsertDataTableColumns {
-                sheet_pos,
-                columns,
-                swallow,
-                select_table,
-            } => {
-                write!(
-                    fmt,
-                    "InsertDataTableColumns {{ sheet_pos: {}, columns: {:?}, swallow: {}, select_table: {} }}",
-                    sheet_pos, columns, swallow, select_table
-                )
-            }
-            Operation::DeleteDataTableColumns {
-                sheet_pos,
-                columns,
-                flatten,
-                select_table,
-            } => {
-                write!(
-                    fmt,
-                    "DeleteDataTableColumns {{ sheet_pos: {}, columns: {:?}, flatten: {}, select_table: {} }}",
-                    sheet_pos, columns, flatten, select_table
-                )
-            }
-            Operation::InsertDataTableRows {
-                sheet_pos,
-                rows,
-                swallow,
-                select_table,
-            } => {
-                write!(
-                    fmt,
-                    "InsertDataTableRows {{ sheet_pos: {}, rows: {:?}, swallow: {}, select_table: {} }}",
-                    sheet_pos, rows, swallow, select_table
-                )
-            }
-            Operation::DeleteDataTableRows {
-                sheet_pos,
-                rows,
-                flatten,
-                select_table,
-            } => {
-                write!(
-                    fmt,
-                    "DeleteDataTableRows {{ sheet_pos: {}, rows: {:?}, flatten: {}, select_table: {} }}",
-                    sheet_pos, rows, flatten, select_table
-                )
-            }
-            Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats - deprecated",),
-            Operation::SetCodeRunVersion {
-                sheet_pos,
-                code_run: run,
-                index,
-                version,
-            } => write!(
-                fmt,
-                "SetCellRun {{ sheet_pos: {} code_cell_value: {:?}, index: {} version: {} }}",
-                sheet_pos, run, index, version
-            ),
-            Operation::SetCellFormatsSelection { selection, formats } => {
-                write!(
-                    fmt,
-                    "SetCellFormatsSelection {{ selection: {:?}, formats: {:?} }}",
-                    selection, formats
-                )
-            }
-            Operation::SetCellFormatsA1 { sheet_id, formats } => {
-                write!(
-                    fmt,
-                    "SetCellFormatsA1 {{ sheet_id: {}, formats: {:?} }}",
-                    sheet_id, formats
-                )
-            }
-            Operation::AddSheet { sheet } => write!(fmt, "AddSheet {{ sheet: {} }}", sheet.name),
-            Operation::DeleteSheet { sheet_id } => {
-                write!(fmt, "DeleteSheet {{ sheet_id: {} }}", sheet_id)
-            }
-            Operation::SetSheetName { sheet_id, name } => {
-                write!(
-                    fmt,
-                    "SetSheetName {{ sheet_id: {}, name: {} }}",
-                    sheet_id, name
-                )
-            }
-            Operation::SetSheetColor { sheet_id, color } => write!(
-                fmt,
-                "SetSheetColor {{ sheet_id: {}, color: {:?} }}",
-                sheet_id, color
-            ),
-            Operation::ReorderSheet { target, order } => write!(
-                fmt,
-                "ReorderSheet {{ target: {}, order: {:?} }}",
-                target, order
-            ),
-            Operation::ResizeColumn {
-                sheet_id,
-                column,
-                new_size,
-                client_resized,
-            } => write!(
-                fmt,
-                "ResizeColumn {{ sheet_id: {}, column: {}, new_size: {}, client_resized: {} }}",
-                sheet_id, column, new_size, client_resized
-            ),
-            Operation::ResizeRow {
-                sheet_id,
-                row,
-                new_size,
-                client_resized,
-            } => write!(
-                fmt,
-                "ResizeRow {{ sheet_id: {}, row: {}, new_size: {}, client_resized: {} }}",
-                sheet_id, row, new_size, client_resized
-            ),
-            Operation::ResizeRows {
-                sheet_id,
-                row_heights,
-            } => write!(
-                fmt,
-                "ResizeRow {{ sheet_id: {}, row_heights: {:?} }}",
-                sheet_id, row_heights
-            ),
-            Operation::SetBorders { .. } => write!(fmt, "SetBorders {{ [deprecated] }}"),
-            Operation::SetBordersSelection { selection, borders } => write!(
-                fmt,
-                "SetBordersSelection {{ selection: {:?}, borders: {:?} }}",
-                selection, borders
-            ),
-            Operation::SetBordersA1 { sheet_id, borders } => write!(
-                fmt,
-                "SetBordersA1 {{ sheet_id: {:?}, borders: {:?} }}",
-                sheet_id, borders
-            ),
-            Operation::SetCursor { sheet_rect } => {
-                write!(fmt, "SetCursor {{ sheet_rect: {} }}", sheet_rect)
-            }
-            Operation::SetCursorSelection { selection } => {
-                write!(fmt, "SetCursorSelection {{ selection: {:?} }}", selection)
-            }
-            Operation::SetCursorA1 { selection } => {
-                write!(fmt, "SetCursorSelection {{ selection: {:?} }}", selection)
-            }
-            Operation::DuplicateSheet {
-                sheet_id,
-                new_sheet_id,
-            } => {
-                write!(
-                    fmt,
-                    "DuplicateSheet {{ sheet_id: {} new_sheet_id: {} }}",
-                    sheet_id, new_sheet_id
-                )
-            }
-            Operation::MoveCells { source, dest } => {
-                write!(fmt, "MoveCells {{ source: {} dest: {} }}", source, dest)
-            }
-            Operation::AddSheetSchema { schema } => {
-                write!(fmt, "AddSheetSchema {{ schema: {:?} }}", schema)
-            }
-            Operation::SetValidation { validation } => {
-                write!(fmt, "SetValidation {{ validation: {:?} }}", validation)
-            }
-            Operation::RemoveValidation {
-                sheet_id,
-                validation_id,
-            } => {
-                write!(
-                    fmt,
-                    "RemoveValidation {{ sheet_id: {}, validation_id: {} }}",
-                    sheet_id, validation_id
-                )
-            }
-            Operation::SetValidationWarning {
-                sheet_pos,
-                validation_id,
-            } => {
-                write!(
-                    fmt,
-                    "SetValidationWarning {{ sheet_pos: {:?}, validation_id: {:?} }}",
-                    sheet_pos, validation_id
-                )
-            }
-            Operation::DeleteColumn { sheet_id, column } => {
-                write!(
-                    fmt,
-                    "DeleteColumn {{ sheet_id: {}, column: {} }}",
-                    sheet_id, column
-                )
-            }
-            Operation::DeleteRow { sheet_id, row } => {
-                write!(fmt, "DeleteRow {{ sheet_id: {}, row: {} }}", sheet_id, row)
-            }
-            Operation::InsertColumn {
-                sheet_id,
-                column,
-                copy_formats,
-            } => {
-                write!(
-                    fmt,
-                    "InsertColumn {{ sheet_id: {sheet_id}, column: {column}, copy_formats: {copy_formats:?} }}"
-                )
-            }
-            Operation::InsertRow {
-                sheet_id,
-                row,
-                copy_formats,
-            } => {
-                write!(
-                    fmt,
-                    "InsertRow {{ sheet_id: {sheet_id}, row: {row}, copy_formats: {copy_formats:?} }}"
-                )
-            }
-            Operation::SetChartSize {
-                sheet_pos,
-                pixel_width,
-                pixel_height,
-            } => write!(
-                fmt,
-                "SetChartSize {{ sheet_pos: {}, pixel_width: {}, pixel_height: {} }}",
-                sheet_pos, pixel_width, pixel_height
-            ),
-            Operation::SetChartCellSize { sheet_pos, w, h } => {
-                write!(
-                    fmt,
-                    "SetChartCellSize {{ sheet_pos: {}, w: {}, h: {} }}",
-                    sheet_pos, w, h
-                )
-            }
-        }
-    }
+    MoveColumns {
+        sheet_id: SheetId,
+        col_start: i64,
+        col_end: i64,
+        to: i64,
+    },
+    MoveRows {
+        sheet_id: SheetId,
+        row_start: i64,
+        row_end: i64,
+        to: i64,
+    },
+    DeleteColumns {
+        sheet_id: SheetId,
+        columns: Vec<i64>,
+    },
+    DeleteRows {
+        sheet_id: SheetId,
+        rows: Vec<i64>,
+    },
 }

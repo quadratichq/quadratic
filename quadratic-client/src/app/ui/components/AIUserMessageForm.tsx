@@ -3,6 +3,7 @@ import {
   editorInteractionStateSettingsAtom,
   editorInteractionStateTeamUuidAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
+import { debug } from '@/app/debugFlags';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { AIAnalystContext } from '@/app/ui/menus/AIAnalyst/AIAnalystContext';
@@ -13,15 +14,27 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import type { Context } from 'quadratic-shared/typesAndSchemasAI';
-import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { isSupportedMimeType } from 'quadratic-shared/ai/helpers/files.helper';
+import type { Content, Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
+import {
+  forwardRef,
+  memo,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  type ClipboardEvent,
+  type DragEvent,
+} from 'react';
 import type { SetterOrUpdater } from 'recoil';
 import { useRecoilValue } from 'recoil';
 
 export type AIUserMessageFormWrapperProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
   autoFocusRef?: React.RefObject<boolean>;
-  initialPrompt?: string;
+  initialContent?: Content;
   messageIndex?: number;
 };
 
@@ -29,7 +42,7 @@ type Props = Omit<AIUserMessageFormWrapperProps, 'messageIndex'> & {
   abortController: AbortController | undefined;
   loading: boolean;
   setLoading: SetterOrUpdater<boolean>;
-  submitPrompt: (prompt: string) => void;
+  submitPrompt: (content: Content) => void;
   formOnKeyDown?: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   maxHeight?: string;
   ctx?: {
@@ -42,7 +55,7 @@ type Props = Omit<AIUserMessageFormWrapperProps, 'messageIndex'> & {
 export const AIUserMessageForm = memo(
   forwardRef<HTMLTextAreaElement, Props>((props: Props, ref) => {
     const {
-      initialPrompt,
+      initialContent,
       ctx,
       autoFocusRef,
       textareaRef: bottomTextareaRef,
@@ -54,13 +67,51 @@ export const AIUserMessageForm = memo(
       maxHeight = '120px',
     } = props;
 
-    const [editing, setEditing] = useState(!initialPrompt);
-    const [prompt, setPrompt] = useState(initialPrompt ?? '');
+    const [editing, setEditing] = useState(!initialContent?.length);
+
+    const initialFiles = useMemo(() => initialContent?.filter((item) => item.type !== 'text'), [initialContent]);
+    const [files, setFiles] = useState<FileContent[]>(initialFiles ?? []);
+
+    const initialPrompt = useMemo(
+      () =>
+        initialContent
+          ?.filter((item) => item.type === 'text')
+          .map((item) => item.text)
+          .join('\n'),
+      [initialContent]
+    );
+    const [prompt, setPrompt] = useState<string>(initialPrompt ?? '');
+
+    const submit = useCallback(() => {
+      submitPrompt([...files, { type: 'text', text: prompt }]);
+    }, [files, prompt, submitPrompt]);
 
     const abortPrompt = useCallback(() => {
       abortController?.abort();
       setLoading(false);
     }, [abortController, setLoading]);
+
+    const handleFiles = useCallback((e: ClipboardEvent<HTMLFormElement> | DragEvent<HTMLFormElement>) => {
+      if (!debug) return;
+
+      const files = 'clipboardData' in e ? e.clipboardData.files : 'dataTransfer' in e ? e.dataTransfer.files : [];
+      if (files && files.length > 0) {
+        e.preventDefault();
+
+        for (const file of files) {
+          const mimeType = file.type;
+          if (isSupportedMimeType(mimeType)) {
+            const reader = new FileReader();
+            reader.onloadend = (e) => {
+              const dataUrl = e.target?.result as string;
+              const base64 = dataUrl.split(',')[1];
+              setFiles((prev) => [...prev, { type: 'data', data: base64, mimeType, fileName: file.name }]);
+            };
+            reader.readAsDataURL(file);
+          }
+        }
+      }
+    }, []);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     useImperativeHandle(ref, () => textareaRef.current!);
@@ -73,10 +124,10 @@ export const AIUserMessageForm = memo(
     }, [autoFocusRef, textareaRef]);
 
     useEffect(() => {
-      if (loading && initialPrompt !== undefined) {
+      if (loading && initialContent !== undefined) {
         setEditing(false);
       }
-    }, [loading, initialPrompt]);
+    }, [loading, initialContent]);
 
     return (
       <form
@@ -87,6 +138,8 @@ export const AIUserMessageForm = memo(
             textareaRef.current?.focus();
           }
         }}
+        onPaste={handleFiles}
+        onDrop={handleFiles}
       >
         {!editing && !loading && (
           <TooltipPopover label="Edit">
@@ -106,8 +159,18 @@ export const AIUserMessageForm = memo(
           </TooltipPopover>
         )}
 
-        {ctx && <AIAnalystContext {...ctx} editing={editing} disabled={!editing} textAreaRef={textareaRef} />}
-
+        {ctx && (
+          <AIAnalystContext
+            initialContext={ctx.initialContext}
+            context={ctx.context}
+            setContext={ctx.setContext}
+            files={files}
+            setFiles={setFiles}
+            editing={editing}
+            disabled={!editing}
+            textAreaRef={textareaRef}
+          />
+        )}
         {editing ? (
           <Textarea
             ref={textareaRef}
@@ -126,9 +189,10 @@ export const AIUserMessageForm = memo(
 
                 if (prompt.trim().length === 0) return;
 
-                submitPrompt(prompt);
+                submit();
 
                 if (initialPrompt === undefined) {
+                  setFiles([]);
                   setPrompt('');
                   textareaRef.current?.focus();
                 } else {
@@ -178,7 +242,7 @@ export const AIUserMessageForm = memo(
                     className="rounded-full"
                     onClick={(e) => {
                       e.stopPropagation();
-                      submitPrompt(prompt);
+                      submit();
                     }}
                     disabled={prompt.length === 0 || loading}
                   >

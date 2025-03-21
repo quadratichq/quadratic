@@ -3,7 +3,7 @@ use lexicon_fractional_index::key_between;
 
 use crate::{
     controller::GridController,
-    grid::{file::sheet_schema::export_sheet, Sheet, SheetId},
+    grid::{Sheet, SheetId, file::sheet_schema::export_sheet},
     util,
 };
 
@@ -65,10 +65,10 @@ impl GridController {
 
         let order = if let Some(to_before) = to_before {
             let before = self.grid.previous_sheet_order(to_before.id);
-            key_between(&before, &Some(to_before.order.clone())).unwrap()
+            key_between(before.as_deref(), Some(&to_before.order)).unwrap()
         } else {
             let last_order = self.grid.sheets().last().map(|last| last.order.clone());
-            key_between(&last_order, &None).unwrap()
+            key_between(last_order.as_deref(), None).unwrap()
         };
 
         vec![Operation::ReorderSheet {
@@ -96,7 +96,7 @@ impl GridController {
             .grid
             .next_sheet(sheet_id)
             .map(|right| right.order.clone());
-        if let Ok(order) = key_between(&Some(sheet.order.clone()), &right_order) {
+        if let Ok(order) = key_between(Some(&sheet.order.clone()), right_order.as_deref()) {
             new_sheet.order = order;
         };
 
@@ -138,8 +138,8 @@ mod test {
         if let Operation::ReorderSheet { target, order } = &ops[0] {
             assert_eq!(target, &sheet_ids[0]);
             let key = key_between(
-                &Some(gc.sheet_index(0).order.clone()),
-                &Some(gc.sheet_index(1).order.clone()),
+                Some(&gc.sheet_index(0).order.clone()),
+                Some(&gc.sheet_index(1).order.clone()),
             )
             .unwrap();
             assert_eq!(order, &key);
@@ -152,7 +152,7 @@ mod test {
         assert_eq!(ops.len(), 1);
         if let Operation::ReorderSheet { target, order } = &ops[0] {
             assert_eq!(target, &sheet_ids[2]);
-            let key = key_between(&None, &Some(gc.sheet_index(0).order.clone())).unwrap();
+            let key = key_between(None, Some(&gc.sheet_index(0).order.clone())).unwrap();
             assert_eq!(order, &key);
         } else {
             panic!("wrong operation type");
@@ -163,7 +163,7 @@ mod test {
         assert_eq!(ops.len(), 1);
         if let Operation::ReorderSheet { target, order } = &ops[0] {
             assert_eq!(target, &sheet_ids[1]);
-            let key = key_between(&Some(gc.sheet_index(2).order.clone()), &None).unwrap();
+            let key = key_between(Some(&gc.sheet_index(2).order.clone()), None).unwrap();
             assert_eq!(order, &key);
         } else {
             panic!("wrong operation type");

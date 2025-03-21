@@ -1,3 +1,5 @@
+//! Shared functions related to the environment
+
 use serde::Deserialize;
 use strum_macros::Display;
 

@@ -1,3 +1,4 @@
+import { editorInteractionStateTransactionsInfoAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { usePythonState } from '@/app/atoms/usePythonState';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -5,6 +6,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { TransactionInfo } from '@/app/shared/types/transactionInfo';
 import { colors } from '@/app/theme/colors';
 import { SidebarToggle, SidebarTooltip } from '@/app/ui/QuadraticSidebar';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
@@ -22,12 +24,34 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Tooltip, TooltipContent } from '@/shared/shadcn/ui/tooltip';
+import { cn } from '@/shared/shadcn/utils';
 import StopIcon from '@mui/icons-material/Stop';
 import { TooltipTrigger } from '@radix-ui/react-tooltip';
 import { useEffect, useState } from 'react';
+import { useRecoilState } from 'recoil';
 
 // Update the KernelMenu component to accept a custom trigger
 export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) => {
+  const [transactionsInfo, setTransactionsInfo] = useRecoilState(editorInteractionStateTransactionsInfoAtom);
+  useEffect(() => {
+    const handleTransactionStart = (transaction: TransactionInfo) => {
+      setTransactionsInfo((prev) => [
+        ...prev.filter((t) => t.transactionId !== transaction.transactionId),
+        transaction,
+      ]);
+    };
+    events.on('transactionStart', handleTransactionStart);
+
+    const handleTransactionEnd = (transaction: TransactionInfo) => {
+      setTransactionsInfo((prev) => prev.filter((t) => t.transactionId !== transaction.transactionId));
+    };
+    events.on('transactionEnd', handleTransactionEnd);
+    return () => {
+      events.off('transactionStart', handleTransactionStart);
+      events.off('transactionEnd', handleTransactionEnd);
+    };
+  }, [setTransactionsInfo]);
+
   const [disableRunCodeCell, setDisableRunCodeCell] = useState(true);
   useEffect(() => {
     const checkRunCodeCell = () => setDisableRunCodeCell(!pixiApp.isCursorOnCodeCell());
@@ -85,9 +109,14 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
         <DropdownMenuTrigger asChild>
           <SidebarToggle>
             {triggerIcon}
-            {running > 0 && (
-              <div className="pointer-events-none absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-warning text-[10px] text-background">
-                {running}
+            {transactionsInfo.length > 0 && (
+              <div
+                className={cn(
+                  'pointer-events-none absolute flex h-4 w-4 items-center justify-center rounded-full bg-warning text-[10px] text-background',
+                  running ? 'right-0 top-0 h-4 w-4' : 'right-1 top-1 h-2 w-2'
+                )}
+              >
+                {running || ''}
               </div>
             )}
           </SidebarToggle>

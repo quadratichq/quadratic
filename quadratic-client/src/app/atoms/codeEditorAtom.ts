@@ -1,7 +1,7 @@
 import { events } from '@/app/events/events';
-import type { CodeCell } from '@/app/gridGL/types/codeCell';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import type { JsCellsAccessed, JsCoordinate } from '@/app/quadratic-core-types';
+import type { CodeCell } from '@/app/shared/types/codeCell';
 import type { PanelTab } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
 import type { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';

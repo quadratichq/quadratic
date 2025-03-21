@@ -309,7 +309,7 @@ export class CellsLabels {
   // Finds the next dirty hash to render. Also handles unloading of hashes.
   // Note: once the memory limit is reached, the algorithm unloads enough cell hashes
   // until the memory maximum is no longer exceeded.
-  private nextDirtyHash(): { hash: CellsTextHash; visible: boolean } | undefined {
+  private nextDirtyHash(isTransactionRunning: boolean): { hash: CellsTextHash; visible: boolean } | undefined {
     let memory = this.totalMemory();
     let findHashToDelete = memory > MAX_RENDERING_MEMORY;
 
@@ -364,13 +364,13 @@ export class CellsLabels {
         console.log(`[CellsTextHash] rendering hash with render cells: ${hash.hashX}, ${hash.hashY}`);
       }
       return { hash, visible: true };
-    } else if (visibleDirtyHashes.length) {
+    } else if (!isTransactionRunning && visibleDirtyHashes.length) {
       const hash = visibleDirtyHashes[0];
       if (debugShowLoadingHashes) {
         console.log(`[CellsTextHash] rendering visible: ${hash.hashX}, ${hash.hashY}`);
       }
       return { hash, visible: true };
-    } else if (notVisibleDirtyHashes.length) {
+    } else if (!isTransactionRunning && notVisibleDirtyHashes.length) {
       const hash = notVisibleDirtyHashes[0].hash;
       if (debugShowLoadingHashes) {
         console.log(`[CellsTextHash] rendering offscreen: ${hash.hashX}, ${hash.hashY}`);
@@ -385,12 +385,15 @@ export class CellsLabels {
     return total;
   }
 
-  update = async (): Promise<boolean | 'headings' | 'visible'> => {
+  update = async (
+    isTransactionRunning: boolean,
+    abortSignal?: AbortSignal
+  ): Promise<boolean | 'headings' | 'visible'> => {
     if (this.updateHeadings()) return 'headings';
 
-    const next = this.nextDirtyHash();
+    const next = this.nextDirtyHash(isTransactionRunning);
     if (next) {
-      await next.hash.update();
+      await next.hash.update(isTransactionRunning, abortSignal);
       const neighborRect = this.getViewportNeighborBounds();
       if (neighborRect && !intersects.rectangleRectangle(next.hash.viewRectangle, neighborRect)) {
         next.hash.unload();
@@ -549,7 +552,7 @@ export class CellsLabels {
   }
 
   async getRowHeights(rows: bigint[]): Promise<JsRowHeight[]> {
-    await this.update();
+    await this.update(true);
     const rowHeights = new Map<number, number>();
     const promises: Promise<void>[] = [];
     const hashYs = new Set<number>(rows.map((row) => Math.floor(Number(row) / sheetHashHeight)));

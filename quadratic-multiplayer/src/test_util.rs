@@ -1,12 +1,12 @@
+use fake::Fake;
 use fake::faker::filesystem::en::FilePath;
 use fake::faker::internet::en::FreeEmail;
 use fake::faker::name::en::{FirstName, LastName};
-use fake::Fake;
 use futures::stream::StreamExt;
 use futures_util::SinkExt;
 use quadratic_core::cell_values::CellValues;
-use quadratic_core::controller::operations::operation::Operation;
 use quadratic_core::controller::GridController;
+use quadratic_core::controller::operations::operation::Operation;
 use quadratic_core::{CellValue, SheetPos};
 use quadratic_rust_shared::quadratic_api::FilePermRole;
 use std::sync::Arc;
@@ -16,15 +16,15 @@ use std::{
 };
 use tokio::net::TcpStream;
 use tokio::sync::Mutex;
-use tokio_tungstenite::{tungstenite, MaybeTlsStream, WebSocketStream};
+use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, tungstenite};
 use uuid::Uuid;
 
 use crate::config::config;
 use crate::message::request::MessageRequest;
 use crate::message::response::MessageResponse;
+use crate::state::State;
 use crate::state::connection::PreConnection;
 use crate::state::user::{CellEdit, User, UserState};
-use crate::state::State;
 
 pub(crate) const TOKEN: &str = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjFaNTdkX2k3VEU2S1RZNTdwS3pEeSJ9.eyJpc3MiOiJodHRwczovL2Rldi1kdXp5YXlrNC5ldS5hdXRoMC5jb20vIiwic3ViIjoiNDNxbW44c281R3VFU0U1N0Fkb3BhN09jYTZXeVNidmRAY2xpZW50cyIsImF1ZCI6Imh0dHBzOi8vZGV2LWR1enlheWs0LmV1LmF1dGgwLmNvbS9hcGkvdjIvIiwiaWF0IjoxNjIzNTg1MzAxLCJleHAiOjE2MjM2NzE3MDEsImF6cCI6IjQzcW1uOHNvNUd1RVNFNTdBZG9wYTdPY2E2V3lTYnZkIiwic2NvcGUiOiJyZWFkOnVzZXJzIiwiZ3R5IjoiY2xpZW50LWNyZWRlbnRpYWxzIn0.0MpewU1GgvRqn4F8fK_-Eu70cUgWA5JJrdbJhkCPCxXP-8WwfI-qx1ZQg2a7nbjXICYAEl-Z6z4opgy-H5fn35wGP0wywDqZpqL35IPqx6d0wRvpPMjJM75zVXuIjk7cEhDr2kaf1LOY9auWUwGzPiDB_wM-R0uvUMeRPMfrHaVN73xhAuQWVjCRBHvNscYS5-i6qBQKDMsql87dwR72DgHzMlaC8NnaGREBC-xiSamesqhKPVyGzSkFSaF3ZKpGrSDapqmHkNW9RDBE3GQ9OHM33vzUdVKOjU1g9Leb9PDt0o1U4p3NQoGJPShQ6zgWSUEaqvUZTfkbpD_DoYDRxA";
 pub static GROUP_NAME_TEST: &str = "quadratic-multiplayer-test-1";
@@ -194,6 +194,7 @@ pub(crate) fn operation(grid: &mut GridController, x: i64, y: i64, value: &str) 
 /// - Runs the app in a separate thread
 /// - Connects to the app via WebSocket
 /// - Returns a reference to the user's `receiver` WebSocket
+///
 pub(crate) async fn integration_test_setup(
     state: Arc<State>,
 ) -> WebSocketStream<MaybeTlsStream<TcpStream>> {
@@ -203,7 +204,13 @@ pub(crate) async fn integration_test_setup(
     let addr = listener.local_addr().unwrap();
 
     // run the server in a separate thread
-    tokio::spawn(axum::serve(listener, crate::server::app(state)).into_future());
+    tokio::spawn(
+        axum::serve(
+            listener,
+            crate::server::app(state).into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .into_future(),
+    );
 
     let (socket, _response) = tokio_tungstenite::connect_async(format!("ws://{addr}/ws"))
         .await

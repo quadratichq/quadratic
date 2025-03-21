@@ -10,6 +10,7 @@ import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
 import { AIAssistantUserMessageForm } from '@/app/ui/menus/CodeEditor/AIAssistant/AIAssistantUserMessageForm';
 import { AICodeBlockParser } from '@/app/ui/menus/CodeEditor/AIAssistant/AICodeBlockParser';
 import { cn } from '@/shared/shadcn/utils';
+import { isToolResultMessage } from 'quadratic-shared/ai/helpers/message.helper';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -114,14 +115,12 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
           >
             {message.role === 'user' && message.contextType === 'userPrompt' ? (
               <AIAssistantUserMessageForm
-                initialPrompt={message.content}
+                initialContent={message.content}
                 messageIndex={index}
                 textareaRef={textareaRef}
               />
-            ) : message.role === 'user' && message.contextType === 'toolResult' ? (
-              message.content.map((messageContent) => (
-                <Markdown key={messageContent.content}>{messageContent.content}</Markdown>
-              ))
+            ) : isToolResultMessage(message) ? (
+              message.content.map(({ text }) => <Markdown key={text}>{text}</Markdown>)
             ) : (
               <>
                 {message.content && Array.isArray(message.content) ? (
@@ -145,9 +144,9 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
                 )}
 
                 {message.contextType === 'userPrompt' &&
-                  message.toolCalls.map((toolCall) => (
+                  message.toolCalls.map((toolCall, index) => (
                     <AIAnalystToolCard
-                      key={toolCall.id}
+                      key={`${index}-${toolCall.id}-${toolCall.arguments}`}
                       name={toolCall.name}
                       args={toolCall.arguments}
                       loading={toolCall.loading}

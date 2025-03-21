@@ -1,3 +1,7 @@
+//! Microsoft SQL Server
+//!
+//! Functions to interact with Microsoft SQL Server
+
 use std::collections::BTreeMap;
 use std::str::FromStr;
 
@@ -9,8 +13,8 @@ use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use futures_util::{StreamExt, TryStreamExt};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
-use tiberius::xml::XmlData;
 use tiberius::ColumnData;
+use tiberius::xml::XmlData;
 use tiberius::{AuthMethod, Client, Column, Config, FromSql, FromSqlOwned, Row};
 use tokio::net::TcpStream;
 use tokio_util::compat::{Compat, TokioAsyncWriteCompatExt};
@@ -18,10 +22,11 @@ use uuid::Uuid;
 
 use crate::arrow::arrow_type::ArrowType;
 use crate::error::{Result, SharedError};
+use crate::sql::Connection;
 use crate::sql::error::Sql as SqlError;
 use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
-use crate::sql::Connection;
 
+/// Microsoft SQL Server connection
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MsSqlConnection {
     pub username: Option<String>,
@@ -32,6 +37,7 @@ pub struct MsSqlConnection {
 }
 
 impl MsSqlConnection {
+    /// Create a new Microsoft SQL Server connection
     pub fn new(
         username: Option<String>,
         password: Option<String>,
@@ -48,6 +54,7 @@ impl MsSqlConnection {
         }
     }
 
+    /// Query all rows from a SQL Server
     async fn query_all(client: &mut Client<Compat<TcpStream>>, sql: &str) -> Result<Vec<Row>> {
         let mut rows = vec![];
         let mut row_stream = client
@@ -73,18 +80,22 @@ impl Connection for MsSqlConnection {
     type Row = Row;
     type Column = Column;
 
+    /// Get the length of a row
     fn row_len(row: &Self::Row) -> usize {
         row.len()
     }
 
+    /// Get the columns of a row
     fn row_columns(row: &Self::Row) -> Box<dyn Iterator<Item = &Self::Column> + '_> {
         Box::new(row.columns().iter())
     }
 
+    /// Get the name of a column
     fn column_name(col: &Self::Column) -> &str {
         col.name()
     }
 
+    /// Connect to a SQL Server
     async fn connect(&self) -> Result<Client<Compat<TcpStream>>> {
         let mut config = Config::new();
         config.host(&self.host);
@@ -125,6 +136,7 @@ impl Connection for MsSqlConnection {
         Ok(client)
     }
 
+    /// Query rows from a SQL Server
     async fn query(
         &self,
         client: &mut Self::Conn,
@@ -167,6 +179,7 @@ impl Connection for MsSqlConnection {
         Ok((bytes, over_the_limit, num_records))
     }
 
+    /// Get the schema of a SQL Server
     async fn schema(&self, client: &mut Self::Conn) -> Result<DatabaseSchema> {
         let database = self.database.to_owned();
         let sql = format!(
@@ -230,6 +243,7 @@ ORDER BY
         Ok(schema)
     }
 
+    /// Convert a row to an Arrow type
     fn to_arrow(row: &tiberius::Row, _: &tiberius::Column, index: usize) -> ArrowType {
         if let Some((_, column_data)) = row.cells().nth(index) {
             match column_data {
@@ -288,6 +302,7 @@ ORDER BY
     }
 }
 
+/// Convert a column data to an Arrow type using a function to map the data to an Arrow type
 fn convert_mssql_type<'a, T, F>(
     column_data: &'a ColumnData<'static>,
     map_to_arrow_type: F,
@@ -303,6 +318,7 @@ where
         .unwrap_or(ArrowType::Void)
 }
 
+/// Convert a column data to an Arrow type using a function to map the data to an Arrow type
 fn convert_mssql_type_owned<T, F>(
     column_data: ColumnData<'static>,
     map_to_arrow_type: F,

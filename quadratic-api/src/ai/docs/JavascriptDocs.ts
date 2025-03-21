@@ -398,4 +398,9 @@ const output = net.run([1, 0]); // [0.987]
 
 return output[0]
 \`\`\`
+
+# File imports and exports
+JavaScript can not be used to import files like .xlsx or .csv. Users should import those files directly to Quadratic by drag and dropping them directly into the sheet. They can then be read into JavaScript with q.cells(). JavaScript can not be used to import files (.xlsx, .csv, .pqt, etc).
+
+JavaScript can also not be used to export/download data as various file types. To download data from Quadratic highlight the data you'd like to download, right click, and select the "Download as CSV" button.
 `;

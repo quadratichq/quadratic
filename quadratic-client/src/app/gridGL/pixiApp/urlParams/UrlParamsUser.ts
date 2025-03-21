@@ -80,7 +80,7 @@ export class UrlParamsUser {
     }
 
     submitAIAnalystPrompt({
-      userPrompt: prompt,
+      content: [{ type: 'text', text: prompt }],
       context: {
         sheets: [],
         currentSheet: sheets.sheet.name,

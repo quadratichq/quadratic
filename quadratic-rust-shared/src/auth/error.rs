@@ -1,3 +1,8 @@
+//! Error Handling for Auth
+//!
+//! Define errors used in the module.
+//! Convert third party crate errors to application errors.
+
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 

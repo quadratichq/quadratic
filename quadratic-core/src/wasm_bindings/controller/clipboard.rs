@@ -70,11 +70,13 @@ impl GridController {
         &mut self,
         source: String,
         dest: String,
+        columns: bool,
+        rows: bool,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let source = SheetRect::from_str(&source)?;
         let dest = SheetPos::from_str(&dest)?;
-        self.move_cells(source, dest, cursor);
+        self.move_cells(source, dest, columns, rows, cursor);
         Ok(())
     }
 

@@ -1,5 +1,7 @@
+//! Interacting with the Quadratic API
+
 use reqwest::{RequestBuilder, Response, StatusCode};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use strum_macros::Display;
 use uuid::Uuid;
 
@@ -209,9 +211,11 @@ pub mod tests {
     #[tokio::test]
     async fn test_file_perms_parse() {
         let perms = serde_json::from_str::<FilePermsPayload>(PERMS).unwrap();
-        assert!(perms
-            .user_making_request
-            .file_permissions
-            .contains(&FilePermRole::FileView));
+        assert!(
+            perms
+                .user_making_request
+                .file_permissions
+                .contains(&FilePermRole::FileView)
+        );
     }
 }

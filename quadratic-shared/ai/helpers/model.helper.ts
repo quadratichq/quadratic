@@ -7,12 +7,14 @@ import type {
   BedrockModelKey,
   ModelKey,
   OpenAIModelKey,
+  VertexAIAnthropicModelKey,
+  VertexAIModelKey,
   XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { aiToolsSpec } from '../specs/aiToolsSpec';
 
-export function isBedrockModel(modelKey: ModelKey): modelKey is BedrockModelKey {
-  return MODELS_CONFIGURATION[modelKey].provider === 'bedrock';
+export function isVertexAIAnthropicModel(modelKey: ModelKey): modelKey is VertexAIAnthropicModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'vertexai-anthropic';
 }
 
 export function isBedrockAnthropicModel(modelKey: ModelKey): modelKey is BedrockAnthropicModelKey {
@@ -31,6 +33,14 @@ export function isOpenAIModel(modelKey: ModelKey): modelKey is OpenAIModelKey {
   return MODELS_CONFIGURATION[modelKey].provider === 'openai';
 }
 
+export function isVertexAIModel(modelKey: ModelKey): modelKey is VertexAIModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'vertexai';
+}
+
+export function isBedrockModel(modelKey: ModelKey): modelKey is BedrockModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'bedrock';
+}
+
 export const getModelFromModelKey = (modelKey: ModelKey): AIModel => {
   return MODELS_CONFIGURATION[modelKey].model;
 };
@@ -43,7 +53,8 @@ export const getModelOptions = (
   temperature: number;
   max_tokens: number;
   thinking?: boolean;
-  strickParams: boolean;
+  promptCaching: boolean;
+  strictParams: boolean;
 } => {
   const config = MODELS_CONFIGURATION[modelKey];
   const { canStream, canStreamWithToolCalls, max_tokens } = config;
@@ -60,7 +71,9 @@ export const getModelOptions = (
 
   const temperature = thinking ? config.thinkingTemperature ?? config.temperature : config.temperature;
 
-  const strickParams = !!config.strickParams;
+  const promptCaching = config.promptCaching;
 
-  return { stream, temperature, max_tokens, thinking, strickParams };
+  const strictParams = !!config.strictParams;
+
+  return { stream, temperature, max_tokens, thinking, promptCaching, strictParams };
 };

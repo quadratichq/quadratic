@@ -9,14 +9,26 @@ use crate::{
 
 impl GridController {
     pub fn execute_move_cells(&mut self, transaction: &mut PendingTransaction, op: Operation) {
-        if let Operation::MoveCells { source, dest } = op {
+        if let Operation::MoveCells {
+            source,
+            dest,
+            columns,
+            rows,
+        } = op
+        {
             // we replace the MoveCells operation with a series of cut/paste
             // operations so we don't have to reimplement it. There's definitely
             // a more efficient way to do this. todo: when rewriting the data
             // store, we should implement higher-level functions that would more
             // easily implement cut/paste/move without resorting to this
             // approach.
-            let selection = A1Selection::from_rect(source);
+            let selection = if columns {
+                A1Selection::cols(source.sheet_id, source.min.x, source.max.x)
+            } else if rows {
+                A1Selection::rows(source.sheet_id, source.min.y, source.max.y)
+            } else {
+                A1Selection::from_rect(source)
+            };
 
             let mut ops = vec![];
 
@@ -66,6 +78,8 @@ mod tests {
         let ops = vec![Operation::MoveCells {
             source: data_table.output_sheet_rect(sheet_pos, true),
             dest: sheet_dest_pos,
+            columns: false,
+            rows: false,
         }];
         gc.start_user_transaction(ops, None, TransactionName::MoveCells);
         print_table(&gc, sheet_id, Rect::new(6, 1, 10, 12));
@@ -90,6 +104,8 @@ mod tests {
         let ops = vec![Operation::MoveCells {
             source: data_table.output_sheet_rect(sheet_pos, true),
             dest: sheet_dest_pos,
+            columns: false,
+            rows: false,
         }];
         gc.start_user_transaction(ops, None, TransactionName::MoveCells);
         print_table(&gc, sheet_id, Rect::new(5, 2, 9, 13));

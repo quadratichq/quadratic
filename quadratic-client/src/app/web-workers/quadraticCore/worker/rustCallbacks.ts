@@ -40,7 +40,7 @@ declare var self: WorkerGlobalScope &
     sendSheetFills: (sheetId: string, fill: JsRenderFill[]) => void;
     sendSheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
     sendBordersSheet: (sheetId: string, borders?: JsBordersSheet) => void;
-    sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
+    sendSheetInfoUpdateClient: (sheetInfo: SheetInfo) => void;
     sendSheetInfoUpdateRender: (sheetInfo: SheetInfo) => void;
     sendAddSheetRender: (sheetInfo: SheetInfo) => void;
     sendDeleteSheetRender: (sheetId: string) => void;
@@ -55,8 +55,11 @@ declare var self: WorkerGlobalScope &
     sendSheetCodeCell: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
     sendSheetBoundsUpdateClient: (sheetBounds: SheetBounds) => void;
     sendSheetBoundsUpdateRender: (sheetBounds: SheetBounds) => void;
-    sendTransactionStart: (transactionId: string, transactionType: TransactionName) => void;
+    sendTransactionStartClient: (transactionId: string, transactionName: TransactionName) => void;
+    sendTransactionStartRender: (transactionId: string, transactionName: TransactionName) => void;
     sendTransactionProgress: (transactionId: string, remainingOperations: number) => void;
+    sendTransactionEndClient: (transactionId: string, transactionName: TransactionName) => void;
+    sendTransactionEndRender: (transactionId: string, transactionName: TransactionName) => void;
     sendRunPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
     sendRunJavascript: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
     sendUpdateCodeCell: (
@@ -149,7 +152,7 @@ export const jsSheetMetaFills = (sheetId: string, sheetMetaFillsStringified: str
 
 export const jsSheetInfoUpdate = (sheetInfoStringified: string) => {
   const sheetInfo = JSON.parse(sheetInfoStringified);
-  self.sheetInfoUpdate(sheetInfo);
+  self.sendSheetInfoUpdateClient(sheetInfo);
   self.sendSheetInfoUpdateRender(sheetInfo);
 };
 
@@ -202,12 +205,19 @@ export const jsSheetBoundsUpdate = (bounds: string) => {
 };
 
 export const jsTransactionStart = (transaction_id: string, transaction_name: string) => {
-  const transactionType = JSON.parse(transaction_name);
-  self.sendTransactionStart(transaction_id, transactionType);
+  const transactionName = JSON.parse(transaction_name);
+  self.sendTransactionStartClient(transaction_id, transactionName);
+  self.sendTransactionStartRender(transaction_id, transactionName);
 };
 
 export const jsTransactionProgress = (transactionId: string, remainingOperations: number) => {
   self.sendTransactionProgress(transactionId, remainingOperations);
+};
+
+export const jsTransactionEnd = (transaction_id: string, transaction_name: string) => {
+  const transactionName = JSON.parse(transaction_name);
+  self.sendTransactionEndClient(transaction_id, transactionName);
+  self.sendTransactionEndRender(transaction_id, transactionName);
 };
 
 export const jsRunPython = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {

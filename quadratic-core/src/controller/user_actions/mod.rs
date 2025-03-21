@@ -9,6 +9,7 @@ pub mod col_row;
 pub mod data_table;
 pub mod formats;
 pub mod import;
+mod move_col_row;
 pub mod sheets;
 pub mod undo;
 pub mod validations;
