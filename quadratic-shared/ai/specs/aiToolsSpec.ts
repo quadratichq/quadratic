@@ -429,7 +429,7 @@ Completion is the delta that will be inserted at the cursor position in the code
     description: `
 This tool provides prompt suggestions for the user, requires an array of three prompt suggestions.\n
 Each prompt suggestion is an object with a label and a prompt.\n
-The label is a short label for the prompt suggestion, this will be displayed to the user in the UI.\n
+The label is a descriptive label for the prompt suggestion with maximum 40 characters, this will be displayed to the user in the UI.\n
 The prompt is the actual prompt that will be used to generate the prompt suggestion.\n
 Use the internal context and the chat history to provide the prompt suggestions.\n
 Always maintain strong correlation between the follow up prompts and the user's chat history and the internal context.\n
@@ -445,7 +445,7 @@ This tool should always be called after you have provided the response to the us
             properties: {
               label: {
                 type: 'string',
-                description: 'The label of the follow up prompt',
+                description: 'The label of the follow up prompt, maximum 40 characters',
               },
               prompt: {
                 type: 'string',
@@ -464,7 +464,7 @@ This tool should always be called after you have provided the response to the us
     prompt: `
 This tool provides prompt suggestions for the user, requires an array of three prompt suggestions.\n
 Each prompt suggestion is an object with a label and a prompt.\n
-The label is a short label for the prompt suggestion, this will be displayed to the user in the UI.\n
+The label is a descriptive label for the prompt suggestion with maximum 40 characters, this will be displayed to the user in the UI.\n
 The prompt is the actual prompt that will be used to generate the prompt suggestion.\n
 Use the internal context and the chat history to provide the prompt suggestions.\n
 Always maintain strong correlation between the prompt suggestions and the user's chat history and the internal context.\n

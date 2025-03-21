@@ -335,7 +335,7 @@ const PromptSuggestions = memo(() => {
             })
           }
         >
-          <span>{suggestion.label}</span>
+          <span className="truncate">{suggestion.label}</span>
         </div>
       ))}
     </div>
