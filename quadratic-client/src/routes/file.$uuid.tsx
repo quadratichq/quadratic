@@ -11,7 +11,7 @@ import { initWorkers } from '@/app/web-workers/workers';
 import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/auth';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
-import { ROUTES } from '@/shared/constants/routes';
+import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
@@ -30,7 +30,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   const { uuid } = params as { uuid: string };
   const url = new URL(request.url);
   const searchParams = new URLSearchParams(url.search);
-  const checkpointId = searchParams.get('checkpoint');
+  const checkpointId = searchParams.get(SEARCH_PARAMS.CHECKPOINT.KEY);
 
   // Fetch the file. If it fails because of permissions, redirect to login. Otherwise throw.
   let data;

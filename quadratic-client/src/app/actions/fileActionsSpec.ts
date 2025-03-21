@@ -6,6 +6,7 @@ import { downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { DownloadIcon, FileRenameIcon, HistoryIcon, PersonAddIcon } from '@/shared/components/Icons';
+import { ROUTES } from '@/shared/constants/routes';
 
 type FileActionSpec = Pick<
   ActionSpecRecord,
@@ -14,6 +15,7 @@ type FileActionSpec = Pick<
 
 export type FileActionArgs = {
   [Action.FileDownload]: { name: string };
+  [Action.FileVersionHistory]: { uuid: string };
 };
 
 export const fileActionsSpec: FileActionSpec = {
@@ -47,15 +49,13 @@ export const fileActionsSpec: FileActionSpec = {
       pixiAppSettings.setEditorInteractionState((prev) => ({ ...prev, isRunningAsyncAction: false }));
     },
   },
-  // This is only for the app-side, we don't use this (yet) on the dashboard-side
   [Action.FileVersionHistory]: {
-    label: 'Version history',
-    labelVerbose: 'View version history',
+    label: 'Open version history',
     Icon: HistoryIcon,
-    isAvailable: isAvailableBecauseCanEditFile,
-    run: () => {
-      if (!pixiAppSettings.setEditorInteractionState) return;
-      pixiAppSettings.setEditorInteractionState((prev) => ({ ...prev, showVersionHistoryDialog: true }));
+    isAvailable: ({ isAuthenticated, filePermissions, teamPermissions }: ActionAvailabilityArgs) =>
+      Boolean(isAuthenticated && filePermissions.includes('FILE_EDIT') && teamPermissions?.includes('TEAM_VIEW')),
+    run: ({ uuid }: { uuid: string }) => {
+      window.open(ROUTES.FILE_VERSIONS(uuid), '_blank');
     },
   },
 };

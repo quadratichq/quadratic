@@ -95,7 +95,9 @@ export const Component = () => {
         <p className="mt-3 flex items-center gap-1 overflow-hidden border-y border-border bg-accent py-1 pl-3 pr-2 text-xs font-semibold">
           <span className="truncate">{data.name}</span>
           <Button variant="ghost" size="sm" className="ml-auto flex-shrink-0 text-muted-foreground" asChild>
-            <Link to={ROUTES.FILE(uuid)}>Open file</Link>
+            <Link target="_blank" to={ROUTES.FILE(uuid)}>
+              Open file
+            </Link>
           </Button>
         </p>
         <div className="flex h-full flex-col overflow-scroll p-3">

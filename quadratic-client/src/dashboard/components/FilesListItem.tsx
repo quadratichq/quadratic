@@ -231,6 +231,15 @@ export function FilesListItemUserFile({
                   {permissions.includes('FILE_EDIT') && (
                     <DropdownMenuItem onClick={() => setOpen(true)}>Rename</DropdownMenuItem>
                   )}
+                  {permissions.includes('FILE_EDIT') && (
+                    <DropdownMenuItem
+                      onClick={() => {
+                        window.open(ROUTES.FILE_VERSIONS(uuid), '_blank');
+                      }}
+                    >
+                      Open version history
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={handleDownload}>Download</DropdownMenuItem>
                   {canMoveFiles && (
                     <>
@@ -271,19 +280,6 @@ export function FilesListItemUserFile({
                   )}
                   <DropdownMenuSeparator />
 
-                  <DropdownMenuItem
-                    onClick={() => {
-                      window.open(ROUTES.FILE(uuid) + '/versions', '_blank');
-                    }}
-                  >
-                    Open version history
-                  </DropdownMenuItem>
-
-                  {permissions.includes('FILE_EDIT') && (
-                    <DropdownMenuItem onClick={() => setActiveRecoverFileId(uuid)}>
-                      View version history
-                    </DropdownMenuItem>
-                  )}
                   {permissions.includes('FILE_DELETE') && (
                     <>
                       <DropdownMenuItem onClick={handleDelete}>Delete</DropdownMenuItem>
