@@ -362,6 +362,7 @@ const AISourceSchema = z.enum([
   'GetChatName',
   'GetFileName',
   'CodeEditorCompletions',
+  'GetUserPromptSuggestions',
 ]);
 export type AISource = z.infer<typeof AISourceSchema>;
 
