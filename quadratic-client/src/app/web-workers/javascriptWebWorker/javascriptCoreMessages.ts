@@ -18,8 +18,8 @@ export interface JavascriptCoreResults {
 export interface CoreJavascriptGetCellsA1 {
   type: 'coreJavascriptGetCellsA1';
   id: number;
-  // stringified JsCellsA1Response
-  response: string;
+  // ArrayBuffer of stringified JsCellsA1Response
+  responseBuffer: ArrayBuffer;
 }
 
 export interface JavascriptCoreGetCellsA1 {

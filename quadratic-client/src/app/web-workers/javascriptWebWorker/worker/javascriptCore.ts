@@ -62,11 +62,11 @@ class JavascriptCore {
     );
   }
 
-  sendGetCellsA1 = (transactionId: string, a1: string): Promise<string> => {
+  sendGetCellsA1 = (transactionId: string, a1: string): Promise<ArrayBuffer> => {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: CoreJavascriptGetCellsA1) => {
-        resolve(message.response);
+        resolve(message.responseBuffer);
       };
       this.send({ type: 'javascriptCoreGetCellsA1', transactionId, id, a1 });
     });

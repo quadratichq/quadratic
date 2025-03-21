@@ -42,18 +42,22 @@ class CoreJavascript {
     }
   };
 
-  private send(message: CoreJavascriptMessage) {
+  private send(message: CoreJavascriptMessage, transfer?: Transferable[]) {
     if (!this.coreJavascriptPort) {
       console.warn('Expected coreJavascriptPort to be defined in CoreJavascript.send');
       return;
     }
-    this.coreJavascriptPort.postMessage(message);
+    if (transfer) {
+      this.coreJavascriptPort.postMessage(message, transfer);
+    } else {
+      this.coreJavascriptPort.postMessage(message);
+    }
   }
 
   private handleGetCellsA1Response = (id: number, transactionId: string, a1: string) => {
-    let responseString: string | undefined;
+    let responseUint8Array: Uint8Array;
     try {
-      responseString = core.getCellsA1(transactionId, a1);
+      responseUint8Array = core.getCellsA1(transactionId, a1);
     } catch (e: any) {
       const cellA1Response: JsCellsA1Response = {
         values: null,
@@ -61,13 +65,22 @@ class CoreJavascript {
           core_error: e,
         },
       };
-      responseString = JSON.stringify(cellA1Response);
+      const responseString = JSON.stringify(cellA1Response);
+      const encoder = new TextEncoder();
+      responseUint8Array = encoder.encode(responseString);
     }
-    this.send({
-      type: 'coreJavascriptGetCellsA1',
-      id,
-      response: responseString,
-    });
+
+    // Convert string to ArrayBuffer for transfer
+    const responseBuffer = responseUint8Array.buffer as ArrayBuffer;
+
+    this.send(
+      {
+        type: 'coreJavascriptGetCellsA1',
+        id,
+        responseBuffer,
+      },
+      [responseBuffer]
+    );
   };
 
   private sendRunJavascript = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {

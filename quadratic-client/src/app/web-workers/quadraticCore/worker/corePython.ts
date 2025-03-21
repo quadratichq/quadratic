@@ -11,7 +11,7 @@ declare var self: WorkerGlobalScope &
 class CorePython {
   private corePythonPort?: MessagePort;
   private id = 0;
-  private getCellsResponses: Record<number, string> = {};
+  private getCellsResponses: Record<number, Uint8Array> = {};
 
   // last running transaction (used to cancel execution)
   lastTransactionId?: string;
@@ -85,9 +85,9 @@ class CorePython {
   private sendGetCellsA1Length = (sharedBuffer: SharedArrayBuffer, transactionId: string, a1: string) => {
     const int32View = new Int32Array(sharedBuffer, 0, 3);
 
-    let responseString: string | undefined;
+    let responseUint8Array: Uint8Array;
     try {
-      responseString = core.getCellsA1(transactionId, a1);
+      responseUint8Array = core.getCellsA1(transactionId, a1);
     } catch (e: any) {
       const cellA1Response: JsCellsA1Response = {
         values: null,
@@ -95,16 +95,17 @@ class CorePython {
           core_error: e,
         },
       };
-      responseString = JSON.stringify(cellA1Response);
+      const responseString = JSON.stringify(cellA1Response);
+      const encoder = new TextEncoder();
+      responseUint8Array = encoder.encode(responseString);
     }
 
-    // need to get the bytes of the string (which covers unicode characters)
-    const length = new Blob([responseString]).size;
+    const length = responseUint8Array.length;
 
     Atomics.store(int32View, 1, length);
     if (length !== 0) {
       const id = this.id++;
-      this.getCellsResponses[id] = responseString;
+      this.getCellsResponses[id] = responseUint8Array;
       Atomics.store(int32View, 2, id);
     }
     Atomics.store(int32View, 0, 1);
@@ -112,16 +113,14 @@ class CorePython {
   };
 
   private sendGetCellsA1Data = (id: number, sharedBuffer: SharedArrayBuffer) => {
-    const cellsString = this.getCellsResponses[id];
+    const responseUint8View = this.getCellsResponses[id];
     delete this.getCellsResponses[id];
     const int32View = new Int32Array(sharedBuffer, 0, 1);
-    if (cellsString === undefined) {
+    if (responseUint8View === undefined) {
       console.warn('[corePython] No cells found for id:', id);
     } else {
-      const encoder = new TextEncoder();
-      const encodedCells = encoder.encode(cellsString);
-      const uint8View = new Uint8Array(sharedBuffer, 4, encodedCells.length);
-      uint8View.set(encodedCells);
+      const uint8View = new Uint8Array(sharedBuffer, 4, responseUint8View.length);
+      uint8View.set(responseUint8View);
     }
     Atomics.store(int32View, 0, 1);
     Atomics.notify(int32View, 0, 1);

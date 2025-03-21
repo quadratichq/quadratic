@@ -17,10 +17,10 @@ impl GridController {
         &mut self,
         transaction_id: String,
         a1: String,
-    ) -> Result<String, String> {
+    ) -> Result<Vec<u8>, String> {
         let response = self.calculation_get_cells_a1(transaction_id, a1);
-        match serde_json::to_string(&response) {
-            Ok(json) => Ok(json),
+        match serde_json::to_vec(&response) {
+            Ok(vec) => Ok(vec),
             Err(e) => {
                 dbgjs!(format!(
                     "calculationGetCellsA1: Failed to serialize get cells a1 response: {:?}",

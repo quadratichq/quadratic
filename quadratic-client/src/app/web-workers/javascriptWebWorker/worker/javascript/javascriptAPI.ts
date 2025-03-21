@@ -34,11 +34,11 @@ export class JavascriptAPI {
       throw new Error('No transactionId in getCellsA1');
     }
 
-    const results = await javascriptCore.sendGetCellsA1(this.javascript.transactionId, a1);
+    const responseBuffer = await javascriptCore.sendGetCellsA1(this.javascript.transactionId, a1);
 
     let response: JsCellsA1Response | undefined;
     try {
-      response = JSON.parse(results);
+      response = JSON.parse(new TextDecoder().decode(responseBuffer));
     } catch (error) {
       response = {
         values: null,
@@ -47,24 +47,24 @@ export class JavascriptAPI {
         },
       };
     }
+
     if (!response || !response.values || response.error) {
       return { values: null, error: response?.error?.core_error ?? 'Failed to get cells' };
     }
 
-    const cells: CellType[][] = [];
-    const height = response.values.y + response.values.h;
-    const width = response.values.x + response.values.w;
+    const startY = response.values.y;
+    const startX = response.values.x;
+    const height = response.values.h;
+    const width = response.values.w;
 
-    for (let y = response.values.y; y < height; y++) {
-      const row: CellType[] = [];
+    // Initialize 2D array with the known dimensions
+    const cells: CellType[][] = Array(height)
+      .fill(null)
+      .map(() => Array(width).fill(undefined));
 
-      for (let x = response.values.x; x < width; x++) {
-        const entry = response.values.cells?.find((r) => Number(r.x) === x && Number(r.y) === y);
-        const typed = entry ? this.convertType(entry) : undefined;
-        row.push(typed);
-      }
-
-      cells.push(row);
+    for (const cell of response.values.cells) {
+      const typed = cell ? this.convertType(cell) : undefined;
+      cells[cell.y - startY][cell.x - startX] = typed;
     }
 
     return {
