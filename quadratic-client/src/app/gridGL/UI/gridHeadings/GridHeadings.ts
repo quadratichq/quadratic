@@ -72,7 +72,8 @@ export class GridHeadings extends Container {
   private findIntervalX(i: number): number {
     if (i > 100) return 52;
     if (i > 20) return 26;
-    if (i > 5) return 13;
+    if (i > 10) return 13;
+    if (i > 5) return 6;
     return 2;
   }
 
@@ -187,6 +188,7 @@ export class GridHeadings extends Container {
 
         // only show labels that will fit (unless grid lines are hidden)
         if (
+          scale < 0.2 || // this fixes a bug where multi letter labels were not showing when zoomed out
           currentWidth > charactersWidth ||
           pixiApp.gridLines.alpha < colors.headerSelectedRowColumnBackgroundColorAlpha
         ) {
