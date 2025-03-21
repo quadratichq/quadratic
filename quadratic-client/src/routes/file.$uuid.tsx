@@ -174,12 +174,12 @@ export const ErrorBoundary = () => {
   const actionsFileFailedToLoad = (
     <div className={`flex justify-center gap-2`}>
       <Button asChild variant="outline">
+        <Link to="/">Go home</Link>
+      </Button>
+      <Button asChild variant="default">
         <Link to={ROUTES.FILE_VERSIONS(uuid)} reloadDocument>
           Open version history
         </Link>
-      </Button>
-      <Button asChild variant="default">
-        <Link to="/">Go home</Link>
       </Button>
     </div>
   );
