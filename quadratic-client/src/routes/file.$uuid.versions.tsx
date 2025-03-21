@@ -1,5 +1,5 @@
 import { apiClient } from '@/shared/api/apiClient';
-import { ChevronRightIcon } from '@/shared/components/Icons';
+import { ChevronRightIcon, RefreshIcon } from '@/shared/components/Icons';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
@@ -7,7 +7,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { useState } from 'react';
-import { Link, useLoaderData, useParams, type LoaderFunctionArgs } from 'react-router-dom';
+import { Link, useLoaderData, useParams, useRevalidator, type LoaderFunctionArgs } from 'react-router-dom';
 
 type LoaderData = Awaited<ReturnType<typeof loader>>;
 
@@ -22,6 +22,7 @@ export const Component = () => {
   const data = useLoaderData() as LoaderData;
   const [activeCheckpointId, setActiveCheckpointId] = useState<number | null>(null);
   const iframeUrl = activeCheckpointId ? ROUTES.FILE(uuid) + `?checkpoint=${activeCheckpointId}&embed` : '';
+  const revalidator = useRevalidator();
 
   const checkpointsByDay = data.checkpoints.reduce((acc, version) => {
     const date = new Date(version.timestamp);
@@ -52,6 +53,17 @@ export const Component = () => {
                 <TooltipContent side="right">Go to dashboard</TooltipContent>
               </Tooltip>
             </TooltipProvider>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground"
+              onClick={() => {
+                revalidator.revalidate();
+              }}
+              disabled={revalidator.state === 'loading'}
+            >
+              <RefreshIcon className={cn(revalidator.state === 'loading' && 'animate-spin')} />
+            </Button>
           </div>
           <h3 className="mr-auto text-lg font-semibold">Version history</h3>
           <p className="text-sm text-muted-foreground">
@@ -82,14 +94,14 @@ export const Component = () => {
         </div>
         <p className="mt-3 flex items-center gap-1 overflow-hidden border-y border-border bg-accent py-1 pl-3 pr-2 text-xs font-semibold">
           <span className="truncate">{data.name}</span>
-          <Button variant="ghost" size="sm" className="ml-auto flex-shrink-0 text-muted-foreground">
-            Open file
+          <Button variant="ghost" size="sm" className="ml-auto flex-shrink-0 text-muted-foreground" asChild>
+            <Link to={ROUTES.FILE(uuid)}>Open file</Link>
           </Button>
         </p>
         <div className="flex h-full flex-col overflow-scroll p-3">
           {Object.entries(checkpointsByDay).map(([day, versions], groupIndex) => {
             return (
-              <div id={day} className={cn(groupIndex !== 0 && 'mt-6')}>
+              <div key={day} className={cn(groupIndex !== 0 && 'mt-6')}>
                 <Type variant="overline" className="mb-2">
                   {day}
                 </Type>
@@ -134,3 +146,5 @@ export const Component = () => {
     </div>
   );
 };
+
+// TODO: error boundary
