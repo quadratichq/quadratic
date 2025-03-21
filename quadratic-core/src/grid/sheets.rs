@@ -169,6 +169,10 @@ impl Grid {
     /// Updates a sheet's name and returns the old name.
     pub fn update_sheet_name(&mut self, sheet_id: SheetId, new_name: &str) -> Result<String> {
         let sheet = self.try_sheet_mut(sheet_id).context("missing sheet")?;
+        if sheet.name == new_name {
+            return Ok(sheet.name.clone());
+        }
+
         let old_name = std::mem::replace(&mut sheet.name, new_name.to_owned());
 
         for sheet in &mut self.sheets {
