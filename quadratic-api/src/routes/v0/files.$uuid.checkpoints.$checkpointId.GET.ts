@@ -3,11 +3,11 @@ import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
 import { getFile } from '../../middleware/getFile';
-import { userMiddleware } from '../../middleware/user';
-import { validateAccessToken } from '../../middleware/validateAccessToken';
+import { userOptionalMiddleware } from '../../middleware/user';
+import { validateOptionalAccessToken } from '../../middleware/validateOptionalAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { getFileUrl } from '../../storage/storage';
-import type { RequestWithUser } from '../../types/Request';
+import type { RequestWithOptionalUser } from '../../types/Request';
 
 export default [
   validateRequestSchema(
@@ -18,8 +18,8 @@ export default [
       }),
     })
   ),
-  validateAccessToken,
-  userMiddleware,
+  validateOptionalAccessToken,
+  userOptionalMiddleware,
   handler,
 ];
 
@@ -28,9 +28,10 @@ async function handler(
   res: Response<ApiTypes['/v0/files/:uuid/checkpoints/:checkpointId.GET.response']>
 ) {
   const {
-    user: { id: userId },
+    user,
     params: { uuid, checkpointId },
-  } = req as RequestWithUser;
+  } = req as RequestWithOptionalUser;
+  const userId = user?.id;
 
   // Ensures the file exists and the user has access to it
   await getFile({ uuid, userId });
