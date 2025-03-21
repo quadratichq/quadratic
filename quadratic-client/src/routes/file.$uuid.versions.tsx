@@ -57,8 +57,6 @@ export const Component = () => {
     return acc;
   }, {} as Record<string, LoaderData['checkpoints']>);
 
-  // TODO: we probably want to hide the file name because it's changed over time
-
   const fetcher = useFetcher();
   const isLoading = fetcher.state !== 'idle' || revalidator.state === 'loading';
   const btnsDisabled = isLoading || !activeCheckpoint;
