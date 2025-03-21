@@ -11,6 +11,32 @@ const transformEmptyStringToUndefined = (val: string | undefined) => (val === ''
 
 export const ConnectionNameSchema = z.string().min(1, { message: 'Required' });
 export const ConnectionTypeSchema = z.enum(['POSTGRES', 'MYSQL', 'MSSQL', 'SNOWFLAKE']);
+const ConnectionHostSchema = z
+  .string()
+  .min(1, { message: 'Required' })
+  .refine(
+    (host) => {
+      // If we're running locally, allow localhost
+      if (window?.location?.hostname === 'localhost') return true;
+
+      // Otherwise, disallow specific hosts
+      host = host.trim();
+
+      // Check for localhost variations
+      if (host.includes('localhost')) return false;
+
+      // Check for local IP ranges
+      if (host.startsWith('127.')) return false; // Loopback addresses
+      if (host.includes('0.0.0.0')) return false; // Default route
+      if (host.startsWith('169.254.')) return false; // Link-local addresses
+
+      return true;
+    },
+    {
+      message:
+        'Quadratic runs in the cloud and can’t connect to a local database. Please use a publicly-accessible host.',
+    }
+  );
 const ConnectionTypeDetailsSchema = z.record(z.string(), z.any());
 const ConnectionSchema = z.object({
   createdDate: z.string().datetime(),
@@ -32,7 +58,7 @@ export type Connection = z.infer<typeof ConnectionSchema>;
  * =============================================================================
  */
 export const ConnectionTypeDetailsPostgresSchema = z.object({
-  host: z.string().min(1, { message: 'Required' }),
+  host: ConnectionHostSchema,
   port: z
     .string()
     .min(1, { message: 'Required' })
@@ -52,7 +78,7 @@ export const ConnectionTypeDetailsPostgresSchema = z.object({
 });
 export const ConnectionTypeDetailsMysqlSchema = ConnectionTypeDetailsPostgresSchema;
 export const ConnectionTypeDetailsMssqlSchema = z.object({
-  host: z.string().min(1, { message: 'Required' }),
+  host: ConnectionHostSchema,
   port: z
     .string()
     .min(1, { message: 'Required' })
