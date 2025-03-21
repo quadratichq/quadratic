@@ -19,7 +19,15 @@ import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import { FilePermissionSchema, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type { LoaderFunctionArgs } from 'react-router-dom';
-import { Link, Outlet, isRouteErrorResponse, redirect, useLoaderData, useRouteError } from 'react-router-dom';
+import {
+  Link,
+  Outlet,
+  isRouteErrorResponse,
+  redirect,
+  useLoaderData,
+  useParams,
+  useRouteError,
+} from 'react-router-dom';
 import type { MutableSnapshot } from 'recoil';
 import { RecoilRoot } from 'recoil';
 import { Empty } from '../dashboard/components/Empty';
@@ -148,14 +156,27 @@ export const Component = () => {
 
 export const ErrorBoundary = () => {
   const error = useRouteError();
+  const { uuid } = useParams() as { uuid: string };
 
   const actionsDefault = (
     <div className={`flex justify-center gap-2`}>
-      <Button variant="secondary">Version history…</Button>
       <Button asChild variant="outline">
         <a href={CONTACT_URL} target="_blank" rel="noreferrer">
           Get help
         </a>
+      </Button>
+      <Button asChild variant="default">
+        <Link to="/">Go home</Link>
+      </Button>
+    </div>
+  );
+
+  const actionsFileFailedToLoad = (
+    <div className={`flex justify-center gap-2`}>
+      <Button asChild variant="outline">
+        <Link to={ROUTES.FILE_VERSIONS(uuid)} reloadDocument>
+          Open version history
+        </Link>
       </Button>
       <Button asChild variant="default">
         <Link to="/">Go home</Link>
@@ -204,6 +225,7 @@ export const ErrorBoundary = () => {
       title = 'File validation failed';
       description =
         'The file was retrieved from the server but failed to load into the app. Try again or contact us for help.';
+      actions = actionsFileFailedToLoad;
       reportError = true;
     } else {
       title = 'Failed to load file';
