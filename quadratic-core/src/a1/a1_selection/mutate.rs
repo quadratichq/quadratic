@@ -1,9 +1,9 @@
 //! Mutation methods that insert or delete columns and rows from a selection.
 
 use crate::{
+    RefError,
     a1::{A1Context, CellRefRange, RefRangeBounds, TableRef},
     grid::RefAdjust,
-    RefError,
 };
 
 use super::A1Selection;
@@ -144,12 +144,14 @@ impl A1Selection {
         (sheet_ranges, table_ranges)
     }
 
+    /// Replaces a table name in the selection.
     pub fn replace_table_name(&mut self, old_name: &str, new_name: &str) {
         self.ranges.iter_mut().for_each(|range| {
             range.replace_table_name(old_name, new_name);
         });
     }
 
+    /// Replaces a table column name in the selection.
     pub fn replace_column_name(&mut self, table_name: &str, old_name: &str, new_name: &str) {
         self.ranges.iter_mut().for_each(|range| {
             range.replace_column_name(table_name, old_name, new_name);
@@ -159,7 +161,7 @@ impl A1Selection {
 
 #[cfg(test)]
 mod tests {
-    use crate::{grid::SheetId, Rect};
+    use crate::{Rect, grid::SheetId};
 
     use super::*;
 

@@ -3,9 +3,9 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{grid::SheetId, Pos, RefAdjust, RefError, SheetPos};
+use crate::{Pos, RefAdjust, RefError, SheetPos, grid::SheetId};
 
-use super::{parse_optional_sheet_name_to_id, A1Context, A1Error, CellRefRange};
+use super::{A1Context, A1Error, CellRefRange, parse_optional_sheet_name_to_id};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SheetCellRefRange {
@@ -56,13 +56,15 @@ impl SheetCellRefRange {
 
     /// Returns whether the reference needs a sheet name in order to be unambiguous.
     fn needs_sheet_name(&self, default_sheet_id: Option<SheetId>) -> bool {
-        self.explicit_sheet_name
-            || match self.cells {
-                CellRefRange::Sheet { .. } => {
-                    default_sheet_id.is_none_or(|sheet_id| sheet_id != self.sheet_id)
-                }
-                CellRefRange::Table { .. } => false, // table names are unique per file
+        match self.cells {
+            CellRefRange::Sheet { .. } => {
+                self.explicit_sheet_name
+                    || default_sheet_id.is_none_or(|sheet_id| sheet_id != self.sheet_id)
             }
+
+            // table names are unique per file; only include sheet name if explicit
+            CellRefRange::Table { .. } => self.explicit_sheet_name,
+        }
     }
 
     /// Returns an A1-style string describing the range. The sheet name is
@@ -131,10 +133,12 @@ impl SheetCellRefRange {
         }
     }
 
+    /// Replaces a table name in the range.
     pub fn replace_table_name(&mut self, old_name: &str, new_name: &str) {
         self.cells.replace_table_name(old_name, new_name);
     }
 
+    /// Replaces a table column name in the range.
     pub fn replace_column_name(&mut self, table_name: &str, old_name: &str, new_name: &str) {
         self.cells
             .replace_column_name(table_name, old_name, new_name);
