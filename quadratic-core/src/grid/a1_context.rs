@@ -7,6 +7,8 @@ use super::*;
 
 impl Grid {
     /// Creates an A1Context from the grid for use by rust client (or core).
+    ///
+    /// TODO: remove calls to this whenever possible. rename to `make_a1_context()`
     pub fn a1_context(&self) -> A1Context {
         let mut context = A1Context::default();
         self.sheets.iter().for_each(|sheet| {

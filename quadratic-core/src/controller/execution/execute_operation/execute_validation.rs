@@ -251,7 +251,7 @@ mod tests {
 
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1", sheet_id),
             rule: ValidationRule::Logical(Default::default()),
             message: Default::default(),
             error: Default::default(),
@@ -323,7 +323,7 @@ mod tests {
         // set validation
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1", sheet_id),
             rule: ValidationRule::Logical(Default::default()),
             message: Default::default(),
             error: Default::default(),

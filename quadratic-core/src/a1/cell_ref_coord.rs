@@ -117,28 +117,43 @@ impl CellRefCoord {
         Self { coord, is_absolute }
     }
 
-    pub fn translate_in_place(&mut self, delta: i64) -> Result<(), RefError> {
-        if !self.is_absolute && !self.is_unbounded() {
-            self.coord = crate::util::offset_cell_coord(self.coord, delta)?;
+    /// Adjusts the coordinate by `delta`.
+    ///
+    /// - Unbounded coordinates are unmodified.
+    /// - If `relatively_only` is true, then absolute coordinates are
+    ///   unmodified.
+    ///
+    /// Returns an error if the result is out of bounds.
+    #[must_use = "this method returns a new value instead of modifying its input"]
+    pub fn adjust(self, relative_only: bool, delta: i64) -> Result<Self, RefError> {
+        if (relative_only && self.is_absolute) || self.is_unbounded() {
+            Ok(self)
+        } else {
+            match self.coord.saturating_add(delta) {
+                ..=0 => Err(RefError),
+                other => Ok(Self {
+                    coord: other,
+                    is_absolute: self.is_absolute,
+                }),
+            }
         }
-        Ok(())
     }
 
-    pub fn translate(mut self, delta: i64) -> Result<Self, RefError> {
-        self.translate_in_place(delta)?;
-        Ok(self)
-    }
-
-    pub fn saturating_translate(self, delta: i64) -> Self {
-        self.translate(delta).unwrap_or(Self {
+    /// Adjusts the coordinate by `delta` if it is at least `start`. See
+    /// [`Self::adjust()`]. If the coordinate ends up out of range, it is
+    /// clamped to A1.
+    #[must_use = "this method returns a new value instead of modifying its input"]
+    pub fn saturating_adjust(self, relative_only: bool, delta: i64) -> Self {
+        self.adjust(relative_only, delta).unwrap_or(Self {
             coord: 1,
             is_absolute: self.is_absolute,
         })
     }
 
     // TODO: remove this function when switching to u64
+    #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn translate_unchecked(mut self, delta: i64) -> Self {
-        if !self.is_absolute && !self.is_unbounded() {
+        if !self.is_unbounded() {
             self.coord = self.coord.saturating_add(delta);
         }
         self
@@ -204,14 +219,23 @@ mod tests {
             (10, -999, Err(RefError)),
             (UNBOUNDED, -999, Ok(UNBOUNDED)),
         ] {
-            assert_eq!(
-                Ok(CellRefCoord::new_abs(init)),
-                CellRefCoord::new_abs(init).translate(delta),
-            );
-            assert_eq!(
-                expected.map(CellRefCoord::new_rel),
-                CellRefCoord::new_rel(init).translate(delta),
-            );
+            let abs_init = CellRefCoord::new_abs(init);
+            let rel_init = CellRefCoord::new_rel(init);
+            let abs_translated = expected.map(CellRefCoord::new_abs);
+            let rel_translated = expected.map(CellRefCoord::new_rel);
+
+            assert_eq!(Ok(abs_init), abs_init.adjust(true, delta));
+            assert_eq!(rel_translated, rel_init.adjust(true, delta));
+            assert_eq!(abs_translated, abs_init.adjust(false, delta));
+            assert_eq!(rel_translated, rel_init.adjust(false, delta));
+
+            let abs_clamped = abs_translated.unwrap_or(CellRefCoord::new_abs(1));
+            let rel_clamped = rel_translated.unwrap_or(CellRefCoord::new_rel(1));
+
+            assert_eq!(abs_init, abs_init.saturating_adjust(true, delta));
+            assert_eq!(rel_clamped, rel_init.saturating_adjust(true, delta));
+            assert_eq!(abs_clamped, abs_init.saturating_adjust(false, delta));
+            assert_eq!(rel_clamped, rel_init.saturating_adjust(false, delta));
         }
     }
 

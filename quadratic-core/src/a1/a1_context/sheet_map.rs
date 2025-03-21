@@ -32,6 +32,7 @@ impl SheetMap {
     }
 
     pub fn try_sheet_id(&self, sheet_id: SheetId) -> Option<&String> {
+        // TODO(ajf): optimize this by making the hashmap go both ways
         self.sheet_map
             .iter()
             .find(|(_, id)| **id == sheet_id)

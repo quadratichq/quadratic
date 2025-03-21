@@ -209,6 +209,7 @@ impl SyntaxRule for SheetTableReference {
                     .ok_or(RunErrorMsg::BadCellReference)?
                     .sheet_id,
                 cells: CellRefRange::Table { range: table_ref },
+                explicit_sheet_name: false,
             })
         })
     }

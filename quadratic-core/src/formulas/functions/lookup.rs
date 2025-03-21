@@ -21,11 +21,10 @@ fn get_functions() -> Vec<FormulaFunction> {
             #[examples("INDIRECT(\"Cn7\")", "INDIRECT(\"F\" & B0)")]
             fn INDIRECT(ctx: Ctx, cellref_string: (Spanned<String>)) {
                 let span = cellref_string.span;
-                let cell_ref = SheetCellRefRange::parse(
+                let cell_ref = SheetCellRefRange::parse_at(
                     &cellref_string.inner,
-                    ctx.sheet_pos.sheet_id,
+                    ctx.sheet_pos,
                     &ctx.grid.a1_context(),
-                    Some(ctx.sheet_pos.into()),
                 )
                 .map_err(|_| RunErrorMsg::BadCellReference.with_span(span))?;
                 let sheet_rect = ctx.resolve_range_ref(&cell_ref, span)?.inner;

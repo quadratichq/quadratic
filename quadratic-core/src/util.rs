@@ -102,13 +102,34 @@ macro_rules! row {
 }
 
 /// Parses a cell position in A1 notation.
-#[allow(unused)]
+///
+/// Expressions evalulating to sheet IDs are allowed but must be surrounded in
+/// parentheses if they are anything other than a single identifier.
+///
+/// # Examples
+///
+/// ```
+/// # use quadratic_core::{pos, Pos, grid::SheetId};
+/// assert_eq!(pos![A1], Pos::new(1, 1));
+/// assert_eq!(pos![C418], Pos::new(3, 418));
+///
+/// // With a sheet ID (identifier)
+/// let my_sheet = SheetId::new();
+/// assert_eq!(pos![my_sheet!A1], Pos::new(1, 1).to_sheet_pos(my_sheet));
+///
+/// // With a sheet ID (arbitrary expression)
+/// let some_tuple = (10, 20, my_sheet);
+/// assert_eq!(pos![(some_tuple.2)!B3], Pos::new(2, 3).to_sheet_pos(some_tuple.2));
+/// ```
+#[macro_export]
 macro_rules! pos {
+    [$sheet_id:ident ! $s:ident] => { pos![($sheet_id) ! $s] };
+    [($sheet_id:expr) ! $s:ident] => { pos![$s].to_sheet_pos($sheet_id) };
     [$s:ident] => {{
         #[allow(unused_assignments, unused_variables)]
         let pos = $crate::formulas::legacy_cell_ref::CellRef::parse_a1(stringify!($s), $crate::Pos::ORIGIN)
             .expect("invalid cell reference")
-            .resolve_from(crate::Pos::ORIGIN);
+            .resolve_from($crate::Pos::ORIGIN);
         pos
     }};
 }

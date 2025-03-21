@@ -206,7 +206,11 @@ impl AstNode {
 
                 let range = RefRangeBounds::combined_bounding_box(range1, range2);
                 let cells = CellRefRange::Sheet { range };
-                Ok(Cow::Owned(SheetCellRefRange { sheet_id, cells }))
+                Ok(Cow::Owned(SheetCellRefRange {
+                    sheet_id,
+                    cells,
+                    explicit_sheet_name: sheet1.is_some() || sheet2.is_some(),
+                }))
             }
             AstNodeContents::Paren(contents) if contents.len() == 1 => {
                 contents[0].to_ref_range(ctx)
@@ -215,6 +219,7 @@ impl AstNode {
                 let ref_range = SheetCellRefRange {
                     sheet_id: sheet_id.unwrap_or(ctx.sheet_pos.sheet_id),
                     cells: CellRefRange::Sheet { range: *bounds },
+                    explicit_sheet_name: sheet_id.is_some(),
                 };
                 Ok(Cow::Owned(ref_range))
             }

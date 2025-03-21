@@ -135,7 +135,6 @@ impl SyntaxRule for CellRangeReference {
     }
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         let ref1 = p.parse(CellReference)?;
-        ref1.span.of_str(p.source_str);
         let (sheet1, range1) = match ref1.inner {
             Ok(x) => x,
             Err(e) => {
@@ -175,10 +174,13 @@ impl SyntaxRule for CellRangeReference {
             range = range1;
         }
 
-        let cells = CellRefRange::Sheet { range };
         Ok(Spanned {
             span,
-            inner: Ok(SheetCellRefRange { sheet_id, cells }),
+            inner: Ok(SheetCellRefRange {
+                sheet_id,
+                cells: CellRefRange::Sheet { range },
+                explicit_sheet_name: sheet1.is_some(),
+            }),
         })
     }
 }

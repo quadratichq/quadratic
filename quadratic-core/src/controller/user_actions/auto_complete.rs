@@ -30,7 +30,6 @@ mod tests {
     use crate::{
         a1::A1Selection,
         array,
-        formulas::convert_a1_to_rc,
         grid::{
             sheet::borders::{BorderSelection, BorderStyle},
             CodeCellLanguage, CodeCellValue,
@@ -103,23 +102,10 @@ mod tests {
                 }
 
                 if let Some(code_cell) = code_cells.get(count) {
-                    let code_cell = match code_cell.language {
-                        CodeCellLanguage::Formula => {
-                            let mut code_cell = code_cell.to_owned();
-                            code_cell.code = convert_a1_to_rc(
-                                &code_cell.code,
-                                grid_controller.a1_context(),
-                                sheet_pos,
-                            );
-                            code_cell
-                        }
-                        _ => code_cell.to_owned(),
-                    };
-
                     grid_controller.set_code_cell(
                         sheet_pos,
-                        code_cell.language,
-                        code_cell.code,
+                        code_cell.language.clone(),
+                        code_cell.code.clone(),
                         None,
                     );
                 }
