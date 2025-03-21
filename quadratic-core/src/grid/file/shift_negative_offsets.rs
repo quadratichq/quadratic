@@ -7,11 +7,11 @@
 use std::collections::HashMap;
 
 use crate::{
+    CopyFormats, RefAdjust,
     controller::{
         active_transactions::pending_transaction::PendingTransaction, execution::TransactionSource,
     },
-    grid::{js_types::JsSnackbarSeverity, Grid, GridBounds},
-    CopyFormats, RefAdjust,
+    grid::{Grid, GridBounds, js_types::JsSnackbarSeverity},
 };
 
 const IMPORT_OFFSET: i64 = 1000000;
@@ -83,7 +83,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
         for (_, code_run) in sheet.iter_code_runs_mut() {
             let cells = &mut code_run.cells_accessed.cells;
             for (sheet_id, ranges) in cells {
-                // Get shift values for the current sheet, skip if not found
+                // Get shift values for the referenced sheet, skip if not found
                 let Some(&(x_shift, y_shift)) = shifted_offsets_sheet_id.get(sheet_id) else {
                     continue;
                 };
@@ -96,11 +96,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
                 // Translate all ranges and collect into new HashSet
                 *ranges = std::mem::take(ranges)
                     .into_iter()
-                    .filter_map(|r| {
-                        // This is actually wrong -- we should translate differently
-                        // for every sheet, not just once for the current sheet
-                        r.adjust(RefAdjust::new_translate(x_shift, y_shift)).ok()
-                    })
+                    .filter_map(|r| r.adjust(RefAdjust::new_translate(x_shift, y_shift)).ok())
                     .collect();
             }
         }
@@ -131,10 +127,10 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
 mod test {
 
     use crate::{
+        CellValue, Pos,
         a1::UNBOUNDED,
         controller::GridController,
         grid::{file::import, sheet::borders::CellBorderLine},
-        CellValue, Pos,
     };
 
     #[test]
