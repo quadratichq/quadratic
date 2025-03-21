@@ -44,7 +44,7 @@ interface CodeEditorBodyProps {
   setEditorInst: React.Dispatch<React.SetStateAction<monaco.editor.IStandaloneCodeEditor | null>>;
 }
 
-const AI_COMPLETION_DEBOUNCE_TIME = 100;
+const AI_COMPLETION_DEBOUNCE_TIME_MS = 100;
 
 // need to track globally since monaco is a singleton
 const registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
@@ -335,7 +335,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
                 console.warn('[CodeEditorBody] Error fetching AI completion: ', error);
                 resolve(null);
               }
-            }, AI_COMPLETION_DEBOUNCE_TIME);
+            }, AI_COMPLETION_DEBOUNCE_TIME_MS);
           });
         },
         freeInlineCompletions: () => {
