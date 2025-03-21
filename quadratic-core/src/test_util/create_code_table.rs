@@ -14,17 +14,6 @@ use crate::{
     grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind, SheetId},
 };
 
-#[cfg(test)]
-pub fn test_create_code_table_first_sheet(
-    gc: &mut GridController,
-    pos: Pos,
-    w: u32,
-    h: u32,
-    values: Vec<&str>,
-) {
-    test_create_code_table(gc, gc.sheet_ids()[0], pos, w, h, values);
-}
-
 /// Creates a Python code table with output of w x h cells with values.
 #[cfg(test)]
 pub fn test_create_code_table(
@@ -79,4 +68,67 @@ pub fn test_create_code_table(
         cell_value,
     };
     gc.start_user_transaction(vec![op], None, TransactionName::Unknown);
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::test_util::sheet;
+
+    use super::*;
+
+    #[test]
+    fn test_basic_code_table_creation() {
+        let mut gc = GridController::test();
+        let pos = pos![A1];
+        let sheet_id = SheetId::TEST;
+
+        // Test 2x2 table with numbers
+        test_create_code_table(&mut gc, sheet_id, pos, 2, 2, vec!["1", "2", "3", "4"]);
+
+        let sheet = sheet(&gc, sheet_id);
+
+        let table = sheet.data_table(pos).unwrap();
+        if let Value::Array(array) = &table.value {
+            assert_eq!(array.width(), 2);
+            assert_eq!(array.height(), 2);
+            assert_eq!(
+                array.get(0, 0).unwrap(),
+                &CellValue::Number(BigDecimal::from(1))
+            );
+        } else {
+            panic!("Expected array value");
+        }
+    }
+
+    #[test]
+    fn test_mixed_content_code_table() {
+        let mut gc = GridController::test();
+        let sheet_id = SheetId::TEST;
+        let pos = pos![A1];
+
+        // Test 2x2 table with mixed content (numbers and text)
+        test_create_code_table(&mut gc, sheet_id, pos, 2, 2, vec!["1", "text", "3.14", ""]);
+
+        let sheet = sheet(&gc, sheet_id);
+        let table = sheet.data_table(pos).unwrap();
+
+        if let Value::Array(array) = &table.value {
+            assert_eq!(
+                array.get(0, 0).unwrap(),
+                &CellValue::Number(BigDecimal::from(1))
+            );
+            assert_eq!(
+                array.get(1, 0).unwrap(),
+                &CellValue::Text("text".to_string())
+            );
+            assert_eq!(
+                array.get(0, 1).unwrap(),
+                &CellValue::Number(BigDecimal::from_str("3.14").unwrap())
+            );
+            // Fourth cell should be empty
+            assert_eq!(array.get(1, 1).unwrap(), &CellValue::Blank);
+        } else {
+            panic!("Expected array value");
+        }
+    }
 }

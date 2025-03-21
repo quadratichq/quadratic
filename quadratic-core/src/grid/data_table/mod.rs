@@ -684,6 +684,24 @@ impl DataTable {
             false
         }
     }
+
+    /// Returns the rows that are part of the data table's UI.
+    pub fn ui_rows(&self, pos: Pos) -> Vec<i64> {
+        let mut rows = vec![];
+        if self.show_ui {
+            if self.show_name || self.is_html_or_image() {
+                rows.push(pos.y);
+            }
+            if self.show_columns && !self.is_html_or_image() {
+                if self.show_name {
+                    rows.push(pos.y + 1);
+                } else {
+                    rows.push(pos.y);
+                }
+            }
+        }
+        rows
+    }
 }
 
 #[cfg(test)]
@@ -1192,5 +1210,45 @@ pub mod test {
         // Allow duplicate column name if the index is the same as the existing column index
         let result = DataTable::validate_column_name(table_name, 0, "existing_col", &context);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_ui_rows() {
+        let code_run = CodeRun::default();
+        let mut data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "Table 1",
+            Value::Array(Array::new_empty(ArraySize::new(2, 2).unwrap())),
+            false,
+            false,
+            true,
+            None,
+        );
+
+        // Test with show_ui = true, show_name = true, show_columns = true
+        let pos = pos!(B2);
+        assert_eq!(data_table.ui_rows(pos), vec![2, 3]);
+
+        // Test with show_name = false
+        data_table.show_name = false;
+        assert_eq!(data_table.ui_rows(pos), vec![2]);
+
+        // Test with show_columns = false
+        data_table.show_columns = false;
+        data_table.show_name = true;
+        assert_eq!(data_table.ui_rows(pos), vec![2]);
+
+        // Test with show_ui = false
+        data_table.show_ui = false;
+        assert_eq!(data_table.ui_rows(pos), Vec::<i64>::new());
+
+        // Test with HTML content
+        data_table.show_ui = true;
+        data_table.value = Value::Single(CellValue::Html("test".into()));
+        assert_eq!(data_table.ui_rows(pos), vec![2]);
+
+        // Test with Image content
+        data_table.value = Value::Single(CellValue::Image("test".into()));
+        assert_eq!(data_table.ui_rows(pos), vec![2]);
     }
 }

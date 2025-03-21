@@ -179,10 +179,7 @@ mod tests {
         CellValue,
         controller::GridController,
         grid::SheetId,
-        test_util::{
-            assert_data_table_size, first_sheet, test_create_code_table_first_sheet,
-            test_create_data_table,
-        },
+        test_util::{assert_data_table_size, first_sheet, test_create_data_table},
     };
 
     use super::*;
@@ -249,7 +246,7 @@ mod tests {
     fn test_check_delete_tables_columns_readonly_table() {
         let mut gc = GridController::test();
         let mut transaction = PendingTransaction::default();
-        test_create_code_table_first_sheet(&mut gc, pos![A1], 3, 1, vec!["A", "B", "C"]);
+        test_create_data_table(&mut gc, SheetId::TEST, pos![A1], 3, 1, &["A", "B", "C"]);
 
         // Test 4: Readonly table should not be modified
         let sheet = gc.sheet_mut(gc.sheet_ids()[0]);

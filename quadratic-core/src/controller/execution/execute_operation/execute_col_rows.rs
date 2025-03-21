@@ -193,11 +193,15 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         rows: Vec<i64>,
-    ) {
+    ) -> Result<(), ()> {
         if let Some(sheet) = self.try_sheet_mut(sheet_id) {
             let min_row = *rows.iter().min().unwrap_or(&1);
             let mut rows_to_adjust = rows.clone();
-            sheet.delete_rows(transaction, rows);
+
+            if sheet.delete_rows(transaction, rows).is_err() {
+                // nothing more to be done since the operation was aborted
+                return Err(());
+            }
 
             if transaction.is_user() {
                 rows_to_adjust.sort_unstable();
@@ -220,12 +224,18 @@ impl GridController {
                 }
             }
         }
+        Ok(())
     }
 
     pub fn execute_delete_row(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::DeleteRow { sheet_id, row } = op.clone() {
             transaction.forward_operations.push(op);
-            self.handle_delete_row(transaction, sheet_id, vec![row]);
+            if self
+                .handle_delete_row(transaction, sheet_id, vec![row])
+                .is_err()
+            {
+                return;
+            }
             self.send_updated_bounds(transaction, sheet_id);
         }
     }
@@ -233,7 +243,9 @@ impl GridController {
     pub fn execute_delete_rows(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::DeleteRows { sheet_id, rows } = op.clone() {
             transaction.forward_operations.push(op);
-            self.handle_delete_row(transaction, sheet_id, rows);
+            if self.handle_delete_row(transaction, sheet_id, rows).is_err() {
+                return;
+            };
             self.send_updated_bounds(transaction, sheet_id);
         }
     }
