@@ -8,6 +8,7 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { PanMode } from '@/app/atoms/gridPanModeAtom';
+import { debug } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { zoomToFit } from '@/app/gridGL/helpers/zoom';
@@ -128,6 +129,7 @@ export class PointerHeading {
       };
       this.active = true;
     } else if (
+      debug &&
       !isRightClick &&
       !cursor.isMultiRange() &&
       (intersects.column == null || cursor.isEntireColumnSelected(intersects.column)) &&
@@ -234,6 +236,7 @@ export class PointerHeading {
         if (result) {
           const cursor = sheets.sheet.cursor;
           if (
+            debug &&
             !cursor.isMultiRange() &&
             !result.corner &&
             (result.column == null || cursor.isEntireColumnSelected(result.column)) &&

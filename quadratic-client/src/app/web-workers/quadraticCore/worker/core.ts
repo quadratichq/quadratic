@@ -993,7 +993,7 @@ class Core {
 
   deleteColumns(sheetId: string, columns: number[], cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.deleteColumn(sheetId, JSON.stringify(columns), cursor);
+    this.gridController.deleteColumns(sheetId, JSON.stringify(columns), cursor);
   }
 
   insertColumn(sheetId: string, column: number, right: boolean, cursor: string) {
