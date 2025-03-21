@@ -93,6 +93,7 @@ export const FileMenubarMenu = () => {
             Duplicate
           </MenubarItem>
         )}
+        <MenubarItemAction action={Action.FileVersionHistory} actionArgs={{ uuid: fileUuid }} />
 
         {recentFilesMenuItems}
 
@@ -101,7 +102,6 @@ export const FileMenubarMenu = () => {
         <MenubarItemAction action={Action.FileShare} actionArgs={undefined} />
         <MenubarItemAction action={Action.FileRename} actionArgs={undefined} />
         <MenubarItemAction action={Action.FileDownload} actionArgs={{ name }} />
-        <MenubarItemAction action={Action.FileVersionHistory} actionArgs={{ uuid: fileUuid }} />
 
         <MenubarSeparator />
 

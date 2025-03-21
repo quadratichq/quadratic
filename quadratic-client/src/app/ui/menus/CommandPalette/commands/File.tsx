@@ -45,20 +45,6 @@ const commands: CommandGroup = {
       },
     },
     {
-      label: downloadFileActionSpec.label,
-      isAvailable: downloadFileActionSpec.isAvailable,
-      Component: (props) => {
-        const { name } = useFileContext();
-        return (
-          <CommandPaletteListItem
-            {...props}
-            action={() => downloadFileActionSpec.run({ name })}
-            icon={downloadFileActionSpec?.Icon && <downloadFileActionSpec.Icon />}
-          />
-        );
-      },
-    },
-    {
       label: openFileVersionHistoryActionSpec.label,
       isAvailable: openFileVersionHistoryActionSpec.isAvailable,
       Component: (props) => {
@@ -69,6 +55,20 @@ const commands: CommandGroup = {
             {...props}
             action={action}
             icon={openFileVersionHistoryActionSpec.Icon && <openFileVersionHistoryActionSpec.Icon />}
+          />
+        );
+      },
+    },
+    {
+      label: downloadFileActionSpec.label,
+      isAvailable: downloadFileActionSpec.isAvailable,
+      Component: (props) => {
+        const { name } = useFileContext();
+        return (
+          <CommandPaletteListItem
+            {...props}
+            action={() => downloadFileActionSpec.run({ name })}
+            icon={downloadFileActionSpec?.Icon && <downloadFileActionSpec.Icon />}
           />
         );
       },
