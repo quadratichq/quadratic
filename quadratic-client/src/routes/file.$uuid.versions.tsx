@@ -2,7 +2,7 @@ import { authClient } from '@/auth/auth';
 import { Empty } from '@/dashboard/components/Empty';
 import { getActionFileDownload, getActionFileDuplicate } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
-import { ChevronRightIcon, RefreshIcon } from '@/shared/components/Icons';
+import { ChevronRightIcon, DraftIcon, ExternalLinkIcon, RefreshIcon } from '@/shared/components/Icons';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
@@ -45,10 +45,10 @@ export const loader = async ({ params }: LoaderFunctionArgs): Promise<LoaderData
 export const Component = () => {
   const { uuid } = useParams() as { uuid: string };
   const data = useLoaderData() as LoaderData;
+  const revalidator = useRevalidator();
   const [activeCheckpointId, setActiveCheckpointId] = useState<number | null>(null);
   const activeCheckpoint = data.checkpoints.find((checkpoint) => checkpoint.id === activeCheckpointId);
   const iframeUrl = activeCheckpointId ? ROUTES.FILE(uuid) + `?checkpoint=${activeCheckpointId}&embed` : '';
-  const revalidator = useRevalidator();
 
   const checkpointsByDay = data.checkpoints.reduce((acc, version) => {
     const date = new Date(version.timestamp);
@@ -65,8 +65,8 @@ export const Component = () => {
 
   return (
     <div className="grid h-full w-full grid-cols-[300px_1fr] overflow-hidden">
-      <div className="overflow-hidden border-r border-border">
-        <div className="p-3 pb-0">
+      <div className="grid grid-rows-[auto_1fr] overflow-hidden border-r border-border">
+        <div className="overflow-hidden border-b border-border p-3">
           <div className="mb-1 flex items-center justify-between">
             <TooltipProvider>
               <Tooltip>
@@ -126,16 +126,20 @@ export const Component = () => {
               Download
             </Button>
           </div>
-        </div>
-        <p className="mt-3 flex items-center gap-1 overflow-hidden border-y border-border bg-accent py-1 pl-3 pr-2 text-xs font-semibold">
-          <span className="truncate">{data.name}</span>
-          <Button variant="ghost" size="sm" className="ml-auto flex-shrink-0 text-muted-foreground" asChild>
-            <Link to={ROUTES.FILE(uuid)} reloadDocument>
-              Open
+          <Button variant="secondary" size="sm" asChild>
+            <Link
+              to={ROUTES.FILE(uuid)}
+              target="_blank"
+              className="group mt-2 flex w-full items-center gap-1 overflow-hidden !px-1 hover:text-primary"
+            >
+              <DraftIcon />
+              <span className="truncate">{data.name}</span>
+
+              <ExternalLinkIcon className="ml-auto !text-sm text-muted-foreground opacity-70 group-hover:text-primary group-hover:opacity-100" />
             </Link>
           </Button>
-        </p>
-        <div className="flex h-full flex-col overflow-scroll p-3">
+        </div>
+        <div className="h-full flex-col overflow-auto p-3">
           {Object.entries(checkpointsByDay).map(([day, checkpoints], groupIndex) => {
             return (
               <div key={day} className={cn(groupIndex !== 0 && 'mt-6')}>
@@ -152,13 +156,17 @@ export const Component = () => {
                     const isSelected = activeCheckpointId === id;
                     const isCurrentVersion = groupIndex === 0 && checkpointIndex === 0;
                     return (
-                      <li key={id}>
+                      <li key={id} className="mb-0.5">
                         <button
+                          disabled={isLoading}
                           className={cn(
                             'flex w-full items-center justify-between rounded px-2 py-2 ',
-                            isSelected ? 'bg-accent' : 'hover:bg-accent'
+                            isSelected ? 'bg-accent' : 'hover:bg-accent',
+                            isLoading && 'cursor-not-allowed'
                           )}
-                          onClick={() => setActiveCheckpointId((prev) => (prev === id ? null : id))}
+                          onClick={() => {
+                            setActiveCheckpointId((prev) => (prev === id ? null : id));
+                          }}
                         >
                           <span className="mr-auto">{label}</span>
                           {isCurrentVersion && (
