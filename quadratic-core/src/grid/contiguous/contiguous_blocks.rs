@@ -1,8 +1,8 @@
-use std::collections::{btree_map, BTreeMap};
+use std::collections::{BTreeMap, btree_map};
 
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use smallvec::{smallvec, SmallVec};
+use smallvec::{SmallVec, smallvec};
 
 use super::block::Block;
 
@@ -520,25 +520,18 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
         self.add_blocks(shifted_blocks);
     }
 
-    pub fn translate_in_place(&mut self, delta: i64) {
-        let mut new_map = BTreeMap::new();
-        for (mut key, mut block) in std::mem::take(&mut self.0).into_iter() {
-            if delta < 0 {
-                key = key.saturating_sub(delta.unsigned_abs()).max(1);
-                block.start = block.start.saturating_sub(delta.unsigned_abs()).max(1);
-                if block.end != u64::MAX {
-                    block.end = block.end.saturating_sub(delta.unsigned_abs()).max(1);
-                }
-            } else {
-                key = key.saturating_add(delta as u64).max(1);
-                block.start = block.start.saturating_add(delta as u64).max(1);
-                if block.end != u64::MAX {
-                    block.end = block.end.saturating_add(delta as u64).max(1);
-                }
-            }
-            new_map.insert(key, block);
+    /// Translates all non-default values.
+    ///
+    /// Values before position 1 are truncated.
+    pub fn translate_in_place(&mut self, delta: i64)
+    where
+        T: Default,
+    {
+        match delta {
+            ..0 => self.shift_remove(1, (1 - delta) as u64),
+            1.. => self.shift_insert(1, (1 + delta) as u64, T::default()),
+            0 => (),
         }
-        self.0 = new_map;
     }
 
     pub fn values_mut(&mut self) -> impl Iterator<Item = &mut Block<T>> {
@@ -766,5 +759,30 @@ mod tests {
                 assert_eq!(block.end, u64::MAX);
             }
         }
+    }
+
+    #[test]
+    fn test_translate() {
+        let mut blocks = ContiguousBlocks::new();
+        blocks.set(1, "hello");
+        blocks.set(5, "world");
+
+        blocks.translate_in_place(10);
+        blocks.check_validity().unwrap();
+
+        let mut expected = ContiguousBlocks::new();
+        expected.set(11, "hello");
+        expected.set(15, "world");
+        assert_eq!(blocks, expected);
+
+        blocks.translate_in_place(-11);
+        blocks.check_validity().unwrap();
+
+        let mut expected = ContiguousBlocks::new();
+        expected.set(4, "world");
+        assert_eq!(blocks, expected);
+
+        blocks.translate_in_place(-10);
+        assert_eq!(blocks, ContiguousBlocks::new());
     }
 }
