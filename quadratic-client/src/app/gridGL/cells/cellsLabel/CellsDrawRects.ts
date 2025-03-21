@@ -1,4 +1,4 @@
-import type { DrawRects } from '@/app/gridGL/types/size';
+import type { DrawRects } from '@/app/shared/types/size';
 import { Container, Graphics } from 'pixi.js';
 
 export class CellsDrawRects extends Container {

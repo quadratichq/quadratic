@@ -220,7 +220,7 @@ export class Cursor extends Container {
     let color: number | undefined, offsets: { x: number; y: number; width: number; height: number } | undefined;
     const inlineShowing = inlineEditorHandler.getShowing();
     if (inlineEditorHandler.formula && inlineShowing && sheets.current === inlineShowing.sheetId) {
-      color = colors.cellColorUserFormula;
+      color = getCSSVariableTint('primary');
       const { width, height } = sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y);
       offsets = {
         x: inlineEditorHandler.x - CURSOR_THICKNESS * 0.5,
@@ -265,7 +265,7 @@ export class Cursor extends Container {
     let { x, y, width, height } = sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y);
     width = Math.max(inlineEditorHandler.width + CURSOR_THICKNESS * (formula ? 1 : 2), width);
     height = Math.max(inlineEditorHandler.height + CURSOR_THICKNESS * (formula ? 1 : 2), height);
-    const color = formula ? colors.cellColorUserFormula : colors.cursorCell;
+    const color = formula ? getCSSVariableTint('primary') : colors.cursorCell;
     const indicatorSize = INLINE_NAVIGATE_TEXT_INDICATOR_SIZE;
     const halfSize = indicatorSize / 2;
     const corners = [

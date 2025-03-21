@@ -31,7 +31,8 @@ impl GridController {
         // first try html
         if let Some(html) = html {
             if let Ok(ops) = self.paste_html_operations(selection, html, special) {
-                return self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
+                self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
+                return;
             }
         }
 
