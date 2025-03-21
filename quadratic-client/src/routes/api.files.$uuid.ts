@@ -10,9 +10,7 @@ export const loader = async () => null;
 export type Action = {
   response: { ok: boolean } | null;
   'request.delete': ReturnType<typeof getActionFileDelete>;
-  'request.download': {
-    action: 'download';
-  };
+  'request.download': ReturnType<typeof getActionFileDownload>;
   'request.duplicate': ReturnType<typeof getActionFileDuplicate>;
   'request.move': ReturnType<typeof getActionFileMove>;
   'request.rename': {
@@ -45,7 +43,8 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
 
   if (action === 'download') {
     try {
-      await apiClient.files.download(uuid);
+      const { checkpointDataUrl } = json as Action['request.download'];
+      await apiClient.files.download(uuid, { checkpointDataUrl });
       return { ok: true };
     } catch (error) {
       return { ok: false };
@@ -54,8 +53,10 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
 
   if (action === 'duplicate') {
     try {
-      const { redirect, isPrivate } = json as Action['request.duplicate'];
-      const { uuid: newFileUuid } = await apiClient.files.duplicate(uuid, isPrivate);
+      const { redirect, isPrivate, checkpointDataUrl, checkpointVersion } = json as Action['request.duplicate'];
+      const checkpoint =
+        checkpointDataUrl && checkpointVersion ? { dataUrl: checkpointDataUrl, version: checkpointVersion } : undefined;
+      const { uuid: newFileUuid } = await apiClient.files.duplicate(uuid, { isPrivate, checkpoint });
       return redirect ? redirectDocument(ROUTES.FILE(newFileUuid)) : { ok: true };
     } catch (error) {
       return { ok: false };
@@ -104,11 +105,23 @@ export const getActionFileMove = (ownerUserId: number | null) => {
  * @param {boolean} args.isPrivate - Whether the file is private to the user on the team where its created
  * @returns
  */
-export const getActionFileDuplicate = ({ isPrivate, redirect }: { isPrivate: boolean; redirect: boolean }) => {
+export const getActionFileDuplicate = ({
+  isPrivate,
+  redirect,
+  checkpointDataUrl,
+  checkpointVersion,
+}: {
+  isPrivate: boolean;
+  redirect: boolean;
+  checkpointDataUrl?: string;
+  checkpointVersion?: string;
+}) => {
   return {
     action: 'duplicate' as const,
     isPrivate,
     redirect,
+    ...(checkpointDataUrl ? { checkpointDataUrl } : {}),
+    ...(checkpointVersion ? { checkpointVersion } : {}),
   };
 };
 
@@ -117,5 +130,12 @@ export const getActionFileDelete = ({ userEmail, redirect }: { userEmail: string
     action: 'delete' as const,
     userEmail,
     redirect,
+  };
+};
+
+export const getActionFileDownload = ({ checkpointDataUrl }: { checkpointDataUrl?: string } = {}) => {
+  return {
+    action: 'download' as const,
+    ...(checkpointDataUrl ? { checkpointDataUrl } : {}),
   };
 };

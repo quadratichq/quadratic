@@ -11,15 +11,23 @@ import { initWorkers } from '@/app/web-workers/workers';
 import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/auth';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
-import { ROUTES } from '@/shared/constants/routes';
+import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
-import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { FilePermissionSchema, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type { LoaderFunctionArgs } from 'react-router-dom';
-import { Link, Outlet, isRouteErrorResponse, redirect, useLoaderData, useRouteError } from 'react-router-dom';
+import {
+  Link,
+  Outlet,
+  isRouteErrorResponse,
+  redirect,
+  useLoaderData,
+  useParams,
+  useRouteError,
+} from 'react-router-dom';
 import type { MutableSnapshot } from 'recoil';
 import { RecoilRoot } from 'recoil';
 import { Empty } from '../dashboard/components/Empty';
@@ -28,6 +36,9 @@ type FileData = ApiTypes['/v0/files/:uuid.GET.response'];
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData | Response> => {
   const { uuid } = params as { uuid: string };
+  const url = new URL(request.url);
+  const searchParams = new URLSearchParams(url.search);
+  const checkpointId = searchParams.get(SEARCH_PARAMS.CHECKPOINT.KEY);
 
   // Fetch the file. If it fails because of permissions, redirect to login. Otherwise throw.
   let data;
@@ -52,12 +63,24 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   // initialize: Rust metadata and PIXI assets
   await Promise.all([initRustClient(), loadAssets()]);
 
-  // initialize Core web worker
-  const result = await quadraticCore.load({
-    fileId: uuid,
+  let checkpoint = {
     url: data.file.lastCheckpointDataUrl,
     version: data.file.lastCheckpointVersion,
     sequenceNumber: data.file.lastCheckpointSequenceNumber,
+  };
+  if (checkpointId !== null) {
+    const c = await apiClient.files.checkpoints.get(uuid, checkpointId);
+    checkpoint.url = c.dataUrl;
+    checkpoint.version = c.version;
+    checkpoint.sequenceNumber = c.sequenceNumber;
+  }
+
+  // initialize Core web worker
+  const result = await quadraticCore.load({
+    fileId: uuid,
+    url: checkpoint.url,
+    version: checkpoint.version,
+    sequenceNumber: checkpoint.sequenceNumber,
   });
   if (result.error) {
     Sentry.captureEvent({
@@ -86,6 +109,13 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     throw new Error('Expected quadraticCore.load to return either a version or an error');
   }
   updateRecentFiles(uuid, data.file.name, true);
+
+  // TODO: only do certain pieces of this logic if it's the iframe embed
+
+  // Hot-modify permissions if its an embed so it's read-only
+  if (isEmbed) {
+    data.userMakingRequest.filePermissions = [FilePermissionSchema.enum.FILE_VIEW];
+  }
   return data;
 };
 
@@ -126,6 +156,7 @@ export const Component = () => {
 
 export const ErrorBoundary = () => {
   const error = useRouteError();
+  const { uuid } = useParams() as { uuid: string };
 
   const actionsDefault = (
     <div className={`flex justify-center gap-2`}>
@@ -136,6 +167,19 @@ export const ErrorBoundary = () => {
       </Button>
       <Button asChild variant="default">
         <Link to="/">Go home</Link>
+      </Button>
+    </div>
+  );
+
+  const actionsFileFailedToLoad = (
+    <div className={`flex justify-center gap-2`}>
+      <Button asChild variant="outline">
+        <Link to="/">Go home</Link>
+      </Button>
+      <Button asChild variant="default">
+        <Link to={ROUTES.FILE_VERSIONS(uuid)} reloadDocument>
+          Open version history
+        </Link>
       </Button>
     </div>
   );
@@ -181,6 +225,7 @@ export const ErrorBoundary = () => {
       title = 'File validation failed';
       description =
         'The file was retrieved from the server but failed to load into the app. Try again or contact us for help.';
+      actions = actionsFileFailedToLoad;
       reportError = true;
     } else {
       title = 'Failed to load file';

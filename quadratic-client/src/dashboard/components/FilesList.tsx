@@ -155,7 +155,6 @@ export function FilesList({
             lazyLoad={i > 12}
             filterValue={filterValue}
             setFilterValue={setFilterValue}
-            activeShareMenuFileId={activeShareMenuFileId}
             setActiveShareMenuFileId={setActiveShareMenuFileId}
             viewPreferences={viewPreferences}
           />

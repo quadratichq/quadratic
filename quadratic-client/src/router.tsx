@@ -25,6 +25,7 @@ export const router = createBrowserRouter(
           {/* Check that the browser is supported _before_ we try to load anything from the API */}
           <Route element={<BrowserCompatibilityLayoutRoute />}>
             <Route index element={<Navigate to="/" replace />} />
+            <Route path=":uuid/versions" lazy={() => import('./routes/file.$uuid.versions')} />
             <Route
               path=":uuid"
               id={ROUTE_LOADER_IDS.FILE}

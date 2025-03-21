@@ -39,14 +39,16 @@ const TooltipPopover = ({
   children,
   shortcut,
   side,
+  tooltipProps,
 }: {
   label: string;
   children: React.ReactNode;
   shortcut?: string;
   side?: PopoverContentProps['side'];
+  tooltipProps?: TooltipPrimitive.TooltipProps;
 }) => {
   return (
-    <Tooltip>
+    <Tooltip {...(tooltipProps ? tooltipProps : {})}>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
       <TooltipPortal>
         <TooltipContent side={side}>

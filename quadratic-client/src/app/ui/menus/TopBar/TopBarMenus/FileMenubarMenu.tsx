@@ -93,6 +93,7 @@ export const FileMenubarMenu = () => {
             Duplicate
           </MenubarItem>
         )}
+        <MenubarItemAction action={Action.FileVersionHistory} actionArgs={{ uuid: fileUuid }} />
 
         {recentFilesMenuItems}
 

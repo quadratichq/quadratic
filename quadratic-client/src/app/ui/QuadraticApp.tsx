@@ -12,8 +12,10 @@ import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javas
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
+import { SEARCH_PARAMS } from '@/shared/constants/routes';
 import { useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
+import { useSearchParams } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 import { v4 } from 'uuid';
 
@@ -22,6 +24,8 @@ export function QuadraticApp() {
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const loggedInUser = useRecoilValue(editorInteractionStateUserAtom);
   const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
+  const [searchParams] = useSearchParams();
+  const checkpointId = searchParams.get(SEARCH_PARAMS.CHECKPOINT.KEY);
 
   // Loading states
   const [offlineLoading, setOfflineLoading] = useState(true);
@@ -43,6 +47,13 @@ export function QuadraticApp() {
   useEffect(() => {
     if (fileUuid && !pixiApp.initialized) {
       pixiApp.init().then(() => {
+        // If we're loading a specific checkpoint (version history), don't load multiplayer
+        if (checkpointId) {
+          setMultiplayerLoading(false);
+          setOfflineLoading(false);
+          return;
+        }
+
         if (!loggedInUser) {
           const anonymous = { sub: v4(), first_name: 'Anonymous', last_name: 'User' };
           multiplayer.init(fileUuid, anonymous, true);
@@ -51,7 +62,7 @@ export function QuadraticApp() {
         }
       });
     }
-  }, [fileUuid, loggedInUser]);
+  }, [fileUuid, loggedInUser, checkpointId]);
 
   // wait for offline sync
   useEffect(() => {
