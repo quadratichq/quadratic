@@ -16,7 +16,7 @@ const MINIMUM_VIEWPORT_SCALE = 0.01;
 const MAXIMUM_VIEWPORT_SCALE = 10;
 const WHEEL_ZOOM_PERCENT = 1.5;
 
-const WAIT_TO_SNAP_TIME = 50;
+const WAIT_TO_SNAP_TIME = 200;
 const SNAPPING_TIME = 50;
 
 type SnapState = 'waiting' | 'snapping' | undefined;
@@ -258,6 +258,7 @@ export class Viewport extends PixiViewport {
         if (this.x > headings.width || this.y > headings.height) {
           if (this.pixiApp.momentumDetector.hasMomentumScroll()) {
             if (!this.plugins.get('drag')?.active) {
+              console.log('startSnap A');
               this.startSnap();
             }
           } else {
@@ -267,7 +268,11 @@ export class Viewport extends PixiViewport {
         }
       } else if (this.snapState === 'waiting' && this.snapTimeout) {
         if (Date.now() - this.snapTimeout > WAIT_TO_SNAP_TIME) {
-          if (!this.plugins.get('drag')?.active) {
+          // Check for trackpad pinch using pointer type
+          const isPinching = window.TouchEvent && navigator.maxTouchPoints > 0 && (window as any).touches?.length > 1;
+          console.log('touches', (window as any).touches?.length);
+          if (!this.plugins.get('drag')?.active && !isPinching) {
+            console.log('startSnap B');
             this.startSnap();
           }
         }
@@ -318,6 +323,7 @@ export class Viewport extends PixiViewport {
 
   private handleZoomEnd = () => {
     this.waitForZoomEnd = false;
+    console.log('handleZoomEnd');
     this.startSnap();
   };
 
