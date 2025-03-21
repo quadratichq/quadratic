@@ -6,7 +6,7 @@ import { ChevronRightIcon, DraftIcon, ExternalLinkIcon, RefreshIcon } from '@/sh
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
-import { CONTACT_URL } from '@/shared/constants/urls';
+import { CONTACT_URL, DOCUMENTATION_FILE_RECOVERY } from '@/shared/constants/urls';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
@@ -95,7 +95,11 @@ export const Component = () => {
           </div>
           <h3 className="mr-auto text-lg font-semibold">Version history</h3>
           <p className="text-sm text-muted-foreground">
-            Browse previous file versions in read-only mode to see changes and restore them.
+            Browse and recover file versions that’ve been automatically saved.{' '}
+            <a href={DOCUMENTATION_FILE_RECOVERY} target="_blank" className="underline hover:text-primary">
+              Learn more
+              <ExternalLinkIcon className="relative top-0.5 ml-0.5 !text-xs" />
+            </a>
           </p>
 
           <div className="mt-2 grid grid-cols-2 gap-2">
