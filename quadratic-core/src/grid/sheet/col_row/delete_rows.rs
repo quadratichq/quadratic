@@ -3,6 +3,17 @@ use crate::{
 };
 
 impl Sheet {
+    fn delete_tables_with_all_rows(&mut self, transaction: &mut PendingTransaction, rows: &[i64]) {
+        let tables_to_delete = self.data_tables.iter().filter_map(|(pos, dt)| {
+            let rect = dt.output_rect(*pos, false);
+            if rect.y_range().all(|row| rows.contains(&row)) {
+                Some(*pos)
+            } else {
+                None
+            }
+        });
+    }
+
     fn ensure_no_table_ui(&self, rows: &[i64]) -> bool {
         for (pos, dt) in self.data_tables.iter() {
             let ui_rows = dt.ui_rows(*pos);
@@ -11,6 +22,23 @@ impl Sheet {
             }
         }
         false
+    }
+
+    fn delete_table_rows(&mut self, transaction: &mut PendingTransaction, rows: &Vec<i64>) {
+        let table_rows_to_delete = self.data_tables.iter().filter_map(|(pos, dt)| {
+            let rect = dt.output_rect(*pos, false);
+            let rows_to_delete = rows
+                .iter()
+                .filter(|row| {
+                    !dt.ui_rows(*pos).contains(row) && dt.output_rect(*pos, false).contains(*pos)
+                })
+                .collect::<Vec<_>>();
+            if rows_to_delete.is_empty() {
+                None
+            } else {
+                Some((*pos, rows_to_delete))
+            }
+        });
     }
 
     /// Deletes rows. Returns false if the rows contain table UI and the
@@ -38,6 +66,8 @@ impl Sheet {
             }
             return Err(());
         }
+
+        self.delete_table_rows(transaction, &rows);
 
         for row in rows {
             self.delete_row(transaction, row);

@@ -27,6 +27,7 @@ impl Sheet {
         let mut set_dirty_code_cells = Vec::new();
         let mut dt_to_add = Vec::new();
         let mut dt_to_replace = Vec::new();
+        let mut dt_to_delete = Vec::new();
 
         self.data_tables
             .iter()
@@ -47,6 +48,8 @@ impl Sheet {
                 // check if all columns in the table are included in the deletion range (1)
                 let table_cols: Vec<i64> = (output_rect.min.x..=output_rect.max.x).collect();
                 if table_cols.iter().all(|col| columns.contains(col)) {
+                    set_dirty_code_cells.push(*pos);
+                    dt_to_delete.push((*pos, index));
                     return;
                 }
 
@@ -99,6 +102,14 @@ impl Sheet {
                 }
             });
 
+        for (pos, index) in dt_to_delete {
+            let old_dt = self.data_tables.shift_remove(&pos);
+            reverse_operations.push(Operation::SetDataTable {
+                sheet_pos: pos.to_sheet_pos(self.id),
+                data_table: old_dt,
+                index,
+            });
+        }
         for (pos, index, new_dt) in dt_to_replace {
             let old_dt = self.data_tables.insert(pos, new_dt);
             reverse_operations.push(Operation::SetDataTable {
@@ -329,5 +340,69 @@ mod tests {
         assert_data_table_size(&gc, SheetId::TEST, pos![A1], 3, 1, false);
         assert_data_table_size(&gc, SheetId::TEST, pos![B10], 3, 1, false);
         assert_eq!(first_sheet(&gc).data_tables.len(), 2);
+    }
+
+    #[test]
+    fn test_delete_entire_table() {
+        let mut gc = GridController::test();
+        test_create_data_table(
+            &mut gc,
+            SheetId::TEST,
+            pos![A1],
+            3,
+            2,
+            &["A", "B", "C", "D", "E", "F"],
+        );
+
+        // Delete all columns that contain the table
+        gc.delete_columns(SheetId::TEST, vec![1, 2, 3], None);
+
+        assert!(
+            first_sheet(&gc).data_tables.is_empty(),
+            "Data table should be completely removed"
+        );
+
+        gc.undo(None);
+        assert_data_table_size(&gc, SheetId::TEST, pos![A1], 3, 2, false);
+        assert_eq!(first_sheet(&gc).data_tables.len(), 1);
+    }
+
+    #[test]
+    fn test_delete_multiple_entire_tables() {
+        let mut gc = GridController::test();
+        // Create two tables
+        test_create_data_table(&mut gc, SheetId::TEST, pos![A1], 2, 1, &["A", "B"]);
+        test_create_data_table(&mut gc, SheetId::TEST, pos![D1], 2, 1, &["C", "D"]);
+
+        // Delete all columns containing both tables
+        gc.delete_columns(SheetId::TEST, vec![1, 2, 4, 5], None);
+
+        assert!(
+            first_sheet(&gc).data_tables.is_empty(),
+            "All data tables should be completely removed"
+        );
+
+        gc.undo(None);
+        assert_data_table_size(&gc, SheetId::TEST, pos![A1], 2, 1, false);
+        assert_data_table_size(&gc, SheetId::TEST, pos![D1], 2, 1, false);
+        assert_eq!(first_sheet(&gc).data_tables.len(), 2);
+    }
+
+    #[test]
+    fn test_delete_entire_table_with_extra_columns() {
+        let mut gc = GridController::test();
+        test_create_data_table(&mut gc, SheetId::TEST, pos![B1], 2, 1, &["A", "B"]);
+
+        // Delete more columns than the table occupies
+        gc.delete_columns(SheetId::TEST, vec![1, 2, 3, 4], None);
+
+        assert!(
+            first_sheet(&gc).data_tables.is_empty(),
+            "Data table should be completely removed"
+        );
+
+        gc.undo(None);
+        assert_data_table_size(&gc, SheetId::TEST, pos![B1], 2, 1, false);
+        assert_eq!(first_sheet(&gc).data_tables.len(), 1);
     }
 }

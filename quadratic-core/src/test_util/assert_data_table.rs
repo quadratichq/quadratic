@@ -101,8 +101,8 @@ mod tests {
             2,
             &["a", "b", "c", "d"],
         );
-        assert_data_table_size(&gc, sheet_id, pos![A1], 2, 4, false);
-        assert_data_table_size(&gc, sheet_id, pos![A1], 2, 2, true);
+        assert_data_table_size(&gc, sheet_id, pos![A1], 2, 4, true);
+        assert_data_table_size(&gc, sheet_id, pos![A1], 2, 2, false);
     }
 
     #[test]
