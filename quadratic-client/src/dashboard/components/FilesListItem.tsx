@@ -139,7 +139,7 @@ export function FilesListItemUserFile({
   };
 
   const handleDownload = () => {
-    const data = getActionFileDownload({});
+    const data = getActionFileDownload();
     fetcherDownload.submit(data, fetcherSubmitOpts);
   };
 
@@ -278,10 +278,10 @@ export function FilesListItemUserFile({
                       )}
                     </>
                   )}
-                  <DropdownMenuSeparator />
 
                   {permissions.includes('FILE_DELETE') && (
                     <>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={handleDelete}>Delete</DropdownMenuItem>
                     </>
                   )}

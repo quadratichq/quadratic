@@ -134,7 +134,7 @@ export const getActionFileDelete = ({ userEmail, redirect }: { userEmail: string
   };
 };
 
-export const getActionFileDownload = ({ checkpointDataUrl }: { checkpointDataUrl?: string }) => {
+export const getActionFileDownload = ({ checkpointDataUrl }: { checkpointDataUrl?: string } = {}) => {
   return {
     action: 'download' as const,
     ...(checkpointDataUrl ? { checkpointDataUrl } : {}),
