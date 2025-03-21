@@ -60,9 +60,12 @@ impl Sheet {
                 for column in columns {
                     // Adjust the column index based on previously deleted columns
                     let adjusted_column = column - output_rect.min.x - deleted_count;
-                    let display_column =
+                    let column_index =
                         new_dt.get_column_index_from_display_index(adjusted_column as u32, true);
-                    if let Err(e) = new_dt.delete_column_sorted(display_column as usize) {
+                    if new_dt.is_column_sorted(column_index as usize) {
+                        new_dt.sort_dirty = true;
+                    }
+                    if let Err(e) = new_dt.delete_column_sorted(column_index as usize) {
                         dbgjs!(format!(
                             "Error in check_delete_tables_columns: cannot delete column\n{:?}",
                             e
@@ -187,10 +190,7 @@ impl Sheet {
 #[cfg(test)]
 mod tests {
     use crate::{
-        CellValue,
-        controller::GridController,
-        grid::SheetId,
-        test_util::{assert_data_table_size, first_sheet, test_create_data_table},
+        controller::GridController, grid::{sort::SortDirection, SheetId}, test_util::{assert_data_table_size, first_sheet, test_create_data_table}, CellValue
     };
 
     use super::*;
@@ -404,5 +404,38 @@ mod tests {
         gc.undo(None);
         assert_data_table_size(&gc, SheetId::TEST, pos![B1], 2, 1, false);
         assert_eq!(first_sheet(&gc).data_tables.len(), 1);
+    }
+
+    #[test]
+    fn test_check_delete_tables_columns_sorted() {
+        let mut gc = GridController::test();
+        let mut transaction = PendingTransaction::default();
+
+        // Create a data table and sort the first column
+        test_create_data_table(&mut gc, SheetId::TEST, pos![A1], 3, 1, &["A", "B", "C"]);
+        let sheet = gc.sheet_mut(SheetId::TEST);
+        let data_table = sheet.data_table_mut(pos![A1]).unwrap();
+        data_table.sort_column(0, SortDirection::Ascending).unwrap();
+
+        // Verify initial state
+        assert!(!data_table.sort_dirty);
+
+        // Delete an unsorted column (column 2)
+        let sheet = gc.sheet_mut(SheetId::TEST);
+        sheet.check_delete_tables_columns(&mut transaction, &vec![2]);
+        let data_table = sheet.data_table(pos![A1]).unwrap();
+        assert!(
+            !data_table.sort_dirty,
+            "sort_dirty should remain false when deleting unsorted column"
+        );
+
+        // Delete the sorted column (column 1)
+        let sheet = gc.sheet_mut(SheetId::TEST);
+        sheet.check_delete_tables_columns(&mut transaction, &vec![1]);
+        let data_table = sheet.data_table(pos![B1]).unwrap();
+        assert!(
+            data_table.sort_dirty,
+            "sort_dirty should be true when deleting sorted column"
+        );
     }
 }
