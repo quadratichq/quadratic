@@ -2,7 +2,11 @@ import type { ModelConfig, ModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
 export const DEFAULT_MODEL: ModelKey = 'bedrock-anthropic:claude:thinking-toggle-off';
 
-export const DEFAULT_GET_CHAT_NAME_MODEL: ModelKey = 'bedrock-anthropic:us.anthropic.claude-3-5-haiku-20241022-v1:0';
+export const DEFAULT_GET_CHAT_NAME_MODEL: ModelKey = 'vertexai:gemini-2.0-flash-001';
+
+export const DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL: ModelKey = 'vertexai:gemini-2.0-flash-001';
+
+export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: ModelKey = 'vertexai:gemini-2.0-flash-001';
 
 // updating this will force the model to be reset to the default model in local storage
 export const DEFAULT_MODEL_VERSION = 6;

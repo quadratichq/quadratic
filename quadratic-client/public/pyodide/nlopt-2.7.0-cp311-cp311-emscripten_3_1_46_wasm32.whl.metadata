@@ -1,7 +1,0 @@
-Metadata-Version: 2.1
-Name: nlopt
-Version: 2.7.0
-License-File: COPYING
-License-File: AUTHORS
-Requires-Dist: numpy >=1.14
-

@@ -7,9 +7,11 @@ import { showAIAnalystOnStartupAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import type { AITool, AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { Chat, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
 import { v4 } from 'uuid';
+import type { z } from 'zod';
 
 export interface AIAnalystState {
   showAIAnalyst: boolean;
@@ -18,6 +20,10 @@ export interface AIAnalystState {
   loading: boolean;
   chats: Chat[];
   currentChat: Chat;
+  promptSuggestions: {
+    abortController: AbortController | undefined;
+    suggestions: z.infer<(typeof AIToolsArgsSchema)[AITool.UserPromptSuggestions]>['prompt_suggestions'];
+  };
 }
 
 export const defaultAIAnalystState: AIAnalystState = {
@@ -32,13 +38,17 @@ export const defaultAIAnalystState: AIAnalystState = {
     lastUpdated: Date.now(),
     messages: [],
   },
+  promptSuggestions: {
+    abortController: undefined,
+    suggestions: [],
+  },
 };
 
 export const aiAnalystAtom = atom<AIAnalystState>({
   key: 'aiAnalystAtom',
   default: defaultAIAnalystState,
   effects: [
-    async ({ getPromise, setSelf, trigger, getLoadable }) => {
+    async ({ getPromise, setSelf, trigger }) => {
       if (trigger === 'get') {
         const showAIAnalyst = await getPromise(showAIAnalystOnStartupAtom);
         setSelf({
@@ -129,6 +139,8 @@ export const aiAnalystChatsAtom = selector<Chat[]>({
         return prev;
       }
 
+      prev.promptSuggestions.abortController?.abort();
+
       // find deleted chats that are not in the new value
       const deletedChatIds = prev.chats
         .filter((chat) => !newValue.some((newChat) => newChat.id === chat.id))
@@ -174,6 +186,10 @@ export const aiAnalystChatsAtom = selector<Chat[]>({
               messages: [],
             }
           : prev.currentChat,
+        promptSuggestions: {
+          abortController: undefined,
+          suggestions: [],
+        },
       };
     });
   },
@@ -193,6 +209,8 @@ export const aiAnalystCurrentChatAtom = selector<Chat>({
         return prev;
       }
 
+      prev.promptSuggestions.abortController?.abort();
+
       let chats = prev.chats;
       if (newValue.id) {
         chats = [...chats.filter((chat) => chat.id !== newValue.id), newValue];
@@ -203,6 +221,10 @@ export const aiAnalystCurrentChatAtom = selector<Chat>({
         showChatHistory: false,
         chats,
         currentChat: newValue,
+        promptSuggestions: {
+          abortController: undefined,
+          suggestions: [],
+        },
       };
     });
   },
@@ -250,6 +272,8 @@ export const aiAnalystCurrentChatMessagesAtom = selector<ChatMessage[]>({
         return prev;
       }
 
+      prev.promptSuggestions.abortController?.abort();
+
       // update current chat
       const currentChat: Chat = {
         id: !!prev.currentChat.id ? prev.currentChat.id : v4(),
@@ -265,6 +289,10 @@ export const aiAnalystCurrentChatMessagesAtom = selector<ChatMessage[]>({
         ...prev,
         chats,
         currentChat,
+        promptSuggestions: {
+          abortController: undefined,
+          suggestions: [],
+        },
       };
     });
   },
@@ -275,13 +303,8 @@ export const aiAnalystCurrentChatMessagesCountAtom = selector<number>({
   get: ({ get }) => getPromptMessages(get(aiAnalystCurrentChatAtom).messages).length,
 });
 
-const STORAGE_KEY = 'aiAnalystOpenCount';
-export function getAiAnalystOpenCount() {
-  const count = window.localStorage.getItem(STORAGE_KEY);
-  return count ? parseInt(count) : 0;
-}
-export function incrementAiAnalystOpenCount() {
-  const count = getAiAnalystOpenCount();
-  const newCount = count + 1;
-  window.localStorage.setItem(STORAGE_KEY, newCount.toString());
-}
+export const aiAnalystPromptSuggestionsAtom = createSelector('promptSuggestions');
+export const aiAnalystPromptSuggestionsCountAtom = selector<number>({
+  key: 'aiAnalystPromptSuggestionsCountAtom',
+  get: ({ get }) => get(aiAnalystPromptSuggestionsAtom).suggestions.length,
+});

@@ -70,6 +70,7 @@ import type {
   CoreClientMoveCodeCellVertically,
   CoreClientNeighborText,
   CoreClientSearch,
+  CoreClientSetCodeCellValue,
   CoreClientSummarizeSelection,
   CoreClientValidateInput,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
@@ -147,6 +148,9 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientTransactionProgress') {
       events.emit('transactionProgress', e.data);
+      return;
+    } else if (e.data.type === 'coreClientTransactionEnd') {
+      events.emit('transactionEnd', e.data);
       return;
     } else if (e.data.type === 'coreClientUpdateCodeCell') {
       events.emit('updateCodeCell', {
@@ -482,15 +486,22 @@ class QuadraticCore {
     language: CodeCellLanguage;
     codeString: string;
     cursor?: string;
-  }) {
-    this.send({
-      type: 'clientCoreSetCodeCellValue',
-      sheetId: options.sheetId,
-      x: options.x,
-      y: options.y,
-      language: options.language,
-      codeString: options.codeString,
-      cursor: options.cursor,
+  }): Promise<string | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientSetCodeCellValue) => {
+        resolve(message.transactionId);
+      };
+      this.send({
+        type: 'clientCoreSetCodeCellValue',
+        sheetId: options.sheetId,
+        x: options.x,
+        y: options.y,
+        language: options.language,
+        codeString: options.codeString,
+        cursor: options.cursor,
+        id,
+      });
     });
   }
 

@@ -10,10 +10,10 @@ import { useRecoilValue, useSetRecoilState } from 'recoil';
 export const AIAnalystEffects = memo(() => {
   const currentChat = useRecoilValue(aiAnalystCurrentChatAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
-  const setCurrentChatName = useSetRecoilState(aiAnalystCurrentChatNameAtom);
-  const { getChatName } = useGetChatName();
 
   // updates chat name if it is empty
+  const { getChatName } = useGetChatName();
+  const setCurrentChatName = useSetRecoilState(aiAnalystCurrentChatNameAtom);
   useEffect(() => {
     if (!loading && !currentChat.name && currentChat.messages.length > 0) {
       getChatName()
