@@ -52,7 +52,6 @@ export function FilesListItemUserFile({
   file,
   filterValue,
   setFilterValue,
-  setActiveRecoverFileId,
   setActiveShareMenuFileId,
   lazyLoad,
   viewPreferences,
@@ -60,8 +59,6 @@ export function FilesListItemUserFile({
   file: FilesListUserFile;
   filterValue: string;
   setFilterValue: Function;
-
-  setActiveRecoverFileId: Function;
   setActiveShareMenuFileId: Function;
   lazyLoad: boolean;
   viewPreferences: ViewPreferences;
