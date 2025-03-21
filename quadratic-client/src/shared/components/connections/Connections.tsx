@@ -129,7 +129,7 @@ export const Connections = ({
       handleNavigateToDetailsViewOverride({ Connection: { kind: connectionType, id: connectionUuid } });
       return;
     }
-    // Otherwise we're on the dashboard, so navigate to the connectiond details
+    // Otherwise we're on the dashboard, so navigate to the connection details
     setActiveConnectionState({ uuid: connectionUuid, view: 'details' });
     setActiveConnectionType(connectionType);
   };

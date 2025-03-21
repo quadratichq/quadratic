@@ -1,10 +1,12 @@
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { Connections } from '@/shared/components/connections/Connections';
 import { ConnectionsSidebar } from '@/shared/components/connections/ConnectionsSidebar';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { HelpIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
@@ -16,6 +18,8 @@ import { useRecoilState, useSetRecoilState } from 'recoil';
 
 export function ConnectionsMenu() {
   const [showConnectionsMenu, setShowConnectionsMenu] = useRecoilState(editorInteractionStateShowConnectionsMenuAtom);
+  const { addGlobalSnackbar } = useGlobalSnackbar();
+
   const {
     team: { uuid: teamUuid },
     userMakingRequest: { teamPermissions },
@@ -33,12 +37,33 @@ export function ConnectionsMenu() {
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
   const openEditor = useCallback(
     (language: CodeCellLanguage) => {
-      mixpanel.track('[Connections].query', { language });
+      setShowConnectionsMenu(false);
 
       const cursor = sheets.sheet.cursor.position;
-      setShowConnectionsMenu(false);
+      const { x, y } = cursor;
+      const table = pixiApp.cellsSheet().tables.getTableFromTableCell(x, y);
+      const codeCell = table?.codeCell;
+
+      if (codeCell) {
+        if (codeCell.language === 'Import') {
+          addGlobalSnackbar('Cannot create a connection inside a data table', { severity: 'error' });
+        } else {
+          addGlobalSnackbar('Cannot create a connection inside a code cell', { severity: 'error' });
+        }
+
+        return;
+      }
+
+      mixpanel.track('[Connections].query', { language });
+
       setCodeEditorState((prev) => ({
         ...prev,
+        aiAssistant: {
+          abortController: undefined,
+          loading: false,
+          id: '',
+          messages: [],
+        },
         diffEditorContent: undefined,
         waitingForEditorClose: {
           codeCell: {
@@ -52,7 +77,7 @@ export function ConnectionsMenu() {
         },
       }));
     },
-    [setCodeEditorState, setShowConnectionsMenu]
+    [addGlobalSnackbar, setCodeEditorState, setShowConnectionsMenu]
   );
   const [showHelp, setShowHelp] = useState(false);
 
