@@ -7,6 +7,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import type { JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
 import type { Graphics } from 'pixi.js';
+import { Rectangle } from 'pixi.js';
 
 const SECTION_OUTLINE_WIDTH = 1;
 const SECTION_OUTLINE_NATIVE = true;
@@ -60,7 +61,7 @@ export const drawInfiniteSelection = (options: {
   color: number;
   alpha: number;
   ranges: RefRangeBounds[];
-}) => {
+}): Rectangle | undefined => {
   const { g, color, alpha, ranges } = options;
   if (ranges.length === 0) return;
 
@@ -73,6 +74,8 @@ export const drawInfiniteSelection = (options: {
   const bounds = pixiApp.viewport.getVisibleBounds();
   bounds.x = Math.max(bounds.x, 0);
   bounds.y = Math.max(bounds.y, 0);
+
+  let rectangle: Rectangle | undefined;
 
   ranges.forEach((range) => {
     const start = range.start;
@@ -126,10 +129,15 @@ export const drawInfiniteSelection = (options: {
         g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: SECTION_OUTLINE_NATIVE });
         g.moveTo(rect.left, 0);
         g.lineTo(rect.right, 0);
-        g.moveTo(rect.left, Math.max(0, bounds.top));
+        const top = Math.max(0, bounds.top);
+        g.moveTo(rect.left, top);
         g.lineTo(rect.left, bounds.bottom);
-        g.moveTo(rect.right, Math.max(0, bounds.top));
+        g.moveTo(rect.right, top);
         g.lineTo(rect.right, bounds.bottom);
+
+        if (ranges.length === 1) {
+          rectangle = new Rectangle(rect.left, top, rect.width, bounds.bottom - top);
+        }
       }
     }
 
@@ -178,6 +186,10 @@ export const drawInfiniteSelection = (options: {
         g.moveTo(bounds.left, rect.bottom);
         g.lineTo(bounds.right, rect.bottom);
       }
+
+      if (ranges.length === 1) {
+        rectangle = new Rectangle(bounds.x, rect.top, bounds.width, rect.height);
+      }
     }
 
     // multiple rows are selected starting on a column
@@ -207,4 +219,6 @@ export const drawInfiniteSelection = (options: {
       }
     }
   });
+
+  return rectangle;
 };

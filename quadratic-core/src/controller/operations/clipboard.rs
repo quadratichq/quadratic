@@ -24,7 +24,7 @@ use crate::grid::DataTableKind;
 use crate::grid::SheetId;
 use crate::{a1::A1Selection, CellValue, Pos, Rect, SheetPos, SheetRect};
 
-// todo: break up this file so tests are easier to write
+// todo: this probably belongs in sheet and not controller
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, ts_rs::TS)]
 pub enum PasteSpecial {
@@ -701,8 +701,19 @@ impl GridController {
         }
     }
 
-    pub fn move_cells_operations(&mut self, source: SheetRect, dest: SheetPos) -> Vec<Operation> {
-        vec![Operation::MoveCells { source, dest }]
+    pub fn move_cells_operations(
+        &mut self,
+        source: SheetRect,
+        dest: SheetPos,
+        columns: bool,
+        rows: bool,
+    ) -> Vec<Operation> {
+        vec![Operation::MoveCells {
+            source,
+            dest,
+            columns,
+            rows,
+        }]
     }
 }
 
@@ -729,9 +740,17 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         let source = (0, 0, 2, 2, sheet_id).into();
         let dest = (2, 2, sheet_id).into();
-        let operations = gc.move_cells_operations(source, dest);
+        let operations = gc.move_cells_operations(source, dest, false, false);
         assert_eq!(operations.len(), 1);
-        assert_eq!(operations[0], Operation::MoveCells { source, dest });
+        assert_eq!(
+            operations[0],
+            Operation::MoveCells {
+                source,
+                dest,
+                columns: false,
+                rows: false
+            }
+        );
     }
 
     #[test]
