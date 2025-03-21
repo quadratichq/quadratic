@@ -193,7 +193,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
       const { x, y } = targetSelection.getCursor();
 
-      await quadraticCore.moveCells(sheetRect, x, y, sheets.current);
+      await quadraticCore.moveCells(sheetRect, x, y, sheets.current, false, false);
 
       return `Executed move cells tool successfully.`;
     } catch (e) {
@@ -260,5 +260,11 @@ export const aiToolsActions: AIToolActionsRecord = {
     } catch (e) {
       return `Error executing update code cell tool: ${e}`;
     }
+  },
+  [AITool.CodeEditorCompletions]: async () => {
+    return `Code editor completions tool executed successfully, user is presented with a list of code completions, to choose from.`;
+  },
+  [AITool.UserPromptSuggestions]: async () => {
+    return `User prompt suggestions tool executed successfully, user is presented with a list of prompt suggestions, to choose from.`;
   },
 } as const;

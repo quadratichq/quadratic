@@ -37,6 +37,18 @@ pub fn assert_cell_value(
     );
 }
 
+/// Run an assertion that a cell value is equal to the given value using the first sheet of the gc
+#[track_caller]
+#[cfg(test)]
+pub fn assert_display_cell_value_first_sheet(
+    grid_controller: &GridController,
+    x: i64,
+    y: i64,
+    value: &str,
+) {
+    assert_display_cell_value(grid_controller, grid_controller.sheet_ids()[0], x, y, value);
+}
+
 /// Run an assertion that a cell value is equal to the given value
 #[track_caller]
 #[cfg(test)]
@@ -123,6 +135,28 @@ pub fn assert_data_table_cell_value(
         CellValue::Text(value.into()),
         cell_value
     );
+}
+
+// Run an assertion that cell values in a give column are equal to the given value
+#[track_caller]
+#[cfg(test)]
+pub fn assert_cell_value_col(
+    grid_controller: &GridController,
+    sheet_id: SheetId,
+    x: i64,
+    y_start: i64,
+    y_end: i64,
+    value: Vec<&str>,
+) {
+    for y in y_start..=y_end {
+        assert_display_cell_value(
+            grid_controller,
+            sheet_id,
+            x,
+            y,
+            value.get(y as usize).unwrap(),
+        );
+    }
 }
 
 /// Run an assertion that cell values in a given row are equal to the given value
@@ -299,6 +333,16 @@ pub fn print_data_table(grid_controller: &GridController, sheet_id: SheetId, rec
     }
 }
 
+/// Util to print the entire sheet from the gc
+#[track_caller]
+pub fn print_first_sheet(gc: &GridController) {
+    if let Some(sheet) = gc.try_sheet(gc.sheet_ids()[0]) {
+        print_sheet(sheet);
+    } else {
+        println!("Sheet not found");
+    }
+}
+
 /// Util to print the entire sheet
 #[track_caller]
 pub fn print_sheet(sheet: &Sheet) {
@@ -465,5 +509,75 @@ mod test {
             .fill_color
             .set(pos![C3], Some("green".to_string()));
         print_table_sheet_formats(sheet, Rect::test_a1("A1:C3"));
+    }
+
+    #[test]
+    fn test_assert_cell_value() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+
+        // Set up a test cell
+        sheet.set_cell_value(pos![A1], CellValue::Text("test".to_string()));
+
+        // Test the assertion passes when values match
+        assert_cell_value(&gc, sheet_id, 1, 1, CellValue::Text("test".to_string()));
+    }
+
+    #[test]
+    fn test_assert_display_cell_value() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+
+        // Set up a test cell
+        sheet.set_cell_value(pos![A1], CellValue::Text("display test".to_string()));
+
+        // Test the assertion passes when values match
+        assert_display_cell_value(&gc, sheet_id, 0, 0, "display test");
+    }
+
+    #[test]
+    fn test_assert_cell_value_row() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+
+        // Set up a row of test cells
+        sheet.set_cell_value(pos![A1], CellValue::Text("one".to_string()));
+        sheet.set_cell_value(pos![B1], CellValue::Text("two".to_string()));
+        sheet.set_cell_value(pos![C1], CellValue::Text("three".to_string()));
+
+        // Test the assertion passes for a row
+        assert_cell_value_row(&gc, sheet_id, 0, 2, 0, vec!["one", "two", "three"]);
+    }
+
+    #[test]
+    fn test_str_vec_to_string_vec() {
+        let input = vec!["test", "convert", "strings"];
+        let result = str_vec_to_string_vec(&input);
+        assert_eq!(
+            result,
+            vec![
+                "test".to_string(),
+                "convert".to_string(),
+                "strings".to_string()
+            ]
+        );
+    }
+
+    #[test]
+    fn test_assert_cell_format_bold() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+
+        // Set bold formatting
+        sheet.formats.bold.set(pos![A1], Some(true));
+
+        // Test the assertion passes when bold is set
+        assert_cell_format_bold(&gc, sheet_id, 1, 1, true);
+        // Test the assertion passes when bold is not set
+        assert_cell_format_bold(&gc, sheet_id, 1, 2, false);
     }
 }

@@ -45,8 +45,15 @@ impl GridController {
         }
     }
 
-    pub fn move_cells(&mut self, source: SheetRect, dest: SheetPos, cursor: Option<String>) {
-        let ops = self.move_cells_operations(source, dest);
+    pub fn move_cells(
+        &mut self,
+        source: SheetRect,
+        dest: SheetPos,
+        columns: bool,
+        rows: bool,
+        cursor: Option<String>,
+    ) {
+        let ops = self.move_cells_operations(source, dest, columns, rows);
         self.start_user_transaction(ops, cursor, TransactionName::MoveCells);
     }
 
@@ -87,7 +94,7 @@ impl GridController {
                 .max(1);
             dest = SheetPos::new(sheet_id, x, row);
         }
-        let ops = self.move_cells_operations(source, dest);
+        let ops = self.move_cells_operations(source, dest, false, false);
         self.start_user_transaction(ops, cursor, TransactionName::MoveCells);
         Some(dest.into())
     }
@@ -129,7 +136,7 @@ impl GridController {
                 .max(1);
             dest = SheetPos::new(sheet_id, col, y);
         }
-        let ops = self.move_cells_operations(source, dest);
+        let ops = self.move_cells_operations(source, dest, false, false);
         self.start_user_transaction(ops, cursor, TransactionName::MoveCells);
         Some(dest.into())
     }
@@ -888,6 +895,8 @@ mod test {
         gc.move_cells(
             SheetRect::new_pos_span(Pos { x: 0, y: 0 }, Pos { x: 3, y: 2 }, sheet_id),
             (10, 10, sheet_id).into(),
+            false,
+            false,
             None,
         );
 

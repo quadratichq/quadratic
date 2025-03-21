@@ -982,7 +982,14 @@ class QuadraticCore {
     });
   }
 
-  moveCells(source: SheetRect, targetX: number, targetY: number, targetSheetId: string) {
+  moveCells(
+    source: SheetRect,
+    targetX: number,
+    targetY: number,
+    targetSheetId: string,
+    columns: boolean,
+    rows: boolean
+  ) {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = () => {
@@ -995,6 +1002,8 @@ class QuadraticCore {
         targetSheetId,
         targetX,
         targetY,
+        columns,
+        rows,
         cursor: sheets.getCursorPosition(),
       });
     });
@@ -1357,6 +1366,28 @@ class QuadraticCore {
       sheetId,
       row,
       below,
+      cursor,
+    });
+  }
+
+  moveColumns(sheetId: string, colStart: number, colEnd: number, to: number, cursor: string) {
+    this.send({
+      type: 'clientCoreMoveColumns',
+      sheetId,
+      colStart,
+      colEnd,
+      to,
+      cursor,
+    });
+  }
+
+  moveRows(sheetId: string, rowStart: number, rowEnd: number, to: number, cursor: string) {
+    this.send({
+      type: 'clientCoreMoveRows',
+      sheetId,
+      rowStart,
+      rowEnd,
+      to,
       cursor,
     });
   }

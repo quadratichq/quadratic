@@ -304,9 +304,13 @@ export class Cursor extends Container {
     return table?.codeCell.spill_error;
   }
 
-  private calculateCursorRectangle(finiteRanges: RefRangeBounds[], infiniteRanges: RefRangeBounds[]) {
+  private calculateCursorRectangle(
+    finiteRanges: RefRangeBounds[],
+    infiniteRanges: RefRangeBounds[],
+    infiniteRectangle: Rectangle | undefined
+  ) {
     const sheet = sheets.sheet;
-    if (finiteRanges.length + infiniteRanges.length === 0) {
+    if (finiteRanges.length + infiniteRanges.length !== 1) {
       this.cursorRectangle = undefined;
     } else if (finiteRanges.length) {
       this.cursorRectangle = new Rectangle();
@@ -316,6 +320,8 @@ export class Cursor extends Container {
         Number(finiteRanges[0].end.row.coord) + 1
       );
       this.cursorRectangle = new Rectangle(start.x, start.y, end.x - start.x, end.y - start.y);
+    } else if (infiniteRanges.length) {
+      this.cursorRectangle = infiniteRectangle;
     } else {
       this.cursorRectangle = new Rectangle();
     }
@@ -347,13 +353,13 @@ export class Cursor extends Container {
       const finiteRanges = cursor.getFiniteRefRangeBounds();
       this.drawFiniteCursor(finiteRanges);
       const infiniteRanges = cursor.getInfiniteRefRangeBounds();
-      drawInfiniteSelection({
+      const infiniteRectangle = drawInfiniteSelection({
         g: this.graphics,
         color: pixiApp.accentColor,
         alpha: FILL_SELECTION_ALPHA,
         ranges: infiniteRanges,
       });
-      this.calculateCursorRectangle(finiteRanges, infiniteRanges);
+      this.calculateCursorRectangle(finiteRanges, infiniteRanges, infiniteRectangle);
       if (
         !columnRow &&
         cursor.rangeCount() === 1 &&
