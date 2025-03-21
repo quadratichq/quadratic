@@ -1,4 +1,4 @@
-import { getActionFileDownload, getActionFileDuplicate } from '@/routes/api.files.$uuid';
+import { getActionFileDuplicate } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { DownloadIcon, ExternalLinkIcon, FileCopyIcon, SpinnerIcon } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
@@ -158,12 +158,12 @@ function FileVersion({
             size="icon"
             className="text-muted-foreground"
             onClick={() => {
-              const data = getActionFileDownload({ checkpointUrl });
-              fetcherDownload.submit(data, {
-                method: 'POST',
-                action: ROUTES.API.FILE(fileUuid),
-                encType: 'application/json',
-              });
+              // const data = getActionFileDownload({ checkpointUrl });
+              // fetcherDownload.submit(data, {
+              //   method: 'POST',
+              //   action: ROUTES.API.FILE(fileUuid),
+              //   encType: 'application/json',
+              // });
             }}
           >
             {fetcherDownload.state !== 'idle' ? <SpinnerIcon /> : <DownloadIcon />}

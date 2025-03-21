@@ -44,8 +44,8 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
 
   if (action === 'download') {
     try {
-      const { checkpointUrl } = json as Action['request.download'];
-      await apiClient.files.download(uuid, { checkpointUrl });
+      const { checkpointDataUrl } = json as Action['request.download'];
+      await apiClient.files.download(uuid, { checkpointDataUrl });
       return { ok: true };
     } catch (error) {
       return { ok: false };
@@ -134,9 +134,9 @@ export const getActionFileDelete = ({ userEmail, redirect }: { userEmail: string
   };
 };
 
-export const getActionFileDownload = ({ checkpointUrl }: { checkpointUrl?: string }) => {
+export const getActionFileDownload = ({ checkpointDataUrl }: { checkpointDataUrl?: string }) => {
   return {
     action: 'download' as const,
-    ...(checkpointUrl ? { checkpointUrl } : {}),
+    ...(checkpointDataUrl ? { checkpointDataUrl } : {}),
   };
 };

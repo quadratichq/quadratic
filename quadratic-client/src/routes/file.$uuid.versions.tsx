@@ -1,19 +1,44 @@
+import { authClient } from '@/auth/auth';
+import { Empty } from '@/dashboard/components/Empty';
+import { getActionFileDownload, getActionFileDuplicate } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { ChevronRightIcon, RefreshIcon } from '@/shared/components/Icons';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
+import { CONTACT_URL } from '@/shared/constants/urls';
+import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useState } from 'react';
-import { Link, useLoaderData, useParams, useRevalidator, type LoaderFunctionArgs } from 'react-router-dom';
+import {
+  Link,
+  redirect,
+  useFetcher,
+  useLoaderData,
+  useParams,
+  useRevalidator,
+  useRouteError,
+  type LoaderFunctionArgs,
+} from 'react-router-dom';
 
-type LoaderData = Awaited<ReturnType<typeof loader>>;
+type LoaderData = ApiTypes['/v0/files/:uuid/checkpoints.GET.response'];
 
-export const loader = async ({ params }: LoaderFunctionArgs) => {
+export const loader = async ({ params }: LoaderFunctionArgs): Promise<LoaderData | Response> => {
   const { uuid } = params as { uuid: string };
-  const data = await apiClient.files.checkpoints.list(uuid);
+  let data;
+  try {
+    data = await apiClient.files.checkpoints.list(uuid);
+  } catch (error: any) {
+    const isLoggedIn = await authClient.isAuthenticated();
+    if (error.status === 401 && !isLoggedIn) {
+      return redirect(ROUTES.SIGNUP_WITH_REDIRECT());
+    }
+    throw error;
+  }
   return data;
 };
 
@@ -21,6 +46,7 @@ export const Component = () => {
   const { uuid } = useParams() as { uuid: string };
   const data = useLoaderData() as LoaderData;
   const [activeCheckpointId, setActiveCheckpointId] = useState<number | null>(null);
+  const activeCheckpoint = data.checkpoints.find((checkpoint) => checkpoint.id === activeCheckpointId);
   const iframeUrl = activeCheckpointId ? ROUTES.FILE(uuid) + `?checkpoint=${activeCheckpointId}&embed` : '';
   const revalidator = useRevalidator();
 
@@ -33,7 +59,9 @@ export const Component = () => {
 
   // TODO: we probably want to hide the file name because it's changed over time
 
-  // TODO: permissions
+  const fetcher = useFetcher();
+  const isLoading = fetcher.state !== 'idle' || revalidator.state === 'loading';
+  const btnsDisabled = isLoading || !activeCheckpoint;
 
   return (
     <div className="grid h-full w-full grid-cols-[300px_1fr] overflow-hidden">
@@ -60,9 +88,9 @@ export const Component = () => {
               onClick={() => {
                 revalidator.revalidate();
               }}
-              disabled={revalidator.state === 'loading'}
+              disabled={isLoading}
             >
-              <RefreshIcon className={cn(revalidator.state === 'loading' && 'animate-spin')} />
+              <RefreshIcon className={cn(isLoading && 'animate-spin opacity-50')} />
             </Button>
           </div>
           <h3 className="mr-auto text-lg font-semibold">Version history</h3>
@@ -72,20 +100,27 @@ export const Component = () => {
 
           <div className="mt-2 grid grid-cols-2 gap-2">
             <Button
-              disabled={!activeCheckpointId}
+              disabled={btnsDisabled}
               onClick={() => {
-                // TODO: implement
-                window.alert('Not implemented');
+                const data = getActionFileDuplicate({
+                  isPrivate: true,
+                  redirect: true,
+                  checkpointVersion: activeCheckpoint?.version,
+                  checkpointDataUrl: activeCheckpoint?.dataUrl,
+                });
+                fetcher.submit(data, { method: 'POST', action: ROUTES.API.FILE(uuid), encType: 'application/json' });
               }}
             >
               Duplicate
             </Button>
             <Button
               variant="outline"
-              disabled={!activeCheckpointId}
+              disabled={btnsDisabled}
               onClick={() => {
-                // TODO: implement
-                window.alert('Not implemented');
+                if (activeCheckpoint) {
+                  const data = getActionFileDownload({ checkpointDataUrl: activeCheckpoint.dataUrl });
+                  fetcher.submit(data, { method: 'POST', action: ROUTES.API.FILE(uuid), encType: 'application/json' });
+                }
               }}
             >
               Download
@@ -95,36 +130,42 @@ export const Component = () => {
         <p className="mt-3 flex items-center gap-1 overflow-hidden border-y border-border bg-accent py-1 pl-3 pr-2 text-xs font-semibold">
           <span className="truncate">{data.name}</span>
           <Button variant="ghost" size="sm" className="ml-auto flex-shrink-0 text-muted-foreground" asChild>
-            <Link target="_blank" to={ROUTES.FILE(uuid)}>
-              Open file
+            <Link to={ROUTES.FILE(uuid)} reloadDocument>
+              Open
             </Link>
           </Button>
         </p>
         <div className="flex h-full flex-col overflow-scroll p-3">
-          {Object.entries(checkpointsByDay).map(([day, versions], groupIndex) => {
+          {Object.entries(checkpointsByDay).map(([day, checkpoints], groupIndex) => {
             return (
               <div key={day} className={cn(groupIndex !== 0 && 'mt-6')}>
                 <Type variant="overline" className="mb-2">
                   {day}
                 </Type>
                 <ul className="flex-col gap-2 text-sm">
-                  {versions.map((version) => {
-                    const label = new Date(version.timestamp).toLocaleTimeString(undefined, {
+                  {checkpoints.map(({ timestamp, id }, checkpointIndex) => {
+                    const label = new Date(timestamp).toLocaleTimeString(undefined, {
                       hour: 'numeric',
                       minute: '2-digit',
                       second: '2-digit',
                     });
-                    const isSelected = activeCheckpointId === version.id;
+                    const isSelected = activeCheckpointId === id;
+                    const isCurrentVersion = groupIndex === 0 && checkpointIndex === 0;
                     return (
-                      <li key={version.id}>
+                      <li key={id}>
                         <button
                           className={cn(
-                            'flex w-full items-center justify-between rounded px-2 py-2',
-                            isSelected ? 'bg-primary text-background' : ''
+                            'flex w-full items-center justify-between rounded px-2 py-2 ',
+                            isSelected ? 'bg-accent' : 'hover:bg-accent'
                           )}
-                          onClick={() => setActiveCheckpointId((prev) => (prev === version.id ? null : version.id))}
+                          onClick={() => setActiveCheckpointId((prev) => (prev === id ? null : id))}
                         >
-                          {label}
+                          <span className="mr-auto">{label}</span>
+                          {isCurrentVersion && (
+                            <Badge variant="outline" className="mr-1">
+                              Current version
+                            </Badge>
+                          )}
                           <ChevronRightIcon className={cn(isSelected ? 'opacity-100' : 'opacity-30')} />
                         </button>
                       </li>
@@ -149,4 +190,28 @@ export const Component = () => {
   );
 };
 
-// TODO: error boundary
+export const ErrorBoundary = () => {
+  const error = useRouteError();
+
+  return (
+    <Empty
+      title="Failed to load version history"
+      description="An unexpected error occurred. Try reloading the page or contact us if the error continues."
+      Icon={ExclamationTriangleIcon}
+      severity="error"
+      error={error}
+      actions={
+        <div className="flex justify-center gap-2">
+          <Button variant="outline" asChild>
+            <Link to={CONTACT_URL} target="_blank">
+              Contact us
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link to="/">Go home</Link>
+          </Button>
+        </div>
+      }
+    />
+  );
+};

@@ -152,17 +152,17 @@ export const apiClient = {
       return fetchFromApi(`/v0/files/${uuid}`, { method: 'DELETE' }, ApiSchemas['/v0/files/:uuid.DELETE.response']);
     },
 
-    async download(uuid: string, args: { checkpointUrl?: string } = {}) {
+    async download(uuid: string, args: { checkpointDataUrl?: string } = {}) {
       // TODO: move somewhere more specific to download only? because this works for both download (latest) and download version
       mixpanel.track('[Files].downloadFile', { id: uuid });
 
       // Get file info from the server
       const { file } = await this.get(uuid);
       const name = file.name;
-      const checkpointUrl = args.checkpointUrl ?? file.lastCheckpointDataUrl;
+      const checkpointDataUrl = args.checkpointDataUrl ?? file.lastCheckpointDataUrl;
 
       // Download the file from the server, then save it through the browser
-      const checkpointData = await fetch(checkpointUrl).then((res) => res.arrayBuffer());
+      const checkpointData = await fetch(checkpointDataUrl).then((res) => res.arrayBuffer());
       downloadQuadraticFile(name, new Uint8Array(checkpointData));
     },
 
