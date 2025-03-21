@@ -20,13 +20,7 @@ import type { CodeCell } from '@/app/shared/types/codeCell';
 import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type {
-  AIMessage,
-  AIMessagePrompt,
-  ChatMessage,
-  Content,
-  ToolResultMessage,
-} from 'quadratic-shared/typesAndSchemasAI';
+import type { AIMessage, ChatMessage, Content, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 
@@ -146,26 +140,29 @@ export function useSubmitAIAssistantPrompt() {
         });
 
         try {
-          // Send user prompt to API
-          const updatedMessages = await updateInternalContext({ codeCell });
-          const response = await handleAIRequestToAPI({
-            chatId,
-            source: 'AIAssistant',
-            modelKey,
-            messages: updatedMessages,
-            useStream: true,
-            toolName: undefined,
-            useToolsPrompt: true,
-            language: getLanguage(codeCell.language),
-            useQuadraticContext: true,
-            setMessages: (updater) => set(aiAssistantMessagesAtom, updater),
-            signal: abortController.signal,
-          });
-          let toolCalls: AIMessagePrompt['toolCalls'] = response.toolCalls;
-
           // Handle tool calls
           let toolCallIterations = 0;
-          while (toolCalls.length > 0 && toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
+          while (toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
+            // Send tool call results to API
+            const updatedMessages = await updateInternalContext({ codeCell });
+            const response = await handleAIRequestToAPI({
+              chatId,
+              source: 'AIAssistant',
+              modelKey,
+              messages: updatedMessages,
+              useStream: true,
+              toolName: undefined,
+              useToolsPrompt: true,
+              language: getLanguage(codeCell.language),
+              useQuadraticContext: true,
+              setMessages: (updater) => set(aiAssistantMessagesAtom, updater),
+              signal: abortController.signal,
+            });
+
+            if (response.toolCalls.length === 0) {
+              break;
+            }
+
             toolCallIterations++;
 
             // Message containing tool call results
@@ -175,7 +172,7 @@ export function useSubmitAIAssistantPrompt() {
               contextType: 'toolResult',
             };
 
-            for (const toolCall of toolCalls) {
+            for (const toolCall of response.toolCalls) {
               if (Object.values(AITool).includes(toolCall.name as AITool)) {
                 const aiTool = toolCall.name as AITool;
                 const argsObject = JSON.parse(toolCall.arguments);
@@ -192,26 +189,8 @@ export function useSubmitAIAssistantPrompt() {
                 });
               }
             }
-            toolCalls = [];
 
             set(aiAssistantMessagesAtom, (prev) => [...prev, toolResultMessage]);
-
-            // Send tool call results to API
-            const updatedMessages = await updateInternalContext({ codeCell });
-            const response = await handleAIRequestToAPI({
-              chatId,
-              source: 'AIAssistant',
-              modelKey,
-              messages: updatedMessages,
-              useStream: true,
-              toolName: undefined,
-              useToolsPrompt: true,
-              language: getLanguage(codeCell.language),
-              useQuadraticContext: true,
-              setMessages: (updater) => set(aiAssistantMessagesAtom, updater),
-              signal: abortController.signal,
-            });
-            toolCalls = response.toolCalls;
           }
         } catch (error) {
           set(aiAssistantMessagesAtom, (prevMessages) => {
