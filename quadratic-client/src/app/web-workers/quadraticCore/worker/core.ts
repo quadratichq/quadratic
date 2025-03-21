@@ -69,26 +69,15 @@ import { Rectangle } from 'pixi.js';
 class Core {
   gridController?: GridController;
 
-  private async loadGridFile(file: string, addToken: boolean): Promise<Uint8Array> {
-    let requestInit = {};
-
-    if (addToken) {
-      const jwt = await coreClient.getJwt();
-      requestInit = { headers: { Authorization: `Bearer ${jwt}` } };
-    }
-
-    const res = await fetch(file, requestInit);
+  private async loadGridFile(file: string): Promise<Uint8Array> {
+    const res = await fetch(file);
     return new Uint8Array(await res.arrayBuffer());
   }
 
   // Creates a Grid from a file. Initializes bother coreClient and coreRender w/metadata.
-  async loadFile(
-    message: ClientCoreLoad,
-    renderPort: MessagePort,
-    addToken: boolean
-  ): Promise<{ version: string } | { error: string }> {
+  async loadFile(message: ClientCoreLoad, renderPort: MessagePort): Promise<{ version: string } | { error: string }> {
     coreRender.init(renderPort);
-    const results = await Promise.all([this.loadGridFile(message.url, addToken), initCore()]);
+    const results = await Promise.all([this.loadGridFile(message.url), initCore()]);
     try {
       this.gridController = GridController.newFromFile(results[0], message.sequenceNumber, true);
     } catch (e) {
