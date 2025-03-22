@@ -79,7 +79,7 @@ export class Javascript {
     }
   };
 
-  async run(message: CoreJavascriptRun, withLineNumbers = true) {
+  run = async (message: CoreJavascriptRun, withLineNumbers = true) => {
     if (this.state !== 'ready') {
       this.awaitingExecution.push(this.coreJavascriptToCodeRun(message));
       return;
@@ -226,7 +226,7 @@ export class Javascript {
       setTimeout(this.next, 0);
       return;
     }
-  }
+  };
 }
 
 export const javascript = new Javascript();

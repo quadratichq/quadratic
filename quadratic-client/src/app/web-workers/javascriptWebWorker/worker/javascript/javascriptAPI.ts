@@ -60,7 +60,7 @@ export class JavascriptAPI {
     // Initialize 2D array with the known dimensions
     const cells: CellType[][] = Array(height)
       .fill(null)
-      .map(() => Array(width).fill(undefined));
+      .map(() => Array(width).fill(null));
 
     for (const cell of response.values.cells) {
       const typed = cell ? this.convertType(cell) : undefined;
