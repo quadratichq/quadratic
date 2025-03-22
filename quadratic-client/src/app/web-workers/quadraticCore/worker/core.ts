@@ -780,9 +780,9 @@ class Core {
     this.gridController.commitSingleResize(sheetId, column, row, size, cursor);
   }
 
-  calculationComplete(results: JsCodeResult) {
+  calculationComplete(jsCodeResultBuffer: ArrayBuffer) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.calculationComplete(JSON.stringify(results));
+    this.gridController.calculationComplete(new Uint8Array(jsCodeResultBuffer));
   }
 
   connectionComplete(transactionId: string, data: ArrayBuffer, std_out?: string, std_err?: string, extra?: string) {
@@ -835,7 +835,10 @@ class Core {
       chart_pixel_output: null,
       has_headers: false,
     };
-    this.gridController.calculationComplete(JSON.stringify(codeResult));
+    const jsCodeResult = JSON.stringify(codeResult);
+    const encoder = new TextEncoder();
+    const jsCodeResultArray = encoder.encode(jsCodeResult);
+    this.gridController.calculationComplete(jsCodeResultArray);
   }
 
   changeDecimalPlaces(selection: string, decimals: number, cursor?: string) {

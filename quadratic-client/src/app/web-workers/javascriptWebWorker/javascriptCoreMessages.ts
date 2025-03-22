@@ -1,5 +1,3 @@
-import type { JsCodeResult } from '@/app/quadratic-core-types';
-
 export interface CoreJavascriptRun {
   type: 'coreJavascriptRun';
   transactionId: string;
@@ -12,14 +10,15 @@ export interface CoreJavascriptRun {
 export interface JavascriptCoreResults {
   type: 'javascriptCoreResults';
   transactionId: string;
-  results: JsCodeResult;
+  // ArrayBuffer of stringified JsCodeResult
+  jsCodeResultBuffer: ArrayBuffer;
 }
 
 export interface CoreJavascriptGetCellsA1 {
   type: 'coreJavascriptGetCellsA1';
   id: number;
   // ArrayBuffer of stringified JsCellsA1Response
-  responseBuffer: ArrayBuffer;
+  cellsA1ResponseBuffer: ArrayBuffer;
 }
 
 export interface JavascriptCoreGetCellsA1 {

@@ -30,7 +30,7 @@ class CoreJavascript {
         if (this.lastTransactionId === e.data.transactionId) {
           this.lastTransactionId = undefined;
         }
-        core.calculationComplete(e.data.results);
+        core.calculationComplete(e.data.jsCodeResultBuffer);
         break;
 
       case 'javascriptCoreGetCellsA1':
@@ -71,15 +71,15 @@ class CoreJavascript {
     }
 
     // Convert string to ArrayBuffer for transfer
-    const responseBuffer = responseUint8Array.buffer as ArrayBuffer;
+    const cellsA1ResponseBuffer = responseUint8Array.buffer as ArrayBuffer;
 
     this.send(
       {
         type: 'coreJavascriptGetCellsA1',
         id,
-        responseBuffer,
+        cellsA1ResponseBuffer,
       },
-      [responseBuffer]
+      [cellsA1ResponseBuffer]
     );
   };
 

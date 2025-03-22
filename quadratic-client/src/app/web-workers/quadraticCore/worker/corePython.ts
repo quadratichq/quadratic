@@ -58,7 +58,9 @@ class CorePython {
           has_headers: !!results.has_headers,
         };
 
-        core.calculationComplete(codeResult);
+        const encoder = new TextEncoder();
+        const encoded = encoder.encode(JSON.stringify(codeResult));
+        core.calculationComplete(encoded.buffer as ArrayBuffer);
         break;
 
       case 'pythonCoreGetCellsA1Length':

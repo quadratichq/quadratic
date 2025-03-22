@@ -149,13 +149,10 @@ export class Javascript {
           setTimeout(this.next, 0);
         } else if (e.data.type === 'getCellsA1Length') {
           const { sharedBuffer, a1 } = e.data;
-          this.api.getCellsA1(a1).then((results) => {
+          this.api.getCellsA1(a1).then((cellsBuffer) => {
             const int32View = new Int32Array(sharedBuffer, 0, 3);
-            if (results) {
-              let cellsString: string | undefined = JSON.stringify(results);
-              const encoder = new TextEncoder();
-              const cellsUint8Array = encoder.encode(cellsString);
-              cellsString = undefined;
+            if (cellsBuffer) {
+              const cellsUint8Array = new Uint8Array(cellsBuffer, 0, cellsBuffer.byteLength);
               const length = cellsUint8Array.length;
               Atomics.store(int32View, 1, length);
               const id = this.id++;
