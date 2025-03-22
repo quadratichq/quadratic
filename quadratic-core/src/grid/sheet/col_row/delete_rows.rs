@@ -1,37 +1,61 @@
 use crate::{
-    controller::active_transactions::pending_transaction::PendingTransaction, grid::Sheet,
+    controller::{
+        active_transactions::pending_transaction::PendingTransaction,
+        operations::operation::Operation,
+    },
+    grid::Sheet,
 };
 
 impl Sheet {
+    /// Deletes tables that have all rows in the deletion range.
     fn delete_tables_with_all_rows(&mut self, transaction: &mut PendingTransaction, rows: &[i64]) {
-        let tables_to_delete = self.data_tables.iter().filter_map(|(pos, dt)| {
-            let rect = dt.output_rect(*pos, false);
-            if rect.y_range().all(|row| rows.contains(&row)) {
-                Some(*pos)
-            } else {
-                None
-            }
-        });
+        let tables_to_delete = self
+            .data_tables
+            .iter()
+            .enumerate()
+            .filter_map(|(index, (pos, dt))| {
+                let rect = dt.output_rect(*pos, false);
+                if rect.y_range().all(|row| rows.contains(&row)) {
+                    Some((*pos, index))
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+
+        for (pos, index) in tables_to_delete {
+            let old_dt = self.data_tables.shift_remove(&pos);
+            transaction
+                .reverse_operations
+                .push(Operation::SetDataTable {
+                    sheet_pos: pos.to_sheet_pos(self.id),
+                    data_table: old_dt,
+                    index,
+                });
+        }
     }
 
     fn ensure_no_table_ui(&self, rows: &[i64]) -> bool {
         for (pos, dt) in self.data_tables.iter() {
+            let rect = dt.output_rect(*pos, false);
             let ui_rows = dt.ui_rows(*pos);
             if rows.iter().any(|row| ui_rows.contains(row)) {
-                return true;
+                // ensure that the entire table is not deleted (we can delete ui
+                // if the entire table is deleted)
+                if !rect.y_range().all(|row| rows.contains(&row)) {
+                    return true;
+                }
             }
         }
         false
     }
 
-    fn delete_table_rows(&mut self, transaction: &mut PendingTransaction, rows: &Vec<i64>) {
+    fn delete_table_rows(&mut self, _transaction: &mut PendingTransaction, rows: &Vec<i64>) {
         let table_rows_to_delete = self.data_tables.iter().filter_map(|(pos, dt)| {
             let rect = dt.output_rect(*pos, false);
             let rows_to_delete = rows
                 .iter()
-                .filter(|row| {
-                    !dt.ui_rows(*pos).contains(row) && dt.output_rect(*pos, false).contains(*pos)
-                })
+                .filter(|row| !dt.ui_rows(*pos).contains(row) && rect.contains(*pos))
                 .collect::<Vec<_>>();
             if rows_to_delete.is_empty() {
                 None
@@ -39,6 +63,8 @@ impl Sheet {
                 Some((*pos, rows_to_delete))
             }
         });
+
+        // for (pos, rows_to_delete) in table_rows_to_delete {}
     }
 
     /// Deletes rows. Returns false if the rows contain table UI and the
@@ -66,6 +92,8 @@ impl Sheet {
             }
             return Err(());
         }
+
+        self.delete_tables_with_all_rows(transaction, &rows);
 
         self.delete_table_rows(transaction, &rows);
 
