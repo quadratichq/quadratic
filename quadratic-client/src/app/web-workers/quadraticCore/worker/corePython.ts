@@ -1,5 +1,5 @@
 import { debugWebWorkers } from '@/app/debugFlags';
-import type { JsCellsA1Response, JsCodeResult } from '@/app/quadratic-core-types';
+import type { JsCellsA1Response } from '@/app/quadratic-core-types';
 import type { CorePythonMessage, PythonCoreMessage } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
 import { core } from '@/app/web-workers/quadraticCore/worker/core';
 
@@ -30,37 +30,7 @@ class CorePython {
         if (this.lastTransactionId === e.data.transactionId) {
           this.lastTransactionId = undefined;
         }
-        if (e.data.results.input_python_stack_trace) {
-          e.data.results.std_err = e.data.results.input_python_stack_trace;
-        }
-        const results = e.data.results;
-        let output_array: string[][][] | null = null;
-        if (results.array_output) {
-          // A 1d list was provided. We convert it to a 2d array by changing each entry into an array.
-          if (!Array.isArray(results.array_output?.[0]?.[0])) {
-            output_array = (results.array_output as any).map((row: any) => [row]);
-          } else {
-            output_array = results.array_output as any as string[][][];
-          }
-        }
-
-        const codeResult: JsCodeResult = {
-          transaction_id: e.data.transactionId,
-          success: results.success,
-          std_err: results.std_err,
-          std_out: results.std_out,
-          output_value: results.output ? (results.output as any as string[]) : null,
-          output_array,
-          line_number: results.lineno ?? null,
-          output_display_type: results.output_type ?? null,
-          cancel_compute: false,
-          chart_pixel_output: null,
-          has_headers: !!results.has_headers,
-        };
-
-        const encoder = new TextEncoder();
-        const encoded = encoder.encode(JSON.stringify(codeResult));
-        core.calculationComplete(encoded.buffer as ArrayBuffer);
+        core.calculationComplete(e.data.jsCodeResultBuffer);
         break;
 
       case 'pythonCoreGetCellsA1Length':
