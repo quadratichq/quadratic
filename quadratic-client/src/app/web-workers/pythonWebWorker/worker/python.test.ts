@@ -62,12 +62,11 @@ describe('Python/Pyodide', () => {
   test(
     'can perform a simple calculation',
     async () => {
-      let code = `
+      const code = `
       5 + 3
 `;
-      let results = await runPython(code);
-
-      expect(results).toEqual({
+      const results = await runPython(code);
+      const expected = {
         output: ['8', 'number'],
         array_output: undefined,
         output_type: 'int',
@@ -85,7 +84,11 @@ describe('Python/Pyodide', () => {
         lineno: 2,
         value_type: 'BinOp',
         formatted_code: '\n      5 + 3\n',
-      });
+      };
+      const encoder = new TextEncoder();
+      const encoded = encoder.encode(JSON.stringify(expected));
+
+      expect(results).toEqual(encoded.buffer);
     },
     30 * 1000
   );
