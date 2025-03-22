@@ -1,4 +1,5 @@
 use crate::{
+    SheetRect,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
@@ -25,6 +26,7 @@ impl Sheet {
 
         for (pos, index) in tables_to_delete {
             let old_dt = self.data_tables.shift_remove(&pos);
+            transaction.add_code_cell(self.id, pos);
             transaction
                 .reverse_operations
                 .push(Operation::SetDataTable {
@@ -50,21 +52,56 @@ impl Sheet {
         false
     }
 
-    fn delete_table_rows(&mut self, _transaction: &mut PendingTransaction, rows: &Vec<i64>) {
-        let table_rows_to_delete = self.data_tables.iter().filter_map(|(pos, dt)| {
-            let rect = dt.output_rect(*pos, false);
-            let rows_to_delete = rows
-                .iter()
-                .filter(|row| !dt.ui_rows(*pos).contains(row) && rect.contains(*pos))
-                .collect::<Vec<_>>();
-            if rows_to_delete.is_empty() {
-                None
-            } else {
-                Some((*pos, rows_to_delete))
-            }
-        });
+    fn delete_table_rows(&mut self, transaction: &mut PendingTransaction, rows: &Vec<i64>) {
+        let table_rows_to_delete = self
+            .data_tables
+            .iter()
+            .filter_map(|(pos, dt)| {
+                let rect = dt.output_rect(*pos, false);
+                let rows_to_delete = rows
+                    .iter()
+                    .filter(|row| !dt.ui_rows(*pos).contains(row) && rect.contains(*pos))
+                    .collect::<Vec<_>>();
+                if rows_to_delete.is_empty() {
+                    None
+                } else {
+                    Some((*pos, rows_to_delete))
+                }
+            })
+            .collect::<Vec<_>>();
 
-        // for (pos, rows_to_delete) in table_rows_to_delete {}
+        for (pos, rows_to_delete) in table_rows_to_delete {
+            transaction.add_code_cell(self.id, pos);
+            if let Some(dt) = self.data_tables.get_mut(&pos) {
+                let rows = rows_to_delete
+                    .iter()
+                    .map(|row| {
+                        let Ok((_actual_index, reverse_row)) = dt.delete_row_sorted(**row as usize)
+                        else {
+                            // there was an error deleting the row, so we skip it
+                            return (**row as u32, None);
+                        };
+                        let w = dt.width() as u32;
+                        transaction.add_dirty_hashes_from_sheet_rect(SheetRect::new(
+                            pos.x,
+                            pos.y + *row,
+                            pos.x + w as i64,
+                            pos.y + *row,
+                            self.id,
+                        ));
+                        (**row as u32, reverse_row)
+                    })
+                    .collect::<Vec<_>>();
+                transaction
+                    .reverse_operations
+                    .push(Operation::InsertDataTableRows {
+                        sheet_pos: pos.to_sheet_pos(self.id),
+                        rows,
+                        swallow: false,
+                        select_table: false,
+                    });
+            }
+        }
     }
 
     /// Deletes rows. Returns false if the rows contain table UI and the
