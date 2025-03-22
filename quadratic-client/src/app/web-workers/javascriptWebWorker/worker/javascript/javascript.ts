@@ -25,7 +25,7 @@ export class Javascript {
   private api: JavascriptAPI;
   private awaitingExecution: CodeRun[];
   private id = 0;
-  private getCellsResponses: Record<number, string> = {};
+  private getCellsResponses: Record<number, Uint8Array> = {};
 
   state: LanguageState = 'loading';
 
@@ -79,7 +79,7 @@ export class Javascript {
     }
   };
 
-  async run(message: CoreJavascriptRun, withLineNumbers = true) {
+  run = async (message: CoreJavascriptRun, withLineNumbers = true) => {
     if (this.state !== 'ready') {
       this.awaitingExecution.push(this.coreJavascriptToCodeRun(message));
       return;
@@ -149,15 +149,14 @@ export class Javascript {
           setTimeout(this.next, 0);
         } else if (e.data.type === 'getCellsA1Length') {
           const { sharedBuffer, a1 } = e.data;
-          this.api.getCellsA1(a1).then((results) => {
+          this.api.getCellsA1(a1).then((cellsBuffer) => {
             const int32View = new Int32Array(sharedBuffer, 0, 3);
-            if (results) {
-              const cellsString = JSON.stringify(results);
-              const encoder = new TextEncoder();
-              const length = encoder.encode(cellsString).length;
+            if (cellsBuffer) {
+              const cellsUint8Array = new Uint8Array(cellsBuffer, 0, cellsBuffer.byteLength);
+              const length = cellsUint8Array.length;
               Atomics.store(int32View, 1, length);
               const id = this.id++;
-              this.getCellsResponses[id] = cellsString;
+              this.getCellsResponses[id] = cellsUint8Array;
               Atomics.store(int32View, 2, id);
               Atomics.store(int32View, 0, 1);
               Atomics.notify(int32View, 0, 1);
@@ -171,16 +170,14 @@ export class Javascript {
           });
         } else if (e.data.type === 'getCellsData') {
           const { id, sharedBuffer } = e.data;
-          const cells = this.getCellsResponses[id];
+          const cellsUint8Array = this.getCellsResponses[id];
           delete this.getCellsResponses[id];
           const int32View = new Int32Array(sharedBuffer, 0, 1);
-          if (cells === undefined) {
+          if (cellsUint8Array === undefined) {
             console.error('[javascript] No cells found for id:', e.data.id);
           } else {
-            const encoder = new TextEncoder();
-            const encodedCells = encoder.encode(cells);
-            const uint8View = new Uint8Array(e.data.sharedBuffer, 4, encodedCells.length);
-            uint8View.set(encodedCells);
+            const uint8View = new Uint8Array(e.data.sharedBuffer, 4, cellsUint8Array.length);
+            uint8View.set(cellsUint8Array);
           }
           Atomics.store(int32View, 0, 1);
           Atomics.notify(int32View, 0, 1);
@@ -226,7 +223,7 @@ export class Javascript {
       setTimeout(this.next, 0);
       return;
     }
-  }
+  };
 }
 
 export const javascript = new Javascript();

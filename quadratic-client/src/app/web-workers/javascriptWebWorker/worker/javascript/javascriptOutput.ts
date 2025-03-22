@@ -131,7 +131,11 @@ export function javascriptConvertOutputArray(
 
   // 2D array of values
   else {
-    const longest = Math.max(...value.map((v) => v.length));
+    let longest = 0;
+    for (let i = 0; i < value.length; i++) {
+      const len = value[i]?.length || 0;
+      longest = Math.max(longest, len);
+    }
 
     for (const [y, v] of value.entries()) {
       output.push([]);

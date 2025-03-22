@@ -22,7 +22,10 @@ export function javascriptErrorResult(transactionId: string, message: string, li
     chart_pixel_output: null,
     has_headers: false,
   };
-  javascriptCore.sendJavascriptResults(transactionId, codeResult);
+  const encoder = new TextEncoder();
+  const encoded = encoder.encode(JSON.stringify(codeResult));
+  const jsCodeResultBuffer = encoded.buffer as ArrayBuffer;
+  javascriptCore.sendJavascriptResults(transactionId, jsCodeResultBuffer, [jsCodeResultBuffer]);
   javascriptClient.sendState('ready');
 }
 
@@ -56,6 +59,9 @@ export function javascriptResults(
 
     has_headers: false,
   };
-  javascriptCore.sendJavascriptResults(transactionId, codeResult);
+  const encoder = new TextEncoder();
+  const encoded = encoder.encode(JSON.stringify(codeResult));
+  const jsCodeResultBuffer = encoded.buffer as ArrayBuffer;
+  javascriptCore.sendJavascriptResults(transactionId, jsCodeResultBuffer, [jsCodeResultBuffer]);
   javascriptClient.sendState('ready', { current: undefined });
 }

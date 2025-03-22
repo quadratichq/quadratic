@@ -12,6 +12,7 @@ export interface BorderStyleCell { top: BorderStyleTimestamp | null, bottom: Bor
 export interface BorderStyleTimestamp { color: Rgba, line: CellBorderLine, timestamp: SmallTimestamp, }
 export interface JsCellsA1Error { core_error: string, }
 export interface JsCellsA1Response { values: JsCellsA1Values | null, error: JsCellsA1Error | null, }
+export interface JsCellsA1Value { x: number, y: number, value: string, type_name: string, }
 export interface JsCellsA1Values { cells: Array<JsCellsA1Value>, x: number, y: number, w: number, h: number, one_dimensional: boolean, two_dimensional: boolean, has_headers: boolean, }
 export type CellAlign = "center" | "left" | "right";
 export type CellBorderLine = "line1" | "line2" | "line3" | "dotted" | "dashed" | "double" | "clear";
