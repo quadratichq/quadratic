@@ -48,7 +48,7 @@ const insertColumnRight: ActionSpec<void> = {
 const deleteColumns: ActionSpec<void> = {
   label: `Delete column(s)`,
   isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) => {
-    const length = sheets.sheet.cursor.getSelectedColumns().length;
+    const length = sheets.sheet.cursor.getSelectedColumnsFinite().length;
     const plural = length > 1 ? 's' : '';
     deleteColumns.label = `Delete ${length} column${plural}`;
     return !isEmbed && isAuthenticated && isColumnFinite();
@@ -57,7 +57,7 @@ const deleteColumns: ActionSpec<void> = {
   run: () => {
     pixiAppSettings.setContextMenu?.({});
 
-    const columns = sheets.sheet.cursor.getSelectedColumns();
+    const columns = sheets.sheet.cursor.getSelectedColumnsFinite();
     quadraticCore.deleteColumns(sheets.current, columns, sheets.getCursorPosition());
   },
 };
@@ -87,7 +87,7 @@ const insertRowBelow: ActionSpec<void> = {
 const deleteRows: ActionSpec<void> = {
   label: 'Delete row(s)',
   isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) => {
-    const length = sheets.sheet.cursor.getSelectedRows().length;
+    const length = sheets.sheet.cursor.getSelectedRowsFinite().length;
     const plural = length > 1 ? 's' : '';
     deleteRows.label = `Delete ${length} row${plural}`;
     return !isEmbed && isAuthenticated && isRowFinite();
@@ -96,7 +96,7 @@ const deleteRows: ActionSpec<void> = {
   run: () => {
     pixiAppSettings.setContextMenu?.({});
 
-    const rows = sheets.sheet.cursor.getSelectedRows();
+    const rows = sheets.sheet.cursor.getSelectedRowsFinite();
     quadraticCore.deleteRows(sheets.current, rows, sheets.getCursorPosition());
   },
 };
