@@ -86,7 +86,7 @@ export const router = createBrowserRouter(
             />
             <Route path={ROUTES.LABS} lazy={() => import('./routes/labs')} />
 
-            {/* Shortcut route to get to get to a route for whatever the 'active' team is */}
+            {/* Shortcut route to get to a route for whatever the 'active' team is */}
             <Route
               path="team/*"
               loader={async ({ params }) => {
