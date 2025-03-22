@@ -637,7 +637,7 @@ mod test {
     use crate::a1::A1Selection;
     use crate::controller::GridController;
     use crate::grid::{CodeCellLanguage, CodeCellValue, DataTableKind, NumericFormat};
-    use crate::test_util::print_table;
+    use crate::test_util::print_table_in_rect;
     use crate::{SheetPos, SheetRect, Value};
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
@@ -834,7 +834,7 @@ mod test {
         ];
         let (grid, sheet_id) = test_setup(&selected, &vals);
 
-        print_table(&grid, sheet_id, selected);
+        print_table_in_rect(&grid, sheet_id, selected);
 
         let sheet = grid.sheet(sheet_id);
         let values = sheet.cell_values_in_rect(&selected, false).unwrap();

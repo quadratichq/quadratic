@@ -3,9 +3,11 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
+    CellValue, CopyFormats, SheetPos, SheetRect,
     a1::A1Selection,
     cell_values::CellValues,
     grid::{
+        CodeRunOld, DataTable, DataTableKind, Sheet, SheetId,
         data_table::{column_header::DataTableColumnHeader, sort::DataTableSort},
         file::sheet_schema::SheetSchema,
         formats::{Formats, SheetFormatUpdates},
@@ -13,15 +15,13 @@ use crate::{
         js_types::JsRowHeight,
         sheet::{
             borders::{
-                borders_old::{BorderStyleCellUpdates, SheetBorders},
                 BordersUpdates,
+                borders_old::{BorderStyleCellUpdates, SheetBorders},
             },
             validations::validation::Validation,
         },
-        CodeRunOld, DataTable, DataTableKind, Sheet, SheetId,
     },
     selection::OldSelection,
-    CellValue, CopyFormats, SheetPos, SheetRect,
 };
 
 /// Description of changes to make to a file.

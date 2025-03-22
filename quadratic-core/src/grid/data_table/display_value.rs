@@ -198,11 +198,10 @@ pub mod test {
     use crate::{
         controller::{transaction_types::JsCodeResult, GridController},
         grid::{
-            test::{
-                assert_data_table_row, new_data_table, pretty_print_data_table, test_csv_values,
-            },
+            test::{new_data_table, test_csv_values},
             CodeCellLanguage, DataTable,
         },
+        test_util::{assert_data_table_row, pretty_print_data_table},
         CellValue, Pos, SheetPos,
     };
 

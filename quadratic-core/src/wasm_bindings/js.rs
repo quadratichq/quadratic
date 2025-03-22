@@ -598,8 +598,8 @@ pub fn jsSendViewportBuffer(buffer: [u8; 112]) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsClientMessage(message: String, error: String) {
-    js_call("jsClientMessage", format!("{},{}", message, error));
+pub fn jsClientMessage(message: String, severity: String) {
+    js_call("jsClientMessage", format!("{},{}", message, severity));
 }
 
 #[cfg(test)]

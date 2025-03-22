@@ -68,6 +68,7 @@ mod test {
             GridController,
         },
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
+        test_util::pretty_print_data_table,
         Array, ArraySize, CellValue, Pos, SheetPos, Value,
     };
 
@@ -347,8 +348,8 @@ mod test {
             .with_column_headers(column_headers)
             .with_last_modified(result.last_modified);
 
-        crate::grid::data_table::test::pretty_print_data_table(&result, None, None);
-        crate::grid::data_table::test::pretty_print_data_table(&expected_result, None, None);
+        pretty_print_data_table(&result, None, None);
+        pretty_print_data_table(&expected_result, None, None);
 
         assert_eq!(result, expected_result);
     }

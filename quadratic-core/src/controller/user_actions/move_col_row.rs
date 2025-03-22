@@ -1,12 +1,12 @@
 use crate::{
+    CopyFormats,
     a1::A1Selection,
     controller::{
+        GridController,
         active_transactions::pending_transaction::PendingTransaction,
         operations::clipboard::{ClipboardOperation, PasteSpecial},
-        GridController,
     },
     grid::{GridBounds, SheetId},
-    CopyFormats,
 };
 
 impl GridController {
@@ -99,7 +99,13 @@ impl GridController {
 
         // delete existing rows
         let min_row = row_start.min(row_end);
-        sheet.delete_rows(transaction, (row_start..=row_end).collect());
+        if sheet
+            .delete_rows(transaction, (row_start..=row_end).collect())
+            .is_err()
+        {
+            // todo: handle move failing b/c of table ui
+            return;
+        }
 
         // update information for all cells below the deleted rows
         if let Some(sheet) = self.try_sheet(sheet_id) {

@@ -336,7 +336,7 @@ mod test {
     use crate::controller::operations::operation::Operation;
     use crate::controller::GridController;
     use crate::grid::{CodeCellLanguage, CodeCellValue, SheetId};
-    use crate::test_util::print_table;
+    use crate::test_util::print_table_in_rect;
     use crate::Rect;
     use crate::{a1::A1Selection, CellValue, SheetPos, SheetRect};
 
@@ -565,6 +565,6 @@ mod test {
         let (ops, data_table_ops) = gc.set_cell_values_operations(sheet_pos, values).unwrap();
         println!("{:?}", ops);
         println!("{:?}", data_table_ops);
-        print_table(&gc, sheet_id, Rect::from_numbers(1, 1, 2, 2));
+        print_table_in_rect(&gc, sheet_id, Rect::from_numbers(1, 1, 2, 2));
     }
 }

@@ -407,7 +407,6 @@ export class Control {
       this.cli.options.files
         ? [
             "watch",
-            "--skip-local-deps",
             "-x",
             "run -p quadratic-files --target-dir=target",
           ]
