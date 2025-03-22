@@ -11,7 +11,6 @@ import numpy as np
 import pandas as pd
 import pytz
 
-
 def attempt_fix_await(code: str) -> str:
     # Convert c((x,y), ...) cell((x,y), ...) to cells((x,y), ...)
     code = re.sub(
@@ -156,7 +155,7 @@ def to_python_type(value: str, value_type: str) -> int | float | str | bool:
                 value,
             ).time()
         elif value_type == "date":
-            return datetime.fromisoformat(value)
+            return datetime.fromisoformat(value).date()
         elif value_type == "date time":
             return datetime.fromisoformat(value)
         elif value_type == "duration":
@@ -179,11 +178,15 @@ def to_python_type_df(value: str, value_type: str) -> int | float | str | bool:
         elif value_type == "logical":
             return ast.literal_eval(normalize_bool(value))
         elif value_type == "time":
+            return datetime.fromisoformat(
+                value,
+            ).time()
+        elif value_type == "time":
             return str(value)
         elif value_type == "date":
-            return pd.to_datetime(value)
+            return datetime.fromisoformat(value).date()
         elif value_type == "date time":
-            return pd.to_datetime(value)
+            return datetime.fromisoformat(value)
         else:
             return value
     except:
