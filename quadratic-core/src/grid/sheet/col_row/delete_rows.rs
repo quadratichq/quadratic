@@ -76,20 +76,21 @@ impl Sheet {
                 let rows = rows_to_delete
                     .iter()
                     .map(|row| {
-                        let Ok((_actual_index, reverse_row)) = dt.delete_row_sorted(**row as usize)
+                        let row = (*row - pos.y) as u32;
+                        let Ok((_actual_index, reverse_row)) = dt.delete_row_sorted(row as usize)
                         else {
                             // there was an error deleting the row, so we skip it
-                            return (**row as u32, None);
+                            return (row, None);
                         };
                         let w = dt.width() as u32;
                         transaction.add_dirty_hashes_from_sheet_rect(SheetRect::new(
                             pos.x,
-                            pos.y + *row,
+                            pos.y + row as i64,
                             pos.x + w as i64,
-                            pos.y + *row,
+                            pos.y + row as i64,
                             self.id,
                         ));
-                        (**row as u32, reverse_row)
+                        (row, reverse_row)
                     })
                     .collect::<Vec<_>>();
                 transaction
