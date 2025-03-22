@@ -1,5 +1,6 @@
 import { protectedRouteLoaderWrapper } from '@/auth/auth';
 import { BrowserCompatibilityLayoutRoute } from '@/dashboard/components/BrowserCompatibilityLayoutRoute';
+import getActiveTeam from '@/dashboard/shared/getActiveTeam';
 import * as Page404 from '@/routes/404';
 import * as RootRoute from '@/routes/_root';
 import * as Login from '@/routes/login';
@@ -84,6 +85,16 @@ export const router = createBrowserRouter(
               shouldRevalidate={dontRevalidateDialogs}
             />
             <Route path={ROUTES.LABS} lazy={() => import('./routes/labs')} />
+
+            {/* Shortcut route to get to get to a route for whatever the 'active' team is */}
+            <Route
+              path="team/*"
+              loader={async ({ params }) => {
+                const { teams } = await apiClient.teams.list();
+                const { teamUuid } = await getActiveTeam(teams, undefined);
+                return redirect(ROUTES.TEAM(teamUuid) + '/' + params['*']);
+              }}
+            />
 
             <Route path="teams">
               <Route path="create" lazy={() => import('./routes/teams.create')} />
