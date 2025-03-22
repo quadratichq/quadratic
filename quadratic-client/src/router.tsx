@@ -1,6 +1,5 @@
 import { protectedRouteLoaderWrapper } from '@/auth/auth';
 import { BrowserCompatibilityLayoutRoute } from '@/dashboard/components/BrowserCompatibilityLayoutRoute';
-import getActiveTeam from '@/dashboard/shared/getActiveTeam';
 import * as Page404 from '@/routes/404';
 import * as RootRoute from '@/routes/_root';
 import * as Login from '@/routes/login';
@@ -8,6 +7,7 @@ import * as LoginResult from '@/routes/login-result';
 import * as Logout from '@/routes/logout';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
+import getActiveTeam from '@/shared/utils/getActiveTeam';
 import type { ShouldRevalidateFunctionArgs } from 'react-router-dom';
 import { Navigate, Route, createBrowserRouter, createRoutesFromElements, redirect } from 'react-router-dom';
 
