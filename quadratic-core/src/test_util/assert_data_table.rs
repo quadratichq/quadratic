@@ -42,7 +42,7 @@ pub fn assert_data_table_column(dt: &DataTable, column: i64, values: Vec<&str>) 
 }
 
 /// Run an assertion that the size of a data table is equal to the given width
-/// and height.
+/// and height. Also works with charts.
 #[track_caller]
 #[cfg(test)]
 pub fn assert_data_table_size(
@@ -57,6 +57,21 @@ pub fn assert_data_table_size(
     let data_table = sheet
         .data_table(pos)
         .unwrap_or_else(|| panic!("Data table at {} not found", pos));
+
+    if data_table.is_html_or_image() {
+        assert_eq!(
+            data_table.chart_output,
+            Some((
+                width as u32,
+                (if include_ui { 1 } else { 0 }) + height as u32
+            )),
+            "Chart size at {} is not {:?}",
+            pos,
+            data_table.chart_output
+        );
+        return;
+    }
+
     let adjust_height = if !include_ui {
         if data_table.show_ui {
             (if data_table.show_name { 1 } else { 0 })

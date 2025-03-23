@@ -34,7 +34,7 @@ impl Sheet {
             .enumerate()
             .for_each(|(index, (pos, table))| {
                 // we can only adjust non-readonly (ie, non-code-run) tables
-                if table.readonly {
+                if table.readonly || table.is_html_or_image() {
                     return;
                 }
                 let output_rect = table.output_rect(*pos, false);

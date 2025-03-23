@@ -23,6 +23,12 @@ pub fn sheet_mut(gc: &mut GridController, id: SheetId) -> &mut Sheet {
         .unwrap_or_else(|| panic!("Sheet with id {} not found", id))
 }
 
+/// Gets the first sheet id from a grid controller
+#[cfg(test)]
+pub fn first_sheet_id(gc: &GridController) -> SheetId {
+    gc.sheet_ids()[0]
+}
+
 #[cfg(test)]
 mod tests {
     use crate::grid::SheetId;
@@ -64,5 +70,12 @@ mod tests {
         let mut gc = GridController::test();
         let non_existent_id = SheetId::new();
         sheet_mut(&mut gc, non_existent_id);
+    }
+
+    #[test]
+    fn test_first_sheet_id() {
+        let gc = GridController::test();
+        let id = first_sheet_id(&gc);
+        assert_eq!(id, SheetId::TEST);
     }
 }

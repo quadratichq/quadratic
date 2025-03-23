@@ -1,6 +1,6 @@
 mod columns_delete;
 mod columns_delete_table;
-mod insert_columns;
+mod columns_insert;
 mod rows_delete;
 mod rows_delete_table;
 mod rows_insert;

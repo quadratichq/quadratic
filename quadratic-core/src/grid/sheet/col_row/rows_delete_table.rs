@@ -53,25 +53,56 @@ impl Sheet {
     }
 
     fn delete_table_rows(&mut self, transaction: &mut PendingTransaction, rows: &[i64]) {
+        let mut adjust_chart_size = vec![];
         let table_rows_to_delete = self
             .data_tables
             .iter()
             .filter_map(|(pos, dt)| {
-                if dt.readonly {
+                let rect = dt.output_rect(*pos, false);
+                if dt.readonly && !dt.is_html_or_image() {
                     return None;
                 }
-                let rect = dt.output_rect(*pos, false);
-                let rows_to_delete = rows
-                    .iter()
-                    .filter(|row| **row >= rect.min.y && **row <= rect.max.y)
-                    .collect::<Vec<_>>();
-                if rows_to_delete.is_empty() {
+                if dt.is_html_or_image() {
+                    let count = rows
+                        .iter()
+                        .filter(|row| **row >= rect.min.y && **row <= rect.max.y)
+                        .count();
+                    if count > 0 {
+                        if let Some((width, height)) = dt.chart_output {
+                            // charts cannot be smaller than 2 height (UI + at least one cell for display)
+                            let min = (width - count as u32).max(1);
+                            if min != height {
+                                adjust_chart_size.push((*pos, width, min));
+                            }
+                        }
+                    }
                     None
                 } else {
-                    Some((*pos, rows_to_delete))
+                    let rows_to_delete = rows
+                        .iter()
+                        .filter(|row| **row >= rect.min.y && **row <= rect.max.y)
+                        .collect::<Vec<_>>();
+                    if rows_to_delete.is_empty() {
+                        None
+                    } else {
+                        Some((*pos, rows_to_delete))
+                    }
                 }
             })
             .collect::<Vec<_>>();
+
+        for (pos, width, height) in adjust_chart_size {
+            if let Some(dt) = self.data_tables.get_mut(&pos) {
+                dt.chart_output = Some((width, height));
+                transaction
+                    .reverse_operations
+                    .push(Operation::SetChartCellSize {
+                        sheet_pos: pos.to_sheet_pos(self.id),
+                        w: width,
+                        h: height,
+                    });
+            }
+        }
 
         for (pos, rows_to_delete) in table_rows_to_delete {
             transaction.add_code_cell(self.id, pos);
@@ -154,7 +185,9 @@ mod tests {
         controller::{
             GridController, active_transactions::pending_transaction::PendingTransaction,
         },
-        test_util::test_create_data_table,
+        test_util::{
+            assert_data_table_size, first_sheet_id, test_create_data_table, test_create_js_chart,
+        },
     };
 
     #[test]
@@ -368,5 +401,43 @@ mod tests {
         for (_, dt) in sheet.data_tables.iter() {
             assert_eq!(dt.height(true), 2); // Both tables should have 2 rows left
         }
+    }
+
+    #[test]
+    fn test_delete_rows_with_chart() {
+        let mut gc = GridController::test();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_js_chart(&mut gc, sheet_id, pos![B2], 4, 4);
+
+        let sheet = gc.sheet_mut(sheet_id);
+        let mut transaction = PendingTransaction::default();
+
+        // Delete rows that contain the chart
+        assert!(sheet.delete_rows(&mut transaction, vec![3, 4]).is_ok());
+
+        // Verify the chart was resized
+        assert_data_table_size(&gc, sheet_id, pos![B2], 4, 2, false);
+    }
+
+    #[test]
+    fn test_delete_rows_with_chart_too_small() {
+        let mut gc = GridController::test();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_js_chart(&mut gc, sheet_id, pos![B2], 4, 4);
+
+        let sheet = gc.sheet_mut(sheet_id);
+        let mut transaction = PendingTransaction::default();
+
+        // Delete all rows (except UI) that contain the chart
+        assert!(
+            sheet
+                .delete_rows(&mut transaction, vec![3, 4, 5, 6])
+                .is_ok()
+        );
+
+        // expect one row to survive since you need a minimum of 2 rows for a chart
+        assert_data_table_size(&gc, sheet_id, pos![B2], 4, 1, false);
     }
 }

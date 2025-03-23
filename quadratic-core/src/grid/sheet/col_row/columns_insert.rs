@@ -8,6 +8,44 @@ use crate::{
 };
 
 impl Sheet {
+    /// Insert columns in data tables that overlap the inserted column.
+    fn check_insert_tables_columns(&mut self, transaction: &mut PendingTransaction, column: i64) {
+        self.data_tables.iter_mut().for_each(|(pos, dt)| {
+            if (!dt.readonly || dt.is_html_or_image())
+                && column >= pos.x
+                && column <= pos.x + dt.width() as i64
+            {
+                if dt.is_html_or_image() {
+                    // if html or image, then we need to change the width
+                    if let Some((width, height)) = dt.chart_output {
+                        dt.chart_output = Some((width + 1, height));
+                        transaction
+                            .reverse_operations
+                            .push(Operation::SetChartCellSize {
+                                sheet_pos: pos.to_sheet_pos(self.id),
+                                w: width,
+                                h: height,
+                            });
+                    }
+                } else {
+                    // the table overlaps the inserted column
+                    let display_index = dt.get_column_index_from_display_index(column as u32, true);
+                    if dt.insert_column(display_index as usize, None, None).is_ok() {
+                        transaction.add_code_cell(self.id, *pos);
+                        transaction
+                            .reverse_operations
+                            .push(Operation::DeleteDataTableColumns {
+                                sheet_pos: pos.to_sheet_pos(self.id),
+                                columns: vec![column as u32],
+                                flatten: false,
+                                select_table: false,
+                            });
+                    }
+                }
+            }
+        });
+    }
+
     pub(crate) fn insert_column(
         &mut self,
         transaction: &mut PendingTransaction,
