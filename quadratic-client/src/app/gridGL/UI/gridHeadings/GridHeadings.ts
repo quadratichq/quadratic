@@ -70,10 +70,11 @@ export class GridHeadings extends Container {
   }
 
   private findIntervalX(i: number): number {
-    if (i > 100) return 50;
+    if (i > 100) return 52;
     if (i > 20) return 26;
-    if (i > 5) return 10;
-    return 5;
+    if (i > 10) return 13;
+    if (i > 5) return 6;
+    return 2;
   }
 
   private findIntervalY(i: number): number {
@@ -82,8 +83,9 @@ export class GridHeadings extends Container {
     if (i > 50) return 50;
     if (i > 25) return 25;
     if (i > 10) return 10;
-    if (i > 5) return 5;
-    return 5;
+    if (i > 3) return 5;
+    if (i > 2) return 2;
+    return 1;
   }
 
   // Fills horizontal bar based on selection.
@@ -174,12 +176,19 @@ export class GridHeadings extends Container {
       // show selected numbers
       const selected = Array.isArray(this.selectedColumns) ? this.selectedColumns.includes(column) : false;
 
-      // only show the label if selected or mod calculation
-      if (selected || mod === 0 || column % mod === 0) {
+      // only show the label if selected or mod calculation or first column
+      if (
+        selected ||
+        mod === 0 ||
+        (mod === 2 && column % 2 === 1) ||
+        (mod !== 2 && column % mod === 0) ||
+        column === start.index
+      ) {
         const charactersWidth = (this.characterSize.width * column.toString().length) / scale;
 
         // only show labels that will fit (unless grid lines are hidden)
         if (
+          scale < 0.2 || // this fixes a bug where multi letter labels were not showing when zoomed out
           currentWidth > charactersWidth ||
           pixiApp.gridLines.alpha < colors.headerSelectedRowColumnBackgroundColorAlpha
         ) {
@@ -342,8 +351,14 @@ export class GridHeadings extends Container {
       // show selected numbers
       const selected = selectedRows.includes(row);
 
-      // only show the label if selected or mod calculation
-      if (selected || mod === 0 || row % mod === 0) {
+      // only show the label if selected or mod calculation or first row
+      if (
+        selected ||
+        mod === 0 ||
+        (mod === 2 && row % 2 === 1) ||
+        (mod !== 2 && row % mod === 0) ||
+        row === start.index
+      ) {
         // only show labels that will fit (unless grid lines are hidden)
         let yPosition = y + currentHeight / 2;
         const top = yPosition - halfCharacterHeight / 2;
