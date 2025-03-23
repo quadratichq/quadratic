@@ -392,7 +392,10 @@ impl DataTable {
         }
     }
 
-    /// Returns the height of the data table.
+    /// Returns the height of the data table. The force_table_bounds parameter
+    /// will return the actual height of the table, including any UI elements.
+    /// If false, it includes the array height, which may contain the column
+    /// header row if header_is_first_row is true.
     pub fn height(&self, force_table_bounds: bool) -> usize {
         match &self.value {
             Value::Single(_) => 1,

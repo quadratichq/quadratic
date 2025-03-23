@@ -57,10 +57,13 @@ impl Sheet {
             .data_tables
             .iter()
             .filter_map(|(pos, dt)| {
+                if dt.readonly {
+                    return None;
+                }
                 let rect = dt.output_rect(*pos, false);
                 let rows_to_delete = rows
                     .iter()
-                    .filter(|row| !dt.ui_rows(*pos).contains(row) && rect.contains(*pos))
+                    .filter(|row| **row >= rect.min.y && **row <= rect.max.y)
                     .collect::<Vec<_>>();
                 if rows_to_delete.is_empty() {
                     None
@@ -246,5 +249,119 @@ mod tests {
             sheet.cell_value(pos![A1]),
             Some(CellValue::Text("A4".to_string()))
         );
+    }
+
+    #[test]
+    fn test_delete_entire_table() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a data table
+        test_create_data_table(
+            &mut gc,
+            sheet_id,
+            pos![A1],
+            3,
+            3,
+            &["A", "B", "C", "D", "E", "F", "G", "H", "I"],
+        );
+
+        let sheet = gc.sheet_mut(sheet_id);
+        let mut transaction = PendingTransaction::default();
+
+        // Delete all rows that contain the table
+        assert!(sheet.delete_rows(&mut transaction, vec![1, 2, 3]).is_ok());
+
+        // Verify the table was removed
+        assert!(sheet.data_tables.is_empty());
+    }
+
+    #[test]
+    fn test_delete_partial_table_rows() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a data table
+        test_create_data_table(
+            &mut gc,
+            sheet_id,
+            pos![A1],
+            3,
+            4,
+            &["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"],
+        );
+
+        let sheet = gc.sheet_mut(sheet_id);
+        let mut transaction = PendingTransaction::default();
+
+        // Delete some rows from the middle of the table
+        assert!(sheet.delete_rows(&mut transaction, vec![3, 4]).is_ok());
+
+        // Verify the table still exists but has fewer rows
+        assert_eq!(sheet.data_tables.len(), 1);
+        let (_, dt) = sheet.data_tables.iter().next().unwrap();
+        assert_eq!(dt.height(true), 2); // Should have 2 rows left
+    }
+
+    #[test]
+    fn test_delete_rows_with_readonly_table() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create a data table and make it readonly
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2, &["A", "B", "C", "D"]);
+
+        let sheet = gc.sheet_mut(sheet_id);
+        if let Some((_, dt)) = sheet.data_tables.iter_mut().next() {
+            dt.readonly = true;
+        }
+
+        let mut transaction = PendingTransaction::default();
+
+        // Try to delete rows containing the readonly table
+        assert!(sheet.delete_rows(&mut transaction, vec![1, 2]).is_ok());
+
+        // Verify the readonly table wasn't modified
+        assert_eq!(sheet.data_tables.len(), 1);
+        let (_, dt) = sheet.data_tables.iter().next().unwrap();
+        assert_eq!(dt.height(false), 2); // Should still have original height
+    }
+
+    #[test]
+    fn test_delete_rows_intersecting_multiple_tables() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Create two data tables that will be affected by the row deletion
+        test_create_data_table(
+            &mut gc,
+            sheet_id,
+            pos![A1],
+            2,
+            3,
+            &["A", "B", "C", "D", "E", "F"],
+        );
+
+        test_create_data_table(
+            &mut gc,
+            sheet_id,
+            pos![D2],
+            2,
+            3,
+            &["G", "H", "I", "J", "K", "L"],
+        );
+
+        let sheet = gc.sheet_mut(sheet_id);
+        let mut transaction = PendingTransaction::default();
+
+        // Delete row that intersects both tables
+        assert!(sheet.delete_rows(&mut transaction, vec![4]).is_ok());
+
+        // Verify both tables still exist but have fewer rows
+        assert_eq!(sheet.data_tables.len(), 2);
+
+        for (_, dt) in sheet.data_tables.iter() {
+            assert_eq!(dt.height(true), 2); // Both tables should have 2 rows left
+        }
     }
 }
