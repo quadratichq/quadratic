@@ -4,7 +4,7 @@ from unittest import TestCase
 
 import pandas as pd
 from quadratic_py.process_output import process_output_value
-
+from quadratic_py.utils import CellValueType
 
 def assert_pov(
     self,
@@ -25,30 +25,30 @@ def assert_pov(
 
 class TestProcessOutput(TestCase):
     def test_value(self):
-        assert_pov(self, 1, None, None, None, ("1", "number"), "int")
-        assert_pov(self, 1.1, None, None, None, ("1.1", "number"), "float")
-        assert_pov(self, -1, None, None, None, ("-1", "number"), "int")
-        assert_pov(self, "hello", None, None, None, ("hello", "text"), "str")
-        assert_pov(self, True, None, None, None, ("True", "logical"), "bool")
-        assert_pov(self, False, None, None, None, ("False", "logical"), "bool")
-        assert_pov(self, "abc", None, None, None, ("abc", "text"), "str")
-        assert_pov(self, "1", None, None, None, ("1", "text"), "str")
-        assert_pov(self, "True", None, None, None, ("True", "text"), "str")
-        assert_pov(self, "False", None, None, None, ("False", "text"), "str")
-        assert_pov(self, "true", None, None, None, ("true", "text"), "str")
-        assert_pov(self, "false", None, None, None, ("false", "text"), "str")
-        assert_pov(self, "123abc", None, None, None, ("123abc", "text"), "str")
-        assert_pov(self, "abc123", None, None, None, ("abc123", "text"), "str")
+        assert_pov(self, 1, None, None, None, ("1", CellValueType.Number.value), "int")
+        assert_pov(self, 1.1, None, None, None, ("1.1", CellValueType.Number.value), "float")
+        assert_pov(self, -1, None, None, None, ("-1", CellValueType.Number.value), "int")
+        assert_pov(self, "hello", None, None, None, ("hello", CellValueType.Text.value), "str")
+        assert_pov(self, True, None, None, None, ("True", CellValueType.Boolean.value), "bool")
+        assert_pov(self, False, None, None, None, ("False", CellValueType.Boolean.value), "bool")
+        assert_pov(self, "abc", None, None, None, ("abc", CellValueType.Text.value), "str")
+        assert_pov(self, "1", None, None, None, ("1", CellValueType.Text.value), "str")
+        assert_pov(self, "True", None, None, None, ("True", CellValueType.Text.value), "str")
+        assert_pov(self, "False", None, None, None, ("False", CellValueType.Text.value), "str")
+        assert_pov(self, "true", None, None, None, ("true", CellValueType.Text.value), "str")
+        assert_pov(self, "false", None, None, None, ("false", CellValueType.Text.value), "str")
+        assert_pov(self, "123abc", None, None, None, ("123abc", CellValueType.Text.value), "str")
+        assert_pov(self, "abc123", None, None, None, ("abc123", CellValueType.Text.value), "str")
         assert_pov(self, None, None, None, None, None, "NoneType")
-        assert_pov(self, "", None, None, None, ("", "blank"), "str")
-        assert_pov(self, " ", None, None, None, (" ", "text"), "str")
+        assert_pov(self, "", None, None, None, ("", CellValueType.Blank.value), "str")
+        assert_pov(self, " ", None, None, None, (" ", CellValueType.Text.value), "str")
         assert_pov(
             self,
             datetime(2021, 1, 1),
             None,
             None,
             None,
-            ("2021-01-01T00:00:00", "date time"),
+            ("2021-01-01T00:00:00", CellValueType.DateTime.value),
             "datetime",
         )
         assert_pov(
@@ -57,7 +57,7 @@ class TestProcessOutput(TestCase):
             None,
             None,
             None,
-            ("2021-01-01T00:00:00", "date time"),
+            ("2021-01-01T00:00:00", CellValueType.DateTime.value),
             "datetime",
         )
         assert_pov(
@@ -66,7 +66,7 @@ class TestProcessOutput(TestCase):
             None,
             None,
             None,
-            ("2021-01-01T00:00:00", "date time"),
+            ("2021-01-01T00:00:00", CellValueType.DateTime.value),
             "datetime",
         )
         assert_pov(
@@ -75,7 +75,7 @@ class TestProcessOutput(TestCase):
             None,
             None,
             None,
-            ("2021-01-01T00:00:00", "date time"),
+            ("2021-01-01T00:00:00", CellValueType.DateTime.value),
             "datetime",
         )
         assert_pov(
@@ -84,7 +84,7 @@ class TestProcessOutput(TestCase):
             None,
             None,
             None,
-            ("1y 2mo 25d 5h 6m 7.5s 155µs", "duration"),
+            ("1y 2mo 25d 5h 6m 7.5s 155µs", CellValueType.Duration.value),
             "relativedelta",
         )
 
@@ -92,7 +92,7 @@ class TestProcessOutput(TestCase):
         assert_pov(
             self,
             [1, 2, 3],
-            [("1", "number"), ("2", "number"), ("3", "number")],
+            [("1", CellValueType.Number.value), ("2", CellValueType.Number.value), ("3", CellValueType.Number.value)],
             [1, 2, 3],
             (1, 3),
             None,
@@ -101,7 +101,7 @@ class TestProcessOutput(TestCase):
         assert_pov(
             self,
             [1.1, 2.2, 3.3],
-            [("1.1", "number"), ("2.2", "number"), ("3.3", "number")],
+            [("1.1", CellValueType.Number.value), ("2.2", CellValueType.Number.value), ("3.3", CellValueType.Number.value)],
             [1.1, 2.2, 3.3],
             (1, 3),
             None,
@@ -110,7 +110,7 @@ class TestProcessOutput(TestCase):
         assert_pov(
             self,
             [-1, -2, -3],
-            [("-1", "number"), ("-2", "number"), ("-3", "number")],
+            [("-1", CellValueType.Number.value), ("-2", CellValueType.Number.value), ("-3", CellValueType.Number.value)],
             [-1, -2, -3],
             (1, 3),
             None,
@@ -119,7 +119,7 @@ class TestProcessOutput(TestCase):
         assert_pov(
             self,
             ["1", "2", "3"],
-            [("1", "text"), ("2", "text"), ("3", "text")],
+            [("1", CellValueType.Text.value), ("2", CellValueType.Text.value), ("3", CellValueType.Text.value)],
             ["1", "2", "3"],
             (1, 3),
             None,
@@ -128,7 +128,7 @@ class TestProcessOutput(TestCase):
         assert_pov(
             self,
             ["hello", "world"],
-            [("hello", "text"), ("world", "text")],
+            [("hello", CellValueType.Text.value), ("world", CellValueType.Text.value)],
             ["hello", "world"],
             (1, 2),
             None,
@@ -137,7 +137,7 @@ class TestProcessOutput(TestCase):
         assert_pov(
             self,
             [True, False],
-            [("True", "logical"), ("False", "logical")],
+            [("True", CellValueType.Boolean.value), ("False", CellValueType.Boolean.value)],
             [True, False],
             (1, 2),
             None,
@@ -146,7 +146,7 @@ class TestProcessOutput(TestCase):
         assert_pov(
             self,
             [None, None],
-            [("", "blank"), ("", "blank")],
+            [("", CellValueType.Blank.value), ("", CellValueType.Blank.value)],
             [None, None],
             (1, 2),
             None,
@@ -155,7 +155,7 @@ class TestProcessOutput(TestCase):
         assert_pov(
             self,
             ["", " "],
-            [("", "blank"), (" ", "text")],
+            [("", CellValueType.Blank.value), (" ", CellValueType.Text.value)],
             ["", " "],
             (1, 2),
             None,
@@ -165,8 +165,8 @@ class TestProcessOutput(TestCase):
             self,
             [datetime(2021, 1, 1), datetime(2021, 1, 2)],
             [
-                ("2021-01-01T00:00:00", "date time"),
-                ("2021-01-02T00:00:00", "date time"),
+                ("2021-01-01T00:00:00", CellValueType.DateTime.value),
+                ("2021-01-02T00:00:00", CellValueType.DateTime.value),
             ],
             [datetime(2021, 1, 1), datetime(2021, 1, 2)],
             (1, 2),
@@ -178,7 +178,7 @@ class TestProcessOutput(TestCase):
         assert_pov(
             self,
             [[1, 2, 3]],
-            [[("1", "number"), ("2", "number"), ("3", "number")]],
+            [[("1", CellValueType.Number.value), ("2", CellValueType.Number.value), ("3", CellValueType.Number.value)]],
             [[1, 2, 3]],
             (3, 1),
             None,
@@ -188,8 +188,8 @@ class TestProcessOutput(TestCase):
             self,
             [[1, 2, 3], [4, 5, 6]],
             [
-                [("1", "number"), ("2", "number"), ("3", "number")],
-                [("4", "number"), ("5", "number"), ("6", "number")],
+                [("1", CellValueType.Number.value), ("2", CellValueType.Number.value), ("3", CellValueType.Number.value)],
+                [("4", CellValueType.Number.value), ("5", CellValueType.Number.value), ("6", CellValueType.Number.value)],
             ],
             [[1, 2, 3], [4, 5, 6]],
             (3, 2),
@@ -200,8 +200,8 @@ class TestProcessOutput(TestCase):
             self,
             [[1.1, 2.2, 3.3], [4.4, 5.5, 6.6]],
             [
-                [("1.1", "number"), ("2.2", "number"), ("3.3", "number")],
-                [("4.4", "number"), ("5.5", "number"), ("6.6", "number")],
+                [("1.1", CellValueType.Number.value), ("2.2", CellValueType.Number.value), ("3.3", CellValueType.Number.value)],
+                [("4.4", CellValueType.Number.value), ("5.5", CellValueType.Number.value), ("6.6", CellValueType.Number.value)],
             ],
             [[1.1, 2.2, 3.3], [4.4, 5.5, 6.6]],
             (3, 2),
@@ -212,8 +212,8 @@ class TestProcessOutput(TestCase):
             self,
             [[-1, -2, -3], [-4, -5, -6]],
             [
-                [("-1", "number"), ("-2", "number"), ("-3", "number")],
-                [("-4", "number"), ("-5", "number"), ("-6", "number")],
+                [("-1", CellValueType.Number.value), ("-2", CellValueType.Number.value), ("-3", CellValueType.Number.value)],
+                [("-4", CellValueType.Number.value), ("-5", CellValueType.Number.value), ("-6", CellValueType.Number.value)],
             ],
             [[-1, -2, -3], [-4, -5, -6]],
             (3, 2),
@@ -224,8 +224,8 @@ class TestProcessOutput(TestCase):
             self,
             [["1", "2", "3"], ["4", "5", "6"]],
             [
-                [("1", "text"), ("2", "text"), ("3", "text")],
-                [("4", "text"), ("5", "text"), ("6", "text")],
+                [("1", CellValueType.Text.value), ("2", CellValueType.Text.value), ("3", CellValueType.Text.value)],
+                [("4", CellValueType.Text.value), ("5", CellValueType.Text.value), ("6", CellValueType.Text.value)],
             ],
             [["1", "2", "3"], ["4", "5", "6"]],
             (3, 2),
@@ -236,8 +236,8 @@ class TestProcessOutput(TestCase):
             self,
             [["hello", "world"], ["hello", "world"]],
             [
-                [("hello", "text"), ("world", "text")],
-                [("hello", "text"), ("world", "text")],
+                [("hello", CellValueType.Text.value), ("world", CellValueType.Text.value)],
+                [("hello", CellValueType.Text.value), ("world", CellValueType.Text.value)],
             ],
             [["hello", "world"], ["hello", "world"]],
             (2, 2),
@@ -248,8 +248,8 @@ class TestProcessOutput(TestCase):
             self,
             [[True, False], [True, False]],
             [
-                [("True", "logical"), ("False", "logical")],
-                [("True", "logical"), ("False", "logical")],
+                [("True", CellValueType.Boolean.value), ("False", CellValueType.Boolean.value)],
+                [("True", CellValueType.Boolean.value), ("False", CellValueType.Boolean.value)],
             ],
             [[True, False], [True, False]],
             (2, 2),
@@ -259,7 +259,7 @@ class TestProcessOutput(TestCase):
         assert_pov(
             self,
             [[None, None], [None, None]],
-            [[("", "blank"), ("", "blank")], [("", "blank"), ("", "blank")]],
+            [[("", CellValueType.Blank.value), ("", CellValueType.Blank.value)], [("", CellValueType.Blank.value), ("", CellValueType.Blank.value)]],
             [[None, None], [None, None]],
             (2, 2),
             None,
@@ -268,7 +268,7 @@ class TestProcessOutput(TestCase):
         assert_pov(
             self,
             [["", " "], ["", " "]],
-            [[("", "blank"), (" ", "text")], [("", "blank"), (" ", "text")]],
+            [[("", CellValueType.Blank.value), (" ", CellValueType.Text.value)], [("", CellValueType.Blank.value), (" ", CellValueType.Text.value)]],
             [["", " "], ["", " "]],
             (2, 2),
             None,
@@ -282,12 +282,12 @@ class TestProcessOutput(TestCase):
             ],
             [
                 [
-                    ("2021-01-01T00:00:00", "date time"),
-                    ("2021-01-02T00:00:00", "date time"),
+                    ("2021-01-01T00:00:00", CellValueType.DateTime.value),
+                    ("2021-01-02T00:00:00", CellValueType.DateTime.value),
                 ],
                 [
-                    ("2021-01-03T00:00:00", "date time"),
-                    ("2021-01-04T00:00:00", "date time"),
+                    ("2021-01-03T00:00:00", CellValueType.DateTime.value),
+                    ("2021-01-04T00:00:00", CellValueType.DateTime.value),
                 ],
             ],
             [
@@ -300,15 +300,15 @@ class TestProcessOutput(TestCase):
         )
 
     def test_empty_list(self):
-        assert_pov(self, [], None, None, None, ("", "blank"), "list")
-        assert_pov(self, [[]], None, None, None, ("", "blank"), "list")
+        assert_pov(self, [], None, None, None, ("", CellValueType.Blank.value), "list")
+        assert_pov(self, [[]], None, None, None, ("", CellValueType.Blank.value), "list")
 
     def test_pandas(self):
 
         assert_pov(
             self,
             pd.Series([1, 2, 3]),
-            [("1", "number"), ("2", "number"), ("3", "number")],
+            [("1", CellValueType.Number.value), ("2", CellValueType.Number.value), ("3", CellValueType.Number.value)],
             [1, 2, 3],
             (1, 3),
             None,
@@ -317,7 +317,7 @@ class TestProcessOutput(TestCase):
         assert_pov(
             self,
             pd.Series([1.1, 2.2, 3.3]),
-            [("1.1", "number"), ("2.2", "number"), ("3.3", "number")],
+            [("1.1", CellValueType.Number.value), ("2.2", CellValueType.Number.value), ("3.3", CellValueType.Number.value)],
             [1.1, 2.2, 3.3],
             (1, 3),
             None,
@@ -326,7 +326,7 @@ class TestProcessOutput(TestCase):
         assert_pov(
             self,
             pd.Series([-1, -2, -3]),
-            [("-1", "number"), ("-2", "number"), ("-3", "number")],
+            [("-1", CellValueType.Number.value), ("-2", CellValueType.Number.value), ("-3", CellValueType.Number.value)],
             [-1, -2, -3],
             (1, 3),
             None,
@@ -335,7 +335,7 @@ class TestProcessOutput(TestCase):
         assert_pov(
             self,
             pd.Series(["1", "2", "3"]),
-            [("1", "text"), ("2", "text"), ("3", "text")],
+            [("1", CellValueType.Text.value), ("2", CellValueType.Text.value), ("3", CellValueType.Text.value)],
             ["1", "2", "3"],
             (1, 3),
             None,
@@ -344,7 +344,7 @@ class TestProcessOutput(TestCase):
         assert_pov(
             self,
             pd.Series(["hello", "world"]),
-            [("hello", "text"), ("world", "text")],
+            [("hello", CellValueType.Text.value), ("world", CellValueType.Text.value)],
             ["hello", "world"],
             (1, 2),
             None,
@@ -353,7 +353,7 @@ class TestProcessOutput(TestCase):
         assert_pov(
             self,
             pd.Series([True, False]),
-            [("True", "logical"), ("False", "logical")],
+            [("True", CellValueType.Boolean.value), ("False", CellValueType.Boolean.value)],
             [True, False],
             (1, 2),
             None,
@@ -362,7 +362,7 @@ class TestProcessOutput(TestCase):
         assert_pov(
             self,
             pd.Series([None, None]),
-            [("", "blank"), ("", "blank")],
+            [("", CellValueType.Blank.value), ("", CellValueType.Blank.value)],
             [None, None],
             (1, 2),
             None,
@@ -371,7 +371,7 @@ class TestProcessOutput(TestCase):
         assert_pov(
             self,
             pd.Series(["", " "]),
-            [("", "blank"), (" ", "text")],
+            [("", CellValueType.Blank.value), (" ", CellValueType.Text.value)],
             ["", " "],
             (1, 2),
             None,
@@ -384,8 +384,8 @@ class TestProcessOutput(TestCase):
             self,
             pd.DataFrame([[1, 2, 3], [4, 5, 6]]),
             [
-                [("1", "number"), ("2", "number"), ("3", "number")],
-                [("4", "number"), ("5", "number"), ("6", "number")],
+                [("1", CellValueType.Number.value), ("2", CellValueType.Number.value), ("3", CellValueType.Number.value)],
+                [("4", CellValueType.Number.value), ("5", CellValueType.Number.value), ("6", CellValueType.Number.value)],
             ],
             [[1, 2, 3], [4, 5, 6]],
             (3, 2),
@@ -396,8 +396,8 @@ class TestProcessOutput(TestCase):
             self,
             pd.DataFrame([[1.1, 2.2, 3.3], [4.4, 5.5, 6.6]]),
             [
-                [("1.1", "number"), ("2.2", "number"), ("3.3", "number")],
-                [("4.4", "number"), ("5.5", "number"), ("6.6", "number")],
+                [("1.1", CellValueType.Number.value), ("2.2", CellValueType.Number.value), ("3.3", CellValueType.Number.value)],
+                [("4.4", CellValueType.Number.value), ("5.5", CellValueType.Number.value), ("6.6", CellValueType.Number.value)],
             ],
             [[1.1, 2.2, 3.3], [4.4, 5.5, 6.6]],
             (3, 2),
@@ -408,8 +408,8 @@ class TestProcessOutput(TestCase):
             self,
             pd.DataFrame([[-1, -2, -3], [-4, -5, -6]]),
             [
-                [("-1", "number"), ("-2", "number"), ("-3", "number")],
-                [("-4", "number"), ("-5", "number"), ("-6", "number")],
+                [("-1", CellValueType.Number.value), ("-2", CellValueType.Number.value), ("-3", CellValueType.Number.value)],
+                [("-4", CellValueType.Number.value), ("-5", CellValueType.Number.value), ("-6", CellValueType.Number.value)],
             ],
             [[-1, -2, -3], [-4, -5, -6]],
             (3, 2),
@@ -420,8 +420,8 @@ class TestProcessOutput(TestCase):
             self,
             pd.DataFrame([["1", "2", "3"], ["4", "5", "6"]]),
             [
-                [("1", "text"), ("2", "text"), ("3", "text")],
-                [("4", "text"), ("5", "text"), ("6", "text")],
+                [("1", CellValueType.Text.value), ("2", CellValueType.Text.value), ("3", CellValueType.Text.value)],
+                [("4", CellValueType.Text.value), ("5", CellValueType.Text.value), ("6", CellValueType.Text.value)],
             ],
             [["1", "2", "3"], ["4", "5", "6"]],
             (3, 2),
@@ -432,8 +432,8 @@ class TestProcessOutput(TestCase):
             self,
             pd.DataFrame([["hello", "world"], ["hello", "world"]]),
             [
-                [("hello", "text"), ("world", "text")],
-                [("hello", "text"), ("world", "text")],
+                [("hello", CellValueType.Text.value), ("world", CellValueType.Text.value)],
+                [("hello", CellValueType.Text.value), ("world", CellValueType.Text.value)],
             ],
             [["hello", "world"], ["hello", "world"]],
             (2, 2),
@@ -444,8 +444,8 @@ class TestProcessOutput(TestCase):
             self,
             pd.DataFrame([[True, False], [True, False]]),
             [
-                [("True", "logical"), ("False", "logical")],
-                [("True", "logical"), ("False", "logical")],
+                [("True", CellValueType.Boolean.value), ("False", CellValueType.Boolean.value)],
+                [("True", CellValueType.Boolean.value), ("False", CellValueType.Boolean.value)],
             ],
             [[True, False], [True, False]],
             (2, 2),
@@ -455,7 +455,7 @@ class TestProcessOutput(TestCase):
         assert_pov(
             self,
             pd.DataFrame([[None, None], [None, None]]),
-            [[("", "blank"), ("", "blank")], [("", "blank"), ("", "blank")]],
+            [[("", CellValueType.Blank.value), ("", CellValueType.Blank.value)], [("", CellValueType.Blank.value), ("", CellValueType.Blank.value)]],
             [[None, None], [None, None]],
             (2, 2),
             None,
@@ -464,7 +464,7 @@ class TestProcessOutput(TestCase):
         assert_pov(
             self,
             pd.DataFrame([["", " "], ["", " "]]),
-            [[("", "blank"), (" ", "text")], [("", "blank"), (" ", "text")]],
+            [[("", CellValueType.Blank.value), (" ", CellValueType.Text.value)], [("", CellValueType.Blank.value), (" ", CellValueType.Text.value)]],
             [["", " "], ["", " "]],
             (2, 2),
             None,
