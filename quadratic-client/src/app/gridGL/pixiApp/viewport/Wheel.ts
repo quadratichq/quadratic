@@ -258,7 +258,7 @@ export class Wheel extends Plugin {
   // adjust is used to move the event for IFrames
   private getPointerPosition(e: WheelEvent, adjust?: { x: number; y: number }) {
     const point = new Point();
-    this.parent.options.interaction!.mapPositionToPoint(
+    this.parent.options.events.mapPositionToPoint(
       point,
       e.clientX + (adjust ? adjust.x : 0),
       e.clientY + (adjust ? adjust.y : 0)
@@ -300,8 +300,12 @@ export class Wheel extends Plugin {
       this.parent.x += point.x - newPoint.x;
       this.parent.y += point.y - newPoint.y;
     }
+
     this.parent.emit('moved', { viewport: this.parent, type: 'wheel' });
-    this.parent.emit('wheel', { wheel: { dx: e.deltaX, dy: e.deltaY, dz: e.deltaZ }, event: e, viewport: this.parent });
+    this.parent.emit('wheel-start', {
+      event: e,
+      viewport: this.parent,
+    });
   }
 
   public wheel(e: WheelEvent, adjust?: { x: number; y: number }): boolean {
@@ -357,7 +361,7 @@ export class Wheel extends Plugin {
       }
 
       this.parent.emit('moved', { viewport: this.parent, type: 'wheel' });
-      this.parent.emit('wheel', {
+      this.parent.emit('wheel-start', {
         wheel: { dx: e.deltaX, dy: e.deltaY, dz: e.deltaZ },
         event: e,
         viewport: this.parent,

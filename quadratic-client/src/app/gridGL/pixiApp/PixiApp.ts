@@ -35,10 +35,8 @@ import { colors } from '@/app/theme/colors';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { sharedEvents } from '@/shared/sharedEvents';
-import { Container, Graphics, Rectangle, Renderer, utils } from 'pixi.js';
+import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
 import './pixiApp.css';
-
-utils.skipHello();
 
 export class PixiApp {
   private parent?: HTMLDivElement;
@@ -52,6 +50,7 @@ export class PixiApp {
   // todo: UI should be pulled out and separated into its own class
 
   canvas!: HTMLCanvasElement;
+  offscreenCanvas!: OffscreenCanvas;
   viewport!: Viewport;
   gridLines: GridLines;
   background: Background;
@@ -78,7 +77,7 @@ export class PixiApp {
   validations: UIValidations;
   copy: UICopy;
 
-  renderer!: Renderer;
+  renderer: Renderer;
   momentumDetector: MomentumScrollDetector;
   stage = new Container();
   loading = true;
@@ -103,6 +102,14 @@ export class PixiApp {
     this.validations = new UIValidations();
     this.hoverTableHeaders = new Container();
     this.hoverTableColumnsSelection = new Graphics();
+
+    this.canvas = document.createElement('canvas');
+    this.renderer = new Renderer({
+      view: this.canvas,
+      resolution: Math.max(2, window.devicePixelRatio),
+      antialias: true,
+      backgroundColor: 0xffffff,
+    });
     this.viewport = new Viewport(this);
     this.background = new Background();
     this.momentumDetector = new MomentumScrollDetector();
@@ -142,7 +149,6 @@ export class PixiApp {
   };
 
   private initCanvas() {
-    this.canvas = document.createElement('canvas');
     this.canvas.id = 'QuadraticCanvasID';
     this.canvas.className = 'pixi_canvas';
     this.canvas.tabIndex = 0;
@@ -150,14 +156,6 @@ export class PixiApp {
     const observer = new ResizeObserver(this.resize);
     observer.observe(this.canvas);
 
-    const resolution = Math.max(2, window.devicePixelRatio);
-    this.renderer = new Renderer({
-      view: this.canvas,
-      resolution,
-      antialias: true,
-      backgroundColor: 0xffffff,
-    });
-    this.viewport.options.interaction = this.renderer.plugins.interaction;
     this.stage.addChild(this.viewport);
 
     // this holds the viewport's contents
