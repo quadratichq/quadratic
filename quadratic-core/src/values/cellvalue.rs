@@ -22,8 +22,7 @@ const CURRENCY_SYMBOLS: &str = "$€£¥";
 const PERCENTAGE_SYMBOL: char = '%';
 
 #[repr(u8)]
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, TS, Default)]
-#[serde(into = "u8", from = "u8")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, TS, Default)]
 pub enum CellValueType {
     Number = 0,
     Text = 1,
@@ -41,29 +40,38 @@ pub enum CellValueType {
     Import = 12,
 }
 
-impl From<CellValueType> for u8 {
-    fn from(value: CellValueType) -> Self {
-        value as u8
+impl Serialize for CellValueType {
+    #[inline]
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_u8(*self as u8)
     }
 }
 
-impl From<u8> for CellValueType {
-    fn from(value: u8) -> Self {
+impl<'de> Deserialize<'de> for CellValueType {
+    #[inline]
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let value = u8::deserialize(deserializer)?;
         match value {
-            0 => CellValueType::Number,
-            1 => CellValueType::Text,
-            2 => CellValueType::Boolean,
-            3 => CellValueType::Error,
-            4 => CellValueType::DateTime,
-            5 => CellValueType::Date,
-            6 => CellValueType::Time,
-            7 => CellValueType::Duration,
-            8 => CellValueType::Blank,
-            9 => CellValueType::Html,
-            10 => CellValueType::Code,
-            11 => CellValueType::Image,
-            12 => CellValueType::Import,
-            _ => CellValueType::Blank, // Default to Blank for invalid values
+            0 => Ok(CellValueType::Number),
+            1 => Ok(CellValueType::Text),
+            2 => Ok(CellValueType::Boolean),
+            3 => Ok(CellValueType::Error),
+            4 => Ok(CellValueType::DateTime),
+            5 => Ok(CellValueType::Date),
+            6 => Ok(CellValueType::Time),
+            7 => Ok(CellValueType::Duration),
+            8 => Ok(CellValueType::Blank),
+            9 => Ok(CellValueType::Html),
+            10 => Ok(CellValueType::Code),
+            11 => Ok(CellValueType::Image),
+            12 => Ok(CellValueType::Import),
+            _ => Ok(CellValueType::Blank), // Default to Blank for invalid values
         }
     }
 }
@@ -501,7 +509,7 @@ impl CellValue {
     /// `SORT()` function. The comparison operators are the same, except that
     /// blank coerces to `0`, `FALSE`, or `""` before comparison.
     pub fn type_id(&self) -> u8 {
-        self.type_enum().into()
+        self.type_enum() as u8
     }
 
     /// Compares two values using a total ordering that propagates errors and
