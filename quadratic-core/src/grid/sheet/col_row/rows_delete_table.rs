@@ -270,7 +270,11 @@ mod tests {
         let mut transaction = PendingTransaction::default();
 
         // Delete all rows that contain the table
-        assert!(sheet.delete_rows(&mut transaction, vec![1, 2, 3]).is_ok());
+        assert!(
+            sheet
+                .delete_rows(&mut transaction, vec![1, 2, 3, 4, 5])
+                .is_ok()
+        );
 
         // Verify the table was removed
         assert!(sheet.data_tables.is_empty());
@@ -319,12 +323,12 @@ mod tests {
         let mut transaction = PendingTransaction::default();
 
         // Try to delete rows containing the readonly table
-        assert!(sheet.delete_rows(&mut transaction, vec![1, 2]).is_ok());
+        assert!(sheet.delete_rows(&mut transaction, vec![1, 2]).is_err());
 
         // Verify the readonly table wasn't modified
         assert_eq!(sheet.data_tables.len(), 1);
         let (_, dt) = sheet.data_tables.iter().next().unwrap();
-        assert_eq!(dt.height(false), 2); // Should still have original height
+        assert_eq!(dt.height(true), 2); // Should still have original height
     }
 
     #[test]
