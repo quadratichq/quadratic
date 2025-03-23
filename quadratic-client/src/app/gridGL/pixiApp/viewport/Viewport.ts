@@ -331,7 +331,6 @@ export class Viewport extends PixiViewport {
 
   private handleZoomEnd = () => {
     this.waitForZoomEnd = false;
-    console.log('handleZoomEnd');
     this.startSnap();
   };
 
