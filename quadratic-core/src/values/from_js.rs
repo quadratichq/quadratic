@@ -133,7 +133,7 @@ impl CellValue {
             CellValueType::Image => CellValue::Image(value),
             _ => CellValue::unpack_date_time(&value)
                 .or_else(|| CellValue::unpack_duration(&value))
-                .unwrap_or_else(|| CellValue::Text(value)),
+                .unwrap_or(CellValue::Text(value)),
         };
 
         Ok((cell_value, ops))

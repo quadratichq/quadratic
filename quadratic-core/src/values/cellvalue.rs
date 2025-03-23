@@ -22,7 +22,7 @@ const CURRENCY_SYMBOLS: &str = "$€£¥";
 const PERCENTAGE_SYMBOL: char = '%';
 
 #[repr(u8)]
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, TS, Default)]
 #[serde(into = "u8", from = "u8")]
 pub enum CellValueType {
     Number = 0,
@@ -33,17 +33,12 @@ pub enum CellValueType {
     Date = 5,
     Time = 6,
     Duration = 7,
+    #[default]
     Blank = 8,
     Html = 9,
     Code = 10,
     Image = 11,
     Import = 12,
-}
-
-impl Default for CellValueType {
-    fn default() -> Self {
-        CellValueType::Blank
-    }
 }
 
 impl From<CellValueType> for u8 {
