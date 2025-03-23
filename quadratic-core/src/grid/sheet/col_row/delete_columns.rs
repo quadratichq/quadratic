@@ -113,6 +113,11 @@ impl Sheet {
                 index,
             });
         }
+
+        // todo: we can optimize the undo by having delete_column_sorted return
+        // the deleted column index and using an Operation::InsertDataTableColumn
+        // instead of replacing the entire data table.
+
         for (pos, index, new_dt) in dt_to_replace {
             let old_dt = self.data_tables.insert(pos, new_dt);
             reverse_operations.push(Operation::SetDataTable {
@@ -190,7 +195,10 @@ impl Sheet {
 #[cfg(test)]
 mod tests {
     use crate::{
-        controller::GridController, grid::{sort::SortDirection, SheetId}, test_util::{assert_data_table_size, first_sheet, test_create_data_table}, CellValue
+        CellValue,
+        controller::GridController,
+        grid::{SheetId, sort::SortDirection},
+        test_util::{assert_data_table_size, first_sheet, test_create_data_table},
     };
 
     use super::*;
