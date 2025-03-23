@@ -56,7 +56,7 @@ pub fn assert_data_table_size(
     let sheet = grid_controller.sheet(sheet_id);
     let data_table = sheet
         .data_table(pos)
-        .expect(&format!("Data table at {} not found", pos));
+        .unwrap_or_else(|| panic!("Data table at {} not found", pos));
     let adjust_height = if !include_ui {
         if data_table.show_ui {
             (if data_table.show_name { 1 } else { 0 })

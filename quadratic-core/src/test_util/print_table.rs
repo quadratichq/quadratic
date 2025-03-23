@@ -94,7 +94,7 @@ pub fn output_pretty_print_data_table(
 pub fn print_table_at(gc: &GridController, sheet_id: SheetId, pos: Pos) {
     let sheet = gc.try_sheet(sheet_id).expect("Sheet not found");
     let data_table = sheet.data_table(pos).expect("Data table not found");
-    pretty_print_data_table(&data_table, None, None);
+    pretty_print_data_table(data_table, None, None);
 }
 
 // Util to print a simple grid to assist in TDD

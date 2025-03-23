@@ -1,6 +1,6 @@
-use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::GridController;
-use crate::{a1::A1Selection, SheetPos};
+use crate::controller::active_transactions::transaction_name::TransactionName;
+use crate::{SheetPos, a1::A1Selection};
 
 impl GridController {
     /// Starts a transaction to set the value of a cell by converting a user's String input
@@ -54,14 +54,14 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
+        CellValue, Pos, Rect, SheetPos,
         a1::A1Selection,
-        controller::{user_actions::import::tests::simple_csv_at, GridController},
-        grid::{sort::SortDirection, NumericFormat, SheetId},
+        controller::{GridController, user_actions::import::tests::simple_csv_at},
+        grid::{NumericFormat, SheetId, sort::SortDirection},
         test_util::{
             assert_cell_value_col, assert_cell_value_row, assert_display_cell_value_pos,
             print_sheet, print_table_in_rect, str_vec_to_string_vec,
         },
-        CellValue, Pos, Rect, SheetPos,
     };
     use std::str::FromStr;
 
@@ -747,7 +747,7 @@ mod test {
         let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
         assert_eq!(data_table.output_rect(pos, false), Rect::new(1, 1, 6, 12));
 
-        print_sheet(&gc.sheet(sheet_id));
+        print_sheet(gc.sheet(sheet_id));
 
         assert_cell_value_col(&gc, sheet_id, 5, 3, 5, vec!["a", "b", "c"]);
         assert_cell_value_col(&gc, sheet_id, 6, 3, 5, vec!["d", "e", "f"]);

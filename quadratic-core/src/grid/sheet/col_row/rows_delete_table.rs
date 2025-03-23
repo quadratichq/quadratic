@@ -52,7 +52,7 @@ impl Sheet {
         false
     }
 
-    fn delete_table_rows(&mut self, transaction: &mut PendingTransaction, rows: &Vec<i64>) {
+    fn delete_table_rows(&mut self, transaction: &mut PendingTransaction, rows: &[i64]) {
         let table_rows_to_delete = self
             .data_tables
             .iter()
@@ -110,6 +110,7 @@ impl Sheet {
 
     /// Deletes rows. Returns false if the rows contain table UI and the
     /// operation was aborted.
+    #[allow(clippy::result_unit_err)]
     pub fn delete_rows(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -142,7 +143,7 @@ impl Sheet {
             self.delete_row(transaction, row);
         }
         self.recalculate_bounds();
-        return Ok(());
+        Ok(())
     }
 }
 

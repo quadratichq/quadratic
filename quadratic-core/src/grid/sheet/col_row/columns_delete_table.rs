@@ -45,7 +45,7 @@ impl Sheet {
                     return;
                 }
 
-                // check if all columns in the table are included in the deletion range (1)
+                // check if all columns in the table are included in the deletion range (*)
                 let table_cols: Vec<i64> = (output_rect.min.x..=output_rect.max.x).collect();
                 if table_cols.iter().all(|col| columns.contains(col)) {
                     set_dirty_code_cells.push(*pos);
@@ -89,14 +89,14 @@ impl Sheet {
                         };
                         dt_to_add.push((*pos, new_pos, new_dt, index));
                         set_dirty_code_cells.push(*pos);
-                        let mut new_output_rect = output_rect.clone();
+                        let mut new_output_rect = output_rect;
                         set_dirty_hash_rects.push(output_rect);
                         new_output_rect.translate(change_column - output_rect.min.x, 0);
                         set_dirty_hash_rects.push(new_output_rect);
                         set_dirty_code_cells.push(new_pos);
                     } else {
-                        // this should never happen because of the (1) check above
-                        return;
+                        // this should never happen because of the (*) check above
+                        dbgjs!("Unexpectedly could not find column in check_delete_table_column");
                     }
                 } else {
                     dt_to_replace.push((*pos, index, new_dt));
