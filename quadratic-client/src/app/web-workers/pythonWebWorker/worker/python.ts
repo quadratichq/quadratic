@@ -40,10 +40,7 @@ class Python {
     if (!this.transactionId) {
       throw new Error('No transactionId in getCellsA1');
     }
-    const time = performance.now();
-    const response = pythonCore.sendGetCellsA1(this.transactionId, a1);
-    console.log('getCellsA1', performance.now() - time);
-    return response;
+    return pythonCore.sendGetCellsA1(this.transactionId, a1);
   };
 
   private init = async () => {
@@ -221,11 +218,9 @@ class Python {
     let inspectionResults: InspectPython | undefined;
 
     try {
-      const time = performance.now();
       result = await this.pyodide.runPythonAsync(
         `run_python(${JSON.stringify(message.code)}, (${message.x}, ${message.y}))`
       );
-      console.log('runPython', performance.now() - time);
       output = Object.fromEntries(result.toJs()) as PythonSuccess | PythonError;
       inspectionResults = await this.inspectPython(message.code || '');
       let outputType = output?.output_type || '';
