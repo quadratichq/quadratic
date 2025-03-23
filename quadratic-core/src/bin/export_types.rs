@@ -9,6 +9,7 @@ use quadratic_core::a1::JsTableInfo;
 use quadratic_core::a1::RefRangeBounds;
 use quadratic_core::a1::TableRef;
 use quadratic_core::a1::js_selection::JsCoordinate;
+use quadratic_core::cellvalue::CellValueType;
 use quadratic_core::color::Rgba;
 use quadratic_core::controller::active_transactions::transaction_name::TransactionName;
 use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Error;
@@ -16,6 +17,7 @@ use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Respons
 use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Value;
 use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Values;
 use quadratic_core::controller::operations::clipboard::PasteSpecial;
+use quadratic_core::controller::transaction_types::JsCellValueResult;
 use quadratic_core::controller::transaction_types::JsCodeResult;
 use quadratic_core::formulas::parse_formula::JsFormulaParseResult;
 use quadratic_core::grid::JsCellsAccessed;
@@ -99,10 +101,12 @@ fn main() {
         BorderStyle,
         BorderStyleCell,
         BorderStyleTimestamp,
+        CellValueType,
         JsCellsA1Error,
         JsCellsA1Response,
         JsCellsA1Value,
         JsCellsA1Values,
+        JsCellValueResult,
         CellAlign,
         CellBorderLine,
         CellFormatSummary,

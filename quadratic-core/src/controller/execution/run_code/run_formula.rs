@@ -1,10 +1,10 @@
 use itertools::Itertools;
 
 use crate::{
-    controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
-    formulas::{parse_formula, Ctx},
-    grid::{CodeRun, DataTable, DataTableKind},
     SheetPos,
+    controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
+    formulas::{Ctx, parse_formula},
+    grid::{CodeRun, DataTable, DataTableKind},
 };
 
 impl GridController {
@@ -58,17 +58,18 @@ mod test {
     use uuid::Uuid;
 
     use crate::{
+        Array, ArraySize, CellValue, Pos, SheetPos, Value,
         cell_values::CellValues,
+        cellvalue::CellValueType,
         controller::{
+            GridController,
             active_transactions::{
                 pending_transaction::PendingTransaction, transaction_name::TransactionName,
             },
             operations::operation::Operation,
-            transaction_types::JsCodeResult,
-            GridController,
+            transaction_types::{JsCellValueResult, JsCodeResult},
         },
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
-        Array, ArraySize, CellValue, Pos, SheetPos, Value,
     };
 
     #[test]
@@ -230,7 +231,7 @@ mod test {
         let result = JsCodeResult {
             transaction_id: Uuid::new_v4().into(),
             success: true,
-            output_value: Some(vec!["$12".into(), "number".into()]),
+            output_value: Some(JsCellValueResult("$12".into(), CellValueType::Number)),
             output_display_type: Some("number".into()),
             ..Default::default()
         };
@@ -274,14 +275,14 @@ mod test {
     fn test_js_code_result_to_code_cell_value_array() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let array_output: Vec<Vec<Vec<String>>> = vec![
+        let array_output: Vec<Vec<JsCellValueResult>> = vec![
             vec![
-                vec!["$1.1".into(), "number".into()],
-                vec!["20%".into(), "number".into()],
+                JsCellValueResult("$1.1".into(), CellValueType::Number),
+                JsCellValueResult("20%".into(), CellValueType::Number),
             ],
             vec![
-                vec!["3".into(), "number".into()],
-                vec!["Hello".into(), "text".into()],
+                JsCellValueResult("3".into(), CellValueType::Number),
+                JsCellValueResult("Hello".into(), CellValueType::Text),
             ],
         ];
         let mut transaction = PendingTransaction::default();
@@ -399,11 +400,12 @@ mod test {
                 .unwrap()
                 .spill_error
         );
-        assert!(gc
-            .sheet(sheet_id)
-            .display_value(Pos { x: 2, y: 1 })
-            .unwrap()
-            .is_blank_or_empty_string());
+        assert!(
+            gc.sheet(sheet_id)
+                .display_value(Pos { x: 2, y: 1 })
+                .unwrap()
+                .is_blank_or_empty_string()
+        );
 
         // undo the spill error
         gc.undo(None);

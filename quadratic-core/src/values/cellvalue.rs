@@ -1,6 +1,7 @@
 use std::hash::Hash;
 use std::str::FromStr;
 use std::{fmt, fmt::Display};
+use ts_rs::TS;
 
 use anyhow::Result;
 use bigdecimal::{BigDecimal, Signed, ToPrimitive, Zero};
@@ -11,14 +12,66 @@ use super::{Duration, Instant, IsBlank};
 use crate::grid::formats::FormatUpdate;
 use crate::grid::{CodeCellLanguage, CodeCellValue};
 use crate::{
-    date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
-    grid::{js_types::JsCellValuePos, NumericFormat, NumericFormatKind},
     CodeResult, Pos, RunError, RunErrorMsg, Span, Spanned,
+    date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
+    grid::{NumericFormat, NumericFormatKind, js_types::JsCellValuePos},
 };
 
 // todo: fill this out
 const CURRENCY_SYMBOLS: &str = "$€£¥";
 const PERCENTAGE_SYMBOL: char = '%';
+
+#[repr(u8)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, TS)]
+#[serde(into = "u8", from = "u8")]
+pub enum CellValueType {
+    Number = 0,
+    Text = 1,
+    Boolean = 2,
+    Error = 3,
+    DateTime = 4,
+    Date = 5,
+    Time = 6,
+    Duration = 7,
+    Blank = 8,
+    Html = 9,
+    Code = 10,
+    Image = 11,
+    Import = 12,
+}
+
+impl Default for CellValueType {
+    fn default() -> Self {
+        CellValueType::Blank
+    }
+}
+
+impl From<CellValueType> for u8 {
+    fn from(value: CellValueType) -> Self {
+        value as u8
+    }
+}
+
+impl From<u8> for CellValueType {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => CellValueType::Number,
+            1 => CellValueType::Text,
+            2 => CellValueType::Boolean,
+            3 => CellValueType::Error,
+            4 => CellValueType::DateTime,
+            5 => CellValueType::Date,
+            6 => CellValueType::Time,
+            7 => CellValueType::Duration,
+            8 => CellValueType::Blank,
+            9 => CellValueType::Html,
+            10 => CellValueType::Code,
+            11 => CellValueType::Image,
+            12 => CellValueType::Import,
+            _ => CellValueType::Blank, // Default to Blank for invalid values
+        }
+    }
+}
 
 // when a number's decimal is larger than this value, then it will treat it as text (this avoids an attempt to allocate a huge vector)
 // there is an unmerged alternative that might be interesting: https://github.com/declanvk/bigdecimal-rs/commit/b0a2ea3a403ddeeeaeef1ddfc41ff2ae4a4252d6
@@ -133,6 +186,26 @@ impl CellValue {
             CellValue::Import(_) => "import",
         }
     }
+
+    // Returns the type of the value as a CellValueType enum
+    pub fn type_enum(&self) -> CellValueType {
+        match self {
+            CellValue::Number(_) => CellValueType::Number,
+            CellValue::Text(_) => CellValueType::Text,
+            CellValue::Logical(_) => CellValueType::Boolean,
+            CellValue::Error(_) => CellValueType::Error,
+            CellValue::Instant(_) | CellValue::DateTime(_) => CellValueType::DateTime,
+            CellValue::Date(_) => CellValueType::Date,
+            CellValue::Time(_) => CellValueType::Time,
+            CellValue::Duration(_) => CellValueType::Duration,
+            CellValue::Blank => CellValueType::Blank,
+            CellValue::Html(_) => CellValueType::Html,
+            CellValue::Code(_) => CellValueType::Code,
+            CellValue::Image(_) => CellValueType::Image,
+            CellValue::Import(_) => CellValueType::Import,
+        }
+    }
+
     /// Returns a formula-source-code representation of the value.
     pub fn repr(&self) -> String {
         match self {
@@ -177,11 +250,7 @@ impl CellValue {
         } else {
             CellValue::add_commas(&s)
         };
-        if negative {
-            format!("-{}", n)
-        } else {
-            n
-        }
+        if negative { format!("-{}", n) } else { n }
     }
 
     pub fn to_display(&self) -> String {
@@ -437,21 +506,7 @@ impl CellValue {
     /// `SORT()` function. The comparison operators are the same, except that
     /// blank coerces to `0`, `FALSE`, or `""` before comparison.
     pub fn type_id(&self) -> u8 {
-        match self {
-            CellValue::Number(_) => 0,
-            CellValue::Text(_) => 1,
-            CellValue::Logical(_) => 2,
-            CellValue::Error(_) => 3,
-            CellValue::Instant(_) | CellValue::DateTime(_) => 4,
-            CellValue::Date(_) => 5,
-            CellValue::Time(_) => 6,
-            CellValue::Duration(_) => 7,
-            CellValue::Blank => 8,
-            CellValue::Html(_) => 9,
-            CellValue::Code(_) => 10,
-            CellValue::Image(_) => 11,
-            CellValue::Import(_) => 12,
-        }
+        self.type_enum().into()
     }
 
     /// Compares two values using a total ordering that propagates errors and

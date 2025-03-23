@@ -1,13 +1,13 @@
 import { debugWebWorkers } from '@/app/debugFlags';
-import type { JsCellsA1Response, JsCodeResult } from '@/app/quadratic-core-types';
+import type { JsCellsA1Response, JsCellValueResult, JsCodeResult } from '@/app/quadratic-core-types';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import type { CorePythonRun } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
 import type {
   InspectPython,
+  outputType,
   PythonError,
   PythonSuccess,
-  outputType,
 } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { pythonClient } from '@/app/web-workers/pythonWebWorker/worker/pythonClient';
 import { pythonCore } from '@/app/web-workers/pythonWebWorker/worker/pythonCore';
@@ -40,7 +40,10 @@ class Python {
     if (!this.transactionId) {
       throw new Error('No transactionId in getCellsA1');
     }
-    return pythonCore.sendGetCellsA1(this.transactionId, a1);
+    const time = performance.now();
+    const response = pythonCore.sendGetCellsA1(this.transactionId, a1);
+    console.log('getCellsA1', performance.now() - time);
+    return response;
   };
 
   private init = async () => {
@@ -218,9 +221,11 @@ class Python {
     let inspectionResults: InspectPython | undefined;
 
     try {
+      const time = performance.now();
       result = await this.pyodide.runPythonAsync(
         `run_python(${JSON.stringify(message.code)}, (${message.x}, ${message.y}))`
       );
+      console.log('runPython', performance.now() - time);
       output = Object.fromEntries(result.toJs()) as PythonSuccess | PythonError;
       inspectionResults = await this.inspectPython(message.code || '');
       let outputType = output?.output_type || '';
@@ -289,8 +294,8 @@ class Python {
       success: pythonRun.success,
       std_err: pythonRun.std_err,
       std_out: pythonRun.std_out,
-      output_value: pythonRun.output ? (pythonRun.output as any as string[]) : null,
-      output_array,
+      output_value: pythonRun.output ? (pythonRun.output as any as JsCellValueResult) : null,
+      output_array: output_array ? (output_array as any as JsCellValueResult[][]) : null,
       line_number: pythonRun.lineno ?? null,
       output_display_type: pythonRun.output_type ?? null,
       cancel_compute: false,

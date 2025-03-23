@@ -1,6 +1,8 @@
 // Converts the Javascript output to the Rust format and the
 // display type for use in the Code Editor.
 
+import { CellValueType } from '@/app/web-workers/javascriptWebWorker/worker/javascript/runner/javascriptLibrary';
+
 // Converts a single cell output and sets the displayType.
 export function javascriptConvertOutputType(
   message: string[],
@@ -9,7 +11,7 @@ export function javascriptConvertOutputType(
   row: number,
   x?: number,
   y?: number
-): { output: [string, string]; displayType: string; chartPixelOutput?: [number, number] } | null {
+): { output: [string, CellValueType]; displayType: string; chartPixelOutput?: [number, number] } | null {
   if (Array.isArray(value) && value.flat().length !== 0) {
     return null;
   }
@@ -23,7 +25,7 @@ export function javascriptConvertOutputType(
       message.push(`Warning: Unsupported output type: 'Infinity' at cell(${column + (x ?? 0)}, ${row + (y ?? 0)})`);
       return null;
     }
-    return { output: [value.toString(), 'number'], displayType: 'number' };
+    return { output: [value.toString(), CellValueType.Number], displayType: 'number' };
   } else if (typeof value === 'string' && value.includes('[object Promise]')) {
     message.push(
       `WARNING: Unsupported output type: \`Promise\` at cell(${column + (x ?? 0)}, ${
@@ -40,22 +42,22 @@ export function javascriptConvertOutputType(
       );
       return null;
     }
-    return { output: [value.toISOString(), 'date time'], displayType: 'Date' };
+    return { output: [value.toISOString(), CellValueType.DateTime], displayType: 'Date' };
   } else if (typeof value === 'function') {
     message.push(`WARNING: Unsupported output type: 'function' at cell(${column + (x ?? 0)}, ${row + (y ?? 0)})`);
     return null;
   } else if (value instanceof Blob && (value as Blob).type.includes('image')) {
     const image = new FileReaderSync().readAsDataURL(value as Blob);
-    return { output: [image, 'image'], displayType: 'OffscreenCanvas' };
+    return { output: [image, CellValueType.Image], displayType: 'OffscreenCanvas' };
   } else if (typeof value === 'string') {
-    return { output: [value, 'text'], displayType: 'string' };
+    return { output: [value, CellValueType.Text], displayType: 'string' };
   } else if (value === undefined || value === null) {
     return null;
   } else if (typeof value === 'boolean') {
-    return { output: [value ? 'true' : 'false', 'logical'], displayType: 'boolean' };
+    return { output: [value ? 'true' : 'false', CellValueType.Boolean], displayType: 'boolean' };
   } else if (Array.isArray(value)) {
     // this handles the case where the value.flat() is empty
-    return { output: ['', 'array'], displayType: 'empty array' };
+    return { output: ['', CellValueType.Code], displayType: 'empty array' };
   } else {
     message.push(
       `WARNING: Unsupported output type "${typeof value}" at cell(${column + (x ?? 0)}, ${
@@ -86,17 +88,17 @@ export function javascriptConvertOutputArray(
   column: number,
   row: number,
   chartPixelOutput?: [number, number]
-): { output: [string, string][][]; displayType: string; chartPixelOutput?: [number, number] } | null {
+): { output: [string, CellValueType][][]; displayType: string; chartPixelOutput?: [number, number] } | null {
   if (!Array.isArray(value) || value.length === 0 || value.flat().length === 0) {
     return null;
   }
   const types: Set<string> = new Set();
-  const output: [string, string][][] = [];
+  const output: [string, CellValueType][][] = [];
 
   // It may be an array of objects, where the object name is the heading row.
   if (!Array.isArray(value[0]) && typeof value[0] === 'object' && !isExpectedObjectType(value[0])) {
     const keys = Object.keys(value[0]);
-    output.push(keys.map((key) => [key, 'text']));
+    output.push(keys.map((key) => [key, CellValueType.Text]));
 
     for (const [y, v] of value.entries()) {
       const rowEntry: any[] = [];
@@ -109,7 +111,7 @@ export function javascriptConvertOutputArray(
           types.add(outputValue.displayType);
           rowEntry.push(outputValue.output);
         } else {
-          rowEntry.push(['', 'blank']);
+          rowEntry.push(['', CellValueType.Blank]);
         }
       }
     }
@@ -124,7 +126,7 @@ export function javascriptConvertOutputArray(
         types.add(outputValue.displayType);
         output.push([outputValue.output]);
       } else {
-        output.push([['', 'blank']]);
+        output.push([['', CellValueType.Blank]]);
       }
     }
   }
@@ -142,7 +144,7 @@ export function javascriptConvertOutputArray(
 
       for (let i = 0; i < longest; i++) {
         if (v.length <= i) {
-          output[y].push(['', 'blank']);
+          output[y].push(['', CellValueType.Blank]);
           types.add('undefined');
         } else {
           const v2 = v[i];
@@ -151,7 +153,7 @@ export function javascriptConvertOutputArray(
             types.add(outputValue.displayType);
             output[y].push(outputValue.output);
           } else {
-            output[y].push(['', 'blank']);
+            output[y].push(['', CellValueType.Blank]);
           }
         }
       }

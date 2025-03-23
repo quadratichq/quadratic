@@ -2,8 +2,8 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::{
-    a1::CellRefRange, controller::GridController, error_core::CoreError, grid::CodeCellLanguage,
-    CellValue,
+    CellValue, a1::CellRefRange, cellvalue::CellValueType, controller::GridController,
+    error_core::CoreError, grid::CodeCellLanguage,
 };
 use serde::{Deserialize, Serialize};
 
@@ -30,7 +30,7 @@ pub struct JsCellsA1Value {
     pub x: i32,
     pub y: i32,
     pub value: String,
-    pub type_name: String,
+    pub type_enum: CellValueType,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
@@ -186,7 +186,7 @@ impl GridController {
 mod test {
     use super::*;
     use crate::{
-        controller::transaction_types::JsCodeResult, grid::CodeCellLanguage, Pos, Rect, SheetPos,
+        Pos, Rect, SheetPos, controller::transaction_types::JsCodeResult, grid::CodeCellLanguage,
     };
 
     #[test]
@@ -350,7 +350,7 @@ mod test {
                         x: 1,
                         y: 1,
                         value: "test".into(),
-                        type_name: "text".into()
+                        type_enum: CellValueType::Text,
                     }],
                     x: 1,
                     y: 1,
@@ -430,31 +430,31 @@ mod test {
                             x: 1,
                             y: 1,
                             value: "test1".into(),
-                            type_name: "text".into()
+                            type_enum: CellValueType::Text
                         },
                         JsCellsA1Value {
                             x: 1,
                             y: 2,
                             value: "test2".into(),
-                            type_name: "text".into()
+                            type_enum: CellValueType::Text
                         },
                         JsCellsA1Value {
                             x: 1,
                             y: 3,
                             value: "test3".into(),
-                            type_name: "text".into()
+                            type_enum: CellValueType::Text
                         },
                         JsCellsA1Value {
                             x: 1,
                             y: 4,
                             value: "".into(),
-                            type_name: "blank".into()
+                            type_enum: CellValueType::Blank
                         },
                         JsCellsA1Value {
                             x: 1,
                             y: 5,
                             value: "test4".into(),
-                            type_name: "text".into()
+                            type_enum: CellValueType::Text
                         }
                     ],
                     x: 1,
@@ -501,7 +501,7 @@ mod test {
                         x: 1,
                         y: 1,
                         value: "test".into(),
-                        type_name: "text".into()
+                        type_enum: CellValueType::Text
                     }],
                     x: 1,
                     y: 1,
@@ -594,13 +594,13 @@ mod test {
                             x: 1,
                             y: 2,
                             value: "Column 1".into(),
-                            type_name: "text".into()
+                            type_enum: CellValueType::Text
                         },
                         JsCellsA1Value {
                             x: 2,
                             y: 2,
                             value: "Column 2".into(),
-                            type_name: "text".into()
+                            type_enum: CellValueType::Text
                         }
                     ],
                     x: 1,
@@ -653,25 +653,25 @@ mod test {
                             x: 1,
                             y: 2,
                             value: "Column 1".into(),
-                            type_name: "text".into()
+                            type_enum: CellValueType::Text
                         },
                         JsCellsA1Value {
                             x: 2,
                             y: 2,
                             value: "Column 2".into(),
-                            type_name: "text".into()
+                            type_enum: CellValueType::Text
                         },
                         JsCellsA1Value {
                             x: 1,
                             y: 3,
                             value: "1".into(),
-                            type_name: "number".into()
+                            type_enum: CellValueType::Number
                         },
                         JsCellsA1Value {
                             x: 2,
                             y: 3,
                             value: "2".into(),
-                            type_name: "number".into()
+                            type_enum: CellValueType::Number
                         }
                     ],
                     x: 1,

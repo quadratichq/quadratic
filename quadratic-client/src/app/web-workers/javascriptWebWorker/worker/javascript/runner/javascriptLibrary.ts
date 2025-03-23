@@ -207,13 +207,30 @@ export const relCells = (deltaX0: number, deltaY0: number, deltaX1: number, delt
 
 export const rc = relCell;
 
+// CellValueType from cellvalue.rs
+export enum CellValueType {
+  Number = 0,
+  Text = 1,
+  Boolean = 2,
+  Error = 3,
+  DateTime = 4,
+  Date = 5,
+  Time = 6,
+  Duration = 7,
+  Blank = 8,
+  Html = 9,
+  Code = 10,
+  Image = 11,
+  Import = 12,
+}
+
 type CellType = number | string | boolean | Date | undefined;
 
 const convertType = (cell: any): CellType => {
-  if (cell.type_name === 'blank') return undefined;
-  if (cell.type_name === 'date time' || cell.type_name === 'date') return new Date(cell.value);
+  if (cell.type_enum === CellValueType.Blank) return undefined;
+  if (cell.type_enum === CellValueType.DateTime || cell.type_enum === CellValueType.Date) return new Date(cell.value);
 
-  return cell.type_name === 'number' ? parseFloat(cell.value) : cell.value;
+  return cell.type_enum === CellValueType.Number ? parseFloat(cell.value) : cell.value;
 };
 
 export class q {

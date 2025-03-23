@@ -1,7 +1,7 @@
 use crate::{
-    controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
-    grid::CodeCellLanguage,
     SheetPos,
+    controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
+    grid::CodeCellLanguage,
 };
 
 impl GridController {
@@ -31,12 +31,13 @@ impl GridController {
 mod tests {
     use super::*;
     use crate::{
+        ArraySize, CellValue, Rect,
+        cellvalue::CellValueType,
         controller::{
             execution::run_code::get_cells::{JsCellsA1Response, JsCellsA1Value, JsCellsA1Values},
-            transaction_types::JsCodeResult,
+            transaction_types::{JsCellValueResult, JsCodeResult},
         },
         grid::js_types::JsRenderCell,
-        ArraySize, CellValue, Rect,
     };
     use bigdecimal::BigDecimal;
 
@@ -53,7 +54,7 @@ mod tests {
         gc.calculation_complete(JsCodeResult {
             transaction_id: transaction.id.to_string(),
             success: true,
-            output_value: Some(vec!["test".into(), "text".into()]),
+            output_value: Some(JsCellValueResult("test".into(), CellValueType::Text)),
             ..Default::default()
         })
         .ok();
@@ -95,7 +96,7 @@ mod tests {
         let summary = gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(vec!["hello world".into(), "text".into()]),
+            output_value: Some(JsCellValueResult("hello world".into(), CellValueType::Text)),
             ..Default::default()
         });
         assert!(summary.is_ok());
@@ -135,7 +136,7 @@ mod tests {
                         x: 1,
                         y: 1,
                         value: "9".into(),
-                        type_name: "number".into(),
+                        type_enum: CellValueType::Number,
                     }],
                     x: 1,
                     y: 1,
@@ -150,14 +151,15 @@ mod tests {
         );
 
         // mock the javascript calculation returning the result
-        assert!(gc
-            .calculation_complete(JsCodeResult {
+        assert!(
+            gc.calculation_complete(JsCodeResult {
                 transaction_id: transaction_id.to_string(),
                 success: true,
-                output_value: Some(vec!["10".into(), "number".into()]),
+                output_value: Some(JsCellValueResult("10".into(), CellValueType::Number)),
                 ..Default::default()
             })
-            .is_ok());
+            .is_ok()
+        );
 
         // check that the value at A3 contains the expected output
         let sheet = gc.try_sheet(sheet_id).unwrap();
@@ -192,7 +194,7 @@ mod tests {
         gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(vec!["10".into(), "number".into()]),
+            output_value: Some(JsCellValueResult("10".into(), CellValueType::Number)),
             ..Default::default()
         })
         .unwrap();
@@ -214,7 +216,7 @@ mod tests {
                         x: 1,
                         y: 1,
                         value: "10".into(),
-                        type_name: "number".into(),
+                        type_enum: CellValueType::Number,
                     }],
                     x: 1,
                     y: 1,
@@ -227,14 +229,15 @@ mod tests {
                 error: None,
             }
         );
-        assert!(gc
-            .calculation_complete(JsCodeResult {
+        assert!(
+            gc.calculation_complete(JsCodeResult {
                 transaction_id: transaction_id.to_string(),
                 success: true,
-                output_value: Some(vec!["11".into(), "number".into()]),
+                output_value: Some(JsCellValueResult("11".into(), CellValueType::Number)),
                 ..Default::default()
             })
-            .is_ok());
+            .is_ok()
+        );
 
         // check that the value at A2 contains the expected output
         let sheet = gc.try_sheet(sheet_id).unwrap();
@@ -244,10 +247,10 @@ mod tests {
         );
     }
 
-    fn javascript_array(input: Vec<isize>) -> Vec<Vec<Vec<String>>> {
+    fn javascript_array(input: Vec<isize>) -> Vec<Vec<JsCellValueResult>> {
         input
             .iter()
-            .map(|i| vec![vec![i.to_string(), "number".into()]])
+            .map(|i| vec![JsCellValueResult(i.to_string(), CellValueType::Number)])
             .collect()
     }
 
@@ -268,14 +271,15 @@ mod tests {
         let transaction_id = gc.async_transactions()[0].id;
 
         // mock the javascript calculation returning the result
-        assert!(gc
-            .calculation_complete(JsCodeResult {
+        assert!(
+            gc.calculation_complete(JsCodeResult {
                 transaction_id: transaction_id.to_string(),
                 success: true,
                 output_array: Some(javascript_array(vec![1, 2, 3])),
                 ..Default::default()
             })
-            .is_ok());
+            .is_ok()
+        );
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
         let cells = sheet.get_render_cells(Rect::from_numbers(1, 2, 1, 3));
@@ -310,17 +314,19 @@ mod tests {
         let result = JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(vec!["".into(), "blank".into()]),
+            output_value: Some(JsCellValueResult("".into(), CellValueType::Blank)),
             cancel_compute: Some(true),
             ..Default::default()
         };
         gc.calculation_complete(result).unwrap();
         assert!(gc.async_transactions().is_empty());
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        assert!(sheet
-            .display_value(pos![A1])
-            .unwrap()
-            .is_blank_or_empty_string());
+        assert!(
+            sheet
+                .display_value(pos![A1])
+                .unwrap()
+                .is_blank_or_empty_string()
+        );
     }
 
     #[test]
@@ -340,14 +346,18 @@ mod tests {
         let transaction_id = gc.async_transactions()[0].id;
 
         // mock the javascript calculation returning the result
-        assert!(gc
-            .calculation_complete(JsCodeResult {
+        assert!(
+            gc.calculation_complete(JsCodeResult {
                 transaction_id: transaction_id.to_string(),
                 success: true,
-                output_value: Some(vec!["original output".into(), "text".into()]),
+                output_value: Some(JsCellValueResult(
+                    "original output".into(),
+                    CellValueType::Text
+                )),
                 ..Default::default()
             })
-            .is_ok());
+            .is_ok()
+        );
 
         // check that the value at A1 contains the expected output
         let sheet = gc.try_sheet(sheet_id).unwrap();
@@ -372,14 +382,15 @@ mod tests {
         let transaction_id = gc.async_transactions()[0].id;
 
         // mock the javascript calculation returning the result
-        assert!(gc
-            .calculation_complete(JsCodeResult {
+        assert!(
+            gc.calculation_complete(JsCodeResult {
                 transaction_id: transaction_id.to_string(),
                 success: true,
-                output_value: Some(vec!["new output".into(), "text".into()]),
+                output_value: Some(JsCellValueResult("new output".into(), CellValueType::Text)),
                 ..Default::default()
             })
-            .is_ok());
+            .is_ok()
+        );
 
         // repeat the same action to find a bug that occurs on second change
         let sheet = gc.try_sheet(sheet_id).unwrap();
@@ -404,14 +415,18 @@ mod tests {
         let transaction_id = gc.async_transactions()[0].id;
 
         // mock the javascript calculation returning the result
-        assert!(gc
-            .calculation_complete(JsCodeResult {
+        assert!(
+            gc.calculation_complete(JsCodeResult {
                 transaction_id: transaction_id.to_string(),
                 success: true,
-                output_value: Some(vec!["new output second time".into(), "text".into()]),
+                output_value: Some(JsCellValueResult(
+                    "new output second time".into(),
+                    CellValueType::Text,
+                )),
                 ..Default::default()
             })
-            .is_ok());
+            .is_ok()
+        );
 
         // check that the value at A1 contains the original output
         let sheet = gc.try_sheet(sheet_id).unwrap();
@@ -443,13 +458,13 @@ mod tests {
                 x: 1,
                 y: 1,
                 value: "1".into(),
-                type_name: "number".into(),
+                type_enum: CellValueType::Number,
             }
         );
         let result = gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(vec!["2".into(), "number".into()]),
+            output_value: Some(JsCellValueResult("2".into(), CellValueType::Number)),
             ..Default::default()
         });
         assert!(result.is_ok());
@@ -472,13 +487,13 @@ mod tests {
                 x: 2,
                 y: 1,
                 value: "2".into(),
-                type_name: "number".into(),
+                type_enum: CellValueType::Number,
             }
         );
         let result = gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(vec!["3".into(), "number".into()]),
+            output_value: Some(JsCellValueResult("3".into(), CellValueType::Number)),
             ..Default::default()
         });
         assert!(result.is_ok());
@@ -517,7 +532,7 @@ mod tests {
         let summary = gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(vec!["hello world".into(), "text".into()]),
+            output_value: Some(JsCellValueResult("hello world".into(), CellValueType::Text)),
             ..Default::default()
         });
         assert!(summary.is_ok());

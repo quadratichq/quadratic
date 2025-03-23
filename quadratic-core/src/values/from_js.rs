@@ -1,20 +1,20 @@
 use std::str::FromStr;
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use bigdecimal::BigDecimal;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
 use crate::{
-    a1::A1Selection,
-    controller::operations::operation::Operation,
-    grid::{
-        formats::{FormatUpdate, SheetFormatUpdates},
-        NumericFormat, NumericFormatKind, Sheet,
-    },
     Pos,
+    a1::A1Selection,
+    controller::{operations::operation::Operation, transaction_types::JsCellValueResult},
+    grid::{
+        NumericFormat, NumericFormatKind, Sheet,
+        formats::{FormatUpdate, SheetFormatUpdates},
+    },
 };
 
-use super::CellValue;
+use super::{CellValue, cellvalue::CellValueType};
 
 impl CellValue {
     // Converts a JS Date to a Date
@@ -46,27 +46,17 @@ impl CellValue {
     /// `value` is the stringified value
     /// `js_type` is the stringified CelLValue type
     pub fn from_js(
-        value: &String,
-        js_type: &str,
+        cell_value: JsCellValueResult,
         pos: Pos,
         sheet: &mut Sheet,
     ) -> Result<(CellValue, Vec<Operation>)> {
         let mut ops = vec![];
 
-        let cell_value = match js_type {
-            "text" => {
-                if value.to_lowercase().starts_with("<html>")
-                    || value.to_lowercase().starts_with("<div>")
-                {
-                    CellValue::Html(value.to_string())
-                } else if let Some(time) = Self::unpack_time(value) {
-                    time
-                } else {
-                    CellValue::Text(value.to_string())
-                }
-            }
-            "number" => {
-                if let Some((currency, number)) = CellValue::unpack_currency(value) {
+        let JsCellValueResult(value, type_enum) = cell_value;
+
+        let cell_value = match type_enum {
+            CellValueType::Number => {
+                if let Some((currency, number)) = CellValue::unpack_currency(&value) {
                     let numeric_format = NumericFormat {
                         kind: NumericFormatKind::Currency,
                         symbol: Some(currency),
@@ -92,9 +82,9 @@ impl CellValue {
                     // length by using 2 if currency is set by default.
 
                     CellValue::Number(number)
-                } else if let Ok(number) = BigDecimal::from_str(value) {
+                } else if let Ok(number) = BigDecimal::from_str(&value) {
                     CellValue::Number(number)
-                } else if let Some(number) = CellValue::unpack_percentage(value) {
+                } else if let Some(number) = CellValue::unpack_percentage(&value) {
                     let numeric_format = NumericFormat {
                         kind: NumericFormatKind::Percentage,
                         symbol: None,
@@ -117,23 +107,33 @@ impl CellValue {
 
                     CellValue::Number(number)
                 } else {
-                    bail!("Could not parse number: {}", value);
+                    bail!("Could not parse number: {}", &value);
                 }
             }
-            "logical" => {
+            CellValueType::Text => {
+                if value.to_lowercase().starts_with("<html>")
+                    || value.to_lowercase().starts_with("<div>")
+                {
+                    CellValue::Html(value)
+                } else if let Some(time) = Self::unpack_time(&value) {
+                    time
+                } else {
+                    CellValue::Text(value)
+                }
+            }
+            CellValueType::Boolean => {
                 let is_true = value.eq_ignore_ascii_case("true");
                 CellValue::Logical(is_true)
             }
-            "instant" => CellValue::Text("not implemented".into()), //unpack_str_unix_timestamp(value)?,
-            "duration" => {
-                CellValue::unpack_duration(value).unwrap_or(CellValue::Text(value.into()))
+            CellValueType::DateTime => Self::from_js_date_time(&value),
+            CellValueType::Date => Self::from_js_date(&value),
+            CellValueType::Duration => {
+                CellValue::unpack_duration(&value).unwrap_or(CellValue::Text(value))
             }
-            "image" => CellValue::Image(value.into()),
-            "date" => Self::from_js_date(value),
-            "date time" => Self::from_js_date_time(value),
-            _ => CellValue::unpack_date_time(value)
-                .or_else(|| CellValue::unpack_duration(value))
-                .unwrap_or_else(|| CellValue::Text(value.clone())),
+            CellValueType::Image => CellValue::Image(value),
+            _ => CellValue::unpack_date_time(&value)
+                .or_else(|| CellValue::unpack_duration(&value))
+                .unwrap_or_else(|| CellValue::Text(value)),
         };
 
         Ok((cell_value, ops))
@@ -152,17 +152,21 @@ mod tests {
         assert_eq!(value.type_name(), "image");
 
         let sheet = &mut Sheet::test();
-        let value = CellValue::from_js(&"test".to_string(), "image", (0, 1).into(), sheet);
+        let value = CellValue::from_js(
+            JsCellValueResult("test".into(), CellValueType::Image),
+            (0, 1).into(),
+            sheet,
+        );
         assert_eq!(value.unwrap().0, CellValue::Image("test".into()));
     }
 
     #[test]
     fn from_js_date() {
         let value = "2024-08-15T10:53:48.750Z".to_string();
-        let js_type = "date time";
+        let js_type = CellValueType::DateTime;
         let pos = (0, 1).into();
         let sheet = &mut Sheet::test();
-        let value = CellValue::from_js(&value, js_type, pos, sheet);
+        let value = CellValue::from_js(JsCellValueResult(value.clone(), js_type), pos, sheet);
         assert_eq!(
             value.unwrap().0,
             CellValue::DateTime(
@@ -172,20 +176,20 @@ mod tests {
         );
 
         let value = "2021-09-01T00:00:00.000Z".to_string();
-        let js_type = "date time";
+        let js_type = CellValueType::DateTime;
         let pos = (0, 1).into();
         let sheet = &mut Sheet::test();
-        let value = CellValue::from_js(&value, js_type, pos, sheet);
+        let value = CellValue::from_js(JsCellValueResult(value.clone(), js_type), pos, sheet);
         assert_eq!(
             value.unwrap().0,
             CellValue::Date(NaiveDate::parse_from_str("2021-09-01", "%Y-%m-%d").unwrap())
         );
 
         let value = "2021-09-01".to_string();
-        let js_type = "date";
+        let js_type = CellValueType::Date;
         let pos = (0, 1).into();
         let sheet = &mut Sheet::test();
-        let value = CellValue::from_js(&value, js_type, pos, sheet);
+        let value = CellValue::from_js(JsCellValueResult(value.clone(), js_type), pos, sheet);
         assert_eq!(
             value.unwrap().0,
             CellValue::Date(NaiveDate::parse_from_str("2021-09-01", "%Y-%m-%d").unwrap())

@@ -1,7 +1,7 @@
 use crate::{
-    controller::{active_transactions::transaction_name::TransactionName, GridController},
-    grid::{data_table::column_header::DataTableColumnHeader, sort::DataTableSort},
     Pos, SheetPos, SheetRect,
+    controller::{GridController, active_transactions::transaction_name::TransactionName},
+    grid::{data_table::column_header::DataTableColumnHeader, sort::DataTableSort},
 };
 
 use anyhow::Result;
@@ -122,16 +122,17 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
+        Array, CellValue, Pos, Rect, SheetPos, Value,
         a1::A1Selection,
-        cellvalue::Import,
+        cellvalue::{CellValueType, Import},
         controller::{
-            transaction_types::JsCodeResult, user_actions::import::tests::simple_csv,
             GridController,
+            transaction_types::{JsCellValueResult, JsCodeResult},
+            user_actions::import::tests::simple_csv,
         },
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
         test_util::{assert_cell_value, assert_data_table_cell_value_row, print_data_table},
         wasm_bindings::js::{clear_js_calls, expect_js_call},
-        Array, CellValue, Pos, Rect, SheetPos, Value,
     };
 
     #[test]
@@ -219,7 +220,7 @@ mod tests {
         let _ = gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(vec!["1".into(), "number".into()]),
+            output_value: Some(JsCellValueResult("1".into(), CellValueType::Number)),
             ..Default::default()
         });
 
@@ -279,7 +280,7 @@ mod tests {
         let _ = gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(vec!["1".into(), "number".into()]),
+            output_value: Some(JsCellValueResult("1".into(), CellValueType::Number)),
             ..Default::default()
         });
 

@@ -1,11 +1,11 @@
 //! Code and html/image output for client rendering.
 
 use crate::{
-    grid::{
-        js_types::{JsHtmlOutput, JsRenderCodeCell, JsRenderCodeCellState},
-        CodeCellLanguage, DataTable, Sheet,
-    },
     CellValue, Pos, Value,
+    grid::{
+        CodeCellLanguage, DataTable, Sheet,
+        js_types::{JsHtmlOutput, JsRenderCodeCell, JsRenderCodeCellState},
+    },
 };
 
 impl Sheet {
@@ -224,10 +224,14 @@ impl Sheet {
 #[cfg(test)]
 mod tests {
     use crate::{
-        controller::{transaction_types::JsCodeResult, GridController},
-        grid::{js_types::JsNumber, CodeCellValue, CodeRun, DataTableKind},
-        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
         Rect, SheetPos,
+        cellvalue::CellValueType,
+        controller::{
+            GridController,
+            transaction_types::{JsCellValueResult, JsCodeResult},
+        },
+        grid::{CodeCellValue, CodeRun, DataTableKind, js_types::JsNumber},
+        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
     };
 
     use super::*;
@@ -250,7 +254,10 @@ mod tests {
         gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
             success: true,
-            output_value: Some(vec!["<html></html>".into(), "text".into()]),
+            output_value: Some(JsCellValueResult(
+                "<html></html>".into(),
+                CellValueType::Text,
+            )),
             ..Default::default()
         })
         .ok();

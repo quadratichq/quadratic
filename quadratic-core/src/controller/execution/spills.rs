@@ -1,8 +1,8 @@
 // Handles all spill checking for the sheet
 
+use crate::controller::GridController;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
-use crate::controller::GridController;
 use crate::grid::SheetId;
 use crate::{ArraySize, Pos, Rect};
 
@@ -104,9 +104,10 @@ impl GridController {
 #[cfg(test)]
 mod tests {
 
-    use crate::controller::active_transactions::pending_transaction::PendingTransaction;
-    use crate::controller::transaction_types::JsCodeResult;
+    use crate::cellvalue::CellValueType;
     use crate::controller::GridController;
+    use crate::controller::active_transactions::pending_transaction::PendingTransaction;
+    use crate::controller::transaction_types::{JsCellValueResult, JsCodeResult};
     use crate::grid::js_types::{JsNumber, JsRenderCell, JsRenderCellSpecial};
     use crate::grid::{CellAlign, CellWrap, CodeCellLanguage, CodeRun, DataTable, DataTableKind};
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call_count};
@@ -482,7 +483,7 @@ mod tests {
             transaction_id: transaction_id.to_string(),
             success: true,
             chart_pixel_output: Some((100.0, 100.0)),
-            output_value: Some(vec!["<html>".to_string(), "text".to_string()]),
+            output_value: Some(JsCellValueResult("<html>".to_string(), CellValueType::Text)),
             ..Default::default()
         };
         gc.calculation_complete(result).unwrap();

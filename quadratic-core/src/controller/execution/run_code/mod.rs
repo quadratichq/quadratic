@@ -1,9 +1,9 @@
+use crate::controller::GridController;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
 use crate::controller::transaction_types::JsCodeResult;
-use crate::controller::GridController;
 use crate::error_core::{CoreError, Result};
-use crate::grid::{unique_data_table_name, CodeCellLanguage, CodeRun, DataTable, DataTableKind};
+use crate::grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind, unique_data_table_name};
 use crate::{Array, CellValue, Pos, RunError, RunErrorMsg, SheetPos, SheetRect, Span, Value};
 
 pub mod get_cells;
@@ -270,7 +270,7 @@ impl GridController {
             None => {
                 return Err(CoreError::TransactionNotFound(
                     "Expected current_sheet_pos to be defined in after_calculation_async".into(),
-                ))
+                ));
             }
         };
 
@@ -330,7 +330,7 @@ impl GridController {
                 return Err(CoreError::TransactionNotFound(
                     "Expected current_sheet_pos to be defined in transaction::code_cell_error"
                         .into(),
-                ))
+                ));
             }
         };
         let sheet_id = sheet_pos.sheet_id;
@@ -456,7 +456,7 @@ impl GridController {
                 }
             } else if let Some(output_value) = js_code_result.output_value {
                 let (cell_value, ops) =
-                    CellValue::from_js(&output_value[0], &output_value[1], start.into(), sheet)
+                    CellValue::from_js(output_value.to_owned(), start.into(), sheet)
                         .unwrap_or_else(|e| {
                             dbgjs!(format!("Cannot parse {:?}: {}", output_value, e));
                             (CellValue::Blank, vec![])
@@ -540,6 +540,8 @@ impl GridController {
 mod test {
 
     use super::*;
+    use crate::cellvalue::CellValueType;
+    use crate::controller::transaction_types::JsCellValueResult;
     use crate::grid::CodeCellValue;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call_count};
 
@@ -673,7 +675,7 @@ mod test {
         let result = JsCodeResult {
             transaction_id: transaction.id.to_string(),
             success: true,
-            output_value: Some(vec!["test".into(), "image".into()]),
+            output_value: Some(JsCellValueResult("test".into(), CellValueType::Image)),
             ..Default::default()
         };
         gc.calculation_complete(result).unwrap();
@@ -698,7 +700,7 @@ mod test {
             let result = JsCodeResult {
                 transaction_id: transaction.id.to_string(),
                 success: true,
-                output_value: Some(vec!["test".into(), "image".into()]),
+                output_value: Some(JsCellValueResult("test".into(), CellValueType::Image)),
                 chart_pixel_output: Some((100.0, 100.0)),
                 ..Default::default()
             };
@@ -713,7 +715,7 @@ mod test {
             let result = JsCodeResult {
                 transaction_id: transaction.id.to_string(),
                 success: true,
-                output_value: Some(vec!["test".into(), "image".into()]),
+                output_value: Some(JsCellValueResult("test".into(), CellValueType::Image)),
                 chart_pixel_output: Some((200.0, 200.0)),
                 ..Default::default()
             };

@@ -149,6 +149,7 @@ export class Javascript {
           setTimeout(this.next, 0);
         } else if (e.data.type === 'getCellsA1Length') {
           const { sharedBuffer, a1 } = e.data;
+          const time = performance.now();
           this.api.getCellsA1(a1).then((cellsBuffer) => {
             const int32View = new Int32Array(sharedBuffer, 0, 3);
             if (cellsBuffer) {
@@ -167,8 +168,10 @@ export class Javascript {
               this.state = 'ready';
               setTimeout(this.next, 0);
             }
+            console.log('getCellsA1', performance.now() - time);
           });
         } else if (e.data.type === 'getCellsData') {
+          const time = performance.now();
           const { id, sharedBuffer } = e.data;
           const cellsUint8Array = this.getCellsResponses[id];
           delete this.getCellsResponses[id];
@@ -181,6 +184,7 @@ export class Javascript {
           }
           Atomics.store(int32View, 0, 1);
           Atomics.notify(int32View, 0, 1);
+          console.log('getCellsData', performance.now() - time);
         } else if (e.data.type === 'error') {
           let errorLine: number | undefined;
           let errorColumn: number | undefined;

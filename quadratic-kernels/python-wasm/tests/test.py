@@ -35,11 +35,11 @@ def a1_to_xy(a1: str) -> tuple:
 
 #  Mock definitions
 class Cell:
-    def __init__(self, x, y, value, type_name):
+    def __init__(self, x, y, value, type_enum):
         self.x = x
         self.y = y
         self.value = value
-        self.type_name = type_name
+        self.type_enum = type_enum
 
 class Values:
     def __init__(self, w, h, x, y, cells, has_headers):
