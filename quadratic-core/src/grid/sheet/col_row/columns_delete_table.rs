@@ -169,27 +169,6 @@ impl Sheet {
 
         transaction.reverse_operations.extend(reverse_operations);
     }
-
-    /// Deletes columns. Columns is a vec of all columns to be deleted. This fn
-    /// will dedup and sort the columns.
-    pub fn delete_columns(&mut self, transaction: &mut PendingTransaction, columns: Vec<i64>) {
-        if columns.is_empty() {
-            return;
-        }
-
-        let mut columns = columns.clone();
-        columns.sort_unstable();
-        columns.dedup();
-
-        self.check_delete_tables_columns(transaction, &columns);
-
-        columns.reverse();
-
-        for column in columns {
-            self.delete_column(transaction, column);
-        }
-        self.recalculate_bounds();
-    }
 }
 
 #[cfg(test)]
