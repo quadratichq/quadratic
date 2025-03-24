@@ -228,7 +228,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                             expected: "date or duration".into(),
                             got: Some(date.inner.type_name().into()),
                         }
-                        .with_span(date.span))
+                        .with_span(date.span));
                     }
                 }
             }
@@ -269,7 +269,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                             expected: "date or duration".into(),
                             got: Some(date.inner.type_name().into()),
                         }
-                        .with_span(date.span))
+                        .with_span(date.span));
                     }
                 }
             }
@@ -312,7 +312,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                             expected: "date, duration, or number".into(),
                             got: Some(date.inner.type_name().into()),
                         }
-                        .with_span(date.span))
+                        .with_span(date.span));
                     }
                 }
             }
@@ -361,7 +361,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                             expected: "time, duration, or number".into(),
                             got: Some(time.inner.type_name().into()),
                         }
-                        .with_span(time.span))
+                        .with_span(time.span));
                     }
                 }
             }
@@ -410,7 +410,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                             expected: "time, duration, or number".into(),
                             got: Some(time.inner.type_name().into()),
                         }
-                        .with_span(time.span))
+                        .with_span(time.span));
                     }
                 }
             }
@@ -459,7 +459,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                             expected: "time, duration, or number".into(),
                             got: Some(time.inner.type_name().into()),
                         }
-                        .with_span(time.span))
+                        .with_span(time.span));
                     }
                 }
             }

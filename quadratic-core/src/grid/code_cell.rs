@@ -2,9 +2,9 @@ use fancy_regex::Regex;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
+use crate::RefError;
 use crate::a1::{A1Context, A1Selection};
 use crate::grid::CodeCellLanguage;
-use crate::RefError;
 
 use super::SheetId;
 

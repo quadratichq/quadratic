@@ -1,8 +1,8 @@
 //! Mutation methods that insert or delete columns and rows from a selection.
 
 use crate::{
-    a1::{A1Context, CellRefRange, RefRangeBounds, TableRef},
     RefError,
+    a1::{A1Context, CellRefRange, RefRangeBounds, TableRef},
 };
 
 use super::A1Selection;
@@ -152,7 +152,7 @@ impl A1Selection {
 
 #[cfg(test)]
 mod tests {
-    use crate::{grid::SheetId, Rect};
+    use crate::{Rect, grid::SheetId};
 
     use super::*;
 

@@ -13,9 +13,9 @@ use rules::SyntaxRule;
 
 use super::*;
 use crate::{
+    CodeResult, CoerceInto, RefError, RunError, RunErrorMsg, SheetPos, Span, Spanned,
     a1::{A1Context, CellRefRange, CellRefRangeEnd, RefRangeBounds, SheetCellRefRange},
     grid::{Grid, SheetId},
-    CodeResult, CoerceInto, RefError, RunError, RunErrorMsg, SheetPos, Span, Spanned,
 };
 
 /// Parses a formula.

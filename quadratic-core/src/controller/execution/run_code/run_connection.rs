@@ -2,10 +2,10 @@ use anyhow::Result;
 use regex::Regex;
 
 use crate::{
-    a1::{A1Error, A1Selection},
-    controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
-    grid::{CodeCellLanguage, ConnectionKind, SheetId},
     RunError, RunErrorMsg, SheetPos,
+    a1::{A1Error, A1Selection},
+    controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
+    grid::{CodeCellLanguage, ConnectionKind, SheetId},
 };
 
 use lazy_static::lazy_static;
@@ -118,12 +118,12 @@ impl GridController {
 mod tests {
 
     use crate::{
+        Pos, RunError, RunErrorMsg, SheetPos,
         constants::SHEET_NAME,
         controller::{
-            active_transactions::pending_transaction::PendingTransaction, GridController,
+            GridController, active_transactions::pending_transaction::PendingTransaction,
         },
         grid::{CodeCellLanguage, ConnectionKind, SheetId},
-        Pos, RunError, RunErrorMsg, SheetPos,
     };
 
     #[test]
@@ -148,9 +148,11 @@ mod tests {
             .unwrap();
         assert_eq!(result, "test".to_string());
         assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
-        assert!(transaction
-            .cells_accessed
-            .contains(SheetPos::new(sheet_id, 1, 2), gc.a1_context()));
+        assert!(
+            transaction
+                .cells_accessed
+                .contains(SheetPos::new(sheet_id, 1, 2), gc.a1_context())
+        );
 
         gc.add_sheet(None);
         let sheet_2_id = gc.sheet_ids()[1];
@@ -163,9 +165,11 @@ mod tests {
             .unwrap();
         assert_eq!(result, "test2".to_string());
         assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
-        assert!(transaction
-            .cells_accessed
-            .contains(SheetPos::new(sheet_id, 1, 2), gc.a1_context()));
+        assert!(
+            transaction
+                .cells_accessed
+                .contains(SheetPos::new(sheet_id, 1, 2), gc.a1_context())
+        );
     }
 
     #[test]
@@ -191,9 +195,11 @@ mod tests {
         assert_eq!(result, "test".to_string());
         assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
         let context = gc.a1_context();
-        assert!(transaction
-            .cells_accessed
-            .contains(SheetPos::new(sheet_id, 1, 2), context));
+        assert!(
+            transaction
+                .cells_accessed
+                .contains(SheetPos::new(sheet_id, 1, 2), context)
+        );
 
         let code = format!(r#"{{{{'{}1'!A2}}}}"#, SHEET_NAME);
         let result = gc
@@ -201,9 +207,11 @@ mod tests {
             .unwrap();
         assert_eq!(result, "test".to_string());
         assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
-        assert!(transaction
-            .cells_accessed
-            .contains(SheetPos::new(sheet_id, 1, 2), context));
+        assert!(
+            transaction
+                .cells_accessed
+                .contains(SheetPos::new(sheet_id, 1, 2), context)
+        );
     }
 
     #[test]

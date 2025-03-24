@@ -168,8 +168,8 @@ impl Sheet {
 #[cfg(test)]
 mod test {
     use crate::{
-        grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind, Sheet},
         CellValue, Pos, Value,
+        grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind, Sheet},
     };
 
     #[test]

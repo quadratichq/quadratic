@@ -283,11 +283,11 @@ impl Sheet {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::controller::operations::clipboard::PasteSpecial;
+    use crate::Pos;
     use crate::controller::GridController;
+    use crate::controller::operations::clipboard::PasteSpecial;
     use crate::grid::js_types::JsClipboard;
     use crate::grid::sheet::borders::{BorderSelection, BorderStyle, CellBorderLine};
-    use crate::Pos;
 
     #[test]
     fn copy_to_clipboard_exclude() {

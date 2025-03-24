@@ -6,7 +6,7 @@ use ts_rs::TS;
 use wasm_bindgen::prelude::*;
 
 use super::{A1Error, CellRefCoord, UNBOUNDED};
-use crate::{a1::column_name, Pos, RefError};
+use crate::{Pos, RefError, a1::column_name};
 
 /// The maximum value for a column or row number.
 const OUT_OF_BOUNDS: i64 = 1_000_000_000;

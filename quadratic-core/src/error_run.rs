@@ -8,7 +8,7 @@ use ts_rs::TS;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{a1::A1Error, ArraySize, Axis, Span, Spanned, Value};
+use crate::{ArraySize, Axis, Span, Spanned, Value, a1::A1Error};
 
 /// Result of a [`crate::RunError`].
 pub type CodeResult<T = Spanned<Value>> = Result<T, RunError>;
@@ -136,7 +136,10 @@ impl fmt::Display for RunErrorMsg {
                 write!(f, "(unknown error)")
             }
             Self::InternalError(s) => {
-                write!(f, "Internal error: {s}\nThis is a bug in Quadratic, not your formula. Please report this to us!")
+                write!(
+                    f,
+                    "Internal error: {s}\nThis is a bug in Quadratic, not your formula. Please report this to us!"
+                )
             }
 
             Self::Unterminated(s) => {

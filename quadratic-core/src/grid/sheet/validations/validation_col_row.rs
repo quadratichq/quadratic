@@ -1,16 +1,16 @@
 use std::cmp::Ordering;
 
 use crate::{
+    Pos,
     a1::{A1Context, A1Selection},
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
     grid::SheetId,
-    Pos,
 };
 
-use super::{validation::Validation, Validations};
+use super::{Validations, validation::Validation};
 
 impl Validations {
     /// Removes a column from all validations and adds undo operations.
@@ -255,12 +255,12 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
-        controller::{active_transactions::transaction_name::TransactionName, GridController},
+        CellValue, CopyFormats,
+        controller::{GridController, active_transactions::transaction_name::TransactionName},
         grid::sheet::validations::validation_rules::{
-            validation_logical::ValidationLogical, ValidationRule,
+            ValidationRule, validation_logical::ValidationLogical,
         },
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
-        CellValue, CopyFormats,
     };
 
     use super::*;

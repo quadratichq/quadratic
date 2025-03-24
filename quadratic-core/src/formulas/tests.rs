@@ -8,7 +8,7 @@ use crate::a1::{CellRefCoord, CellRefRange, SheetCellRefRange};
 pub(crate) use crate::grid::Grid;
 use crate::grid::{Sheet, SheetId};
 pub(crate) use crate::values::*;
-pub(crate) use crate::{array, CodeResult, RunError, RunErrorMsg, Spanned};
+pub(crate) use crate::{CodeResult, RunError, RunErrorMsg, Spanned, array};
 use crate::{CoerceInto, Pos, SheetPos};
 
 #[track_caller]
@@ -415,8 +415,14 @@ fn test_table_references() {
             "simple.csv[[#HEADERS]]",
             "{city, region, country, population}",
         ),
-        ("simple.csv[region]", "{MA; MA; MA; MA; MA; MO; NJ; OH; OR; NH}"),
-        ("simple.csv[[region]]", "{MA; MA; MA; MA; MA; MO; NJ; OH; OR; NH}"),
+        (
+            "simple.csv[region]",
+            "{MA; MA; MA; MA; MA; MO; NJ; OH; OR; NH}",
+        ),
+        (
+            "simple.csv[[region]]",
+            "{MA; MA; MA; MA; MA; MO; NJ; OH; OR; NH}",
+        ),
         (
             "simple.csv[[city]:[country]]",
             "{Southborough, MA, United States; Northbridge, MA, United States; Westborough, MA, United States; Marlborough, MA, United States; Springfield, MA, United States; Springfield, MO, United States; Springfield, NJ, United States; Springfield, OH, United States; Springfield, OR, United States; Concord, NH, United States}",

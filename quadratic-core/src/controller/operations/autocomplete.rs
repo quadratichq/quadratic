@@ -1,15 +1,16 @@
 use crate::{
+    CellValue, Pos, Rect, SheetPos, SheetRect,
     a1::A1Selection,
     cell_values::CellValues,
     controller::GridController,
     grid::{
+        SheetId,
         formats::SheetFormatUpdates,
-        series::{find_auto_complete, SeriesOptions},
+        series::{SeriesOptions, find_auto_complete},
         sheet::borders::BordersUpdates,
-        unique_data_table_name, SheetId,
+        unique_data_table_name,
     },
     util::maybe_reverse,
-    CellValue, Pos, Rect, SheetPos, SheetRect,
 };
 use anyhow::{Error, Result};
 use itertools::Itertools;

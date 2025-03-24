@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::{grid::SheetId, Pos};
+use crate::{Pos, grid::SheetId};
 
 use super::A1Context;
 use wasm_bindgen::prelude::*;

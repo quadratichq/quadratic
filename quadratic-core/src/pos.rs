@@ -243,9 +243,9 @@ impl SheetPos {
 #[cfg(test)]
 mod test {
     use crate::{
+        Pos, SheetPos, SheetRect,
         grid::SheetId,
         renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-        Pos, SheetPos, SheetRect,
     };
 
     #[test]

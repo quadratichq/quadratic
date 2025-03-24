@@ -1,9 +1,9 @@
 use crate::{
-    grid::{
-        js_types::{JsNumber, JsRenderCell, JsRenderCellSpecial},
-        CellAlign, CellWrap, CodeCellLanguage, DataTable, Format, Sheet,
-    },
     CellValue, Pos, Rect, RunError, RunErrorMsg,
+    grid::{
+        CellAlign, CellWrap, CodeCellLanguage, DataTable, Format, Sheet,
+        js_types::{JsNumber, JsRenderCell, JsRenderCellSpecial},
+    },
 };
 
 impl Sheet {
@@ -289,11 +289,11 @@ impl Sheet {
 #[cfg(test)]
 mod tests {
     use crate::{
+        SheetPos, Value,
         a1::A1Selection,
         controller::GridController,
         grid::{CellVerticalAlign, CellWrap, CodeCellValue, CodeRun, DataTableKind},
         wasm_bindings::js::{clear_js_calls, expect_js_call, hash_test},
-        SheetPos, Value,
     };
 
     use super::*;

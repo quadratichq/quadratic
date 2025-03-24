@@ -1,8 +1,8 @@
 //! Querying a TableRef.
 
 use crate::{
-    a1::{A1Context, UNBOUNDED},
     Pos, Rect,
+    a1::{A1Context, UNBOUNDED},
 };
 
 use super::*;

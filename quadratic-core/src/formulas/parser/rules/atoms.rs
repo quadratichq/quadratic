@@ -1,6 +1,6 @@
 use crate::{
-    a1::{A1Error, SheetCellRefRange},
     RefError,
+    a1::{A1Error, SheetCellRefRange},
 };
 
 use super::*;

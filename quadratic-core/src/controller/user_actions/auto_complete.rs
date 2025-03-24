@@ -1,6 +1,6 @@
-use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::GridController;
-use crate::{grid::SheetId, Rect};
+use crate::controller::active_transactions::transaction_name::TransactionName;
+use crate::{Rect, grid::SheetId};
 use anyhow::Result;
 
 impl GridController {
@@ -28,18 +28,18 @@ impl GridController {
 mod tests {
     use super::*;
     use crate::{
+        CellValue, Pos, SheetPos, SheetRect,
         a1::A1Selection,
         array,
         formulas::convert_a1_to_rc,
         grid::{
-            sheet::borders::{BorderSelection, BorderStyle},
             CodeCellLanguage, CodeCellValue,
+            sheet::borders::{BorderSelection, BorderStyle},
         },
         test_util::{
             assert_cell_format_bold_row, assert_cell_format_cell_fill_color_row,
             assert_cell_value_row, assert_code_cell_value, assert_display_cell_value, print_table,
         },
-        CellValue, Pos, SheetPos, SheetRect,
     };
 
     fn test_setup_rect(selection: &Rect) -> (GridController, SheetId) {

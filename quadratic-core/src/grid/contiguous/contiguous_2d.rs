@@ -1,10 +1,10 @@
 use std::fmt::Debug;
 
 use crate::{
+    CopyFormats, Pos, Rect,
     a1::{A1Selection, CellRefRange, UNBOUNDED},
     grid::GridBounds,
     util::sort_bounds,
-    CopyFormats, Pos, Rect,
 };
 
 use serde::{Deserialize, Serialize};

@@ -1,12 +1,12 @@
 use indexmap::IndexMap;
 
 use crate::{
+    CellValue, Pos,
     cell_values::CellValues,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
-    CellValue, Pos,
 };
 
 use super::Sheet;
@@ -130,13 +130,13 @@ mod test {
     use std::str::FromStr;
 
     use crate::{
+        CellValue,
         a1::A1Selection,
         grid::{
-            sheet::validations::{validation::Validation, validation_rules::ValidationRule},
             NumericFormat,
+            sheet::validations::{validation::Validation, validation_rules::ValidationRule},
         },
         wasm_bindings::js::expect_js_call,
-        CellValue,
     };
 
     use super::*;

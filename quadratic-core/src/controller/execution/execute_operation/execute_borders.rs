@@ -1,6 +1,6 @@
 use crate::controller::{
-    active_transactions::pending_transaction::PendingTransaction, operations::operation::Operation,
-    GridController,
+    GridController, active_transactions::pending_transaction::PendingTransaction,
+    operations::operation::Operation,
 };
 
 impl GridController {

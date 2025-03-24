@@ -1,6 +1,6 @@
 use crate::{
-    a1::{A1Context, ColRange, RefRangeBounds, TableRef},
     OldSelection, Rect, SheetPos, SheetRect,
+    a1::{A1Context, ColRange, RefRangeBounds, TableRef},
 };
 
 use super::*;

@@ -12,8 +12,8 @@ mod table_map_entry;
 pub mod wasm_bindings;
 
 use crate::{
-    grid::{CodeCellLanguage, SheetId},
     SheetPos,
+    grid::{CodeCellLanguage, SheetId},
 };
 pub use sheet_map::*;
 pub use table_map::*;

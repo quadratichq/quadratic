@@ -7,11 +7,11 @@
 use std::collections::HashMap;
 
 use crate::{
+    CopyFormats,
     controller::{
         active_transactions::pending_transaction::PendingTransaction, execution::TransactionSource,
     },
-    grid::{js_types::JsSnackbarSeverity, Grid, GridBounds},
-    CopyFormats,
+    grid::{Grid, GridBounds, js_types::JsSnackbarSeverity},
 };
 
 const IMPORT_OFFSET: i64 = 1000000;
@@ -127,10 +127,10 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
 mod test {
 
     use crate::{
+        CellValue, Pos,
         a1::UNBOUNDED,
         controller::GridController,
         grid::{file::import, sheet::borders::CellBorderLine},
-        CellValue, Pos,
     };
 
     #[test]

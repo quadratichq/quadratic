@@ -1,12 +1,12 @@
 use crate::{
+    CellValue, SheetPos,
     a1::{A1Context, CellRefRange, CellRefRangeEnd, UNBOUNDED},
     controller::{
-        active_transactions::pending_transaction::PendingTransaction,
-        operations::operation::Operation, GridController,
+        GridController, active_transactions::pending_transaction::PendingTransaction,
+        operations::operation::Operation,
     },
     formulas::replace_cell_references_with,
     grid::{CodeCellLanguage, CodeCellValue, GridBounds, SheetId},
-    CellValue, SheetPos,
 };
 
 impl GridController {
@@ -356,14 +356,14 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
+        Array, CellValue, DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT, Pos, Rect, SheetPos, SheetRect,
+        Value,
         a1::A1Selection,
         grid::{
-            sheet::validations::{validation::Validation, validation_rules::ValidationRule},
             CellsAccessed, CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
+            sheet::validations::{validation::Validation, validation_rules::ValidationRule},
         },
         wasm_bindings::js::{clear_js_calls, expect_js_call_count, expect_js_offsets},
-        Array, CellValue, Pos, Rect, SheetPos, SheetRect, Value, DEFAULT_COLUMN_WIDTH,
-        DEFAULT_ROW_HEIGHT,
     };
 
     use super::*;

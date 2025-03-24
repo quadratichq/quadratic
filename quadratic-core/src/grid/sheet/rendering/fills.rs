@@ -4,11 +4,11 @@
 //! (even if defined as infinite).
 
 use crate::{
-    grid::{
-        js_types::{JsRenderFill, JsSheetFill},
-        Sheet,
-    },
     Pos,
+    grid::{
+        Sheet,
+        js_types::{JsRenderFill, JsSheetFill},
+    },
 };
 
 impl Sheet {
@@ -135,10 +135,10 @@ impl Sheet {
 #[cfg(test)]
 mod tests {
     use crate::{
-        a1::A1Selection,
-        controller::{user_actions::import::tests::simple_csv_at, GridController},
-        grid::sort::SortDirection,
         CellValue, Pos,
+        a1::A1Selection,
+        controller::{GridController, user_actions::import::tests::simple_csv_at},
+        grid::sort::SortDirection,
     };
 
     use super::*;

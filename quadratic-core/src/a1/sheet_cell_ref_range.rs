@@ -3,9 +3,9 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{grid::SheetId, Pos};
+use crate::{Pos, grid::SheetId};
 
-use super::{parse_optional_sheet_name_to_id, A1Context, A1Error, CellRefRange};
+use super::{A1Context, A1Error, CellRefRange, parse_optional_sheet_name_to_id};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SheetCellRefRange {

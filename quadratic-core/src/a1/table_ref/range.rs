@@ -84,7 +84,7 @@ impl fmt::Display for ColRange {
 
 #[cfg(test)]
 mod tests {
-    use crate::{grid::CodeCellLanguage, Rect};
+    use crate::{Rect, grid::CodeCellLanguage};
 
     use super::*;
 
