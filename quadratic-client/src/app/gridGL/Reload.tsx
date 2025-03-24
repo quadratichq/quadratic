@@ -1,7 +1,7 @@
 import { events } from '@/app/events/events';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export const Reload = () => {
   const [open, setOpen] = useState(false);
@@ -14,9 +14,9 @@ export const Reload = () => {
     };
   }, []);
 
-  const handleReload = () => {
+  const handleReload = useCallback(() => {
     window.location.reload();
-  };
+  }, []);
 
   if (!open) return null;
 
