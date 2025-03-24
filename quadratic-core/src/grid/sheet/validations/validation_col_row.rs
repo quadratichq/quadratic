@@ -277,7 +277,7 @@ mod tests {
         // rect and columns to be updated
         let validation_rect_columns = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1:C3,A:C", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:C3,A:C", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -286,7 +286,7 @@ mod tests {
         // to be removed
         let validation_removed = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("B2:B3,B", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("B2:B3,B", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -295,7 +295,7 @@ mod tests {
         // nothing to do with this one
         let validation_not_changed = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1:A1,A,5:10", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:A1,A,5:10", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -352,7 +352,7 @@ mod tests {
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 2);
         let new_validation_rect_column = Validation {
-            selection: A1Selection::test_a1_sheet_id("A1:B3,A:B", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:B3,A:B", sheet_id),
             ..validation_rect_columns.clone()
         };
         assert_eq!(sheet.validations.validations[0], new_validation_rect_column);
@@ -431,7 +431,7 @@ mod tests {
         // rect and rows to be updated
         let validation_rect_rows = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1:C3,1:3", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:C3,1:3", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -440,7 +440,7 @@ mod tests {
         // to be removed
         let validation_removed = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A2:C2,2", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A2:C2,2", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -449,7 +449,7 @@ mod tests {
         // nothing to do with this one
         let validation_not_changed = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1:A1,A1:D1,1", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:A1,A1:D1,1", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -503,7 +503,7 @@ mod tests {
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 2);
         let new_validation_rect_row = Validation {
-            selection: A1Selection::test_a1_sheet_id("A1:C2,1:2", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:C2,1:2", sheet_id),
             ..validation_rect_rows.clone()
         };
         assert_eq!(sheet.validations.validations[0], new_validation_rect_row);
@@ -582,7 +582,7 @@ mod tests {
         // rect and rows to be updated
         let validation_rect_cols = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1:C3,A,B,C", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:C3,A,B,C", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -591,7 +591,7 @@ mod tests {
         // nothing to do with this one
         let validation_not_changed = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1:A1,A", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:A1,A", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -644,7 +644,7 @@ mod tests {
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 2);
         let new_validation_rect_col = Validation {
-            selection: A1Selection::test_a1_sheet_id("A1:D3,A,C,D", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:D3,A,C,D", sheet_id),
             ..validation_rect_cols.clone()
         };
         assert_eq!(sheet.validations.validations[0], new_validation_rect_col);
@@ -718,7 +718,7 @@ mod tests {
         // rect and columns to be updated
         let validation_rect_rows = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1:C3,1,2,3", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:C3,1,2,3", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -727,7 +727,7 @@ mod tests {
         // nothing to do with this one
         let validation_not_changed = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1:A1,1", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:A1,1", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -781,7 +781,7 @@ mod tests {
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 2);
         let new_validation_rect_row = Validation {
-            selection: A1Selection::test_a1_sheet_id("A1:C4,1,3,4", &sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:C4,1,3,4", sheet_id),
             ..validation_rect_rows.clone()
         };
         assert_eq!(sheet.validations.validations[0], new_validation_rect_row);

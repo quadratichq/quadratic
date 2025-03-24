@@ -116,8 +116,13 @@ impl CodeRun {
 pub enum CodeCellLanguage {
     Python,
     Formula,
-    Connection { kind: ConnectionKind, id: String },
+    /// Database connection.
+    Connection {
+        kind: ConnectionKind,
+        id: String,
+    },
     Javascript,
+    /// CSV or other file import.
     Import,
 }
 
@@ -127,6 +132,12 @@ impl CodeCellLanguage {
             self,
             CodeCellLanguage::Python | CodeCellLanguage::Javascript
         )
+    }
+
+    /// Returns whether this language that uses `q.cells()` syntax (either
+    /// Python or Javascript).
+    pub fn has_q_cells(&self) -> bool {
+        *self == CodeCellLanguage::Python || *self == CodeCellLanguage::Javascript
     }
 }
 

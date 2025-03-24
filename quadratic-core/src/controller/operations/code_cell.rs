@@ -2,7 +2,7 @@ use super::operation::Operation;
 use crate::{
     cell_values::CellValues,
     controller::GridController,
-    formulas::convert_a1_to_rc,
+    formulas::convert_rc_to_a1,
     grid::{CodeCellLanguage, CodeCellValue, DataTable, SheetId},
     CellValue, SheetPos,
 };
@@ -17,7 +17,7 @@ impl GridController {
     ) -> Vec<Operation> {
         let parse_ctx = self.a1_context();
         let code = match language {
-            CodeCellLanguage::Formula => convert_a1_to_rc(&code, parse_ctx, sheet_pos),
+            CodeCellLanguage::Formula => convert_rc_to_a1(&code, parse_ctx, sheet_pos),
             _ => code,
         };
 

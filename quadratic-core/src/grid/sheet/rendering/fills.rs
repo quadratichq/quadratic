@@ -265,7 +265,7 @@ mod tests {
         // set a data table at E2 that's 3x3 and show_header is true
         gc.test_set_data_table(pos!(E2).to_sheet_pos(sheet_id), 3, 3, false, true);
         gc.set_fill_color(
-            &A1Selection::test_a1_sheet_id("E5:I5", &sheet_id),
+            &A1Selection::test_a1_sheet_id("E5:I5", sheet_id),
             Some("red".to_string()),
             None,
         )
@@ -339,7 +339,7 @@ mod tests {
     fn test_get_all_render_fills_table_with_sort() {
         let (mut gc, sheet_id, pos, file_name) = simple_csv_at(pos!(E2));
         gc.set_fill_color(
-            &A1Selection::test_a1_sheet_id("E4:I4", &sheet_id),
+            &A1Selection::test_a1_sheet_id("E4:I4", sheet_id),
             Some("red".to_string()),
             None,
         )
@@ -391,7 +391,7 @@ mod tests {
         let (mut gc, sheet_id, pos, file_name) = simple_csv_at(pos!(E2));
 
         gc.set_fill_color(
-            &A1Selection::test_a1_sheet_id("E4:I4", &sheet_id),
+            &A1Selection::test_a1_sheet_id("E4:I4", sheet_id),
             Some("red".to_string()),
             None,
         )
@@ -438,7 +438,7 @@ mod tests {
         assert_fill_eq(&fills[2], 6, 4, 2, 1, "red");
 
         gc.set_fill_color(
-            &A1Selection::test_a1_sheet_id("E10:I10", &sheet_id),
+            &A1Selection::test_a1_sheet_id("E10:I10", sheet_id),
             Some("green".to_string()),
             None,
         )
