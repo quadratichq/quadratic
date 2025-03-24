@@ -49,10 +49,10 @@ async function handler(
   const dataUrl = await getFileUrl(checkpoint.s3Key);
 
   return res.status(200).json({
-    id: checkpoint.id,
     dataUrl,
+    id: checkpoint.id,
+    sequenceNumber: checkpoint.sequenceNumber,
     timestamp: checkpoint.timestamp.toISOString(),
     version: checkpoint.version,
-    sequenceNumber: checkpoint.sequenceNumber,
   });
 }
