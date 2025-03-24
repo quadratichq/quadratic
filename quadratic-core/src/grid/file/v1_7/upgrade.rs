@@ -8,8 +8,8 @@ use crate::grid::file::{
 };
 
 use super::{
-    schema::{self as current, BorderStyleCellSchema},
     BordersUpgrade, SheetFormattingUpgrade,
+    schema::{self as current, BorderStyleCellSchema},
 };
 
 fn upgrade_cells_accessed(

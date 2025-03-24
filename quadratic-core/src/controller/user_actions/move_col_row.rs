@@ -1,12 +1,12 @@
 use crate::{
+    CopyFormats,
     a1::A1Selection,
     controller::{
+        GridController,
         active_transactions::pending_transaction::PendingTransaction,
         operations::clipboard::{ClipboardOperation, PasteSpecial},
-        GridController,
     },
     grid::{GridBounds, SheetId},
-    CopyFormats,
 };
 
 impl GridController {

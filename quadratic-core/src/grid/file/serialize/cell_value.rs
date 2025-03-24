@@ -1,8 +1,8 @@
 use super::current;
 use crate::{
+    CellValue,
     cellvalue::Import,
     grid::{CodeCellLanguage, CodeCellValue, ConnectionKind},
-    CellValue,
 };
 use bigdecimal::BigDecimal;
 use std::str::FromStr;

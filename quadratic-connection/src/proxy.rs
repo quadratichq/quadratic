@@ -1,15 +1,15 @@
 use std::time::Duration;
 
 use axum::{
+    Extension,
     body::Body,
     extract::Request,
     response::{IntoResponse, Response},
-    Extension,
 };
 use http::{HeaderName, HeaderValue};
 use reqwest::{Client, Method, RequestBuilder};
 
-use crate::error::{proxy_error, ConnectionError, Result};
+use crate::error::{ConnectionError, Result, proxy_error};
 use crate::state::State;
 
 const REQUEST_TIMEOUT_SEC: u64 = 15;

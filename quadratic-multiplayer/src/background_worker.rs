@@ -122,7 +122,7 @@ async fn remove_stale_users_in_room(
 
 #[cfg(test)]
 mod tests {
-    use quadratic_core::controller::{transaction::Transaction, GridController};
+    use quadratic_core::controller::{GridController, transaction::Transaction};
 
     use crate::test_util::{add_new_user_to_room, new_arc_state, operation};
 

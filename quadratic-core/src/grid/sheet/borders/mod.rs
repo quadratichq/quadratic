@@ -8,7 +8,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{grid::Contiguous2D, ClearOption, Pos, Rect};
+use crate::{ClearOption, Pos, Rect, grid::Contiguous2D};
 
 mod borders_clipboard;
 mod borders_col_row;

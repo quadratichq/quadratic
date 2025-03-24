@@ -1,8 +1,8 @@
 // Handles all spill checking for the sheet
 
+use crate::controller::GridController;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
-use crate::controller::GridController;
 use crate::grid::SheetId;
 use crate::{ArraySize, Pos, Rect};
 
@@ -104,9 +104,9 @@ impl GridController {
 #[cfg(test)]
 mod tests {
 
+    use crate::controller::GridController;
     use crate::controller::active_transactions::pending_transaction::PendingTransaction;
     use crate::controller::transaction_types::JsCodeResult;
-    use crate::controller::GridController;
     use crate::grid::js_types::{JsNumber, JsRenderCell, JsRenderCellSpecial};
     use crate::grid::{CellAlign, CellWrap, CodeCellLanguage, CodeRun, DataTable, DataTableKind};
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call_count};

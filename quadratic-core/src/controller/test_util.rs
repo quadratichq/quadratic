@@ -6,20 +6,20 @@ use std::str::FromStr;
 
 #[cfg(test)]
 use crate::{
+    Array, ArraySize, CellValue, SheetPos, Value,
     cellvalue::Import,
-    grid::column_header::DataTableColumnHeader,
     grid::Grid,
     grid::SheetId,
+    grid::column_header::DataTableColumnHeader,
     grid::{CodeCellLanguage, CodeCellValue, CodeRun},
     grid::{DataTable, DataTableKind},
     viewport::ViewportBuffer,
-    Array, ArraySize, CellValue, SheetPos, Value,
 };
 
 #[cfg(test)]
 use super::{
-    active_transactions::transaction_name::TransactionName, operations::operation::Operation,
-    GridController,
+    GridController, active_transactions::transaction_name::TransactionName,
+    operations::operation::Operation,
 };
 
 #[cfg(test)]

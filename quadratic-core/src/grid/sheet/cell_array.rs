@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 
 use crate::{
-    controller::execution::run_code::get_cells::JsCellsA1Value, Array, CellValue, Pos, Rect,
+    Array, CellValue, Pos, Rect, controller::execution::run_code::get_cells::JsCellsA1Value,
 };
 
 use super::Sheet;
@@ -184,9 +184,9 @@ mod tests {
 
     use super::*;
     use crate::{
+        CellValue, Pos, Rect, SheetPos,
         controller::GridController,
         grid::{CodeCellLanguage, Sheet},
-        CellValue, Pos, Rect, SheetPos,
     };
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 

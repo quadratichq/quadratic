@@ -1,7 +1,7 @@
 use crate::{
-    controller::{active_transactions::transaction_name::TransactionName, GridController},
-    grid::{data_table::column_header::DataTableColumnHeader, sort::DataTableSort},
     Pos, SheetPos, SheetRect,
+    controller::{GridController, active_transactions::transaction_name::TransactionName},
+    grid::{data_table::column_header::DataTableColumnHeader, sort::DataTableSort},
 };
 
 use anyhow::Result;
@@ -122,16 +122,16 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
+        Array, CellValue, Pos, Rect, SheetPos, Value,
         a1::A1Selection,
         cellvalue::Import,
         controller::{
-            transaction_types::JsCodeResult, user_actions::import::tests::simple_csv,
-            GridController,
+            GridController, transaction_types::JsCodeResult,
+            user_actions::import::tests::simple_csv,
         },
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
         test_util::{assert_cell_value, assert_data_table_cell_value_row, print_data_table},
         wasm_bindings::js::{clear_js_calls, expect_js_call},
-        Array, CellValue, Pos, Rect, SheetPos, Value,
     };
 
     #[test]
